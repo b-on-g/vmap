@@ -1,0 +1,81 @@
+- Inspector of one class of the document: every port it has, own and inherited,
+- with an editor for the value of each. Every edit lands in the AST and is written
+- straight back as source text.
+-
+- The class is handed in as source. Which class that is — which node is picked on
+- the canvas — is somebody else's question.
+- @see ../../ARCHITECTURE.md sections 1 and 5
+$bog_vmap_app_inspect $mol_view
+	- Source of the class. The truth; everything below is derived from it.
+	source? \
+	- Other classes of the same document, so that a node typed with one of them
+	- resolves its ports like any other. Empty is the honest default: an inspector
+	- handed a lone class has no siblings, and inventing some would be worse than
+	- having none.
+	peers /$mol_tree2
+	- Deployed MAM module the inherited ports are read from.
+	pack? \https://mol.hyoo.ru
+	sub /
+		<= Head $mol_view
+			sub /
+				<= Title $mol_view sub / <= class_title \
+				<= Base $mol_view sub / <= base_title \
+				<= Total $mol_view sub / <= total \
+		<= Body $mol_scroll
+			sub /
+				<= Rows $mol_view sub <= rows /
+	- The document model. `source` is bound both ways, so a write through any
+	- property below serializes the whole class and comes back out here as text.
+	Node $bog_vmap_lang_node
+		source? <=> source?
+	- Where inherited ports come from. The class of the document is handed to the
+	- library as well, so that `props_map` resolves the chain through it and
+	- `props_owner` can tell an own port from an inherited one.
+	Lib $bog_vmap_lib
+		pack <= pack
+		classes <= classes /
+	Row* $bog_vmap_app_inspect_row
+		sign <= row_sign* \
+		owner <= row_owner* \
+		inherited <= row_inherited* false
+		value? <=> row_value*? $mol_tree2_empty
+		keyed? <=> row_keyed*? false
+		changeable? <=> row_changeable*? false
+		drop? <=> row_drop*? null
+		binds <= binds /string
+		nodes <= nodes *
+
+- Stand for the inspector: the source of the whole DOCUMENT on the left, the
+- inspector of one of its classes on the right, so that an edit and the line it
+- moves are on screen at once — and so that the lines it must NOT move are on
+- screen too.
+-
+- A document and not a class, because that is where the editing of one class is
+- dangerous: the class model writes what it touched as the whole text, and a stand
+- of one class could never show the neighbour it eats.
+-
+- Which class is inspected is picked here by hand. Picking a node on the canvas is
+- task 2.5, and until it exists a stand that pretends to have it would be testing
+- nothing.
+$bog_vmap_app_inspect_demo $mol_view
+	source? \
+	sub /
+		<= Source $mol_view
+			sub /
+				<= Source_head $mol_view
+					sub /
+						<= Source_title $mol_view sub / \Исходник документа
+						<= Class_pick $mol_select
+							hint \класс
+							value? <=> klass? \
+							options <= names /string
+				<= Source_text $bog_vmap_app_inspect_value_area
+					rows 26
+					value? <=> source?
+		<= Inspect $bog_vmap_app_inspect
+			source? <=> class_source? \
+			peers <= trees /$mol_tree2
+	- The document. One text, several classes, and a write through one of them
+	- leaves the others alone.
+	Doc $bog_vmap_lang_doc
+		source? <=> source?

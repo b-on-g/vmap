@@ -1,0 +1,12 @@
+$bog_vmap_app_palette_port $mol_view
+	sign \
+	body \
+	owner \
+	inherited false
+	attr *
+		^
+		bog_vmap_app_palette_port_inherited <= inherited
+	sub /
+		<= Sign $mol_view sub / <= sign
+		<= Body $mol_view sub / <= body
+		<= Owner $mol_view sub / <= owner

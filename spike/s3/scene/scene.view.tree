@@ -1,0 +1,21 @@
+$bog_vmap_spike_s3_scene $mol_view
+	sub /
+		<= Probes $mol_view
+			sub <= probe_rows /
+		<= Preview $mol_view
+			sub <= preview /
+		<= Shot_pane $mol_view
+			sub <= shot_rows /
+	Shot $mol_image
+		uri <= image_uri \
+		title \asset delivered as bytes
+		- $mol_image defaults to loading=lazy, and a lazy image in a background
+		- tab never loads, so the measurement would never arrive.
+		loading \eager
+		load? <=> shot_load? null
+	Probe* $mol_view
+		attr *
+			^
+			bog_vmap_spike_s3_scene_verdict <= probe_verdict* \
+		sub /
+			<= probe_text* \

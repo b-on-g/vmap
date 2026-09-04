@@ -1,0 +1,131 @@
+$bog_vmap_app $mol_view
+	doc_src \
+	- CSS of the document, and only of the document: this is what an export carries.
+	- Canvas placement of free parts rides `spots` instead and never joins this, so
+	- the export cannot pick up a world coordinate even by accident.
+	doc_css \
+	spots? *
+	- Property name of the node picked on the canvas, `null` when nothing is picked.
+	- Read this to follow the selection; it is the whole public shape of it.
+	selected? null
+	doc_js *
+	doc_root \
+	scene_uri \
+	mode? \edit
+	- Address of the donor pack. One value for the whole editor: the palette offers
+	- what the scene has actually loaded, and the two must never drift apart.
+	pack? \https://mol.hyoo.ru
+	palette_showed? true
+	inspect_showed? true
+	sub <= body /$mol_view
+	-
+	Head $mol_bar
+		sub /
+			<= Brand $mol_view
+				sub /
+					\vmap
+			<= Palette_check $mol_check
+				title \Палитра
+				checked? <=> palette_showed?
+			<= Inspect_check $mol_check
+				title \Свойства
+				checked? <=> inspect_showed?
+			<= Mode $mol_switch
+				options <= mode_options *
+					edit \Правка
+					run \Запуск
+				value? <=> mode?
+			<= Zoom_out $mol_button_minor
+				title \−
+				hint \Отдалить
+				click? <=> zoom_out? null
+			<= Zoom_title $mol_view
+				sub /
+					<= zoom_title \
+			<= Zoom_in $mol_button_minor
+				title \+
+				hint \Приблизить
+				click? <=> zoom_in? null
+			<= Reset $mol_button_minor
+				title \Сбросить вид
+				click? <=> camera_reset? null
+			<= Delete $mol_button_minor
+				title \Удалить
+				hint <= delete_hint \
+				enabled <= selection_showed false
+				click? <=> node_delete? null
+			<= Status $mol_view
+				sub /
+					<= status \
+	-
+	Alarm $mol_view
+		sub /
+			<= error \
+	-
+	- The scene has stopped answering. Its own strip and not the error one: an
+	- error means the scene spoke, this means it did not, and the only thing that
+	- helps is on this strip.
+	Stall $mol_view
+		sub /
+			<= Stall_note $mol_view sub / <= stall_note \
+			<= Stall_reload $mol_button_minor
+				title \Перезагрузить сцену
+				hint \Поднять кадр заново. Документ хранится в редакторе и не потеряется
+				click? <=> scene_restart? null
+	-
+	- Palette beside the canvas, canvas taking whatever is left.
+	Body $mol_view
+		sub <= body_main /$mol_view
+	-
+	Side $mol_view
+		sub /
+			<= Palette $bog_vmap_app_palette
+				compact true
+				pack? <=> pack?
+	-
+	- Properties of the picked node, on the far edge from the palette: one panel
+	- offers what can be added, the other what the added thing can do, and the canvas
+	- keeps the middle. Either can be folded away when the canvas needs the room.
+	Aside $mol_view
+		sub <= aside_content /$mol_view
+	-
+	- The inspector reads ONE class, and a part declared on the canvas is exactly
+	- that: `Button_minor $mol_button_minor` is a class named `Button_minor` with
+	- `$mol_button_minor` for a base, so its own lines are its own ports and the rest
+	- come down the chain. Nothing had to be added to the inspector to fit.
+	Inspect $bog_vmap_app_inspect
+		source? <=> node_source? \
+		peers <= node_peers /$mol_tree2
+		pack <= pack
+	-
+	- What stands in the panel while nothing is picked. A state, not a blank: the
+	- inspector handed an empty source would fail to find a class in it and show an
+	- error where an invitation belongs.
+	Idle $mol_view
+		sub /
+			<= idle_note \Выберите узел на холсте, чтобы править его свойства
+	-
+	- Component library of the host. Only `script_link()` is read here, to point the
+	- frame at the pack; the class tree is fetched by the palette, from the same
+	- address, and the two share one `$mol_fetch` cell.
+	Lib $bog_vmap_lib
+		pack <= pack
+	-
+	- What the pointer is carrying, drawn at the pointer. Rendered only while a drag
+	- is on, so it costs nothing the rest of the time.
+	Ghost $mol_view
+		style *
+			left <= ghost_left \0px
+			top <= ghost_top \0px
+		sub /
+			<= ghost_title \
+	-
+	Pane $bog_vmap_app_pane
+		scene_uri <= scene_uri
+		doc_src <= doc_src
+		doc_css <= doc_css
+		spots? <=> spots?
+		selected? <=> selected?
+		doc_js <= doc_js
+		doc_root <= doc_root
+		mode <= mode

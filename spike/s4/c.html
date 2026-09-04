@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+	S4, variant A with the proposed scene fix applied as a prototype patch.
+
+	The patch is the whole recommendation of the spike, in the form it would
+	take in `scene.view.ts`: mount the document by its DOM node instead of by
+	`sub()`. `$mol_view.render()` decides between "a view" and "a string" with
+	`child instanceof $mol_view`, and that `$mol_view` is the class local to
+	`mol/view/view/view.tsx` — the scene's own copy. A document built on the
+	pack's copy fails the check and gets stringified, with a green compile and
+	no error anywhere. An `Element` takes the `instanceof Node` branch instead,
+	which no second framework copy can disagree about.
+
+	Patched on the prototype rather than in the module so that the measurement
+	runs against the shipping bundle, byte for byte.
+
+	http://localhost:9080/bog/vmap/spike/s4/c.html
+-->
+<html lang="en" mol_view_root style=" height: 100%; width: 100% ">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
+		<title>$bog_vmap spike S4 · C · A plus the node mount</title>
+	</head>
+	<body mol_view_root style=" padding: 0; margin: 0; height: 100%; width: 100% ">
+		<div mol_view_root="$bog_vmap_scene"></div>
+		<script src="/bog/vmap/scene/-/web.js" charset="utf-8"></script>
+		<script>
+			;( function () {
+
+				const proto = window.$bog_vmap_scene.prototype
+
+				// Byte for byte what `stage()` would become, plus `dom_tree()`.
+				// In the module `sub <= stage /$mol_view` has to widen to
+				// `$mol_view_content`, which already covers `Node`.
+				proto.stage = function () {
+					this.css_attach()
+					const made = this.instance()
+					return made ? [ made.dom_tree() ] : []
+				}
+
+				// The declaration in the class body was decorated; replacing the
+				// method drops the wrapper, so it goes back on by hand — exactly
+				// the `source_js_decorators()` trick the scene already uses.
+				window.$mol_mem( proto, 'stage' )
+
+			} )()
+		</script>
+	</body>
+</html>

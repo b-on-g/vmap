@@ -1,0 +1,20 @@
+<!doctype html>
+<!--
+	http://localhost:9080/bog/vmap/spike/s4/host.html
+	Answer lands in `window.S4_frame` and on the page.
+-->
+<html>
+	<head><meta charset="utf-8" /><title>S4 host · pack inside the sandbox</title></head>
+	<body style=" font: 14px/1.5 system-ui; margin: 1rem ">
+		<pre id="out">waiting…</pre>
+		<iframe sandbox="allow-scripts" src="frame.html?v=2" style=" width: 200px; height: 60px "></iframe>
+		<script>
+			window.addEventListener( 'message', event => {
+				const data = event.data
+				if( !data || data.ns !== 's4_frame' ) return
+				window.S4_frame = data
+				document.getElementById( 'out' ).textContent = JSON.stringify( data, null, '\t' )
+			} )
+		</script>
+	</body>
+</html>

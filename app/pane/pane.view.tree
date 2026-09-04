@@ -1,0 +1,86 @@
+- Camera lives here: `camera_shift` is a screen-pixel vector, `camera_zoom` an
+- isotropic scalar. $mol_touch drives both from pointer, wheel and pinch.
+$bog_vmap_app_pane $mol_view
+	scene_uri \
+	doc_src \
+	doc_css \
+	- Canvas placement of free parts, world coordinates keyed by property name.
+	- Never joined with `doc_css`: that one is the document, this one is the desk.
+	- Two way: dragging a node on the canvas writes here.
+	spots? *
+	- Property name of the picked node, `null` when nothing is picked.
+	selected? null
+	doc_js *
+	doc_root \
+	mode \edit
+	handshake? 0
+	ready false
+	- The scene owes an answer to something we sent and has stopped answering.
+	- Set by the watchdog, cleared by the next message from the scene.
+	stalled? false
+	error_at*? \
+	error \
+	isolation \
+	camera_shift? $mol_vector_2d<number> /
+		0
+		0
+	camera_zoom? 1
+	grid_scale $mol_vector_2d<number> /
+		1
+		1
+	sub /
+		<= Grid $bog_vmap_app_pane_grid
+			shift <= camera_shift
+			scale <= grid_scale
+		<= Scene $bog_vmap_app_pane_frame
+			uri <= scene_uri
+		<= Overlay $bog_vmap_app_pane_overlay
+			mode <= mode
+			frame_showed <= frame_showed false
+			frame_style <= frame_style *
+			press? <=> node_press? null
+			move? <=> node_move? null
+			release? <=> node_release? null
+	plugins /
+		^
+		<= Touch $mol_touch
+			allow_draw false
+			allow_pan true
+			allow_zoom true
+			pan? <=> camera_shift?
+			zoom? <=> camera_zoom?
+
+- Transparent gate over the frame. In `edit` it swallows every pointer event and
+- lets it bubble up to the pane, where $mol_touch listens. In `run` it steps aside
+- and the event lands inside the sandbox.
+-
+- Selection is drawn HERE and not in the scene: the overlay belongs to the host,
+- so no code inside the document can fake a selection frame or hide one, and the
+- ring stays crisp because the camera scales the scene, not this layer.
+- @see ../../ARCHITECTURE.md section 4
+$bog_vmap_app_pane_overlay $mol_view
+	mode \edit
+	frame_showed false
+	frame_style *
+	press? null
+	move? null
+	release? null
+	attr *
+		^
+		bog_vmap_app_pane_mode <= mode
+	event *
+		^
+		pointerdown? <=> press? null
+		pointermove? <=> move? null
+		pointerup? <=> release? null
+	- Ring around the picked node. A free part of the class, put into `sub` only
+	- while something is picked, so an empty canvas costs no node at all.
+	Frame $mol_view
+		style <= frame_style *
+
+- `sandbox` goes FIRST: $mol_dom_render_attributes writes the object in key order,
+- and an iframe that got its src before its sandbox is already loading unsandboxed.
+$bog_vmap_app_pane_frame $mol_frame
+	attr *
+		sandbox \allow-scripts
+		^

@@ -1,0 +1,19 @@
+<!doctype html>
+<!--
+	The page itself paints nothing: the frame lies over the host canvas and the
+	grid has to show through it. `mol/theme/theme.css` gives `body` an opaque
+	`--mol_theme_back`, and the host cannot override it across the origin, so it
+	is overridden here. Inline, not by a rule, so that it also holds during the
+	first paint, before `web.js` has loaded.
+-->
+<html lang="en" mol_view_root style=" height: 100%; width: 100%; background: transparent ">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
+		<title>$bog_vmap scene</title>
+	</head>
+	<body mol_view_root style=" padding: 0; margin: 0; height: 100%; width: 100%; background: transparent ">
+		<div mol_view_root="$bog_vmap_scene"></div>
+		<script src="web.js" charset="utf-8"></script>
+	</body>
+</html>

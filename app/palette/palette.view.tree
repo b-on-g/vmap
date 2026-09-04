@@ -1,0 +1,71 @@
+$bog_vmap_app_palette $mol_view
+	pack? \https://mol.hyoo.ru
+	query? \
+	selected? \
+	- Narrow layout for a side panel of the editor: header in a column, ports pane
+	- dropped. A port row is an 11rem signature plus a value plus an owner badge and
+	- does not fit a panel; the ports of a node picked on the canvas belong to the
+	- inspector of 2.6 anyway, which is a different question from «what can I add».
+	compact false
+	- Class the pointer is currently carrying, empty when nothing is being dragged,
+	- and where the pointer is right now in viewport coordinates. Started here on
+	- `pointerdown`, moved and cleared by whoever owns the canvas: the palette knows
+	- when a drag begins and nothing about where it ends.
+	dragged? \
+	drag_x? 0
+	drag_y? 0
+	attr *
+		^
+		bog_vmap_app_palette_compact <= compact
+	sub <= body /$mol_view
+	-
+	Head $mol_bar
+		sub /
+			<= Brand $mol_view sub / \Палитра
+			<= Pack $mol_string
+				hint \Адрес пака
+				value? <=> pack?
+			<= Query $mol_string
+				hint \Поиск по имени
+				value? <=> query?
+			<= Total $mol_view sub / <= total \
+	-
+	Body $mol_view
+		sub <= body_content /$mol_view
+	-
+	Classes $mol_scroll
+		sub /
+			<= Class_list $mol_list
+				rows <= class_rows /
+	-
+	- `$mol_scroll` is a grid that puts every child into cell 1/1, so it holds
+	- exactly one node. The heading has to live beside it, not in it.
+	Ports $mol_view
+		sub /
+			<= Ports_head $mol_view
+				sub /
+					<= Selected $mol_view sub / <= selected_title \
+					<= Chain $mol_view sub / <= chain_title \
+			<= Ports_scroll $mol_scroll
+				sub /
+					<= Port_list $mol_list
+						rows <= port_rows /
+	-
+	- One button per class. `$mol_list` renders only what is on screen, so all
+	- 449 of them cost nothing until scrolled to.
+	Class_row* $bog_vmap_app_palette_item
+		title <= class_title* \
+		click? <=> class_click*? null
+		current <= class_current* false
+		drag_start? <=> class_drag*? null
+	-
+	Port_row* $bog_vmap_app_palette_port
+		sign <= port_sign* \
+		body <= port_body* \
+		owner <= port_owner* \
+		inherited <= port_inherited* false
+	-
+	- The model. `pack` is wired one way: the field above is the only place it is
+	- written, and the library derives both of its addresses from it.
+	Lib $bog_vmap_lib
+		pack <= pack

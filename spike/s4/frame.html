@@ -1,0 +1,46 @@
+<!doctype html>
+<!--
+	Does a pack even load inside the real boundary? The scene runs in
+	`sandbox="allow-scripts"` without `allow-same-origin`, so its origin is
+	opaque, and a cross-origin `<script src>` from an opaque origin is the one
+	thing none of the measurements above touch. Loaded by `host.html`.
+-->
+<html>
+	<head><meta charset="utf-8" /><title>S4 frame</title></head>
+	<body>
+		<script>
+			;( function () {
+
+				const say = data => parent.postMessage( { ns: 's4_frame', ... data }, '*' )
+
+				const el = document.createElement( 'script' )
+				el.src = 'https://mol.hyoo.ru/web.js'
+				el.charset = 'utf-8'
+
+				const started = performance.now()
+
+				el.onload = () => say( {
+					ok: true,
+					ms: Math.round( performance.now() - started ),
+					// `location.origin` is the origin of the URL, not of the
+					// document, so it says `http://localhost` even in a
+					// sandboxed frame. Only `self.origin` reports the opaque one.
+					location_origin: String( location.origin ),
+					self_origin: String( self.origin ),
+					opaque: self.origin === 'null',
+					storage: ( () => { try { localStorage.length; return 'reachable' } catch ( error ) { return String( error.name ) } } )(),
+					parent_reach: ( () => { try { return String( parent.location.href ) } catch ( error ) { return 'blocked: ' + error.name } } )(),
+					mol_view: typeof window.$mol_view,
+					mol_string: typeof window.$mol_string,
+					mol_button_minor: typeof window.$mol_button_minor,
+					classes: Object.getOwnPropertyNames( window ).filter( k => /^\$mol_/.test( k ) ).length,
+				} )
+
+				el.onerror = () => say( { ok: false, origin: String( location.origin ) } )
+
+				document.head.appendChild( el )
+
+			} )()
+		</script>
+	</body>
+</html>

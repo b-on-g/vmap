@@ -1,0 +1,16 @@
+$bog_vmap_app_palette_item $mol_button_minor
+	current false
+	- A palette row is a line of text, not a tap target: 40 px of `$mol_button_typed`
+	- would show a dozen classes where three dozen fit. `$mol_list` sizes its virtual
+	- window by this very number, so it has to be the truth, not just CSS.
+	minimal_height 24
+	- Pointer down, not HTML5 `dragstart`. The native protocol cannot be driven by
+	- synthetic events at all, which would leave dragging unverifiable here, and it
+	- would hand the drop to the browser instead of to the canvas.
+	drag_start? null
+	attr *
+		^
+		bog_vmap_app_palette_item_current <= current
+	event *
+		^
+		pointerdown? <=> drag_start?

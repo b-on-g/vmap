@@ -1,0 +1,14 @@
+$bog_vmap_spike_s3_host $mol_view
+	sub /
+		<= Log $mol_view
+			sub <= log_rows /
+		<= Stage $mol_view
+			sub /
+				<= Scene $bog_vmap_spike_s3_frame
+					uri <= scene_uri \
+	Row* $mol_view
+		attr *
+			^
+			bog_vmap_spike_s3_host_verdict <= row_verdict* \
+		sub /
+			<= row_text* \

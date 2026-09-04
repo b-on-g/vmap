@@ -1,0 +1,25 @@
+<!doctype html>
+<!--
+	S4, variant B: the donor pack is loaded BEFORE the scene bundle.
+
+	No module of its own on purpose. The page mounts the REAL, production
+	`$bog_vmap_scene` bundle, so the measurement is of the shipping scene and
+	not of a lookalike. Opened at the top level the page is its own `parent`,
+	which is what the scene takes for a peer, so the bridge is drivable from
+	the console with `window.postMessage`.
+
+	Served straight off the dev server as a plain file:
+	http://localhost:9080/bog/vmap/spike/s4/b.html
+-->
+<html lang="en" mol_view_root style=" height: 100%; width: 100% ">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
+		<title>$bog_vmap spike S4 · B · pack before scene</title>
+	</head>
+	<body mol_view_root style=" padding: 0; margin: 0; height: 100%; width: 100% ">
+		<div mol_view_root="$bog_vmap_scene"></div>
+		<script src="https://mol.hyoo.ru/web.js" charset="utf-8"></script>
+		<script src="/bog/vmap/scene/-/web.js" charset="utf-8"></script>
+	</body>
+</html>

@@ -1,0 +1,39 @@
+$bog_vmap_spike_s2 $mol_view
+	sub /
+		<= Left $mol_scroll sub /
+			<= Panel $mol_view sub /
+				<= Strategy $mol_switch
+					value?val <=> strategy?val \swap
+					options <= strategy_options *
+				<= Actions $mol_row sub /
+					<= Recompile $mol_button_major
+						title \Перекомпилировать
+						click?event <=> recompile?event null
+					<= Bench $mol_button_minor
+						title \Бенч ×20
+						click?event <=> bench?event null
+					<= Reset $mol_button_minor
+						title \Сброс стенда
+						click?event <=> reset?event null
+				<= Breaks $mol_row sub /
+					<= Break_touch $mol_button_minor
+						title \правка одного свойства
+						click?event <=> break_touch?event null
+					<= Break_key $mol_button_minor
+						title \counter → counter*
+						click?event <=> break_key?event null
+					<= Break_drop $mol_button_minor
+						title \убрать extra
+						click?event <=> break_drop?event null
+					<= Break_base $mol_button_minor
+						title \база → $mol_scroll
+						click?event <=> break_base?event null
+				<= Report $mol_text text <= report \
+				<= Tree_title $mol_text text \### view.tree
+				<= Tree_edit $mol_textarea
+					value?val <=> source_tree?val \
+				<= Js_title $mol_text text \### тело класса
+				<= Js_edit $mol_textarea
+					value?val <=> source_js?val \
+		<= Right $mol_scroll sub /
+			<= Stage $mol_view sub <= stage /
