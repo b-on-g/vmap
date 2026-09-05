@@ -3,9 +3,9 @@ namespace $.$$ {
 	/**
 	 * Infinite background grid. Feeds two $mol_plot_ruler instances the same way
 	 * $mol_plot_pane feeds its graphs, and renders only their curves.
-	 * @see ../../../ARCHITECTURE.md section 8
+	 * @see ../../ARCHITECTURE.md section 8
 	 */
-	export class $bog_vmap_app_pane_grid extends $.$bog_vmap_app_pane_grid {
+	export class $bog_vmap_scene_grid extends $.$bog_vmap_scene_grid {
 
 		@ $mol_mem
 		size_real() {
@@ -64,7 +64,7 @@ namespace $.$$ {
 	}
 
 	/** Base clamps its lines to 1000px tall. The canvas is whatever the window is. */
-	export class $bog_vmap_app_pane_grid_hor extends $.$bog_vmap_app_pane_grid_hor {
+	export class $bog_vmap_scene_grid_hor extends $.$bog_vmap_scene_grid_hor {
 
 		override curve() {
 
@@ -82,7 +82,7 @@ namespace $.$$ {
 	}
 
 	/** Same story, base clamps its lines to 2000px wide. */
-	export class $bog_vmap_app_pane_grid_vert extends $.$bog_vmap_app_pane_grid_vert {
+	export class $bog_vmap_scene_grid_vert extends $.$bog_vmap_scene_grid_vert {
 
 		override curve() {
 

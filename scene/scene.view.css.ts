@@ -2,11 +2,51 @@ namespace $.$$ {
 
 	$mol_style_define( $bog_vmap_scene, {
 
+		/**
+		 * The frame paints its own ground now.
+		 *
+		 * It used to be transparent so the host grid showed through, and that is
+		 * what could not be kept: a frame with no `color-scheme` is transparent only
+		 * until something inside it takes a compositing layer — the camera transform
+		 * on `Stage` does — and from then on the browser fills it with a pale base of
+		 * its own. Measured in a live window, not under automation. Declaring the
+		 * scheme in `index.html` settles the base; painting the theme colour here
+		 * makes the canvas the same tone as the editor around it instead of whatever
+		 * the browser picked.
+		 */
+		position: 'relative',
+		width: '100%',
+		height: '100%',
+		overflow: 'hidden',
+		background: { color: $mol_theme.back },
+
 		flex: { direction: 'column' },
 		align: { items: 'flex-start' },
-		background: { color: 'transparent' },
+
+		/**
+		 * Under the document, and said with a number rather than left to chance:
+		 * `Grid` is positioned and `Stage` is transformed, so both paint in the same
+		 * layer and DOM order alone would decide. Figma keeps its grid beneath the
+		 * content and so do we — the whole point of moving the grid in here was to
+		 * keep that order, not to invert it.
+		 */
+		Grid: {
+			position: 'absolute',
+			top: 0,
+			left: 0,
+			zIndex: 0,
+			width: '100%',
+			height: '100%',
+			fill: 'none',
+			// `stroke` comes from CSSStyleDeclaration and is plain `string` there.
+			stroke: String( $mol_theme.line ),
+			strokeWidth: '1px',
+			pointerEvents: 'none',
+		},
 
 		Stage: {
+			position: 'relative',
+			zIndex: 1,
 			flex: { direction: 'column' },
 			align: { items: 'flex-start' },
 			transformOrigin: '0 0',
@@ -16,10 +56,9 @@ namespace $.$$ {
 			transition: 'none',
 		},
 
-		// The page of the scene is deliberately transparent, so this note has no
-		// ground of its own and lies straight on the grid of the host. It needs a
-		// card and full contrast text: `$mol_theme.shade` was measured on screen
-		// and came out unreadable over the canvas.
+		// The note lies over the canvas and its grid, so it needs a ground of its
+		// own and full contrast text: `$mol_theme.shade` was measured on screen and
+		// came out unreadable over the canvas.
 		Wait: {
 			padding: $mol_gap.block,
 			maxWidth: '22rem',

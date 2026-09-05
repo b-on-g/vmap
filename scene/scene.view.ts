@@ -242,6 +242,28 @@ namespace $.$$ {
 			return next ?? super.mode()
 		}
 
+		/**
+		 * Pan of the grid, in screen pixels.
+		 *
+		 * The same numbers `camera_transform()` puts in its `translate`, and they
+		 * have to be, or the lines would drift away from the nodes they are behind.
+		 * The camera is stated in world units because the host thinks in world units;
+		 * a ruler draws in screen pixels, so the conversion happens here and nowhere
+		 * else.
+		 */
+		@ $mol_mem
+		grid_shift() {
+			const { x, y, zoom } = this.camera()
+			return new this.$.$mol_vector_2d( -x * zoom, -y * zoom )
+		}
+
+		/** The rulers want a scale per axis, the camera is one isotropic number. */
+		@ $mol_mem
+		grid_scale() {
+			const zoom = this.camera().zoom
+			return new this.$.$mol_vector_2d( zoom, zoom )
+		}
+
 		override camera_transform() {
 			const { x, y, zoom } = this.camera()
 			return `translate(${ -x * zoom }px,${ -y * zoom }px) scale(${ zoom })`

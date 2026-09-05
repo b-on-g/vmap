@@ -36,13 +36,6 @@ namespace $.$$ {
 			return Math.min( this.zoom_max(), Math.max( this.zoom_min(), zoom ) )
 		}
 
-		/** The grid wants a per-axis scale, the camera is isotropic. */
-		@ $mol_mem
-		override grid_scale() {
-			const zoom = this.camera_zoom()
-			return new this.$.$mol_vector_2d( zoom, zoom )
-		}
-
 		/** World point under the top left corner of the viewport, plus the zoom. */
 		camera(): $bog_vmap_bridge_camera {
 			const shift = this.camera_shift()

@@ -25,13 +25,7 @@ $bog_vmap_app_pane $mol_view
 		0
 		0
 	camera_zoom? 1
-	grid_scale $mol_vector_2d<number> /
-		1
-		1
 	sub /
-		<= Grid $bog_vmap_app_pane_grid
-			shift <= camera_shift
-			scale <= grid_scale
 		<= Scene $bog_vmap_app_pane_frame
 			uri <= scene_uri
 		<= Overlay $bog_vmap_app_pane_overlay

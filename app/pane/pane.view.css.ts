@@ -7,19 +7,6 @@ namespace $.$$ {
 		overflow: 'hidden',
 		background: { color: $mol_theme.back },
 
-		Grid: {
-			position: 'absolute',
-			top: 0,
-			left: 0,
-			width: '100%',
-			height: '100%',
-			fill: 'none',
-			// `stroke` comes from CSSStyleDeclaration and is plain `string` there.
-			stroke: String( $mol_theme.line ),
-			strokeWidth: '1px',
-			pointerEvents: 'none',
-		},
-
 		Scene: {
 			position: 'absolute',
 			top: 0,

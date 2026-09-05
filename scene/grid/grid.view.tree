@@ -1,6 +1,6 @@
 - Background grid in world coordinates. Line placement comes from $mol_plot_ruler,
 - the pane itself is not taken: it auto fits to data and renders svg-only graphs.
-$bog_vmap_app_pane_grid $mol_svg_root
+$bog_vmap_scene_grid $mol_svg_root
 	aspect \none
 	shift $mol_vector_2d<number> /
 		0
@@ -9,13 +9,13 @@ $bog_vmap_app_pane_grid $mol_svg_root
 		1
 		1
 	sub <= rulers /$mol_svg
-	Ruler_hor $bog_vmap_app_pane_grid_hor
+	Ruler_hor $bog_vmap_scene_grid_hor
 		title \
-	Ruler_vert $bog_vmap_app_pane_grid_vert
+	Ruler_vert $bog_vmap_scene_grid_vert
 		title \
 
-$bog_vmap_app_pane_grid_hor $mol_plot_ruler_hor
+$bog_vmap_scene_grid_hor $mol_plot_ruler_hor
 	title \
 
-$bog_vmap_app_pane_grid_vert $mol_plot_ruler_vert
+$bog_vmap_scene_grid_vert $mol_plot_ruler_vert
 	title \
