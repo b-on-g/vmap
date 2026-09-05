@@ -1,10 +1,58 @@
 # $bog_vmap — передача дел
 
-Читать первым. Дальше: [ARCHITECTURE.md](./ARCHITECTURE.md) — свод решений, менять только
-с замером; [PLAN.md](./PLAN.md) — этапы, что закрыто и чем доказано; [TESTING.md](./TESTING.md)
-— как гонять тесты в паке, где работают несколько исполнителей.
+Читать первым. Состояние на 05.09.2026.
 
-Состояние на 05.09.2026.
+## Что прочесть и в каком порядке
+
+**До первой строки кода, целиком:**
+
+1. этот файл;
+2. [ARCHITECTURE.md](./ARCHITECTURE.md) — свод решений. Не справочник: каждое утверждение
+   там подтверждено замером, и менять их можно только замером. Разделы 1 (документ как один
+   класс, провода, пять капканов), 3 (рантайм-компиляция), 4 (граница и два бандла) —
+   фундамент, остальное поймёшь по ходу;
+3. [PLAN.md](./PLAN.md) — этапы, что закрыто и **чем именно доказано**; в конце визуальный
+   долг и состояние по плёнке;
+4. [TESTING.md](./TESTING.md) — как гонять тесты, когда в паке несколько исполнителей.
+
+**Память проекта** (`~/.claude/projects/-Users-cmyser-code-mam/memory/`), сгруппировано:
+
+- про проект: `project_bog_vmap`
+- **фундамент, без этого нельзя:** `mol_runtime_view_tree_compile` (компиляция в браузере,
+  `web.view.tree` пака), `mol_two_bundles_one_page` (два бандла уживаются, ломается только
+  `instanceof`), `mam_test_html_masks_missing_deps`
+- **`view.tree`:** `mol_view_tree_chain_operator` (провод это `=`, а не `<=`),
+  `mol_view_tree_dict_override_replaces` (`attr *` без `^` заменяет словарь базы)
+- **ловушки `@$mol_mem`, за день сработали трижды:** `mol_mem_write_freezes_deps` (путь
+  чтения не делит ячейку с путём записи), `mol_mem_stamps_owned_class`,
+  `mol_mem_created_objects_destroyed`
+- **Гипер База:** `giper_baza_mem_accessor_stale`, `giper_baza_save_in_fiber`
+  (и почему `@$mol_action` там не годится)
+- **сборка MAM:** `mam_same_file_inheritance_loses_body`, `mam_dep_graph_jsdoc_only`
+- **браузер и DOM:** `iframe_transparency_color_scheme`, `mol_frame_sandbox_attr_order`,
+  `mol_view_transform_transition`, `mol_scroll_single_child`, `mol_string_setter_throw_silent`
+- **проверка глазами:** `chrome_automation_frozen_renderer` (вкладка врёт про события),
+  `chrome_cdp_probe_without_extension` (запасной стенд)
+- **если запускаешь исполнителей:** `mol-subagent.md` — шаблон промпта, правила ведения
+  работы и гочи дев-сервера уже внутри
+
+**Донорский код**, читать перед задачами, где он назван: `hyoo-ru/studio.hyoo.ru` (пак
+`studio` в `hyoo/hyoo.meta.tree`). Половина фундамента взята оттуда, см. раздел 2
+архитектуры. Клонировать заново, каталог сессии временный.
+
+**Исходники `mol`, куда точно придётся заглянуть:**
+
+| файл | зачем |
+|---|---|
+| `mol/view/tree2/class/props.ts:41` | хак `upper` — почему под-виды плоские свойства корня |
+| `mol/view/tree2/to/js/js.ts` | `call_of` (одно звено) и ветка `'='` (цепочка) |
+| `mol/view/view/view.tsx:307` | `render()` и `instanceof` — почему документ монтируется узлом |
+| `mol/wire/atom/atom.ts:171` | клеймение владеемого значения |
+| `mol/build/build.node.ts:1591` | порядок `.view.ts` после `.view.tree` |
+| `mol/touch/touch.view.ts` | камера: `pan`, `zoom`, перевод в мировые координаты |
+
+**Стенды спайков:** `spike/s5` (грабля MAM с наследованием внутри файла, стоит трёх файлов),
+`spike/s4` (изоляция и два бандла — там измерено то, на чём стоит раздел 4).
 
 ---
 
