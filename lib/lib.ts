@@ -51,6 +51,23 @@ namespace $ {
 	}
 
 	/**
+	 * The address with a trailing slash, whatever it was typed with.
+	 *
+	 * `new URL( 'web.js', base )` drops the last segment of a base that does not end
+	 * with one, so `https://b-on-g.github.io/gram` would resolve to
+	 * `https://b-on-g.github.io/web.js`. The default `https://mol.hyoo.ru` survives
+	 * that only by accident, being an origin root.
+	 *
+	 * A function and not a step inside the field, because the field is edited by
+	 * hand: appending the slash on every keystroke would fight the typing. Typed is
+	 * stored as is, derived is normalized — the rule for every field a person types.
+	 * @see ../ARCHITECTURE.md section 5, «Адрес пака нормализовать до слэша»
+	 */
+	export function $bog_vmap_lib_slashed( uri: string ) {
+		return uri.replace( /\/?$/, '/' )
+	}
+
+	/**
 	 * Glues the library tree with the classes of the document into one namespace.
 	 *
 	 * Both sides end up in the same `$` sandbox at run time, so resolution has to
@@ -299,38 +316,37 @@ namespace $ {
 	 */
 	export class $bog_vmap_lib extends $bog_vmap_lib_any {
 
-		/** Deployed MAM module the components come from. */
+		/**
+		 * Deployed MAM module the components come from.
+		 *
+		 * Empty means no pack at all, and that is a state rather than a failure: a
+		 * palette fed by lands alone has nothing deployed behind it. Every address
+		 * below is then empty too, and `tree()` is the stub on its own.
+		 */
 		@ $mol_mem
 		pack( next?: string ) {
 			return next ?? 'https://mol.hyoo.ru'
 		}
 
-		/**
-		 * Same address, guaranteed to end with a slash.
-		 *
-		 * `new URL( 'web.js', base )` drops the last segment of a base that does not
-		 * end with one, so `https://b-on-g.github.io/gram` would resolve to
-		 * `https://b-on-g.github.io/web.js`. The default survives that only by
-		 * accident, being an origin root.
-		 *
-		 * Normalized here and not inside `pack()`, because `pack()` is edited by
-		 * hand: appending the slash on every keystroke would fight the typing.
-		 */
+		/** Same address, guaranteed to end with a slash. See `$bog_vmap_lib_slashed`. */
 		@ $mol_mem
 		pack_base() {
-			return this.pack().replace( /\/?$/, '/' )
+			const pack = this.pack()
+			return pack ? $bog_vmap_lib_slashed( pack ) : ''
 		}
 
 		/** Behaviour of the classes. Loaded by the scene, not by us. */
 		@ $mol_mem
 		script_link() {
-			return new URL( 'web.js', this.pack_base() ).toString()
+			const base = this.pack_base()
+			return base ? new URL( 'web.js', base ).toString() : ''
 		}
 
 		/** Declarations of the classes. */
 		@ $mol_mem
 		tree_link() {
-			return new URL( 'web.view.tree', this.pack_base() ).toString()
+			const base = this.pack_base()
+			return base ? new URL( 'web.view.tree', base ).toString() : ''
 		}
 
 		/**
@@ -344,6 +360,7 @@ namespace $ {
 		@ $mol_mem
 		override tree() {
 			const uri = this.tree_link()
+			if( !uri ) return this.$.$bog_vmap_lib_parse( '' )
 			return this.$.$bog_vmap_lib_parse( this.$.$mol_fetch.text( uri ), uri )
 		}
 

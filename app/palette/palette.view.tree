@@ -1,5 +1,8 @@
 $bog_vmap_app_palette $mol_view
-	pack? \https://mol.hyoo.ru
+	- Links separated by commas. The first http(s) one is the donor pack, the rest
+	- are lands of Giper Baza holding component sources; anything else is refused
+	- and said so under the field. Stored exactly as typed, see `pack_link`.
+	links? \https://mol.hyoo.ru
 	query? \
 	selected? \
 	- Narrow layout for a side panel of the editor: header in a column, ports pane
@@ -14,6 +17,10 @@ $bog_vmap_app_palette $mol_view
 	dragged? \
 	drag_x? 0
 	drag_y? 0
+	- Classes of the attached lands, handed in by the owner. The palette knows no
+	- database: whoever does resolves the links of the field and passes the trees,
+	- and the library resolves them against the pack like any other class.
+	land_classes /$mol_tree2
 	attr *
 		^
 		bog_vmap_app_palette_compact <= compact
@@ -22,13 +29,19 @@ $bog_vmap_app_palette $mol_view
 	Head $mol_bar
 		sub /
 			<= Brand $mol_view sub / \Палитра
-			<= Pack $mol_string
-				hint \Адрес пака
-				value? <=> pack?
+			<= Links $mol_string
+				hint \Пак и ленды через запятую
+				value? <=> links?
 			<= Query $mol_string
 				hint \Поиск по имени
 				value? <=> query?
 			<= Total $mol_view sub / <= total \
+	-
+	- What was typed and not taken, and why, right under the field. Rendered only
+	- while there is something to say: a second pack is refused by construction
+	- and a person who typed one has to learn that from the screen, not from a log.
+	Note $mol_view
+		sub / <= rejected_note \
 	-
 	Body $mol_view
 		sub <= body_content /$mol_view
@@ -65,7 +78,10 @@ $bog_vmap_app_palette $mol_view
 		owner <= port_owner* \
 		inherited <= port_inherited* false
 	-
-	- The model. `pack` is wired one way: the field above is the only place it is
-	- written, and the library derives both of its addresses from it.
+	- The model. The pack address is DERIVED from the field: the first http(s) link
+	- of the list, with its slash grown here and not in the field, so that typing
+	- an address is possible at all. Empty when the list names no pack, and the
+	- library is then the lands alone.
 	Lib $bog_vmap_lib
-		pack <= pack
+		pack <= pack_link \
+		classes <= land_classes

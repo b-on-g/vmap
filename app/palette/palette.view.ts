@@ -18,7 +18,37 @@ namespace $.$$ {
 		 * width the signature column alone eats the row.
 		 */
 		override body() {
-			return [ this.Head(), this.Body() ] as readonly $mol_view[]
+			return [
+				this.Head(),
+				... this.rejected_note() ? [ this.Note() ] : [],
+				this.Body(),
+			] as readonly $mol_view[]
+		}
+
+		/**
+		 * The field, parsed. The owner of the palette parses the same string for
+		 * its own needs, and that is fine: the parse is pure and costs nothing
+		 * next to a cell shared across two modules.
+		 */
+		@ $mol_mem
+		links_parsed() {
+			return this.$.$bog_vmap_lib_links_parse( this.links() )
+		}
+
+		/**
+		 * The donor pack with its trailing slash, or empty when the list has none.
+		 *
+		 * Derived and never written back: the slash grows here, so the field can
+		 * still be typed into character by character.
+		 */
+		override pack_link() {
+			const pack = this.links_parsed().pack
+			return pack ? this.$.$bog_vmap_lib_slashed( pack ) : ''
+		}
+
+		/** Refused links with their reasons, one per line; empty hides the strip. */
+		override rejected_note() {
+			return this.$.$bog_vmap_lib_links_note( this.links_parsed() )
 		}
 
 		override body_content() {

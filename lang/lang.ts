@@ -222,8 +222,10 @@ namespace $ {
 	 *   correct — the slot is found and replaced — but the caller then holds a stale
 	 *   key and has to re-read `names()`;
 	 * - two classes of one name are one class here, the first. That is already
-	 *   broken further down: `$bog_vmap_lib_index` keeps the LAST of a duplicate
-	 *   pair, so a document with two would disagree with itself about which is real.
+	 *   broken further down: the class index of the library model keeps the LAST of
+	 *   a duplicate pair, so a document with two would disagree with itself about
+	 *   which is real. (The index is not named here: mam reads doc comments for
+	 *   dependencies, and its name dragged the whole library module into the scene.)
 	 *
 	 * @see ../ARCHITECTURE.md section 1
 	 */

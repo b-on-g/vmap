@@ -26,11 +26,24 @@ namespace $.$$ {
 			padding: { right: $mol_gap.text },
 		},
 
-		Pack: {
+		Links: {
 			flex: { grow: 1 },
 			minWidth: '14rem',
 			background: { color: $mol_theme.field },
 			font: { family: 'monospace', size: '.8rem' },
+		},
+
+		/**
+		 * Refused links under the field. Rendered only while there is something to
+		 * say, so it never takes room from the list on a clean field.
+		 */
+		Note: {
+			flex: { shrink: 0 },
+			padding: { top: '.25rem', bottom: '.25rem', left: $mol_gap.text, right: $mol_gap.text },
+			color: $mol_theme.focus,
+			font: { family: 'monospace', size: '.75rem' },
+			whiteSpace: 'pre-wrap',
+			border: { bottom: { width: '1px', style: 'solid', color: $mol_theme.line } },
 		},
 
 		Query: {
@@ -141,7 +154,7 @@ namespace $.$$ {
 						gap: '.25rem',
 					},
 
-					Pack: { minWidth: 0 },
+					Links: { minWidth: 0 },
 					Query: { minWidth: 0 },
 
 					Total: {

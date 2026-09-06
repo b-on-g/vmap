@@ -237,6 +237,98 @@ namespace $ {
 	}
 
 	/**
+	 * The three texts of one component, as the scene wants them: declaration, body,
+	 * styles. Plain data, so it survives the structured clone of the bridge.
+	 */
+	export type $bog_vmap_lib_land_text = {
+		readonly tree: string
+		readonly js: string
+		readonly css: string
+	}
+
+	/**
+	 * A pack with lands stacked on top of it: the library of the palette field.
+	 *
+	 * The pack is the base class, so from the outside this is a `$bog_vmap_lib` and
+	 * nothing downstream has to learn a new name. The lands ride in through
+	 * `classes()`, the hook `$bog_vmap_lib_any` left for exactly this, and the index
+	 * lets the last declaration win, so a land class shadows a pack class of the
+	 * same name the way it will at run time, where it is compiled into the sandbox
+	 * after the pack has filled it.
+	 *
+	 * Composition is by the LINK, not by the object: the palette field holds links,
+	 * a link is what the user pastes, and the land behind it is looked up here and
+	 * nowhere else. The host asks this object for two things — the class trees for
+	 * the palette and the inspector, and the source texts for the scene — and both
+	 * come from the same `land()` cells, so the two views cannot disagree about
+	 * which lands are attached.
+	 *
+	 * @see ../../ARCHITECTURE.md section 5
+	 */
+	export class $bog_vmap_lib_land_stack extends $bog_vmap_lib {
+
+		/** Land links as the user typed them, in order. Supplied by the owner. */
+		lands(): readonly string[] {
+			return []
+		}
+
+		/**
+		 * Library of one land, by its link.
+		 *
+		 * `.land()` on the link, because a link to a pawn INSIDE the land is a
+		 * legitimate thing to paste — a shared component, say — and the shelf lives
+		 * at the root of that land whichever pawn was pointed at. A malformed link
+		 * fails here with the database's own message; the field parser is meant to
+		 * have refused it before it ever reaches this method.
+		 */
+		@ $mol_mem_key
+		land( link: string ): $bog_vmap_lib_land {
+			return $bog_vmap_lib_land.make({
+				$: this.$,
+				shelf: ()=> this.$.$giper_baza_glob
+					.Land( new $giper_baza_link( link ).land() )
+					.Data( $bog_vmap_lib_land_shelf ),
+			})
+		}
+
+		@ $mol_mem
+		libs() {
+			return this.lands().map( link => this.land( link ) )
+		}
+
+		/**
+		 * Classes of every land, without the stub, in the order of the lands.
+		 *
+		 * This is what the palette and the inspector are handed: the trees alone,
+		 * because neither of them may depend on the database and neither has to —
+		 * resolving a class against the pack is a walk over a tree, whoever made it.
+		 */
+		@ $mol_mem
+		land_trees(): readonly $mol_tree2[] {
+			return this.libs().flatMap( lib => lib.class_trees() )
+		}
+
+		override classes() {
+			return this.land_trees()
+		}
+
+		/**
+		 * Sources of every component of every land, in declaration order, for the
+		 * scene to compile. Read through the pawns of each shelf's own land and
+		 * never through `remote_list()`, see `$bog_vmap_lib_land_shelf.parts`.
+		 */
+		@ $mol_mem
+		parts(): readonly $bog_vmap_lib_land_text[] {
+			return this.libs().flatMap( lib => lib.parts().map( part => ({
+				tree: part.tree(),
+				js: part.js(),
+				css: part.css(),
+			}) ) )
+		}
+
+	}
+
+	/**
 	 * Name of the class a `view.tree` source declares, or empty when it declares
 	 * none.
 	 *

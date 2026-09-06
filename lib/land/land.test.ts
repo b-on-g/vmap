@@ -216,6 +216,167 @@ namespace $ {
 
 		},
 
+		/**
+		 * The palette field in one object: a pack with a land on top. A land class
+		 * inheriting a pack class, and another land class inheriting that one, both
+		 * resolve their chain down into the pack — one namespace, as section 5 says.
+		 *
+		 * `land` is handed a local library so the link is never looked up; the link
+		 * itself is a placeholder shaped like a real one.
+		 */
+		'a pack with a land stacked on it is one library from the outside'( $ ) {
+
+			const pack_src = `${d}my_base ${d}mol_view\n\tpack_port \\\n`
+			const tile_src = `${d}my_tile ${d}my_base\n\tcaption \\Плитка\n`
+			const hero_src = `${d}my_hero ${d}my_tile\n\tcaption \\Герой\n`
+
+			const one = shelf( $ )
+			part( one, tile_src )
+			part( one, hero_src )
+
+			const lib = $bog_vmap_lib_land.make({ $, shelf: ()=> one })
+
+			const stack = $bog_vmap_lib_land_stack.make({
+				$,
+				tree: ()=> $.$bog_vmap_lib_parse( pack_src ),
+				lands: ()=> [ 'AbCdEfGh_12345678_ZyXwVuTs' ],
+				land: ()=> lib,
+			})
+
+			$mol_assert_like(
+				stack.class_list(),
+				[ `${d}mol_view`, `${d}my_base`, `${d}my_tile`, `${d}my_hero` ],
+			)
+
+			// the chain runs from the land into the pack and down to the stub
+			$mol_assert_like(
+				stack.inherit_chain( `${d}my_hero` ),
+				[ `${d}my_hero`, `${d}my_tile`, `${d}my_base`, `${d}mol_view`, `${d}mol_object` ],
+			)
+
+			const ports = [ ... stack.props_map( `${d}my_hero` ).keys() ]
+			$mol_assert_ok( ports.includes( 'pack_port' ) )
+			$mol_assert_ok( ports.includes( 'caption' ) )
+			$mol_assert_ok( ports.includes( 'sub' ) )
+
+			// the nearer declaration wins the value
+			$mol_assert_equal( stack.props_map( `${d}my_hero` ).get( 'caption' )!.kids[0].value, 'Герой' )
+
+			// what is handed to the palette and the inspector carries no stub
+			$mol_assert_like(
+				stack.land_trees().map( tree => tree.type ),
+				[ `${d}my_tile`, `${d}my_hero` ],
+			)
+
+		},
+
+		/** What the scene receives: the three texts per component, in shelf order. */
+		'the sources of a stack are the parts of its lands in order'( $ ) {
+
+			const one = shelf( $ )
+			part( one, card_src )
+			const badge = part( one, badge_src )
+			badge.js( 'price(){ return 1 }' )
+			badge.css( '[my_badge] { color: red }' )
+
+			const lib = $bog_vmap_lib_land.make({ $, shelf: ()=> one })
+
+			const stack = $bog_vmap_lib_land_stack.make({
+				$,
+				lands: ()=> [ 'AbCdEfGh_12345678_ZyXwVuTs' ],
+				land: ()=> lib,
+			})
+
+			$mol_assert_like( stack.parts(), [
+				{ tree: card_src, js: '', css: '' },
+				{ tree: badge_src, js: 'price(){ return 1 }', css: '[my_badge] { color: red }' },
+			] )
+
+		},
+
+		/**
+		 * An author fixes a component and the consumer's scene has to follow: the
+		 * sources depend on the texts of the parts, not merely on the list of links.
+		 * The write goes straight to the atom, which is what a merged remote edit
+		 * amounts to, and the array the scene is sent changes with it.
+		 */
+		'the sources of a stack follow an edit of a part'( $ ) {
+
+			const one = shelf( $ )
+			const card = part( one, card_src )
+
+			const lib = $bog_vmap_lib_land.make({ $, shelf: ()=> one })
+
+			const stack = $bog_vmap_lib_land_stack.make({
+				$,
+				lands: ()=> [ 'AbCdEfGh_12345678_ZyXwVuTs' ],
+				land: ()=> lib,
+			})
+
+			$mol_assert_like( stack.parts(), [ { tree: card_src, js: '', css: '' } ] )
+			$mol_assert_like( stack.land_trees().map( tree => tree.type ), [ `${d}my_card` ] )
+
+			card.Tree()!.val( badge_src )
+			// `null` makes the atom, the way `Parts( null )` makes the list above
+			card.Css( null )!.val( '[my_badge] { color: red }' )
+
+			$mol_assert_like( stack.parts(), [ { tree: badge_src, js: '', css: '[my_badge] { color: red }' } ] )
+			$mol_assert_like( stack.land_trees().map( tree => tree.type ), [ `${d}my_badge` ] )
+
+			// a component added later joins the list too
+			part( one, card_src )
+			$mol_assert_equal( stack.parts().length, 2 )
+
+		},
+
+		'a stack with no lands is the pack alone'( $ ) {
+
+			const stack = $bog_vmap_lib_land_stack.make({
+				$,
+				tree: ()=> $.$bog_vmap_lib_parse( card_src ),
+			})
+
+			$mol_assert_like( stack.class_list(), [ `${d}mol_view`, `${d}my_card` ] )
+			$mol_assert_like( stack.parts(), [] )
+
+		},
+
+		/**
+		 * The link grammar in `lib/links` is a COPY of the one in `$giper_baza_link`,
+		 * kept there so that `lib/` stays free of the database. This is the guard on
+		 * the copy: on a sample of tokens the two must agree. The original admits the
+		 * empty string and bare underscores, which the copy rules out on purpose, so
+		 * the comparison adds that one rule to the original.
+		 */
+		'the link grammar copied into lib/links agrees with the database'( $ ) {
+
+			const samples = [
+				'AbCdEfGh',
+				'AbCdEfGh_12345678_ZyXwVuTs',
+				'AbCdEfGh_12345678_ZyXwVuTs_HeAdHeAd',
+				'_12345678',
+				'AbCdEfGh_',
+				'æÆ123456',
+				'abc',
+				'AbCdEfGh_1234567',
+				'AbCdEfGh_12345678_ZyXwVuTs_HeAdHeAd_TooMany1',
+				'https://mol.hyoo.ru',
+				'hello world',
+				'',
+				'_',
+			]
+
+			for( const token of samples ) {
+
+				const ours = $bog_vmap_lib_links_is_land( token )
+				const theirs = $giper_baza_link.check( token ) !== null && /[a-zæA-ZÆ0-9]{8}/.test( token )
+
+				$mol_assert_equal( `${ token }: ${ ours }`, `${ token }: ${ theirs }` )
+
+			}
+
+		},
+
 	})
 
 }
