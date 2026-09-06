@@ -193,10 +193,13 @@ namespace $.$$ {
 			return ''
 		}
 
-		/** $mol_switch clears the value when the active option is clicked again. */
-		@ $mol_mem
-		override mode( next?: string ) {
-			return next || 'edit'
+		/**
+		 * The overlay may be cut open under the picked part, except while something
+		 * is carried from the palette: that drag has no pointer capture, and a release
+		 * over the hole would land in the frame, with the host never hearing of it.
+		 */
+		override hole_allowed() {
+			return !this.dragged()
 		}
 
 		@ $mol_mem
@@ -275,17 +278,67 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Classes of the document besides the one being inspected.
+		 * Classes beside the one being inspected: the lands of the field, then the
+		 * root of the document.
 		 *
-		 * One for now — the root — and it earns its place: a part whose base is
-		 * another class of this document resolves its ports only if that class is in
-		 * the library index. Today every base is a pack class and the peer changes
-		 * nothing; on artboards it will be the difference between a chain that
-		 * resolves and one that stops at an unknown name.
+		 * The land classes go in here and not through a second library, because the
+		 * inspector already resolves a peer through the same index and the same
+		 * `props_map` as a pack class — section 5 says the two are one namespace,
+		 * and the inspector has held that since before there was a second source.
+		 * The root earns its place too: a part whose base is another class of this
+		 * document resolves its ports only if that class is in the index.
 		 */
 		@ $mol_mem
 		node_peers(): readonly $mol_tree2[] {
-			return [ this.node().tree() ]
+			return [ ... this.lib_classes(), this.node().tree() ]
+		}
+
+		/**
+		 * The palette field, parsed. The palette parses the same string for its own
+		 * status line; the parse is pure and two calls cost less than a shared cell
+		 * across two modules would.
+		 */
+		@ $mol_mem
+		links_parsed() {
+			return this.$.$bog_vmap_lib_links_parse( this.links() )
+		}
+
+		/**
+		 * The donor pack for the frame and for every library, with its slash, or
+		 * empty when the field names none.
+		 *
+		 * Derived and never written back into the field: the slash is grown here so
+		 * that the address can still be typed character by character. Empty is a
+		 * state — a palette of lands alone — and every address downstream is then
+		 * empty too, so the frame loads no pack and compiles against its own
+		 * `$mol_view`.
+		 */
+		override pack_link() {
+			const pack = this.links_parsed().pack
+			return pack ? this.$.$bog_vmap_lib_slashed( pack ) : ''
+		}
+
+		/** Land links of the field, in the order typed. */
+		override lands() {
+			return this.links_parsed().lands
+		}
+
+		/** Classes of the lands, for the palette and the inspector. No stub in them. */
+		override lib_classes() {
+			return this.Lib().land_trees()
+		}
+
+		/**
+		 * Sources of the lands, for the scene.
+		 *
+		 * This travels on the bridge while the pack travels in `scene_uri`, and the
+		 * split is the rule of section 5: a second pack cannot be unloaded from a
+		 * realm, so a pack change reloads the frame; a land is compiled into the
+		 * sandbox like the document, so a land change recompiles and keeps the frame,
+		 * its camera and its live instances.
+		 */
+		override libs() {
+			return this.Lib().parts()
 		}
 
 		override error() {
@@ -348,10 +401,10 @@ namespace $.$$ {
 		 * On the window rather than on the palette row, and without
 		 * `setPointerCapture`: capture retargets the later `click` to the captor,
 		 * and a synthetic pointer does not register at all, which would make the
-		 * whole gesture untestable here. In `edit` mode the overlay of the pane eats
-		 * pointer events in the host document, so a move across the canvas reaches
-		 * this listener; in `run` mode the events fall into the sandbox and a drop
-		 * there is simply not offered.
+		 * whole gesture untestable here. The overlay of the pane eats pointer events
+		 * in the host document, so a move across the canvas reaches this listener —
+		 * and the hole under the picked part is closed for the whole drag, see
+		 * `hole_allowed()`, so a release over the canvas cannot fall into the frame.
 		 */
 		@ $mol_mem
 		drag_listeners() {
@@ -523,8 +576,9 @@ namespace $.$$ {
 		 * iframe swallows every key, so a listener living on the pane would go quiet
 		 * exactly when the user has just clicked a node. That the scene keeps its own
 		 * keystrokes is the other half of the same fact and is what makes this safe:
-		 * typing into a live component in `run` mode cannot reach here at all, so
-		 * there is no way for a Backspace meant for a text field to delete a node.
+		 * typing into a live component focused through the hole in the overlay cannot
+		 * reach here at all, so there is no way for a Backspace meant for a text
+		 * field to delete a node.
 		 *
 		 * Fields of the HOST are a real risk though — the palette search is one — so
 		 * a keystroke aimed at an editable target is left alone.

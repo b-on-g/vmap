@@ -12,7 +12,15 @@ $bog_vmap_app_pane $mol_view
 	selected? null
 	doc_js *
 	doc_root \
-	mode \edit
+	- Sources of the land libraries, compiled by the scene before the document.
+	- On the bridge and not in `scene_uri`: a change of lands is a recompile, a
+	- change of pack is a reload, see section 5.
+	libs /$bog_vmap_bridge_part
+	- Whether the overlay may be cut open under the picked part. The host turns
+	- this off while something is carried from the palette: that gesture has no
+	- pointer capture, so a release over the hole would land in the frame and the
+	- host would never hear of the drop.
+	hole_allowed true
 	handshake? 0
 	ready false
 	- The scene owes an answer to something we sent and has stopped answering.
@@ -29,7 +37,7 @@ $bog_vmap_app_pane $mol_view
 		<= Scene $bog_vmap_app_pane_frame
 			uri <= scene_uri
 		<= Overlay $bog_vmap_app_pane_overlay
-			mode <= mode
+			style <= overlay_style *
 			frame_showed <= frame_showed false
 			frame_style <= frame_style *
 			press? <=> node_press? null
@@ -44,24 +52,23 @@ $bog_vmap_app_pane $mol_view
 			pan? <=> camera_shift?
 			zoom? <=> camera_zoom?
 
-- Transparent gate over the frame. In `edit` it swallows every pointer event and
-- lets it bubble up to the pane, where $mol_touch listens. In `run` it steps aside
-- and the event lands inside the sandbox.
+- Transparent gate over the frame. It swallows every pointer event and lets it
+- bubble up to the pane, where $mol_touch listens: there are no editor modes, one
+- layer takes every gesture. A click that does not move is relayed to the scene
+- as `click_at`, and under the picked part the layer is cut open, so that one
+- part at a time gets real events. Hover on any other part does not work, and
+- that is the accepted price of the overlay owning the input.
 -
 - Selection is drawn HERE and not in the scene: the overlay belongs to the host,
 - so no code inside the document can fake a selection frame or hide one, and the
 - ring stays crisp because the camera scales the scene, not this layer.
 - @see ../../ARCHITECTURE.md section 4
 $bog_vmap_app_pane_overlay $mol_view
-	mode \edit
 	frame_showed false
 	frame_style *
 	press? null
 	move? null
 	release? null
-	attr *
-		^
-		bog_vmap_app_pane_mode <= mode
 	event *
 		^
 		pointerdown? <=> press? null
@@ -69,8 +76,23 @@ $bog_vmap_app_pane_overlay $mol_view
 		pointerup? <=> release? null
 	- Ring around the picked node. A free part of the class, put into `sub` only
 	- while something is picked, so an empty canvas costs no node at all.
+	- The handles sit outside the box, on the strip of overlay that still takes
+	- the pointer, and say where the part can be taken hold of.
 	Frame $mol_view
 		style <= frame_style *
+		sub /
+			<= Handle_nw $bog_vmap_app_pane_handle corner \nw
+			<= Handle_ne $bog_vmap_app_pane_handle corner \ne
+			<= Handle_sw $bog_vmap_app_pane_handle corner \sw
+			<= Handle_se $bog_vmap_app_pane_handle corner \se
+
+- A grip at one corner of the ring. Picture only, like the ring: the press it
+- marks is taken by the overlay under it.
+$bog_vmap_app_pane_handle $mol_view
+	corner \
+	attr *
+		^
+		bog_vmap_app_pane_handle_corner <= corner
 
 - `sandbox` goes FIRST: $mol_dom_render_attributes writes the object in key order,
 - and an iframe that got its src before its sandbox is already loading unsandboxed.

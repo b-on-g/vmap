@@ -33,6 +33,24 @@ namespace $ {
 	}
 
 	/**
+	 * One component of a land library: the three sources a class is built from.
+	 * Texts and nothing else, the scene has no way to reach the land itself.
+	 */
+	export type $bog_vmap_bridge_part = {
+		readonly tree: string
+		readonly js: string
+		readonly css: string
+	}
+
+	/** Modifier keys of a relayed click. Named as `MouseEventInit` names them, so they spread straight into one. */
+	export type $bog_vmap_bridge_mods = {
+		readonly altKey: boolean
+		readonly ctrlKey: boolean
+		readonly metaKey: boolean
+		readonly shiftKey: boolean
+	}
+
+	/**
 	 * Host to scene.
 	 *
 	 * `doc_set` carries the whole document, not a patch: the scene holds no
@@ -96,8 +114,27 @@ namespace $ {
 		}
 
 		| {
-			readonly kind: 'mode_set'
-			readonly mode: 'edit' | 'run'
+			/**
+			 * A click that landed on the host overlay and is meant for the document.
+			 *
+			 * There are no editor modes: the overlay takes every gesture, so a plain
+			 * click — press and release without movement — is relayed here, and the
+			 * scene replays it on the element under the point as synthetic pointer
+			 * and click events, with focus. One click therefore both picks a part
+			 * on the host and presses the live component in the sandbox.
+			 *
+			 * World coordinates, not screen ones: the host resolves its camera the
+			 * same way it does for the hit test, and the scene resolves its own,
+			 * so neither side has to know the other's pixel geometry.
+			 *
+			 * Answered like every other push, with `sizes`: a click is the most
+			 * likely thing to start a loop in document code, so a scene that takes
+			 * one and says nothing back is exactly what the watchdog has to notice.
+			 */
+			readonly kind: 'click_at'
+			readonly x: number
+			readonly y: number
+			readonly mods: $bog_vmap_bridge_mods
 		}
 
 		| {
@@ -105,13 +142,11 @@ namespace $ {
 			 * Are you alive.
 			 *
 			 * Штатный трафик уже несёт пульс: всякий толчок хоста сцена обязана
-			 * подтвердить `sizes`, поэтому сторож в режиме правки обходится без
-			 * лишних сообщений. Слепая зона одна — код документа завис, когда его
-			 * никто не толкал: в «Запуске» это ровно то, что вероятнее всего и
-			 * произойдёт, а хосту толкать нечего, документ не менялся.
+			 * подтвердить `sizes`. Слепая зона одна — код документа завис, когда его
+			 * никто не толкал: живой компонент нажат настоящим событием сквозь дыру
+			 * в оверлее, хосту толкать нечего, документ не менялся.
 			 *
-			 * Поэтому пульс взводить **только в режиме запуска** и только после
-			 * первого `sizes`. Простаивающий редактор в правке остаётся немым.
+			 * Поэтому пульс идёт всегда, начиная с первого `sizes`.
 			 */
 			readonly kind: 'ping'
 			readonly nonce: number
@@ -123,6 +158,24 @@ namespace $ {
 			readonly mime: string
 			/** Bytes, not a blob: URL. A host blob: URL is dead in an opaque origin. */
 			readonly bytes: ArrayBuffer
+		}
+
+		| {
+			/**
+			 * Sources of the land libraries attached to the document.
+			 *
+			 * On the bridge and NOT in the frame address, unlike the pack: a land
+			 * arrives as text and is compiled into the same sandbox as the document,
+			 * so a change of the list is a recompile, not a reload. The whole list
+			 * every time, in the order the classes should be declared — the scene
+			 * sorts by inheritance anyway and merges nothing.
+			 *
+			 * The host reads the lands, because only the host may touch the
+			 * database; the scene sees strings.
+			 * @see ../ARCHITECTURE.md sections 4 and 5
+			 */
+			readonly kind: 'libs_set'
+			readonly parts: readonly $bog_vmap_bridge_part[]
 		}
 
 	/** Scene to host. */

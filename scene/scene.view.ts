@@ -18,6 +18,9 @@ namespace $.$$ {
 	 */
 	const spots_id = 'bog_vmap_spots:stage'
 
+	/** Styles of the land libraries, one element, same reasoning as `spots_id`. */
+	const libs_id = 'bog_vmap_libs:stage'
+
 	/** A part name goes into a CSS selector, so it may be nothing but a name. */
 	const spot_name_ok = /^[a-zA-Z_]\w*$/
 
@@ -237,11 +240,6 @@ namespace $.$$ {
 			return next ?? { x: 0, y: 0, zoom: 1 }
 		}
 
-		@ $mol_mem
-		override mode( next?: string ) {
-			return next ?? super.mode()
-		}
-
 		/**
 		 * Pan of the grid, in screen pixels.
 		 *
@@ -391,46 +389,63 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Class declarations, base first.
+		 * Sources of the land libraries, from the host, compiled before the document.
 		 *
-		 * `class $A extends $[ '$B' ]` resolves its base at definition time, and
-		 * `$mol_view_tree2_to_js` emits declarations in source order. A subclass
-		 * written above its base would inherit the PREVIOUS version of it, once
-		 * per rebuild, without a word.
+		 * Texts and nothing else: the scene has no database and no keys, so a land is
+		 * read by the host and arrives here as the three strings of each component.
+		 * On the bridge and not in the frame address, unlike the pack — a land is
+		 * compiled into the sandbox like the document and inherits the current
+		 * `$['$mol_view']`, so a change of the list is a recompile, not a reload.
+		 * @see ../ARCHITECTURE.md section 5
 		 */
-		classes_sorted( defs: readonly $mol_tree2[] ): readonly $mol_tree2[] {
+		@ $mol_mem
+		libs( next?: readonly $bog_vmap_bridge_part[] ): readonly $bog_vmap_bridge_part[] {
+			return next ?? []
+		}
 
-			const by_name = new Map< string, $mol_tree2 >()
-			for( const def of defs ) by_name.set( def.type, def )
+		/**
+		 * The libraries parsed: every declaration, and the handwritten bodies keyed
+		 * by the class each part declares.
+		 *
+		 * The name of a class is read off its own tree rather than carried beside
+		 * it, the same rule the land model lives by: one source of truth for a
+		 * derivable fact. A part with no class declares nothing and keys nothing.
+		 *
+		 * Read inside `code()`, so a malformed library fails on the compile channel
+		 * with the name of the file it came from, like a malformed document does.
+		 */
+		@ $mol_mem
+		libs_parsed() {
 
-			const sorted = [] as $mol_tree2[]
-			const done = new Set< string >()
-			const path = new Set< string >()
+			const defs = [] as $mol_tree2[]
+			const js = {} as { [ klass: string ]: string }
 
-			const walk = ( def: $mol_tree2 ) => {
+			for( const part of this.libs() ) {
 
-				if( done.has( def.type ) ) return
-				if( path.has( def.type ) ) this.$.$mol_fail(
-					new Error( `Circular inheritance around ${ def.type }` )
-				)
+				const src = this.assets_apply( part.tree ).replace( /\n?$/, '\n' )
 
-				path.add( def.type )
+				const kids = this.$.$mol_view_tree2_normalize(
+					this.$.$mol_tree2_from_string( src, 'lib.view.tree' )
+				).kids
 
-				const base = by_name.get( def.kids[0]?.type ?? '' )
-				if( base && base !== def ) walk( base )
+				defs.push( ... kids )
 
-				path.delete( def.type )
-				done.add( def.type )
-				sorted.push( def )
+				const name = kids[ 0 ]?.type
+				if( name && part.js ) js[ name ] = part.js
 
 			}
 
-			for( const def of defs ) walk( def )
-
-			return sorted
+			return { defs: defs as readonly $mol_tree2[], js: js as { readonly [ klass: string ]: string } }
 		}
 
-		/** Normalized and topologically sorted declarations of the document. */
+		/**
+		 * Normalized declarations of the libraries and the document, in the order
+		 * they can be defined in: libraries first, a base before its heir, one
+		 * declaration per name. The order is `$bog_vmap_scene_order`, and the sort
+		 * inside it is the canonical one from `lang` — the scene used to carry a
+		 * copy, and two copies of a sort are one divergence away from `Class
+		 * extends value undefined`.
+		 */
 		@ $mol_mem
 		doc_tree() {
 
@@ -440,7 +455,7 @@ namespace $.$$ {
 				this.$.$mol_tree2_from_string( src, 'vmap.view.tree' )
 			)
 
-			return defs.clone( this.classes_sorted( defs.kids ) )
+			return defs.clone( this.$.$bog_vmap_scene_order( this.libs_parsed().defs, defs.kids ) )
 		}
 
 		/**
@@ -508,7 +523,10 @@ namespace $.$$ {
 				new Error( `Class ${ root } is not declared by the document` )
 			)
 
-			const bodies = this.doc_js()
+			// Library bodies first, document bodies over them: a document class of
+			// the same name shadows the library one in the declarations already,
+			// and its body has to shadow the library body the same way.
+			const bodies = { ... this.libs_parsed().js, ... this.doc_js() }
 			const chunks = [] as string[]
 
 			for( const def of tree.kids ) {
@@ -668,6 +686,22 @@ namespace $.$$ {
 		}
 
 		/**
+		 * Styles of the land libraries, as one element of the scene's own.
+		 *
+		 * Under a constant id outside `style_scope`, like the placement: the sweep
+		 * on every compile of the document must not take the library styles with
+		 * it, and `$mol_style_attach` reuses the element it finds by id. Read off
+		 * the raw parts and not off `libs_parsed()`, so that a library that fails
+		 * to parse fails on the compile channel and does not take the styles of its
+		 * neighbours down with it.
+		 */
+		@ $mol_mem
+		libs_css_attach() {
+			const css = this.libs().map( part => part.css ).filter( Boolean ).join( '\n' )
+			return this.$.$mol_style_attach( libs_id, this.assets_apply( css ) )
+		}
+
+		/**
 		 * The placement rules.
 		 *
 		 * A sub view of a class carries `[<root without $>_<property lowercased>]`
@@ -803,6 +837,7 @@ namespace $.$$ {
 			// attach. Before the early return, because a part may be dropped while
 			// the pack is still on its way.
 			this.spots_attach()
+			this.libs_css_attach()
 
 			// `instance()` is suspended while the pack travels, and a suspended
 			// `stage()` would render as nothing at all for 610 ms cold. The note
@@ -857,11 +892,27 @@ namespace $.$$ {
 
 				case 'css_set': this.doc_css( message.css ); return
 
+				// The whole list every time. A host older than this message simply
+				// never sends it, and the document compiles against the pack alone.
+				case 'libs_set': this.libs( Array.isArray( message.parts ) ? message.parts : [] ); return
+
 				case 'spots_set': this.spots( message.spots ); return
 
 				case 'camera_set': this.camera( message.camera ); return
 
-				case 'mode_set': this.mode( message.mode ); return
+				case 'click_at': {
+
+					this.click_apply( message.x, message.y, message.mods )
+
+					// A click is a push like any other and owes the host an answer:
+					// geometry, which the click may just have changed. Sent at once
+					// rather than left to the debounced report, because a click that
+					// changes nothing would otherwise be answered by nothing, and the
+					// watchdog would read that silence as a stuck scene.
+					this.report_send()
+
+					return
+				}
 
 				// Answered right here, off the raw message, and deliberately not
 				// through any cell: what the host is asking is whether this THREAD is
@@ -884,6 +935,28 @@ namespace $.$$ {
 				}
 
 			}
+
+		}
+
+		/**
+		 * Replays a click the host overlay took, on whatever is under that point here.
+		 *
+		 * The host sends world coordinates and this side owns the same camera the
+		 * stage is drawn with, so the point on this window is `(world - camera) *
+		 * zoom` — the inverse of what `sizes_of` does to a measured box. The replay
+		 * itself lives in `$bog_vmap_scene_click`, which is where it is tested.
+		 */
+		click_apply( x: number, y: number, mods: $bog_vmap_bridge_mods ) {
+
+			const camera = this.camera()
+			const zoom = camera.zoom || 1
+
+			this.$.$bog_vmap_scene_click(
+				this.$.$mol_dom_context,
+				( x - camera.x ) * zoom,
+				( y - camera.y ) * zoom,
+				mods,
+			)
 
 		}
 
@@ -947,6 +1020,7 @@ namespace $.$$ {
 			this.doc_root()
 			this.doc_js()
 			this.doc_css()
+			this.libs()
 			// Placement moves nodes without resizing the root, so the observer of
 			// `resize_watch()` never fires on it and the host would keep boxes of
 			// the previous layout.

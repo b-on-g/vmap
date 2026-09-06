@@ -11,10 +11,12 @@ $bog_vmap_app $mol_view
 	doc_js *
 	doc_root \
 	scene_uri \
-	mode? \edit
-	- Address of the donor pack. One value for the whole editor: the palette offers
-	- what the scene has actually loaded, and the two must never drift apart.
-	pack? \https://mol.hyoo.ru
+	- The palette field: links separated by commas, stored exactly as typed. The
+	- first http(s) one is the donor pack, the rest are lands of Giper Baza. One
+	- value for the whole editor: the palette offers what the scene has actually
+	- loaded, and the two must never drift apart. Derived from it: `pack_link` for
+	- the frame address, `lands` for the library, `libs` for the scene.
+	links? \https://mol.hyoo.ru
 	palette_showed? true
 	inspect_showed? true
 	sub <= body /$mol_view
@@ -30,11 +32,6 @@ $bog_vmap_app $mol_view
 			<= Inspect_check $mol_check
 				title \Свойства
 				checked? <=> inspect_showed?
-			<= Mode $mol_switch
-				options <= mode_options *
-					edit \Правка
-					run \Запуск
-				value? <=> mode?
 			<= Zoom_out $mol_button_minor
 				title \−
 				hint \Отдалить
@@ -81,7 +78,8 @@ $bog_vmap_app $mol_view
 		sub /
 			<= Palette $bog_vmap_app_palette
 				compact true
-				pack? <=> pack?
+				links? <=> links?
+				land_classes <= lib_classes /$mol_tree2
 	-
 	- Properties of the picked node, on the far edge from the palette: one panel
 	- offers what can be added, the other what the added thing can do, and the canvas
@@ -93,10 +91,13 @@ $bog_vmap_app $mol_view
 	- that: `Button_minor $mol_button_minor` is a class named `Button_minor` with
 	- `$mol_button_minor` for a base, so its own lines are its own ports and the rest
 	- come down the chain. Nothing had to be added to the inspector to fit.
+	- The classes of the attached lands ride in through `peers` beside the root of
+	- the document: the inspector already resolves a peer's ports through the same
+	- index as the pack's, so a land class needs nothing added on its side.
 	Inspect $bog_vmap_app_inspect
 		source? <=> node_source? \
 		peers <= node_peers /$mol_tree2
-		pack <= pack
+		pack <= pack_link \
 	-
 	- What stands in the panel while nothing is picked. A state, not a blank: the
 	- inspector handed an empty source would fail to find a class in it and show an
@@ -105,11 +106,14 @@ $bog_vmap_app $mol_view
 		sub /
 			<= idle_note \Выберите узел на холсте, чтобы править его свойства
 	-
-	- Component library of the host. Only `script_link()` is read here, to point the
-	- frame at the pack; the class tree is fetched by the palette, from the same
-	- address, and the two share one `$mol_fetch` cell.
-	Lib $bog_vmap_lib
-		pack <= pack
+	- Component library of the host: the pack, with the lands of the field stacked
+	- on it. `script_link()` points the frame at the pack; `land_trees()` feed the
+	- palette and the inspector; `parts()` go to the scene. The pack tree itself is
+	- fetched by the palette from the same address, the two share one `$mol_fetch`
+	- cell. The only object in the editor that opens a land of the field.
+	Lib $bog_vmap_lib_land_stack
+		pack <= pack_link
+		lands <= lands /string
 	-
 	- What the pointer is carrying, drawn at the pointer. Rendered only while a drag
 	- is on, so it costs nothing the rest of the time.
@@ -128,4 +132,5 @@ $bog_vmap_app $mol_view
 		selected? <=> selected?
 		doc_js <= doc_js
 		doc_root <= doc_root
-		mode <= mode
+		libs <= libs /$bog_vmap_bridge_part
+		hole_allowed <= hole_allowed true
