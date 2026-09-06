@@ -29,17 +29,15 @@ namespace $.$$ {
 
 	$mol_style_define( $bog_vmap_app_pane_overlay, {
 
-		'@': {
-			bog_vmap_app_pane_mode: {
-
-				/** Edit: the host eats every pointer event, nothing reaches the scene. */
-				edit: { pointerEvents: 'auto' },
-
-				/** Run: events fall through into the sandbox, the component is alive. */
-				run: { pointerEvents: 'none' },
-
-			},
-		},
+		/**
+		 * The overlay eats every pointer event; nothing reaches the scene by itself.
+		 *
+		 * Said explicitly although it is the default, because it used to be switched
+		 * by an editor mode and is now a fixed fact of the layer: a click gets to the
+		 * document by being relayed over the bridge, and the picked part alone gets
+		 * real events through a hole cut by `clip-path` in the inline style.
+		 */
+		pointerEvents: 'auto',
 
 		Frame: {
 
@@ -74,6 +72,32 @@ namespace $.$$ {
 			 */
 			transition: 'none',
 
+		},
+
+	} )
+
+	/**
+	 * Corner grips of the ring. Fully outside the box, because inside it the overlay
+	 * is cut away and a grip drawn there would be clipped to nothing; outside, on
+	 * the strip the hit test still counts as the part, they mark where it can be
+	 * taken hold of. Sized to that strip.
+	 */
+	$mol_style_define( $bog_vmap_app_pane_handle, {
+
+		position: 'absolute',
+		width: '8px',
+		height: '8px',
+		background: { color: $mol_theme.focus },
+		pointerEvents: 'none',
+		transition: 'none',
+
+		'@': {
+			bog_vmap_app_pane_handle_corner: {
+				nw: { left: '-8px', top: '-8px' },
+				ne: { right: '-8px', top: '-8px' },
+				sw: { left: '-8px', bottom: '-8px' },
+				se: { right: '-8px', bottom: '-8px' },
+			},
 		},
 
 	} )

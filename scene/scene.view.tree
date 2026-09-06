@@ -3,9 +3,6 @@
 - @see ../ARCHITECTURE.md section 4
 
 $bog_vmap_scene $mol_view
-	attr *
-		^
-		bog_vmap_scene_mode <= mode \edit
 	sub /
 		- The canvas ground. Inside the frame since the frame stopped being see
 		- through: a `color-scheme` is what gives a frame its base colour, and
