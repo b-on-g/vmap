@@ -53,21 +53,27 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The document text, and the only place it is stored.
-		 *
-		 * `node()` writes here through the delegate below, so an edit of the tree and
-		 * the string the bridge pushes are the same cell. No synchronisation code
-		 * exists because there are not two copies to synchronise.
-		 *
-		 * In memory, and the document does not survive a reload. `app/doc/` already
-		 * has the schema for it — `Nodes`, `Root`, `Spots` — but the schema is
-		 * deliberately pure, so persistence is grabbing a land, choosing masters and
-		 * running the writes from a fiber: CRUD in the views, which is a task and not
-		 * a line. Same for `spots()` below.
+		 * Persistence, one for the editor. Made with our `$`, so the store sees the
+		 * same context as the editor: the glob, the auth, the address a test hands in.
 		 */
 		@ $mol_mem
+		override store() {
+			return this.$.$bog_vmap_app_store.make({ $: this.$ })
+		}
+
+		/**
+		 * The document text: the atoms of the current document, or the draft of the
+		 * store before there is one. `node()` writes here through its delegate, so the
+		 * tree and the string the bridge pushes are the same path. A plain method, not
+		 * `@ $mol_mem`: a cell in front of a Giper Baza atom freezes after a write.
+		 * Empty text is the empty page, the scene needs a root class to compile.
+		 */
 		doc_source( next?: string ) {
-			return next ?? this.doc_source_initial()
+
+			const store = this.store()
+			if( next !== undefined ) return store.source( next )
+
+			return store.source() || this.doc_source_initial()
 		}
 
 		/**
@@ -101,13 +107,54 @@ namespace $.$$ {
 		 * free parts lie by coordinates; artboards are stage 6, and until they exist
 		 * a dropped component has nowhere else to be.
 		 *
-		 * In memory for now. The schema has `Spots` for exactly this, but wiring it
-		 * up means CRUD over Giper Baza in the views, and this task is about a
-		 * component appearing under the pointer.
+		 * Stored with the document, in `Spots` of the schema, through the store.
+		 * A plain method for the reason given at `doc_source`.
 		 */
-		@ $mol_mem
 		override spots( next?: { readonly [ name: string ]: { readonly x: number, readonly y: number } } ) {
-			return next ?? {} as { readonly [ name: string ]: { readonly x: number, readonly y: number } }
+			return this.store().spots( next )
+		}
+
+		/**
+		 * The palette field, stored with the document as the string it is typed as.
+		 *
+		 * The store keeps it and knows nothing of what it means; the parsing below
+		 * is untouched and reads this. Empty in the store is the default of the
+		 * field, so a document that never had a palette opens on the standard one.
+		 */
+		override links( next?: string ) {
+
+			const store = this.store()
+			if( next !== undefined ) return store.pack( next ) || super.links()
+
+			return store.pack() || super.links()
+		}
+
+		/**
+		 * The store in a word for the status line, or empty when there is nothing
+		 * to say: the first document being made, or somebody else's document open
+		 * by its link, where edits do not stick.
+		 */
+		store_note() {
+			switch( this.store().stage() ) {
+				case 'making': return 'заводим сцену…'
+				case 'readonly': return 'чужая сцена: только просмотр, правки не сохраняются'
+				default: return ''
+			}
+		}
+
+		/**
+		 * Starts the store from `auto()`, so the first document is made in the
+		 * background. A suspension is the home land still loading: swallowed here,
+		 * because a suspension in `auto()` blanks the whole editor; the subscription
+		 * is recorded before the throw, so this runs again once the land is in.
+		 */
+		store_boot() {
+			try {
+				return this.store().boot()
+			} catch( error ) {
+				if( $mol_promise_like( error ) ) return 'loading'
+				return $mol_fail_hidden( error )
+			}
 		}
 
 		/**
@@ -303,6 +350,8 @@ namespace $.$$ {
 		}
 
 		override status() {
+			const note = this.store_note()
+			if( note ) return note
 			if( this.stalled() ) return 'сцена не отвечает'
 			const isolation = this.Pane().isolation()
 			if( isolation ) return isolation
@@ -572,6 +621,7 @@ namespace $.$$ {
 				... super.auto(),
 				this.drag_listeners(),
 				this.hotkeys(),
+				this.store_boot(),
 			]
 		}
 

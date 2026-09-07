@@ -21,6 +21,10 @@ $bog_vmap_app $mol_view
 	links? \https://mol.hyoo.ru
 	palette_showed? true
 	inspect_showed? true
+	- Persistence: the documents of the user in Giper Baza. One for the whole
+	- editor, handed to the switcher in the head bar; text and placement read
+	- through it and write back into it.
+	store $bog_vmap_app_store
 	sub <= body /$mol_view
 	-
 	Head $mol_bar
@@ -28,6 +32,8 @@ $bog_vmap_app $mol_view
 			<= Brand $mol_view
 				sub /
 					\vmap
+			<= Scenes $bog_vmap_app_scenes
+				store <= store
 			<= Palette_check $mol_check
 				title \Палитра
 				checked? <=> palette_showed?
