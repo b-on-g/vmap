@@ -39,9 +39,6 @@ namespace $.$$ {
 	 * than a syntax error a hundred lines down. */
 	const class_name_ok = /^\$[a-zA-Z][\w$]*$/
 
-	/** Donor pack address in the query of the scene's own URL, percent encoded. */
-	const pack_ref = /[?&]pack=([^&]*)/
-
 	/**
 	 * Sandbox application of $bog_vmap.
 	 *
@@ -268,37 +265,13 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Donor pack of this frame, taken from our own address.
-		 *
-		 * Deliberately not a bridge message. The scene has no way to unload a
-		 * bundle, and a second pack over the first poisons the palette without a
-		 * single signal — 277 of 414 `$mol_*` classes left with a stale base on
-		 * the S4 measurement, at a green compile and an empty error channel.
-		 *
-		 * In the QUERY, and the query is what makes it hold. A different query is
-		 * a different document URL, so the browser reloads the frame on its own
-		 * and this realm never sees a second pack. A fragment would not: an `src`
-		 * differing only after the `#` is a same-document navigation, the frame
-		 * keeps its document, its globals and the pack already in them — measured
-		 * on the live host, where the pack address changed and no second `ready`
-		 * ever came. The fragment is also contested ground, `$mol_state_arg`
-		 * lives there.
-		 *
-		 * A plain method, not a cell: an address change means a new document, so
-		 * there is nothing here to subscribe to.
+		 * Donor pack of this frame, from the query of our own address. A message
+		 * would not do: a realm cannot unload a bundle, and a second pack over the
+		 * first poisons the palette silently. Not a cell: a new address is a new document.
 		 * @see ../ARCHITECTURE.md section 5
 		 */
 		pack_uri() {
-
-			const found = pack_ref.exec( this.$.$mol_dom_context.location?.search ?? '' )
-			if( !found ) return ''
-
-			try {
-				return decodeURIComponent( found[1] )
-			} catch {
-				return found[1]
-			}
-
+			return new URLSearchParams( this.$.$mol_dom_context.location?.search ?? '' ).get( 'pack' ) ?? ''
 		}
 
 		/**

@@ -13,60 +13,17 @@ namespace $.$$ {
 	export class $bog_vmap_app extends $.$bog_vmap_app {
 
 		/**
-		 * The sandbox is a sibling module, addressed relative to our own bundle.
-		 *
-		 * The donor pack rides in the address of the frame rather than in a
-		 * bridge message. A pack cannot be unloaded once it is in a realm, and a
-		 * second one over the first leaves two thirds of the palette inheriting
-		 * from a class nobody holds any more — with a green compile and an empty
-		 * error channel. In `src` the address makes the browser reload the frame
-		 * on every change, so one pack per frame holds by construction.
-		 *
-		 * In the query and not in the fragment, because only the query is a
-		 * different document URL. An `src` differing from the current one after
-		 * the `#` alone is a same-document navigation: measured here, the address
-		 * changed and the frame kept its document, its globals and its previous
-		 * pack, with no second `ready` ever reaching the host.
+		 * The sandbox page with the donor pack in its query. A new pack is a new
+		 * address, so the browser reloads the frame and one pack per frame holds.
 		 * @see ../ARCHITECTURE.md section 5
 		 */
 		override scene_uri() {
-
-			const uri = new URL( '../../scene/-/index.html', this.$.$mol_dom_context.location.href )
-			uri.search = 'pack=' + encodeURIComponent( this.Lib().script_link() )
-
-			// Reloading the frame is done by changing its address, not by touching
-			// the frame: `src` is bound to this method, so an imperative reload would
-			// be fighting the binding on the next render. The counter goes AFTER
-			// `pack`, and the scene reads the pack with `[?&]pack=([^&]*)`, so the
-			// extra parameter cannot reach into it.
-			const restart = this.scene_restarts()
-			if( restart ) uri.search += '&restart=' + restart
-
-			return uri.href
+			return this.scene_page() + '?' + new URLSearchParams({ pack: this.Lib().script_link() })
 		}
 
-		/** How many times the user has asked for a fresh scene. */
-		@ $mol_mem
-		scene_restarts( next?: number ) {
-			return next ?? 0
-		}
-
-		/**
-		 * Raises a new scene in place of the stuck one.
-		 *
-		 * Nothing is lost by doing it: the host owns the document, the placement and
-		 * the camera, so the fresh scene is handed all of it as soon as it says
-		 * `ready` — every push cell reads `target()`, which depends on `handshake()`,
-		 * so a new handshake re-sends everything by construction.
-		 *
-		 * The strip is dropped here rather than waiting for the new scene to answer,
-		 * because between the click and the first answer the claim is no longer true:
-		 * the scene it accused is already gone.
-		 */
-		@ $mol_action
+		/** A fresh frame in place of the stuck one; the pane owns the frame. */
 		override scene_restart() {
-			this.scene_restarts( this.scene_restarts() + 1 )
-			this.Pane().stalled( false )
+			this.pane().scene_restart()
 		}
 
 		stalled() {

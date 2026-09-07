@@ -111,7 +111,25 @@ namespace $.$$ {
 		 * for a probe stole the binding from the real frame.
 		 */
 		scene_peer(): $bog_vmap_app_pane_peer | null {
-			return ( this.Scene().dom_node() as HTMLIFrameElement ).contentWindow
+			return ( this.Scene( this.scene_generation() ).dom_node() as HTMLIFrameElement ).contentWindow
+		}
+
+		/** The live frame under the overlay. */
+		override sub() {
+			return [ this.Scene( this.scene_generation() ), this.Overlay() ] as readonly $mol_view[]
+		}
+
+		/**
+		 * Replaces the frame with a fresh one that has said nothing and proved nothing
+		 * yet. Nothing is lost: the host owns the document, the placement and the
+		 * camera, and every push cell re-sends on the new handshake.
+		 */
+		@ $mol_action
+		scene_restart() {
+			this.scene_generation( this.scene_generation() + 1 )
+			this.handshake( 0 )
+			this.warmed( false )
+			this.stalled( false )
 		}
 
 		/**

@@ -33,9 +33,12 @@ $bog_vmap_app_pane $mol_view
 		0
 		0
 	camera_zoom? 1
+	- Which frame is live. Bumped by `scene_restart`: a new key is a new frame
+	- element, so a stuck scene is replaced rather than talked to.
+	scene_generation? 0
+	Scene* $bog_vmap_app_pane_frame
+		uri <= scene_uri
 	sub /
-		<= Scene $bog_vmap_app_pane_frame
-			uri <= scene_uri
 		<= Overlay $bog_vmap_app_pane_overlay
 			style <= overlay_style *
 			frame_showed <= frame_showed false

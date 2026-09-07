@@ -10,6 +10,8 @@ $bog_vmap_app $mol_view
 	selected? null
 	doc_js *
 	doc_root \
+	- The sandbox is a sibling module, addressed relative to this page.
+	scene_page \../../scene/-/index.html
 	scene_uri \
 	- The palette field: links separated by commas, stored exactly as typed. The
 	- first http(s) one is the donor pack, the rest are lands of Giper Baza. One

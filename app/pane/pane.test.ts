@@ -329,6 +329,50 @@ namespace $ {
 
 		},
 
+		/**
+		 * The button on the strip: a new frame element, the accusation withdrawn,
+		 * nothing sent until the new scene says `ready`, then everything re-sent.
+		 */
+		'scene_restart gives a fresh frame and clears stalled'( $ ) {
+
+			timers_fake( $ )
+			const { pane, posted, answer } = pane_make( $ )
+
+			pane.warmed( true )
+			pane.watchdog()
+			answer({ kind: 'sizes', sizes: {} })
+
+			const frame_before = pane.sub()[0]
+			$mol_assert_equal( frame_before, pane.Scene( pane.scene_generation() ) )
+
+			pane.stalled( true )
+			posted.length = 0
+
+			pane.scene_restart()
+
+			$mol_assert_equal( pane.stalled(), false )
+			$mol_assert_equal( pane.ready(), false )
+			$mol_assert_equal( pane.warmed(), false )
+			$mol_assert_equal( pane.sub()[0] !== frame_before, true )
+			$mol_assert_equal( pane.sub()[0], pane.Scene( pane.scene_generation() ) )
+			$mol_assert_equal( pane.sub().length, 2 )
+
+			// a frame that has not spoken gets nothing and is accused of nothing
+			$mol_assert_equal( pane.watchdog(), null )
+			$mol_assert_equal( pane.heartbeat(), null )
+			$mol_assert_equal( posted.length, 0 )
+
+			answer({ kind: 'ready' })
+			pane.watchdog()
+
+			$mol_assert_equal( pane.ready(), true )
+			$mol_assert_like(
+				posted.map( m => m.kind ),
+				[ 'doc_set', 'css_set', 'libs_set', 'spots_set', 'camera_set' ],
+			)
+
+		},
+
 		/** A click is a push like any other: it arms the watch, and geometry back disarms it. */
 		'a relayed click arms the watchdog and sizes disarm it'( $ ) {
 
