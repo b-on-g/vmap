@@ -1,0 +1,26 @@
+- Documents of the user, in the head bar: which one is open, its name, a new one.
+- Owns no data. The store is handed in by the app so that the whole editor holds
+- one, and every value shown here is read from it and written back into it.
+$bog_vmap_app_scenes $mol_view
+	store $bog_vmap_app_store
+	- Link of the open document, empty when there is none yet. Two way: picking
+	- one writes the address, and the address is what the store reads.
+	current? \
+	title? \
+	- Whether there is a document to name at all. The field is off without one,
+	- so that a name typed into an empty editor does not grab a land per keystroke.
+	current_exists false
+	sub /
+		<= Pick $mol_select
+			hint \Сцена
+			dictionary <= scene_dict *
+			option_label_default \Без названия
+			value? <=> current?
+		<= Title $mol_string
+			hint \Название сцены
+			enabled <= current_exists
+			value? <=> title?
+		<= Add $mol_button_minor
+			title \Новая сцена
+			hint \Завести новый документ. Он станет текущим
+			click? <=> add? null
