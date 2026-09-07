@@ -2,7 +2,7 @@ $bog_vmap_app_palette $mol_view
 	- Links separated by commas. The first http(s) one is the donor pack, the rest
 	- are lands of Giper Baza holding component sources; anything else is refused
 	- and said so under the field. Stored exactly as typed, see `pack_link`.
-	links? \https://mol.hyoo.ru
+	links? \http://localhost:9080/bog/vmap/part/-/
 	query? \
 	selected? \
 	- Narrow layout for a side panel of the editor: header in a column, ports pane

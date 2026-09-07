@@ -1,0 +1,28 @@
+$bog_vmap_part_calc $mol_view
+	- Two operands, an operation and the result as a NUMBER: this is the port a
+	- wire takes to another part. NaN is «no number» here, as in the number field.
+	left? 0
+	right? 0
+	op? \add
+	result +NaN
+	result_text \
+	zero_note \деление на ноль
+	empty_note \—
+	sub /
+		<= Left $mol_number
+			hint \a
+			value? <=> left?
+		<= Op $mol_switch
+			value? <=> op?
+			options *
+				add \+
+				sub \−
+				mul \×
+				div \÷
+		<= Right $mol_number
+			hint \b
+			value? <=> right?
+		<= Equals $mol_view
+			sub / \=
+		<= Result $mol_view
+			sub / <= result_text

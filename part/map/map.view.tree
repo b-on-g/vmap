@@ -1,0 +1,23 @@
+$bog_vmap_part_map $mol_view
+	- Ports are plain numbers, one each, so that a wire carrying one number
+	- lands on any of them. The center is derived from `lat` and `lng`.
+	zoom? 10
+	lat? 59.94
+	lng? 30.31
+	marker? \
+	zoom_min 0
+	zoom_max 19
+	sub /
+		<= Map $mol_map_yandex
+			zoom? <=> zoom_limited? 10
+			center? <=> center? $mol_vector_2d<number> /
+				0
+				0
+			objects <= objects /$mol_map_yandex_mark
+	- The one mark, placed at the center and shown while `marker` has text.
+	- `pos` is bound here on purpose: the class of the mark would otherwise
+	- geocode its address over the network to find its position.
+	Mark $mol_map_yandex_mark
+		pos <= center
+		title <= marker
+		hint <= marker

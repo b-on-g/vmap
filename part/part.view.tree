@@ -1,0 +1,48 @@
+$bog_vmap_part $mol_page
+	title \Базовые детали vmap
+	- The showcase of the pack: the two parts wired together, and the common
+	- components of mol beside them, so that a palette fed by this pack has the
+	- basics and not the two parts alone.
+	calc_result = Calc result
+	body /
+		<= Calc $bog_vmap_part_calc
+		<= Map $bog_vmap_part_map
+			zoom <= calc_result
+		<= Kit $mol_list
+			rows /
+				<= Button_major $mol_button_major
+					title \Кнопка
+				<= Button_minor $mol_button_minor
+					title \Кнопка
+				<= String $mol_string
+					hint \Строка
+				<= Textarea $mol_textarea
+					hint \Текст
+				<= Number $mol_number
+				<= Check $mol_check_box
+					title \Флажок
+				<= Switch $mol_switch
+					options *
+						one \Раз
+						two \Два
+				<= Select $mol_select
+					options /
+						\Раз
+						\Два
+				<= Link $mol_link
+					title \Ссылка
+					uri \https://mol.hyoo.ru
+				<= Image $mol_image
+					uri \https://mol.hyoo.ru/mol/logo/logo.svg
+				<= Text $mol_text
+					text \**Разметка**
+				<= Paragraph $mol_paragraph
+					title \Абзац
+				<= Labeler $mol_labeler
+					title \Подпись
+					content / \Значение
+				<= Row $mol_row
+				<= Card $mol_card
+				<= Form $mol_form
+				<= Field $mol_form_field
+					name \Поле
