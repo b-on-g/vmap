@@ -47,6 +47,17 @@ namespace $ {
 		``,
 	].join( '\n' )
 
+	/** Two parts on the canvas and no wire between them yet. Normalized. */
+	const pair_src = [
+		`${d}bog_vmap_lang_test_pair ${d}mol_view`,
+		`	Calc ${d}bog_vmap_lang_test_calc`,
+		`	Price ${d}mol_view`,
+		`	sub /`,
+		`		<= Calc`,
+		`		<= Price`,
+		``,
+	].join( '\n' )
+
 	/** Indices of the lines two texts differ at, trailing tail included. */
 	function lines_diff( left: string, right: string ) {
 
@@ -594,6 +605,188 @@ namespace $ {
 				`	count 2`,
 				``,
 			].join( '\n' ) )
+
+		},
+
+		/**
+		 * The canvas gesture in model terms. Two parts, no wire; after a link there
+		 * are exactly two new lines: the wire on the root and the reference in the
+		 * target declaration.
+		 */
+		'a link writes exactly two lines, in canonical form'( $ ) {
+
+			const node = doc( pair_src )
+			const name = node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title' })
+
+			$mol_assert_equal( name, 'calc_result' )
+			$mol_assert_equal( node.source(), [
+				`${d}bog_vmap_lang_test_pair ${d}mol_view`,
+				`	Calc ${d}bog_vmap_lang_test_calc`,
+				`	Price ${d}mol_view title <= calc_result`,
+				`	sub /`,
+				`		<= Calc`,
+				`		<= Price`,
+				`	calc_result = Calc result`,
+				``,
+			].join( '\n' ) )
+
+			$mol_assert_like( node.links(), [
+				{ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title', name: 'calc_result', bidi: false },
+			] )
+
+		},
+
+		'a repeated link does not duplicate anything'( $ ) {
+
+			const node = doc( pair_src )
+
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title' })
+			const once = node.source()
+
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title' })
+
+			$mol_assert_equal( node.source(), once )
+			$mol_assert_equal( node.links().length, 1 )
+
+		},
+
+		'one wire feeds two ports and survives the drop of one of them'( $ ) {
+
+			const node = doc( pair_src )
+
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title' })
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'hint' })
+
+			$mol_assert_equal( node.wires().length, 1 )
+			$mol_assert_equal( node.links().length, 2 )
+
+			node.link_drop( 'Price', 'hint' )
+
+			$mol_assert_equal( node.wires().length, 1 )
+			$mol_assert_equal( node.links().length, 1 )
+
+		},
+
+		'unplugging removes both lines'( $ ) {
+
+			const node = doc( pair_src )
+
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title' })
+			node.link_drop( 'Price', 'title' )
+
+			$mol_assert_equal( node.source(), pair_src )
+			$mol_assert_equal( node.links().length, 0 )
+			$mol_assert_equal( node.wires().length, 0 )
+
+		},
+
+		'unplugging a port that is not wired changes nothing'( $ ) {
+
+			const node = doc( pair_src )
+			node.link_drop( 'Price', 'title' )
+			$mol_assert_equal( node.source(), pair_src )
+
+		},
+
+		'a two way link puts the sign on both ends of both lines'( $ ) {
+
+			const node = doc( pair_src )
+			node.link_add({ from: 'Calc', from_prop: 'value', to: 'Price', to_prop: 'title', bidi: true })
+
+			const lines = node.source().split( '\n' )
+			$mol_assert_equal( lines.includes( '\tcalc_value? = Calc value?' ), true )
+			$mol_assert_equal( lines.includes( '\tPrice $mol_view title? <=> calc_value?'.replace( '$', d ) ), true )
+
+			$mol_assert_equal( node.links()[ 0 ].bidi, true )
+
+			const js = js_of( $, node )
+			$mol_assert_equal( js.includes( 'this.Calc().value(next)' ), true )
+
+		},
+
+		'a link takes a free name when the obvious one is taken'( $ ) {
+
+			const node = doc( pair_src )
+			node.prop_add( 'calc_result' )
+
+			const name = node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title' })
+
+			$mol_assert_equal( name, 'calc_result_2' )
+			$mol_assert_equal( node.prop_tree( 'calc_result' )!.kids[ 0 ].type, 'null' )
+
+		},
+
+		'a link to an undeclared part is refused and writes nothing'( $ ) {
+
+			const node = doc( pair_src )
+
+			$mol_assert_fail( ()=> node.link_add({ from: 'Calc', from_prop: 'result', to: 'Nope', to_prop: 'title' }), Error )
+			$mol_assert_fail( ()=> node.link_add({ from: 'Nope', from_prop: 'result', to: 'Price', to_prop: 'title' }), Error )
+			$mol_assert_fail( ()=> node.link_add({ from: 'Calc', from_prop: 'result', to: 'Calc', to_prop: 'title' }), Error )
+
+			$mol_assert_equal( node.source(), pair_src )
+
+		},
+
+		'a loop of wires is refused with the reason'( $ ) {
+
+			const node = doc( pair_src )
+
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title' })
+			const before = node.source()
+
+			let message = ''
+			try {
+				node.link_add({ from: 'Price', from_prop: 'title', to: 'Calc', to_prop: 'hint' })
+			} catch( error ) {
+				message = ( error as Error ).message
+			}
+
+			$mol_assert_equal( /loop/.test( message ), true )
+			$mol_assert_equal( node.source(), before )
+
+		},
+
+		/**
+		 * The five traps, from the side of the link rather than of the wire: whatever
+		 * the ends are, the reference in the target carries a bare name and the wire
+		 * is two tokens under `=`.
+		 */
+		'trap: a link never emits a reference with a child or a sign on one end'( $ ) {
+
+			const node = doc( pair_src )
+
+			$mol_assert_fail( ()=> node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title?' }), Error )
+			$mol_assert_fail( ()=> node.link_add({ from: 'Calc', from_prop: 'result?', to: 'Price', to_prop: 'title' }), Error )
+			$mol_assert_fail( ()=> node.link_add({ from: 'Calc', from_prop: 'Inner result', to: 'Price', to_prop: 'title' }), Error )
+			$mol_assert_fail( ()=> node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'a b' }), Error )
+			$mol_assert_equal( node.source(), pair_src )
+
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title' })
+
+			const over = node.prop_tree( 'Price' )!.kids[ 0 ].kids[ 0 ]
+			$mol_assert_equal( over.type, 'title' )
+			$mol_assert_equal( over.kids[ 0 ].type, '<=' )
+			$mol_assert_equal( over.kids[ 0 ].kids[ 0 ].kids.length, 0 )
+
+			const wire = node.prop_tree( 'calc_result' )!
+			$mol_assert_equal( wire.kids[ 0 ].type, '=' )
+			$mol_assert_equal( wire.kids[ 0 ].kids.length, 1 )
+			$mol_assert_equal( wire.kids[ 0 ].kids[ 0 ].kids.length, 1 )
+			$mol_assert_equal( wire.kids[ 0 ].kids[ 0 ].kids[ 0 ].kids.length, 0 )
+
+		},
+
+		'links are read back from a hand written document'( $ ) {
+
+			const node = doc( demo_src )
+
+			$mol_assert_like( node.links(), [
+				{ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title', name: 'calc_result', bidi: false },
+			] )
+
+			// A reference to something that is not a wire is not a link.
+			$mol_assert_like( doc( `${d}bog_vmap_lang_test_x ${d}mol_view\n\tlabel \\a\n\tP ${d}mol_view title <= label\n` ).links(), [] )
 
 		},
 

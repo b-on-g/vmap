@@ -42,6 +42,19 @@ namespace $ {
 	}
 
 	/**
+	 * A wire with its consumer: `from.from_prop` feeds `to.to_prop` through the
+	 * root property `name`. Two lines of the class and nothing else.
+	 */
+	export type $bog_vmap_lang_link = {
+		readonly from: string
+		readonly from_prop: string
+		readonly to: string
+		readonly to_prop: string
+		readonly name: string
+		readonly bidi: boolean
+	}
+
+	/**
 	 * Checks that a token is a bare property name and returns it.
 	 *
 	 * Bare means: no `*`, no `?`, no `!`, no spaces, nothing but a name. Signs are
@@ -509,6 +522,229 @@ namespace $ {
 			if( prev && prev !== next.type ) this.prop_drop( wire.name )
 
 			this.tree( this.tree().insert( next, null, next.type ) )
+
+		}
+
+		/**
+		 * Wires declared by the class: every property whose value is the `=`
+		 * operator. `bidi` is read off the left end alone, because the emitter never
+		 * writes the two signs apart; a hand written wire with one sign is reported
+		 * as it is and left for the compiler to complain about.
+		 */
+		@ $mol_mem
+		wires(): readonly $bog_vmap_lang_wire[] {
+
+			const wires = [] as $bog_vmap_lang_wire[]
+
+			for( const prop of this.props_tree().kids ) {
+
+				const op = prop.kids[ 0 ]
+				if( op?.type !== '=' ) continue
+
+				const node = op.kids[ 0 ]
+				const far = node?.kids[ 0 ]
+				if( !node || !far ) continue
+
+				const meta = this.$.$mol_view_tree2_prop_parts( prop )
+
+				wires.push({
+					name: meta.name,
+					node: node.type,
+					prop: this.$.$mol_view_tree2_prop_parts( far ).name,
+					bidi: Boolean( meta.next ),
+				})
+
+			}
+
+			return wires
+		}
+
+		/**
+		 * Declarations of parts: properties whose value is a class name, with the
+		 * overrides written under it. That is where a consumer of a wire lives:
+		 * `Price $mol_text title <= calc_result`.
+		 */
+		part_names() {
+			return this.props_tree().kids
+				.filter( prop => {
+					const val = prop.kids[ 0 ]
+					return val && $mol_view_tree2_class_match( val )
+				} )
+				.map( prop => this.$.$mol_view_tree2_prop_parts( prop ).name )
+		}
+
+		/**
+		 * Wires together with who reads them. A wire nobody reads is not a link,
+		 * and a reference to a name that is not a wire is a plain binding of the
+		 * part and none of this module's business.
+		 */
+		@ $mol_mem
+		links(): readonly $bog_vmap_lang_link[] {
+
+			const wires = new Map( this.wires().map( wire => [ wire.name, wire ] as const ) )
+			const links = [] as $bog_vmap_lang_link[]
+
+			// Off `props_tree()` and not through `prop_tree()`: the latter is the
+			// write path of `link_target`, and a cell read through a written cell
+			// freezes at what was written.
+			for( const decl of this.props_tree().kids ) {
+
+				const klass = decl.kids[ 0 ]
+				if( !klass || !$mol_view_tree2_class_match( klass ) ) continue
+
+				const to = this.$.$mol_view_tree2_prop_parts( decl ).name
+
+				for( const over of klass.kids ) {
+
+					const op = over.kids[ 0 ]
+					if( op?.type !== '<=' && op?.type !== '<=>' ) continue
+
+					const ref = op.kids[ 0 ]
+					if( !ref || ref.kids.length ) continue
+
+					const wire = wires.get( this.$.$mol_view_tree2_prop_parts( ref ).name )
+					if( !wire ) continue
+
+					links.push({
+						from: wire.node,
+						from_prop: wire.prop,
+						to,
+						to_prop: this.$.$mol_view_tree2_prop_parts( over ).name,
+						name: wire.name,
+						bidi: Boolean( wire.bidi ) && op.type === '<=>',
+					})
+
+				}
+
+			}
+
+			return links
+		}
+
+		/** Whether `to` is already fed, directly or through others, by `from`. */
+		link_reaches( from: string, to: string ) {
+
+			const seen = new Set< string >()
+			const queue = [ from ]
+
+			while( queue.length ) {
+				const at = queue.shift()!
+				if( at === to ) return true
+				if( seen.has( at ) ) continue
+				seen.add( at )
+				for( const link of this.links() ) if( link.from === at ) queue.push( link.to )
+			}
+
+			return false
+		}
+
+		/**
+		 * Name of the root property a wire from `from.prop` goes by: `calc_result`.
+		 * An existing wire to the same end is reused, an unrelated property of the
+		 * same name is stepped around with a suffix.
+		 */
+		link_name( from: string, prop: string, bidi: boolean ) {
+
+			const base = `${ from.toLowerCase() }_${ prop }`
+			const taken = new Set( this.prop_names() )
+
+			for( let i = 1; ; ++i ) {
+
+				const name = i === 1 ? base : `${ base }_${ i }`
+
+				const wire = this.wires().find( wire => wire.name === name )
+				if( wire ) {
+					if( wire.node === from && wire.prop === prop && wire.bidi === bidi ) return name
+					continue
+				}
+
+				if( !taken.has( name ) ) return name
+
+			}
+
+		}
+
+		/**
+		 * Connects a port of one part to a port of another: two lines and no more.
+		 *
+		 * The wire `name = From prop` goes through `wire_add` with every guard it
+		 * has, and the consumer is a bare reference in the declaration of the target
+		 * part, `to_prop <= name`, or `to_prop? <=> name?` for a two way wire. The
+		 * reference is built by `$bog_vmap_lang_ref_tree`, so it can carry nothing
+		 * under the name and never turns into the middle form of `<=`.
+		 *
+		 * Refused, with nothing written: a part wired to itself, an undeclared end,
+		 * and a target the source already depends on, because a loop of wires is a
+		 * loop of fibers and the scene would hang on the first read.
+		 */
+		@ $mol_action
+		link_add( link: {
+			readonly from: string
+			readonly from_prop: string
+			readonly to: string
+			readonly to_prop: string
+			readonly bidi?: boolean
+		} ) {
+
+			const bidi = Boolean( link.bidi )
+
+			if( link.from === link.to ) this.$.$mol_fail(
+				new Error( `Part ${ JSON.stringify( link.to ) } cannot be wired to itself` )
+			)
+
+			const parts = new Set( this.part_names() )
+			for( const end of [ link.from, link.to ] ) if( !parts.has( end ) ) this.$.$mol_fail(
+				new Error( `Part ${ JSON.stringify( end ) } is not declared in ${ this.name() }` )
+			)
+
+			if( this.link_reaches( link.to, link.from ) ) this.$.$mol_fail(
+				new Error( `Wire ${ link.from } → ${ link.to } closes a loop: ${ link.to } already feeds ${ link.from }` )
+			)
+
+			const to_prop = this.$.$bog_vmap_lang_token( link.to_prop, 'Target port' )
+			const name = this.link_name( link.from, link.from_prop, bidi )
+
+			this.wire_add({ name, node: link.from, prop: link.from_prop, bidi })
+
+			const ref = bidi
+				? $mol_tree2.struct( '<=>', [ $mol_tree2.struct( name + '?' ) ] )
+				: this.$.$bog_vmap_lang_ref_tree( name )
+
+			this.link_target( link.to, to_prop, $mol_tree2.struct( to_prop + ( bidi ? '?' : '' ), [ ref ] ) )
+
+			return name
+		}
+
+		/**
+		 * Replaces the override of one port in the declaration of a part, or drops
+		 * it when `next` is `null`. The other overrides keep their order.
+		 */
+		link_target( to: string, to_prop: string, next: $mol_tree2 | null ) {
+
+			const decl = this.prop_tree( to )!
+			const klass = decl.kids[ 0 ]
+
+			const kids = klass.kids.filter( over => this.$.$mol_view_tree2_prop_parts( over ).name !== to_prop )
+			if( next ) kids.push( next )
+
+			this.prop_tree( to, decl.clone([ klass.clone( kids ) ]) )
+		}
+
+		/**
+		 * Unplugs a port: the reference goes from the target, and the wire goes from
+		 * the class when nobody else reads it. Both lines, or the first alone when
+		 * the second is still in use.
+		 */
+		@ $mol_action
+		link_drop( to: string, to_prop: string ) {
+
+			const link = this.links().find( link => link.to === to && link.to_prop === to_prop )
+			if( !link ) return
+
+			this.link_target( to, to_prop, null )
+
+			const used = this.links().some( other => other.name === link.name )
+			if( !used ) this.prop_drop( link.name )
 
 		}
 
