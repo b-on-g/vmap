@@ -826,6 +826,53 @@ namespace $.$$ {
 			this.$.$bog_vmap_bridge_send( this.peer(), message )
 		}
 
+		/** Wires the host wants labelled: root property names, the whole list each time. */
+		@ $mol_mem
+		values_wanted( next?: readonly string[] ): readonly string[] {
+			return next ?? []
+		}
+
+		/** Wall clock of the last `values` sent. A plain field, written from a timer. */
+		values_at = 0
+
+		/** Shortest gap between two `values` messages, in ms. */
+		values_period() {
+			return 250
+		}
+
+		/** The clock. A method so that a test can move it by hand. */
+		now() {
+			return Date.now()
+		}
+
+		/**
+		 * Labels of the wanted wires, sent to the host no more often than
+		 * `values_period()`.
+		 *
+		 * The values are read here, inside the cell, so the document's own atoms wake
+		 * it: the graph is shared with the document, see section 4. Every change
+		 * restarts the timer with whatever is left of the period, so a wire that
+		 * changes on every frame costs one message per period and a wire that
+		 * changes once is reported at once.
+		 */
+		@ $mol_mem
+		values_task() {
+
+			const names = this.values_wanted()
+			if( !names.length ) return null
+
+			const made = this.instance()
+			if( !made ) return null
+
+			const values = this.$.$bog_vmap_scene_values( made, names )
+			const wait = Math.max( 0, this.values_period() - ( this.now() - this.values_at ) )
+
+			return new this.$.$mol_after_timeout( wait, () => {
+				this.values_at = this.now()
+				this.post({ kind: 'values', values })
+			} )
+		}
+
 		/**
 		 * The one window the scene talks to.
 		 *
@@ -872,6 +919,8 @@ namespace $.$$ {
 				case 'spots_set': this.spots( message.spots ); return
 
 				case 'camera_set': this.camera( message.camera ); return
+
+				case 'values_want': this.values_wanted( Array.isArray( message.names ) ? message.names.map( String ) : [] ); return
 
 				case 'click_at': {
 
@@ -1222,6 +1271,7 @@ namespace $.$$ {
 				this.resize_watch(),
 				this.boot(),
 				this.report_task(),
+				this.values_task(),
 				this.screen_listener(),
 			]
 		}
