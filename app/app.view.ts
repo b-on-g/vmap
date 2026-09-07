@@ -185,6 +185,11 @@ namespace $.$$ {
 			return Boolean( this.selected() )
 		}
 
+		/** The pick as the publish button takes it: a name, empty for none. */
+		override publish_part() {
+			return this.selected() ?? ''
+		}
+
 		/**
 		 * CSS of the document itself: the only styling an export may ever carry.
 		 *

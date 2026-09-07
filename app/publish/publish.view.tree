@@ -1,0 +1,30 @@
+- Publishing the picked part of the document into the library of the user: one
+- button in the head bar, and the link of the library that comes out of it, ready
+- for the palette field of another scene.
+- @see ../../ARCHITECTURE.md section 5
+$bog_vmap_app_publish $mol_view
+	store $bog_vmap_app_publish_store
+	- Property name of the picked part on the root class, empty when nothing is
+	- picked. The button is off without one.
+	part \
+	- Declaration of the picked part, as the inspector reads it: `Name $base …`.
+	source \
+	- Body and styles of the part. Empty until the code editor of stage 4 keeps
+	- them per part; the shape is here so that it plugs in without a change.
+	js \
+	css \
+	- Link of the library land, empty before the first publication.
+	lib_link \
+	sub <= content /$mol_view
+	Publish $mol_button_minor
+		title \В библиотеку
+		hint <= publish_hint \
+		enabled <= enabled false
+		click? <=> publish? null
+	- The link itself is the caption, so what is copied is what is seen.
+	Copy $mol_button_copy
+		hint \Скопировать ссылку библиотеки для поля палитры другой сцены
+		text <= lib_link
+		title <= lib_link
+	Note $mol_view
+		sub / <= note \

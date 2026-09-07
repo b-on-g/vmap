@@ -18,7 +18,7 @@ $bog_vmap_app $mol_view
 	- value for the whole editor: the palette offers what the scene has actually
 	- loaded, and the two must never drift apart. Derived from it: `pack_link` for
 	- the frame address, `lands` for the library, `libs` for the scene.
-	links? \https://mol.hyoo.ru
+	links? \http://localhost:9080/bog/vmap/part/-/
 	palette_showed? true
 	inspect_showed? true
 	- Persistence: the documents of the user in Giper Baza. One for the whole
@@ -59,6 +59,12 @@ $bog_vmap_app $mol_view
 				hint <= delete_hint \
 				enabled <= selection_showed false
 				click? <=> node_delete? null
+			- Publishing the picked part into the library of the user, link included.
+			- The declaration goes in as the inspector reads it, and the part name as
+			- the picked property; the store of libraries is the button's own.
+			<= Publish $bog_vmap_app_publish
+				part <= publish_part \
+				source <= node_source? \
 			<= Status $mol_view
 				sub /
 					<= status \
