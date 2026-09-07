@@ -178,6 +178,18 @@ namespace $ {
 			readonly parts: readonly $bog_vmap_bridge_part[]
 		}
 
+		| {
+			/**
+			 * Which wires the host wants values for: the root properties of the
+			 * wires drawn on screen right now, and only those. The whole list every
+			 * time; an empty list stops the flow. The host knows what is visible,
+			 * the scene knows the values, so the question goes down and the answer
+			 * comes up as `values`.
+			 */
+			readonly kind: 'values_want'
+			readonly names: readonly string[]
+		}
+
 	/** Scene to host. */
 	export type $bog_vmap_bridge_up =
 
@@ -206,9 +218,14 @@ namespace $ {
 		}
 
 		| {
-			readonly kind: 'ports'
-			/** Current port values, for labelling wires. Throttled by the scene. */
-			readonly values: { readonly [ port: string ]: string }
+			/**
+			 * Current values of the wires the host asked for in `values_want`,
+			 * keyed by the root property of the wire, as short text. A read that
+			 * throws comes back as the text of the error, so a broken wire is
+			 * labelled rather than the scene taken down. Throttled by the scene.
+			 */
+			readonly kind: 'values'
+			readonly values: { readonly [ wire: string ]: string }
 		}
 
 		| {

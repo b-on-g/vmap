@@ -27,6 +27,27 @@ namespace $ {
 
 		},
 
+		/** The question goes down as a list of names, the answer comes up keyed by them. */
+		'values_want and values survive the wire'( $ ) {
+
+			const sent = [] as unknown[]
+			const target = { postMessage: ( data: unknown )=> { sent.push( data ) } }
+
+			$bog_vmap_bridge_send( target, { kind: 'values_want', names: [ 'calc_result', 'calc_value' ] } )
+			$bog_vmap_bridge_send( target, { kind: 'values', values: { calc_result: '42', calc_value: 'Error: boom' } } )
+
+			const want = $bog_vmap_bridge_read< $bog_vmap_bridge_down >( { data: sent[ 0 ] } )
+			$mol_assert_equal( want?.kind, 'values_want' )
+			if( want?.kind !== 'values_want' ) return
+			$mol_assert_like( want.names, [ 'calc_result', 'calc_value' ] )
+
+			const got = $bog_vmap_bridge_read< $bog_vmap_bridge_up >( { data: sent[ 1 ] } )
+			$mol_assert_equal( got?.kind, 'values' )
+			if( got?.kind !== 'values' ) return
+			$mol_assert_like( got.values, { calc_result: '42', calc_value: 'Error: boom' } )
+
+		},
+
 		'a message from another namespace is not ours'( $ ) {
 
 			$mol_assert_equal(
