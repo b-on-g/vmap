@@ -29546,6 +29546,9 @@ var $;
 		containers(){
 			return [];
 		}
+		axis(id){
+			return "";
+		}
 		tree_move(next){
 			if(next !== undefined) return next;
 			return null;
@@ -29766,20 +29769,30 @@ var $;
 var $;
 (function ($) {
     /**
-     * Which way the children of a container are stacked, read off their boxes.
+     * Which way the children of a container are stacked: what the node DECLARES,
+     * else what its children came out as, else a column.
      *
-     * Geometry and not CSS on purpose: the host does not compile the document and
-     * has no layout of its own, so the only honest source of the direction is where
-     * the children came out. Asking the scene would put a message on the wire for
-     * something already measured.
+     * The declaration comes first because it is not a guess about CSS — it is a
+     * line of the document, which the host owns and reads directly. Geometry is the
+     * fallback and not the source: it degenerates on nought or one child, where
+     * there is nothing to read a direction off at all.
      *
-     * Fewer than two children says nothing at all, and the answer is then a column:
-     * that is the way a page stacks, and it is what an artboard is set to. Note the
-     * default of `$mol_view` itself is a ROW — `[mol_view]` is `display: flex` with
-     * no direction — which is why an artboard has to say `flexDirection` out loud
-     * and why the inspector offers it.
+     * A direction the document states in some other way — `row-reverse` and its
+     * kind — falls through to the geometry rather than being taken at its word: the
+     * children of a reversed box come out in the opposite order from the one `sub`
+     * lists them in, and a position counted along the boxes would be the mirror of
+     * the position written into the tree. Guessing from where things are is then
+     * strictly better than trusting a word we do not act on.
+     *
+     * The last resort is a column, the way a page stacks and what the artboard
+     * preset sets. It has to be set: `[mol_view]` is `display: flex` with no
+     * direction at all, which is a ROW.
      */
-    function $bog_vmap_app_pane_axis(boxes) {
+    function $bog_vmap_app_pane_axis(boxes, declared = '') {
+        if (declared === 'row')
+            return 'row';
+        if (declared === 'column')
+            return 'column';
         if (boxes.length < 2)
             return 'column';
         const mid_x = boxes.map(box => box.x + box.width / 2);
@@ -29802,8 +29815,8 @@ var $;
      * because the host draws it with the same transform it draws the selection ring
      * with, and turning world into screen is done once, for both.
      */
-    function $bog_vmap_app_pane_slot(owner, box, kids, point) {
-        const row = $bog_vmap_app_pane_axis(kids) === 'row';
+    function $bog_vmap_app_pane_slot(owner, box, kids, point, declared = '') {
+        const row = $bog_vmap_app_pane_axis(kids, declared) === 'row';
         const start = (kid) => row ? kid.x : kid.y;
         const end = (kid) => row ? kid.x + kid.width : kid.y + kid.height;
         const at = point[row ? 0 : 1];
@@ -30339,7 +30352,7 @@ var $;
                 const box = this.part_size(owner);
                 if (!box)
                     return null;
-                return this.$.$bog_vmap_app_pane_slot(owner, box, this.node_kids(owner), point);
+                return this.$.$bog_vmap_app_pane_slot(owner, box, this.node_kids(owner), point, this.axis(owner));
             }
             /**
              * The slot the gesture in hand is aiming at, drawn as a line between children.
@@ -31365,6 +31378,9 @@ var $;
 		doc_containers(){
 			return [];
 		}
+		doc_axis(id){
+			return "";
+		}
 		tree_move(next){
 			if(next !== undefined) return next;
 			return null;
@@ -31497,6 +31513,7 @@ var $;
 			(obj.link_add) = (next) => ((this.link_add(next)));
 			(obj.link_drop) = (next) => ((this.link_drop(next)));
 			(obj.containers) = () => ((this.doc_containers()));
+			(obj.axis) = (id) => ((this.doc_axis(id)));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
 			return obj;
 		}
@@ -31876,6 +31893,19 @@ var $;
             doc_containers() {
                 const node = this.node();
                 return node.prop_names().filter(name => node.sub_names(name));
+            }
+            /**
+             * The `flexDirection` a node declares, empty when it declares none.
+             *
+             * The document states which way a container stacks, and the host owns the
+             * document, so this is a reading and not an inference. The pane falls back to
+             * the geometry of the children only where there is no declaration — and it
+             * has to have somewhere to fall back to, because a container with one child
+             * or none shows nothing at all about its direction.
+             */
+            doc_axis(name) {
+                const style = this.node().over_tree(name, 'style')?.kids[0] ?? null;
+                return this.$.$bog_vmap_lang_dict_get(style, 'flexDirection')?.value ?? '';
             }
             /**
              * A node dropped inside an artboard goes into the tree of its parent, and
@@ -32286,6 +32316,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "doc_containers", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "doc_axis", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "links_parsed", null);
@@ -33849,6 +33882,318 @@ var $;
 
 ;
 "use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'Vector limiting'() {
+            let point = new $mol_vector_3d(7, 10, 13);
+            const res = point.limited([[1, 5], [15, 20], [5, 10]]);
+            $mol_assert_equal(res.x, 5);
+            $mol_assert_equal(res.y, 15);
+            $mol_assert_equal(res.z, 10);
+        },
+        'Vector adding scalar'() {
+            let point = new $mol_vector_3d(1, 2, 3);
+            let res = point.added0(5);
+            $mol_assert_equal(res.x, 6);
+            $mol_assert_equal(res.y, 7);
+            $mol_assert_equal(res.z, 8);
+        },
+        'Vector adding vector'() {
+            let point = new $mol_vector_3d(1, 2, 3);
+            let res = point.added1([5, 10, 15]);
+            $mol_assert_equal(res.x, 6);
+            $mol_assert_equal(res.y, 12);
+            $mol_assert_equal(res.z, 18);
+        },
+        'Vector multiplying scalar'() {
+            let point = new $mol_vector_3d(2, 3, 4);
+            let res = point.multed0(-1);
+            $mol_assert_equal(res.x, -2);
+            $mol_assert_equal(res.y, -3);
+            $mol_assert_equal(res.z, -4);
+        },
+        'Vector multiplying vector'() {
+            let point = new $mol_vector_3d(2, 3, 4);
+            let res = point.multed1([5, 2, -2]);
+            $mol_assert_equal(res.x, 10);
+            $mol_assert_equal(res.y, 6);
+            $mol_assert_equal(res.z, -8);
+        },
+        'Matrix adding matrix'() {
+            let matrix = new $mol_vector_matrix(...[[1, 2], [3, 4], [5, 6]]);
+            let res = matrix.added2([[10, 20], [30, 40], [50, 60]]);
+            $mol_assert_equal(res[0][0], 11);
+            $mol_assert_equal(res[0][1], 22);
+            $mol_assert_equal(res[1][0], 33);
+            $mol_assert_equal(res[1][1], 44);
+            $mol_assert_equal(res[2][0], 55);
+            $mol_assert_equal(res[2][1], 66);
+        },
+        'Matrix multiplying matrix'() {
+            let matrix = new $mol_vector_matrix(...[[2, 3], [4, 5], [6, 7]]);
+            let res = matrix.multed2([[2, 3], [4, 5], [6, 7]]);
+            $mol_assert_equal(res[0][0], 4);
+            $mol_assert_equal(res[0][1], 9);
+            $mol_assert_equal(res[1][0], 16);
+            $mol_assert_equal(res[1][1], 25);
+            $mol_assert_equal(res[2][0], 36);
+            $mol_assert_equal(res[2][1], 49);
+        },
+        'Range expanding'() {
+            let range = $mol_vector_range_full.inversed;
+            const expanded = range.expanded0(10).expanded0(5);
+            $mol_assert_like([...expanded], [5, 10]);
+        },
+        'Vector of range expanding by vector'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = dimensions.expanded1([1, 7]).expanded1([3, 5]);
+            $mol_assert_like([...expanded.x], [1, 3]);
+            $mol_assert_like([...expanded.y], [5, 7]);
+        },
+        'Vector of range expanding by vector of range'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = dimensions
+                .expanded2([[1, 3], [7, 9]])
+                .expanded2([[2, 4], [6, 8]]);
+            $mol_assert_like([...expanded.x], [1, 4]);
+            $mol_assert_like([...expanded.y], [6, 9]);
+        },
+        'Vector of infinity range expanding by vector of range'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const next = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = next
+                .expanded2(dimensions);
+            $mol_assert_like([...expanded.x], [Infinity, -Infinity]);
+            $mol_assert_like([...expanded.y], [Infinity, -Infinity]);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'get'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
+            $mol_assert_equal(proxy.foo, 777);
+        },
+        'has'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
+            $mol_assert_equal('foo' in proxy, true);
+        },
+        'set'() {
+            const target = { foo: 777 };
+            const proxy = $mol_delegate({}, () => target);
+            proxy.foo = 123;
+            $mol_assert_equal(target.foo, 123);
+        },
+        'getOwnPropertyDescriptor'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
+            $mol_assert_like(Object.getOwnPropertyDescriptor(proxy, 'foo'), {
+                value: 777,
+                writable: true,
+                enumerable: true,
+                configurable: true,
+            });
+        },
+        'ownKeys'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777, [Symbol.toStringTag]: 'bar' }));
+            $mol_assert_like(Reflect.ownKeys(proxy), ['foo', Symbol.toStringTag]);
+        },
+        'getPrototypeOf'() {
+            class Foo {
+            }
+            const proxy = $mol_delegate({}, () => new Foo);
+            $mol_assert_equal(Object.getPrototypeOf(proxy), Foo.prototype);
+        },
+        'setPrototypeOf'() {
+            class Foo {
+            }
+            const target = {};
+            const proxy = $mol_delegate({}, () => target);
+            Object.setPrototypeOf(proxy, Foo.prototype);
+            $mol_assert_equal(Object.getPrototypeOf(target), Foo.prototype);
+        },
+        'instanceof'() {
+            class Foo {
+            }
+            const proxy = $mol_delegate({}, () => new Foo);
+            $mol_assert_ok(proxy instanceof Foo);
+            $mol_assert_ok(proxy instanceof $mol_delegate);
+        },
+        'autobind'() {
+            class Foo {
+            }
+            const proxy = $mol_delegate({}, () => new Foo);
+            $mol_assert_ok(proxy instanceof Foo);
+            $mol_assert_ok(proxy instanceof $mol_delegate);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'span for same uri'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const child = span.span(4, 5, 8);
+            $mol_assert_equal(child.uri, 'test.ts');
+            $mol_assert_equal(child.row, 4);
+            $mol_assert_equal(child.col, 5);
+            $mol_assert_equal(child.length, 8);
+        },
+        'span after of given position'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const child = span.after(11);
+            $mol_assert_equal(child.uri, 'test.ts');
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 7);
+            $mol_assert_equal(child.length, 11);
+        },
+        'slice span - regular'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            const child = span.slice(1, 4);
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 4);
+            $mol_assert_equal(child.length, 3);
+            const child2 = span.slice(2, 2);
+            $mol_assert_equal(child2.col, 5);
+            $mol_assert_equal(child2.length, 0);
+        },
+        'slice span - negative'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            const child = span.slice(-3, -1);
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 5);
+            $mol_assert_equal(child.length, 2);
+        },
+        'slice span - out of range'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            $mol_assert_fail(() => span.slice(-1, 3), `End value '3' can't be less than begin value (test.ts#1:3/5)`);
+            $mol_assert_fail(() => span.slice(1, 6), `End value '6' out of range (test.ts#1:3/5)`);
+            $mol_assert_fail(() => span.slice(1, 10), `End value '10' out of range (test.ts#1:3/5)`);
+        },
+        'error handling'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const error = span.error('Some error');
+            $mol_assert_equal(error.message, 'Some error (test.ts#1:3/4)');
+        }
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'all cases of using maybe'() {
+            $mol_assert_equal($mol_maybe(0)[0], 0);
+            $mol_assert_equal($mol_maybe(false)[0], false);
+            $mol_assert_equal($mol_maybe(null)[0], void 0);
+            $mol_assert_equal($mol_maybe(void 0)[0], void 0);
+            $mol_assert_equal($mol_maybe(void 0).map(v => v.toString())[0], void 0);
+            $mol_assert_equal($mol_maybe(0).map(v => v.toString())[0], '0');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    function check(tree, ideal) {
+        $mol_assert_equal(tree.toString(), $$.$mol_tree2_from_string(ideal).toString());
+    }
+    $mol_test({
+        'inserting'($) {
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c'), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c', 'd'), `
+					a b c x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`)
+                .insert($mol_tree2.struct('x'), 0, 0, 0), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`)
+                .insert($mol_tree2.struct('x'), 0, 0, 0, 0), `
+					a b \\
+						x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`)
+                .insert($mol_tree2.struct('x'), null, null, null), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`)
+                .insert($mol_tree2.struct('x'), null, null, null, null), `
+					a b \\
+						x
+				`);
+        },
+        'updating'($) {
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([], 'a', 'b', 'c')[0], `
+					a b
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([$mol_tree2.struct('x')])[0], `
+					x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([$mol_tree2.struct('x'), $mol_tree2.struct('y')], 'a', 'b', 'c')[0], `
+					a b
+						x
+						y
+				`);
+        },
+        'deleting'($) {
+            const base = $.$mol_tree2_from_string(`
+				a b c d
+			`);
+            check(base.insert(null, 'a', 'b', 'c'), `
+					a b
+				`);
+            check(base.update(base.select('a', 'b', 'c', null).kids, 'a', 'b', 'c')[0], `
+					a b d
+				`);
+            check(base.insert(null, 0, 0, 0), `
+					a b
+				`);
+        },
+        'hack'($) {
+            const res = $.$mol_tree2_from_string(`
+				foo bar xxx
+			`)
+                .hack({
+                'bar': (input, belt) => [input.struct('777', input.hack(belt))],
+            });
+            $mol_assert_equal(res.map(String), ['foo 777 xxx\n']);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
 
 ;
 "use strict";
@@ -34947,318 +35292,6 @@ var $;
             var node = x.dom_node();
             node.click();
             $mol_assert_ok(clicked);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'Vector limiting'() {
-            let point = new $mol_vector_3d(7, 10, 13);
-            const res = point.limited([[1, 5], [15, 20], [5, 10]]);
-            $mol_assert_equal(res.x, 5);
-            $mol_assert_equal(res.y, 15);
-            $mol_assert_equal(res.z, 10);
-        },
-        'Vector adding scalar'() {
-            let point = new $mol_vector_3d(1, 2, 3);
-            let res = point.added0(5);
-            $mol_assert_equal(res.x, 6);
-            $mol_assert_equal(res.y, 7);
-            $mol_assert_equal(res.z, 8);
-        },
-        'Vector adding vector'() {
-            let point = new $mol_vector_3d(1, 2, 3);
-            let res = point.added1([5, 10, 15]);
-            $mol_assert_equal(res.x, 6);
-            $mol_assert_equal(res.y, 12);
-            $mol_assert_equal(res.z, 18);
-        },
-        'Vector multiplying scalar'() {
-            let point = new $mol_vector_3d(2, 3, 4);
-            let res = point.multed0(-1);
-            $mol_assert_equal(res.x, -2);
-            $mol_assert_equal(res.y, -3);
-            $mol_assert_equal(res.z, -4);
-        },
-        'Vector multiplying vector'() {
-            let point = new $mol_vector_3d(2, 3, 4);
-            let res = point.multed1([5, 2, -2]);
-            $mol_assert_equal(res.x, 10);
-            $mol_assert_equal(res.y, 6);
-            $mol_assert_equal(res.z, -8);
-        },
-        'Matrix adding matrix'() {
-            let matrix = new $mol_vector_matrix(...[[1, 2], [3, 4], [5, 6]]);
-            let res = matrix.added2([[10, 20], [30, 40], [50, 60]]);
-            $mol_assert_equal(res[0][0], 11);
-            $mol_assert_equal(res[0][1], 22);
-            $mol_assert_equal(res[1][0], 33);
-            $mol_assert_equal(res[1][1], 44);
-            $mol_assert_equal(res[2][0], 55);
-            $mol_assert_equal(res[2][1], 66);
-        },
-        'Matrix multiplying matrix'() {
-            let matrix = new $mol_vector_matrix(...[[2, 3], [4, 5], [6, 7]]);
-            let res = matrix.multed2([[2, 3], [4, 5], [6, 7]]);
-            $mol_assert_equal(res[0][0], 4);
-            $mol_assert_equal(res[0][1], 9);
-            $mol_assert_equal(res[1][0], 16);
-            $mol_assert_equal(res[1][1], 25);
-            $mol_assert_equal(res[2][0], 36);
-            $mol_assert_equal(res[2][1], 49);
-        },
-        'Range expanding'() {
-            let range = $mol_vector_range_full.inversed;
-            const expanded = range.expanded0(10).expanded0(5);
-            $mol_assert_like([...expanded], [5, 10]);
-        },
-        'Vector of range expanding by vector'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = dimensions.expanded1([1, 7]).expanded1([3, 5]);
-            $mol_assert_like([...expanded.x], [1, 3]);
-            $mol_assert_like([...expanded.y], [5, 7]);
-        },
-        'Vector of range expanding by vector of range'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = dimensions
-                .expanded2([[1, 3], [7, 9]])
-                .expanded2([[2, 4], [6, 8]]);
-            $mol_assert_like([...expanded.x], [1, 4]);
-            $mol_assert_like([...expanded.y], [6, 9]);
-        },
-        'Vector of infinity range expanding by vector of range'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const next = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = next
-                .expanded2(dimensions);
-            $mol_assert_like([...expanded.x], [Infinity, -Infinity]);
-            $mol_assert_like([...expanded.y], [Infinity, -Infinity]);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'get'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
-            $mol_assert_equal(proxy.foo, 777);
-        },
-        'has'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
-            $mol_assert_equal('foo' in proxy, true);
-        },
-        'set'() {
-            const target = { foo: 777 };
-            const proxy = $mol_delegate({}, () => target);
-            proxy.foo = 123;
-            $mol_assert_equal(target.foo, 123);
-        },
-        'getOwnPropertyDescriptor'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
-            $mol_assert_like(Object.getOwnPropertyDescriptor(proxy, 'foo'), {
-                value: 777,
-                writable: true,
-                enumerable: true,
-                configurable: true,
-            });
-        },
-        'ownKeys'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777, [Symbol.toStringTag]: 'bar' }));
-            $mol_assert_like(Reflect.ownKeys(proxy), ['foo', Symbol.toStringTag]);
-        },
-        'getPrototypeOf'() {
-            class Foo {
-            }
-            const proxy = $mol_delegate({}, () => new Foo);
-            $mol_assert_equal(Object.getPrototypeOf(proxy), Foo.prototype);
-        },
-        'setPrototypeOf'() {
-            class Foo {
-            }
-            const target = {};
-            const proxy = $mol_delegate({}, () => target);
-            Object.setPrototypeOf(proxy, Foo.prototype);
-            $mol_assert_equal(Object.getPrototypeOf(target), Foo.prototype);
-        },
-        'instanceof'() {
-            class Foo {
-            }
-            const proxy = $mol_delegate({}, () => new Foo);
-            $mol_assert_ok(proxy instanceof Foo);
-            $mol_assert_ok(proxy instanceof $mol_delegate);
-        },
-        'autobind'() {
-            class Foo {
-            }
-            const proxy = $mol_delegate({}, () => new Foo);
-            $mol_assert_ok(proxy instanceof Foo);
-            $mol_assert_ok(proxy instanceof $mol_delegate);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'span for same uri'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const child = span.span(4, 5, 8);
-            $mol_assert_equal(child.uri, 'test.ts');
-            $mol_assert_equal(child.row, 4);
-            $mol_assert_equal(child.col, 5);
-            $mol_assert_equal(child.length, 8);
-        },
-        'span after of given position'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const child = span.after(11);
-            $mol_assert_equal(child.uri, 'test.ts');
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 7);
-            $mol_assert_equal(child.length, 11);
-        },
-        'slice span - regular'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            const child = span.slice(1, 4);
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 4);
-            $mol_assert_equal(child.length, 3);
-            const child2 = span.slice(2, 2);
-            $mol_assert_equal(child2.col, 5);
-            $mol_assert_equal(child2.length, 0);
-        },
-        'slice span - negative'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            const child = span.slice(-3, -1);
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 5);
-            $mol_assert_equal(child.length, 2);
-        },
-        'slice span - out of range'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            $mol_assert_fail(() => span.slice(-1, 3), `End value '3' can't be less than begin value (test.ts#1:3/5)`);
-            $mol_assert_fail(() => span.slice(1, 6), `End value '6' out of range (test.ts#1:3/5)`);
-            $mol_assert_fail(() => span.slice(1, 10), `End value '10' out of range (test.ts#1:3/5)`);
-        },
-        'error handling'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const error = span.error('Some error');
-            $mol_assert_equal(error.message, 'Some error (test.ts#1:3/4)');
-        }
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'all cases of using maybe'() {
-            $mol_assert_equal($mol_maybe(0)[0], 0);
-            $mol_assert_equal($mol_maybe(false)[0], false);
-            $mol_assert_equal($mol_maybe(null)[0], void 0);
-            $mol_assert_equal($mol_maybe(void 0)[0], void 0);
-            $mol_assert_equal($mol_maybe(void 0).map(v => v.toString())[0], void 0);
-            $mol_assert_equal($mol_maybe(0).map(v => v.toString())[0], '0');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    function check(tree, ideal) {
-        $mol_assert_equal(tree.toString(), $$.$mol_tree2_from_string(ideal).toString());
-    }
-    $mol_test({
-        'inserting'($) {
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c'), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c', 'd'), `
-					a b c x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`)
-                .insert($mol_tree2.struct('x'), 0, 0, 0), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`)
-                .insert($mol_tree2.struct('x'), 0, 0, 0, 0), `
-					a b \\
-						x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`)
-                .insert($mol_tree2.struct('x'), null, null, null), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`)
-                .insert($mol_tree2.struct('x'), null, null, null, null), `
-					a b \\
-						x
-				`);
-        },
-        'updating'($) {
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([], 'a', 'b', 'c')[0], `
-					a b
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([$mol_tree2.struct('x')])[0], `
-					x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([$mol_tree2.struct('x'), $mol_tree2.struct('y')], 'a', 'b', 'c')[0], `
-					a b
-						x
-						y
-				`);
-        },
-        'deleting'($) {
-            const base = $.$mol_tree2_from_string(`
-				a b c d
-			`);
-            check(base.insert(null, 'a', 'b', 'c'), `
-					a b
-				`);
-            check(base.update(base.select('a', 'b', 'c', null).kids, 'a', 'b', 'c')[0], `
-					a b d
-				`);
-            check(base.insert(null, 0, 0, 0), `
-					a b
-				`);
-        },
-        'hack'($) {
-            const res = $.$mol_tree2_from_string(`
-				foo bar xxx
-			`)
-                .hack({
-                'bar': (input, belt) => [input.struct('777', input.hack(belt))],
-            });
-            $mol_assert_equal(res.map(String), ['foo 777 xxx\n']);
         },
     });
 })($ || ($ = {}));
@@ -40707,6 +40740,37 @@ var $;
             $mol_assert_like(moves, [{ name: 'Head', owner: 'Board', index: 2 }]);
         },
         /**
+         * A row inside a column: the drop belongs to the innermost box it landed in,
+         * and the position in it is counted along ITS direction, not its parent's.
+         */
+        'a container inside a container takes the drop itself'($) {
+            const { pane } = pane_make($, {}, {
+                containers: () => ['Page', 'Bar'],
+                axis: (name) => name === 'Bar' ? 'row' : 'column',
+            });
+            pane.sizes_last = {
+                [`${root}/Page`]: box(0, 0, 400, 600),
+                [`${root}/Page/Head`]: box(0, 0, 400, 100),
+                [`${root}/Page/Bar`]: box(0, 100, 400, 100),
+                [`${root}/Page/Bar/Left`]: box(0, 100, 200, 100),
+                [`${root}/Page/Bar/Right`]: box(200, 100, 200, 100),
+                [`${root}/Page/Foot`]: box(0, 200, 400, 100),
+            };
+            // Inside the bar, which lies inside the page: the deeper one wins.
+            const inner = pane.insert_slot([250, 150]);
+            $mol_assert_equal(inner.owner, 'Bar');
+            $mol_assert_equal(inner.index, 1);
+            // Between the left and the right, across — the direction of the bar.
+            $mol_assert_like(inner.line, { x: 200, y: 100, width: 0, height: 100 });
+            // The same page, below the bar: the page takes it, counted downwards.
+            const outer = pane.insert_slot([250, 400]);
+            $mol_assert_equal(outer.owner, 'Page');
+            $mol_assert_equal(outer.index, 3);
+            // The pick follows the same rule, so what is picked and what a drop goes
+            // into never disagree about which box the pointer is in.
+            $mol_assert_equal(pane.node_at([250, 150]), 'Right');
+        },
+        /**
          * A container cannot become its own descendant, and a line drawn where the
          * drop would be refused is worse than no line at all.
          */
@@ -40778,12 +40842,44 @@ var $;
     const row = [box(0, 0, 100, 300), box(100, 0, 100, 300), box(200, 0, 100, 300)];
     const board = box(0, 0, 400, 300);
     $mol_test({
-        'the direction is read off where the children came out'($) {
+        /**
+         * Three sources, in this order and for this reason: what the node declares is
+         * a line of the document rather than a guess; the boxes of the children are
+         * the fallback and say nothing when there are fewer than two of them; a
+         * column is the last resort and what a page is set to.
+         */
+        'the declared direction wins, then the geometry, then a column'($) {
+            // Declared, and the children say the opposite. The declaration is right:
+            // the boxes of a box that has just been re-declared are the old layout.
+            $mol_assert_equal($bog_vmap_app_pane_axis(column, 'row'), 'row');
+            $mol_assert_equal($bog_vmap_app_pane_axis(row, 'column'), 'column');
+            // Nothing declared: read off where the children came out.
             $mol_assert_equal($bog_vmap_app_pane_axis(column), 'column');
             $mol_assert_equal($bog_vmap_app_pane_axis(row), 'row');
-            // Nothing to read: a page stacks, and that is what an artboard is set to.
+            $mol_assert_equal($bog_vmap_app_pane_axis(column, ''), 'column');
+            // Neither: a column. One child is exactly as silent as none, which is why
+            // the declaration has to come first at all.
             $mol_assert_equal($bog_vmap_app_pane_axis([]), 'column');
             $mol_assert_equal($bog_vmap_app_pane_axis([column[0]]), 'column');
+            $mol_assert_equal($bog_vmap_app_pane_axis([column[0]], 'row'), 'row');
+            // A direction we do not act on is not taken at its word: a reversed box
+            // lays its children out backwards from the order `sub` lists them, so a
+            // position counted along the boxes would be the mirror of the one written.
+            $mol_assert_equal($bog_vmap_app_pane_axis(row, 'row-reverse'), 'row');
+            $mol_assert_equal($bog_vmap_app_pane_axis(column, 'row-reverse'), 'column');
+        },
+        /** One child and a declared row: the position is counted across, not down. */
+        'a declared direction decides where a lone child is passed'($) {
+            const one = [box(0, 0, 100, 300)];
+            const before = $bog_vmap_app_pane_slot('Board', board, one, [20, 150], 'row');
+            const after = $bog_vmap_app_pane_slot('Board', board, one, [80, 150], 'row');
+            $mol_assert_equal(before.index, 0);
+            $mol_assert_equal(after.index, 1);
+            // Undeclared, the same lone child is judged down the column instead, so
+            // the very same point lands on the other side of it.
+            $mol_assert_equal($bog_vmap_app_pane_slot('Board', board, one, [20, 200]).index, 1);
+            $mol_assert_equal($bog_vmap_app_pane_slot('Board', board, one, [80, 200], 'row').index, 1);
+            $mol_assert_equal($bog_vmap_app_pane_slot('Board', board, one, [20, 200], 'row').index, 0);
         },
         /**
          * The middle of a child decides, not the gap between children: children of a
@@ -45539,6 +45635,25 @@ var $;
             $mol_assert_ok(Boolean(app.spots()['Page']));
             app.board_add();
             $mol_assert_like(app.doc_containers(), ['Page', 'Page_2']);
+        },
+        /**
+         * Which way a container stacks is stated by the document, and the host reads
+         * it out rather than guessing: the boxes of the children say nothing while
+         * there are fewer than two of them, which is every page just made.
+         */
+        'the direction a container is set to comes off the document'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.board_add();
+            $mol_assert_equal(app.doc_axis('Page'), 'column');
+            app.part_drop(`${d}mol_button_minor`, 2000, 100);
+            $mol_assert_equal(app.doc_axis('Button_minor'), '');
+            // What the layout panel writes is what the canvas reads back.
+            app.node().over_set('Page', 'style', app.node().tree().struct('style', [
+                app.node().tree().struct('*', [
+                    app.node().tree().struct('flexDirection', [app.node().tree().data('row')]),
+                ]),
+            ]));
+            $mol_assert_equal(app.doc_axis('Page'), 'row');
         },
         /**
          * The same drop, two ways of being laid out, told apart by where the release

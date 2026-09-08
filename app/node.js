@@ -29555,6 +29555,9 @@ var $;
 		containers(){
 			return [];
 		}
+		axis(id){
+			return "";
+		}
 		tree_move(next){
 			if(next !== undefined) return next;
 			return null;
@@ -29775,20 +29778,30 @@ var $;
 var $;
 (function ($) {
     /**
-     * Which way the children of a container are stacked, read off their boxes.
+     * Which way the children of a container are stacked: what the node DECLARES,
+     * else what its children came out as, else a column.
      *
-     * Geometry and not CSS on purpose: the host does not compile the document and
-     * has no layout of its own, so the only honest source of the direction is where
-     * the children came out. Asking the scene would put a message on the wire for
-     * something already measured.
+     * The declaration comes first because it is not a guess about CSS — it is a
+     * line of the document, which the host owns and reads directly. Geometry is the
+     * fallback and not the source: it degenerates on nought or one child, where
+     * there is nothing to read a direction off at all.
      *
-     * Fewer than two children says nothing at all, and the answer is then a column:
-     * that is the way a page stacks, and it is what an artboard is set to. Note the
-     * default of `$mol_view` itself is a ROW — `[mol_view]` is `display: flex` with
-     * no direction — which is why an artboard has to say `flexDirection` out loud
-     * and why the inspector offers it.
+     * A direction the document states in some other way — `row-reverse` and its
+     * kind — falls through to the geometry rather than being taken at its word: the
+     * children of a reversed box come out in the opposite order from the one `sub`
+     * lists them in, and a position counted along the boxes would be the mirror of
+     * the position written into the tree. Guessing from where things are is then
+     * strictly better than trusting a word we do not act on.
+     *
+     * The last resort is a column, the way a page stacks and what the artboard
+     * preset sets. It has to be set: `[mol_view]` is `display: flex` with no
+     * direction at all, which is a ROW.
      */
-    function $bog_vmap_app_pane_axis(boxes) {
+    function $bog_vmap_app_pane_axis(boxes, declared = '') {
+        if (declared === 'row')
+            return 'row';
+        if (declared === 'column')
+            return 'column';
         if (boxes.length < 2)
             return 'column';
         const mid_x = boxes.map(box => box.x + box.width / 2);
@@ -29811,8 +29824,8 @@ var $;
      * because the host draws it with the same transform it draws the selection ring
      * with, and turning world into screen is done once, for both.
      */
-    function $bog_vmap_app_pane_slot(owner, box, kids, point) {
-        const row = $bog_vmap_app_pane_axis(kids) === 'row';
+    function $bog_vmap_app_pane_slot(owner, box, kids, point, declared = '') {
+        const row = $bog_vmap_app_pane_axis(kids, declared) === 'row';
         const start = (kid) => row ? kid.x : kid.y;
         const end = (kid) => row ? kid.x + kid.width : kid.y + kid.height;
         const at = point[row ? 0 : 1];
@@ -30348,7 +30361,7 @@ var $;
                 const box = this.part_size(owner);
                 if (!box)
                     return null;
-                return this.$.$bog_vmap_app_pane_slot(owner, box, this.node_kids(owner), point);
+                return this.$.$bog_vmap_app_pane_slot(owner, box, this.node_kids(owner), point, this.axis(owner));
             }
             /**
              * The slot the gesture in hand is aiming at, drawn as a line between children.
@@ -31374,6 +31387,9 @@ var $;
 		doc_containers(){
 			return [];
 		}
+		doc_axis(id){
+			return "";
+		}
 		tree_move(next){
 			if(next !== undefined) return next;
 			return null;
@@ -31506,6 +31522,7 @@ var $;
 			(obj.link_add) = (next) => ((this.link_add(next)));
 			(obj.link_drop) = (next) => ((this.link_drop(next)));
 			(obj.containers) = () => ((this.doc_containers()));
+			(obj.axis) = (id) => ((this.doc_axis(id)));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
 			return obj;
 		}
@@ -31885,6 +31902,19 @@ var $;
             doc_containers() {
                 const node = this.node();
                 return node.prop_names().filter(name => node.sub_names(name));
+            }
+            /**
+             * The `flexDirection` a node declares, empty when it declares none.
+             *
+             * The document states which way a container stacks, and the host owns the
+             * document, so this is a reading and not an inference. The pane falls back to
+             * the geometry of the children only where there is no declaration — and it
+             * has to have somewhere to fall back to, because a container with one child
+             * or none shows nothing at all about its direction.
+             */
+            doc_axis(name) {
+                const style = this.node().over_tree(name, 'style')?.kids[0] ?? null;
+                return this.$.$bog_vmap_lang_dict_get(style, 'flexDirection')?.value ?? '';
             }
             /**
              * A node dropped inside an artboard goes into the tree of its parent, and
@@ -32295,6 +32325,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "doc_containers", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "doc_axis", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "links_parsed", null);

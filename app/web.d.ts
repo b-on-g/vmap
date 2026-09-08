@@ -51004,20 +51004,26 @@ declare namespace $ {
         readonly line: $bog_vmap_bridge_rect;
     };
     /**
-     * Which way the children of a container are stacked, read off their boxes.
+     * Which way the children of a container are stacked: what the node DECLARES,
+     * else what its children came out as, else a column.
      *
-     * Geometry and not CSS on purpose: the host does not compile the document and
-     * has no layout of its own, so the only honest source of the direction is where
-     * the children came out. Asking the scene would put a message on the wire for
-     * something already measured.
+     * The declaration comes first because it is not a guess about CSS — it is a
+     * line of the document, which the host owns and reads directly. Geometry is the
+     * fallback and not the source: it degenerates on nought or one child, where
+     * there is nothing to read a direction off at all.
      *
-     * Fewer than two children says nothing at all, and the answer is then a column:
-     * that is the way a page stacks, and it is what an artboard is set to. Note the
-     * default of `$mol_view` itself is a ROW — `[mol_view]` is `display: flex` with
-     * no direction — which is why an artboard has to say `flexDirection` out loud
-     * and why the inspector offers it.
+     * A direction the document states in some other way — `row-reverse` and its
+     * kind — falls through to the geometry rather than being taken at its word: the
+     * children of a reversed box come out in the opposite order from the one `sub`
+     * lists them in, and a position counted along the boxes would be the mirror of
+     * the position written into the tree. Guessing from where things are is then
+     * strictly better than trusting a word we do not act on.
+     *
+     * The last resort is a column, the way a page stacks and what the artboard
+     * preset sets. It has to be set: `[mol_view]` is `display: flex` with no
+     * direction at all, which is a ROW.
      */
-    function $bog_vmap_app_pane_axis(boxes: readonly $bog_vmap_bridge_rect[]): "row" | "column";
+    function $bog_vmap_app_pane_axis(boxes: readonly $bog_vmap_bridge_rect[], declared?: string): "row" | "column";
     /**
      * Position a point aims at among the children of a container, and the line to
      * draw for it.
@@ -51032,7 +51038,7 @@ declare namespace $ {
      * because the host draws it with the same transform it draws the selection ring
      * with, and turning world into screen is done once, for both.
      */
-    function $bog_vmap_app_pane_slot(owner: string, box: $bog_vmap_bridge_rect, kids: readonly $bog_vmap_bridge_rect[], point: readonly [number, number]): $bog_vmap_app_pane_slot;
+    function $bog_vmap_app_pane_slot(owner: string, box: $bog_vmap_bridge_rect, kids: readonly $bog_vmap_bridge_rect[], point: readonly [number, number], declared?: string): $bog_vmap_app_pane_slot;
 }
 
 declare namespace $ {
@@ -51150,6 +51156,7 @@ declare namespace $ {
 		link_add( next?: any ): any
 		link_drop( next?: any ): any
 		containers( ): readonly(string)[]
+		axis( id: any): string
 		tree_move( next?: any ): any
 		values( next?: Record<string, any> ): Record<string, any>
 		handshake( next?: number ): number
@@ -52094,7 +52101,12 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_pane['containers'] >
 	>
-	type $bog_vmap_app_pane__tree_move_bog_vmap_app_64 = $mol_type_enforce<
+	type $bog_vmap_app_pane__axis_bog_vmap_app_64 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['doc_axis'] >
+		,
+		ReturnType< $bog_vmap_app_pane['axis'] >
+	>
+	type $bog_vmap_app_pane__tree_move_bog_vmap_app_65 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['tree_move'] >
 		,
 		ReturnType< $bog_vmap_app_pane['tree_move'] >
@@ -52147,6 +52159,7 @@ declare namespace $ {
 		link_add( next?: any ): any
 		link_drop( next?: any ): any
 		doc_containers( ): readonly(string)[]
+		doc_axis( id: any): string
 		tree_move( next?: any ): any
 		doc_src( ): string
 		doc_css( ): string
@@ -52389,6 +52402,16 @@ declare namespace $.$$ {
          * difference between them is in the text.
          */
         doc_containers(): string[];
+        /**
+         * The `flexDirection` a node declares, empty when it declares none.
+         *
+         * The document states which way a container stacks, and the host owns the
+         * document, so this is a reading and not an inference. The pane falls back to
+         * the geometry of the children only where there is no declaration — and it
+         * has to have somewhere to fall back to, because a container with one child
+         * or none shows nothing at all about its direction.
+         */
+        doc_axis(name: string): string;
         /**
          * A node dropped inside an artboard goes into the tree of its parent, and
          * loses its coordinate on the way.
