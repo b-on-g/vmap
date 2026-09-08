@@ -355,6 +355,55 @@ namespace $ {
 		},
 
 		/**
+		 * A dot in a FOLDER name does not make it a page. A versioned deploy is the
+		 * ordinary way to get one, and taking `v1.2` for a page would eat a second
+		 * segment and point both addresses a level above where they live.
+		 */
+		'a dot in a folder name is not a page file'( $ ) {
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/v1.2/app/', 'part' ),
+				'https://b-on-g.github.io/vmap/v1.2/part/',
+			)
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/v1.2/app/index.html', 'scene' ),
+				'https://b-on-g.github.io/vmap/v1.2/scene/',
+			)
+
+			// a module folder may carry one as well
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/app.v2/', 'part' ),
+				'https://b-on-g.github.io/vmap/part/',
+			)
+
+		},
+
+		/**
+		 * The editor deployed as the site root has no folder to replace, so the
+		 * siblings lie at the root beside it. Nothing is eaten and no address climbs
+		 * above the root, which is the one thing that must never happen here.
+		 */
+		'a page at the root of a site keeps its siblings at the root'( $ ) {
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( 'https://vmap.example/', 'part' ),
+				'https://vmap.example/part/',
+			)
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( 'https://vmap.example/index.html', 'scene' ),
+				'https://vmap.example/scene/',
+			)
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( 'https://vmap.example', 'part' ),
+				'https://vmap.example/part/',
+			)
+
+		},
+
+		/**
 		 * A `data:` address keeps the fetch offline while still going through the
 		 * real `$mol_fetch`, so `tree()` is covered end to end and CI stays free of
 		 * a third party host.
