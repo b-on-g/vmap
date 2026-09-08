@@ -15,6 +15,201 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    /** Generates unique identifier. */
+    function $mol_guid(length?: number, exists?: (id: string) => boolean): string;
+}
+
+declare namespace $ {
+    function $mol_fail(error: any): never;
+}
+
+declare namespace $ {
+    /** Special status statuses. */
+    enum $mol_wire_cursor {
+        /** Update required. */
+        stale = -1,
+        /** Some of (transitive) pub update required. */
+        doubt = -2,
+        /** Actual state but may be dropped. */
+        fresh = -3,
+        /** State will never be changed. */
+        final = -4
+    }
+}
+
+declare namespace $ {
+    /**
+     * Collects subscribers in compact array. 28B
+     */
+    class $mol_wire_pub extends Object {
+        constructor(id?: string);
+        [Symbol.toStringTag]: string;
+        data: unknown[];
+        static get [Symbol.species](): ArrayConstructor;
+        /**
+         * Index of first subscriber.
+         */
+        protected sub_from: number;
+        /**
+         * All current subscribers.
+         */
+        get sub_list(): readonly $mol_wire_sub[];
+        /**
+         * Has any subscribers or not.
+         */
+        get sub_empty(): boolean;
+        /**
+         * Subscribe subscriber to this publisher events and return position of subscriber that required to unsubscribe.
+         */
+        sub_on(sub: $mol_wire_pub, pub_pos: number): number;
+        /**
+         * Unsubscribe subscriber from this publisher events by subscriber position provided by `on(pub)`.
+         */
+        sub_off(sub_pos: number): void;
+        /**
+         * Called when last sub was unsubscribed.
+         **/
+        reap(): void;
+        /**
+         * Autowire this publisher with current subscriber.
+         **/
+        promote(): void;
+        /**
+         * Enforce actualization. Should not throw errors.
+         */
+        fresh(): void;
+        /**
+         * Allow to put data to caches in the subtree.
+         */
+        complete(): void;
+        get incompleted(): boolean;
+        /**
+         * Notify subscribers about self changes.
+         */
+        emit(quant?: $mol_wire_cursor): void;
+        /**
+         * Moves peer from one position to another. Doesn't clear data at old position!
+         */
+        peer_move(from_pos: number, to_pos: number): void;
+        /**
+         * Updates self position in the peer.
+         */
+        peer_repos(peer_pos: number, self_pos: number): void;
+    }
+}
+
+declare namespace $ {
+    /** Generic subscriber interface */
+    interface $mol_wire_sub extends $mol_wire_pub {
+        temp: boolean;
+        pub_list: $mol_wire_pub[];
+        /**
+         * Begin auto wire to publishers.
+         * Returns previous auto subscriber that must me transfer to the `end`.
+         */
+        track_on(): $mol_wire_sub | null;
+        /**
+         * Returns next auto wired publisher. It can be easely repormoted.
+         * Or promotes next publisher to auto wire its togeter.
+         * Must be used only between `track_on` and `track_off`.
+         */
+        track_next(pub?: $mol_wire_pub): $mol_wire_pub | null;
+        pub_off(pub_pos: number): void;
+        /**
+         * Unsubscribes from unpromoted publishers.
+         */
+        track_cut(sub: $mol_wire_pub | null): void;
+        /**
+         * Ends auto wire to publishers.
+         */
+        track_off(sub: $mol_wire_pub | null): void;
+        /**
+         * Receive notification about publisher changes.
+         */
+        absorb(quant: $mol_wire_cursor, pos: number): void;
+        /**
+         * Unsubscribes from all publishers.
+         */
+        destructor(): void;
+    }
+}
+
+declare namespace $ {
+    let $mol_wire_auto_sub: $mol_wire_sub | null;
+    /**
+     * When fulfilled, all publishers are promoted to this subscriber on access to its.
+     */
+    function $mol_wire_auto(next?: $mol_wire_sub | null): $mol_wire_sub | null;
+    /**
+     * Affection queue. Used to prevent accidental stack overflow on emit.
+     */
+    const $mol_wire_affected: ($mol_wire_sub | number)[];
+}
+
+declare namespace $ {
+    function $mol_fail_hidden(error: any): never;
+}
+
+declare namespace $ {
+    function $mol_dev_format_register(config: {
+        header: (val: any, config: any) => any;
+        hasBody: (val: any, config: any) => false;
+    } | {
+        header: (val: any, config: any) => any;
+        hasBody: (val: any, config: any) => boolean;
+        body: (val: any, config: any) => any;
+    }): void;
+    const $mol_dev_format_head: unique symbol;
+    const $mol_dev_format_body: unique symbol;
+    function $mol_dev_format_native(obj: any): any[];
+    function $mol_dev_format_auto(obj: any): any[];
+    function $mol_dev_format_element(element: string, style: object, ...content: any[]): any[];
+    let $mol_dev_format_span: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_div: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_ol: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_li: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_table: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_tr: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_td: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_accent: (...args: any[]) => any[];
+    let $mol_dev_format_strong: (...args: any[]) => any[];
+    let $mol_dev_format_string: (...args: any[]) => any[];
+    let $mol_dev_format_shade: (...args: any[]) => any[];
+    let $mol_dev_format_indent: (...args: any[]) => any[];
+}
+
+declare namespace $ {
+    /**
+     * Publisher that can auto collect other publishers. 32B
+     *
+     * 	P1 P2 P3 P4 S1 S2 S3
+     * 	^           ^
+     * 	pubs_from   subs_from
+     */
+    class $mol_wire_pub_sub extends $mol_wire_pub implements $mol_wire_sub {
+        protected pub_from: number;
+        protected cursor: $mol_wire_cursor;
+        get temp(): boolean;
+        get pub_list(): $mol_wire_pub[];
+        track_on(): $mol_wire_sub | null;
+        promote(): void;
+        track_next(pub?: $mol_wire_pub): $mol_wire_pub | null;
+        track_off(sub: $mol_wire_sub | null): void;
+        pub_off(sub_pos: number): void;
+        destructor(): void;
+        track_cut(): void;
+        complete(): void;
+        complete_pubs(): void;
+        absorb(quant?: $mol_wire_cursor, pos?: number): void;
+        [$mol_dev_format_head](): any[];
+        /**
+         * Is subscribed to any publisher or not.
+         */
+        get pub_empty(): boolean;
+    }
+}
+
+declare namespace $ {
     const $mol_ambient_ref: unique symbol;
     /** @deprecated use $ instead */
     type $mol_ambient_context = $;
@@ -42,14 +237,6 @@ declare namespace $ {
         destructor(): void;
     };
     function $mol_owning_catch<Owner, Having>(owner: Owner, having: Having): boolean;
-}
-
-declare namespace $ {
-    function $mol_fail(error: any): never;
-}
-
-declare namespace $ {
-    function $mol_fail_hidden(error: any): never;
 }
 
 declare namespace $ {
@@ -88,6 +275,136 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    class $mol_after_tick extends $mol_object2 {
+        task: () => void;
+        static promise: Promise<void> | null;
+        cancelled: boolean;
+        constructor(task: () => void);
+        destructor(): void;
+    }
+}
+
+declare namespace $ {
+    function $mol_promise_like(val: any): val is Promise<any>;
+}
+
+declare namespace $ {
+    /**
+     * Suspendable task with support both sync/async api.
+     *
+     * 	A1 A2 A3 A4 P1 P2 P3 P4 S1 S2 S3
+     * 	^           ^           ^
+     * 	args_from   pubs_from   subs_from
+     **/
+    abstract class $mol_wire_fiber<Host, Args extends readonly unknown[], Result> extends $mol_wire_pub_sub {
+        readonly task: (this: Host, ...args: Args) => Result;
+        readonly host?: Host | undefined;
+        static warm: boolean;
+        static planning: Set<$mol_wire_fiber<any, any, any>>;
+        static reaping: Set<$mol_wire_fiber<any, any, any>>;
+        static plan_task: $mol_after_tick | null;
+        static plan(): void;
+        static sync(): void;
+        cache: Result | Error | Promise<Result | Error>;
+        get args(): Args;
+        result(): Result | undefined;
+        get incompleted(): boolean;
+        field(): string;
+        constructor(id: string, task: (this: Host, ...args: Args) => Result, host?: Host | undefined, args?: Args);
+        plan(): this;
+        reap(): void;
+        toString(): string;
+        toJSON(): string;
+        [$mol_dev_format_head](): any[];
+        [$mol_dev_format_body](): null;
+        get $(): any;
+        emit(quant?: $mol_wire_cursor): void;
+        fresh(): this | undefined;
+        refresh(): void;
+        abstract put(next: Result | Error | Promise<Result | Error>): Result | Error | Promise<Result | Error>;
+        /**
+         * Synchronous execution. Throws Promise when waits async task (SuspenseAPI provider).
+         * Should be called inside SuspenseAPI consumer (ie fiber).
+         */
+        sync(): Awaited<Result>;
+        /**
+         * Asynchronous execution.
+         * It's SuspenseAPI consumer. So SuspenseAPI providers can be called inside.
+         */
+        async_raw(): Promise<Result>;
+        async(): Promise<Result> & {
+            destructor(): void;
+        };
+        step(): Promise<null>;
+        destructor(): void;
+    }
+}
+
+declare namespace $ {
+    /** Returns string key for any value. */
+    function $mol_key<Value>(value: Value): string;
+}
+
+declare namespace $ {
+    class $mol_after_timeout extends $mol_object2 {
+        delay: number;
+        task: () => void;
+        id: any;
+        constructor(delay: number, task: () => void);
+        destructor(): void;
+    }
+}
+
+declare namespace $ {
+    class $mol_after_frame extends $mol_after_timeout {
+        task: () => void;
+        constructor(task: () => void);
+    }
+}
+
+declare namespace $ {
+    let $mol_compare_deep_cache: WeakMap<any, WeakMap<any, boolean>>;
+    /**
+     * Deeply compares two values. Returns true if equal.
+     * Define `Symbol.toPrimitive` to customize.
+     */
+    function $mol_compare_deep<Value>(left: Value, right: Value): boolean;
+}
+
+declare namespace $ {
+    /** Logger event data */
+    type $mol_log3_event<Fields> = {
+        [key in string]: unknown;
+    } & {
+        /** Time of event creation */
+        time?: string;
+        /** Place of event creation */
+        place: unknown;
+        /** Short description of event */
+        message: string;
+    } & Fields;
+    /** Logger function */
+    type $mol_log3_logger<Fields, Res = void> = (this: $, event: $mol_log3_event<Fields>) => Res;
+    /** Log begin of some task */
+    let $mol_log3_come: $mol_log3_logger<{}>;
+    /** Log end of some task */
+    let $mol_log3_done: $mol_log3_logger<{}>;
+    /** Log error */
+    let $mol_log3_fail: $mol_log3_logger<{}>;
+    /** Log warning message */
+    let $mol_log3_warn: $mol_log3_logger<{
+        hint: string;
+    }>;
+    /** Log some generic event */
+    let $mol_log3_rise: $mol_log3_logger<{}>;
+    /** Log begin of log group, returns func to close group */
+    let $mol_log3_area: $mol_log3_logger<{}, () => void>;
+    /** Log begin of collapsed group only when some logged inside, returns func to close group */
+    function $mol_log3_area_lazy(this: $, event: $mol_log3_event<{}>): () => void;
+    let $mol_log3_stack: (() => void)[];
+}
+
+declare namespace $ {
     /** Position in any resource. */
     class $mol_span extends $mol_object2 {
         readonly uri: string;
@@ -120,21 +437,6 @@ declare namespace $ {
         /** Makes new span between begin and end. */
         slice(begin: number, end?: number): $mol_span;
     }
-}
-
-declare namespace $ {
-    /** Syntax error with cordinates and source line snippet. */
-    class $mol_error_syntax extends SyntaxError {
-        reason: string;
-        line: string;
-        span: $mol_span;
-        constructor(reason: string, line: string, span: $mol_span);
-    }
-}
-
-declare namespace $ {
-    /** Parses tree format from string. */
-    function $mol_tree2_from_string(this: $, str: string, uri?: string): $mol_tree2;
 }
 
 declare namespace $ {
@@ -219,6 +521,138 @@ declare namespace $ {
     }
     class $mol_tree2_empty extends $mol_tree2 {
         constructor();
+    }
+}
+
+declare namespace $ {
+    /** Syntax error with cordinates and source line snippet. */
+    class $mol_error_syntax extends SyntaxError {
+        reason: string;
+        line: string;
+        span: $mol_span;
+        constructor(reason: string, line: string, span: $mol_span);
+    }
+}
+
+declare namespace $ {
+    /** Parses tree format from string. */
+    function $mol_tree2_from_string(this: $, str: string, uri?: string): $mol_tree2;
+}
+
+declare namespace $ {
+    function $mol_array_chunks<Item>(array: readonly Item[], rule: number | ((item: Item, index: number) => boolean)): Item[][];
+}
+
+declare namespace $ {
+    function $mol_tree2_from_json(json: any, span?: $mol_span): $mol_tree2;
+}
+
+declare namespace $ {
+    /** Module for working with terminal. Text coloring when output in terminal */
+    class $mol_term_color {
+        static reset: (str: string) => string;
+        static bold: (str: string) => string;
+        static italic: (str: string) => string;
+        static underline: (str: string) => string;
+        static inverse: (str: string) => string;
+        static hidden: (str: string) => string;
+        static strike: (str: string) => string;
+        static gray: (str: string) => string;
+        static red: (str: string) => string;
+        static green: (str: string) => string;
+        static yellow: (str: string) => string;
+        static blue: (str: string) => string;
+        static magenta: (str: string) => string;
+        static cyan: (str: string) => string;
+        static Gray: (str: string) => string;
+        static Red: (str: string) => string;
+        static Green: (str: string) => string;
+        static Yellow: (str: string) => string;
+        static Blue: (str: string) => string;
+        static Magenta: (str: string) => string;
+        static Cyan: (str: string) => string;
+        static ansi(open: number, close: number): (str: string) => string;
+    }
+}
+
+declare namespace $ {
+    function $mol_log3_node_make(level: keyof Console, output: 'stdout' | 'stderr', type: string, color: (str: string) => string): (this: $, event: $mol_log3_event<{}>) => () => void;
+}
+
+declare namespace $ {
+    /** One-shot fiber */
+    class $mol_wire_task<Host, Args extends readonly unknown[], Result> extends $mol_wire_fiber<Host, Args, Result> {
+        static getter<Host, Args extends readonly unknown[], Result>(task: (this: Host, ...args: Args) => Result): (host: Host, args: Args) => $mol_wire_task<Host, Args, Result>;
+        get temp(): boolean;
+        complete(): void;
+        put(next: Result | Error | Promise<Result | Error>): Error | Result | Promise<Error | Result>;
+        destructor(): void;
+    }
+}
+
+declare namespace $ {
+    /**
+     * Decorates method to fiber to ensure it is executed only once inside other fiber.
+     */
+    function $mol_wire_method<Host extends object, Args extends readonly any[]>(host: Host, field: PropertyKey, descr?: TypedPropertyDescriptor<(...args: Args) => any>): {
+        value: (this: Host, ...args: Args) => any;
+        enumerable?: boolean;
+        configurable?: boolean;
+        writable?: boolean;
+        get?: (() => (...args: Args) => any) | undefined;
+        set?: ((value: (...args: Args) => any) => void) | undefined;
+    };
+}
+
+declare namespace $ {
+    /**
+     * Returns `Tuple` without first element.
+     *
+     * 	$mol_type_tail<[ 1 , 2 , 3 ]> // [ 2, 3 ]
+     */
+    type $mol_type_tail<Tuple extends readonly any[]> = ((...tail: Tuple) => any) extends ((head: any, ...tail: infer Tail) => any) ? Tail : never;
+}
+
+declare namespace $ {
+    /**
+     * Returns last element of `Tuple`.
+     *
+     * 	$mol_type_tail<[ 1 , 2 , 3 ]> // 3
+     */
+    type $mol_type_foot<Tuple extends readonly any[]> = Tuple['length'] extends 0 ? never : Tuple[$mol_type_tail<Tuple>['length']];
+}
+
+declare namespace $ {
+    function $mol_fail_catch(error: unknown): boolean;
+}
+
+declare namespace $ {
+    function $mol_try<Result>(handler: () => Result): Result | Error;
+}
+
+declare namespace $ {
+    function $mol_fail_log(error: unknown): boolean;
+}
+
+declare namespace $ {
+    /** Long-living fiber. */
+    class $mol_wire_atom<Host, Args extends readonly unknown[], Result> extends $mol_wire_fiber<Host, Args, Result> {
+        static solo<Host, Args extends readonly unknown[], Result>(host: Host, task: (this: Host, ...args: Args) => Result): $mol_wire_atom<Host, Args, Result>;
+        static plex<Host, Args extends readonly unknown[], Result>(host: Host, task: (this: Host, ...args: Args) => Result, key: Args[0]): $mol_wire_atom<Host, Args, Result>;
+        static watching: Set<$mol_wire_atom<any, any, any>>;
+        static watcher: $mol_after_frame | null;
+        static watch(): void;
+        watch(): void;
+        /**
+         * Update atom value through another temp fiber.
+         */
+        resync(args: Args): Error | Result | Promise<Error | Result>;
+        once(): Awaited<Result>;
+        channel(): ((next?: $mol_type_foot<Args>) => Awaited<Result>) & {
+            atom: $mol_wire_atom<Host, Args, Result>;
+        };
+        destructor(): void;
+        put(next: Result | Error | Promise<Result | Error>): Error | Result | Promise<Error | Result>;
     }
 }
 
@@ -439,440 +873,6 @@ declare namespace $ {
     const $mol_object_field: unique symbol;
     class $mol_object extends $mol_object2 {
         static make<This extends typeof $mol_object>(this: This, config: Partial<InstanceType<This>>): InstanceType<This>;
-    }
-}
-
-declare namespace $ {
-    /** Generates unique identifier. */
-    function $mol_guid(length?: number, exists?: (id: string) => boolean): string;
-}
-
-declare namespace $ {
-    /** Special status statuses. */
-    enum $mol_wire_cursor {
-        /** Update required. */
-        stale = -1,
-        /** Some of (transitive) pub update required. */
-        doubt = -2,
-        /** Actual state but may be dropped. */
-        fresh = -3,
-        /** State will never be changed. */
-        final = -4
-    }
-}
-
-declare namespace $ {
-    /**
-     * Collects subscribers in compact array. 28B
-     */
-    class $mol_wire_pub extends Object {
-        constructor(id?: string);
-        [Symbol.toStringTag]: string;
-        data: unknown[];
-        static get [Symbol.species](): ArrayConstructor;
-        /**
-         * Index of first subscriber.
-         */
-        protected sub_from: number;
-        /**
-         * All current subscribers.
-         */
-        get sub_list(): readonly $mol_wire_sub[];
-        /**
-         * Has any subscribers or not.
-         */
-        get sub_empty(): boolean;
-        /**
-         * Subscribe subscriber to this publisher events and return position of subscriber that required to unsubscribe.
-         */
-        sub_on(sub: $mol_wire_pub, pub_pos: number): number;
-        /**
-         * Unsubscribe subscriber from this publisher events by subscriber position provided by `on(pub)`.
-         */
-        sub_off(sub_pos: number): void;
-        /**
-         * Called when last sub was unsubscribed.
-         **/
-        reap(): void;
-        /**
-         * Autowire this publisher with current subscriber.
-         **/
-        promote(): void;
-        /**
-         * Enforce actualization. Should not throw errors.
-         */
-        fresh(): void;
-        /**
-         * Allow to put data to caches in the subtree.
-         */
-        complete(): void;
-        get incompleted(): boolean;
-        /**
-         * Notify subscribers about self changes.
-         */
-        emit(quant?: $mol_wire_cursor): void;
-        /**
-         * Moves peer from one position to another. Doesn't clear data at old position!
-         */
-        peer_move(from_pos: number, to_pos: number): void;
-        /**
-         * Updates self position in the peer.
-         */
-        peer_repos(peer_pos: number, self_pos: number): void;
-    }
-}
-
-declare namespace $ {
-    /** Generic subscriber interface */
-    interface $mol_wire_sub extends $mol_wire_pub {
-        temp: boolean;
-        pub_list: $mol_wire_pub[];
-        /**
-         * Begin auto wire to publishers.
-         * Returns previous auto subscriber that must me transfer to the `end`.
-         */
-        track_on(): $mol_wire_sub | null;
-        /**
-         * Returns next auto wired publisher. It can be easely repormoted.
-         * Or promotes next publisher to auto wire its togeter.
-         * Must be used only between `track_on` and `track_off`.
-         */
-        track_next(pub?: $mol_wire_pub): $mol_wire_pub | null;
-        pub_off(pub_pos: number): void;
-        /**
-         * Unsubscribes from unpromoted publishers.
-         */
-        track_cut(sub: $mol_wire_pub | null): void;
-        /**
-         * Ends auto wire to publishers.
-         */
-        track_off(sub: $mol_wire_pub | null): void;
-        /**
-         * Receive notification about publisher changes.
-         */
-        absorb(quant: $mol_wire_cursor, pos: number): void;
-        /**
-         * Unsubscribes from all publishers.
-         */
-        destructor(): void;
-    }
-}
-
-declare namespace $ {
-    let $mol_wire_auto_sub: $mol_wire_sub | null;
-    /**
-     * When fulfilled, all publishers are promoted to this subscriber on access to its.
-     */
-    function $mol_wire_auto(next?: $mol_wire_sub | null): $mol_wire_sub | null;
-    /**
-     * Affection queue. Used to prevent accidental stack overflow on emit.
-     */
-    const $mol_wire_affected: ($mol_wire_sub | number)[];
-}
-
-declare namespace $ {
-    function $mol_dev_format_register(config: {
-        header: (val: any, config: any) => any;
-        hasBody: (val: any, config: any) => false;
-    } | {
-        header: (val: any, config: any) => any;
-        hasBody: (val: any, config: any) => boolean;
-        body: (val: any, config: any) => any;
-    }): void;
-    const $mol_dev_format_head: unique symbol;
-    const $mol_dev_format_body: unique symbol;
-    function $mol_dev_format_native(obj: any): any[];
-    function $mol_dev_format_auto(obj: any): any[];
-    function $mol_dev_format_element(element: string, style: object, ...content: any[]): any[];
-    let $mol_dev_format_span: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_div: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_ol: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_li: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_table: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_tr: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_td: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_accent: (...args: any[]) => any[];
-    let $mol_dev_format_strong: (...args: any[]) => any[];
-    let $mol_dev_format_string: (...args: any[]) => any[];
-    let $mol_dev_format_shade: (...args: any[]) => any[];
-    let $mol_dev_format_indent: (...args: any[]) => any[];
-}
-
-declare namespace $ {
-    /**
-     * Publisher that can auto collect other publishers. 32B
-     *
-     * 	P1 P2 P3 P4 S1 S2 S3
-     * 	^           ^
-     * 	pubs_from   subs_from
-     */
-    class $mol_wire_pub_sub extends $mol_wire_pub implements $mol_wire_sub {
-        protected pub_from: number;
-        protected cursor: $mol_wire_cursor;
-        get temp(): boolean;
-        get pub_list(): $mol_wire_pub[];
-        track_on(): $mol_wire_sub | null;
-        promote(): void;
-        track_next(pub?: $mol_wire_pub): $mol_wire_pub | null;
-        track_off(sub: $mol_wire_sub | null): void;
-        pub_off(sub_pos: number): void;
-        destructor(): void;
-        track_cut(): void;
-        complete(): void;
-        complete_pubs(): void;
-        absorb(quant?: $mol_wire_cursor, pos?: number): void;
-        [$mol_dev_format_head](): any[];
-        /**
-         * Is subscribed to any publisher or not.
-         */
-        get pub_empty(): boolean;
-    }
-}
-
-declare namespace $ {
-    class $mol_after_tick extends $mol_object2 {
-        task: () => void;
-        static promise: Promise<void> | null;
-        cancelled: boolean;
-        constructor(task: () => void);
-        destructor(): void;
-    }
-}
-
-declare namespace $ {
-    function $mol_promise_like(val: any): val is Promise<any>;
-}
-
-declare namespace $ {
-    /**
-     * Suspendable task with support both sync/async api.
-     *
-     * 	A1 A2 A3 A4 P1 P2 P3 P4 S1 S2 S3
-     * 	^           ^           ^
-     * 	args_from   pubs_from   subs_from
-     **/
-    abstract class $mol_wire_fiber<Host, Args extends readonly unknown[], Result> extends $mol_wire_pub_sub {
-        readonly task: (this: Host, ...args: Args) => Result;
-        readonly host?: Host | undefined;
-        static warm: boolean;
-        static planning: Set<$mol_wire_fiber<any, any, any>>;
-        static reaping: Set<$mol_wire_fiber<any, any, any>>;
-        static plan_task: $mol_after_tick | null;
-        static plan(): void;
-        static sync(): void;
-        cache: Result | Error | Promise<Result | Error>;
-        get args(): Args;
-        result(): Result | undefined;
-        get incompleted(): boolean;
-        field(): string;
-        constructor(id: string, task: (this: Host, ...args: Args) => Result, host?: Host | undefined, args?: Args);
-        plan(): this;
-        reap(): void;
-        toString(): string;
-        toJSON(): string;
-        [$mol_dev_format_head](): any[];
-        [$mol_dev_format_body](): null;
-        get $(): any;
-        emit(quant?: $mol_wire_cursor): void;
-        fresh(): this | undefined;
-        refresh(): void;
-        abstract put(next: Result | Error | Promise<Result | Error>): Result | Error | Promise<Result | Error>;
-        /**
-         * Synchronous execution. Throws Promise when waits async task (SuspenseAPI provider).
-         * Should be called inside SuspenseAPI consumer (ie fiber).
-         */
-        sync(): Awaited<Result>;
-        /**
-         * Asynchronous execution.
-         * It's SuspenseAPI consumer. So SuspenseAPI providers can be called inside.
-         */
-        async_raw(): Promise<Result>;
-        async(): Promise<Result> & {
-            destructor(): void;
-        };
-        step(): Promise<null>;
-        destructor(): void;
-    }
-}
-
-declare namespace $ {
-    /** Returns string key for any value. */
-    function $mol_key<Value>(value: Value): string;
-}
-
-declare namespace $ {
-    class $mol_after_timeout extends $mol_object2 {
-        delay: number;
-        task: () => void;
-        id: any;
-        constructor(delay: number, task: () => void);
-        destructor(): void;
-    }
-}
-
-declare namespace $ {
-    class $mol_after_frame extends $mol_after_timeout {
-        task: () => void;
-        constructor(task: () => void);
-    }
-}
-
-declare namespace $ {
-    let $mol_compare_deep_cache: WeakMap<any, WeakMap<any, boolean>>;
-    /**
-     * Deeply compares two values. Returns true if equal.
-     * Define `Symbol.toPrimitive` to customize.
-     */
-    function $mol_compare_deep<Value>(left: Value, right: Value): boolean;
-}
-
-declare namespace $ {
-    /** Logger event data */
-    type $mol_log3_event<Fields> = {
-        [key in string]: unknown;
-    } & {
-        /** Time of event creation */
-        time?: string;
-        /** Place of event creation */
-        place: unknown;
-        /** Short description of event */
-        message: string;
-    } & Fields;
-    /** Logger function */
-    type $mol_log3_logger<Fields, Res = void> = (this: $, event: $mol_log3_event<Fields>) => Res;
-    /** Log begin of some task */
-    let $mol_log3_come: $mol_log3_logger<{}>;
-    /** Log end of some task */
-    let $mol_log3_done: $mol_log3_logger<{}>;
-    /** Log error */
-    let $mol_log3_fail: $mol_log3_logger<{}>;
-    /** Log warning message */
-    let $mol_log3_warn: $mol_log3_logger<{
-        hint: string;
-    }>;
-    /** Log some generic event */
-    let $mol_log3_rise: $mol_log3_logger<{}>;
-    /** Log begin of log group, returns func to close group */
-    let $mol_log3_area: $mol_log3_logger<{}, () => void>;
-    /** Log begin of collapsed group only when some logged inside, returns func to close group */
-    function $mol_log3_area_lazy(this: $, event: $mol_log3_event<{}>): () => void;
-    let $mol_log3_stack: (() => void)[];
-}
-
-declare namespace $ {
-    function $mol_array_chunks<Item>(array: readonly Item[], rule: number | ((item: Item, index: number) => boolean)): Item[][];
-}
-
-declare namespace $ {
-    function $mol_tree2_from_json(json: any, span?: $mol_span): $mol_tree2;
-}
-
-declare namespace $ {
-    /** Module for working with terminal. Text coloring when output in terminal */
-    class $mol_term_color {
-        static reset: (str: string) => string;
-        static bold: (str: string) => string;
-        static italic: (str: string) => string;
-        static underline: (str: string) => string;
-        static inverse: (str: string) => string;
-        static hidden: (str: string) => string;
-        static strike: (str: string) => string;
-        static gray: (str: string) => string;
-        static red: (str: string) => string;
-        static green: (str: string) => string;
-        static yellow: (str: string) => string;
-        static blue: (str: string) => string;
-        static magenta: (str: string) => string;
-        static cyan: (str: string) => string;
-        static Gray: (str: string) => string;
-        static Red: (str: string) => string;
-        static Green: (str: string) => string;
-        static Yellow: (str: string) => string;
-        static Blue: (str: string) => string;
-        static Magenta: (str: string) => string;
-        static Cyan: (str: string) => string;
-        static ansi(open: number, close: number): (str: string) => string;
-    }
-}
-
-declare namespace $ {
-    function $mol_log3_node_make(level: keyof Console, output: 'stdout' | 'stderr', type: string, color: (str: string) => string): (this: $, event: $mol_log3_event<{}>) => () => void;
-}
-
-declare namespace $ {
-    /** One-shot fiber */
-    class $mol_wire_task<Host, Args extends readonly unknown[], Result> extends $mol_wire_fiber<Host, Args, Result> {
-        static getter<Host, Args extends readonly unknown[], Result>(task: (this: Host, ...args: Args) => Result): (host: Host, args: Args) => $mol_wire_task<Host, Args, Result>;
-        get temp(): boolean;
-        complete(): void;
-        put(next: Result | Error | Promise<Result | Error>): Error | Result | Promise<Error | Result>;
-        destructor(): void;
-    }
-}
-
-declare namespace $ {
-    /**
-     * Decorates method to fiber to ensure it is executed only once inside other fiber.
-     */
-    function $mol_wire_method<Host extends object, Args extends readonly any[]>(host: Host, field: PropertyKey, descr?: TypedPropertyDescriptor<(...args: Args) => any>): {
-        value: (this: Host, ...args: Args) => any;
-        enumerable?: boolean;
-        configurable?: boolean;
-        writable?: boolean;
-        get?: (() => (...args: Args) => any) | undefined;
-        set?: ((value: (...args: Args) => any) => void) | undefined;
-    };
-}
-
-declare namespace $ {
-    /**
-     * Returns `Tuple` without first element.
-     *
-     * 	$mol_type_tail<[ 1 , 2 , 3 ]> // [ 2, 3 ]
-     */
-    type $mol_type_tail<Tuple extends readonly any[]> = ((...tail: Tuple) => any) extends ((head: any, ...tail: infer Tail) => any) ? Tail : never;
-}
-
-declare namespace $ {
-    /**
-     * Returns last element of `Tuple`.
-     *
-     * 	$mol_type_tail<[ 1 , 2 , 3 ]> // 3
-     */
-    type $mol_type_foot<Tuple extends readonly any[]> = Tuple['length'] extends 0 ? never : Tuple[$mol_type_tail<Tuple>['length']];
-}
-
-declare namespace $ {
-    function $mol_fail_catch(error: unknown): boolean;
-}
-
-declare namespace $ {
-    function $mol_try<Result>(handler: () => Result): Result | Error;
-}
-
-declare namespace $ {
-    function $mol_fail_log(error: unknown): boolean;
-}
-
-declare namespace $ {
-    /** Long-living fiber. */
-    class $mol_wire_atom<Host, Args extends readonly unknown[], Result> extends $mol_wire_fiber<Host, Args, Result> {
-        static solo<Host, Args extends readonly unknown[], Result>(host: Host, task: (this: Host, ...args: Args) => Result): $mol_wire_atom<Host, Args, Result>;
-        static plex<Host, Args extends readonly unknown[], Result>(host: Host, task: (this: Host, ...args: Args) => Result, key: Args[0]): $mol_wire_atom<Host, Args, Result>;
-        static watching: Set<$mol_wire_atom<any, any, any>>;
-        static watcher: $mol_after_frame | null;
-        static watch(): void;
-        watch(): void;
-        /**
-         * Update atom value through another temp fiber.
-         */
-        resync(args: Args): Error | Result | Promise<Error | Result>;
-        once(): Awaited<Result>;
-        channel(): ((next?: $mol_type_foot<Args>) => Awaited<Result>) & {
-            atom: $mol_wire_atom<Host, Args, Result>;
-        };
-        destructor(): void;
-        put(next: Result | Error | Promise<Result | Error>): Error | Result | Promise<Error | Result>;
     }
 }
 
@@ -6288,6 +6288,45 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    /** Shape of one recompiled class: what it declares and what of that is keyed. */
+    type $bog_vmap_scene_shape = {
+        readonly declared: ReadonlySet<string>;
+        readonly keyed: ReadonlySet<string>;
+    };
+    /** Counters of one hot swap, for tests and for the log. */
+    type $bog_vmap_scene_swap_report = {
+        /** Instances whose prototype was moved onto the freshly compiled class. */
+        swapped: number;
+        /** Atoms whose implementation was redirected onto the new one. */
+        moved: number;
+        /** Atoms whose implementation actually changed, so subscribers were woken. */
+        stale: number;
+        /** Atoms dropped because the property changed shape or stopped being a cell. */
+        dropped: number;
+    };
+    /**
+     * Moves a live component onto the freshly compiled classes, keeping its state.
+     *
+     * A cell lives as an OWN field of the instance, so replacing the prototype
+     * touches no value, no subscription and no DOM node — caret, focus and scroll
+     * position included. The one thing the prototype does not reach is the
+     * implementation a fiber captured in its constructor, and that is what is
+     * redirected here, taking the new one off the wrapper the decorator left it on.
+     *
+     * The walk goes over the atom caches and never over `sub()`: free parts are not
+     * in `sub` at all, `sub()` of a generated class is not memoized, so calling it
+     * would run user code and could create children that do not exist yet, and a
+     * child temporarily out of `sub` is still a live instance.
+     *
+     * Instances of classes the document does not declare — components of the donor
+     * pack — keep their prototype and are only walked through, because a document
+     * class may well sit inside one.
+     * @see ../ARCHITECTURE.md section 3, spike/S2.md
+     */
+    function $bog_vmap_scene_swap(this: $, root: object, klass_of: (name: string) => unknown, shape_of: (name: string) => $bog_vmap_scene_shape | null): $bog_vmap_scene_swap_report;
+}
+
+declare namespace $ {
     /** Modifier keys of the click, named as `MouseEventInit` names them. */
     type $bog_vmap_scene_click_mods = {
         readonly altKey: boolean;
@@ -6530,6 +6569,20 @@ declare namespace $.$$ {
         compile_error: string;
         /** Instance kept across a failed rebuild, see `instance()`. */
         instance_live: $mol_view | null;
+        /** Pack the live instance was built against. See `identity_kept()`. */
+        pack_live: string;
+        /** Root class the live instance is an instance of. */
+        root_live: string;
+        /**
+         * Bases of every class this instance has ever been compiled with.
+         *
+         * Accumulated rather than replaced: a class deleted from the document and
+         * written again with another base would otherwise slip through, because the
+         * round in between has no opinion about a name it never saw.
+         */
+        supers_live: {
+            readonly [klass: string]: string;
+        };
         /** Asset ids the document references but the host has not delivered. */
         assets_missing: Set<string>;
         /** Ids already asked for, so a report round does not re-ask every 120ms. */
@@ -6744,6 +6797,28 @@ declare namespace $.$$ {
          */
         doc_tree(): $mol_tree2;
         /**
+         * Base class of every declaration, by name.
+         *
+         * The declarations are already normalized, so the single kid of a class is
+         * its base and nothing else can be there.
+         */
+        supers(): {
+            readonly [klass: string]: string;
+        };
+        /**
+         * What each class declares and which of it is keyed, bases folded in.
+         *
+         * The hot swap reads this to tell a property that lost its cell from one
+         * that changed between solo and keyed, and both questions are asked of a
+         * live instance — whose atoms come from the whole chain, not from the last
+         * declaration alone. So a base declared by the document is folded into its
+         * heir, while a base from the pack is left out on purpose: its properties
+         * are not ours to judge and their shape does not change under us.
+         */
+        shapes(): {
+            readonly [klass: string]: $bog_vmap_scene_shape;
+        };
+        /**
          * Applies the decorators studio applies in `source_js_decorators()`.
          *
          * A decorator cannot be written inside the string handed to
@@ -6787,12 +6862,38 @@ declare namespace $.$$ {
             readonly Root: typeof $mol_view;
         };
         /**
-         * The live root instance.
+         * May the live instance be moved onto the freshly compiled classes.
+         *
+         * Three things it cannot survive. A different pack, because the context of a
+         * live instance is cached under a symbol private to a bundle and silently
+         * falls back to the global one the moment another bundle lands. A different
+         * root class, because then it is another document. And a changed base of ANY
+         * class, because a DOM node takes `attr_static()` off its base at creation
+         * and nothing recomputes it — the panel would read as the new base and behave
+         * as the old one.
+         *
+         * Classes the live instance has never seen are not an obstacle: a new
+         * declaration takes nothing away from anybody.
+         * @see ../ARCHITECTURE.md section 3
+         */
+        identity_kept(pack: string, root: string, supers: {
+            readonly [klass: string]: string;
+        }): boolean;
+        /**
+         * The live root instance, kept across edits of the document.
+         *
+         * An edit moves the living component onto the new classes instead of
+         * building another one: cells are own fields of an instance, so a prototype
+         * swap keeps every value, every subscription and the DOM node itself — with
+         * the caret, the focus and the scroll position, which no snapshot can carry
+         * because they never reach a cell. Measured on the S2 bench at 6.1 ms against
+         * 8.7 ms for a rebuild, and unlike a rebuild it does not grow with the size
+         * of the component.
          *
          * A failed rebuild returns the previous instance, so the value does not
-         * change, no subscriber is woken and the living component stays whole,
-         * caret and focus included. The failure travels to the host as an
-         * `error` message instead of taking the page down.
+         * change, no subscriber is woken and the living component stays whole. The
+         * failure travels to the host as an `error` message instead of taking the
+         * page down.
          */
         instance(): $mol_view | null;
         /**
