@@ -6276,6 +6276,30 @@ var $;
         `		<= Price`,
         ``,
     ].join('\n');
+    /**
+     * A document with an artboard: `Board` carries a `sub` of its own, so its
+     * children are laid out by tree, while `Loose` lies free on the canvas.
+     *
+     * Nothing marks the artboard as one. Section 8 says both are properties of the
+     * same root class, and the only difference in the text is the `sub`.
+     */
+    const board_src = [
+        `${d}bog_vmap_lang_test_board ${d}mol_view`,
+        `	Head ${d}mol_view`,
+        `	Foot ${d}mol_view`,
+        `	Loose ${d}mol_view`,
+        `	Board ${d}mol_view`,
+        `		style *`,
+        `			width \\1280px`,
+        `			flexDirection \\column`,
+        `		sub /`,
+        `			<= Head`,
+        `			<= Foot`,
+        `	sub /`,
+        `		<= Board`,
+        `		<= Loose`,
+        ``,
+    ].join('\n');
     /** Indices of the lines two texts differ at, trailing tail included. */
     function lines_diff(left, right) {
         const a = left.split('\n');
@@ -6721,6 +6745,138 @@ var $;
             $mol_assert_equal(wire.kids[0].kids[0].kids.length, 1);
             $mol_assert_equal(wire.kids[0].kids[0].kids[0].kids.length, 0);
         },
+        /**
+         * The artboard fixture is a fixed point of normalization. Everything below
+         * asserts against it, so a fixture the model would reformat on the first
+         * write would make every one of those assertions about the serializer.
+         */
+        'a document with an artboard round trips byte for byte'($) {
+            $mol_assert_equal(doc(board_src).source(), board_src);
+        },
+        'a node with a sub of its own is a container, one without is not'($) {
+            const node = doc(board_src);
+            $mol_assert_like(node.sub_names(), ['Board', 'Loose']);
+            $mol_assert_like(node.sub_names('Board'), ['Head', 'Foot']);
+            // Not «no children»: no `sub` at all, which is what a free part is.
+            $mol_assert_equal(node.sub_names('Loose'), null);
+            $mol_assert_equal(node.sub_names('Nobody'), null);
+            $mol_assert_equal(node.sub_holder('Head'), 'Board');
+            $mol_assert_equal(node.sub_holder('Loose'), '');
+            $mol_assert_equal(node.sub_holder('Nobody'), null);
+        },
+        'a node is inserted into sub at the head, in the middle and at the tail'($) {
+            const at_head = doc(board_src);
+            at_head.sub_insert('Loose', 0, 'Board');
+            $mol_assert_like(at_head.sub_names('Board'), ['Loose', 'Head', 'Foot']);
+            const between = doc(board_src);
+            between.sub_insert('Loose', 1, 'Board');
+            $mol_assert_like(between.sub_names('Board'), ['Head', 'Loose', 'Foot']);
+            const at_tail = doc(board_src);
+            at_tail.sub_insert('Loose', 2, 'Board');
+            $mol_assert_like(at_tail.sub_names('Board'), ['Head', 'Foot', 'Loose']);
+            // The reference is bare, like every other one in `sub`: a reference with
+            // a child under it is the middle form of `<=` and declares a property.
+            const refs = between.sub_list('Board').kids;
+            $mol_assert_like(refs.map(ref => ref.type), ['<=', '<=', '<=']);
+            $mol_assert_like(refs.map(ref => ref.kids[0].kids.length), [0, 0, 0]);
+        },
+        /**
+         * Insertion writes into `sub` and NOWHERE else: the declaration of the
+         * artboard keeps its style, its order and its line, and the node put inside
+         * keeps the declaration it had.
+         */
+        'insertion touches the sub and nothing around it'($) {
+            const node = doc(board_src);
+            node.sub_insert('Loose', 1, 'Board');
+            const lines = node.source().split('\n');
+            $mol_assert_like(lines.slice(0, 10), board_src.split('\n').slice(0, 10));
+            $mol_assert_equal(lines[10], '\t\t\t<= Loose');
+            $mol_assert_equal(lines.length, board_src.split('\n').length + 1);
+            const style = node.over_tree('Board', 'style').kids[0];
+            $mol_assert_like(style.kids.map(kid => kid.type), ['width', 'flexDirection']);
+        },
+        'a node moves from the canvas into an artboard and back'($) {
+            const node = doc(board_src);
+            node.sub_move('Loose', 1, 'Board');
+            $mol_assert_like(node.sub_names(), ['Board']);
+            $mol_assert_like(node.sub_names('Board'), ['Head', 'Loose', 'Foot']);
+            node.sub_move('Loose', 0);
+            $mol_assert_like(node.sub_names(), ['Loose', 'Board']);
+            $mol_assert_like(node.sub_names('Board'), ['Head', 'Foot']);
+            // The declaration never moved: what changed is where it is drawn.
+            $mol_assert_equal(node.prop_names().includes('Loose'), true);
+        },
+        /**
+         * The position the user aimed at was read off a list that still held the
+         * node being moved, so moving it down by one has to mean what it looked
+         * like — otherwise a drag one place to the right does nothing at all.
+         */
+        'moving inside one parent counts positions on the list the user saw'($) {
+            const node = doc(board_src);
+            node.sub_move('Head', 2, 'Board');
+            $mol_assert_like(node.sub_names('Board'), ['Foot', 'Head']);
+            node.sub_move('Head', 0, 'Board');
+            $mol_assert_like(node.sub_names('Board'), ['Head', 'Foot']);
+        },
+        'a node cannot be put inside itself or under its own child'($) {
+            const node = doc(board_src);
+            $mol_assert_fail(() => node.sub_insert('Board', 0, 'Board'), Error);
+            $mol_assert_fail(() => node.sub_move('Board', 0, 'Head'), Error);
+            $mol_assert_equal(node.source(), board_src);
+        },
+        'deleting reaches the sub of an artboard, not only the sub of the class'($) {
+            const node = doc(board_src);
+            node.sub_drop('Head');
+            $mol_assert_like(node.sub_names('Board'), ['Foot']);
+            $mol_assert_like(node.sub_names(), ['Board', 'Loose']);
+            node.prop_drop('Head');
+            $mol_assert_equal(node.prop_names().includes('Head'), false);
+        },
+        /**
+         * A free part becomes an artboard by growing a `sub`, which is the only
+         * difference between the two, and an artboard that already has one is left
+         * alone rather than emptied.
+         */
+        'a node is opened into a container by an empty sub'($) {
+            const node = doc(board_src);
+            node.sub_open('Loose');
+            $mol_assert_like(node.sub_names('Loose'), []);
+            node.sub_open('Board');
+            $mol_assert_like(node.sub_names('Board'), ['Head', 'Foot']);
+        },
+        /**
+         * Layout properties are ordinary keys of the ordinary `style` dictionary, so
+         * an artboard exports as plain $mol and depends on nothing of ours.
+         */
+        'a dictionary key is set, replaced where it stands and dropped'($) {
+            const node = doc(board_src);
+            const style = node.over_tree('Board', 'style').kids[0];
+            $mol_assert_equal($bog_vmap_lang_dict_get(style, 'width').type, '');
+            $mol_assert_equal($bog_vmap_lang_dict_get(style, 'width').value, '1280px');
+            $mol_assert_equal($bog_vmap_lang_dict_get(style, 'gap'), null);
+            const narrow = $.$bog_vmap_lang_dict_set(style, 'width', style.data('390px'));
+            $mol_assert_like(narrow.kids.map(kid => kid.type), ['width', 'flexDirection']);
+            $mol_assert_equal($bog_vmap_lang_dict_get(narrow, 'width').value, '390px');
+            const gapped = $.$bog_vmap_lang_dict_set(style, 'gap', style.data('1rem'));
+            $mol_assert_like(gapped.kids.map(kid => kid.type), ['width', 'flexDirection', 'gap']);
+            const bare = $.$bog_vmap_lang_dict_set(style, 'width', null);
+            $mol_assert_like(bare.kids.map(kid => kid.type), ['flexDirection']);
+            $mol_assert_fail(() => $.$bog_vmap_lang_dict_set(style, 'a b', style.data('1')), Error);
+        },
+        /**
+         * An inherited dictionary starts with `^`, and `^` has to stay at the head:
+         * a dictionary redeclared without it REPLACES the one of the base instead of
+         * extending it, so a document over `$mol_button` that grew one `style` key
+         * would lose the rest in silence.
+         */
+        'a dictionary key never moves the inherited head'($) {
+            const dict = $mol_tree2.struct('*', [$mol_tree2.struct('^')]);
+            const one = $.$bog_vmap_lang_dict_set(dict, 'flexGrow', dict.data('1'));
+            $mol_assert_like(one.kids.map(kid => kid.type), ['^', 'flexGrow']);
+            const two = $.$bog_vmap_lang_dict_set(one, 'flexGrow', dict.data('2'));
+            $mol_assert_like(two.kids.map(kid => kid.type), ['^', 'flexGrow']);
+            $mol_assert_equal($bog_vmap_lang_dict_get(two, 'flexGrow').value, '2');
+        },
         'links are read back from a hand written document'($) {
             const node = doc(demo_src);
             $mol_assert_like(node.links(), [
@@ -6926,6 +7082,27 @@ var $;
         /** A pack served from the root of an origin has one segment less and no more. */
         'a pack at the root of an origin'($) {
             $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example.org/app/', 'part'), 'https://vmap.example.org/part/');
+        },
+        /**
+         * A dot in a FOLDER name does not make it a page. A versioned deploy is the
+         * ordinary way to get one, and taking `v1.2` for a page would eat a second
+         * segment and point both addresses a level above where they live.
+         */
+        'a dot in a folder name is not a page file'($) {
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/app/', 'part'), 'https://b-on-g.github.io/vmap/v1.2/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/app/index.html', 'scene'), 'https://b-on-g.github.io/vmap/v1.2/scene/');
+            // a module folder may carry one as well
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/app.v2/', 'part'), 'https://b-on-g.github.io/vmap/part/');
+        },
+        /**
+         * The editor deployed as the site root has no folder to replace, so the
+         * siblings lie at the root beside it. Nothing is eaten and no address climbs
+         * above the root, which is the one thing that must never happen here.
+         */
+        'a page at the root of a site keeps its siblings at the root'($) {
+            $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/', 'part'), 'https://vmap.example/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/index.html', 'scene'), 'https://vmap.example/scene/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example', 'part'), 'https://vmap.example/part/');
         },
         /**
          * A `data:` address keeps the fetch offline while still going through the
