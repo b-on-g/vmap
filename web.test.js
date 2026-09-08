@@ -106,6 +106,142 @@ var $;
 
 ;
 "use strict";
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Argument must be Truthy
+     * @deprecated use $mol_assert_equal instead
+     */
+    function $mol_assert_ok(value) {
+        if (value)
+            return;
+        $mol_fail(new Error(`${value} ≠ true`));
+    }
+    $.$mol_assert_ok = $mol_assert_ok;
+    /**
+     * Argument must be Falsy
+     * @deprecated use $mol_assert_equal instead
+     */
+    function $mol_assert_not(value) {
+        if (!value)
+            return;
+        $mol_fail(new Error(`${value} ≠ false`));
+    }
+    $.$mol_assert_not = $mol_assert_not;
+    /**
+     * Handler must throw an error.
+     * @example
+     * $mol_assert_fail( ()=>{ throw new Error( 'Parse error' ) } ) // Passes because throws error
+     * $mol_assert_fail( ()=>{ throw new Error( 'Parse error' ) } , 'Parse error' ) // Passes because throws right message
+     * $mol_assert_fail( ()=>{ throw new Error( 'Parse error' ) } , Error ) // Passes because throws right class
+     * @see https://mol.hyoo.ru/#!section=docs/=9q9dv3_fgxjsf
+     */
+    function $mol_assert_fail(handler, ErrorRight) {
+        const fail = $.$mol_fail;
+        try {
+            $.$mol_fail = $.$mol_fail_hidden;
+            handler();
+        }
+        catch (error) {
+            $.$mol_fail = fail;
+            if (typeof ErrorRight === 'string') {
+                $mol_assert_equal(error.message ?? error, ErrorRight);
+            }
+            else {
+                $mol_assert_equal(error instanceof ErrorRight, true);
+            }
+            return error;
+        }
+        finally {
+            $.$mol_fail = fail;
+        }
+        $mol_fail(new Error('Not failed', { cause: { expect: ErrorRight } }));
+    }
+    $.$mol_assert_fail = $mol_assert_fail;
+    /** @deprecated Use $mol_assert_equal */
+    function $mol_assert_like(...args) {
+        $mol_assert_equal(...args);
+    }
+    $.$mol_assert_like = $mol_assert_like;
+    /**
+     * All arguments must not be structural equal to each other.
+     * @example
+     * $mol_assert_unique( 1 , 2 , 3 ) // Passes
+     * $mol_assert_unique( 1 , 1 , 2 ) // Fails because 1 === 1
+     * @see https://mol.hyoo.ru/#!section=docs/=9q9dv3_fgxjsf
+     */
+    function $mol_assert_unique(...args) {
+        for (let i = 0; i < args.length; ++i) {
+            for (let j = 0; j < args.length; ++j) {
+                if (i === j)
+                    continue;
+                if (!$mol_compare_deep(args[i], args[j]))
+                    continue;
+                return $mol_fail(new Error(`Uniquesess assertion failure`, { cause: { [i]: args[i], [i]: args[i] } }));
+            }
+        }
+    }
+    $.$mol_assert_unique = $mol_assert_unique;
+    /**
+     * All arguments must be structural equal each other.
+     * @example
+     * $mol_assert_like( [1] , [1] , [1] ) // Passes
+     * $mol_assert_like( [1] , [1] , [2] ) // Fails because 1 !== 2
+     * @see https://mol.hyoo.ru/#!section=docs/=9q9dv3_fgxjsf
+     */
+    function $mol_assert_equal(...args) {
+        for (let i = 1; i < args.length; ++i) {
+            if ($mol_compare_deep(args[0], args[i]))
+                continue;
+            return $mol_fail(new Error(`Equality assertion failure`, { cause: { 0: args[0], [i]: args[i] } }));
+        }
+    }
+    $.$mol_assert_equal = $mol_assert_equal;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'must be false'() {
+            $mol_assert_not(0);
+        },
+        'must be true'() {
+            $mol_assert_ok(1);
+        },
+        'two must be equal'() {
+            $mol_assert_equal(2, 2);
+        },
+        'three must be equal'() {
+            $mol_assert_equal(2, 2, 2);
+        },
+        'two must be unique'() {
+            $mol_assert_unique([2], [3]);
+        },
+        'three must be unique'() {
+            $mol_assert_unique([1], [2], [3]);
+        },
+        'two must be alike'() {
+            $mol_assert_equal([3], [3]);
+        },
+        'three must be alike'() {
+            $mol_assert_equal([3], [3], [3]);
+        },
+        'two object must be alike'() {
+            $mol_assert_equal({ a: 1 }, { a: 1 });
+        },
+        'three object must be alike'() {
+            $mol_assert_equal({ a: 1 }, { a: 1 }, { a: 1 });
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
 /** @jsx $mol_jsx */
 /** @jsxFrag $mol_jsx_frag */
 var $;
@@ -208,6 +344,303 @@ var $;
         },
     });
 })($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'get'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
+            $mol_assert_equal(proxy.foo, 777);
+        },
+        'has'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
+            $mol_assert_equal('foo' in proxy, true);
+        },
+        'set'() {
+            const target = { foo: 777 };
+            const proxy = $mol_delegate({}, () => target);
+            proxy.foo = 123;
+            $mol_assert_equal(target.foo, 123);
+        },
+        'getOwnPropertyDescriptor'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
+            $mol_assert_like(Object.getOwnPropertyDescriptor(proxy, 'foo'), {
+                value: 777,
+                writable: true,
+                enumerable: true,
+                configurable: true,
+            });
+        },
+        'ownKeys'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777, [Symbol.toStringTag]: 'bar' }));
+            $mol_assert_like(Reflect.ownKeys(proxy), ['foo', Symbol.toStringTag]);
+        },
+        'getPrototypeOf'() {
+            class Foo {
+            }
+            const proxy = $mol_delegate({}, () => new Foo);
+            $mol_assert_equal(Object.getPrototypeOf(proxy), Foo.prototype);
+        },
+        'setPrototypeOf'() {
+            class Foo {
+            }
+            const target = {};
+            const proxy = $mol_delegate({}, () => target);
+            Object.setPrototypeOf(proxy, Foo.prototype);
+            $mol_assert_equal(Object.getPrototypeOf(target), Foo.prototype);
+        },
+        'instanceof'() {
+            class Foo {
+            }
+            const proxy = $mol_delegate({}, () => new Foo);
+            $mol_assert_ok(proxy instanceof Foo);
+            $mol_assert_ok(proxy instanceof $mol_delegate);
+        },
+        'autobind'() {
+            class Foo {
+            }
+            const proxy = $mol_delegate({}, () => new Foo);
+            $mol_assert_ok(proxy instanceof Foo);
+            $mol_assert_ok(proxy instanceof $mol_delegate);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'FQN of anon function'($) {
+            const $$ = Object.assign($, { $mol_func_name_test: (() => () => { })() });
+            $mol_assert_equal($$.$mol_func_name_test.name, '');
+            $mol_assert_equal($$.$mol_func_name($$.$mol_func_name_test), '$mol_func_name_test');
+            $mol_assert_equal($$.$mol_func_name_test.name, '$mol_func_name_test');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'init with overload'() {
+            class X extends $mol_object {
+                foo() {
+                    return 1;
+                }
+            }
+            var x = X.make({
+                foo: () => 2,
+            });
+            $mol_assert_equal(x.foo(), 2);
+        },
+        'Context in instance inherits from class'($) {
+            const custom = $.$mol_ambient({});
+            class X extends $.$mol_object {
+                static $ = custom;
+            }
+            $mol_assert_equal(new X().$, custom);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'Collect deps'() {
+            const pub1 = new $mol_wire_pub;
+            const pub2 = new $mol_wire_pub;
+            const sub = new $mol_wire_pub_sub;
+            const bu1 = sub.track_on();
+            try {
+                pub1.promote();
+                pub2.promote();
+                pub2.promote();
+            }
+            finally {
+                sub.track_cut();
+                sub.track_off(bu1);
+            }
+            pub1.emit();
+            pub2.emit();
+            $mol_assert_like(sub.pub_list, [pub1, pub2, pub2]);
+            const bu2 = sub.track_on();
+            try {
+                pub1.promote();
+                pub1.promote();
+                pub2.promote();
+            }
+            finally {
+                sub.track_cut();
+                sub.track_off(bu2);
+            }
+            pub1.emit();
+            pub2.emit();
+            $mol_assert_like(sub.pub_list, [pub1, pub1, pub2]);
+        },
+        'cyclic detection'($) {
+            const sub1 = new $mol_wire_pub_sub;
+            const sub2 = new $mol_wire_pub_sub;
+            const bu1 = sub1.track_on();
+            try {
+                const bu2 = sub2.track_on();
+                try {
+                    $mol_assert_fail(() => sub1.promote(), 'Circular subscription');
+                }
+                finally {
+                    sub2.track_cut();
+                    sub2.track_off(bu2);
+                }
+            }
+            finally {
+                sub1.track_cut();
+                sub1.track_off(bu1);
+            }
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /// @todo right orderinng
+    $.$mol_after_mock_queue = [];
+    function $mol_after_mock_warp() {
+        const queue = $.$mol_after_mock_queue.splice(0);
+        for (const task of queue)
+            task();
+    }
+    $.$mol_after_mock_warp = $mol_after_mock_warp;
+    class $mol_after_mock_commmon extends $mol_object2 {
+        task;
+        promise = Promise.resolve();
+        cancelled = false;
+        id;
+        constructor(task) {
+            super();
+            this.task = task;
+            $.$mol_after_mock_queue.push(task);
+        }
+        destructor() {
+            const index = $.$mol_after_mock_queue.indexOf(this.task);
+            if (index >= 0)
+                $.$mol_after_mock_queue.splice(index, 1);
+        }
+    }
+    $.$mol_after_mock_commmon = $mol_after_mock_commmon;
+    class $mol_after_mock_timeout extends $mol_after_mock_commmon {
+        delay;
+        constructor(delay, task) {
+            super(task);
+            this.delay = delay;
+        }
+    }
+    $.$mol_after_mock_timeout = $mol_after_mock_timeout;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test_mocks.push($ => {
+        $.$mol_after_tick = $mol_after_mock_commmon;
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'Sync execution'() {
+            class Sync extends $mol_object2 {
+                static calc(a, b) {
+                    return a + b;
+                }
+            }
+            __decorate([
+                $mol_wire_method
+            ], Sync, "calc", null);
+            $mol_assert_equal(Sync.calc(1, 2), 3);
+        },
+        async 'async <=> sync'() {
+            class SyncAsync extends $mol_object2 {
+                static async val(a) {
+                    return a;
+                }
+                static sum(a, b) {
+                    const syn = $mol_wire_sync(this);
+                    return syn.val(a) + syn.val(b);
+                }
+                static async calc(a, b) {
+                    return 5 + await $mol_wire_async(this).sum(a, b);
+                }
+            }
+            $mol_assert_equal(await SyncAsync.calc(1, 2), 8);
+        },
+        async 'Idempotence control'() {
+            class Idempotence extends $mol_object2 {
+                static logs_idemp = 0;
+                static logs_unidemp = 0;
+                static log_idemp() {
+                    this.logs_idemp += 1;
+                }
+                static log_unidemp() {
+                    this.logs_unidemp += 1;
+                }
+                static async val(a) {
+                    return a;
+                }
+                static sum(a, b) {
+                    this.log_idemp();
+                    this.log_unidemp();
+                    const syn = $mol_wire_sync(this);
+                    return syn.val(a) + syn.val(b);
+                }
+                static async calc(a, b) {
+                    return 5 + await $mol_wire_async(this).sum(a, b);
+                }
+            }
+            __decorate([
+                $mol_wire_method
+            ], Idempotence, "log_idemp", null);
+            $mol_assert_equal(await Idempotence.calc(1, 2), 8);
+            $mol_assert_equal(Idempotence.logs_idemp, 1);
+            $mol_assert_equal(Idempotence.logs_unidemp, 3);
+        },
+        async 'Error handling'() {
+            class Handle extends $mol_object2 {
+                static async sum(a, b) {
+                    $mol_fail(new Error('test error ' + (a + b)));
+                }
+                static check() {
+                    try {
+                        return $mol_wire_sync(Handle).sum(1, 2);
+                    }
+                    catch (error) {
+                        if ($mol_promise_like(error))
+                            $mol_fail_hidden(error);
+                        $mol_assert_equal(error.message, 'test error 3');
+                    }
+                }
+            }
+            await $mol_wire_async(Handle).check();
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
 
 ;
 "use strict";
@@ -638,857 +1071,6 @@ var $;
 
 ;
 "use strict";
-var $;
-(function ($) {
-    /**
-     * Argument must be Truthy
-     * @deprecated use $mol_assert_equal instead
-     */
-    function $mol_assert_ok(value) {
-        if (value)
-            return;
-        $mol_fail(new Error(`${value} ≠ true`));
-    }
-    $.$mol_assert_ok = $mol_assert_ok;
-    /**
-     * Argument must be Falsy
-     * @deprecated use $mol_assert_equal instead
-     */
-    function $mol_assert_not(value) {
-        if (!value)
-            return;
-        $mol_fail(new Error(`${value} ≠ false`));
-    }
-    $.$mol_assert_not = $mol_assert_not;
-    /**
-     * Handler must throw an error.
-     * @example
-     * $mol_assert_fail( ()=>{ throw new Error( 'Parse error' ) } ) // Passes because throws error
-     * $mol_assert_fail( ()=>{ throw new Error( 'Parse error' ) } , 'Parse error' ) // Passes because throws right message
-     * $mol_assert_fail( ()=>{ throw new Error( 'Parse error' ) } , Error ) // Passes because throws right class
-     * @see https://mol.hyoo.ru/#!section=docs/=9q9dv3_fgxjsf
-     */
-    function $mol_assert_fail(handler, ErrorRight) {
-        const fail = $.$mol_fail;
-        try {
-            $.$mol_fail = $.$mol_fail_hidden;
-            handler();
-        }
-        catch (error) {
-            $.$mol_fail = fail;
-            if (typeof ErrorRight === 'string') {
-                $mol_assert_equal(error.message ?? error, ErrorRight);
-            }
-            else {
-                $mol_assert_equal(error instanceof ErrorRight, true);
-            }
-            return error;
-        }
-        finally {
-            $.$mol_fail = fail;
-        }
-        $mol_fail(new Error('Not failed', { cause: { expect: ErrorRight } }));
-    }
-    $.$mol_assert_fail = $mol_assert_fail;
-    /** @deprecated Use $mol_assert_equal */
-    function $mol_assert_like(...args) {
-        $mol_assert_equal(...args);
-    }
-    $.$mol_assert_like = $mol_assert_like;
-    /**
-     * All arguments must not be structural equal to each other.
-     * @example
-     * $mol_assert_unique( 1 , 2 , 3 ) // Passes
-     * $mol_assert_unique( 1 , 1 , 2 ) // Fails because 1 === 1
-     * @see https://mol.hyoo.ru/#!section=docs/=9q9dv3_fgxjsf
-     */
-    function $mol_assert_unique(...args) {
-        for (let i = 0; i < args.length; ++i) {
-            for (let j = 0; j < args.length; ++j) {
-                if (i === j)
-                    continue;
-                if (!$mol_compare_deep(args[i], args[j]))
-                    continue;
-                return $mol_fail(new Error(`Uniquesess assertion failure`, { cause: { [i]: args[i], [i]: args[i] } }));
-            }
-        }
-    }
-    $.$mol_assert_unique = $mol_assert_unique;
-    /**
-     * All arguments must be structural equal each other.
-     * @example
-     * $mol_assert_like( [1] , [1] , [1] ) // Passes
-     * $mol_assert_like( [1] , [1] , [2] ) // Fails because 1 !== 2
-     * @see https://mol.hyoo.ru/#!section=docs/=9q9dv3_fgxjsf
-     */
-    function $mol_assert_equal(...args) {
-        for (let i = 1; i < args.length; ++i) {
-            if ($mol_compare_deep(args[0], args[i]))
-                continue;
-            return $mol_fail(new Error(`Equality assertion failure`, { cause: { 0: args[0], [i]: args[i] } }));
-        }
-    }
-    $.$mol_assert_equal = $mol_assert_equal;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'must be false'() {
-            $mol_assert_not(0);
-        },
-        'must be true'() {
-            $mol_assert_ok(1);
-        },
-        'two must be equal'() {
-            $mol_assert_equal(2, 2);
-        },
-        'three must be equal'() {
-            $mol_assert_equal(2, 2, 2);
-        },
-        'two must be unique'() {
-            $mol_assert_unique([2], [3]);
-        },
-        'three must be unique'() {
-            $mol_assert_unique([1], [2], [3]);
-        },
-        'two must be alike'() {
-            $mol_assert_equal([3], [3]);
-        },
-        'three must be alike'() {
-            $mol_assert_equal([3], [3], [3]);
-        },
-        'two object must be alike'() {
-            $mol_assert_equal({ a: 1 }, { a: 1 });
-        },
-        'three object must be alike'() {
-            $mol_assert_equal({ a: 1 }, { a: 1 }, { a: 1 });
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'FQN of anon function'($) {
-            const $$ = Object.assign($, { $mol_func_name_test: (() => () => { })() });
-            $mol_assert_equal($$.$mol_func_name_test.name, '');
-            $mol_assert_equal($$.$mol_func_name($$.$mol_func_name_test), '$mol_func_name_test');
-            $mol_assert_equal($$.$mol_func_name_test.name, '$mol_func_name_test');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
-     * Tests of the wire protocol: what goes in through `send` comes out of `read`,
-     * and what is not ours does not. A fake `postMessage` stands in for the window.
-     */
-    $mol_test({
-        'libs_set survives the wire'($) {
-            const parts = [
-                { tree: 'my_card mol_view\n\tprice 0\n', js: 'price(){ return 1 }', css: '' },
-                { tree: 'my_badge my_card\n', js: '', css: '[my_badge] { color: red }' },
-            ];
-            const sent = [];
-            $bog_vmap_bridge_send({ postMessage: (data) => { sent.push(data); } }, { kind: 'libs_set', parts });
-            $mol_assert_equal(sent.length, 1);
-            const message = $bog_vmap_bridge_read({ data: sent[0] });
-            $mol_assert_equal(message?.kind, 'libs_set');
-            if (message?.kind !== 'libs_set')
-                return;
-            $mol_assert_like(message.parts, parts);
-        },
-        /** The question goes down as a list of names, the answer comes up keyed by them. */
-        'values_want and values survive the wire'($) {
-            const sent = [];
-            const target = { postMessage: (data) => { sent.push(data); } };
-            $bog_vmap_bridge_send(target, { kind: 'values_want', names: ['calc_result', 'calc_value'] });
-            $bog_vmap_bridge_send(target, { kind: 'values', values: { calc_result: '42', calc_value: 'Error: boom' } });
-            const want = $bog_vmap_bridge_read({ data: sent[0] });
-            $mol_assert_equal(want?.kind, 'values_want');
-            if (want?.kind !== 'values_want')
-                return;
-            $mol_assert_like(want.names, ['calc_result', 'calc_value']);
-            const got = $bog_vmap_bridge_read({ data: sent[1] });
-            $mol_assert_equal(got?.kind, 'values');
-            if (got?.kind !== 'values')
-                return;
-            $mol_assert_like(got.values, { calc_result: '42', calc_value: 'Error: boom' });
-        },
-        'a message from another namespace is not ours'($) {
-            $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: 'somebody_else', kind: 'libs_set', parts: [] } }), null);
-            $mol_assert_equal($bog_vmap_bridge_read({ data: 'text' }), null);
-            $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: $bog_vmap_bridge_ns } }), null);
-        },
-        /** Passing a peer at all turns the check on: an unknown source is refused. */
-        'a message from a window other than the peer is dropped'($) {
-            const peer = {};
-            const stranger = {};
-            const data = { ns: $bog_vmap_bridge_ns, kind: 'ready' };
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, peer), null);
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: peer }, peer)?.kind, 'ready');
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, null), null);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
-     * `click_at` on the wire: the relayed click keeps its point and its modifiers,
-     * and comes in only from the peer, like every other message.
-     */
-    $mol_test({
-        'click_at survives the wire with its point and modifiers'($) {
-            const posted = [];
-            const target = { postMessage(data) { posted.push(data); } };
-            const mods = { altKey: false, ctrlKey: true, metaKey: false, shiftKey: false };
-            $bog_vmap_bridge_send(target, { kind: 'click_at', x: 12.5, y: -3, mods });
-            $mol_assert_equal(posted.length, 1);
-            const read = $bog_vmap_bridge_read({ data: posted[0], source: target }, target);
-            $mol_assert_equal(read?.kind, 'click_at');
-            if (read?.kind !== 'click_at')
-                return;
-            $mol_assert_equal(read.x, 12.5);
-            $mol_assert_equal(read.y, -3);
-            $mol_assert_like(read.mods, mods);
-        },
-        'a click_at from a stranger is dropped'($) {
-            const peer = {};
-            const stranger = {};
-            const data = { ns: $bog_vmap_bridge_ns, kind: 'click_at', x: 1, y: 2, mods: {} };
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, peer), null);
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: peer }, peer)?.kind, 'click_at');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'get'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
-            $mol_assert_equal(proxy.foo, 777);
-        },
-        'has'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
-            $mol_assert_equal('foo' in proxy, true);
-        },
-        'set'() {
-            const target = { foo: 777 };
-            const proxy = $mol_delegate({}, () => target);
-            proxy.foo = 123;
-            $mol_assert_equal(target.foo, 123);
-        },
-        'getOwnPropertyDescriptor'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
-            $mol_assert_like(Object.getOwnPropertyDescriptor(proxy, 'foo'), {
-                value: 777,
-                writable: true,
-                enumerable: true,
-                configurable: true,
-            });
-        },
-        'ownKeys'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777, [Symbol.toStringTag]: 'bar' }));
-            $mol_assert_like(Reflect.ownKeys(proxy), ['foo', Symbol.toStringTag]);
-        },
-        'getPrototypeOf'() {
-            class Foo {
-            }
-            const proxy = $mol_delegate({}, () => new Foo);
-            $mol_assert_equal(Object.getPrototypeOf(proxy), Foo.prototype);
-        },
-        'setPrototypeOf'() {
-            class Foo {
-            }
-            const target = {};
-            const proxy = $mol_delegate({}, () => target);
-            Object.setPrototypeOf(proxy, Foo.prototype);
-            $mol_assert_equal(Object.getPrototypeOf(target), Foo.prototype);
-        },
-        'instanceof'() {
-            class Foo {
-            }
-            const proxy = $mol_delegate({}, () => new Foo);
-            $mol_assert_ok(proxy instanceof Foo);
-            $mol_assert_ok(proxy instanceof $mol_delegate);
-        },
-        'autobind'() {
-            class Foo {
-            }
-            const proxy = $mol_delegate({}, () => new Foo);
-            $mol_assert_ok(proxy instanceof Foo);
-            $mol_assert_ok(proxy instanceof $mol_delegate);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($) {
-    /// @todo right orderinng
-    $.$mol_after_mock_queue = [];
-    function $mol_after_mock_warp() {
-        const queue = $.$mol_after_mock_queue.splice(0);
-        for (const task of queue)
-            task();
-    }
-    $.$mol_after_mock_warp = $mol_after_mock_warp;
-    class $mol_after_mock_commmon extends $mol_object2 {
-        task;
-        promise = Promise.resolve();
-        cancelled = false;
-        id;
-        constructor(task) {
-            super();
-            this.task = task;
-            $.$mol_after_mock_queue.push(task);
-        }
-        destructor() {
-            const index = $.$mol_after_mock_queue.indexOf(this.task);
-            if (index >= 0)
-                $.$mol_after_mock_queue.splice(index, 1);
-        }
-    }
-    $.$mol_after_mock_commmon = $mol_after_mock_commmon;
-    class $mol_after_mock_timeout extends $mol_after_mock_commmon {
-        delay;
-        constructor(delay, task) {
-            super(task);
-            this.delay = delay;
-        }
-    }
-    $.$mol_after_mock_timeout = $mol_after_mock_timeout;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test_mocks.push($ => {
-        $.$mol_after_timeout = $mol_after_mock_timeout;
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'Vector limiting'() {
-            let point = new $mol_vector_3d(7, 10, 13);
-            const res = point.limited([[1, 5], [15, 20], [5, 10]]);
-            $mol_assert_equal(res.x, 5);
-            $mol_assert_equal(res.y, 15);
-            $mol_assert_equal(res.z, 10);
-        },
-        'Vector adding scalar'() {
-            let point = new $mol_vector_3d(1, 2, 3);
-            let res = point.added0(5);
-            $mol_assert_equal(res.x, 6);
-            $mol_assert_equal(res.y, 7);
-            $mol_assert_equal(res.z, 8);
-        },
-        'Vector adding vector'() {
-            let point = new $mol_vector_3d(1, 2, 3);
-            let res = point.added1([5, 10, 15]);
-            $mol_assert_equal(res.x, 6);
-            $mol_assert_equal(res.y, 12);
-            $mol_assert_equal(res.z, 18);
-        },
-        'Vector multiplying scalar'() {
-            let point = new $mol_vector_3d(2, 3, 4);
-            let res = point.multed0(-1);
-            $mol_assert_equal(res.x, -2);
-            $mol_assert_equal(res.y, -3);
-            $mol_assert_equal(res.z, -4);
-        },
-        'Vector multiplying vector'() {
-            let point = new $mol_vector_3d(2, 3, 4);
-            let res = point.multed1([5, 2, -2]);
-            $mol_assert_equal(res.x, 10);
-            $mol_assert_equal(res.y, 6);
-            $mol_assert_equal(res.z, -8);
-        },
-        'Matrix adding matrix'() {
-            let matrix = new $mol_vector_matrix(...[[1, 2], [3, 4], [5, 6]]);
-            let res = matrix.added2([[10, 20], [30, 40], [50, 60]]);
-            $mol_assert_equal(res[0][0], 11);
-            $mol_assert_equal(res[0][1], 22);
-            $mol_assert_equal(res[1][0], 33);
-            $mol_assert_equal(res[1][1], 44);
-            $mol_assert_equal(res[2][0], 55);
-            $mol_assert_equal(res[2][1], 66);
-        },
-        'Matrix multiplying matrix'() {
-            let matrix = new $mol_vector_matrix(...[[2, 3], [4, 5], [6, 7]]);
-            let res = matrix.multed2([[2, 3], [4, 5], [6, 7]]);
-            $mol_assert_equal(res[0][0], 4);
-            $mol_assert_equal(res[0][1], 9);
-            $mol_assert_equal(res[1][0], 16);
-            $mol_assert_equal(res[1][1], 25);
-            $mol_assert_equal(res[2][0], 36);
-            $mol_assert_equal(res[2][1], 49);
-        },
-        'Range expanding'() {
-            let range = $mol_vector_range_full.inversed;
-            const expanded = range.expanded0(10).expanded0(5);
-            $mol_assert_like([...expanded], [5, 10]);
-        },
-        'Vector of range expanding by vector'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = dimensions.expanded1([1, 7]).expanded1([3, 5]);
-            $mol_assert_like([...expanded.x], [1, 3]);
-            $mol_assert_like([...expanded.y], [5, 7]);
-        },
-        'Vector of range expanding by vector of range'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = dimensions
-                .expanded2([[1, 3], [7, 9]])
-                .expanded2([[2, 4], [6, 8]]);
-            $mol_assert_like([...expanded.x], [1, 4]);
-            $mol_assert_like([...expanded.y], [6, 9]);
-        },
-        'Vector of infinity range expanding by vector of range'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const next = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = next
-                .expanded2(dimensions);
-            $mol_assert_like([...expanded.x], [Infinity, -Infinity]);
-            $mol_assert_like([...expanded.y], [Infinity, -Infinity]);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'span for same uri'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const child = span.span(4, 5, 8);
-            $mol_assert_equal(child.uri, 'test.ts');
-            $mol_assert_equal(child.row, 4);
-            $mol_assert_equal(child.col, 5);
-            $mol_assert_equal(child.length, 8);
-        },
-        'span after of given position'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const child = span.after(11);
-            $mol_assert_equal(child.uri, 'test.ts');
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 7);
-            $mol_assert_equal(child.length, 11);
-        },
-        'slice span - regular'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            const child = span.slice(1, 4);
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 4);
-            $mol_assert_equal(child.length, 3);
-            const child2 = span.slice(2, 2);
-            $mol_assert_equal(child2.col, 5);
-            $mol_assert_equal(child2.length, 0);
-        },
-        'slice span - negative'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            const child = span.slice(-3, -1);
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 5);
-            $mol_assert_equal(child.length, 2);
-        },
-        'slice span - out of range'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            $mol_assert_fail(() => span.slice(-1, 3), `End value '3' can't be less than begin value (test.ts#1:3/5)`);
-            $mol_assert_fail(() => span.slice(1, 6), `End value '6' out of range (test.ts#1:3/5)`);
-            $mol_assert_fail(() => span.slice(1, 10), `End value '10' out of range (test.ts#1:3/5)`);
-        },
-        'error handling'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const error = span.error('Some error');
-            $mol_assert_equal(error.message, 'Some error (test.ts#1:3/4)');
-        }
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'tree parsing'($) {
-            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids.length, 2);
-            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids[1].type, "bar");
-            $mol_assert_equal($.$mol_tree2_from_string("foo\n\n\n").kids.length, 1);
-            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids.length, 2);
-            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids[1].value, "bar");
-            $mol_assert_equal($.$mol_tree2_from_string("foo bar \\pol\n").kids[0].kids[0].kids[0].value, "pol");
-            $mol_assert_equal($.$mol_tree2_from_string("foo bar\n\t\\pol\n\t\\men\n").kids[0].kids[0].kids[1].value, "men");
-            $mol_assert_equal($.$mol_tree2_from_string('foo bar \\text\n').toString(), 'foo bar \\text\n');
-        },
-        'Too many tabs'($) {
-            const tree = `
-				foo
-						bar
-			`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Too many tabs\ntest#3:1/6\n!!!!!!\n\t\t\t\t\t\tbar');
-        },
-        'Too few tabs'($) {
-            const tree = `
-					foo
-				bar
-			`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Too few tabs\ntest#3:1/4\n!!!!\n\t\t\t\tbar');
-        },
-        'Wrong nodes separator at start'($) {
-            const tree = `foo\n \tbar\n`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Wrong nodes separator\ntest#2:1/2\n!!\n \tbar');
-        },
-        'Wrong nodes separator in the middle'($) {
-            const tree = `foo  bar\n`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar');
-        },
-        'Unexpected EOF, LF required'($) {
-            const tree = `	foo`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Unexpected EOF, LF required\ntest#1:5/1\n	   !\n	foo');
-        },
-        'Errors skip and collect'($) {
-            const tree = `foo  bar`;
-            const errors = [];
-            const $$ = $.$mol_ambient({
-                $mol_fail: (error) => {
-                    errors.push(error.message);
-                    return null;
-                }
-            });
-            const res = $$.$mol_tree2_from_string(tree, 'test');
-            $mol_assert_like(errors, [
-                'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar',
-                'Unexpected EOF, LF required\ntest#1:9/1\n        !\nfoo  bar',
-            ]);
-            $mol_assert_equal(res.toString(), 'foo bar\n');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'all cases of using maybe'() {
-            $mol_assert_equal($mol_maybe(0)[0], 0);
-            $mol_assert_equal($mol_maybe(false)[0], false);
-            $mol_assert_equal($mol_maybe(null)[0], void 0);
-            $mol_assert_equal($mol_maybe(void 0)[0], void 0);
-            $mol_assert_equal($mol_maybe(void 0).map(v => v.toString())[0], void 0);
-            $mol_assert_equal($mol_maybe(0).map(v => v.toString())[0], '0');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    function check(tree, ideal) {
-        $mol_assert_equal(tree.toString(), $$.$mol_tree2_from_string(ideal).toString());
-    }
-    $mol_test({
-        'inserting'($) {
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c'), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c', 'd'), `
-					a b c x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`)
-                .insert($mol_tree2.struct('x'), 0, 0, 0), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`)
-                .insert($mol_tree2.struct('x'), 0, 0, 0, 0), `
-					a b \\
-						x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`)
-                .insert($mol_tree2.struct('x'), null, null, null), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`)
-                .insert($mol_tree2.struct('x'), null, null, null, null), `
-					a b \\
-						x
-				`);
-        },
-        'updating'($) {
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([], 'a', 'b', 'c')[0], `
-					a b
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([$mol_tree2.struct('x')])[0], `
-					x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([$mol_tree2.struct('x'), $mol_tree2.struct('y')], 'a', 'b', 'c')[0], `
-					a b
-						x
-						y
-				`);
-        },
-        'deleting'($) {
-            const base = $.$mol_tree2_from_string(`
-				a b c d
-			`);
-            check(base.insert(null, 'a', 'b', 'c'), `
-					a b
-				`);
-            check(base.update(base.select('a', 'b', 'c', null).kids, 'a', 'b', 'c')[0], `
-					a b d
-				`);
-            check(base.insert(null, 0, 0, 0), `
-					a b
-				`);
-        },
-        'hack'($) {
-            const res = $.$mol_tree2_from_string(`
-				foo bar xxx
-			`)
-                .hack({
-                'bar': (input, belt) => [input.struct('777', input.hack(belt))],
-            });
-            $mol_assert_equal(res.map(String), ['foo 777 xxx\n']);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'init with overload'() {
-            class X extends $mol_object {
-                foo() {
-                    return 1;
-                }
-            }
-            var x = X.make({
-                foo: () => 2,
-            });
-            $mol_assert_equal(x.foo(), 2);
-        },
-        'Context in instance inherits from class'($) {
-            const custom = $.$mol_ambient({});
-            class X extends $.$mol_object {
-                static $ = custom;
-            }
-            $mol_assert_equal(new X().$, custom);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'Collect deps'() {
-            const pub1 = new $mol_wire_pub;
-            const pub2 = new $mol_wire_pub;
-            const sub = new $mol_wire_pub_sub;
-            const bu1 = sub.track_on();
-            try {
-                pub1.promote();
-                pub2.promote();
-                pub2.promote();
-            }
-            finally {
-                sub.track_cut();
-                sub.track_off(bu1);
-            }
-            pub1.emit();
-            pub2.emit();
-            $mol_assert_like(sub.pub_list, [pub1, pub2, pub2]);
-            const bu2 = sub.track_on();
-            try {
-                pub1.promote();
-                pub1.promote();
-                pub2.promote();
-            }
-            finally {
-                sub.track_cut();
-                sub.track_off(bu2);
-            }
-            pub1.emit();
-            pub2.emit();
-            $mol_assert_like(sub.pub_list, [pub1, pub1, pub2]);
-        },
-        'cyclic detection'($) {
-            const sub1 = new $mol_wire_pub_sub;
-            const sub2 = new $mol_wire_pub_sub;
-            const bu1 = sub1.track_on();
-            try {
-                const bu2 = sub2.track_on();
-                try {
-                    $mol_assert_fail(() => sub1.promote(), 'Circular subscription');
-                }
-                finally {
-                    sub2.track_cut();
-                    sub2.track_off(bu2);
-                }
-            }
-            finally {
-                sub1.track_cut();
-                sub1.track_off(bu1);
-            }
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test_mocks.push($ => {
-        $.$mol_after_tick = $mol_after_mock_commmon;
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'Sync execution'() {
-            class Sync extends $mol_object2 {
-                static calc(a, b) {
-                    return a + b;
-                }
-            }
-            __decorate([
-                $mol_wire_method
-            ], Sync, "calc", null);
-            $mol_assert_equal(Sync.calc(1, 2), 3);
-        },
-        async 'async <=> sync'() {
-            class SyncAsync extends $mol_object2 {
-                static async val(a) {
-                    return a;
-                }
-                static sum(a, b) {
-                    const syn = $mol_wire_sync(this);
-                    return syn.val(a) + syn.val(b);
-                }
-                static async calc(a, b) {
-                    return 5 + await $mol_wire_async(this).sum(a, b);
-                }
-            }
-            $mol_assert_equal(await SyncAsync.calc(1, 2), 8);
-        },
-        async 'Idempotence control'() {
-            class Idempotence extends $mol_object2 {
-                static logs_idemp = 0;
-                static logs_unidemp = 0;
-                static log_idemp() {
-                    this.logs_idemp += 1;
-                }
-                static log_unidemp() {
-                    this.logs_unidemp += 1;
-                }
-                static async val(a) {
-                    return a;
-                }
-                static sum(a, b) {
-                    this.log_idemp();
-                    this.log_unidemp();
-                    const syn = $mol_wire_sync(this);
-                    return syn.val(a) + syn.val(b);
-                }
-                static async calc(a, b) {
-                    return 5 + await $mol_wire_async(this).sum(a, b);
-                }
-            }
-            __decorate([
-                $mol_wire_method
-            ], Idempotence, "log_idemp", null);
-            $mol_assert_equal(await Idempotence.calc(1, 2), 8);
-            $mol_assert_equal(Idempotence.logs_idemp, 1);
-            $mol_assert_equal(Idempotence.logs_unidemp, 3);
-        },
-        async 'Error handling'() {
-            class Handle extends $mol_object2 {
-                static async sum(a, b) {
-                    $mol_fail(new Error('test error ' + (a + b)));
-                }
-                static check() {
-                    try {
-                        return $mol_wire_sync(Handle).sum(1, 2);
-                    }
-                    catch (error) {
-                        if ($mol_promise_like(error))
-                            $mol_fail_hidden(error);
-                        $mol_assert_equal(error.message, 'test error 3');
-                    }
-                }
-            }
-            await $mol_wire_async(Handle).check();
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-
-;
-"use strict";
 
 ;
 "use strict";
@@ -1504,6 +1086,15 @@ var $;
         $.$mol_log3_warn = () => { };
         $.$mol_log3_rise = () => { };
         $.$mol_log3_area = () => () => { };
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test_mocks.push($ => {
+        $.$mol_after_timeout = $mol_after_mock_timeout;
     });
 })($ || ($ = {}));
 
@@ -2505,6 +2096,22 @@ var $;
 var $;
 (function ($) {
     $mol_test({
+        'all cases of using maybe'() {
+            $mol_assert_equal($mol_maybe(0)[0], 0);
+            $mol_assert_equal($mol_maybe(false)[0], false);
+            $mol_assert_equal($mol_maybe(null)[0], void 0);
+            $mol_assert_equal($mol_maybe(void 0)[0], void 0);
+            $mol_assert_equal($mol_maybe(void 0).map(v => v.toString())[0], void 0);
+            $mol_assert_equal($mol_maybe(0).map(v => v.toString())[0], '0');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
         'run callback'() {
             class Plus1 extends $mol_wrapper {
                 static wrap(task) {
@@ -2763,6 +2370,399 @@ var $;
             var node = x.dom_node();
             node.click();
             $mol_assert_ok(clicked);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * Tests of the wire protocol: what goes in through `send` comes out of `read`,
+     * and what is not ours does not. A fake `postMessage` stands in for the window.
+     */
+    $mol_test({
+        'libs_set survives the wire'($) {
+            const parts = [
+                { tree: 'my_card mol_view\n\tprice 0\n', js: 'price(){ return 1 }', css: '' },
+                { tree: 'my_badge my_card\n', js: '', css: '[my_badge] { color: red }' },
+            ];
+            const sent = [];
+            $bog_vmap_bridge_send({ postMessage: (data) => { sent.push(data); } }, { kind: 'libs_set', parts });
+            $mol_assert_equal(sent.length, 1);
+            const message = $bog_vmap_bridge_read({ data: sent[0] });
+            $mol_assert_equal(message?.kind, 'libs_set');
+            if (message?.kind !== 'libs_set')
+                return;
+            $mol_assert_like(message.parts, parts);
+        },
+        /** The question goes down as a list of names, the answer comes up keyed by them. */
+        'values_want and values survive the wire'($) {
+            const sent = [];
+            const target = { postMessage: (data) => { sent.push(data); } };
+            $bog_vmap_bridge_send(target, { kind: 'values_want', names: ['calc_result', 'calc_value'] });
+            $bog_vmap_bridge_send(target, { kind: 'values', values: { calc_result: '42', calc_value: 'Error: boom' } });
+            const want = $bog_vmap_bridge_read({ data: sent[0] });
+            $mol_assert_equal(want?.kind, 'values_want');
+            if (want?.kind !== 'values_want')
+                return;
+            $mol_assert_like(want.names, ['calc_result', 'calc_value']);
+            const got = $bog_vmap_bridge_read({ data: sent[1] });
+            $mol_assert_equal(got?.kind, 'values');
+            if (got?.kind !== 'values')
+                return;
+            $mol_assert_like(got.values, { calc_result: '42', calc_value: 'Error: boom' });
+        },
+        'a message from another namespace is not ours'($) {
+            $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: 'somebody_else', kind: 'libs_set', parts: [] } }), null);
+            $mol_assert_equal($bog_vmap_bridge_read({ data: 'text' }), null);
+            $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: $bog_vmap_bridge_ns } }), null);
+        },
+        /** Passing a peer at all turns the check on: an unknown source is refused. */
+        'a message from a window other than the peer is dropped'($) {
+            const peer = {};
+            const stranger = {};
+            const data = { ns: $bog_vmap_bridge_ns, kind: 'ready' };
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, peer), null);
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: peer }, peer)?.kind, 'ready');
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, null), null);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * `click_at` on the wire: the relayed click keeps its point and its modifiers,
+     * and comes in only from the peer, like every other message.
+     */
+    $mol_test({
+        'click_at survives the wire with its point and modifiers'($) {
+            const posted = [];
+            const target = { postMessage(data) { posted.push(data); } };
+            const mods = { altKey: false, ctrlKey: true, metaKey: false, shiftKey: false };
+            $bog_vmap_bridge_send(target, { kind: 'click_at', x: 12.5, y: -3, mods });
+            $mol_assert_equal(posted.length, 1);
+            const read = $bog_vmap_bridge_read({ data: posted[0], source: target }, target);
+            $mol_assert_equal(read?.kind, 'click_at');
+            if (read?.kind !== 'click_at')
+                return;
+            $mol_assert_equal(read.x, 12.5);
+            $mol_assert_equal(read.y, -3);
+            $mol_assert_like(read.mods, mods);
+        },
+        'a click_at from a stranger is dropped'($) {
+            const peer = {};
+            const stranger = {};
+            const data = { ns: $bog_vmap_bridge_ns, kind: 'click_at', x: 1, y: 2, mods: {} };
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, peer), null);
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: peer }, peer)?.kind, 'click_at');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'Vector limiting'() {
+            let point = new $mol_vector_3d(7, 10, 13);
+            const res = point.limited([[1, 5], [15, 20], [5, 10]]);
+            $mol_assert_equal(res.x, 5);
+            $mol_assert_equal(res.y, 15);
+            $mol_assert_equal(res.z, 10);
+        },
+        'Vector adding scalar'() {
+            let point = new $mol_vector_3d(1, 2, 3);
+            let res = point.added0(5);
+            $mol_assert_equal(res.x, 6);
+            $mol_assert_equal(res.y, 7);
+            $mol_assert_equal(res.z, 8);
+        },
+        'Vector adding vector'() {
+            let point = new $mol_vector_3d(1, 2, 3);
+            let res = point.added1([5, 10, 15]);
+            $mol_assert_equal(res.x, 6);
+            $mol_assert_equal(res.y, 12);
+            $mol_assert_equal(res.z, 18);
+        },
+        'Vector multiplying scalar'() {
+            let point = new $mol_vector_3d(2, 3, 4);
+            let res = point.multed0(-1);
+            $mol_assert_equal(res.x, -2);
+            $mol_assert_equal(res.y, -3);
+            $mol_assert_equal(res.z, -4);
+        },
+        'Vector multiplying vector'() {
+            let point = new $mol_vector_3d(2, 3, 4);
+            let res = point.multed1([5, 2, -2]);
+            $mol_assert_equal(res.x, 10);
+            $mol_assert_equal(res.y, 6);
+            $mol_assert_equal(res.z, -8);
+        },
+        'Matrix adding matrix'() {
+            let matrix = new $mol_vector_matrix(...[[1, 2], [3, 4], [5, 6]]);
+            let res = matrix.added2([[10, 20], [30, 40], [50, 60]]);
+            $mol_assert_equal(res[0][0], 11);
+            $mol_assert_equal(res[0][1], 22);
+            $mol_assert_equal(res[1][0], 33);
+            $mol_assert_equal(res[1][1], 44);
+            $mol_assert_equal(res[2][0], 55);
+            $mol_assert_equal(res[2][1], 66);
+        },
+        'Matrix multiplying matrix'() {
+            let matrix = new $mol_vector_matrix(...[[2, 3], [4, 5], [6, 7]]);
+            let res = matrix.multed2([[2, 3], [4, 5], [6, 7]]);
+            $mol_assert_equal(res[0][0], 4);
+            $mol_assert_equal(res[0][1], 9);
+            $mol_assert_equal(res[1][0], 16);
+            $mol_assert_equal(res[1][1], 25);
+            $mol_assert_equal(res[2][0], 36);
+            $mol_assert_equal(res[2][1], 49);
+        },
+        'Range expanding'() {
+            let range = $mol_vector_range_full.inversed;
+            const expanded = range.expanded0(10).expanded0(5);
+            $mol_assert_like([...expanded], [5, 10]);
+        },
+        'Vector of range expanding by vector'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = dimensions.expanded1([1, 7]).expanded1([3, 5]);
+            $mol_assert_like([...expanded.x], [1, 3]);
+            $mol_assert_like([...expanded.y], [5, 7]);
+        },
+        'Vector of range expanding by vector of range'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = dimensions
+                .expanded2([[1, 3], [7, 9]])
+                .expanded2([[2, 4], [6, 8]]);
+            $mol_assert_like([...expanded.x], [1, 4]);
+            $mol_assert_like([...expanded.y], [6, 9]);
+        },
+        'Vector of infinity range expanding by vector of range'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const next = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = next
+                .expanded2(dimensions);
+            $mol_assert_like([...expanded.x], [Infinity, -Infinity]);
+            $mol_assert_like([...expanded.y], [Infinity, -Infinity]);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'span for same uri'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const child = span.span(4, 5, 8);
+            $mol_assert_equal(child.uri, 'test.ts');
+            $mol_assert_equal(child.row, 4);
+            $mol_assert_equal(child.col, 5);
+            $mol_assert_equal(child.length, 8);
+        },
+        'span after of given position'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const child = span.after(11);
+            $mol_assert_equal(child.uri, 'test.ts');
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 7);
+            $mol_assert_equal(child.length, 11);
+        },
+        'slice span - regular'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            const child = span.slice(1, 4);
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 4);
+            $mol_assert_equal(child.length, 3);
+            const child2 = span.slice(2, 2);
+            $mol_assert_equal(child2.col, 5);
+            $mol_assert_equal(child2.length, 0);
+        },
+        'slice span - negative'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            const child = span.slice(-3, -1);
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 5);
+            $mol_assert_equal(child.length, 2);
+        },
+        'slice span - out of range'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            $mol_assert_fail(() => span.slice(-1, 3), `End value '3' can't be less than begin value (test.ts#1:3/5)`);
+            $mol_assert_fail(() => span.slice(1, 6), `End value '6' out of range (test.ts#1:3/5)`);
+            $mol_assert_fail(() => span.slice(1, 10), `End value '10' out of range (test.ts#1:3/5)`);
+        },
+        'error handling'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const error = span.error('Some error');
+            $mol_assert_equal(error.message, 'Some error (test.ts#1:3/4)');
+        }
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'tree parsing'($) {
+            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids.length, 2);
+            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids[1].type, "bar");
+            $mol_assert_equal($.$mol_tree2_from_string("foo\n\n\n").kids.length, 1);
+            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids.length, 2);
+            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids[1].value, "bar");
+            $mol_assert_equal($.$mol_tree2_from_string("foo bar \\pol\n").kids[0].kids[0].kids[0].value, "pol");
+            $mol_assert_equal($.$mol_tree2_from_string("foo bar\n\t\\pol\n\t\\men\n").kids[0].kids[0].kids[1].value, "men");
+            $mol_assert_equal($.$mol_tree2_from_string('foo bar \\text\n').toString(), 'foo bar \\text\n');
+        },
+        'Too many tabs'($) {
+            const tree = `
+				foo
+						bar
+			`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Too many tabs\ntest#3:1/6\n!!!!!!\n\t\t\t\t\t\tbar');
+        },
+        'Too few tabs'($) {
+            const tree = `
+					foo
+				bar
+			`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Too few tabs\ntest#3:1/4\n!!!!\n\t\t\t\tbar');
+        },
+        'Wrong nodes separator at start'($) {
+            const tree = `foo\n \tbar\n`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Wrong nodes separator\ntest#2:1/2\n!!\n \tbar');
+        },
+        'Wrong nodes separator in the middle'($) {
+            const tree = `foo  bar\n`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar');
+        },
+        'Unexpected EOF, LF required'($) {
+            const tree = `	foo`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Unexpected EOF, LF required\ntest#1:5/1\n	   !\n	foo');
+        },
+        'Errors skip and collect'($) {
+            const tree = `foo  bar`;
+            const errors = [];
+            const $$ = $.$mol_ambient({
+                $mol_fail: (error) => {
+                    errors.push(error.message);
+                    return null;
+                }
+            });
+            const res = $$.$mol_tree2_from_string(tree, 'test');
+            $mol_assert_like(errors, [
+                'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar',
+                'Unexpected EOF, LF required\ntest#1:9/1\n        !\nfoo  bar',
+            ]);
+            $mol_assert_equal(res.toString(), 'foo bar\n');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    function check(tree, ideal) {
+        $mol_assert_equal(tree.toString(), $$.$mol_tree2_from_string(ideal).toString());
+    }
+    $mol_test({
+        'inserting'($) {
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c'), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c', 'd'), `
+					a b c x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`)
+                .insert($mol_tree2.struct('x'), 0, 0, 0), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`)
+                .insert($mol_tree2.struct('x'), 0, 0, 0, 0), `
+					a b \\
+						x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`)
+                .insert($mol_tree2.struct('x'), null, null, null), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`)
+                .insert($mol_tree2.struct('x'), null, null, null, null), `
+					a b \\
+						x
+				`);
+        },
+        'updating'($) {
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([], 'a', 'b', 'c')[0], `
+					a b
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([$mol_tree2.struct('x')])[0], `
+					x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([$mol_tree2.struct('x'), $mol_tree2.struct('y')], 'a', 'b', 'c')[0], `
+					a b
+						x
+						y
+				`);
+        },
+        'deleting'($) {
+            const base = $.$mol_tree2_from_string(`
+				a b c d
+			`);
+            check(base.insert(null, 'a', 'b', 'c'), `
+					a b
+				`);
+            check(base.update(base.select('a', 'b', 'c', null).kids, 'a', 'b', 'c')[0], `
+					a b d
+				`);
+            check(base.insert(null, 0, 0, 0), `
+					a b
+				`);
+        },
+        'hack'($) {
+            const res = $.$mol_tree2_from_string(`
+				foo bar xxx
+			`)
+                .hack({
+                'bar': (input, belt) => [input.struct('777', input.hack(belt))],
+            });
+            $mol_assert_equal(res.map(String), ['foo 777 xxx\n']);
         },
     });
 })($ || ($ = {}));
@@ -7123,44 +7123,40 @@ var $;
             $mol_assert_equal($bog_vmap_lib_sibling('http://localhost:9080/bog/vmap/app/-/index.html', 'scene'), 'http://localhost:9080/bog/vmap/scene/-/');
         },
         /**
-         * A deploy publishes the content of `-/` into the folder of the module, so
-         * the same three modules are siblings one level up. The address of the pack
-         * itself is then `<origin>/vmap/part/`, which is where `web.view.tree` is.
+         * A deploy publishes the editor at the root of the site and every other
+         * module as a folder beneath it, so a sibling is a folder INSIDE the one the
+         * editor is served from. The address of the pack is then `<site>/part/`,
+         * which is where `web.view.tree` is, and the bundle of the sandbox is
+         * `<site>/scene/web.js` — neither of them a page.
          */
-        'a sibling module on a deploy has no build folder'($) {
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/app/', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/app/', 'part'), 'https://b-on-g.github.io/vmap/part/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/app/index.html', 'part'), 'https://b-on-g.github.io/vmap/part/');
+        'a sibling module on a deploy is a folder under the editor'($) {
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/', 'part'), 'https://b-on-g.github.io/vmap/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/index.html', 'part'), 'https://b-on-g.github.io/vmap/part/');
         },
         /**
          * A folder address without its slash reads the same: a last segment with no
          * dot in it is a folder, not a page file. GitHub Pages answers both.
          */
         'a page address without a trailing slash reads as a folder'($) {
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/app', 'part'), 'https://b-on-g.github.io/vmap/part/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/app?x=1#y', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
-        },
-        /** A pack served from the root of an origin has one segment less and no more. */
-        'a pack at the root of an origin'($) {
-            $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example.org/app/', 'part'), 'https://vmap.example.org/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap', 'part'), 'https://b-on-g.github.io/vmap/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap?x=1#y', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
         },
         /**
          * A dot in a FOLDER name does not make it a page. A versioned deploy is the
-         * ordinary way to get one, and taking `v1.2` for a page would eat a second
+         * ordinary way to get one, and taking `v1.2` for a page would eat the
          * segment and point both addresses a level above where they live.
          */
         'a dot in a folder name is not a page file'($) {
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/app/', 'part'), 'https://b-on-g.github.io/vmap/v1.2/part/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/app/index.html', 'scene'), 'https://b-on-g.github.io/vmap/v1.2/scene/');
-            // a module folder may carry one as well
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/app.v2/', 'part'), 'https://b-on-g.github.io/vmap/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/', 'part'), 'https://b-on-g.github.io/vmap/v1.2/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/index.html', 'scene'), 'https://b-on-g.github.io/vmap/v1.2/scene/');
         },
         /**
-         * The editor deployed as the site root has no folder to replace, so the
-         * siblings lie at the root beside it. Nothing is eaten and no address climbs
-         * above the root, which is the one thing that must never happen here.
+         * The editor on a domain of its own is served from the root itself, so the
+         * siblings are the first segment there. Nothing is eaten and no address
+         * climbs above the root, which is the one thing that must never happen here.
          */
-        'a page at the root of a site keeps its siblings at the root'($) {
+        'an editor served from the root of a site keeps its siblings under it'($) {
             $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/', 'part'), 'https://vmap.example/part/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/index.html', 'scene'), 'https://vmap.example/scene/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example', 'part'), 'https://vmap.example/part/');
@@ -7478,7 +7474,7 @@ var $;
             now: () => clock.now,
             ...over,
         });
-        pane.handshake(1);
+        pane.handshake(pane.scene_key(), 1);
         const answer = (data) => {
             clock.now++;
             pane.message_receive({ data: { ns: $bog_vmap_bridge_ns, ...data }, source: peer });
@@ -7579,7 +7575,7 @@ var $;
         },
         'nothing is relayed while the scene is not listening'($) {
             const { pane, posted } = pane_make($);
-            pane.handshake(0);
+            pane.handshake(pane.scene_key(), 0);
             pane.node_press(pointer(5, 5));
             pane.node_release(pointer(5, 5, { buttons: 0 }));
             $mol_assert_equal(posted.length, 0);
@@ -7674,7 +7670,7 @@ var $;
             pane.watchdog();
             answer({ kind: 'sizes', sizes: {} });
             const frame_before = pane.sub()[0];
-            $mol_assert_equal(frame_before, pane.Scene(pane.scene_generation()));
+            $mol_assert_equal(frame_before, pane.Scene(pane.scene_key()));
             pane.stalled(true);
             posted.length = 0;
             pane.scene_restart();
@@ -7682,7 +7678,7 @@ var $;
             $mol_assert_equal(pane.ready(), false);
             $mol_assert_equal(pane.warmed(), false);
             $mol_assert_equal(pane.sub()[0] !== frame_before, true);
-            $mol_assert_equal(pane.sub()[0], pane.Scene(pane.scene_generation()));
+            $mol_assert_equal(pane.sub()[0], pane.Scene(pane.scene_key()));
             $mol_assert_equal(pane.sub().length, 3);
             // a frame that has not spoken gets nothing and is accused of nothing
             $mol_assert_equal(pane.watchdog(), null);
@@ -7691,7 +7687,56 @@ var $;
             answer({ kind: 'ready' });
             pane.watchdog();
             $mol_assert_equal(pane.ready(), true);
-            $mol_assert_like(posted.map(m => m.kind), ['doc_set', 'css_set', 'libs_set', 'spots_set', 'camera_set']);
+            $mol_assert_like(posted.map(m => m.kind), 
+            // the pack first: the scene compiles nothing until it has one
+            ['pack_set', 'doc_set', 'css_set', 'libs_set', 'spots_set', 'camera_set']);
+        },
+        /**
+         * The frame is isolated and has no address, and the ORDER of the two says so.
+         *
+         * `$mol_dom_render_attributes` writes the dictionary in key order, so a frame
+         * that got its source before its sandbox is already loading unsandboxed —
+         * with the attribute present in the DOM and the audit green. Reading the
+         * dictionary is therefore the check, not reading the element.
+         */
+        'the frame is sandboxed first, addressed never and raised from markup'($) {
+            const { pane } = pane_make($, {}, { scene_bundle: () => 'https://vmap.test/scene/web.js' });
+            // read as entries and not by property name: dropping the attribute would
+            // then be a type error and the build would stop before this ever ran,
+            // leaving the last green bundle in place to be tested instead
+            const attr = pane.Scene(pane.scene_key()).attr();
+            const entries = Object.entries(attr);
+            const keys = entries.map(([name]) => name);
+            $mol_assert_equal(keys[0], 'sandbox');
+            $mol_assert_equal(entries[0][1], 'allow-scripts');
+            // `null` is removal. An empty `src` would load the page we stand on.
+            $mol_assert_equal(attr.src, null);
+            $mol_assert_ok(keys.indexOf('srcdoc') > 0);
+            const html = String(attr.srcdoc);
+            $mol_assert_ok(html.includes('src="https://vmap.test/scene/web.js"'));
+            $mol_assert_ok(html.includes('color-scheme:dark'));
+        },
+        /**
+         * One pack per realm, held by the key of the frame now that no address holds
+         * it: the pack is IN the key, so naming another one addresses another frame.
+         * That the element really is replaced when a person types a pack is
+         * `flow.test.ts`, where the whole chain from the field down is real.
+         *
+         * The pack also goes out first, before the document and the libraries: the
+         * scene refuses to compile until it has one.
+         * @see ../../ARCHITECTURE.md section 5
+         */
+        'the pack keys the frame and goes down the wire first'($) {
+            const one = pane_make($, {}, { pack_uri: () => 'https://one.test/web.js' });
+            const two = pane_make($, {}, { pack_uri: () => 'https://two.test/web.js' });
+            one.pane.watchdog();
+            $mol_assert_equal(one.posted[0]?.kind, 'pack_set');
+            $mol_assert_equal(one.posted[0]?.uri, 'https://one.test/web.js');
+            $mol_assert_ok(one.pane.scene_key() !== two.pane.scene_key());
+            $mol_assert_ok(one.pane.scene_key().includes('https://one.test/web.js'));
+            // same generation, different pack, different frame
+            $mol_assert_equal(one.pane.scene_generation(), two.pane.scene_generation());
+            $mol_assert_ok(one.pane.sub()[0] !== two.pane.sub()[0]);
         },
         /** A click is a push like any other: it arms the watch, and geometry back disarms it. */
         'a relayed click arms the watchdog and sizes disarm it'($) {
@@ -12614,27 +12659,32 @@ var $;
         },
         /**
          * Section 5 in one test: a pack cannot be unloaded from a realm, so a change
-         * of pack is a change of the frame address and the browser reloads; a land is
-         * compiled into the sandbox like the document, so a change of lands leaves
-         * the address — and with it the frame, its camera and its live instances —
-         * exactly where they were.
+         * of pack is a change of the KEY of the frame and the element is replaced; a
+         * land is compiled into the sandbox like the document, so a change of lands
+         * leaves the key — and with it the frame, its camera and its live
+         * instances — exactly where they were.
+         *
+         * The pack rides the bridge now rather than the address of the frame, so
+         * what is read here is the key, which is what the guarantee actually rests
+         * on. That a key really makes a new element is `flow.test.ts`.
          */
-        'a change of lands keeps the frame, a change of pack reloads it'($) {
+        'a change of lands keeps the frame, a change of pack replaces it'($) {
             const app = $bog_vmap_app.make({ $ });
+            const pane = app.Pane();
             app.links('https://mol.hyoo.ru');
-            const before = app.scene_uri();
-            $mol_assert_ok(before.includes(encodeURIComponent('https://mol.hyoo.ru/web.js')));
+            const before = pane.scene_key();
+            $mol_assert_equal(pane.pack_uri(), 'https://mol.hyoo.ru/web.js');
             app.links('https://mol.hyoo.ru, AbCdEfGh_12345678_ZyXwVuTs');
-            $mol_assert_equal(app.scene_uri(), before);
+            $mol_assert_equal(pane.scene_key(), before);
             $mol_assert_like(app.lands(), ['AbCdEfGh_12345678_ZyXwVuTs']);
             // the slash grows in the derived address, the field keeps what was typed
             app.links('https://b-on-g.github.io/gram, AbCdEfGh_12345678_ZyXwVuTs');
-            $mol_assert_ok(app.scene_uri() !== before);
-            $mol_assert_ok(app.scene_uri().includes(encodeURIComponent('https://b-on-g.github.io/gram/web.js')));
+            $mol_assert_ok(pane.scene_key() !== before);
+            $mol_assert_equal(pane.pack_uri(), 'https://b-on-g.github.io/gram/web.js');
             $mol_assert_equal(app.links(), 'https://b-on-g.github.io/gram, AbCdEfGh_12345678_ZyXwVuTs');
             // a second pack is refused: the frame keeps the first
             app.links('https://b-on-g.github.io/gram, https://mol.hyoo.ru');
-            $mol_assert_ok(app.scene_uri().includes(encodeURIComponent('https://b-on-g.github.io/gram/web.js')));
+            $mol_assert_equal(pane.pack_uri(), 'https://b-on-g.github.io/gram/web.js');
             $mol_assert_equal(app.links_parsed().rejected.length, 1);
             // a field naming no pack falls back to the standard palette, see below
             app.links('AbCdEfGh_12345678_ZyXwVuTs');
@@ -12644,11 +12694,12 @@ var $;
         /**
          * The two layouts of one pack, from the address of the editor page alone.
          *
-         * The dev server keeps a module in `<pack>/<module>/-/` and a deploy
-         * publishes the content of `-/` into `<pack>/<module>/`, so both the sandbox
-         * and the standard palette are found without anything being configured or
-         * typed. The derivation itself is covered in `lib`; here it is that the
-         * editor asks for the right two siblings.
+         * The dev server keeps every module in `<pack>/<module>/-/`, while a deploy
+         * publishes the editor at the root of the site and the other modules as
+         * folders under it. Neither the sandbox nor the standard palette has a page
+         * on either layout, so what is derived is a bundle and a folder, and nothing
+         * is configured or typed. The derivation itself is covered in `lib`; here it
+         * is that the editor asks for the right two siblings.
          */
         'the sandbox and the standard palette are found on both layouts'($) {
             // the address of the page is put in by hand rather than through `make`:
@@ -12656,16 +12707,14 @@ var $;
             // against the class the tree declares
             const dev = $bog_vmap_app.make({ $ });
             dev.page_uri = () => 'http://localhost:9080/bog/vmap/app/-/test.html';
-            $mol_assert_equal(dev.scene_page(), 'http://localhost:9080/bog/vmap/scene/-/index.html');
+            $mol_assert_equal(dev.scene_bundle(), 'http://localhost:9080/bog/vmap/scene/-/web.js');
             $mol_assert_equal(dev.pack_link(), 'http://localhost:9080/bog/vmap/part/-/');
-            $mol_assert_equal(dev.scene_uri(), 'http://localhost:9080/bog/vmap/scene/-/index.html?pack='
-                + encodeURIComponent('http://localhost:9080/bog/vmap/part/-/web.js'));
+            $mol_assert_equal(dev.pack_script(), 'http://localhost:9080/bog/vmap/part/-/web.js');
             const prod = $bog_vmap_app.make({ $ });
-            prod.page_uri = () => 'https://b-on-g.github.io/vmap/app/';
-            $mol_assert_equal(prod.scene_page(), 'https://b-on-g.github.io/vmap/scene/index.html');
+            prod.page_uri = () => 'https://b-on-g.github.io/vmap/';
+            $mol_assert_equal(prod.scene_bundle(), 'https://b-on-g.github.io/vmap/scene/web.js');
             $mol_assert_equal(prod.pack_link(), 'https://b-on-g.github.io/vmap/part/');
-            $mol_assert_equal(prod.scene_uri(), 'https://b-on-g.github.io/vmap/scene/index.html?pack='
-                + encodeURIComponent('https://b-on-g.github.io/vmap/part/web.js'));
+            $mol_assert_equal(prod.pack_script(), 'https://b-on-g.github.io/vmap/part/web.js');
             // what a person typed is used as typed and never replaced by the sibling
             prod.links('https://mol.hyoo.ru');
             $mol_assert_equal(prod.pack_link(), 'https://mol.hyoo.ru/');
@@ -12810,7 +12859,7 @@ var $;
             $mol_assert_like(rows, [`${d}mol_view`, button, calc, map]);
             // Nothing failed to draw except the frame, which stays suspended for
             // ever: jsdom never loads the sandbox page, so its `onload` never fires.
-            $mol_assert_like(stage.broken(), [stage.pane.Scene(0).dom_id()]);
+            $mol_assert_like(stage.broken(), [stage.pane.Scene(stage.pane.scene_key()).dom_id()]);
         },
         /**
          * A component is carried out of the palette onto the canvas: it is declared,
@@ -12950,6 +12999,73 @@ var $;
             $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
         },
         /**
+         * The sandbox is raised from markup, not from an address: there is exactly
+         * one page in the project and the sandbox is not it.
+         *
+         * What the markup has to carry is checked here rather than argued: the
+         * isolation, the absence of any address, and an ABSOLUTE address of the
+         * bundle — an opaque origin has no base to resolve a relative one against.
+         */
+        'the frame is raised from markup and carries no address'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const frame = stage.frame();
+            $mol_assert_equal(frame.getAttribute('sandbox'), 'allow-scripts');
+            $mol_assert_equal(frame.hasAttribute('src'), false);
+            const html = frame.getAttribute('srcdoc') ?? '';
+            const bundle = stage.app.scene_bundle();
+            $mol_assert_ok(bundle.endsWith('/scene/web.js'));
+            $mol_assert_ok(html.includes(`src="${bundle}"`));
+            // the frame paints its own ground, see `scene_html()`
+            $mol_assert_ok(html.includes('color-scheme:dark'));
+        },
+        /**
+         * The pack travels the bridge, and it travels FIRST.
+         *
+         * The scene compiles nothing until it has been told a pack, because a class
+         * picks its base once and a document built a moment early would inherit the
+         * sandbox's own `$mol_view` for good. So the order of the first three
+         * messages of a handshake is part of the contract, not an accident of how
+         * the cells happen to be listed.
+         */
+        'the pack goes down the wire before the document and the libraries'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const kinds = stage.scene.posted.map(message => message.kind);
+            const pack = kinds.indexOf('pack_set');
+            $mol_assert_ok(pack >= 0);
+            $mol_assert_ok(pack < kinds.indexOf('doc_set'));
+            $mol_assert_ok(pack < kinds.indexOf('libs_set'));
+            $mol_assert_equal(stage.scene.last('pack_set')?.uri, stage.app.pack_script());
+        },
+        /**
+         * One pack per frame, held by construction now that no address holds it: the
+         * pack is part of the key of the frame, so naming another one gives a new
+         * element and a realm that has never seen the first bundle. A land is
+         * compiled into the sandbox instead, so a change of lands must not cost the
+         * frame, its camera or its live instances.
+         * @see ../ARCHITECTURE.md section 5
+         */
+        'a new pack gives a new frame, a new land keeps the old one'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const field = stage.field('Palette().Links()');
+            const before = stage.frame();
+            stage.type(field, 'http://pack.test/, AbCdEfGh');
+            $mol_assert_ok(stage.frame() !== before);
+            $mol_assert_like(stage.app.lands(), ['AbCdEfGh']);
+            // the fresh frame has proved nothing yet, so nothing is pushed at it
+            $mol_assert_equal(stage.pane.ready(), false);
+            // it boots and gets the new pack first, exactly as the first one did
+            const seen = stage.scene.posted.length;
+            stage.scene.hello();
+            $mol_assert_equal(stage.pane.ready(), true);
+            $mol_assert_equal(stage.scene.posted[seen]?.kind, 'pack_set');
+            $mol_assert_equal(stage.scene.last('pack_set')?.uri, 'http://pack.test/web.js');
+            // a land rides the bridge, so the frame stands
+            const kept = stage.frame();
+            stage.type(field, 'http://pack.test/, AbCdEfGh, ZyXwVuTs');
+            $mol_assert_equal(stage.frame(), kept);
+            $mol_assert_like(stage.app.lands(), ['AbCdEfGh', 'ZyXwVuTs']);
+        },
+        /**
          * The palette field takes a pack and lands together, and refuses a second
          * pack out loud: the reason is under the field and the frame keeps the pack
          * it already loaded.
@@ -12960,14 +13076,14 @@ var $;
             stage.type(field, 'http://pack.test/, AbCdEfGh');
             $mol_assert_equal(stage.app.pack_link(), 'http://pack.test/');
             $mol_assert_like(stage.app.lands(), ['AbCdEfGh']);
-            const uri = stage.app.scene_uri();
-            $mol_assert_ok(uri.includes(encodeURIComponent('http://pack.test/web.js')));
+            const key = stage.pane.scene_key();
+            $mol_assert_equal(stage.pane.pack_uri(), 'http://pack.test/web.js');
             stage.type(field, 'http://pack.test/, AbCdEfGh, http://other.test/');
             // The refusal is on screen, in the user's words, under the field.
             $mol_assert_ok(stage.text().includes($bog_vmap_lib_links_reason.pack_second));
             $mol_assert_ok(stage.text().includes('http://other.test/'));
-            // The frame address is the one it already had: no reload.
-            $mol_assert_equal(stage.app.scene_uri(), uri);
+            // The frame is the one it already was: no reload.
+            $mol_assert_equal(stage.pane.scene_key(), key);
             $mol_assert_equal(stage.field('Palette().Links()').value, 'http://pack.test/, AbCdEfGh, http://other.test/');
         },
         /**
@@ -13041,9 +13157,9 @@ var $;
         /**
          * A document opened by a link lives in a land of its own, and until that
          * land arrives every read of it suspends. THE SANDBOX MUST COME UP ANYWAY:
-         * its address is not the document's business, and an editor that waits for
-         * the text before it raises the frame waits for ever on a document whose
-         * master is not reachable — which is what «ожидание сцены…» was.
+         * the markup of the frame is not the document's business, and an editor that
+         * waits for the text before it raises the frame waits for ever on a document
+         * whose master is not reachable — which is what «ожидание сцены…» was.
          */
         'the sandbox comes up while the document of the address is still on its way'($) {
             // Every read of the open document suspends, as an unsynced land does.
@@ -13055,10 +13171,9 @@ var $;
                 spots: () => { throw waiting; },
                 pack: () => { throw waiting; },
             });
-            const stage = $bog_vmap_app_flow_stage($, store);
-            // The frame has an address, so the scene boots and answers.
-            $mol_assert_ok(stage.app.scene_uri());
-            $mol_assert_ok(stage.frame().getAttribute('src'));
+            const stage = $bog_vmap_app_flow_stage($, { store });
+            // The frame has its markup, so the scene boots and answers.
+            $mol_assert_ok(stage.frame().getAttribute('srcdoc'));
             $mol_assert_equal(stage.pane.ready(), true);
             // The complaint itself: the head bar no longer says it is waiting.
             $mol_assert_equal(stage.text().includes('ожидание сцены'), false);
@@ -13217,36 +13332,7 @@ var $;
         return done();
     }
     $_1.$bog_vmap_app_flow_settle = $bog_vmap_app_flow_settle;
-    /**
-     * The editor, rendered into the jsdom document and talking to a fake scene.
-     *
-     * Faked, and nothing else is: the donor pack (a fixture instead of the
-     * network), the sandbox (a peer that answers like a scene), the geometry of the
-     * pane (jsdom has no layout), the timers (they must not fire by themselves),
-     * and the land of the documents (the home land, so no proof of work).
-     *
-     * A NEW SCENARIO NEEDS NONE OF THAT. One line makes the editor,
-     * `const stage = $bog_vmap_app_flow_stage( $ )`, and from then on everything is
-     * a gesture of the user:
-     *
-     * - `stage.drop( klass, stage.client([ x, y ]) )` carries a class out of the
-     *   palette onto the canvas, `stage.tap( stage.part_center( name ) )` clicks a
-     *   part, `stage.press/move/release( stage.overlay(), point )` is any gesture
-     *   in between, and `stage.port_dot( part, port, 'out' )` is where a wire starts;
-     * - `stage.button( 'Удалить' )`, `stage.field( 'Palette().Links()' )` and
-     *   `stage.class_row( klass )` find what to press, and fail by name when it is
-     *   not on screen; `stage.click` and `stage.type` press and type into them;
-     * - `stage.text()` is the whole editor as text, `stage.app` and `stage.pane`
-     *   the state behind it;
-     * - `stage.scene.last( 'doc_set' )` is what the sandbox was told last,
-     *   `stage.scene.values({ … })` is the sandbox answering, `stage.scene.silence()`
-     *   is the sandbox dying. Answers are delivered by `stage.scene.flush()`, and
-     *   every gesture above flushes on its own.
-     *
-     * Points are in the screen space of the pane and go through `stage.client()`,
-     * which is the only place that knows where the pane sits.
-     */
-    function $bog_vmap_app_flow_stage($, store_own = null) {
+    function $bog_vmap_app_flow_stage($, over = {}) {
         browser_gaps($);
         const dom = $.$mol_dom_context;
         // The editor of the previous scenario keeps window listeners alive, and its
@@ -13274,8 +13360,8 @@ var $;
         // A store of the scenario's own is how a document that is still loading, or
         // somebody else's, is put on the stand; the default one is a fresh document
         // in the home land, made here so that nothing waits on `boot`.
-        const store = store_own ?? $bog_vmap_app_store.make({ $, doc_land_config: () => null });
-        if (!store_own)
+        const store = over.store ?? $bog_vmap_app_store.make({ $, doc_land_config: () => null });
+        if (!over.store)
             store.doc_add('Сцена 1');
         const app = $bog_vmap_app.make({ $, store: () => store });
         $bog_vmap_app_flow_last = app;
@@ -13328,8 +13414,19 @@ var $;
          * pushed is still computing.
          */
         let silent = false;
+        let exposed = false;
         const peer = {
-            origin: 'null',
+            /**
+             * A frame in a sandbox has an opaque origin, and reading it from outside
+             * throws — which is how the host tells a working sandbox from a missing
+             * one. So the peer throws by default, and answers only for the scenario
+             * that asks what happens when the sandbox is gone.
+             */
+            get origin() {
+                if (exposed)
+                    return 'http://localhost';
+                return $mol_fail(new Error('SecurityError: cross-origin frame'));
+            },
             postMessage(data) {
                 const message = data;
                 posted.push(message);
@@ -13372,6 +13469,17 @@ var $;
             silence() {
                 silent = true;
                 queue.length = 0;
+            },
+            /** The frame boots and announces itself, as a scene does on load. */
+            hello() {
+                deliver({ kind: 'ready' });
+                app.dom_tree();
+                this.flush();
+            },
+            /** The sandbox is gone: the origin of the frame reads back from the host. */
+            expose() {
+                exposed = true;
+                app.dom_tree();
             },
         };
         const pane = app.Pane();

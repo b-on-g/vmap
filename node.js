@@ -19680,41 +19680,44 @@ var $;
      * Base address of a sibling module of the pack, derived from the address of the
      * page asking. Always ends with a slash, so `new URL` keeps its last segment.
      *
-     * The two layouts of one pack differ by a single segment. The dev server serves
-     * a module out of `<pack>/<module>/-/`, while a deploy publishes the content of
-     * `-/` into `<pack>/<module>/` — measured in section 5 on two live packs. So the
-     * layout is readable off the page itself: a trailing `-` means the dev server,
-     * its absence means a deploy, and nothing has to be configured or typed.
+     * The two layouts are told apart by a trailing `-`, and they are not two
+     * spellings of one rule but two different places, so the code says so.
+     *
+     * The dev server serves every module of a pack out of `<pack>/<module>/-/`, so
+     * the modules are siblings there in the plain sense: the segment naming ours is
+     * replaced by the one asked for, and the `-` goes back on.
+     *
+     * A deploy has only ONE page in the whole project — the editor, published at
+     * the root of the site — and the other modules are published as folders beneath
+     * it, `web.js` and `web.view.tree` without a page of their own. So there is
+     * nothing to replace: the module asked for is a folder inside the one the
+     * editor is served from.
      *
      * A last segment ending in `.html` is the page file — `index.html`, `test.html`
      * are the only two a module has — and is dropped first. Anything else is a
-     * folder, which is how `https://b-on-g.github.io/vmap/app` reads the same as the
+     * folder, which is how `https://b-on-g.github.io/vmap` reads the same as the
      * same address with its slash.
      *
      * The test is the extension and not merely a dot in the name, because a folder
-     * may carry one: a deploy versioned as `/vmap/v1.2/app/` is ordinary, and on a
-     * dot the segment `v1.2` would be taken for a page, one more segment eaten, and
-     * both addresses would point a level above where they live.
+     * may carry one: a deploy versioned as `/vmap/v1.2/` is ordinary, and on a dot
+     * the segment `v1.2` would be taken for a page and eaten.
      *
-     * A page with no folder above it — the editor deployed as the site root — leaves
-     * nothing to replace, and the siblings then lie at the root beside it. Popping an
-     * empty list is a no op, so no address ever climbs above the root.
-     *
-     * @see ../ARCHITECTURE.md section 5
+     * @see ../ARCHITECTURE.md sections 5 and 7
      */
     function $bog_vmap_lib_sibling(page, module) {
         const url = new URL(page);
         const path = url.pathname.split('/').filter(Boolean);
         if (/\.html?$/i.test(path[path.length - 1] ?? ''))
             path.pop();
-        const dev = path[path.length - 1] === '-';
-        if (dev)
+        // on the dev server the modules stand side by side, each in its own `-`
+        if (path[path.length - 1] === '-') {
             path.pop();
-        // the folder of the module we are served from; the sibling takes its place
-        path.pop();
-        path.push(module);
-        if (dev)
-            path.push('-');
+            path.pop();
+            path.push(module, '-');
+        }
+        else {
+            path.push(module);
+        }
         return `${url.origin}/${path.join('/')}/`;
     }
     $.$bog_vmap_lib_sibling = $bog_vmap_lib_sibling;
@@ -29509,7 +29512,13 @@ var $;
 			(obj.zoom) = (next) => ((this.camera_zoom(next)));
 			return obj;
 		}
-		scene_uri(){
+		scene_bundle(){
+			return "";
+		}
+		scene_html(){
+			return "";
+		}
+		pack_uri(){
 			return "";
 		}
 		doc_src(){
@@ -29566,7 +29575,7 @@ var $;
 			if(next !== undefined) return next;
 			return {};
 		}
-		handshake(next){
+		handshake(id, next){
 			if(next !== undefined) return next;
 			return 0;
 		}
@@ -29602,7 +29611,7 @@ var $;
 		}
 		Scene(id){
 			const obj = new this.$.$bog_vmap_app_pane_frame();
-			(obj.uri) = () => ((this.scene_uri()));
+			(obj.html) = () => ((this.scene_html()));
 			return obj;
 		}
 		sub(){
@@ -29629,7 +29638,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_drop"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "values"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "handshake"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "handshake"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "stalled"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_at"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_shift"));
@@ -29714,7 +29723,11 @@ var $;
 	};
 	($.$bog_vmap_app_pane_frame) = class $bog_vmap_app_pane_frame extends ($.$mol_frame) {
 		attr(){
-			return {"sandbox": "allow-scripts", ...(super.attr())};
+			return {
+				"sandbox": "allow-scripts", 
+				...(super.attr()), 
+				"src": null
+			};
 		}
 	};
 
@@ -29879,6 +29892,16 @@ var $;
          */
         const click_slack = 4;
         /**
+         * Root class the markup of the frame mounts, as a name and nothing more.
+         *
+         * Glued from two halves on purpose. mam builds its dependency graph by a regexp
+         * over sources, string literals included, so the name written whole would make
+         * the editor depend on the sandbox module and carry the whole scene bundle
+         * inside its own — the two are separate bundles by design, and the frame loads
+         * the second one itself.
+         */
+        const scene_root = '$' + 'bog_vmap_scene';
+        /**
          * Infinite canvas: background grid, sandboxed scene and the pointer gate over it.
          *
          * The camera is a screen-space pan vector plus an isotropic zoom, exactly what
@@ -29922,13 +29945,62 @@ var $;
                 this.camera_shift(this.camera_shift().multed0(real).added1(center.multed0(1 - real)));
             }
             /**
-             * Both channels at once. They clear independently, so a single slot would
-             * let a fixed compile erase a runtime failure that is still live.
+             * Everything the user has to be told about the scene: a sandbox that is not
+             * there, and the two error channels. They clear independently, so a single
+             * slot would let a fixed compile erase a runtime failure that is still live.
              */
             error() {
-                return [this.error_at('compile'), this.error_at('runtime')]
+                return [this.isolation(), this.error_at('compile'), this.error_at('runtime')]
                     .filter(Boolean)
                     .join('\n');
+            }
+            /**
+             * Which frame is the live one: the generation, and the pack it was raised
+             * with. A new key is a new `$mol_frame`, a new element and a new document.
+             *
+             * The pack belongs in the key because a realm cannot unload a bundle, and a
+             * second pack over the first poisons half the palette without a word — 277
+             * classes of 414 in the measurement of section 5. The frame no longer has an
+             * address for the pack to ride in, so what used to be held by the browser
+             * reloading on a changed `src` is held here instead, by the same means the
+             * restart button uses.
+             */
+            scene_key() {
+                return this.scene_generation() + ' ' + this.pack_uri();
+            }
+            /**
+             * The document of the frame, handed to it as markup instead of fetched.
+             *
+             * There is no page for the sandbox anywhere in the project, and the boundary
+             * of section 4 does not depend on there being one: `allow-scripts` without
+             * `allow-same-origin` gives the frame an opaque origin whether it arrived by
+             * address or by markup. What an opaque origin does lose is a base to resolve
+             * against, so the bundle is named absolutely.
+             *
+             * `color-scheme` is what gives a frame its base background, and it has to be
+             * declared: without it Chrome keeps a transparent frame transparent only
+             * until something inside takes a compositing layer — the camera transform on
+             * `Stage` does — and from then on fills it with a pale base of its own.
+             * Measured in a live window with `requestAnimationFrame` ticking, not under
+             * automation.
+             *
+             * So the frame is opaque on purpose, and everything that has to be seen
+             * beneath the document lives inside it: the canvas grid is drawn in there
+             * with it. Inline rather than by a rule, so that it also holds during the
+             * first paint, before the bundle has loaded.
+             */
+            scene_html() {
+                return [
+                    '<!doctype html>',
+                    '<html lang="en" mol_view_root style="height:100%;width:100%;color-scheme:dark">',
+                    '<head><meta charset="utf-8" />',
+                    '<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />',
+                    '</head>',
+                    '<body mol_view_root style="padding:0;margin:0;height:100%;width:100%">',
+                    `<div mol_view_root="${scene_root}"></div>`,
+                    `<script src="${this.scene_bundle()}" charset="utf-8"></script>`,
+                    '</body></html>',
+                ].join('');
             }
             /**
              * Peer window, taken from the frame itself and never from `event.source`.
@@ -29938,7 +30010,7 @@ var $;
              * for a probe stole the binding from the real frame.
              */
             scene_peer() {
-                return this.Scene(this.scene_generation()).dom_node().contentWindow;
+                return this.Scene(this.scene_key()).dom_node().contentWindow;
             }
             /**
              * The live frame, the gate over it, the wires above both, and the insertion
@@ -29950,7 +30022,7 @@ var $;
              */
             sub() {
                 return [
-                    this.Scene(this.scene_generation()),
+                    this.Scene(this.scene_key()),
                     this.Overlay(),
                     this.Wire(),
                     ...this.slot() ? [this.Insert()] : [],
@@ -29960,30 +30032,43 @@ var $;
              * Replaces the frame with a fresh one that has said nothing and proved nothing
              * yet. Nothing is lost: the host owns the document, the placement and the
              * camera, and every push cell re-sends on the new handshake.
+             *
+             * The handshake is not cleared here and must not be: it is kept per frame, so
+             * the new key already reads zero. What is cleared is the two claims the host
+             * makes about the OLD frame, so that the strip stops accusing it the moment
+             * the button is pressed.
              */
             scene_restart() {
                 this.scene_generation(this.scene_generation() + 1);
-                this.handshake(0);
                 this.warmed(false);
                 this.stalled(false);
             }
             /**
-             * Handshakes seen. A counter, not a flag, so a scene reload re-pushes.
+             * Handshakes seen from one frame. A counter, not a flag, so a scene reload
+             * re-pushes; keyed by the frame, so a REPLACED frame starts from zero.
+             *
+             * Keyed and not plain, because the frame is now replaced by two different
+             * things — the restart button and a change of pack — and only one of them is
+             * an action that could clear a plain cell. A derived change of key would
+             * otherwise leave this reading «already shaken hands», the host would push
+             * into a window that has not booted, and every one of those messages would
+             * be lost silently while the watchdog counted the new frame's pack fetch
+             * against it.
              *
              * One scene load does not mean exactly one step here: observed both +1
              * and +2 for a single reload, because the scene may announce itself more
              * than once. Only the change matters, never the number — do not go
              * hunting for a bug on the strength of an even count.
              */
-            handshake(next) {
+            handshake(key, next) {
                 return next ?? 0;
             }
             ready() {
-                return this.handshake() > 0;
+                return this.handshake(this.scene_key()) > 0;
             }
             /** The window to push to, or null until the scene says it is listening. */
             target() {
-                return this.handshake() ? this.scene_peer() : null;
+                return this.ready() ? this.scene_peer() : null;
             }
             /**
              * Wall clock of the last push the scene owes an answer to.
@@ -30102,6 +30187,7 @@ var $;
              */
             watchdog() {
                 // Armed by everything we send…
+                this.pack_push();
                 this.doc_push();
                 this.css_push();
                 this.libs_push();
@@ -30799,6 +30885,25 @@ var $;
                 this.$.$bog_vmap_bridge_send(target, message);
                 this.poke_at = this.now();
             }
+            /**
+             * The donor pack, named to the scene before anything else is.
+             *
+             * First of the pushes in `auto()` and first in the reads of `watchdog()`, and
+             * the order is load bearing rather than tidy: the scene refuses to compile
+             * until it has been told a pack, because a class picks its base once and a
+             * document built a moment early would inherit the sandbox's own `$mol_view`
+             * for good. Sending the document first would not break anything — the scene
+             * would simply hold it — but it would make the ordinary path the one that
+             * compiles twice.
+             */
+            pack_push() {
+                const target = this.target();
+                const uri = this.pack_uri();
+                if (!target)
+                    return uri;
+                this.post(target, { kind: 'pack_set', uri });
+                return uri;
+            }
             doc_push() {
                 const target = this.target();
                 const src = this.doc_src();
@@ -30863,21 +30968,31 @@ var $;
                 return camera;
             }
             /**
-             * The `sandbox` attribute proves nothing, an unreachable origin does.
-             * The scene is served from our own origin, so a SecurityError here means the
-             * sandbox gave it an opaque origin, which is `null` seen from the inside.
+             * What is WRONG with the isolation of the scene, and empty when nothing is.
+             *
+             * The `sandbox` attribute proves nothing, an unreachable origin does: the
+             * scene is served from our own origin, so a SecurityError on reading it is
+             * the sandbox doing its job — the frame got an opaque origin. That is the
+             * ordinary state and it says nothing to anybody, so it says nothing at all.
+             * It used to report itself, which put a sentence about origins where the
+             * user expected news and made the plain «сцена на связи» unreachable.
+             *
+             * An origin that DOES read back is the news: the sandbox is off and the code
+             * of the document runs beside the editor. That goes to the error strip, not
+             * to the status line, because it is not a state of the work but a fault.
              */
             isolation() {
                 if (!this.ready())
                     return '';
                 const peer = this.scene_peer();
                 if (!peer)
-                    return 'кадра нет';
+                    return 'Кадра сцены нет — рисовать документ негде';
                 try {
-                    return `БЕЗ ПЕСОЧНИЦЫ: origin ${peer.origin}`;
+                    const origin = peer.origin;
+                    return `Песочница не работает: кадр сцены живёт на origin ${origin}, то есть код документа исполняется наравне с редактором`;
                 }
                 catch {
-                    return 'песочница: origin кадра недоступен';
+                    return '';
                 }
             }
             message_receive(event) {
@@ -30907,7 +31022,8 @@ var $;
                     // a pack fetch happens, so the false alarm would be the common case,
                     // not the corner one.
                     this.warmed(false);
-                    this.handshake(this.handshake() + 1);
+                    const key = this.scene_key();
+                    this.handshake(key, this.handshake(key) + 1);
                     return;
                 }
                 if (message.kind === 'error') {
@@ -30952,6 +31068,9 @@ var $;
                 return [
                     ...super.auto(),
                     this.message_listener(),
+                    // The pack goes before the document and the libraries: the scene
+                    // compiles nothing until it has one, see `pack_push()`.
+                    this.pack_push(),
                     this.doc_push(),
                     this.css_push(),
                     this.libs_push(),
@@ -30973,7 +31092,7 @@ var $;
             $mol_action
         ], $bog_vmap_app_pane.prototype, "scene_restart", null);
         __decorate([
-            $mol_mem
+            $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "handshake", null);
         __decorate([
             $mol_mem
@@ -31035,6 +31154,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "values_push", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "pack_push", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "doc_push", null);
@@ -31364,6 +31486,9 @@ var $;
 		ghost_title(){
 			return "";
 		}
+		pack_script(){
+			return "";
+		}
 		libs(){
 			return [];
 		}
@@ -31414,10 +31539,7 @@ var $;
 		doc_root(){
 			return "";
 		}
-		scene_page(){
-			return "";
-		}
-		scene_uri(){
+		scene_bundle(){
 			return "";
 		}
 		links(next){
@@ -31508,7 +31630,8 @@ var $;
 		}
 		Pane(){
 			const obj = new this.$.$bog_vmap_app_pane();
-			(obj.scene_uri) = () => ((this.scene_uri()));
+			(obj.scene_bundle) = () => ((this.scene_bundle()));
+			(obj.pack_uri) = () => ((this.pack_script()));
 			(obj.doc_src) = () => ((this.doc_src()));
 			(obj.doc_css) = () => ((this.doc_css()));
 			(obj.spots) = (next) => ((this.spots(next)));
@@ -31603,25 +31726,30 @@ var $;
                 return this.$.$mol_dom_context.location?.href ?? '';
             }
             /**
-             * The sandbox, a sibling module of this one, derived from our own address.
+             * Bundle of the sandbox, a sibling module of this one, derived from our own
+             * address. This is the only page in the project, so nothing else has one and
+             * there is nothing else to derive.
              *
-             * Was a relative constant with `-/` in it, which is the layout of the dev
-             * server only: a deploy publishes the content of `-/` into the folder of the
-             * module, so the constant pointed at nothing there. Derived, both layouts
-             * work and the user configures nothing.
-             * @see ../ARCHITECTURE.md section 5
+             * Absolute, because the markup of the frame is handed to an opaque origin,
+             * which has no base for a relative path to be resolved against. Derived and
+             * not a constant, because a constant is written in one layout: the dev server
+             * keeps a module in `-/` and a deploy does not.
+             * @see ../ARCHITECTURE.md sections 4 and 7
              */
-            scene_page() {
+            scene_bundle() {
                 const page = this.page_uri();
-                return page ? this.$.$bog_vmap_lib_sibling(page, 'scene') + 'index.html' : super.scene_page();
+                return page ? this.$.$bog_vmap_lib_sibling(page, 'scene') + 'web.js' : super.scene_bundle();
             }
             /**
-             * The sandbox page with the donor pack in its query. A new pack is a new
-             * address, so the browser reloads the frame and one pack per frame holds.
+             * The donor pack the scene is told to load, as the address of its bundle.
+             *
+             * Travels down the bridge as `pack_set` and keys the frame on the way: a
+             * realm cannot unload a bundle, so a different pack has to be a different
+             * frame, which is what the frame address used to do by being different.
              * @see ../ARCHITECTURE.md section 5
              */
-            scene_uri() {
-                return this.scene_page() + '?' + new URLSearchParams({ pack: this.Lib().script_link() });
+            pack_script() {
+                return this.Lib().script_link();
             }
             /** A fresh frame in place of the stuck one; the pane owns the frame. */
             scene_restart() {
@@ -31723,17 +31851,19 @@ var $;
              * THE SANDBOX MUST NOT WAIT FOR THE DOCUMENT. A document opened by a link
              * lives in a land of its own, and reading any field of it suspends until
              * that land syncs — which, with no master reachable, is for ever. This value
-             * feeds `pack_link`, `pack_link` feeds `scene_uri`, and `scene_uri` is the
-             * `src` of the frame: a suspension here therefore left the iframe with NO
-             * ADDRESS AT ALL, so the scene never booted, never said `ready`, and the
-             * editor sat on «ожидание сцены…» for ever. Measured on a document link with
-             * no master: frame `src` absent, palette suspended, nothing on the wire.
+             * feeds `pack_link`, `pack_link` feeds the pack the frame is keyed by: a
+             * suspension here therefore left the frame with NO KEY AT ALL, so the scene
+             * never booted, never said `ready`, and the editor sat on «ожидание сцены…»
+             * for ever. Measured on a document link with no master while the pack still
+             * rode the frame address: frame `src` absent, palette suspended, nothing on
+             * the wire. The pack travels the bridge now, and the key is still derived
+             * from it, so the shape of the failure is unchanged.
              *
              * So a suspension is answered with the empty string, which the caller reads
              * as «no palette of its own» and falls back to the standard one. Nothing is
              * lost: the subscription is recorded before the throw, so this recomputes
              * the moment the land arrives, and a document that does carry a palette of
-             * its own then reloads the frame exactly as any change of pack does.
+             * its own then replaces the frame exactly as any change of pack does.
              * The same shape as `store_boot`, and for the same reason.
              */
             store_links() {
@@ -32014,11 +32144,12 @@ var $;
             /**
              * Sources of the lands, for the scene.
              *
-             * This travels on the bridge while the pack travels in `scene_uri`, and the
-             * split is the rule of section 5: a second pack cannot be unloaded from a
-             * realm, so a pack change reloads the frame; a land is compiled into the
-             * sandbox like the document, so a land change recompiles and keeps the frame,
-             * its camera and its live instances.
+             * Both this and the pack travel the same bridge now, and the split is still
+             * the rule of section 5, only held elsewhere: a second pack cannot be
+             * unloaded from a realm, so the pack is part of the key of the frame and a
+             * pack change replaces the element; a land is compiled into the sandbox like
+             * the document, so a land change recompiles and keeps the frame, its camera
+             * and its live instances.
              */
             libs() {
                 return this.Lib().parts();
@@ -32026,15 +32157,22 @@ var $;
             error() {
                 return this.Pane().error();
             }
+            /**
+             * The state of the work in a few words: what the store is doing with the
+             * document, and whether the scene is answering.
+             *
+             * Nothing technical belongs here. A confirmed sandbox is the normal state
+             * and the strip used to announce it, which read as a fault and, standing
+             * before the check below, made «сцена на связи» unreachable code. What can
+             * really be wrong with the frame goes to the error strip through
+             * `Pane().error()`.
+             */
             status() {
                 const note = this.store_note();
                 if (note)
                     return note;
                 if (this.stalled())
                     return 'сцена не отвечает';
-                const isolation = this.Pane().isolation();
-                if (isolation)
-                    return isolation;
                 return this.Pane().ready() ? 'сцена на связи' : 'ожидание сцены…';
             }
             zoom_title() {
