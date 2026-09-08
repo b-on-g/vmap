@@ -24233,6 +24233,36 @@ var $;
             $mol_assert_ok(failed.message);
             $mol_assert_equal(failed.node, '');
         },
+        /**
+         * A property declared AND written by hand keeps its state too, and its atom
+         * does not sit in the field its name suggests.
+         *
+         * The decorator copies the name off the base wrapper when the base was
+         * decorated already, and the copy carries a trailing space, so a property
+         * memoized both by the generator and by the body lives in `note ()` rather
+         * than in `note()`. That is exactly the shape the code editor produces, and
+         * a swap that built the field name by gluing `name + '()'` would find
+         * nothing, retarget nothing and lose what the user typed — silently, on
+         * every edit.
+         */
+        async 'a property memoized twice keeps its state across an edit'($) {
+            const made = scene($);
+            const root = `${d}hot_twice_page`;
+            const src = (tag) => `${root} ${d}mol_view\n\ttag \\${tag}\n\tnote? \\\n`;
+            made.doc_root(root);
+            made.doc_src(src('one'));
+            made.doc_js({ [root]: 'note( next ) { return next ?? "from body" }' });
+            const first = await settled(() => made.instance());
+            $mol_assert_equal(first.note(), 'from body');
+            // the atom is where the double decoration put it, not where the name says
+            $mol_assert_like(Object.getOwnPropertyNames(first).filter(key => key.endsWith('()')), ['note ()']);
+            first.note('typed by hand');
+            const second = await grown(made, root, src('two'));
+            $mol_assert_equal(second, first);
+            $mol_assert_equal(second.tag(), 'two');
+            $mol_assert_equal(second.note(), 'typed by hand');
+            $mol_assert_equal(made.compile_error(), '');
+        },
     });
 })($ || ($ = {}));
 
