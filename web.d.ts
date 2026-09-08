@@ -49104,6 +49104,31 @@ declare namespace $ {
         prop_tree(name: string, next?: $mol_tree2 | null): $mol_tree2 | null;
         prop_add(name: string): void;
         prop_drop(name: string): void;
+        /**
+         * Renames a property together with every reference to it, in one write.
+         *
+         * `next` is a whole signature, `d*?` and not `d`, because a rename and a
+         * change of sign arrive together from the inspector and two writes would
+         * leave the document renamed but unsigned in between.
+         *
+         * **A reference is rewritten, never dropped.** A node is named by the
+         * property it occupies, so a rename moves the name every `sub` list, every
+         * wire end and every binding spells. Dropping them instead — which is what
+         * `links_drop` does for a delete — would silently cut the wires of a node
+         * that is still there; the two operations are opposites and must not share
+         * a path. Anything of the shape `<= name`, `<=> name` or `= name prop` at
+         * any depth is such a reference.
+         *
+         * The declaration is retyped IN PLACE, among the kids of the base, and only
+         * there: an override of the same name under a part is a port of that part
+         * and none of our business. In place also keeps the property where it was —
+         * dropping it and inserting it back moved it to the end of the class, which
+         * reorders the canvas for a rename that should not move anything.
+         *
+         * A name already taken is refused rather than merged: two properties of one
+         * name is a document nothing can address afterwards.
+         */
+        prop_rename(name: string, next: string): undefined;
         property(name: string): $bog_vmap_lang_prop;
         /**
          * Declares a free part: `Calc $bog_vmap_lang_calc`.
@@ -49335,10 +49360,24 @@ declare namespace $ {
         /**
          * Signature parts: bare `name`, `key` (`*`) and `next` (`?`).
          *
-         * Deviation from studio: renaming drops the old property BEFORE the instance
-         * method is overwritten, so a failure in the drop leaves the model pointing at
-         * a property that still exists. Studio does it the other way round and ends up
-         * with a live `hyoo_studio_property` addressing a name nothing declares.
+         * A rename goes to the node, because it is not a fact about this property
+         * alone: everything that spells the old name has to be rewritten in the same
+         * write. A change of sign is local and is written here.
+         *
+         * Deviation from studio: this handle is NOT patched to follow the rename.
+         * Studio overwrites the `name` method of the live property object, which
+         * leaves an object addressing one name and reading another past the graph;
+         * here the handle simply stops addressing anything, and the caller asks the
+         * node for the property under its new name — a keyed cell, so that is one
+         * read and no state.
+         *
+         * **Plain method, and so are the three below.** Every accessor here only
+         * delegates into `tree()`, which is a cell already, and an accessor of that
+         * shape under `@ $mol_mem` freezes at the value written THROUGH it: after a
+         * rename this handle went on reporting the new name although it addressed a
+         * property no longer under it, which is the very object-past-the-graph the
+         * patching above was dropped for. Measured; there is a test. The same rule
+         * and the same measurement as `bog_vmap_app_doc_node.source`.
          */
         meta(next?: {
             readonly name?: string;
@@ -50789,115 +50828,125 @@ declare namespace $ {
 
 declare namespace $ {
 
-	type $mol_textarea__title_bog_vmap_app_code_1 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_textarea['title'] >
-	>
-	type $mol_textarea__hint_bog_vmap_app_code_2 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_textarea['hint'] >
-	>
-	type $mol_textarea__sidebar_showed_bog_vmap_app_code_3 = $mol_type_enforce<
-		boolean
-		,
-		ReturnType< $mol_textarea['sidebar_showed'] >
-	>
-	type $mol_textarea__value_bog_vmap_app_code_4 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_code['tree_text'] >
-		,
-		ReturnType< $mol_textarea['value'] >
-	>
-	type $mol_textarea__title_bog_vmap_app_code_5 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_textarea['title'] >
-	>
-	type $mol_textarea__hint_bog_vmap_app_code_6 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_textarea['hint'] >
-	>
-	type $mol_textarea__sidebar_showed_bog_vmap_app_code_7 = $mol_type_enforce<
-		boolean
-		,
-		ReturnType< $mol_textarea['sidebar_showed'] >
-	>
-	type $mol_textarea__value_bog_vmap_app_code_8 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_code['js_text'] >
-		,
-		ReturnType< $mol_textarea['value'] >
-	>
-	type $mol_textarea__title_bog_vmap_app_code_9 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_textarea['title'] >
-	>
-	type $mol_textarea__hint_bog_vmap_app_code_10 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_textarea['hint'] >
-	>
-	type $mol_textarea__sidebar_showed_bog_vmap_app_code_11 = $mol_type_enforce<
-		boolean
-		,
-		ReturnType< $mol_textarea['sidebar_showed'] >
-	>
-	type $mol_textarea__value_bog_vmap_app_code_12 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_code['css_text'] >
-		,
-		ReturnType< $mol_textarea['value'] >
-	>
-	type $mol_bar__sub_bog_vmap_app_code_13 = $mol_type_enforce<
+	type $mol_bar__sub_bog_vmap_app_code_1 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_code['head_content'] >
 		,
 		ReturnType< $mol_bar['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_code_14 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_code_2 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_check__title_bog_vmap_app_code_15 = $mol_type_enforce<
+	type $mol_check__title_bog_vmap_app_code_3 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['title'] >
 	>
-	type $mol_check__hint_bog_vmap_app_code_16 = $mol_type_enforce<
+	type $mol_check__hint_bog_vmap_app_code_4 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['hint'] >
 	>
-	type $mol_check__checked_bog_vmap_app_code_17 = $mol_type_enforce<
+	type $mol_check__checked_bog_vmap_app_code_5 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_code['whole'] >
 		,
 		ReturnType< $mol_check['checked'] >
 	>
-	type $mol_view__sub_bog_vmap_app_code_18 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_code_6 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_code_19 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_code_7 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_code_20 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_code_8 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_code['typing_rows'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_code_21 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_code_9 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_deck__items_bog_vmap_app_code_22 = $mol_type_enforce<
-		readonly(any)[]
+	type $mol_deck__items_bog_vmap_app_code_10 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['source_tabs'] >
 		,
 		ReturnType< $mol_deck['items'] >
+	>
+	type $mol_textarea__title_bog_vmap_app_code_11 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['title'] >
+	>
+	type $mol_textarea__hint_bog_vmap_app_code_12 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['hint'] >
+	>
+	type $mol_textarea__sidebar_showed_bog_vmap_app_code_13 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_textarea['sidebar_showed'] >
+	>
+	type $mol_textarea__value_bog_vmap_app_code_14 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['tree_text'] >
+		,
+		ReturnType< $mol_textarea['value'] >
+	>
+	type $mol_textarea__title_bog_vmap_app_code_15 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['title'] >
+	>
+	type $mol_textarea__hint_bog_vmap_app_code_16 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['hint'] >
+	>
+	type $mol_textarea__sidebar_showed_bog_vmap_app_code_17 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_textarea['sidebar_showed'] >
+	>
+	type $mol_textarea__value_bog_vmap_app_code_18 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['js_text'] >
+		,
+		ReturnType< $mol_textarea['value'] >
+	>
+	type $mol_view__title_bog_vmap_app_code_19 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_view['title'] >
+	>
+	type $mol_view__sub_bog_vmap_app_code_20 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_textarea__title_bog_vmap_app_code_21 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['title'] >
+	>
+	type $mol_textarea__hint_bog_vmap_app_code_22 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['hint'] >
+	>
+	type $mol_textarea__sidebar_showed_bog_vmap_app_code_23 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_textarea['sidebar_showed'] >
+	>
+	type $mol_textarea__value_bog_vmap_app_code_24 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['css_text'] >
+		,
+		ReturnType< $mol_textarea['value'] >
 	>
 	export class $bog_vmap_app_code extends $mol_view {
 		content( ): readonly($mol_view)[]
@@ -50906,16 +50955,14 @@ declare namespace $ {
 		note( ): string
 		typing_rows( ): readonly($mol_view)[]
 		typing_text( id: any): string
+		source_tabs( ): readonly($mol_view)[]
 		tree_text( next?: string ): string
-		Tree( ): $mol_textarea
 		js_text( next?: string ): string
-		Js( ): $mol_textarea
+		js_idle_note( ): string
 		css_text( next?: string ): string
-		Css( ): $mol_textarea
 		klass( ): string
 		prop( ): string
-		prop_key( ): boolean
-		prop_next( ): boolean
+		hooks( ): readonly(string)[]
 		source( next?: string ): string
 		node_source( next?: string ): string
 		js( next?: string ): string
@@ -50932,6 +50979,10 @@ declare namespace $ {
 		Typing( ): $mol_view
 		Typing_row( id: any): $mol_view
 		Sources( ): $mol_deck
+		Tree( ): $mol_textarea
+		Js( ): $mol_textarea
+		Js_idle( ): $mol_view
+		Css( ): $mol_textarea
 	}
 	
 }
@@ -50960,8 +51011,15 @@ declare namespace $.$$ {
          *
          * Kept so that a broken `view.tree` can be fixed where it was written
          * instead of vanishing on the next redraw. Cleared by the write that parses.
+         *
+         * Keyed by the tab AND by what is being edited in it. Keyed by the tab alone
+         * it would follow the panel rather than the text: a refused edit made on one
+         * node would show up under the name of the next node picked, and correcting
+         * it there would write it into that other node.
          */
-        draft(slot: $bog_vmap_app_code_slot, next?: string | null): string | null;
+        draft(id: string, next?: string | null): string | null;
+        /** Address of a draft: the tab, plus the node when one is being edited. */
+        draft_id(slot: $bog_vmap_app_code_slot): string;
         /** Why the last edit was not written into the document. Empty when it was. */
         refusal(next?: string): string;
         /**
@@ -50979,7 +51037,22 @@ declare namespace $.$$ {
         props_js(): $bog_vmap_app_code_props;
         /** Properties of the class styles, the same way. */
         props_css(): $bog_vmap_app_code_props;
+        /**
+         * Body of the node, which is the methods its declaration asks for.
+         *
+         * NOT one method named after the node. That name belongs to the factory of
+         * the sub-view in the generated class, so a handwritten method of that name
+         * shadows the factory and the node leaves the canvas — measured on the
+         * generator, which emits `Calc(){ const obj = new this.$.$mol_view(); … }`
+         * for a node called `Calc`. What a person opens this tab to write is the
+         * other side of a binding: `title <= greeting` wants `greeting()`.
+         */
         js_text(next?: string): string;
+        /** Whether the JS tab has anything for this node to edit at all. */
+        js_writable(): boolean;
+        js_idle_note(): string;
+        /** The JS tab: the field when there is something to write in it, the reason when not. */
+        source_tabs(): readonly $mol_view[];
         css_text(next?: string): string;
         /**
          * The slice of one property, or the empty one when the text has no such
@@ -51005,9 +51078,11 @@ declare namespace $.$$ {
          * A body in the scene goes through `new Function`, which takes any JS, so
          * nothing else in the editor would ever say a word about this.
          *
-         * While one node is being edited only its own method is complained about:
-         * the neighbours are not on screen, and a line about a method the panel does
-         * not show is a line nobody can act on.
+         * Checked on the text the tab is SHOWING, not on the whole class. That is
+         * what makes the line number true in both modes, and it removes the filter
+         * this used to carry: filtering by the name of the node hid every complaint
+         * a person could actually make, because the one method they must never write
+         * is the one named after the node.
          */
         complaints(): readonly $bog_vmap_app_export_complaint[];
         typing_rows(): $mol_view[];
@@ -52711,52 +52786,47 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_code['prop'] >
 	>
-	type $bog_vmap_app_code__prop_key_bog_vmap_app_53 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['code_prop_key'] >
+	type $bog_vmap_app_code__hooks_bog_vmap_app_53 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['code_hooks'] >
 		,
-		ReturnType< $bog_vmap_app_code['prop_key'] >
+		ReturnType< $bog_vmap_app_code['hooks'] >
 	>
-	type $bog_vmap_app_code__prop_next_bog_vmap_app_54 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['code_prop_next'] >
-		,
-		ReturnType< $bog_vmap_app_code['prop_next'] >
-	>
-	type $bog_vmap_app_code__source_bog_vmap_app_55 = $mol_type_enforce<
+	type $bog_vmap_app_code__source_bog_vmap_app_54 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_text'] >
 		,
 		ReturnType< $bog_vmap_app_code['source'] >
 	>
-	type $bog_vmap_app_code__node_source_bog_vmap_app_56 = $mol_type_enforce<
+	type $bog_vmap_app_code__node_source_bog_vmap_app_55 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['node_source'] >
 	>
-	type $bog_vmap_app_code__js_bog_vmap_app_57 = $mol_type_enforce<
+	type $bog_vmap_app_code__js_bog_vmap_app_56 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['root_js'] >
 		,
 		ReturnType< $bog_vmap_app_code['js'] >
 	>
-	type $bog_vmap_app_code__css_bog_vmap_app_58 = $mol_type_enforce<
+	type $bog_vmap_app_code__css_bog_vmap_app_57 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['root_css'] >
 		,
 		ReturnType< $bog_vmap_app_code['css'] >
 	>
-	type $bog_vmap_app_code__error_bog_vmap_app_59 = $mol_type_enforce<
+	type $bog_vmap_app_code__error_bog_vmap_app_58 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_error'] >
 		,
 		ReturnType< $bog_vmap_app_code['error'] >
 	>
-	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_60 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_59 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['pack'] >
 	>
-	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_61 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_60 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lands'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['lands'] >
 	>
-	type $mol_view__style_bog_vmap_app_62 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_61 = $mol_type_enforce<
 		({ 
 			'left': ReturnType< $bog_vmap_app['ghost_left'] >,
 			'top': ReturnType< $bog_vmap_app['ghost_top'] >,
@@ -52764,92 +52834,92 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_63 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_62 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_app_pane__scene_bundle_bog_vmap_app_64 = $mol_type_enforce<
+	type $bog_vmap_app_pane__scene_bundle_bog_vmap_app_63 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_bundle'] >
 		,
 		ReturnType< $bog_vmap_app_pane['scene_bundle'] >
 	>
-	type $bog_vmap_app_pane__pack_uri_bog_vmap_app_65 = $mol_type_enforce<
+	type $bog_vmap_app_pane__pack_uri_bog_vmap_app_64 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_script'] >
 		,
 		ReturnType< $bog_vmap_app_pane['pack_uri'] >
 	>
-	type $bog_vmap_app_pane__doc_src_bog_vmap_app_66 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_src_bog_vmap_app_65 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_src'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_src'] >
 	>
-	type $bog_vmap_app_pane__doc_css_bog_vmap_app_67 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_css_bog_vmap_app_66 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_css'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_css'] >
 	>
-	type $bog_vmap_app_pane__spots_bog_vmap_app_68 = $mol_type_enforce<
+	type $bog_vmap_app_pane__spots_bog_vmap_app_67 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['spots'] >
 		,
 		ReturnType< $bog_vmap_app_pane['spots'] >
 	>
-	type $bog_vmap_app_pane__selected_bog_vmap_app_69 = $mol_type_enforce<
+	type $bog_vmap_app_pane__selected_bog_vmap_app_68 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['selected'] >
 		,
 		ReturnType< $bog_vmap_app_pane['selected'] >
 	>
-	type $bog_vmap_app_pane__doc_js_bog_vmap_app_70 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_js_bog_vmap_app_69 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_js'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_js'] >
 	>
-	type $bog_vmap_app_pane__doc_root_bog_vmap_app_71 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_root_bog_vmap_app_70 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_root'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_root'] >
 	>
-	type $bog_vmap_app_pane__libs_bog_vmap_app_72 = $mol_type_enforce<
+	type $bog_vmap_app_pane__libs_bog_vmap_app_71 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['libs'] >
 		,
 		ReturnType< $bog_vmap_app_pane['libs'] >
 	>
-	type $bog_vmap_app_pane__hole_allowed_bog_vmap_app_73 = $mol_type_enforce<
+	type $bog_vmap_app_pane__hole_allowed_bog_vmap_app_72 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['hole_allowed'] >
 		,
 		ReturnType< $bog_vmap_app_pane['hole_allowed'] >
 	>
-	type $bog_vmap_app_pane__wires_bog_vmap_app_74 = $mol_type_enforce<
+	type $bog_vmap_app_pane__wires_bog_vmap_app_73 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_wires'] >
 		,
 		ReturnType< $bog_vmap_app_pane['wires'] >
 	>
-	type $bog_vmap_app_pane__part_ports_bog_vmap_app_75 = $mol_type_enforce<
+	type $bog_vmap_app_pane__part_ports_bog_vmap_app_74 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['part_ports'] >
 		,
 		ReturnType< $bog_vmap_app_pane['part_ports'] >
 	>
-	type $bog_vmap_app_pane__link_add_bog_vmap_app_76 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_add_bog_vmap_app_75 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_add'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_add'] >
 	>
-	type $bog_vmap_app_pane__link_drop_bog_vmap_app_77 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_drop_bog_vmap_app_76 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_drop'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_drop'] >
 	>
-	type $bog_vmap_app_pane__containers_bog_vmap_app_78 = $mol_type_enforce<
+	type $bog_vmap_app_pane__containers_bog_vmap_app_77 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_containers'] >
 		,
 		ReturnType< $bog_vmap_app_pane['containers'] >
 	>
-	type $bog_vmap_app_pane__axis_bog_vmap_app_79 = $mol_type_enforce<
+	type $bog_vmap_app_pane__axis_bog_vmap_app_78 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_axis'] >
 		,
 		ReturnType< $bog_vmap_app_pane['axis'] >
 	>
-	type $bog_vmap_app_pane__tree_move_bog_vmap_app_80 = $mol_type_enforce<
+	type $bog_vmap_app_pane__tree_move_bog_vmap_app_79 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['tree_move'] >
 		,
 		ReturnType< $bog_vmap_app_pane['tree_move'] >
@@ -52895,8 +52965,7 @@ declare namespace $ {
 		pack_link( ): string
 		idle_note( ): string
 		code_prop( ): string
-		code_prop_key( ): boolean
-		code_prop_next( ): boolean
+		code_hooks( ): readonly(string)[]
 		code_error( ): string
 		lands( ): readonly(string)[]
 		ghost_left( ): string
@@ -53156,9 +53225,17 @@ declare namespace $.$$ {
         doc_css(): string;
         /** The picked node as the code editor takes it: a name, empty for none. */
         code_prop(): string;
-        /** Signature of the picked property: it shapes the empty method offered for it. */
-        code_prop_key(): boolean;
-        code_prop_next(): boolean;
+        /**
+         * Methods of the class the picked node needs written by hand.
+         *
+         * Every name its declaration refers to with `<=` that the class does not
+         * declare itself. A generated property already has a body — the name of the
+         * node most of all, which compiles to the factory of the sub-view — and a
+         * handwritten method of that name would shadow it and take the node off the
+         * canvas. What has no generated body is exactly what a person opens the JS
+         * tab to write: `title <= greeting` wants `greeting()`.
+         */
+        code_hooks(): readonly string[];
         /** What the scene said about the picked node last, empty when it said nothing. */
         code_error(): string;
         /** Method of the picked node, cut out of the body of its class. */
@@ -53405,6 +53482,27 @@ declare namespace $.$$ {
          * an export would write stay the same string.
          */
         node_delete(): void;
+        /**
+         * Renames a node: the declaration, everything that spells it, and the editor
+         * state keyed by its name.
+         *
+         * The name of a node is the property it occupies on the root class, so it is
+         * also the key of the placement, of the remembered boxes and of the pick.
+         * Renaming the text alone orphans all three: the node moves to a new name and
+         * `selected()` and `spots()` go on pointing at one nothing declares.
+         *
+         * The document goes first BECAUSE it is the write that can refuse — a name
+         * already declared is rejected there — so a refused rename leaves the editor
+         * state exactly as it was rather than pointing at a rename that never
+         * happened.
+         *
+         * Through the property handle and not through `prop_rename` directly: the
+         * handle composes the new signature out of the current one, so a keyed or a
+         * two way property keeps its signs. Wires are rewritten by the model, NOT
+         * dropped — the mirror of `node_delete`, where `links_drop` cuts them because
+         * the node itself is going.
+         */
+        node_rename(name: string, next: string): void;
         /**
          * Del anywhere in the editor, as long as the keystroke is not somebody's text.
          *

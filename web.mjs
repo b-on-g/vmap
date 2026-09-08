@@ -34110,6 +34110,54 @@ var $;
         prop_drop(name) {
             this.prop_tree(name, null);
         }
+        /**
+         * Renames a property together with every reference to it, in one write.
+         *
+         * `next` is a whole signature, `d*?` and not `d`, because a rename and a
+         * change of sign arrive together from the inspector and two writes would
+         * leave the document renamed but unsigned in between.
+         *
+         * **A reference is rewritten, never dropped.** A node is named by the
+         * property it occupies, so a rename moves the name every `sub` list, every
+         * wire end and every binding spells. Dropping them instead — which is what
+         * `links_drop` does for a delete — would silently cut the wires of a node
+         * that is still there; the two operations are opposites and must not share
+         * a path. Anything of the shape `<= name`, `<=> name` or `= name prop` at
+         * any depth is such a reference.
+         *
+         * The declaration is retyped IN PLACE, among the kids of the base, and only
+         * there: an override of the same name under a part is a port of that part
+         * and none of our business. In place also keeps the property where it was —
+         * dropping it and inserting it back moved it to the end of the class, which
+         * reorders the canvas for a rename that should not move anything.
+         *
+         * A name already taken is refused rather than merged: two properties of one
+         * name is a document nothing can address afterwards.
+         */
+        prop_rename(name, next) {
+            const to = [...next.matchAll($mol_view_tree2_prop_signature)][0]?.groups?.name;
+            if (!to)
+                return this.$.$mol_fail(new Error(`Bad property signature ${JSON.stringify(next)}`));
+            if (to !== name && this.prop_names().includes(to))
+                return this.$.$mol_fail(new Error(`Property ${JSON.stringify(to)} is already declared in ${this.name()}`));
+            const self = this.tree();
+            const base = self.kids[0];
+            if (!base)
+                return;
+            const refs = (tree) => {
+                const kids = tree.kids.map(refs);
+                const head = kids[0];
+                if (head?.type === name
+                    && (tree.type === '<=' || tree.type === '<=>' || tree.type === '='))
+                    return tree.clone([head.struct(to, head.kids), ...kids.slice(1)]);
+                return tree.clone(kids);
+            };
+            const props = base.kids.map(prop => {
+                const meta = [...prop.type.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
+                return meta?.name === name ? prop.struct(next, prop.kids) : prop;
+            });
+            this.tree(self.clone([base.clone(props.map(refs))]));
+        }
         property(name) {
             return $bog_vmap_lang_prop.make({
                 name: $mol_const(name),
@@ -34582,6 +34630,9 @@ var $;
         $mol_action
     ], $bog_vmap_lang_node.prototype, "prop_drop", null);
     __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "prop_rename", null);
+    __decorate([
         $mol_mem_key
     ], $bog_vmap_lang_node.prototype, "property", null);
     __decorate([
@@ -34647,10 +34698,24 @@ var $;
         /**
          * Signature parts: bare `name`, `key` (`*`) and `next` (`?`).
          *
-         * Deviation from studio: renaming drops the old property BEFORE the instance
-         * method is overwritten, so a failure in the drop leaves the model pointing at
-         * a property that still exists. Studio does it the other way round and ends up
-         * with a live `hyoo_studio_property` addressing a name nothing declares.
+         * A rename goes to the node, because it is not a fact about this property
+         * alone: everything that spells the old name has to be rewritten in the same
+         * write. A change of sign is local and is written here.
+         *
+         * Deviation from studio: this handle is NOT patched to follow the rename.
+         * Studio overwrites the `name` method of the live property object, which
+         * leaves an object addressing one name and reading another past the graph;
+         * here the handle simply stops addressing anything, and the caller asks the
+         * node for the property under its new name — a keyed cell, so that is one
+         * read and no state.
+         *
+         * **Plain method, and so are the three below.** Every accessor here only
+         * delegates into `tree()`, which is a cell already, and an accessor of that
+         * shape under `@ $mol_mem` freezes at the value written THROUGH it: after a
+         * rename this handle went on reporting the new name although it addressed a
+         * property no longer under it, which is the very object-past-the-graph the
+         * patching above was dropped for. Measured; there is a test. The same rule
+         * and the same measurement as `bog_vmap_app_doc_node.source`.
          */
         meta(next) {
             const tree = this.tree();
@@ -34658,12 +34723,13 @@ var $;
             let meta = [...sign.matchAll($mol_view_tree2_prop_signature)][0]?.groups
                 ?? { name: '', key: '', next: '' };
             if (next) {
-                if (next.name) {
-                    this.node().prop_drop(meta.name);
-                    this.name = () => next.name;
-                }
-                meta = { ...meta, ...next };
-                this.tree(tree.struct(`${meta.name}${meta.key || ''}${meta.next || ''}`, tree.kids));
+                const made = { ...meta, ...next };
+                const sign = `${made.name}${made.key || ''}${made.next || ''}`;
+                if (made.name === meta.name)
+                    this.tree(tree.struct(sign, tree.kids));
+                else
+                    this.node().prop_rename(meta.name, sign);
+                meta = made;
             }
             return meta;
         }
@@ -34677,18 +34743,6 @@ var $;
             return Boolean(this.meta(next === undefined ? undefined : { next: next ? '?' : '' }).next);
         }
     }
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_prop.prototype, "meta", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_prop.prototype, "title", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_prop.prototype, "key", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_prop.prototype, "next", null);
     $.$bog_vmap_lang_prop = $bog_vmap_lang_prop;
 })($ || ($ = {}));
 
@@ -36977,41 +37031,23 @@ var $;
 		typing_text(id){
 			return "";
 		}
+		source_tabs(){
+			return [];
+		}
 		tree_text(next){
 			if(next !== undefined) return next;
 			return "";
-		}
-		Tree(){
-			const obj = new this.$.$mol_textarea();
-			(obj.title) = () => ("view.tree");
-			(obj.hint) = () => ("Имя_узла $mol_view");
-			(obj.sidebar_showed) = () => (true);
-			(obj.value) = (next) => ((this.tree_text(next)));
-			return obj;
 		}
 		js_text(next){
 			if(next !== undefined) return next;
 			return "";
 		}
-		Js(){
-			const obj = new this.$.$mol_textarea();
-			(obj.title) = () => ("JS");
-			(obj.hint) = () => ("");
-			(obj.sidebar_showed) = () => (true);
-			(obj.value) = (next) => ((this.js_text(next)));
-			return obj;
+		js_idle_note(){
+			return "";
 		}
 		css_text(next){
 			if(next !== undefined) return next;
 			return "";
-		}
-		Css(){
-			const obj = new this.$.$mol_textarea();
-			(obj.title) = () => ("CSS");
-			(obj.hint) = () => ("");
-			(obj.sidebar_showed) = () => (true);
-			(obj.value) = (next) => ((this.css_text(next)));
-			return obj;
 		}
 		klass(){
 			return "";
@@ -37019,11 +37055,8 @@ var $;
 		prop(){
 			return "";
 		}
-		prop_key(){
-			return false;
-		}
-		prop_next(){
-			return false;
+		hooks(){
+			return [];
 		}
 		source(next){
 			if(next !== undefined) return next;
@@ -37094,20 +37127,43 @@ var $;
 		}
 		Sources(){
 			const obj = new this.$.$mol_deck();
-			(obj.items) = () => ([
-				(this.Tree()), 
-				(this.Js()), 
-				(this.Css())
-			]);
+			(obj.items) = () => ((this.source_tabs()));
+			return obj;
+		}
+		Tree(){
+			const obj = new this.$.$mol_textarea();
+			(obj.title) = () => ("view.tree");
+			(obj.hint) = () => ("Имя_узла $mol_view");
+			(obj.sidebar_showed) = () => (true);
+			(obj.value) = (next) => ((this.tree_text(next)));
+			return obj;
+		}
+		Js(){
+			const obj = new this.$.$mol_textarea();
+			(obj.title) = () => ("JS");
+			(obj.hint) = () => ("");
+			(obj.sidebar_showed) = () => (true);
+			(obj.value) = (next) => ((this.js_text(next)));
+			return obj;
+		}
+		Js_idle(){
+			const obj = new this.$.$mol_view();
+			(obj.title) = () => ("JS");
+			(obj.sub) = () => ([(this.js_idle_note())]);
+			return obj;
+		}
+		Css(){
+			const obj = new this.$.$mol_textarea();
+			(obj.title) = () => ("CSS");
+			(obj.hint) = () => ("");
+			(obj.sidebar_showed) = () => (true);
+			(obj.value) = (next) => ((this.css_text(next)));
 			return obj;
 		}
 	};
 	($mol_mem(($.$bog_vmap_app_code.prototype), "tree_text"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Tree"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "js_text"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Js"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "css_text"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Css"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "source"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "node_source"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "js"));
@@ -37122,6 +37178,10 @@ var $;
 	($mol_mem(($.$bog_vmap_app_code.prototype), "Typing"));
 	($mol_mem_key(($.$bog_vmap_app_code.prototype), "Typing_row"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "Sources"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Tree"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Js"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Js_idle"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Css"));
 
 
 ;
@@ -37816,9 +37876,18 @@ var $;
              *
              * Kept so that a broken `view.tree` can be fixed where it was written
              * instead of vanishing on the next redraw. Cleared by the write that parses.
+             *
+             * Keyed by the tab AND by what is being edited in it. Keyed by the tab alone
+             * it would follow the panel rather than the text: a refused edit made on one
+             * node would show up under the name of the next node picked, and correcting
+             * it there would write it into that other node.
              */
-            draft(slot, next) {
+            draft(id, next) {
                 return next ?? null;
+            }
+            /** Address of a draft: the tab, plus the node when one is being edited. */
+            draft_id(slot) {
+                return this.sliced() ? slot + ' ' + this.prop() : slot;
             }
             /** Why the last edit was not written into the document. Empty when it was. */
             refusal(next) {
@@ -37833,24 +37902,25 @@ var $;
              * untouched — swallowing it would turn a wait into an error.
              */
             written(slot, next, write) {
+                const id = this.draft_id(slot);
                 try {
                     write(next);
                 }
                 catch (error) {
                     if (this.$.$mol_promise_like(error))
                         return this.$.$mol_fail_hidden(error);
-                    this.draft(slot, next);
+                    this.draft(id, next);
                     this.refusal(String(error?.message ?? error));
                     return next;
                 }
-                this.draft(slot, null);
+                this.draft(id, null);
                 this.refusal('');
                 return next;
             }
             /** `view.tree` of the node, or of the whole document. */
             tree_text(next) {
                 if (next === undefined) {
-                    return this.draft('tree') ?? (this.sliced() ? this.node_source() : this.source());
+                    return this.draft(this.draft_id('tree')) ?? (this.sliced() ? this.node_source() : this.source());
                 }
                 return this.written('tree', next, text => {
                     if (this.sliced())
@@ -37867,28 +37937,74 @@ var $;
             props_css() {
                 return this.$.$bog_vmap_app_code_props_css(this.css(), this.klass());
             }
+            /**
+             * Body of the node, which is the methods its declaration asks for.
+             *
+             * NOT one method named after the node. That name belongs to the factory of
+             * the sub-view in the generated class, so a handwritten method of that name
+             * shadows the factory and the node leaves the canvas — measured on the
+             * generator, which emits `Calc(){ const obj = new this.$.$mol_view(); … }`
+             * for a node called `Calc`. What a person opens this tab to write is the
+             * other side of a binding: `title <= greeting` wants `greeting()`.
+             */
             js_text(next) {
                 if (!this.sliced()) {
                     if (next === undefined)
-                        return this.draft('js') ?? this.js();
+                        return this.draft(this.draft_id('js')) ?? this.js();
                     return this.written('js', next, text => this.js(text));
                 }
-                const prop = this.prop();
+                const hooks = this.hooks();
                 if (next === undefined) {
-                    return this.draft('js') ?? this.sliced_read(() => this.props_js().get(prop), () => this.$.$bog_vmap_app_code_js_default(prop, this.prop_key(), this.prop_next()));
+                    return this.draft(this.draft_id('js')) ?? this.sliced_read(() => {
+                        const props = this.props_js();
+                        return hooks
+                            .map(name => props.get(name) ?? this.$.$bog_vmap_app_code_js_default(name))
+                            .join('\n\n');
+                    }, () => hooks.map(name => this.$.$bog_vmap_app_code_js_default(name)).join('\n\n'));
                 }
-                return this.written('js', next, text => this.js(this.$.$bog_vmap_app_code_joined(this.$.$bog_vmap_app_code_with(this.props_js(), prop, text))));
+                // Merged into the body method by method, never written over it: what is
+                // on screen is a few methods of a class that has others, and this tab
+                // must not be able to delete a method it never showed. A method renamed
+                // here leaves the old one behind, and that is the safe half of the trade.
+                return this.written('js', next, text => {
+                    const all = this.props_js();
+                    for (const [name, code] of this.$.$bog_vmap_app_code_props_js(text)) {
+                        if (!name)
+                            continue;
+                        this.$.$bog_vmap_app_code_with(all, name, code);
+                    }
+                    this.js(this.$.$bog_vmap_app_code_joined(all));
+                });
+            }
+            /** Whether the JS tab has anything for this node to edit at all. */
+            js_writable() {
+                return !this.sliced() || this.hooks().length > 0;
+            }
+            js_idle_note() {
+                return `У узла ${this.prop()} нет своего метода: всё, что он делает, задано`
+                    + ` объявлением, а тело под его именем перебило бы фабрику под-вида и`
+                    + ` убрало бы узел с холста. Метод появится здесь, как только объявление`
+                    + ` на него сошлётся: например «title <= greeting» просит написать`
+                    + ` «greeting()». Общие методы класса правятся в режиме «Весь класс».`;
+            }
+            /** The JS tab: the field when there is something to write in it, the reason when not. */
+            source_tabs() {
+                return [
+                    this.Tree(),
+                    this.js_writable() ? this.Js() : this.Js_idle(),
+                    this.Css(),
+                ];
             }
             css_text(next) {
                 if (!this.sliced()) {
                     if (next === undefined)
-                        return this.draft('css') ?? this.css();
+                        return this.draft(this.draft_id('css')) ?? this.css();
                     return this.written('css', next, text => this.css(text));
                 }
                 const prop = this.prop();
                 const key = prop.toLowerCase();
                 if (next === undefined) {
-                    return this.draft('css') ?? this.sliced_read(() => this.props_css().get(key), () => this.$.$bog_vmap_app_code_css_default(prop, this.klass()));
+                    return this.draft(this.draft_id('css')) ?? this.sliced_read(() => this.props_css().get(key), () => this.$.$bog_vmap_app_code_css_default(prop, this.klass()));
                 }
                 return this.written('css', next, text => this.css(this.$.$bog_vmap_app_code_joined(this.$.$bog_vmap_app_code_with(this.props_css(), key, text))));
             }
@@ -37936,22 +38052,21 @@ var $;
              * A body in the scene goes through `new Function`, which takes any JS, so
              * nothing else in the editor would ever say a word about this.
              *
-             * While one node is being edited only its own method is complained about:
-             * the neighbours are not on screen, and a line about a method the panel does
-             * not show is a line nobody can act on.
+             * Checked on the text the tab is SHOWING, not on the whole class. That is
+             * what makes the line number true in both modes, and it removes the filter
+             * this used to carry: filtering by the name of the node hid every complaint
+             * a person could actually make, because the one method they must never write
+             * is the one named after the node.
              */
             complaints() {
-                const all = this.$.$bog_vmap_app_export_untyped(this.js());
-                if (!this.sliced())
-                    return all;
-                const prop = this.prop();
-                return all.filter(one => one.method === prop);
+                return this.$.$bog_vmap_app_export_untyped(this.js_text());
             }
             typing_rows() {
                 return this.complaints().map((_, index) => this.Typing_row(index));
             }
             typing_text(index) {
-                return this.complaints()[index]?.text ?? '';
+                const one = this.complaints()[index];
+                return one ? `Строка ${one.line}. ${one.text}` : '';
             }
             head_content() {
                 return [
@@ -40654,11 +40769,8 @@ var $;
 		code_prop(){
 			return "";
 		}
-		code_prop_key(){
-			return false;
-		}
-		code_prop_next(){
-			return false;
+		code_hooks(){
+			return [];
 		}
 		code_error(){
 			return "";
@@ -40826,8 +40938,7 @@ var $;
 			const obj = new this.$.$bog_vmap_app_code();
 			(obj.klass) = () => ((this.doc_root()));
 			(obj.prop) = () => ((this.code_prop()));
-			(obj.prop_key) = () => ((this.code_prop_key()));
-			(obj.prop_next) = () => ((this.code_prop_next()));
+			(obj.hooks) = () => ((this.code_hooks()));
 			(obj.source) = (next) => ((this.doc_text(next)));
 			(obj.node_source) = (next) => ((this.node_source(next)));
 			(obj.js) = (next) => ((this.root_js(next)));
@@ -41247,14 +41358,41 @@ var $;
             code_prop() {
                 return this.selected() ?? '';
             }
-            /** Signature of the picked property: it shapes the empty method offered for it. */
-            code_prop_key() {
+            /**
+             * Methods of the class the picked node needs written by hand.
+             *
+             * Every name its declaration refers to with `<=` that the class does not
+             * declare itself. A generated property already has a body — the name of the
+             * node most of all, which compiles to the factory of the sub-view — and a
+             * handwritten method of that name would shadow it and take the node off the
+             * canvas. What has no generated body is exactly what a person opens the JS
+             * tab to write: `title <= greeting` wants `greeting()`.
+             */
+            code_hooks() {
                 const name = this.selected();
-                return name ? this.node().property(name).key() : false;
-            }
-            code_prop_next() {
-                const name = this.selected();
-                return name ? this.node().property(name).next() : false;
+                if (!name)
+                    return [];
+                const node = this.node();
+                const decl = node.props_tree().select(node.prop_fullname(name)).kids[0];
+                if (!decl)
+                    return [];
+                const declared = new Set(node.prop_names());
+                const found = [];
+                const walk = (tree) => {
+                    if (tree.type === '<=') {
+                        const ref = tree.kids[0];
+                        // A reference with kids is a declaration, not a reference: that is
+                        // the `upper` hack, and it brings its own generated body with it.
+                        if (ref && !ref.kids.length && !declared.has(ref.type)) {
+                            if (!found.includes(ref.type))
+                                found.push(ref.type);
+                        }
+                    }
+                    for (const kid of tree.kids)
+                        walk(kid);
+                };
+                walk(decl);
+                return found;
             }
             /** What the scene said about the picked node last, empty when it said nothing. */
             code_error() {
@@ -41263,11 +41401,12 @@ var $;
             }
             /** Method of the picked node, cut out of the body of its class. */
             node_js() {
-                const name = this.selected();
-                if (!name)
+                const hooks = this.code_hooks();
+                if (!hooks.length)
                     return '';
                 try {
-                    return this.$.$bog_vmap_app_code_props_js(this.root_js()).get(name) ?? '';
+                    const props = this.$.$bog_vmap_app_code_props_js(this.root_js());
+                    return hooks.map(name => props.get(name)).filter(Boolean).join('\n\n');
                 }
                 catch (error) {
                     if (this.$.$mol_promise_like(error))
@@ -41777,6 +41916,42 @@ var $;
                 this.selected(null);
             }
             /**
+             * Renames a node: the declaration, everything that spells it, and the editor
+             * state keyed by its name.
+             *
+             * The name of a node is the property it occupies on the root class, so it is
+             * also the key of the placement, of the remembered boxes and of the pick.
+             * Renaming the text alone orphans all three: the node moves to a new name and
+             * `selected()` and `spots()` go on pointing at one nothing declares.
+             *
+             * The document goes first BECAUSE it is the write that can refuse — a name
+             * already declared is rejected there — so a refused rename leaves the editor
+             * state exactly as it was rather than pointing at a rename that never
+             * happened.
+             *
+             * Through the property handle and not through `prop_rename` directly: the
+             * handle composes the new signature out of the current one, so a keyed or a
+             * two way property keeps its signs. Wires are rewritten by the model, NOT
+             * dropped — the mirror of `node_delete`, where `links_drop` cuts them because
+             * the node itself is going.
+             */
+            node_rename(name, next) {
+                if (!next || next === name)
+                    return;
+                this.node().property(name).title(next);
+                const spots = { ...this.spots() };
+                const spot = spots[name];
+                if (spot) {
+                    delete spots[name];
+                    this.spots({ ...spots, [next]: spot });
+                }
+                // The box is remembered under the old name and nothing will ever report
+                // it again; the new name gets its own on the next measurement.
+                this.pane().sizes_forget(name);
+                if (this.selected() === name)
+                    this.selected(next);
+            }
+            /**
              * Del anywhere in the editor, as long as the keystroke is not somebody's text.
              *
              * On the window and not on the canvas: the canvas is an iframe, and a focused
@@ -41845,6 +42020,9 @@ var $;
         ], $bog_vmap_app.prototype, "doc_css", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app.prototype, "code_hooks", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_app.prototype, "body", null);
         __decorate([
             $mol_mem
@@ -41873,6 +42051,9 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "node_delete", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "node_rename", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "hotkeys", null);

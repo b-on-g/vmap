@@ -6946,6 +6946,74 @@ var $;
             // A reference to something that is not a wire is not a link.
             $mol_assert_like(doc(`${d}bog_vmap_lang_test_x ${d}mol_view\n\tlabel \\a\n\tP ${d}mol_view title <= label\n`).links(), []);
         },
+        /**
+         * A rename is a rewrite of the whole class, not of one line: the name of a
+         * node is spelled by everything that points at it. The property also keeps
+         * its place — dropping and re-inserting moved it to the end, which reorders
+         * the canvas for an edit that moves nothing.
+         */
+        'renaming a node rewrites the wire that reads it'($) {
+            const node = doc(demo_src);
+            node.property('Calc').title('Motor');
+            $mol_assert_equal(node.source(), demo_src.replace(/Calc(?= |\n)/g, 'Motor'));
+            $mol_assert_like(node.prop_names(), ['Price', 'Hero', 'Motor', 'calc_result', 'label', 'sub']);
+            // The wire is alive and reads the node under its new name.
+            $mol_assert_like(node.links(), [
+                { from: 'Motor', from_prop: 'result', to: 'Price', to_prop: 'title', name: 'calc_result', bidi: false },
+            ]);
+        },
+        'renaming a node rewrites the sub that draws it'($) {
+            const node = doc(demo_src);
+            node.property('Hero').title('Stage');
+            $mol_assert_like(node.sub_names(), ['Stage']);
+            $mol_assert_equal(node.sub_holder('Stage'), '');
+            $mol_assert_equal(node.sub_holder('Hero'), null);
+            // The sub of the renamed node itself is untouched.
+            $mol_assert_like(node.sub_names('Stage'), ['Price']);
+        },
+        /** The other end: renaming the wire moves the name in the part that reads it. */
+        'renaming a wire rewrites the binding that reads it'($) {
+            const node = doc(demo_src);
+            node.property('calc_result').title('total');
+            $mol_assert_like(node.links(), [
+                { from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title', name: 'total', bidi: false },
+            ]);
+            $mol_assert_equal(node.source().includes('title <= total'), true);
+            $mol_assert_equal(node.source().includes('calc_result'), false);
+        },
+        /**
+         * The handle is not patched to follow the rename, and a reader of the name
+         * recomputes off the text instead. Under the old shape the `name` method of
+         * the live handle was overwritten, so the object addressed one property and
+         * read another, past the graph.
+         */
+        'a reader of the name recomputes on a rename'($) {
+            const node = doc(demo_src);
+            const reader = $mol_wire_atom.solo(node, function names_reader() {
+                return this.prop_names().join(' ');
+            });
+            $mol_assert_equal(reader.sync().includes('Calc'), true);
+            node.property('Calc').title('Motor');
+            $mol_assert_equal(reader.sync().includes('Motor'), true);
+            $mol_assert_equal(reader.sync().includes('Calc'), false);
+            // The handle of the old name addresses nothing now, and says so instead
+            // of answering out of what was written through it.
+            $mol_assert_equal(node.property('Calc').title(), '');
+            $mol_assert_equal(node.property('Motor').title(), 'Motor');
+        },
+        'a rename onto a name already declared is refused'($) {
+            const node = doc(demo_src);
+            $mol_assert_fail(() => node.property('Calc').title('Price'), Error);
+            // Nothing moved.
+            $mol_assert_equal(node.source(), demo_src);
+        },
+        /** A sign travels with the rename: one write, or the document is unsigned between two. */
+        'a rename carries the sign of the property'($) {
+            const node = doc(`${d}bog_vmap_lang_test_sign ${d}mol_view value? null\n`);
+            node.property('value').title('title');
+            $mol_assert_equal(node.source(), `${d}bog_vmap_lang_test_sign ${d}mol_view title? null\n`);
+            $mol_assert_equal(node.property('title').next(), true);
+        },
     });
 })($ || ($ = {}));
 
@@ -12942,6 +13010,50 @@ var $;
             $mol_assert_equal(names.includes('Button_minor'), false);
             $mol_assert_like(app.node().sub_names(), []);
         },
+        /**
+         * The name of a node is the key of the pick, of the placement and of the
+         * remembered box at once, so a rename that only touches the text orphans all
+         * three: the node lives under the new name while the editor points at one
+         * nothing declares.
+         */
+        'renaming a node carries the pick and the placement with it'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            app.selected('Button_minor');
+            const spot = app.spots()['Button_minor'];
+            $mol_assert_equal(Boolean(spot), true);
+            app.node_rename('Button_minor', 'Send');
+            $mol_assert_equal(app.node().prop_names().includes('Send'), true);
+            $mol_assert_equal(app.node().prop_names().includes('Button_minor'), false);
+            $mol_assert_equal(app.selected(), 'Send');
+            $mol_assert_like(app.spots()['Send'], spot);
+            $mol_assert_equal(app.spots()['Button_minor'], undefined);
+        },
+        /** A node drawn on a page keeps its place in that page under the new name. */
+        'renaming a node on a board keeps it drawn'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.board_add();
+            app.part_drop(`${d}mol_button_minor`, 2000, 100);
+            app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 });
+            app.node_rename('Button_minor', 'Send');
+            $mol_assert_like(app.node().sub_names('Page'), ['Send']);
+        },
+        /**
+         * The document refuses the rename, and the editor state must not move for a
+         * rename that did not happen.
+         */
+        'a rename onto a name already taken changes nothing'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            app.part_drop(`${d}mol_string`, 300, 400);
+            app.selected('Button_minor');
+            const before = app.doc_source();
+            const spots = JSON.stringify(app.spots());
+            $mol_assert_fail(() => app.node_rename('Button_minor', 'String'), Error);
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(JSON.stringify(app.spots()), spots);
+            $mol_assert_equal(app.selected(), 'Button_minor');
+        },
     });
 })($ || ($ = {}));
 
@@ -14433,6 +14545,17 @@ var $;
         const code = app.Code();
         return { app, code, name: app.selected() };
     };
+    /**
+     * The same, with the node bound to a name the class does not declare.
+     *
+     * That binding is the only thing that gives a node a method of its own to
+     * write: `title <= greeting` asks for `greeting()`, and nothing generates it.
+     */
+    const wired = ($) => {
+        const one = editor($);
+        one.code.tree_text(`${one.name} ${d}mol_button_minor\n\ttitle <= greeting\n`);
+        return one;
+    };
     $mol_test({
         'the declaration of a node written back leaves the document alone'($) {
             const { app, code } = editor($);
@@ -14495,27 +14618,63 @@ var $;
             $mol_assert_equal(code.tree_text().includes(`${d}mol_check`), true);
         },
         'a method written for a node lands in the body of its class'($) {
-            const { app, code, name } = editor($);
-            code.js_text(`${name}_title() {\n\treturn 'hi'\n}`);
-            $mol_assert_equal(app.root_js().includes(`${name}_title()`), true);
+            const { app, code } = wired($);
+            code.js_text(`greeting() {\n\treturn 'hi'\n}`);
+            $mol_assert_equal(app.root_js().includes(`greeting()`), true);
         },
         /** The whole point of 4.2: one property and the whole text say the same thing. */
         'the slice of a node and the whole body agree'($) {
-            const { app, code, name } = editor($);
-            app.root_js(`${name}( next ) {\n\treturn next\n}\n\nother() {\n\t\n}`);
-            $mol_assert_equal(code.js_text(), `${name}( next ) {\n\treturn next\n}`);
+            const { app, code } = wired($);
+            app.root_js(`greeting() {\n\treturn 'hi'\n}\n\nother() {\n\t\n}`);
+            $mol_assert_equal(code.js_text(), `greeting() {\n\treturn 'hi'\n}`);
             code.whole(true);
             $mol_assert_equal(code.js_text(), app.root_js());
         },
         'editing one property leaves its neighbour byte for byte'($) {
-            const { app, code, name } = editor($);
-            app.root_js(`${name}() {\n\t\n}\n\nother() {\n\treturn 1\n}`);
-            code.js_text(`${name}() {\n\treturn 2\n}`);
-            $mol_assert_equal(app.root_js(), `${name}() {\n\treturn 2\n}\n\nother() {\n\treturn 1\n}`);
+            const { app, code } = wired($);
+            app.root_js(`greeting() {\n\t\n}\n\nother() {\n\treturn 1\n}`);
+            code.js_text(`greeting() {\n\treturn 2\n}`);
+            $mol_assert_equal(app.root_js(), `greeting() {\n\treturn 2\n}\n\nother() {\n\treturn 1\n}`);
         },
-        'a node with no method of its own is offered an empty one'($) {
+        /**
+         * THE TRAP THIS WHOLE SHAPE EXISTS TO AVOID. The name of a node is the name
+         * of the factory of its sub-view in the generated class, so a handwritten
+         * method of that name shadows the factory and the node leaves the canvas.
+         * The panel must never put that name in front of a person as a suggestion.
+         */
+        'a method named after the node is never offered'($) {
+            const plain = editor($);
+            $mol_assert_equal(plain.code.js_text().includes(`${plain.name}(`), false);
+            const one = wired($);
+            $mol_assert_equal(one.code.js_text().includes(`${one.name}(`), false);
+        },
+        'a node whose declaration asks for nothing has no JS field at all'($) {
+            const { code } = editor($);
+            $mol_assert_equal(code.js_writable(), false);
+            $mol_assert_equal(code.source_tabs()[1], code.Js_idle());
+            $mol_assert_equal(code.js_idle_note() !== '', true);
+        },
+        'the method the declaration asks for is offered empty'($) {
+            const { code } = wired($);
+            $mol_assert_equal(code.js_writable(), true);
+            $mol_assert_equal(code.source_tabs()[1], code.Js());
+            $mol_assert_equal(code.js_text(), 'greeting(  ) {\n\t\n}');
+        },
+        /** The declaration is what decides, so a binding added later opens the field. */
+        'a binding added to the declaration brings the method with it'($) {
             const { code, name } = editor($);
-            $mol_assert_equal(code.js_text(), `${name}(  ) {\n\t\n}`);
+            $mol_assert_equal(code.js_writable(), false);
+            code.tree_text(`${name} ${d}mol_button_minor\n\ttitle <= greeting\n`);
+            $mol_assert_equal(code.js_writable(), true);
+            $mol_assert_equal(code.js_text(), 'greeting(  ) {\n\t\n}');
+        },
+        /** A method the class already generates is not something to write by hand. */
+        'a wire the class declares is not offered as a method'($) {
+            const { app, code, name } = editor($);
+            app.node().part_add('Motor', `${d}mol_view`);
+            app.node().wire_add({ name: 'spin', node: 'Motor', prop: 'sub' });
+            code.tree_text(`${name} ${d}mol_button_minor\n\ttitle <= spin\n`);
+            $mol_assert_equal(code.js_writable(), false);
         },
         'a rule written for a node lands in the styles of its class'($) {
             const { app, code, name } = editor($);
@@ -14542,10 +14701,10 @@ var $;
         },
         /** The scene compiles what the panel writes, so the two texts have to travel. */
         'what the panel writes reaches the scene'($) {
-            const { app, code, name } = editor($);
-            code.js_text(`${name}() {\n\treturn 1\n}`);
+            const { app, code, name } = wired($);
+            code.js_text(`greeting() {\n\treturn 1\n}`);
             code.css_text(`[${app.doc_root().slice(1)}_${name.toLowerCase()}] {\n\tcolor: red;\n}`);
-            $mol_assert_equal(app.doc_js()[app.doc_root()]?.includes(`${name}()`), true);
+            $mol_assert_equal(app.doc_js()[app.doc_root()]?.includes(`greeting()`), true);
             $mol_assert_equal(app.doc_css().includes('color: red'), true);
         },
         /**
@@ -14553,34 +14712,61 @@ var $;
          * in the scene through `new Function` and would fail the export on `strict`.
          */
         'an untyped parameter is complained about as it is written'($) {
-            const { code, name } = editor($);
+            const { code } = wired($);
             $mol_assert_equal(code.complaints().length, 0);
-            code.js_text(`${name}( next ) {\n\treturn next\n}`);
+            code.js_text(`greeting( next ) {\n\treturn next\n}`);
             $mol_assert_equal(code.complaints().length, 1);
             $mol_assert_equal(code.complaints()[0].param, 'next');
-            $mol_assert_equal(code.complaints()[0].method, name);
+            $mol_assert_equal(code.complaints()[0].method, 'greeting');
         },
         'a typed parameter is not complained about'($) {
-            const { code, name } = editor($);
-            code.js_text(`${name}( next?: string ) {\n\treturn next\n}`);
+            const { code } = wired($);
+            code.js_text(`greeting( next?: string ) {\n\treturn next\n}`);
             $mol_assert_equal(code.complaints().length, 0);
         },
-        /** A line about a method the panel does not show is a line nobody can act on. */
-        'only the method of the picked node is complained about'($) {
-            const { app, code, name } = editor($);
-            app.root_js(`${name}( a ) {\n\t\n}\n\nother( b ) {\n\t\n}`);
+        /**
+         * The complaint used to be filtered by the name of the node, which hid every
+         * one a person could make: the method they must never write is the one named
+         * after the node. It is checked on the text on screen now, so it shows in
+         * both modes and its line number counts in the text the reader is looking at.
+         */
+        'the complaint is visible in both modes'($) {
+            const { app, code } = wired($);
+            app.root_js(`greeting( a ) {\n\t\n}\n\nother( b ) {\n\t\n}`);
             $mol_assert_equal(code.complaints().length, 1);
             $mol_assert_equal(code.complaints()[0].param, 'a');
+            $mol_assert_equal(code.complaints()[0].line, 1);
             code.whole(true);
             $mol_assert_equal(code.complaints().length, 2);
+            $mol_assert_equal(code.complaints()[1].param, 'b');
+            $mol_assert_equal(code.complaints()[1].line, 5);
+        },
+        /**
+         * A draft belongs to the text, not to the tab. Keyed by the tab alone, a
+         * refused edit made on one node showed up under the name of the next node
+         * picked — and correcting it there wrote it into that other node.
+         */
+        'a refused edit does not follow the panel to another node'($) {
+            const { app, code, name } = editor($);
+            app.part_drop(`${d}mol_string`, 300, 400);
+            const second = app.selected();
+            app.selected(name);
+            code.tree_text('Broken \\\n\t\t\tnonsense');
+            $mol_assert_equal(code.tree_text(), 'Broken \\\n\t\t\tnonsense');
+            app.selected(second);
+            $mol_assert_equal(code.tree_text().includes('nonsense'), false);
+            $mol_assert_equal(code.tree_text().includes(second), true);
+            // And it is still there when the node it was typed on comes back.
+            app.selected(name);
+            $mol_assert_equal(code.tree_text(), 'Broken \\\n\t\t\tnonsense');
         },
         /** A published component without its behaviour is a picture of a component. */
         'a published node carries its method and its rule'($) {
-            const { app, code, name } = editor($);
-            code.js_text(`${name}() {\n\treturn 1\n}`);
+            const { app, code, name } = wired($);
+            code.js_text(`greeting() {\n\treturn 1\n}`);
             code.css_text(`[${app.doc_root().slice(1)}_${name.toLowerCase()}] {\n\tcolor: red;\n}`);
             const publish = app.Publish();
-            $mol_assert_equal(publish.js(), `${name}() {\n\treturn 1\n}`);
+            $mol_assert_equal(publish.js(), `greeting() {\n\treturn 1\n}`);
             $mol_assert_equal(publish.css().includes('color: red'), true);
         },
     });
