@@ -4552,6 +4552,17 @@ declare namespace $ {
      * canvas.
      */
     function $bog_vmap_lang_part_tree(this: $, name: string, klass: string): $mol_tree2;
+    /** Value of one key of a `*` dictionary, or `null` when the key is not there. */
+    function $bog_vmap_lang_dict_get(dict: $mol_tree2 | null, key: string): $mol_tree2 | null;
+    /**
+     * Sets one key of a `*` dictionary, or drops it when the value is `null`.
+     *
+     * A key already there is replaced where it stands, so `^` keeps the head of the
+     * dictionary it has to keep: a redeclared dictionary REPLACES the one of the
+     * base instead of extending it, and `^` is the line that undoes that. Writing a
+     * key must never be able to move it, and appending is the only other option.
+     */
+    function $bog_vmap_lang_dict_set(this: $, dict: $mol_tree2, key: string, value: $mol_tree2 | null): $mol_tree2;
     /**
      * Class declarations reordered so that a base always precedes its heir.
      *
@@ -4760,8 +4771,11 @@ declare namespace $ {
             readonly bidi?: boolean;
         }): string;
         /**
-         * Replaces the override of one port in the declaration of a part, or drops
-         * it when `next` is `null`. The other overrides keep their order.
+         * Plugs a port of a part, or unplugs it when `next` is `null`.
+         *
+         * One override of one part, which is what `over_set` is; a wire has no
+         * special way of writing its end and must not grow one, or the two would
+         * drift apart on the first fix to either.
          */
         link_target(to: string, to_prop: string, next: $mol_tree2 | null): void;
         /**
@@ -4770,6 +4784,95 @@ declare namespace $ {
          * the second is still in use.
          */
         link_drop(to: string, to_prop: string): void;
+        /**
+         * Declaration of a property, read off the derivation of the text.
+         *
+         * Not through `prop_tree()`: that one is a keyed cell the writes below go
+         * through, and a read taken from a written cell freezes at what was written.
+         * `props_tree()` is a plain derivation of the source and stays live.
+         */
+        prop_decl(name: string): $mol_tree2 | null;
+        /**
+         * The `/` list of a `sub`, of the class itself or of one part of it, or
+         * `null` when there is no `sub` there.
+         *
+         * The empty owner is the class, a named one is a part. Both are one shape
+         * because `upper` has already flattened them: the class carries `sub` as a
+         * property, a part carries it as an override under its class name, and under
+         * either sits the same list of bare references.
+         */
+        sub_list(owner?: string): $mol_tree2 | null;
+        /**
+         * Names the `sub` of a node references, in the order it draws them, or
+         * `null` when the node declares no `sub` and so is not a container.
+         *
+         * A node WITH a `sub` is an artboard: children of it are laid out by tree,
+         * by ordinary flex, while everything else lies free by coordinates. That is
+         * the whole difference between the two, and it is a difference in the text
+         * rather than a mark on the side, see section 8.
+         *
+         * Content that is not a bare reference — a literal string in `sub` — takes
+         * its place in the list as an empty name, so that an index here is an index
+         * there.
+         */
+        sub_names(owner?: string): readonly string[] | null;
+        /** Whose `sub` references this name: a part, `''` for the class, `null` for nobody. */
+        sub_holder(name: string): string | null;
+        /** Whether `name` is `owner` itself or lies somewhere under it. */
+        sub_within(owner: string, name: string): boolean;
+        /**
+         * Puts a list of references back into the `sub` of the class or of a part.
+         *
+         * An override already there is replaced where it stands, never dropped and
+         * appended: the order of the lines under a part is text the user reads, and
+         * a `sub` that jumped to the bottom on every insertion would rewrite the
+         * declaration around an edit that changed one child.
+         */
+        sub_write(owner: string, list: $mol_tree2): void;
+        /** Makes a node a container by giving it an empty `sub`, if it has none. */
+        sub_open(owner: string): void;
+        /** One override written under a part, `Board $mol_view style *`, or `null`. */
+        over_tree(owner: string, prop: string): $mol_tree2 | null;
+        /**
+         * Replaces an override under a part where it stands, appends a new one, or
+         * drops it on `null`.
+         *
+         * In place, because the order of the lines under a part is text the user
+         * reads: an override that jumped to the bottom every time its value changed
+         * would rewrite the declaration around an edit that changed one line.
+         */
+        over_set(owner: string, prop: string, next: $mol_tree2 | null): void;
+        /**
+         * Refuses to put a node inside itself or inside anything it already holds.
+         *
+         * A cycle in `sub` is not a badly drawn document, it is a class whose
+         * `dom_tree()` never returns: the scene would hang on the first render, and
+         * the document that hangs it is the one that got saved.
+         */
+        sub_check(name: string, owner: string): void;
+        /**
+         * Puts a bare reference `<= name` into a `sub` at a position.
+         *
+         * The position is where the insertion line was drawn, so it is clamped
+         * rather than checked: a drop at the end of a list the document has since
+         * shortened is an ordinary race of a gesture against a document, and landing
+         * at the end is the answer to it.
+         */
+        sub_insert(name: string, index: number, owner?: string): void;
+        /**
+         * Moves a node to a position under another parent, or to another position
+         * under the same one.
+         *
+         * Taken out first and put back after, so reparenting and reordering are one
+         * operation with one shape. Within one parent the index is corrected for the
+         * hole the node itself leaves, because the position the user aimed at was
+         * read off a list that still had it.
+         *
+         * The refusal is checked BEFORE the node is taken out, not left to the
+         * insertion: a move that fails halfway is a document with the node gone from
+         * the page and nothing in its place, written and saved.
+         */
+        sub_move(name: string, index: number, owner?: string): void;
         /** Appends a bare reference `<= name` to the own `sub` of the class. */
         sub_add(name: string): void;
         /**
@@ -4784,6 +4887,11 @@ declare namespace $ {
          * it is two calls — the same split as `part_add` plus `sub_add` on the way
          * in. A node taken out of `sub` but still declared is a free part that draws
          * nothing and keeps its ports, which is a legitimate state, not a leftover.
+         *
+         * The reference is looked for wherever it is, the class and every part of it
+         * alike. A node inside an artboard is referenced by that artboard and not by
+         * the class, and deleting it has to reach there too — otherwise the document
+         * keeps drawing a node nothing declares any more.
          */
         sub_drop(name: string): void;
     }
@@ -6292,6 +6400,70 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    /** As much of a DOM node as measuring needs. */
+    type $bog_vmap_scene_rect_source = {
+        readonly isConnected: boolean;
+        getBoundingClientRect(): {
+            readonly left: number;
+            readonly top: number;
+            readonly width: number;
+            readonly height: number;
+        };
+    };
+    /** What the walk of one rendered document came out to. */
+    type $bog_vmap_scene_measured<Node> = {
+        readonly sizes: {
+            readonly [node: string]: $bog_vmap_scene_box;
+        };
+        readonly nodes: readonly Node[];
+    };
+    /**
+     * Geometry of a rendered document, in world units, and the nodes it was read
+     * off.
+     *
+     * Pure, and out of the view for the reason the culling decision is: this is the
+     * whole of what the host learns about the layout, and a walk worth testing is
+     * worth testing without a compiled document. Everything that knows about `$mol`
+     * — what counts as a view, what a view's children are, which property holds it —
+     * is handed in, so the function itself knows only rectangles and paths.
+     *
+     * The nodes come back beside the sizes because the two are one question asked
+     * twice: what the host is told about, and what has to be watched for changing
+     * behind the graph's back. Watching the root alone leaves every node inside an
+     * artboard of fixed width unwatched, and a reflow INSIDE a box that keeps its
+     * own size is exactly what an artboard is made of.
+     *
+     * @param key path of the root, which every deeper path is built onto
+     * @param zoom camera zoom the measured pixels are divided by, so the host, which
+     *        owns the camera, is told world units
+     */
+    function $bog_vmap_scene_measure<View extends {
+        dom_node(): $bog_vmap_scene_rect_source;
+    }>(root: View, how: {
+        readonly key: string;
+        readonly zoom: number;
+        /** The kid as a view, or `null` when it is not one. */
+        readonly view_of: (kid: unknown) => View | null;
+        /** Children of a view, or none when they cannot be read. */
+        readonly kids_of: (view: View) => readonly unknown[];
+        /** Property the view is held by, empty when it is held by nothing named. */
+        readonly prop_of: (view: View) => string;
+    }): $bog_vmap_scene_measured<ReturnType<View['dom_node']>>;
+    /**
+     * Brings the watched set to exactly `next`, and says what it now is.
+     *
+     * Only the difference is touched: a node already watched is left alone rather
+     * than re-observed, because `ResizeObserver` delivers a first box on every fresh
+     * `observe()`, and re-observing the whole tree after every report would answer
+     * its own delivery with another report, forever.
+     */
+    function $bog_vmap_scene_watch<Node>(watcher: {
+        observe(node: Node): void;
+        unobserve(node: Node): void;
+    }, prev: ReadonlySet<Node>, next: readonly Node[]): Set<Node>;
+}
+
+declare namespace $ {
 
 	type $mol_vector_2d__bog_vmap_scene_1 = $mol_type_enforce<
 		[ number, number ]
@@ -6770,10 +6942,22 @@ declare namespace $.$$ {
          * The wrapper is here to give the observer a `destructor`: a bare
          * `ResizeObserver` is not ownable, so the atom would leave the previous
          * one connected on every rebuild.
+         *
+         * The set of watched nodes is not decided here — it is every node the last
+         * report measured, which `resize_sync()` hands over. The root alone is not
+         * enough and stops being enough the moment there is an artboard: a page of
+         * fixed width keeps its own box while everything inside it reflows, so the
+         * one observer that used to be here would never fire and the host would sit
+         * on the boxes of the previous layout.
          */
         resize_watch(): {
+            observer: ResizeObserver;
             destructor: () => void;
-        } | null;
+        };
+        /** Nodes the observer is watching right now. */
+        resize_seen: Set<Element>;
+        /** Watches exactly the nodes of the last measurement, and nothing else. */
+        resize_sync(nodes: readonly Element[]): void;
         /**
          * Debounced answer to the host.
          *
@@ -6826,14 +7010,13 @@ declare namespace $.$$ {
          */
         error_post(at: 'compile' | 'runtime', message: string): void;
         /**
-         * Geometry of the document, in world units.
+         * Geometry of the document, in world units, and the nodes it was read off.
          *
-         * Divided by the zoom, because the host owns the camera and thinks in
-         * world coordinates; the scene only reports what the layout came out to.
+         * The walk itself is `$bog_vmap_scene_measure`, which knows nothing of `$mol`;
+         * what a view is, what its children are and which property holds it are the
+         * three things this class knows and hands over.
          */
-        sizes_of(root: $mol_view): {
-            [node: string]: $bog_vmap_bridge_rect;
-        };
+        sizes_of(root: $mol_view): $bog_vmap_scene_measured<Element>;
         /**
          * Is this piece of content a view, told by shape rather than by class.
          *

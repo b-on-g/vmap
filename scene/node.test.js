@@ -10630,6 +10630,33 @@ var $;
         return $mol_tree2.struct(this.$bog_vmap_lang_token(name, 'Part name'), [base]);
     }
     $.$bog_vmap_lang_part_tree = $bog_vmap_lang_part_tree;
+    /** Value of one key of a `*` dictionary, or `null` when the key is not there. */
+    function $bog_vmap_lang_dict_get(dict, key) {
+        if (dict?.type !== '*')
+            return null;
+        const found = dict.kids.find(kid => kid.type === key);
+        return found?.kids[0] ?? null;
+    }
+    $.$bog_vmap_lang_dict_get = $bog_vmap_lang_dict_get;
+    /**
+     * Sets one key of a `*` dictionary, or drops it when the value is `null`.
+     *
+     * A key already there is replaced where it stands, so `^` keeps the head of the
+     * dictionary it has to keep: a redeclared dictionary REPLACES the one of the
+     * base instead of extending it, and `^` is the line that undoes that. Writing a
+     * key must never be able to move it, and appending is the only other option.
+     */
+    function $bog_vmap_lang_dict_set(dict, key, value) {
+        const name = this.$bog_vmap_lang_token(key, 'Dictionary key');
+        if (!value)
+            return dict.clone(dict.kids.filter(kid => kid.type !== name));
+        const entry = dict.struct(name, [value]);
+        if (!dict.kids.some(kid => kid.type === name)) {
+            return dict.clone([...dict.kids, entry]);
+        }
+        return dict.clone(dict.kids.map(kid => kid.type === name ? entry : kid));
+    }
+    $.$bog_vmap_lang_dict_set = $bog_vmap_lang_dict_set;
     /**
      * Class declarations reordered so that a base always precedes its heir.
      *
@@ -11061,16 +11088,14 @@ var $;
             return name;
         }
         /**
-         * Replaces the override of one port in the declaration of a part, or drops
-         * it when `next` is `null`. The other overrides keep their order.
+         * Plugs a port of a part, or unplugs it when `next` is `null`.
+         *
+         * One override of one part, which is what `over_set` is; a wire has no
+         * special way of writing its end and must not grow one, or the two would
+         * drift apart on the first fix to either.
          */
         link_target(to, to_prop, next) {
-            const decl = this.prop_tree(to);
-            const klass = decl.kids[0];
-            const kids = klass.kids.filter(over => this.$.$mol_view_tree2_prop_parts(over).name !== to_prop);
-            if (next)
-                kids.push(next);
-            this.prop_tree(to, decl.clone([klass.clone(kids)]));
+            this.over_set(to, to_prop, next);
         }
         /**
          * Unplugs a port: the reference goes from the target, and the wire goes from
@@ -11086,15 +11111,176 @@ var $;
             if (!used)
                 this.prop_drop(link.name);
         }
+        /**
+         * Declaration of a property, read off the derivation of the text.
+         *
+         * Not through `prop_tree()`: that one is a keyed cell the writes below go
+         * through, and a read taken from a written cell freezes at what was written.
+         * `props_tree()` is a plain derivation of the source and stays live.
+         */
+        prop_decl(name) {
+            const sign = this.prop_fullname(name);
+            return sign ? this.props_tree().select(sign).kids[0] ?? null : null;
+        }
+        /**
+         * The `/` list of a `sub`, of the class itself or of one part of it, or
+         * `null` when there is no `sub` there.
+         *
+         * The empty owner is the class, a named one is a part. Both are one shape
+         * because `upper` has already flattened them: the class carries `sub` as a
+         * property, a part carries it as an override under its class name, and under
+         * either sits the same list of bare references.
+         */
+        sub_list(owner = '') {
+            const prop = owner ? this.over_tree(owner, 'sub') : this.prop_decl('sub');
+            const list = prop?.kids[0] ?? null;
+            return list?.type[0] === '/' ? list : null;
+        }
+        /**
+         * Names the `sub` of a node references, in the order it draws them, or
+         * `null` when the node declares no `sub` and so is not a container.
+         *
+         * A node WITH a `sub` is an artboard: children of it are laid out by tree,
+         * by ordinary flex, while everything else lies free by coordinates. That is
+         * the whole difference between the two, and it is a difference in the text
+         * rather than a mark on the side, see section 8.
+         *
+         * Content that is not a bare reference — a literal string in `sub` — takes
+         * its place in the list as an empty name, so that an index here is an index
+         * there.
+         */
+        sub_names(owner = '') {
+            const list = this.sub_list(owner);
+            return list && list.kids.map(ref => ref.kids[0]?.type ?? '');
+        }
+        /** Whose `sub` references this name: a part, `''` for the class, `null` for nobody. */
+        sub_holder(name) {
+            for (const owner of ['', ...this.part_names()]) {
+                if (this.sub_names(owner)?.includes(name))
+                    return owner;
+            }
+            return null;
+        }
+        /** Whether `name` is `owner` itself or lies somewhere under it. */
+        sub_within(owner, name) {
+            const seen = new Set();
+            const queue = [owner];
+            while (queue.length) {
+                const at = queue.shift();
+                if (at === name)
+                    return true;
+                if (seen.has(at))
+                    continue;
+                seen.add(at);
+                for (const kid of this.sub_names(at) ?? [])
+                    if (kid)
+                        queue.push(kid);
+            }
+            return false;
+        }
+        /**
+         * Puts a list of references back into the `sub` of the class or of a part.
+         *
+         * An override already there is replaced where it stands, never dropped and
+         * appended: the order of the lines under a part is text the user reads, and
+         * a `sub` that jumped to the bottom on every insertion would rewrite the
+         * declaration around an edit that changed one child.
+         */
+        sub_write(owner, list) {
+            const sub = list.struct('sub', [list]);
+            if (owner)
+                return this.over_set(owner, 'sub', sub);
+            this.tree(this.tree().insert(sub, null, this.prop_fullname('sub') || 'sub'));
+        }
+        /** Makes a node a container by giving it an empty `sub`, if it has none. */
+        sub_open(owner) {
+            if (this.sub_list(owner))
+                return;
+            this.sub_write(owner, this.tree().struct('/'));
+        }
+        /** One override written under a part, `Board $mol_view style *`, or `null`. */
+        over_tree(owner, prop) {
+            const kids = this.prop_decl(owner)?.kids[0]?.kids ?? [];
+            return kids.find(over => this.$.$mol_view_tree2_prop_parts(over).name === prop) ?? null;
+        }
+        /**
+         * Replaces an override under a part where it stands, appends a new one, or
+         * drops it on `null`.
+         *
+         * In place, because the order of the lines under a part is text the user
+         * reads: an override that jumped to the bottom every time its value changed
+         * would rewrite the declaration around an edit that changed one line.
+         */
+        over_set(owner, prop, next) {
+            const decl = this.prop_decl(owner);
+            const klass = decl?.kids[0];
+            if (!decl || !klass)
+                return;
+            const named = (over) => this.$.$mol_view_tree2_prop_parts(over).name === prop;
+            const kids = klass.kids.some(named)
+                ? klass.kids.flatMap(over => named(over) ? next ? [next] : [] : [over])
+                : next ? [...klass.kids, next] : klass.kids;
+            this.prop_tree(owner, decl.clone([klass.clone(kids)]));
+        }
+        /**
+         * Refuses to put a node inside itself or inside anything it already holds.
+         *
+         * A cycle in `sub` is not a badly drawn document, it is a class whose
+         * `dom_tree()` never returns: the scene would hang on the first render, and
+         * the document that hangs it is the one that got saved.
+         */
+        sub_check(name, owner) {
+            if (!owner)
+                return;
+            if (name === owner)
+                this.$.$mol_fail(new Error(`Node ${JSON.stringify(name)} cannot be put inside itself`));
+            if (this.sub_within(name, owner))
+                this.$.$mol_fail(new Error(`Node ${JSON.stringify(name)} cannot be put inside ${JSON.stringify(owner)}, which it already holds`));
+        }
+        /**
+         * Puts a bare reference `<= name` into a `sub` at a position.
+         *
+         * The position is where the insertion line was drawn, so it is clamped
+         * rather than checked: a drop at the end of a list the document has since
+         * shortened is an ordinary race of a gesture against a document, and landing
+         * at the end is the answer to it.
+         */
+        sub_insert(name, index, owner = '') {
+            const ref = this.$.$bog_vmap_lang_ref_tree(name);
+            this.sub_check(name, owner);
+            const list = this.sub_list(owner) ?? ref.struct('/');
+            const kids = [...list.kids];
+            kids.splice(Math.max(0, Math.min(index, kids.length)), 0, ref);
+            this.sub_write(owner, list.clone(kids));
+        }
+        /**
+         * Moves a node to a position under another parent, or to another position
+         * under the same one.
+         *
+         * Taken out first and put back after, so reparenting and reordering are one
+         * operation with one shape. Within one parent the index is corrected for the
+         * hole the node itself leaves, because the position the user aimed at was
+         * read off a list that still had it.
+         *
+         * The refusal is checked BEFORE the node is taken out, not left to the
+         * insertion: a move that fails halfway is a document with the node gone from
+         * the page and nothing in its place, written and saved.
+         */
+        sub_move(name, index, owner = '') {
+            this.sub_check(name, owner);
+            const from = this.sub_holder(name);
+            if (from === owner) {
+                const at = this.sub_names(owner).indexOf(name);
+                if (at >= 0 && at < index)
+                    index -= 1;
+            }
+            if (from !== null)
+                this.sub_drop(name);
+            this.sub_insert(name, index, owner);
+        }
         /** Appends a bare reference `<= name` to the own `sub` of the class. */
         sub_add(name) {
-            const ref = this.$.$bog_vmap_lang_ref_tree(name);
-            const prev = this.prop_tree('sub');
-            const list = prev?.kids[0] ?? ref.struct('/');
-            const sub = (prev ?? ref.struct('sub')).clone([
-                list.clone([...list.kids, ref])
-            ]);
-            this.tree(this.tree().insert(sub, null, sub.type));
+            this.sub_insert(name, Infinity);
         }
         /**
          * Removes the bare reference `<= name` from the own `sub` of the class.
@@ -11108,18 +11294,18 @@ var $;
          * it is two calls — the same split as `part_add` plus `sub_add` on the way
          * in. A node taken out of `sub` but still declared is a free part that draws
          * nothing and keeps its ports, which is a legitimate state, not a leftover.
+         *
+         * The reference is looked for wherever it is, the class and every part of it
+         * alike. A node inside an artboard is referenced by that artboard and not by
+         * the class, and deleting it has to reach there too — otherwise the document
+         * keeps drawing a node nothing declares any more.
          */
         sub_drop(name) {
-            const prev = this.prop_tree('sub');
-            if (!prev)
+            const owner = this.sub_holder(name);
+            if (owner === null)
                 return;
-            const list = prev.kids[0];
-            if (!list)
-                return;
-            const kids = list.kids.filter(ref => ref.kids[0]?.type !== name);
-            if (kids.length === list.kids.length)
-                return;
-            this.tree(this.tree().insert(prev.clone([list.clone(kids)]), null, prev.type));
+            const list = this.sub_list(owner);
+            this.sub_write(owner, list.clone(list.kids.filter(ref => ref.kids[0]?.type !== name)));
         }
     }
     __decorate([
@@ -11173,6 +11359,15 @@ var $;
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "link_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "sub_open", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "sub_insert", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "sub_move", null);
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "sub_add", null);
@@ -14280,6 +14475,88 @@ var $;
 
 ;
 "use strict";
+var $;
+(function ($) {
+    /**
+     * Geometry of a rendered document, in world units, and the nodes it was read
+     * off.
+     *
+     * Pure, and out of the view for the reason the culling decision is: this is the
+     * whole of what the host learns about the layout, and a walk worth testing is
+     * worth testing without a compiled document. Everything that knows about `$mol`
+     * — what counts as a view, what a view's children are, which property holds it —
+     * is handed in, so the function itself knows only rectangles and paths.
+     *
+     * The nodes come back beside the sizes because the two are one question asked
+     * twice: what the host is told about, and what has to be watched for changing
+     * behind the graph's back. Watching the root alone leaves every node inside an
+     * artboard of fixed width unwatched, and a reflow INSIDE a box that keeps its
+     * own size is exactly what an artboard is made of.
+     *
+     * @param key path of the root, which every deeper path is built onto
+     * @param zoom camera zoom the measured pixels are divided by, so the host, which
+     *        owns the camera, is told world units
+     */
+    function $bog_vmap_scene_measure(root, how) {
+        const sizes = {};
+        const nodes = [];
+        const base = root.dom_node().getBoundingClientRect();
+        const zoom = how.zoom || 1;
+        const put = (key, view) => {
+            const node = view.dom_node();
+            if (!node.isConnected)
+                return;
+            const box = node.getBoundingClientRect();
+            sizes[key] = {
+                x: (box.left - base.left) / zoom,
+                y: (box.top - base.top) / zoom,
+                width: box.width / zoom,
+                height: box.height / zoom,
+            };
+            nodes.push(node);
+        };
+        const walk = (view, path, depth) => {
+            if (depth > 16)
+                return;
+            let index = 0;
+            for (const kid of how.kids_of(view)) {
+                const sub = how.view_of(kid);
+                if (!sub)
+                    continue;
+                const key = path + '/' + (how.prop_of(sub) || index);
+                index++;
+                put(key, sub);
+                walk(sub, key, depth + 1);
+            }
+        };
+        put(how.key, root);
+        walk(root, how.key, 0);
+        return { sizes, nodes };
+    }
+    $.$bog_vmap_scene_measure = $bog_vmap_scene_measure;
+    /**
+     * Brings the watched set to exactly `next`, and says what it now is.
+     *
+     * Only the difference is touched: a node already watched is left alone rather
+     * than re-observed, because `ResizeObserver` delivers a first box on every fresh
+     * `observe()`, and re-observing the whole tree after every report would answer
+     * its own delivery with another report, forever.
+     */
+    function $bog_vmap_scene_watch(watcher, prev, next) {
+        const kept = new Set(next);
+        for (const node of prev)
+            if (!kept.has(node))
+                watcher.unobserve(node);
+        for (const node of kept)
+            if (!prev.has(node))
+                watcher.observe(node);
+        return kept;
+    }
+    $.$bog_vmap_scene_watch = $bog_vmap_scene_watch;
+})($ || ($ = {}));
+
+;
+"use strict";
 
 
 ;
@@ -15076,14 +15353,23 @@ var $;
              * The wrapper is here to give the observer a `destructor`: a bare
              * `ResizeObserver` is not ownable, so the atom would leave the previous
              * one connected on every rebuild.
+             *
+             * The set of watched nodes is not decided here — it is every node the last
+             * report measured, which `resize_sync()` hands over. The root alone is not
+             * enough and stops being enough the moment there is an artboard: a page of
+             * fixed width keeps its own box while everything inside it reflows, so the
+             * one observer that used to be here would never fire and the host would sit
+             * on the boxes of the previous layout.
              */
             resize_watch() {
-                const made = this.instance();
-                if (!made)
-                    return null;
                 const observer = new ResizeObserver(() => this.report_send());
-                observer.observe(made.dom_node());
-                return { destructor: () => observer.disconnect() };
+                return { observer, destructor: () => observer.disconnect() };
+            }
+            /** Nodes the observer is watching right now. */
+            resize_seen = new Set();
+            /** Watches exactly the nodes of the last measurement, and nothing else. */
+            resize_sync(nodes) {
+                this.resize_seen = this.$.$bog_vmap_scene_watch(this.resize_watch().observer, this.resize_seen, nodes);
             }
             /**
              * Debounced answer to the host.
@@ -15103,9 +15389,10 @@ var $;
                 this.doc_js();
                 this.doc_css();
                 this.libs();
-                // Placement moves nodes without resizing the root, so the observer of
-                // `resize_watch()` never fires on it and the host would keep boxes of
-                // the previous layout.
+                // Placement MOVES nodes without resizing any of them, and a
+                // `ResizeObserver` reports size and never position. So this subscription
+                // is not a stand-in for the narrow observer that used to watch the root
+                // alone — it stays needed however many nodes are watched.
                 this.spots();
                 this.assets();
                 this.camera();
@@ -15138,7 +15425,9 @@ var $;
                     this.post({ kind: 'asset_want', id });
                 }
                 this.error_post('compile', this.compile_error);
-                const sizes = made ? this.sizes_of(made) : {};
+                const measured = made ? this.sizes_of(made) : { sizes: {}, nodes: [] };
+                const sizes = measured.sizes;
+                this.resize_sync(measured.nodes);
                 this.sizes_remember(sizes);
                 this.post({ kind: 'sizes', sizes });
                 this.error_post('runtime', made ? this.render_error(made) : '');
@@ -15206,51 +15495,27 @@ var $;
                 this.post({ kind: 'error', at, message: next });
             }
             /**
-             * Geometry of the document, in world units.
+             * Geometry of the document, in world units, and the nodes it was read off.
              *
-             * Divided by the zoom, because the host owns the camera and thinks in
-             * world coordinates; the scene only reports what the layout came out to.
+             * The walk itself is `$bog_vmap_scene_measure`, which knows nothing of `$mol`;
+             * what a view is, what its children are and which property holds it are the
+             * three things this class knows and hands over.
              */
             sizes_of(root) {
-                const sizes = {};
-                const zoom = this.camera().zoom || 1;
-                const base = root.dom_node().getBoundingClientRect();
-                const put = (key, view) => {
-                    const node = view.dom_node();
-                    if (!node.isConnected)
-                        return;
-                    const box = node.getBoundingClientRect();
-                    sizes[key] = {
-                        x: (box.left - base.left) / zoom,
-                        y: (box.top - base.top) / zoom,
-                        width: box.width / zoom,
-                        height: box.height / zoom,
-                    };
-                };
-                const walk = (view, path, depth) => {
-                    if (depth > 16)
-                        return;
-                    let kids = [];
-                    try {
-                        kids = view.sub() ?? [];
+                return this.$.$bog_vmap_scene_measure(root, {
+                    key: this.doc_root(),
+                    zoom: this.camera().zoom,
+                    view_of: kid => this.view_like(kid) ? kid : null,
+                    // A document whose `sub` throws is a document mid-failure, reported on
+                    // the error channel; here it simply has no children to measure.
+                    kids_of: view => { try {
+                        return view.sub() ?? [];
                     }
                     catch {
-                        return;
-                    }
-                    let index = 0;
-                    for (const kid of kids) {
-                        if (!this.view_like(kid))
-                            continue;
-                        const key = path + '/' + (this.view_prop(kid) || index);
-                        index++;
-                        put(key, kid);
-                        walk(kid, key, depth + 1);
-                    }
-                };
-                const root_key = this.doc_root();
-                put(root_key, root);
-                walk(root, root_key, 0);
-                return sizes;
+                        return [];
+                    } },
+                    prop_of: view => this.view_prop(view),
+                });
             }
             /**
              * Is this piece of content a view, told by shape rather than by class.
@@ -21520,6 +21785,30 @@ var $;
         `		<= Price`,
         ``,
     ].join('\n');
+    /**
+     * A document with an artboard: `Board` carries a `sub` of its own, so its
+     * children are laid out by tree, while `Loose` lies free on the canvas.
+     *
+     * Nothing marks the artboard as one. Section 8 says both are properties of the
+     * same root class, and the only difference in the text is the `sub`.
+     */
+    const board_src = [
+        `${d}bog_vmap_lang_test_board ${d}mol_view`,
+        `	Head ${d}mol_view`,
+        `	Foot ${d}mol_view`,
+        `	Loose ${d}mol_view`,
+        `	Board ${d}mol_view`,
+        `		style *`,
+        `			width \\1280px`,
+        `			flexDirection \\column`,
+        `		sub /`,
+        `			<= Head`,
+        `			<= Foot`,
+        `	sub /`,
+        `		<= Board`,
+        `		<= Loose`,
+        ``,
+    ].join('\n');
     /** Indices of the lines two texts differ at, trailing tail included. */
     function lines_diff(left, right) {
         const a = left.split('\n');
@@ -21964,6 +22253,138 @@ var $;
             $mol_assert_equal(wire.kids[0].kids.length, 1);
             $mol_assert_equal(wire.kids[0].kids[0].kids.length, 1);
             $mol_assert_equal(wire.kids[0].kids[0].kids[0].kids.length, 0);
+        },
+        /**
+         * The artboard fixture is a fixed point of normalization. Everything below
+         * asserts against it, so a fixture the model would reformat on the first
+         * write would make every one of those assertions about the serializer.
+         */
+        'a document with an artboard round trips byte for byte'($) {
+            $mol_assert_equal(doc(board_src).source(), board_src);
+        },
+        'a node with a sub of its own is a container, one without is not'($) {
+            const node = doc(board_src);
+            $mol_assert_like(node.sub_names(), ['Board', 'Loose']);
+            $mol_assert_like(node.sub_names('Board'), ['Head', 'Foot']);
+            // Not «no children»: no `sub` at all, which is what a free part is.
+            $mol_assert_equal(node.sub_names('Loose'), null);
+            $mol_assert_equal(node.sub_names('Nobody'), null);
+            $mol_assert_equal(node.sub_holder('Head'), 'Board');
+            $mol_assert_equal(node.sub_holder('Loose'), '');
+            $mol_assert_equal(node.sub_holder('Nobody'), null);
+        },
+        'a node is inserted into sub at the head, in the middle and at the tail'($) {
+            const at_head = doc(board_src);
+            at_head.sub_insert('Loose', 0, 'Board');
+            $mol_assert_like(at_head.sub_names('Board'), ['Loose', 'Head', 'Foot']);
+            const between = doc(board_src);
+            between.sub_insert('Loose', 1, 'Board');
+            $mol_assert_like(between.sub_names('Board'), ['Head', 'Loose', 'Foot']);
+            const at_tail = doc(board_src);
+            at_tail.sub_insert('Loose', 2, 'Board');
+            $mol_assert_like(at_tail.sub_names('Board'), ['Head', 'Foot', 'Loose']);
+            // The reference is bare, like every other one in `sub`: a reference with
+            // a child under it is the middle form of `<=` and declares a property.
+            const refs = between.sub_list('Board').kids;
+            $mol_assert_like(refs.map(ref => ref.type), ['<=', '<=', '<=']);
+            $mol_assert_like(refs.map(ref => ref.kids[0].kids.length), [0, 0, 0]);
+        },
+        /**
+         * Insertion writes into `sub` and NOWHERE else: the declaration of the
+         * artboard keeps its style, its order and its line, and the node put inside
+         * keeps the declaration it had.
+         */
+        'insertion touches the sub and nothing around it'($) {
+            const node = doc(board_src);
+            node.sub_insert('Loose', 1, 'Board');
+            const lines = node.source().split('\n');
+            $mol_assert_like(lines.slice(0, 10), board_src.split('\n').slice(0, 10));
+            $mol_assert_equal(lines[10], '\t\t\t<= Loose');
+            $mol_assert_equal(lines.length, board_src.split('\n').length + 1);
+            const style = node.over_tree('Board', 'style').kids[0];
+            $mol_assert_like(style.kids.map(kid => kid.type), ['width', 'flexDirection']);
+        },
+        'a node moves from the canvas into an artboard and back'($) {
+            const node = doc(board_src);
+            node.sub_move('Loose', 1, 'Board');
+            $mol_assert_like(node.sub_names(), ['Board']);
+            $mol_assert_like(node.sub_names('Board'), ['Head', 'Loose', 'Foot']);
+            node.sub_move('Loose', 0);
+            $mol_assert_like(node.sub_names(), ['Loose', 'Board']);
+            $mol_assert_like(node.sub_names('Board'), ['Head', 'Foot']);
+            // The declaration never moved: what changed is where it is drawn.
+            $mol_assert_equal(node.prop_names().includes('Loose'), true);
+        },
+        /**
+         * The position the user aimed at was read off a list that still held the
+         * node being moved, so moving it down by one has to mean what it looked
+         * like — otherwise a drag one place to the right does nothing at all.
+         */
+        'moving inside one parent counts positions on the list the user saw'($) {
+            const node = doc(board_src);
+            node.sub_move('Head', 2, 'Board');
+            $mol_assert_like(node.sub_names('Board'), ['Foot', 'Head']);
+            node.sub_move('Head', 0, 'Board');
+            $mol_assert_like(node.sub_names('Board'), ['Head', 'Foot']);
+        },
+        'a node cannot be put inside itself or under its own child'($) {
+            const node = doc(board_src);
+            $mol_assert_fail(() => node.sub_insert('Board', 0, 'Board'), Error);
+            $mol_assert_fail(() => node.sub_move('Board', 0, 'Head'), Error);
+            $mol_assert_equal(node.source(), board_src);
+        },
+        'deleting reaches the sub of an artboard, not only the sub of the class'($) {
+            const node = doc(board_src);
+            node.sub_drop('Head');
+            $mol_assert_like(node.sub_names('Board'), ['Foot']);
+            $mol_assert_like(node.sub_names(), ['Board', 'Loose']);
+            node.prop_drop('Head');
+            $mol_assert_equal(node.prop_names().includes('Head'), false);
+        },
+        /**
+         * A free part becomes an artboard by growing a `sub`, which is the only
+         * difference between the two, and an artboard that already has one is left
+         * alone rather than emptied.
+         */
+        'a node is opened into a container by an empty sub'($) {
+            const node = doc(board_src);
+            node.sub_open('Loose');
+            $mol_assert_like(node.sub_names('Loose'), []);
+            node.sub_open('Board');
+            $mol_assert_like(node.sub_names('Board'), ['Head', 'Foot']);
+        },
+        /**
+         * Layout properties are ordinary keys of the ordinary `style` dictionary, so
+         * an artboard exports as plain $mol and depends on nothing of ours.
+         */
+        'a dictionary key is set, replaced where it stands and dropped'($) {
+            const node = doc(board_src);
+            const style = node.over_tree('Board', 'style').kids[0];
+            $mol_assert_equal($bog_vmap_lang_dict_get(style, 'width').type, '');
+            $mol_assert_equal($bog_vmap_lang_dict_get(style, 'width').value, '1280px');
+            $mol_assert_equal($bog_vmap_lang_dict_get(style, 'gap'), null);
+            const narrow = $.$bog_vmap_lang_dict_set(style, 'width', style.data('390px'));
+            $mol_assert_like(narrow.kids.map(kid => kid.type), ['width', 'flexDirection']);
+            $mol_assert_equal($bog_vmap_lang_dict_get(narrow, 'width').value, '390px');
+            const gapped = $.$bog_vmap_lang_dict_set(style, 'gap', style.data('1rem'));
+            $mol_assert_like(gapped.kids.map(kid => kid.type), ['width', 'flexDirection', 'gap']);
+            const bare = $.$bog_vmap_lang_dict_set(style, 'width', null);
+            $mol_assert_like(bare.kids.map(kid => kid.type), ['flexDirection']);
+            $mol_assert_fail(() => $.$bog_vmap_lang_dict_set(style, 'a b', style.data('1')), Error);
+        },
+        /**
+         * An inherited dictionary starts with `^`, and `^` has to stay at the head:
+         * a dictionary redeclared without it REPLACES the one of the base instead of
+         * extending it, so a document over `$mol_button` that grew one `style` key
+         * would lose the rest in silence.
+         */
+        'a dictionary key never moves the inherited head'($) {
+            const dict = $mol_tree2.struct('*', [$mol_tree2.struct('^')]);
+            const one = $.$bog_vmap_lang_dict_set(dict, 'flexGrow', dict.data('1'));
+            $mol_assert_like(one.kids.map(kid => kid.type), ['^', 'flexGrow']);
+            const two = $.$bog_vmap_lang_dict_set(one, 'flexGrow', dict.data('2'));
+            $mol_assert_like(two.kids.map(kid => kid.type), ['^', 'flexGrow']);
+            $mol_assert_equal($bog_vmap_lang_dict_get(two, 'flexGrow').value, '2');
         },
         'links are read back from a hand written document'($) {
             const node = doc(demo_src);
@@ -22451,6 +22872,121 @@ var $;
             $mol_assert_equal(typeof values.view, 'string');
             $mol_assert_equal(values.view.length > 0, true);
             $mol_assert_equal(values.nil, 'null');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * Tests of the measurement walk and of what it hands the observer.
+     *
+     * No DOM and no compiled document: the walk is handed what a view is, what its
+     * children are and where its box is, so a fixture here is three plain objects
+     * and the arithmetic is visible.
+     */
+    /** A node with a box, standing in for an element. */
+    function node(left, top, width, height, isConnected = true) {
+        return {
+            isConnected,
+            getBoundingClientRect: () => ({ left, top, width, height }),
+        };
+    }
+    /** A view: a property name, a box and children. */
+    function view(prop, box, kids = []) {
+        return { prop, box, kids, dom_node: () => box };
+    }
+    function measure(root, zoom = 1) {
+        return $bog_vmap_scene_measure(root, {
+            key: 'doc',
+            zoom,
+            view_of: kid => kid?.dom_node ? kid : null,
+            kids_of: made => made.kids,
+            prop_of: made => made.prop,
+        });
+    }
+    /**
+     * An artboard: a page of fixed width with two rows inside it, and a free part
+     * beside it on the canvas.
+     */
+    function doc(width) {
+        return view('Doc', node(0, 0, 2000, 1000), [
+            view('Board', node(100, 100, width, 600), [
+                view('Head', node(100, 100, width, 40)),
+                view('Body', node(100, 140, width, 560)),
+            ]),
+            view('Loose', node(1500, 100, 80, 24)),
+        ]);
+    }
+    $mol_test({
+        /**
+         * The host addresses a node by the property that holds it, at any depth —
+         * section 1 — so the path is the chain of those names, and everything inside
+         * an artboard is reachable by one.
+         */
+        'every node of the document is measured, not only the free parts'($) {
+            const { sizes } = measure(doc(1280));
+            $mol_assert_like(Object.keys(sizes), [
+                'doc',
+                'doc/Board',
+                'doc/Board/Head',
+                'doc/Board/Body',
+                'doc/Loose',
+            ]);
+            $mol_assert_like(sizes['doc/Board/Head'], { x: 100, y: 100, width: 1280, height: 40 });
+        },
+        /**
+         * The point of the width switcher: the artboard changes size, and so does
+         * everything laid out inside it, while the free part beside it does not move.
+         */
+        'a narrower artboard reports narrower nodes inside it'($) {
+            const wide = measure(doc(1280)).sizes;
+            const narrow = measure(doc(390)).sizes;
+            $mol_assert_equal(wide['doc/Board'].width, 1280);
+            $mol_assert_equal(narrow['doc/Board'].width, 390);
+            $mol_assert_equal(narrow['doc/Board/Body'].width, 390);
+            $mol_assert_like(wide['doc/Loose'], narrow['doc/Loose']);
+        },
+        /** The host owns the camera and is told world units, whatever the zoom. */
+        'boxes are reported in world units, relative to the root'($) {
+            const { sizes } = measure(doc(1280), 2);
+            $mol_assert_like(sizes['doc/Board'], { x: 50, y: 50, width: 640, height: 300 });
+        },
+        'a node out of the document is not measured'($) {
+            const { sizes, nodes } = measure(view('Doc', node(0, 0, 100, 100), [
+                view('Gone', node(0, 0, 10, 10, false)),
+                view('Here', node(0, 0, 10, 10)),
+            ]));
+            $mol_assert_like(Object.keys(sizes), ['doc', 'doc/Here']);
+            $mol_assert_equal(nodes.length, 2);
+        },
+        /**
+         * Watching the root alone leaves everything inside an artboard unwatched,
+         * which is exactly where a late font or a decoded image reflows without the
+         * root changing size.
+         */
+        'the observer is handed every measured node'($) {
+            const { nodes } = measure(doc(1280));
+            $mol_assert_equal(nodes.length, 5);
+        },
+        'watching adds what is new, drops what is gone and leaves the rest alone'($) {
+            const log = [];
+            const watcher = {
+                observe: (node) => log.push('+' + node),
+                unobserve: (node) => log.push('-' + node),
+            };
+            const first = $bog_vmap_scene_watch(watcher, new Set(), ['a', 'b']);
+            $mol_assert_like(log, ['+a', '+b']);
+            // A node still there is NOT observed again: every fresh `observe` gets a
+            // box delivered, and a report that re-observes everything would answer
+            // its own delivery with another report.
+            const second = $bog_vmap_scene_watch(watcher, first, ['b', 'c']);
+            $mol_assert_like(log, ['+a', '+b', '-a', '+c']);
+            $mol_assert_like([...second], ['b', 'c']);
+            $bog_vmap_scene_watch(watcher, second, []);
+            $mol_assert_like(log, ['+a', '+b', '-a', '+c', '-b', '-c']);
         },
     });
 })($ || ($ = {}));
