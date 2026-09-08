@@ -643,11 +643,17 @@ namespace $.$$ {
 			// Into the tree of the artboard it was dropped into, or onto the canvas
 			// by a coordinate. One gesture, two ways of being laid out, told apart
 			// by where the release happened and nowhere else.
-			if( slot ) return node.sub_insert( name, slot.index, slot.owner )
+			if( slot ) {
+				node.sub_insert( name, slot.index, slot.owner )
+			} else {
+				node.sub_add( name )
+				this.spots({ ... this.spots(), [ name ]: { x, y } })
+			}
 
-			node.sub_add( name )
-
-			this.spots({ ... this.spots(), [ name ]: { x, y } })
+			// Picked by the drop itself, as a fresh artboard is: a part is put on
+			// the canvas in order to be set up, and a click to reach the inspector
+			// is friction between the two halves of one intention.
+			this.selected( name )
 
 		}
 
@@ -751,6 +757,13 @@ namespace $.$$ {
 			for( const dead of doomed ) for( const kid of node.sub_names( dead ) ?? [] ) {
 				if( kid && !doomed.includes( kid ) ) doomed.push( kid )
 			}
+
+			// Wires first, and all of them before anything is dropped: a wire left
+			// behind names a node the document no longer declares, and the scene
+			// compiles that into a call of a property nobody has. Whose end it is
+			// makes no difference here — the model unplugs both sides and leaves
+			// every wire between the survivors alone.
+			for( const dead of doomed ) node.links_drop( dead )
 
 			for( const dead of doomed ) {
 				node.sub_drop( dead )

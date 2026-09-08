@@ -786,6 +786,32 @@ namespace $ {
 		}
 
 		/**
+		 * Unplugs every wire with an end on a part: the ones it feeds and the ones
+		 * it reads. What a delete of that part has to do before it takes the part
+		 * out, or the document keeps a wire to a node that is no longer declared —
+		 * which compiles into a call of a property nobody declares.
+		 *
+		 * Through `link_drop`, so a wire read by somebody else keeps its line
+		 * exactly as it does when a port is unplugged by hand; a wire from this part
+		 * that nobody reads has no consumer to unplug and goes in the second pass.
+		 * Both ends of every OTHER wire are left alone.
+		 */
+		@ $mol_action
+		links_drop( node: string ) {
+
+			for( const link of [ ... this.links() ] ) {
+				if( link.from !== node && link.to !== node ) continue
+				this.link_drop( link.to, link.to_prop )
+			}
+
+			for( const wire of [ ... this.wires() ] ) {
+				if( wire.node !== node ) continue
+				this.prop_drop( wire.name )
+			}
+
+		}
+
+		/**
 		 * Declaration of a property, read off the derivation of the text.
 		 *
 		 * Not through `prop_tree()`: that one is a keyed cell the writes below go

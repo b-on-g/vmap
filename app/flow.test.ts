@@ -56,11 +56,11 @@ namespace $ {
 		},
 
 		/**
-		 * A component is carried out of the palette onto the canvas, and a click on
-		 * it picks it. Two gestures on purpose: a drop declares the part, and the
-		 * pick is a press of its own — nothing is selected by the drop itself.
+		 * A component is carried out of the palette onto the canvas: it is declared,
+		 * placed, picked on the spot — the properties panel is open on it without a
+		 * second gesture — and a click on it goes on to the live component as well.
 		 */
-		'a class carried from the palette becomes a part, and a click picks it'( $ ) {
+		'a class carried from the palette becomes a part, picked and ready to press'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )
 
@@ -75,11 +75,16 @@ namespace $ {
 			// The scene compiles what the document says, byte for byte.
 			$mol_assert_equal( stage.scene.last( 'doc_set' )!.src, source )
 
-			// A click on the part picks it and goes on to the live component.
+			// Picked by the drop itself: the ring is on the canvas and the inspector
+			// is on the part, with the ports of its class in it.
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+			$mol_assert_ok( stage.root.querySelector( '[bog_vmap_app_pane_handle]' ) !== null )
+			stage.field( "Row('result').Value().Number().Num()" )
+
+			// A click on the part keeps the pick and goes on to the live component.
 			stage.tap( stage.part_center( 'Calc' ) )
 
 			$mol_assert_equal( stage.app.selected(), 'Calc' )
-			$mol_assert_ok( stage.root.querySelector( '[bog_vmap_app_pane_handle]' ) !== null )
 
 			const click = stage.scene.last( 'click_at' )!
 			$mol_assert_equal( click.x, 250 )
@@ -357,38 +362,58 @@ namespace $ {
 
 		},
 
+		/**
+		 * Deleting a wired part takes its wires with it, from either end. A wire
+		 * left behind would name a node the document no longer declares, and the
+		 * scene compiles that into a call of a property nobody has.
+		 */
+		'deleting a wired part leaves no wire to a node that is gone'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 100, 100 ]) )
+			stage.drop( map, stage.client([ 400, 100 ]) )
+			stage.tap( stage.part_center( 'Calc' ) )
+
+			const overlay = stage.overlay()
+			stage.press( overlay, stage.port_dot( 'Calc', 'result', 'out' ) )
+			stage.move( overlay, stage.port_dot( 'Map', 'zoom', 'in' ) )
+			stage.release( overlay, stage.port_dot( 'Map', 'zoom', 'in' ) )
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.doc_wires().length, 1 )
+
+			// The source of the wire goes.
+			stage.tap( stage.part_center( 'Calc' ) )
+			stage.click( stage.button( 'Удалить' ) )
+
+			$mol_assert_equal( stage.app.doc_source().includes( 'calc_result' ), false )
+			$mol_assert_like( stage.app.doc_wires(), [] )
+			$mol_assert_ok( stage.app.doc_source().includes( `Map ${ map }` ) )
+
+			// And the same from the other end: a wire drawn again and the consumer
+			// deleted leaves the source part standing and no wire behind. The name
+			// of the deleted part is free again, so the new one takes it.
+			stage.drop( calc, stage.client([ 100, 300 ]) )
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+
+			stage.press( overlay, stage.port_dot( 'Calc', 'result', 'out' ) )
+			stage.move( overlay, stage.port_dot( 'Map', 'zoom', 'in' ) )
+			stage.release( overlay, stage.port_dot( 'Map', 'zoom', 'in' ) )
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.doc_wires().length, 1 )
+
+			stage.tap( stage.part_center( 'Map' ) )
+			stage.click( stage.button( 'Удалить' ) )
+
+			$mol_assert_like( stage.app.doc_wires(), [] )
+			$mol_assert_equal( stage.app.doc_source().includes( 'calc_result' ), false )
+			$mol_assert_ok( stage.app.doc_source().includes( `Calc ${ calc }` ) )
+			$mol_assert_equal( stage.app.doc_source().includes( `Map ${ map }` ), false )
+
+		},
+
 	})
-
-	/**
-	 * WAITS FOR A FIX of `node_delete` in `app/app.view.ts`: deleting a part leaves
-	 * the wires that ran to it, so the document keeps `calc_result = Calc result`
-	 * and `zoom <= calc_result` pointing at a node that no longer exists.
-	 *
-	 * Written and deliberately NOT registered: `mam` runs `node.test.js` in the
-	 * build, so a red test in a shared module stops everybody. Move it into the
-	 * call above, as one line, the moment the delete takes its wires with it.
-	 */
-	export async function $bog_vmap_app_flow_delete_wired( $: $ ) {
-
-		const stage = $bog_vmap_app_flow_stage( $ )
-
-		stage.drop( calc, stage.client([ 100, 100 ]) )
-		stage.drop( map, stage.client([ 400, 100 ]) )
-		stage.tap( stage.part_center( 'Calc' ) )
-
-		const overlay = stage.overlay()
-		stage.press( overlay, stage.port_dot( 'Calc', 'result', 'out' ) )
-		stage.move( overlay, stage.port_dot( 'Map', 'zoom', 'in' ) )
-		stage.release( overlay, stage.port_dot( 'Map', 'zoom', 'in' ) )
-		stage.redraw()
-
-		stage.tap( stage.part_center( 'Calc' ) )
-		stage.click( stage.button( 'Удалить' ) )
-
-		// The end of the wire is gone, so the wire has to be gone with it.
-		$mol_assert_equal( stage.app.doc_source().includes( 'calc_result' ), false )
-		$mol_assert_like( stage.app.doc_wires(), [] )
-
-	}
 
 }

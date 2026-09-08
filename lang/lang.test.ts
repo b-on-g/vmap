@@ -58,6 +58,19 @@ namespace $ {
 		``,
 	].join( '\n' )
 
+	/** Two sources and two consumers, enough for a wire to have neighbours. */
+	const trio_src = [
+		`${d}bog_vmap_lang_test_pair ${d}mol_view`,
+		`	Calc ${d}bog_vmap_lang_test_calc`,
+		`	Calc_2 ${d}bog_vmap_lang_test_calc`,
+		`	Price ${d}mol_view`,
+		`	Note ${d}mol_view`,
+		`	sub /`,
+		`		<= Calc`,
+		`		<= Price`,
+		``,
+	].join( '\n' )
+
 	/**
 	 * A document with an artboard: `Board` carries a `sub` of its own, so its
 	 * children are laid out by tree, while `Loose` lies free on the canvas.
@@ -710,6 +723,74 @@ namespace $ {
 			const node = doc( pair_src )
 			node.link_drop( 'Price', 'title' )
 			$mol_assert_equal( node.source(), pair_src )
+
+		},
+
+		/**
+		 * What a delete of a part has to do first: a wire left with one end on a
+		 * part that is gone names a property nobody declares.
+		 */
+		'unwiring a part takes both ends of its own wires and no others'( $ ) {
+
+			const node = doc( trio_src )
+
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title' })
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Note', to_prop: 'title' })
+			node.link_add({ from: 'Calc_2', from_prop: 'result', to: 'Note', to_prop: 'hint' })
+
+			node.links_drop( 'Calc' )
+
+			$mol_assert_like(
+				node.links().map( link => [ link.from, link.to, link.to_prop ] ),
+				[ [ 'Calc_2', 'Note', 'hint' ] ],
+			)
+			$mol_assert_like( node.wires().map( wire => wire.name ), [ 'calc_2_result' ] )
+			$mol_assert_equal( node.source().includes( 'calc_result' ), false )
+
+			// The parts are none of its business: taking them out is the caller's half.
+			$mol_assert_ok( node.prop_names().includes( 'Calc' ) )
+
+		},
+
+		/**
+		 * A wire nobody reads is still a wire and still names its node, so it goes
+		 * with the node too. Reachable from a hand written document and from an
+		 * import, where a wire may well stand without a consumer.
+		 */
+		'unwiring a part takes its wire even when nobody reads it'( $ ) {
+
+			const node = doc( trio_src )
+			node.wire_add({ name: 'calc_result', node: 'Calc', prop: 'result', bidi: false })
+
+			$mol_assert_like( node.wires().map( wire => wire.name ), [ 'calc_result' ] )
+			$mol_assert_like( node.links(), [] )
+
+			node.links_drop( 'Calc' )
+
+			$mol_assert_like( node.wires(), [] )
+			$mol_assert_equal( node.source().includes( 'calc_result' ), false )
+
+		},
+
+		/** A part that only reads a wire goes off it alone; the wire lives while somebody else reads it. */
+		'unwiring a consumer keeps the wire while another consumer holds it'( $ ) {
+
+			const node = doc( trio_src )
+
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title' })
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Note', to_prop: 'title' })
+
+			node.links_drop( 'Price' )
+
+			$mol_assert_like( node.links().map( link => [ link.from, link.to ] ), [ [ 'Calc', 'Note' ] ] )
+			$mol_assert_ok( node.source().includes( '\tcalc_result = Calc result\n' ) )
+			$mol_assert_equal( node.source().includes( 'Price ' + `${d}mol_view title` ), false )
+
+			// The last reader gone, the wire goes with it, as unplugging by hand does.
+			node.links_drop( 'Note' )
+
+			$mol_assert_like( node.links(), [] )
+			$mol_assert_equal( node.source().includes( 'calc_result' ), false )
 
 		},
 
