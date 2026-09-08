@@ -164,8 +164,7 @@ $bog_vmap_app $mol_view
 	Code $bog_vmap_app_code
 		klass <= doc_root
 		prop <= code_prop \
-		prop_key <= code_prop_key false
-		prop_next <= code_prop_next false
+		hooks <= code_hooks /string
 		source? <=> doc_text?
 		node_source? <=> node_source?
 		js? <=> root_js?

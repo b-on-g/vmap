@@ -13,10 +13,11 @@ $bog_vmap_app_code $mol_view
 	- Property name of the picked node, empty when nothing is picked. Without one
 	- there is nothing to slice and the panel edits the class whole.
 	prop \
-	- Signature of the picked property: whether it takes a key and whether it takes
-	- a next. Only the empty method of a node that has none yet is shaped by them.
-	prop_key false
-	prop_next false
+	- Methods this node needs written by hand: the names its declaration refers to
+	- that the class does not generate. The JS tab edits exactly these, because a
+	- method named after the node itself would shadow the factory of the sub-view
+	- and take the node off the canvas.
+	hooks /string
 	- `view.tree` of the whole document, two way.
 	source? \
 	- Declaration of the picked node, two way. The same value the inspector edits,
@@ -58,19 +59,25 @@ $bog_vmap_app_code $mol_view
 	Typing_row* $mol_view
 		sub / <= typing_text* \
 	Sources $mol_deck
-		items /
-			<= Tree $mol_textarea
-				title \view.tree
-				hint \Имя_узла $mol_view
-				sidebar_showed true
-				value? <=> tree_text? \
-			<= Js $mol_textarea
-				title \JS
-				hint \
-				sidebar_showed true
-				value? <=> js_text? \
-			<= Css $mol_textarea
-				title \CSS
-				hint \
-				sidebar_showed true
-				value? <=> css_text? \
+		items <= source_tabs /$mol_view
+	Tree $mol_textarea
+		title \view.tree
+		hint \Имя_узла $mol_view
+		sidebar_showed true
+		value? <=> tree_text? \
+	Js $mol_textarea
+		title \JS
+		hint \
+		sidebar_showed true
+		value? <=> js_text? \
+	- What stands on the JS tab when this node has no method of its own to write.
+	- A state, not an empty field: an empty field here would invite writing a method
+	- named after the node, and that one shadows the factory of the sub-view.
+	Js_idle $mol_view
+		title \JS
+		sub / <= js_idle_note \
+	Css $mol_textarea
+		title \CSS
+		hint \
+		sidebar_showed true
+		value? <=> css_text? \

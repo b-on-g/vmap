@@ -32,10 +32,20 @@ namespace $.$$ {
 		 *
 		 * Kept so that a broken `view.tree` can be fixed where it was written
 		 * instead of vanishing on the next redraw. Cleared by the write that parses.
+		 *
+		 * Keyed by the tab AND by what is being edited in it. Keyed by the tab alone
+		 * it would follow the panel rather than the text: a refused edit made on one
+		 * node would show up under the name of the next node picked, and correcting
+		 * it there would write it into that other node.
 		 */
 		@ $mol_mem_key
-		draft( slot: $bog_vmap_app_code_slot, next?: string | null ) {
+		draft( id: string, next?: string | null ) {
 			return next ?? null
+		}
+
+		/** Address of a draft: the tab, plus the node when one is being edited. */
+		draft_id( slot: $bog_vmap_app_code_slot ) {
+			return this.sliced() ? slot + ' ' + this.prop() : slot
 		}
 
 		/** Why the last edit was not written into the document. Empty when it was. */
@@ -54,16 +64,18 @@ namespace $.$$ {
 		 */
 		written( slot: $bog_vmap_app_code_slot, next: string, write: ( next: string )=> void ) {
 
+			const id = this.draft_id( slot )
+
 			try {
 				write( next )
 			} catch( error: unknown ) {
 				if( this.$.$mol_promise_like( error ) ) return this.$.$mol_fail_hidden( error )
-				this.draft( slot, next )
+				this.draft( id, next )
 				this.refusal( String( ( error as Error )?.message ?? error ) )
 				return next
 			}
 
-			this.draft( slot, null )
+			this.draft( id, null )
 			this.refusal( '' )
 
 			return next
@@ -73,7 +85,7 @@ namespace $.$$ {
 		override tree_text( next?: string ): string {
 
 			if( next === undefined ) {
-				return this.draft( 'tree' ) ?? ( this.sliced() ? this.node_source() : this.source() )
+				return this.draft( this.draft_id( 'tree' ) ) ?? ( this.sliced() ? this.node_source() : this.source() )
 			}
 
 			return this.written( 'tree', next, text => {
@@ -93,34 +105,82 @@ namespace $.$$ {
 			return this.$.$bog_vmap_app_code_props_css( this.css(), this.klass() )
 		}
 
+		/**
+		 * Body of the node, which is the methods its declaration asks for.
+		 *
+		 * NOT one method named after the node. That name belongs to the factory of
+		 * the sub-view in the generated class, so a handwritten method of that name
+		 * shadows the factory and the node leaves the canvas — measured on the
+		 * generator, which emits `Calc(){ const obj = new this.$.$mol_view(); … }`
+		 * for a node called `Calc`. What a person opens this tab to write is the
+		 * other side of a binding: `title <= greeting` wants `greeting()`.
+		 */
 		override js_text( next?: string ): string {
 
 			if( !this.sliced() ) {
-				if( next === undefined ) return this.draft( 'js' ) ?? this.js()
+				if( next === undefined ) return this.draft( this.draft_id( 'js' ) ) ?? this.js()
 				return this.written( 'js', next, text => this.js( text ) )
 			}
 
-			const prop = this.prop()
+			const hooks = this.hooks()
 
 			if( next === undefined ) {
-				return this.draft( 'js' ) ?? this.sliced_read(
-					()=> this.props_js().get( prop ),
-					()=> this.$.$bog_vmap_app_code_js_default( prop, this.prop_key(), this.prop_next() ),
+				return this.draft( this.draft_id( 'js' ) ) ?? this.sliced_read(
+					()=> {
+						const props = this.props_js()
+						return hooks
+							.map( name => props.get( name ) ?? this.$.$bog_vmap_app_code_js_default( name ) )
+							.join( '\n\n' )
+					},
+					()=> hooks.map( name => this.$.$bog_vmap_app_code_js_default( name ) ).join( '\n\n' ),
 				)
 			}
 
-			return this.written( 'js', next, text => this.js(
-				this.$.$bog_vmap_app_code_joined(
-					this.$.$bog_vmap_app_code_with( this.props_js(), prop, text )
-				)
-			) )
+			// Merged into the body method by method, never written over it: what is
+			// on screen is a few methods of a class that has others, and this tab
+			// must not be able to delete a method it never showed. A method renamed
+			// here leaves the old one behind, and that is the safe half of the trade.
+			return this.written( 'js', next, text => {
 
+				const all = this.props_js()
+
+				for( const [ name, code ] of this.$.$bog_vmap_app_code_props_js( text ) ) {
+					if( !name ) continue
+					this.$.$bog_vmap_app_code_with( all, name, code )
+				}
+
+				this.js( this.$.$bog_vmap_app_code_joined( all ) )
+
+			} )
+
+		}
+
+		/** Whether the JS tab has anything for this node to edit at all. */
+		js_writable() {
+			return !this.sliced() || this.hooks().length > 0
+		}
+
+		override js_idle_note() {
+			return `У узла ${ this.prop() } нет своего метода: всё, что он делает, задано`
+				+ ` объявлением, а тело под его именем перебило бы фабрику под-вида и`
+				+ ` убрало бы узел с холста. Метод появится здесь, как только объявление`
+				+ ` на него сошлётся: например «title <= greeting» просит написать`
+				+ ` «greeting()». Общие методы класса правятся в режиме «Весь класс».`
+		}
+
+		/** The JS tab: the field when there is something to write in it, the reason when not. */
+		override source_tabs() {
+			return [
+				this.Tree(),
+				this.js_writable() ? this.Js() : this.Js_idle(),
+				this.Css(),
+			] as readonly $mol_view[]
 		}
 
 		override css_text( next?: string ): string {
 
 			if( !this.sliced() ) {
-				if( next === undefined ) return this.draft( 'css' ) ?? this.css()
+				if( next === undefined ) return this.draft( this.draft_id( 'css' ) ) ?? this.css()
 				return this.written( 'css', next, text => this.css( text ) )
 			}
 
@@ -128,7 +188,7 @@ namespace $.$$ {
 			const key = prop.toLowerCase()
 
 			if( next === undefined ) {
-				return this.draft( 'css' ) ?? this.sliced_read(
+				return this.draft( this.draft_id( 'css' ) ) ?? this.sliced_read(
 					()=> this.props_css().get( key ),
 					()=> this.$.$bog_vmap_app_code_css_default( prop, this.klass() ),
 				)
@@ -185,18 +245,15 @@ namespace $.$$ {
 		 * A body in the scene goes through `new Function`, which takes any JS, so
 		 * nothing else in the editor would ever say a word about this.
 		 *
-		 * While one node is being edited only its own method is complained about:
-		 * the neighbours are not on screen, and a line about a method the panel does
-		 * not show is a line nobody can act on.
+		 * Checked on the text the tab is SHOWING, not on the whole class. That is
+		 * what makes the line number true in both modes, and it removes the filter
+		 * this used to carry: filtering by the name of the node hid every complaint
+		 * a person could actually make, because the one method they must never write
+		 * is the one named after the node.
 		 */
 		@ $mol_mem
 		complaints(): readonly $bog_vmap_app_export_complaint[] {
-
-			const all = this.$.$bog_vmap_app_export_untyped( this.js() )
-			if( !this.sliced() ) return all
-
-			const prop = this.prop()
-			return all.filter( one => one.method === prop )
+			return this.$.$bog_vmap_app_export_untyped( this.js_text() )
 		}
 
 		override typing_rows() {
@@ -205,7 +262,8 @@ namespace $.$$ {
 
 		@ $mol_mem_key
 		override typing_text( index: number ) {
-			return this.complaints()[ index ]?.text ?? ''
+			const one = this.complaints()[ index ]
+			return one ? `Строка ${ one.line }. ${ one.text }` : ''
 		}
 
 		override head_content() {

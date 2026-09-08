@@ -360,15 +360,46 @@ namespace $.$$ {
 			return this.selected() ?? ''
 		}
 
-		/** Signature of the picked property: it shapes the empty method offered for it. */
-		code_prop_key() {
-			const name = this.selected()
-			return name ? this.node().property( name ).key() : false
-		}
+		/**
+		 * Methods of the class the picked node needs written by hand.
+		 *
+		 * Every name its declaration refers to with `<=` that the class does not
+		 * declare itself. A generated property already has a body — the name of the
+		 * node most of all, which compiles to the factory of the sub-view — and a
+		 * handwritten method of that name would shadow it and take the node off the
+		 * canvas. What has no generated body is exactly what a person opens the JS
+		 * tab to write: `title <= greeting` wants `greeting()`.
+		 */
+		@ $mol_mem
+		code_hooks(): readonly string[] {
 
-		code_prop_next() {
 			const name = this.selected()
-			return name ? this.node().property( name ).next() : false
+			if( !name ) return []
+
+			const node = this.node()
+			const decl = node.props_tree().select( node.prop_fullname( name ) ).kids[ 0 ]
+			if( !decl ) return []
+
+			const declared = new Set( node.prop_names() )
+			const found = [] as string[]
+
+			const walk = ( tree: $mol_tree2 )=> {
+
+				if( tree.type === '<=' ) {
+					const ref = tree.kids[ 0 ]
+					// A reference with kids is a declaration, not a reference: that is
+					// the `upper` hack, and it brings its own generated body with it.
+					if( ref && !ref.kids.length && !declared.has( ref.type ) ) {
+						if( !found.includes( ref.type ) ) found.push( ref.type )
+					}
+				}
+
+				for( const kid of tree.kids ) walk( kid )
+			}
+
+			walk( decl )
+
+			return found
 		}
 
 		/** What the scene said about the picked node last, empty when it said nothing. */
@@ -380,11 +411,12 @@ namespace $.$$ {
 		/** Method of the picked node, cut out of the body of its class. */
 		node_js() {
 
-			const name = this.selected()
-			if( !name ) return ''
+			const hooks = this.code_hooks()
+			if( !hooks.length ) return ''
 
 			try {
-				return this.$.$bog_vmap_app_code_props_js( this.root_js() ).get( name ) ?? ''
+				const props = this.$.$bog_vmap_app_code_props_js( this.root_js() )
+				return hooks.map( name => props.get( name ) ).filter( Boolean ).join( '\n\n' )
 			} catch( error: unknown ) {
 				if( this.$.$mol_promise_like( error ) ) return this.$.$mol_fail_hidden( error )
 				return ''
