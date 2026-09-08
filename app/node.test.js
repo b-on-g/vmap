@@ -44263,5 +44263,585 @@ var $;
     });
 })($ || ($ = {}));
 
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * The editor from the user's side: real clicks on real elements of a rendered
+     * DOM, one scenario per test.
+     *
+     * These are not tests of methods. Every step is what a person does — press a
+     * palette row, drag onto the canvas, type into a field, click a button — and
+     * what is checked is where it leaves the document, the panels and the scene.
+     * The stand and everything it fakes are in `flow_stage.test.ts`.
+     *
+     * `d` keeps `$` out of the string literals — mam builds its dependency graph by
+     * a regexp over sources, literals included.
+     */
+    const d = '$';
+    const calc = `${d}flow_calc`;
+    const map = `${d}flow_map`;
+    const button = `${d}flow_button`;
+    $mol_test({
+        /**
+         * The editor opens: the head bar, the palette of the pack, the canvas and
+         * the invitation in the properties panel. The pack is a fixture and the
+         * network is fenced off — a fetch of anything else throws by name.
+         */
+        'the editor opens with its bar, its palette and its canvas'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            // The bar: everything the scenarios below press.
+            stage.button('Новая сцена');
+            stage.button('−');
+            stage.button('+');
+            stage.button('Сбросить вид');
+            stage.button('Удалить');
+            stage.button('В библиотеку');
+            const text = stage.text();
+            $mol_assert_ok(text.includes('Палитра'));
+            $mol_assert_ok(text.includes('Свойства'));
+            $mol_assert_ok(text.includes('100%'));
+            $mol_assert_ok(text.includes('Выберите узел на холсте'));
+            // The palette offers the classes of the pack, the `$mol_view` stub included.
+            const rows = [...stage.root.querySelectorAll('[bog_vmap_app_palette_item]')]
+                .map(el => el.textContent);
+            $mol_assert_like(rows, [`${d}mol_view`, button, calc, map]);
+            // Nothing failed to draw except the frame, which stays suspended for
+            // ever: jsdom never loads the sandbox page, so its `onload` never fires.
+            $mol_assert_like(stage.broken(), [stage.pane.Scene(0).dom_id()]);
+        },
+        /**
+         * A component is carried out of the palette onto the canvas, and a click on
+         * it picks it. Two gestures on purpose: a drop declares the part, and the
+         * pick is a press of its own — nothing is selected by the drop itself.
+         */
+        'a class carried from the palette becomes a part, and a click picks it'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            // One declaration and one reference, and the placement beside them.
+            const source = stage.app.doc_source();
+            $mol_assert_ok(source.includes(`Calc ${calc}`));
+            $mol_assert_ok(source.includes('<= Calc'));
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
+            // The scene compiles what the document says, byte for byte.
+            $mol_assert_equal(stage.scene.last('doc_set').src, source);
+            // A click on the part picks it and goes on to the live component.
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            $mol_assert_ok(stage.root.querySelector('[bog_vmap_app_pane_handle]') !== null);
+            const click = stage.scene.last('click_at');
+            $mol_assert_equal(click.x, 250);
+            $mol_assert_equal(click.y, 175);
+        },
+        /**
+         * A property typed into the inspector lands in the document as the line of
+         * that property, and the scene is handed the document again.
+         */
+        'a value typed into the inspector goes into the document and to the scene'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.tap(stage.part_center('Calc'));
+            const before = stage.scene.sent('doc_set').length;
+            stage.type(stage.field("Row('result').Value().Number().Num()"), '42');
+            const source = stage.app.doc_source();
+            $mol_assert_ok(source.includes(`Calc ${calc} result 42`));
+            // The neighbouring lines are untouched: one property moved, not the class.
+            $mol_assert_ok(source.includes('<= Calc'));
+            $mol_assert_ok(stage.scene.sent('doc_set').length > before);
+            $mol_assert_equal(stage.scene.last('doc_set').src, source);
+        },
+        /**
+         * A wire drawn by hand: from the output dot of one part to the input dot of
+         * another. Two lines go into the document, unplugging takes both away, and
+         * the value the scene reports is shown on the wire.
+         */
+        'a wire drawn between two parts is written, labelled and unplugged'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([400, 100]));
+            stage.tap(stage.part_center('Calc'));
+            const overlay = stage.overlay();
+            const out = stage.port_dot('Calc', 'result', 'out');
+            const into = stage.port_dot('Map', 'zoom', 'in');
+            stage.press(overlay, out);
+            stage.move(overlay, into);
+            stage.release(overlay, into);
+            stage.redraw();
+            const source = stage.app.doc_source();
+            $mol_assert_ok(source.includes('\tcalc_result = Calc result\n'));
+            $mol_assert_ok(source.includes('zoom <= calc_result'));
+            // The host asks the scene for the value of the wire it now draws.
+            stage.scene.flush();
+            $mol_assert_like(stage.scene.last('values_want').names, ['calc_result']);
+            stage.scene.values({ calc_result: '42' });
+            $mol_assert_like(stage.pane.wire_lines().map(line => [line.key, line.label]), [['Map.zoom', '42']]);
+            // A press on the wired input pulls the wire out; let go over bare canvas
+            // and both lines are gone from the document.
+            stage.tap(stage.part_center('Map'));
+            stage.press(overlay, stage.port_dot('Map', 'zoom', 'in'));
+            stage.release(overlay, stage.client([550, 450]));
+            stage.redraw();
+            const after = stage.app.doc_source();
+            $mol_assert_equal(after.includes('calc_result'), false);
+            $mol_assert_like(stage.app.doc_wires(), []);
+        },
+        /**
+         * The whole point of publishing: a part goes out as a class of the library,
+         * its link goes into the palette field of a scene, and it is a component
+         * again — droppable like any other.
+         *
+         * The library land is the home land here, so no proof of work, as in
+         * `publish/publish.test.ts`. The link is resolved by the real stack through
+         * the real database.
+         */
+        async 'a published part comes back through the palette field'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const library = $bog_vmap_app_publish_store.make({
+                $,
+                shelf_land_config: () => $.$giper_baza_glob.home().land(),
+            });
+            stage.app.Publish().store = () => library;
+            stage.drop(button, stage.client([200, 150]));
+            stage.tap(stage.part_center('Button'));
+            stage.click(stage.button('В библиотеку'));
+            // Publishing encodes units, which is asynchronous even without the proof
+            // of work; the click hands it to a fiber and answers at once.
+            const link = await $bog_vmap_app_flow_settle(() => library.link());
+            stage.redraw();
+            $mol_assert_ok(link);
+            $mol_assert_ok(stage.text().includes('опубликовано'));
+            $mol_assert_ok(stage.text().includes(link));
+            stage.type(stage.field('Palette().Links()'), link);
+            $mol_assert_like(stage.app.lands(), [link]);
+            $mol_assert_like(stage.app.lib_classes().map(tree => tree.type), [`${d}bog_vmap_pub_button`]);
+            // In the palette beside the classes of the pack, and it drops like them.
+            stage.drop(`${d}bog_vmap_pub_button`, stage.client([400, 300]));
+            $mol_assert_ok(stage.app.doc_source().includes(` ${d}bog_vmap_pub_button\n`));
+            $mol_assert_equal(Object.keys(stage.app.spots()).length, 2);
+        },
+        /**
+         * A second scene is a document of its own: made from the bar, it opens
+         * empty, and going back brings the first one with everything on it.
+         */
+        async 'a second scene is a document of its own and the first one comes back'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            const first = stage.store.doc_current().link().str;
+            const source = stage.app.doc_source();
+            stage.click(stage.button('Новая сцена'));
+            // The store makes the document in a fiber of its own, as the click does.
+            await $bog_vmap_app_flow_settle(() => stage.store.doc_links().length > 1);
+            stage.redraw();
+            $mol_assert_equal(stage.store.doc_links().length, 2);
+            $mol_assert_ok(stage.store.doc_current().link().str !== first);
+            $mol_assert_equal(stage.app.doc_source(), `${stage.app.doc_root()} ${d}mol_view\n\tsub /\n`);
+            $mol_assert_like(stage.app.spots(), {});
+            // Back to the first one, by the same value the picker of the bar writes.
+            const scenes = stage.app.Scenes();
+            scenes.current(first);
+            stage.redraw();
+            $mol_assert_equal(stage.app.doc_source(), source);
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
+        },
+        /**
+         * The palette field takes a pack and lands together, and refuses a second
+         * pack out loud: the reason is under the field and the frame keeps the pack
+         * it already loaded.
+         */
+        'the palette field takes a pack with lands and says why it refuses a second'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const field = stage.field('Palette().Links()');
+            stage.type(field, 'http://pack.test/, AbCdEfGh');
+            $mol_assert_equal(stage.app.pack_link(), 'http://pack.test/');
+            $mol_assert_like(stage.app.lands(), ['AbCdEfGh']);
+            const uri = stage.app.scene_uri();
+            $mol_assert_ok(uri.includes(encodeURIComponent('http://pack.test/web.js')));
+            stage.type(field, 'http://pack.test/, AbCdEfGh, http://other.test/');
+            // The refusal is on screen, in the user's words, under the field.
+            $mol_assert_ok(stage.text().includes($bog_vmap_lib_links_reason.pack_second));
+            $mol_assert_ok(stage.text().includes('http://other.test/'));
+            // The frame address is the one it already had: no reload.
+            $mol_assert_equal(stage.app.scene_uri(), uri);
+            $mol_assert_equal(stage.field('Palette().Links()').value, 'http://pack.test/, AbCdEfGh, http://other.test/');
+        },
+        /**
+         * The delete button takes the picked part out of the document, and the
+         * camera cannot touch the document at all: panning and zooming leave the
+         * text byte for byte where it was.
+         */
+        'delete takes the part out, and the camera leaves the document alone'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([300, 100]));
+            stage.tap(stage.part_center('Calc'));
+            stage.click(stage.button('Удалить'));
+            const source = stage.app.doc_source();
+            $mol_assert_equal(source.includes('Calc'), false);
+            $mol_assert_ok(source.includes(`Map ${map}`));
+            $mol_assert_equal(stage.app.selected(), null);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Map']);
+            // A drag over bare canvas is a pan…
+            const overlay = stage.overlay();
+            stage.press(overlay, stage.client([450, 400]));
+            stage.move(overlay, stage.client([500, 430]));
+            stage.release(overlay, stage.client([500, 430]));
+            stage.redraw();
+            $mol_assert_like([...stage.pane.camera_shift()], [50, 30]);
+            // …and the buttons of the bar are the zoom.
+            stage.click(stage.button('+'));
+            $mol_assert_ok(stage.text().includes('125%'));
+            stage.click(stage.button('Сбросить вид'));
+            $mol_assert_ok(stage.text().includes('100%'));
+            $mol_assert_like([...stage.pane.camera_shift()], [0, 0]);
+            $mol_assert_equal(stage.app.doc_source(), source);
+        },
+        /**
+         * A scene that stopped answering is called out on a strip of its own, and
+         * the button on it replaces the frame rather than talking to the stuck one.
+         *
+         * Time is the test's own: the timers of the stand never fire by themselves,
+         * so the watchdog is asked to fire the moment its limit would have run out.
+         */
+        'a silent scene raises the strip and the button gives a fresh frame'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_equal(stage.pane.stalled(), false);
+            const frame = stage.frame();
+            stage.scene.silence();
+            // Something is pushed and never answered.
+            stage.click(stage.button('+'));
+            const watch = stage.timers.filter(timer => timer.delay === stage.pane.answer_limit()).at(-1);
+            $mol_assert_ok(watch);
+            watch.task();
+            stage.redraw();
+            $mol_assert_equal(stage.pane.stalled(), true);
+            $mol_assert_ok(stage.text().includes('Сцена не отвечает'));
+            stage.click(stage.button('Перезагрузить сцену'));
+            $mol_assert_equal(stage.pane.stalled(), false);
+            $mol_assert_equal(stage.pane.ready(), false);
+            $mol_assert_equal(stage.text().includes('Сцена не отвечает'), false);
+            // A frame element of its own, so the stuck document is gone with it.
+            $mol_assert_ok(stage.frame() !== frame);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * Stand for the end to end scenarios of `flow.test.ts`: the whole editor in a
+     * real DOM, with the sandbox replaced by a fake bridge peer.
+     *
+     * A `.test.ts` and not a plain module: nothing here may reach the product
+     * bundle, and mam keeps test files out of it. Everything the stand fakes is
+     * named below; the rest of the editor is the editor.
+     *
+     * `d` keeps `$` out of the string literals — mam builds its dependency graph by
+     * a regexp over sources, literals included.
+     */
+    const d = '$';
+    /**
+     * Class tree of the donor pack, served instead of the network.
+     *
+     * Shaped like the `web.view.tree` of a deployed module, because that is what
+     * the library parses: a class per block, properties under it. Two of them carry
+     * a number and a string, which is what makes a wire between them possible.
+     */
+    $_1.$bog_vmap_app_flow_pack = [
+        `${d}flow_button ${d}mol_view`,
+        `\ttitle \\`,
+        `\tenabled true`,
+        `${d}flow_calc ${d}mol_view`,
+        `\tresult 0`,
+        `\top \\plus`,
+        `${d}flow_map ${d}mol_view`,
+        `\tzoom 0`,
+        `\tmarker \\`,
+        ``,
+    ].join('\n');
+    /** Where the pane sits in the viewport. jsdom lays nothing out, so it is told. */
+    $_1.$bog_vmap_app_flow_rect = {
+        left: 200, top: 50, width: 600, height: 500, right: 800, bottom: 550,
+    };
+    /** Size the fake scene reports for every part it is asked to draw. */
+    $_1.$bog_vmap_app_flow_size = { width: 100, height: 50 };
+    /**
+     * Globals of a browser that node does not define and jsdom does not export.
+     *
+     * `$mol_view_selection` names `ShadowRoot` and `$mol_touch` names `PointerEvent`
+     * bare, so a field or a gesture in a node test dies on a `ReferenceError` that
+     * says nothing about the editor. Pointer capture is missing from jsdom
+     * elements outright, and `$mol_touch` calls it without a guard.
+     */
+    function browser_gaps($) {
+        const dom = $.$mol_dom_context;
+        Object.assign(globalThis, {
+            ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
+            PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
+        });
+        const proto = dom.Element.prototype;
+        if (!proto.setPointerCapture)
+            Object.assign(proto, {
+                setPointerCapture() { },
+                releasePointerCapture() { },
+                hasPointerCapture() { return false; },
+            });
+    }
+    /** The editor of the previous scenario, taken down before the next one starts. */
+    let $bog_vmap_app_flow_last = null;
+    /**
+     * Waits for work a click handed to a fiber of its own: making a document,
+     * publishing a part. Both answer at once and land later, so a scenario that
+     * looked at the result on the next tick would sometimes be too early.
+     */
+    async function $bog_vmap_app_flow_settle(done, limit = 300) {
+        const till = Date.now() + limit;
+        while (!done() && Date.now() < till) {
+            await new Promise(next => setTimeout(next, 2));
+        }
+        return done();
+    }
+    $_1.$bog_vmap_app_flow_settle = $bog_vmap_app_flow_settle;
+    /**
+     * The editor, rendered into the jsdom document and talking to a fake scene.
+     *
+     * Faked, and nothing else is: the donor pack (a fixture instead of the
+     * network), the sandbox (a peer that answers like a scene), the geometry of the
+     * pane (jsdom has no layout), the timers (they must not fire by themselves),
+     * and the land of the documents (the home land, so no proof of work).
+     */
+    function $bog_vmap_app_flow_stage($) {
+        browser_gaps($);
+        const dom = $.$mol_dom_context;
+        // The editor of the previous scenario keeps window listeners alive, and its
+        // document node keeps taking events; both go before this one is built.
+        $bog_vmap_app_flow_last?.destructor();
+        dom.document.body.innerHTML = '';
+        const timers = [];
+        class $mol_after_timeout_flow extends $mol_after_timeout {
+            constructor(delay, task) {
+                super(delay, task);
+                clearTimeout(this.id);
+                timers.push(this);
+            }
+        }
+        $.$mol_after_timeout = $mol_after_timeout_flow;
+        class $mol_fetch_flow extends $mol_fetch {
+            static text(input) {
+                const uri = String(input);
+                if (uri.endsWith('web.view.tree'))
+                    return $_1.$bog_vmap_app_flow_pack;
+                return $mol_fail(new Error('network in a test: ' + uri));
+            }
+        }
+        $.$mol_fetch = $mol_fetch_flow;
+        const store = $bog_vmap_app_store.make({ $, doc_land_config: () => null });
+        store.doc_add('Сцена 1');
+        const app = $bog_vmap_app.make({ $, store: () => store });
+        $bog_vmap_app_flow_last = app;
+        const posted = [];
+        const queue = [];
+        /** Geometry of the parts as a scene would measure it: a box at its spot. */
+        const sizes = () => {
+            const res = {};
+            const spots = app.spots();
+            for (const name of Object.keys(spots)) {
+                res[app.doc_root() + '/' + name] = {
+                    x: spots[name].x,
+                    y: spots[name].y,
+                    ...$_1.$bog_vmap_app_flow_size,
+                };
+            }
+            return res;
+        };
+        /**
+         * The far end of the bridge: records what the host sends and lines up the
+         * answer a scene owes. Answered on `flush()` and not here, because a reply
+         * posted from inside `postMessage` would write cells while the cell that
+         * pushed is still computing.
+         */
+        let silent = false;
+        const peer = {
+            origin: 'null',
+            postMessage(data) {
+                const message = data;
+                posted.push(message);
+                if (silent)
+                    return;
+                if (message.kind === 'ping')
+                    queue.push({ kind: 'pong', nonce: message.nonce });
+                else if (message.kind !== 'values_want')
+                    queue.push({ kind: 'sizes', sizes: sizes() });
+            },
+        };
+        /** Hands one message to the host the way the frame does: a window event from the peer. */
+        const deliver = (data) => {
+            const event = new dom.MessageEvent('message', { data: { ns: $bog_vmap_bridge_ns, ...data } });
+            Object.defineProperty(event, 'source', { value: peer });
+            dom.dispatchEvent(event);
+        };
+        const scene = {
+            posted,
+            /** Everything of one kind the host has sent, in order. */
+            sent(kind) {
+                return posted.filter(message => message.kind === kind);
+            },
+            /** The last message of a kind, or undefined. */
+            last(kind) {
+                return this.sent(kind).at(-1);
+            },
+            /** Answers everything owed, then lets the editor redraw on the answers. */
+            flush() {
+                while (queue.length)
+                    deliver(queue.shift());
+                app.dom_tree();
+            },
+            /** Values of the wires, as the scene reports them. */
+            values(values) {
+                deliver({ kind: 'values', values });
+                app.dom_tree();
+            },
+            /** From now on the scene takes everything and says nothing back. */
+            silence() {
+                silent = true;
+                queue.length = 0;
+            },
+        };
+        const pane = app.Pane();
+        pane.scene_peer = () => peer;
+        const root = app.dom_tree();
+        dom.document.body.appendChild(root);
+        // The pane and the camera plugin read their rectangle through a cell that
+        // only a browser ever refreshes, so both are told it outright.
+        const rect = $_1.$bog_vmap_app_flow_rect;
+        pane.dom_node().getBoundingClientRect = () => rect;
+        pane.view_rect = () => rect;
+        pane.Touch().view_rect = () => rect;
+        deliver({ kind: 'ready' });
+        app.dom_tree();
+        scene.flush();
+        const found = (selector, note, match) => {
+            const el = [...root.querySelectorAll(selector)].find(match);
+            if (!el)
+                $mol_fail(new Error(`nothing on screen: ${note}`));
+            return el;
+        };
+        /**
+         * A pointer event as a browser makes one: cancelable, so that
+         * `preventDefault` in a handler really stops the camera, and bubbling, so
+         * that a press on the overlay reaches the plugins of the pane.
+         */
+        const pointer = (type, point, over = {}) => {
+            return new dom.PointerEvent(type, {
+                bubbles: true,
+                cancelable: true,
+                clientX: point[0],
+                clientY: point[1],
+                button: 0,
+                buttons: type === 'pointerup' ? 0 : 1,
+                pointerId: 1,
+                ...over,
+            });
+        };
+        return {
+            app, pane, store, scene, root, timers,
+            /** Viewport point of a point in the screen space of the pane. */
+            client(point) {
+                return [rect.left + point[0], rect.top + point[1]];
+            },
+            /** The whole editor as text, for a coarse look at what is on screen. */
+            text() {
+                return root.textContent ?? '';
+            },
+            /** Views that failed to render, by their id. The frame is not one: see below. */
+            broken() {
+                return [...root.querySelectorAll('[mol_view_error]')].map(el => el.getAttribute('id'));
+            },
+            button(title) {
+                return found('[role=button]', `button «${title}»`, el => el.textContent?.startsWith(title) ?? false);
+            },
+            /** A row of the palette, by the class it offers. */
+            class_row(klass) {
+                return found('[bog_vmap_app_palette_item]', `palette row ${klass}`, el => el.textContent === klass);
+            },
+            /** A text field, addressed by the tail of the id $mol builds out of the path to it. */
+            field(tail) {
+                return found('input, textarea', `field ${tail}`, el => el.getAttribute('id')?.endsWith(tail) ?? false);
+            },
+            overlay() {
+                return root.querySelector('[bog_vmap_app_pane_overlay]');
+            },
+            /** The frame element itself, so that a restart can be seen to replace it. */
+            frame() {
+                return root.querySelector('iframe');
+            },
+            /** Types into a field the way a person does: the value, then the input event. */
+            type(el, value) {
+                el.value = value;
+                el.dispatchEvent(new dom.Event('input', { bubbles: true }));
+                app.dom_tree();
+            },
+            click(el) {
+                el.dispatchEvent(new dom.MouseEvent('click', { bubbles: true, cancelable: true }));
+                app.dom_tree();
+            },
+            press(el, point, over = {}) {
+                el.dispatchEvent(pointer('pointerdown', point, over));
+            },
+            move(el, point, over = {}) {
+                el.dispatchEvent(pointer('pointermove', point, over));
+            },
+            release(el, point, over = {}) {
+                el.dispatchEvent(pointer('pointerup', point, over));
+            },
+            /**
+             * Carries a class from the palette onto the canvas: a press on the row,
+             * a move across the window, a release over the overlay. The pointer
+             * moves on the window because that is where the editor listens for it.
+             */
+            drop(klass, point) {
+                this.press(this.class_row(klass), [10, 300]);
+                dom.dispatchEvent(pointer('pointermove', point));
+                this.release(this.overlay(), point);
+                app.dom_tree();
+                scene.flush();
+            },
+            /** A click on the canvas: press and release without moving. */
+            tap(point, over = {}) {
+                this.press(this.overlay(), point, over);
+                this.release(this.overlay(), point, over);
+                app.dom_tree();
+                scene.flush();
+            },
+            /** Centre of a part on screen, as the scene has measured it. */
+            part_center(name) {
+                const box = pane.part_box(name);
+                if (!box)
+                    $mol_fail(new Error(`part ${name} is not measured`));
+                return this.client([box.left + box.width / 2, box.top + box.height / 2]);
+            },
+            /**
+             * Viewport point of the dot of a port, from the geometry the pane draws
+             * the dots with: the box of the part and the row of the port among the
+             * wirable ports of its class.
+             */
+            port_dot(name, port, side) {
+                const box = pane.part_box(name);
+                const index = app.part_ports(name).findIndex(known => known.name === port);
+                if (!box || index < 0)
+                    $mol_fail(new Error(`no port ${name}.${port} on screen`));
+                return this.client($bog_vmap_app_wire_port_point(box, side, index));
+            },
+            redraw() {
+                app.dom_tree();
+            },
+        };
+    }
+    $_1.$bog_vmap_app_flow_stage = $bog_vmap_app_flow_stage;
+})($ || ($ = {}));
+
 
 //# sourceMappingURL=node.test.js.map
