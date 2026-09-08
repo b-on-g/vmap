@@ -15683,6 +15683,15 @@ var $;
              * restarts the timer with whatever is left of the period, so a wire that
              * changes on every frame costs one message per period and a wire that
              * changes once is reported at once.
+             *
+             * `values_at` is read here and written in the callback, past the graph, and
+             * it wants NO counter cell to prop it up — unlike the similar fields in the
+             * pane. Nothing else writes it, so it only ever changes as a consequence of
+             * this cell's own timer having fired, and at that moment the value has just
+             * been sent and there is nothing to recompute. A wake on it would restart
+             * the timer for a message already on the wire, which is one extra message
+             * per period, not one fewer. Measured in `values.test.ts`, on a hand moved
+             * clock: first send at delay 0, a change 100 ms later waits the remaining 150.
              */
             values_task() {
                 const names = this.values_wanted();
@@ -15935,7 +15944,28 @@ var $;
                 const found = this.$.$bog_vmap_scene_seek(made, this.walk_of(made), view => this.view_broken(view) !== '');
                 if (!found)
                     return { message: '', node: '' };
-                return { message: this.view_broken(found.view), node: found.path };
+                return { message: this.view_broken(found.view), node: this.part_of(found.path) };
+            }
+            /**
+             * The free part a path falls inside, which is how the host names a node.
+             *
+             * One segment and never the whole path: the host looks a node up by the name
+             * it was given in `sizes`, and there only the direct children of the root are
+             * kept — one path segment is exactly one free part. A deeper path is reported
+             * by the part that CONTAINS it rather than by its own last segment, and that
+             * is not a rounding but the honest answer: the failure really is inside that
+             * part, while a bare last segment would collide with a part of the same name
+             * elsewhere and put the mark on the wrong node, silently.
+             *
+             * The root itself is no node of the canvas, so it comes back empty and the
+             * failure stays in the status line, where a failure of the whole document
+             * belongs.
+             */
+            part_of(path) {
+                const prefix = this.doc_root() + '/';
+                if (!path.startsWith(prefix))
+                    return '';
+                return path.slice(prefix.length).split('/')[0] ?? '';
             }
             /**
              * The failure written on the node of one view, or an empty string.
@@ -15974,10 +16004,13 @@ var $;
             class_node(made, klass) {
                 if (!klass)
                     return '';
+                // The root class is the document, not a node of the canvas. Naming it
+                // would hand the host a class name where it expects a part name, and a
+                // name it cannot find is a mark that never appears, with nothing said.
                 if (klass === this.doc_root())
-                    return this.doc_root();
+                    return '';
                 const found = this.$.$bog_vmap_scene_seek(made, this.walk_of(made), view => view.constructor?.name === klass);
-                return found?.path ?? '';
+                return found ? this.part_of(found.path) : '';
             }
             /**
              * How to walk a rendered document: the three things the walks need to know

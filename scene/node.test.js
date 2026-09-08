@@ -15674,6 +15674,15 @@ var $;
              * restarts the timer with whatever is left of the period, so a wire that
              * changes on every frame costs one message per period and a wire that
              * changes once is reported at once.
+             *
+             * `values_at` is read here and written in the callback, past the graph, and
+             * it wants NO counter cell to prop it up — unlike the similar fields in the
+             * pane. Nothing else writes it, so it only ever changes as a consequence of
+             * this cell's own timer having fired, and at that moment the value has just
+             * been sent and there is nothing to recompute. A wake on it would restart
+             * the timer for a message already on the wire, which is one extra message
+             * per period, not one fewer. Measured in `values.test.ts`, on a hand moved
+             * clock: first send at delay 0, a change 100 ms later waits the remaining 150.
              */
             values_task() {
                 const names = this.values_wanted();
@@ -15926,7 +15935,28 @@ var $;
                 const found = this.$.$bog_vmap_scene_seek(made, this.walk_of(made), view => this.view_broken(view) !== '');
                 if (!found)
                     return { message: '', node: '' };
-                return { message: this.view_broken(found.view), node: found.path };
+                return { message: this.view_broken(found.view), node: this.part_of(found.path) };
+            }
+            /**
+             * The free part a path falls inside, which is how the host names a node.
+             *
+             * One segment and never the whole path: the host looks a node up by the name
+             * it was given in `sizes`, and there only the direct children of the root are
+             * kept — one path segment is exactly one free part. A deeper path is reported
+             * by the part that CONTAINS it rather than by its own last segment, and that
+             * is not a rounding but the honest answer: the failure really is inside that
+             * part, while a bare last segment would collide with a part of the same name
+             * elsewhere and put the mark on the wrong node, silently.
+             *
+             * The root itself is no node of the canvas, so it comes back empty and the
+             * failure stays in the status line, where a failure of the whole document
+             * belongs.
+             */
+            part_of(path) {
+                const prefix = this.doc_root() + '/';
+                if (!path.startsWith(prefix))
+                    return '';
+                return path.slice(prefix.length).split('/')[0] ?? '';
             }
             /**
              * The failure written on the node of one view, or an empty string.
@@ -15965,10 +15995,13 @@ var $;
             class_node(made, klass) {
                 if (!klass)
                     return '';
+                // The root class is the document, not a node of the canvas. Naming it
+                // would hand the host a class name where it expects a part name, and a
+                // name it cannot find is a mark that never appears, with nothing said.
                 if (klass === this.doc_root())
-                    return this.doc_root();
+                    return '';
                 const found = this.$.$bog_vmap_scene_seek(made, this.walk_of(made), view => view.constructor?.name === klass);
-                return found?.path ?? '';
+                return found ? this.part_of(found.path) : '';
             }
             /**
              * How to walk a rendered document: the three things the walks need to know
@@ -23950,13 +23983,14 @@ var $;
                 first.dom_tree();
             }
             catch { }
-            // the attribution itself
-            $mol_assert_equal(made.render_error(first).node, `${root}/Tail/Deep`);
+            // the attribution itself: the free part the failure is inside, which is
+            // the only name the host can find a box by
+            $mol_assert_equal(made.render_error(first).node, 'Tail');
             $mol_assert_ok(made.render_error(first).message);
             // and the same thing as the host sees it
             made.report_send();
             const failed = failure(sent, 'runtime');
-            $mol_assert_equal(failed?.node, `${root}/Tail/Deep`);
+            $mol_assert_equal(failed?.node, 'Tail');
             $mol_assert_ok(failed?.message);
         },
         /**
@@ -23993,7 +24027,7 @@ var $;
             $mol_assert_ok(made.compile_error());
             $mol_assert_equal(made.compile_class(), `${d}hot_guilt_kid`);
             made.report_send();
-            $mol_assert_equal(failure(sent, 'compile')?.node, `${root}/Kid`);
+            $mol_assert_equal(failure(sent, 'compile')?.node, 'Kid');
         },
         /**
          * The error state lives in the graph, not in a field beside it.
@@ -24021,6 +24055,61 @@ var $;
             // symptom of a failure kept in a field beside the graph.
             $mol_assert_ok(atom.sync());
             $mol_assert_equal(atom.sync(), made.compile_error());
+        },
+        /**
+         * The FORM of the name, which is what the two halves stick together by.
+         *
+         * The host finds the box of a node by a name out of `sizes`, and there only
+         * the direct children of the root are kept. A path, a class name or anything
+         * with a slash in it finds no box, so no mark appears — with no error, no log
+         * and nothing to notice. Hence a test on the shape of the string and not only
+         * on which node it points at.
+         */
+        async 'the reported node is a part name, not a path and not a class'($) {
+            const made = scene($);
+            const root = `${d}hot_shape_name_page`;
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Tail ${d}hot_shape_name_tail\n`
+                + `${d}hot_shape_name_tail ${d}mol_view\n\tsub /\n\t\t<= Deep ${d}hot_shape_name_deep\n`
+                + `${d}hot_shape_name_deep ${d}mol_view\n\tsub /\n\t\t<= boom \\\n`);
+            made.doc_js({ [`${d}hot_shape_name_deep`]: 'boom() { throw new Error( "bang" ) }' });
+            await settled(() => made.instance());
+            try {
+                first.dom_tree();
+            }
+            catch { }
+            const node = made.render_error(first).node;
+            $mol_assert_equal(node.includes('/'), false);
+            $mol_assert_equal(node.startsWith('$'), false);
+            // and it is one of the names the host is given for a box, not merely a
+            // string without a slash. Taken off the walk and not off `sizes`: a node
+            // run has no layout, so nothing is connected and nothing is measured.
+            const walk = made.walk_of(first);
+            const parts = walk.kids_of(first)
+                .map(kid => walk.view_of(kid))
+                .filter(Boolean)
+                .map(view => walk.prop_of(view));
+            $mol_assert_equal(parts.includes(node), true);
+        },
+        /**
+         * A failure of the document itself belongs to no node of the canvas.
+         *
+         * Naming the root class here would hand the host a class name where it
+         * expects a part name — a mark that silently never appears. An empty node
+         * says the same thing honestly, and the text still reaches the status line.
+         */
+        async 'a failure of the root itself is reported with no node'($) {
+            const made = scene($);
+            const root = `${d}hot_top_page`;
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= boom \\\n`);
+            made.doc_js({ [root]: 'boom() { throw new Error( "bang" ) }' });
+            await settled(() => made.instance());
+            try {
+                first.dom_tree();
+            }
+            catch { }
+            const failed = made.render_error(first);
+            $mol_assert_ok(failed.message);
+            $mol_assert_equal(failed.node, '');
         },
     });
 })($ || ($ = {}));
