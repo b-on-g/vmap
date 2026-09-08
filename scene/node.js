@@ -10909,6 +10909,54 @@ var $;
         prop_drop(name) {
             this.prop_tree(name, null);
         }
+        /**
+         * Renames a property together with every reference to it, in one write.
+         *
+         * `next` is a whole signature, `d*?` and not `d`, because a rename and a
+         * change of sign arrive together from the inspector and two writes would
+         * leave the document renamed but unsigned in between.
+         *
+         * **A reference is rewritten, never dropped.** A node is named by the
+         * property it occupies, so a rename moves the name every `sub` list, every
+         * wire end and every binding spells. Dropping them instead — which is what
+         * `links_drop` does for a delete — would silently cut the wires of a node
+         * that is still there; the two operations are opposites and must not share
+         * a path. Anything of the shape `<= name`, `<=> name` or `= name prop` at
+         * any depth is such a reference.
+         *
+         * The declaration is retyped IN PLACE, among the kids of the base, and only
+         * there: an override of the same name under a part is a port of that part
+         * and none of our business. In place also keeps the property where it was —
+         * dropping it and inserting it back moved it to the end of the class, which
+         * reorders the canvas for a rename that should not move anything.
+         *
+         * A name already taken is refused rather than merged: two properties of one
+         * name is a document nothing can address afterwards.
+         */
+        prop_rename(name, next) {
+            const to = [...next.matchAll($mol_view_tree2_prop_signature)][0]?.groups?.name;
+            if (!to)
+                return this.$.$mol_fail(new Error(`Bad property signature ${JSON.stringify(next)}`));
+            if (to !== name && this.prop_names().includes(to))
+                return this.$.$mol_fail(new Error(`Property ${JSON.stringify(to)} is already declared in ${this.name()}`));
+            const self = this.tree();
+            const base = self.kids[0];
+            if (!base)
+                return;
+            const refs = (tree) => {
+                const kids = tree.kids.map(refs);
+                const head = kids[0];
+                if (head?.type === name
+                    && (tree.type === '<=' || tree.type === '<=>' || tree.type === '='))
+                    return tree.clone([head.struct(to, head.kids), ...kids.slice(1)]);
+                return tree.clone(kids);
+            };
+            const props = base.kids.map(prop => {
+                const meta = [...prop.type.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
+                return meta?.name === name ? prop.struct(next, prop.kids) : prop;
+            });
+            this.tree(self.clone([base.clone(props.map(refs))]));
+        }
         property(name) {
             return $bog_vmap_lang_prop.make({
                 name: $mol_const(name),
@@ -11381,6 +11429,9 @@ var $;
         $mol_action
     ], $bog_vmap_lang_node.prototype, "prop_drop", null);
     __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "prop_rename", null);
+    __decorate([
         $mol_mem_key
     ], $bog_vmap_lang_node.prototype, "property", null);
     __decorate([
@@ -11446,10 +11497,24 @@ var $;
         /**
          * Signature parts: bare `name`, `key` (`*`) and `next` (`?`).
          *
-         * Deviation from studio: renaming drops the old property BEFORE the instance
-         * method is overwritten, so a failure in the drop leaves the model pointing at
-         * a property that still exists. Studio does it the other way round and ends up
-         * with a live `hyoo_studio_property` addressing a name nothing declares.
+         * A rename goes to the node, because it is not a fact about this property
+         * alone: everything that spells the old name has to be rewritten in the same
+         * write. A change of sign is local and is written here.
+         *
+         * Deviation from studio: this handle is NOT patched to follow the rename.
+         * Studio overwrites the `name` method of the live property object, which
+         * leaves an object addressing one name and reading another past the graph;
+         * here the handle simply stops addressing anything, and the caller asks the
+         * node for the property under its new name — a keyed cell, so that is one
+         * read and no state.
+         *
+         * **Plain method, and so are the three below.** Every accessor here only
+         * delegates into `tree()`, which is a cell already, and an accessor of that
+         * shape under `@ $mol_mem` freezes at the value written THROUGH it: after a
+         * rename this handle went on reporting the new name although it addressed a
+         * property no longer under it, which is the very object-past-the-graph the
+         * patching above was dropped for. Measured; there is a test. The same rule
+         * and the same measurement as `bog_vmap_app_doc_node.source`.
          */
         meta(next) {
             const tree = this.tree();
@@ -11457,12 +11522,13 @@ var $;
             let meta = [...sign.matchAll($mol_view_tree2_prop_signature)][0]?.groups
                 ?? { name: '', key: '', next: '' };
             if (next) {
-                if (next.name) {
-                    this.node().prop_drop(meta.name);
-                    this.name = () => next.name;
-                }
-                meta = { ...meta, ...next };
-                this.tree(tree.struct(`${meta.name}${meta.key || ''}${meta.next || ''}`, tree.kids));
+                const made = { ...meta, ...next };
+                const sign = `${made.name}${made.key || ''}${made.next || ''}`;
+                if (made.name === meta.name)
+                    this.tree(tree.struct(sign, tree.kids));
+                else
+                    this.node().prop_rename(meta.name, sign);
+                meta = made;
             }
             return meta;
         }
@@ -11476,18 +11542,6 @@ var $;
             return Boolean(this.meta(next === undefined ? undefined : { next: next ? '?' : '' }).next);
         }
     }
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_prop.prototype, "meta", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_prop.prototype, "title", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_prop.prototype, "key", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_prop.prototype, "next", null);
     $.$bog_vmap_lang_prop = $bog_vmap_lang_prop;
 })($ || ($ = {}));
 
