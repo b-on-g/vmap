@@ -36855,6 +36855,9 @@ var $;
 			(obj.drag_geometry) = () => ((this.wire_drag_geometry()));
 			return obj;
 		}
+		insert_style(){
+			return {};
+		}
 		Touch(){
 			const obj = new this.$.$mol_touch();
 			(obj.allow_draw) = () => (false);
@@ -36907,6 +36910,13 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		containers(){
+			return [];
+		}
+		tree_move(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		values(next){
 			if(next !== undefined) return next;
 			return {};
@@ -36953,6 +36963,11 @@ var $;
 		sub(){
 			return [(this.Overlay()), (this.Wire())];
 		}
+		Insert(){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.insert_style()));
+			return obj;
+		}
 		plugins(){
 			return [...(super.plugins()), (this.Touch())];
 		}
@@ -36967,6 +36982,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "selected"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_add"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_drop"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "values"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "handshake"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "stalled"));
@@ -36975,6 +36991,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_zoom"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_generation"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Scene"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Insert"));
 	($.$bog_vmap_app_pane_overlay) = class $bog_vmap_app_pane_overlay extends ($.$mol_view) {
 		press(next){
 			if(next !== undefined) return next;
@@ -37113,6 +37130,67 @@ var $;
 
 ;
 "use strict";
+var $;
+(function ($) {
+    /**
+     * Which way the children of a container are stacked, read off their boxes.
+     *
+     * Geometry and not CSS on purpose: the host does not compile the document and
+     * has no layout of its own, so the only honest source of the direction is where
+     * the children came out. Asking the scene would put a message on the wire for
+     * something already measured.
+     *
+     * Fewer than two children says nothing at all, and the answer is then a column:
+     * that is the way a page stacks, and it is what an artboard is set to. Note the
+     * default of `$mol_view` itself is a ROW — `[mol_view]` is `display: flex` with
+     * no direction — which is why an artboard has to say `flexDirection` out loud
+     * and why the inspector offers it.
+     */
+    function $bog_vmap_app_pane_axis(boxes) {
+        if (boxes.length < 2)
+            return 'column';
+        const mid_x = boxes.map(box => box.x + box.width / 2);
+        const mid_y = boxes.map(box => box.y + box.height / 2);
+        const spread = (mids) => Math.max(...mids) - Math.min(...mids);
+        return spread(mid_x) > spread(mid_y) ? 'row' : 'column';
+    }
+    $.$bog_vmap_app_pane_axis = $bog_vmap_app_pane_axis;
+    /**
+     * Position a point aims at among the children of a container, and the line to
+     * draw for it.
+     *
+     * The position is decided by the MIDDLE of each child, not by the gaps between
+     * them: children of a flex box usually touch, so a rule that only fired between
+     * boxes would have nowhere to fire, and pointing at the upper half of a child
+     * plainly means «above this one».
+     *
+     * The line is drawn on the boundary rather than on the child: at the middle of
+     * the gap when there is one, on the outer edge at either end. In world units,
+     * because the host draws it with the same transform it draws the selection ring
+     * with, and turning world into screen is done once, for both.
+     */
+    function $bog_vmap_app_pane_slot(owner, box, kids, point) {
+        const row = $bog_vmap_app_pane_axis(kids) === 'row';
+        const start = (kid) => row ? kid.x : kid.y;
+        const end = (kid) => row ? kid.x + kid.width : kid.y + kid.height;
+        const at = point[row ? 0 : 1];
+        const index = kids.filter(kid => (start(kid) + end(kid)) / 2 < at).length;
+        const before = kids[index - 1];
+        const after = kids[index];
+        const bound = before && after ? (end(before) + start(after)) / 2
+            : before ? end(before)
+                : after ? start(after)
+                    : row ? box.x : box.y;
+        const line = row
+            ? { x: bound, y: box.y, width: 0, height: box.height }
+            : { x: box.x, y: bound, width: box.width, height: 0 };
+        return { owner, index, line };
+    }
+    $.$bog_vmap_app_pane_slot = $bog_vmap_app_pane_slot;
+})($ || ($ = {}));
+
+;
+"use strict";
 
 
 ;
@@ -37207,9 +37285,21 @@ var $;
             scene_peer() {
                 return this.Scene(this.scene_generation()).dom_node().contentWindow;
             }
-            /** The live frame, the gate over it, and the wires above both. */
+            /**
+             * The live frame, the gate over it, the wires above both, and the insertion
+             * line while a drop has somewhere to go.
+             *
+             * The line is topmost and lives here rather than on the overlay: the overlay
+             * is cut open under the picked node, and a line crossing that hole would be
+             * cut in half exactly when the user is aiming at it.
+             */
             sub() {
-                return [this.Scene(this.scene_generation()), this.Overlay(), this.Wire()];
+                return [
+                    this.Scene(this.scene_generation()),
+                    this.Overlay(),
+                    this.Wire(),
+                    ...this.slot() ? [this.Insert()] : [],
+                ];
             }
             /**
              * Replaces the frame with a fresh one that has said nothing and proved nothing
@@ -37415,23 +37505,60 @@ var $;
                 this.sizes_version(this.sizes_version() + 1);
             }
             /**
-             * The box of a free part, or `null` while the scene has not reported one.
+             * Every measured node of the document, with the path the scene walked to it
+             * and the name it is addressed by, in the order it was walked.
              *
-             * Only the direct children of the root are addressed, and that is the whole
-             * set of things lying free on the canvas — section 1: every named sub view
-             * becomes a flat property of the root class, so one path segment is exactly
-             * one part. Anything deeper (`…/Icon_close/Path`) lives INSIDE a part, and
-             * picking those is a tree question, which is what artboards are for.
+             * The name is the LAST segment of the path and nothing else: section 1 makes
+             * every named node a flat property of the root class whatever its depth, so a
+             * node inside an artboard is addressed exactly like one lying free, and the
+             * path says only where it is drawn.
+             *
+             * The order is the order of the report, which is the order of the DOM, which
+             * is the order the children of an artboard are laid out in. Everything below
+             * relies on that and on nothing else.
+             */
+            nodes_measured() {
+                const prefix = this.doc_root() + '/';
+                const nodes = [];
+                for (const key of Object.keys(this.sizes())) {
+                    if (!key.startsWith(prefix))
+                        continue;
+                    const path = key.slice(prefix.length).split('/');
+                    nodes.push({ name: path[path.length - 1], path, box: this.sizes()[key] });
+                }
+                return nodes;
+            }
+            /**
+             * The box of a node, at whatever depth it is drawn, or `null` while the scene
+             * has not reported one.
+             *
+             * A name is looked up rather than a path, because a name is what the document,
+             * the selection and the placement are all keyed by. The last match wins, the
+             * same rule the hit test follows: a name drawn twice is a keyed sub view, and
+             * the later one is the one on top.
              */
             part_size(name) {
-                return this.sizes()[this.doc_root() + '/' + name] ?? null;
+                let found = null;
+                for (const node of this.nodes_measured())
+                    if (node.name === name)
+                        found = node.box;
+                return found;
             }
-            /** Names of the parts the scene has measured, in the order it walked them. */
+            /** Names of the nodes the scene has measured, at every depth. */
             part_names() {
-                const prefix = this.doc_root() + '/';
-                return Object.keys(this.sizes())
-                    .filter(key => key.startsWith(prefix) && !key.includes('/', prefix.length))
-                    .map(key => key.slice(prefix.length));
+                return this.nodes_measured().map(node => node.name);
+            }
+            /** Names of the parts lying free on the canvas: the direct children of the root. */
+            free_names() {
+                return this.nodes_measured().filter(node => node.path.length === 1).map(node => node.name);
+            }
+            /** Where a node is drawn: the names of the nodes it lies inside, outermost first. */
+            node_path(name) {
+                for (const node of this.nodes_measured()) {
+                    if (node.name === name)
+                        return node.path.slice(0, -1);
+                }
+                return [];
             }
             /**
              * The node being dragged, kept as a plain field.
@@ -37495,17 +37622,23 @@ var $;
             /**
              * Which part is under a world point, or `null` for bare canvas.
              *
-             * The LAST match wins, because the parts are absolutely positioned siblings
-             * and a later one paints over an earlier one. Picking the first, or the
-             * smallest, would hand back a node the user cannot see.
+             * The DEEPEST match wins, and among equally deep ones the last, because the
+             * parts are absolutely positioned siblings and a later one paints over an
+             * earlier one. Picking the first, or the smallest, would hand back a node the
+             * user cannot see.
+             *
+             * Depth first is what makes a node inside an artboard reachable at all: it
+             * lies inside the box of the artboard, so a rule that stopped at the free
+             * parts would always hand back the page and never anything on it. The strip
+             * of slack around a box is added on every level, so a child still catches the
+             * pointer near its edge, and its parent catches it further out.
              */
             node_at(point) {
                 const slack = grab_slack / this.camera_zoom();
                 let found = null;
-                for (const name of this.part_names()) {
-                    const box = this.part_size(name);
-                    if (!box)
-                        continue;
+                let depth = 0;
+                for (const node of this.nodes_measured()) {
+                    const box = node.box;
                     if (point[0] < box.x - slack)
                         continue;
                     if (point[1] < box.y - slack)
@@ -37514,9 +37647,78 @@ var $;
                         continue;
                     if (point[1] > box.y + box.height + slack)
                         continue;
-                    found = name;
+                    if (node.path.length < depth)
+                        continue;
+                    found = node.name;
+                    depth = node.path.length;
                 }
                 return found;
+            }
+            /**
+             * Boxes of the children of a container, in the order they are laid out.
+             *
+             * Off the report and not off the document: the order the scene walked is the
+             * order of the DOM, and a child hidden by culling has no box and no place on
+             * screen to put an insertion line at.
+             */
+            node_kids(owner) {
+                return this.nodes_measured()
+                    .filter(node => node.path[node.path.length - 2] === owner)
+                    .map(node => node.box);
+            }
+            /**
+             * The container a point falls into, or `null` for bare canvas.
+             *
+             * A container is a node whose declaration carries a `sub` — an artboard, see
+             * section 8 — and the deepest one wins, so a box nested inside an artboard
+             * takes the drop rather than the page around it.
+             *
+             * The node being carried is stepped over, and so is everything inside it: a
+             * node cannot become its own descendant, and offering that as a target would
+             * mean drawing a line where the drop is going to be refused.
+             */
+            container_at(point, moving = '') {
+                const containers = new Set(this.containers());
+                let found = null;
+                let depth = 0;
+                for (const node of this.nodes_measured()) {
+                    if (!containers.has(node.name))
+                        continue;
+                    if (node.path.length < depth)
+                        continue;
+                    if (moving && node.path.includes(moving))
+                        continue;
+                    const box = node.box;
+                    if (point[0] < box.x || point[0] > box.x + box.width)
+                        continue;
+                    if (point[1] < box.y || point[1] > box.y + box.height)
+                        continue;
+                    found = node.name;
+                    depth = node.path.length;
+                }
+                return found;
+            }
+            /** Where a node dropped at this point would go, or `null` for bare canvas. */
+            insert_slot(point, moving = '') {
+                const owner = this.container_at(point, moving);
+                if (!owner)
+                    return null;
+                const box = this.part_size(owner);
+                if (!box)
+                    return null;
+                return this.$.$bog_vmap_app_pane_slot(owner, box, this.node_kids(owner), point);
+            }
+            /**
+             * The slot the gesture in hand is aiming at, drawn as a line between children.
+             *
+             * A cell rather than a field, because the line is drawn from it; the whole
+             * point of the feedback is that it follows the pointer.
+             */
+            slot(next) {
+                return next ?? null;
+            }
+            tree_move(next) {
+                return next ?? null;
             }
             /**
              * Press picks, and a press on a part also starts carrying it.
@@ -37560,6 +37762,7 @@ var $;
                     spot: this.spots()[name] ?? { x: 0, y: 0 },
                     grab: point,
                     version: this.sizes_version(),
+                    nested: this.node_path(name).length > 0,
                 };
                 this.drag_live = true;
                 // A pointer released off the window would otherwise leave the gesture
@@ -37584,6 +37787,14 @@ var $;
             /**
              * Carrying a node writes straight into `spots`, the same channel a drop from
              * the palette writes: placement is one fact with one owner, whatever moved it.
+             *
+             * Over a container it writes nothing at all. Inside an artboard the layout is
+             * a tree and not a set of coordinates, so what the gesture means there is a
+             * position among children, and the only feedback until the release is the
+             * insertion line. A node that is drawn inside one never gets a coordinate
+             * either way: `spots` positions the direct children of the root and nothing
+             * else, so writing one would leave a number in the document's desk layout
+             * that moves nothing.
              */
             node_move(event) {
                 if (!event)
@@ -37604,6 +37815,10 @@ var $;
                     return this.node_release(event);
                 event.preventDefault();
                 const point = this.world_point(event);
+                const slot = this.insert_slot(point, drag.name);
+                this.slot(slot);
+                if (slot || drag.nested)
+                    return;
                 this.spots({
                     ...this.spots(),
                     [drag.name]: {
@@ -37631,6 +37846,13 @@ var $;
                 if (this.wire_drag())
                     return this.wire_release(event);
                 if (this.drag_live) {
+                    // The drop into a tree is asked for here and never written here: the
+                    // pane owns the geometry of the gesture, the document is the owner's.
+                    const drag = this.drag;
+                    const slot = this.slot();
+                    this.slot(null);
+                    if (drag && slot)
+                        this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index });
                     this.drag_live = false;
                     try {
                         this.Overlay().dom_node().releasePointerCapture(event.pointerId);
@@ -37707,6 +37929,19 @@ var $;
                 const dx = live ? spot.x - drag.spot.x : 0;
                 const dy = live ? spot.y - drag.spot.y : 0;
                 return this.$.$bog_vmap_app_pane_screen({ x: box.x + dx, y: box.y + dy, width: box.width, height: box.height }, this.camera_zoom(), this.camera_shift());
+            }
+            /** Where the line goes on screen. Flat in world units, two pixels thick here. */
+            insert_style() {
+                const slot = this.slot();
+                if (!slot)
+                    return {};
+                const rect = this.$.$bog_vmap_app_pane_screen(slot.line, this.camera_zoom(), this.camera_shift());
+                return {
+                    left: rect.left + 'px',
+                    top: rect.top + 'px',
+                    width: Math.max(rect.width, 2) + 'px',
+                    height: Math.max(rect.height, 2) + 'px',
+                };
             }
             frame_style() {
                 const rect = this.frame_box();
@@ -38110,8 +38345,17 @@ var $;
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "sizes_version", null);
         __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "nodes_measured", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "slot", null);
+        __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "part_box", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "insert_style", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "frame_style", null);
@@ -38209,6 +38453,16 @@ var $;
                 left: 0,
                 width: '100%',
                 height: '100%',
+            },
+            /**
+             * The insertion line. Placed by the inline style in screen pixels, painted
+             * here, and never in the way: it is drawn over the frame and takes no pointer,
+             * because the gesture it belongs to is the overlay's.
+             */
+            Insert: {
+                position: 'absolute',
+                background: { color: $mol_theme.focus },
+                pointerEvents: 'none',
             },
         });
         $mol_style_define($bog_vmap_app_pane_overlay, {

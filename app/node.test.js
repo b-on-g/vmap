@@ -28999,6 +28999,9 @@ var $;
 			(obj.drag_geometry) = () => ((this.wire_drag_geometry()));
 			return obj;
 		}
+		insert_style(){
+			return {};
+		}
 		Touch(){
 			const obj = new this.$.$mol_touch();
 			(obj.allow_draw) = () => (false);
@@ -29051,6 +29054,13 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		containers(){
+			return [];
+		}
+		tree_move(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		values(next){
 			if(next !== undefined) return next;
 			return {};
@@ -29097,6 +29107,11 @@ var $;
 		sub(){
 			return [(this.Overlay()), (this.Wire())];
 		}
+		Insert(){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.insert_style()));
+			return obj;
+		}
 		plugins(){
 			return [...(super.plugins()), (this.Touch())];
 		}
@@ -29111,6 +29126,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "selected"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_add"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_drop"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "values"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "handshake"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "stalled"));
@@ -29119,6 +29135,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_zoom"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_generation"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Scene"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Insert"));
 	($.$bog_vmap_app_pane_overlay) = class $bog_vmap_app_pane_overlay extends ($.$mol_view) {
 		press(next){
 			if(next !== undefined) return next;
@@ -29257,6 +29274,67 @@ var $;
 
 ;
 "use strict";
+var $;
+(function ($) {
+    /**
+     * Which way the children of a container are stacked, read off their boxes.
+     *
+     * Geometry and not CSS on purpose: the host does not compile the document and
+     * has no layout of its own, so the only honest source of the direction is where
+     * the children came out. Asking the scene would put a message on the wire for
+     * something already measured.
+     *
+     * Fewer than two children says nothing at all, and the answer is then a column:
+     * that is the way a page stacks, and it is what an artboard is set to. Note the
+     * default of `$mol_view` itself is a ROW — `[mol_view]` is `display: flex` with
+     * no direction — which is why an artboard has to say `flexDirection` out loud
+     * and why the inspector offers it.
+     */
+    function $bog_vmap_app_pane_axis(boxes) {
+        if (boxes.length < 2)
+            return 'column';
+        const mid_x = boxes.map(box => box.x + box.width / 2);
+        const mid_y = boxes.map(box => box.y + box.height / 2);
+        const spread = (mids) => Math.max(...mids) - Math.min(...mids);
+        return spread(mid_x) > spread(mid_y) ? 'row' : 'column';
+    }
+    $.$bog_vmap_app_pane_axis = $bog_vmap_app_pane_axis;
+    /**
+     * Position a point aims at among the children of a container, and the line to
+     * draw for it.
+     *
+     * The position is decided by the MIDDLE of each child, not by the gaps between
+     * them: children of a flex box usually touch, so a rule that only fired between
+     * boxes would have nowhere to fire, and pointing at the upper half of a child
+     * plainly means «above this one».
+     *
+     * The line is drawn on the boundary rather than on the child: at the middle of
+     * the gap when there is one, on the outer edge at either end. In world units,
+     * because the host draws it with the same transform it draws the selection ring
+     * with, and turning world into screen is done once, for both.
+     */
+    function $bog_vmap_app_pane_slot(owner, box, kids, point) {
+        const row = $bog_vmap_app_pane_axis(kids) === 'row';
+        const start = (kid) => row ? kid.x : kid.y;
+        const end = (kid) => row ? kid.x + kid.width : kid.y + kid.height;
+        const at = point[row ? 0 : 1];
+        const index = kids.filter(kid => (start(kid) + end(kid)) / 2 < at).length;
+        const before = kids[index - 1];
+        const after = kids[index];
+        const bound = before && after ? (end(before) + start(after)) / 2
+            : before ? end(before)
+                : after ? start(after)
+                    : row ? box.x : box.y;
+        const line = row
+            ? { x: bound, y: box.y, width: 0, height: box.height }
+            : { x: box.x, y: bound, width: box.width, height: 0 };
+        return { owner, index, line };
+    }
+    $.$bog_vmap_app_pane_slot = $bog_vmap_app_pane_slot;
+})($ || ($ = {}));
+
+;
+"use strict";
 
 
 ;
@@ -29351,9 +29429,21 @@ var $;
             scene_peer() {
                 return this.Scene(this.scene_generation()).dom_node().contentWindow;
             }
-            /** The live frame, the gate over it, and the wires above both. */
+            /**
+             * The live frame, the gate over it, the wires above both, and the insertion
+             * line while a drop has somewhere to go.
+             *
+             * The line is topmost and lives here rather than on the overlay: the overlay
+             * is cut open under the picked node, and a line crossing that hole would be
+             * cut in half exactly when the user is aiming at it.
+             */
             sub() {
-                return [this.Scene(this.scene_generation()), this.Overlay(), this.Wire()];
+                return [
+                    this.Scene(this.scene_generation()),
+                    this.Overlay(),
+                    this.Wire(),
+                    ...this.slot() ? [this.Insert()] : [],
+                ];
             }
             /**
              * Replaces the frame with a fresh one that has said nothing and proved nothing
@@ -29559,23 +29649,60 @@ var $;
                 this.sizes_version(this.sizes_version() + 1);
             }
             /**
-             * The box of a free part, or `null` while the scene has not reported one.
+             * Every measured node of the document, with the path the scene walked to it
+             * and the name it is addressed by, in the order it was walked.
              *
-             * Only the direct children of the root are addressed, and that is the whole
-             * set of things lying free on the canvas — section 1: every named sub view
-             * becomes a flat property of the root class, so one path segment is exactly
-             * one part. Anything deeper (`…/Icon_close/Path`) lives INSIDE a part, and
-             * picking those is a tree question, which is what artboards are for.
+             * The name is the LAST segment of the path and nothing else: section 1 makes
+             * every named node a flat property of the root class whatever its depth, so a
+             * node inside an artboard is addressed exactly like one lying free, and the
+             * path says only where it is drawn.
+             *
+             * The order is the order of the report, which is the order of the DOM, which
+             * is the order the children of an artboard are laid out in. Everything below
+             * relies on that and on nothing else.
+             */
+            nodes_measured() {
+                const prefix = this.doc_root() + '/';
+                const nodes = [];
+                for (const key of Object.keys(this.sizes())) {
+                    if (!key.startsWith(prefix))
+                        continue;
+                    const path = key.slice(prefix.length).split('/');
+                    nodes.push({ name: path[path.length - 1], path, box: this.sizes()[key] });
+                }
+                return nodes;
+            }
+            /**
+             * The box of a node, at whatever depth it is drawn, or `null` while the scene
+             * has not reported one.
+             *
+             * A name is looked up rather than a path, because a name is what the document,
+             * the selection and the placement are all keyed by. The last match wins, the
+             * same rule the hit test follows: a name drawn twice is a keyed sub view, and
+             * the later one is the one on top.
              */
             part_size(name) {
-                return this.sizes()[this.doc_root() + '/' + name] ?? null;
+                let found = null;
+                for (const node of this.nodes_measured())
+                    if (node.name === name)
+                        found = node.box;
+                return found;
             }
-            /** Names of the parts the scene has measured, in the order it walked them. */
+            /** Names of the nodes the scene has measured, at every depth. */
             part_names() {
-                const prefix = this.doc_root() + '/';
-                return Object.keys(this.sizes())
-                    .filter(key => key.startsWith(prefix) && !key.includes('/', prefix.length))
-                    .map(key => key.slice(prefix.length));
+                return this.nodes_measured().map(node => node.name);
+            }
+            /** Names of the parts lying free on the canvas: the direct children of the root. */
+            free_names() {
+                return this.nodes_measured().filter(node => node.path.length === 1).map(node => node.name);
+            }
+            /** Where a node is drawn: the names of the nodes it lies inside, outermost first. */
+            node_path(name) {
+                for (const node of this.nodes_measured()) {
+                    if (node.name === name)
+                        return node.path.slice(0, -1);
+                }
+                return [];
             }
             /**
              * The node being dragged, kept as a plain field.
@@ -29639,17 +29766,23 @@ var $;
             /**
              * Which part is under a world point, or `null` for bare canvas.
              *
-             * The LAST match wins, because the parts are absolutely positioned siblings
-             * and a later one paints over an earlier one. Picking the first, or the
-             * smallest, would hand back a node the user cannot see.
+             * The DEEPEST match wins, and among equally deep ones the last, because the
+             * parts are absolutely positioned siblings and a later one paints over an
+             * earlier one. Picking the first, or the smallest, would hand back a node the
+             * user cannot see.
+             *
+             * Depth first is what makes a node inside an artboard reachable at all: it
+             * lies inside the box of the artboard, so a rule that stopped at the free
+             * parts would always hand back the page and never anything on it. The strip
+             * of slack around a box is added on every level, so a child still catches the
+             * pointer near its edge, and its parent catches it further out.
              */
             node_at(point) {
                 const slack = grab_slack / this.camera_zoom();
                 let found = null;
-                for (const name of this.part_names()) {
-                    const box = this.part_size(name);
-                    if (!box)
-                        continue;
+                let depth = 0;
+                for (const node of this.nodes_measured()) {
+                    const box = node.box;
                     if (point[0] < box.x - slack)
                         continue;
                     if (point[1] < box.y - slack)
@@ -29658,9 +29791,78 @@ var $;
                         continue;
                     if (point[1] > box.y + box.height + slack)
                         continue;
-                    found = name;
+                    if (node.path.length < depth)
+                        continue;
+                    found = node.name;
+                    depth = node.path.length;
                 }
                 return found;
+            }
+            /**
+             * Boxes of the children of a container, in the order they are laid out.
+             *
+             * Off the report and not off the document: the order the scene walked is the
+             * order of the DOM, and a child hidden by culling has no box and no place on
+             * screen to put an insertion line at.
+             */
+            node_kids(owner) {
+                return this.nodes_measured()
+                    .filter(node => node.path[node.path.length - 2] === owner)
+                    .map(node => node.box);
+            }
+            /**
+             * The container a point falls into, or `null` for bare canvas.
+             *
+             * A container is a node whose declaration carries a `sub` — an artboard, see
+             * section 8 — and the deepest one wins, so a box nested inside an artboard
+             * takes the drop rather than the page around it.
+             *
+             * The node being carried is stepped over, and so is everything inside it: a
+             * node cannot become its own descendant, and offering that as a target would
+             * mean drawing a line where the drop is going to be refused.
+             */
+            container_at(point, moving = '') {
+                const containers = new Set(this.containers());
+                let found = null;
+                let depth = 0;
+                for (const node of this.nodes_measured()) {
+                    if (!containers.has(node.name))
+                        continue;
+                    if (node.path.length < depth)
+                        continue;
+                    if (moving && node.path.includes(moving))
+                        continue;
+                    const box = node.box;
+                    if (point[0] < box.x || point[0] > box.x + box.width)
+                        continue;
+                    if (point[1] < box.y || point[1] > box.y + box.height)
+                        continue;
+                    found = node.name;
+                    depth = node.path.length;
+                }
+                return found;
+            }
+            /** Where a node dropped at this point would go, or `null` for bare canvas. */
+            insert_slot(point, moving = '') {
+                const owner = this.container_at(point, moving);
+                if (!owner)
+                    return null;
+                const box = this.part_size(owner);
+                if (!box)
+                    return null;
+                return this.$.$bog_vmap_app_pane_slot(owner, box, this.node_kids(owner), point);
+            }
+            /**
+             * The slot the gesture in hand is aiming at, drawn as a line between children.
+             *
+             * A cell rather than a field, because the line is drawn from it; the whole
+             * point of the feedback is that it follows the pointer.
+             */
+            slot(next) {
+                return next ?? null;
+            }
+            tree_move(next) {
+                return next ?? null;
             }
             /**
              * Press picks, and a press on a part also starts carrying it.
@@ -29704,6 +29906,7 @@ var $;
                     spot: this.spots()[name] ?? { x: 0, y: 0 },
                     grab: point,
                     version: this.sizes_version(),
+                    nested: this.node_path(name).length > 0,
                 };
                 this.drag_live = true;
                 // A pointer released off the window would otherwise leave the gesture
@@ -29728,6 +29931,14 @@ var $;
             /**
              * Carrying a node writes straight into `spots`, the same channel a drop from
              * the palette writes: placement is one fact with one owner, whatever moved it.
+             *
+             * Over a container it writes nothing at all. Inside an artboard the layout is
+             * a tree and not a set of coordinates, so what the gesture means there is a
+             * position among children, and the only feedback until the release is the
+             * insertion line. A node that is drawn inside one never gets a coordinate
+             * either way: `spots` positions the direct children of the root and nothing
+             * else, so writing one would leave a number in the document's desk layout
+             * that moves nothing.
              */
             node_move(event) {
                 if (!event)
@@ -29748,6 +29959,10 @@ var $;
                     return this.node_release(event);
                 event.preventDefault();
                 const point = this.world_point(event);
+                const slot = this.insert_slot(point, drag.name);
+                this.slot(slot);
+                if (slot || drag.nested)
+                    return;
                 this.spots({
                     ...this.spots(),
                     [drag.name]: {
@@ -29775,6 +29990,13 @@ var $;
                 if (this.wire_drag())
                     return this.wire_release(event);
                 if (this.drag_live) {
+                    // The drop into a tree is asked for here and never written here: the
+                    // pane owns the geometry of the gesture, the document is the owner's.
+                    const drag = this.drag;
+                    const slot = this.slot();
+                    this.slot(null);
+                    if (drag && slot)
+                        this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index });
                     this.drag_live = false;
                     try {
                         this.Overlay().dom_node().releasePointerCapture(event.pointerId);
@@ -29851,6 +30073,19 @@ var $;
                 const dx = live ? spot.x - drag.spot.x : 0;
                 const dy = live ? spot.y - drag.spot.y : 0;
                 return this.$.$bog_vmap_app_pane_screen({ x: box.x + dx, y: box.y + dy, width: box.width, height: box.height }, this.camera_zoom(), this.camera_shift());
+            }
+            /** Where the line goes on screen. Flat in world units, two pixels thick here. */
+            insert_style() {
+                const slot = this.slot();
+                if (!slot)
+                    return {};
+                const rect = this.$.$bog_vmap_app_pane_screen(slot.line, this.camera_zoom(), this.camera_shift());
+                return {
+                    left: rect.left + 'px',
+                    top: rect.top + 'px',
+                    width: Math.max(rect.width, 2) + 'px',
+                    height: Math.max(rect.height, 2) + 'px',
+                };
             }
             frame_style() {
                 const rect = this.frame_box();
@@ -30254,8 +30489,17 @@ var $;
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "sizes_version", null);
         __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "nodes_measured", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "slot", null);
+        __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "part_box", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "insert_style", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "frame_style", null);
@@ -30353,6 +30597,16 @@ var $;
                 left: 0,
                 width: '100%',
                 height: '100%',
+            },
+            /**
+             * The insertion line. Placed by the inline style in screen pixels, painted
+             * here, and never in the way: it is drawn over the frame and takes no pointer,
+             * because the gesture it belongs to is the overlay's.
+             */
+            Insert: {
+                position: 'absolute',
+                background: { color: $mol_theme.focus },
+                pointerEvents: 'none',
             },
         });
         $mol_style_define($bog_vmap_app_pane_overlay, {
@@ -32959,318 +33213,6 @@ var $;
 
 ;
 "use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'Vector limiting'() {
-            let point = new $mol_vector_3d(7, 10, 13);
-            const res = point.limited([[1, 5], [15, 20], [5, 10]]);
-            $mol_assert_equal(res.x, 5);
-            $mol_assert_equal(res.y, 15);
-            $mol_assert_equal(res.z, 10);
-        },
-        'Vector adding scalar'() {
-            let point = new $mol_vector_3d(1, 2, 3);
-            let res = point.added0(5);
-            $mol_assert_equal(res.x, 6);
-            $mol_assert_equal(res.y, 7);
-            $mol_assert_equal(res.z, 8);
-        },
-        'Vector adding vector'() {
-            let point = new $mol_vector_3d(1, 2, 3);
-            let res = point.added1([5, 10, 15]);
-            $mol_assert_equal(res.x, 6);
-            $mol_assert_equal(res.y, 12);
-            $mol_assert_equal(res.z, 18);
-        },
-        'Vector multiplying scalar'() {
-            let point = new $mol_vector_3d(2, 3, 4);
-            let res = point.multed0(-1);
-            $mol_assert_equal(res.x, -2);
-            $mol_assert_equal(res.y, -3);
-            $mol_assert_equal(res.z, -4);
-        },
-        'Vector multiplying vector'() {
-            let point = new $mol_vector_3d(2, 3, 4);
-            let res = point.multed1([5, 2, -2]);
-            $mol_assert_equal(res.x, 10);
-            $mol_assert_equal(res.y, 6);
-            $mol_assert_equal(res.z, -8);
-        },
-        'Matrix adding matrix'() {
-            let matrix = new $mol_vector_matrix(...[[1, 2], [3, 4], [5, 6]]);
-            let res = matrix.added2([[10, 20], [30, 40], [50, 60]]);
-            $mol_assert_equal(res[0][0], 11);
-            $mol_assert_equal(res[0][1], 22);
-            $mol_assert_equal(res[1][0], 33);
-            $mol_assert_equal(res[1][1], 44);
-            $mol_assert_equal(res[2][0], 55);
-            $mol_assert_equal(res[2][1], 66);
-        },
-        'Matrix multiplying matrix'() {
-            let matrix = new $mol_vector_matrix(...[[2, 3], [4, 5], [6, 7]]);
-            let res = matrix.multed2([[2, 3], [4, 5], [6, 7]]);
-            $mol_assert_equal(res[0][0], 4);
-            $mol_assert_equal(res[0][1], 9);
-            $mol_assert_equal(res[1][0], 16);
-            $mol_assert_equal(res[1][1], 25);
-            $mol_assert_equal(res[2][0], 36);
-            $mol_assert_equal(res[2][1], 49);
-        },
-        'Range expanding'() {
-            let range = $mol_vector_range_full.inversed;
-            const expanded = range.expanded0(10).expanded0(5);
-            $mol_assert_like([...expanded], [5, 10]);
-        },
-        'Vector of range expanding by vector'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = dimensions.expanded1([1, 7]).expanded1([3, 5]);
-            $mol_assert_like([...expanded.x], [1, 3]);
-            $mol_assert_like([...expanded.y], [5, 7]);
-        },
-        'Vector of range expanding by vector of range'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = dimensions
-                .expanded2([[1, 3], [7, 9]])
-                .expanded2([[2, 4], [6, 8]]);
-            $mol_assert_like([...expanded.x], [1, 4]);
-            $mol_assert_like([...expanded.y], [6, 9]);
-        },
-        'Vector of infinity range expanding by vector of range'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const next = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = next
-                .expanded2(dimensions);
-            $mol_assert_like([...expanded.x], [Infinity, -Infinity]);
-            $mol_assert_like([...expanded.y], [Infinity, -Infinity]);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'get'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
-            $mol_assert_equal(proxy.foo, 777);
-        },
-        'has'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
-            $mol_assert_equal('foo' in proxy, true);
-        },
-        'set'() {
-            const target = { foo: 777 };
-            const proxy = $mol_delegate({}, () => target);
-            proxy.foo = 123;
-            $mol_assert_equal(target.foo, 123);
-        },
-        'getOwnPropertyDescriptor'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
-            $mol_assert_like(Object.getOwnPropertyDescriptor(proxy, 'foo'), {
-                value: 777,
-                writable: true,
-                enumerable: true,
-                configurable: true,
-            });
-        },
-        'ownKeys'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777, [Symbol.toStringTag]: 'bar' }));
-            $mol_assert_like(Reflect.ownKeys(proxy), ['foo', Symbol.toStringTag]);
-        },
-        'getPrototypeOf'() {
-            class Foo {
-            }
-            const proxy = $mol_delegate({}, () => new Foo);
-            $mol_assert_equal(Object.getPrototypeOf(proxy), Foo.prototype);
-        },
-        'setPrototypeOf'() {
-            class Foo {
-            }
-            const target = {};
-            const proxy = $mol_delegate({}, () => target);
-            Object.setPrototypeOf(proxy, Foo.prototype);
-            $mol_assert_equal(Object.getPrototypeOf(target), Foo.prototype);
-        },
-        'instanceof'() {
-            class Foo {
-            }
-            const proxy = $mol_delegate({}, () => new Foo);
-            $mol_assert_ok(proxy instanceof Foo);
-            $mol_assert_ok(proxy instanceof $mol_delegate);
-        },
-        'autobind'() {
-            class Foo {
-            }
-            const proxy = $mol_delegate({}, () => new Foo);
-            $mol_assert_ok(proxy instanceof Foo);
-            $mol_assert_ok(proxy instanceof $mol_delegate);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'span for same uri'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const child = span.span(4, 5, 8);
-            $mol_assert_equal(child.uri, 'test.ts');
-            $mol_assert_equal(child.row, 4);
-            $mol_assert_equal(child.col, 5);
-            $mol_assert_equal(child.length, 8);
-        },
-        'span after of given position'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const child = span.after(11);
-            $mol_assert_equal(child.uri, 'test.ts');
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 7);
-            $mol_assert_equal(child.length, 11);
-        },
-        'slice span - regular'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            const child = span.slice(1, 4);
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 4);
-            $mol_assert_equal(child.length, 3);
-            const child2 = span.slice(2, 2);
-            $mol_assert_equal(child2.col, 5);
-            $mol_assert_equal(child2.length, 0);
-        },
-        'slice span - negative'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            const child = span.slice(-3, -1);
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 5);
-            $mol_assert_equal(child.length, 2);
-        },
-        'slice span - out of range'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            $mol_assert_fail(() => span.slice(-1, 3), `End value '3' can't be less than begin value (test.ts#1:3/5)`);
-            $mol_assert_fail(() => span.slice(1, 6), `End value '6' out of range (test.ts#1:3/5)`);
-            $mol_assert_fail(() => span.slice(1, 10), `End value '10' out of range (test.ts#1:3/5)`);
-        },
-        'error handling'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const error = span.error('Some error');
-            $mol_assert_equal(error.message, 'Some error (test.ts#1:3/4)');
-        }
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'all cases of using maybe'() {
-            $mol_assert_equal($mol_maybe(0)[0], 0);
-            $mol_assert_equal($mol_maybe(false)[0], false);
-            $mol_assert_equal($mol_maybe(null)[0], void 0);
-            $mol_assert_equal($mol_maybe(void 0)[0], void 0);
-            $mol_assert_equal($mol_maybe(void 0).map(v => v.toString())[0], void 0);
-            $mol_assert_equal($mol_maybe(0).map(v => v.toString())[0], '0');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    function check(tree, ideal) {
-        $mol_assert_equal(tree.toString(), $$.$mol_tree2_from_string(ideal).toString());
-    }
-    $mol_test({
-        'inserting'($) {
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c'), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c', 'd'), `
-					a b c x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`)
-                .insert($mol_tree2.struct('x'), 0, 0, 0), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`)
-                .insert($mol_tree2.struct('x'), 0, 0, 0, 0), `
-					a b \\
-						x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`)
-                .insert($mol_tree2.struct('x'), null, null, null), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`)
-                .insert($mol_tree2.struct('x'), null, null, null, null), `
-					a b \\
-						x
-				`);
-        },
-        'updating'($) {
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([], 'a', 'b', 'c')[0], `
-					a b
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([$mol_tree2.struct('x')])[0], `
-					x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([$mol_tree2.struct('x'), $mol_tree2.struct('y')], 'a', 'b', 'c')[0], `
-					a b
-						x
-						y
-				`);
-        },
-        'deleting'($) {
-            const base = $.$mol_tree2_from_string(`
-				a b c d
-			`);
-            check(base.insert(null, 'a', 'b', 'c'), `
-					a b
-				`);
-            check(base.update(base.select('a', 'b', 'c', null).kids, 'a', 'b', 'c')[0], `
-					a b d
-				`);
-            check(base.insert(null, 0, 0, 0), `
-					a b
-				`);
-        },
-        'hack'($) {
-            const res = $.$mol_tree2_from_string(`
-				foo bar xxx
-			`)
-                .hack({
-                'bar': (input, belt) => [input.struct('777', input.hack(belt))],
-            });
-            $mol_assert_equal(res.map(String), ['foo 777 xxx\n']);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
 
 ;
 "use strict";
@@ -34369,6 +34311,318 @@ var $;
             var node = x.dom_node();
             node.click();
             $mol_assert_ok(clicked);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'Vector limiting'() {
+            let point = new $mol_vector_3d(7, 10, 13);
+            const res = point.limited([[1, 5], [15, 20], [5, 10]]);
+            $mol_assert_equal(res.x, 5);
+            $mol_assert_equal(res.y, 15);
+            $mol_assert_equal(res.z, 10);
+        },
+        'Vector adding scalar'() {
+            let point = new $mol_vector_3d(1, 2, 3);
+            let res = point.added0(5);
+            $mol_assert_equal(res.x, 6);
+            $mol_assert_equal(res.y, 7);
+            $mol_assert_equal(res.z, 8);
+        },
+        'Vector adding vector'() {
+            let point = new $mol_vector_3d(1, 2, 3);
+            let res = point.added1([5, 10, 15]);
+            $mol_assert_equal(res.x, 6);
+            $mol_assert_equal(res.y, 12);
+            $mol_assert_equal(res.z, 18);
+        },
+        'Vector multiplying scalar'() {
+            let point = new $mol_vector_3d(2, 3, 4);
+            let res = point.multed0(-1);
+            $mol_assert_equal(res.x, -2);
+            $mol_assert_equal(res.y, -3);
+            $mol_assert_equal(res.z, -4);
+        },
+        'Vector multiplying vector'() {
+            let point = new $mol_vector_3d(2, 3, 4);
+            let res = point.multed1([5, 2, -2]);
+            $mol_assert_equal(res.x, 10);
+            $mol_assert_equal(res.y, 6);
+            $mol_assert_equal(res.z, -8);
+        },
+        'Matrix adding matrix'() {
+            let matrix = new $mol_vector_matrix(...[[1, 2], [3, 4], [5, 6]]);
+            let res = matrix.added2([[10, 20], [30, 40], [50, 60]]);
+            $mol_assert_equal(res[0][0], 11);
+            $mol_assert_equal(res[0][1], 22);
+            $mol_assert_equal(res[1][0], 33);
+            $mol_assert_equal(res[1][1], 44);
+            $mol_assert_equal(res[2][0], 55);
+            $mol_assert_equal(res[2][1], 66);
+        },
+        'Matrix multiplying matrix'() {
+            let matrix = new $mol_vector_matrix(...[[2, 3], [4, 5], [6, 7]]);
+            let res = matrix.multed2([[2, 3], [4, 5], [6, 7]]);
+            $mol_assert_equal(res[0][0], 4);
+            $mol_assert_equal(res[0][1], 9);
+            $mol_assert_equal(res[1][0], 16);
+            $mol_assert_equal(res[1][1], 25);
+            $mol_assert_equal(res[2][0], 36);
+            $mol_assert_equal(res[2][1], 49);
+        },
+        'Range expanding'() {
+            let range = $mol_vector_range_full.inversed;
+            const expanded = range.expanded0(10).expanded0(5);
+            $mol_assert_like([...expanded], [5, 10]);
+        },
+        'Vector of range expanding by vector'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = dimensions.expanded1([1, 7]).expanded1([3, 5]);
+            $mol_assert_like([...expanded.x], [1, 3]);
+            $mol_assert_like([...expanded.y], [5, 7]);
+        },
+        'Vector of range expanding by vector of range'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = dimensions
+                .expanded2([[1, 3], [7, 9]])
+                .expanded2([[2, 4], [6, 8]]);
+            $mol_assert_like([...expanded.x], [1, 4]);
+            $mol_assert_like([...expanded.y], [6, 9]);
+        },
+        'Vector of infinity range expanding by vector of range'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const next = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = next
+                .expanded2(dimensions);
+            $mol_assert_like([...expanded.x], [Infinity, -Infinity]);
+            $mol_assert_like([...expanded.y], [Infinity, -Infinity]);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'get'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
+            $mol_assert_equal(proxy.foo, 777);
+        },
+        'has'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
+            $mol_assert_equal('foo' in proxy, true);
+        },
+        'set'() {
+            const target = { foo: 777 };
+            const proxy = $mol_delegate({}, () => target);
+            proxy.foo = 123;
+            $mol_assert_equal(target.foo, 123);
+        },
+        'getOwnPropertyDescriptor'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
+            $mol_assert_like(Object.getOwnPropertyDescriptor(proxy, 'foo'), {
+                value: 777,
+                writable: true,
+                enumerable: true,
+                configurable: true,
+            });
+        },
+        'ownKeys'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777, [Symbol.toStringTag]: 'bar' }));
+            $mol_assert_like(Reflect.ownKeys(proxy), ['foo', Symbol.toStringTag]);
+        },
+        'getPrototypeOf'() {
+            class Foo {
+            }
+            const proxy = $mol_delegate({}, () => new Foo);
+            $mol_assert_equal(Object.getPrototypeOf(proxy), Foo.prototype);
+        },
+        'setPrototypeOf'() {
+            class Foo {
+            }
+            const target = {};
+            const proxy = $mol_delegate({}, () => target);
+            Object.setPrototypeOf(proxy, Foo.prototype);
+            $mol_assert_equal(Object.getPrototypeOf(target), Foo.prototype);
+        },
+        'instanceof'() {
+            class Foo {
+            }
+            const proxy = $mol_delegate({}, () => new Foo);
+            $mol_assert_ok(proxy instanceof Foo);
+            $mol_assert_ok(proxy instanceof $mol_delegate);
+        },
+        'autobind'() {
+            class Foo {
+            }
+            const proxy = $mol_delegate({}, () => new Foo);
+            $mol_assert_ok(proxy instanceof Foo);
+            $mol_assert_ok(proxy instanceof $mol_delegate);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'span for same uri'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const child = span.span(4, 5, 8);
+            $mol_assert_equal(child.uri, 'test.ts');
+            $mol_assert_equal(child.row, 4);
+            $mol_assert_equal(child.col, 5);
+            $mol_assert_equal(child.length, 8);
+        },
+        'span after of given position'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const child = span.after(11);
+            $mol_assert_equal(child.uri, 'test.ts');
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 7);
+            $mol_assert_equal(child.length, 11);
+        },
+        'slice span - regular'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            const child = span.slice(1, 4);
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 4);
+            $mol_assert_equal(child.length, 3);
+            const child2 = span.slice(2, 2);
+            $mol_assert_equal(child2.col, 5);
+            $mol_assert_equal(child2.length, 0);
+        },
+        'slice span - negative'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            const child = span.slice(-3, -1);
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 5);
+            $mol_assert_equal(child.length, 2);
+        },
+        'slice span - out of range'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            $mol_assert_fail(() => span.slice(-1, 3), `End value '3' can't be less than begin value (test.ts#1:3/5)`);
+            $mol_assert_fail(() => span.slice(1, 6), `End value '6' out of range (test.ts#1:3/5)`);
+            $mol_assert_fail(() => span.slice(1, 10), `End value '10' out of range (test.ts#1:3/5)`);
+        },
+        'error handling'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const error = span.error('Some error');
+            $mol_assert_equal(error.message, 'Some error (test.ts#1:3/4)');
+        }
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'all cases of using maybe'() {
+            $mol_assert_equal($mol_maybe(0)[0], 0);
+            $mol_assert_equal($mol_maybe(false)[0], false);
+            $mol_assert_equal($mol_maybe(null)[0], void 0);
+            $mol_assert_equal($mol_maybe(void 0)[0], void 0);
+            $mol_assert_equal($mol_maybe(void 0).map(v => v.toString())[0], void 0);
+            $mol_assert_equal($mol_maybe(0).map(v => v.toString())[0], '0');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    function check(tree, ideal) {
+        $mol_assert_equal(tree.toString(), $$.$mol_tree2_from_string(ideal).toString());
+    }
+    $mol_test({
+        'inserting'($) {
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c'), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c', 'd'), `
+					a b c x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`)
+                .insert($mol_tree2.struct('x'), 0, 0, 0), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`)
+                .insert($mol_tree2.struct('x'), 0, 0, 0, 0), `
+					a b \\
+						x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`)
+                .insert($mol_tree2.struct('x'), null, null, null), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`)
+                .insert($mol_tree2.struct('x'), null, null, null, null), `
+					a b \\
+						x
+				`);
+        },
+        'updating'($) {
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([], 'a', 'b', 'c')[0], `
+					a b
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([$mol_tree2.struct('x')])[0], `
+					x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([$mol_tree2.struct('x'), $mol_tree2.struct('y')], 'a', 'b', 'c')[0], `
+					a b
+						x
+						y
+				`);
+        },
+        'deleting'($) {
+            const base = $.$mol_tree2_from_string(`
+				a b c d
+			`);
+            check(base.insert(null, 'a', 'b', 'c'), `
+					a b
+				`);
+            check(base.update(base.select('a', 'b', 'c', null).kids, 'a', 'b', 'c')[0], `
+					a b d
+				`);
+            check(base.insert(null, 0, 0, 0), `
+					a b
+				`);
+        },
+        'hack'($) {
+            const res = $.$mol_tree2_from_string(`
+				foo bar xxx
+			`)
+                .hack({
+                'bar': (input, belt) => [input.struct('777', input.hack(belt))],
+            });
+            $mol_assert_equal(res.map(String), ['foo 777 xxx\n']);
         },
     });
 })($ || ($ = {}));
@@ -39535,6 +39789,145 @@ var $;
             // A question that owes no answer must not arm the watch.
             $mol_assert_equal(pane.watchdog(), null);
         },
+        /**
+         * Inside an artboard the deepest node wins, or a page would swallow every
+         * pick made on it: everything laid out inside it lies within its box.
+         */
+        'the pick goes to the deepest node under the point'($) {
+            const { pane } = pane_make($);
+            pane.sizes_last = {
+                [`${root}/Board`]: box(0, 0, 400, 300),
+                [`${root}/Board/Head`]: box(0, 0, 400, 100),
+                [`${root}/Loose`]: box(600, 0, 100, 50),
+            };
+            $mol_assert_equal(pane.node_at([200, 50]), 'Head');
+            $mol_assert_equal(pane.node_at([200, 200]), 'Board');
+            $mol_assert_equal(pane.node_at([650, 25]), 'Loose');
+            $mol_assert_equal(pane.node_at([900, 400]), null);
+            // The box of a node is found at whatever depth it is drawn.
+            $mol_assert_like(pane.part_size('Head'), box(0, 0, 400, 100));
+            $mol_assert_like(pane.node_path('Head'), ['Board']);
+            $mol_assert_like(pane.node_path('Loose'), []);
+        },
+        /**
+         * The camera is undone once, by `world_point`, and everything downstream
+         * works in world units — the hit test, the container and the position among
+         * its children alike.
+         */
+        'a pan and a zoom do not move the slot a drop lands in'($) {
+            const { pane } = pane_make($, {}, { containers: () => ['Board'] });
+            pane.sizes_last = {
+                [`${root}/Board`]: box(0, 0, 400, 300),
+                [`${root}/Board/Head`]: box(0, 0, 400, 100),
+                [`${root}/Board/Foot`]: box(0, 100, 400, 100),
+            };
+            const world = [200, 120];
+            const flat = pane.insert_slot(world);
+            $mol_assert_equal(flat.owner, 'Board');
+            $mol_assert_equal(flat.index, 1);
+            // The same world point through a moved and scaled camera: screen is
+            // `world * zoom + shift`, and the press is given in screen pixels.
+            pane.camera_shift(new $mol_vector_2d(100, 50));
+            pane.camera_zoom(2);
+            const point = pane.world_point(pointer(200 * 2 + 100, 120 * 2 + 50));
+            $mol_assert_like([...point], [...world]);
+            $mol_assert_like(pane.insert_slot(point), flat);
+        },
+        /**
+         * The two ways of laying a node out, told apart by where the release
+         * happened: inside an artboard the gesture means a position in the tree, on
+         * bare canvas it means a coordinate.
+         */
+        'a drop inside an artboard goes into the tree, and no coordinate is written'($) {
+            const moves = [];
+            const { pane } = pane_make($, {}, {
+                containers: () => ['Board'],
+                tree_move: (next) => {
+                    if (next)
+                        moves.push(next);
+                    return next ?? null;
+                },
+            });
+            pane.sizes_last = {
+                [`${root}/Board`]: box(0, 0, 400, 300),
+                [`${root}/Board/Head`]: box(0, 0, 400, 100),
+                [`${root}/Loose`]: box(600, 0, 100, 50),
+            };
+            pane.spots({ Loose: { x: 600, y: 0 } });
+            pane.node_press(pointer(650, 25));
+            pane.node_move(pointer(200, 120));
+            // The line is drawn where the node would land, and the placement is
+            // untouched while the pointer is over the page.
+            $mol_assert_equal(pane.slot()?.owner, 'Board');
+            $mol_assert_equal(pane.slot()?.index, 1);
+            $mol_assert_like(pane.spots(), { Loose: { x: 600, y: 0 } });
+            pane.node_release(pointer(200, 120, { buttons: 0 }));
+            $mol_assert_like(moves, [{ name: 'Loose', owner: 'Board', index: 1 }]);
+            $mol_assert_equal(pane.slot(), null);
+            $mol_assert_like(pane.spots(), { Loose: { x: 600, y: 0 } });
+        },
+        'a drop on bare canvas still writes a coordinate and asks for no move'($) {
+            const moves = [];
+            const { pane } = pane_make($, {}, {
+                containers: () => ['Board'],
+                tree_move: (next) => {
+                    if (next)
+                        moves.push(next);
+                    return next ?? null;
+                },
+            });
+            pane.sizes_last = {
+                [`${root}/Board`]: box(0, 0, 400, 300),
+                [`${root}/Loose`]: box(600, 0, 100, 50),
+            };
+            pane.spots({ Loose: { x: 600, y: 0 } });
+            pane.node_press(pointer(650, 25));
+            pane.node_move(pointer(750, 125));
+            pane.node_release(pointer(750, 125, { buttons: 0 }));
+            $mol_assert_like(pane.spots(), { Loose: { x: 700, y: 100 } });
+            $mol_assert_like(moves, []);
+            $mol_assert_equal(pane.slot(), null);
+        },
+        /**
+         * A node drawn inside an artboard has no coordinate to change: `spots`
+         * positions the direct children of the root and nothing else, so a number
+         * written for it would move nothing and lie in the desk layout for good.
+         */
+        'dragging a node that lives in a tree never writes a coordinate'($) {
+            const moves = [];
+            const { pane } = pane_make($, {}, {
+                containers: () => ['Board'],
+                tree_move: (next) => {
+                    if (next)
+                        moves.push(next);
+                    return next ?? null;
+                },
+            });
+            pane.sizes_last = {
+                [`${root}/Board`]: box(0, 0, 400, 300),
+                [`${root}/Board/Head`]: box(0, 0, 400, 100),
+                [`${root}/Board/Foot`]: box(0, 100, 400, 100),
+            };
+            // Head taken by its own strip and carried below Foot.
+            pane.node_press(pointer(200, 50));
+            pane.node_move(pointer(200, 180));
+            pane.node_release(pointer(200, 180, { buttons: 0 }));
+            $mol_assert_like(pane.spots(), {});
+            $mol_assert_like(moves, [{ name: 'Head', owner: 'Board', index: 2 }]);
+        },
+        /**
+         * A container cannot become its own descendant, and a line drawn where the
+         * drop would be refused is worse than no line at all.
+         */
+        'an artboard carried over itself offers no slot'($) {
+            const { pane } = pane_make($, {}, { containers: () => ['Board', 'Inner'] });
+            pane.sizes_last = {
+                [`${root}/Board`]: box(0, 0, 400, 300),
+                [`${root}/Board/Inner`]: box(0, 0, 400, 100),
+            };
+            $mol_assert_equal(pane.insert_slot([200, 50], 'Board'), null);
+            $mol_assert_equal(pane.insert_slot([200, 50], 'Inner')?.owner, 'Board');
+        },
     });
     /** Wirable ports of the two fixture classes, as the owner would hand them to the pane. */
     const ports = {
@@ -39574,6 +39967,78 @@ var $;
         });
         return { ...made, node };
     }
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * Tests of where a drop into an artboard lands.
+     *
+     * Pure geometry, so a fixture is a container and a few boxes. What the document
+     * says about the layout never enters: the host does not compile it and has no
+     * layout of its own, and the boxes are all it is told.
+     */
+    const box = (x, y, width, height) => ({ x, y, width, height });
+    /** A page of three rows, stacked down the artboard. */
+    const column = [box(0, 0, 400, 100), box(0, 100, 400, 100), box(0, 200, 400, 100)];
+    /** The same three, laid side by side. */
+    const row = [box(0, 0, 100, 300), box(100, 0, 100, 300), box(200, 0, 100, 300)];
+    const board = box(0, 0, 400, 300);
+    $mol_test({
+        'the direction is read off where the children came out'($) {
+            $mol_assert_equal($bog_vmap_app_pane_axis(column), 'column');
+            $mol_assert_equal($bog_vmap_app_pane_axis(row), 'row');
+            // Nothing to read: a page stacks, and that is what an artboard is set to.
+            $mol_assert_equal($bog_vmap_app_pane_axis([]), 'column');
+            $mol_assert_equal($bog_vmap_app_pane_axis([column[0]]), 'column');
+        },
+        /**
+         * The middle of a child decides, not the gap between children: children of a
+         * flex box usually touch, and pointing at the upper half of one plainly means
+         * «above this one».
+         */
+        'a point above the middle of a child goes before it'($) {
+            const at = (y) => $bog_vmap_app_pane_slot('Board', board, column, [200, y]).index;
+            $mol_assert_equal(at(10), 0);
+            $mol_assert_equal(at(49), 0);
+            $mol_assert_equal(at(51), 1);
+            $mol_assert_equal(at(149), 1);
+            $mol_assert_equal(at(151), 2);
+            $mol_assert_equal(at(290), 3);
+        },
+        'a row is judged along the other axis'($) {
+            const at = (x) => $bog_vmap_app_pane_slot('Board', board, row, [x, 150]).index;
+            $mol_assert_equal(at(10), 0);
+            $mol_assert_equal(at(120), 1);
+            $mol_assert_equal(at(290), 3);
+        },
+        /** The line lies on the boundary and spans the container, flat across it. */
+        'the line is drawn between the children, and at the edge at either end'($) {
+            const head = $bog_vmap_app_pane_slot('Board', board, column, [200, 10]);
+            $mol_assert_like(head.line, { x: 0, y: 0, width: 400, height: 0 });
+            const between = $bog_vmap_app_pane_slot('Board', board, column, [200, 120]);
+            $mol_assert_like(between.line, { x: 0, y: 100, width: 400, height: 0 });
+            const tail = $bog_vmap_app_pane_slot('Board', board, column, [200, 290]);
+            $mol_assert_like(tail.line, { x: 0, y: 300, width: 400, height: 0 });
+            const across = $bog_vmap_app_pane_slot('Board', board, row, [120, 150]);
+            $mol_assert_like(across.line, { x: 100, y: 0, width: 0, height: 300 });
+        },
+        /** An empty artboard takes the drop at its own top edge, at position zero. */
+        'an empty container offers the one position it has'($) {
+            const slot = $bog_vmap_app_pane_slot('Board', box(40, 60, 400, 300), [], [200, 200]);
+            $mol_assert_equal(slot.index, 0);
+            $mol_assert_like(slot.line, { x: 40, y: 60, width: 400, height: 0 });
+        },
+        /** A gap between children puts the line in the middle of it, not on a child. */
+        'the line splits the gap when there is one'($) {
+            const gapped = [box(0, 0, 400, 100), box(0, 140, 400, 100)];
+            const slot = $bog_vmap_app_pane_slot('Board', board, gapped, [200, 120]);
+            $mol_assert_equal(slot.index, 1);
+            $mol_assert_equal(slot.line.y, 120);
+        },
+    });
 })($ || ($ = {}));
 
 ;
@@ -44268,6 +44733,343 @@ var $;
 var $;
 (function ($_1) {
     /**
+     * Stand for the end to end scenarios of `flow.test.ts`: the whole editor in a
+     * real DOM, with the sandbox replaced by a fake bridge peer.
+     *
+     * A `.test.ts` and not a plain module: nothing here may reach the product
+     * bundle, and mam keeps test files out of it. Everything the stand fakes is
+     * named below; the rest of the editor is the editor.
+     *
+     * `d` keeps `$` out of the string literals — mam builds its dependency graph by
+     * a regexp over sources, literals included.
+     */
+    const d = '$';
+    /**
+     * Class tree of the donor pack, served instead of the network.
+     *
+     * Shaped like the `web.view.tree` of a deployed module, because that is what
+     * the library parses: a class per block, properties under it. Two of them carry
+     * a number and a string, which is what makes a wire between them possible.
+     */
+    $_1.$bog_vmap_app_flow_pack = [
+        `${d}flow_button ${d}mol_view`,
+        `\ttitle \\`,
+        `\tenabled true`,
+        `${d}flow_calc ${d}mol_view`,
+        `\tresult 0`,
+        `\top \\plus`,
+        `${d}flow_map ${d}mol_view`,
+        `\tzoom 0`,
+        `\tmarker \\`,
+        ``,
+    ].join('\n');
+    /** Where the pane sits in the viewport. jsdom lays nothing out, so it is told. */
+    $_1.$bog_vmap_app_flow_rect = {
+        left: 200, top: 50, width: 600, height: 500, right: 800, bottom: 550,
+    };
+    /** Size the fake scene reports for every part it is asked to draw. */
+    $_1.$bog_vmap_app_flow_size = { width: 100, height: 50 };
+    /**
+     * Globals of a browser that node does not define and jsdom does not export.
+     *
+     * `$mol_view_selection` names `ShadowRoot` and `$mol_touch` names `PointerEvent`
+     * bare, so a field or a gesture in a node test dies on a `ReferenceError` that
+     * says nothing about the editor. Pointer capture is missing from jsdom
+     * elements outright, and `$mol_touch` calls it without a guard.
+     */
+    function browser_gaps($) {
+        const dom = $.$mol_dom_context;
+        Object.assign(globalThis, {
+            ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
+            PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
+        });
+        const proto = dom.Element.prototype;
+        if (!proto.setPointerCapture)
+            Object.assign(proto, {
+                setPointerCapture() { },
+                releasePointerCapture() { },
+                hasPointerCapture() { return false; },
+            });
+    }
+    /** The editor of the previous scenario, taken down before the next one starts. */
+    let $bog_vmap_app_flow_last = null;
+    /**
+     * Waits for work a click handed to a fiber of its own: making a document,
+     * publishing a part. Both answer at once and land later, so a scenario that
+     * looked at the result on the next tick would sometimes be too early.
+     */
+    async function $bog_vmap_app_flow_settle(done, limit = 300) {
+        const till = Date.now() + limit;
+        while (!done() && Date.now() < till) {
+            await new Promise(next => setTimeout(next, 2));
+        }
+        return done();
+    }
+    $_1.$bog_vmap_app_flow_settle = $bog_vmap_app_flow_settle;
+    /**
+     * The editor, rendered into the jsdom document and talking to a fake scene.
+     *
+     * Faked, and nothing else is: the donor pack (a fixture instead of the
+     * network), the sandbox (a peer that answers like a scene), the geometry of the
+     * pane (jsdom has no layout), the timers (they must not fire by themselves),
+     * and the land of the documents (the home land, so no proof of work).
+     *
+     * A NEW SCENARIO NEEDS NONE OF THAT. One line makes the editor,
+     * `const stage = $bog_vmap_app_flow_stage( $ )`, and from then on everything is
+     * a gesture of the user:
+     *
+     * - `stage.drop( klass, stage.client([ x, y ]) )` carries a class out of the
+     *   palette onto the canvas, `stage.tap( stage.part_center( name ) )` clicks a
+     *   part, `stage.press/move/release( stage.overlay(), point )` is any gesture
+     *   in between, and `stage.port_dot( part, port, 'out' )` is where a wire starts;
+     * - `stage.button( 'Удалить' )`, `stage.field( 'Palette().Links()' )` and
+     *   `stage.class_row( klass )` find what to press, and fail by name when it is
+     *   not on screen; `stage.click` and `stage.type` press and type into them;
+     * - `stage.text()` is the whole editor as text, `stage.app` and `stage.pane`
+     *   the state behind it;
+     * - `stage.scene.last( 'doc_set' )` is what the sandbox was told last,
+     *   `stage.scene.values({ … })` is the sandbox answering, `stage.scene.silence()`
+     *   is the sandbox dying. Answers are delivered by `stage.scene.flush()`, and
+     *   every gesture above flushes on its own.
+     *
+     * Points are in the screen space of the pane and go through `stage.client()`,
+     * which is the only place that knows where the pane sits.
+     */
+    function $bog_vmap_app_flow_stage($) {
+        browser_gaps($);
+        const dom = $.$mol_dom_context;
+        // The editor of the previous scenario keeps window listeners alive, and its
+        // document node keeps taking events; both go before this one is built.
+        $bog_vmap_app_flow_last?.destructor();
+        dom.document.body.innerHTML = '';
+        const timers = [];
+        class $mol_after_timeout_flow extends $mol_after_timeout {
+            constructor(delay, task) {
+                super(delay, task);
+                clearTimeout(this.id);
+                timers.push(this);
+            }
+        }
+        $.$mol_after_timeout = $mol_after_timeout_flow;
+        class $mol_fetch_flow extends $mol_fetch {
+            static text(input) {
+                const uri = String(input);
+                if (uri.endsWith('web.view.tree'))
+                    return $_1.$bog_vmap_app_flow_pack;
+                return $mol_fail(new Error('network in a test: ' + uri));
+            }
+        }
+        $.$mol_fetch = $mol_fetch_flow;
+        const store = $bog_vmap_app_store.make({ $, doc_land_config: () => null });
+        store.doc_add('Сцена 1');
+        const app = $bog_vmap_app.make({ $, store: () => store });
+        $bog_vmap_app_flow_last = app;
+        const posted = [];
+        const queue = [];
+        /** Geometry of the parts as a scene would measure it: a box at its spot. */
+        const sizes = () => {
+            const res = {};
+            const spots = app.spots();
+            for (const name of Object.keys(spots)) {
+                res[app.doc_root() + '/' + name] = {
+                    x: spots[name].x,
+                    y: spots[name].y,
+                    ...$_1.$bog_vmap_app_flow_size,
+                };
+            }
+            return res;
+        };
+        /**
+         * The far end of the bridge: records what the host sends and lines up the
+         * answer a scene owes. Answered on `flush()` and not here, because a reply
+         * posted from inside `postMessage` would write cells while the cell that
+         * pushed is still computing.
+         */
+        let silent = false;
+        const peer = {
+            origin: 'null',
+            postMessage(data) {
+                const message = data;
+                posted.push(message);
+                if (silent)
+                    return;
+                if (message.kind === 'ping')
+                    queue.push({ kind: 'pong', nonce: message.nonce });
+                else if (message.kind !== 'values_want')
+                    queue.push({ kind: 'sizes', sizes: sizes() });
+            },
+        };
+        /** Hands one message to the host the way the frame does: a window event from the peer. */
+        const deliver = (data) => {
+            const event = new dom.MessageEvent('message', { data: { ns: $bog_vmap_bridge_ns, ...data } });
+            Object.defineProperty(event, 'source', { value: peer });
+            dom.dispatchEvent(event);
+        };
+        const scene = {
+            posted,
+            /** Everything of one kind the host has sent, in order. */
+            sent(kind) {
+                return posted.filter(message => message.kind === kind);
+            },
+            /** The last message of a kind, or undefined. */
+            last(kind) {
+                return this.sent(kind).at(-1);
+            },
+            /** Answers everything owed, then lets the editor redraw on the answers. */
+            flush() {
+                while (queue.length)
+                    deliver(queue.shift());
+                app.dom_tree();
+            },
+            /** Values of the wires, as the scene reports them. */
+            values(values) {
+                deliver({ kind: 'values', values });
+                app.dom_tree();
+            },
+            /** From now on the scene takes everything and says nothing back. */
+            silence() {
+                silent = true;
+                queue.length = 0;
+            },
+        };
+        const pane = app.Pane();
+        pane.scene_peer = () => peer;
+        const root = app.dom_tree();
+        dom.document.body.appendChild(root);
+        // The pane and the camera plugin read their rectangle through a cell that
+        // only a browser ever refreshes, so both are told it outright.
+        const rect = $_1.$bog_vmap_app_flow_rect;
+        pane.dom_node().getBoundingClientRect = () => rect;
+        pane.view_rect = () => rect;
+        pane.Touch().view_rect = () => rect;
+        deliver({ kind: 'ready' });
+        app.dom_tree();
+        scene.flush();
+        const found = (selector, note, match) => {
+            const el = [...root.querySelectorAll(selector)].find(match);
+            if (!el)
+                $mol_fail(new Error(`nothing on screen: ${note}`));
+            return el;
+        };
+        /**
+         * A pointer event as a browser makes one: cancelable, so that
+         * `preventDefault` in a handler really stops the camera, and bubbling, so
+         * that a press on the overlay reaches the plugins of the pane.
+         */
+        const pointer = (type, point, over = {}) => {
+            return new dom.PointerEvent(type, {
+                bubbles: true,
+                cancelable: true,
+                clientX: point[0],
+                clientY: point[1],
+                button: 0,
+                buttons: type === 'pointerup' ? 0 : 1,
+                pointerId: 1,
+                ...over,
+            });
+        };
+        return {
+            app, pane, store, scene, root, timers,
+            /** Viewport point of a point in the screen space of the pane. */
+            client(point) {
+                return [rect.left + point[0], rect.top + point[1]];
+            },
+            /** The whole editor as text, for a coarse look at what is on screen. */
+            text() {
+                return root.textContent ?? '';
+            },
+            /** Views that failed to render, by their id. The frame is not one: see below. */
+            broken() {
+                return [...root.querySelectorAll('[mol_view_error]')].map(el => el.getAttribute('id'));
+            },
+            button(title) {
+                return found('[role=button]', `button «${title}»`, el => el.textContent?.startsWith(title) ?? false);
+            },
+            /** A row of the palette, by the class it offers. */
+            class_row(klass) {
+                return found('[bog_vmap_app_palette_item]', `palette row ${klass}`, el => el.textContent === klass);
+            },
+            /** A text field, addressed by the tail of the id $mol builds out of the path to it. */
+            field(tail) {
+                return found('input, textarea', `field ${tail}`, el => el.getAttribute('id')?.endsWith(tail) ?? false);
+            },
+            overlay() {
+                return root.querySelector('[bog_vmap_app_pane_overlay]');
+            },
+            /** The frame element itself, so that a restart can be seen to replace it. */
+            frame() {
+                return root.querySelector('iframe');
+            },
+            /** Types into a field the way a person does: the value, then the input event. */
+            type(el, value) {
+                el.value = value;
+                el.dispatchEvent(new dom.Event('input', { bubbles: true }));
+                app.dom_tree();
+            },
+            click(el) {
+                el.dispatchEvent(new dom.MouseEvent('click', { bubbles: true, cancelable: true }));
+                app.dom_tree();
+            },
+            press(el, point, over = {}) {
+                el.dispatchEvent(pointer('pointerdown', point, over));
+            },
+            move(el, point, over = {}) {
+                el.dispatchEvent(pointer('pointermove', point, over));
+            },
+            release(el, point, over = {}) {
+                el.dispatchEvent(pointer('pointerup', point, over));
+            },
+            /**
+             * Carries a class from the palette onto the canvas: a press on the row,
+             * a move across the window, a release over the overlay. The pointer
+             * moves on the window because that is where the editor listens for it.
+             */
+            drop(klass, point) {
+                this.press(this.class_row(klass), [10, 300]);
+                dom.dispatchEvent(pointer('pointermove', point));
+                this.release(this.overlay(), point);
+                app.dom_tree();
+                scene.flush();
+            },
+            /** A click on the canvas: press and release without moving. */
+            tap(point, over = {}) {
+                this.press(this.overlay(), point, over);
+                this.release(this.overlay(), point, over);
+                app.dom_tree();
+                scene.flush();
+            },
+            /** Centre of a part on screen, as the scene has measured it. */
+            part_center(name) {
+                const box = pane.part_box(name);
+                if (!box)
+                    $mol_fail(new Error(`part ${name} is not measured`));
+                return this.client([box.left + box.width / 2, box.top + box.height / 2]);
+            },
+            /**
+             * Viewport point of the dot of a port, from the geometry the pane draws
+             * the dots with: the box of the part and the row of the port among the
+             * wirable ports of its class.
+             */
+            port_dot(name, port, side) {
+                const box = pane.part_box(name);
+                const index = app.part_ports(name).findIndex(known => known.name === port);
+                if (!box || index < 0)
+                    $mol_fail(new Error(`no port ${name}.${port} on screen`));
+                return this.client($bog_vmap_app_wire_port_point(box, side, index));
+            },
+            redraw() {
+                app.dom_tree();
+            },
+        };
+    }
+    $_1.$bog_vmap_app_flow_stage = $bog_vmap_app_flow_stage;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
      * The editor from the user's side: real clicks on real elements of a rendered
      * DOM, one scenario per test.
      *
@@ -44525,322 +45327,32 @@ var $;
             $mol_assert_ok(stage.frame() !== frame);
         },
     });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
     /**
-     * Stand for the end to end scenarios of `flow.test.ts`: the whole editor in a
-     * real DOM, with the sandbox replaced by a fake bridge peer.
+     * WAITS FOR A FIX of `node_delete` in `app/app.view.ts`: deleting a part leaves
+     * the wires that ran to it, so the document keeps `calc_result = Calc result`
+     * and `zoom <= calc_result` pointing at a node that no longer exists.
      *
-     * A `.test.ts` and not a plain module: nothing here may reach the product
-     * bundle, and mam keeps test files out of it. Everything the stand fakes is
-     * named below; the rest of the editor is the editor.
-     *
-     * `d` keeps `$` out of the string literals — mam builds its dependency graph by
-     * a regexp over sources, literals included.
+     * Written and deliberately NOT registered: `mam` runs `node.test.js` in the
+     * build, so a red test in a shared module stops everybody. Move it into the
+     * call above, as one line, the moment the delete takes its wires with it.
      */
-    const d = '$';
-    /**
-     * Class tree of the donor pack, served instead of the network.
-     *
-     * Shaped like the `web.view.tree` of a deployed module, because that is what
-     * the library parses: a class per block, properties under it. Two of them carry
-     * a number and a string, which is what makes a wire between them possible.
-     */
-    $_1.$bog_vmap_app_flow_pack = [
-        `${d}flow_button ${d}mol_view`,
-        `\ttitle \\`,
-        `\tenabled true`,
-        `${d}flow_calc ${d}mol_view`,
-        `\tresult 0`,
-        `\top \\plus`,
-        `${d}flow_map ${d}mol_view`,
-        `\tzoom 0`,
-        `\tmarker \\`,
-        ``,
-    ].join('\n');
-    /** Where the pane sits in the viewport. jsdom lays nothing out, so it is told. */
-    $_1.$bog_vmap_app_flow_rect = {
-        left: 200, top: 50, width: 600, height: 500, right: 800, bottom: 550,
-    };
-    /** Size the fake scene reports for every part it is asked to draw. */
-    $_1.$bog_vmap_app_flow_size = { width: 100, height: 50 };
-    /**
-     * Globals of a browser that node does not define and jsdom does not export.
-     *
-     * `$mol_view_selection` names `ShadowRoot` and `$mol_touch` names `PointerEvent`
-     * bare, so a field or a gesture in a node test dies on a `ReferenceError` that
-     * says nothing about the editor. Pointer capture is missing from jsdom
-     * elements outright, and `$mol_touch` calls it without a guard.
-     */
-    function browser_gaps($) {
-        const dom = $.$mol_dom_context;
-        Object.assign(globalThis, {
-            ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
-            PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
-        });
-        const proto = dom.Element.prototype;
-        if (!proto.setPointerCapture)
-            Object.assign(proto, {
-                setPointerCapture() { },
-                releasePointerCapture() { },
-                hasPointerCapture() { return false; },
-            });
+    async function $bog_vmap_app_flow_delete_wired($) {
+        const stage = $bog_vmap_app_flow_stage($);
+        stage.drop(calc, stage.client([100, 100]));
+        stage.drop(map, stage.client([400, 100]));
+        stage.tap(stage.part_center('Calc'));
+        const overlay = stage.overlay();
+        stage.press(overlay, stage.port_dot('Calc', 'result', 'out'));
+        stage.move(overlay, stage.port_dot('Map', 'zoom', 'in'));
+        stage.release(overlay, stage.port_dot('Map', 'zoom', 'in'));
+        stage.redraw();
+        stage.tap(stage.part_center('Calc'));
+        stage.click(stage.button('Удалить'));
+        // The end of the wire is gone, so the wire has to be gone with it.
+        $mol_assert_equal(stage.app.doc_source().includes('calc_result'), false);
+        $mol_assert_like(stage.app.doc_wires(), []);
     }
-    /** The editor of the previous scenario, taken down before the next one starts. */
-    let $bog_vmap_app_flow_last = null;
-    /**
-     * Waits for work a click handed to a fiber of its own: making a document,
-     * publishing a part. Both answer at once and land later, so a scenario that
-     * looked at the result on the next tick would sometimes be too early.
-     */
-    async function $bog_vmap_app_flow_settle(done, limit = 300) {
-        const till = Date.now() + limit;
-        while (!done() && Date.now() < till) {
-            await new Promise(next => setTimeout(next, 2));
-        }
-        return done();
-    }
-    $_1.$bog_vmap_app_flow_settle = $bog_vmap_app_flow_settle;
-    /**
-     * The editor, rendered into the jsdom document and talking to a fake scene.
-     *
-     * Faked, and nothing else is: the donor pack (a fixture instead of the
-     * network), the sandbox (a peer that answers like a scene), the geometry of the
-     * pane (jsdom has no layout), the timers (they must not fire by themselves),
-     * and the land of the documents (the home land, so no proof of work).
-     */
-    function $bog_vmap_app_flow_stage($) {
-        browser_gaps($);
-        const dom = $.$mol_dom_context;
-        // The editor of the previous scenario keeps window listeners alive, and its
-        // document node keeps taking events; both go before this one is built.
-        $bog_vmap_app_flow_last?.destructor();
-        dom.document.body.innerHTML = '';
-        const timers = [];
-        class $mol_after_timeout_flow extends $mol_after_timeout {
-            constructor(delay, task) {
-                super(delay, task);
-                clearTimeout(this.id);
-                timers.push(this);
-            }
-        }
-        $.$mol_after_timeout = $mol_after_timeout_flow;
-        class $mol_fetch_flow extends $mol_fetch {
-            static text(input) {
-                const uri = String(input);
-                if (uri.endsWith('web.view.tree'))
-                    return $_1.$bog_vmap_app_flow_pack;
-                return $mol_fail(new Error('network in a test: ' + uri));
-            }
-        }
-        $.$mol_fetch = $mol_fetch_flow;
-        const store = $bog_vmap_app_store.make({ $, doc_land_config: () => null });
-        store.doc_add('Сцена 1');
-        const app = $bog_vmap_app.make({ $, store: () => store });
-        $bog_vmap_app_flow_last = app;
-        const posted = [];
-        const queue = [];
-        /** Geometry of the parts as a scene would measure it: a box at its spot. */
-        const sizes = () => {
-            const res = {};
-            const spots = app.spots();
-            for (const name of Object.keys(spots)) {
-                res[app.doc_root() + '/' + name] = {
-                    x: spots[name].x,
-                    y: spots[name].y,
-                    ...$_1.$bog_vmap_app_flow_size,
-                };
-            }
-            return res;
-        };
-        /**
-         * The far end of the bridge: records what the host sends and lines up the
-         * answer a scene owes. Answered on `flush()` and not here, because a reply
-         * posted from inside `postMessage` would write cells while the cell that
-         * pushed is still computing.
-         */
-        let silent = false;
-        const peer = {
-            origin: 'null',
-            postMessage(data) {
-                const message = data;
-                posted.push(message);
-                if (silent)
-                    return;
-                if (message.kind === 'ping')
-                    queue.push({ kind: 'pong', nonce: message.nonce });
-                else if (message.kind !== 'values_want')
-                    queue.push({ kind: 'sizes', sizes: sizes() });
-            },
-        };
-        /** Hands one message to the host the way the frame does: a window event from the peer. */
-        const deliver = (data) => {
-            const event = new dom.MessageEvent('message', { data: { ns: $bog_vmap_bridge_ns, ...data } });
-            Object.defineProperty(event, 'source', { value: peer });
-            dom.dispatchEvent(event);
-        };
-        const scene = {
-            posted,
-            /** Everything of one kind the host has sent, in order. */
-            sent(kind) {
-                return posted.filter(message => message.kind === kind);
-            },
-            /** The last message of a kind, or undefined. */
-            last(kind) {
-                return this.sent(kind).at(-1);
-            },
-            /** Answers everything owed, then lets the editor redraw on the answers. */
-            flush() {
-                while (queue.length)
-                    deliver(queue.shift());
-                app.dom_tree();
-            },
-            /** Values of the wires, as the scene reports them. */
-            values(values) {
-                deliver({ kind: 'values', values });
-                app.dom_tree();
-            },
-            /** From now on the scene takes everything and says nothing back. */
-            silence() {
-                silent = true;
-                queue.length = 0;
-            },
-        };
-        const pane = app.Pane();
-        pane.scene_peer = () => peer;
-        const root = app.dom_tree();
-        dom.document.body.appendChild(root);
-        // The pane and the camera plugin read their rectangle through a cell that
-        // only a browser ever refreshes, so both are told it outright.
-        const rect = $_1.$bog_vmap_app_flow_rect;
-        pane.dom_node().getBoundingClientRect = () => rect;
-        pane.view_rect = () => rect;
-        pane.Touch().view_rect = () => rect;
-        deliver({ kind: 'ready' });
-        app.dom_tree();
-        scene.flush();
-        const found = (selector, note, match) => {
-            const el = [...root.querySelectorAll(selector)].find(match);
-            if (!el)
-                $mol_fail(new Error(`nothing on screen: ${note}`));
-            return el;
-        };
-        /**
-         * A pointer event as a browser makes one: cancelable, so that
-         * `preventDefault` in a handler really stops the camera, and bubbling, so
-         * that a press on the overlay reaches the plugins of the pane.
-         */
-        const pointer = (type, point, over = {}) => {
-            return new dom.PointerEvent(type, {
-                bubbles: true,
-                cancelable: true,
-                clientX: point[0],
-                clientY: point[1],
-                button: 0,
-                buttons: type === 'pointerup' ? 0 : 1,
-                pointerId: 1,
-                ...over,
-            });
-        };
-        return {
-            app, pane, store, scene, root, timers,
-            /** Viewport point of a point in the screen space of the pane. */
-            client(point) {
-                return [rect.left + point[0], rect.top + point[1]];
-            },
-            /** The whole editor as text, for a coarse look at what is on screen. */
-            text() {
-                return root.textContent ?? '';
-            },
-            /** Views that failed to render, by their id. The frame is not one: see below. */
-            broken() {
-                return [...root.querySelectorAll('[mol_view_error]')].map(el => el.getAttribute('id'));
-            },
-            button(title) {
-                return found('[role=button]', `button «${title}»`, el => el.textContent?.startsWith(title) ?? false);
-            },
-            /** A row of the palette, by the class it offers. */
-            class_row(klass) {
-                return found('[bog_vmap_app_palette_item]', `palette row ${klass}`, el => el.textContent === klass);
-            },
-            /** A text field, addressed by the tail of the id $mol builds out of the path to it. */
-            field(tail) {
-                return found('input, textarea', `field ${tail}`, el => el.getAttribute('id')?.endsWith(tail) ?? false);
-            },
-            overlay() {
-                return root.querySelector('[bog_vmap_app_pane_overlay]');
-            },
-            /** The frame element itself, so that a restart can be seen to replace it. */
-            frame() {
-                return root.querySelector('iframe');
-            },
-            /** Types into a field the way a person does: the value, then the input event. */
-            type(el, value) {
-                el.value = value;
-                el.dispatchEvent(new dom.Event('input', { bubbles: true }));
-                app.dom_tree();
-            },
-            click(el) {
-                el.dispatchEvent(new dom.MouseEvent('click', { bubbles: true, cancelable: true }));
-                app.dom_tree();
-            },
-            press(el, point, over = {}) {
-                el.dispatchEvent(pointer('pointerdown', point, over));
-            },
-            move(el, point, over = {}) {
-                el.dispatchEvent(pointer('pointermove', point, over));
-            },
-            release(el, point, over = {}) {
-                el.dispatchEvent(pointer('pointerup', point, over));
-            },
-            /**
-             * Carries a class from the palette onto the canvas: a press on the row,
-             * a move across the window, a release over the overlay. The pointer
-             * moves on the window because that is where the editor listens for it.
-             */
-            drop(klass, point) {
-                this.press(this.class_row(klass), [10, 300]);
-                dom.dispatchEvent(pointer('pointermove', point));
-                this.release(this.overlay(), point);
-                app.dom_tree();
-                scene.flush();
-            },
-            /** A click on the canvas: press and release without moving. */
-            tap(point, over = {}) {
-                this.press(this.overlay(), point, over);
-                this.release(this.overlay(), point, over);
-                app.dom_tree();
-                scene.flush();
-            },
-            /** Centre of a part on screen, as the scene has measured it. */
-            part_center(name) {
-                const box = pane.part_box(name);
-                if (!box)
-                    $mol_fail(new Error(`part ${name} is not measured`));
-                return this.client([box.left + box.width / 2, box.top + box.height / 2]);
-            },
-            /**
-             * Viewport point of the dot of a port, from the geometry the pane draws
-             * the dots with: the box of the part and the row of the port among the
-             * wirable ports of its class.
-             */
-            port_dot(name, port, side) {
-                const box = pane.part_box(name);
-                const index = app.part_ports(name).findIndex(known => known.name === port);
-                if (!box || index < 0)
-                    $mol_fail(new Error(`no port ${name}.${port} on screen`));
-                return this.client($bog_vmap_app_wire_port_point(box, side, index));
-            },
-            redraw() {
-                app.dom_tree();
-            },
-        };
-    }
-    $_1.$bog_vmap_app_flow_stage = $bog_vmap_app_flow_stage;
+    $_1.$bog_vmap_app_flow_delete_wired = $bog_vmap_app_flow_delete_wired;
 })($ || ($ = {}));
 
 

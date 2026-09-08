@@ -50649,6 +50649,48 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    /** Where a dragged node would go: into whose `sub`, at what position. */
+    type $bog_vmap_app_pane_slot = {
+        /** Property name of the container. */
+        readonly owner: string;
+        /** Position among the children of that container. */
+        readonly index: number;
+        /** The insertion line, in world units. Flat: one of the sides is zero. */
+        readonly line: $bog_vmap_bridge_rect;
+    };
+    /**
+     * Which way the children of a container are stacked, read off their boxes.
+     *
+     * Geometry and not CSS on purpose: the host does not compile the document and
+     * has no layout of its own, so the only honest source of the direction is where
+     * the children came out. Asking the scene would put a message on the wire for
+     * something already measured.
+     *
+     * Fewer than two children says nothing at all, and the answer is then a column:
+     * that is the way a page stacks, and it is what an artboard is set to. Note the
+     * default of `$mol_view` itself is a ROW — `[mol_view]` is `display: flex` with
+     * no direction — which is why an artboard has to say `flexDirection` out loud
+     * and why the inspector offers it.
+     */
+    function $bog_vmap_app_pane_axis(boxes: readonly $bog_vmap_bridge_rect[]): "row" | "column";
+    /**
+     * Position a point aims at among the children of a container, and the line to
+     * draw for it.
+     *
+     * The position is decided by the MIDDLE of each child, not by the gaps between
+     * them: children of a flex box usually touch, so a rule that only fired between
+     * boxes would have nowhere to fire, and pointing at the upper half of a child
+     * plainly means «above this one».
+     *
+     * The line is drawn on the boundary rather than on the child: at the middle of
+     * the gap when there is one, on the outer edge at either end. In world units,
+     * because the host draws it with the same transform it draws the selection ring
+     * with, and turning world into screen is done once, for both.
+     */
+    function $bog_vmap_app_pane_slot(owner: string, box: $bog_vmap_bridge_rect, kids: readonly $bog_vmap_bridge_rect[], point: readonly [number, number]): $bog_vmap_app_pane_slot;
+}
+
+declare namespace $ {
 
 	type $bog_vmap_app_pane_overlay__style_bog_vmap_app_pane_1 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['overlay_style'] >
@@ -50730,6 +50772,11 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_pane_frame['uri'] >
 	>
+	type $mol_view__style_bog_vmap_app_pane_17 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['insert_style'] >
+		,
+		ReturnType< $mol_view['style'] >
+	>
 	export class $bog_vmap_app_pane extends $mol_view {
 		overlay_style( ): Record<string, any>
 		frame_showed( ): boolean
@@ -50742,6 +50789,7 @@ declare namespace $ {
 		wire_dots( ): readonly($bog_vmap_app_wire_dot)[]
 		wire_drag_geometry( ): string
 		Wire( ): $bog_vmap_app_wire
+		insert_style( ): Record<string, any>
 		Touch( ): $mol_touch
 		scene_uri( ): string
 		doc_src( ): string
@@ -50756,6 +50804,8 @@ declare namespace $ {
 		part_ports( id: any): readonly($bog_vmap_app_wire_port)[]
 		link_add( next?: any ): any
 		link_drop( next?: any ): any
+		containers( ): readonly(string)[]
+		tree_move( next?: any ): any
 		values( next?: Record<string, any> ): Record<string, any>
 		handshake( next?: number ): number
 		ready( ): boolean
@@ -50768,6 +50818,7 @@ declare namespace $ {
 		scene_generation( next?: number ): number
 		Scene( id: any): $bog_vmap_app_pane_frame
 		sub( ): readonly(any)[]
+		Insert( ): $mol_view
 		plugins( ): readonly(any)[]
 	}
 	
@@ -50840,6 +50891,12 @@ declare namespace $.$$ {
     type $bog_vmap_app_pane_link_new = Pick<$bog_vmap_lang_link, 'from' | 'from_prop' | 'to' | 'to_prop'>;
     /** An input to unplug. */
     type $bog_vmap_app_pane_link_end = Pick<$bog_vmap_lang_link, 'to' | 'to_prop'>;
+    /** A node put into the tree of a container, as the pane asks the owner to write it. */
+    type $bog_vmap_app_pane_tree_move = {
+        readonly name: string;
+        readonly owner: string;
+        readonly index: number;
+    };
     /** The other end of the bridge, as much of a window as the pane needs. */
     type $bog_vmap_app_pane_peer = {
         postMessage(data: unknown, origin: string): void;
@@ -50884,7 +50941,14 @@ declare namespace $.$$ {
          * for a probe stole the binding from the real frame.
          */
         scene_peer(): $bog_vmap_app_pane_peer | null;
-        /** The live frame, the gate over it, and the wires above both. */
+        /**
+         * The live frame, the gate over it, the wires above both, and the insertion
+         * line while a drop has somewhere to go.
+         *
+         * The line is topmost and lives here rather than on the overlay: the overlay
+         * is cut open under the picked node, and a line crossing that hole would be
+         * cut in half exactly when the user is aiming at it.
+         */
         sub(): readonly $mol_view[];
         /**
          * Replaces the frame with a fresh one that has said nothing and proved nothing
@@ -51021,17 +51085,39 @@ declare namespace $.$$ {
          */
         sizes_forget(name: string): void;
         /**
-         * The box of a free part, or `null` while the scene has not reported one.
+         * Every measured node of the document, with the path the scene walked to it
+         * and the name it is addressed by, in the order it was walked.
          *
-         * Only the direct children of the root are addressed, and that is the whole
-         * set of things lying free on the canvas — section 1: every named sub view
-         * becomes a flat property of the root class, so one path segment is exactly
-         * one part. Anything deeper (`…/Icon_close/Path`) lives INSIDE a part, and
-         * picking those is a tree question, which is what artboards are for.
+         * The name is the LAST segment of the path and nothing else: section 1 makes
+         * every named node a flat property of the root class whatever its depth, so a
+         * node inside an artboard is addressed exactly like one lying free, and the
+         * path says only where it is drawn.
+         *
+         * The order is the order of the report, which is the order of the DOM, which
+         * is the order the children of an artboard are laid out in. Everything below
+         * relies on that and on nothing else.
          */
-        part_size(name: string): $bog_vmap_bridge_rect;
-        /** Names of the parts the scene has measured, in the order it walked them. */
+        nodes_measured(): {
+            name: string;
+            path: readonly string[];
+            box: $bog_vmap_bridge_rect;
+        }[];
+        /**
+         * The box of a node, at whatever depth it is drawn, or `null` while the scene
+         * has not reported one.
+         *
+         * A name is looked up rather than a path, because a name is what the document,
+         * the selection and the placement are all keyed by. The last match wins, the
+         * same rule the hit test follows: a name drawn twice is a keyed sub view, and
+         * the later one is the one on top.
+         */
+        part_size(name: string): $bog_vmap_bridge_rect | null;
+        /** Names of the nodes the scene has measured, at every depth. */
         part_names(): string[];
+        /** Names of the parts lying free on the canvas: the direct children of the root. */
+        free_names(): string[];
+        /** Where a node is drawn: the names of the nodes it lies inside, outermost first. */
+        node_path(name: string): readonly string[];
         /**
          * The node being dragged, kept as a plain field.
          *
@@ -51053,6 +51139,8 @@ declare namespace $.$$ {
             };
             grab: readonly [number, number];
             version: number;
+            /** Drawn inside another node, so it is laid out by tree and has no coordinate. */
+            nested: boolean;
         } | null;
         /** Whether a moved pointer still counts, i.e. the button is not up yet. */
         drag_live: boolean;
@@ -51092,11 +51180,48 @@ declare namespace $.$$ {
         /**
          * Which part is under a world point, or `null` for bare canvas.
          *
-         * The LAST match wins, because the parts are absolutely positioned siblings
-         * and a later one paints over an earlier one. Picking the first, or the
-         * smallest, would hand back a node the user cannot see.
+         * The DEEPEST match wins, and among equally deep ones the last, because the
+         * parts are absolutely positioned siblings and a later one paints over an
+         * earlier one. Picking the first, or the smallest, would hand back a node the
+         * user cannot see.
+         *
+         * Depth first is what makes a node inside an artboard reachable at all: it
+         * lies inside the box of the artboard, so a rule that stopped at the free
+         * parts would always hand back the page and never anything on it. The strip
+         * of slack around a box is added on every level, so a child still catches the
+         * pointer near its edge, and its parent catches it further out.
          */
         node_at(point: readonly [number, number]): string | null;
+        /**
+         * Boxes of the children of a container, in the order they are laid out.
+         *
+         * Off the report and not off the document: the order the scene walked is the
+         * order of the DOM, and a child hidden by culling has no box and no place on
+         * screen to put an insertion line at.
+         */
+        node_kids(owner: string): $bog_vmap_bridge_rect[];
+        /**
+         * The container a point falls into, or `null` for bare canvas.
+         *
+         * A container is a node whose declaration carries a `sub` — an artboard, see
+         * section 8 — and the deepest one wins, so a box nested inside an artboard
+         * takes the drop rather than the page around it.
+         *
+         * The node being carried is stepped over, and so is everything inside it: a
+         * node cannot become its own descendant, and offering that as a target would
+         * mean drawing a line where the drop is going to be refused.
+         */
+        container_at(point: readonly [number, number], moving?: string): string | null;
+        /** Where a node dropped at this point would go, or `null` for bare canvas. */
+        insert_slot(point: readonly [number, number], moving?: string): $bog_vmap_app_pane_slot | null;
+        /**
+         * The slot the gesture in hand is aiming at, drawn as a line between children.
+         *
+         * A cell rather than a field, because the line is drawn from it; the whole
+         * point of the feedback is that it follows the pointer.
+         */
+        slot(next?: $bog_vmap_app_pane_slot | null): $bog_vmap_app_pane_slot | null;
+        tree_move(next?: $bog_vmap_app_pane_tree_move | null): $bog_vmap_app_pane_tree_move | null;
         /**
          * Press picks, and a press on a part also starts carrying it.
          *
@@ -51119,6 +51244,14 @@ declare namespace $.$$ {
         /**
          * Carrying a node writes straight into `spots`, the same channel a drop from
          * the palette writes: placement is one fact with one owner, whatever moved it.
+         *
+         * Over a container it writes nothing at all. Inside an artboard the layout is
+         * a tree and not a set of coordinates, so what the gesture means there is a
+         * position among children, and the only feedback until the release is the
+         * insertion line. A node that is drawn inside one never gets a coordinate
+         * either way: `spots` positions the direct children of the root and nothing
+         * else, so writing one would leave a number in the document's desk layout
+         * that moves nothing.
          */
         node_move(event?: PointerEvent): void;
         /**
@@ -51161,6 +51294,10 @@ declare namespace $.$$ {
          * wire to a part that left the viewport still has an end to go to.
          */
         part_box(name: string): $bog_vmap_app_pane_screen_box | null;
+        /** Where the line goes on screen. Flat in world units, two pixels thick here. */
+        insert_style(): {
+            readonly [prop: string]: string;
+        };
         frame_style(): {
             readonly [prop: string]: string;
         };
