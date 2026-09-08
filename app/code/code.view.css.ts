@@ -40,6 +40,16 @@ namespace $.$$ {
 			whiteSpace: 'pre-wrap',
 		},
 
+		/** A warning, not a failure: the document works, the export would not. */
+		Typing: {
+			flex: { direction: 'column', shrink: 0 },
+			gap: '.25rem',
+			padding: $mol_gap.text,
+			color: $mol_theme.shade,
+			font: { size: '.75rem' },
+			whiteSpace: 'normal',
+		},
+
 		/** The three fields fill what is left; without this the deck sizes to its text. */
 		Sources: {
 			flex: { direction: 'column', grow: 1, shrink: 1 },

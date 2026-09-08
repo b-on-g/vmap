@@ -233,6 +233,49 @@ namespace $ {
 
 		},
 
+		/**
+		 * The divergence of section 10 shown where the mistake is made: the body runs
+		 * in the scene through `new Function` and would fail the export on `strict`.
+		 */
+		'an untyped parameter is complained about as it is written'( $ ) {
+
+			const { code, name } = editor( $ )
+
+			$mol_assert_equal( code.complaints().length, 0 )
+
+			code.js_text( `${ name }( next ) {\n\treturn next\n}` )
+
+			$mol_assert_equal( code.complaints().length, 1 )
+			$mol_assert_equal( code.complaints()[ 0 ].param, 'next' )
+			$mol_assert_equal( code.complaints()[ 0 ].method, name )
+
+		},
+
+		'a typed parameter is not complained about'( $ ) {
+
+			const { code, name } = editor( $ )
+
+			code.js_text( `${ name }( next?: string ) {\n\treturn next\n}` )
+
+			$mol_assert_equal( code.complaints().length, 0 )
+
+		},
+
+		/** A line about a method the panel does not show is a line nobody can act on. */
+		'only the method of the picked node is complained about'( $ ) {
+
+			const { app, code, name } = editor( $ )
+
+			app.root_js( `${ name }( a ) {\n\t\n}\n\nother( b ) {\n\t\n}` )
+
+			$mol_assert_equal( code.complaints().length, 1 )
+			$mol_assert_equal( code.complaints()[ 0 ].param, 'a' )
+
+			code.whole( true )
+			$mol_assert_equal( code.complaints().length, 2 )
+
+		},
+
 		/** A published component without its behaviour is a picture of a component. */
 		'a published node carries its method and its rule'( $ ) {
 

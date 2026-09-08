@@ -177,6 +177,37 @@ namespace $.$$ {
 			}
 		}
 
+		/**
+		 * Untyped parameters of the body, as the export names them.
+		 *
+		 * The same check the export refuses on, called here so that the author reads
+		 * the complaint where the mistake was made rather than at the outbound gate.
+		 * A body in the scene goes through `new Function`, which takes any JS, so
+		 * nothing else in the editor would ever say a word about this.
+		 *
+		 * While one node is being edited only its own method is complained about:
+		 * the neighbours are not on screen, and a line about a method the panel does
+		 * not show is a line nobody can act on.
+		 */
+		@ $mol_mem
+		complaints(): readonly $bog_vmap_app_export_complaint[] {
+
+			const all = this.$.$bog_vmap_app_export_untyped( this.js() )
+			if( !this.sliced() ) return all
+
+			const prop = this.prop()
+			return all.filter( one => one.method === prop )
+		}
+
+		override typing_rows() {
+			return this.complaints().map( ( _, index )=> this.Typing_row( index ) )
+		}
+
+		@ $mol_mem_key
+		override typing_text( index: number ) {
+			return this.complaints()[ index ]?.text ?? ''
+		}
+
 		override head_content() {
 			return [
 				this.Scope_note(),
@@ -189,6 +220,7 @@ namespace $.$$ {
 				this.Head(),
 				... this.error() ? [ this.Alarm() ] : [],
 				... this.note() ? [ this.Refusal() ] : [],
+				... this.complaints().length ? [ this.Typing() ] : [],
 				this.Sources(),
 			] as readonly $mol_view[]
 		}
