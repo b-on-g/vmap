@@ -409,6 +409,96 @@ namespace $ {
 		},
 
 		/**
+		 * The draft is poured AFTER the document is already in the list, so there is
+		 * a window in which `boot` answers `ready` while the fiber still has work to
+		 * do. Whoever is reading `boot` — the application, every render — must not
+		 * end that fiber by looking away: the loss would be silent and would be the
+		 * text the user had typed.
+		 */
+		async 'the draft survives a suspension after the document is already listed'( $ ) {
+
+			let open = ()=> {}
+			const gate = new Promise< void >( done => { open = ()=> done() } )
+			let held = true
+
+			/** Suspends once while pouring, the way signing a unit does. */
+			class store_late extends $bog_vmap_app_store {
+				override doc_source( doc: $bog_vmap_app_doc, next?: string ): string {
+					if( next !== undefined && held ) return $mol_fail_hidden( gate )
+					return super.doc_source( doc, next )
+				}
+			}
+
+			const s = store_late.make({ $, doc_land_config: ()=> null })
+			s.source( src_page )
+
+			$mol_assert_equal( s.boot(), 'making' )
+
+			// The document is listed, the draft is not in it yet.
+			$mol_assert_equal( s.doc_links().length, 1 )
+			$mol_assert_equal( s.doc_source( s.doc_current()! ), '' )
+
+			// The application reads `boot` again on that very change and is told
+			// `ready`, so it stops asking for the fiber.
+			$mol_assert_equal( s.boot(), 'ready' )
+
+			held = false
+			open()
+			await s.doc_first_task().task
+
+			$mol_assert_equal( s.doc_links().length, 1 )
+			$mol_assert_equal( s.source(), src_page )
+
+		},
+
+		/**
+		 * The same window, with a reader that subscribes and then looks away — the
+		 * application, whose `auto()` reads `boot` from a cell. A cell nobody reads
+		 * is collected together with what it owns, so the fiber must not hang on
+		 * being read: it is held while it has work, and the draft lands whole.
+		 */
+		async 'a reader that looks away does not take the fiber with it'( $ ) {
+
+			let open = ()=> {}
+			const gate = new Promise< void >( done => { open = ()=> done() } )
+			let held = true
+
+			class store_late extends $bog_vmap_app_store {
+				override doc_source( doc: $bog_vmap_app_doc, next?: string ): string {
+					if( next !== undefined && held ) return $mol_fail_hidden( gate )
+					return super.doc_source( doc, next )
+				}
+			}
+
+			const s = store_late.make({ $, doc_land_config: ()=> null })
+			s.source( src_page )
+
+			/** Stands for `auto()` of the application: a cell, and the only reader. */
+			const reader = $mol_wire_atom.solo( s, function boot_reader( this: typeof s ) {
+				return this.boot()
+			} )
+
+			$mol_assert_equal( reader.sync(), 'making' )
+			$mol_assert_equal( s.doc_links().length, 1 )
+
+			// It runs again — a render, an edit, anything — and is told `ready`.
+			reader.refresh()
+			$mol_assert_equal( reader.sync(), 'ready' )
+
+			// The tick on which the graph collects whatever nobody reads any more.
+			await new Promise( done => new $mol_after_tick( ()=> done( null ) ) )
+
+			held = false
+			open()
+			await new Promise( done => new $mol_after_tick( ()=> done( null ) ) )
+			await new Promise( done => new $mol_after_tick( ()=> done( null ) ) )
+
+			$mol_assert_equal( s.doc_links().length, 1 )
+			$mol_assert_equal( s.source(), src_page )
+
+		},
+
+		/**
 		 * A link in the address opens somebody else's public document: it reads,
 		 * it says so, and a write into it changes nothing and throws nothing. The
 		 * owner is a second key; their land is copied into the reader's glob the way

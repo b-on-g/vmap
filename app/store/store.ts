@@ -175,6 +175,13 @@ namespace $ {
 		 * the fiber restarts this from the beginning on every `Promise` on the way,
 		 * and a document that arrived from another device while the proof of work
 		 * was being mined must not be pushed aside by ours.
+		 *
+		 * The check guards against that device and not against our own half made
+		 * document, and it cannot confuse the two: a restart replays every read
+		 * from the cache of the fiber itself, so the list here reads as it read
+		 * when the fiber started — empty. Measured. That is what lets a restart in
+		 * the middle of pouring the draft carry the pouring through instead of
+		 * walking away from a document with no text in it.
 		 */
 		doc_first() {
 
@@ -207,14 +214,18 @@ namespace $ {
 		 * The fiber is wrapped and not returned as it is: a cell answering with a
 		 * promise is a cell that never finished, and every reader of it suspends
 		 * for ever.
+		 *
+		 * **The wrapper deliberately has no `destructor`, so this cell holds the
+		 * handle and not the life.** The draft is poured AFTER the document is in
+		 * the list, so there is a window in which `boot` already answers `ready`,
+		 * the last reader looks away and a cell nobody reads is collected. Owning
+		 * the fiber here would end it inside that window, and what would be lost is
+		 * the text the user typed, silently. Measured; there is a test. Nothing
+		 * leaks by it: a one-shot fiber destructs itself the moment it completes.
 		 */
 		@ $mol_mem
 		doc_first_task() {
-
-			const task: Promise< void > & { destructor?(): void }
-				= $mol_wire_async( this ).doc_first()
-
-			return { task, destructor: ()=> task.destructor?.() }
+			return { task: $mol_wire_async( this ).doc_first() }
 		}
 
 		/**
