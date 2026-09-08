@@ -1,0 +1,10 @@
+{
+	"name": "bog_vmap_scene",
+	"short_name": "bog_vmap_scene",
+	"description": "",
+	"id": "bog_vmap_scene",
+	"start_url": ".",
+	"display": "standalone",
+	"background_color": "#000000",
+	"theme_color": "#000000"
+}
