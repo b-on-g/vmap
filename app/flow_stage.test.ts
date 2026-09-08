@@ -38,8 +38,11 @@ namespace $ {
 		left: 200, top: 50, width: 600, height: 500, right: 800, bottom: 550,
 	}
 
-	/** Size the fake scene reports for every part it is asked to draw. */
+	/** Size the fake scene reports for a part with nothing inside it. */
 	export const $bog_vmap_app_flow_size = { width: 100, height: 50 }
+
+	/** Size it reports for a container, big enough to aim a drop inside it. */
+	export const $bog_vmap_app_flow_board = { width: 400, height: 300 }
 
 	/** A message the host put on the wire, as the stand keeps it. */
 	export type $bog_vmap_app_flow_sent = { kind: string, [ key: string ]: unknown }
@@ -119,7 +122,7 @@ namespace $ {
 	 * Points are in the screen space of the pane and go through `stage.client()`,
 	 * which is the only place that knows where the pane sits.
 	 */
-	export function $bog_vmap_app_flow_stage( $: $ ) {
+	export function $bog_vmap_app_flow_stage( $: $, store_own: $bog_vmap_app_store | null = null ) {
 
 		browser_gaps( $ )
 
@@ -150,8 +153,11 @@ namespace $ {
 		}
 		$.$mol_fetch = $mol_fetch_flow
 
-		const store = $bog_vmap_app_store.make({ $, doc_land_config: ()=> null })
-		store.doc_add( 'Сцена 1' )
+		// A store of the scenario's own is how a document that is still loading, or
+		// somebody else's, is put on the stand; the default one is a fresh document
+		// in the home land, made here so that nothing waits on `boot`.
+		const store = store_own ?? $bog_vmap_app_store.make({ $, doc_land_config: ()=> null })
+		if( !store_own ) store.doc_add( 'Сцена 1' )
 
 		const app = $bog_vmap_app.make({ $, store: ()=> store }) as $$.$bog_vmap_app
 		$bog_vmap_app_flow_last = app
@@ -159,18 +165,50 @@ namespace $ {
 		const posted = [] as $bog_vmap_app_flow_sent[]
 		const queue = [] as $bog_vmap_app_flow_sent[]
 
-		/** Geometry of the parts as a scene would measure it: a box at its spot. */
+		/** Which way a node stacks what is inside it, as its `style` says. */
+		const direction = ( name: string )=> {
+			const style = app.node().over_tree( name, 'style' )?.kids[ 0 ] ?? null
+			return $bog_vmap_lang_dict_get( style, 'flexDirection' )?.value
+				?? 'row' // what `[mol_view]` is with no direction written
+		}
+
+		/**
+		 * Geometry of the document as a scene would measure it: free parts at their
+		 * spots, and whatever a container carries stacked inside it along the
+		 * direction the node declares.
+		 *
+		 * A rough flex box and nothing more — boxes of one size, laid end to end —
+		 * but enough for what the host does with the numbers: hit testing, the ring,
+		 * the ends of a wire, and aiming a drop between two children of a page.
+		 */
 		const sizes = ()=> {
 
 			const res = {} as { [ node: string ]: $bog_vmap_bridge_rect }
-			const spots = app.spots()
+			const node = app.node()
 
-			for( const name of Object.keys( spots ) ) {
-				res[ app.doc_root() + '/' + name ] = {
-					x: spots[ name ].x,
-					y: spots[ name ].y,
-					... $bog_vmap_app_flow_size,
+			const place = ( name: string, path: string, x: number, y: number ) => {
+
+				const kids = node.sub_names( name )
+				const box = { x, y, ... kids ? $bog_vmap_app_flow_board : $bog_vmap_app_flow_size }
+
+				res[ path ] = box
+				if( !kids ) return box
+
+				const row = direction( name ) === 'row'
+				let at = 0
+
+				for( const kid of kids ) {
+					if( !kid ) continue
+					const inner = place( kid, path + '/' + kid, row ? x + at : x, row ? y : y + at )
+					at += row ? inner.width : inner.height
 				}
+
+				return box
+			}
+
+			const spots = app.spots()
+			for( const name of Object.keys( spots ) ) {
+				place( name, app.doc_root() + '/' + name, spots[ name ].x, spots[ name ].y )
 			}
 
 			return res
@@ -306,6 +344,15 @@ namespace $ {
 				return found( '[role=button]', `button «${ title }»`, el => el.textContent?.startsWith( title ) ?? false )
 			},
 
+			/**
+			 * A checkbox or one option of a switch, by its label. Not a button:
+			 * `$mol_check` answers `role="checkbox"`, and the options of a switch are
+			 * checks, so the head bar toggles and the layout panel are found here.
+			 */
+			check( title: string ) {
+				return found( '[role=checkbox]', `check «${ title }»`, el => el.textContent?.includes( title ) ?? false )
+			},
+
 			/** A row of the palette, by the class it offers. */
 			class_row( klass: string ) {
 				return found( '[bog_vmap_app_palette_item]', `palette row ${ klass }`, el => el.textContent === klass )
@@ -330,11 +377,13 @@ namespace $ {
 				el.value = value
 				el.dispatchEvent( new dom.Event( 'input', { bubbles: true } ) )
 				app.dom_tree()
+				scene.flush()
 			},
 
 			click( el: Element ) {
 				el.dispatchEvent( new dom.MouseEvent( 'click', { bubbles: true, cancelable: true } ) )
 				app.dom_tree()
+				scene.flush()
 			},
 
 			press( el: Element, point: readonly [ number, number ], over: object = {} ) {

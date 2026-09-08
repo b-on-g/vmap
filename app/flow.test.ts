@@ -322,6 +322,93 @@ namespace $ {
 		},
 
 		/**
+		 * The artboard from the user's side: a page is put on the canvas, two parts
+		 * are dropped INTO it and go into its tree instead of onto the desk, and the
+		 * direction switch of the inspector decides how they stack — including where
+		 * the next drop goes in.
+		 */
+		'a page takes the parts dropped into it and stacks them the way it is set'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.click( stage.button( 'Артборд' ) )
+
+			// Nothing marks a page as one: it is a view with a `sub` of its own.
+			$mol_assert_equal( stage.app.selected(), 'Page' )
+
+			const node = stage.app.node()
+			$mol_assert_like( node.sub_names( 'Page' ), [] )
+
+			const page = stage.pane.part_box( 'Page' )!
+			$mol_assert_ok( page )
+
+			// Dropped inside the page, both go into its tree and neither takes a
+			// coordinate: on the desk only the page itself lies.
+			stage.drop( calc, stage.client([ page.left + 200, page.top + 40 ]) )
+			stage.drop( map, stage.client([ page.left + 200, page.top + 250 ]) )
+
+			$mol_assert_like( node.sub_names( 'Page' ), [ 'Calc', 'Map' ] )
+			$mol_assert_like( Object.keys( stage.app.spots() ), [ 'Page' ] )
+			$mol_assert_equal( stage.app.doc_source().includes( '\t\tsub /\n\t\t\t<= Calc\n\t\t\t<= Map\n' ), true )
+
+			// The page is picked again by a click on the empty part of it.
+			stage.tap( stage.client([ page.left + 200, page.top + 250 ]) )
+			$mol_assert_equal( stage.app.selected(), 'Page' )
+
+			// The layout panel of the inspector turns the column into a row.
+			stage.click( stage.check( 'рядом' ) )
+
+			$mol_assert_ok( stage.app.doc_source().includes( 'flexDirection \\row' ) )
+			$mol_assert_equal( stage.scene.last( 'doc_set' )!.src, stage.app.doc_source() )
+
+			const first = stage.pane.part_box( 'Calc' )!
+			const second = stage.pane.part_box( 'Map' )!
+			$mol_assert_equal( first.top, second.top )
+			$mol_assert_ok( second.left > first.left )
+
+			// And the next drop is aimed by the same row: to the left of both is first.
+			stage.drop( button, stage.client([ page.left + 20, page.top + 20 ]) )
+			$mol_assert_like( node.sub_names( 'Page' ), [ 'Button', 'Calc', 'Map' ] )
+
+		},
+
+		/**
+		 * A document opened by a link lives in a land of its own, and until that
+		 * land arrives every read of it suspends. THE SANDBOX MUST COME UP ANYWAY:
+		 * its address is not the document's business, and an editor that waits for
+		 * the text before it raises the frame waits for ever on a document whose
+		 * master is not reachable — which is what «ожидание сцены…» was.
+		 */
+		'the sandbox comes up while the document of the address is still on its way'( $ ) {
+
+			// Every read of the open document suspends, as an unsynced land does.
+			const waiting = new Promise( ()=> {} )
+			const store = $bog_vmap_app_store.make({
+				$,
+				doc_land_config: ()=> null,
+				source: ()=> { throw waiting },
+				spots: ()=> { throw waiting },
+				pack: ()=> { throw waiting },
+			})
+
+			const stage = $bog_vmap_app_flow_stage( $, store )
+
+			// The frame has an address, so the scene boots and answers.
+			$mol_assert_ok( stage.app.scene_uri() )
+			$mol_assert_ok( stage.frame().getAttribute( 'src' ) )
+			$mol_assert_equal( stage.pane.ready(), true )
+
+			// The complaint itself: the head bar no longer says it is waiting.
+			$mol_assert_equal( stage.text().includes( 'ожидание сцены' ), false )
+
+			// The palette of the document is unknown, so the standard one stands in
+			// and is on screen rather than suspended.
+			$mol_assert_equal( stage.app.links(), '' )
+			stage.class_row( calc )
+
+		},
+
+		/**
 		 * A scene that stopped answering is called out on a strip of its own, and
 		 * the button on it replaces the frame rather than talking to the stuck one.
 		 *
