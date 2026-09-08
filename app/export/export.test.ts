@@ -460,6 +460,107 @@ namespace $ {
 
 		},
 
+		/**
+		 * The forms a naive search for «a parameter without a type» gets wrong, one
+		 * assertion each.
+		 *
+		 * The two mistakes do not cost the same. A complaint refuses the export, so a
+		 * false one locks the author inside the editor with no way out, while a missed
+		 * one costs a build failure that explains itself. Every line below is
+		 * therefore an assertion of SILENCE, and the ones that are genuine errors
+		 * passed over — the destructuring, the object literal method — are silence on
+		 * purpose and named as misses in the docs.
+		 */
+		'the check keeps quiet on everything it is not sure of'( $ ) {
+
+			const quiet = ( js: string )=> $mol_assert_like( $.$bog_vmap_app_export_untyped( js ), [] )
+
+			// A destructured parameter is an error of the same kind, and naming it
+			// sensibly is beyond a search over text. Missed on purpose.
+			quiet( 'render( { head, foot } ) {\n\treturn [ head, foot ]\n}\n' )
+
+			// An arrow written as a class property. Its parameter is untyped, and the
+			// line is not a method head at all, so it is left alone.
+			quiet( 'handler = ( event )=> event.type\n' )
+
+			// A `this` parameter is not a parameter of the caller.
+			quiet( 'pick( this: $, id: string ) {\n\treturn id\n}\n' )
+
+			// A generic method, typed through its own type parameter.
+			quiet( 'first< Item >( list: Item[] ) {\n\treturn list[0]\n}\n' )
+
+			// An overload signature carries no body, so it is not a head. Missed even
+			// with an untyped parameter, and that is the safe direction.
+			quiet( 'plus( a ): number\nplus( a: number ) {\n\treturn a\n}\n' )
+
+			// Optional and rest parameters, both typed.
+			quiet( 'join( a?: string, ... rest: string[] ) {\n\treturn [ a, ... rest ]\n}\n' )
+
+			// A signature quoted inside a template literal is not a signature. This is
+			// the one that would fire on text the author never meant as code.
+			quiet( 'sample() {\n\treturn `\ncount( next ) {\n`\n}\n' )
+
+			// The same inside comments, both kinds.
+			quiet( 'sample() {\n\treturn 1\n}\n// count( next ) {\n' )
+			quiet( 'sample() {\n\treturn 1\n}\n/*\ncount( next ) {\n*/\n' )
+
+			// A method of an object literal inside a body: indented, therefore a
+			// statement rather than a head. Missed on purpose.
+			quiet( 'config() {\n\treturn {\n\t\topen( next ) { return next },\n\t}\n}\n' )
+
+			// A call at the start of a line inside a method reads exactly like a head
+			// to a search that ignores indentation.
+			quiet( 'run() {\n\tsuper( next )\n\tthis.compute( x )\n}\n' )
+
+		},
+
+		/**
+		 * The other half of the same rule: what the check IS sure of, it says. A body
+		 * that reaches the export in any of these shapes does not build.
+		 */
+		'the check does say the parameter it is sure about'( $ ) {
+
+			const first = ( js: string )=> $.$bog_vmap_app_export_untyped( js )[0]
+
+			// A `this` parameter beside an untyped one: only the second is named.
+			const beside = $.$bog_vmap_app_export_untyped( 'pick( this: $, id ) {\n\treturn id\n}\n' )
+			$mol_assert_equal( beside.length, 1 )
+			$mol_assert_equal( beside[0].param, 'id' )
+
+			// A generic whose value parameter carries no type of its own.
+			$mol_assert_equal( first( 'first< Item >( list ) {\n\treturn list[0]\n}\n' ).param, 'list' )
+
+			// A rest parameter, named without its dots and suggested with them.
+			const rest = first( 'join( ... parts ) {\n\treturn parts\n}\n' )
+			$mol_assert_equal( rest.param, 'parts' )
+			$mol_assert_equal( rest.text.includes( '... parts: number[]' ), true )
+
+			// An optional parameter without a type is untyped all the same.
+			$mol_assert_equal( first( 'load( id? ) {\n\treturn id\n}\n' ).param, 'id' )
+
+			// A setter and an async method are heads like any other.
+			$mol_assert_equal( first( 'set title( next ) {\n\treturn next\n}\n' ).method, 'title' )
+			$mol_assert_equal( first( 'async load( id ) {\n\treturn id\n}\n' ).method, 'load' )
+
+			// A head split over several lines is still one head, reported at the line
+			// the author reads as its first.
+			const split = first( 'sum(\n\ta: number,\n\tb,\n) {\n\treturn a + b\n}\n' )
+			$mol_assert_equal( split.param, 'b' )
+			$mol_assert_equal( split.line, 1 )
+
+			// A body written with an indent of its own is checked at that indent, or
+			// the check would silently do nothing for a whole class of editors.
+			const inset = first( '\tcount( next ) {\n\t\treturn next\n\t}\n' )
+			$mol_assert_equal( inset.param, 'next' )
+
+			// The message is an instruction: what to write, spelled out.
+			$mol_assert_equal(
+				first( 'count( next ) {\n\treturn next\n}\n' ).text.includes( 'count( next?: number )' ),
+				true,
+			)
+
+		},
+
 		'a cycle of bases is refused rather than hung'( $ ) {
 
 			$mol_assert_fail(

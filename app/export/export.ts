@@ -159,37 +159,69 @@ namespace $ {
 	 * error. What is not caught here is what needs types to catch — an unknown
 	 * member, a wrong type — and those stay a build failure.
 	 *
-	 * A parameter with a default value is no complaint: TypeScript infers its type.
-	 * Arrow functions inside the body are not looked at either, because their
-	 * parameters are typed by context. A signature holding brackets of its own is
-	 * skipped rather than guessed at, so the check misses cases instead of
-	 * inventing them.
+	 * **The cost of the two mistakes is not the same, so the check is built to miss
+	 * rather than to lie.** A complaint refuses the export, and a false one locks
+	 * the author inside the editor with no way out; a missed one costs a build
+	 * failure with a message of its own. Everything doubtful is therefore passed
+	 * over in silence:
+	 *
+	 * - strings and comments are blanked before anything is read, so a signature
+	 *   quoted inside a template literal is not a signature;
+	 * - a head is only a head at the indent of the body itself and only when a `{`
+	 *   follows, which is what separates a definition from a call and from an
+	 *   overload signature;
+	 * - only a plain identifier is reported. A destructured parameter is an error
+	 *   of the same kind, but naming it sensibly is beyond this, and half a name in
+	 *   a refusal is worse than no refusal;
+	 * - a default value is a type, an arrow is typed by its context, and a
+	 *   parameter list holding brackets of its own is left alone.
 	 */
 	export function $bog_vmap_app_export_untyped( js: string ) {
 
 		const out = [] as $bog_vmap_app_export_complaint[]
 
-		const heads = /(?:^|\n)[ \t]*(?:(?:async|static|override|get|set|public|private|protected)[ \t]+)*(\*[ \t]*)?([A-Za-z_$][\w$]*)[ \t]*\(([^()]*)\)/g
+		const clean = $bog_vmap_app_export_blanked( js )
+		const base = base_indent( clean )
+
+		const heads = new RegExp(
+			'(?:^|\\n)([ \\t]*)'
+			+ '((?:(?:async|static|override|public|private|protected|get|set)[ \\t]+)*)'
+			+ '(\\*[ \\t]*)?([A-Za-z_$][\\w$]*)[ \\t]*'
+			+ '(?:<[^<>()\\n]*>[ \\t]*)?'
+			+ '\\(([^()]*)\\)[ \\t]*(?::[^\\n{;]*)?\\{',
+			'g',
+		)
 
 		// Words that begin a statement and would otherwise read as a method name.
-		const keywords = [ 'if', 'for', 'while', 'switch', 'catch', 'return', 'do', 'else', 'with', 'function', 'typeof', 'await', 'yield', 'new', 'delete', 'void' ]
+		const keywords = [
+			'if', 'for', 'while', 'switch', 'catch', 'return', 'do', 'else', 'with',
+			'function', 'typeof', 'await', 'yield', 'new', 'delete', 'void', 'super',
+			'this', 'case', 'throw', 'try', 'finally',
+		]
 
-		for( const head of js.matchAll( heads ) ) {
+		for( const head of clean.matchAll( heads ) ) {
 
-			const method = head[ 2 ]
+			// At the indent of the body and nowhere deeper: what stands inside a
+			// method is a statement, however much it looks like a signature.
+			if( head[ 1 ].length !== base ) continue
+
+			const method = head[ 4 ]
 			if( keywords.includes( method ) ) continue
 
-			const line = js.slice( 0, ( head.index ?? 0 ) + head[ 0 ].length ).split( '\n' ).length
+			const at = ( head.index ?? 0 ) + ( head[ 0 ][ 0 ] === '\n' ? 1 : 0 )
+			const line = clean.slice( 0, at ).split( '\n' ).length
 
-			for( const param of params_of( head[ 3 ] ) ) {
+			for( const param of params_of( head[ 5 ] ) ) {
+
+				const sample = param.rest ? `... ${ param.name }: number[]` : `${ param.name }?: number`
 
 				out.push({
 					line,
 					method,
-					param,
-					text: `Параметр «${ param }» метода «${ method }» без типа:`
-						+ ` в превью это работает, а выгрузка собирается со strict и упадёт.`
-						+ ` Написать тип, например «${ param }?: string».`,
+					param: param.name,
+					text: `У метода «${ method }» параметр «${ param.name }» без типа.`
+						+ ` В превью это работает, а выгрузка компилируется TypeScript'ом со strict и упадёт на noImplicitAny.`
+						+ ` Допишите тип, например «${ method }( ${ sample } )».`,
 				})
 
 			}
@@ -199,26 +231,115 @@ namespace $ {
 		return out as readonly $bog_vmap_app_export_complaint[]
 	}
 
-	/** Names of the parameters that carry neither a type nor a default value. */
+	/**
+	 * The same text with every string and comment replaced by spaces.
+	 *
+	 * Length and line breaks are kept, so a position in the result is the same
+	 * position in the source and the line of a complaint stays true. Without this a
+	 * signature quoted inside a template literal reads as a signature, and that is
+	 * a refusal over text that is not code at all.
+	 *
+	 * A regular expression literal is not understood, deliberately: telling one
+	 * from a division needs a parser. An apostrophe inside one blanks more than it
+	 * should, and the whole cost of that is a complaint not raised.
+	 */
+	export function $bog_vmap_app_export_blanked( js: string ) {
+
+		const blank = ( text: string )=> text.replace( /[^\n]/g, ' ' )
+
+		let out = ''
+		let i = 0
+
+		while( i < js.length ) {
+
+			const char = js[ i ]
+
+			if( char === '/' && js[ i + 1 ] === '/' ) {
+				const end = js.indexOf( '\n', i )
+				const stop = end < 0 ? js.length : end
+				out += blank( js.slice( i, stop ) )
+				i = stop
+				continue
+			}
+
+			if( char === '/' && js[ i + 1 ] === '*' ) {
+				const end = js.indexOf( '*/', i + 2 )
+				const stop = end < 0 ? js.length : end + 2
+				out += blank( js.slice( i, stop ) )
+				i = stop
+				continue
+			}
+
+			if( char === '"' || char === "'" || char === '`' ) {
+
+				let j = i + 1
+
+				while( j < js.length ) {
+					if( js[ j ] === '\\' ) { j += 2; continue }
+					if( js[ j ] === char ) { ++j; break }
+					if( char !== '`' && js[ j ] === '\n' ) break
+					++j
+				}
+
+				out += blank( js.slice( i, j ) )
+				i = j
+				continue
+			}
+
+			out += char
+			++i
+		}
+
+		return out
+	}
+
+	/** Indent the body itself stands at, which is the indent its methods stand at. */
+	function base_indent( js: string ) {
+
+		let base = Infinity
+
+		for( const line of js.split( '\n' ) ) {
+			if( !line.trim() ) continue
+			base = Math.min( base, /^[ \t]*/.exec( line )![ 0 ].length )
+		}
+
+		return base === Infinity ? 0 : base
+	}
+
+	/**
+	 * Parameters that carry neither a type nor a default value, by name.
+	 *
+	 * Anything that is not a plain identifier — a destructuring, a parameter whose
+	 * own brackets confuse the split — leaves without a word said, see the rule
+	 * above.
+	 */
 	function params_of( list: string ) {
 
-		const out = [] as string[]
+		const out = [] as { name: string, rest: boolean }[]
 
 		let depth = 0
 		let typed = false
 		let text = ''
 
 		const close = ()=> {
-			const name = text.trim()
-			if( name && !typed ) out.push( name.replace( /^\.\.\./, '' ) )
-			typed = false
+
+			const written = text.trim()
 			text = ''
+			const was_typed = typed
+			typed = false
+
+			if( !written || was_typed ) return
+
+			const parts = /^(\.\.\.[ \t]*)?([A-Za-z_$][\w$]*)\??$/.exec( written )
+			if( !parts ) return
+
+			out.push({ name: parts[ 2 ], rest: Boolean( parts[ 1 ] ) })
 		}
 
 		for( const char of list ) {
 
-			if( '<{['.includes( char ) ) ++depth
-			if( '>}]'.includes( char ) && depth > 0 ) --depth
+			if( '<{(['.includes( char ) ) ++depth
+			if( '>})]'.includes( char ) && depth > 0 ) --depth
 
 			if( depth === 0 && ( char === ':' || char === '=' ) ) typed = true
 			if( depth === 0 && char === ',' ) { close(); continue }
