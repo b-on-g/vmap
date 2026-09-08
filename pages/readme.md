@@ -10,6 +10,10 @@ question stage 6.5 adds: does a document of **several pages** build, and is a
 page addressable once it does. A unit test cannot show either — what has to
 succeed is a mam build, and what has to work afterwards is an address.
 
+Both fixtures stand in the `modules` of `.github/workflows/deploy.yml`, built on
+every run and published by nothing. A fixture built only when somebody remembers
+to build it breaks exactly when nobody is watching it.
+
 The document behind it is two artboards and one free part beside them:
 
 - `Home` and `About` carry a `sub` of their own, so they are pages;

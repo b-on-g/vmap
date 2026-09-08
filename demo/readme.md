@@ -8,7 +8,10 @@ It exists to answer one question, the acceptance criterion of stage 7 in
 [PLAN.md](../PLAN.md): does an exported document drop into the tree and build
 with no manual fixes? Section 10 of [ARCHITECTURE.md](../ARCHITECTURE.md) states
 that it must. A unit test cannot show it, because what has to succeed is a mam
-build. This folder can, and does, every time CI runs.
+build. This folder can, and does, every time CI runs: `demo` stands in the
+`modules` of `.github/workflows/deploy.yml` beside `app`, built and never
+published. It was added there on 09.09.2026, and until then this sentence was a
+promise nothing kept.
 
 What the built bundle is checked to contain:
 
