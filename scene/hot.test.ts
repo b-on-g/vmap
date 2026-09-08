@@ -1,0 +1,368 @@
+namespace $ {
+
+	/**
+	 * Hot recompilation: an edit moves the living component onto the new classes
+	 * instead of building another one.
+	 *
+	 * Everything here is checked on a document of SEVERAL classes, because that is
+	 * the mode the editor works in and the one the S2 bench never ran. Two failures
+	 * of this are silent rather than loud, so both have a test of their own: a
+	 * recreated sandbox would cut live instances off the fresh classes, and
+	 * unsorted declarations would let an heir inherit the previous version of its
+	 * base with no error anywhere.
+	 *
+	 * `d` keeps `$` out of the string literals — mam builds its dependency graph by
+	 * a regexp over sources, literals included.
+	 * @see ../ARCHITECTURE.md section 3, ../spike/S2.md
+	 */
+	const d = '$'
+
+	const pack = 'https://pack.test/web.js'
+
+	/** A scene whose pack never leaves the process. */
+	function scene( $: $ ) {
+
+		const made = $bog_vmap_scene.make({ $ }) as $$.$bog_vmap_scene
+
+		made.pack_fetch = async ( uri: string )=> uri
+		made.pack_uri( pack )
+
+		return made
+	}
+
+	/**
+	 * Reads a cell that suspends on the fetch of the pack, from outside a fiber.
+	 * Any other failure is rethrown at once rather than waited out.
+	 */
+	async function settled< Value >( read: ()=> Value, limit = 300 ) {
+
+		const till = Date.now() + limit
+
+		for( ;; ) {
+
+			try {
+				return read()
+			} catch( error: unknown ) {
+
+				if( !$mol_promise_like( error ) ) return $mol_fail( error as Error )
+				if( Date.now() > till ) return $mol_fail( new Error( 'the pack never landed' ) )
+
+				await new Promise( next => setTimeout( next, 2 ) )
+			}
+
+		}
+
+	}
+
+	/** Compiles a source and hands back the live root. */
+	async function grown( made: $$.$bog_vmap_scene, root: string, src: string ) {
+		made.doc_root( root )
+		made.doc_src( src )
+		return await settled( ()=> made.instance() ) as any
+	}
+
+	$mol_test({
+
+		/**
+		 * The whole point of the stage, on the shape a document actually has.
+		 *
+		 * An edit of one class leaves the instances of its neighbour untouched —
+		 * the same objects, with the same values — while the edited class picks
+		 * the new code up. Instance identity is asserted and not merely the
+		 * values, because a rebuild that restored the values would also lose
+		 * the caret, the focus and the scroll of the real thing.
+		 */
+		async 'an edit of one class leaves the instances of its neighbour alone'( $ ) {
+
+			const made = scene( $ )
+			const root = `${d}hot_two_page`
+
+			const src = ( tag: string )=>
+				`${root} ${d}mol_view\n`
+				+ `\tsub /\n\t\t<= Kid ${d}hot_two_kid\n\t\t<= Tail ${d}hot_two_tail\n`
+				+ `${d}hot_two_kid ${d}mol_view\n\tnote? \\\n`
+				+ `${d}hot_two_tail ${d}mol_view\n\ttag \\${ tag }\n`
+
+			const first = await grown( made, root, src( 'one' ) )
+
+			const kid = first.Kid()
+			const tail = first.Tail()
+
+			kid.note( 'typed by hand' )
+
+			const second = await grown( made, root, src( 'two' ) )
+
+			$mol_assert_equal( second, first )
+			$mol_assert_equal( second.Kid(), kid )
+			$mol_assert_equal( second.Tail(), tail )
+
+			// the untouched neighbour keeps what was written into it
+			$mol_assert_equal( kid.note(), 'typed by hand' )
+
+			// and the edited class serves the new code, on the same object
+			$mol_assert_equal( tail.tag(), 'two' )
+
+		},
+
+		/**
+		 * An heir written ABOVE its base, which is the order that breaks silently.
+		 *
+		 * A class computes its base at definition time, and the generator emits
+		 * declarations in the order it got them. Unsorted, the second compile finds
+		 * the previous version of the base already in the sandbox and inherits THAT:
+		 * no error, no failure on the bridge, the edit simply does not arrive.
+		 * Measured before this test was written, on this very source.
+		 */
+		async 'an heir declared above its base follows an edit of that base'( $ ) {
+
+			const made = scene( $ )
+			const root = `${d}hot_heir_page`
+
+			const src = ( tag: string )=>
+				`${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_heir_kid\n`
+				+ `${d}hot_heir_kid ${d}hot_heir_base\n`
+				+ `${d}hot_heir_base ${d}mol_view\n\ttag \\${ tag }\n`
+
+			const first = await grown( made, root, src( 'one' ) )
+			$mol_assert_equal( first.Kid().tag(), 'one' )
+
+			const second = await grown( made, root, src( 'two' ) )
+
+			$mol_assert_equal( second, first )
+			$mol_assert_equal( second.Kid().tag(), 'two' )
+
+		},
+
+		/**
+		 * One sandbox per document, and a live instance still reaches through it.
+		 *
+		 * A fresh `Object.create` on every compile would be invisible from the
+		 * outside: the context of an instance is cached at its first read and never
+		 * looked up again, so an old child would keep resolving names in the sandbox
+		 * of the previous round while the new classes went into another one.
+		 */
+		async 'the sandbox is one per document and holds the fresh classes'( $ ) {
+
+			const made = scene( $ )
+			const root = `${d}hot_box_page`
+
+			const src = ( tag: string )=>
+				`${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_box_kid\n`
+				+ `${d}hot_box_kid ${d}mol_view\n\ttag \\${ tag }\n`
+
+			const first = await grown( made, root, src( 'one' ) )
+			const box = made.sandbox()
+			const kid = first.Kid()
+
+			await grown( made, root, src( 'two' ) )
+
+			$mol_assert_equal( made.sandbox(), box )
+			$mol_assert_equal( ( kid as any ).$, box )
+
+			// the class in the sandbox is the one the live child now answers by
+			$mol_assert_equal( Reflect.get( box, `${d}hot_box_kid` ), kid.constructor )
+
+		},
+
+		/**
+		 * What has to survive an edit, in the three forms a cell takes.
+		 *
+		 * A written solo value, a written keyed value and the text of a field are
+		 * one mechanism — an own field of the instance holding an atom — so all
+		 * three are asserted together. The caret, the focus and the scroll position
+		 * are NOT here: they live in the DOM alone and a node run has no layout to
+		 * put them in. They were measured on the S2 bench in a browser.
+		 */
+		async 'written values survive a recompile'( $ ) {
+
+			const made = scene( $ )
+			const root = `${d}hot_state_page`
+
+			const src = ( tag: string )=>
+				`${root} ${d}mol_view\n`
+				+ `\ttag \\${ tag }\n`
+				+ `\tcount? 0\n`
+				+ `\tslot*id? \\\n`
+				+ `\ttext? \\\n`
+
+			const first = await grown( made, root, src( 'one' ) )
+
+			first.count( 7 )
+			first.slot( 'left', 'held' )
+			first.text( 'typed by hand' )
+
+			const second = await grown( made, root, src( 'two' ) )
+
+			$mol_assert_equal( second, first )
+			$mol_assert_equal( second.tag(), 'two' )
+			$mol_assert_equal( second.count(), 7 )
+			$mol_assert_equal( second.slot( 'left' ), 'held' )
+			$mol_assert_equal( second.text(), 'typed by hand' )
+
+		},
+
+		/**
+		 * A changed base is the case the swap must refuse.
+		 *
+		 * State would survive it, and that is exactly the trap: the DOM node was
+		 * built by the old base and carries ITS `attr_static()`, which nothing
+		 * recomputes. The component would read as the new base and behave as the
+		 * old one. Checked on a NESTED class, because a base changes far more often
+		 * away from the root than at it.
+		 */
+		async 'a changed base rebuilds instead of swapping'( $ ) {
+
+			const made = scene( $ )
+			const root = `${d}hot_base_page`
+
+			const src = ( base: string )=>
+				`${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_base_kid\n`
+				+ `${d}hot_base_kid ${d}hot_base_${ base }\n`
+				+ `${d}hot_base_one ${d}mol_view\n\ttag \\one\n`
+				+ `${d}hot_base_two ${d}mol_view\n\ttag \\two\n`
+
+			const first = await grown( made, root, src( 'one' ) )
+			$mol_assert_equal( first.Kid().tag(), 'one' )
+
+			const second = await grown( made, root, src( 'two' ) )
+
+			$mol_assert_equal( second === first, false )
+			$mol_assert_equal( second.Kid().tag(), 'two' )
+
+		},
+
+		/**
+		 * A changed pack is the other case it must refuse.
+		 *
+		 * The context of a live instance is cached under a symbol private to a
+		 * bundle, and the getter falls back to the global one the moment another
+		 * bundle defines its own. Measured on S4: the same instance, the same living
+		 * DOM, nothing on the error channel, and the sandbox simply gone.
+		 */
+		async 'a changed pack rebuilds instead of swapping'( $ ) {
+
+			const made = scene( $ )
+			const root = `${d}hot_pack_page`
+			const src = `${root} ${d}mol_view\n\ttag \\one\n`
+
+			const first = await grown( made, root, src )
+
+			made.pack_uri( 'https://other.test/web.js' )
+
+			const second = await settled( ()=> made.instance() ) as any
+
+			$mol_assert_equal( second === first, false )
+
+		},
+
+		/**
+		 * A property that changes between solo and keyed cannot keep its value,
+		 * and must not leave the atom of the other shape behind either.
+		 *
+		 * A keyed read looks for a dictionary in the field a solo atom is sitting
+		 * in, so the stale one is not merely useless, it throws `dict.get is not a
+		 * function`.
+		 *
+		 * The `emit()` the atom gets before it is dropped is NOT isolated here, and
+		 * cannot be by a test of this shape: waking dependants matters because
+		 * unsubscribing marks nobody stale, but every dependant of a property that
+		 * changes shape has its own code changed by the same edit, so it would
+		 * recompute either way. It is asserted where it can be — the property is
+		 * gone in its old shape and answers in the new one, on the same instance.
+		 */
+		async 'a property that turns keyed leaves no atom of the old shape'( $ ) {
+
+			const made = scene( $ )
+			const root = `${d}hot_shape_page`
+
+			const solo = `${root} ${d}mol_view\n\tnote? \\\n`
+			const keyed = `${root} ${d}mol_view\n\tnote*id? \\\n`
+
+			const first = await grown( made, root, solo )
+
+			first.note( 'written' )
+			$mol_assert_equal( first.note(), 'written' )
+			$mol_assert_ok( Reflect.get( first, 'note()' ) )
+
+			const second = await grown( made, root, keyed )
+
+			$mol_assert_equal( second, first )
+			$mol_assert_equal( made.compile_error, '' )
+
+			// the solo atom is gone rather than left for a keyed read to trip over
+			$mol_assert_equal( Reflect.get( second, 'note()' ), undefined )
+
+			// and the keyed property answers, on the same instance
+			$mol_assert_equal( second.note( 'a' ), '' )
+			$mol_assert_equal( second.note( 'a', 'again' ), 'again' )
+			$mol_assert_ok( Reflect.get( second, 'note()' ) instanceof Map )
+
+		},
+
+		/**
+		 * The sort is the language's, not the scene's.
+		 *
+		 * Two copies of it would be one divergence away from an heir inheriting the
+		 * previous version of its base, and the divergence would show as nothing at
+		 * all. So the scene is asked to order declarations while the canonical sort
+		 * is replaced: an answer that follows the replacement is proof there is no
+		 * second copy.
+		 */
+		'the scene orders declarations by the sort of the language'( $ ) {
+
+			const asked = [] as number[]
+
+			const ctx = Object.create( $ ) as $
+			Reflect.set( ctx, '$bog_vmap_lang_sorted', ( defs: readonly $mol_tree2[] )=> {
+				asked.push( defs.length )
+				return [ ... defs ].reverse()
+			} )
+
+			const defs = $.$mol_tree2_from_string( `${d}hot_sort_a ${d}mol_view\n${d}hot_sort_b ${d}mol_view\n` ).kids
+
+			const out = ctx.$bog_vmap_scene_order( [], defs )
+
+			$mol_assert_like( asked, [ 2 ] )
+			$mol_assert_like( out.map( def => def.type ), [ `${d}hot_sort_b`, `${d}hot_sort_a` ] )
+
+		},
+
+		/**
+		 * A broken source must cost nothing but a message.
+		 *
+		 * The failure is reported, the living component keeps its state and its
+		 * node, and a fixed source lands back on the very same instance rather than
+		 * on a replacement of it.
+		 */
+		async 'a compile failure leaves the living instance whole'( $ ) {
+
+			const made = scene( $ )
+			const root = `${d}hot_fail_page`
+
+			const src = ( tag: string )=> `${root} ${d}mol_view\n\ttag \\${ tag }\n\tnote? \\\n`
+
+			const first = await grown( made, root, src( 'one' ) )
+			first.note( 'typed by hand' )
+
+			// an heir of a class nobody declared: the generated code throws
+			const broken = await grown(
+				made, root,
+				src( 'one' ) + `${d}hot_fail_kid ${d}hot_fail_ghost\n`,
+			)
+
+			$mol_assert_equal( broken, first )
+			$mol_assert_ok( made.compile_error )
+			$mol_assert_equal( first.note(), 'typed by hand' )
+
+			const fixed = await grown( made, root, src( 'two' ) )
+
+			$mol_assert_equal( fixed, first )
+			$mol_assert_equal( made.compile_error, '' )
+			$mol_assert_equal( fixed.tag(), 'two' )
+			$mol_assert_equal( fixed.note(), 'typed by hand' )
+
+		},
+
+	})
+
+}
