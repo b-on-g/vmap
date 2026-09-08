@@ -992,6 +992,49 @@ namespace $.$$ {
 		}
 
 		/**
+		 * Renames a node: the declaration, everything that spells it, and the editor
+		 * state keyed by its name.
+		 *
+		 * The name of a node is the property it occupies on the root class, so it is
+		 * also the key of the placement, of the remembered boxes and of the pick.
+		 * Renaming the text alone orphans all three: the node moves to a new name and
+		 * `selected()` and `spots()` go on pointing at one nothing declares.
+		 *
+		 * The document goes first BECAUSE it is the write that can refuse — a name
+		 * already declared is rejected there — so a refused rename leaves the editor
+		 * state exactly as it was rather than pointing at a rename that never
+		 * happened.
+		 *
+		 * Through the property handle and not through `prop_rename` directly: the
+		 * handle composes the new signature out of the current one, so a keyed or a
+		 * two way property keeps its signs. Wires are rewritten by the model, NOT
+		 * dropped — the mirror of `node_delete`, where `links_drop` cuts them because
+		 * the node itself is going.
+		 */
+		@ $mol_action
+		node_rename( name: string, next: string ) {
+
+			if( !next || next === name ) return
+
+			this.node().property( name ).title( next )
+
+			const spots = { ... this.spots() }
+			const spot = spots[ name ]
+
+			if( spot ) {
+				delete spots[ name ]
+				this.spots({ ... spots, [ next ]: spot })
+			}
+
+			// The box is remembered under the old name and nothing will ever report
+			// it again; the new name gets its own on the next measurement.
+			this.pane().sizes_forget( name )
+
+			if( this.selected() === name ) this.selected( next )
+
+		}
+
+		/**
 		 * Del anywhere in the editor, as long as the keystroke is not somebody's text.
 		 *
 		 * On the window and not on the canvas: the canvas is an iframe, and a focused

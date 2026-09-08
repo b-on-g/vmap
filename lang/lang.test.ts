@@ -1096,6 +1096,109 @@ namespace $ {
 
 		},
 
+		/**
+		 * A rename is a rewrite of the whole class, not of one line: the name of a
+		 * node is spelled by everything that points at it. The property also keeps
+		 * its place — dropping and re-inserting moved it to the end, which reorders
+		 * the canvas for an edit that moves nothing.
+		 */
+		'renaming a node rewrites the wire that reads it'( $ ) {
+
+			const node = doc( demo_src )
+
+			node.property( 'Calc' ).title( 'Motor' )
+
+			$mol_assert_equal( node.source(), demo_src.replace( /Calc(?= |\n)/g, 'Motor' ) )
+			$mol_assert_like( node.prop_names(), [ 'Price', 'Hero', 'Motor', 'calc_result', 'label', 'sub' ] )
+
+			// The wire is alive and reads the node under its new name.
+			$mol_assert_like( node.links(), [
+				{ from: 'Motor', from_prop: 'result', to: 'Price', to_prop: 'title', name: 'calc_result', bidi: false },
+			] )
+
+		},
+
+		'renaming a node rewrites the sub that draws it'( $ ) {
+
+			const node = doc( demo_src )
+
+			node.property( 'Hero' ).title( 'Stage' )
+
+			$mol_assert_like( node.sub_names(), [ 'Stage' ] )
+			$mol_assert_equal( node.sub_holder( 'Stage' ), '' )
+			$mol_assert_equal( node.sub_holder( 'Hero' ), null )
+
+			// The sub of the renamed node itself is untouched.
+			$mol_assert_like( node.sub_names( 'Stage' ), [ 'Price' ] )
+
+		},
+
+		/** The other end: renaming the wire moves the name in the part that reads it. */
+		'renaming a wire rewrites the binding that reads it'( $ ) {
+
+			const node = doc( demo_src )
+
+			node.property( 'calc_result' ).title( 'total' )
+
+			$mol_assert_like( node.links(), [
+				{ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title', name: 'total', bidi: false },
+			] )
+			$mol_assert_equal( node.source().includes( 'title <= total' ), true )
+			$mol_assert_equal( node.source().includes( 'calc_result' ), false )
+
+		},
+
+		/**
+		 * The handle is not patched to follow the rename, and a reader of the name
+		 * recomputes off the text instead. Under the old shape the `name` method of
+		 * the live handle was overwritten, so the object addressed one property and
+		 * read another, past the graph.
+		 */
+		'a reader of the name recomputes on a rename'( $ ) {
+
+			const node = doc( demo_src )
+
+			const reader = $mol_wire_atom.solo( node, function names_reader( this: typeof node ) {
+				return this.prop_names().join( ' ' )
+			} )
+
+			$mol_assert_equal( reader.sync().includes( 'Calc' ), true )
+
+			node.property( 'Calc' ).title( 'Motor' )
+
+			$mol_assert_equal( reader.sync().includes( 'Motor' ), true )
+			$mol_assert_equal( reader.sync().includes( 'Calc' ), false )
+
+			// The handle of the old name addresses nothing now, and says so instead
+			// of answering out of what was written through it.
+			$mol_assert_equal( node.property( 'Calc' ).title(), '' )
+			$mol_assert_equal( node.property( 'Motor' ).title(), 'Motor' )
+
+		},
+
+		'a rename onto a name already declared is refused'( $ ) {
+
+			const node = doc( demo_src )
+
+			$mol_assert_fail( ()=> node.property( 'Calc' ).title( 'Price' ), Error )
+
+			// Nothing moved.
+			$mol_assert_equal( node.source(), demo_src )
+
+		},
+
+		/** A sign travels with the rename: one write, or the document is unsigned between two. */
+		'a rename carries the sign of the property'( $ ) {
+
+			const node = doc( `${d}bog_vmap_lang_test_sign ${d}mol_view value? null\n` )
+
+			node.property( 'value' ).title( 'title' )
+
+			$mol_assert_equal( node.source(), `${d}bog_vmap_lang_test_sign ${d}mol_view title? null\n` )
+			$mol_assert_equal( node.property( 'title' ).next(), true )
+
+		},
+
 	})
 
 }

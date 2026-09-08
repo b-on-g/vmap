@@ -370,6 +370,71 @@ namespace $ {
 
 		},
 
+		/**
+		 * The name of a node is the key of the pick, of the placement and of the
+		 * remembered box at once, so a rename that only touches the text orphans all
+		 * three: the node lives under the new name while the editor points at one
+		 * nothing declares.
+		 */
+		'renaming a node carries the pick and the placement with it'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+			app.selected( 'Button_minor' )
+
+			const spot = app.spots()[ 'Button_minor' ]
+			$mol_assert_equal( Boolean( spot ), true )
+
+			app.node_rename( 'Button_minor', 'Send' )
+
+			$mol_assert_equal( app.node().prop_names().includes( 'Send' ), true )
+			$mol_assert_equal( app.node().prop_names().includes( 'Button_minor' ), false )
+
+			$mol_assert_equal( app.selected(), 'Send' )
+			$mol_assert_like( app.spots()[ 'Send' ], spot )
+			$mol_assert_equal( app.spots()[ 'Button_minor' ], undefined )
+
+		},
+
+		/** A node drawn on a page keeps its place in that page under the new name. */
+		'renaming a node on a board keeps it drawn'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.board_add()
+			app.part_drop( `${d}mol_button_minor`, 2000, 100 )
+			app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 })
+
+			app.node_rename( 'Button_minor', 'Send' )
+
+			$mol_assert_like( app.node().sub_names( 'Page' ), [ 'Send' ] )
+
+		},
+
+		/**
+		 * The document refuses the rename, and the editor state must not move for a
+		 * rename that did not happen.
+		 */
+		'a rename onto a name already taken changes nothing'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+			app.part_drop( `${d}mol_string`, 300, 400 )
+			app.selected( 'Button_minor' )
+
+			const before = app.doc_source()
+			const spots = JSON.stringify( app.spots() )
+
+			$mol_assert_fail( ()=> app.node_rename( 'Button_minor', 'String' ), Error )
+
+			$mol_assert_equal( app.doc_source(), before )
+			$mol_assert_equal( JSON.stringify( app.spots() ), spots )
+			$mol_assert_equal( app.selected(), 'Button_minor' )
+
+		},
+
 	})
 
 }
