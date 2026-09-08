@@ -12,8 +12,6 @@ namespace $.$$ {
 	/** Sandbox side of the S3 spike. Runs untrusted code, talks to the host only by postMessage. */
 	export class $bog_vmap_spike_s3_scene extends $.$bog_vmap_spike_s3_scene {
 
-		compile_error = ''
-
 		/** Source of the document class, as delivered by the host. */
 		@ $mol_mem
 		doc_src( next?: string ) {
@@ -65,24 +63,41 @@ namespace $.$$ {
 			return `${ mark } ${ probe.name } -> ${ probe.note }`
 		}
 
-		/** Compiled document instance, owned by this cell. */
+		/**
+		 * The compiled document and why the last compile failed, in one value.
+		 *
+		 * One cell and not two, because they are one computation. The failure used
+		 * to be a plain field written from inside this very computation, and a
+		 * reader of a field is woken by nothing: the report would carry the failure
+		 * of the round before, or none at all. That is the second forbidden case of
+		 * section 13 of the architecture, and the live scene was fixed the same way.
+		 */
 		@ $mol_mem
-		override preview(): readonly $mol_view[] {
+		mount(): { readonly made: readonly $mol_view[], readonly error: string } {
 
 			const src = this.doc_src()
 			const self = this.doc_class()
-			if( !src || !self ) return []
+			if( !src || !self ) return { made: [], error: '' }
 
 			try {
-				const made = this.compile( src, self )
-				this.compile_error = ''
-				return [ made ]
+				return { made: [ this.compile( src, self ) ], error: '' }
 			} catch( error: any ) {
 				if( error instanceof Promise ) return $mol_fail_hidden( error )
-				this.compile_error = String( error?.message ?? error )
-				return []
+				return { made: [], error: String( error?.message ?? error ) }
 			}
 
+		}
+
+		/** Compiled document instance. */
+		@ $mol_mem
+		override preview(): readonly $mol_view[] {
+			return this.mount().made
+		}
+
+		/** Why the last compile failed, or an empty string. */
+		@ $mol_mem
+		compile_error() {
+			return this.mount().error
 		}
 
 		/** view.tree text -> live class -> live instance, all inside this document. */
@@ -228,7 +243,7 @@ namespace $.$$ {
 				},
 			})
 
-			if( this.compile_error ) this.post({ kind: 'error', message: 'compile: ' + this.compile_error })
+			if( this.compile_error() ) this.post({ kind: 'error', message: 'compile: ' + this.compile_error() })
 
 			const broken = node.querySelector( '[mol_view_error]' )?.getAttribute( 'mol_view_error' )
 			if( broken && broken !== 'Promise' ) this.post({ kind: 'error', message: 'render: ' + broken })
