@@ -161,6 +161,47 @@ namespace $ {
 		return $mol_tree2.struct( this.$bog_vmap_lang_token( name, 'Part name' ), [ base ] )
 	}
 
+	/** Value of one key of a `*` dictionary, or `null` when the key is not there. */
+	export function $bog_vmap_lang_dict_get(
+		dict: $mol_tree2 | null,
+		key: string,
+	) {
+
+		if( dict?.type !== '*' ) return null
+
+		const found = dict.kids.find( kid => kid.type === key )
+
+		return found?.kids[ 0 ] ?? null
+	}
+
+	/**
+	 * Sets one key of a `*` dictionary, or drops it when the value is `null`.
+	 *
+	 * A key already there is replaced where it stands, so `^` keeps the head of the
+	 * dictionary it has to keep: a redeclared dictionary REPLACES the one of the
+	 * base instead of extending it, and `^` is the line that undoes that. Writing a
+	 * key must never be able to move it, and appending is the only other option.
+	 */
+	export function $bog_vmap_lang_dict_set(
+		this: $,
+		dict: $mol_tree2,
+		key: string,
+		value: $mol_tree2 | null,
+	) {
+
+		const name = this.$bog_vmap_lang_token( key, 'Dictionary key' )
+
+		if( !value ) return dict.clone( dict.kids.filter( kid => kid.type !== name ) )
+
+		const entry = dict.struct( name, [ value ] )
+
+		if( ! dict.kids.some( kid => kid.type === name ) ) {
+			return dict.clone([ ... dict.kids, entry ])
+		}
+
+		return dict.clone( dict.kids.map( kid => kid.type === name ? entry : kid ) )
+	}
+
 	/**
 	 * Class declarations reordered so that a base always precedes its heir.
 	 *
@@ -716,18 +757,14 @@ namespace $ {
 		}
 
 		/**
-		 * Replaces the override of one port in the declaration of a part, or drops
-		 * it when `next` is `null`. The other overrides keep their order.
+		 * Plugs a port of a part, or unplugs it when `next` is `null`.
+		 *
+		 * One override of one part, which is what `over_set` is; a wire has no
+		 * special way of writing its end and must not grow one, or the two would
+		 * drift apart on the first fix to either.
 		 */
 		link_target( to: string, to_prop: string, next: $mol_tree2 | null ) {
-
-			const decl = this.prop_tree( to )!
-			const klass = decl.kids[ 0 ]
-
-			const kids = klass.kids.filter( over => this.$.$mol_view_tree2_prop_parts( over ).name !== to_prop )
-			if( next ) kids.push( next )
-
-			this.prop_tree( to, decl.clone([ klass.clone( kids ) ]) )
+			this.over_set( to, to_prop, next )
 		}
 
 		/**
@@ -748,21 +785,221 @@ namespace $ {
 
 		}
 
-		/** Appends a bare reference `<= name` to the own `sub` of the class. */
+		/**
+		 * Declaration of a property, read off the derivation of the text.
+		 *
+		 * Not through `prop_tree()`: that one is a keyed cell the writes below go
+		 * through, and a read taken from a written cell freezes at what was written.
+		 * `props_tree()` is a plain derivation of the source and stays live.
+		 */
+		prop_decl( name: string ) {
+			const sign = this.prop_fullname( name )
+			return sign ? this.props_tree().select( sign ).kids[ 0 ] ?? null : null
+		}
+
+		/**
+		 * The `/` list of a `sub`, of the class itself or of one part of it, or
+		 * `null` when there is no `sub` there.
+		 *
+		 * The empty owner is the class, a named one is a part. Both are one shape
+		 * because `upper` has already flattened them: the class carries `sub` as a
+		 * property, a part carries it as an override under its class name, and under
+		 * either sits the same list of bare references.
+		 */
+		sub_list( owner = '' ) {
+
+			const prop = owner ? this.over_tree( owner, 'sub' ) : this.prop_decl( 'sub' )
+
+			const list = prop?.kids[ 0 ] ?? null
+
+			return list?.type[ 0 ] === '/' ? list : null
+		}
+
+		/**
+		 * Names the `sub` of a node references, in the order it draws them, or
+		 * `null` when the node declares no `sub` and so is not a container.
+		 *
+		 * A node WITH a `sub` is an artboard: children of it are laid out by tree,
+		 * by ordinary flex, while everything else lies free by coordinates. That is
+		 * the whole difference between the two, and it is a difference in the text
+		 * rather than a mark on the side, see section 8.
+		 *
+		 * Content that is not a bare reference — a literal string in `sub` — takes
+		 * its place in the list as an empty name, so that an index here is an index
+		 * there.
+		 */
+		sub_names( owner = '' ): readonly string[] | null {
+			const list = this.sub_list( owner )
+			return list && list.kids.map( ref => ref.kids[ 0 ]?.type ?? '' )
+		}
+
+		/** Whose `sub` references this name: a part, `''` for the class, `null` for nobody. */
+		sub_holder( name: string ) {
+
+			for( const owner of [ '', ... this.part_names() ] ) {
+				if( this.sub_names( owner )?.includes( name ) ) return owner
+			}
+
+			return null
+		}
+
+		/** Whether `name` is `owner` itself or lies somewhere under it. */
+		sub_within( owner: string, name: string ) {
+
+			const seen = new Set< string >()
+			const queue = [ owner ]
+
+			while( queue.length ) {
+
+				const at = queue.shift()!
+				if( at === name ) return true
+				if( seen.has( at ) ) continue
+				seen.add( at )
+
+				for( const kid of this.sub_names( at ) ?? [] ) if( kid ) queue.push( kid )
+			}
+
+			return false
+		}
+
+		/**
+		 * Puts a list of references back into the `sub` of the class or of a part.
+		 *
+		 * An override already there is replaced where it stands, never dropped and
+		 * appended: the order of the lines under a part is text the user reads, and
+		 * a `sub` that jumped to the bottom on every insertion would rewrite the
+		 * declaration around an edit that changed one child.
+		 */
+		sub_write( owner: string, list: $mol_tree2 ) {
+
+			const sub = list.struct( 'sub', [ list ] )
+
+			if( owner ) return this.over_set( owner, 'sub', sub )
+
+			this.tree( this.tree().insert( sub, null, this.prop_fullname( 'sub' ) || 'sub' ) )
+		}
+
+		/** Makes a node a container by giving it an empty `sub`, if it has none. */
 		@ $mol_action
-		sub_add( name: string ) {
+		sub_open( owner: string ) {
+			if( this.sub_list( owner ) ) return
+			this.sub_write( owner, this.tree().struct( '/' ) )
+		}
+
+		/** One override written under a part, `Board $mol_view style *`, or `null`. */
+		over_tree( owner: string, prop: string ) {
+
+			const kids = this.prop_decl( owner )?.kids[ 0 ]?.kids ?? []
+
+			return kids.find(
+				over => this.$.$mol_view_tree2_prop_parts( over ).name === prop
+			) ?? null
+		}
+
+		/**
+		 * Replaces an override under a part where it stands, appends a new one, or
+		 * drops it on `null`.
+		 *
+		 * In place, because the order of the lines under a part is text the user
+		 * reads: an override that jumped to the bottom every time its value changed
+		 * would rewrite the declaration around an edit that changed one line.
+		 */
+		over_set( owner: string, prop: string, next: $mol_tree2 | null ) {
+
+			const decl = this.prop_decl( owner )
+			const klass = decl?.kids[ 0 ]
+			if( !decl || !klass ) return
+
+			const named = ( over: $mol_tree2 ) => this.$.$mol_view_tree2_prop_parts( over ).name === prop
+
+			const kids = klass.kids.some( named )
+				? klass.kids.flatMap( over => named( over ) ? next ? [ next ] : [] : [ over ] )
+				: next ? [ ... klass.kids, next ] : klass.kids
+
+			this.prop_tree( owner, decl.clone([ klass.clone( kids ) ]) )
+
+		}
+
+		/**
+		 * Refuses to put a node inside itself or inside anything it already holds.
+		 *
+		 * A cycle in `sub` is not a badly drawn document, it is a class whose
+		 * `dom_tree()` never returns: the scene would hang on the first render, and
+		 * the document that hangs it is the one that got saved.
+		 */
+		sub_check( name: string, owner: string ) {
+
+			if( !owner ) return
+
+			if( name === owner ) this.$.$mol_fail(
+				new Error( `Node ${ JSON.stringify( name ) } cannot be put inside itself` )
+			)
+
+			if( this.sub_within( name, owner ) ) this.$.$mol_fail(
+				new Error( `Node ${ JSON.stringify( name ) } cannot be put inside ${ JSON.stringify( owner ) }, which it already holds` )
+			)
+
+		}
+
+		/**
+		 * Puts a bare reference `<= name` into a `sub` at a position.
+		 *
+		 * The position is where the insertion line was drawn, so it is clamped
+		 * rather than checked: a drop at the end of a list the document has since
+		 * shortened is an ordinary race of a gesture against a document, and landing
+		 * at the end is the answer to it.
+		 */
+		@ $mol_action
+		sub_insert( name: string, index: number, owner = '' ) {
 
 			const ref = this.$.$bog_vmap_lang_ref_tree( name )
 
-			const prev = this.prop_tree( 'sub' )
-			const list = prev?.kids[ 0 ] ?? ref.struct( '/' )
+			this.sub_check( name, owner )
 
-			const sub = ( prev ?? ref.struct( 'sub' ) ).clone([
-				list.clone([ ... list.kids, ref ])
-			])
+			const list = this.sub_list( owner ) ?? ref.struct( '/' )
 
-			this.tree( this.tree().insert( sub, null, sub.type ) )
+			const kids = [ ... list.kids ]
+			kids.splice( Math.max( 0, Math.min( index, kids.length ) ), 0, ref )
 
+			this.sub_write( owner, list.clone( kids ) )
+
+		}
+
+		/**
+		 * Moves a node to a position under another parent, or to another position
+		 * under the same one.
+		 *
+		 * Taken out first and put back after, so reparenting and reordering are one
+		 * operation with one shape. Within one parent the index is corrected for the
+		 * hole the node itself leaves, because the position the user aimed at was
+		 * read off a list that still had it.
+		 *
+		 * The refusal is checked BEFORE the node is taken out, not left to the
+		 * insertion: a move that fails halfway is a document with the node gone from
+		 * the page and nothing in its place, written and saved.
+		 */
+		@ $mol_action
+		sub_move( name: string, index: number, owner = '' ) {
+
+			this.sub_check( name, owner )
+
+			const from = this.sub_holder( name )
+
+			if( from === owner ) {
+				const at = this.sub_names( owner )!.indexOf( name )
+				if( at >= 0 && at < index ) index -= 1
+			}
+
+			if( from !== null ) this.sub_drop( name )
+
+			this.sub_insert( name, index, owner )
+
+		}
+
+		/** Appends a bare reference `<= name` to the own `sub` of the class. */
+		@ $mol_action
+		sub_add( name: string ) {
+			this.sub_insert( name, Infinity )
 		}
 
 		/**
@@ -777,22 +1014,23 @@ namespace $ {
 		 * it is two calls — the same split as `part_add` plus `sub_add` on the way
 		 * in. A node taken out of `sub` but still declared is a free part that draws
 		 * nothing and keeps its ports, which is a legitimate state, not a leftover.
+		 *
+		 * The reference is looked for wherever it is, the class and every part of it
+		 * alike. A node inside an artboard is referenced by that artboard and not by
+		 * the class, and deleting it has to reach there too — otherwise the document
+		 * keeps drawing a node nothing declares any more.
 		 */
 		@ $mol_action
 		sub_drop( name: string ) {
 
-			const prev = this.prop_tree( 'sub' )
-			if( !prev ) return
+			const owner = this.sub_holder( name )
+			if( owner === null ) return
 
-			const list = prev.kids[ 0 ]
-			if( !list ) return
+			const list = this.sub_list( owner )!
 
-			const kids = list.kids.filter( ref => ref.kids[ 0 ]?.type !== name )
-			if( kids.length === list.kids.length ) return
-
-			this.tree(
-				this.tree().insert( prev.clone([ list.clone( kids ) ]), null, prev.type )
-			)
+			this.sub_write( owner, list.clone(
+				list.kids.filter( ref => ref.kids[ 0 ]?.type !== name )
+			) )
 
 		}
 
