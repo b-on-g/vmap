@@ -42144,6 +42144,12 @@ declare namespace $ {
          * the fiber here would end it inside that window, and what would be lost is
          * the text the user typed, silently. Measured; there is a test. Nothing
          * leaks by it: a one-shot fiber destructs itself the moment it completes.
+         *
+         * What opens that window is `make()` standing first in `doc_add` and the
+         * pouring standing after it — NOT `doc_pick`, which is last. Without an
+         * address, and there is none on a first run, `doc_current` answers with the
+         * last link of the list, and the link is in the list from `make()` on, with
+         * an empty document behind it.
          */
         doc_first_task(): {
             task: Promise<void>;
