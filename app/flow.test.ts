@@ -51,7 +51,7 @@ namespace $ {
 
 			// Nothing failed to draw except the frame, which stays suspended for
 			// ever: jsdom never loads the sandbox page, so its `onload` never fires.
-			$mol_assert_like( stage.broken(), [ stage.pane.Scene( 0 ).dom_id() ] )
+			$mol_assert_like( stage.broken(), [ stage.pane.Scene( stage.pane.scene_key() ).dom_id() ] )
 
 		},
 
@@ -250,6 +250,96 @@ namespace $ {
 		},
 
 		/**
+		 * The sandbox is raised from markup, not from an address: there is exactly
+		 * one page in the project and the sandbox is not it.
+		 *
+		 * What the markup has to carry is checked here rather than argued: the
+		 * isolation, the absence of any address, and an ABSOLUTE address of the
+		 * bundle — an opaque origin has no base to resolve a relative one against.
+		 */
+		'the frame is raised from markup and carries no address'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const frame = stage.frame()
+
+			$mol_assert_equal( frame.getAttribute( 'sandbox' ), 'allow-scripts' )
+			$mol_assert_equal( frame.hasAttribute( 'src' ), false )
+
+			const html = frame.getAttribute( 'srcdoc' ) ?? ''
+			const bundle = stage.app.scene_bundle()
+
+			$mol_assert_ok( bundle.endsWith( '/scene/web.js' ) )
+			$mol_assert_ok( html.includes( `src="${ bundle }"` ) )
+
+			// the frame paints its own ground, see `scene_html()`
+			$mol_assert_ok( html.includes( 'color-scheme:dark' ) )
+
+		},
+
+		/**
+		 * The pack travels the bridge, and it travels FIRST.
+		 *
+		 * The scene compiles nothing until it has been told a pack, because a class
+		 * picks its base once and a document built a moment early would inherit the
+		 * sandbox's own `$mol_view` for good. So the order of the first three
+		 * messages of a handshake is part of the contract, not an accident of how
+		 * the cells happen to be listed.
+		 */
+		'the pack goes down the wire before the document and the libraries'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			const kinds = stage.scene.posted.map( message => message.kind )
+			const pack = kinds.indexOf( 'pack_set' )
+
+			$mol_assert_ok( pack >= 0 )
+			$mol_assert_ok( pack < kinds.indexOf( 'doc_set' ) )
+			$mol_assert_ok( pack < kinds.indexOf( 'libs_set' ) )
+
+			$mol_assert_equal( stage.scene.last( 'pack_set' )?.uri, stage.app.pack_script() )
+
+		},
+
+		/**
+		 * One pack per frame, held by construction now that no address holds it: the
+		 * pack is part of the key of the frame, so naming another one gives a new
+		 * element and a realm that has never seen the first bundle. A land is
+		 * compiled into the sandbox instead, so a change of lands must not cost the
+		 * frame, its camera or its live instances.
+		 * @see ../ARCHITECTURE.md section 5
+		 */
+		'a new pack gives a new frame, a new land keeps the old one'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const field = stage.field( 'Palette().Links()' )
+
+			const before = stage.frame()
+
+			stage.type( field, 'http://pack.test/, AbCdEfGh' )
+			$mol_assert_ok( stage.frame() !== before )
+			$mol_assert_like( stage.app.lands(), [ 'AbCdEfGh' ] )
+
+			// the fresh frame has proved nothing yet, so nothing is pushed at it
+			$mol_assert_equal( stage.pane.ready(), false )
+
+			// it boots and gets the new pack first, exactly as the first one did
+			const seen = stage.scene.posted.length
+			stage.scene.hello()
+
+			$mol_assert_equal( stage.pane.ready(), true )
+			$mol_assert_equal( stage.scene.posted[ seen ]?.kind, 'pack_set' )
+			$mol_assert_equal( stage.scene.last( 'pack_set' )?.uri, 'http://pack.test/web.js' )
+
+			// a land rides the bridge, so the frame stands
+			const kept = stage.frame()
+			stage.type( field, 'http://pack.test/, AbCdEfGh, ZyXwVuTs' )
+
+			$mol_assert_equal( stage.frame(), kept )
+			$mol_assert_like( stage.app.lands(), [ 'AbCdEfGh', 'ZyXwVuTs' ] )
+
+		},
+
+		/**
 		 * The palette field takes a pack and lands together, and refuses a second
 		 * pack out loud: the reason is under the field and the frame keeps the pack
 		 * it already loaded.
@@ -264,8 +354,8 @@ namespace $ {
 			$mol_assert_equal( stage.app.pack_link(), 'http://pack.test/' )
 			$mol_assert_like( stage.app.lands(), [ 'AbCdEfGh' ] )
 
-			const uri = stage.app.scene_uri()
-			$mol_assert_ok( uri.includes( encodeURIComponent( 'http://pack.test/web.js' ) ) )
+			const key = stage.pane.scene_key()
+			$mol_assert_equal( stage.pane.pack_uri(), 'http://pack.test/web.js' )
 
 			stage.type( field, 'http://pack.test/, AbCdEfGh, http://other.test/' )
 
@@ -273,8 +363,8 @@ namespace $ {
 			$mol_assert_ok( stage.text().includes( $bog_vmap_lib_links_reason.pack_second ) )
 			$mol_assert_ok( stage.text().includes( 'http://other.test/' ) )
 
-			// The frame address is the one it already had: no reload.
-			$mol_assert_equal( stage.app.scene_uri(), uri )
+			// The frame is the one it already was: no reload.
+			$mol_assert_equal( stage.pane.scene_key(), key )
 			$mol_assert_equal( stage.field( 'Palette().Links()' ).value, 'http://pack.test/, AbCdEfGh, http://other.test/' )
 
 		},
@@ -375,9 +465,9 @@ namespace $ {
 		/**
 		 * A document opened by a link lives in a land of its own, and until that
 		 * land arrives every read of it suspends. THE SANDBOX MUST COME UP ANYWAY:
-		 * its address is not the document's business, and an editor that waits for
-		 * the text before it raises the frame waits for ever on a document whose
-		 * master is not reachable — which is what «ожидание сцены…» was.
+		 * the markup of the frame is not the document's business, and an editor that
+		 * waits for the text before it raises the frame waits for ever on a document
+		 * whose master is not reachable — which is what «ожидание сцены…» was.
 		 */
 		'the sandbox comes up while the document of the address is still on its way'( $ ) {
 
@@ -391,11 +481,10 @@ namespace $ {
 				pack: ()=> { throw waiting },
 			})
 
-			const stage = $bog_vmap_app_flow_stage( $, store )
+			const stage = $bog_vmap_app_flow_stage( $, { store } )
 
-			// The frame has an address, so the scene boots and answers.
-			$mol_assert_ok( stage.app.scene_uri() )
-			$mol_assert_ok( stage.frame().getAttribute( 'src' ) )
+			// The frame has its markup, so the scene boots and answers.
+			$mol_assert_ok( stage.frame().getAttribute( 'srcdoc' ) )
 			$mol_assert_equal( stage.pane.ready(), true )
 
 			// The complaint itself: the head bar no longer says it is waiting.

@@ -165,32 +165,37 @@ namespace $ {
 
 		/**
 		 * Section 5 in one test: a pack cannot be unloaded from a realm, so a change
-		 * of pack is a change of the frame address and the browser reloads; a land is
-		 * compiled into the sandbox like the document, so a change of lands leaves
-		 * the address — and with it the frame, its camera and its live instances —
-		 * exactly where they were.
+		 * of pack is a change of the KEY of the frame and the element is replaced; a
+		 * land is compiled into the sandbox like the document, so a change of lands
+		 * leaves the key — and with it the frame, its camera and its live
+		 * instances — exactly where they were.
+		 *
+		 * The pack rides the bridge now rather than the address of the frame, so
+		 * what is read here is the key, which is what the guarantee actually rests
+		 * on. That a key really makes a new element is `flow.test.ts`.
 		 */
-		'a change of lands keeps the frame, a change of pack reloads it'( $ ) {
+		'a change of lands keeps the frame, a change of pack replaces it'( $ ) {
 
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+			const pane = app.Pane() as $$.$bog_vmap_app_pane
 
 			app.links( 'https://mol.hyoo.ru' )
-			const before = app.scene_uri()
-			$mol_assert_ok( before.includes( encodeURIComponent( 'https://mol.hyoo.ru/web.js' ) ) )
+			const before = pane.scene_key()
+			$mol_assert_equal( pane.pack_uri(), 'https://mol.hyoo.ru/web.js' )
 
 			app.links( 'https://mol.hyoo.ru, AbCdEfGh_12345678_ZyXwVuTs' )
-			$mol_assert_equal( app.scene_uri(), before )
+			$mol_assert_equal( pane.scene_key(), before )
 			$mol_assert_like( app.lands(), [ 'AbCdEfGh_12345678_ZyXwVuTs' ] )
 
 			// the slash grows in the derived address, the field keeps what was typed
 			app.links( 'https://b-on-g.github.io/gram, AbCdEfGh_12345678_ZyXwVuTs' )
-			$mol_assert_ok( app.scene_uri() !== before )
-			$mol_assert_ok( app.scene_uri().includes( encodeURIComponent( 'https://b-on-g.github.io/gram/web.js' ) ) )
+			$mol_assert_ok( pane.scene_key() !== before )
+			$mol_assert_equal( pane.pack_uri(), 'https://b-on-g.github.io/gram/web.js' )
 			$mol_assert_equal( app.links(), 'https://b-on-g.github.io/gram, AbCdEfGh_12345678_ZyXwVuTs' )
 
 			// a second pack is refused: the frame keeps the first
 			app.links( 'https://b-on-g.github.io/gram, https://mol.hyoo.ru' )
-			$mol_assert_ok( app.scene_uri().includes( encodeURIComponent( 'https://b-on-g.github.io/gram/web.js' ) ) )
+			$mol_assert_equal( pane.pack_uri(), 'https://b-on-g.github.io/gram/web.js' )
 			$mol_assert_equal( app.links_parsed().rejected.length, 1 )
 
 			// a field naming no pack falls back to the standard palette, see below
@@ -203,11 +208,12 @@ namespace $ {
 		/**
 		 * The two layouts of one pack, from the address of the editor page alone.
 		 *
-		 * The dev server keeps a module in `<pack>/<module>/-/` and a deploy
-		 * publishes the content of `-/` into `<pack>/<module>/`, so both the sandbox
-		 * and the standard palette are found without anything being configured or
-		 * typed. The derivation itself is covered in `lib`; here it is that the
-		 * editor asks for the right two siblings.
+		 * The dev server keeps every module in `<pack>/<module>/-/`, while a deploy
+		 * publishes the editor at the root of the site and the other modules as
+		 * folders under it. Neither the sandbox nor the standard palette has a page
+		 * on either layout, so what is derived is a bundle and a folder, and nothing
+		 * is configured or typed. The derivation itself is covered in `lib`; here it
+		 * is that the editor asks for the right two siblings.
 		 */
 		'the sandbox and the standard palette are found on both layouts'( $ ) {
 
@@ -217,24 +223,16 @@ namespace $ {
 			const dev = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 			dev.page_uri = ()=> 'http://localhost:9080/bog/vmap/app/-/test.html'
 
-			$mol_assert_equal( dev.scene_page(), 'http://localhost:9080/bog/vmap/scene/-/index.html' )
+			$mol_assert_equal( dev.scene_bundle(), 'http://localhost:9080/bog/vmap/scene/-/web.js' )
 			$mol_assert_equal( dev.pack_link(), 'http://localhost:9080/bog/vmap/part/-/' )
-			$mol_assert_equal(
-				dev.scene_uri(),
-				'http://localhost:9080/bog/vmap/scene/-/index.html?pack='
-					+ encodeURIComponent( 'http://localhost:9080/bog/vmap/part/-/web.js' ),
-			)
+			$mol_assert_equal( dev.pack_script(), 'http://localhost:9080/bog/vmap/part/-/web.js' )
 
 			const prod = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
-			prod.page_uri = ()=> 'https://b-on-g.github.io/vmap/app/'
+			prod.page_uri = ()=> 'https://b-on-g.github.io/vmap/'
 
-			$mol_assert_equal( prod.scene_page(), 'https://b-on-g.github.io/vmap/scene/index.html' )
+			$mol_assert_equal( prod.scene_bundle(), 'https://b-on-g.github.io/vmap/scene/web.js' )
 			$mol_assert_equal( prod.pack_link(), 'https://b-on-g.github.io/vmap/part/' )
-			$mol_assert_equal(
-				prod.scene_uri(),
-				'https://b-on-g.github.io/vmap/scene/index.html?pack='
-					+ encodeURIComponent( 'https://b-on-g.github.io/vmap/part/web.js' ),
-			)
+			$mol_assert_equal( prod.pack_script(), 'https://b-on-g.github.io/vmap/part/web.js' )
 
 			// what a person typed is used as typed and never replaced by the sibling
 			prod.links( 'https://mol.hyoo.ru' )

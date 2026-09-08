@@ -10,15 +10,16 @@ $bog_vmap_app $mol_view
 	selected? null
 	doc_js *
 	doc_root \
-	- The sandbox is a sibling module, its address derived from the address of this
-	- page, so the dev server and a deploy both work with nothing configured.
-	scene_page \
-	scene_uri \
+	- The sandbox is a sibling module with no page of its own, so what is derived
+	- from the address of THIS page is the address of its bundle, which the markup
+	- of the frame names. The dev server and a deploy both work with nothing
+	- configured. There is exactly one page in the project and this is it.
+	scene_bundle \
 	- The palette field: links separated by commas, stored exactly as typed. The
 	- first http(s) one is the donor pack, the rest are lands of Giper Baza. One
 	- value for the whole editor: the palette offers what the scene has actually
 	- loaded, and the two must never drift apart. Derived from it: `pack_link` for
-	- the frame address, `lands` for the library, `libs` for the scene.
+	- the pack the frame is keyed by, `lands` for the library, `libs` for the scene.
 	- Empty is the standard palette: the `part` module of this very pack.
 	links? \
 	palette_showed? true
@@ -136,7 +137,7 @@ $bog_vmap_app $mol_view
 			<= idle_note \Выберите узел на холсте, чтобы править его свойства
 	-
 	- Component library of the host: the pack, with the lands of the field stacked
-	- on it. `script_link()` points the frame at the pack; `land_trees()` feed the
+	- on it. `script_link()` is the bundle the scene is told to load; `land_trees()` feed the
 	- palette and the inspector; `parts()` go to the scene. The pack tree itself is
 	- fetched by the palette from the same address, the two share one `$mol_fetch`
 	- cell. The only object in the editor that opens a land of the field.
@@ -154,7 +155,8 @@ $bog_vmap_app $mol_view
 			<= ghost_title \
 	-
 	Pane $bog_vmap_app_pane
-		scene_uri <= scene_uri
+		scene_bundle <= scene_bundle
+		pack_uri <= pack_script \
 		doc_src <= doc_src
 		doc_css <= doc_css
 		spots? <=> spots?

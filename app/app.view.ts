@@ -24,26 +24,31 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The sandbox, a sibling module of this one, derived from our own address.
+		 * Bundle of the sandbox, a sibling module of this one, derived from our own
+		 * address. This is the only page in the project, so nothing else has one and
+		 * there is nothing else to derive.
 		 *
-		 * Was a relative constant with `-/` in it, which is the layout of the dev
-		 * server only: a deploy publishes the content of `-/` into the folder of the
-		 * module, so the constant pointed at nothing there. Derived, both layouts
-		 * work and the user configures nothing.
-		 * @see ../ARCHITECTURE.md section 5
+		 * Absolute, because the markup of the frame is handed to an opaque origin,
+		 * which has no base for a relative path to be resolved against. Derived and
+		 * not a constant, because a constant is written in one layout: the dev server
+		 * keeps a module in `-/` and a deploy does not.
+		 * @see ../ARCHITECTURE.md sections 4 and 7
 		 */
-		override scene_page() {
+		override scene_bundle() {
 			const page = this.page_uri()
-			return page ? this.$.$bog_vmap_lib_sibling( page, 'scene' ) + 'index.html' : super.scene_page()
+			return page ? this.$.$bog_vmap_lib_sibling( page, 'scene' ) + 'web.js' : super.scene_bundle()
 		}
 
 		/**
-		 * The sandbox page with the donor pack in its query. A new pack is a new
-		 * address, so the browser reloads the frame and one pack per frame holds.
+		 * The donor pack the scene is told to load, as the address of its bundle.
+		 *
+		 * Travels down the bridge as `pack_set` and keys the frame on the way: a
+		 * realm cannot unload a bundle, so a different pack has to be a different
+		 * frame, which is what the frame address used to do by being different.
 		 * @see ../ARCHITECTURE.md section 5
 		 */
-		override scene_uri() {
-			return this.scene_page() + '?' + new URLSearchParams({ pack: this.Lib().script_link() })
+		override pack_script() {
+			return this.Lib().script_link()
 		}
 
 		/** A fresh frame in place of the stuck one; the pane owns the frame. */
@@ -161,17 +166,19 @@ namespace $.$$ {
 		 * THE SANDBOX MUST NOT WAIT FOR THE DOCUMENT. A document opened by a link
 		 * lives in a land of its own, and reading any field of it suspends until
 		 * that land syncs — which, with no master reachable, is for ever. This value
-		 * feeds `pack_link`, `pack_link` feeds `scene_uri`, and `scene_uri` is the
-		 * `src` of the frame: a suspension here therefore left the iframe with NO
-		 * ADDRESS AT ALL, so the scene never booted, never said `ready`, and the
-		 * editor sat on «ожидание сцены…» for ever. Measured on a document link with
-		 * no master: frame `src` absent, palette suspended, nothing on the wire.
+		 * feeds `pack_link`, `pack_link` feeds the pack the frame is keyed by: a
+		 * suspension here therefore left the frame with NO KEY AT ALL, so the scene
+		 * never booted, never said `ready`, and the editor sat on «ожидание сцены…»
+		 * for ever. Measured on a document link with no master while the pack still
+		 * rode the frame address: frame `src` absent, palette suspended, nothing on
+		 * the wire. The pack travels the bridge now, and the key is still derived
+		 * from it, so the shape of the failure is unchanged.
 		 *
 		 * So a suspension is answered with the empty string, which the caller reads
 		 * as «no palette of its own» and falls back to the standard one. Nothing is
 		 * lost: the subscription is recorded before the throw, so this recomputes
 		 * the moment the land arrives, and a document that does carry a palette of
-		 * its own then reloads the frame exactly as any change of pack does.
+		 * its own then replaces the frame exactly as any change of pack does.
 		 * The same shape as `store_boot`, and for the same reason.
 		 */
 		store_links() {
@@ -489,11 +496,12 @@ namespace $.$$ {
 		/**
 		 * Sources of the lands, for the scene.
 		 *
-		 * This travels on the bridge while the pack travels in `scene_uri`, and the
-		 * split is the rule of section 5: a second pack cannot be unloaded from a
-		 * realm, so a pack change reloads the frame; a land is compiled into the
-		 * sandbox like the document, so a land change recompiles and keeps the frame,
-		 * its camera and its live instances.
+		 * Both this and the pack travel the same bridge now, and the split is still
+		 * the rule of section 5, only held elsewhere: a second pack cannot be
+		 * unloaded from a realm, so the pack is part of the key of the frame and a
+		 * pack change replaces the element; a land is compiled into the sandbox like
+		 * the document, so a land change recompiles and keeps the frame, its camera
+		 * and its live instances.
 		 */
 		override libs() {
 			return this.Lib().parts()
@@ -503,12 +511,20 @@ namespace $.$$ {
 			return this.Pane().error()
 		}
 
+		/**
+		 * The state of the work in a few words: what the store is doing with the
+		 * document, and whether the scene is answering.
+		 *
+		 * Nothing technical belongs here. A confirmed sandbox is the normal state
+		 * and the strip used to announce it, which read as a fault and, standing
+		 * before the check below, made «сцена на связи» unreachable code. What can
+		 * really be wrong with the frame goes to the error strip through
+		 * `Pane().error()`.
+		 */
 		override status() {
 			const note = this.store_note()
 			if( note ) return note
 			if( this.stalled() ) return 'сцена не отвечает'
-			const isolation = this.Pane().isolation()
-			if( isolation ) return isolation
 			return this.Pane().ready() ? 'сцена на связи' : 'ожидание сцены…'
 		}
 

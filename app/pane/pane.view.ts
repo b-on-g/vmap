@@ -26,6 +26,17 @@ namespace $.$$ {
 	 */
 	const click_slack = 4
 
+	/**
+	 * Root class the markup of the frame mounts, as a name and nothing more.
+	 *
+	 * Glued from two halves on purpose. mam builds its dependency graph by a regexp
+	 * over sources, string literals included, so the name written whole would make
+	 * the editor depend on the sandbox module and carry the whole scene bundle
+	 * inside its own — the two are separate bundles by design, and the frame loads
+	 * the second one itself.
+	 */
+	const scene_root = '$' + 'bog_vmap_scene'
+
 	/** A wire to make: both ends, as the pane asks the owner to write it. */
 	export type $bog_vmap_app_pane_link_new = Pick< $bog_vmap_lang_link, 'from' | 'from_prop' | 'to' | 'to_prop' >
 
@@ -107,13 +118,64 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Both channels at once. They clear independently, so a single slot would
-		 * let a fixed compile erase a runtime failure that is still live.
+		 * Everything the user has to be told about the scene: a sandbox that is not
+		 * there, and the two error channels. They clear independently, so a single
+		 * slot would let a fixed compile erase a runtime failure that is still live.
 		 */
 		override error() {
-			return [ this.error_at( 'compile' ), this.error_at( 'runtime' ) ]
+			return [ this.isolation(), this.error_at( 'compile' ), this.error_at( 'runtime' ) ]
 				.filter( Boolean )
 				.join( '\n' )
+		}
+
+		/**
+		 * Which frame is the live one: the generation, and the pack it was raised
+		 * with. A new key is a new `$mol_frame`, a new element and a new document.
+		 *
+		 * The pack belongs in the key because a realm cannot unload a bundle, and a
+		 * second pack over the first poisons half the palette without a word — 277
+		 * classes of 414 in the measurement of section 5. The frame no longer has an
+		 * address for the pack to ride in, so what used to be held by the browser
+		 * reloading on a changed `src` is held here instead, by the same means the
+		 * restart button uses.
+		 */
+		scene_key() {
+			return this.scene_generation() + ' ' + this.pack_uri()
+		}
+
+		/**
+		 * The document of the frame, handed to it as markup instead of fetched.
+		 *
+		 * There is no page for the sandbox anywhere in the project, and the boundary
+		 * of section 4 does not depend on there being one: `allow-scripts` without
+		 * `allow-same-origin` gives the frame an opaque origin whether it arrived by
+		 * address or by markup. What an opaque origin does lose is a base to resolve
+		 * against, so the bundle is named absolutely.
+		 *
+		 * `color-scheme` is what gives a frame its base background, and it has to be
+		 * declared: without it Chrome keeps a transparent frame transparent only
+		 * until something inside takes a compositing layer — the camera transform on
+		 * `Stage` does — and from then on fills it with a pale base of its own.
+		 * Measured in a live window with `requestAnimationFrame` ticking, not under
+		 * automation.
+		 *
+		 * So the frame is opaque on purpose, and everything that has to be seen
+		 * beneath the document lives inside it: the canvas grid is drawn in there
+		 * with it. Inline rather than by a rule, so that it also holds during the
+		 * first paint, before the bundle has loaded.
+		 */
+		override scene_html() {
+			return [
+				'<!doctype html>',
+				'<html lang="en" mol_view_root style="height:100%;width:100%;color-scheme:dark">',
+				'<head><meta charset="utf-8" />',
+				'<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />',
+				'</head>',
+				'<body mol_view_root style="padding:0;margin:0;height:100%;width:100%">',
+				`<div mol_view_root="${ scene_root }"></div>`,
+				`<script src="${ this.scene_bundle() }" charset="utf-8"></script>`,
+				'</body></html>',
+			].join( '' )
 		}
 
 		/**
@@ -124,7 +186,7 @@ namespace $.$$ {
 		 * for a probe stole the binding from the real frame.
 		 */
 		scene_peer(): $bog_vmap_app_pane_peer | null {
-			return ( this.Scene( this.scene_generation() ).dom_node() as HTMLIFrameElement ).contentWindow
+			return ( this.Scene( this.scene_key() ).dom_node() as HTMLIFrameElement ).contentWindow
 		}
 
 		/**
@@ -137,7 +199,7 @@ namespace $.$$ {
 		 */
 		override sub() {
 			return [
-				this.Scene( this.scene_generation() ),
+				this.Scene( this.scene_key() ),
 				this.Overlay(),
 				this.Wire(),
 				... this.slot() ? [ this.Insert() ] : [],
@@ -148,35 +210,48 @@ namespace $.$$ {
 		 * Replaces the frame with a fresh one that has said nothing and proved nothing
 		 * yet. Nothing is lost: the host owns the document, the placement and the
 		 * camera, and every push cell re-sends on the new handshake.
+		 *
+		 * The handshake is not cleared here and must not be: it is kept per frame, so
+		 * the new key already reads zero. What is cleared is the two claims the host
+		 * makes about the OLD frame, so that the strip stops accusing it the moment
+		 * the button is pressed.
 		 */
 		@ $mol_action
 		scene_restart() {
 			this.scene_generation( this.scene_generation() + 1 )
-			this.handshake( 0 )
 			this.warmed( false )
 			this.stalled( false )
 		}
 
 		/**
-		 * Handshakes seen. A counter, not a flag, so a scene reload re-pushes.
+		 * Handshakes seen from one frame. A counter, not a flag, so a scene reload
+		 * re-pushes; keyed by the frame, so a REPLACED frame starts from zero.
+		 *
+		 * Keyed and not plain, because the frame is now replaced by two different
+		 * things — the restart button and a change of pack — and only one of them is
+		 * an action that could clear a plain cell. A derived change of key would
+		 * otherwise leave this reading «already shaken hands», the host would push
+		 * into a window that has not booted, and every one of those messages would
+		 * be lost silently while the watchdog counted the new frame's pack fetch
+		 * against it.
 		 *
 		 * One scene load does not mean exactly one step here: observed both +1
 		 * and +2 for a single reload, because the scene may announce itself more
 		 * than once. Only the change matters, never the number — do not go
 		 * hunting for a bug on the strength of an even count.
 		 */
-		@ $mol_mem
-		override handshake( next?: number ) {
+		@ $mol_mem_key
+		override handshake( key: string, next?: number ) {
 			return next ?? 0
 		}
 
 		override ready() {
-			return this.handshake() > 0
+			return this.handshake( this.scene_key() ) > 0
 		}
 
 		/** The window to push to, or null until the scene says it is listening. */
 		target() {
-			return this.handshake() ? this.scene_peer() : null
+			return this.ready() ? this.scene_peer() : null
 		}
 
 		/**
@@ -317,6 +392,7 @@ namespace $.$$ {
 		watchdog() {
 
 			// Armed by everything we send…
+			this.pack_push()
 			this.doc_push()
 			this.css_push()
 			this.libs_push()
@@ -1181,6 +1257,29 @@ namespace $.$$ {
 			this.poke_at = this.now()
 		}
 
+		/**
+		 * The donor pack, named to the scene before anything else is.
+		 *
+		 * First of the pushes in `auto()` and first in the reads of `watchdog()`, and
+		 * the order is load bearing rather than tidy: the scene refuses to compile
+		 * until it has been told a pack, because a class picks its base once and a
+		 * document built a moment early would inherit the sandbox's own `$mol_view`
+		 * for good. Sending the document first would not break anything — the scene
+		 * would simply hold it — but it would make the ordinary path the one that
+		 * compiles twice.
+		 */
+		@ $mol_mem
+		pack_push() {
+
+			const target = this.target()
+			const uri = this.pack_uri()
+			if( !target ) return uri
+
+			this.post( target, { kind: 'pack_set', uri } )
+
+			return uri
+		}
+
 		@ $mol_mem
 		doc_push() {
 
@@ -1265,9 +1364,18 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The `sandbox` attribute proves nothing, an unreachable origin does.
-		 * The scene is served from our own origin, so a SecurityError here means the
-		 * sandbox gave it an opaque origin, which is `null` seen from the inside.
+		 * What is WRONG with the isolation of the scene, and empty when nothing is.
+		 *
+		 * The `sandbox` attribute proves nothing, an unreachable origin does: the
+		 * scene is served from our own origin, so a SecurityError on reading it is
+		 * the sandbox doing its job — the frame got an opaque origin. That is the
+		 * ordinary state and it says nothing to anybody, so it says nothing at all.
+		 * It used to report itself, which put a sentence about origins where the
+		 * user expected news and made the plain «сцена на связи» unreachable.
+		 *
+		 * An origin that DOES read back is the news: the sandbox is off and the code
+		 * of the document runs beside the editor. That goes to the error strip, not
+		 * to the status line, because it is not a state of the work but a fault.
 		 */
 		@ $mol_mem
 		override isolation() {
@@ -1275,12 +1383,13 @@ namespace $.$$ {
 			if( !this.ready() ) return ''
 
 			const peer = this.scene_peer()
-			if( !peer ) return 'кадра нет'
+			if( !peer ) return 'Кадра сцены нет — рисовать документ негде'
 
 			try {
-				return `БЕЗ ПЕСОЧНИЦЫ: origin ${ peer.origin }`
+				const origin = peer.origin
+				return `Песочница не работает: кадр сцены живёт на origin ${ origin }, то есть код документа исполняется наравне с редактором`
 			} catch {
-				return 'песочница: origin кадра недоступен'
+				return ''
 			}
 
 		}
@@ -1317,7 +1426,8 @@ namespace $.$$ {
 				// not the corner one.
 				this.warmed( false )
 
-				this.handshake( this.handshake() + 1 )
+				const key = this.scene_key()
+				this.handshake( key, this.handshake( key ) + 1 )
 				return
 			}
 
@@ -1378,6 +1488,9 @@ namespace $.$$ {
 			return [
 				... super.auto(),
 				this.message_listener(),
+				// The pack goes before the document and the libraries: the scene
+				// compiles nothing until it has one, see `pack_push()`.
+				this.pack_push(),
 				this.doc_push(),
 				this.css_push(),
 				this.libs_push(),

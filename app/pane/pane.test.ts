@@ -43,7 +43,7 @@ namespace $ {
 			... over,
 		})
 
-		pane.handshake( 1 )
+		pane.handshake( pane.scene_key(), 1 )
 
 		const answer = ( data: object )=> {
 			clock.now ++
@@ -192,7 +192,7 @@ namespace $ {
 		'nothing is relayed while the scene is not listening'( $ ) {
 
 			const { pane, posted } = pane_make( $ )
-			pane.handshake( 0 )
+			pane.handshake( pane.scene_key(), 0 )
 
 			pane.node_press( pointer( 5, 5 ) )
 			pane.node_release( pointer( 5, 5, { buttons: 0 } ) )
@@ -345,7 +345,7 @@ namespace $ {
 			answer({ kind: 'sizes', sizes: {} })
 
 			const frame_before = pane.sub()[0]
-			$mol_assert_equal( frame_before, pane.Scene( pane.scene_generation() ) )
+			$mol_assert_equal( frame_before, pane.Scene( pane.scene_key() ) )
 
 			pane.stalled( true )
 			posted.length = 0
@@ -356,7 +356,7 @@ namespace $ {
 			$mol_assert_equal( pane.ready(), false )
 			$mol_assert_equal( pane.warmed(), false )
 			$mol_assert_equal( pane.sub()[0] !== frame_before, true )
-			$mol_assert_equal( pane.sub()[0], pane.Scene( pane.scene_generation() ) )
+			$mol_assert_equal( pane.sub()[0], pane.Scene( pane.scene_key() ) )
 			$mol_assert_equal( pane.sub().length, 3 )
 
 			// a frame that has not spoken gets nothing and is accused of nothing
@@ -370,8 +370,70 @@ namespace $ {
 			$mol_assert_equal( pane.ready(), true )
 			$mol_assert_like(
 				posted.map( m => m.kind ),
-				[ 'doc_set', 'css_set', 'libs_set', 'spots_set', 'camera_set' ],
+				// the pack first: the scene compiles nothing until it has one
+				[ 'pack_set', 'doc_set', 'css_set', 'libs_set', 'spots_set', 'camera_set' ],
 			)
+
+		},
+
+		/**
+		 * The frame is isolated and has no address, and the ORDER of the two says so.
+		 *
+		 * `$mol_dom_render_attributes` writes the dictionary in key order, so a frame
+		 * that got its source before its sandbox is already loading unsandboxed —
+		 * with the attribute present in the DOM and the audit green. Reading the
+		 * dictionary is therefore the check, not reading the element.
+		 */
+		'the frame is sandboxed first, addressed never and raised from markup'( $ ) {
+
+			const { pane } = pane_make( $, {}, { scene_bundle: ()=> 'https://vmap.test/scene/web.js' } )
+
+			// read as entries and not by property name: dropping the attribute would
+			// then be a type error and the build would stop before this ever ran,
+			// leaving the last green bundle in place to be tested instead
+			const attr = pane.Scene( pane.scene_key() ).attr()
+			const entries = Object.entries( attr )
+			const keys = entries.map( ( [ name ] )=> name )
+
+			$mol_assert_equal( keys[0], 'sandbox' )
+			$mol_assert_equal( entries[0][1], 'allow-scripts' )
+
+			// `null` is removal. An empty `src` would load the page we stand on.
+			$mol_assert_equal( attr.src, null )
+			$mol_assert_ok( keys.indexOf( 'srcdoc' ) > 0 )
+
+			const html = String( attr.srcdoc )
+			$mol_assert_ok( html.includes( 'src="https://vmap.test/scene/web.js"' ) )
+			$mol_assert_ok( html.includes( 'color-scheme:dark' ) )
+
+		},
+
+		/**
+		 * One pack per realm, held by the key of the frame now that no address holds
+		 * it: the pack is IN the key, so naming another one addresses another frame.
+		 * That the element really is replaced when a person types a pack is
+		 * `flow.test.ts`, where the whole chain from the field down is real.
+		 *
+		 * The pack also goes out first, before the document and the libraries: the
+		 * scene refuses to compile until it has one.
+		 * @see ../../ARCHITECTURE.md section 5
+		 */
+		'the pack keys the frame and goes down the wire first'( $ ) {
+
+			const one = pane_make( $, {}, { pack_uri: ()=> 'https://one.test/web.js' } )
+			const two = pane_make( $, {}, { pack_uri: ()=> 'https://two.test/web.js' } )
+
+			one.pane.watchdog()
+
+			$mol_assert_equal( one.posted[0]?.kind, 'pack_set' )
+			$mol_assert_equal( one.posted[0]?.uri, 'https://one.test/web.js' )
+
+			$mol_assert_ok( one.pane.scene_key() !== two.pane.scene_key() )
+			$mol_assert_ok( one.pane.scene_key().includes( 'https://one.test/web.js' ) )
+
+			// same generation, different pack, different frame
+			$mol_assert_equal( one.pane.scene_generation(), two.pane.scene_generation() )
+			$mol_assert_ok( one.pane.sub()[0] !== two.pane.sub()[0] )
 
 		},
 
