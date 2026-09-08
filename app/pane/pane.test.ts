@@ -616,6 +616,186 @@ namespace $ {
 
 		},
 
+		/**
+		 * Inside an artboard the deepest node wins, or a page would swallow every
+		 * pick made on it: everything laid out inside it lies within its box.
+		 */
+		'the pick goes to the deepest node under the point'( $ ) {
+
+			const { pane } = pane_make( $ )
+
+			pane.sizes_last = {
+				[ `${root}/Board` ]: box( 0, 0, 400, 300 ),
+				[ `${root}/Board/Head` ]: box( 0, 0, 400, 100 ),
+				[ `${root}/Loose` ]: box( 600, 0, 100, 50 ),
+			}
+
+			$mol_assert_equal( pane.node_at( [ 200, 50 ] ), 'Head' )
+			$mol_assert_equal( pane.node_at( [ 200, 200 ] ), 'Board' )
+			$mol_assert_equal( pane.node_at( [ 650, 25 ] ), 'Loose' )
+			$mol_assert_equal( pane.node_at( [ 900, 400 ] ), null )
+
+			// The box of a node is found at whatever depth it is drawn.
+			$mol_assert_like( pane.part_size( 'Head' ), box( 0, 0, 400, 100 ) )
+			$mol_assert_like( pane.node_path( 'Head' ), [ 'Board' ] )
+			$mol_assert_like( pane.node_path( 'Loose' ), [] )
+
+		},
+
+		/**
+		 * The camera is undone once, by `world_point`, and everything downstream
+		 * works in world units — the hit test, the container and the position among
+		 * its children alike.
+		 */
+		'a pan and a zoom do not move the slot a drop lands in'( $ ) {
+
+			const { pane } = pane_make( $, {}, { containers: ()=> [ 'Board' ] } )
+
+			pane.sizes_last = {
+				[ `${root}/Board` ]: box( 0, 0, 400, 300 ),
+				[ `${root}/Board/Head` ]: box( 0, 0, 400, 100 ),
+				[ `${root}/Board/Foot` ]: box( 0, 100, 400, 100 ),
+			}
+
+			const world = [ 200, 120 ] as const
+			const flat = pane.insert_slot( world )!
+
+			$mol_assert_equal( flat.owner, 'Board' )
+			$mol_assert_equal( flat.index, 1 )
+
+			// The same world point through a moved and scaled camera: screen is
+			// `world * zoom + shift`, and the press is given in screen pixels.
+			pane.camera_shift( new $mol_vector_2d( 100, 50 ) )
+			pane.camera_zoom( 2 )
+
+			const point = pane.world_point( pointer( 200 * 2 + 100, 120 * 2 + 50 ) )
+			$mol_assert_like( [ ... point ], [ ... world ] )
+			$mol_assert_like( pane.insert_slot( point ), flat )
+
+		},
+
+		/**
+		 * The two ways of laying a node out, told apart by where the release
+		 * happened: inside an artboard the gesture means a position in the tree, on
+		 * bare canvas it means a coordinate.
+		 */
+		'a drop inside an artboard goes into the tree, and no coordinate is written'( $ ) {
+
+			const moves = [] as ( $$.$bog_vmap_app_pane_tree_move | null )[]
+
+			const { pane } = pane_make( $, {}, {
+				containers: ()=> [ 'Board' ],
+				tree_move: ( next?: $$.$bog_vmap_app_pane_tree_move | null )=> {
+					if( next ) moves.push( next )
+					return next ?? null
+				},
+			} )
+
+			pane.sizes_last = {
+				[ `${root}/Board` ]: box( 0, 0, 400, 300 ),
+				[ `${root}/Board/Head` ]: box( 0, 0, 400, 100 ),
+				[ `${root}/Loose` ]: box( 600, 0, 100, 50 ),
+			}
+
+			pane.spots({ Loose: { x: 600, y: 0 } })
+
+			pane.node_press( pointer( 650, 25 ) )
+			pane.node_move( pointer( 200, 120 ) )
+
+			// The line is drawn where the node would land, and the placement is
+			// untouched while the pointer is over the page.
+			$mol_assert_equal( pane.slot()?.owner, 'Board' )
+			$mol_assert_equal( pane.slot()?.index, 1 )
+			$mol_assert_like( pane.spots(), { Loose: { x: 600, y: 0 } } )
+
+			pane.node_release( pointer( 200, 120, { buttons: 0 } ) )
+
+			$mol_assert_like( moves, [ { name: 'Loose', owner: 'Board', index: 1 } ] )
+			$mol_assert_equal( pane.slot(), null )
+			$mol_assert_like( pane.spots(), { Loose: { x: 600, y: 0 } } )
+
+		},
+
+		'a drop on bare canvas still writes a coordinate and asks for no move'( $ ) {
+
+			const moves = [] as ( $$.$bog_vmap_app_pane_tree_move | null )[]
+
+			const { pane } = pane_make( $, {}, {
+				containers: ()=> [ 'Board' ],
+				tree_move: ( next?: $$.$bog_vmap_app_pane_tree_move | null )=> {
+					if( next ) moves.push( next )
+					return next ?? null
+				},
+			} )
+
+			pane.sizes_last = {
+				[ `${root}/Board` ]: box( 0, 0, 400, 300 ),
+				[ `${root}/Loose` ]: box( 600, 0, 100, 50 ),
+			}
+
+			pane.spots({ Loose: { x: 600, y: 0 } })
+
+			pane.node_press( pointer( 650, 25 ) )
+			pane.node_move( pointer( 750, 125 ) )
+			pane.node_release( pointer( 750, 125, { buttons: 0 } ) )
+
+			$mol_assert_like( pane.spots(), { Loose: { x: 700, y: 100 } } )
+			$mol_assert_like( moves, [] )
+			$mol_assert_equal( pane.slot(), null )
+
+		},
+
+		/**
+		 * A node drawn inside an artboard has no coordinate to change: `spots`
+		 * positions the direct children of the root and nothing else, so a number
+		 * written for it would move nothing and lie in the desk layout for good.
+		 */
+		'dragging a node that lives in a tree never writes a coordinate'( $ ) {
+
+			const moves = [] as ( $$.$bog_vmap_app_pane_tree_move | null )[]
+
+			const { pane } = pane_make( $, {}, {
+				containers: ()=> [ 'Board' ],
+				tree_move: ( next?: $$.$bog_vmap_app_pane_tree_move | null )=> {
+					if( next ) moves.push( next )
+					return next ?? null
+				},
+			} )
+
+			pane.sizes_last = {
+				[ `${root}/Board` ]: box( 0, 0, 400, 300 ),
+				[ `${root}/Board/Head` ]: box( 0, 0, 400, 100 ),
+				[ `${root}/Board/Foot` ]: box( 0, 100, 400, 100 ),
+			}
+
+			// Head taken by its own strip and carried below Foot.
+			pane.node_press( pointer( 200, 50 ) )
+			pane.node_move( pointer( 200, 180 ) )
+			pane.node_release( pointer( 200, 180, { buttons: 0 } ) )
+
+			$mol_assert_like( pane.spots(), {} )
+			$mol_assert_like( moves, [ { name: 'Head', owner: 'Board', index: 2 } ] )
+
+		},
+
+		/**
+		 * A container cannot become its own descendant, and a line drawn where the
+		 * drop would be refused is worse than no line at all.
+		 */
+		'an artboard carried over itself offers no slot'( $ ) {
+
+			const { pane } = pane_make( $, {}, { containers: ()=> [ 'Board', 'Inner' ] } )
+
+			pane.sizes_last = {
+				[ `${root}/Board` ]: box( 0, 0, 400, 300 ),
+				[ `${root}/Board/Inner` ]: box( 0, 0, 400, 100 ),
+			}
+
+			$mol_assert_equal( pane.insert_slot( [ 200, 50 ], 'Board' ), null )
+			$mol_assert_equal( pane.insert_slot( [ 200, 50 ], 'Inner' )?.owner, 'Board' )
+
+		},
+
 	})
 
 	/** Wirable ports of the two fixture classes, as the owner would hand them to the pane. */

@@ -28,6 +28,13 @@ $bog_vmap_app_pane $mol_view
 	part_ports* /$bog_vmap_app_wire_port
 	link_add? null
 	link_drop? null
+	- Nodes that carry a `sub` of their own: an artboard, and anything laid out by
+	- tree inside one. A drop inside one of these goes into the tree at a position,
+	- see section 8; a drop anywhere else lands on the canvas by coordinates.
+	containers /string
+	- A node put into the tree of a container. The pane owns the geometry of the
+	- gesture and asks the owner to write the document, never writing it itself.
+	tree_move? null
 	- Labels of the wires on screen, by wire name, as the scene reports them.
 	values? *
 	handshake? 0
@@ -61,6 +68,10 @@ $bog_vmap_app_pane $mol_view
 			lines <= wire_lines /$bog_vmap_app_wire_line
 			dots <= wire_dots /$bog_vmap_app_wire_dot
 			drag_geometry <= wire_drag_geometry \
+	- Where the node in hand would land among the children of a container. Put into
+	- `sub` only while a drop has somewhere to go, so an idle canvas costs no node.
+	Insert $mol_view
+		style <= insert_style *
 	plugins /
 		^
 		<= Touch $mol_touch

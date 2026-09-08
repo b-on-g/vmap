@@ -25,6 +25,17 @@ namespace $.$$ {
 			height: '100%',
 		},
 
+		/**
+		 * The insertion line. Placed by the inline style in screen pixels, painted
+		 * here, and never in the way: it is drawn over the frame and takes no pointer,
+		 * because the gesture it belongs to is the overlay's.
+		 */
+		Insert: {
+			position: 'absolute',
+			background: { color: $mol_theme.focus },
+			pointerEvents: 'none',
+		},
+
 	} )
 
 	$mol_style_define( $bog_vmap_app_pane_overlay, {
