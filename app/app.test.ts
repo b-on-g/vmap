@@ -243,6 +243,109 @@ namespace $ {
 
 		},
 
+		/**
+		 * An artboard is a node with a `sub` of its own and a width, written in
+		 * plain `view.tree`. No class of ours, so an exported document depends on
+		 * nothing of this pack, and no mark on the side, so the text is the whole
+		 * truth about what is a page.
+		 */
+		'an artboard is an ordinary node with a sub and a width'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.board_add()
+
+			const source = app.doc_source()
+
+			$mol_assert_ok( source.includes( `Page ${d}mol_view` ) )
+			$mol_assert_ok( source.includes( 'width \\1280px' ) )
+			// `[mol_view]` is `display: flex` with no direction, which is a ROW.
+			$mol_assert_ok( source.includes( 'flexDirection \\column' ) )
+
+			$mol_assert_like( app.node().sub_names(), [ 'Page' ] )
+			$mol_assert_like( app.node().sub_names( 'Page' ), [] )
+			$mol_assert_like( app.doc_containers(), [ 'Page' ] )
+			$mol_assert_equal( app.selected(), 'Page' )
+
+			// It lies on the canvas like any free part, so a second one goes beside
+			// the first rather than on top of it — that is what several pages are.
+			$mol_assert_ok( Boolean( app.spots()[ 'Page' ] ) )
+
+			app.board_add()
+			$mol_assert_like( app.doc_containers(), [ 'Page', 'Page_2' ] )
+
+		},
+
+		/**
+		 * The same drop, two ways of being laid out, told apart by where the release
+		 * happened: inside a page it is a position in the tree, outside it is a
+		 * coordinate on the desk.
+		 */
+		'a drop inside an artboard goes into its tree and gets no coordinate'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+			const pane = app.Pane() as $$.$bog_vmap_app_pane
+
+			app.board_add()
+
+			pane.sizes_last = { [ `${ app.doc_root() }/Page` ]: { x: 0, y: 0, width: 1280, height: 720 } }
+			pane.sizes_version( pane.sizes_version() + 1 )
+
+			app.part_drop( `${d}mol_button_minor`, 100, 100 )
+
+			$mol_assert_like( app.node().sub_names( 'Page' ), [ 'Button_minor' ] )
+			$mol_assert_equal( app.spots()[ 'Button_minor' ], undefined )
+
+			// Outside the page it is a free part with a coordinate, as before.
+			app.part_drop( `${d}mol_string`, 2000, 100 )
+
+			$mol_assert_like( app.node().sub_names(), [ 'Page', 'String' ] )
+			$mol_assert_like( app.spots()[ 'String' ], { x: 2000, y: 100 } )
+
+		},
+
+		/** Carried into a page, a part loses the coordinate that no longer moves it. */
+		'a part carried into an artboard leaves the placement'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.board_add()
+			app.part_drop( `${d}mol_button_minor`, 2000, 100 )
+
+			$mol_assert_like( app.spots()[ 'Button_minor' ], { x: 2000, y: 100 } )
+
+			app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 })
+
+			$mol_assert_like( app.node().sub_names( 'Page' ), [ 'Button_minor' ] )
+			$mol_assert_like( app.node().sub_names(), [ 'Page' ] )
+			$mol_assert_equal( app.spots()[ 'Button_minor' ], undefined )
+
+		},
+
+		/**
+		 * A page goes with everything on it. Left behind, its children would stay
+		 * declared and referenced by nothing: nothing draws them, so nothing can
+		 * select them, so nothing can ever take them out again.
+		 */
+		'deleting an artboard takes what is laid out inside it'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.board_add()
+			app.part_drop( `${d}mol_button_minor`, 2000, 100 )
+			app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 })
+
+			app.selected( 'Page' )
+			app.node_delete()
+
+			const names = app.node().prop_names()
+
+			$mol_assert_equal( names.includes( 'Page' ), false )
+			$mol_assert_equal( names.includes( 'Button_minor' ), false )
+			$mol_assert_like( app.node().sub_names(), [] )
+
+		},
+
 	})
 
 }
