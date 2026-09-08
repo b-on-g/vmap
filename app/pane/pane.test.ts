@@ -21,7 +21,8 @@ namespace $ {
 	 */
 	const pane_make = (
 		$: $mol_ambient_context,
-		rect = { left: 0, top: 0 },
+		rect: Partial< $bog_vmap_app_pane_screen_box > = {},
+		over: Partial< $$.$bog_vmap_app_pane > = {},
 	) => {
 
 		const posted = [] as sent[]
@@ -36,9 +37,10 @@ namespace $ {
 		const pane = $$.$bog_vmap_app_pane.make({
 			$,
 			doc_root: ()=> root,
-			pane_rect: ()=> rect,
+			pane_rect: ()=> ({ left: 0, top: 0, width: 1000, height: 800, ... rect }),
 			scene_peer: ()=> peer,
 			now: ()=> clock.now,
+			... over,
 		})
 
 		pane.handshake( 1 )
@@ -355,7 +357,7 @@ namespace $ {
 			$mol_assert_equal( pane.warmed(), false )
 			$mol_assert_equal( pane.sub()[0] !== frame_before, true )
 			$mol_assert_equal( pane.sub()[0], pane.Scene( pane.scene_generation() ) )
-			$mol_assert_equal( pane.sub().length, 2 )
+			$mol_assert_equal( pane.sub().length, 3 )
 
 			// a frame that has not spoken gets nothing and is accused of nothing
 			$mol_assert_equal( pane.watchdog(), null )
@@ -412,6 +414,254 @@ namespace $ {
 
 		},
 
+		/**
+		 * THE WIRE GESTURE. Camera panned and zoomed, so screen and world differ:
+		 * a drag from the output dot of one part to the input dot of another puts
+		 * exactly two lines into the document, and the click channel stays quiet.
+		 */
+		'a drag from an output to a fitting input writes exactly two lines'( $ ) {
+
+			const { pane, node, posted } = wired_make( $ )
+
+			pane.camera_shift( new $mol_vector_2d( 100, 50 ) )
+			pane.camera_zoom( 2 )
+
+			// Calc at world (0,0) is screen (100,50) 200×100; Map at world (300,0) is screen (700,50).
+			pane.sizes_last = { [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) }
+			pane.selected( 'Calc' )
+
+			const before = node.source()
+
+			// Output `result` is the first row: right of the box by the gap, half a row down.
+			pane.node_press( pointer( 312, 57 ) )
+
+			$mol_assert_like( pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' } )
+			$mol_assert_equal( pane.selected(), 'Calc' )
+
+			pane.node_move( pointer( 600, 100 ) )
+
+			// In hand: the inputs of the other part, the number one lit, the string one not.
+			$mol_assert_like(
+				pane.wire_dots().map( dot => [ dot.node, dot.port.name, dot.side, dot.x, dot.y, dot.lit ] ),
+				[ [ 'Map', 'zoom', 'in', 688, 57, true ], [ 'Map', 'marker', 'in', 688, 71, false ] ],
+			)
+			$mol_assert_equal( pane.wire_drag_geometry().startsWith( 'M 312 57 C' ), true )
+
+			pane.node_release( pointer( 688, 57, { buttons: 0 } ) )
+
+			$mol_assert_equal( pane.wire_drag(), null )
+
+			// Two facts in the text: the wire at class level and the reference in the
+			// target's declaration, the latter serialized on the declaration's own line.
+			$mol_assert_equal( node.source().split( '\n' ).length, before.split( '\n' ).length + 1 )
+			$mol_assert_equal( node.source().includes( '\tcalc_result = Calc result\n' ), true )
+			$mol_assert_equal( node.source().includes( 'zoom <= calc_result\n' ), true )
+			$mol_assert_like( node.wires(), [ { name: 'calc_result', node: 'Calc', prop: 'result', bidi: false } ] )
+			$mol_assert_like( node.links().map( link => [ link.from, link.from_prop, link.to, link.to_prop ] ), [ [ 'Calc', 'result', 'Map', 'zoom' ] ] )
+
+			$mol_assert_equal( clicks( posted ).length, 0 )
+
+			// Drawn from the same numbers the dots were.
+			$mol_assert_equal( pane.wire_lines().length, 1 )
+			$mol_assert_equal( pane.wire_lines()[0].geometry.startsWith( 'M 312 57 C' ), true )
+			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 688 57' ), true )
+			$mol_assert_equal( pane.wire_dots().find( dot => dot.port.name === 'zoom' )?.linked, undefined )
+
+			pane.selected( 'Map' )
+			$mol_assert_equal( pane.wire_dots().find( dot => dot.port.name === 'zoom' && dot.side === 'in' )?.linked, true )
+
+		},
+
+		'a drag let go over nothing, or over an input of the wrong shape, writes nothing'( $ ) {
+
+			const { pane, node } = wired_make( $ )
+
+			pane.sizes_last = { [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) }
+			pane.selected( 'Calc' )
+
+			const before = node.source()
+
+			pane.node_press( pointer( 112, 7 ) )
+			pane.node_move( pointer( 200, 200 ) )
+			pane.node_release( pointer( 200, 200, { buttons: 0 } ) )
+
+			$mol_assert_equal( node.source(), before )
+			$mol_assert_equal( pane.wire_drag(), null )
+
+			// `marker` is a string, the wire carries a number: the dot is there, unlit, and takes nothing.
+			pane.node_press( pointer( 112, 7 ) )
+			pane.node_release( pointer( 288, 21, { buttons: 0 } ) )
+
+			$mol_assert_equal( node.source(), before )
+
+		},
+
+		/** A dot sits on the grip strip of its part, and the wire is the finer target: no part is carried. */
+		'a press on a dot is a wire even where the part would also be hit'( $ ) {
+
+			const { pane } = wired_make( $ )
+
+			pane.camera_zoom( .5 )
+			pane.sizes_last = { [ `${root}/Calc` ]: box( 0, 0 ) }
+			pane.selected( 'Calc' )
+
+			// Box is 50 wide on screen, the dot at 62, the grip strip reaches 8 px past 50.
+			pane.node_press( pointer( 62, 7 ) )
+
+			$mol_assert_equal( pane.wire_drag() !== null, true )
+			$mol_assert_equal( pane.drag, null )
+
+			pane.node_release( pointer( 62, 7, { buttons: 0 } ) )
+
+		},
+
+		/** Pressing a wired input unplugs it at once and leaves the wire in hand from the same source. */
+		'a press on a wired input unplugs it and carries on from its source'( $ ) {
+
+			const { pane, node } = wired_make( $ )
+
+			pane.sizes_last = { [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) }
+
+			const before = node.source()
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' })
+
+			pane.selected( 'Map' )
+			pane.node_press( pointer( 288, 7 ) )
+
+			$mol_assert_equal( node.source(), before )
+			$mol_assert_like( pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' } )
+
+			// Let go over nothing: it stays unplugged.
+			pane.node_release( pointer( 500, 500, { buttons: 0 } ) )
+			$mol_assert_equal( node.source(), before )
+			$mol_assert_equal( node.links().length, 0 )
+
+			// The same again, put back where it was: the same two lines.
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' })
+			const wired = node.source()
+
+			pane.node_press( pointer( 288, 7 ) )
+			pane.node_release( pointer( 288, 7, { buttons: 0 } ) )
+
+			$mol_assert_equal( node.source(), wired )
+
+		},
+
+		/**
+		 * SECOND INVARIANT OF CULLING, seen from the wires: a part that left the
+		 * viewport is missing from the next report, and its wire keeps its last end.
+		 */
+		'a wire is drawn from the last known box when one end is no longer reported'( $ ) {
+
+			const { pane, node, answer } = wired_make( $ )
+
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' })
+
+			// One end never measured: nothing to draw yet.
+			answer({ kind: 'sizes', sizes: { [ `${root}/Calc` ]: box( 0, 0 ) } })
+			$mol_assert_equal( pane.wire_lines().length, 0 )
+
+			answer({ kind: 'sizes', sizes: { [ `${root}/Map` ]: box( 300, 0 ) } })
+			const drawn = pane.wire_lines()
+			$mol_assert_equal( drawn.length, 1 )
+
+			// Map culled, Calc moved: the wire follows the one and keeps the other.
+			answer({ kind: 'sizes', sizes: { [ `${root}/Calc` ]: box( 0, 100 ) } })
+			$mol_assert_equal( pane.wire_lines().length, 1 )
+			$mol_assert_equal( pane.wire_lines()[0].geometry.startsWith( 'M 112 107 C' ), true )
+			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 288 7' ), true )
+
+		},
+
+		/** The scene is asked for the wires on screen, and only for those, and asked again only when the set changes. */
+		'values_want names the visible wires only'( $ ) {
+
+			const { pane, node, posted } = wired_make( $, [
+				`Calc ${d}my_calc`, `Map ${d}my_map`, `Calc_2 ${d}my_calc`, `Map_2 ${d}my_map`,
+			] )
+
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' })
+			node.link_add({ from: 'Calc_2', from_prop: 'result', to: 'Map_2', to_prop: 'zoom' })
+
+			pane.sizes_last = {
+				[ `${root}/Calc` ]: box( 0, 0 ),
+				[ `${root}/Map` ]: box( 300, 0 ),
+				[ `${root}/Calc_2` ]: box( 5000, 5000 ),
+				[ `${root}/Map_2` ]: box( 5300, 5000 ),
+			}
+			pane.sizes_version( pane.sizes_version() + 1 )
+
+			const wants = ()=> posted.filter( m => m.kind === 'values_want' ).map( m => m.names )
+
+			pane.values_push()
+			$mol_assert_like( wants(), [ [ 'calc_result' ] ] )
+
+			// A pan that keeps the same wire on screen asks nothing new.
+			pane.camera_shift( new $mol_vector_2d( 10, 10 ) )
+			pane.values_push()
+			$mol_assert_equal( wants().length, 1 )
+
+			// Over to the far pair.
+			pane.camera_shift( new $mol_vector_2d( -5000, -5000 ) )
+			pane.values_push()
+			$mol_assert_like( wants(), [ [ 'calc_result' ], [ 'calc_2_result' ] ] )
+
+			// The answer lands on the wire as its label.
+			$mol_assert_equal( pane.wire_lines().find( line => line.key === 'Map_2.zoom' )?.label, '' )
+			pane.message_receive( { data: { ns: $bog_vmap_bridge_ns, kind: 'values', values: { calc_2_result: '42' } }, source: pane.scene_peer() } as unknown as MessageEvent )
+			$mol_assert_equal( pane.wire_lines().find( line => line.key === 'Map_2.zoom' )?.label, '42' )
+
+			// A question that owes no answer must not arm the watch.
+			$mol_assert_equal( pane.watchdog(), null )
+
+		},
+
 	})
+
+	/** Wirable ports of the two fixture classes, as the owner would hand them to the pane. */
+	const ports: { readonly [ klass: string ]: readonly $bog_vmap_app_wire_port[] } = {
+		[ `${d}my_calc` ]: [
+			{ name: 'result', next: false, kind: 'number' },
+			{ name: 'op', next: true, kind: 'string' },
+		],
+		[ `${d}my_map` ]: [
+			{ name: 'zoom', next: true, kind: 'number' },
+			{ name: 'marker', next: true, kind: 'string' },
+		],
+	}
+
+	/**
+	 * A pane over a real document model: two parts, no wires yet. The pane reads
+	 * the wires and the ports through the same three properties the owner binds,
+	 * and writes through the same two events, so what is checked is the document.
+	 */
+	function wired_make(
+		$: $mol_ambient_context,
+		parts = [ `Calc ${d}my_calc`, `Map ${d}my_map` ],
+	) {
+
+		const node = $bog_vmap_lang_node.make({ $ })
+		node.source( [ `${root} ${d}mol_view`, ... parts.map( part => '\t' + part ), '\tsub /', '' ].join( '\n' ) )
+
+		// To the fixed point of normalization, so that a write and its undo give the same bytes.
+		node.tree( node.tree() )
+
+		const klass_of = ( name: string )=> node.props_tree().select( name ).kids[0]?.kids[0]?.type ?? ''
+
+		const made = pane_make( $, {}, {
+			wires: ()=> node.links(),
+			part_ports: ( name: string )=> ports[ klass_of( name ) ] ?? [],
+			link_add: ( next?: $$.$bog_vmap_app_pane_link_new | null )=> {
+				if( next ) node.link_add( next )
+				return next ?? null
+			},
+			link_drop: ( next?: $$.$bog_vmap_app_pane_link_end | null )=> {
+				if( next ) node.link_drop( next.to, next.to_prop )
+				return next ?? null
+			},
+		} )
+
+		return { ... made, node }
+	}
 
 }

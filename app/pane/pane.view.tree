@@ -21,6 +21,15 @@ $bog_vmap_app_pane $mol_view
 	- pointer capture, so a release over the hole would land in the frame and the
 	- host would never hear of the drop.
 	hole_allowed true
+	- Wires of the document and the wirable ports of each part's class, from the
+	- owner. The pane draws them and writes back through the two events below; it
+	- never touches the document itself.
+	wires /$bog_vmap_lang_link
+	part_ports* /$bog_vmap_app_wire_port
+	link_add? null
+	link_drop? null
+	- Labels of the wires on screen, by wire name, as the scene reports them.
+	values? *
 	handshake? 0
 	ready false
 	- The scene owes an answer to something we sent and has stopped answering.
@@ -46,6 +55,12 @@ $bog_vmap_app_pane $mol_view
 			press? <=> node_press? null
 			move? <=> node_move? null
 			release? <=> node_release? null
+		- Above the overlay and outside its hole, so a wire crossing the picked part
+		- is not cut. Takes no pointer: the press on a dot is the overlay's, by geometry.
+		<= Wire $bog_vmap_app_wire
+			lines <= wire_lines /$bog_vmap_app_wire_line
+			dots <= wire_dots /$bog_vmap_app_wire_dot
+			drag_geometry <= wire_drag_geometry \
 	plugins /
 		^
 		<= Touch $mol_touch

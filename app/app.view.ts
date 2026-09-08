@@ -302,6 +302,40 @@ namespace $.$$ {
 			return [ ... this.lib_classes(), this.node().tree() ]
 		}
 
+		/** Wires of the document, for the pane to draw. */
+		override doc_wires() {
+			return this.node().links()
+		}
+
+		/**
+		 * Wirable ports of the class a part is declared with, through the same
+		 * library index the inspector uses. Read off `props_tree()`, the derivation
+		 * of the text, and not through `prop_tree()`, the write path.
+		 */
+		@ $mol_mem_key
+		override part_ports( name: string ): readonly $bog_vmap_app_wire_port[] {
+
+			const node = this.node()
+			const sign = node.prop_fullname( name )
+			if( !sign ) return []
+
+			const klass = node.props_tree().select( sign ).kids[ 0 ]?.kids[ 0 ]
+			if( !klass || !$mol_view_tree2_class_match( klass ) ) return []
+
+			return this.$.$bog_vmap_app_wire_ports( this.Lib().props_map( klass.type ) )
+		}
+
+		/** A wire drawn on the canvas goes into the document as two lines, see `link_add` of the model. */
+		override link_add( next?: $bog_vmap_app_pane_link_new | null ) {
+			if( next ) this.node().link_add( next )
+			return next ?? null
+		}
+
+		override link_drop( next?: $bog_vmap_app_pane_link_end | null ) {
+			if( next ) this.node().link_drop( next.to, next.to_prop )
+			return next ?? null
+		}
+
 		/**
 		 * The palette field, parsed. The palette parses the same string for its own
 		 * status line; the parse is pure and two calls cost less than a shared cell

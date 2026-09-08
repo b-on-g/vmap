@@ -150,3 +150,9 @@ $bog_vmap_app $mol_view
 		doc_root <= doc_root
 		libs <= libs /$bog_vmap_bridge_part
 		hole_allowed <= hole_allowed true
+		- Wires: the pane draws them from the document and its ports, and writes a
+		- new or a dropped one back through these two events, never into the text.
+		wires <= doc_wires /$bog_vmap_lang_link
+		part_ports* <= part_ports* /$bog_vmap_app_wire_port
+		link_add? <=> link_add? null
+		link_drop? <=> link_drop? null

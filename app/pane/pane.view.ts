@@ -26,6 +26,12 @@ namespace $.$$ {
 	 */
 	const click_slack = 4
 
+	/** A wire to make: both ends, as the pane asks the owner to write it. */
+	export type $bog_vmap_app_pane_link_new = Pick< $bog_vmap_lang_link, 'from' | 'from_prop' | 'to' | 'to_prop' >
+
+	/** An input to unplug. */
+	export type $bog_vmap_app_pane_link_end = Pick< $bog_vmap_lang_link, 'to' | 'to_prop' >
+
 	/** The other end of the bridge, as much of a window as the pane needs. */
 	export type $bog_vmap_app_pane_peer = {
 		postMessage( data: unknown, origin: string ): void
@@ -114,9 +120,9 @@ namespace $.$$ {
 			return ( this.Scene( this.scene_generation() ).dom_node() as HTMLIFrameElement ).contentWindow
 		}
 
-		/** The live frame under the overlay. */
+		/** The live frame, the gate over it, and the wires above both. */
 		override sub() {
-			return [ this.Scene( this.scene_generation() ), this.Overlay() ] as readonly $mol_view[]
+			return [ this.Scene( this.scene_generation() ), this.Overlay(), this.Wire() ] as readonly $mol_view[]
 		}
 
 		/**
@@ -427,8 +433,15 @@ namespace $.$$ {
 		 * its own drop or drag causes. A method of its own so that a test can hand in
 		 * a geometry the test DOM has no way to lay out.
 		 */
-		pane_rect(): { readonly left: number, readonly top: number } {
-			return this.dom_node().getBoundingClientRect()
+		pane_rect(): $bog_vmap_app_pane_screen_box {
+			const rect = this.dom_node().getBoundingClientRect()
+			return { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+		}
+
+		/** Point of a pointer event in screen pixels of this pane, the space the wires are drawn in. */
+		screen_point( event: PointerEvent ) {
+			const rect = this.pane_rect()
+			return [ event.clientX - rect.left, event.clientY - rect.top ] as const
 		}
 
 		/**
@@ -441,13 +454,13 @@ namespace $.$$ {
 		 */
 		world_point( event: PointerEvent ) {
 
-			const rect = this.pane_rect()
+			const screen = this.screen_point( event )
 			const shift = this.camera_shift()
 			const zoom = this.camera_zoom()
 
 			return [
-				( event.clientX - rect.left - shift[0] ) / zoom,
-				( event.clientY - rect.top - shift[1] ) / zoom,
+				( screen[0] - shift[0] ) / zoom,
+				( screen[1] - shift[1] ) / zoom,
 			] as const
 		}
 
@@ -501,6 +514,11 @@ namespace $.$$ {
 
 			if( !event ) return
 			if( event.button !== 0 ) return
+
+			// A dot before a part: dots lie on the grip strip of the part they belong
+			// to, and the wire is the finer target.
+			const dot = $bog_vmap_app_wire_dot_at( this.wire_dots(), this.screen_point( event ) )
+			if( dot ) return this.wire_press( dot, event )
 
 			const point = this.world_point( event )
 			const name = this.node_at( point )
@@ -557,6 +575,13 @@ namespace $.$$ {
 
 			this.press_track( event )
 
+			if( this.wire_drag() ) {
+				if( !event.buttons ) return this.node_release( event )
+				event.preventDefault()
+				this.wire_point( this.screen_point( event ) )
+				return
+			}
+
 			const drag = this.drag
 			if( !drag || !this.drag_live ) return
 
@@ -593,6 +618,8 @@ namespace $.$$ {
 			const press = this.press
 			if( press ) this.press_track( event )
 			this.press = null
+
+			if( this.wire_drag() ) return this.wire_release( event )
 
 			if( this.drag_live ) {
 
@@ -658,11 +685,18 @@ namespace $.$$ {
 		 * at any zoom, and done once so that the ring and the hole in the overlay are
 		 * cut from the same numbers.
 		 */
-		@ $mol_mem
 		frame_box(): $bog_vmap_app_pane_screen_box | null {
-
 			const name = this.selected()
-			if( !name ) return null
+			return name ? this.part_box( name ) : null
+		}
+
+		/**
+		 * Where a part is on screen, in pixels of this pane, or `null` while the
+		 * scene has not measured it. The last known box is kept across culling, so a
+		 * wire to a part that left the viewport still has an end to go to.
+		 */
+		@ $mol_mem_key
+		part_box( name: string ): $bog_vmap_app_pane_screen_box | null {
 
 			const box = this.part_size( name )
 			if( !box ) return null
@@ -713,6 +747,222 @@ namespace $.$$ {
 		override overlay_style(): { readonly [ prop: string ]: string } {
 			const rect = this.hole_allowed() ? this.frame_box() : null
 			return { clipPath: this.$.$bog_vmap_app_pane_hole( rect ) }
+		}
+
+		override link_add( next?: $bog_vmap_app_pane_link_new | null ) {
+			return next ?? null
+		}
+
+		override link_drop( next?: $bog_vmap_app_pane_link_end | null ) {
+			return next ?? null
+		}
+
+		/** The source end of the wire in hand, or `null`. */
+		@ $mol_mem
+		wire_drag( next?: { from: string, from_prop: string, kind: $bog_vmap_app_inspect_value_kind } | null ) {
+			return next ?? null
+		}
+
+		/** Where the loose end of the wire in hand is, in screen pixels. */
+		@ $mol_mem
+		wire_point( next?: readonly [ number, number ] ) {
+			return next ?? [ 0, 0 ] as const
+		}
+
+		/** Row of a port among the wirable ports of the part's class; the first row when the class is unknown. */
+		port_index( name: string, port: string ) {
+			return Math.max( 0, this.part_ports( name ).findIndex( known => known.name === port ) )
+		}
+
+		/** Centre of a port dot on screen, or `null` while the part is not measured. */
+		port_point( name: string, port: string, side: $bog_vmap_app_wire_side ) {
+			const box = this.part_box( name )
+			return box && $bog_vmap_app_wire_port_point( box, side, this.port_index( name, port ) )
+		}
+
+		/** Every wire whose both ends have a last known box. Labelled from `values()`. */
+		@ $mol_mem
+		override wire_lines(): readonly $bog_vmap_app_wire_line[] {
+
+			const values = this.values()
+			const lines = [] as $bog_vmap_app_wire_line[]
+
+			for( const link of this.wires() ) {
+
+				const from = this.port_point( link.from, link.from_prop, 'out' )
+				const to = this.port_point( link.to, link.to_prop, 'in' )
+				if( !from || !to ) continue
+
+				const mid = $bog_vmap_app_wire_curve_mid( from, to )
+
+				lines.push({
+					key: `${ link.to }.${ link.to_prop }`,
+					geometry: $bog_vmap_app_wire_curve( from, to ),
+					label: String( values[ link.name ] ?? '' ),
+					label_x: mid[0],
+					label_y: mid[1],
+				})
+
+			}
+
+			return lines
+		}
+
+		/**
+		 * Dots to draw and to hit: both sides of the picked part, or, while a wire is
+		 * in hand, the inputs of every other measured part, lit where the shape fits.
+		 */
+		@ $mol_mem
+		override wire_dots(): readonly $bog_vmap_app_wire_dot[] {
+
+			const linked = new Set( this.wires().map( link => `${ link.to }.${ link.to_prop }` ) )
+			const dots = [] as $bog_vmap_app_wire_dot[]
+
+			const add = (
+				node: string,
+				side: $bog_vmap_app_wire_side,
+				lit: ( port: $bog_vmap_app_wire_port )=> boolean,
+			)=> {
+
+				const box = this.part_box( node )
+				if( !box ) return
+
+				this.part_ports( node ).forEach( ( port, index )=> {
+					const [ x, y ] = $bog_vmap_app_wire_port_point( box, side, index )
+					dots.push({
+						node, port, side, x, y,
+						lit: lit( port ),
+						linked: side === 'in' && linked.has( `${ node }.${ port.name }` ),
+					})
+				} )
+
+			}
+
+			const drag = this.wire_drag()
+
+			if( drag ) {
+				for( const name of this.part_names() ) {
+					if( name === drag.from ) continue
+					add( name, 'in', port => $bog_vmap_app_wire_fits( drag.kind, port.kind ) )
+				}
+				return dots
+			}
+
+			const name = this.selected()
+			if( name ) {
+				add( name, 'in', ()=> true )
+				add( name, 'out', ()=> true )
+			}
+
+			return dots
+		}
+
+		override wire_drag_geometry() {
+
+			const drag = this.wire_drag()
+			if( !drag ) return ''
+
+			const from = this.port_point( drag.from, drag.from_prop, 'out' )
+			if( !from ) return ''
+
+			return $bog_vmap_app_wire_curve( from, this.wire_point() )
+		}
+
+		/**
+		 * A press on a dot: an output starts a wire from it, a wired input unplugs
+		 * its wire and carries on from the same source, a bare input takes the press
+		 * and does nothing, so that it does not fall through to the canvas and drop
+		 * the pick. `preventDefault` keeps `$mol_touch` from panning.
+		 */
+		wire_press( dot: $bog_vmap_app_wire_dot, event: PointerEvent ) {
+
+			event.preventDefault()
+			this.press = null
+
+			let source = { from: dot.node, from_prop: dot.port.name, kind: dot.port.kind }
+
+			if( dot.side === 'in' ) {
+
+				const link = this.wires().find( link => link.to === dot.node && link.to_prop === dot.port.name )
+				if( !link ) return
+
+				const port = this.part_ports( link.from ).find( port => port.name === link.from_prop )
+				source = { from: link.from, from_prop: link.from_prop, kind: port?.kind ?? 'null' }
+
+				this.link_drop({ to: link.to, to_prop: link.to_prop })
+
+			}
+
+			this.wire_point( this.screen_point( event ) )
+			this.wire_drag( source )
+
+			try {
+				this.Overlay().dom_node().setPointerCapture( event.pointerId )
+			} catch {}
+
+		}
+
+		/** The loose end lands on a lit input, and the document gets the wire; anywhere else, nothing. */
+		wire_release( event: PointerEvent ) {
+
+			const drag = this.wire_drag()!
+			const dot = $bog_vmap_app_wire_dot_at( this.wire_dots(), this.screen_point( event ) )
+
+			this.wire_drag( null )
+
+			try {
+				this.Overlay().dom_node().releasePointerCapture( event.pointerId )
+			} catch {}
+
+			if( !dot || !dot.lit ) return
+
+			this.link_add({ from: drag.from, from_prop: drag.from_prop, to: dot.node, to_prop: dot.port.name })
+
+		}
+
+		/**
+		 * Names of the wires with an end on screen. Memoized on its content, so the
+		 * push below fires when the set changes and not on every frame of a pan.
+		 */
+		@ $mol_mem
+		wires_visible(): readonly string[] {
+
+			const rect = this.pane_rect()
+			const names = new Set< string >()
+
+			for( const link of this.wires() ) {
+
+				const from = this.port_point( link.from, link.from_prop, 'out' )
+				const to = this.port_point( link.to, link.to_prop, 'in' )
+				if( !from || !to ) continue
+
+				if( Math.max( from[0], to[0] ) < 0 ) continue
+				if( Math.max( from[1], to[1] ) < 0 ) continue
+				if( Math.min( from[0], to[0] ) > rect.width ) continue
+				if( Math.min( from[1], to[1] ) > rect.height ) continue
+
+				names.add( link.name )
+
+			}
+
+			return [ ... names ]
+		}
+
+		/**
+		 * Asks the scene for the values of the wires on screen. Not through `post()`:
+		 * the scene answers an empty list with nothing, and the watchdog must not be
+		 * armed by a question that owes no answer.
+		 */
+		@ $mol_mem
+		values_push() {
+
+			const target = this.target()
+			const names = this.wires_visible()
+			if( !target ) return names
+
+			this.$.$bog_vmap_bridge_send( target, { kind: 'values_want', names } )
+
+			return names
 		}
 
 		/**
@@ -885,6 +1135,11 @@ namespace $.$$ {
 				return
 			}
 
+			if( message.kind === 'values' ) {
+				this.values( message.values )
+				return
+			}
+
 			if( message.kind === 'sizes' ) {
 
 				// MERGED, never replaced. Culling means the scene stops drawing what
@@ -924,6 +1179,7 @@ namespace $.$$ {
 				this.libs_push(),
 				this.spots_push(),
 				this.camera_push(),
+				this.values_push(),
 				this.heartbeat(),
 				this.watchdog(),
 			]
