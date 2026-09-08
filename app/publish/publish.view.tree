@@ -13,6 +13,9 @@ $bog_vmap_app_publish $mol_view
 	- them per part; the shape is here so that it plugs in without a change.
 	js \
 	css \
+	- The root class of the document, as text: the sub-views the editor hoisted
+	- out of the part are put back into it from here before it goes out.
+	doc \
 	- Names of the classes the document authors, root included: a part based on
 	- one of them is refused, its base would stay behind.
 	classes /string

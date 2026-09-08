@@ -44,11 +44,26 @@ namespace $.$$ {
 			return next ?? ''
 		}
 
+		/** Sub-views that went out as a copy because the document reads them too. */
+		@ $mol_mem
+		shared( next?: readonly string[] ) {
+			return next ?? [] as readonly string[]
+		}
+
 		override note() {
+
 			const refused = this.refused()
 			if( refused ) return refused
+
 			const klass = this.published()
-			return klass ? `опубликовано ${ klass }:` : ''
+			if( !klass ) return ''
+
+			const shared = this.shared()
+			const copied = shared.length
+				? `, под-виды ${ shared.join( ', ' ) } ушли копией, документ читает их и сам`
+				: ''
+
+			return `опубликовано ${ klass }${ copied }:`
 		}
 
 		/**
@@ -65,7 +80,7 @@ namespace $.$$ {
 			if( !part ) return null
 
 			const klass = this.store().class_name( part )
-			const source = this.source()
+			const { source, shared } = this.store().inlined( this.source(), this.doc() )
 
 			// A wired part is a state of the bar, not an exception on the button: a
 			// throw out of the handler goes to the fiber, and the user sees nothing.
@@ -75,6 +90,7 @@ namespace $.$$ {
 
 			this.store().publish( part, source, this.js(), this.css(), this.classes() )
 			this.published( klass )
+			this.shared( shared )
 
 			return null
 		}

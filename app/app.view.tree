@@ -65,6 +65,8 @@ $bog_vmap_app $mol_view
 			<= Publish $bog_vmap_app_publish
 				part <= publish_part \
 				source <= node_source? \
+				doc <= doc_src
+				classes / <= doc_root
 			<= Status $mol_view
 				sub /
 					<= status \

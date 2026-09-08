@@ -27,6 +27,11 @@ namespace $ {
 	 *
 	 * @see ../../ARCHITECTURE.md sections 5 and 9
 	 */
+	/** The name a reference carries, without the `?*!` signs. */
+	export function $bog_vmap_app_publish_bare( node: $mol_tree2 ) {
+		return node.type.replace( /[*?!]+$/, '' )
+	}
+
 	export class $bog_vmap_app_publish_store extends $mol_object {
 
 		/** Plain method: a Giper Baza object under `@ $mol_mem` is destructed on a rebuild. */
@@ -121,6 +126,78 @@ namespace $ {
 		}
 
 		/**
+		 * The body of a part with the sub-views of the document put back in.
+		 *
+		 * The editor keeps the document normalized: `upper` hoists every nested
+		 * `<= Inner $mol_view …` onto the root and leaves a bare `<= Inner` in the
+		 * part. Published alone, that bare name is a hole. This is the reverse: a
+		 * bare reference to a root property declared as a NODE, `Inner Class …`,
+		 * gets that declaration back in its place, and so on down, so the class
+		 * carries the whole tree. `doc` is the root class; empty leaves the body as
+		 * it is.
+		 *
+		 * A name met again on the way down is a loop of the document and stays
+		 * bare, so the refusal names it. `shared` are the sub-views somebody else in
+		 * the document reads too: they go out as a copy, and the note says so.
+		 */
+		inlined( source: string, doc: string ) {
+
+			const tree = this.tree( source )
+			const root = doc ? this.$.$mol_view_tree2_normalize(
+				this.$.$mol_tree2_from_string( doc.replace( /\n?$/, '\n' ), 'vmap.view.tree' )
+			).kids[ 0 ] : null
+
+			if( !tree || !root ) return { source, shared: [] as readonly string[] }
+
+			const props = this.$.$mol_view_tree2_class_props( root )
+			const name_of = ( prop: $mol_tree2 )=> this.$.$mol_view_tree2_prop_parts( prop ).name
+
+			const nodes = new Map< string, $mol_tree2 >()
+			for( const prop of props ) {
+				if( $mol_view_tree2_class_match( prop.kids[ 0 ] ) ) nodes.set( name_of( prop ), prop )
+			}
+
+			const taken = new Set< string >()
+
+			const walk = ( node: $mol_tree2, path: ReadonlySet< string > ): $mol_tree2 => {
+
+				const ref = node.kids[ 0 ]
+
+				if( ref && !ref.kids.length && ( node.type === '<=' || node.type === '<=>' ) ) {
+					const decl = nodes.get( $bog_vmap_app_publish_bare( ref ) )
+					if( decl && !path.has( name_of( decl ) ) ) {
+						taken.add( name_of( decl ) )
+						const deeper = new Set([ ... path, name_of( decl ) ])
+						return node.clone([ ref.clone( decl.kids.map( kid => walk( kid, deeper ) ) ) ])
+					}
+				}
+
+				return node.clone( node.kids.map( kid => walk( kid, path ) ) )
+			}
+
+			const full = tree.clone( tree.kids.map( kid => walk( kid, new Set([ tree.type ]) ) ) )
+
+			const shared = new Set< string >()
+
+			const seek = ( node: $mol_tree2 )=> {
+				const ref = node.kids[ 0 ]
+				if( ref && /^(<=|<=>|=)$/.test( node.type ) ) {
+					const name = $bog_vmap_app_publish_bare( ref )
+					if( taken.has( name ) ) shared.add( name )
+				}
+				for( const kid of node.kids ) seek( kid )
+			}
+
+			for( const prop of props ) {
+				const name = name_of( prop )
+				if( name === tree.type || taken.has( name ) ) continue
+				seek( prop )
+			}
+
+			return { source: full.toString(), shared: [ ... shared ] as readonly string[] }
+		}
+
+		/**
 		 * Properties of the DOCUMENT a part is wired to, by name.
 		 *
 		 * Every `<=` and `<=>` inside a part compiles to `this.name()` on the ROOT,
@@ -129,11 +206,12 @@ namespace $ {
 		 * published class and resolves. A bare one, and the node of a `=`, declares
 		 * nothing: published alone, the class resolves them against itself, where
 		 * nothing has them — a green compile and a hole at run time. Those are the
-		 * names here, unless the part declares them itself.
+		 * names here, unless the part declares them itself. Runs on the body after
+		 * `inlined`, so what is left bare is a value of the document or a wire.
 		 */
 		bound_names( source: string ) {
 
-			const bare = ( node: $mol_tree2 )=> node.type.replace( /[*?!]+$/, '' )
+			const bare = $bog_vmap_app_publish_bare
 
 			const owned = new Set< string >()
 			const refs = new Set< string >()

@@ -34,15 +34,32 @@ namespace $ {
 		})
 	}
 
-	function view( $: $, s: $bog_vmap_app_publish_store, part: string, source: string, classes: readonly string[] = [] ) {
+	function view( $: $, s: $bog_vmap_app_publish_store, part: string, source: string, classes: readonly string[] = [], doc = '' ) {
 		return $bog_vmap_app_publish.make({
 			$,
 			store: ()=> s,
 			part: ()=> part,
 			source: ()=> source,
 			classes: ()=> classes,
+			doc: ()=> doc,
 		}) as $$.$bog_vmap_app_publish
 	}
+
+	/** A normalized document: every sub-view hoisted onto the root, two levels deep. */
+	const doc_nested = [
+		`${d}bog_vmap_app_page ${d}mol_view`,
+		`\tPrice ${d}mol_text`,
+		`\t\ttitle \\Hi`,
+		`\tHero ${d}mol_view`,
+		`\t\tsub / <= Price`,
+		`\tCard ${d}mol_view`,
+		`\t\tsub / <= Hero`,
+		`\tsub / <= Card`,
+		``,
+	].join( '\n' )
+
+	const src_card = `Card ${d}mol_view\n\tsub / <= Hero\n`
+	const klass_card = `${d}bog_vmap_pub_card`
 
 	$mol_test({
 
@@ -298,6 +315,128 @@ namespace $ {
 			const parts = s.shelf()!.parts()
 			$mol_assert_equal( parts.length, 1 )
 			$mol_assert_equal( $bog_vmap_lib_land_name( parts[ 0 ].tree() ), `${d}bog_vmap_pub_card` )
+
+		},
+
+		/**
+		 * The reverse of `upper`: the editor keeps `Hero` and `Price` hoisted onto
+		 * the root with bare `<= Hero` left in the card, and the published class
+		 * gets both declarations back in their places, so the library resolves the
+		 * whole tree and lists the sub-views as ports of the class.
+		 */
+		async 'hoisted sub-views are put back into the part two levels down and the class carries them'( $ ) {
+
+			const s = store( $ )
+
+			const { source, shared } = s.inlined( src_card, doc_nested )
+			$mol_assert_like( shared, [] )
+			$mol_assert_like( s.bound_names( source ), [] )
+			$mol_assert_equal( s.refusal( 'Card', source ), '' )
+
+			const tree = s.tree( source )!
+			const hero = tree.select( `${d}mol_view`, 'sub', '/', '<=', 'Hero', `${d}mol_view` )
+			$mol_assert_equal( hero.kids.length, 1 )
+			$mol_assert_equal(
+				hero.select( `${d}mol_view`, 'sub', '/', '<=', 'Price', `${d}mol_text`, 'title', null ).kids[ 0 ].value,
+				'Hi',
+			)
+
+			// Bare in the part before, so it would have been refused.
+			$mol_assert_like( s.bound_names( src_card ), [ 'Hero' ] )
+
+			// Without a document nothing is put back.
+			$mol_assert_equal( s.inlined( src_card, '' ).source, src_card )
+
+			const link = await $mol_wire_async( s ).publish( 'Card', source )
+
+			const stack = $bog_vmap_lib_land_stack.make({
+				$,
+				tree: ()=> $.$bog_vmap_lib_parse( pack_src ),
+				lands: ()=> [ link ],
+			})
+
+			$mol_assert_like( stack.class_list(), [ `${d}mol_view`, klass_card ] )
+			const ports = [ ... stack.props_map( klass_card ).keys() ]
+			$mol_assert_ok( ports.includes( 'Hero' ) )
+			$mol_assert_ok( ports.includes( 'Price' ) )
+			$mol_assert_ok( ports.includes( 'sub' ) )
+
+		},
+
+		/**
+		 * The click with the document at hand: the part goes out whole, and the
+		 * sub-view the root reads as well goes out as a copy, which the note says.
+		 */
+		async 'a sub-view the document reads too goes out as a copy and the note names it'( $ ) {
+
+			const s = store( $ )
+			const doc = doc_nested.replace( 'sub / <= Card', 'sub /\n\t\t<= Card\n\t\t<= Hero' )
+
+			const { shared } = s.inlined( src_card, doc )
+			$mol_assert_like( shared, [ 'Hero' ] )
+
+			// A wire to the sub-view counts as reading it too.
+			const wired = doc_nested.replace( 'sub / <= Card', 'hero_sub = Hero sub\n\tsub / <= Card' )
+			$mol_assert_like( s.inlined( src_card, wired ).shared, [ 'Hero' ] )
+
+			const v = view( $, s, 'Card', src_card, [], doc )
+			await $mol_wire_async( v ).publish()
+
+			$mol_assert_equal( v.published(), klass_card )
+			$mol_assert_like( v.shared(), [ 'Hero' ] )
+			$mol_assert_equal( v.note(), `опубликовано ${ klass_card }, под-виды Hero ушли копией, документ читает их и сам:` )
+			$mol_assert_equal( s.shelf()!.parts().length, 1 )
+
+			// The part itself is read by the root and that is no copy.
+			const plain = view( $, s, 'Card', src_card, [], doc_nested )
+			await $mol_wire_async( plain ).publish()
+			$mol_assert_equal( plain.note(), `опубликовано ${ klass_card }:` )
+
+		},
+
+		/**
+		 * Values of the root stay wires after the sub-views are back: `title \Hi`
+		 * on the root is not a node, and a loop of sub-views leaves the repeated
+		 * name bare, so the refusal names it instead of the walk running forever.
+		 */
+		'a value of the root and a loop of sub-views are still refused after inlining'( $ ) {
+
+			const s = store( $ )
+
+			const doc_values = [
+				`${d}bog_vmap_app_page ${d}mol_view`,
+				`\ttitle \\Hi`,
+				`\tCalc ${d}mol_view`,
+				`\t\tresult 42`,
+				`\tcalc_result = Calc result`,
+				`\tLabel ${d}mol_view`,
+				`\t\tsub / <= calc_result`,
+				`\t\thint <= title`,
+				`\tsub / <= Label`,
+				``,
+			].join( '\n' )
+
+			const label = `Label ${d}mol_view\n\tsub / <= calc_result\n\thint <= title\n`
+			const { source } = s.inlined( label, doc_values )
+			$mol_assert_equal( source, label )
+			$mol_assert_like( s.bound_names( source ), [ 'calc_result', 'title' ] )
+
+			const doc_loop = [
+				`${d}bog_vmap_app_page ${d}mol_view`,
+				`\tA ${d}mol_view`,
+				`\t\tsub / <= B`,
+				`\tB ${d}mol_view`,
+				`\t\tsub / <= A`,
+				`\tsub / <= A`,
+				``,
+			].join( '\n' )
+
+			const loop = s.inlined( `A ${d}mol_view\n\tsub / <= B\n`, doc_loop )
+			$mol_assert_like( s.bound_names( loop.source ), [ 'A' ] )
+			$mol_assert_equal(
+				s.refusal( 'A', loop.source ),
+				'деталь A ссылается на A документа, отвяжите провод перед публикацией',
+			)
 
 		},
 
