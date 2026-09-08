@@ -48931,13 +48931,37 @@ declare namespace $ {
      * error. What is not caught here is what needs types to catch — an unknown
      * member, a wrong type — and those stay a build failure.
      *
-     * A parameter with a default value is no complaint: TypeScript infers its type.
-     * Arrow functions inside the body are not looked at either, because their
-     * parameters are typed by context. A signature holding brackets of its own is
-     * skipped rather than guessed at, so the check misses cases instead of
-     * inventing them.
+     * **The cost of the two mistakes is not the same, so the check is built to miss
+     * rather than to lie.** A complaint refuses the export, and a false one locks
+     * the author inside the editor with no way out; a missed one costs a build
+     * failure with a message of its own. Everything doubtful is therefore passed
+     * over in silence:
+     *
+     * - strings and comments are blanked before anything is read, so a signature
+     *   quoted inside a template literal is not a signature;
+     * - a head is only a head at the indent of the body itself and only when a `{`
+     *   follows, which is what separates a definition from a call and from an
+     *   overload signature;
+     * - only a plain identifier is reported. A destructured parameter is an error
+     *   of the same kind, but naming it sensibly is beyond this, and half a name in
+     *   a refusal is worse than no refusal;
+     * - a default value is a type, an arrow is typed by its context, and a
+     *   parameter list holding brackets of its own is left alone.
      */
     function $bog_vmap_app_export_untyped(js: string): readonly $bog_vmap_app_export_complaint[];
+    /**
+     * The same text with every string and comment replaced by spaces.
+     *
+     * Length and line breaks are kept, so a position in the result is the same
+     * position in the source and the line of a complaint stays true. Without this a
+     * signature quoted inside a template literal reads as a signature, and that is
+     * a refusal over text that is not code at all.
+     *
+     * A regular expression literal is not understood, deliberately: telling one
+     * from a division needs a parser. An apostrophe inside one blanks more than it
+     * should, and the whole cost of that is a complaint not raised.
+     */
+    function $bog_vmap_app_export_blanked(js: string): string;
     /** Indents a hand written body into a class declaration. */
     function $bog_vmap_app_export_indent(text: string, depth?: number): string;
     /**

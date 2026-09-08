@@ -29009,53 +29009,158 @@ var $;
      * error. What is not caught here is what needs types to catch — an unknown
      * member, a wrong type — and those stay a build failure.
      *
-     * A parameter with a default value is no complaint: TypeScript infers its type.
-     * Arrow functions inside the body are not looked at either, because their
-     * parameters are typed by context. A signature holding brackets of its own is
-     * skipped rather than guessed at, so the check misses cases instead of
-     * inventing them.
+     * **The cost of the two mistakes is not the same, so the check is built to miss
+     * rather than to lie.** A complaint refuses the export, and a false one locks
+     * the author inside the editor with no way out; a missed one costs a build
+     * failure with a message of its own. Everything doubtful is therefore passed
+     * over in silence:
+     *
+     * - strings and comments are blanked before anything is read, so a signature
+     *   quoted inside a template literal is not a signature;
+     * - a head is only a head at the indent of the body itself and only when a `{`
+     *   follows, which is what separates a definition from a call and from an
+     *   overload signature;
+     * - only a plain identifier is reported. A destructured parameter is an error
+     *   of the same kind, but naming it sensibly is beyond this, and half a name in
+     *   a refusal is worse than no refusal;
+     * - a default value is a type, an arrow is typed by its context, and a
+     *   parameter list holding brackets of its own is left alone.
      */
     function $bog_vmap_app_export_untyped(js) {
         const out = [];
-        const heads = /(?:^|\n)[ \t]*(?:(?:async|static|override|get|set|public|private|protected)[ \t]+)*(\*[ \t]*)?([A-Za-z_$][\w$]*)[ \t]*\(([^()]*)\)/g;
+        const clean = $bog_vmap_app_export_blanked(js);
+        const base = base_indent(clean);
+        const heads = new RegExp('(?:^|\\n)([ \\t]*)'
+            + '((?:(?:async|static|override|public|private|protected|get|set)[ \\t]+)*)'
+            + '(\\*[ \\t]*)?([A-Za-z_$][\\w$]*)[ \\t]*'
+            + '(?:<[^<>()\\n]*>[ \\t]*)?'
+            + '\\(([^()]*)\\)[ \\t]*(?::[^\\n{;]*)?\\{', 'g');
         // Words that begin a statement and would otherwise read as a method name.
-        const keywords = ['if', 'for', 'while', 'switch', 'catch', 'return', 'do', 'else', 'with', 'function', 'typeof', 'await', 'yield', 'new', 'delete', 'void'];
-        for (const head of js.matchAll(heads)) {
-            const method = head[2];
+        const keywords = [
+            'if', 'for', 'while', 'switch', 'catch', 'return', 'do', 'else', 'with',
+            'function', 'typeof', 'await', 'yield', 'new', 'delete', 'void', 'super',
+            'this', 'case', 'throw', 'try', 'finally',
+        ];
+        for (const head of clean.matchAll(heads)) {
+            // At the indent of the body and nowhere deeper: what stands inside a
+            // method is a statement, however much it looks like a signature.
+            if (head[1].length !== base)
+                continue;
+            const method = head[4];
             if (keywords.includes(method))
                 continue;
-            const line = js.slice(0, (head.index ?? 0) + head[0].length).split('\n').length;
-            for (const param of params_of(head[3])) {
+            const at = (head.index ?? 0) + (head[0][0] === '\n' ? 1 : 0);
+            const line = clean.slice(0, at).split('\n').length;
+            for (const param of params_of(head[5])) {
+                const sample = param.rest ? `... ${param.name}: number[]` : `${param.name}?: number`;
                 out.push({
                     line,
                     method,
-                    param,
-                    text: `Параметр «${param}» метода «${method}» без типа:`
-                        + ` в превью это работает, а выгрузка собирается со strict и упадёт.`
-                        + ` Написать тип, например «${param}?: string».`,
+                    param: param.name,
+                    text: `У метода «${method}» параметр «${param.name}» без типа.`
+                        + ` В превью это работает, а выгрузка компилируется TypeScript'ом со strict и упадёт на noImplicitAny.`
+                        + ` Допишите тип, например «${method}( ${sample} )».`,
                 });
             }
         }
         return out;
     }
     $.$bog_vmap_app_export_untyped = $bog_vmap_app_export_untyped;
-    /** Names of the parameters that carry neither a type nor a default value. */
+    /**
+     * The same text with every string and comment replaced by spaces.
+     *
+     * Length and line breaks are kept, so a position in the result is the same
+     * position in the source and the line of a complaint stays true. Without this a
+     * signature quoted inside a template literal reads as a signature, and that is
+     * a refusal over text that is not code at all.
+     *
+     * A regular expression literal is not understood, deliberately: telling one
+     * from a division needs a parser. An apostrophe inside one blanks more than it
+     * should, and the whole cost of that is a complaint not raised.
+     */
+    function $bog_vmap_app_export_blanked(js) {
+        const blank = (text) => text.replace(/[^\n]/g, ' ');
+        let out = '';
+        let i = 0;
+        while (i < js.length) {
+            const char = js[i];
+            if (char === '/' && js[i + 1] === '/') {
+                const end = js.indexOf('\n', i);
+                const stop = end < 0 ? js.length : end;
+                out += blank(js.slice(i, stop));
+                i = stop;
+                continue;
+            }
+            if (char === '/' && js[i + 1] === '*') {
+                const end = js.indexOf('*/', i + 2);
+                const stop = end < 0 ? js.length : end + 2;
+                out += blank(js.slice(i, stop));
+                i = stop;
+                continue;
+            }
+            if (char === '"' || char === "'" || char === '`') {
+                let j = i + 1;
+                while (j < js.length) {
+                    if (js[j] === '\\') {
+                        j += 2;
+                        continue;
+                    }
+                    if (js[j] === char) {
+                        ++j;
+                        break;
+                    }
+                    if (char !== '`' && js[j] === '\n')
+                        break;
+                    ++j;
+                }
+                out += blank(js.slice(i, j));
+                i = j;
+                continue;
+            }
+            out += char;
+            ++i;
+        }
+        return out;
+    }
+    $.$bog_vmap_app_export_blanked = $bog_vmap_app_export_blanked;
+    /** Indent the body itself stands at, which is the indent its methods stand at. */
+    function base_indent(js) {
+        let base = Infinity;
+        for (const line of js.split('\n')) {
+            if (!line.trim())
+                continue;
+            base = Math.min(base, /^[ \t]*/.exec(line)[0].length);
+        }
+        return base === Infinity ? 0 : base;
+    }
+    /**
+     * Parameters that carry neither a type nor a default value, by name.
+     *
+     * Anything that is not a plain identifier — a destructuring, a parameter whose
+     * own brackets confuse the split — leaves without a word said, see the rule
+     * above.
+     */
     function params_of(list) {
         const out = [];
         let depth = 0;
         let typed = false;
         let text = '';
         const close = () => {
-            const name = text.trim();
-            if (name && !typed)
-                out.push(name.replace(/^\.\.\./, ''));
-            typed = false;
+            const written = text.trim();
             text = '';
+            const was_typed = typed;
+            typed = false;
+            if (!written || was_typed)
+                return;
+            const parts = /^(\.\.\.[ \t]*)?([A-Za-z_$][\w$]*)\??$/.exec(written);
+            if (!parts)
+                return;
+            out.push({ name: parts[2], rest: Boolean(parts[1]) });
         };
         for (const char of list) {
-            if ('<{['.includes(char))
+            if ('<{(['.includes(char))
                 ++depth;
-            if ('>}]'.includes(char) && depth > 0)
+            if ('>})]'.includes(char) && depth > 0)
                 --depth;
             if (depth === 0 && (char === ':' || char === '='))
                 typed = true;
@@ -48910,6 +49015,80 @@ var $;
             const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero, js }]);
             $mol_assert_equal(file_of(module, '.view.ts').includes('count( next?: number )'), true);
         },
+        /**
+         * The forms a naive search for «a parameter without a type» gets wrong, one
+         * assertion each.
+         *
+         * The two mistakes do not cost the same. A complaint refuses the export, so a
+         * false one locks the author inside the editor with no way out, while a missed
+         * one costs a build failure that explains itself. Every line below is
+         * therefore an assertion of SILENCE, and the ones that are genuine errors
+         * passed over — the destructuring, the object literal method — are silence on
+         * purpose and named as misses in the docs.
+         */
+        'the check keeps quiet on everything it is not sure of'($) {
+            const quiet = (js) => $mol_assert_like($.$bog_vmap_app_export_untyped(js), []);
+            // A destructured parameter is an error of the same kind, and naming it
+            // sensibly is beyond a search over text. Missed on purpose.
+            quiet('render( { head, foot } ) {\n\treturn [ head, foot ]\n}\n');
+            // An arrow written as a class property. Its parameter is untyped, and the
+            // line is not a method head at all, so it is left alone.
+            quiet('handler = ( event )=> event.type\n');
+            // A `this` parameter is not a parameter of the caller.
+            quiet('pick( this: $, id: string ) {\n\treturn id\n}\n');
+            // A generic method, typed through its own type parameter.
+            quiet('first< Item >( list: Item[] ) {\n\treturn list[0]\n}\n');
+            // An overload signature carries no body, so it is not a head. Missed even
+            // with an untyped parameter, and that is the safe direction.
+            quiet('plus( a ): number\nplus( a: number ) {\n\treturn a\n}\n');
+            // Optional and rest parameters, both typed.
+            quiet('join( a?: string, ... rest: string[] ) {\n\treturn [ a, ... rest ]\n}\n');
+            // A signature quoted inside a template literal is not a signature. This is
+            // the one that would fire on text the author never meant as code.
+            quiet('sample() {\n\treturn `\ncount( next ) {\n`\n}\n');
+            // The same inside comments, both kinds.
+            quiet('sample() {\n\treturn 1\n}\n// count( next ) {\n');
+            quiet('sample() {\n\treturn 1\n}\n/*\ncount( next ) {\n*/\n');
+            // A method of an object literal inside a body: indented, therefore a
+            // statement rather than a head. Missed on purpose.
+            quiet('config() {\n\treturn {\n\t\topen( next ) { return next },\n\t}\n}\n');
+            // A call at the start of a line inside a method reads exactly like a head
+            // to a search that ignores indentation.
+            quiet('run() {\n\tsuper( next )\n\tthis.compute( x )\n}\n');
+        },
+        /**
+         * The other half of the same rule: what the check IS sure of, it says. A body
+         * that reaches the export in any of these shapes does not build.
+         */
+        'the check does say the parameter it is sure about'($) {
+            const first = (js) => $.$bog_vmap_app_export_untyped(js)[0];
+            // A `this` parameter beside an untyped one: only the second is named.
+            const beside = $.$bog_vmap_app_export_untyped('pick( this: $, id ) {\n\treturn id\n}\n');
+            $mol_assert_equal(beside.length, 1);
+            $mol_assert_equal(beside[0].param, 'id');
+            // A generic whose value parameter carries no type of its own.
+            $mol_assert_equal(first('first< Item >( list ) {\n\treturn list[0]\n}\n').param, 'list');
+            // A rest parameter, named without its dots and suggested with them.
+            const rest = first('join( ... parts ) {\n\treturn parts\n}\n');
+            $mol_assert_equal(rest.param, 'parts');
+            $mol_assert_equal(rest.text.includes('... parts: number[]'), true);
+            // An optional parameter without a type is untyped all the same.
+            $mol_assert_equal(first('load( id? ) {\n\treturn id\n}\n').param, 'id');
+            // A setter and an async method are heads like any other.
+            $mol_assert_equal(first('set title( next ) {\n\treturn next\n}\n').method, 'title');
+            $mol_assert_equal(first('async load( id ) {\n\treturn id\n}\n').method, 'load');
+            // A head split over several lines is still one head, reported at the line
+            // the author reads as its first.
+            const split = first('sum(\n\ta: number,\n\tb,\n) {\n\treturn a + b\n}\n');
+            $mol_assert_equal(split.param, 'b');
+            $mol_assert_equal(split.line, 1);
+            // A body written with an indent of its own is checked at that indent, or
+            // the check would silently do nothing for a whole class of editors.
+            const inset = first('\tcount( next ) {\n\t\treturn next\n\t}\n');
+            $mol_assert_equal(inset.param, 'next');
+            // The message is an instruction: what to write, spelled out.
+            $mol_assert_equal(first('count( next ) {\n\treturn next\n}\n').text.includes('count( next?: number )'), true);
+        },
         'a cycle of bases is refused rather than hung'($) {
             $mol_assert_fail(() => $.$bog_vmap_app_export_build([
                 { source: `${d}bog_site_a ${d}bog_site_b\n\tx \\1\n` },
@@ -49088,6 +49267,37 @@ var $;
             });
             $mol_assert_equal(pane.error_marks().length, 1);
             $mol_assert_equal(pane.mark_hint('Calc'), 'исполнение — Calc: boom');
+        },
+        /**
+         * The case the marks exist for: code is written, it breaks, and the node
+         * stops being drawn. Nothing is measured any more, so the mark has to stand
+         * on the last box the node was seen at — otherwise it disappears exactly
+         * when it is needed.
+         */
+        'a node that stops being drawn keeps its mark where it was'($) {
+            const { pane, answer } = pane_make($);
+            answer({
+                kind: 'sizes',
+                sizes: { [`${root}/Calc`]: { x: 10, y: 20, width: 100, height: 50 } },
+            });
+            // It broke: the scene draws it no more, so it measures it no more, and
+            // the report simply stops mentioning it.
+            answer({ kind: 'sizes', sizes: {} });
+            answer({ kind: 'error', at: 'runtime', message: 'boom', node: 'Calc' });
+            $mol_assert_equal(pane.error_marks().length, 1);
+            $mol_assert_equal(pane.mark_style('Calc').left, '10px');
+            $mol_assert_equal(pane.mark_style('Calc').top, '20px');
+        },
+        /**
+         * A node that never drew has no corner to point at, and pointing at a made
+         * up one would be the false mark. The text is not conditional on geometry,
+         * so the panel of that node says it anyway.
+         */
+        'a node never drawn gets no mark, and is still told about'($) {
+            const { pane, answer } = pane_make($);
+            answer({ kind: 'error', at: 'compile', message: 'boom', node: 'Calc' });
+            $mol_assert_equal(pane.error_marks().length, 0);
+            $mol_assert_equal(pane.node_error('Calc'), 'компиляция — Calc: boom');
         },
         /** What the panel of the picked node shows is what the pane knows about it. */
         'the code panel shows the failure of the node it is editing'($) {
