@@ -277,6 +277,32 @@ namespace $ {
 		},
 
 		/**
+		 * Which way a container stacks is stated by the document, and the host reads
+		 * it out rather than guessing: the boxes of the children say nothing while
+		 * there are fewer than two of them, which is every page just made.
+		 */
+		'the direction a container is set to comes off the document'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.board_add()
+			$mol_assert_equal( app.doc_axis( 'Page' ), 'column' )
+
+			app.part_drop( `${d}mol_button_minor`, 2000, 100 )
+			$mol_assert_equal( app.doc_axis( 'Button_minor' ), '' )
+
+			// What the layout panel writes is what the canvas reads back.
+			app.node().over_set( 'Page', 'style', app.node().tree().struct( 'style', [
+				app.node().tree().struct( '*', [
+					app.node().tree().struct( 'flexDirection', [ app.node().tree().data( 'row' ) ] ),
+				] ),
+			] ) )
+
+			$mol_assert_equal( app.doc_axis( 'Page' ), 'row' )
+
+		},
+
+		/**
 		 * The same drop, two ways of being laid out, told apart by where the release
 		 * happened: inside a page it is a position in the tree, outside it is a
 		 * coordinate on the desk.

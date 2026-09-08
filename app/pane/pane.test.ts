@@ -779,6 +779,45 @@ namespace $ {
 		},
 
 		/**
+		 * A row inside a column: the drop belongs to the innermost box it landed in,
+		 * and the position in it is counted along ITS direction, not its parent's.
+		 */
+		'a container inside a container takes the drop itself'( $ ) {
+
+			const { pane } = pane_make( $, {}, {
+				containers: ()=> [ 'Page', 'Bar' ],
+				axis: ( name: string )=> name === 'Bar' ? 'row' : 'column',
+			} )
+
+			pane.sizes_last = {
+				[ `${root}/Page` ]: box( 0, 0, 400, 600 ),
+				[ `${root}/Page/Head` ]: box( 0, 0, 400, 100 ),
+				[ `${root}/Page/Bar` ]: box( 0, 100, 400, 100 ),
+				[ `${root}/Page/Bar/Left` ]: box( 0, 100, 200, 100 ),
+				[ `${root}/Page/Bar/Right` ]: box( 200, 100, 200, 100 ),
+				[ `${root}/Page/Foot` ]: box( 0, 200, 400, 100 ),
+			}
+
+			// Inside the bar, which lies inside the page: the deeper one wins.
+			const inner = pane.insert_slot( [ 250, 150 ] )!
+			$mol_assert_equal( inner.owner, 'Bar' )
+			$mol_assert_equal( inner.index, 1 )
+
+			// Between the left and the right, across — the direction of the bar.
+			$mol_assert_like( inner.line, { x: 200, y: 100, width: 0, height: 100 } )
+
+			// The same page, below the bar: the page takes it, counted downwards.
+			const outer = pane.insert_slot( [ 250, 400 ] )!
+			$mol_assert_equal( outer.owner, 'Page' )
+			$mol_assert_equal( outer.index, 3 )
+
+			// The pick follows the same rule, so what is picked and what a drop goes
+			// into never disagree about which box the pointer is in.
+			$mol_assert_equal( pane.node_at( [ 250, 150 ] ), 'Right' )
+
+		},
+
+		/**
 		 * A container cannot become its own descendant, and a line drawn where the
 		 * drop would be refused is worse than no line at all.
 		 */

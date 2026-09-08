@@ -15,20 +15,32 @@ namespace $ {
 	}
 
 	/**
-	 * Which way the children of a container are stacked, read off their boxes.
+	 * Which way the children of a container are stacked: what the node DECLARES,
+	 * else what its children came out as, else a column.
 	 *
-	 * Geometry and not CSS on purpose: the host does not compile the document and
-	 * has no layout of its own, so the only honest source of the direction is where
-	 * the children came out. Asking the scene would put a message on the wire for
-	 * something already measured.
+	 * The declaration comes first because it is not a guess about CSS — it is a
+	 * line of the document, which the host owns and reads directly. Geometry is the
+	 * fallback and not the source: it degenerates on nought or one child, where
+	 * there is nothing to read a direction off at all.
 	 *
-	 * Fewer than two children says nothing at all, and the answer is then a column:
-	 * that is the way a page stacks, and it is what an artboard is set to. Note the
-	 * default of `$mol_view` itself is a ROW — `[mol_view]` is `display: flex` with
-	 * no direction — which is why an artboard has to say `flexDirection` out loud
-	 * and why the inspector offers it.
+	 * A direction the document states in some other way — `row-reverse` and its
+	 * kind — falls through to the geometry rather than being taken at its word: the
+	 * children of a reversed box come out in the opposite order from the one `sub`
+	 * lists them in, and a position counted along the boxes would be the mirror of
+	 * the position written into the tree. Guessing from where things are is then
+	 * strictly better than trusting a word we do not act on.
+	 *
+	 * The last resort is a column, the way a page stacks and what the artboard
+	 * preset sets. It has to be set: `[mol_view]` is `display: flex` with no
+	 * direction at all, which is a ROW.
 	 */
-	export function $bog_vmap_app_pane_axis( boxes: readonly $bog_vmap_bridge_rect[] ) {
+	export function $bog_vmap_app_pane_axis(
+		boxes: readonly $bog_vmap_bridge_rect[],
+		declared = '',
+	) {
+
+		if( declared === 'row' ) return 'row' as const
+		if( declared === 'column' ) return 'column' as const
 
 		if( boxes.length < 2 ) return 'column' as const
 
@@ -59,9 +71,10 @@ namespace $ {
 		box: $bog_vmap_bridge_rect,
 		kids: readonly $bog_vmap_bridge_rect[],
 		point: readonly [ number, number ],
+		declared = '',
 	): $bog_vmap_app_pane_slot {
 
-		const row = $bog_vmap_app_pane_axis( kids ) === 'row'
+		const row = $bog_vmap_app_pane_axis( kids, declared ) === 'row'
 
 		const start = ( kid: $bog_vmap_bridge_rect )=> row ? kid.x : kid.y
 		const end = ( kid: $bog_vmap_bridge_rect )=> row ? kid.x + kid.width : kid.y + kid.height

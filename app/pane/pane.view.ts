@@ -630,7 +630,13 @@ namespace $.$$ {
 			const box = this.part_size( owner )
 			if( !box ) return null
 
-			return this.$.$bog_vmap_app_pane_slot( owner, box, this.node_kids( owner ), point )
+			return this.$.$bog_vmap_app_pane_slot(
+				owner,
+				box,
+				this.node_kids( owner ),
+				point,
+				this.axis( owner ),
+			)
 		}
 
 		/**

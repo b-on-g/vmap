@@ -32,6 +32,10 @@ $bog_vmap_app_pane $mol_view
 	- tree inside one. A drop inside one of these goes into the tree at a position,
 	- see section 8; a drop anywhere else lands on the canvas by coordinates.
 	containers /string
+	- `flexDirection` the node declares, empty when it declares none. From the
+	- document, which the host owns, and so a statement rather than a guess: the
+	- boxes of the children say nothing when there are fewer than two of them.
+	axis* \
 	- A node put into the tree of a container. The pane owns the geometry of the
 	- gesture and asks the owner to write the document, never writing it itself.
 	tree_move? null

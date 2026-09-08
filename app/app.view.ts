@@ -366,6 +366,23 @@ namespace $.$$ {
 		}
 
 		/**
+		 * The `flexDirection` a node declares, empty when it declares none.
+		 *
+		 * The document states which way a container stacks, and the host owns the
+		 * document, so this is a reading and not an inference. The pane falls back to
+		 * the geometry of the children only where there is no declaration — and it
+		 * has to have somewhere to fall back to, because a container with one child
+		 * or none shows nothing at all about its direction.
+		 */
+		@ $mol_mem_key
+		override doc_axis( name: string ) {
+
+			const style = this.node().over_tree( name, 'style' )?.kids[ 0 ] ?? null
+
+			return this.$.$bog_vmap_lang_dict_get( style, 'flexDirection' )?.value ?? ''
+		}
+
+		/**
 		 * A node dropped inside an artboard goes into the tree of its parent, and
 		 * loses its coordinate on the way.
 		 *

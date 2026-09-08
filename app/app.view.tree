@@ -172,4 +172,5 @@ $bog_vmap_app $mol_view
 		- Nodes that carry a `sub` of their own, so the pane knows where a drop goes
 		- into the tree instead of onto the canvas, and where to draw the line.
 		containers <= doc_containers /string
+		axis* <= doc_axis* \
 		tree_move? <=> tree_move? null

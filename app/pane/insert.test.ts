@@ -20,14 +20,54 @@ namespace $ {
 
 	$mol_test({
 
-		'the direction is read off where the children came out'( $ ) {
+		/**
+		 * Three sources, in this order and for this reason: what the node declares is
+		 * a line of the document rather than a guess; the boxes of the children are
+		 * the fallback and say nothing when there are fewer than two of them; a
+		 * column is the last resort and what a page is set to.
+		 */
+		'the declared direction wins, then the geometry, then a column'( $ ) {
 
+			// Declared, and the children say the opposite. The declaration is right:
+			// the boxes of a box that has just been re-declared are the old layout.
+			$mol_assert_equal( $bog_vmap_app_pane_axis( column, 'row' ), 'row' )
+			$mol_assert_equal( $bog_vmap_app_pane_axis( row, 'column' ), 'column' )
+
+			// Nothing declared: read off where the children came out.
 			$mol_assert_equal( $bog_vmap_app_pane_axis( column ), 'column' )
 			$mol_assert_equal( $bog_vmap_app_pane_axis( row ), 'row' )
+			$mol_assert_equal( $bog_vmap_app_pane_axis( column, '' ), 'column' )
 
-			// Nothing to read: a page stacks, and that is what an artboard is set to.
+			// Neither: a column. One child is exactly as silent as none, which is why
+			// the declaration has to come first at all.
 			$mol_assert_equal( $bog_vmap_app_pane_axis( [] ), 'column' )
 			$mol_assert_equal( $bog_vmap_app_pane_axis( [ column[0] ] ), 'column' )
+			$mol_assert_equal( $bog_vmap_app_pane_axis( [ column[0] ], 'row' ), 'row' )
+
+			// A direction we do not act on is not taken at its word: a reversed box
+			// lays its children out backwards from the order `sub` lists them, so a
+			// position counted along the boxes would be the mirror of the one written.
+			$mol_assert_equal( $bog_vmap_app_pane_axis( row, 'row-reverse' ), 'row' )
+			$mol_assert_equal( $bog_vmap_app_pane_axis( column, 'row-reverse' ), 'column' )
+
+		},
+
+		/** One child and a declared row: the position is counted across, not down. */
+		'a declared direction decides where a lone child is passed'( $ ) {
+
+			const one = [ box( 0, 0, 100, 300 ) ]
+
+			const before = $bog_vmap_app_pane_slot( 'Board', board, one, [ 20, 150 ], 'row' )
+			const after = $bog_vmap_app_pane_slot( 'Board', board, one, [ 80, 150 ], 'row' )
+
+			$mol_assert_equal( before.index, 0 )
+			$mol_assert_equal( after.index, 1 )
+
+			// Undeclared, the same lone child is judged down the column instead, so
+			// the very same point lands on the other side of it.
+			$mol_assert_equal( $bog_vmap_app_pane_slot( 'Board', board, one, [ 20, 200 ] ).index, 1 )
+			$mol_assert_equal( $bog_vmap_app_pane_slot( 'Board', board, one, [ 80, 200 ], 'row' ).index, 1 )
+			$mol_assert_equal( $bog_vmap_app_pane_slot( 'Board', board, one, [ 20, 200 ], 'row' ).index, 0 )
 
 		},
 
