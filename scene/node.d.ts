@@ -4736,6 +4736,18 @@ declare namespace $ {
          */
         link_drop(to: string, to_prop: string): void;
         /**
+         * Unplugs every wire with an end on a part: the ones it feeds and the ones
+         * it reads. What a delete of that part has to do before it takes the part
+         * out, or the document keeps a wire to a node that is no longer declared —
+         * which compiles into a call of a property nobody declares.
+         *
+         * Through `link_drop`, so a wire read by somebody else keeps its line
+         * exactly as it does when a port is unplugged by hand; a wire from this part
+         * that nobody reads has no consumer to unplug and goes in the second pass.
+         * Both ends of every OTHER wire are left alone.
+         */
+        links_drop(node: string): void;
+        /**
          * Declaration of a property, read off the derivation of the text.
          *
          * Not through `prop_tree()`: that one is a keyed cell the writes below go
@@ -4782,7 +4794,15 @@ declare namespace $ {
         sub_write(owner: string, list: $mol_tree2): void;
         /** Makes a node a container by giving it an empty `sub`, if it has none. */
         sub_open(owner: string): void;
-        /** One override written under a part, `Board $mol_view style *`, or `null`. */
+        /**
+         * One override written under a part, `Board $mol_view style *`, or `null`.
+         *
+         * Only under a PART: a property whose value is a class name. Under anything
+         * else the children are not overrides at all — under `sub` they are bare
+         * `<=` references — and reading them as property signatures fails on the
+         * first one, which is how every property of the document gets asked whether
+         * it is an artboard.
+         */
         over_tree(owner: string, prop: string): $mol_tree2 | null;
         /**
          * Replaces an override under a part where it stands, appends a new one, or

@@ -11112,6 +11112,29 @@ var $;
                 this.prop_drop(link.name);
         }
         /**
+         * Unplugs every wire with an end on a part: the ones it feeds and the ones
+         * it reads. What a delete of that part has to do before it takes the part
+         * out, or the document keeps a wire to a node that is no longer declared —
+         * which compiles into a call of a property nobody declares.
+         *
+         * Through `link_drop`, so a wire read by somebody else keeps its line
+         * exactly as it does when a port is unplugged by hand; a wire from this part
+         * that nobody reads has no consumer to unplug and goes in the second pass.
+         * Both ends of every OTHER wire are left alone.
+         */
+        links_drop(node) {
+            for (const link of [...this.links()]) {
+                if (link.from !== node && link.to !== node)
+                    continue;
+                this.link_drop(link.to, link.to_prop);
+            }
+            for (const wire of [...this.wires()]) {
+                if (wire.node !== node)
+                    continue;
+                this.prop_drop(wire.name);
+            }
+        }
+        /**
          * Declaration of a property, read off the derivation of the text.
          *
          * Not through `prop_tree()`: that one is a keyed cell the writes below go
@@ -11198,10 +11221,20 @@ var $;
                 return;
             this.sub_write(owner, this.tree().struct('/'));
         }
-        /** One override written under a part, `Board $mol_view style *`, or `null`. */
+        /**
+         * One override written under a part, `Board $mol_view style *`, or `null`.
+         *
+         * Only under a PART: a property whose value is a class name. Under anything
+         * else the children are not overrides at all — under `sub` they are bare
+         * `<=` references — and reading them as property signatures fails on the
+         * first one, which is how every property of the document gets asked whether
+         * it is an artboard.
+         */
         over_tree(owner, prop) {
-            const kids = this.prop_decl(owner)?.kids[0]?.kids ?? [];
-            return kids.find(over => this.$.$mol_view_tree2_prop_parts(over).name === prop) ?? null;
+            const klass = this.prop_decl(owner)?.kids[0];
+            if (!klass || !$mol_view_tree2_class_match(klass))
+                return null;
+            return klass.kids.find(over => this.$.$mol_view_tree2_prop_parts(over).name === prop) ?? null;
         }
         /**
          * Replaces an override under a part where it stands, appends a new one, or
@@ -11214,7 +11247,7 @@ var $;
         over_set(owner, prop, next) {
             const decl = this.prop_decl(owner);
             const klass = decl?.kids[0];
-            if (!decl || !klass)
+            if (!decl || !klass || !$mol_view_tree2_class_match(klass))
                 return;
             const named = (over) => this.$.$mol_view_tree2_prop_parts(over).name === prop;
             const kids = klass.kids.some(named)
@@ -11359,6 +11392,9 @@ var $;
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "link_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "links_drop", null);
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "sub_open", null);
@@ -21785,6 +21821,18 @@ var $;
         `		<= Price`,
         ``,
     ].join('\n');
+    /** Two sources and two consumers, enough for a wire to have neighbours. */
+    const trio_src = [
+        `${d}bog_vmap_lang_test_pair ${d}mol_view`,
+        `	Calc ${d}bog_vmap_lang_test_calc`,
+        `	Calc_2 ${d}bog_vmap_lang_test_calc`,
+        `	Price ${d}mol_view`,
+        `	Note ${d}mol_view`,
+        `	sub /`,
+        `		<= Calc`,
+        `		<= Price`,
+        ``,
+    ].join('\n');
     /**
      * A document with an artboard: `Board` carries a `sub` of its own, so its
      * children are laid out by tree, while `Loose` lies free on the canvas.
@@ -22193,6 +22241,50 @@ var $;
             node.link_drop('Price', 'title');
             $mol_assert_equal(node.source(), pair_src);
         },
+        /**
+         * What a delete of a part has to do first: a wire left with one end on a
+         * part that is gone names a property nobody declares.
+         */
+        'unwiring a part takes both ends of its own wires and no others'($) {
+            const node = doc(trio_src);
+            node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title' });
+            node.link_add({ from: 'Calc', from_prop: 'result', to: 'Note', to_prop: 'title' });
+            node.link_add({ from: 'Calc_2', from_prop: 'result', to: 'Note', to_prop: 'hint' });
+            node.links_drop('Calc');
+            $mol_assert_like(node.links().map(link => [link.from, link.to, link.to_prop]), [['Calc_2', 'Note', 'hint']]);
+            $mol_assert_like(node.wires().map(wire => wire.name), ['calc_2_result']);
+            $mol_assert_equal(node.source().includes('calc_result'), false);
+            // The parts are none of its business: taking them out is the caller's half.
+            $mol_assert_ok(node.prop_names().includes('Calc'));
+        },
+        /**
+         * A wire nobody reads is still a wire and still names its node, so it goes
+         * with the node too. Reachable from a hand written document and from an
+         * import, where a wire may well stand without a consumer.
+         */
+        'unwiring a part takes its wire even when nobody reads it'($) {
+            const node = doc(trio_src);
+            node.wire_add({ name: 'calc_result', node: 'Calc', prop: 'result', bidi: false });
+            $mol_assert_like(node.wires().map(wire => wire.name), ['calc_result']);
+            $mol_assert_like(node.links(), []);
+            node.links_drop('Calc');
+            $mol_assert_like(node.wires(), []);
+            $mol_assert_equal(node.source().includes('calc_result'), false);
+        },
+        /** A part that only reads a wire goes off it alone; the wire lives while somebody else reads it. */
+        'unwiring a consumer keeps the wire while another consumer holds it'($) {
+            const node = doc(trio_src);
+            node.link_add({ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title' });
+            node.link_add({ from: 'Calc', from_prop: 'result', to: 'Note', to_prop: 'title' });
+            node.links_drop('Price');
+            $mol_assert_like(node.links().map(link => [link.from, link.to]), [['Calc', 'Note']]);
+            $mol_assert_ok(node.source().includes('\tcalc_result = Calc result\n'));
+            $mol_assert_equal(node.source().includes('Price ' + `${d}mol_view title`), false);
+            // The last reader gone, the wire goes with it, as unplugging by hand does.
+            node.links_drop('Note');
+            $mol_assert_like(node.links(), []);
+            $mol_assert_equal(node.source().includes('calc_result'), false);
+        },
         'a two way link puts the sign on both ends of both lines'($) {
             const node = doc(pair_src);
             node.link_add({ from: 'Calc', from_prop: 'value', to: 'Price', to_prop: 'title', bidi: true });
@@ -22269,6 +22361,11 @@ var $;
             // Not «no children»: no `sub` at all, which is what a free part is.
             $mol_assert_equal(node.sub_names('Loose'), null);
             $mol_assert_equal(node.sub_names('Nobody'), null);
+            // Every property of the document gets asked this, including the ones
+            // whose children are not overrides at all: `sub` holds bare references,
+            // and reading one as a property signature fails outright.
+            $mol_assert_equal(node.sub_names('sub'), null);
+            $mol_assert_equal(node.over_tree('sub', 'sub'), null);
             $mol_assert_equal(node.sub_holder('Head'), 'Board');
             $mol_assert_equal(node.sub_holder('Loose'), '');
             $mol_assert_equal(node.sub_holder('Nobody'), null);

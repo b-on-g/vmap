@@ -11121,6 +11121,29 @@ var $;
                 this.prop_drop(link.name);
         }
         /**
+         * Unplugs every wire with an end on a part: the ones it feeds and the ones
+         * it reads. What a delete of that part has to do before it takes the part
+         * out, or the document keeps a wire to a node that is no longer declared —
+         * which compiles into a call of a property nobody declares.
+         *
+         * Through `link_drop`, so a wire read by somebody else keeps its line
+         * exactly as it does when a port is unplugged by hand; a wire from this part
+         * that nobody reads has no consumer to unplug and goes in the second pass.
+         * Both ends of every OTHER wire are left alone.
+         */
+        links_drop(node) {
+            for (const link of [...this.links()]) {
+                if (link.from !== node && link.to !== node)
+                    continue;
+                this.link_drop(link.to, link.to_prop);
+            }
+            for (const wire of [...this.wires()]) {
+                if (wire.node !== node)
+                    continue;
+                this.prop_drop(wire.name);
+            }
+        }
+        /**
          * Declaration of a property, read off the derivation of the text.
          *
          * Not through `prop_tree()`: that one is a keyed cell the writes below go
@@ -11207,10 +11230,20 @@ var $;
                 return;
             this.sub_write(owner, this.tree().struct('/'));
         }
-        /** One override written under a part, `Board $mol_view style *`, or `null`. */
+        /**
+         * One override written under a part, `Board $mol_view style *`, or `null`.
+         *
+         * Only under a PART: a property whose value is a class name. Under anything
+         * else the children are not overrides at all — under `sub` they are bare
+         * `<=` references — and reading them as property signatures fails on the
+         * first one, which is how every property of the document gets asked whether
+         * it is an artboard.
+         */
         over_tree(owner, prop) {
-            const kids = this.prop_decl(owner)?.kids[0]?.kids ?? [];
-            return kids.find(over => this.$.$mol_view_tree2_prop_parts(over).name === prop) ?? null;
+            const klass = this.prop_decl(owner)?.kids[0];
+            if (!klass || !$mol_view_tree2_class_match(klass))
+                return null;
+            return klass.kids.find(over => this.$.$mol_view_tree2_prop_parts(over).name === prop) ?? null;
         }
         /**
          * Replaces an override under a part where it stands, appends a new one, or
@@ -11223,7 +11256,7 @@ var $;
         over_set(owner, prop, next) {
             const decl = this.prop_decl(owner);
             const klass = decl?.kids[0];
-            if (!decl || !klass)
+            if (!decl || !klass || !$mol_view_tree2_class_match(klass))
                 return;
             const named = (over) => this.$.$mol_view_tree2_prop_parts(over).name === prop;
             const kids = klass.kids.some(named)
@@ -11368,6 +11401,9 @@ var $;
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "link_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "links_drop", null);
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "sub_open", null);
