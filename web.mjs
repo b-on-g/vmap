@@ -28863,33 +28863,47 @@ var $;
                 return;
             this.doc_add(this.title_next(), this.draft_source(), this.draft_spots(), this.draft_pack());
         }
-        /** The one fiber making the first document. A field, so a retry cannot see it. */
-        doc_first_task = null;
+        /**
+         * The one fiber making the first document, held by a cell of its own.
+         *
+         * A cell that reads nothing and answers with the fiber it made. That is the
+         * shape a `$mol` effect takes — the same one `message_listener` and
+         * `resize_watch` take in `scene/` — and it is what makes one fiber one
+         * fiber: read this again while the proof of work is still being mined and
+         * the same object comes back, so no second document is ever started.
+         *
+         * Reading nothing is the point and not an accident. An invalidation
+         * arriving while a cell computes is dropped on the spot — `absorb` returns
+         * early on a cursor that is still tracking — and the document landing is
+         * exactly such an invalidation. A cell with no dependencies has nothing to
+         * lose that way.
+         *
+         * The fiber is wrapped and not returned as it is: a cell answering with a
+         * promise is a cell that never finished, and every reader of it suspends
+         * for ever.
+         */
+        doc_first_task() {
+            const task = $mol_wire_async(this).doc_first();
+            return { task, destructor: () => task.destructor?.() };
+        }
         /**
          * Makes sure there is a document, from the start of the session.
          *
          * Read from `auto()` of the application. Suspends while the home land loads,
          * so the decision «there are none» is taken on the loaded list and not on an
-         * empty cache; then hands the making to one background fiber and answers at
-         * once, so that nothing waits on the proof of work. The cell is read only
-         * and reactive: the moment the document lands, `doc_current` changes and
-         * this reads `ready`.
+         * empty cache; then asks for the fiber above and answers at once, so that
+         * nothing waits on the proof of work.
          *
-         * Not the promise itself: a cell holding a promise is a cell that never
-         * finished, and every reader of it suspends for ever.
-         *
-         * The fiber is started from a microtask and not from the body of the cell.
-         * Started inline it runs to its first suspension right here, and with no
-         * proof of work to wait on that is the whole of it — the document lands
-         * while this cell is still computing, the cell then stores `making` over
-         * the invalidation it just caused, and answers `making` for good. Measured.
+         * A plain method, deliberately. Under `@ $mol_mem` this answered `making`
+         * for good: with no proof of work to wait on, the document lands while the
+         * cell is still computing, and the invalidation it causes is dropped rather
+         * than remembered. Measured. Read afresh every time there is nothing to go
+         * stale, and the answer follows `doc_current` for free.
          */
         boot() {
             if (this.doc_current())
                 return 'ready';
-            if (!this.doc_first_task) {
-                this.doc_first_task = Promise.resolve().then(() => $mol_wire_async(this).doc_first());
-            }
+            this.doc_first_task();
             return 'making';
         }
         /**
@@ -29081,7 +29095,7 @@ var $;
     }
     __decorate([
         $mol_mem
-    ], $bog_vmap_app_store.prototype, "boot", null);
+    ], $bog_vmap_app_store.prototype, "doc_first_task", null);
     __decorate([
         $mol_mem
     ], $bog_vmap_app_store.prototype, "draft_source", null);

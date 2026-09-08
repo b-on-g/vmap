@@ -18741,33 +18741,47 @@ var $;
                 return;
             this.doc_add(this.title_next(), this.draft_source(), this.draft_spots(), this.draft_pack());
         }
-        /** The one fiber making the first document. A field, so a retry cannot see it. */
-        doc_first_task = null;
+        /**
+         * The one fiber making the first document, held by a cell of its own.
+         *
+         * A cell that reads nothing and answers with the fiber it made. That is the
+         * shape a `$mol` effect takes — the same one `message_listener` and
+         * `resize_watch` take in `scene/` — and it is what makes one fiber one
+         * fiber: read this again while the proof of work is still being mined and
+         * the same object comes back, so no second document is ever started.
+         *
+         * Reading nothing is the point and not an accident. An invalidation
+         * arriving while a cell computes is dropped on the spot — `absorb` returns
+         * early on a cursor that is still tracking — and the document landing is
+         * exactly such an invalidation. A cell with no dependencies has nothing to
+         * lose that way.
+         *
+         * The fiber is wrapped and not returned as it is: a cell answering with a
+         * promise is a cell that never finished, and every reader of it suspends
+         * for ever.
+         */
+        doc_first_task() {
+            const task = $mol_wire_async(this).doc_first();
+            return { task, destructor: () => task.destructor?.() };
+        }
         /**
          * Makes sure there is a document, from the start of the session.
          *
          * Read from `auto()` of the application. Suspends while the home land loads,
          * so the decision «there are none» is taken on the loaded list and not on an
-         * empty cache; then hands the making to one background fiber and answers at
-         * once, so that nothing waits on the proof of work. The cell is read only
-         * and reactive: the moment the document lands, `doc_current` changes and
-         * this reads `ready`.
+         * empty cache; then asks for the fiber above and answers at once, so that
+         * nothing waits on the proof of work.
          *
-         * Not the promise itself: a cell holding a promise is a cell that never
-         * finished, and every reader of it suspends for ever.
-         *
-         * The fiber is started from a microtask and not from the body of the cell.
-         * Started inline it runs to its first suspension right here, and with no
-         * proof of work to wait on that is the whole of it — the document lands
-         * while this cell is still computing, the cell then stores `making` over
-         * the invalidation it just caused, and answers `making` for good. Measured.
+         * A plain method, deliberately. Under `@ $mol_mem` this answered `making`
+         * for good: with no proof of work to wait on, the document lands while the
+         * cell is still computing, and the invalidation it causes is dropped rather
+         * than remembered. Measured. Read afresh every time there is nothing to go
+         * stale, and the answer follows `doc_current` for free.
          */
         boot() {
             if (this.doc_current())
                 return 'ready';
-            if (!this.doc_first_task) {
-                this.doc_first_task = Promise.resolve().then(() => $mol_wire_async(this).doc_first());
-            }
+            this.doc_first_task();
             return 'making';
         }
         /**
@@ -18959,7 +18973,7 @@ var $;
     }
     __decorate([
         $mol_mem
-    ], $bog_vmap_app_store.prototype, "boot", null);
+    ], $bog_vmap_app_store.prototype, "doc_first_task", null);
     __decorate([
         $mol_mem
     ], $bog_vmap_app_store.prototype, "draft_source", null);
@@ -44467,18 +44481,32 @@ var $;
             $mol_assert_equal(s.doc_links().length, 1);
         },
         /**
-         * `boot` answers at once and makes the document in the background; the
-         * answer follows the document. One fiber for the whole thing, however many
-         * times the cell is read while it is on its way.
+         * `boot` answers at once and hands the making to one fiber; the answer
+         * follows the document afterwards. Read again and it is the same fiber, so
+         * a second document is never started.
          */
-        async 'boot makes the first document in the background and reports it'($) {
+        async 'boot makes the first document and then reports it'($) {
             const s = store($);
             $mol_assert_equal(s.boot(), 'making');
-            const task = s.doc_first_task;
-            $mol_assert_ok(task);
+            const held = s.doc_first_task();
+            $mol_assert_equal(s.doc_first_task().task === held.task, true);
+            await held.task;
+            $mol_assert_equal(s.doc_links().length, 1);
+            $mol_assert_equal(s.boot(), 'ready');
+            $mol_assert_equal(s.stage(), 'ready');
+            // Still the one fiber, and still the one document.
+            $mol_assert_equal(s.doc_first_task().task === held.task, true);
+            $mol_assert_equal(s.doc_links().length, 1);
+        },
+        /**
+         * The answer of `boot` is read afresh every time and cannot go stale: under
+         * `@ $mol_mem` this is the case that answered «making» for the rest of the
+         * session, the document having landed while the cell was still computing.
+         */
+        'boot reports the document it just made, in the same breath'($) {
+            const s = store($);
             $mol_assert_equal(s.boot(), 'making');
-            $mol_assert_equal(s.doc_first_task, task);
-            await task;
+            // Nothing awaited: with no proof of work the document is already there.
             $mol_assert_equal(s.doc_links().length, 1);
             $mol_assert_equal(s.boot(), 'ready');
             $mol_assert_equal(s.stage(), 'ready');
@@ -44487,8 +44515,55 @@ var $;
             const s = store($);
             s.doc_add('First', src_page);
             $mol_assert_equal(s.boot(), 'ready');
-            $mol_assert_equal(s.doc_first_task, null);
             $mol_assert_equal(s.doc_links().length, 1);
+            // No fiber was ever asked for: the cell holding it is untouched.
+            $mol_assert_equal($mol_wire_probe(() => s.doc_first_task()), undefined);
+        },
+        /** The draft goes into the document `boot` makes, the same as into `doc_first`. */
+        async 'the draft goes whole into the document boot makes'($) {
+            const s = store($);
+            s.source(src_page);
+            s.spots({ Calc: { x: 10, y: 20 } });
+            s.pack('https://mol.hyoo.ru');
+            $mol_assert_equal(s.boot(), 'making');
+            await s.doc_first_task().task;
+            $mol_assert_equal(s.doc_links().length, 1);
+            $mol_assert_equal(s.source(), src_page);
+            $mol_assert_like(s.spots(), { Calc: { x: 10, y: 20 } });
+            $mol_assert_equal(s.pack(), 'https://mol.hyoo.ru');
+            $mol_assert_equal(s.title(), 'Сцена 1');
+        },
+        /**
+         * A land still on its way suspends the fiber, which is what mining the
+         * proof of work does in the editor. The reader is told «making» and is not
+         * left on it: the moment the document lands, `boot` says `ready`. Repeated
+         * reads while it waits get the same fiber and make no second document.
+         */
+        async 'a suspended land does not leave the reader on making for ever'($) {
+            let open = () => { };
+            const gate = new Promise(done => { open = () => done(); });
+            let held = true;
+            /** Suspends once on the way in, the way a land grab does. */
+            class store_slow extends $bog_vmap_app_store {
+                doc_first() {
+                    if (held)
+                        return $mol_fail_hidden(gate);
+                    return super.doc_first();
+                }
+            }
+            const s = store_slow.make({ $, doc_land_config: () => null });
+            $mol_assert_equal(s.boot(), 'making');
+            $mol_assert_equal(s.doc_links().length, 0);
+            const task = s.doc_first_task();
+            $mol_assert_equal(s.boot(), 'making');
+            $mol_assert_equal(s.doc_first_task().task === task.task, true);
+            $mol_assert_equal(s.doc_links().length, 0);
+            held = false;
+            open();
+            await task.task;
+            $mol_assert_equal(s.doc_links().length, 1);
+            $mol_assert_equal(s.boot(), 'ready');
+            $mol_assert_equal(s.stage(), 'ready');
         },
         /**
          * A link in the address opens somebody else's public document: it reads,
