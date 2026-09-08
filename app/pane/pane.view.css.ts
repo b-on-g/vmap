@@ -36,6 +36,35 @@ namespace $.$$ {
 			pointerEvents: 'none',
 		},
 
+		/** The layer of the marks: a frame of reference, not a box of its own. */
+		Marks: {
+			position: 'absolute',
+			top: 0,
+			left: 0,
+			width: '100%',
+			height: '100%',
+			pointerEvents: 'none',
+		},
+
+		/**
+		 * A badge at the corner of a node the scene complained about. Takes the
+		 * pointer, alone on this layer, so that the tooltip can be read at all.
+		 */
+		Mark: {
+			position: 'absolute',
+			transform: 'translate(-50%, -50%)',
+			width: '1rem',
+			height: '1rem',
+			borderRadius: '50%',
+			flex: { direction: 'row' },
+			justifyContent: 'center',
+			alignItems: 'center',
+			background: { color: $mol_theme.focus },
+			color: $mol_theme.card,
+			font: { size: '.75rem', weight: 'bolder' },
+			pointerEvents: 'auto',
+		},
+
 	} )
 
 	$mol_style_define( $bog_vmap_app_pane_overlay, {

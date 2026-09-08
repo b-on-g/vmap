@@ -67,6 +67,14 @@ namespace $.$$ {
 			border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
 		},
 
+		/** Wider than the inspector: this one holds code, and code wraps badly. */
+		Code: {
+			flex: { direction: 'column', shrink: 0 },
+			width: '28rem',
+			minHeight: 0,
+			border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
+		},
+
 		Idle: {
 			padding: $mol_gap.block,
 			color: $mol_theme.shade,

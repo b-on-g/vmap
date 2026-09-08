@@ -59,6 +59,10 @@ $bog_vmap_app_pane $mol_view
 	- Set by the watchdog, cleared by the next message from the scene.
 	stalled? false
 	error_at*? \
+	- Node the failure of a channel belongs to, empty when the scene could not
+	- attribute it. Kept apart from the text so that the strip and the mark on the
+	- canvas read the same report without either parsing the other's sentence.
+	error_node*? \
 	error \
 	isolation \
 	camera_shift? $mol_vector_2d<number> /
@@ -85,6 +89,19 @@ $bog_vmap_app_pane $mol_view
 			lines <= wire_lines /$bog_vmap_app_wire_line
 			dots <= wire_dots /$bog_vmap_app_wire_dot
 			drag_geometry <= wire_drag_geometry \
+		- Failures of the scene, each on the node it belongs to. Above everything,
+		- because a node that threw is what the eye has to be sent to first.
+		<= Marks $mol_view
+			sub <= error_marks /$mol_view
+	- A failure sits at the corner of the node that caused it, and carries the text
+	- of the failure as its tooltip. Picture only: the overlay under it takes the press.
+	Mark* $mol_view
+		style <= mark_style* *
+		attr *
+			^
+			title <= mark_hint* \
+		sub /
+			\!
 	- Where the node in hand would land among the children of a container. Put into
 	- `sub` only while a drop has somewhere to go, so an idle canvas costs no node.
 	Insert $mol_view

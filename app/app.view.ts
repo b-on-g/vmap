@@ -251,16 +251,161 @@ namespace $.$$ {
 			return this.selected() ?? ''
 		}
 
+		/** The whole document text, two way: what the code editor writes back through. */
+		override doc_text( next?: string ) {
+			return this.doc_source( next )
+		}
+
+		/**
+		 * The document as a model over the classes it declares.
+		 *
+		 * Beside `node()`, which is the root class alone. Both are read only
+		 * derivations of the same text, and the code editor needs the list of
+		 * classes that one cannot give.
+		 */
+		@ $mol_mem
+		doc_model() {
+			return this.$.$bog_vmap_lang_doc.make({
+				$: this.$,
+				source: ( next?: string )=> this.doc_source( next ),
+			})
+		}
+
+		/**
+		 * Handwritten body of one class of the document, in the document or in the
+		 * draft before there is one.
+		 *
+		 * A plain method, like everything in front of a Giper Baza atom: a cell
+		 * there freezes at what was written through it.
+		 */
+		class_js( klass: string, next?: string ): string {
+
+			const store = this.store()
+			const doc = store.doc_current()
+
+			if( !doc ) return this.draft_js( klass, next )
+			if( next !== undefined && !doc.can_change() ) return store.node_js( doc, klass )
+
+			return store.node_js( doc, klass, next )
+		}
+
+		/** Styles of one class, the same way. */
+		class_css( klass: string, next?: string ): string {
+
+			const store = this.store()
+			const doc = store.doc_current()
+
+			if( !doc ) return this.draft_css( klass, next )
+			if( next !== undefined && !doc.can_change() ) return store.node_css( doc, klass )
+
+			return store.node_css( doc, klass, next )
+		}
+
+		/** Body of a class while there is no document to keep it in. */
+		@ $mol_mem_key
+		draft_js( klass: string, next?: string ) {
+			return next ?? ''
+		}
+
+		/** Styles of a class while there is no document to keep them in. */
+		@ $mol_mem_key
+		draft_css( klass: string, next?: string ) {
+			return next ?? ''
+		}
+
+		override root_js( next?: string ) {
+			return this.class_js( this.doc_root(), next )
+		}
+
+		override root_css( next?: string ) {
+			return this.class_css( this.doc_root(), next )
+		}
+
+		/**
+		 * Handwritten bodies of the document, by class name, as the scene takes them.
+		 *
+		 * A class with no body of its own is left out rather than sent empty: the
+		 * scene wraps a class only when there is something to put in the wrapper.
+		 */
+		@ $mol_mem
+		override doc_js() {
+
+			const bodies = {} as { [ klass: string ]: string }
+
+			for( const name of this.doc_model().names() ) {
+				const js = this.class_js( name )
+				if( js ) bodies[ name ] = js
+			}
+
+			return bodies
+		}
+
 		/**
 		 * CSS of the document itself: the only styling an export may ever carry.
 		 *
-		 * Empty until the code editor of stage 4. Styles of a node are kept per node
-		 * in the model of `app/doc/`, and that is what the export reads. Nothing
-		 * about the canvas belongs here, and there is no longer anywhere to put it:
+		 * The styles of every class, glued in the order the text declares them.
+		 * Nothing about the canvas belongs here, and there is nowhere to put it:
 		 * placement travels on `spots` and is turned into rules by the scene.
 		 */
+		@ $mol_mem
 		override doc_css() {
-			return ''
+			return this.doc_model().names()
+				.map( name => this.class_css( name ) )
+				.filter( Boolean )
+				.join( '\n\n' )
+		}
+
+		/** The picked node as the code editor takes it: a name, empty for none. */
+		code_prop() {
+			return this.selected() ?? ''
+		}
+
+		/** Signature of the picked property: it shapes the empty method offered for it. */
+		code_prop_key() {
+			const name = this.selected()
+			return name ? this.node().property( name ).key() : false
+		}
+
+		code_prop_next() {
+			const name = this.selected()
+			return name ? this.node().property( name ).next() : false
+		}
+
+		/** What the scene said about the picked node last, empty when it said nothing. */
+		code_error() {
+			const name = this.selected()
+			return name ? this.pane().node_error( name ) : ''
+		}
+
+		/** Method of the picked node, cut out of the body of its class. */
+		node_js() {
+
+			const name = this.selected()
+			if( !name ) return ''
+
+			try {
+				return this.$.$bog_vmap_app_code_props_js( this.root_js() ).get( name ) ?? ''
+			} catch( error: unknown ) {
+				if( this.$.$mol_promise_like( error ) ) return this.$.$mol_fail_hidden( error )
+				return ''
+			}
+
+		}
+
+		/** Rule of the picked node, cut out of the styles of its class. */
+		node_css() {
+
+			const name = this.selected()
+			if( !name ) return ''
+
+			try {
+				return this.$.$bog_vmap_app_code_props_css( this.root_css(), this.doc_root() )
+					.get( name.toLowerCase() ) ?? ''
+			} catch( error: unknown ) {
+				if( this.$.$mol_promise_like( error ) ) return this.$.$mol_fail_hidden( error )
+				return ''
+			}
+
 		}
 
 		/**
@@ -290,6 +435,7 @@ namespace $.$$ {
 				... this.palette_showed() ? [ this.Side() ] : [],
 				this.Pane(),
 				... this.inspect_showed() ? [ this.Aside() ] : [],
+				... this.code_showed() ? [ this.Code() ] : [],
 			] as readonly $mol_view[]
 		}
 

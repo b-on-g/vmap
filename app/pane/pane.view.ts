@@ -129,6 +129,64 @@ namespace $.$$ {
 		}
 
 		/**
+		 * The two channels sorted onto the nodes they were attributed to.
+		 *
+		 * A failure the scene could not attribute stays on the strip alone: a mark
+		 * on the wrong node would be worse than no mark, and there is nowhere else
+		 * to put it. Both channels can name the same node, and then both texts go
+		 * on it, and a channel cleared by the scene takes its mark off with it —
+		 * the name of a node without a text of its own is not a failure.
+		 */
+		@ $mol_mem
+		errors(): { readonly [ node: string ]: string } {
+
+			const res = {} as { [ node: string ]: string }
+
+			for( const at of [ 'compile', 'runtime' ] as const ) {
+
+				const node = this.error_node( at )
+				const text = this.error_at( at )
+				if( !node || !text ) continue
+
+				res[ node ] = res[ node ] ? res[ node ] + '\n' + text : text
+
+			}
+
+			return res
+		}
+
+		/** What the scene said about one node, empty when it said nothing. */
+		node_error( name: string ) {
+			return this.errors()[ name ] ?? ''
+		}
+
+		/** A mark per node the scene complained about, once it has been measured. */
+		@ $mol_mem
+		override error_marks() {
+			return Object.keys( this.errors() )
+				.filter( name => this.part_box( name ) )
+				.map( name => this.Mark( name ) )
+		}
+
+		@ $mol_mem_key
+		override mark_hint( name: string ) {
+			return this.node_error( name )
+		}
+
+		/** At the top left corner of the node, in screen pixels, like the ring. */
+		@ $mol_mem_key
+		override mark_style( name: string ): { readonly [ prop: string ]: string } {
+
+			const rect = this.part_box( name )
+			if( !rect ) return {}
+
+			return {
+				left: rect.left + 'px',
+				top: rect.top + 'px',
+			}
+		}
+
+		/**
 		 * Which frame is the live one: the generation, and the pack it was raised
 		 * with. A new key is a new `$mol_frame`, a new element and a new document.
 		 *
@@ -1446,6 +1504,7 @@ namespace $.$$ {
 				const label = at === 'compile' ? 'компиляция' : 'исполнение'
 				const node = message.node ? ` — ${ message.node }` : ''
 				this.error_at( at, `${ label }${ node }: ${ message.message }` )
+				this.error_node( at, message.node ?? '' )
 				return
 			}
 

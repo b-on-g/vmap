@@ -24,6 +24,15 @@ $bog_vmap_app $mol_view
 	links? \
 	palette_showed? true
 	inspect_showed? true
+	code_showed? false
+	- `view.tree` of the whole document, two way. `doc_src` is the same text read
+	- only, for the scene; this one is the one the code editor writes back through.
+	doc_text? \
+	- Handwritten body and styles of the root class, two way. Everything the code
+	- editor writes ends up in these two, and `doc_js`/`doc_css` carry them to the
+	- scene beside the text.
+	root_js? \
+	root_css? \
 	- Persistence: the documents of the user in Giper Baza. One for the whole
 	- editor, handed to the switcher in the head bar; text and placement read
 	- through it and write back into it.
@@ -43,6 +52,10 @@ $bog_vmap_app $mol_view
 			<= Inspect_check $mol_check
 				title \Свойства
 				checked? <=> inspect_showed?
+			<= Code_check $mol_check
+				title \Код
+				hint \Три текста выбранного узла: view.tree, JS и CSS
+				checked? <=> code_showed?
 			<= Zoom_out $mol_button_minor
 				title \−
 				hint \Отдалить
@@ -75,6 +88,11 @@ $bog_vmap_app $mol_view
 			<= Publish $bog_vmap_app_publish
 				part <= publish_part \
 				source <= node_source? \
+				- Method and rule of the picked part, cut out of the two texts of the
+				- class the code editor writes. Without these a published component
+				- would arrive at the next document with its behaviour left behind.
+				js <= node_js \
+				css <= node_css \
 				doc <= doc_src
 				classes / <= doc_root
 			<= Status $mol_view
@@ -135,6 +153,24 @@ $bog_vmap_app $mol_view
 	Idle $mol_view
 		sub /
 			<= idle_note \Выберите узел на холсте, чтобы править его свойства
+	-
+	- Three sources of the picked node, next to the inspector: one panel says what
+	- the node can do, the other says how it does it. Folded away by its own check
+	- in the head bar, like the two panels beside it.
+	-
+	- `node_source` is the very binding the inspector edits, so a change made with
+	- the mouse shows up in the text with no path of its own; the body and the
+	- styles are the two texts of the root class, sliced by the panel.
+	Code $bog_vmap_app_code
+		klass <= doc_root
+		prop <= code_prop \
+		prop_key <= code_prop_key false
+		prop_next <= code_prop_next false
+		source? <=> doc_text?
+		node_source? <=> node_source?
+		js? <=> root_js?
+		css? <=> root_css?
+		error <= code_error \
 	-
 	- Component library of the host: the pack, with the lands of the field stacked
 	- on it. `script_link()` is the bundle the scene is told to load; `land_trees()` feed the
