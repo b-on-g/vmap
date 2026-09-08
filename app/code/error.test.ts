@@ -115,6 +115,48 @@ namespace $ {
 
 		},
 
+		/**
+		 * The case the marks exist for: code is written, it breaks, and the node
+		 * stops being drawn. Nothing is measured any more, so the mark has to stand
+		 * on the last box the node was seen at — otherwise it disappears exactly
+		 * when it is needed.
+		 */
+		'a node that stops being drawn keeps its mark where it was'( $ ) {
+
+			const { pane, answer } = pane_make( $ )
+
+			answer({
+				kind: 'sizes',
+				sizes: { [ `${ root }/Calc` ]: { x: 10, y: 20, width: 100, height: 50 } },
+			})
+
+			// It broke: the scene draws it no more, so it measures it no more, and
+			// the report simply stops mentioning it.
+			answer({ kind: 'sizes', sizes: {} })
+			answer({ kind: 'error', at: 'runtime', message: 'boom', node: 'Calc' })
+
+			$mol_assert_equal( pane.error_marks().length, 1 )
+			$mol_assert_equal( pane.mark_style( 'Calc' ).left, '10px' )
+			$mol_assert_equal( pane.mark_style( 'Calc' ).top, '20px' )
+
+		},
+
+		/**
+		 * A node that never drew has no corner to point at, and pointing at a made
+		 * up one would be the false mark. The text is not conditional on geometry,
+		 * so the panel of that node says it anyway.
+		 */
+		'a node never drawn gets no mark, and is still told about'( $ ) {
+
+			const { pane, answer } = pane_make( $ )
+
+			answer({ kind: 'error', at: 'compile', message: 'boom', node: 'Calc' })
+
+			$mol_assert_equal( pane.error_marks().length, 0 )
+			$mol_assert_equal( pane.node_error( 'Calc' ), 'компиляция — Calc: boom' )
+
+		},
+
 		/** What the panel of the picked node shows is what the pane knows about it. */
 		'the code panel shows the failure of the node it is editing'( $ ) {
 
