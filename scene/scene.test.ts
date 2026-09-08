@@ -80,6 +80,14 @@ namespace $ {
 		/**
 		 * The state every frame starts in: a document is on hand, a pack is not.
 		 * Nothing is compiled and nothing throws, and the wait has a face.
+		 *
+		 * The class is checked for in the sandbox as well as the instance, because
+		 * those are two different failures and only one of them shows. A document
+		 * compiled here would inherit the `$mol_view` of the SCENE — a class computes
+		 * its base once, and no later load of the pack can move it — so the damage is
+		 * done at definition time, before anything is instantiated, and it is done
+		 * for the life of the frame. Compilation is green, the bridge reports no
+		 * error, and half the palette silently draws as text.
 		 */
 		'a scene with no pack compiles nothing and says what it waits for'( $ ) {
 
@@ -91,6 +99,10 @@ namespace $ {
 			$mol_assert_equal( made.pack_uri(), '' )
 			$mol_assert_equal( made.instance(), null )
 			$mol_assert_like( loaded, [] )
+
+			// not merely uninstantiated: never defined
+			$mol_assert_equal( Reflect.get( made.sandbox(), root ), undefined )
+
 			$mol_assert_equal( made.pack_note(), 'Ожидание библиотеки компонентов…' )
 
 		},
@@ -111,6 +123,7 @@ namespace $ {
 			$mol_assert_equal( made.pack_uri(), 'https://pack.test/web.js' )
 			$mol_assert_ok( await settled( ()=> made.instance() ) )
 			$mol_assert_like( loaded, [ 'https://pack.test/web.js' ] )
+			$mol_assert_equal( typeof Reflect.get( made.sandbox(), root ), 'function' )
 			$mol_assert_equal( made.pack_note(), '' )
 
 		},
