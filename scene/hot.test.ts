@@ -54,6 +54,30 @@ namespace $ {
 
 	}
 
+	/**
+	 * Collects what the scene puts on the wire, in order.
+	 *
+	 * `ResizeObserver` is stubbed along the way: node has none, and without it a
+	 * report round dies on the resize step before it ever reaches the error it was
+	 * called to send. Nothing about attribution is replaced, only a browser API.
+	 */
+	function wired( made: $$.$bog_vmap_scene ) {
+
+		const sent = [] as $bog_vmap_bridge_up[]
+		made.post = ( message: $bog_vmap_bridge_up )=> { sent.push( message ) }
+
+		const observer = { observe: ()=> {}, unobserve: ()=> {}, disconnect: ()=> {} }
+		made.resize_watch = ()=> ({ observer: observer as unknown as ResizeObserver, destructor: ()=> {} })
+
+		return sent
+	}
+
+	/** The last failure the scene reported on one channel. */
+	function failure( sent: readonly $bog_vmap_bridge_up[], at: 'compile' | 'runtime' ) {
+		const errors = sent.filter( m => m.kind === 'error' && m.at === at )
+		return errors[ errors.length - 1 ] as undefined | { message: string | null, node?: string }
+	}
+
 	/** Compiles a source and hands back the live root. */
 	async function grown( made: $$.$bog_vmap_scene, root: string, src: string ) {
 		made.doc_root( root )
@@ -287,7 +311,7 @@ namespace $ {
 			const second = await grown( made, root, keyed )
 
 			$mol_assert_equal( second, first )
-			$mol_assert_equal( made.compile_error, '' )
+			$mol_assert_equal( made.compile_error(), '' )
 
 			// the solo atom is gone rather than left for a keyed read to trip over
 			$mol_assert_equal( Reflect.get( second, 'note()' ), undefined )
@@ -351,15 +375,143 @@ namespace $ {
 			)
 
 			$mol_assert_equal( broken, first )
-			$mol_assert_ok( made.compile_error )
+			$mol_assert_ok( made.compile_error() )
 			$mol_assert_equal( first.note(), 'typed by hand' )
 
 			const fixed = await grown( made, root, src( 'two' ) )
 
 			$mol_assert_equal( fixed, first )
-			$mol_assert_equal( made.compile_error, '' )
+			$mol_assert_equal( made.compile_error(), '' )
 			$mol_assert_equal( fixed.tag(), 'two' )
 			$mol_assert_equal( fixed.note(), 'typed by hand' )
+
+		},
+
+		/**
+		 * A failure of a nested node arrives named by that node.
+		 *
+		 * The name is the path `sizes` is keyed with, and it has to be, or the host
+		 * looks the label up in a dictionary that does not have it. The element that
+		 * failed does carry an attribute of its own, but that one is lowercased and
+		 * joined by underscores — a different vocabulary, and a silently wrong one.
+		 */
+		async 'a runtime failure names the node it belongs to'( $ ) {
+
+			const made = scene( $ )
+			const sent = wired( made )
+			const root = `${d}hot_blame_page`
+
+			const first = await grown(
+				made, root,
+				`${root} ${d}mol_view\n\tsub /\n\t\t<= Tail ${d}hot_blame_tail\n`
+				+ `${d}hot_blame_tail ${d}mol_view\n\tsub /\n\t\t<= Deep ${d}hot_blame_deep\n`
+				+ `${d}hot_blame_deep ${d}mol_view\n\tsub /\n\t\t<= boom \\\n`,
+			)
+
+			made.doc_js({ [ `${d}hot_blame_deep` ]: 'boom() { throw new Error( "bang" ) }' })
+
+			await settled( ()=> made.instance() )
+			try { first.dom_tree() } catch {}
+
+			// the attribution itself
+			$mol_assert_equal( made.render_error( first ).node, `${ root }/Tail/Deep` )
+			$mol_assert_ok( made.render_error( first ).message )
+
+			// and the same thing as the host sees it
+			made.report_send()
+
+			const failed = failure( sent, 'runtime' )
+
+			$mol_assert_equal( failed?.node, `${ root }/Tail/Deep` )
+			$mol_assert_ok( failed?.message )
+
+		},
+
+		/**
+		 * A failure nobody can be blamed for still travels, with an empty node.
+		 *
+		 * Empty and not absent: the host must not have to tell «this scene found no
+		 * node» from «this scene is older than the field».
+		 */
+		async 'a failure with no node to blame reports an empty one'( $ ) {
+
+			const made = scene( $ )
+			const sent = wired( made )
+			const root = `${d}hot_blank_page`
+
+			await grown( made, root, `${root} ${d}mol_view\n\ttag \\one\n` )
+
+			made.error_post( 'runtime', 'something nobody owns', '' )
+
+			const failed = failure( sent, 'runtime' )
+
+			$mol_assert_equal( failed?.message, 'something nobody owns' )
+			$mol_assert_equal( failed?.node, '' )
+
+		},
+
+		/**
+		 * A COMPILE failure names a class, and a class is not a node. The tree still
+		 * on the screen was built from the previous text, so the live instance of
+		 * the class just broken is the node the user is looking at.
+		 */
+		async 'a compile failure names the node of the class that broke'( $ ) {
+
+			const made = scene( $ )
+			const sent = wired( made )
+			const root = `${d}hot_guilt_page`
+
+			const src = ( kid: string )=>
+				`${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_guilt_kid\n`
+				+ `${d}hot_guilt_kid ${kid}\n\ttag \\one\n`
+
+			const first = await grown( made, root, src( `${d}mol_view` ) )
+			$mol_assert_ok( first.Kid() )
+
+			// the child now inherits a class nobody declared: the generated code throws
+			await grown( made, root, src( `${d}hot_guilt_ghost` ) )
+
+			$mol_assert_ok( made.compile_error() )
+			$mol_assert_equal( made.compile_class(), `${d}hot_guilt_kid` )
+
+			made.report_send()
+
+			$mol_assert_equal( failure( sent, 'compile' )?.node, `${ root }/Kid` )
+
+		},
+
+		/**
+		 * The error state lives in the graph, not in a field beside it.
+		 *
+		 * It used to be a plain field written from inside the cell that builds the
+		 * instance, and a reader of a field is woken by nothing: the label on the
+		 * node would light up a round late, or not until something else moved. So
+		 * what is asserted is not the value but the waking — a subscriber that has
+		 * read the failure answers with the new one without the scene being asked
+		 * again — a cached atom nobody invalidated answers with what it remembers,
+		 * which is precisely what a field beside the graph produces.
+		 */
+		async 'a reader of the compile failure is woken when it changes'( $ ) {
+
+			const made = scene( $ )
+			const root = `${d}hot_wake_page`
+			const src = ( tag: string )=> `${root} ${d}mol_view\n\ttag \\${ tag }\n`
+
+			await grown( made, root, src( 'one' ) )
+
+			const seen = {} as object
+			const atom = $mol_wire_atom.solo( seen, function watcher() { return made.compile_error() } )
+
+			$mol_assert_equal( atom.sync(), '' )
+
+			// an heir of a class nobody declared: the generated code throws
+			await grown( made, root, src( 'one' ) + `${d}hot_wake_kid ${d}hot_wake_ghost\n` )
+
+			// The subscriber is asked, not the scene. A cached atom nobody
+			// invalidated answers with what it remembers, and that is exactly the
+			// symptom of a failure kept in a field beside the graph.
+			$mol_assert_ok( atom.sync() )
+			$mol_assert_equal( atom.sync(), made.compile_error() )
 
 		},
 

@@ -51,14 +51,12 @@ namespace $.$$ {
 	export class $bog_vmap_scene extends $.$bog_vmap_scene {
 
 		/**
-		 * Last compile failure. A plain field on purpose: written from inside
-		 * `instance()`, and a `@ $mol_mem` cell written from another cell means
-		 * infinite invalidation. It also must not invalidate `instance()`, or a
-		 * broken source would take the live component down with it.
+		 * Instance kept across a failed rebuild, see `mount()`.
+		 *
+		 * A plain field and not a cell, because it is the memo of the cell that
+		 * builds it: `mount()` needs to know what it built last time, and a cell
+		 * cannot read its own previous value. Nobody else writes it.
 		 */
-		compile_error = ''
-
-		/** Instance kept across a failed rebuild, see `instance()`. */
 		instance_live: $mol_view | null = null
 
 		/** Pack the live instance was built against. See `identity_kept()`. */
@@ -568,7 +566,7 @@ namespace $.$$ {
 		 * name is not a global here at all.
 		 */
 		@ $mol_mem
-		code() {
+		code_parts() {
 
 			const root = this.doc_root()
 			if( !class_name_ok.test( root ) ) this.$.$mol_fail(
@@ -585,42 +583,83 @@ namespace $.$$ {
 			// the same name shadows the library one in the declarations already,
 			// and its body has to shadow the library body the same way.
 			const bodies = { ... this.libs_parsed().js, ... this.doc_js() }
-			const chunks = [] as string[]
+			const parts = [] as { readonly klass: string, readonly js: string }[]
 
 			for( const def of tree.kids ) {
 
 				const name = def.type
 				if( !class_name_ok.test( name ) ) this.$.$mol_fail(
-					new Error( `Class name ${ JSON.stringify( name ) } is not an identifier` )
+					this.fault_named( new Error( `Class name ${ JSON.stringify( name ) } is not an identifier` ), name )
 				)
 
-				// Every chunk starts with a semicolon: the generated code opens
-				// with a parenthesis, and without one ASI glues it onto the
-				// previous line into `$( … )` with `$ is not a function`.
-				chunks.push( ';' + this.$.$mol_tree2_text_to_string_mapped_js(
-					this.$.$mol_tree2_js_to_text(
-						this.$.$mol_view_tree2_to_js( tree.clone([ def ]) )
-					)
-				) )
-
-				const js = bodies[ name ]
-				if( !js ) continue
-
-				const cls = JSON.stringify( name )
-
-				// The class is named. An anonymous one drops `dom_name()` to
-				// `div` and gives every sub view a bare `_echo`, the same one in
-				// every document.
-				chunks.push(
-					`;$[ ${ cls } ] = class ${ name } extends $[ ${ cls } ] {`,
-					js,
-					'}',
-					';' + this.decorators( def, js ) + ';',
-				)
+				try {
+					parts.push({ klass: name, js: this.class_code( tree, def, bodies[ name ] ).join( '\n' ) })
+				} catch( error: unknown ) {
+					// The name of the class travels ON the failure, so that the host
+					// can put the message where the text that caused it is being
+					// edited. Attached here, where it is known for certain, rather
+					// than guessed later out of the wording of a parser.
+					this.$.$mol_fail( this.fault_named( error as Error, name ) )
+				}
 
 			}
 
-			return chunks.join( '\n' )
+			return parts as readonly { readonly klass: string, readonly js: string }[]
+		}
+
+		/**
+		 * Generated source of the whole document, one string.
+		 *
+		 * Kept apart from the pieces because the pieces are what names a failure:
+		 * the whole document goes into ONE `new Function`, and a failure there says
+		 * nothing about which class caused it.
+		 */
+		@ $mol_mem
+		code() {
+			return this.code_parts().map( part => part.js ).join( '\n' )
+		}
+
+		/** Marks a failure with the class whose text caused it. */
+		fault_named( error: Error, klass: string ) {
+			return Object.assign( error, { klass } )
+		}
+
+		/**
+		 * Generated source of one class: its declaration, then its handwritten body.
+		 *
+		 * Apart from `code()` so that a failure can be caught around one class and
+		 * named by it. The body wraps the declaration in a NEW class, which is why
+		 * the two are emitted together and never in two passes over the document.
+		 */
+		class_code( tree: $mol_tree2, def: $mol_tree2, js: string | undefined ) {
+
+			const name = def.type
+			const chunks = [] as string[]
+
+			// Every chunk starts with a semicolon: the generated code opens
+			// with a parenthesis, and without one ASI glues it onto the
+			// previous line into `$( … )` with `$ is not a function`.
+			chunks.push( ';' + this.$.$mol_tree2_text_to_string_mapped_js(
+				this.$.$mol_tree2_js_to_text(
+					this.$.$mol_view_tree2_to_js( tree.clone([ def ]) )
+				)
+			) )
+
+			if( !js ) return chunks
+
+			const cls = JSON.stringify( name )
+
+			// The class is named. An anonymous one drops `dom_name()` to
+			// `div` and gives every sub view a bare `_echo`, the same one in
+			// every document.
+			chunks.push(
+				`;$[ ${ cls } ] = class ${ name } extends $[ ${ cls } ] {`,
+				js,
+				'}',
+				';' + this.decorators( def, js ) + ';',
+			)
+
+			return chunks
 		}
 
 		/**
@@ -639,7 +678,11 @@ namespace $.$$ {
 			const sandbox = this.sandbox()
 			const root = this.doc_root()
 
-			new Function( '$', code )( sandbox )
+			try {
+				new Function( '$', code )( sandbox )
+			} catch( error: unknown ) {
+				this.$.$mol_fail( this.fault_named( error as Error, this.culprit() ) )
+			}
 
 			const Root = Reflect.get( sandbox, root ) as typeof $mol_view | undefined
 			if( typeof Root !== 'function' ) this.$.$mol_fail(
@@ -647,6 +690,35 @@ namespace $.$$ {
 			)
 
 			return { Root: Root! }
+		}
+
+		/**
+		 * Class whose generated code throws, found by running the document again
+		 * class by class.
+		 *
+		 * The whole document goes into ONE `new Function`, so a failure there — a
+		 * base nobody declared, a syntax error in a handwritten body — carries no
+		 * name. Splitting the fast path into a call per class to keep that name
+		 * would cost every keystroke for the sake of the rare round that fails, so
+		 * the search happens only once something already went wrong.
+		 *
+		 * Into a scratch context and not into the sandbox: the retry must not add
+		 * half a generation of classes to the one the living component is using.
+		 */
+		culprit() {
+
+			const scratch = Object.create( this.sandbox() )
+			Object.defineProperty( scratch, '$', { value: scratch, writable: true, configurable: true } )
+
+			for( const part of this.code_parts() ) {
+				try {
+					new Function( '$', part.js )( scratch )
+				} catch {
+					return part.klass
+				}
+			}
+
+			return ''
 		}
 
 		/**
@@ -679,7 +751,13 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The live root instance, kept across edits of the document.
+		 * The live root instance and why the last compile failed, in one value.
+		 *
+		 * One cell and not two, because they are one computation: the compile either
+		 * yields a component or a reason, and asking twice would compile twice. The
+		 * two are split apart again right below, so that each moves only its own
+		 * readers — a plain record, which `$mol_owning_catch` refuses, so nothing
+		 * here is stamped or destroyed by holding it.
 		 *
 		 * An edit moves the living component onto the new classes instead of
 		 * building another one: cells are own fields of an instance, so a prototype
@@ -695,7 +773,11 @@ namespace $.$$ {
 		 * page down.
 		 */
 		@ $mol_mem
-		instance(): $mol_view | null {
+		mount(): {
+			readonly made: $mol_view | null
+			readonly error: string
+			readonly klass: string
+		} {
 
 			const src = this.doc_src()
 			const root = this.doc_root()
@@ -708,9 +790,8 @@ namespace $.$$ {
 			const pack = this.pack_uri()
 
 			if( !src.trim() || !root || !pack ) {
-				this.compile_error = ''
 				this.instance_live = null
-				return null
+				return { made: null, error: '', klass: '' }
 			}
 
 			try {
@@ -736,12 +817,11 @@ namespace $.$$ {
 					)
 
 					this.supers_live = { ... this.supers_live, ... supers }
-					this.compile_error = ''
 
-					// The very same object: the cell keeps its value, nobody is
+					// The very same object: `instance()` keeps its value, nobody is
 					// woken by the swap itself, and only the atoms whose code
 					// really changed recompute.
-					return live
+					return { made: live, error: '', klass: '' }
 				}
 
 				const made = Root.make({ $: this.sandbox() })
@@ -754,20 +834,54 @@ namespace $.$$ {
 				this.root_live = root
 				this.supers_live = supers
 
-				this.compile_error = ''
 				this.instance_live = made
 
-				return made
+				return { made, error: '', klass: '' }
 
 			} catch( error: unknown ) {
 
 				if( this.$.$mol_promise_like( error ) ) return this.$.$mol_fail_hidden( error )
 
-				this.compile_error = String( ( error as Error )?.message ?? error )
+				return {
+					made: this.instance_live,
+					error: String( ( error as Error )?.message ?? error ),
+					klass: String( ( error as { klass?: unknown } )?.klass ?? '' ),
+				}
 
-				return this.instance_live
 			}
 
+		}
+
+		/**
+		 * The live root instance.
+		 *
+		 * A cell of its own over `mount()`, so that a failure appearing or clearing
+		 * moves the error and nothing else: the value here stays the same object and
+		 * no subscriber of the document is woken by a message on the error channel.
+		 */
+		@ $mol_mem
+		instance(): $mol_view | null {
+			return this.mount().made
+		}
+
+		/**
+		 * Why the last compile failed, or an empty string.
+		 *
+		 * In the graph rather than in a field, so that a reader wakes when it
+		 * changes. It used to be a plain field written from inside the cell that
+		 * builds the instance, which is the second forbidden case of section 13: not
+		 * a projection outwards but a write past the cells, and the label on the node
+		 * would light up a round late or not at all.
+		 */
+		@ $mol_mem
+		compile_error() {
+			return this.mount().error
+		}
+
+		/** Class whose text failed to compile, when the failure names one. */
+		@ $mol_mem
+		compile_class() {
+			return this.mount().klass
 		}
 
 		/**
@@ -1255,7 +1369,8 @@ namespace $.$$ {
 				this.post({ kind: 'asset_want', id })
 			}
 
-			this.error_post( 'compile', this.compile_error )
+			const compiled = this.compile_error()
+			this.error_post( 'compile', compiled, compiled && made ? this.class_node( made, this.compile_class() ) : '' )
 
 			const measured = made ? this.sizes_of( made ) : { sizes: {}, nodes: [] }
 			const sizes = measured.sizes
@@ -1264,7 +1379,8 @@ namespace $.$$ {
 			this.sizes_remember( sizes )
 			this.post({ kind: 'sizes', sizes })
 
-			this.error_post( 'runtime', made ? this.render_error( made ) : '' )
+			const failed = made ? this.render_error( made ) : { message: '', node: '' }
+			this.error_post( 'runtime', failed.message, failed.node )
 
 		}
 
@@ -1294,27 +1410,92 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The failure of the last render, or an empty string when there is none.
+		 * The failure of the last render, and the node it belongs to.
 		 *
-		 * The root node carries its own failure, and `querySelector` never
-		 * matches the element it is called on. A document whose root render
-		 * throws is exactly the common case, so it is checked first.
+		 * The walk goes over the views and not over the DOM, even though a failing
+		 * element is a `querySelector` away. The host addresses a node by the path
+		 * `sizes` was keyed with, and the attribute the element carries is a
+		 * different vocabulary: lowercased and joined by underscores, so `My_box`
+		 * and `my/Box` reach the host as one string and neither of them matches. A
+		 * label put on the wrong node is worse than no label at all.
+		 *
+		 * A document whose own render throws is the common case, so the root is
+		 * asked first — that is inside the walk, which starts there.
 		 */
 		render_error( made: $mol_view ) {
 
-			const node = made.dom_node()
-			const failed = node.hasAttribute( 'mol_view_error' )
-				? node
-				: node.querySelector( '[mol_view_error]' )
+			const found = this.$.$bog_vmap_scene_seek(
+				made,
+				this.walk_of( made ),
+				view => this.view_broken( view ) !== '',
+			)
 
-			const broken = failed?.getAttribute( 'mol_view_error' )
+			if( !found ) return { message: '', node: '' }
+
+			return { message: this.view_broken( found.view ), node: found.path }
+		}
+
+		/**
+		 * The failure written on the node of one view, or an empty string.
+		 *
+		 * A suspension is not a failure: `$mol` writes the same attribute while a
+		 * fiber waits, and reporting that would light the node up on every load.
+		 */
+		view_broken( view: $mol_view ) {
+
+			let node: Element
+			// A view whose node cannot even be built is a view with nothing to read
+			// a failure off; the failure of its owner is reported instead.
+			try { node = view.dom_node() } catch { return '' }
+
+			const broken = node.getAttribute( 'mol_view_error' )
 			if( !broken || broken === 'Promise' || broken === '$mol_promise_blocker' ) return ''
 
 			// The attribute holds only the error name; $mol puts the message
 			// itself into the text of the node.
-			const text = ( failed!.textContent ?? '' ).replace( /\s+/g, ' ' ).trim().slice( 0, 500 )
+			const text = ( node.textContent ?? '' ).replace( /\s+/g, ' ' ).trim().slice( 0, 500 )
 
 			return text ? `${ broken }: ${ text }` : broken
+		}
+
+		/**
+		 * Node of the first live instance of a class, by the path the host uses.
+		 *
+		 * This is how a COMPILE failure gets a node. The failure names a class, and
+		 * a class is not a node — but the tree still standing on the screen is the
+		 * one built from the previous text, so the instance of the class just broken
+		 * is exactly the node the user is looking at. When the class has no live
+		 * instance, or is the root itself, there is nothing better to say than the
+		 * root, and when it is not named at all the answer is empty.
+		 */
+		class_node( made: $mol_view, klass: string ) {
+
+			if( !klass ) return ''
+			if( klass === this.doc_root() ) return this.doc_root()
+
+			const found = this.$.$bog_vmap_scene_seek(
+				made,
+				this.walk_of( made ),
+				view => ( view.constructor as { name?: string } )?.name === klass,
+			)
+
+			return found?.path ?? ''
+		}
+
+		/**
+		 * How to walk a rendered document: the three things the walks need to know
+		 * about `$mol`, in one place because both of them need the same three and a
+		 * second copy would be a second vocabulary.
+		 */
+		walk_of( made: $mol_view ) {
+			return {
+				key: this.doc_root(),
+				view_of: ( kid: unknown )=> this.view_like( kid ) ? kid : null,
+				// A document whose `sub` throws is a document mid-failure, reported on
+				// the error channel; here it simply has no children to walk.
+				kids_of: ( view: $mol_view )=> { try { return view.sub() ?? [] } catch { return [] } },
+				prop_of: ( view: $mol_view )=> this.view_prop( view ),
+			}
 		}
 
 		/**
@@ -1329,14 +1510,16 @@ namespace $.$$ {
 		 * plausible bug and must not read as good news. The two stages clear
 		 * independently.
 		 */
-		error_post( at: 'compile' | 'runtime', message: string ) {
+		error_post( at: 'compile' | 'runtime', message: string, node: string ) {
 
 			const next = message || null
 
 			if( this.error_sent[ at ] === next ) return
 			this.error_sent[ at ] = next
 
-			this.post({ kind: 'error', at, message: next })
+			// The field always travels, empty when the failure belongs to nobody, so
+			// that the host never has to tell «no node» from «an older scene».
+			this.post({ kind: 'error', at, message: next, node })
 		}
 
 		/**
@@ -1349,13 +1532,8 @@ namespace $.$$ {
 		sizes_of( root: $mol_view ) {
 
 			return this.$.$bog_vmap_scene_measure( root, {
-				key: this.doc_root(),
+				... this.walk_of( root ),
 				zoom: this.camera().zoom,
-				view_of: kid => this.view_like( kid ) ? kid : null,
-				// A document whose `sub` throws is a document mid-failure, reported on
-				// the error channel; here it simply has no children to measure.
-				kids_of: view => { try { return view.sub() ?? [] } catch { return [] } },
-				prop_of: view => this.view_prop( view ),
 			} )
 		}
 
