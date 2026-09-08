@@ -1,0 +1,32 @@
+- The wire layer of the overlay: existing wires with their labels, the port dots
+- of the picked part, and the wire being dragged. The pane hands everything in as
+- screen geometry; this view only draws. On the host, so that document code can
+- neither forge a wire nor hide one.
+- @see ../../ARCHITECTURE.md section 4
+$bog_vmap_app_wire $mol_svg_root
+	attr *
+		^
+		viewBox null
+	lines /$bog_vmap_app_wire_line
+	dots /$bog_vmap_app_wire_dot
+	drag_geometry \
+	sub <= shapes /$mol_view
+	Line* $mol_svg_path
+		geometry <= line_geometry* \
+	Label* $mol_svg_text
+		pos <= label_pos* /number
+		text <= label_text* \
+	Dot* $mol_svg_circle
+		radius <= dot_radius \5
+		pos <= dot_pos* /number
+		attr *
+			^
+			bog_vmap_app_wire_dot_side <= dot_side* \
+			bog_vmap_app_wire_dot_lit <= dot_lit* true
+			bog_vmap_app_wire_dot_linked <= dot_linked* false
+	Name* $mol_svg_text
+		pos <= name_pos* /number
+		align <= name_align* \start
+		text <= name_text* \
+	Drag $mol_svg_path
+		geometry <= drag_geometry
