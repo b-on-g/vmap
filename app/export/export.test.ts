@@ -224,6 +224,47 @@ namespace $ {
 
 		},
 
+		/**
+		 * The acceptance of the artboards: what an export carries of a page is the
+		 * tree it shows and the flex properties it was set with, and not one number
+		 * of the canvas.
+		 *
+		 * The placement of free parts cannot leak here by construction — it never
+		 * enters the document, it rides `spots` to the scene and is turned into
+		 * rules there — and this is the test that keeps that true from the far end,
+		 * where the leak would be shipped rather than merely visible.
+		 */
+		'an artboard exports as the tree it shows, with no coordinate in it'( $ ) {
+
+			const board = [
+				`${d}bog_site_page ${d}mol_view`,
+				`	Head ${d}mol_view`,
+				`	Foot ${d}mol_view`,
+				`	Loose ${d}mol_view`,
+				`	Board ${d}mol_view`,
+				`		style *`,
+				`			width \\1280px`,
+				`			flexDirection \\column`,
+				`		sub /`,
+				`			<= Head`,
+				`			<= Foot`,
+				`	sub /`,
+				`		<= Board`,
+				`		<= Loose`,
+				``,
+			].join( '\n' )
+
+			const tree = file_of( $.$bog_vmap_app_export_build([ { source: board } ]), '.view.tree' )
+
+			$mol_assert_equal( tree, board )
+
+			// Nothing of the desk: no coordinates, and no absolute positioning to
+			// apply them with.
+			const css = file_of( $.$bog_vmap_app_export_build([ { source: board } ]), '.view.css.ts' )
+			$mol_assert_equal( /\bleft\b|\btop\b|position/.test( css ), false )
+
+		},
+
 		'a cycle of bases is refused rather than hung'( $ ) {
 
 			$mol_assert_fail(
