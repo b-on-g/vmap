@@ -193,10 +193,53 @@ namespace $ {
 			$mol_assert_ok( app.scene_uri().includes( encodeURIComponent( 'https://b-on-g.github.io/gram/web.js' ) ) )
 			$mol_assert_equal( app.links_parsed().rejected.length, 1 )
 
-			// no pack at all: an empty address, and the scene compiles against its own view
+			// a field naming no pack falls back to the standard palette, see below
 			app.links( 'AbCdEfGh_12345678_ZyXwVuTs' )
-			$mol_assert_equal( app.pack_link(), '' )
-			$mol_assert_ok( app.scene_uri().endsWith( '?pack=' ) )
+			$mol_assert_ok( !app.pack_link().startsWith( 'https://b-on-g.github.io/gram' ) )
+			$mol_assert_like( app.lands(), [ 'AbCdEfGh_12345678_ZyXwVuTs' ] )
+
+		},
+
+		/**
+		 * The two layouts of one pack, from the address of the editor page alone.
+		 *
+		 * The dev server keeps a module in `<pack>/<module>/-/` and a deploy
+		 * publishes the content of `-/` into `<pack>/<module>/`, so both the sandbox
+		 * and the standard palette are found without anything being configured or
+		 * typed. The derivation itself is covered in `lib`; here it is that the
+		 * editor asks for the right two siblings.
+		 */
+		'the sandbox and the standard palette are found on both layouts'( $ ) {
+
+			// the address of the page is put in by hand rather than through `make`:
+			// it is a method of the derived class, and `make` types its overrides
+			// against the class the tree declares
+			const dev = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+			dev.page_uri = ()=> 'http://localhost:9080/bog/vmap/app/-/test.html'
+
+			$mol_assert_equal( dev.scene_page(), 'http://localhost:9080/bog/vmap/scene/-/index.html' )
+			$mol_assert_equal( dev.pack_link(), 'http://localhost:9080/bog/vmap/part/-/' )
+			$mol_assert_equal(
+				dev.scene_uri(),
+				'http://localhost:9080/bog/vmap/scene/-/index.html?pack='
+					+ encodeURIComponent( 'http://localhost:9080/bog/vmap/part/-/web.js' ),
+			)
+
+			const prod = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+			prod.page_uri = ()=> 'https://b-on-g.github.io/vmap/app/'
+
+			$mol_assert_equal( prod.scene_page(), 'https://b-on-g.github.io/vmap/scene/index.html' )
+			$mol_assert_equal( prod.pack_link(), 'https://b-on-g.github.io/vmap/part/' )
+			$mol_assert_equal(
+				prod.scene_uri(),
+				'https://b-on-g.github.io/vmap/scene/index.html?pack='
+					+ encodeURIComponent( 'https://b-on-g.github.io/vmap/part/web.js' ),
+			)
+
+			// what a person typed is used as typed and never replaced by the sibling
+			prod.links( 'https://mol.hyoo.ru' )
+			$mol_assert_equal( prod.pack_link(), 'https://mol.hyoo.ru/' )
+			$mol_assert_equal( prod.links(), 'https://mol.hyoo.ru' )
 
 		},
 

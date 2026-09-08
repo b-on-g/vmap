@@ -1,0 +1,93 @@
+name: $bog_vmap
+
+permissions: write-all
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    # Три точки входа одним прогоном: `modules` бьётся по пробелам и каждое имя
+    # дописывается к пакету, артефакты ложатся в <модуль>/-/. `part` собирается
+    # не ради своей страницы, а ради `web.view.tree` рядом с `web.js`: это и есть
+    # библиотека компонентов, которую редактор берёт палитрой по умолчанию.
+    - uses: hyoo-ru/mam_build@master2
+      with:
+        package: 'bog/vmap'
+        modules: 'app scene part'
+
+    # GitHub Pages отдаёт web.js с `cache-control: max-age=600`, поэтому первые
+    # десять минут после деплоя вернувшийся читатель получает старый бандл и
+    # видит ровно то, что уже починили. Ссылка со стемпом коммита делает адрес
+    # бандла новым на каждый деплой — кэшу нечего отдавать.
+    - name: Cache-bust the bundle
+      if: github.ref == 'refs/heads/main'
+      run: |
+        set -euo pipefail
+        stamp="${GITHUB_SHA::7}"
+        for module in app scene part; do
+          file="bog/vmap/$module/-/index.html"
+          sed -i "s|src=\"web.js\"|src=\"web.js?v=$stamp\"|" "$file"
+          grep -q "web.js?v=$stamp" "$file"
+        done
+
+    # Корень — витрина со ссылками. `clean-exclude` обязателен: без него
+    # rsync --delete в корне снёс бы папки точек входа, которые кладутся следом.
+    - uses: hyoo-ru/gh-deploy@v4.4.1
+      if: github.ref == 'refs/heads/main'
+      with:
+        folder: 'bog/vmap/deploy'
+        clean-exclude: |
+          app
+          scene
+          part
+
+    # У каждой точки входа свой адрес. `target-folder` уводит rsync --delete
+    # внутрь подпапки, поэтому соседей и корень они не трогают.
+    #
+    # Содержимое `-/` уезжает в корень своей папки, так что `-` в адресах не
+    # остаётся: сцена это `vmap/scene/index.html`, пак это `vmap/part/`. Редактор
+    # выводит оба адреса из адреса собственной страницы и потому работает и здесь,
+    # и на дев-сервере, где путь ещё несёт `-/`.
+    - uses: hyoo-ru/gh-deploy@v4.4.1
+      if: github.ref == 'refs/heads/main'
+      with:
+        folder: 'bog/vmap/app/-'
+        target-folder: 'app'
+        commit-message: 'deploy app'
+
+    - uses: hyoo-ru/gh-deploy@v4.4.1
+      if: github.ref == 'refs/heads/main'
+      with:
+        folder: 'bog/vmap/scene/-'
+        target-folder: 'scene'
+        commit-message: 'deploy scene'
+
+    - uses: hyoo-ru/gh-deploy@v4.4.1
+      if: github.ref == 'refs/heads/main'
+      with:
+        folder: 'bog/vmap/part/-'
+        target-folder: 'part'
+        commit-message: 'deploy part'
+
+    - name: URLs
+      if: github.ref == 'refs/heads/main'
+      run: |
+        {
+          echo "- https://b-on-g.github.io/vmap/"
+          echo "- https://b-on-g.github.io/vmap/app/ — редактор"
+          echo "- https://b-on-g.github.io/vmap/part/ — пак деталей, он же палитра по умолчанию"
+          echo "- https://b-on-g.github.io/vmap/part/web.view.tree — дерево классов пака"
+        } >> "$GITHUB_STEP_SUMMARY"

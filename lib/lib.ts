@@ -68,6 +68,42 @@ namespace $ {
 	}
 
 	/**
+	 * Base address of a sibling module of the pack, derived from the address of the
+	 * page asking. Always ends with a slash, so `new URL` keeps its last segment.
+	 *
+	 * The two layouts of one pack differ by a single segment. The dev server serves
+	 * a module out of `<pack>/<module>/-/`, while a deploy publishes the content of
+	 * `-/` into `<pack>/<module>/` — measured in section 5 on two live packs. So the
+	 * layout is readable off the page itself: a trailing `-` means the dev server,
+	 * its absence means a deploy, and nothing has to be configured or typed.
+	 *
+	 * A last segment carrying a dot is the page file — `index.html`, `test.html` —
+	 * and is dropped first. A last segment without one is a directory, which is how
+	 * `https://b-on-g.github.io/vmap/app` reads the same as the same address with
+	 * its slash.
+	 *
+	 * @see ../ARCHITECTURE.md section 5
+	 */
+	export function $bog_vmap_lib_sibling( page: string, module: string ) {
+
+		const url = new URL( page )
+		const path = url.pathname.split( '/' ).filter( Boolean )
+
+		if( path[ path.length - 1 ]?.includes( '.' ) ) path.pop()
+
+		const dev = path[ path.length - 1 ] === '-'
+		if( dev ) path.pop()
+
+		// the folder of the module we are served from; the sibling takes its place
+		path.pop()
+
+		path.push( module )
+		if( dev ) path.push( '-' )
+
+		return `${ url.origin }/${ path.join( '/' ) }/`
+	}
+
+	/**
 	 * Glues the library tree with the classes of the document into one namespace.
 	 *
 	 * Both sides end up in the same `$` sandbox at run time, so resolution has to

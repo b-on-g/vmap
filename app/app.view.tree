@@ -10,15 +10,17 @@ $bog_vmap_app $mol_view
 	selected? null
 	doc_js *
 	doc_root \
-	- The sandbox is a sibling module, addressed relative to this page.
-	scene_page \../../scene/-/index.html
+	- The sandbox is a sibling module, its address derived from the address of this
+	- page, so the dev server and a deploy both work with nothing configured.
+	scene_page \
 	scene_uri \
 	- The palette field: links separated by commas, stored exactly as typed. The
 	- first http(s) one is the donor pack, the rest are lands of Giper Baza. One
 	- value for the whole editor: the palette offers what the scene has actually
 	- loaded, and the two must never drift apart. Derived from it: `pack_link` for
 	- the frame address, `lands` for the library, `libs` for the scene.
-	links? \http://localhost:9080/bog/vmap/part/-/
+	- Empty is the standard palette: the `part` module of this very pack.
+	links? \
 	palette_showed? true
 	inspect_showed? true
 	- Persistence: the documents of the user in Giper Baza. One for the whole
@@ -95,6 +97,10 @@ $bog_vmap_app $mol_view
 			<= Palette $bog_vmap_app_palette
 				compact true
 				links? <=> links?
+				- The address the host derived, not the one the palette would derive
+				- from the field on its own: an empty field means the pack of this
+				- very deploy, and only the host knows where that is.
+				pack_link <= pack_link
 				land_classes <= lib_classes /$mol_tree2
 	-
 	- Properties of the picked node, on the far edge from the palette: one panel

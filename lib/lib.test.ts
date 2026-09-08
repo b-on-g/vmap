@@ -277,6 +277,84 @@ namespace $ {
 		},
 
 		/**
+		 * The dev server keeps a module in `<pack>/<module>/-/`, so a sibling of the
+		 * page keeps the `-` as well. Both entry pages of a module live there, and
+		 * the editor is developed on `test.html`.
+		 */
+		'a sibling module on the dev server keeps the build folder'( $ ) {
+
+			const page = 'http://localhost:9080/bog/vmap/app/-/test.html'
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( page, 'scene' ),
+				'http://localhost:9080/bog/vmap/scene/-/',
+			)
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( page, 'part' ),
+				'http://localhost:9080/bog/vmap/part/-/',
+			)
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( 'http://localhost:9080/bog/vmap/app/-/index.html', 'scene' ),
+				'http://localhost:9080/bog/vmap/scene/-/',
+			)
+
+		},
+
+		/**
+		 * A deploy publishes the content of `-/` into the folder of the module, so
+		 * the same three modules are siblings one level up. The address of the pack
+		 * itself is then `<origin>/vmap/part/`, which is where `web.view.tree` is.
+		 */
+		'a sibling module on a deploy has no build folder'( $ ) {
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/app/', 'scene' ),
+				'https://b-on-g.github.io/vmap/scene/',
+			)
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/app/', 'part' ),
+				'https://b-on-g.github.io/vmap/part/',
+			)
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/app/index.html', 'part' ),
+				'https://b-on-g.github.io/vmap/part/',
+			)
+
+		},
+
+		/**
+		 * A folder address without its slash reads the same: a last segment with no
+		 * dot in it is a folder, not a page file. GitHub Pages answers both.
+		 */
+		'a page address without a trailing slash reads as a folder'( $ ) {
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/app', 'part' ),
+				'https://b-on-g.github.io/vmap/part/',
+			)
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/app?x=1#y', 'scene' ),
+				'https://b-on-g.github.io/vmap/scene/',
+			)
+
+		},
+
+		/** A pack served from the root of an origin has one segment less and no more. */
+		'a pack at the root of an origin'( $ ) {
+
+			$mol_assert_equal(
+				$bog_vmap_lib_sibling( 'https://vmap.example.org/app/', 'part' ),
+				'https://vmap.example.org/part/',
+			)
+
+		},
+
+		/**
 		 * A `data:` address keeps the fetch offline while still going through the
 		 * real `$mol_fetch`, so `tree()` is covered end to end and CI stays free of
 		 * a third party host.

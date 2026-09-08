@@ -13,6 +13,31 @@ namespace $.$$ {
 	export class $bog_vmap_app extends $.$bog_vmap_app {
 
 		/**
+		 * Address of the editor page itself, the origin of every derived address.
+		 *
+		 * A method rather than a read at each use, so a test can put the editor on
+		 * either layout without touching the DOM context. Empty only where there is
+		 * no location at all, and then nothing is derived.
+		 */
+		page_uri() {
+			return this.$.$mol_dom_context.location?.href ?? ''
+		}
+
+		/**
+		 * The sandbox, a sibling module of this one, derived from our own address.
+		 *
+		 * Was a relative constant with `-/` in it, which is the layout of the dev
+		 * server only: a deploy publishes the content of `-/` into the folder of the
+		 * module, so the constant pointed at nothing there. Derived, both layouts
+		 * work and the user configures nothing.
+		 * @see ../ARCHITECTURE.md section 5
+		 */
+		override scene_page() {
+			const page = this.page_uri()
+			return page ? this.$.$bog_vmap_lib_sibling( page, 'scene' ) + 'index.html' : super.scene_page()
+		}
+
+		/**
 		 * The sandbox page with the donor pack in its query. A new pack is a new
 		 * address, so the browser reloads the frame and one pack per frame holds.
 		 * @see ../ARCHITECTURE.md section 5
@@ -347,18 +372,25 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The donor pack for the frame and for every library, with its slash, or
-		 * empty when the field names none.
+		 * The donor pack for the frame and for every library, with its slash.
 		 *
 		 * Derived and never written back into the field: the slash is grown here so
-		 * that the address can still be typed character by character. Empty is a
-		 * state — a palette of lands alone — and every address downstream is then
-		 * empty too, so the frame loads no pack and compiles against its own
-		 * `$mol_view`.
+		 * that the address can still be typed character by character.
+		 *
+		 * A field that names no pack means the standard palette, which is the `part`
+		 * module of this very pack — a sibling of the editor, so its address comes
+		 * off our own. It used to mean no pack at all, and that state is gone on
+		 * purpose: a land library inherits from the `$mol_view` of the loaded pack,
+		 * so a palette of lands alone was never the useful reading, while an empty
+		 * field on a deploy left the user with no components and nothing to type.
 		 */
 		override pack_link() {
+
 			const pack = this.links_parsed().pack
-			return pack ? this.$.$bog_vmap_lib_slashed( pack ) : ''
+			if( pack ) return this.$.$bog_vmap_lib_slashed( pack )
+
+			const page = this.page_uri()
+			return page ? this.$.$bog_vmap_lib_sibling( page, 'part' ) : ''
 		}
 
 		/** Land links of the field, in the order typed. */
