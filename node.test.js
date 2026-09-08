@@ -46175,6 +46175,47 @@ var $;
             $mol_assert_like(stage.app.lands(), ['AbCdEfGh', 'ZyXwVuTs']);
         },
         /**
+         * A change of pack must not be mistaken for a scene that died.
+         *
+         * The frame is replaced, and the new one then spends the whole cold load of
+         * the pack saying nothing — 610 ms in the measurement of section 4, and much
+         * worse on a slow line, against a watchdog limit of eight seconds. Two things
+         * therefore have to hold across the swap, and they are checked apart because
+         * they fail apart.
+         *
+         * NOTHING IS PUSHED at a window that has not booted. A push into a frame
+         * still loading is lost silently, and the host would never learn that the
+         * document it thinks it sent was never received.
+         *
+         * THE WATCH DOES NOT ARM. `warmed` is still true from the frame that just
+         * went, so an armed watch here would accuse a perfectly healthy scene of
+         * being stuck and offer to reload the very thing that is loading. This is
+         * held by the handshake being kept per frame, not per pane.
+         */
+        'a change of pack raises no false alarm about the scene'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const watch = () => stage.timers.filter(timer => timer.delay === stage.pane.answer_limit()).length;
+            // real traffic first, so the scene has proved itself and the pulse is on
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_equal(stage.pane.warmed(), true);
+            const sent = stage.scene.posted.length;
+            const armed = watch();
+            stage.type(stage.field('Palette().Links()'), 'http://pack.test/');
+            // a frame that has said nothing, and nothing said to it
+            $mol_assert_equal(stage.pane.ready(), false);
+            $mol_assert_equal(stage.scene.posted.length, sent);
+            // and no claim made about its silence
+            $mol_assert_equal(stage.pane.watchdog(), null);
+            $mol_assert_equal(watch(), armed);
+            $mol_assert_equal(stage.pane.stalled(), false);
+            $mol_assert_equal(stage.text().includes('Сцена не отвечает'), false);
+            // it boots, and only then does anything go out — the pack first
+            stage.scene.hello();
+            $mol_assert_equal(stage.pane.ready(), true);
+            $mol_assert_equal(stage.scene.posted[sent]?.kind, 'pack_set');
+            $mol_assert_equal(stage.scene.posted[sent]?.uri, 'http://pack.test/web.js');
+        },
+        /**
          * The palette field takes a pack and lands together, and refuses a second
          * pack out loud: the reason is under the field and the frame keeps the pack
          * it already loaded.
