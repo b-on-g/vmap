@@ -350,6 +350,43 @@ namespace $.$$ {
 			return this.$.$bog_vmap_app_wire_ports( this.Lib().props_map( klass.type ) )
 		}
 
+		/**
+		 * Nodes that carry a `sub` of their own, which is what makes a node an
+		 * artboard and its children a tree rather than a heap of coordinates.
+		 *
+		 * Read off the document and nowhere else: there is no mark, no registry and
+		 * no side channel saying which node is a page. Section 8 says both artboards
+		 * and free parts are properties of the same root class, and the only
+		 * difference between them is in the text.
+		 */
+		@ $mol_mem
+		override doc_containers() {
+			const node = this.node()
+			return node.prop_names().filter( name => node.sub_names( name ) )
+		}
+
+		/**
+		 * A node dropped inside an artboard goes into the tree of its parent, and
+		 * loses its coordinate on the way.
+		 *
+		 * The coordinate goes because it would stop meaning anything: the placement
+		 * rules of the scene position the direct children of the root and nothing
+		 * else, so a number left here would be a line of the desk layout that moves
+		 * nothing and outlives every drag.
+		 */
+		override tree_move( next?: $bog_vmap_app_pane_tree_move | null ) {
+
+			if( !next ) return null
+
+			this.node().sub_move( next.name, next.index, next.owner )
+
+			const spots = { ... this.spots() }
+			delete spots[ next.name ]
+			this.spots( spots )
+
+			return next
+		}
+
 		/** A wire drawn on the canvas goes into the document as two lines, see `link_add` of the model. */
 		override link_add( next?: $bog_vmap_app_pane_link_new | null ) {
 			if( next ) this.node().link_add( next )
@@ -568,7 +605,12 @@ namespace $.$$ {
 		part_name( klass: string ) {
 
 			const short = klass.replace( /^\$/, '' ).replace( /^\w+?_/, '' )
-			const head = short.slice( 0, 1 ).toUpperCase() + short.slice( 1 )
+
+			return this.name_free( short.slice( 0, 1 ).toUpperCase() + short.slice( 1 ) )
+		}
+
+		/** The given name, or it with a number, whichever the document does not carry. */
+		name_free( head: string ) {
 
 			const taken = new Set( this.node().prop_names() )
 			if( !taken.has( head ) ) return head
@@ -594,12 +636,83 @@ namespace $.$$ {
 
 			const node = this.node()
 			const name = this.part_name( klass )
+			const slot = this.pane().insert_slot([ x, y ])
 
 			node.part_add( name, klass )
+
+			// Into the tree of the artboard it was dropped into, or onto the canvas
+			// by a coordinate. One gesture, two ways of being laid out, told apart
+			// by where the release happened and nowhere else.
+			if( slot ) return node.sub_insert( name, slot.index, slot.owner )
+
 			node.sub_add( name )
 
 			this.spots({ ... this.spots(), [ name ]: { x, y } })
 
+		}
+
+		/** Layout of a fresh artboard: the page of a desktop, stacked downwards. */
+		board_style() {
+			return {
+				width: '1280px',
+				minHeight: '720px',
+				flexDirection: 'column',
+				background: '#ffffff',
+			} as { readonly [ key: string ]: string }
+		}
+
+		/**
+		 * Puts a page on the canvas: a node with a `sub` of its own.
+		 *
+		 * A plain `$mol_view` and not a class of ours, so an exported document
+		 * depends on nothing of this pack; what makes it a page is the width and the
+		 * `sub`, both of them ordinary lines of the document. `flexDirection` is
+		 * written out because `[mol_view]` is `display: flex` with no direction at
+		 * all, that is to say a ROW: a page that did not say so would lay its first
+		 * two blocks side by side.
+		 */
+		@ $mol_action
+		board_add() {
+
+			const node = this.node()
+			const name = this.name_free( 'Page' )
+			const tree = node.tree()
+
+			node.part_add( name, '$mol_view' )
+
+			node.over_set( name, 'style', tree.struct( 'style', [
+				tree.struct( '*', Object.entries( this.board_style() ).map(
+					( [ key, value ] )=> tree.struct( key, [ tree.data( value ) ] )
+				) ),
+			] ) )
+
+			node.sub_open( name )
+			node.sub_add( name )
+
+			const spot = this.canvas_center()
+			this.spots({ ... this.spots(), [ name ]: { x: spot[0], y: spot[1] } })
+
+			this.selected( name )
+
+		}
+
+		/**
+		 * The world point the middle of the canvas is looking at.
+		 *
+		 * Read off the DOM like `canvas_point`, and for the same reason: `view_rect`
+		 * is a watched cell, and a handler that subscribed to it would be re-run by
+		 * the layout change its own drop causes.
+		 */
+		canvas_center() {
+
+			const rect = this.Pane().dom_node().getBoundingClientRect()
+			const shift = this.pane().camera_shift()
+			const zoom = this.pane().camera_zoom()
+
+			return [
+				( rect.width / 2 - shift[0] ) / zoom,
+				( rect.height / 2 - shift[1] ) / zoom,
+			] as const
 		}
 
 		override delete_hint() {
@@ -630,17 +743,28 @@ namespace $.$$ {
 
 			const node = this.node()
 
-			node.sub_drop( name )
-			node.prop_drop( name )
+			// An artboard goes with everything laid out inside it. Left behind, its
+			// children would stay declared and referenced by nothing — a legitimate
+			// state for a free part, and a trap for a page: nothing draws them, so
+			// nothing can select them, so nothing can ever take them out again.
+			const doomed = [ name ]
+			for( const dead of doomed ) for( const kid of node.sub_names( dead ) ?? [] ) {
+				if( kid && !doomed.includes( kid ) ) doomed.push( kid )
+			}
+
+			for( const dead of doomed ) {
+				node.sub_drop( dead )
+				node.prop_drop( dead )
+			}
 
 			const spots = { ... this.spots() }
-			delete spots[ name ]
+			for( const dead of doomed ) delete spots[ dead ]
 			this.spots( spots )
 
 			// The pane remembers boxes across culling, so a name missing from a
 			// report no longer means the node is gone. This is the one place that
 			// knows it is.
-			this.pane().sizes_forget( name )
+			for( const dead of doomed ) this.pane().sizes_forget( dead )
 
 			this.selected( null )
 

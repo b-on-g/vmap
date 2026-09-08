@@ -824,6 +824,12 @@ namespace $ {
 			$mol_assert_equal( node.sub_names( 'Loose' ), null )
 			$mol_assert_equal( node.sub_names( 'Nobody' ), null )
 
+			// Every property of the document gets asked this, including the ones
+			// whose children are not overrides at all: `sub` holds bare references,
+			// and reading one as a property signature fails outright.
+			$mol_assert_equal( node.sub_names( 'sub' ), null )
+			$mol_assert_equal( node.over_tree( 'sub', 'sub' ), null )
+
 			$mol_assert_equal( node.sub_holder( 'Head' ), 'Board' )
 			$mol_assert_equal( node.sub_holder( 'Loose' ), '' )
 			$mol_assert_equal( node.sub_holder( 'Nobody' ), null )

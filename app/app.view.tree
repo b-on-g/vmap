@@ -56,6 +56,13 @@ $bog_vmap_app $mol_view
 			<= Reset $mol_button_minor
 				title \Сбросить вид
 				click? <=> camera_reset? null
+			- A page of the document: a node with a `sub` of its own, laid out by
+			- tree inside. Nothing marks it as an artboard — the `sub` is the whole
+			- difference, see section 8 of the architecture.
+			<= Board $mol_button_minor
+				title \Артборд
+				hint \Положить страницу: прямоугольник ширины макета, вёрстка внутри по дереву
+				click? <=> board_add? null
 			<= Delete $mol_button_minor
 				title \Удалить
 				hint <= delete_hint \
@@ -162,3 +169,7 @@ $bog_vmap_app $mol_view
 		part_ports* <= part_ports* /$bog_vmap_app_wire_port
 		link_add? <=> link_add? null
 		link_drop? <=> link_drop? null
+		- Nodes that carry a `sub` of their own, so the pane knows where a drop goes
+		- into the tree instead of onto the canvas, and where to draw the line.
+		containers <= doc_containers /string
+		tree_move? <=> tree_move? null

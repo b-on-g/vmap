@@ -886,12 +886,21 @@ namespace $ {
 			this.sub_write( owner, this.tree().struct( '/' ) )
 		}
 
-		/** One override written under a part, `Board $mol_view style *`, or `null`. */
+		/**
+		 * One override written under a part, `Board $mol_view style *`, or `null`.
+		 *
+		 * Only under a PART: a property whose value is a class name. Under anything
+		 * else the children are not overrides at all — under `sub` they are bare
+		 * `<=` references — and reading them as property signatures fails on the
+		 * first one, which is how every property of the document gets asked whether
+		 * it is an artboard.
+		 */
 		over_tree( owner: string, prop: string ) {
 
-			const kids = this.prop_decl( owner )?.kids[ 0 ]?.kids ?? []
+			const klass = this.prop_decl( owner )?.kids[ 0 ]
+			if( !klass || !$mol_view_tree2_class_match( klass ) ) return null
 
-			return kids.find(
+			return klass.kids.find(
 				over => this.$.$mol_view_tree2_prop_parts( over ).name === prop
 			) ?? null
 		}
@@ -908,7 +917,7 @@ namespace $ {
 
 			const decl = this.prop_decl( owner )
 			const klass = decl?.kids[ 0 ]
-			if( !decl || !klass ) return
+			if( !decl || !klass || !$mol_view_tree2_class_match( klass ) ) return
 
 			const named = ( over: $mol_tree2 ) => this.$.$mol_view_tree2_prop_parts( over ).name === prop
 
