@@ -295,6 +295,59 @@ namespace $.$$ {
 			this.Node().prop_drop( name )
 		}
 
+		/**
+		 * The `style` dictionary of the class, or `null` while it declares none.
+		 *
+		 * Off `prop_decl`, the derivation of the text, and not through `prop_tree`,
+		 * which is the write path below: a read taken from a written cell freezes at
+		 * what was written, and the panel would go on showing the value it set after
+		 * the document moved underneath it.
+		 */
+		style_dict() {
+
+			const dict = this.Node().prop_decl( 'style' )?.kids[ 0 ] ?? null
+
+			return dict?.type === '*' ? dict : null
+		}
+
+		/**
+		 * One key of the `style` dictionary of the node, both ways. Empty means the
+		 * key is not written, and writing empty takes it out again.
+		 *
+		 * A dictionary the document does not declare yet is started with `^` under
+		 * it. A redeclared dictionary REPLACES the one of the base rather than
+		 * extending it, so a node over `$mol_button` that grew one `gap` would lose
+		 * every style the base sets, in silence; `^` says the one true thing —
+		 * everything of the base, plus what is written below.
+		 *
+		 * Not memoized, for the reason spelled out at `row_value`: this is a write
+		 * path, and the read is a lookup over a tree that is a cell already.
+		 */
+		flex_value( key: string, next?: string ) {
+
+			const node = this.Node()
+			const dict = this.style_dict()
+
+			if( next === undefined ) {
+				return this.$.$bog_vmap_lang_dict_get( dict, key )?.value ?? ''
+			}
+
+			const tree = node.tree()
+			const base = dict ?? tree.struct( '*', [ tree.struct( '^' ) ] )
+
+			const written = this.$.$bog_vmap_lang_dict_set(
+				base,
+				key,
+				next ? tree.data( next ) : null,
+			)
+
+			if( ! node.prop_names().includes( 'style' ) ) node.prop_add( 'style' )
+
+			node.prop_tree( 'style', node.prop_tree( 'style' )!.clone([ written ]) )
+
+			return next
+		}
+
 	}
 
 	/**

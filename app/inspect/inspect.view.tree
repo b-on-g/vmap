@@ -21,6 +21,11 @@ $bog_vmap_app_inspect $mol_view
 				<= Title $mol_view sub / <= class_title \
 				<= Base $mol_view sub / <= base_title \
 				<= Total $mol_view sub / <= total \
+		- Layout of the node, above the ports: on a page these five decide what the
+		- thing looks like, and hunting them down among two dozen inherited ports is
+		- not what an inspector is for. They are keys of `style` all the same.
+		<= Flex $bog_vmap_app_inspect_flex
+			value*? <=> flex_value*? \
 		<= Body $mol_scroll
 			sub /
 				<= Rows $mol_view sub <= rows /

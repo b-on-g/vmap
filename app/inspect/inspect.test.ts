@@ -63,6 +63,136 @@ namespace $ {
 
 		},
 
+		/**
+		 * The layout panel writes into the ordinary `style` dictionary of the node,
+		 * so what an artboard is made of is what a hand written $mol document would
+		 * carry, and an export has nothing to learn about artboards.
+		 */
+		'layout properties land in the style of the node and read back'( $ ) {
+
+			const inspect = inspect_of( $, [
+				`${ d }bog_vmap_app_inspect_test_page ${ d }mol_view`,
+				'	sub /',
+				'',
+			].join( '\n' ) )
+
+			$mol_assert_equal( inspect.Flex().direction(), '' )
+
+			inspect.Flex().direction( 'column' )
+			inspect.Flex().gap( '1rem' )
+
+			$mol_assert_equal( inspect.Flex().direction(), 'column' )
+			$mol_assert_equal( inspect.Flex().gap(), '1rem' )
+
+			$mol_assert_equal(
+				inspect.Node().source(),
+				[
+					`${ d }bog_vmap_app_inspect_test_page ${ d }mol_view`,
+					'	sub /',
+					'	style *',
+					'		^',
+					'		flexDirection \\column',
+					'		gap \\1rem',
+					'',
+				].join( '\n' ),
+			)
+
+			// Empty takes the key out again, and the dictionary keeps the rest.
+			inspect.Flex().gap( '' )
+			$mol_assert_equal( inspect.Flex().gap(), '' )
+			$mol_assert_equal( inspect.Node().source().includes( 'gap' ), false )
+			$mol_assert_equal( inspect.Flex().direction(), 'column' )
+
+		},
+
+		/**
+		 * `^` first, always. A dictionary redeclared without it replaces the one of
+		 * the base instead of extending it, so a node that grew one layout key would
+		 * lose every style its class sets, without a word.
+		 */
+		'the inherited head of the style dictionary is kept'( $ ) {
+
+			const inspect = inspect_of( $, [
+				`${ d }bog_vmap_app_inspect_test_card ${ d }mol_view`,
+				'	style *',
+				'		^',
+				'		padding \\4px',
+				'',
+			].join( '\n' ) )
+
+			inspect.Flex().across( 'center' )
+
+			$mol_assert_like(
+				inspect.style_dict()!.kids.map( kid => kid.type ),
+				[ '^', 'padding', 'alignItems' ],
+			)
+
+		},
+
+		/**
+		 * `$mol_dom_render_styles` appends `px` to a number, so `flexGrow 1` comes
+		 * out as `flex-grow: 1px` — not a length, not a growth factor, dropped, and
+		 * the node does not stretch. The document has to carry text.
+		 */
+		'stretching is written as text, because a number would get px'( $ ) {
+
+			const inspect = inspect_of( $, [
+				`${ d }bog_vmap_app_inspect_test_cell ${ d }mol_view`,
+				'	sub /',
+				'',
+			].join( '\n' ) )
+
+			inspect.Flex().grow( true )
+
+			$mol_assert_equal( inspect.Flex().grow(), true )
+			$mol_assert_ok( inspect.Node().source().includes( 'flexGrow \\1' ) )
+
+			inspect.Flex().grow( false )
+			$mol_assert_equal( inspect.Flex().grow(), false )
+			$mol_assert_equal( inspect.Node().source().includes( 'flexGrow' ), false )
+
+		},
+
+		/** The width of the page is the same kind of fact, set through the same key. */
+		'the width switch sets the width of the artboard'( $ ) {
+
+			const inspect = inspect_of( $, [
+				`${ d }bog_vmap_app_inspect_test_board ${ d }mol_view`,
+				'	style * width \\1280px',
+				'	sub /',
+				'',
+			].join( '\n' ) )
+
+			$mol_assert_equal( inspect.Flex().width(), '1280px' )
+
+			inspect.Flex().width( '390px' )
+
+			$mol_assert_equal( inspect.Flex().width(), '390px' )
+			$mol_assert_ok( inspect.Node().source().includes( 'width \\390px' ) )
+
+		},
+
 	})
+
+	/** `d` keeps `$` out of the literals: mam reads them when building its graph. */
+	const d = '$'
+
+	/**
+	 * An inspector over one class held in a local variable.
+	 *
+	 * The library is never touched, so nothing here reaches the network: the layout
+	 * panel asks the document what it says and writes back into it, and inherited
+	 * ports are somebody else's question.
+	 */
+	function inspect_of( $: $mol_ambient_context, source: string ) {
+
+		let text = source
+
+		return $.$bog_vmap_app_inspect.make({
+			$,
+			source: ( next?: string )=> next === undefined ? text : ( text = next ),
+		}) as $$.$bog_vmap_app_inspect
+
+	}
 
 }
