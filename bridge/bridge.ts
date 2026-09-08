@@ -164,11 +164,12 @@ namespace $ {
 			/**
 			 * Sources of the land libraries attached to the document.
 			 *
-			 * On the bridge and NOT in the frame address, unlike the pack: a land
-			 * arrives as text and is compiled into the same sandbox as the document,
-			 * so a change of the list is a recompile, not a reload. The whole list
-			 * every time, in the order the classes should be declared — the scene
-			 * sorts by inheritance anyway and merges nothing.
+			 * A land arrives as text and is compiled into the same sandbox as the
+			 * document, so a change of the list is a recompile — unlike `pack_set`,
+			 * which travels the same wire but is answered by a fresh frame, because a
+			 * realm cannot unload a bundle. The whole list every time, in the order
+			 * the classes should be declared — the scene sorts by inheritance anyway
+			 * and merges nothing.
 			 *
 			 * The host reads the lands, because only the host may touch the
 			 * database; the scene sees strings.
@@ -176,6 +177,29 @@ namespace $ {
 			 */
 			readonly kind: 'libs_set'
 			readonly parts: readonly $bog_vmap_bridge_part[]
+		}
+
+		| {
+			/**
+			 * Donor pack the scene is to load into its realm, as an absolute URL of
+			 * the `web.js` of a deployed module. Empty means no pack, which the scene
+			 * answers by compiling nothing at all.
+			 *
+			 * On the bridge and not in the address of the frame, because the frame
+			 * has no address: it is raised from markup handed to it, so there is no
+			 * query string to carry anything. The rule of section 5 — one pack per
+			 * realm, a second one poisons the palette silently — is held by the host
+			 * instead: the address of the pack is part of the key of the frame, so a
+			 * different pack is a different frame element and a fresh realm.
+			 *
+			 * Sent first of everything after the handshake. A document compiled
+			 * before the pack lands inherits the scene's own `$mol_view` and no later
+			 * load can move it, so the scene waits for this message before it
+			 * compiles anything.
+			 * @see ../ARCHITECTURE.md sections 4 and 5
+			 */
+			readonly kind: 'pack_set'
+			readonly uri: string
 		}
 
 		| {
