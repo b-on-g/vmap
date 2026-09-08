@@ -50574,6 +50574,140 @@ declare namespace $.$$ {
 
 declare namespace $ {
     /**
+     * Export of a document as a real MAM module.
+     *
+     * Not an abstract «project»: the output is a folder that drops into `bog/` and
+     * builds with `npx mam` untouched. That is the acceptance criterion of the
+     * stage, and it is also what closes the circle of section 5 — a built module is
+     * a donor pack, so anything assembled here becomes a component library for the
+     * next document.
+     *
+     * Pure functions over text. Knows nothing of Giper Baza and nothing of the DOM,
+     * so the caller maps its stored nodes onto `doc_export_node` and gets files back.
+     *
+     * @see ../../ARCHITECTURE.md section 10
+     */
+    /** One class of the document, as the three sources the editor keeps. */
+    type $bog_vmap_app_export_node = {
+        /** `view.tree` declaration. Carries the class name in its first token. */
+        readonly source: string;
+        /** Hand written class body: method definitions, no wrapping class. */
+        readonly js?: string;
+        /** Raw CSS. */
+        readonly css?: string;
+    };
+    /**
+     * One file of the module.
+     *
+     * Text only for now. Assets arrive at stage 5.1 as separate blob lands, and
+     * they will need a binary sibling of this type plus an `assets/` prefix in the
+     * name — the shape is a flat list of named files precisely so that adding them
+     * appends entries instead of reworking the result.
+     */
+    type $bog_vmap_app_export_file = {
+        readonly name: string;
+        readonly text: string;
+    };
+    type $bog_vmap_app_export_module = {
+        /** Folder the module must be placed at, relative to the MAM root. */
+        readonly path: string;
+        /** Last segment of the path, and the base name of every source file. */
+        readonly name: string;
+        /** Class instantiated by `index.html`. */
+        readonly root: string;
+        readonly files: readonly $bog_vmap_app_export_file[];
+    };
+    /**
+     * Folder the classes of a document oblige it to live in.
+     *
+     * Section 10 says the export is a MAM module and says nothing about where it
+     * goes, but the two are not independent: mam turns a class name into a path by
+     * replacing every underscore with a slash, so a document placed anywhere else
+     * fails to build while looking perfectly correct. The document therefore names
+     * its own folder, by the longest common prefix of its class names.
+     *
+     * A lone `bog_site_page` gives `bog/site/page`; together with `bog_site_hero`
+     * it gives `bog/site`. Both resolve, because a missing last segment collapses
+     * onto the longest existing prefix — the same rule that makes demo classes safe
+     * to name after their own module.
+     *
+     * A prefix shorter than two segments means classes from different packs, or a
+     * module at the root of a pack. Refused: renaming the user's classes to fit
+     * would break «byte for byte from the editor», and emitting them as they are
+     * would produce a folder that does not build.
+     *
+     * **What this cannot check: whether the root pack exists.** Only the machine
+     * doing the build knows that, and we run in a browser. Classes named
+     * `my_doc_page` give a perfectly well formed `my/doc/page`, and mam then fails
+     * with `Root package "my" not found` — the length test above does not catch it,
+     * because nothing is wrong with the shape. The export UI has to say out loud
+     * which folder the module is going to, so that the first segment is a decision
+     * the author sees rather than one made for them.
+     */
+    function $bog_vmap_app_export_path(this: $, names: readonly string[]): string;
+    /**
+     * Whether a hand written body defines a method of this name.
+     *
+     * Deliberately the same test the scene applies before decorating, so that a
+     * property memoized in the preview is memoized in the export and the two cannot
+     * drift. A property decorated in the generated base but overridden here without
+     * a decorator loses its atom outright, and nothing reports it: the method just
+     * returns a fresh value while the DOM keeps the old one.
+     */
+    function $bog_vmap_app_export_defines(js: string, name: string): boolean;
+    /** One reason a hand written body would not survive the export. */
+    type $bog_vmap_app_export_complaint = {
+        /** 1-based, counted inside the body the editor shows. */
+        readonly line: number;
+        readonly method: string;
+        readonly param: string;
+        /** Ready to show, in the language of the editor. */
+        readonly text: string;
+    };
+    /**
+     * Parameters of methods that carry no type.
+     *
+     * The divergence of section 10: in the scene a body goes through `new Function`,
+     * where any JS runs, and in the export the same body is compiled by TypeScript
+     * with `strict` and `noImplicitAny`. An untyped parameter is the whole of that
+     * divergence in practice — it works in the preview and fails the build, and the
+     * author learns about it neither where nor when the mistake was made.
+     *
+     * Not a type checker and not pretending to be one: a real `tsc` in the browser
+     * costs megabytes in the bundle of an editor that would use it for one class of
+     * error. What is not caught here is what needs types to catch — an unknown
+     * member, a wrong type — and those stay a build failure.
+     *
+     * A parameter with a default value is no complaint: TypeScript infers its type.
+     * Arrow functions inside the body are not looked at either, because their
+     * parameters are typed by context. A signature holding brackets of its own is
+     * skipped rather than guessed at, so the check misses cases instead of
+     * inventing them.
+     */
+    function $bog_vmap_app_export_untyped(js: string): readonly $bog_vmap_app_export_complaint[];
+    /** Indents a hand written body into a class declaration. */
+    function $bog_vmap_app_export_indent(text: string, depth?: number): string;
+    /**
+     * Builds the module.
+     *
+     * @param nodes classes of the document, in any order
+     * @param root class `index.html` instantiates; defaults to the first node
+     */
+    function $bog_vmap_app_export_build(this: $, nodes: readonly $bog_vmap_app_export_node[], root?: string): $bog_vmap_app_export_module;
+    /**
+     * Pages of a document: the artboards its root class draws.
+     *
+     * An artboard is a node with a `sub` of its own, and that is the only mark it
+     * has — the same reading the canvas does in `doc_containers`, and section 8
+     * says there is no other. A free part carries no `sub`, so it is not a page and
+     * the router never shows it, which is also why the desk coordinates have
+     * nothing to leak into here.
+     */
+    function $bog_vmap_app_export_pages(model: $bog_vmap_lang_node): string[];
+}
+
+declare namespace $ {
+    /**
      * Slicing of the handwritten sources by property.
      *
      * Port of `props_js()`, `props_css()` and the `source_*_prop` family of
@@ -50726,7 +50860,17 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_deck__items_bog_vmap_app_code_20 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_code_20 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['typing_rows'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_code_21 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_deck__items_bog_vmap_app_code_22 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_deck['items'] >
@@ -50736,6 +50880,8 @@ declare namespace $ {
 		head_content( ): readonly($mol_view)[]
 		scope_note( ): string
 		note( ): string
+		typing_rows( ): readonly($mol_view)[]
+		typing_text( id: any): string
 		tree_text( next?: string ): string
 		Tree( ): $mol_textarea
 		js_text( next?: string ): string
@@ -50759,6 +50905,8 @@ declare namespace $ {
 		Scope( ): $mol_check
 		Alarm( ): $mol_view
 		Refusal( ): $mol_view
+		Typing( ): $mol_view
+		Typing_row( id: any): $mol_view
 		Sources( ): $mol_deck
 	}
 	
@@ -50825,6 +50973,21 @@ declare namespace $.$$ {
          * else, and says the same thing the read path silently works around.
          */
         sliceable(): boolean;
+        /**
+         * Untyped parameters of the body, as the export names them.
+         *
+         * The same check the export refuses on, called here so that the author reads
+         * the complaint where the mistake was made rather than at the outbound gate.
+         * A body in the scene goes through `new Function`, which takes any JS, so
+         * nothing else in the editor would ever say a word about this.
+         *
+         * While one node is being edited only its own method is complained about:
+         * the neighbours are not on screen, and a line about a method the panel does
+         * not show is a line nobody can act on.
+         */
+        complaints(): readonly $bog_vmap_app_export_complaint[];
+        typing_rows(): $mol_view[];
+        typing_text(index: number): string;
         head_content(): readonly $mol_view[];
         content(): readonly $mol_view[];
         /** The refusal, or the standing reason the slicing is off. */

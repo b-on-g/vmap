@@ -398,6 +398,7 @@
     "$bog_vmap_app_code",
     "$mol_textarea",
     "$mol_deck",
+    "$bog_vmap_app_export",
     "$bog_vmap_app_pane",
     "$bog_vmap_bridge",
     "$bog_vmap_app_wire",

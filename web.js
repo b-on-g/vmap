@@ -36971,6 +36971,12 @@ var $;
 		note(){
 			return "";
 		}
+		typing_rows(){
+			return [];
+		}
+		typing_text(id){
+			return "";
+		}
 		tree_text(next){
 			if(next !== undefined) return next;
 			return "";
@@ -37076,6 +37082,16 @@ var $;
 			(obj.sub) = () => ([(this.note())]);
 			return obj;
 		}
+		Typing(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.typing_rows()));
+			return obj;
+		}
+		Typing_row(id){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.typing_text(id))]);
+			return obj;
+		}
 		Sources(){
 			const obj = new this.$.$mol_deck();
 			(obj.items) = () => ([
@@ -37103,8 +37119,396 @@ var $;
 	($mol_mem(($.$bog_vmap_app_code.prototype), "Scope"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "Alarm"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "Refusal"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Typing"));
+	($mol_mem_key(($.$bog_vmap_app_code.prototype), "Typing_row"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "Sources"));
 
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Export of a document as a real MAM module.
+     *
+     * Not an abstract «project»: the output is a folder that drops into `bog/` and
+     * builds with `npx mam` untouched. That is the acceptance criterion of the
+     * stage, and it is also what closes the circle of section 5 — a built module is
+     * a donor pack, so anything assembled here becomes a component library for the
+     * next document.
+     *
+     * Pure functions over text. Knows nothing of Giper Baza and nothing of the DOM,
+     * so the caller maps its stored nodes onto `doc_export_node` and gets files back.
+     *
+     * @see ../../ARCHITECTURE.md section 10
+     */
+    /**
+     * Folder the classes of a document oblige it to live in.
+     *
+     * Section 10 says the export is a MAM module and says nothing about where it
+     * goes, but the two are not independent: mam turns a class name into a path by
+     * replacing every underscore with a slash, so a document placed anywhere else
+     * fails to build while looking perfectly correct. The document therefore names
+     * its own folder, by the longest common prefix of its class names.
+     *
+     * A lone `bog_site_page` gives `bog/site/page`; together with `bog_site_hero`
+     * it gives `bog/site`. Both resolve, because a missing last segment collapses
+     * onto the longest existing prefix — the same rule that makes demo classes safe
+     * to name after their own module.
+     *
+     * A prefix shorter than two segments means classes from different packs, or a
+     * module at the root of a pack. Refused: renaming the user's classes to fit
+     * would break «byte for byte from the editor», and emitting them as they are
+     * would produce a folder that does not build.
+     *
+     * **What this cannot check: whether the root pack exists.** Only the machine
+     * doing the build knows that, and we run in a browser. Classes named
+     * `my_doc_page` give a perfectly well formed `my/doc/page`, and mam then fails
+     * with `Root package "my" not found` — the length test above does not catch it,
+     * because nothing is wrong with the shape. The export UI has to say out loud
+     * which folder the module is going to, so that the first segment is a decision
+     * the author sees rather than one made for them.
+     */
+    function $bog_vmap_app_export_path(names) {
+        if (!names.length)
+            this.$mol_fail(new Error('Nothing to export'));
+        const parts = names.map(name => {
+            if (name[0] !== '$')
+                this.$mol_fail(new Error(`Class name must start with $, got ${JSON.stringify(name)}`));
+            return name.slice(1).split('_');
+        });
+        const common = [];
+        for (let i = 0; i < parts[0].length; ++i) {
+            const segment = parts[0][i];
+            if (!parts.every(part => part[i] === segment))
+                break;
+            common.push(segment);
+        }
+        if (common.length < 2)
+            this.$mol_fail(new Error(`Classes ${names.join(', ')} share no module path.`
+                + ` A document must name its classes after one module,`
+                + ` so that they agree on at least two leading segments.`));
+        return common.join('/');
+    }
+    $.$bog_vmap_app_export_path = $bog_vmap_app_export_path;
+    /**
+     * Whether a hand written body defines a method of this name.
+     *
+     * Deliberately the same test the scene applies before decorating, so that a
+     * property memoized in the preview is memoized in the export and the two cannot
+     * drift. A property decorated in the generated base but overridden here without
+     * a decorator loses its atom outright, and nothing reports it: the method just
+     * returns a fresh value while the DOM keeps the old one.
+     */
+    function $bog_vmap_app_export_defines(js, name) {
+        if (js.includes(`/${'*'}${name}${'*'}/`))
+            return true;
+        return new RegExp(`(^|[^\\w.$])${name}\\s*\\(`, 'm').test(js);
+    }
+    $.$bog_vmap_app_export_defines = $bog_vmap_app_export_defines;
+    /**
+     * Parameters of methods that carry no type.
+     *
+     * The divergence of section 10: in the scene a body goes through `new Function`,
+     * where any JS runs, and in the export the same body is compiled by TypeScript
+     * with `strict` and `noImplicitAny`. An untyped parameter is the whole of that
+     * divergence in practice — it works in the preview and fails the build, and the
+     * author learns about it neither where nor when the mistake was made.
+     *
+     * Not a type checker and not pretending to be one: a real `tsc` in the browser
+     * costs megabytes in the bundle of an editor that would use it for one class of
+     * error. What is not caught here is what needs types to catch — an unknown
+     * member, a wrong type — and those stay a build failure.
+     *
+     * A parameter with a default value is no complaint: TypeScript infers its type.
+     * Arrow functions inside the body are not looked at either, because their
+     * parameters are typed by context. A signature holding brackets of its own is
+     * skipped rather than guessed at, so the check misses cases instead of
+     * inventing them.
+     */
+    function $bog_vmap_app_export_untyped(js) {
+        const out = [];
+        const heads = /(?:^|\n)[ \t]*(?:(?:async|static|override|get|set|public|private|protected)[ \t]+)*(\*[ \t]*)?([A-Za-z_$][\w$]*)[ \t]*\(([^()]*)\)/g;
+        // Words that begin a statement and would otherwise read as a method name.
+        const keywords = ['if', 'for', 'while', 'switch', 'catch', 'return', 'do', 'else', 'with', 'function', 'typeof', 'await', 'yield', 'new', 'delete', 'void'];
+        for (const head of js.matchAll(heads)) {
+            const method = head[2];
+            if (keywords.includes(method))
+                continue;
+            const line = js.slice(0, (head.index ?? 0) + head[0].length).split('\n').length;
+            for (const param of params_of(head[3])) {
+                out.push({
+                    line,
+                    method,
+                    param,
+                    text: `Параметр «${param}» метода «${method}» без типа:`
+                        + ` в превью это работает, а выгрузка собирается со strict и упадёт.`
+                        + ` Написать тип, например «${param}?: string».`,
+                });
+            }
+        }
+        return out;
+    }
+    $.$bog_vmap_app_export_untyped = $bog_vmap_app_export_untyped;
+    /** Names of the parameters that carry neither a type nor a default value. */
+    function params_of(list) {
+        const out = [];
+        let depth = 0;
+        let typed = false;
+        let text = '';
+        const close = () => {
+            const name = text.trim();
+            if (name && !typed)
+                out.push(name.replace(/^\.\.\./, ''));
+            typed = false;
+            text = '';
+        };
+        for (const char of list) {
+            if ('<{['.includes(char))
+                ++depth;
+            if ('>}]'.includes(char) && depth > 0)
+                --depth;
+            if (depth === 0 && (char === ':' || char === '='))
+                typed = true;
+            if (depth === 0 && char === ',') {
+                close();
+                continue;
+            }
+            if (!typed)
+                text += char;
+        }
+        close();
+        return out;
+    }
+    /** Indents a hand written body into a class declaration. */
+    function $bog_vmap_app_export_indent(text, depth = 2) {
+        const pad = '\t'.repeat(depth);
+        return text.replace(/\n?$/, '').split('\n')
+            .map(line => line.trim() ? pad + line : '')
+            .join('\n');
+    }
+    $.$bog_vmap_app_export_indent = $bog_vmap_app_export_indent;
+    /**
+     * Builds the module.
+     *
+     * @param nodes classes of the document, in any order
+     * @param root class `index.html` instantiates; defaults to the first node
+     */
+    function $bog_vmap_app_export_build(nodes, root) {
+        if (!nodes.length)
+            this.$mol_fail(new Error('Nothing to export'));
+        /**
+         * Parsed through the same model the editor edits with, so the export sees
+         * exactly the classes the editor sees, reformatting included.
+         *
+         * This is also where the `asset:` rewrite of stage 5.1 belongs: one place,
+         * before anything reads the text.
+         */
+        const parsed = nodes.map(node => {
+            const model = this.$bog_vmap_lang_node.make({});
+            model.source(node.source);
+            return { node, model, tree: model.tree(), name: model.name() };
+        });
+        const names = parsed.map(item => item.name);
+        /**
+         * Bodies are checked before anything is written, so that the answer names the
+         * mistake instead of leaving a module that only fails on the build machine.
+         * Section 10: the preview forgives what the export does not.
+         */
+        const complaints = parsed.flatMap(item => {
+            const js = item.node.js?.trim();
+            return js
+                ? this.$bog_vmap_app_export_untyped(js).map(note => `${item.name}, строка ${note.line}: ${note.text}`)
+                : [];
+        });
+        if (complaints.length)
+            this.$mol_fail(new Error(`Код узлов не переживёт выгрузку:\n${complaints.join('\n')}`));
+        const twice = names.filter((name, i) => names.indexOf(name) !== i);
+        if (twice.length)
+            this.$mol_fail(new Error(`Class ${twice[0]} is declared twice`));
+        const path = this.$bog_vmap_app_export_path(names);
+        const name = path.slice(path.lastIndexOf('/') + 1);
+        const entry = root ?? names[0];
+        if (!names.includes(entry))
+            this.$mol_fail(new Error(`Root class ${JSON.stringify(entry)} is not among the document classes`));
+        const order = this.$bog_vmap_lang_sorted(parsed.map(item => item.tree));
+        const by_tree = new Map(parsed.map(item => [item.tree, item]));
+        const sorted = order.map(tree => by_tree.get(tree));
+        const pages = $bog_vmap_app_export_pages(parsed.find(item => item.name === entry).model);
+        /**
+         * Two pages or more get a router, one page gets nothing at all.
+         *
+         * A single page document stays exactly what it was: the same five files and
+         * the document itself at the root. A router over one page would be a class
+         * that always answers the same thing, and an address key that always holds
+         * the same value.
+         */
+        const router = pages.length > 1 ? router_name(path, names) : '';
+        const files = [
+            {
+                name: `${name}.view.tree`,
+                text: sorted.map(item => item.tree.toString()).join('')
+                    + (router ? router_tree(router, entry) : ''),
+            },
+            { name: `${name}.view.ts`, text: view_ts.call(this, sorted, router, pages) },
+            { name: `${name}.view.css.ts`, text: view_css_ts.call(this, sorted) },
+            { name: `${name}.meta.tree`, text: 'include \\/mol/theme/auto\n' },
+            { name: 'index.html', text: index_html(router || entry) },
+        ];
+        return { path, name, root: router || entry, files };
+    }
+    $.$bog_vmap_app_export_build = $bog_vmap_app_export_build;
+    /**
+     * Pages of a document: the artboards its root class draws.
+     *
+     * An artboard is a node with a `sub` of its own, and that is the only mark it
+     * has — the same reading the canvas does in `doc_containers`, and section 8
+     * says there is no other. A free part carries no `sub`, so it is not a page and
+     * the router never shows it, which is also why the desk coordinates have
+     * nothing to leak into here.
+     */
+    function $bog_vmap_app_export_pages(model) {
+        return (model.sub_names() ?? []).filter(name => name && model.sub_names(name));
+    }
+    $.$bog_vmap_app_export_pages = $bog_vmap_app_export_pages;
+    /**
+     * Name of the router class, free of collisions.
+     *
+     * Built out of the module path rather than out of the root class, so that it
+     * adds no segment to the longest common prefix and the module stays in the
+     * folder the document already chose: `bog/site` gives `$bog_site_app`,
+     * `bog/site/page` gives `$bog_site_page_app`. A document that already holds
+     * that name gets the next free one instead of a class declared twice.
+     */
+    function router_name(path, taken) {
+        const base = '$' + path.replace(/\//g, '_') + '_app';
+        let name = base;
+        for (let i = 2; taken.includes(name); ++i)
+            name = base + i;
+        return name;
+    }
+    /**
+     * Declaration of the router.
+     *
+     * `$mol_view` and not the document class, although inheriting would be shorter:
+     * an heir declared in the SAME `.view.tree` silently loses the hand written body
+     * of its base, because the generated file of the whole tree is ordered before
+     * the single `.view.ts` of the module, where the wrapper overwrites the
+     * generated class rather than extending it. The document therefore lies inside
+     * the router as `Doc`.
+     *
+     * `Doc` is declared and never put into `sub`, so it costs one lazy memoized
+     * instance and no DOM — the free part of section 1. Its artboards are flat
+     * properties of it thanks to `upper`, which is what lets the router reach a page
+     * by name at all.
+     *
+     * No `sub` here: an empty list in the tree would be generated as a method
+     * returning `never[]`, and an override widening that is a type error. The list
+     * belongs to the body, where it is picked by the address anyway.
+     */
+    function router_tree(router, doc) {
+        return `${router} $mol_view\n\tDoc ${doc}\n`;
+    }
+    /**
+     * Body of the router: one page, named by the address.
+     *
+     * `$mol_state_arg` and nothing of our own, because that is the standard address
+     * of $mol: a link from page to page is an ordinary `$mol_link` with
+     * `arg * page \Page_1` written in the document itself, and it works without a
+     * line of code from us. The first artboard is the default, so the bare address
+     * opens the site rather than an empty screen, and an unknown page name lands
+     * there as well instead of showing nothing.
+     *
+     * A `switch` over literal names rather than a lookup by string: a property read
+     * by a computed name would need a cast, and the export must compile under
+     * `strict` with no `as any` anywhere in it.
+     */
+    function router_ts(router, pages) {
+        const rest = pages.slice(1).map(page => `\t\t\t\tcase ${JSON.stringify(page)}: return [ doc.${page}() ]\n`);
+        return ''
+            + `\n\texport class ${router} extends $.${router} {\n\n`
+            + `\t\toverride sub() {\n\n`
+            + `\t\t\tconst doc = this.Doc()\n\n`
+            + `\t\t\tswitch( this.$.$mol_state_arg.value( 'page' ) ) {\n`
+            + rest.join('')
+            + `\t\t\t\tdefault: return [ doc.${pages[0]}() ]\n`
+            + `\t\t\t}\n\n`
+            + `\t\t}\n\n`
+            + `\t}\n`;
+    }
+    /**
+     * Hand written bodies, one subclass per class that has one.
+     *
+     * Decorators go as separate expressions after the class, the way studio applies
+     * them in `source_js_decorators()`. Writing `@ $mol_mem` into the user's text
+     * would mean finding where each method starts, and getting that wrong produces
+     * a file that does not compile.
+     *
+     * The leading `;` is not decoration. A generated line starting with `(` and no
+     * semicolon above it gets glued to the previous expression by ASI, and the
+     * result is `$( … )` and a `TypeError` at load.
+     */
+    function view_ts(items, router, pages) {
+        const out = ['namespace $.$$ {\n'];
+        for (const item of items) {
+            const js = item.node.js?.trim();
+            if (!js)
+                continue;
+            const decorators = [];
+            for (const prop of item.tree.kids[0]?.kids ?? []) {
+                const { name, key, next } = this.$mol_view_tree2_prop_parts(prop);
+                if (!key && !next)
+                    continue;
+                if (!this.$bog_vmap_app_export_defines(js, name))
+                    continue;
+                decorators.push(`\t;( $mol_mem${key ? '_key' : ''}( ${item.name}.prototype, ${JSON.stringify(name)} ) )\n`);
+            }
+            out.push(`\n\texport class ${item.name} extends $.${item.name} {\n\n`);
+            out.push(this.$bog_vmap_app_export_indent(js) + '\n');
+            out.push('\n\t}\n');
+            out.push(...decorators);
+        }
+        if (router)
+            out.push(router_ts(router, pages));
+        out.push('\n}\n');
+        return out.join('');
+    }
+    /**
+     * Styles.
+     *
+     * `$mol_style_attach` rather than `$mol_style_define`, because what the editor
+     * holds is raw CSS text and not a dictionary of properties. Name and CSS both
+     * go in through `JSON.stringify`: a stylesheet containing a backtick or a `${`
+     * would tear a template literal apart, and that is user text.
+     */
+    function view_css_ts(items) {
+        const out = ['namespace $.$$ {\n'];
+        for (const item of items) {
+            const css = item.node.css?.trim();
+            if (!css)
+                continue;
+            out.push(`\n\t$mol_style_attach( ${JSON.stringify(item.name)}, ${JSON.stringify(css)} )\n`);
+        }
+        out.push('\n}\n');
+        return out.join('');
+    }
+    function index_html(root) {
+        return [
+            '<!doctype html>',
+            '<html mol_view_root>',
+            '\t<head>',
+            '\t\t<meta charset="utf-8" />',
+            '\t\t<meta name="viewport" content="width=device-width, initial-scale=1" />',
+            '\t</head>',
+            '\t<body mol_view_root>',
+            `\t\t<div mol_view_root="${root}"></div>`,
+            '\t\t<script src="web.js"></script>',
+            '\t</body>',
+            '</html>',
+            '',
+        ].join('\n');
+    }
+})($ || ($ = {}));
 
 ;
 "use strict";
@@ -37419,6 +37823,31 @@ var $;
                     return false;
                 }
             }
+            /**
+             * Untyped parameters of the body, as the export names them.
+             *
+             * The same check the export refuses on, called here so that the author reads
+             * the complaint where the mistake was made rather than at the outbound gate.
+             * A body in the scene goes through `new Function`, which takes any JS, so
+             * nothing else in the editor would ever say a word about this.
+             *
+             * While one node is being edited only its own method is complained about:
+             * the neighbours are not on screen, and a line about a method the panel does
+             * not show is a line nobody can act on.
+             */
+            complaints() {
+                const all = this.$.$bog_vmap_app_export_untyped(this.js());
+                if (!this.sliced())
+                    return all;
+                const prop = this.prop();
+                return all.filter(one => one.method === prop);
+            }
+            typing_rows() {
+                return this.complaints().map((_, index) => this.Typing_row(index));
+            }
+            typing_text(index) {
+                return this.complaints()[index]?.text ?? '';
+            }
             head_content() {
                 return [
                     this.Scope_note(),
@@ -37430,6 +37859,7 @@ var $;
                     this.Head(),
                     ...this.error() ? [this.Alarm()] : [],
                     ...this.note() ? [this.Refusal()] : [],
+                    ...this.complaints().length ? [this.Typing()] : [],
                     this.Sources(),
                 ];
             }
@@ -37453,6 +37883,12 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_code.prototype, "sliceable", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_code.prototype, "complaints", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_code.prototype, "typing_text", null);
         $$.$bog_vmap_app_code = $bog_vmap_app_code;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
@@ -37496,6 +37932,15 @@ var $;
                 color: $mol_theme.shade,
                 font: { size: '.75rem' },
                 whiteSpace: 'pre-wrap',
+            },
+            /** A warning, not a failure: the document works, the export would not. */
+            Typing: {
+                flex: { direction: 'column', shrink: 0 },
+                gap: '.25rem',
+                padding: $mol_gap.text,
+                color: $mol_theme.shade,
+                font: { size: '.75rem' },
+                whiteSpace: 'normal',
             },
             /** The three fields fill what is left; without this the deck sizes to its text. */
             Sources: {

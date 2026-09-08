@@ -1541,6 +1541,13 @@ $bog_vmap_app_code $mol_view
 	- field so it can be fixed; the document keeps the last one that parsed.
 	Refusal $mol_view
 		sub / <= note \
+	- Parameters without types in the body of this node. Shown while it is being
+	- written, because the failure they cause happens at the export, where neither
+	- the mistake nor its author is any more.
+	Typing $mol_view
+		sub <= typing_rows /$mol_view
+	Typing_row* $mol_view
+		sub / <= typing_text* \
 	Sources $mol_deck
 		items /
 			<= Tree $mol_textarea
