@@ -1,0 +1,1717 @@
+$mol_ghost $mol_view
+	Sub $mol_view
+
+$mol_follower $mol_ghost
+	Anchor $mol_view
+	align /number
+		-.5
+		-.5
+	offset /number
+		0
+		0
+	style *
+		^
+		transform <= transform \
+
+$mol_pop $mol_view
+	showed? false
+	align_vert \
+	align_hor \
+	direction \ltr
+	align_enriched <= align \bottom_center
+	prefer \vert
+	auto /
+		<= bubble null
+	sub /
+		<= Anchor null
+	sub_visible /
+		<= Anchor
+		<= Follower $mol_follower
+			offset <= bubble_offset /number
+				0
+				1
+			align <= bubble_align /number
+				0
+				0
+			Anchor <= Anchor
+			Sub <= Bubble $mol_pop_bubble
+				content <= bubble_content /$mol_view_content
+				height_max <= height_max 9999
+
+$mol_pop_bubble $mol_view
+	sub <= content /$mol_view_content
+	style *
+		^
+		maxHeight <= height_max 9999
+	attr *
+		^
+		tabindex 0
+		popover \manual
+
+$mol_scroll $mol_view
+	scroll_top? 0
+	scroll_left? 0
+	attr *
+		^
+		tabindex <= tabindex -1
+	event *
+		^
+		scroll? <=> event_scroll? null
+
+$mol_speck $mol_view
+	theme \$mol_theme_accent
+	sub /
+		<= value null
+
+$mol_button $mol_view
+	enabled true
+	click? null
+	event_click? null
+	status? /
+	event *
+		^
+		click? <=> activate? <=> event_activate? null
+		dblclick? <=> clicks? null
+		keydown? <=> key_press? <=> event_key_press? null
+	attr *
+		^
+		disabled <= disabled false
+		role \button
+		tabindex <= tab_index 0
+		title <= hint_safe <= hint \
+	sub /$mol_view_content
+		<= title
+	Speck $mol_speck
+		value <= error \
+
+$mol_button_typed $mol_button
+	minimal_height 40
+	minimal_width 40
+
+$mol_button_minor $mol_button_typed
+
+$mol_check $mol_button_minor
+	attr *
+		^
+		mol_check_checked <= checked? false
+		aria-checked <= aria_checked \false
+		role <= aria_role \checkbox
+	sub /$mol_view_content
+		<= Icon null
+		<= label /
+			<= Title $mol_view
+				sub /
+					<= title \
+
+$mol_pick $mol_pop
+	event *
+		^
+		keydown? <=> keydown? null
+	Anchor <= Trigger $mol_check
+		minimal_width 40
+		minimal_height 40
+		enabled <= trigger_enabled true
+		checked? <=> showed?
+		clicks? <=> clicks? null
+		sub <= trigger_content /$mol_view_content
+			<= title
+		hint <= hint \
+
+$mol_paragraph $mol_view
+	line_height 24
+	letter_width 7
+	width_limit +Infinity
+	row_width 0
+	sub / <= title
+
+$mol_dimmer $mol_paragraph
+	haystack \
+	needle \
+	sub <= parts /$mol_view_content
+	Low* $mol_paragraph
+		sub /
+			<= string* \
+	High* $mol_paragraph
+		sub /
+			<= string* \
+
+$mol_nav $mol_plugin
+	cycle? false
+	-
+	mod_ctrl false
+	mod_shift false
+	mod_alt false
+	-
+	keys_x? /
+	keys_y? /
+	-
+	current_x? null
+	current_y? null
+	-
+	event_up? null
+	event_down? null
+	event_left? null
+	event_right? null
+	event *
+		^
+		keydown? <=> event_key? null
+
+$mol_list $mol_view
+	render_visible_only true
+	render_over 0.1
+	sub <= rows /$mol_view
+		<= Gap_before $mol_view style * paddingTop <= gap_before 0
+		<= Empty $mol_view
+		<= Gap_after $mol_view style * paddingTop <= gap_after 0
+	item_height_min* 1
+	item_width_min* 1
+	view_window_shift? 0
+	view_window /
+		0
+		0
+
+$mol_hotkey $mol_plugin
+	event *
+		^
+		keydown? <=> keydown? null
+	key *
+	mod_ctrl false
+	mod_alt false
+	mod_shift false
+
+$mol_string $mol_view
+	dom_name \input
+	enabled true
+	minimal_height 40
+	autocomplete false
+	selection? /number
+		0
+		0
+	auto /
+		<= selection_watcher null
+		<= error_report null
+	field *
+		^
+		disabled <= disabled false
+		value <= value_changed? <=> value? \
+		placeholder <= hint_visible <= hint \
+		spellcheck <= spellcheck true
+		autocomplete <= autocomplete_native \
+		selectionEnd <= selection_end 0
+		selectionStart <= selection_start 0
+		inputMode <= keyboard \text
+		enterkeyhint <= enter \go
+	attr *
+		^
+		maxlength <= length_max +Infinity
+		type <= type? \text
+	event *
+		^
+		input? <=> event_change? null
+	plugins /
+		<= Submit $mol_hotkey
+			mod_ctrl <= submit_with_ctrl false
+			key * enter? <=> submit? null
+
+$mol_svg $mol_view
+	dom_name \svg
+	dom_name_space \http://www.w3.org/2000/svg
+	font_size 16
+	font_family \
+	style_size *
+
+$mol_svg_root $mol_svg
+	dom_name \svg
+	attr *
+		^
+		viewBox <= view_box \0 0 100 100
+		preserveAspectRatio <= aspect \xMidYMid
+
+$mol_svg_path $mol_svg
+	dom_name \path
+	attr *
+		^
+		d <= geometry \
+
+
+$mol_icon $mol_svg_root
+	view_box \0 0 24 24
+	minimal_width 16
+	minimal_height 16
+	sub /
+		<= Path $mol_svg_path
+			geometry <= path \
+
+$mol_icon_close $mol_icon path \M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z
+
+$mol_search $mol_pop
+	query? \
+	suggests /string
+	plugins /$mol_plugin
+		^
+		<= Hotkey $mol_hotkey
+			key * escape? <=> clear? null
+		<= Nav $mol_nav
+			keys_y <= nav_components /$mol_view
+			current_y? <=> nav_focused? null
+	showed? <=> suggests_showed? false
+	align_hor \right
+	Anchor $mol_view
+		sub <= anchor_content /
+			<= Query $mol_string
+				value? <=> query? \
+				hint <= hint @ \Search...
+				submit? <=> submit? null
+				enabled <= enabled true
+				keyboard <= keyboard \search
+				enter <= enter \search
+				bring => bring
+			<= Clear $mol_button_minor
+				hint @ \Clear
+				enabled <= enabled true
+				click? <=> clear? null
+				sub /
+					<= Clear_icon $mol_icon_close
+	bubble_content /$mol_view_content
+		<= Bubble_pane $mol_scroll
+			sub /
+				<= Menu $mol_list
+					rows <= menu_items /$mol_view
+	Suggest* $mol_button_minor
+		click? <=> suggest_select*? null
+		sub <= suggest_content* /$mol_view_content
+			<= Suggest_label* $mol_dimmer
+				haystack <= suggest_label* \
+				needle <= query? \
+
+$mol_icon_dots_vertical $mol_icon path \M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z
+
+$mol_select $mol_pick
+	dictionary? *
+	options /string
+	value? \
+	option_label_default \
+	Option_row* $mol_button_minor
+		enabled <= enabled true
+		event_click? <=> event_select*? null
+		hint <= option_hint* null
+		sub <= option_content* /
+			<= Option_label* $mol_dimmer
+				haystack <= option_label* \
+				needle <= filter_pattern? \
+	No_options $mol_view
+		sub /
+			<= no_options_message @ \No options
+	plugins /
+		^
+		<= Nav $mol_nav
+			keys_y <= nav_components /$mol_view
+			current_y? <=> option_focused? null
+			cycle? <=> nav_cycle? true
+	hint @ \Pick..
+	bubble_content /
+		<= Filter
+		<= Bubble_pane $mol_scroll
+			sub /
+				<= Menu $mol_list
+					rows <= menu_content /$mol_view
+	Filter $mol_search
+		query? <=> filter_pattern? \
+		hint <= filter_hint @ \Filter..
+		submit? <=> submit? null
+		enabled <= enabled true
+	Trigger_icon $mol_icon_dots_vertical
+	trigger_enabled <= enabled
+
+$mol_icon_menu $mol_icon path \M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z
+
+$mol_icon_menu_down $mol_icon path \M7,10L12,15L17,10H7Z
+
+$mol_icon_menu_down_outline $mol_icon path \M18,9V10.5L12,16.5L6,10.5V9H18M12,13.67L14.67,11H9.33L12,13.67Z
+
+$mol_icon_menu_up $mol_icon path \M7,15L12,10L17,15H7Z
+
+$mol_icon_menu_up_outline $mol_icon path \M18,16V14.5L12,8.5L6,14.5V16H18M12,11.33L14.67,14H9.33L12,11.33Z
+
+$mol_number $mol_view
+	precision_view <= precision 0
+	precision_change <= precision 0
+	boost 10
+	value_min -Infinity
+	value_max +Infinity
+	value? +NaN
+	enabled true
+	plugins /
+		<= Hotkey $mol_hotkey
+			key *
+				down? <=> event_dec? null
+				up? <=> event_inc? null
+				pageDown? <=> event_dec_boost? null
+				pageUp? <=> event_inc_boost? null
+	sub /
+		<= String $mol_string
+			- \ we don't want native number controls in mobile devices
+			- \ https://stackoverflow.com/questions/3790935/can-i-hide-the-html5-number-input-s-spin-box
+			type <= type \text
+			keyboard \decimal
+			value? <=> value_string? \
+			hint <= hint \ 
+			enabled <= string_enabled <= enabled
+			submit? <=> submit? null
+			selection? <=> selection? /number
+		<= Dec $mol_button_minor
+			event_click? <=> event_dec? null
+			enabled <= dec_enabled <= enabled
+			sub / <= dec_icon $mol_icon_menu_down_outline
+		<= Inc $mol_button_minor
+			event_click? <=> event_inc? null
+			enabled <= inc_enabled <= enabled
+			sub / <= inc_icon $mol_icon_menu_up_outline
+
+- Documents of the user, in the head bar: which one is open, its name, a new one.
+- Owns no data. The store is handed in by the app so that the whole editor holds
+- one, and every value shown here is read from it and written back into it.
+$bog_vmap_app_scenes $mol_view
+	store $bog_vmap_app_store
+	- Link of the open document, empty when there is none yet. Two way: picking
+	- one writes the address, and the address is what the store reads.
+	current? \
+	title? \
+	- Whether there is a document to name at all. The field is off without one,
+	- so that a name typed into an empty editor does not grab a land per keystroke.
+	current_exists false
+	sub /
+		<= Pick $mol_select
+			hint \Сцена
+			dictionary <= scene_dict *
+			option_label_default \Без названия
+			value? <=> current?
+		<= Title $mol_string
+			hint \Название сцены
+			enabled <= current_exists
+			value? <=> title?
+		<= Add $mol_button_minor
+			title \Новая сцена
+			hint \Завести новый документ. Он станет текущим
+			click? <=> add? null
+
+$mol_icon_clipboard $mol_icon path \M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3
+
+$mol_icon_clipboard_outline $mol_icon path \M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V5H19V19H5V5H7V7Z
+
+$mol_button_copy $mol_button_minor
+	blobs /$mol_blob
+		<= text_blob? $mol_blob /
+			/BlobPart <= text <= title
+			* type \text/plain
+		<= html_blob? $mol_blob /
+			/BlobPart <= html \
+			* type \text/html
+	data *
+	sub /
+		<= Icon $mol_icon_clipboard_outline
+		<= title \
+
+- Publishing the picked part of the document into the library of the user: one
+- button in the head bar, and the link of the library that comes out of it, ready
+- for the palette field of another scene.
+- @see ../../ARCHITECTURE.md section 5
+$bog_vmap_app_publish $mol_view
+	store $bog_vmap_app_publish_store
+	- Property name of the picked part on the root class, empty when nothing is
+	- picked. The button is off without one.
+	part \
+	- Declaration of the picked part, as the inspector reads it: `Name $base …`.
+	source \
+	- Body and styles of the part. Empty until the code editor of stage 4 keeps
+	- them per part; the shape is here so that it plugs in without a change.
+	js \
+	css \
+	- The root class of the document, as text: the sub-views the editor hoisted
+	- out of the part are put back into it from here before it goes out.
+	doc \
+	- Names of the classes the document authors, root included: a part based on
+	- one of them is refused, its base would stay behind.
+	classes /string
+	- Link of the library land, empty before the first publication.
+	lib_link \
+	sub <= content /$mol_view
+	Publish $mol_button_minor
+		title \В библиотеку
+		hint <= publish_hint \
+		enabled <= enabled false
+		click? <=> publish? null
+	- The link itself is the caption, so what is copied is what is seen.
+	Copy $mol_button_copy
+		hint \Скопировать ссылку библиотеки для поля палитры другой сцены
+		text <= lib_link
+		title <= lib_link
+	Note $mol_view
+		sub / <= note \
+
+$mol_bar $mol_view
+
+$bog_vmap_app_palette_item $mol_button_minor
+	current false
+	- A palette row is a line of text, not a tap target: 40 px of `$mol_button_typed`
+	- would show a dozen classes where three dozen fit. `$mol_list` sizes its virtual
+	- window by this very number, so it has to be the truth, not just CSS.
+	minimal_height 24
+	- Pointer down, not HTML5 `dragstart`. The native protocol cannot be driven by
+	- synthetic events at all, which would leave dragging unverifiable here, and it
+	- would hand the drop to the browser instead of to the canvas.
+	drag_start? null
+	attr *
+		^
+		bog_vmap_app_palette_item_current <= current
+	event *
+		^
+		pointerdown? <=> drag_start?
+
+$bog_vmap_app_palette_port $mol_view
+	sign \
+	body \
+	owner \
+	inherited false
+	attr *
+		^
+		bog_vmap_app_palette_port_inherited <= inherited
+	sub /
+		<= Sign $mol_view sub / <= sign
+		<= Body $mol_view sub / <= body
+		<= Owner $mol_view sub / <= owner
+
+$bog_vmap_app_palette $mol_view
+	- Links separated by commas. The first http(s) one is the donor pack, the rest
+	- are lands of Giper Baza holding component sources; anything else is refused
+	- and said so under the field. Stored exactly as typed, see `pack_link`.
+	links? \http://localhost:9080/bog/vmap/part/-/
+	query? \
+	selected? \
+	- Narrow layout for a side panel of the editor: header in a column, ports pane
+	- dropped. A port row is an 11rem signature plus a value plus an owner badge and
+	- does not fit a panel; the ports of a node picked on the canvas belong to the
+	- inspector of 2.6 anyway, which is a different question from «what can I add».
+	compact false
+	- Class the pointer is currently carrying, empty when nothing is being dragged,
+	- and where the pointer is right now in viewport coordinates. Started here on
+	- `pointerdown`, moved and cleared by whoever owns the canvas: the palette knows
+	- when a drag begins and nothing about where it ends.
+	dragged? \
+	drag_x? 0
+	drag_y? 0
+	- Classes of the attached lands, handed in by the owner. The palette knows no
+	- database: whoever does resolves the links of the field and passes the trees,
+	- and the library resolves them against the pack like any other class.
+	land_classes /$mol_tree2
+	attr *
+		^
+		bog_vmap_app_palette_compact <= compact
+	sub <= body /$mol_view
+	-
+	Head $mol_bar
+		sub /
+			<= Brand $mol_view sub / \Палитра
+			<= Links $mol_string
+				hint \Пак и ленды через запятую
+				value? <=> links?
+			<= Query $mol_string
+				hint \Поиск по имени
+				value? <=> query?
+			<= Total $mol_view sub / <= total \
+	-
+	- What was typed and not taken, and why, right under the field. Rendered only
+	- while there is something to say: a second pack is refused by construction
+	- and a person who typed one has to learn that from the screen, not from a log.
+	Note $mol_view
+		sub / <= rejected_note \
+	-
+	Body $mol_view
+		sub <= body_content /$mol_view
+	-
+	Classes $mol_scroll
+		sub /
+			<= Class_list $mol_list
+				rows <= class_rows /
+	-
+	- `$mol_scroll` is a grid that puts every child into cell 1/1, so it holds
+	- exactly one node. The heading has to live beside it, not in it.
+	Ports $mol_view
+		sub /
+			<= Ports_head $mol_view
+				sub /
+					<= Selected $mol_view sub / <= selected_title \
+					<= Chain $mol_view sub / <= chain_title \
+			<= Ports_scroll $mol_scroll
+				sub /
+					<= Port_list $mol_list
+						rows <= port_rows /
+	-
+	- One button per class. `$mol_list` renders only what is on screen, so all
+	- 449 of them cost nothing until scrolled to.
+	Class_row* $bog_vmap_app_palette_item
+		title <= class_title* \
+		click? <=> class_click*? null
+		current <= class_current* false
+		drag_start? <=> class_drag*? null
+	-
+	Port_row* $bog_vmap_app_palette_port
+		sign <= port_sign* \
+		body <= port_body* \
+		owner <= port_owner* \
+		inherited <= port_inherited* false
+	-
+	- The model. The pack address is DERIVED from the field: the first http(s) link
+	- of the list, with its slash grown here and not in the field, so that typing
+	- an address is possible at all. Empty when the list names no pack, and the
+	- library is then the lands alone.
+	Lib $bog_vmap_lib
+		pack <= pack_link \
+		classes <= land_classes
+
+$mol_stack $mol_view
+
+$mol_text_code_token $mol_dimmer
+	attr *
+		^
+		mol_text_code_token_type <= type \
+
+$mol_text_code_token_link $mol_text_code_token
+	dom_name \a
+	type \code-link
+	attr *
+		^
+		href <= uri \
+		target \_blank
+
+$mol_text_code_line $mol_paragraph
+	text \
+	minimal_height 24
+	numb_showed true
+	syntax null
+	uri_resolve* \
+	Numb $mol_view
+		sub /
+			<= numb 0
+	Token* $mol_text_code_token
+		type <= token_type* \
+		haystack <= token_text* \
+		needle <= highlight \
+	Token_link* $mol_text_code_token_link
+		haystack <= token_text* \
+		needle <= highlight \
+		uri <= token_uri* \
+	find_pos* null
+
+$mol_text_code $mol_stack
+	attr *
+		^
+		mol_text_code_sidebar_showed <= sidebar_showed false
+	text \
+	text_lines /string
+	find_pos* null
+	uri_base \
+	row_themes /string
+	sub /
+		<= Rows $mol_list
+			render_visible_only <= render_visible_only false
+			rows <= rows /
+				<= Row*0 $mol_text_code_line
+					numb_showed <= sidebar_showed
+					numb <= row_numb* 0
+					theme <= row_theme* \
+					text <= row_text* \
+					syntax <= syntax null
+					uri_resolve* <= uri_resolve* \
+					highlight <= highlight \
+		<= Copy $mol_button_copy
+			hint @ \Copy whole code
+			text <= text_export \
+
+$mol_float $mol_view
+	style *
+		^
+		minHeight \auto
+
+$mol_icon_chevron $mol_icon path \M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z
+
+$mol_check_expand $mol_check
+	Icon $mol_icon_chevron
+	level 0
+	style *
+		^
+		paddingLeft <= level_style \0px
+	checked? <=> expanded? false
+	enabled <= expandable false
+
+$mol_grid $mol_view
+	row_height 32
+	row_ids /string[]
+	row_id* null
+	col_ids /
+	records *
+	record* null
+	hierarchy null
+	hierarchy_col \
+	minimal_width 0
+	-
+	sub /
+		<= Head
+		<= Table $mol_grid_table
+			sub <= rows /$mol_view
+	Head $mol_grid_row
+		cells <= head_cells /$mol_view
+	Row* $mol_grid_row
+		minimal_height <= row_height
+		minimal_width <= minimal_width
+		cells <= cells* /$mol_view
+	-
+	Cell* $mol_view
+	cell* null
+	Cell_text* $mol_grid_cell
+		sub <= cell_content_text* <= cell_content* /$mol_view_content
+	Cell_number* $mol_grid_number
+		sub <= cell_content_number* <= cell_content* /$mol_view_content
+	Col_head* $mol_float
+		dom_name \th
+		sub <= col_head_content* /$mol_view_content
+	Cell_branch* $mol_check_expand
+		level <= cell_level* 0
+		label <= cell_content* /$mol_view_content
+		expanded? <=> cell_expanded*? false
+	Cell_content* /
+		<= Cell_dimmer* $mol_dimmer
+			needle <= needle \
+			haystack <= cell_value* \
+
+$mol_grid_table $mol_list
+	- dom_name \table
+
+$mol_grid_row $mol_view
+	- dom_name \tr
+	sub <= cells /$mol_view
+
+$mol_grid_cell $mol_view
+	- dom_name \td
+	minimal_height 40
+
+$mol_grid_number $mol_grid_cell
+
+$mol_link $mol_view
+	uri \
+	dom_name \a
+	uri_off \
+	uri_native null
+	external false
+	attr *
+		^
+		href <= uri_unsafe <= uri_toggle \
+		title <= hint_safe <= hint \
+		target <= target \_self
+		download <= file_name \
+		mol_link_current <= current false
+		rel <= relation \
+	sub /$mol_view_content
+		<= title
+	arg *
+	event *
+		^
+		click? <=> click? <=> event_click? null
+
+$mol_image $mol_view
+	dom_name \img
+	attr *any
+		^
+		src <= uri \
+		title <= hint
+		alt <= title \
+		loading <= loading \lazy
+		decoding <= decoding \async
+		crossOrigin <= cors null
+		width <= natural_width 0
+		height <= natural_height 0
+	event *any
+		load? <=> load? null
+	minimal_width 16
+	minimal_height 16
+
+$mol_link_iconed $mol_link
+	sub /
+		<= Icon $mol_image
+			uri <= icon \
+			title \
+	content /
+		<= title <= uri
+	host \
+
+$mol_embed_native $mol_scroll
+	dom_name \iframe
+	window null
+	attr *
+		^
+		src <= uri? \about:config
+	sub /
+		<= Fallback $mol_link
+			uri <= uri
+			sub /
+				<= title \
+	message *
+		hashchange? <=> uri_change? null
+
+$mol_icon_youtube $mol_icon path \M10,15L15.19,12L10,9V15M21.56,7.17C21.69,7.64 21.78,8.27 21.84,9.07C21.91,9.87 21.94,10.56 21.94,11.16L22,12C22,14.19 21.84,15.8 21.56,16.83C21.31,17.73 20.73,18.31 19.83,18.56C19.36,18.69 18.5,18.78 17.18,18.84C15.88,18.91 14.69,18.94 13.59,18.94L12,19C7.81,19 5.2,18.84 4.17,18.56C3.27,18.31 2.69,17.73 2.44,16.83C2.31,16.36 2.22,15.73 2.16,14.93C2.09,14.13 2.06,13.44 2.06,12.84L2,12C2,9.81 2.16,8.2 2.44,7.17C2.69,6.27 3.27,5.69 4.17,5.44C4.64,5.31 5.5,5.22 6.82,5.16C8.12,5.09 9.31,5.06 10.41,5.06L12,5C16.19,5 18.8,5.16 19.83,5.44C20.73,5.69 21.31,6.27 21.56,7.17Z
+
+$mol_frame $mol_embed_native
+	attr *
+		tabindex <= tabindex
+		allow <= allow \
+		src <= uri
+		srcdoc <= html null
+	fullscreen true
+	accelerometer true
+	autoplay true
+	encription true
+	gyroscope true
+	pip true
+	clipboard_read true
+	clipboard_write true
+
+$mol_embed_service $mol_check
+	uri \
+	video_preview \
+	video_id \
+	checked? <=> active? false
+	sub /
+		<= Image $mol_image
+			title <= title \
+			uri <= video_preview \
+		<= Hint $mol_icon_youtube
+		<= Frame $mol_frame
+			title <= title \
+			uri <= video_embed \
+
+
+$mol_embed_youtube $mol_embed_service
+
+$mol_embed_rutube $mol_embed_service
+
+$mol_embed_vklive $mol_embed_service
+
+$mol_embed_any $mol_view
+	Image $mol_image
+		title <= title \
+		uri <= uri \
+	Object $mol_embed_native
+		title <= title \
+		uri <= uri \
+	Youtube $mol_embed_youtube
+		title <= title \
+		uri <= uri \
+	Rutube $mol_embed_rutube
+		title <= title \
+		uri <= uri \
+	Vklive $mol_embed_vklive
+		title <= title \
+		uri <= uri \
+
+$mol_expander $mol_list
+	rows /
+		<= Label $mol_view
+			sub /
+				<= Trigger $mol_check_expand
+					checked? <=> expanded? false
+					expandable <= expandable true
+					label <= label /
+						<= title
+				<= Tools null
+		<= Content $mol_list
+			rows <= content /
+
+$mol_text $mol_list
+	uri_base \
+	text \
+	param \
+	flow_tokens /
+	block_text* \
+	auto /
+		<= auto_scroll null
+	- \Blocks
+	Paragraph* $mol_paragraph
+		sub <= block_content* /
+	Quote* $mol_text
+		uri_resolve* <= uri_resolve* \
+		text <= quote_text* \
+		highlight <= highlight \
+		auto_scroll null
+	List* $mol_text_list
+		uri_resolve* <= uri_resolve* \
+		type <= list_type* \-
+		text <= list_text* \
+		highlight <= highlight \
+	item_index* 0
+	Header* $mol_text_header
+		minimal_height 40
+		level <= header_level* 1
+		content <= block_content* /
+		arg <= header_arg* *
+	Pre* $mol_text_code
+		text <= pre_text* \
+		row_themes <= pre_themes* /string
+		highlight <= highlight \
+		uri_resolve* <= uri_resolve* \
+		sidebar_showed <= pre_sidebar_showed <= code_sidebar_showed true
+	Cut* $mol_view dom_name \hr
+	- \Table
+	Table* $mol_grid
+		head_cells <= table_head_cells* /
+		rows <= table_rows* /
+	Table_row* $mol_grid_row
+		cells <= table_cells* /
+	Table_cell* $mol_text
+		auto_scroll null
+		highlight <= highlight \
+		uri_resolve* <= uri_resolve* \
+		text <= table_cell_text* \
+	- \Grid
+	Grid* $mol_grid
+		rows <= grid_rows* /
+	Grid_row* $mol_grid_row
+		cells <= grid_cells* /
+	Grid_cell* $mol_text
+		auto_scroll null
+		highlight <= highlight \
+		uri_resolve* <= uri_resolve* \
+		text <= grid_cell_text* \
+	- \Lines
+	String* $mol_dimmer
+		dom_name \span
+		needle <= highlight \
+		haystack <= line_text* \
+	Span* $mol_text_span
+		dom_name \span
+		type <= line_type* \
+		sub <= line_content* /
+	Code_line* $mol_text_code_line
+		numb_showed false
+		highlight <= highlight \
+		text <= line_text* \
+		uri_resolve* <= uri_resolve* \
+		syntax <= code_syntax null
+	Link* $mol_link_iconed
+		uri <= link_uri* \
+		content <= line_content* /
+	Link_http* $mol_link_iconed
+		uri <= link_uri* \
+		content / <= link_host* \
+	Embed* $mol_embed_any
+		uri <= link_uri* \
+		title <= line_text* \
+	- \Spoilers
+	Spoiler* $mol_expander
+		label /
+			<= Spoiler_label* $mol_text
+				text <= spoiler_label* \
+		content /
+			<= Spoiler_content* $mol_text
+				text <= spoiler_content* \
+
+$mol_text_header $mol_paragraph
+	level 1
+	sub /
+		<= Link $mol_link
+			arg <= arg *
+			hint @ \Permalink to this section
+			sub <= content /
+
+$mol_text_span $mol_paragraph
+	dom_name \span
+	attr *
+		^
+		mol_text_type <= type \
+
+$mol_text_list $mol_text
+	auto_scroll null
+	attr *
+		^
+		mol_text_list_type <= type \
+	Paragraph* $mol_text_list_item
+		index <= item_index*
+		sub <= block_content*
+
+$mol_text_list_item $mol_paragraph
+	attr *
+		^
+		mol_text_list_item_index <= index 0
+
+- Editor of one value of a `view.tree` property, dispatching on the shape of the
+- value and recursing into composite ones.
+-
+- Port of `hyoo_studio_value` and its six sub editors, plus a seventh the studio
+- has no equivalent of: the wire `=` of section 1. Deviations are marked at their
+- place.
+-
+- Every class here derives from something OUTSIDE this file, and that is a rule,
+- not a coincidence. Declarations of a `view.tree` are emitted before the
+- handwritten bodies of the same module, so a class inheriting a neighbour from
+- this very file would extend the version without its `.view.ts` methods — half
+- the behaviour gone, nothing reported. Studio can afford `hyoo_studio_value_object
+- hyoo_studio_value_dict` because there the two live in separate modules.
+- List, dictionary and object are therefore one class with two flags rather than
+- three classes in a chain.
+- @see ../../../../ARCHITECTURE.md section 3
+$bog_vmap_app_inspect_value $mol_view
+	- The value node. Writing serializes it back into the document.
+	tree? $mol_tree2_empty
+	- Property names of the class this value belongs to, offered as binding targets.
+	binds /string
+	- Nodes a wire may start from, by name, each carrying the class it is declared
+	- with and the ports that class has. Both ends of a wire are picked out of this
+	- one map, so neither end can be spelled by hand into something that does not
+	- exist.
+	nodes *
+	- Why the last edit was refused, empty while there is nothing to say.
+	-
+	- A refusal has to be legible, and on its own it is not. `$mol_string` catches
+	- what a setter throws and puts the message into `setCustomValidity`
+	- (`mol/string/string.view.ts:36`), which the browser shows on form submit and
+	- nowhere else. In a form that is never submitted the value silently stays out
+	- of the document and the field keeps the text nobody accepted — the document
+	- is safe and the person is lost.
+	alarm? \
+	sub <= editors /$mol_view
+	Alarm $mol_view sub / <= alarm
+	- Every editor is declared, one is rendered. Studio picks the same way and then
+	- copies the context onto the chosen instance field by field
+	- (`obj.tree = …`, `obj.props_of = …`). Here the context arrives through
+	- ordinary bindings instead, so the wiring is visible in the declaration and
+	- type checked, and swapping the shape of a value cannot leave an editor
+	- holding a stale accessor.
+	String $bog_vmap_app_inspect_value_string
+		tree? <=> tree?
+	Number $bog_vmap_app_inspect_value_number
+		tree? <=> tree?
+		alarm? <=> alarm?
+	Bool $bog_vmap_app_inspect_value_bool
+		tree? <=> tree?
+	Seq $bog_vmap_app_inspect_value_seq
+		tree? <=> tree?
+		keyed <= seq_keyed false
+		klass <= seq_klass false
+		binds <= binds
+		nodes <= nodes
+		alarm? <=> alarm?
+	Bind $bog_vmap_app_inspect_value_bind
+		tree? <=> tree?
+		binds <= binds
+		nodes <= nodes
+		alarm? <=> alarm?
+	Wire $bog_vmap_app_inspect_value_wire
+		tree? <=> tree?
+		nodes <= nodes
+		alarm? <=> alarm?
+	Raw $bog_vmap_app_inspect_value_raw
+		tree? <=> tree?
+
+- Multi line text field.
+-
+- `$mol_textarea`, which studio uses here, is a code editor with a gutter and a
+- highlighter. A plain `$mol_string` is an `<input>`, which cannot hold a newline,
+- so a two line value would collapse to one line on the first keystroke, silently.
+- The `<textarea>` in between is neither, and is the shape this needs.
+$bog_vmap_app_inspect_value_area $mol_string
+	dom_name \textarea
+	attr *
+		^
+		rows <= rows 1
+	- `$mol_string` binds Enter to `submit`. In an input that is the only sensible
+	- meaning of the key; in a text area it is the one key that has to reach the
+	- field itself.
+	plugins /
+
+- A text value: `\Текст`, or `@ \Текст` when it goes through the locale table.
+$bog_vmap_app_inspect_value_string $mol_view
+	tree? $mol_tree2_empty
+	sub /
+		<= Text $bog_vmap_app_inspect_value_area
+			hint \текст
+			rows <= text_rows 1
+			value? <=> text? \
+		<= Locale $mol_check
+			title \@
+			hint \Многоязычное: текст уедет в таблицу локалей
+			checked? <=> locale? false
+
+- A number literal, kept as the exact text of the source.
+$bog_vmap_app_inspect_value_number $mol_view
+	tree? $mol_tree2_empty
+	alarm? \
+	sub /
+		<= Num $mol_string
+			hint \число
+			value? <=> num? \
+
+- `true` or `false`.
+$bog_vmap_app_inspect_value_bool $mol_view
+	tree? $mol_tree2_empty
+	sub /
+		<= Flag $mol_check
+			title <= flag_title \
+			checked? <=> flag? false
+
+- A value with no editor of its own: `null`, `^`, or a shape this module has no
+- form for. Shown as its own source text and left alone, because failing here
+- would take out the whole property list over one node nobody was editing.
+$bog_vmap_app_inspect_value_raw $mol_view
+	tree? $mol_tree2_empty
+	sub / <= raw \
+
+- A list `/`, a dictionary `*` or an object `$Класс`: a column of value editors
+- with an add button. The three differ in two bits — whether an element carries a
+- key, and whether the node itself carries a class name — and in nothing else.
+$bog_vmap_app_inspect_value_seq $mol_view
+	tree? $mol_tree2_empty
+	binds /string
+	nodes *
+	alarm? \
+	- Elements are `ключ значение` pairs rather than bare values: a dictionary and
+	- an object, not a list.
+	keyed false
+	- The node type is the name of a class and is editable: an object.
+	klass false
+	sub <= seq_sub /$mol_view
+	Class_name $mol_string
+		hint \класс
+		value? <=> class_name? \
+	Items $mol_view
+		sub <= items /
+	Add $mol_button_minor
+		title <= add_title \
+		hint \Добавить
+		click? <=> item_add? null
+	- A row of the sequence is a class of its own because it has to be: a named
+	- sub view declared inside a keyed one is hoisted by `upper` into a property of
+	- the root WITHOUT the key, so every row would share one editor.
+	Item* $bog_vmap_app_inspect_value_item
+		keyed <= keyed
+		marker <= item_marker* false
+		key? <=> item_key*? \
+		value? <=> item_value*? $mol_tree2_empty
+		binds <= binds
+		nodes <= nodes
+		drop? <=> item_drop*? null
+
+- One element of a list, or one entry of a dictionary when it carries a key.
+$bog_vmap_app_inspect_value_item $mol_view
+	value? $mol_tree2_empty
+	binds /string
+	nodes *
+	keyed false
+	- The entry is a bare marker — `^` — and not a pair. It has no key to edit and
+	- no value to assign, so it is shown whole and left alone.
+	marker false
+	drop? null
+	sub <= item_sub /$mol_view
+	Key $mol_string
+		hint \ключ
+		value? <=> key? \
+	Value $bog_vmap_app_inspect_value
+		tree? <=> value?
+		binds <= binds
+		nodes <= nodes
+	Drop $mol_button_minor
+		title \✕
+		hint \Убрать
+		click? <=> drop?
+
+- A binding: `<= prop`, `<=> prop` or `=> prop`, optionally carrying a default.
+-
+- The target is one bare token and there is nowhere to put a second one, which is
+- the guard against the middle form of `<=`: `<= Calc result` looks like a wire,
+- is not one, and either kills the build with a message about default values or
+- ships `Calc(){ return result }` into the bundle.
+$bog_vmap_app_inspect_value_bind $mol_view
+	tree? $mol_tree2_empty
+	binds /string
+	nodes *
+	alarm? \
+	sub <= bind_sub /$mol_view
+	Op $mol_view sub / <= op \
+	- Picked, like both ends of a wire. One end of a link chosen from a list and the
+	- other typed by hand would read as an inconsistency of the editor rather than a
+	- difference between the two things.
+	Target $mol_select
+		hint \свойство
+		value? <=> target? \
+		options <= binds
+	Default $bog_vmap_app_inspect_value
+		tree? <=> default_value? $mol_tree2_empty
+		binds <= binds
+		nodes <= nodes
+
+- A wire: `= Узел порт`, the two token form of section 1.
+-
+- Both ends are PICKED, not typed: the node out of the nodes the document declares,
+- the port out of the ports that node's class has. A wire that cannot be spelled
+- wrong needs no message about being spelled wrong.
+-
+- The checks stay underneath all the same, because the pickers are an interface and
+- the document is not: both ends still go through `$bog_vmap_lang_token`, so a sign
+- or a space cannot be smuggled inside one, and the node is still checked against
+- the declared list. The `?` of a two way wire lives on the property signature and
+- is moved by the row, through `wire_add`, so that both ends always move together.
+$bog_vmap_app_inspect_value_wire $mol_view
+	tree? $mol_tree2_empty
+	nodes *
+	alarm? \
+	sub <= wire_sub /$mol_view
+	Row $mol_view
+		sub <= wire_row /$mol_view
+	- The operator, shown for the same reason the binding shows `<=`: a wire and a
+	- binding are two different things and the difference is one glyph.
+	Op $mol_view sub / \=
+	Origin $mol_select
+		hint \узел
+		value? <=> origin? \
+		options <= node_names /string
+	Dot $mol_view sub / \.
+	Port_pick $mol_select
+		hint \порт
+		value? <=> port? \
+		options <= ports /string
+	- Free text is the fallback and never the default: it is offered exactly when
+	- there is no list to pick from, that is when the pack does not carry the class
+	- of the node. Refusing to edit at all would be the wrong answer — a document
+	- may legitimately name a class the loaded pack has never heard of.
+	Port_free $mol_string
+		hint \порт
+		value? <=> port? \
+	- Why the port is a text field and not a list, said in words. Rendered only when
+	- there is something to say.
+	Note $mol_view sub / <= note \
+
+- One property of the inspected class: its signature, where it came from, and an
+- editor for its value.
+-
+- A row is a class of its own for the same reason a palette row is: a named sub
+- view declared inside a keyed one is hoisted by `upper` into a property of the
+- ROOT, without the key, so one editor would be shared by every row.
+$bog_vmap_app_inspect_row $mol_view
+	- Full signature as it is written in the source, `Menu_option*` and `click?`
+	- included: the suffixes are the difference between a port and a keyed port.
+	sign \
+	- Class the winning declaration came from. Empty on an own property, so the
+	- badge itself marks what is inherited.
+	owner \
+	inherited false
+	value? $mol_tree2_empty
+	binds /string
+	nodes *
+	keyed? false
+	changeable? false
+	drop? null
+	sub /
+		<= Head $mol_view
+			sub /
+				<= Sign $mol_view sub / <= sign
+				<= Owner $mol_view sub / <= owner
+				<= Tools $mol_view sub <= tools /
+		<= Value $bog_vmap_app_inspect_value
+			tree? <=> value?
+			binds <= binds
+			nodes <= nodes
+	- Signature switches are offered on own properties only. An inherited port has
+	- no declaration in this document to put a `*` or a `?` on, and writing one
+	- would mean silently declaring an override the user never asked for.
+	Key $mol_check
+		title \*
+		hint \Много значений по ключу
+		checked? <=> keyed?
+	Next $mol_check
+		title \?
+		hint \Изменяемое
+		checked? <=> changeable?
+	Drop $mol_button_minor
+		title \✕
+		hint \Убрать свойство из документа
+		click? <=> drop?
+	attr *
+		^
+		bog_vmap_app_inspect_row_inherited <= inherited
+
+- Inspector of one class of the document: every port it has, own and inherited,
+- with an editor for the value of each. Every edit lands in the AST and is written
+- straight back as source text.
+-
+- The class is handed in as source. Which class that is — which node is picked on
+- the canvas — is somebody else's question.
+- @see ../../ARCHITECTURE.md sections 1 and 5
+$bog_vmap_app_inspect $mol_view
+	- Source of the class. The truth; everything below is derived from it.
+	source? \
+	- Other classes of the same document, so that a node typed with one of them
+	- resolves its ports like any other. Empty is the honest default: an inspector
+	- handed a lone class has no siblings, and inventing some would be worse than
+	- having none.
+	peers /$mol_tree2
+	- Deployed MAM module the inherited ports are read from.
+	pack? \https://mol.hyoo.ru
+	sub /
+		<= Head $mol_view
+			sub /
+				<= Title $mol_view sub / <= class_title \
+				<= Base $mol_view sub / <= base_title \
+				<= Total $mol_view sub / <= total \
+		<= Body $mol_scroll
+			sub /
+				<= Rows $mol_view sub <= rows /
+	- The document model. `source` is bound both ways, so a write through any
+	- property below serializes the whole class and comes back out here as text.
+	Node $bog_vmap_lang_node
+		source? <=> source?
+	- Where inherited ports come from. The class of the document is handed to the
+	- library as well, so that `props_map` resolves the chain through it and
+	- `props_owner` can tell an own port from an inherited one.
+	Lib $bog_vmap_lib
+		pack <= pack
+		classes <= classes /
+	Row* $bog_vmap_app_inspect_row
+		sign <= row_sign* \
+		owner <= row_owner* \
+		inherited <= row_inherited* false
+		value? <=> row_value*? $mol_tree2_empty
+		keyed? <=> row_keyed*? false
+		changeable? <=> row_changeable*? false
+		drop? <=> row_drop*? null
+		binds <= binds /string
+		nodes <= nodes *
+
+- Stand for the inspector: the source of the whole DOCUMENT on the left, the
+- inspector of one of its classes on the right, so that an edit and the line it
+- moves are on screen at once — and so that the lines it must NOT move are on
+- screen too.
+-
+- A document and not a class, because that is where the editing of one class is
+- dangerous: the class model writes what it touched as the whole text, and a stand
+- of one class could never show the neighbour it eats.
+-
+- Which class is inspected is picked here by hand. Picking a node on the canvas is
+- task 2.5, and until it exists a stand that pretends to have it would be testing
+- nothing.
+$bog_vmap_app_inspect_demo $mol_view
+	source? \
+	sub /
+		<= Source $mol_view
+			sub /
+				<= Source_head $mol_view
+					sub /
+						<= Source_title $mol_view sub / \Исходник документа
+						<= Class_pick $mol_select
+							hint \класс
+							value? <=> klass? \
+							options <= names /string
+				<= Source_text $bog_vmap_app_inspect_value_area
+					rows 26
+					value? <=> source?
+		<= Inspect $bog_vmap_app_inspect
+			source? <=> class_source? \
+			peers <= trees /$mol_tree2
+	- The document. One text, several classes, and a write through one of them
+	- leaves the others alone.
+	Doc $bog_vmap_lang_doc
+		source? <=> source?
+
+$mol_svg_text $mol_svg
+	dom_name \text
+	pos /
+	attr *
+		^
+		x <= pos_x \
+		y <= pos_y \
+		text-anchor <= align_hor <= align \middle
+		alignment-baseline <= align_vert \baseline
+	sub /
+		<= text \
+
+$mol_svg_circle $mol_svg
+	dom_name \circle
+	pos /
+	attr *
+		^
+		r <= radius \.5%
+		cx <= pos_x \
+		cy <= pos_y \
+
+- The wire layer of the overlay: existing wires with their labels, the port dots
+- of the picked part, and the wire being dragged. The pane hands everything in as
+- screen geometry; this view only draws. On the host, so that document code can
+- neither forge a wire nor hide one.
+- @see ../../ARCHITECTURE.md section 4
+$bog_vmap_app_wire $mol_svg_root
+	attr *
+		^
+		viewBox null
+	lines /$bog_vmap_app_wire_line
+	dots /$bog_vmap_app_wire_dot
+	drag_geometry \
+	sub <= shapes /$mol_view
+	Line* $mol_svg_path
+		geometry <= line_geometry* \
+	Label* $mol_svg_text
+		pos <= label_pos* /number
+		text <= label_text* \
+	Dot* $mol_svg_circle
+		radius <= dot_radius \5
+		pos <= dot_pos* /number
+		attr *
+			^
+			bog_vmap_app_wire_dot_side <= dot_side* \
+			bog_vmap_app_wire_dot_lit <= dot_lit* true
+			bog_vmap_app_wire_dot_linked <= dot_linked* false
+	Name* $mol_svg_text
+		pos <= name_pos* /number
+		align <= name_align* \start
+		text <= name_text* \
+	Drag $mol_svg_path
+		geometry <= drag_geometry
+
+$mol_touch $mol_plugin
+	start_zoom? 0
+	start_distance? 0
+	zoom? 1
+	allow_draw true
+	allow_pan true
+	allow_zoom true
+	action_type? \
+	action_point? $mol_vector_2d<number> /
+		NaN
+		NaN
+	-
+	start_pan? /
+		0
+		0
+	pan? $mol_vector_2d<number> /
+		0
+		0
+	pointer_center $mol_vector_2d<number> /
+		NaN
+		NaN
+	-
+	start_pos? null
+	swipe_precision 16
+	-
+	swipe_right? null
+	swipe_bottom? null
+	swipe_left? null
+	swipe_top? null
+	-
+	swipe_from_right? null
+	swipe_from_bottom? null
+	swipe_from_left? null
+	swipe_from_top? null
+	-
+	swipe_to_right? null
+	swipe_to_bottom? null
+	swipe_to_left? null
+	swipe_to_top? null
+	-
+	draw_start? null
+	draw? null
+	draw_end? null
+	-
+	style *
+		^
+		touch-action \none
+		overscroll-behavior \none
+	-
+	event *
+		^
+		pointerdown? <=> event_start? null
+		pointermove? <=> event_move? null
+		pointerup? <=> event_end? null
+		pointerleave? <=> event_leave? null
+		wheel? <=> event_wheel? null
+
+- Camera lives here: `camera_shift` is a screen-pixel vector, `camera_zoom` an
+- isotropic scalar. $mol_touch drives both from pointer, wheel and pinch.
+$bog_vmap_app_pane $mol_view
+	scene_uri \
+	doc_src \
+	doc_css \
+	- Canvas placement of free parts, world coordinates keyed by property name.
+	- Never joined with `doc_css`: that one is the document, this one is the desk.
+	- Two way: dragging a node on the canvas writes here.
+	spots? *
+	- Property name of the picked node, `null` when nothing is picked.
+	selected? null
+	doc_js *
+	doc_root \
+	- Sources of the land libraries, compiled by the scene before the document.
+	- On the bridge and not in `scene_uri`: a change of lands is a recompile, a
+	- change of pack is a reload, see section 5.
+	libs /$bog_vmap_bridge_part
+	- Whether the overlay may be cut open under the picked part. The host turns
+	- this off while something is carried from the palette: that gesture has no
+	- pointer capture, so a release over the hole would land in the frame and the
+	- host would never hear of the drop.
+	hole_allowed true
+	- Wires of the document and the wirable ports of each part's class, from the
+	- owner. The pane draws them and writes back through the two events below; it
+	- never touches the document itself.
+	wires /$bog_vmap_lang_link
+	part_ports* /$bog_vmap_app_wire_port
+	link_add? null
+	link_drop? null
+	- Labels of the wires on screen, by wire name, as the scene reports them.
+	values? *
+	handshake? 0
+	ready false
+	- The scene owes an answer to something we sent and has stopped answering.
+	- Set by the watchdog, cleared by the next message from the scene.
+	stalled? false
+	error_at*? \
+	error \
+	isolation \
+	camera_shift? $mol_vector_2d<number> /
+		0
+		0
+	camera_zoom? 1
+	- Which frame is live. Bumped by `scene_restart`: a new key is a new frame
+	- element, so a stuck scene is replaced rather than talked to.
+	scene_generation? 0
+	Scene* $bog_vmap_app_pane_frame
+		uri <= scene_uri
+	sub /
+		<= Overlay $bog_vmap_app_pane_overlay
+			style <= overlay_style *
+			frame_showed <= frame_showed false
+			frame_style <= frame_style *
+			press? <=> node_press? null
+			move? <=> node_move? null
+			release? <=> node_release? null
+		- Above the overlay and outside its hole, so a wire crossing the picked part
+		- is not cut. Takes no pointer: the press on a dot is the overlay's, by geometry.
+		<= Wire $bog_vmap_app_wire
+			lines <= wire_lines /$bog_vmap_app_wire_line
+			dots <= wire_dots /$bog_vmap_app_wire_dot
+			drag_geometry <= wire_drag_geometry \
+	plugins /
+		^
+		<= Touch $mol_touch
+			allow_draw false
+			allow_pan true
+			allow_zoom true
+			pan? <=> camera_shift?
+			zoom? <=> camera_zoom?
+
+- Transparent gate over the frame. It swallows every pointer event and lets it
+- bubble up to the pane, where $mol_touch listens: there are no editor modes, one
+- layer takes every gesture. A click that does not move is relayed to the scene
+- as `click_at`, and under the picked part the layer is cut open, so that one
+- part at a time gets real events. Hover on any other part does not work, and
+- that is the accepted price of the overlay owning the input.
+-
+- Selection is drawn HERE and not in the scene: the overlay belongs to the host,
+- so no code inside the document can fake a selection frame or hide one, and the
+- ring stays crisp because the camera scales the scene, not this layer.
+- @see ../../ARCHITECTURE.md section 4
+$bog_vmap_app_pane_overlay $mol_view
+	frame_showed false
+	frame_style *
+	press? null
+	move? null
+	release? null
+	event *
+		^
+		pointerdown? <=> press? null
+		pointermove? <=> move? null
+		pointerup? <=> release? null
+	- Ring around the picked node. A free part of the class, put into `sub` only
+	- while something is picked, so an empty canvas costs no node at all.
+	- The handles sit outside the box, on the strip of overlay that still takes
+	- the pointer, and say where the part can be taken hold of.
+	Frame $mol_view
+		style <= frame_style *
+		sub /
+			<= Handle_nw $bog_vmap_app_pane_handle corner \nw
+			<= Handle_ne $bog_vmap_app_pane_handle corner \ne
+			<= Handle_sw $bog_vmap_app_pane_handle corner \sw
+			<= Handle_se $bog_vmap_app_pane_handle corner \se
+
+- A grip at one corner of the ring. Picture only, like the ring: the press it
+- marks is taken by the overlay under it.
+$bog_vmap_app_pane_handle $mol_view
+	corner \
+	attr *
+		^
+		bog_vmap_app_pane_handle_corner <= corner
+
+- `sandbox` goes FIRST: $mol_dom_render_attributes writes the object in key order,
+- and an iframe that got its src before its sandbox is already loading unsandboxed.
+$bog_vmap_app_pane_frame $mol_frame
+	attr *
+		sandbox \allow-scripts
+		^
+
+$bog_vmap_app $mol_view
+	doc_src \
+	- CSS of the document, and only of the document: this is what an export carries.
+	- Canvas placement of free parts rides `spots` instead and never joins this, so
+	- the export cannot pick up a world coordinate even by accident.
+	doc_css \
+	spots? *
+	- Property name of the node picked on the canvas, `null` when nothing is picked.
+	- Read this to follow the selection; it is the whole public shape of it.
+	selected? null
+	doc_js *
+	doc_root \
+	- The sandbox is a sibling module, its address derived from the address of this
+	- page, so the dev server and a deploy both work with nothing configured.
+	scene_page \
+	scene_uri \
+	- The palette field: links separated by commas, stored exactly as typed. The
+	- first http(s) one is the donor pack, the rest are lands of Giper Baza. One
+	- value for the whole editor: the palette offers what the scene has actually
+	- loaded, and the two must never drift apart. Derived from it: `pack_link` for
+	- the frame address, `lands` for the library, `libs` for the scene.
+	- Empty is the standard palette: the `part` module of this very pack.
+	links? \
+	palette_showed? true
+	inspect_showed? true
+	- Persistence: the documents of the user in Giper Baza. One for the whole
+	- editor, handed to the switcher in the head bar; text and placement read
+	- through it and write back into it.
+	store $bog_vmap_app_store
+	sub <= body /$mol_view
+	-
+	Head $mol_bar
+		sub /
+			<= Brand $mol_view
+				sub /
+					\vmap
+			<= Scenes $bog_vmap_app_scenes
+				store <= store
+			<= Palette_check $mol_check
+				title \Палитра
+				checked? <=> palette_showed?
+			<= Inspect_check $mol_check
+				title \Свойства
+				checked? <=> inspect_showed?
+			<= Zoom_out $mol_button_minor
+				title \−
+				hint \Отдалить
+				click? <=> zoom_out? null
+			<= Zoom_title $mol_view
+				sub /
+					<= zoom_title \
+			<= Zoom_in $mol_button_minor
+				title \+
+				hint \Приблизить
+				click? <=> zoom_in? null
+			<= Reset $mol_button_minor
+				title \Сбросить вид
+				click? <=> camera_reset? null
+			<= Delete $mol_button_minor
+				title \Удалить
+				hint <= delete_hint \
+				enabled <= selection_showed false
+				click? <=> node_delete? null
+			- Publishing the picked part into the library of the user, link included.
+			- The declaration goes in as the inspector reads it, and the part name as
+			- the picked property; the store of libraries is the button's own.
+			<= Publish $bog_vmap_app_publish
+				part <= publish_part \
+				source <= node_source? \
+				doc <= doc_src
+				classes / <= doc_root
+			<= Status $mol_view
+				sub /
+					<= status \
+	-
+	Alarm $mol_view
+		sub /
+			<= error \
+	-
+	- The scene has stopped answering. Its own strip and not the error one: an
+	- error means the scene spoke, this means it did not, and the only thing that
+	- helps is on this strip.
+	Stall $mol_view
+		sub /
+			<= Stall_note $mol_view sub / <= stall_note \
+			<= Stall_reload $mol_button_minor
+				title \Перезагрузить сцену
+				hint \Поднять кадр заново. Документ хранится в редакторе и не потеряется
+				click? <=> scene_restart? null
+	-
+	- Palette beside the canvas, canvas taking whatever is left.
+	Body $mol_view
+		sub <= body_main /$mol_view
+	-
+	Side $mol_view
+		sub /
+			<= Palette $bog_vmap_app_palette
+				compact true
+				links? <=> links?
+				- The address the host derived, not the one the palette would derive
+				- from the field on its own: an empty field means the pack of this
+				- very deploy, and only the host knows where that is.
+				pack_link <= pack_link
+				land_classes <= lib_classes /$mol_tree2
+	-
+	- Properties of the picked node, on the far edge from the palette: one panel
+	- offers what can be added, the other what the added thing can do, and the canvas
+	- keeps the middle. Either can be folded away when the canvas needs the room.
+	Aside $mol_view
+		sub <= aside_content /$mol_view
+	-
+	- The inspector reads ONE class, and a part declared on the canvas is exactly
+	- that: `Button_minor $mol_button_minor` is a class named `Button_minor` with
+	- `$mol_button_minor` for a base, so its own lines are its own ports and the rest
+	- come down the chain. Nothing had to be added to the inspector to fit.
+	- The classes of the attached lands ride in through `peers` beside the root of
+	- the document: the inspector already resolves a peer's ports through the same
+	- index as the pack's, so a land class needs nothing added on its side.
+	Inspect $bog_vmap_app_inspect
+		source? <=> node_source? \
+		peers <= node_peers /$mol_tree2
+		pack <= pack_link \
+	-
+	- What stands in the panel while nothing is picked. A state, not a blank: the
+	- inspector handed an empty source would fail to find a class in it and show an
+	- error where an invitation belongs.
+	Idle $mol_view
+		sub /
+			<= idle_note \Выберите узел на холсте, чтобы править его свойства
+	-
+	- Component library of the host: the pack, with the lands of the field stacked
+	- on it. `script_link()` points the frame at the pack; `land_trees()` feed the
+	- palette and the inspector; `parts()` go to the scene. The pack tree itself is
+	- fetched by the palette from the same address, the two share one `$mol_fetch`
+	- cell. The only object in the editor that opens a land of the field.
+	Lib $bog_vmap_lib_land_stack
+		pack <= pack_link
+		lands <= lands /string
+	-
+	- What the pointer is carrying, drawn at the pointer. Rendered only while a drag
+	- is on, so it costs nothing the rest of the time.
+	Ghost $mol_view
+		style *
+			left <= ghost_left \0px
+			top <= ghost_top \0px
+		sub /
+			<= ghost_title \
+	-
+	Pane $bog_vmap_app_pane
+		scene_uri <= scene_uri
+		doc_src <= doc_src
+		doc_css <= doc_css
+		spots? <=> spots?
+		selected? <=> selected?
+		doc_js <= doc_js
+		doc_root <= doc_root
+		libs <= libs /$bog_vmap_bridge_part
+		hole_allowed <= hole_allowed true
+		- Wires: the pane draws them from the document and its ports, and writes a
+		- new or a dropped one back through these two events, never into the text.
+		wires <= doc_wires /$bog_vmap_lang_link
+		part_ports* <= part_ports* /$bog_vmap_app_wire_port
+		link_add? <=> link_add? null
+		link_drop? <=> link_drop? null
