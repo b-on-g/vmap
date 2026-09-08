@@ -413,8 +413,9 @@ namespace $ {
 			await settled( ()=> made.instance() )
 			try { first.dom_tree() } catch {}
 
-			// the attribution itself
-			$mol_assert_equal( made.render_error( first ).node, `${ root }/Tail/Deep` )
+			// the attribution itself: the free part the failure is inside, which is
+			// the only name the host can find a box by
+			$mol_assert_equal( made.render_error( first ).node, 'Tail' )
 			$mol_assert_ok( made.render_error( first ).message )
 
 			// and the same thing as the host sees it
@@ -422,7 +423,7 @@ namespace $ {
 
 			const failed = failure( sent, 'runtime' )
 
-			$mol_assert_equal( failed?.node, `${ root }/Tail/Deep` )
+			$mol_assert_equal( failed?.node, 'Tail' )
 			$mol_assert_ok( failed?.message )
 
 		},
@@ -476,7 +477,7 @@ namespace $ {
 
 			made.report_send()
 
-			$mol_assert_equal( failure( sent, 'compile' )?.node, `${ root }/Kid` )
+			$mol_assert_equal( failure( sent, 'compile' )?.node, 'Kid' )
 
 		},
 
@@ -512,6 +513,76 @@ namespace $ {
 			// symptom of a failure kept in a field beside the graph.
 			$mol_assert_ok( atom.sync() )
 			$mol_assert_equal( atom.sync(), made.compile_error() )
+
+		},
+
+		/**
+		 * The FORM of the name, which is what the two halves stick together by.
+		 *
+		 * The host finds the box of a node by a name out of `sizes`, and there only
+		 * the direct children of the root are kept. A path, a class name or anything
+		 * with a slash in it finds no box, so no mark appears — with no error, no log
+		 * and nothing to notice. Hence a test on the shape of the string and not only
+		 * on which node it points at.
+		 */
+		async 'the reported node is a part name, not a path and not a class'( $ ) {
+
+			const made = scene( $ )
+			const root = `${d}hot_shape_name_page`
+
+			const first = await grown(
+				made, root,
+				`${root} ${d}mol_view\n\tsub /\n\t\t<= Tail ${d}hot_shape_name_tail\n`
+				+ `${d}hot_shape_name_tail ${d}mol_view\n\tsub /\n\t\t<= Deep ${d}hot_shape_name_deep\n`
+				+ `${d}hot_shape_name_deep ${d}mol_view\n\tsub /\n\t\t<= boom \\\n`,
+			)
+
+			made.doc_js({ [ `${d}hot_shape_name_deep` ]: 'boom() { throw new Error( "bang" ) }' })
+
+			await settled( ()=> made.instance() )
+			try { first.dom_tree() } catch {}
+
+			const node = made.render_error( first ).node
+
+			$mol_assert_equal( node.includes( '/' ), false )
+			$mol_assert_equal( node.startsWith( '$' ), false )
+
+			// and it is one of the names the host is given for a box, not merely a
+			// string without a slash. Taken off the walk and not off `sizes`: a node
+			// run has no layout, so nothing is connected and nothing is measured.
+			const walk = made.walk_of( first )
+			const parts = walk.kids_of( first )
+				.map( kid => walk.view_of( kid ) )
+				.filter( Boolean )
+				.map( view => walk.prop_of( view! ) )
+
+			$mol_assert_equal( parts.includes( node ), true )
+
+		},
+
+		/**
+		 * A failure of the document itself belongs to no node of the canvas.
+		 *
+		 * Naming the root class here would hand the host a class name where it
+		 * expects a part name — a mark that silently never appears. An empty node
+		 * says the same thing honestly, and the text still reaches the status line.
+		 */
+		async 'a failure of the root itself is reported with no node'( $ ) {
+
+			const made = scene( $ )
+			const root = `${d}hot_top_page`
+
+			const first = await grown( made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= boom \\\n` )
+
+			made.doc_js({ [ root ]: 'boom() { throw new Error( "bang" ) }' })
+
+			await settled( ()=> made.instance() )
+			try { first.dom_tree() } catch {}
+
+			const failed = made.render_error( first )
+
+			$mol_assert_ok( failed.message )
+			$mol_assert_equal( failed.node, '' )
 
 		},
 
