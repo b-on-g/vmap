@@ -6337,6 +6337,102 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    /** As much of a DOM node as measuring needs. */
+    type $bog_vmap_scene_rect_source = {
+        readonly isConnected: boolean;
+        getBoundingClientRect(): {
+            readonly left: number;
+            readonly top: number;
+            readonly width: number;
+            readonly height: number;
+        };
+    };
+    /** What the walk of one rendered document came out to. */
+    type $bog_vmap_scene_measured<Node> = {
+        readonly sizes: {
+            readonly [node: string]: $bog_vmap_scene_box;
+        };
+        readonly nodes: readonly Node[];
+    };
+    /**
+     * Geometry of a rendered document, in world units, and the nodes it was read
+     * off.
+     *
+     * Pure, and out of the view for the reason the culling decision is: this is the
+     * whole of what the host learns about the layout, and a walk worth testing is
+     * worth testing without a compiled document. Everything that knows about `$mol`
+     * — what counts as a view, what a view's children are, which property holds it —
+     * is handed in, so the function itself knows only rectangles and paths.
+     *
+     * The nodes come back beside the sizes because the two are one question asked
+     * twice: what the host is told about, and what has to be watched for changing
+     * behind the graph's back. Watching the root alone leaves every node inside an
+     * artboard of fixed width unwatched, and a reflow INSIDE a box that keeps its
+     * own size is exactly what an artboard is made of.
+     *
+     * @param key path of the root, which every deeper path is built onto
+     * @param zoom camera zoom the measured pixels are divided by, so the host, which
+     *        owns the camera, is told world units
+     */
+    function $bog_vmap_scene_measure<View extends {
+        dom_node(): $bog_vmap_scene_rect_source;
+    }>(root: View, how: {
+        readonly key: string;
+        readonly zoom: number;
+        /** The kid as a view, or `null` when it is not one. */
+        readonly view_of: (kid: unknown) => View | null;
+        /** Children of a view, or none when they cannot be read. */
+        readonly kids_of: (view: View) => readonly unknown[];
+        /** Property the view is held by, empty when it is held by nothing named. */
+        readonly prop_of: (view: View) => string;
+    }): $bog_vmap_scene_measured<ReturnType<View['dom_node']>>;
+    /**
+     * Brings the watched set to exactly `next`, and says what it now is.
+     *
+     * Only the difference is touched: a node already watched is left alone rather
+     * than re-observed, because `ResizeObserver` delivers a first box on every fresh
+     * `observe()`, and re-observing the whole tree after every report would answer
+     * its own delivery with another report, forever.
+     */
+    function $bog_vmap_scene_watch<Node>(watcher: {
+        observe(node: Node): void;
+        unobserve(node: Node): void;
+    }, prev: ReadonlySet<Node>, next: readonly Node[]): Set<Node>;
+}
+
+declare namespace $ {
+    /** A node of the document, by the path the host addresses it with. */
+    type $bog_vmap_scene_found<View> = {
+        readonly path: string;
+        readonly view: View;
+    };
+    /**
+     * First node of a rendered document the probe accepts, and its path.
+     *
+     * The path is built exactly as `$bog_vmap_scene_measure` builds it, and that is
+     * the whole reason this exists as a walk of its own rather than as a read of the
+     * DOM. A failing element does carry an attribute naming it, but that attribute
+     * is lowercased and joined by underscores, so `My_box` and `my/Box` arrive as the
+     * same string and neither matches the key the host was given in `sizes`. A label
+     * placed by a name that does not match is worse than no label.
+     *
+     * Pure, and out of the view for the reason the measurement is: everything that
+     * knows about the framework is handed in, so the walk itself knows only paths.
+     *
+     * @param key path of the root, which every deeper path is built onto
+     */
+    function $bog_vmap_scene_seek<View>(root: View, how: {
+        readonly key: string;
+        /** The kid as a view, or `null` when it is not one. */
+        readonly view_of: (kid: unknown) => View | null;
+        /** Children of a view, or none when they cannot be read. */
+        readonly kids_of: (view: View) => readonly unknown[];
+        /** Property the view is held by, empty when it is held by nothing named. */
+        readonly prop_of: (view: View) => string;
+    }, probe: (view: View) => boolean): $bog_vmap_scene_found<View> | null;
+}
+
+declare namespace $ {
     /** Shape of one recompiled class: what it declares and what of that is keyed. */
     type $bog_vmap_scene_shape = {
         readonly declared: ReadonlySet<string>;
@@ -6481,70 +6577,6 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /** As much of a DOM node as measuring needs. */
-    type $bog_vmap_scene_rect_source = {
-        readonly isConnected: boolean;
-        getBoundingClientRect(): {
-            readonly left: number;
-            readonly top: number;
-            readonly width: number;
-            readonly height: number;
-        };
-    };
-    /** What the walk of one rendered document came out to. */
-    type $bog_vmap_scene_measured<Node> = {
-        readonly sizes: {
-            readonly [node: string]: $bog_vmap_scene_box;
-        };
-        readonly nodes: readonly Node[];
-    };
-    /**
-     * Geometry of a rendered document, in world units, and the nodes it was read
-     * off.
-     *
-     * Pure, and out of the view for the reason the culling decision is: this is the
-     * whole of what the host learns about the layout, and a walk worth testing is
-     * worth testing without a compiled document. Everything that knows about `$mol`
-     * — what counts as a view, what a view's children are, which property holds it —
-     * is handed in, so the function itself knows only rectangles and paths.
-     *
-     * The nodes come back beside the sizes because the two are one question asked
-     * twice: what the host is told about, and what has to be watched for changing
-     * behind the graph's back. Watching the root alone leaves every node inside an
-     * artboard of fixed width unwatched, and a reflow INSIDE a box that keeps its
-     * own size is exactly what an artboard is made of.
-     *
-     * @param key path of the root, which every deeper path is built onto
-     * @param zoom camera zoom the measured pixels are divided by, so the host, which
-     *        owns the camera, is told world units
-     */
-    function $bog_vmap_scene_measure<View extends {
-        dom_node(): $bog_vmap_scene_rect_source;
-    }>(root: View, how: {
-        readonly key: string;
-        readonly zoom: number;
-        /** The kid as a view, or `null` when it is not one. */
-        readonly view_of: (kid: unknown) => View | null;
-        /** Children of a view, or none when they cannot be read. */
-        readonly kids_of: (view: View) => readonly unknown[];
-        /** Property the view is held by, empty when it is held by nothing named. */
-        readonly prop_of: (view: View) => string;
-    }): $bog_vmap_scene_measured<ReturnType<View['dom_node']>>;
-    /**
-     * Brings the watched set to exactly `next`, and says what it now is.
-     *
-     * Only the difference is touched: a node already watched is left alone rather
-     * than re-observed, because `ResizeObserver` delivers a first box on every fresh
-     * `observe()`, and re-observing the whole tree after every report would answer
-     * its own delivery with another report, forever.
-     */
-    function $bog_vmap_scene_watch<Node>(watcher: {
-        observe(node: Node): void;
-        unobserve(node: Node): void;
-    }, prev: ReadonlySet<Node>, next: readonly Node[]): Set<Node>;
-}
-
-declare namespace $ {
 
 	type $mol_vector_2d__bog_vmap_scene_1 = $mol_type_enforce<
 		[ number, number ]
@@ -6610,13 +6642,12 @@ declare namespace $.$$ {
      */
     class $bog_vmap_scene extends $.$bog_vmap_scene {
         /**
-         * Last compile failure. A plain field on purpose: written from inside
-         * `instance()`, and a `@ $mol_mem` cell written from another cell means
-         * infinite invalidation. It also must not invalidate `instance()`, or a
-         * broken source would take the live component down with it.
+         * Instance kept across a failed rebuild, see `mount()`.
+         *
+         * A plain field and not a cell, because it is the memo of the cell that
+         * builds it: `mount()` needs to know what it built last time, and a cell
+         * cannot read its own previous value. Nobody else writes it.
          */
-        compile_error: string;
-        /** Instance kept across a failed rebuild, see `instance()`. */
         instance_live: $mol_view | null;
         /** Pack the live instance was built against. See `identity_kept()`. */
         pack_live: string;
@@ -6897,7 +6928,30 @@ declare namespace $.$$ {
          * with a backtick or a `${` would tear the string apart otherwise, and a
          * name is not a global here at all.
          */
+        code_parts(): readonly {
+            readonly klass: string;
+            readonly js: string;
+        }[];
+        /**
+         * Generated source of the whole document, one string.
+         *
+         * Kept apart from the pieces because the pieces are what names a failure:
+         * the whole document goes into ONE `new Function`, and a failure there says
+         * nothing about which class caused it.
+         */
         code(): string;
+        /** Marks a failure with the class whose text caused it. */
+        fault_named(error: Error, klass: string): Error & {
+            klass: string;
+        };
+        /**
+         * Generated source of one class: its declaration, then its handwritten body.
+         *
+         * Apart from `code()` so that a failure can be caught around one class and
+         * named by it. The body wraps the declaration in a NEW class, which is why
+         * the two are emitted together and never in two passes over the document.
+         */
+        class_code(tree: $mol_tree2, def: $mol_tree2, js: string | undefined): string[];
         /**
          * Compiles the document into the sandbox, overwriting classes in place.
          *
@@ -6910,6 +6964,20 @@ declare namespace $.$$ {
         build(): {
             readonly Root: typeof $mol_view;
         };
+        /**
+         * Class whose generated code throws, found by running the document again
+         * class by class.
+         *
+         * The whole document goes into ONE `new Function`, so a failure there — a
+         * base nobody declared, a syntax error in a handwritten body — carries no
+         * name. Splitting the fast path into a call per class to keep that name
+         * would cost every keystroke for the sake of the rare round that fails, so
+         * the search happens only once something already went wrong.
+         *
+         * Into a scratch context and not into the sandbox: the retry must not add
+         * half a generation of classes to the one the living component is using.
+         */
+        culprit(): string;
         /**
          * May the live instance be moved onto the freshly compiled classes.
          *
@@ -6929,7 +6997,13 @@ declare namespace $.$$ {
             readonly [klass: string]: string;
         }): boolean;
         /**
-         * The live root instance, kept across edits of the document.
+         * The live root instance and why the last compile failed, in one value.
+         *
+         * One cell and not two, because they are one computation: the compile either
+         * yields a component or a reason, and asking twice would compile twice. The
+         * two are split apart again right below, so that each moves only its own
+         * readers — a plain record, which `$mol_owning_catch` refuses, so nothing
+         * here is stamped or destroyed by holding it.
          *
          * An edit moves the living component onto the new classes instead of
          * building another one: cells are own fields of an instance, so a prototype
@@ -6944,7 +7018,31 @@ declare namespace $.$$ {
          * failure travels to the host as an `error` message instead of taking the
          * page down.
          */
+        mount(): {
+            readonly made: $mol_view | null;
+            readonly error: string;
+            readonly klass: string;
+        };
+        /**
+         * The live root instance.
+         *
+         * A cell of its own over `mount()`, so that a failure appearing or clearing
+         * moves the error and nothing else: the value here stays the same object and
+         * no subscriber of the document is woken by a message on the error channel.
+         */
         instance(): $mol_view | null;
+        /**
+         * Why the last compile failed, or an empty string.
+         *
+         * In the graph rather than in a field, so that a reader wakes when it
+         * changes. It used to be a plain field written from inside the cell that
+         * builds the instance, which is the second forbidden case of section 13: not
+         * a projection outwards but a write past the cells, and the label on the node
+         * would light up a round late or not at all.
+         */
+        compile_error(): string;
+        /** Class whose text failed to compile, when the failure names one. */
+        compile_class(): string;
         /**
          * Styles, attached apart from the class.
          *
@@ -7139,13 +7237,51 @@ declare namespace $.$$ {
             readonly [node: string]: $bog_vmap_bridge_rect;
         }): void;
         /**
-         * The failure of the last render, or an empty string when there is none.
+         * The failure of the last render, and the node it belongs to.
          *
-         * The root node carries its own failure, and `querySelector` never
-         * matches the element it is called on. A document whose root render
-         * throws is exactly the common case, so it is checked first.
+         * The walk goes over the views and not over the DOM, even though a failing
+         * element is a `querySelector` away. The host addresses a node by the path
+         * `sizes` was keyed with, and the attribute the element carries is a
+         * different vocabulary: lowercased and joined by underscores, so `My_box`
+         * and `my/Box` reach the host as one string and neither of them matches. A
+         * label put on the wrong node is worse than no label at all.
+         *
+         * A document whose own render throws is the common case, so the root is
+         * asked first — that is inside the walk, which starts there.
          */
-        render_error(made: $mol_view): string;
+        render_error(made: $mol_view): {
+            message: string;
+            node: string;
+        };
+        /**
+         * The failure written on the node of one view, or an empty string.
+         *
+         * A suspension is not a failure: `$mol` writes the same attribute while a
+         * fiber waits, and reporting that would light the node up on every load.
+         */
+        view_broken(view: $mol_view): string;
+        /**
+         * Node of the first live instance of a class, by the path the host uses.
+         *
+         * This is how a COMPILE failure gets a node. The failure names a class, and
+         * a class is not a node — but the tree still standing on the screen is the
+         * one built from the previous text, so the instance of the class just broken
+         * is exactly the node the user is looking at. When the class has no live
+         * instance, or is the root itself, there is nothing better to say than the
+         * root, and when it is not named at all the answer is empty.
+         */
+        class_node(made: $mol_view, klass: string): string;
+        /**
+         * How to walk a rendered document: the three things the walks need to know
+         * about `$mol`, in one place because both of them need the same three and a
+         * second copy would be a second vocabulary.
+         */
+        walk_of(made: $mol_view): {
+            key: string;
+            view_of: (kid: unknown) => $mol_view | null;
+            kids_of: (view: $mol_view) => readonly $mol_view_content[];
+            prop_of: (view: $mol_view) => string;
+        };
         /**
          * Reports a failure only when it changes, and `null` once it is gone.
          *
@@ -7158,7 +7294,7 @@ declare namespace $.$$ {
          * plausible bug and must not read as good news. The two stages clear
          * independently.
          */
-        error_post(at: 'compile' | 'runtime', message: string): void;
+        error_post(at: 'compile' | 'runtime', message: string, node: string): void;
         /**
          * Geometry of the document, in world units, and the nodes it was read off.
          *

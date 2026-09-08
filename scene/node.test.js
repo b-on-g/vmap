@@ -14346,6 +14346,136 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    /**
+     * Geometry of a rendered document, in world units, and the nodes it was read
+     * off.
+     *
+     * Pure, and out of the view for the reason the culling decision is: this is the
+     * whole of what the host learns about the layout, and a walk worth testing is
+     * worth testing without a compiled document. Everything that knows about `$mol`
+     * — what counts as a view, what a view's children are, which property holds it —
+     * is handed in, so the function itself knows only rectangles and paths.
+     *
+     * The nodes come back beside the sizes because the two are one question asked
+     * twice: what the host is told about, and what has to be watched for changing
+     * behind the graph's back. Watching the root alone leaves every node inside an
+     * artboard of fixed width unwatched, and a reflow INSIDE a box that keeps its
+     * own size is exactly what an artboard is made of.
+     *
+     * @param key path of the root, which every deeper path is built onto
+     * @param zoom camera zoom the measured pixels are divided by, so the host, which
+     *        owns the camera, is told world units
+     */
+    function $bog_vmap_scene_measure(root, how) {
+        const sizes = {};
+        const nodes = [];
+        const base = root.dom_node().getBoundingClientRect();
+        const zoom = how.zoom || 1;
+        const put = (key, view) => {
+            const node = view.dom_node();
+            if (!node.isConnected)
+                return;
+            const box = node.getBoundingClientRect();
+            sizes[key] = {
+                x: (box.left - base.left) / zoom,
+                y: (box.top - base.top) / zoom,
+                width: box.width / zoom,
+                height: box.height / zoom,
+            };
+            nodes.push(node);
+        };
+        const walk = (view, path, depth) => {
+            if (depth > 16)
+                return;
+            let index = 0;
+            for (const kid of how.kids_of(view)) {
+                const sub = how.view_of(kid);
+                if (!sub)
+                    continue;
+                const key = path + '/' + (how.prop_of(sub) || index);
+                index++;
+                put(key, sub);
+                walk(sub, key, depth + 1);
+            }
+        };
+        put(how.key, root);
+        walk(root, how.key, 0);
+        return { sizes, nodes };
+    }
+    $.$bog_vmap_scene_measure = $bog_vmap_scene_measure;
+    /**
+     * Brings the watched set to exactly `next`, and says what it now is.
+     *
+     * Only the difference is touched: a node already watched is left alone rather
+     * than re-observed, because `ResizeObserver` delivers a first box on every fresh
+     * `observe()`, and re-observing the whole tree after every report would answer
+     * its own delivery with another report, forever.
+     */
+    function $bog_vmap_scene_watch(watcher, prev, next) {
+        const kept = new Set(next);
+        for (const node of prev)
+            if (!kept.has(node))
+                watcher.unobserve(node);
+        for (const node of kept)
+            if (!prev.has(node))
+                watcher.observe(node);
+        return kept;
+    }
+    $.$bog_vmap_scene_watch = $bog_vmap_scene_watch;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * First node of a rendered document the probe accepts, and its path.
+     *
+     * The path is built exactly as `$bog_vmap_scene_measure` builds it, and that is
+     * the whole reason this exists as a walk of its own rather than as a read of the
+     * DOM. A failing element does carry an attribute naming it, but that attribute
+     * is lowercased and joined by underscores, so `My_box` and `my/Box` arrive as the
+     * same string and neither matches the key the host was given in `sizes`. A label
+     * placed by a name that does not match is worse than no label.
+     *
+     * Pure, and out of the view for the reason the measurement is: everything that
+     * knows about the framework is handed in, so the walk itself knows only paths.
+     *
+     * @param key path of the root, which every deeper path is built onto
+     */
+    function $bog_vmap_scene_seek(root, how, probe) {
+        // The root is asked first: a document whose own render throws is the common
+        // case, and a walk that started with the children would answer with a child
+        // that merely inherited the failure.
+        if (probe(root))
+            return { path: how.key, view: root };
+        const walk = (view, path, depth) => {
+            if (depth > 16)
+                return null;
+            let index = 0;
+            for (const kid of how.kids_of(view)) {
+                const sub = how.view_of(kid);
+                if (!sub)
+                    continue;
+                const key = path + '/' + (how.prop_of(sub) || index);
+                index++;
+                if (probe(sub))
+                    return { path: key, view: sub };
+                const deeper = walk(sub, key, depth + 1);
+                if (deeper)
+                    return deeper;
+            }
+            return null;
+        };
+        return walk(root, how.key, 0);
+    }
+    $.$bog_vmap_scene_seek = $bog_vmap_scene_seek;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     /** Atoms behind one own field: a solo one, or every value of a keyed dictionary. */
     function atoms_of(holder) {
         if (holder instanceof Map)
@@ -14651,88 +14781,6 @@ var $;
 
 ;
 "use strict";
-var $;
-(function ($) {
-    /**
-     * Geometry of a rendered document, in world units, and the nodes it was read
-     * off.
-     *
-     * Pure, and out of the view for the reason the culling decision is: this is the
-     * whole of what the host learns about the layout, and a walk worth testing is
-     * worth testing without a compiled document. Everything that knows about `$mol`
-     * — what counts as a view, what a view's children are, which property holds it —
-     * is handed in, so the function itself knows only rectangles and paths.
-     *
-     * The nodes come back beside the sizes because the two are one question asked
-     * twice: what the host is told about, and what has to be watched for changing
-     * behind the graph's back. Watching the root alone leaves every node inside an
-     * artboard of fixed width unwatched, and a reflow INSIDE a box that keeps its
-     * own size is exactly what an artboard is made of.
-     *
-     * @param key path of the root, which every deeper path is built onto
-     * @param zoom camera zoom the measured pixels are divided by, so the host, which
-     *        owns the camera, is told world units
-     */
-    function $bog_vmap_scene_measure(root, how) {
-        const sizes = {};
-        const nodes = [];
-        const base = root.dom_node().getBoundingClientRect();
-        const zoom = how.zoom || 1;
-        const put = (key, view) => {
-            const node = view.dom_node();
-            if (!node.isConnected)
-                return;
-            const box = node.getBoundingClientRect();
-            sizes[key] = {
-                x: (box.left - base.left) / zoom,
-                y: (box.top - base.top) / zoom,
-                width: box.width / zoom,
-                height: box.height / zoom,
-            };
-            nodes.push(node);
-        };
-        const walk = (view, path, depth) => {
-            if (depth > 16)
-                return;
-            let index = 0;
-            for (const kid of how.kids_of(view)) {
-                const sub = how.view_of(kid);
-                if (!sub)
-                    continue;
-                const key = path + '/' + (how.prop_of(sub) || index);
-                index++;
-                put(key, sub);
-                walk(sub, key, depth + 1);
-            }
-        };
-        put(how.key, root);
-        walk(root, how.key, 0);
-        return { sizes, nodes };
-    }
-    $.$bog_vmap_scene_measure = $bog_vmap_scene_measure;
-    /**
-     * Brings the watched set to exactly `next`, and says what it now is.
-     *
-     * Only the difference is touched: a node already watched is left alone rather
-     * than re-observed, because `ResizeObserver` delivers a first box on every fresh
-     * `observe()`, and re-observing the whole tree after every report would answer
-     * its own delivery with another report, forever.
-     */
-    function $bog_vmap_scene_watch(watcher, prev, next) {
-        const kept = new Set(next);
-        for (const node of prev)
-            if (!kept.has(node))
-                watcher.unobserve(node);
-        for (const node of kept)
-            if (!prev.has(node))
-                watcher.observe(node);
-        return kept;
-    }
-    $.$bog_vmap_scene_watch = $bog_vmap_scene_watch;
-})($ || ($ = {}));
-
-;
-"use strict";
 
 
 ;
@@ -14784,13 +14832,12 @@ var $;
          */
         class $bog_vmap_scene extends $.$bog_vmap_scene {
             /**
-             * Last compile failure. A plain field on purpose: written from inside
-             * `instance()`, and a `@ $mol_mem` cell written from another cell means
-             * infinite invalidation. It also must not invalidate `instance()`, or a
-             * broken source would take the live component down with it.
+             * Instance kept across a failed rebuild, see `mount()`.
+             *
+             * A plain field and not a cell, because it is the memo of the cell that
+             * builds it: `mount()` needs to know what it built last time, and a cell
+             * cannot read its own previous value. Nobody else writes it.
              */
-            compile_error = '';
-            /** Instance kept across a failed rebuild, see `instance()`. */
             instance_live = null;
             /** Pack the live instance was built against. See `identity_kept()`. */
             pack_live = '';
@@ -15194,7 +15241,7 @@ var $;
              * with a backtick or a `${` would tear the string apart otherwise, and a
              * name is not a global here at all.
              */
-            code() {
+            code_parts() {
                 const root = this.doc_root();
                 if (!class_name_ok.test(root))
                     this.$.$mol_fail(new Error(`Root class name ${JSON.stringify(root)} is not an identifier`));
@@ -15205,25 +15252,60 @@ var $;
                 // the same name shadows the library one in the declarations already,
                 // and its body has to shadow the library body the same way.
                 const bodies = { ...this.libs_parsed().js, ...this.doc_js() };
-                const chunks = [];
+                const parts = [];
                 for (const def of tree.kids) {
                     const name = def.type;
                     if (!class_name_ok.test(name))
-                        this.$.$mol_fail(new Error(`Class name ${JSON.stringify(name)} is not an identifier`));
-                    // Every chunk starts with a semicolon: the generated code opens
-                    // with a parenthesis, and without one ASI glues it onto the
-                    // previous line into `$( … )` with `$ is not a function`.
-                    chunks.push(';' + this.$.$mol_tree2_text_to_string_mapped_js(this.$.$mol_tree2_js_to_text(this.$.$mol_view_tree2_to_js(tree.clone([def])))));
-                    const js = bodies[name];
-                    if (!js)
-                        continue;
-                    const cls = JSON.stringify(name);
-                    // The class is named. An anonymous one drops `dom_name()` to
-                    // `div` and gives every sub view a bare `_echo`, the same one in
-                    // every document.
-                    chunks.push(`;$[ ${cls} ] = class ${name} extends $[ ${cls} ] {`, js, '}', ';' + this.decorators(def, js) + ';');
+                        this.$.$mol_fail(this.fault_named(new Error(`Class name ${JSON.stringify(name)} is not an identifier`), name));
+                    try {
+                        parts.push({ klass: name, js: this.class_code(tree, def, bodies[name]).join('\n') });
+                    }
+                    catch (error) {
+                        // The name of the class travels ON the failure, so that the host
+                        // can put the message where the text that caused it is being
+                        // edited. Attached here, where it is known for certain, rather
+                        // than guessed later out of the wording of a parser.
+                        this.$.$mol_fail(this.fault_named(error, name));
+                    }
                 }
-                return chunks.join('\n');
+                return parts;
+            }
+            /**
+             * Generated source of the whole document, one string.
+             *
+             * Kept apart from the pieces because the pieces are what names a failure:
+             * the whole document goes into ONE `new Function`, and a failure there says
+             * nothing about which class caused it.
+             */
+            code() {
+                return this.code_parts().map(part => part.js).join('\n');
+            }
+            /** Marks a failure with the class whose text caused it. */
+            fault_named(error, klass) {
+                return Object.assign(error, { klass });
+            }
+            /**
+             * Generated source of one class: its declaration, then its handwritten body.
+             *
+             * Apart from `code()` so that a failure can be caught around one class and
+             * named by it. The body wraps the declaration in a NEW class, which is why
+             * the two are emitted together and never in two passes over the document.
+             */
+            class_code(tree, def, js) {
+                const name = def.type;
+                const chunks = [];
+                // Every chunk starts with a semicolon: the generated code opens
+                // with a parenthesis, and without one ASI glues it onto the
+                // previous line into `$( … )` with `$ is not a function`.
+                chunks.push(';' + this.$.$mol_tree2_text_to_string_mapped_js(this.$.$mol_tree2_js_to_text(this.$.$mol_view_tree2_to_js(tree.clone([def])))));
+                if (!js)
+                    return chunks;
+                const cls = JSON.stringify(name);
+                // The class is named. An anonymous one drops `dom_name()` to
+                // `div` and gives every sub view a bare `_echo`, the same one in
+                // every document.
+                chunks.push(`;$[ ${cls} ] = class ${name} extends $[ ${cls} ] {`, js, '}', ';' + this.decorators(def, js) + ';');
+                return chunks;
             }
             /**
              * Compiles the document into the sandbox, overwriting classes in place.
@@ -15238,11 +15320,42 @@ var $;
                 const code = this.code();
                 const sandbox = this.sandbox();
                 const root = this.doc_root();
-                new Function('$', code)(sandbox);
+                try {
+                    new Function('$', code)(sandbox);
+                }
+                catch (error) {
+                    this.$.$mol_fail(this.fault_named(error, this.culprit()));
+                }
                 const Root = Reflect.get(sandbox, root);
                 if (typeof Root !== 'function')
                     this.$.$mol_fail(new Error(`Class ${root} is not registered by the compiled code`));
                 return { Root: Root };
+            }
+            /**
+             * Class whose generated code throws, found by running the document again
+             * class by class.
+             *
+             * The whole document goes into ONE `new Function`, so a failure there — a
+             * base nobody declared, a syntax error in a handwritten body — carries no
+             * name. Splitting the fast path into a call per class to keep that name
+             * would cost every keystroke for the sake of the rare round that fails, so
+             * the search happens only once something already went wrong.
+             *
+             * Into a scratch context and not into the sandbox: the retry must not add
+             * half a generation of classes to the one the living component is using.
+             */
+            culprit() {
+                const scratch = Object.create(this.sandbox());
+                Object.defineProperty(scratch, '$', { value: scratch, writable: true, configurable: true });
+                for (const part of this.code_parts()) {
+                    try {
+                        new Function('$', part.js)(scratch);
+                    }
+                    catch {
+                        return part.klass;
+                    }
+                }
+                return '';
             }
             /**
              * May the live instance be moved onto the freshly compiled classes.
@@ -15274,7 +15387,13 @@ var $;
                 return true;
             }
             /**
-             * The live root instance, kept across edits of the document.
+             * The live root instance and why the last compile failed, in one value.
+             *
+             * One cell and not two, because they are one computation: the compile either
+             * yields a component or a reason, and asking twice would compile twice. The
+             * two are split apart again right below, so that each moves only its own
+             * readers — a plain record, which `$mol_owning_catch` refuses, so nothing
+             * here is stamped or destroyed by holding it.
              *
              * An edit moves the living component onto the new classes instead of
              * building another one: cells are own fields of an instance, so a prototype
@@ -15289,7 +15408,7 @@ var $;
              * failure travels to the host as an `error` message instead of taking the
              * page down.
              */
-            instance() {
+            mount() {
                 const src = this.doc_src();
                 const root = this.doc_root();
                 // No pack, no compile. The pack arrives by message now, so the first
@@ -15299,9 +15418,8 @@ var $;
                 // milliseconds is the cheap outcome; a silently wrong base is not.
                 const pack = this.pack_uri();
                 if (!src.trim() || !root || !pack) {
-                    this.compile_error = '';
                     this.instance_live = null;
-                    return null;
+                    return { made: null, error: '', klass: '' };
                 }
                 try {
                     // First read of the body, and it suspends: an `@ $mol_action`
@@ -15316,11 +15434,10 @@ var $;
                     if (live && this.identity_kept(pack, root, supers)) {
                         this.$.$bog_vmap_scene_swap(live, name => Reflect.get(this.sandbox(), name), name => this.shapes()[name] ?? null);
                         this.supers_live = { ...this.supers_live, ...supers };
-                        this.compile_error = '';
-                        // The very same object: the cell keeps its value, nobody is
+                        // The very same object: `instance()` keeps its value, nobody is
                         // woken by the swap itself, and only the atoms whose code
                         // really changed recompute.
-                        return live;
+                        return { made: live, error: '', klass: '' };
                     }
                     const made = Root.make({ $: this.sandbox() });
                     // Before anything reads `dom_tree()`, so the first paint is already
@@ -15329,16 +15446,44 @@ var $;
                     this.pack_live = pack;
                     this.root_live = root;
                     this.supers_live = supers;
-                    this.compile_error = '';
                     this.instance_live = made;
-                    return made;
+                    return { made, error: '', klass: '' };
                 }
                 catch (error) {
                     if (this.$.$mol_promise_like(error))
                         return this.$.$mol_fail_hidden(error);
-                    this.compile_error = String(error?.message ?? error);
-                    return this.instance_live;
+                    return {
+                        made: this.instance_live,
+                        error: String(error?.message ?? error),
+                        klass: String(error?.klass ?? ''),
+                    };
                 }
+            }
+            /**
+             * The live root instance.
+             *
+             * A cell of its own over `mount()`, so that a failure appearing or clearing
+             * moves the error and nothing else: the value here stays the same object and
+             * no subscriber of the document is woken by a message on the error channel.
+             */
+            instance() {
+                return this.mount().made;
+            }
+            /**
+             * Why the last compile failed, or an empty string.
+             *
+             * In the graph rather than in a field, so that a reader wakes when it
+             * changes. It used to be a plain field written from inside the cell that
+             * builds the instance, which is the second forbidden case of section 13: not
+             * a projection outwards but a write past the cells, and the label on the node
+             * would light up a round late or not at all.
+             */
+            compile_error() {
+                return this.mount().error;
+            }
+            /** Class whose text failed to compile, when the failure names one. */
+            compile_class() {
+                return this.mount().klass;
             }
             /**
              * Styles, attached apart from the class.
@@ -15731,13 +15876,15 @@ var $;
                     this.assets_asked.add(id);
                     this.post({ kind: 'asset_want', id });
                 }
-                this.error_post('compile', this.compile_error);
+                const compiled = this.compile_error();
+                this.error_post('compile', compiled, compiled && made ? this.class_node(made, this.compile_class()) : '');
                 const measured = made ? this.sizes_of(made) : { sizes: {}, nodes: [] };
                 const sizes = measured.sizes;
                 this.resize_sync(measured.nodes);
                 this.sizes_remember(sizes);
                 this.post({ kind: 'sizes', sizes });
-                this.error_post('runtime', made ? this.render_error(made) : '');
+                const failed = made ? this.render_error(made) : { message: '', node: '' };
+                this.error_post('runtime', failed.message, failed.node);
             }
             /**
              * Keeps the boxes of the free parts for the next culling round.
@@ -15763,24 +15910,85 @@ var $;
                 }
             }
             /**
-             * The failure of the last render, or an empty string when there is none.
+             * The failure of the last render, and the node it belongs to.
              *
-             * The root node carries its own failure, and `querySelector` never
-             * matches the element it is called on. A document whose root render
-             * throws is exactly the common case, so it is checked first.
+             * The walk goes over the views and not over the DOM, even though a failing
+             * element is a `querySelector` away. The host addresses a node by the path
+             * `sizes` was keyed with, and the attribute the element carries is a
+             * different vocabulary: lowercased and joined by underscores, so `My_box`
+             * and `my/Box` reach the host as one string and neither of them matches. A
+             * label put on the wrong node is worse than no label at all.
+             *
+             * A document whose own render throws is the common case, so the root is
+             * asked first — that is inside the walk, which starts there.
              */
             render_error(made) {
-                const node = made.dom_node();
-                const failed = node.hasAttribute('mol_view_error')
-                    ? node
-                    : node.querySelector('[mol_view_error]');
-                const broken = failed?.getAttribute('mol_view_error');
+                const found = this.$.$bog_vmap_scene_seek(made, this.walk_of(made), view => this.view_broken(view) !== '');
+                if (!found)
+                    return { message: '', node: '' };
+                return { message: this.view_broken(found.view), node: found.path };
+            }
+            /**
+             * The failure written on the node of one view, or an empty string.
+             *
+             * A suspension is not a failure: `$mol` writes the same attribute while a
+             * fiber waits, and reporting that would light the node up on every load.
+             */
+            view_broken(view) {
+                let node;
+                // A view whose node cannot even be built is a view with nothing to read
+                // a failure off; the failure of its owner is reported instead.
+                try {
+                    node = view.dom_node();
+                }
+                catch {
+                    return '';
+                }
+                const broken = node.getAttribute('mol_view_error');
                 if (!broken || broken === 'Promise' || broken === '$mol_promise_blocker')
                     return '';
                 // The attribute holds only the error name; $mol puts the message
                 // itself into the text of the node.
-                const text = (failed.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 500);
+                const text = (node.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 500);
                 return text ? `${broken}: ${text}` : broken;
+            }
+            /**
+             * Node of the first live instance of a class, by the path the host uses.
+             *
+             * This is how a COMPILE failure gets a node. The failure names a class, and
+             * a class is not a node — but the tree still standing on the screen is the
+             * one built from the previous text, so the instance of the class just broken
+             * is exactly the node the user is looking at. When the class has no live
+             * instance, or is the root itself, there is nothing better to say than the
+             * root, and when it is not named at all the answer is empty.
+             */
+            class_node(made, klass) {
+                if (!klass)
+                    return '';
+                if (klass === this.doc_root())
+                    return this.doc_root();
+                const found = this.$.$bog_vmap_scene_seek(made, this.walk_of(made), view => view.constructor?.name === klass);
+                return found?.path ?? '';
+            }
+            /**
+             * How to walk a rendered document: the three things the walks need to know
+             * about `$mol`, in one place because both of them need the same three and a
+             * second copy would be a second vocabulary.
+             */
+            walk_of(made) {
+                return {
+                    key: this.doc_root(),
+                    view_of: (kid) => this.view_like(kid) ? kid : null,
+                    // A document whose `sub` throws is a document mid-failure, reported on
+                    // the error channel; here it simply has no children to walk.
+                    kids_of: (view) => { try {
+                        return view.sub() ?? [];
+                    }
+                    catch {
+                        return [];
+                    } },
+                    prop_of: (view) => this.view_prop(view),
+                };
             }
             /**
              * Reports a failure only when it changes, and `null` once it is gone.
@@ -15794,12 +16002,14 @@ var $;
              * plausible bug and must not read as good news. The two stages clear
              * independently.
              */
-            error_post(at, message) {
+            error_post(at, message, node) {
                 const next = message || null;
                 if (this.error_sent[at] === next)
                     return;
                 this.error_sent[at] = next;
-                this.post({ kind: 'error', at, message: next });
+                // The field always travels, empty when the failure belongs to nobody, so
+                // that the host never has to tell «no node» from «an older scene».
+                this.post({ kind: 'error', at, message: next, node });
             }
             /**
              * Geometry of the document, in world units, and the nodes it was read off.
@@ -15810,18 +16020,8 @@ var $;
              */
             sizes_of(root) {
                 return this.$.$bog_vmap_scene_measure(root, {
-                    key: this.doc_root(),
+                    ...this.walk_of(root),
                     zoom: this.camera().zoom,
-                    view_of: kid => this.view_like(kid) ? kid : null,
-                    // A document whose `sub` throws is a document mid-failure, reported on
-                    // the error channel; here it simply has no children to measure.
-                    kids_of: view => { try {
-                        return view.sub() ?? [];
-                    }
-                    catch {
-                        return [];
-                    } },
-                    prop_of: view => this.view_prop(view),
                 });
             }
             /**
@@ -15941,13 +16141,25 @@ var $;
         ], $bog_vmap_scene.prototype, "shapes", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_scene.prototype, "code_parts", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_scene.prototype, "code", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "build", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_scene.prototype, "mount", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_scene.prototype, "instance", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "compile_error", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "compile_class", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "css_attach", null);
@@ -22959,6 +23171,179 @@ var $;
 var $;
 (function ($_1) {
     /**
+     * Tests of the measurement walk and of what it hands the observer.
+     *
+     * No DOM and no compiled document: the walk is handed what a view is, what its
+     * children are and where its box is, so a fixture here is three plain objects
+     * and the arithmetic is visible.
+     */
+    /** A node with a box, standing in for an element. */
+    function node(left, top, width, height, isConnected = true) {
+        return {
+            isConnected,
+            getBoundingClientRect: () => ({ left, top, width, height }),
+        };
+    }
+    /** A view: a property name, a box and children. */
+    function view(prop, box, kids = []) {
+        return { prop, box, kids, dom_node: () => box };
+    }
+    function measure(root, zoom = 1) {
+        return $bog_vmap_scene_measure(root, {
+            key: 'doc',
+            zoom,
+            view_of: kid => kid?.dom_node ? kid : null,
+            kids_of: made => made.kids,
+            prop_of: made => made.prop,
+        });
+    }
+    /**
+     * An artboard: a page of fixed width with two rows inside it, and a free part
+     * beside it on the canvas.
+     */
+    function doc(width) {
+        return view('Doc', node(0, 0, 2000, 1000), [
+            view('Board', node(100, 100, width, 600), [
+                view('Head', node(100, 100, width, 40)),
+                view('Body', node(100, 140, width, 560)),
+            ]),
+            view('Loose', node(1500, 100, 80, 24)),
+        ]);
+    }
+    $mol_test({
+        /**
+         * The host addresses a node by the property that holds it, at any depth —
+         * section 1 — so the path is the chain of those names, and everything inside
+         * an artboard is reachable by one.
+         */
+        'every node of the document is measured, not only the free parts'($) {
+            const { sizes } = measure(doc(1280));
+            $mol_assert_like(Object.keys(sizes), [
+                'doc',
+                'doc/Board',
+                'doc/Board/Head',
+                'doc/Board/Body',
+                'doc/Loose',
+            ]);
+            $mol_assert_like(sizes['doc/Board/Head'], { x: 100, y: 100, width: 1280, height: 40 });
+        },
+        /**
+         * The point of the width switcher: the artboard changes size, and so does
+         * everything laid out inside it, while the free part beside it does not move.
+         */
+        'a narrower artboard reports narrower nodes inside it'($) {
+            const wide = measure(doc(1280)).sizes;
+            const narrow = measure(doc(390)).sizes;
+            $mol_assert_equal(wide['doc/Board'].width, 1280);
+            $mol_assert_equal(narrow['doc/Board'].width, 390);
+            $mol_assert_equal(narrow['doc/Board/Body'].width, 390);
+            $mol_assert_like(wide['doc/Loose'], narrow['doc/Loose']);
+        },
+        /** The host owns the camera and is told world units, whatever the zoom. */
+        'boxes are reported in world units, relative to the root'($) {
+            const { sizes } = measure(doc(1280), 2);
+            $mol_assert_like(sizes['doc/Board'], { x: 50, y: 50, width: 640, height: 300 });
+        },
+        'a node out of the document is not measured'($) {
+            const { sizes, nodes } = measure(view('Doc', node(0, 0, 100, 100), [
+                view('Gone', node(0, 0, 10, 10, false)),
+                view('Here', node(0, 0, 10, 10)),
+            ]));
+            $mol_assert_like(Object.keys(sizes), ['doc', 'doc/Here']);
+            $mol_assert_equal(nodes.length, 2);
+        },
+        /**
+         * Watching the root alone leaves everything inside an artboard unwatched,
+         * which is exactly where a late font or a decoded image reflows without the
+         * root changing size.
+         */
+        'the observer is handed every measured node'($) {
+            const { nodes } = measure(doc(1280));
+            $mol_assert_equal(nodes.length, 5);
+        },
+        'watching adds what is new, drops what is gone and leaves the rest alone'($) {
+            const log = [];
+            const watcher = {
+                observe: (node) => log.push('+' + node),
+                unobserve: (node) => log.push('-' + node),
+            };
+            const first = $bog_vmap_scene_watch(watcher, new Set(), ['a', 'b']);
+            $mol_assert_like(log, ['+a', '+b']);
+            // A node still there is NOT observed again: every fresh `observe` gets a
+            // box delivered, and a report that re-observes everything would answer
+            // its own delivery with another report.
+            const second = $bog_vmap_scene_watch(watcher, first, ['b', 'c']);
+            $mol_assert_like(log, ['+a', '+b', '-a', '+c']);
+            $mol_assert_like([...second], ['b', 'c']);
+            $bog_vmap_scene_watch(watcher, second, []);
+            $mol_assert_like(log, ['+a', '+b', '-a', '+c', '-b', '-c']);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    const how = (key) => ({
+        key,
+        view_of: (kid) => kid?.name === undefined ? null : kid,
+        kids_of: (view) => view.kids ?? [],
+        prop_of: (view) => view.name,
+    });
+    const bad = (view) => !!view.bad;
+    $mol_test({
+        'the path of a node is the root and every property down to it'($) {
+            const tree = { name: 'root', kids: [
+                    { name: 'Head' },
+                    { name: 'Tail', kids: [{ name: 'Deep', bad: true }] },
+                ] };
+            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad)?.path, 'doc/Tail/Deep');
+        },
+        /**
+         * A document whose own render throws is the common case, and it must not be
+         * answered with a child that merely inherited the failure.
+         */
+        'the root is asked before any child'($) {
+            const tree = { name: 'root', bad: true, kids: [{ name: 'Kid', bad: true }] };
+            const found = $bog_vmap_scene_seek(tree, how('doc'), bad);
+            $mol_assert_equal(found?.path, 'doc');
+            $mol_assert_equal(found?.view, tree);
+        },
+        'nothing to blame comes back as nothing, not as the root'($) {
+            const tree = { name: 'root', kids: [{ name: 'Kid' }] };
+            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad), null);
+        },
+        /**
+         * A child held by no named property is still on the path, by its position.
+         * Losing it would shift every sibling after it onto the wrong node.
+         */
+        'an unnamed child is addressed by its index'($) {
+            const tree = { name: 'root', kids: [{ name: '' }, { name: '', bad: true }] };
+            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad)?.path, 'doc/1');
+        },
+        /**
+         * Content that is not a view is skipped rather than counted: a string
+         * between two views would otherwise push the second one off its own index.
+         */
+        'text between views does not take an index'($) {
+            const tree = { name: 'root', kids: ['just text', { name: '', bad: true }] };
+            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad)?.path, 'doc/0');
+        },
+        /** A cycle in the tree must end the walk instead of the process. */
+        'a cycle is cut by the depth limit'($) {
+            const loop = { name: 'Loop' };
+            loop.kids = [loop];
+            $mol_assert_equal($bog_vmap_scene_seek(loop, how('doc'), bad), null);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
      * The replay of a relayed click, on a fake realm.
      *
      * No real DOM is involved on purpose: what a real `$mol_button` inside the
@@ -23258,121 +23643,6 @@ var $;
 var $;
 (function ($_1) {
     /**
-     * Tests of the measurement walk and of what it hands the observer.
-     *
-     * No DOM and no compiled document: the walk is handed what a view is, what its
-     * children are and where its box is, so a fixture here is three plain objects
-     * and the arithmetic is visible.
-     */
-    /** A node with a box, standing in for an element. */
-    function node(left, top, width, height, isConnected = true) {
-        return {
-            isConnected,
-            getBoundingClientRect: () => ({ left, top, width, height }),
-        };
-    }
-    /** A view: a property name, a box and children. */
-    function view(prop, box, kids = []) {
-        return { prop, box, kids, dom_node: () => box };
-    }
-    function measure(root, zoom = 1) {
-        return $bog_vmap_scene_measure(root, {
-            key: 'doc',
-            zoom,
-            view_of: kid => kid?.dom_node ? kid : null,
-            kids_of: made => made.kids,
-            prop_of: made => made.prop,
-        });
-    }
-    /**
-     * An artboard: a page of fixed width with two rows inside it, and a free part
-     * beside it on the canvas.
-     */
-    function doc(width) {
-        return view('Doc', node(0, 0, 2000, 1000), [
-            view('Board', node(100, 100, width, 600), [
-                view('Head', node(100, 100, width, 40)),
-                view('Body', node(100, 140, width, 560)),
-            ]),
-            view('Loose', node(1500, 100, 80, 24)),
-        ]);
-    }
-    $mol_test({
-        /**
-         * The host addresses a node by the property that holds it, at any depth —
-         * section 1 — so the path is the chain of those names, and everything inside
-         * an artboard is reachable by one.
-         */
-        'every node of the document is measured, not only the free parts'($) {
-            const { sizes } = measure(doc(1280));
-            $mol_assert_like(Object.keys(sizes), [
-                'doc',
-                'doc/Board',
-                'doc/Board/Head',
-                'doc/Board/Body',
-                'doc/Loose',
-            ]);
-            $mol_assert_like(sizes['doc/Board/Head'], { x: 100, y: 100, width: 1280, height: 40 });
-        },
-        /**
-         * The point of the width switcher: the artboard changes size, and so does
-         * everything laid out inside it, while the free part beside it does not move.
-         */
-        'a narrower artboard reports narrower nodes inside it'($) {
-            const wide = measure(doc(1280)).sizes;
-            const narrow = measure(doc(390)).sizes;
-            $mol_assert_equal(wide['doc/Board'].width, 1280);
-            $mol_assert_equal(narrow['doc/Board'].width, 390);
-            $mol_assert_equal(narrow['doc/Board/Body'].width, 390);
-            $mol_assert_like(wide['doc/Loose'], narrow['doc/Loose']);
-        },
-        /** The host owns the camera and is told world units, whatever the zoom. */
-        'boxes are reported in world units, relative to the root'($) {
-            const { sizes } = measure(doc(1280), 2);
-            $mol_assert_like(sizes['doc/Board'], { x: 50, y: 50, width: 640, height: 300 });
-        },
-        'a node out of the document is not measured'($) {
-            const { sizes, nodes } = measure(view('Doc', node(0, 0, 100, 100), [
-                view('Gone', node(0, 0, 10, 10, false)),
-                view('Here', node(0, 0, 10, 10)),
-            ]));
-            $mol_assert_like(Object.keys(sizes), ['doc', 'doc/Here']);
-            $mol_assert_equal(nodes.length, 2);
-        },
-        /**
-         * Watching the root alone leaves everything inside an artboard unwatched,
-         * which is exactly where a late font or a decoded image reflows without the
-         * root changing size.
-         */
-        'the observer is handed every measured node'($) {
-            const { nodes } = measure(doc(1280));
-            $mol_assert_equal(nodes.length, 5);
-        },
-        'watching adds what is new, drops what is gone and leaves the rest alone'($) {
-            const log = [];
-            const watcher = {
-                observe: (node) => log.push('+' + node),
-                unobserve: (node) => log.push('-' + node),
-            };
-            const first = $bog_vmap_scene_watch(watcher, new Set(), ['a', 'b']);
-            $mol_assert_like(log, ['+a', '+b']);
-            // A node still there is NOT observed again: every fresh `observe` gets a
-            // box delivered, and a report that re-observes everything would answer
-            // its own delivery with another report.
-            const second = $bog_vmap_scene_watch(watcher, first, ['b', 'c']);
-            $mol_assert_like(log, ['+a', '+b', '-a', '+c']);
-            $mol_assert_like([...second], ['b', 'c']);
-            $bog_vmap_scene_watch(watcher, second, []);
-            $mol_assert_like(log, ['+a', '+b', '-a', '+c', '-b', '-c']);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
      * Hot recompilation: an edit moves the living component onto the new classes
      * instead of building another one.
      *
@@ -23414,6 +23684,25 @@ var $;
                 await new Promise(next => setTimeout(next, 2));
             }
         }
+    }
+    /**
+     * Collects what the scene puts on the wire, in order.
+     *
+     * `ResizeObserver` is stubbed along the way: node has none, and without it a
+     * report round dies on the resize step before it ever reaches the error it was
+     * called to send. Nothing about attribution is replaced, only a browser API.
+     */
+    function wired(made) {
+        const sent = [];
+        made.post = (message) => { sent.push(message); };
+        const observer = { observe: () => { }, unobserve: () => { }, disconnect: () => { } };
+        made.resize_watch = () => ({ observer: observer, destructor: () => { } });
+        return sent;
+    }
+    /** The last failure the scene reported on one channel. */
+    function failure(sent, at) {
+        const errors = sent.filter(m => m.kind === 'error' && m.at === at);
+        return errors[errors.length - 1];
     }
     /** Compiles a source and hands back the live root. */
     async function grown(made, root, src) {
@@ -23587,7 +23876,7 @@ var $;
             $mol_assert_ok(Reflect.get(first, 'note()'));
             const second = await grown(made, root, keyed);
             $mol_assert_equal(second, first);
-            $mol_assert_equal(made.compile_error, '');
+            $mol_assert_equal(made.compile_error(), '');
             // the solo atom is gone rather than left for a keyed read to trip over
             $mol_assert_equal(Reflect.get(second, 'note()'), undefined);
             // and the keyed property answers, on the same instance
@@ -23632,13 +23921,106 @@ var $;
             // an heir of a class nobody declared: the generated code throws
             const broken = await grown(made, root, src('one') + `${d}hot_fail_kid ${d}hot_fail_ghost\n`);
             $mol_assert_equal(broken, first);
-            $mol_assert_ok(made.compile_error);
+            $mol_assert_ok(made.compile_error());
             $mol_assert_equal(first.note(), 'typed by hand');
             const fixed = await grown(made, root, src('two'));
             $mol_assert_equal(fixed, first);
-            $mol_assert_equal(made.compile_error, '');
+            $mol_assert_equal(made.compile_error(), '');
             $mol_assert_equal(fixed.tag(), 'two');
             $mol_assert_equal(fixed.note(), 'typed by hand');
+        },
+        /**
+         * A failure of a nested node arrives named by that node.
+         *
+         * The name is the path `sizes` is keyed with, and it has to be, or the host
+         * looks the label up in a dictionary that does not have it. The element that
+         * failed does carry an attribute of its own, but that one is lowercased and
+         * joined by underscores — a different vocabulary, and a silently wrong one.
+         */
+        async 'a runtime failure names the node it belongs to'($) {
+            const made = scene($);
+            const sent = wired(made);
+            const root = `${d}hot_blame_page`;
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Tail ${d}hot_blame_tail\n`
+                + `${d}hot_blame_tail ${d}mol_view\n\tsub /\n\t\t<= Deep ${d}hot_blame_deep\n`
+                + `${d}hot_blame_deep ${d}mol_view\n\tsub /\n\t\t<= boom \\\n`);
+            made.doc_js({ [`${d}hot_blame_deep`]: 'boom() { throw new Error( "bang" ) }' });
+            await settled(() => made.instance());
+            try {
+                first.dom_tree();
+            }
+            catch { }
+            // the attribution itself
+            $mol_assert_equal(made.render_error(first).node, `${root}/Tail/Deep`);
+            $mol_assert_ok(made.render_error(first).message);
+            // and the same thing as the host sees it
+            made.report_send();
+            const failed = failure(sent, 'runtime');
+            $mol_assert_equal(failed?.node, `${root}/Tail/Deep`);
+            $mol_assert_ok(failed?.message);
+        },
+        /**
+         * A failure nobody can be blamed for still travels, with an empty node.
+         *
+         * Empty and not absent: the host must not have to tell «this scene found no
+         * node» from «this scene is older than the field».
+         */
+        async 'a failure with no node to blame reports an empty one'($) {
+            const made = scene($);
+            const sent = wired(made);
+            const root = `${d}hot_blank_page`;
+            await grown(made, root, `${root} ${d}mol_view\n\ttag \\one\n`);
+            made.error_post('runtime', 'something nobody owns', '');
+            const failed = failure(sent, 'runtime');
+            $mol_assert_equal(failed?.message, 'something nobody owns');
+            $mol_assert_equal(failed?.node, '');
+        },
+        /**
+         * A COMPILE failure names a class, and a class is not a node. The tree still
+         * on the screen was built from the previous text, so the live instance of
+         * the class just broken is the node the user is looking at.
+         */
+        async 'a compile failure names the node of the class that broke'($) {
+            const made = scene($);
+            const sent = wired(made);
+            const root = `${d}hot_guilt_page`;
+            const src = (kid) => `${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_guilt_kid\n`
+                + `${d}hot_guilt_kid ${kid}\n\ttag \\one\n`;
+            const first = await grown(made, root, src(`${d}mol_view`));
+            $mol_assert_ok(first.Kid());
+            // the child now inherits a class nobody declared: the generated code throws
+            await grown(made, root, src(`${d}hot_guilt_ghost`));
+            $mol_assert_ok(made.compile_error());
+            $mol_assert_equal(made.compile_class(), `${d}hot_guilt_kid`);
+            made.report_send();
+            $mol_assert_equal(failure(sent, 'compile')?.node, `${root}/Kid`);
+        },
+        /**
+         * The error state lives in the graph, not in a field beside it.
+         *
+         * It used to be a plain field written from inside the cell that builds the
+         * instance, and a reader of a field is woken by nothing: the label on the
+         * node would light up a round late, or not until something else moved. So
+         * what is asserted is not the value but the waking — a subscriber that has
+         * read the failure answers with the new one without the scene being asked
+         * again — a cached atom nobody invalidated answers with what it remembers,
+         * which is precisely what a field beside the graph produces.
+         */
+        async 'a reader of the compile failure is woken when it changes'($) {
+            const made = scene($);
+            const root = `${d}hot_wake_page`;
+            const src = (tag) => `${root} ${d}mol_view\n\ttag \\${tag}\n`;
+            await grown(made, root, src('one'));
+            const seen = {};
+            const atom = $mol_wire_atom.solo(seen, function watcher() { return made.compile_error(); });
+            $mol_assert_equal(atom.sync(), '');
+            // an heir of a class nobody declared: the generated code throws
+            await grown(made, root, src('one') + `${d}hot_wake_kid ${d}hot_wake_ghost\n`);
+            // The subscriber is asked, not the scene. A cached atom nobody
+            // invalidated answers with what it remembers, and that is exactly the
+            // symptom of a failure kept in a field beside the graph.
+            $mol_assert_ok(atom.sync());
+            $mol_assert_equal(atom.sync(), made.compile_error());
         },
     });
 })($ || ($ = {}));

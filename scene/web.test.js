@@ -6840,6 +6840,179 @@ var $;
 var $;
 (function ($_1) {
     /**
+     * Tests of the measurement walk and of what it hands the observer.
+     *
+     * No DOM and no compiled document: the walk is handed what a view is, what its
+     * children are and where its box is, so a fixture here is three plain objects
+     * and the arithmetic is visible.
+     */
+    /** A node with a box, standing in for an element. */
+    function node(left, top, width, height, isConnected = true) {
+        return {
+            isConnected,
+            getBoundingClientRect: () => ({ left, top, width, height }),
+        };
+    }
+    /** A view: a property name, a box and children. */
+    function view(prop, box, kids = []) {
+        return { prop, box, kids, dom_node: () => box };
+    }
+    function measure(root, zoom = 1) {
+        return $bog_vmap_scene_measure(root, {
+            key: 'doc',
+            zoom,
+            view_of: kid => kid?.dom_node ? kid : null,
+            kids_of: made => made.kids,
+            prop_of: made => made.prop,
+        });
+    }
+    /**
+     * An artboard: a page of fixed width with two rows inside it, and a free part
+     * beside it on the canvas.
+     */
+    function doc(width) {
+        return view('Doc', node(0, 0, 2000, 1000), [
+            view('Board', node(100, 100, width, 600), [
+                view('Head', node(100, 100, width, 40)),
+                view('Body', node(100, 140, width, 560)),
+            ]),
+            view('Loose', node(1500, 100, 80, 24)),
+        ]);
+    }
+    $mol_test({
+        /**
+         * The host addresses a node by the property that holds it, at any depth —
+         * section 1 — so the path is the chain of those names, and everything inside
+         * an artboard is reachable by one.
+         */
+        'every node of the document is measured, not only the free parts'($) {
+            const { sizes } = measure(doc(1280));
+            $mol_assert_like(Object.keys(sizes), [
+                'doc',
+                'doc/Board',
+                'doc/Board/Head',
+                'doc/Board/Body',
+                'doc/Loose',
+            ]);
+            $mol_assert_like(sizes['doc/Board/Head'], { x: 100, y: 100, width: 1280, height: 40 });
+        },
+        /**
+         * The point of the width switcher: the artboard changes size, and so does
+         * everything laid out inside it, while the free part beside it does not move.
+         */
+        'a narrower artboard reports narrower nodes inside it'($) {
+            const wide = measure(doc(1280)).sizes;
+            const narrow = measure(doc(390)).sizes;
+            $mol_assert_equal(wide['doc/Board'].width, 1280);
+            $mol_assert_equal(narrow['doc/Board'].width, 390);
+            $mol_assert_equal(narrow['doc/Board/Body'].width, 390);
+            $mol_assert_like(wide['doc/Loose'], narrow['doc/Loose']);
+        },
+        /** The host owns the camera and is told world units, whatever the zoom. */
+        'boxes are reported in world units, relative to the root'($) {
+            const { sizes } = measure(doc(1280), 2);
+            $mol_assert_like(sizes['doc/Board'], { x: 50, y: 50, width: 640, height: 300 });
+        },
+        'a node out of the document is not measured'($) {
+            const { sizes, nodes } = measure(view('Doc', node(0, 0, 100, 100), [
+                view('Gone', node(0, 0, 10, 10, false)),
+                view('Here', node(0, 0, 10, 10)),
+            ]));
+            $mol_assert_like(Object.keys(sizes), ['doc', 'doc/Here']);
+            $mol_assert_equal(nodes.length, 2);
+        },
+        /**
+         * Watching the root alone leaves everything inside an artboard unwatched,
+         * which is exactly where a late font or a decoded image reflows without the
+         * root changing size.
+         */
+        'the observer is handed every measured node'($) {
+            const { nodes } = measure(doc(1280));
+            $mol_assert_equal(nodes.length, 5);
+        },
+        'watching adds what is new, drops what is gone and leaves the rest alone'($) {
+            const log = [];
+            const watcher = {
+                observe: (node) => log.push('+' + node),
+                unobserve: (node) => log.push('-' + node),
+            };
+            const first = $bog_vmap_scene_watch(watcher, new Set(), ['a', 'b']);
+            $mol_assert_like(log, ['+a', '+b']);
+            // A node still there is NOT observed again: every fresh `observe` gets a
+            // box delivered, and a report that re-observes everything would answer
+            // its own delivery with another report.
+            const second = $bog_vmap_scene_watch(watcher, first, ['b', 'c']);
+            $mol_assert_like(log, ['+a', '+b', '-a', '+c']);
+            $mol_assert_like([...second], ['b', 'c']);
+            $bog_vmap_scene_watch(watcher, second, []);
+            $mol_assert_like(log, ['+a', '+b', '-a', '+c', '-b', '-c']);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    const how = (key) => ({
+        key,
+        view_of: (kid) => kid?.name === undefined ? null : kid,
+        kids_of: (view) => view.kids ?? [],
+        prop_of: (view) => view.name,
+    });
+    const bad = (view) => !!view.bad;
+    $mol_test({
+        'the path of a node is the root and every property down to it'($) {
+            const tree = { name: 'root', kids: [
+                    { name: 'Head' },
+                    { name: 'Tail', kids: [{ name: 'Deep', bad: true }] },
+                ] };
+            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad)?.path, 'doc/Tail/Deep');
+        },
+        /**
+         * A document whose own render throws is the common case, and it must not be
+         * answered with a child that merely inherited the failure.
+         */
+        'the root is asked before any child'($) {
+            const tree = { name: 'root', bad: true, kids: [{ name: 'Kid', bad: true }] };
+            const found = $bog_vmap_scene_seek(tree, how('doc'), bad);
+            $mol_assert_equal(found?.path, 'doc');
+            $mol_assert_equal(found?.view, tree);
+        },
+        'nothing to blame comes back as nothing, not as the root'($) {
+            const tree = { name: 'root', kids: [{ name: 'Kid' }] };
+            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad), null);
+        },
+        /**
+         * A child held by no named property is still on the path, by its position.
+         * Losing it would shift every sibling after it onto the wrong node.
+         */
+        'an unnamed child is addressed by its index'($) {
+            const tree = { name: 'root', kids: [{ name: '' }, { name: '', bad: true }] };
+            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad)?.path, 'doc/1');
+        },
+        /**
+         * Content that is not a view is skipped rather than counted: a string
+         * between two views would otherwise push the second one off its own index.
+         */
+        'text between views does not take an index'($) {
+            const tree = { name: 'root', kids: ['just text', { name: '', bad: true }] };
+            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad)?.path, 'doc/0');
+        },
+        /** A cycle in the tree must end the walk instead of the process. */
+        'a cycle is cut by the depth limit'($) {
+            const loop = { name: 'Loop' };
+            loop.kids = [loop];
+            $mol_assert_equal($bog_vmap_scene_seek(loop, how('doc'), bad), null);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
      * The replay of a relayed click, on a fake realm.
      *
      * No real DOM is involved on purpose: what a real `$mol_button` inside the
@@ -7139,121 +7312,6 @@ var $;
 var $;
 (function ($_1) {
     /**
-     * Tests of the measurement walk and of what it hands the observer.
-     *
-     * No DOM and no compiled document: the walk is handed what a view is, what its
-     * children are and where its box is, so a fixture here is three plain objects
-     * and the arithmetic is visible.
-     */
-    /** A node with a box, standing in for an element. */
-    function node(left, top, width, height, isConnected = true) {
-        return {
-            isConnected,
-            getBoundingClientRect: () => ({ left, top, width, height }),
-        };
-    }
-    /** A view: a property name, a box and children. */
-    function view(prop, box, kids = []) {
-        return { prop, box, kids, dom_node: () => box };
-    }
-    function measure(root, zoom = 1) {
-        return $bog_vmap_scene_measure(root, {
-            key: 'doc',
-            zoom,
-            view_of: kid => kid?.dom_node ? kid : null,
-            kids_of: made => made.kids,
-            prop_of: made => made.prop,
-        });
-    }
-    /**
-     * An artboard: a page of fixed width with two rows inside it, and a free part
-     * beside it on the canvas.
-     */
-    function doc(width) {
-        return view('Doc', node(0, 0, 2000, 1000), [
-            view('Board', node(100, 100, width, 600), [
-                view('Head', node(100, 100, width, 40)),
-                view('Body', node(100, 140, width, 560)),
-            ]),
-            view('Loose', node(1500, 100, 80, 24)),
-        ]);
-    }
-    $mol_test({
-        /**
-         * The host addresses a node by the property that holds it, at any depth —
-         * section 1 — so the path is the chain of those names, and everything inside
-         * an artboard is reachable by one.
-         */
-        'every node of the document is measured, not only the free parts'($) {
-            const { sizes } = measure(doc(1280));
-            $mol_assert_like(Object.keys(sizes), [
-                'doc',
-                'doc/Board',
-                'doc/Board/Head',
-                'doc/Board/Body',
-                'doc/Loose',
-            ]);
-            $mol_assert_like(sizes['doc/Board/Head'], { x: 100, y: 100, width: 1280, height: 40 });
-        },
-        /**
-         * The point of the width switcher: the artboard changes size, and so does
-         * everything laid out inside it, while the free part beside it does not move.
-         */
-        'a narrower artboard reports narrower nodes inside it'($) {
-            const wide = measure(doc(1280)).sizes;
-            const narrow = measure(doc(390)).sizes;
-            $mol_assert_equal(wide['doc/Board'].width, 1280);
-            $mol_assert_equal(narrow['doc/Board'].width, 390);
-            $mol_assert_equal(narrow['doc/Board/Body'].width, 390);
-            $mol_assert_like(wide['doc/Loose'], narrow['doc/Loose']);
-        },
-        /** The host owns the camera and is told world units, whatever the zoom. */
-        'boxes are reported in world units, relative to the root'($) {
-            const { sizes } = measure(doc(1280), 2);
-            $mol_assert_like(sizes['doc/Board'], { x: 50, y: 50, width: 640, height: 300 });
-        },
-        'a node out of the document is not measured'($) {
-            const { sizes, nodes } = measure(view('Doc', node(0, 0, 100, 100), [
-                view('Gone', node(0, 0, 10, 10, false)),
-                view('Here', node(0, 0, 10, 10)),
-            ]));
-            $mol_assert_like(Object.keys(sizes), ['doc', 'doc/Here']);
-            $mol_assert_equal(nodes.length, 2);
-        },
-        /**
-         * Watching the root alone leaves everything inside an artboard unwatched,
-         * which is exactly where a late font or a decoded image reflows without the
-         * root changing size.
-         */
-        'the observer is handed every measured node'($) {
-            const { nodes } = measure(doc(1280));
-            $mol_assert_equal(nodes.length, 5);
-        },
-        'watching adds what is new, drops what is gone and leaves the rest alone'($) {
-            const log = [];
-            const watcher = {
-                observe: (node) => log.push('+' + node),
-                unobserve: (node) => log.push('-' + node),
-            };
-            const first = $bog_vmap_scene_watch(watcher, new Set(), ['a', 'b']);
-            $mol_assert_like(log, ['+a', '+b']);
-            // A node still there is NOT observed again: every fresh `observe` gets a
-            // box delivered, and a report that re-observes everything would answer
-            // its own delivery with another report.
-            const second = $bog_vmap_scene_watch(watcher, first, ['b', 'c']);
-            $mol_assert_like(log, ['+a', '+b', '-a', '+c']);
-            $mol_assert_like([...second], ['b', 'c']);
-            $bog_vmap_scene_watch(watcher, second, []);
-            $mol_assert_like(log, ['+a', '+b', '-a', '+c', '-b', '-c']);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
      * Hot recompilation: an edit moves the living component onto the new classes
      * instead of building another one.
      *
@@ -7295,6 +7353,25 @@ var $;
                 await new Promise(next => setTimeout(next, 2));
             }
         }
+    }
+    /**
+     * Collects what the scene puts on the wire, in order.
+     *
+     * `ResizeObserver` is stubbed along the way: node has none, and without it a
+     * report round dies on the resize step before it ever reaches the error it was
+     * called to send. Nothing about attribution is replaced, only a browser API.
+     */
+    function wired(made) {
+        const sent = [];
+        made.post = (message) => { sent.push(message); };
+        const observer = { observe: () => { }, unobserve: () => { }, disconnect: () => { } };
+        made.resize_watch = () => ({ observer: observer, destructor: () => { } });
+        return sent;
+    }
+    /** The last failure the scene reported on one channel. */
+    function failure(sent, at) {
+        const errors = sent.filter(m => m.kind === 'error' && m.at === at);
+        return errors[errors.length - 1];
     }
     /** Compiles a source and hands back the live root. */
     async function grown(made, root, src) {
@@ -7468,7 +7545,7 @@ var $;
             $mol_assert_ok(Reflect.get(first, 'note()'));
             const second = await grown(made, root, keyed);
             $mol_assert_equal(second, first);
-            $mol_assert_equal(made.compile_error, '');
+            $mol_assert_equal(made.compile_error(), '');
             // the solo atom is gone rather than left for a keyed read to trip over
             $mol_assert_equal(Reflect.get(second, 'note()'), undefined);
             // and the keyed property answers, on the same instance
@@ -7513,13 +7590,106 @@ var $;
             // an heir of a class nobody declared: the generated code throws
             const broken = await grown(made, root, src('one') + `${d}hot_fail_kid ${d}hot_fail_ghost\n`);
             $mol_assert_equal(broken, first);
-            $mol_assert_ok(made.compile_error);
+            $mol_assert_ok(made.compile_error());
             $mol_assert_equal(first.note(), 'typed by hand');
             const fixed = await grown(made, root, src('two'));
             $mol_assert_equal(fixed, first);
-            $mol_assert_equal(made.compile_error, '');
+            $mol_assert_equal(made.compile_error(), '');
             $mol_assert_equal(fixed.tag(), 'two');
             $mol_assert_equal(fixed.note(), 'typed by hand');
+        },
+        /**
+         * A failure of a nested node arrives named by that node.
+         *
+         * The name is the path `sizes` is keyed with, and it has to be, or the host
+         * looks the label up in a dictionary that does not have it. The element that
+         * failed does carry an attribute of its own, but that one is lowercased and
+         * joined by underscores — a different vocabulary, and a silently wrong one.
+         */
+        async 'a runtime failure names the node it belongs to'($) {
+            const made = scene($);
+            const sent = wired(made);
+            const root = `${d}hot_blame_page`;
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Tail ${d}hot_blame_tail\n`
+                + `${d}hot_blame_tail ${d}mol_view\n\tsub /\n\t\t<= Deep ${d}hot_blame_deep\n`
+                + `${d}hot_blame_deep ${d}mol_view\n\tsub /\n\t\t<= boom \\\n`);
+            made.doc_js({ [`${d}hot_blame_deep`]: 'boom() { throw new Error( "bang" ) }' });
+            await settled(() => made.instance());
+            try {
+                first.dom_tree();
+            }
+            catch { }
+            // the attribution itself
+            $mol_assert_equal(made.render_error(first).node, `${root}/Tail/Deep`);
+            $mol_assert_ok(made.render_error(first).message);
+            // and the same thing as the host sees it
+            made.report_send();
+            const failed = failure(sent, 'runtime');
+            $mol_assert_equal(failed?.node, `${root}/Tail/Deep`);
+            $mol_assert_ok(failed?.message);
+        },
+        /**
+         * A failure nobody can be blamed for still travels, with an empty node.
+         *
+         * Empty and not absent: the host must not have to tell «this scene found no
+         * node» from «this scene is older than the field».
+         */
+        async 'a failure with no node to blame reports an empty one'($) {
+            const made = scene($);
+            const sent = wired(made);
+            const root = `${d}hot_blank_page`;
+            await grown(made, root, `${root} ${d}mol_view\n\ttag \\one\n`);
+            made.error_post('runtime', 'something nobody owns', '');
+            const failed = failure(sent, 'runtime');
+            $mol_assert_equal(failed?.message, 'something nobody owns');
+            $mol_assert_equal(failed?.node, '');
+        },
+        /**
+         * A COMPILE failure names a class, and a class is not a node. The tree still
+         * on the screen was built from the previous text, so the live instance of
+         * the class just broken is the node the user is looking at.
+         */
+        async 'a compile failure names the node of the class that broke'($) {
+            const made = scene($);
+            const sent = wired(made);
+            const root = `${d}hot_guilt_page`;
+            const src = (kid) => `${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_guilt_kid\n`
+                + `${d}hot_guilt_kid ${kid}\n\ttag \\one\n`;
+            const first = await grown(made, root, src(`${d}mol_view`));
+            $mol_assert_ok(first.Kid());
+            // the child now inherits a class nobody declared: the generated code throws
+            await grown(made, root, src(`${d}hot_guilt_ghost`));
+            $mol_assert_ok(made.compile_error());
+            $mol_assert_equal(made.compile_class(), `${d}hot_guilt_kid`);
+            made.report_send();
+            $mol_assert_equal(failure(sent, 'compile')?.node, `${root}/Kid`);
+        },
+        /**
+         * The error state lives in the graph, not in a field beside it.
+         *
+         * It used to be a plain field written from inside the cell that builds the
+         * instance, and a reader of a field is woken by nothing: the label on the
+         * node would light up a round late, or not until something else moved. So
+         * what is asserted is not the value but the waking — a subscriber that has
+         * read the failure answers with the new one without the scene being asked
+         * again — a cached atom nobody invalidated answers with what it remembers,
+         * which is precisely what a field beside the graph produces.
+         */
+        async 'a reader of the compile failure is woken when it changes'($) {
+            const made = scene($);
+            const root = `${d}hot_wake_page`;
+            const src = (tag) => `${root} ${d}mol_view\n\ttag \\${tag}\n`;
+            await grown(made, root, src('one'));
+            const seen = {};
+            const atom = $mol_wire_atom.solo(seen, function watcher() { return made.compile_error(); });
+            $mol_assert_equal(atom.sync(), '');
+            // an heir of a class nobody declared: the generated code throws
+            await grown(made, root, src('one') + `${d}hot_wake_kid ${d}hot_wake_ghost\n`);
+            // The subscriber is asked, not the scene. A cached atom nobody
+            // invalidated answers with what it remembers, and that is exactly the
+            // symptom of a failure kept in a field beside the graph.
+            $mol_assert_ok(atom.sync());
+            $mol_assert_equal(atom.sync(), made.compile_error());
         },
     });
 })($ || ($ = {}));
