@@ -45113,6 +45113,315 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
+
+	type $mol_check__checked_mol_check_list_1 = $mol_type_enforce<
+		ReturnType< $mol_check_list['option_checked'] >
+		,
+		ReturnType< $mol_check['checked'] >
+	>
+	type $mol_check__label_mol_check_list_2 = $mol_type_enforce<
+		ReturnType< $mol_check_list['option_label'] >
+		,
+		ReturnType< $mol_check['label'] >
+	>
+	type $mol_check__enabled_mol_check_list_3 = $mol_type_enforce<
+		ReturnType< $mol_check_list['option_enabled'] >
+		,
+		ReturnType< $mol_check['enabled'] >
+	>
+	type $mol_check__hint_mol_check_list_4 = $mol_type_enforce<
+		ReturnType< $mol_check_list['option_hint'] >
+		,
+		ReturnType< $mol_check['hint'] >
+	>
+	type $mol_check__minimal_height_mol_check_list_5 = $mol_type_enforce<
+		number
+		,
+		ReturnType< $mol_check['minimal_height'] >
+	>
+	export class $mol_check_list extends $mol_view {
+		option_checked( id: any, next?: boolean ): boolean
+		option_title( id: any): string
+		option_label( id: any): readonly(any)[]
+		enabled( ): boolean
+		option_enabled( id: any): ReturnType< $mol_check_list['enabled'] >
+		option_hint( id: any): string
+		items( ): readonly($mol_check)[]
+		dictionary( ): Record<string, any>
+		Option( id: any): $mol_check
+		options( ): Record<string, any>
+		keys( ): readonly(string)[]
+		sub( ): ReturnType< $mol_check_list['items'] >
+	}
+	
+}
+
+//# sourceMappingURL=list.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * List of checkboxes
+     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_check_list_demo
+     */
+    class $mol_check_list extends $.$mol_check_list {
+        options(): {
+            [key: string]: string;
+        };
+        dictionary(next?: Record<string, boolean>): Record<string, boolean>;
+        option_checked(id: string, next?: boolean | null): boolean;
+        keys(): readonly string[];
+        items(): $.$mol_check[];
+        option_title(key: string): string;
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
+    class $mol_state_session<Value> extends $mol_object {
+        static 'native()': Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+        static native(): Storage | {
+            getItem(key: string): any;
+            setItem(key: string, value: string): void;
+            removeItem(key: string): void;
+        };
+        static value<Value>(key: string, next?: Value): Value;
+        prefix(): string;
+        value(key: string, next?: Value): Value;
+    }
+}
+
+declare namespace $ {
+
+	export class $mol_switch extends $mol_check_list {
+		value( next?: string ): string
+	}
+	
+}
+
+//# sourceMappingURL=switch.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * Buttons which switching the state
+     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_switch_demo
+     */
+    class $mol_switch extends $.$mol_switch {
+        value(next?: string): string;
+        option_checked(key: string, next?: boolean): boolean;
+    }
+}
+
+declare namespace $ {
+
+	type $mol_switch__value_bog_vmap_app_inspect_flex_1 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_flex['width'] >
+		,
+		ReturnType< $mol_switch['value'] >
+	>
+	type $mol_switch__options_bog_vmap_app_inspect_flex_2 = $mol_type_enforce<
+		({ 
+			'390px': string,
+			'768px': string,
+			'1280px': string,
+		}) 
+		,
+		ReturnType< $mol_switch['options'] >
+	>
+	type $bog_vmap_app_inspect_flex_row__title_bog_vmap_app_inspect_flex_3 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $bog_vmap_app_inspect_flex_row['title'] >
+	>
+	type $bog_vmap_app_inspect_flex_row__Field_bog_vmap_app_inspect_flex_4 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_flex['Width_pick'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_flex_row['Field'] >
+	>
+	type $mol_switch__value_bog_vmap_app_inspect_flex_5 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_flex['direction'] >
+		,
+		ReturnType< $mol_switch['value'] >
+	>
+	type $mol_switch__options_bog_vmap_app_inspect_flex_6 = $mol_type_enforce<
+		({ 
+			'column': string,
+			'row': string,
+		}) 
+		,
+		ReturnType< $mol_switch['options'] >
+	>
+	type $bog_vmap_app_inspect_flex_row__title_bog_vmap_app_inspect_flex_7 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $bog_vmap_app_inspect_flex_row['title'] >
+	>
+	type $bog_vmap_app_inspect_flex_row__Field_bog_vmap_app_inspect_flex_8 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_flex['Direction_pick'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_flex_row['Field'] >
+	>
+	type $mol_switch__value_bog_vmap_app_inspect_flex_9 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_flex['across'] >
+		,
+		ReturnType< $mol_switch['value'] >
+	>
+	type $mol_switch__options_bog_vmap_app_inspect_flex_10 = $mol_type_enforce<
+		({ 
+			'flex-start': string,
+			'center': string,
+			'flex-end': string,
+			'stretch': string,
+		}) 
+		,
+		ReturnType< $mol_switch['options'] >
+	>
+	type $bog_vmap_app_inspect_flex_row__title_bog_vmap_app_inspect_flex_11 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $bog_vmap_app_inspect_flex_row['title'] >
+	>
+	type $bog_vmap_app_inspect_flex_row__Field_bog_vmap_app_inspect_flex_12 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_flex['Across_pick'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_flex_row['Field'] >
+	>
+	type $mol_switch__value_bog_vmap_app_inspect_flex_13 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_flex['along'] >
+		,
+		ReturnType< $mol_switch['value'] >
+	>
+	type $mol_switch__options_bog_vmap_app_inspect_flex_14 = $mol_type_enforce<
+		({ 
+			'flex-start': string,
+			'center': string,
+			'flex-end': string,
+			'space-between': string,
+		}) 
+		,
+		ReturnType< $mol_switch['options'] >
+	>
+	type $bog_vmap_app_inspect_flex_row__title_bog_vmap_app_inspect_flex_15 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $bog_vmap_app_inspect_flex_row['title'] >
+	>
+	type $bog_vmap_app_inspect_flex_row__Field_bog_vmap_app_inspect_flex_16 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_flex['Along_pick'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_flex_row['Field'] >
+	>
+	type $mol_string__hint_bog_vmap_app_inspect_flex_17 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_string['hint'] >
+	>
+	type $mol_string__value_bog_vmap_app_inspect_flex_18 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_flex['gap'] >
+		,
+		ReturnType< $mol_string['value'] >
+	>
+	type $bog_vmap_app_inspect_flex_row__title_bog_vmap_app_inspect_flex_19 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $bog_vmap_app_inspect_flex_row['title'] >
+	>
+	type $bog_vmap_app_inspect_flex_row__Field_bog_vmap_app_inspect_flex_20 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_flex['Gap_field'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_flex_row['Field'] >
+	>
+	type $mol_check__title_bog_vmap_app_inspect_flex_21 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_check['title'] >
+	>
+	type $mol_check__checked_bog_vmap_app_inspect_flex_22 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_flex['grow'] >
+		,
+		ReturnType< $mol_check['checked'] >
+	>
+	type $bog_vmap_app_inspect_flex_row__title_bog_vmap_app_inspect_flex_23 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $bog_vmap_app_inspect_flex_row['title'] >
+	>
+	type $bog_vmap_app_inspect_flex_row__Field_bog_vmap_app_inspect_flex_24 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_flex['Grow_check'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_flex_row['Field'] >
+	>
+	export class $bog_vmap_app_inspect_flex extends $mol_view {
+		width( next?: string ): string
+		Width_pick( ): $mol_switch
+		Width( ): $bog_vmap_app_inspect_flex_row
+		direction( next?: string ): string
+		Direction_pick( ): $mol_switch
+		Direction( ): $bog_vmap_app_inspect_flex_row
+		across( next?: string ): string
+		Across_pick( ): $mol_switch
+		Across( ): $bog_vmap_app_inspect_flex_row
+		along( next?: string ): string
+		Along_pick( ): $mol_switch
+		Along( ): $bog_vmap_app_inspect_flex_row
+		gap( next?: string ): string
+		Gap_field( ): $mol_string
+		Gap( ): $bog_vmap_app_inspect_flex_row
+		grow( next?: boolean ): boolean
+		Grow_check( ): $mol_check
+		Grow( ): $bog_vmap_app_inspect_flex_row
+		value( id: any, next?: string ): string
+		sub( ): readonly(any)[]
+	}
+	
+	type $mol_view__sub_bog_vmap_app_inspect_flex_row_1 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	export class $bog_vmap_app_inspect_flex_row extends $mol_view {
+		Title( ): $mol_view
+		title( ): string
+		Field( ): $mol_view
+		sub( ): readonly(any)[]
+	}
+	
+}
+
+//# sourceMappingURL=flex.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * Layout panel of one node: five style keys with names on them.
+     *
+     * It owns nothing. Every control is one key of the `style` dictionary of the
+     * node, read and written through `value()`, so what the panel shows is what the
+     * document says and what it writes is an ordinary line of `view.tree`. The
+     * inspector already has a dictionary editor for the same property; this is the
+     * same facts with the names of the decisions on them.
+     *
+     * @see ../../../ARCHITECTURE.md section 8
+     */
+    class $bog_vmap_app_inspect_flex extends $.$bog_vmap_app_inspect_flex {
+        width(next?: string): string;
+        direction(next?: string): string;
+        across(next?: string): string;
+        along(next?: string): string;
+        gap(next?: string): string;
+        /**
+         * Stretching, written as the STRING `1` and never as the number.
+         *
+         * `$mol_dom_render_styles` appends `px` to a number, so `flexGrow 1` in the
+         * document comes out as `flex-grow: 1px`, which is not a length and not a
+         * growth factor either: the property is simply dropped and the node does not
+         * stretch. Dimensionless numbers go in as text.
+         */
+        grow(next?: boolean): boolean;
+    }
+}
+
+declare namespace $.$$ {
+}
+
+declare namespace $ {
     function $mol_tree2_js_is_number(type: string): boolean | RegExpMatchArray;
 }
 
@@ -45485,20 +45794,6 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
-}
-
-declare namespace $ {
-    class $mol_state_session<Value> extends $mol_object {
-        static 'native()': Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
-        static native(): Storage | {
-            getItem(key: string): any;
-            setItem(key: string, value: string): void;
-            removeItem(key: string): void;
-        };
-        static value<Value>(key: string, next?: Value): Value;
-        prefix(): string;
-        value(key: string, next?: Value): Value;
-    }
 }
 
 declare namespace $ {
@@ -46957,6 +47252,18 @@ declare namespace $ {
          */
         link_drop(to: string, to_prop: string): void;
         /**
+         * Unplugs every wire with an end on a part: the ones it feeds and the ones
+         * it reads. What a delete of that part has to do before it takes the part
+         * out, or the document keeps a wire to a node that is no longer declared —
+         * which compiles into a call of a property nobody declares.
+         *
+         * Through `link_drop`, so a wire read by somebody else keeps its line
+         * exactly as it does when a port is unplugged by hand; a wire from this part
+         * that nobody reads has no consumer to unplug and goes in the second pass.
+         * Both ends of every OTHER wire are left alone.
+         */
+        links_drop(node: string): void;
+        /**
          * Declaration of a property, read off the derivation of the text.
          *
          * Not through `prop_tree()`: that one is a keyed cell the writes below go
@@ -47003,7 +47310,15 @@ declare namespace $ {
         sub_write(owner: string, list: $mol_tree2): void;
         /** Makes a node a container by giving it an empty `sub`, if it has none. */
         sub_open(owner: string): void;
-        /** One override written under a part, `Board $mol_view style *`, or `null`. */
+        /**
+         * One override written under a part, `Board $mol_view style *`, or `null`.
+         *
+         * Only under a PART: a property whose value is a class name. Under anything
+         * else the children are not overrides at all — under `sub` they are bare
+         * `<=` references — and reading them as property signatures fails on the
+         * first one, which is how every property of the document gets asked whether
+         * it is an artboard.
+         */
         over_tree(owner: string, prop: string): $mol_tree2 | null;
         /**
          * Replaces an override under a part where it stands, appends a new one, or
@@ -47915,72 +48230,77 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_inspect_5 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_flex__value_bog_vmap_app_inspect_5 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['flex_value'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_flex['value'] >
+	>
+	type $mol_view__sub_bog_vmap_app_inspect_6 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['rows'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_scroll__sub_bog_vmap_app_inspect_6 = $mol_type_enforce<
+	type $mol_scroll__sub_bog_vmap_app_inspect_7 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_scroll['sub'] >
 	>
-	type $bog_vmap_lang_node__source_bog_vmap_app_inspect_7 = $mol_type_enforce<
+	type $bog_vmap_lang_node__source_bog_vmap_app_inspect_8 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['source'] >
 		,
 		ReturnType< $bog_vmap_lang_node['source'] >
 	>
-	type $bog_vmap_lib__pack_bog_vmap_app_inspect_8 = $mol_type_enforce<
+	type $bog_vmap_lib__pack_bog_vmap_app_inspect_9 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['pack'] >
 		,
 		ReturnType< $bog_vmap_lib['pack'] >
 	>
-	type $bog_vmap_lib__classes_bog_vmap_app_inspect_9 = $mol_type_enforce<
+	type $bog_vmap_lib__classes_bog_vmap_app_inspect_10 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['classes'] >
 		,
 		ReturnType< $bog_vmap_lib['classes'] >
 	>
-	type $bog_vmap_app_inspect_row__sign_bog_vmap_app_inspect_10 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__sign_bog_vmap_app_inspect_11 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_sign'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['sign'] >
 	>
-	type $bog_vmap_app_inspect_row__owner_bog_vmap_app_inspect_11 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__owner_bog_vmap_app_inspect_12 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_owner'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['owner'] >
 	>
-	type $bog_vmap_app_inspect_row__inherited_bog_vmap_app_inspect_12 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__inherited_bog_vmap_app_inspect_13 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_inherited'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['inherited'] >
 	>
-	type $bog_vmap_app_inspect_row__value_bog_vmap_app_inspect_13 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__value_bog_vmap_app_inspect_14 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_value'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['value'] >
 	>
-	type $bog_vmap_app_inspect_row__keyed_bog_vmap_app_inspect_14 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__keyed_bog_vmap_app_inspect_15 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_keyed'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['keyed'] >
 	>
-	type $bog_vmap_app_inspect_row__changeable_bog_vmap_app_inspect_15 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__changeable_bog_vmap_app_inspect_16 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_changeable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['changeable'] >
 	>
-	type $bog_vmap_app_inspect_row__drop_bog_vmap_app_inspect_16 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__drop_bog_vmap_app_inspect_17 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_drop'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['drop'] >
 	>
-	type $bog_vmap_app_inspect_row__binds_bog_vmap_app_inspect_17 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__binds_bog_vmap_app_inspect_18 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['binds'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['binds'] >
 	>
-	type $bog_vmap_app_inspect_row__nodes_bog_vmap_app_inspect_18 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__nodes_bog_vmap_app_inspect_19 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['nodes'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['nodes'] >
@@ -47993,6 +48313,8 @@ declare namespace $ {
 		total( ): string
 		Total( ): $mol_view
 		Head( ): $mol_view
+		flex_value( id: any, next?: string ): string
+		Flex( ): $bog_vmap_app_inspect_flex
 		rows( ): readonly(any)[]
 		Rows( ): $mol_view
 		Body( ): $mol_scroll
@@ -48232,6 +48554,29 @@ declare namespace $.$$ {
          */
         row_changeable(name: string, next?: boolean): boolean;
         row_drop(name: string): void;
+        /**
+         * The `style` dictionary of the class, or `null` while it declares none.
+         *
+         * Off `prop_decl`, the derivation of the text, and not through `prop_tree`,
+         * which is the write path below: a read taken from a written cell freezes at
+         * what was written, and the panel would go on showing the value it set after
+         * the document moved underneath it.
+         */
+        style_dict(): $mol_tree2 | null;
+        /**
+         * One key of the `style` dictionary of the node, both ways. Empty means the
+         * key is not written, and writing empty takes it out again.
+         *
+         * A dictionary the document does not declare yet is started with `^` under
+         * it. A redeclared dictionary REPLACES the one of the base rather than
+         * extending it, so a node over `$mol_button` that grew one `gap` would lose
+         * every style the base sets, in silence; `^` says the one true thing —
+         * everything of the base, plus what is written below.
+         *
+         * Not memoized, for the reason spelled out at `row_value`: this is a write
+         * path, and the read is a lookup over a tree that is a cell already.
+         */
+        flex_value(key: string, next?: string): string;
     }
     class $bog_vmap_app_inspect_demo extends $.$bog_vmap_app_inspect_demo {
         source(next?: string): string;
@@ -49815,104 +50160,104 @@ declare namespace $ {
 		ReturnType< $mol_button_minor['title'] >
 	>
 	type $mol_button_minor__hint_bog_vmap_app_17 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['delete_hint'] >
+		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__enabled_bog_vmap_app_18 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['selection_showed'] >
-		,
-		ReturnType< $mol_button_minor['enabled'] >
-	>
-	type $mol_button_minor__click_bog_vmap_app_19 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_delete'] >
+	type $mol_button_minor__click_bog_vmap_app_18 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['board_add'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $bog_vmap_app_publish__part_bog_vmap_app_20 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['publish_part'] >
-		,
-		ReturnType< $bog_vmap_app_publish['part'] >
-	>
-	type $bog_vmap_app_publish__source_bog_vmap_app_21 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_source'] >
-		,
-		ReturnType< $bog_vmap_app_publish['source'] >
-	>
-	type $bog_vmap_app_publish__doc_bog_vmap_app_22 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['doc_src'] >
-		,
-		ReturnType< $bog_vmap_app_publish['doc'] >
-	>
-	type $bog_vmap_app_publish__classes_bog_vmap_app_23 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $bog_vmap_app_publish['classes'] >
-	>
-	type $mol_view__sub_bog_vmap_app_24 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_25 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_button_minor__title_bog_vmap_app_26 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_19 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_27 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_20 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['delete_hint'] >
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_bog_vmap_app_21 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['selection_showed'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_bog_vmap_app_22 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_delete'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $bog_vmap_app_publish__part_bog_vmap_app_23 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['publish_part'] >
+		,
+		ReturnType< $bog_vmap_app_publish['part'] >
+	>
+	type $bog_vmap_app_publish__source_bog_vmap_app_24 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_source'] >
+		,
+		ReturnType< $bog_vmap_app_publish['source'] >
+	>
+	type $bog_vmap_app_publish__doc_bog_vmap_app_25 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['doc_src'] >
+		,
+		ReturnType< $bog_vmap_app_publish['doc'] >
+	>
+	type $bog_vmap_app_publish__classes_bog_vmap_app_26 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $bog_vmap_app_publish['classes'] >
+	>
+	type $mol_view__sub_bog_vmap_app_27 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_28 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_button_minor__title_bog_vmap_app_29 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_bog_vmap_app_30 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_28 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_31 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_restart'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $bog_vmap_app_palette__compact_bog_vmap_app_29 = $mol_type_enforce<
+	type $bog_vmap_app_palette__compact_bog_vmap_app_32 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $bog_vmap_app_palette['compact'] >
 	>
-	type $bog_vmap_app_palette__links_bog_vmap_app_30 = $mol_type_enforce<
+	type $bog_vmap_app_palette__links_bog_vmap_app_33 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['links'] >
 		,
 		ReturnType< $bog_vmap_app_palette['links'] >
 	>
-	type $bog_vmap_app_palette__pack_link_bog_vmap_app_31 = $mol_type_enforce<
+	type $bog_vmap_app_palette__pack_link_bog_vmap_app_34 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_app_palette['pack_link'] >
 	>
-	type $bog_vmap_app_palette__land_classes_bog_vmap_app_32 = $mol_type_enforce<
+	type $bog_vmap_app_palette__land_classes_bog_vmap_app_35 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lib_classes'] >
 		,
 		ReturnType< $bog_vmap_app_palette['land_classes'] >
 	>
-	type $mol_bar__sub_bog_vmap_app_33 = $mol_type_enforce<
+	type $mol_bar__sub_bog_vmap_app_36 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_bar['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_34 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_35 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_36 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['body_main'] >
-		,
-		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_view__sub_bog_vmap_app_37 = $mol_type_enforce<
 		readonly(any)[]
@@ -49920,41 +50265,56 @@ declare namespace $ {
 		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_view__sub_bog_vmap_app_38 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['aside_content'] >
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $bog_vmap_app_inspect__source_bog_vmap_app_39 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_source'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['source'] >
-	>
-	type $bog_vmap_app_inspect__peers_bog_vmap_app_40 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_peers'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['peers'] >
-	>
-	type $bog_vmap_app_inspect__pack_bog_vmap_app_41 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['pack_link'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['pack'] >
-	>
-	type $mol_view__sub_bog_vmap_app_42 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_43 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_39 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['body_main'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_40 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_41 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['aside_content'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $bog_vmap_app_inspect__source_bog_vmap_app_42 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_source'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['source'] >
+	>
+	type $bog_vmap_app_inspect__peers_bog_vmap_app_43 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_peers'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['peers'] >
+	>
+	type $bog_vmap_app_inspect__pack_bog_vmap_app_44 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['pack_link'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['pack'] >
+	>
+	type $mol_view__sub_bog_vmap_app_45 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_46 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['pack'] >
 	>
-	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_44 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_47 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lands'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['lands'] >
 	>
-	type $mol_view__style_bog_vmap_app_45 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_48 = $mol_type_enforce<
 		({ 
 			'left': ReturnType< $bog_vmap_app['ghost_left'] >,
 			'top': ReturnType< $bog_vmap_app['ghost_top'] >,
@@ -49962,75 +50322,85 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_46 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_49 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_app_pane__scene_uri_bog_vmap_app_47 = $mol_type_enforce<
+	type $bog_vmap_app_pane__scene_uri_bog_vmap_app_50 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_uri'] >
 		,
 		ReturnType< $bog_vmap_app_pane['scene_uri'] >
 	>
-	type $bog_vmap_app_pane__doc_src_bog_vmap_app_48 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_src_bog_vmap_app_51 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_src'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_src'] >
 	>
-	type $bog_vmap_app_pane__doc_css_bog_vmap_app_49 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_css_bog_vmap_app_52 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_css'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_css'] >
 	>
-	type $bog_vmap_app_pane__spots_bog_vmap_app_50 = $mol_type_enforce<
+	type $bog_vmap_app_pane__spots_bog_vmap_app_53 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['spots'] >
 		,
 		ReturnType< $bog_vmap_app_pane['spots'] >
 	>
-	type $bog_vmap_app_pane__selected_bog_vmap_app_51 = $mol_type_enforce<
+	type $bog_vmap_app_pane__selected_bog_vmap_app_54 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['selected'] >
 		,
 		ReturnType< $bog_vmap_app_pane['selected'] >
 	>
-	type $bog_vmap_app_pane__doc_js_bog_vmap_app_52 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_js_bog_vmap_app_55 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_js'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_js'] >
 	>
-	type $bog_vmap_app_pane__doc_root_bog_vmap_app_53 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_root_bog_vmap_app_56 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_root'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_root'] >
 	>
-	type $bog_vmap_app_pane__libs_bog_vmap_app_54 = $mol_type_enforce<
+	type $bog_vmap_app_pane__libs_bog_vmap_app_57 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['libs'] >
 		,
 		ReturnType< $bog_vmap_app_pane['libs'] >
 	>
-	type $bog_vmap_app_pane__hole_allowed_bog_vmap_app_55 = $mol_type_enforce<
+	type $bog_vmap_app_pane__hole_allowed_bog_vmap_app_58 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['hole_allowed'] >
 		,
 		ReturnType< $bog_vmap_app_pane['hole_allowed'] >
 	>
-	type $bog_vmap_app_pane__wires_bog_vmap_app_56 = $mol_type_enforce<
+	type $bog_vmap_app_pane__wires_bog_vmap_app_59 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_wires'] >
 		,
 		ReturnType< $bog_vmap_app_pane['wires'] >
 	>
-	type $bog_vmap_app_pane__part_ports_bog_vmap_app_57 = $mol_type_enforce<
+	type $bog_vmap_app_pane__part_ports_bog_vmap_app_60 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['part_ports'] >
 		,
 		ReturnType< $bog_vmap_app_pane['part_ports'] >
 	>
-	type $bog_vmap_app_pane__link_add_bog_vmap_app_58 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_add_bog_vmap_app_61 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_add'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_add'] >
 	>
-	type $bog_vmap_app_pane__link_drop_bog_vmap_app_59 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_drop_bog_vmap_app_62 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_drop'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_drop'] >
+	>
+	type $bog_vmap_app_pane__containers_bog_vmap_app_63 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['doc_containers'] >
+		,
+		ReturnType< $bog_vmap_app_pane['containers'] >
+	>
+	type $bog_vmap_app_pane__tree_move_bog_vmap_app_64 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['tree_move'] >
+		,
+		ReturnType< $bog_vmap_app_pane['tree_move'] >
 	>
 	export class $bog_vmap_app extends $mol_view {
 		body( ): readonly($mol_view)[]
@@ -50046,6 +50416,8 @@ declare namespace $ {
 		Zoom_in( ): $mol_button_minor
 		camera_reset( next?: any ): any
 		Reset( ): $mol_button_minor
+		board_add( next?: any ): any
+		Board( ): $mol_button_minor
 		delete_hint( ): string
 		selection_showed( ): boolean
 		node_delete( next?: any ): any
@@ -50077,6 +50449,8 @@ declare namespace $ {
 		part_ports( id: any): readonly($bog_vmap_app_wire_port)[]
 		link_add( next?: any ): any
 		link_drop( next?: any ): any
+		doc_containers( ): readonly(string)[]
+		tree_move( next?: any ): any
 		doc_src( ): string
 		doc_css( ): string
 		spots( next?: Record<string, any> ): Record<string, any>
@@ -50308,6 +50682,26 @@ declare namespace $.$$ {
          * of the text, and not through `prop_tree()`, the write path.
          */
         part_ports(name: string): readonly $bog_vmap_app_wire_port[];
+        /**
+         * Nodes that carry a `sub` of their own, which is what makes a node an
+         * artboard and its children a tree rather than a heap of coordinates.
+         *
+         * Read off the document and nowhere else: there is no mark, no registry and
+         * no side channel saying which node is a page. Section 8 says both artboards
+         * and free parts are properties of the same root class, and the only
+         * difference between them is in the text.
+         */
+        doc_containers(): string[];
+        /**
+         * A node dropped inside an artboard goes into the tree of its parent, and
+         * loses its coordinate on the way.
+         *
+         * The coordinate goes because it would stop meaning anything: the placement
+         * rules of the scene position the direct children of the root and nothing
+         * else, so a number left here would be a line of the desk layout that moves
+         * nothing and outlives every drag.
+         */
+        tree_move(next?: $bog_vmap_app_pane_tree_move | null): $bog_vmap_app_pane_tree_move | null;
         /** A wire drawn on the canvas goes into the document as two lines, see `link_add` of the model. */
         link_add(next?: $bog_vmap_app_pane_link_new | null): $bog_vmap_app_pane_link_new | null;
         link_drop(next?: $bog_vmap_app_pane_link_end | null): $bog_vmap_app_pane_link_end | null;
@@ -50400,6 +50794,8 @@ declare namespace $.$$ {
          * one and it would only make the names longer, not more distinct.
          */
         part_name(klass: string): string;
+        /** The given name, or it with a number, whichever the document does not carry. */
+        name_free(head: string): string;
         /**
          * Drops a component onto the canvas: one declaration and one reference.
          *
@@ -50410,6 +50806,29 @@ declare namespace $.$$ {
          * two separate facts: what exists, and what is on the page.
          */
         part_drop(klass: string, x: number, y: number): void;
+        /** Layout of a fresh artboard: the page of a desktop, stacked downwards. */
+        board_style(): {
+            readonly [key: string]: string;
+        };
+        /**
+         * Puts a page on the canvas: a node with a `sub` of its own.
+         *
+         * A plain `$mol_view` and not a class of ours, so an exported document
+         * depends on nothing of this pack; what makes it a page is the width and the
+         * `sub`, both of them ordinary lines of the document. `flexDirection` is
+         * written out because `[mol_view]` is `display: flex` with no direction at
+         * all, that is to say a ROW: a page that did not say so would lay its first
+         * two blocks side by side.
+         */
+        board_add(): void;
+        /**
+         * The world point the middle of the canvas is looking at.
+         *
+         * Read off the DOM like `canvas_point`, and for the same reason: `view_rect`
+         * is a watched cell, and a handler that subscribed to it would be re-run by
+         * the layout change its own drop causes.
+         */
+        canvas_center(): readonly [number, number];
         delete_hint(): string;
         /**
          * Takes the picked node off the canvas: out of `sub`, out of the class, out

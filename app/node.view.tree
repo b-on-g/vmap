@@ -569,6 +569,88 @@ $bog_vmap_app_palette $mol_view
 		pack <= pack_link \
 		classes <= land_classes
 
+$mol_check_list $mol_view
+	dictionary *
+	Option* $mol_check
+		checked? <=> option_checked*? false
+		label <= option_label* /
+			<= option_title* \
+		enabled <= option_enabled* <= enabled true
+		hint <= option_hint* \
+		minimal_height 24
+	options *
+	keys /string
+	sub <= items /$mol_check
+
+$mol_switch $mol_check_list
+	value? \
+
+- Layout of one node, as the four decisions a flex box actually takes: which way
+- the children go, how they line up across and along it, how far apart they are,
+- and whether this node stretches inside its own parent. Plus the width of the
+- page, which is the same kind of fact and is what an artboard is set by.
+-
+- Every one of them is a key of the ordinary `style` dictionary of the node, so
+- what this panel writes is what a hand written $mol document would carry, and an
+- export needs to know nothing about artboards at all.
+- @see ../../../ARCHITECTURE.md section 8
+$bog_vmap_app_inspect_flex $mol_view
+	- Value of one style key, by the name of the key. Two way: this is the whole
+	- surface of the panel, and the document is the owner's to write.
+	value*? \
+	sub /
+		<= Width $bog_vmap_app_inspect_flex_row
+			title \Ширина
+			Field <= Width_pick $mol_switch
+				value? <=> width? \
+				options *
+					390px \мобильная
+					768px \планшет
+					1280px \десктоп
+		<= Direction $bog_vmap_app_inspect_flex_row
+			title \Направление
+			Field <= Direction_pick $mol_switch
+				value? <=> direction? \
+				options *
+					column \колонкой
+					row \рядом
+		<= Across $bog_vmap_app_inspect_flex_row
+			title \Поперёк
+			Field <= Across_pick $mol_switch
+				value? <=> across? \
+				options *
+					flex-start \к началу
+					center \по центру
+					flex-end \к концу
+					stretch \во всю
+		<= Along $bog_vmap_app_inspect_flex_row
+			title \Вдоль
+			Field <= Along_pick $mol_switch
+				value? <=> along? \
+				options *
+					flex-start \к началу
+					center \по центру
+					flex-end \к концу
+					space-between \по краям
+		<= Gap $bog_vmap_app_inspect_flex_row
+			title \Зазор
+			Field <= Gap_field $mol_string
+				hint \1rem
+				value? <=> gap? \
+		<= Grow $bog_vmap_app_inspect_flex_row
+			title \Растяжение
+			Field <= Grow_check $mol_check
+				title \занимать свободное место
+				checked? <=> grow? false
+
+- One line of the panel: what is being set, and the control setting it.
+$bog_vmap_app_inspect_flex_row $mol_view
+	title \
+	Field $mol_view
+	sub /
+		<= Title $mol_view sub / <= title
+		<= Field
+
 $mol_stack $mol_view
 
 $mol_text_code_token $mol_dimmer
@@ -1260,6 +1342,11 @@ $bog_vmap_app_inspect $mol_view
 				<= Title $mol_view sub / <= class_title \
 				<= Base $mol_view sub / <= base_title \
 				<= Total $mol_view sub / <= total \
+		- Layout of the node, above the ports: on a page these five decide what the
+		- thing looks like, and hunting them down among two dozen inherited ports is
+		- not what an inspector is for. They are keys of `style` all the same.
+		<= Flex $bog_vmap_app_inspect_flex
+			value*? <=> flex_value*? \
 		<= Body $mol_scroll
 			sub /
 				<= Rows $mol_view sub <= rows /
@@ -1620,6 +1707,13 @@ $bog_vmap_app $mol_view
 			<= Reset $mol_button_minor
 				title \Сбросить вид
 				click? <=> camera_reset? null
+			- A page of the document: a node with a `sub` of its own, laid out by
+			- tree inside. Nothing marks it as an artboard — the `sub` is the whole
+			- difference, see section 8 of the architecture.
+			<= Board $mol_button_minor
+				title \Артборд
+				hint \Положить страницу: прямоугольник ширины макета, вёрстка внутри по дереву
+				click? <=> board_add? null
 			<= Delete $mol_button_minor
 				title \Удалить
 				hint <= delete_hint \
@@ -1726,3 +1820,7 @@ $bog_vmap_app $mol_view
 		part_ports* <= part_ports* /$bog_vmap_app_wire_port
 		link_add? <=> link_add? null
 		link_drop? <=> link_drop? null
+		- Nodes that carry a `sub` of their own, so the pane knows where a drop goes
+		- into the tree instead of onto the canvas, and where to draw the line.
+		containers <= doc_containers /string
+		tree_move? <=> tree_move? null

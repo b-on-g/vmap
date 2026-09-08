@@ -21734,6 +21734,457 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$mol_check_list) = class $mol_check_list extends ($.$mol_view) {
+		option_checked(id, next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		option_title(id){
+			return "";
+		}
+		option_label(id){
+			return [(this.option_title(id))];
+		}
+		enabled(){
+			return true;
+		}
+		option_enabled(id){
+			return (this.enabled());
+		}
+		option_hint(id){
+			return "";
+		}
+		items(){
+			return [];
+		}
+		dictionary(){
+			return {};
+		}
+		Option(id){
+			const obj = new this.$.$mol_check();
+			(obj.checked) = (next) => ((this.option_checked(id, next)));
+			(obj.label) = () => ((this.option_label(id)));
+			(obj.enabled) = () => ((this.option_enabled(id)));
+			(obj.hint) = () => ((this.option_hint(id)));
+			(obj.minimal_height) = () => (24);
+			return obj;
+		}
+		options(){
+			return {};
+		}
+		keys(){
+			return [];
+		}
+		sub(){
+			return (this.items());
+		}
+	};
+	($mol_mem_key(($.$mol_check_list.prototype), "option_checked"));
+	($mol_mem_key(($.$mol_check_list.prototype), "Option"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * List of checkboxes
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_check_list_demo
+         */
+        class $mol_check_list extends $.$mol_check_list {
+            options() {
+                return {};
+            }
+            dictionary(next) {
+                return next ?? {};
+            }
+            option_checked(id, next) {
+                const prev = this.dictionary();
+                if (next === undefined)
+                    return prev[id] ?? null;
+                const next_rec = { ...prev, [id]: next };
+                if (next === null)
+                    delete next_rec[id];
+                return this.dictionary(next_rec)[id] ?? null;
+            }
+            keys() {
+                return Object.keys(this.options());
+            }
+            items() {
+                return this.keys().map(key => this.Option(key));
+            }
+            option_title(key) {
+                return this.options()[key] || key;
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_check_list.prototype, "keys", null);
+        __decorate([
+            $mol_mem
+        ], $mol_check_list.prototype, "items", null);
+        $$.$mol_check_list = $mol_check_list;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/check/list/list.view.css", "[mol_check_list] {\n\tdisplay: flex;\n\tflex-wrap: wrap;\n\tflex: 1 1 auto;\n\tborder-radius: var(--mol_gap_round);\n\tgap: 1px;\n}\n\n[mol_check_list_option] {\n\tflex: 0 1 auto;\n}\n\n[mol_check_list_option]:where([mol_check_checked=\"true\"]) {\n\ttext-shadow: 0 0;\n\tcolor: var(--mol_theme_current);\n}\n\n[mol_check_list_option]:where([mol_check_checked=\"true\"][disabled]) {\n\tcolor: var(--mol_theme_text);\n}\n");
+})($ || ($ = {}));
+
+;
+	($.$mol_switch) = class $mol_switch extends ($.$mol_check_list) {
+		value(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+	};
+	($mol_mem(($.$mol_switch.prototype), "value"));
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    class $mol_state_session extends $mol_object {
+        static 'native()';
+        static native() {
+            if (this['native()'])
+                return this['native()'];
+            check: try {
+                const native = $mol_dom_context.sessionStorage;
+                if (!native)
+                    break check;
+                native.setItem('', '');
+                native.removeItem('');
+                return this['native()'] = native;
+            }
+            catch (error) {
+                console.warn(error);
+            }
+            return this['native()'] = {
+                getItem(key) {
+                    return this[':' + key];
+                },
+                setItem(key, value) {
+                    this[':' + key] = value;
+                },
+                removeItem(key) {
+                    this[':' + key] = void 0;
+                }
+            };
+        }
+        static value(key, next) {
+            if (next === void 0)
+                return JSON.parse(this.native().getItem(key) || 'null');
+            if (next === null)
+                this.native().removeItem(key);
+            else
+                this.native().setItem(key, JSON.stringify(next));
+            return next;
+        }
+        prefix() { return ''; }
+        value(key, next) {
+            return $mol_state_session.value(this.prefix() + '.' + key, next);
+        }
+    }
+    __decorate([
+        $mol_mem_key
+    ], $mol_state_session, "value", null);
+    $.$mol_state_session = $mol_state_session;
+})($ || ($ = {}));
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Buttons which switching the state
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_switch_demo
+         */
+        class $mol_switch extends $.$mol_switch {
+            value(next) {
+                return $mol_state_session.value(`${this}.value()`, next) ?? '';
+            }
+            option_checked(key, next) {
+                if (next === undefined)
+                    return this.value() == key;
+                this.value(next ? key : '');
+                return next;
+            }
+        }
+        $$.$mol_switch = $mol_switch;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$bog_vmap_app_inspect_flex) = class $bog_vmap_app_inspect_flex extends ($.$mol_view) {
+		width(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		Width_pick(){
+			const obj = new this.$.$mol_switch();
+			(obj.value) = (next) => ((this.width(next)));
+			(obj.options) = () => ({
+				"390px": "мобильная", 
+				"768px": "планшет", 
+				"1280px": "десктоп"
+			});
+			return obj;
+		}
+		Width(){
+			const obj = new this.$.$bog_vmap_app_inspect_flex_row();
+			(obj.title) = () => ("Ширина");
+			(obj.Field) = () => ((this.Width_pick()));
+			return obj;
+		}
+		direction(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		Direction_pick(){
+			const obj = new this.$.$mol_switch();
+			(obj.value) = (next) => ((this.direction(next)));
+			(obj.options) = () => ({"column": "колонкой", "row": "рядом"});
+			return obj;
+		}
+		Direction(){
+			const obj = new this.$.$bog_vmap_app_inspect_flex_row();
+			(obj.title) = () => ("Направление");
+			(obj.Field) = () => ((this.Direction_pick()));
+			return obj;
+		}
+		across(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		Across_pick(){
+			const obj = new this.$.$mol_switch();
+			(obj.value) = (next) => ((this.across(next)));
+			(obj.options) = () => ({
+				"flex-start": "к началу", 
+				"center": "по центру", 
+				"flex-end": "к концу", 
+				"stretch": "во всю"
+			});
+			return obj;
+		}
+		Across(){
+			const obj = new this.$.$bog_vmap_app_inspect_flex_row();
+			(obj.title) = () => ("Поперёк");
+			(obj.Field) = () => ((this.Across_pick()));
+			return obj;
+		}
+		along(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		Along_pick(){
+			const obj = new this.$.$mol_switch();
+			(obj.value) = (next) => ((this.along(next)));
+			(obj.options) = () => ({
+				"flex-start": "к началу", 
+				"center": "по центру", 
+				"flex-end": "к концу", 
+				"space-between": "по краям"
+			});
+			return obj;
+		}
+		Along(){
+			const obj = new this.$.$bog_vmap_app_inspect_flex_row();
+			(obj.title) = () => ("Вдоль");
+			(obj.Field) = () => ((this.Along_pick()));
+			return obj;
+		}
+		gap(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		Gap_field(){
+			const obj = new this.$.$mol_string();
+			(obj.hint) = () => ("1rem");
+			(obj.value) = (next) => ((this.gap(next)));
+			return obj;
+		}
+		Gap(){
+			const obj = new this.$.$bog_vmap_app_inspect_flex_row();
+			(obj.title) = () => ("Зазор");
+			(obj.Field) = () => ((this.Gap_field()));
+			return obj;
+		}
+		grow(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		Grow_check(){
+			const obj = new this.$.$mol_check();
+			(obj.title) = () => ("занимать свободное место");
+			(obj.checked) = (next) => ((this.grow(next)));
+			return obj;
+		}
+		Grow(){
+			const obj = new this.$.$bog_vmap_app_inspect_flex_row();
+			(obj.title) = () => ("Растяжение");
+			(obj.Field) = () => ((this.Grow_check()));
+			return obj;
+		}
+		value(id, next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		sub(){
+			return [
+				(this.Width()), 
+				(this.Direction()), 
+				(this.Across()), 
+				(this.Along()), 
+				(this.Gap()), 
+				(this.Grow())
+			];
+		}
+	};
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "width"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "Width_pick"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "Width"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "direction"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "Direction_pick"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "Direction"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "across"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "Across_pick"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "Across"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "along"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "Along_pick"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "Along"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "gap"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "Gap_field"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "Gap"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "grow"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "Grow_check"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex.prototype), "Grow"));
+	($mol_mem_key(($.$bog_vmap_app_inspect_flex.prototype), "value"));
+	($.$bog_vmap_app_inspect_flex_row) = class $bog_vmap_app_inspect_flex_row extends ($.$mol_view) {
+		Title(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.title())]);
+			return obj;
+		}
+		title(){
+			return "";
+		}
+		Field(){
+			const obj = new this.$.$mol_view();
+			return obj;
+		}
+		sub(){
+			return [(this.Title()), (this.Field())];
+		}
+	};
+	($mol_mem(($.$bog_vmap_app_inspect_flex_row.prototype), "Title"));
+	($mol_mem(($.$bog_vmap_app_inspect_flex_row.prototype), "Field"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Layout panel of one node: five style keys with names on them.
+         *
+         * It owns nothing. Every control is one key of the `style` dictionary of the
+         * node, read and written through `value()`, so what the panel shows is what the
+         * document says and what it writes is an ordinary line of `view.tree`. The
+         * inspector already has a dictionary editor for the same property; this is the
+         * same facts with the names of the decisions on them.
+         *
+         * @see ../../../ARCHITECTURE.md section 8
+         */
+        class $bog_vmap_app_inspect_flex extends $.$bog_vmap_app_inspect_flex {
+            width(next) {
+                return this.value('width', next);
+            }
+            direction(next) {
+                return this.value('flexDirection', next);
+            }
+            across(next) {
+                return this.value('alignItems', next);
+            }
+            along(next) {
+                return this.value('justifyContent', next);
+            }
+            gap(next) {
+                return this.value('gap', next);
+            }
+            /**
+             * Stretching, written as the STRING `1` and never as the number.
+             *
+             * `$mol_dom_render_styles` appends `px` to a number, so `flexGrow 1` in the
+             * document comes out as `flex-grow: 1px`, which is not a length and not a
+             * growth factor either: the property is simply dropped and the node does not
+             * stretch. Dimensionless numbers go in as text.
+             */
+            grow(next) {
+                if (next === undefined)
+                    return this.value('flexGrow') === '1';
+                this.value('flexGrow', next ? '1' : '');
+                return next;
+            }
+        }
+        $$.$bog_vmap_app_inspect_flex = $bog_vmap_app_inspect_flex;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        $mol_style_define($bog_vmap_app_inspect_flex, {
+            flex: { direction: 'column' },
+            padding: { top: $mol_gap.space, bottom: $mol_gap.space },
+            gap: $mol_gap.space,
+        });
+        $mol_style_define($bog_vmap_app_inspect_flex_row, {
+            flex: { direction: 'row' },
+            align: { items: 'center' },
+            gap: $mol_gap.space,
+            Title: {
+                flex: { basis: '6rem', shrink: 0 },
+                color: $mol_theme.shade,
+            },
+            Field: {
+                flex: { grow: 1 },
+                // A panel of controls sits in a narrow column, and a $mol component
+                // embedded in someone else's layout keeps its content width unless it is
+                // told it may shrink.
+                minWidth: 0,
+            },
+        });
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
 "use strict";
 var $;
 (function ($) {
@@ -22831,58 +23282,6 @@ var $;
 	};
 	($.$mol_grid_number) = class $mol_grid_number extends ($.$mol_grid_cell) {};
 
-
-;
-"use strict";
-var $;
-(function ($) {
-    class $mol_state_session extends $mol_object {
-        static 'native()';
-        static native() {
-            if (this['native()'])
-                return this['native()'];
-            check: try {
-                const native = $mol_dom_context.sessionStorage;
-                if (!native)
-                    break check;
-                native.setItem('', '');
-                native.removeItem('');
-                return this['native()'] = native;
-            }
-            catch (error) {
-                console.warn(error);
-            }
-            return this['native()'] = {
-                getItem(key) {
-                    return this[':' + key];
-                },
-                setItem(key, value) {
-                    this[':' + key] = value;
-                },
-                removeItem(key) {
-                    this[':' + key] = void 0;
-                }
-            };
-        }
-        static value(key, next) {
-            if (next === void 0)
-                return JSON.parse(this.native().getItem(key) || 'null');
-            if (next === null)
-                this.native().removeItem(key);
-            else
-                this.native().setItem(key, JSON.stringify(next));
-            return next;
-        }
-        prefix() { return ''; }
-        value(key, next) {
-            return $mol_state_session.value(this.prefix() + '.' + key, next);
-        }
-    }
-    __decorate([
-        $mol_mem_key
-    ], $mol_state_session, "value", null);
-    $.$mol_state_session = $mol_state_session;
-})($ || ($ = {}));
 
 ;
 "use strict";
@@ -25412,6 +25811,29 @@ var $;
                 this.prop_drop(link.name);
         }
         /**
+         * Unplugs every wire with an end on a part: the ones it feeds and the ones
+         * it reads. What a delete of that part has to do before it takes the part
+         * out, or the document keeps a wire to a node that is no longer declared —
+         * which compiles into a call of a property nobody declares.
+         *
+         * Through `link_drop`, so a wire read by somebody else keeps its line
+         * exactly as it does when a port is unplugged by hand; a wire from this part
+         * that nobody reads has no consumer to unplug and goes in the second pass.
+         * Both ends of every OTHER wire are left alone.
+         */
+        links_drop(node) {
+            for (const link of [...this.links()]) {
+                if (link.from !== node && link.to !== node)
+                    continue;
+                this.link_drop(link.to, link.to_prop);
+            }
+            for (const wire of [...this.wires()]) {
+                if (wire.node !== node)
+                    continue;
+                this.prop_drop(wire.name);
+            }
+        }
+        /**
          * Declaration of a property, read off the derivation of the text.
          *
          * Not through `prop_tree()`: that one is a keyed cell the writes below go
@@ -25498,10 +25920,20 @@ var $;
                 return;
             this.sub_write(owner, this.tree().struct('/'));
         }
-        /** One override written under a part, `Board $mol_view style *`, or `null`. */
+        /**
+         * One override written under a part, `Board $mol_view style *`, or `null`.
+         *
+         * Only under a PART: a property whose value is a class name. Under anything
+         * else the children are not overrides at all — under `sub` they are bare
+         * `<=` references — and reading them as property signatures fails on the
+         * first one, which is how every property of the document gets asked whether
+         * it is an artboard.
+         */
         over_tree(owner, prop) {
-            const kids = this.prop_decl(owner)?.kids[0]?.kids ?? [];
-            return kids.find(over => this.$.$mol_view_tree2_prop_parts(over).name === prop) ?? null;
+            const klass = this.prop_decl(owner)?.kids[0];
+            if (!klass || !$mol_view_tree2_class_match(klass))
+                return null;
+            return klass.kids.find(over => this.$.$mol_view_tree2_prop_parts(over).name === prop) ?? null;
         }
         /**
          * Replaces an override under a part where it stands, appends a new one, or
@@ -25514,7 +25946,7 @@ var $;
         over_set(owner, prop, next) {
             const decl = this.prop_decl(owner);
             const klass = decl?.kids[0];
-            if (!decl || !klass)
+            if (!decl || !klass || !$mol_view_tree2_class_match(klass))
                 return;
             const named = (over) => this.$.$mol_view_tree2_prop_parts(over).name === prop;
             const kids = klass.kids.some(named)
@@ -25659,6 +26091,9 @@ var $;
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "link_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "links_drop", null);
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "sub_open", null);
@@ -27254,6 +27689,15 @@ var $;
 			]);
 			return obj;
 		}
+		flex_value(id, next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		Flex(){
+			const obj = new this.$.$bog_vmap_app_inspect_flex();
+			(obj.value) = (id, next) => ((this.flex_value(id, next)));
+			return obj;
+		}
 		rows(){
 			return [];
 		}
@@ -27314,7 +27758,11 @@ var $;
 			return "https://mol.hyoo.ru";
 		}
 		sub(){
-			return [(this.Head()), (this.Body())];
+			return [
+				(this.Head()), 
+				(this.Flex()), 
+				(this.Body())
+			];
 		}
 		Node(){
 			const obj = new this.$.$bog_vmap_lang_node();
@@ -27345,6 +27793,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Base"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Total"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Head"));
+	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "flex_value"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Flex"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Rows"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Body"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "row_value"));
@@ -27684,6 +28134,45 @@ var $;
             }
             row_drop(name) {
                 this.Node().prop_drop(name);
+            }
+            /**
+             * The `style` dictionary of the class, or `null` while it declares none.
+             *
+             * Off `prop_decl`, the derivation of the text, and not through `prop_tree`,
+             * which is the write path below: a read taken from a written cell freezes at
+             * what was written, and the panel would go on showing the value it set after
+             * the document moved underneath it.
+             */
+            style_dict() {
+                const dict = this.Node().prop_decl('style')?.kids[0] ?? null;
+                return dict?.type === '*' ? dict : null;
+            }
+            /**
+             * One key of the `style` dictionary of the node, both ways. Empty means the
+             * key is not written, and writing empty takes it out again.
+             *
+             * A dictionary the document does not declare yet is started with `^` under
+             * it. A redeclared dictionary REPLACES the one of the base rather than
+             * extending it, so a node over `$mol_button` that grew one `gap` would lose
+             * every style the base sets, in silence; `^` says the one true thing —
+             * everything of the base, plus what is written below.
+             *
+             * Not memoized, for the reason spelled out at `row_value`: this is a write
+             * path, and the read is a lookup over a tree that is a cell already.
+             */
+            flex_value(key, next) {
+                const node = this.Node();
+                const dict = this.style_dict();
+                if (next === undefined) {
+                    return this.$.$bog_vmap_lang_dict_get(dict, key)?.value ?? '';
+                }
+                const tree = node.tree();
+                const base = dict ?? tree.struct('*', [tree.struct('^')]);
+                const written = this.$.$bog_vmap_lang_dict_set(base, key, next ? tree.data(next) : null);
+                if (!node.prop_names().includes('style'))
+                    node.prop_add('style');
+                node.prop_tree('style', node.prop_tree('style').clone([written]));
+                return next;
             }
         }
         __decorate([
@@ -30750,6 +31239,17 @@ var $;
 			(obj.click) = (next) => ((this.camera_reset(next)));
 			return obj;
 		}
+		board_add(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Board(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("Артборд");
+			(obj.hint) = () => ("Положить страницу: прямоугольник ширины макета, вёрстка внутри по дереву");
+			(obj.click) = (next) => ((this.board_add(next)));
+			return obj;
+		}
 		delete_hint(){
 			return "";
 		}
@@ -30871,6 +31371,13 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		doc_containers(){
+			return [];
+		}
+		tree_move(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		doc_src(){
 			return "";
 		}
@@ -30927,6 +31434,7 @@ var $;
 				(this.Zoom_title()), 
 				(this.Zoom_in()), 
 				(this.Reset()), 
+				(this.Board()), 
 				(this.Delete()), 
 				(this.Publish()), 
 				(this.Status())
@@ -30997,6 +31505,8 @@ var $;
 			(obj.part_ports) = (id) => ((this.part_ports(id)));
 			(obj.link_add) = (next) => ((this.link_add(next)));
 			(obj.link_drop) = (next) => ((this.link_drop(next)));
+			(obj.containers) = () => ((this.doc_containers()));
+			(obj.tree_move) = (next) => ((this.tree_move(next)));
 			return obj;
 		}
 	};
@@ -31011,6 +31521,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Zoom_in"));
 	($mol_mem(($.$bog_vmap_app.prototype), "camera_reset"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Reset"));
+	($mol_mem(($.$bog_vmap_app.prototype), "board_add"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Board"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_delete"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Delete"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_source"));
@@ -31022,6 +31534,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Palette"));
 	($mol_mem(($.$bog_vmap_app.prototype), "link_add"));
 	($mol_mem(($.$bog_vmap_app.prototype), "link_drop"));
+	($mol_mem(($.$bog_vmap_app.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app.prototype), "spots"));
 	($mol_mem(($.$bog_vmap_app.prototype), "selected"));
 	($mol_mem(($.$bog_vmap_app.prototype), "links"));
@@ -31360,6 +31873,37 @@ var $;
                     return [];
                 return this.$.$bog_vmap_app_wire_ports(this.Lib().props_map(klass.type));
             }
+            /**
+             * Nodes that carry a `sub` of their own, which is what makes a node an
+             * artboard and its children a tree rather than a heap of coordinates.
+             *
+             * Read off the document and nowhere else: there is no mark, no registry and
+             * no side channel saying which node is a page. Section 8 says both artboards
+             * and free parts are properties of the same root class, and the only
+             * difference between them is in the text.
+             */
+            doc_containers() {
+                const node = this.node();
+                return node.prop_names().filter(name => node.sub_names(name));
+            }
+            /**
+             * A node dropped inside an artboard goes into the tree of its parent, and
+             * loses its coordinate on the way.
+             *
+             * The coordinate goes because it would stop meaning anything: the placement
+             * rules of the scene position the direct children of the root and nothing
+             * else, so a number left here would be a line of the desk layout that moves
+             * nothing and outlives every drag.
+             */
+            tree_move(next) {
+                if (!next)
+                    return null;
+                this.node().sub_move(next.name, next.index, next.owner);
+                const spots = { ...this.spots() };
+                delete spots[next.name];
+                this.spots(spots);
+                return next;
+            }
             /** A wire drawn on the canvas goes into the document as two lines, see `link_add` of the model. */
             link_add(next) {
                 if (next)
@@ -31540,7 +32084,10 @@ var $;
              */
             part_name(klass) {
                 const short = klass.replace(/^\$/, '').replace(/^\w+?_/, '');
-                const head = short.slice(0, 1).toUpperCase() + short.slice(1);
+                return this.name_free(short.slice(0, 1).toUpperCase() + short.slice(1));
+            }
+            /** The given name, or it with a number, whichever the document does not carry. */
+            name_free(head) {
                 const taken = new Set(this.node().prop_names());
                 if (!taken.has(head))
                     return head;
@@ -31562,9 +32109,71 @@ var $;
             part_drop(klass, x, y) {
                 const node = this.node();
                 const name = this.part_name(klass);
+                const slot = this.pane().insert_slot([x, y]);
                 node.part_add(name, klass);
+                // Into the tree of the artboard it was dropped into, or onto the canvas
+                // by a coordinate. One gesture, two ways of being laid out, told apart
+                // by where the release happened and nowhere else.
+                if (slot) {
+                    node.sub_insert(name, slot.index, slot.owner);
+                }
+                else {
+                    node.sub_add(name);
+                    this.spots({ ...this.spots(), [name]: { x, y } });
+                }
+                // Picked by the drop itself, as a fresh artboard is: a part is put on
+                // the canvas in order to be set up, and a click to reach the inspector
+                // is friction between the two halves of one intention.
+                this.selected(name);
+            }
+            /** Layout of a fresh artboard: the page of a desktop, stacked downwards. */
+            board_style() {
+                return {
+                    width: '1280px',
+                    minHeight: '720px',
+                    flexDirection: 'column',
+                    background: '#ffffff',
+                };
+            }
+            /**
+             * Puts a page on the canvas: a node with a `sub` of its own.
+             *
+             * A plain `$mol_view` and not a class of ours, so an exported document
+             * depends on nothing of this pack; what makes it a page is the width and the
+             * `sub`, both of them ordinary lines of the document. `flexDirection` is
+             * written out because `[mol_view]` is `display: flex` with no direction at
+             * all, that is to say a ROW: a page that did not say so would lay its first
+             * two blocks side by side.
+             */
+            board_add() {
+                const node = this.node();
+                const name = this.name_free('Page');
+                const tree = node.tree();
+                node.part_add(name, '$mol_view');
+                node.over_set(name, 'style', tree.struct('style', [
+                    tree.struct('*', Object.entries(this.board_style()).map(([key, value]) => tree.struct(key, [tree.data(value)]))),
+                ]));
+                node.sub_open(name);
                 node.sub_add(name);
-                this.spots({ ...this.spots(), [name]: { x, y } });
+                const spot = this.canvas_center();
+                this.spots({ ...this.spots(), [name]: { x: spot[0], y: spot[1] } });
+                this.selected(name);
+            }
+            /**
+             * The world point the middle of the canvas is looking at.
+             *
+             * Read off the DOM like `canvas_point`, and for the same reason: `view_rect`
+             * is a watched cell, and a handler that subscribed to it would be re-run by
+             * the layout change its own drop causes.
+             */
+            canvas_center() {
+                const rect = this.Pane().dom_node().getBoundingClientRect();
+                const shift = this.pane().camera_shift();
+                const zoom = this.pane().camera_zoom();
+                return [
+                    (rect.width / 2 - shift[0]) / zoom,
+                    (rect.height / 2 - shift[1]) / zoom,
+                ];
             }
             delete_hint() {
                 const name = this.selected();
@@ -31590,15 +32199,36 @@ var $;
                 if (!name)
                     return;
                 const node = this.node();
-                node.sub_drop(name);
-                node.prop_drop(name);
+                // An artboard goes with everything laid out inside it. Left behind, its
+                // children would stay declared and referenced by nothing — a legitimate
+                // state for a free part, and a trap for a page: nothing draws them, so
+                // nothing can select them, so nothing can ever take them out again.
+                const doomed = [name];
+                for (const dead of doomed)
+                    for (const kid of node.sub_names(dead) ?? []) {
+                        if (kid && !doomed.includes(kid))
+                            doomed.push(kid);
+                    }
+                // Wires first, and all of them before anything is dropped: a wire left
+                // behind names a node the document no longer declares, and the scene
+                // compiles that into a call of a property nobody has. Whose end it is
+                // makes no difference here — the model unplugs both sides and leaves
+                // every wire between the survivors alone.
+                for (const dead of doomed)
+                    node.links_drop(dead);
+                for (const dead of doomed) {
+                    node.sub_drop(dead);
+                    node.prop_drop(dead);
+                }
                 const spots = { ...this.spots() };
-                delete spots[name];
+                for (const dead of doomed)
+                    delete spots[dead];
                 this.spots(spots);
                 // The pane remembers boxes across culling, so a name missing from a
                 // report no longer means the node is gone. This is the one place that
                 // knows it is.
-                this.pane().sizes_forget(name);
+                for (const dead of doomed)
+                    this.pane().sizes_forget(dead);
                 this.selected(null);
             }
             /**
@@ -31664,6 +32294,9 @@ var $;
         ], $bog_vmap_app.prototype, "part_ports", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app.prototype, "doc_containers", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_app.prototype, "links_parsed", null);
         __decorate([
             $mol_mem
@@ -31671,6 +32304,9 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "part_drop", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "board_add", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "node_delete", null);
