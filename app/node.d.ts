@@ -50596,6 +50596,27 @@ declare namespace $.$$ {
          */
         links(next?: string): string;
         /**
+         * The palette of the open document, or nothing while the document is still
+         * on its way.
+         *
+         * THE SANDBOX MUST NOT WAIT FOR THE DOCUMENT. A document opened by a link
+         * lives in a land of its own, and reading any field of it suspends until
+         * that land syncs — which, with no master reachable, is for ever. This value
+         * feeds `pack_link`, `pack_link` feeds `scene_uri`, and `scene_uri` is the
+         * `src` of the frame: a suspension here therefore left the iframe with NO
+         * ADDRESS AT ALL, so the scene never booted, never said `ready`, and the
+         * editor sat on «ожидание сцены…» for ever. Measured on a document link with
+         * no master: frame `src` absent, palette suspended, nothing on the wire.
+         *
+         * So a suspension is answered with the empty string, which the caller reads
+         * as «no palette of its own» and falls back to the standard one. Nothing is
+         * lost: the subscription is recorded before the throw, so this recomputes
+         * the moment the land arrives, and a document that does carry a palette of
+         * its own then reloads the frame exactly as any change of pack does.
+         * The same shape as `store_boot`, and for the same reason.
+         */
+        store_links(): string;
+        /**
          * The store in a word for the status line, or empty when there is nothing
          * to say: the first document being made, or somebody else's document open
          * by its link, where edits do not stick.

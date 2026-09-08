@@ -13002,6 +13002,72 @@ var $;
             $mol_assert_equal(stage.app.doc_source(), source);
         },
         /**
+         * The artboard from the user's side: a page is put on the canvas, two parts
+         * are dropped INTO it and go into its tree instead of onto the desk, and the
+         * direction switch of the inspector decides how they stack — including where
+         * the next drop goes in.
+         */
+        'a page takes the parts dropped into it and stacks them the way it is set'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.click(stage.button('Артборд'));
+            // Nothing marks a page as one: it is a view with a `sub` of its own.
+            $mol_assert_equal(stage.app.selected(), 'Page');
+            const node = stage.app.node();
+            $mol_assert_like(node.sub_names('Page'), []);
+            const page = stage.pane.part_box('Page');
+            $mol_assert_ok(page);
+            // Dropped inside the page, both go into its tree and neither takes a
+            // coordinate: on the desk only the page itself lies.
+            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
+            stage.drop(map, stage.client([page.left + 200, page.top + 250]));
+            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Page']);
+            $mol_assert_equal(stage.app.doc_source().includes('\t\tsub /\n\t\t\t<= Calc\n\t\t\t<= Map\n'), true);
+            // The page is picked again by a click on the empty part of it.
+            stage.tap(stage.client([page.left + 200, page.top + 250]));
+            $mol_assert_equal(stage.app.selected(), 'Page');
+            // The layout panel of the inspector turns the column into a row.
+            stage.click(stage.check('рядом'));
+            $mol_assert_ok(stage.app.doc_source().includes('flexDirection \\row'));
+            $mol_assert_equal(stage.scene.last('doc_set').src, stage.app.doc_source());
+            const first = stage.pane.part_box('Calc');
+            const second = stage.pane.part_box('Map');
+            $mol_assert_equal(first.top, second.top);
+            $mol_assert_ok(second.left > first.left);
+            // And the next drop is aimed by the same row: to the left of both is first.
+            stage.drop(button, stage.client([page.left + 20, page.top + 20]));
+            $mol_assert_like(node.sub_names('Page'), ['Button', 'Calc', 'Map']);
+        },
+        /**
+         * A document opened by a link lives in a land of its own, and until that
+         * land arrives every read of it suspends. THE SANDBOX MUST COME UP ANYWAY:
+         * its address is not the document's business, and an editor that waits for
+         * the text before it raises the frame waits for ever on a document whose
+         * master is not reachable — which is what «ожидание сцены…» was.
+         */
+        'the sandbox comes up while the document of the address is still on its way'($) {
+            // Every read of the open document suspends, as an unsynced land does.
+            const waiting = new Promise(() => { });
+            const store = $bog_vmap_app_store.make({
+                $,
+                doc_land_config: () => null,
+                source: () => { throw waiting; },
+                spots: () => { throw waiting; },
+                pack: () => { throw waiting; },
+            });
+            const stage = $bog_vmap_app_flow_stage($, store);
+            // The frame has an address, so the scene boots and answers.
+            $mol_assert_ok(stage.app.scene_uri());
+            $mol_assert_ok(stage.frame().getAttribute('src'));
+            $mol_assert_equal(stage.pane.ready(), true);
+            // The complaint itself: the head bar no longer says it is waiting.
+            $mol_assert_equal(stage.text().includes('ожидание сцены'), false);
+            // The palette of the document is unknown, so the standard one stands in
+            // and is on screen rather than suspended.
+            $mol_assert_equal(stage.app.links(), '');
+            stage.class_row(calc);
+        },
+        /**
          * A scene that stopped answering is called out on a strip of its own, and
          * the button on it replaces the frame rather than talking to the stuck one.
          *
@@ -13110,8 +13176,10 @@ var $;
     $_1.$bog_vmap_app_flow_rect = {
         left: 200, top: 50, width: 600, height: 500, right: 800, bottom: 550,
     };
-    /** Size the fake scene reports for every part it is asked to draw. */
+    /** Size the fake scene reports for a part with nothing inside it. */
     $_1.$bog_vmap_app_flow_size = { width: 100, height: 50 };
+    /** Size it reports for a container, big enough to aim a drop inside it. */
+    $_1.$bog_vmap_app_flow_board = { width: 400, height: 300 };
     /**
      * Globals of a browser that node does not define and jsdom does not export.
      *
@@ -13178,7 +13246,7 @@ var $;
      * Points are in the screen space of the pane and go through `stage.client()`,
      * which is the only place that knows where the pane sits.
      */
-    function $bog_vmap_app_flow_stage($) {
+    function $bog_vmap_app_flow_stage($, store_own = null) {
         browser_gaps($);
         const dom = $.$mol_dom_context;
         // The editor of the previous scenario keeps window listeners alive, and its
@@ -13203,22 +13271,53 @@ var $;
             }
         }
         $.$mol_fetch = $mol_fetch_flow;
-        const store = $bog_vmap_app_store.make({ $, doc_land_config: () => null });
-        store.doc_add('Сцена 1');
+        // A store of the scenario's own is how a document that is still loading, or
+        // somebody else's, is put on the stand; the default one is a fresh document
+        // in the home land, made here so that nothing waits on `boot`.
+        const store = store_own ?? $bog_vmap_app_store.make({ $, doc_land_config: () => null });
+        if (!store_own)
+            store.doc_add('Сцена 1');
         const app = $bog_vmap_app.make({ $, store: () => store });
         $bog_vmap_app_flow_last = app;
         const posted = [];
         const queue = [];
-        /** Geometry of the parts as a scene would measure it: a box at its spot. */
+        /** Which way a node stacks what is inside it, as its `style` says. */
+        const direction = (name) => {
+            const style = app.node().over_tree(name, 'style')?.kids[0] ?? null;
+            return $bog_vmap_lang_dict_get(style, 'flexDirection')?.value
+                ?? 'row'; // what `[mol_view]` is with no direction written
+        };
+        /**
+         * Geometry of the document as a scene would measure it: free parts at their
+         * spots, and whatever a container carries stacked inside it along the
+         * direction the node declares.
+         *
+         * A rough flex box and nothing more — boxes of one size, laid end to end —
+         * but enough for what the host does with the numbers: hit testing, the ring,
+         * the ends of a wire, and aiming a drop between two children of a page.
+         */
         const sizes = () => {
             const res = {};
+            const node = app.node();
+            const place = (name, path, x, y) => {
+                const kids = node.sub_names(name);
+                const box = { x, y, ...kids ? $_1.$bog_vmap_app_flow_board : $_1.$bog_vmap_app_flow_size };
+                res[path] = box;
+                if (!kids)
+                    return box;
+                const row = direction(name) === 'row';
+                let at = 0;
+                for (const kid of kids) {
+                    if (!kid)
+                        continue;
+                    const inner = place(kid, path + '/' + kid, row ? x + at : x, row ? y : y + at);
+                    at += row ? inner.width : inner.height;
+                }
+                return box;
+            };
             const spots = app.spots();
             for (const name of Object.keys(spots)) {
-                res[app.doc_root() + '/' + name] = {
-                    x: spots[name].x,
-                    y: spots[name].y,
-                    ...$_1.$bog_vmap_app_flow_size,
-                };
+                place(name, app.doc_root() + '/' + name, spots[name].x, spots[name].y);
             }
             return res;
         };
@@ -13328,6 +13427,14 @@ var $;
             button(title) {
                 return found('[role=button]', `button «${title}»`, el => el.textContent?.startsWith(title) ?? false);
             },
+            /**
+             * A checkbox or one option of a switch, by its label. Not a button:
+             * `$mol_check` answers `role="checkbox"`, and the options of a switch are
+             * checks, so the head bar toggles and the layout panel are found here.
+             */
+            check(title) {
+                return found('[role=checkbox]', `check «${title}»`, el => el.textContent?.includes(title) ?? false);
+            },
             /** A row of the palette, by the class it offers. */
             class_row(klass) {
                 return found('[bog_vmap_app_palette_item]', `palette row ${klass}`, el => el.textContent === klass);
@@ -13348,10 +13455,12 @@ var $;
                 el.value = value;
                 el.dispatchEvent(new dom.Event('input', { bubbles: true }));
                 app.dom_tree();
+                scene.flush();
             },
             click(el) {
                 el.dispatchEvent(new dom.MouseEvent('click', { bubbles: true, cancelable: true }));
                 app.dom_tree();
+                scene.flush();
             },
             press(el, point, over = {}) {
                 el.dispatchEvent(pointer('pointerdown', point, over));
