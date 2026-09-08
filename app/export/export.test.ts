@@ -25,6 +25,23 @@ namespace $ {
 
 	const hero = `${d}bog_site_hero ${d}mol_view\n\ttitle \\Hi\n\tcount? 0\n\tplain \\x\n`
 
+	/**
+	 * Two artboards and one free part beside them: `Home` and `About` carry a `sub`
+	 * of their own and so are pages, `Loose` carries none and so is not.
+	 */
+	const pages = [
+		`${d}bog_site_page ${d}mol_view`,
+		`	Head ${d}mol_view`,
+		`	Loose ${d}mol_view`,
+		`	Home ${d}mol_view sub / <= Head`,
+		`	About ${d}mol_view sub /`,
+		`	sub /`,
+		`		<= Home`,
+		`		<= About`,
+		`		<= Loose`,
+		``,
+	].join( '\n' )
+
 	function file_of( module: $bog_vmap_app_export_module, suffix: string ) {
 		return module.files.find( file => file.name.endsWith( suffix ) )!.text
 	}
@@ -122,7 +139,7 @@ namespace $ {
 
 			const module = $.$bog_vmap_app_export_build([
 				{ source: page },
-				{ source: hero, js: 'count( next ) {\n\treturn next ?? 7\n}\n' },
+				{ source: hero, js: 'count( next?: number ) {\n\treturn next ?? 7\n}\n' },
 			])
 
 			const ts = file_of( module, '.view.ts' )
@@ -262,6 +279,184 @@ namespace $ {
 			// apply them with.
 			const css = file_of( $.$bog_vmap_app_export_build([ { source: board } ]), '.view.css.ts' )
 			$mol_assert_equal( /\bleft\b|\btop\b|position/.test( css ), false )
+
+		},
+
+		/**
+		 * Two artboards are two pages, and pages need an address. The router is a
+		 * class of its own rather than an edit of the document, because the document
+		 * goes out byte for byte the way the editor holds it.
+		 */
+		'a document of two artboards exports with a router over them'( $ ) {
+
+			const module = $.$bog_vmap_app_export_build([ { source: pages }, { source: hero } ])
+
+			const tree = file_of( module, '.view.tree' )
+			const ts = file_of( module, '.view.ts' )
+
+			// The document itself is untouched, and the router is one class after it.
+			$mol_assert_equal( tree, pages + hero + `${d}bog_site_app ${d}mol_view\n\tDoc ${d}bog_site_page\n` )
+
+			// The base of the router is declared above it, as every base has to be.
+			$mol_assert_equal( tree.indexOf( `${d}bog_site_page ` ) < tree.indexOf( `${d}bog_site_app ` ), true )
+
+			// Both pages are addressable, and the first one is what a bare address opens.
+			$mol_assert_equal( ts.includes( `switch( this.$.${d}mol_state_arg.value( 'page' ) ) {` ), true )
+			$mol_assert_equal( ts.includes( `case "About": return [ doc.About() ]` ), true )
+			$mol_assert_equal( ts.includes( `default: return [ doc.Home() ]` ), true )
+
+			// A free part is not a page: it has no `sub` of its own, and the router
+			// never names it.
+			$mol_assert_equal( ts.includes( 'Loose' ), false )
+
+			// The page is reached through the document, which is declared and never
+			// drawn, so nothing but the chosen page builds any DOM.
+			$mol_assert_equal( ts.includes( 'const doc = this.Doc()' ), true )
+
+			$mol_assert_equal( module.root, `${d}bog_site_app` )
+			$mol_assert_equal( file_of( module, 'index.html' ).includes( `mol_view_root="${d}bog_site_app"` ), true )
+
+		},
+
+		/**
+		 * The router carries no coordinate either. Two artboards lie side by side on
+		 * the canvas by numbers that ride `spots`, and a page that came out placed
+		 * absolutely would be that desk shipped to a reader.
+		 */
+		'a routed document ships no placement'( $ ) {
+
+			const module = $.$bog_vmap_app_export_build([ { source: pages }, { source: hero } ])
+
+			$mol_assert_equal( /\bleft\b|\btop\b|position/.test( file_of( module, '.view.css.ts' ) ), false )
+			$mol_assert_equal( /\bx\b|\by\b|spot/.test( file_of( module, '.view.ts' ) ), false )
+
+		},
+
+		/**
+		 * A router over one page would be a class that always answers the same thing.
+		 * One page stays one page: the same five files and the document at the root.
+		 */
+		'a document of one artboard gets no router'( $ ) {
+
+			const one = [
+				`${d}bog_site_page ${d}mol_view`,
+				`	Head ${d}mol_view`,
+				`	Home ${d}mol_view sub / <= Head`,
+				`	sub / <= Home`,
+				``,
+			].join( '\n' )
+
+			const module = $.$bog_vmap_app_export_build([ { source: one } ])
+
+			$mol_assert_equal( file_of( module, '.view.tree' ), one )
+			$mol_assert_equal( file_of( module, '.view.ts' ), 'namespace $.$$ {\n\n}\n' )
+			$mol_assert_equal( module.root, `${d}bog_site_page` )
+			$mol_assert_equal( module.files.length, 5 )
+
+		},
+
+		/**
+		 * Placement is not free for the router either: a name adding a segment to the
+		 * longest common prefix would move the whole module into a folder that does
+		 * not exist.
+		 */
+		'the router leaves the module where the document put it'( $ ) {
+
+			const module = $.$bog_vmap_app_export_build([ { source: pages }, { source: hero } ])
+
+			$mol_assert_equal( module.path, 'bog/site' )
+			$mol_assert_equal( module.root, `${d}bog_site_app` )
+			$mol_assert_equal(
+				$.$bog_vmap_app_export_path([ `${d}bog_site_page`, `${d}bog_site_hero`, module.root ]),
+				'bog/site',
+			)
+
+			// A document of a single class sits one segment deeper, and the router
+			// follows it there instead of pulling it back up.
+			const deep = $.$bog_vmap_app_export_build([ { source: pages } ])
+
+			$mol_assert_equal( deep.path, 'bog/site/page' )
+			$mol_assert_equal( deep.root, `${d}bog_site_page_app` )
+			$mol_assert_equal(
+				$.$bog_vmap_app_export_path([ `${d}bog_site_page`, deep.root ]),
+				'bog/site/page',
+			)
+
+		},
+
+		'a router named by the document takes the next free name'( $ ) {
+
+			const module = $.$bog_vmap_app_export_build([
+				{ source: pages },
+				{ source: `${d}bog_site_app ${d}mol_view\n\ttitle \\Taken\n` },
+			], `${d}bog_site_page` )
+
+			$mol_assert_equal( module.root, `${d}bog_site_app2` )
+			$mol_assert_equal( file_of( module, '.view.tree' ).includes( `${d}bog_site_app2 ${d}mol_view` ), true )
+
+		},
+
+		/**
+		 * The divergence of section 10, caught where the author can still do
+		 * something about it. A body without types runs in the preview through
+		 * `new Function` and fails the export, which compiles it with `strict`.
+		 */
+		'a body that would not pass strict is named before the export'( $ ) {
+
+			const notes = $.$bog_vmap_app_export_untyped( 'count( next ) {\n\treturn next ?? 7\n}\n' )
+
+			$mol_assert_equal( notes.length, 1 )
+			$mol_assert_equal( notes[0].method, 'count' )
+			$mol_assert_equal( notes[0].param, 'next' )
+			$mol_assert_equal( notes[0].line, 1 )
+
+			const error = $mol_assert_fail(
+				()=> $.$bog_vmap_app_export_build([
+					{ source: page },
+					{ source: hero, js: 'title() {\n\treturn "hi"\n}\n\ncount( next ) {\n\treturn next ?? 7\n}\n' },
+				]),
+				Error,
+			)
+
+			// The refusal names the class, the line, the method and the parameter —
+			// everything needed to go and fix it.
+			$mol_assert_equal( error.message.includes( `${d}bog_site_hero` ), true )
+			$mol_assert_equal( error.message.includes( 'строка 5' ), true )
+			$mol_assert_equal( error.message.includes( 'count' ), true )
+			$mol_assert_equal( error.message.includes( 'next' ), true )
+
+		},
+
+		/**
+		 * What the check must NOT say, or the editor would cry over working code and
+		 * be turned off. A default value is a type, an arrow is typed by context, and
+		 * a statement is not a method.
+		 */
+		'a typed body passes untouched'( $ ) {
+
+			const js = [
+				`@ ${d}mol_mem`,
+				'count( next?: number ) {',
+				'	return next ?? 7',
+				'}',
+				'',
+				'sum( rest = 0 ) {',
+				'	return this.items().map( item => item.value() ).reduce( ( a: number, b: number )=> a + b, rest )',
+				'}',
+				'',
+				'title() {',
+				'	if( this.count() ) return "many"',
+				'	for( const item of this.items() ) return "one"',
+				'	return ""',
+				'}',
+				'',
+			].join( '\n' )
+
+			$mol_assert_like( $.$bog_vmap_app_export_untyped( js ), [] )
+
+			const module = $.$bog_vmap_app_export_build([ { source: page }, { source: hero, js } ])
+
+			$mol_assert_equal( file_of( module, '.view.ts' ).includes( 'count( next?: number )' ), true )
 
 		},
 

@@ -1,0 +1,29 @@
+$bog_vmap_pages_doc $mol_view
+	Title $mol_view title \Home
+	Away $mol_link title \About
+		arg * page \About
+	Back $mol_link title \Home
+		arg * page \Home
+	Card $bog_vmap_pages_hero
+	Home $mol_view
+		style *
+			width \1280px
+			flexDirection \column
+		sub /
+			<= Title
+			<= Away
+	About $mol_view
+		style *
+			width \1280px
+			flexDirection \column
+		sub / <= Back
+	sub /
+		<= Home
+		<= About
+		<= Card
+$bog_vmap_pages_hero $mol_view
+	greeting \Hi
+	count? 0
+	sub / <= greeting
+$bog_vmap_pages_app $mol_view
+	Doc $bog_vmap_pages_doc
