@@ -1010,17 +1010,34 @@ namespace $.$$ {
 		 * The wrapper is here to give the observer a `destructor`: a bare
 		 * `ResizeObserver` is not ownable, so the atom would leave the previous
 		 * one connected on every rebuild.
+		 *
+		 * The set of watched nodes is not decided here — it is every node the last
+		 * report measured, which `resize_sync()` hands over. The root alone is not
+		 * enough and stops being enough the moment there is an artboard: a page of
+		 * fixed width keeps its own box while everything inside it reflows, so the
+		 * one observer that used to be here would never fire and the host would sit
+		 * on the boxes of the previous layout.
 		 */
 		@ $mol_mem
 		resize_watch() {
 
-			const made = this.instance()
-			if( !made ) return null
-
 			const observer = new ResizeObserver( () => this.report_send() )
-			observer.observe( made.dom_node() )
 
-			return { destructor: () => observer.disconnect() }
+			return { observer, destructor: () => observer.disconnect() }
+		}
+
+		/** Nodes the observer is watching right now. */
+		resize_seen = new Set< Element >()
+
+		/** Watches exactly the nodes of the last measurement, and nothing else. */
+		resize_sync( nodes: readonly Element[] ) {
+
+			this.resize_seen = this.$.$bog_vmap_scene_watch(
+				this.resize_watch().observer,
+				this.resize_seen,
+				nodes,
+			)
+
 		}
 
 		/**
@@ -1043,9 +1060,10 @@ namespace $.$$ {
 			this.doc_js()
 			this.doc_css()
 			this.libs()
-			// Placement moves nodes without resizing the root, so the observer of
-			// `resize_watch()` never fires on it and the host would keep boxes of
-			// the previous layout.
+			// Placement MOVES nodes without resizing any of them, and a
+			// `ResizeObserver` reports size and never position. So this subscription
+			// is not a stand-in for the narrow observer that used to watch the root
+			// alone — it stays needed however many nodes are watched.
 			this.spots()
 			this.assets()
 			this.camera()
@@ -1079,7 +1097,10 @@ namespace $.$$ {
 
 			this.error_post( 'compile', this.compile_error )
 
-			const sizes = made ? this.sizes_of( made ) : {}
+			const measured = made ? this.sizes_of( made ) : { sizes: {}, nodes: [] }
+			const sizes = measured.sizes
+
+			this.resize_sync( measured.nodes )
 			this.sizes_remember( sizes )
 			this.post({ kind: 'sizes', sizes })
 
@@ -1159,65 +1180,23 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Geometry of the document, in world units.
+		 * Geometry of the document, in world units, and the nodes it was read off.
 		 *
-		 * Divided by the zoom, because the host owns the camera and thinks in
-		 * world coordinates; the scene only reports what the layout came out to.
+		 * The walk itself is `$bog_vmap_scene_measure`, which knows nothing of `$mol`;
+		 * what a view is, what its children are and which property holds it are the
+		 * three things this class knows and hands over.
 		 */
 		sizes_of( root: $mol_view ) {
 
-			const sizes = {} as { [ node: string ]: $bog_vmap_bridge_rect }
-			const zoom = this.camera().zoom || 1
-			const base = root.dom_node().getBoundingClientRect()
-
-			const put = ( key: string, view: $mol_view ) => {
-
-				const node = view.dom_node()
-				if( !node.isConnected ) return
-
-				const box = node.getBoundingClientRect()
-
-				sizes[ key ] = {
-					x: ( box.left - base.left ) / zoom,
-					y: ( box.top - base.top ) / zoom,
-					width: box.width / zoom,
-					height: box.height / zoom,
-				}
-
-			}
-
-			const walk = ( view: $mol_view, path: string, depth: number ) => {
-
-				if( depth > 16 ) return
-
-				let kids = [] as readonly $mol_view_content[]
-				try {
-					kids = view.sub() ?? []
-				} catch {
-					return
-				}
-
-				let index = 0
-
-				for( const kid of kids ) {
-
-					if( !this.view_like( kid ) ) continue
-
-					const key = path + '/' + ( this.view_prop( kid ) || index )
-					index ++
-
-					put( key, kid )
-					walk( kid, key, depth + 1 )
-
-				}
-
-			}
-
-			const root_key = this.doc_root()
-			put( root_key, root )
-			walk( root, root_key, 0 )
-
-			return sizes
+			return this.$.$bog_vmap_scene_measure( root, {
+				key: this.doc_root(),
+				zoom: this.camera().zoom,
+				view_of: kid => this.view_like( kid ) ? kid : null,
+				// A document whose `sub` throws is a document mid-failure, reported on
+				// the error channel; here it simply has no children to measure.
+				kids_of: view => { try { return view.sub() ?? [] } catch { return [] } },
+				prop_of: view => this.view_prop( view ),
+			} )
 		}
 
 		/**
