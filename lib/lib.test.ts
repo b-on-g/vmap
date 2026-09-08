@@ -303,24 +303,26 @@ namespace $ {
 		},
 
 		/**
-		 * A deploy publishes the content of `-/` into the folder of the module, so
-		 * the same three modules are siblings one level up. The address of the pack
-		 * itself is then `<origin>/vmap/part/`, which is where `web.view.tree` is.
+		 * A deploy publishes the editor at the root of the site and every other
+		 * module as a folder beneath it, so a sibling is a folder INSIDE the one the
+		 * editor is served from. The address of the pack is then `<site>/part/`,
+		 * which is where `web.view.tree` is, and the bundle of the sandbox is
+		 * `<site>/scene/web.js` — neither of them a page.
 		 */
-		'a sibling module on a deploy has no build folder'( $ ) {
+		'a sibling module on a deploy is a folder under the editor'( $ ) {
 
 			$mol_assert_equal(
-				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/app/', 'scene' ),
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/', 'scene' ),
 				'https://b-on-g.github.io/vmap/scene/',
 			)
 
 			$mol_assert_equal(
-				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/app/', 'part' ),
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/', 'part' ),
 				'https://b-on-g.github.io/vmap/part/',
 			)
 
 			$mol_assert_equal(
-				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/app/index.html', 'part' ),
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/index.html', 'part' ),
 				'https://b-on-g.github.io/vmap/part/',
 			)
 
@@ -333,58 +335,42 @@ namespace $ {
 		'a page address without a trailing slash reads as a folder'( $ ) {
 
 			$mol_assert_equal(
-				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/app', 'part' ),
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap', 'part' ),
 				'https://b-on-g.github.io/vmap/part/',
 			)
 
 			$mol_assert_equal(
-				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/app?x=1#y', 'scene' ),
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap?x=1#y', 'scene' ),
 				'https://b-on-g.github.io/vmap/scene/',
-			)
-
-		},
-
-		/** A pack served from the root of an origin has one segment less and no more. */
-		'a pack at the root of an origin'( $ ) {
-
-			$mol_assert_equal(
-				$bog_vmap_lib_sibling( 'https://vmap.example.org/app/', 'part' ),
-				'https://vmap.example.org/part/',
 			)
 
 		},
 
 		/**
 		 * A dot in a FOLDER name does not make it a page. A versioned deploy is the
-		 * ordinary way to get one, and taking `v1.2` for a page would eat a second
+		 * ordinary way to get one, and taking `v1.2` for a page would eat the
 		 * segment and point both addresses a level above where they live.
 		 */
 		'a dot in a folder name is not a page file'( $ ) {
 
 			$mol_assert_equal(
-				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/v1.2/app/', 'part' ),
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/v1.2/', 'part' ),
 				'https://b-on-g.github.io/vmap/v1.2/part/',
 			)
 
 			$mol_assert_equal(
-				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/v1.2/app/index.html', 'scene' ),
+				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/v1.2/index.html', 'scene' ),
 				'https://b-on-g.github.io/vmap/v1.2/scene/',
-			)
-
-			// a module folder may carry one as well
-			$mol_assert_equal(
-				$bog_vmap_lib_sibling( 'https://b-on-g.github.io/vmap/app.v2/', 'part' ),
-				'https://b-on-g.github.io/vmap/part/',
 			)
 
 		},
 
 		/**
-		 * The editor deployed as the site root has no folder to replace, so the
-		 * siblings lie at the root beside it. Nothing is eaten and no address climbs
-		 * above the root, which is the one thing that must never happen here.
+		 * The editor on a domain of its own is served from the root itself, so the
+		 * siblings are the first segment there. Nothing is eaten and no address
+		 * climbs above the root, which is the one thing that must never happen here.
 		 */
-		'a page at the root of a site keeps its siblings at the root'( $ ) {
+		'an editor served from the root of a site keeps its siblings under it'( $ ) {
 
 			$mol_assert_equal(
 				$bog_vmap_lib_sibling( 'https://vmap.example/', 'part' ),
