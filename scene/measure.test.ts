@@ -30,7 +30,7 @@ namespace $ {
 
 	function measure( root: Fake, zoom = 1 ) {
 		return $bog_vmap_scene_measure( root, {
-			key: '$doc',
+			key: 'doc',
 			zoom,
 			view_of: kid => ( kid as Fake )?.dom_node ? kid as Fake : null,
 			kids_of: made => made.kids,
@@ -64,14 +64,14 @@ namespace $ {
 			const { sizes } = measure( doc( 1280 ) )
 
 			$mol_assert_like( Object.keys( sizes ), [
-				'$doc',
-				'$doc/Board',
-				'$doc/Board/Head',
-				'$doc/Board/Body',
-				'$doc/Loose',
+				'doc',
+				'doc/Board',
+				'doc/Board/Head',
+				'doc/Board/Body',
+				'doc/Loose',
 			] )
 
-			$mol_assert_like( sizes[ '$doc/Board/Head' ], { x: 100, y: 100, width: 1280, height: 40 } )
+			$mol_assert_like( sizes[ 'doc/Board/Head' ], { x: 100, y: 100, width: 1280, height: 40 } )
 
 		},
 
@@ -84,11 +84,11 @@ namespace $ {
 			const wide = measure( doc( 1280 ) ).sizes
 			const narrow = measure( doc( 390 ) ).sizes
 
-			$mol_assert_equal( wide[ '$doc/Board' ].width, 1280 )
-			$mol_assert_equal( narrow[ '$doc/Board' ].width, 390 )
-			$mol_assert_equal( narrow[ '$doc/Board/Body' ].width, 390 )
+			$mol_assert_equal( wide[ 'doc/Board' ].width, 1280 )
+			$mol_assert_equal( narrow[ 'doc/Board' ].width, 390 )
+			$mol_assert_equal( narrow[ 'doc/Board/Body' ].width, 390 )
 
-			$mol_assert_like( wide[ '$doc/Loose' ], narrow[ '$doc/Loose' ] )
+			$mol_assert_like( wide[ 'doc/Loose' ], narrow[ 'doc/Loose' ] )
 
 		},
 
@@ -97,7 +97,7 @@ namespace $ {
 
 			const { sizes } = measure( doc( 1280 ), 2 )
 
-			$mol_assert_like( sizes[ '$doc/Board' ], { x: 50, y: 50, width: 640, height: 300 } )
+			$mol_assert_like( sizes[ 'doc/Board' ], { x: 50, y: 50, width: 640, height: 300 } )
 
 		},
 
@@ -110,7 +110,7 @@ namespace $ {
 				] )
 			)
 
-			$mol_assert_like( Object.keys( sizes ), [ '$doc', '$doc/Here' ] )
+			$mol_assert_like( Object.keys( sizes ), [ 'doc', 'doc/Here' ] )
 			$mol_assert_equal( nodes.length, 2 )
 
 		},

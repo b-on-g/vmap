@@ -38,8 +38,7 @@ namespace $ {
 	 *        owns the camera, is told world units
 	 */
 	export function $bog_vmap_scene_measure<
-		Node extends $bog_vmap_scene_rect_source,
-		View extends { dom_node(): Node },
+		View extends { dom_node(): $bog_vmap_scene_rect_source },
 	>(
 		root: View,
 		how: {
@@ -52,17 +51,17 @@ namespace $ {
 			/** Property the view is held by, empty when it is held by nothing named. */
 			readonly prop_of: ( view: View )=> string
 		},
-	): $bog_vmap_scene_measured< Node > {
+	): $bog_vmap_scene_measured< ReturnType< View[ 'dom_node' ] > > {
 
 		const sizes = {} as { [ node: string ]: $bog_vmap_scene_box }
-		const nodes = [] as Node[]
+		const nodes = [] as ReturnType< View[ 'dom_node' ] >[]
 
 		const base = root.dom_node().getBoundingClientRect()
 		const zoom = how.zoom || 1
 
 		const put = ( key: string, view: View )=> {
 
-			const node = view.dom_node()
+			const node = view.dom_node() as ReturnType< View[ 'dom_node' ] >
 			if( !node.isConnected ) return
 
 			const box = node.getBoundingClientRect()
