@@ -2883,6 +2883,84 @@ $bog_vmap_app_inspect_demo $mol_view
 	Doc $bog_vmap_lang_doc
 		source? <=> source?
 
+$mol_deck $mol_list
+	items /$mol_view
+	rows /$mol_view
+		<= Switch $mol_switch
+			value? <=> current? \0
+			options <= switch_options *
+		<= Content $mol_view
+
+- Three sources of one node: its `view.tree` declaration, its method and its rule.
+- Port of `Source_type` of `$hyoo_studio`, down to the deck of three `$mol_textarea`.
+-
+- A node is a flat property of the class after normalization, so the three texts of
+- a node are three slices of the three texts of the class: the declaration, the
+- method of that name in the body, and the rule addressed to the attribute $mol
+- writes on it. The whole class is one switch away, and that switch is the whole
+- difference between the two modes.
+- @see ../../ARCHITECTURE.md sections 1 and 2
+$bog_vmap_app_code $mol_view
+	- Class the three texts belong to: the root class of the document.
+	klass \
+	- Property name of the picked node, empty when nothing is picked. Without one
+	- there is nothing to slice and the panel edits the class whole.
+	prop \
+	- Signature of the picked property: whether it takes a key and whether it takes
+	- a next. Only the empty method of a node that has none yet is shaped by them.
+	prop_key false
+	prop_next false
+	- `view.tree` of the whole document, two way.
+	source? \
+	- Declaration of the picked node, two way. The same value the inspector edits,
+	- so a change made with the mouse shows up in the text without a path of its own.
+	node_source? \
+	- Handwritten body of the class, two way.
+	js? \
+	- Styles of the class, two way.
+	css? \
+	- What the scene said about this node last, empty when it said nothing.
+	error \
+	- Editing the class whole instead of the picked node.
+	whole? false
+	- Why the last edit was not written into the document, empty when it was.
+	refusal? \
+	sub <= content /$mol_view
+	Head $mol_bar
+		sub <= head_content /$mol_view
+	- Which node the three texts belong to, in words.
+	Scope_note $mol_view
+		sub / <= scope_note \
+	Scope $mol_check
+		title \Весь класс
+		hint \Править три текста класса целиком, а не только выбранный узел
+		checked? <=> whole?
+	- The failure the scene reported for this node. Here and not only in the status
+	- strip: an error belongs where the code that caused it is being written.
+	Alarm $mol_view
+		sub / <= error
+	- Why the last edit was not written into the document. The text stays in the
+	- field so it can be fixed; the document keeps the last one that parsed.
+	Refusal $mol_view
+		sub / <= note \
+	Sources $mol_deck
+		items /
+			<= Tree $mol_textarea
+				title \view.tree
+				hint \Имя_узла $mol_view
+				sidebar_showed true
+				value? <=> tree_text? \
+			<= Js $mol_textarea
+				title \JS
+				hint \
+				sidebar_showed true
+				value? <=> js_text? \
+			<= Css $mol_textarea
+				title \CSS
+				hint \
+				sidebar_showed true
+				value? <=> css_text? \
+
 $mol_svg_circle $mol_svg
 	dom_name \circle
 	pos /
@@ -2986,6 +3064,10 @@ $bog_vmap_app_pane $mol_view
 	- Set by the watchdog, cleared by the next message from the scene.
 	stalled? false
 	error_at*? \
+	- Node the failure of a channel belongs to, empty when the scene could not
+	- attribute it. Kept apart from the text so that the strip and the mark on the
+	- canvas read the same report without either parsing the other's sentence.
+	error_node*? \
 	error \
 	isolation \
 	camera_shift? $mol_vector_2d<number> /
@@ -3012,6 +3094,19 @@ $bog_vmap_app_pane $mol_view
 			lines <= wire_lines /$bog_vmap_app_wire_line
 			dots <= wire_dots /$bog_vmap_app_wire_dot
 			drag_geometry <= wire_drag_geometry \
+		- Failures of the scene, each on the node it belongs to. Above everything,
+		- because a node that threw is what the eye has to be sent to first.
+		<= Marks $mol_view
+			sub <= error_marks /$mol_view
+	- A failure sits at the corner of the node that caused it, and carries the text
+	- of the failure as its tooltip. Picture only: the overlay under it takes the press.
+	Mark* $mol_view
+		style <= mark_style* *
+		attr *
+			^
+			title <= mark_hint* \
+		sub /
+			\!
 	- Where the node in hand would land among the children of a container. Put into
 	- `sub` only while a drop has somewhere to go, so an idle canvas costs no node.
 	Insert $mol_view
@@ -3109,6 +3204,15 @@ $bog_vmap_app $mol_view
 	links? \
 	palette_showed? true
 	inspect_showed? true
+	code_showed? false
+	- `view.tree` of the whole document, two way. `doc_src` is the same text read
+	- only, for the scene; this one is the one the code editor writes back through.
+	doc_text? \
+	- Handwritten body and styles of the root class, two way. Everything the code
+	- editor writes ends up in these two, and `doc_js`/`doc_css` carry them to the
+	- scene beside the text.
+	root_js? \
+	root_css? \
 	- Persistence: the documents of the user in Giper Baza. One for the whole
 	- editor, handed to the switcher in the head bar; text and placement read
 	- through it and write back into it.
@@ -3128,6 +3232,10 @@ $bog_vmap_app $mol_view
 			<= Inspect_check $mol_check
 				title \Свойства
 				checked? <=> inspect_showed?
+			<= Code_check $mol_check
+				title \Код
+				hint \Три текста выбранного узла: view.tree, JS и CSS
+				checked? <=> code_showed?
 			<= Zoom_out $mol_button_minor
 				title \−
 				hint \Отдалить
@@ -3160,6 +3268,11 @@ $bog_vmap_app $mol_view
 			<= Publish $bog_vmap_app_publish
 				part <= publish_part \
 				source <= node_source? \
+				- Method and rule of the picked part, cut out of the two texts of the
+				- class the code editor writes. Without these a published component
+				- would arrive at the next document with its behaviour left behind.
+				js <= node_js \
+				css <= node_css \
 				doc <= doc_src
 				classes / <= doc_root
 			<= Status $mol_view
@@ -3220,6 +3333,24 @@ $bog_vmap_app $mol_view
 	Idle $mol_view
 		sub /
 			<= idle_note \Выберите узел на холсте, чтобы править его свойства
+	-
+	- Three sources of the picked node, next to the inspector: one panel says what
+	- the node can do, the other says how it does it. Folded away by its own check
+	- in the head bar, like the two panels beside it.
+	-
+	- `node_source` is the very binding the inspector edits, so a change made with
+	- the mouse shows up in the text with no path of its own; the body and the
+	- styles are the two texts of the root class, sliced by the panel.
+	Code $bog_vmap_app_code
+		klass <= doc_root
+		prop <= code_prop \
+		prop_key <= code_prop_key false
+		prop_next <= code_prop_next false
+		source? <=> doc_text?
+		node_source? <=> node_source?
+		js? <=> root_js?
+		css? <=> root_css?
+		error <= code_error \
 	-
 	- Component library of the host: the pack, with the lands of the field stacked
 	- on it. `script_link()` is the bundle the scene is told to load; `land_trees()` feed the

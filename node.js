@@ -18744,6 +18744,13 @@ var $;
          * the fiber restarts this from the beginning on every `Promise` on the way,
          * and a document that arrived from another device while the proof of work
          * was being mined must not be pushed aside by ours.
+         *
+         * The check guards against that device and not against our own half made
+         * document, and it cannot confuse the two: a restart replays every read
+         * from the cache of the fiber itself, so the list here reads as it read
+         * when the fiber started — empty. Measured. That is what lets a restart in
+         * the middle of pouring the draft carry the pouring through instead of
+         * walking away from a document with no text in it.
          */
         doc_first() {
             if (this.doc_current())
@@ -18768,10 +18775,17 @@ var $;
          * The fiber is wrapped and not returned as it is: a cell answering with a
          * promise is a cell that never finished, and every reader of it suspends
          * for ever.
+         *
+         * **The wrapper deliberately has no `destructor`, so this cell holds the
+         * handle and not the life.** The draft is poured AFTER the document is in
+         * the list, so there is a window in which `boot` already answers `ready`,
+         * the last reader looks away and a cell nobody reads is collected. Owning
+         * the fiber here would end it inside that window, and what would be lost is
+         * the text the user typed, silently. Measured; there is a test. Nothing
+         * leaks by it: a one-shot fiber destructs itself the moment it completes.
          */
         doc_first_task() {
-            const task = $mol_wire_async(this).doc_first();
-            return { task, destructor: () => task.destructor?.() };
+            return { task: $mol_wire_async(this).doc_first() };
         }
         /**
          * Makes sure there is a document, from the start of the session.
@@ -28397,6 +28411,894 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$mol_textarea) = class $mol_textarea extends ($.$mol_stack) {
+		clickable(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		sidebar_showed(){
+			return false;
+		}
+		press(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		hover(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		value(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		hint(){
+			return " ";
+		}
+		enabled(){
+			return true;
+		}
+		spellcheck(){
+			return true;
+		}
+		length_max(){
+			return +Infinity;
+		}
+		selection(next){
+			if(next !== undefined) return next;
+			return [];
+		}
+		bring(){
+			return (this.Edit().bring());
+		}
+		submit(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		submit_with_ctrl(){
+			return true;
+		}
+		Edit(){
+			const obj = new this.$.$mol_textarea_edit();
+			(obj.value) = (next) => ((this.value(next)));
+			(obj.hint) = () => ((this.hint()));
+			(obj.enabled) = () => ((this.enabled()));
+			(obj.spellcheck) = () => ((this.spellcheck()));
+			(obj.length_max) = () => ((this.length_max()));
+			(obj.selection) = (next) => ((this.selection(next)));
+			(obj.submit) = (next) => ((this.submit(next)));
+			(obj.submit_with_ctrl) = () => ((this.submit_with_ctrl()));
+			return obj;
+		}
+		row_numb(id){
+			return 0;
+		}
+		highlight(){
+			return "";
+		}
+		syntax(){
+			const obj = new this.$.$mol_syntax2();
+			return obj;
+		}
+		View(){
+			const obj = new this.$.$mol_text_code();
+			(obj.text) = () => ((this.value()));
+			(obj.render_visible_only) = () => (false);
+			(obj.row_numb) = (id) => ((this.row_numb(id)));
+			(obj.sidebar_showed) = () => ((this.sidebar_showed()));
+			(obj.highlight) = () => ((this.highlight()));
+			(obj.syntax) = () => ((this.syntax()));
+			return obj;
+		}
+		attr(){
+			return {
+				...(super.attr()), 
+				"mol_textarea_clickable": (this.clickable()), 
+				"mol_textarea_sidebar_showed": (this.sidebar_showed())
+			};
+		}
+		event(){
+			return {"keydown": (next) => (this.press(next)), "pointermove": (next) => (this.hover(next))};
+		}
+		sub(){
+			return [(this.Edit()), (this.View())];
+		}
+		symbols_alt(){
+			return {
+				"comma": "<", 
+				"period": ">", 
+				"dash": "−", 
+				"equals": "≈", 
+				"graveAccent": "́", 
+				"forwardSlash": "÷", 
+				"E": "€", 
+				"V": "✔", 
+				"X": "×", 
+				"C": "©", 
+				"P": "§", 
+				"H": "₽", 
+				"key0": "°", 
+				"key8": "•", 
+				"key2": "@", 
+				"key3": "#", 
+				"key4": "$", 
+				"key6": "^", 
+				"key7": "&", 
+				"bracketOpen": "[", 
+				"bracketClose": "]", 
+				"slashBack": "|"
+			};
+		}
+		symbols_alt_ctrl(){
+			return {"space": " "};
+		}
+		symbols_alt_shift(){
+			return {
+				"V": "✅", 
+				"X": "❌", 
+				"O": "⭕", 
+				"key1": "❗", 
+				"key4": "💲", 
+				"key7": "❓", 
+				"comma": "«", 
+				"period": "»", 
+				"semicolon": "“", 
+				"quoteSingle": "”", 
+				"dash": "—", 
+				"equals": "≠", 
+				"graveAccent": "̱", 
+				"bracketOpen": "{", 
+				"bracketClose": "}"
+			};
+		}
+	};
+	($mol_mem(($.$mol_textarea.prototype), "clickable"));
+	($mol_mem(($.$mol_textarea.prototype), "press"));
+	($mol_mem(($.$mol_textarea.prototype), "hover"));
+	($mol_mem(($.$mol_textarea.prototype), "value"));
+	($mol_mem(($.$mol_textarea.prototype), "selection"));
+	($mol_mem(($.$mol_textarea.prototype), "submit"));
+	($mol_mem(($.$mol_textarea.prototype), "Edit"));
+	($mol_mem(($.$mol_textarea.prototype), "syntax"));
+	($mol_mem(($.$mol_textarea.prototype), "View"));
+	($.$mol_textarea_edit) = class $mol_textarea_edit extends ($.$mol_string) {
+		dom_name(){
+			return "textarea";
+		}
+		enter(){
+			return "enter";
+		}
+		field(){
+			return {...(super.field()), "scrollTop": 0};
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * An input field for entering multiline text.
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_textarea_demo
+         */
+        class $mol_textarea extends $.$mol_textarea {
+            indent_inc() {
+                let text = this.value();
+                let [from, to] = this.selection();
+                const rows = text.split('\n');
+                let start = 0;
+                for (let i = 0; i < rows.length; ++i) {
+                    let end = start + rows[i].length;
+                    if (end >= from && start <= to) {
+                        if (to === from || start !== to) {
+                            rows[i] = '\t' + rows[i];
+                            to += 1;
+                            end += 1;
+                        }
+                    }
+                    start = end + 1;
+                }
+                this.value(rows.join('\n'));
+                this.selection([from + 1, to]);
+            }
+            indent_dec() {
+                let text = this.value();
+                let [from, to] = this.selection();
+                const rows = text.split('\n');
+                let start = 0;
+                for (let i = 0; i < rows.length; ++i) {
+                    const end = start + rows[i].length;
+                    if (end >= from && start <= to && rows[i].startsWith('\t')) {
+                        rows[i] = rows[i].slice(1);
+                        to -= 1;
+                        if (start < from)
+                            from -= 1;
+                    }
+                    start = end + 1;
+                }
+                this.value(rows.join('\n'));
+                this.selection([from, to]);
+            }
+            symbol_insert(event) {
+                const symbol = event.shiftKey
+                    ? this.symbols_alt_shift()[$mol_keyboard_code[event.keyCode]]
+                    : event.ctrlKey
+                        ? this.symbols_alt_ctrl()[$mol_keyboard_code[event.keyCode]]
+                        : this.symbols_alt()[$mol_keyboard_code[event.keyCode]];
+                if (!symbol)
+                    return;
+                event.preventDefault();
+                document.execCommand('insertText', false, symbol);
+            }
+            clickable(next) {
+                if (!this.enabled())
+                    return true;
+                return next ?? false;
+            }
+            hover(event) {
+                this.clickable(event.ctrlKey);
+            }
+            press(event) {
+                if (event.altKey) {
+                    this.symbol_insert(event);
+                }
+                else {
+                    switch (event.keyCode) {
+                        case !event.shiftKey && $mol_keyboard_code.tab:
+                            this.indent_inc();
+                            break;
+                        case event.shiftKey && $mol_keyboard_code.tab:
+                            this.indent_dec();
+                            break;
+                        default: return;
+                    }
+                    event.preventDefault();
+                }
+            }
+            row_numb(index) {
+                return index;
+            }
+            syntax() {
+                return this.$.$mol_syntax2_md_code;
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_textarea.prototype, "clickable", null);
+        $$.$mol_textarea = $mol_textarea;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/textarea/textarea.view.css", "[mol_textarea] {\n\tflex: 1 0 auto;\n\tflex-direction: column;\n\tvertical-align: top;\n\tmin-height: max-content;\n\twhite-space: pre-wrap;\n\tword-break: break-word;\n\tborder-radius: var(--mol_gap_round);\n\tfont-family: monospace;\n\tposition: relative;\n\ttab-size: 4;\n}\n\n[mol_textarea_view] {\n\tpointer-events: none;\n\twhite-space: inherit;\n\tfont-family: inherit;\n\ttab-size: inherit;\n\tuser-select: none;\n}\n\n[mol_textarea_view_copy] {\n\tpointer-events: all;\n}\n\n[mol_textarea_clickable] > [mol_textarea_view] {\n\tpointer-events: all;\n\tuser-select: auto;\n}\n\n[mol_textarea_clickable] > [mol_textarea_edit] {\n\tuser-select: none;\n}\n\n[mol_textarea_edit] {\n\tfont-family: inherit;\n\tpadding: var(--mol_gap_text);\n\tcolor: transparent !important;\n\tcaret-color: var(--mol_theme_text);\n\tresize: none;\n\ttext-align: inherit;\n\twhite-space: inherit;\n\tborder-radius: inherit;\n\toverflow-anchor: none;\n\tposition: absolute;\n\theight: 100%;\n\twidth: 100%;\n\ttab-size: inherit;\n}\n\n[mol_textarea_sidebar_showed] [mol_textarea_edit] {\n\tleft: 1.75rem;\n\twidth: calc( 100% - 1.75rem );\n}\n\n[mol_textarea_edit]:hover + [mol_textarea_view] {\n\tz-index: var(--mol_layer_hover);\n}\n\n[mol_textarea_edit]:focus + [mol_textarea_view] {\n\tz-index: var(--mol_layer_focus);\n}\n");
+})($ || ($ = {}));
+
+;
+	($.$mol_deck) = class $mol_deck extends ($.$mol_list) {
+		current(next){
+			if(next !== undefined) return next;
+			return "0";
+		}
+		switch_options(){
+			return {};
+		}
+		Switch(){
+			const obj = new this.$.$mol_switch();
+			(obj.value) = (next) => ((this.current(next)));
+			(obj.options) = () => ((this.switch_options()));
+			return obj;
+		}
+		Content(){
+			const obj = new this.$.$mol_view();
+			return obj;
+		}
+		items(){
+			return [];
+		}
+		rows(){
+			return [(this.Switch()), (this.Content())];
+		}
+	};
+	($mol_mem(($.$mol_deck.prototype), "current"));
+	($mol_mem(($.$mol_deck.prototype), "Switch"));
+	($mol_mem(($.$mol_deck.prototype), "Content"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * The component which arrange content in multiple tabs.
+         * @seehttps://mol.hyoo.ru/#!section=demos/demo=mol_deck_demo
+         */
+        class $mol_deck extends $.$mol_deck {
+            current(next) {
+                return $mol_state_session.value(`${this}.current()`, next) || '0';
+            }
+            switch_options() {
+                let options = {};
+                this.items().forEach((item, index) => {
+                    options[String(index)] = item.title();
+                });
+                return options;
+            }
+            Content() {
+                return this.items()[Number(this.current())];
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_deck.prototype, "Content", null);
+        $$.$mol_deck = $mol_deck;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$bog_vmap_app_code) = class $bog_vmap_app_code extends ($.$mol_view) {
+		content(){
+			return [];
+		}
+		head_content(){
+			return [];
+		}
+		scope_note(){
+			return "";
+		}
+		note(){
+			return "";
+		}
+		tree_text(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		Tree(){
+			const obj = new this.$.$mol_textarea();
+			(obj.title) = () => ("view.tree");
+			(obj.hint) = () => ("Имя_узла $mol_view");
+			(obj.sidebar_showed) = () => (true);
+			(obj.value) = (next) => ((this.tree_text(next)));
+			return obj;
+		}
+		js_text(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		Js(){
+			const obj = new this.$.$mol_textarea();
+			(obj.title) = () => ("JS");
+			(obj.hint) = () => ("");
+			(obj.sidebar_showed) = () => (true);
+			(obj.value) = (next) => ((this.js_text(next)));
+			return obj;
+		}
+		css_text(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		Css(){
+			const obj = new this.$.$mol_textarea();
+			(obj.title) = () => ("CSS");
+			(obj.hint) = () => ("");
+			(obj.sidebar_showed) = () => (true);
+			(obj.value) = (next) => ((this.css_text(next)));
+			return obj;
+		}
+		klass(){
+			return "";
+		}
+		prop(){
+			return "";
+		}
+		prop_key(){
+			return false;
+		}
+		prop_next(){
+			return false;
+		}
+		source(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		node_source(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		js(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		css(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		error(){
+			return "";
+		}
+		whole(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		refusal(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		sub(){
+			return (this.content());
+		}
+		Head(){
+			const obj = new this.$.$mol_bar();
+			(obj.sub) = () => ((this.head_content()));
+			return obj;
+		}
+		Scope_note(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.scope_note())]);
+			return obj;
+		}
+		Scope(){
+			const obj = new this.$.$mol_check();
+			(obj.title) = () => ("Весь класс");
+			(obj.hint) = () => ("Править три текста класса целиком, а не только выбранный узел");
+			(obj.checked) = (next) => ((this.whole(next)));
+			return obj;
+		}
+		Alarm(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.error())]);
+			return obj;
+		}
+		Refusal(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.note())]);
+			return obj;
+		}
+		Sources(){
+			const obj = new this.$.$mol_deck();
+			(obj.items) = () => ([
+				(this.Tree()), 
+				(this.Js()), 
+				(this.Css())
+			]);
+			return obj;
+		}
+	};
+	($mol_mem(($.$bog_vmap_app_code.prototype), "tree_text"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Tree"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "js_text"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Js"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "css_text"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Css"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "source"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "node_source"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "js"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "css"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "whole"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "refusal"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Head"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Scope_note"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Scope"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Alarm"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Refusal"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Sources"));
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Slicing of the handwritten sources by property.
+     *
+     * Port of `props_js()`, `props_css()` and the `source_*_prop` family of
+     * `hyoo_studio`. Kept as plain functions with no view around them, because
+     * the whole of stage 4.2 is text in and text out.
+     *
+     * @see ../../ARCHITECTURE.md section 2
+     */
+    /**
+     * Class body cut into properties, keyed by property name.
+     *
+     * Counts braces rather than parsing: a body is arbitrary JS, and everything
+     * between the end of the previous property and the opening brace of this one
+     * is where the name lives. Studio does it this way and it holds on real
+     * bodies, comments and nested functions included.
+     */
+    function $bog_vmap_app_code_props_js(body) {
+        const props = new Map;
+        let code_start = 0;
+        let body_start = 0;
+        let depth = 0;
+        for (let i = 0; i < body.length; ++i) {
+            const char = body[i];
+            if (char === '}') {
+                --depth;
+                if (depth !== 0)
+                    continue;
+                const name = $bog_vmap_app_code_last(body.slice(code_start, body_start), /([\w]+)[\s]*\(/g);
+                if (!name)
+                    continue;
+                props.set(name, body.slice(code_start, i + 1).trim());
+                code_start = i + 1;
+            }
+            else if (char === '{') {
+                if (depth === 0)
+                    body_start = i;
+                ++depth;
+            }
+        }
+        if (depth !== 0)
+            return this.$mol_fail(new Error('Curly braces is not balanced'));
+        $bog_vmap_app_code_tail(props, body, code_start);
+        return props;
+    }
+    $.$bog_vmap_app_code_props_js = $bog_vmap_app_code_props_js;
+    /**
+     * Styles cut into properties, keyed by the property the rule belongs to.
+     *
+     * The selector of a sub-view is the attribute `[<class>_<prop>]` that $mol
+     * writes on it, so the property name is the tail of the attribute once the
+     * name of the class is taken off. A rule about anything else is skipped.
+     */
+    function $bog_vmap_app_code_props_css(css, klass) {
+        const props = new Map;
+        const prefix = $bog_vmap_app_code_attr(klass) + '_';
+        let code_start = 0;
+        let body_start = 0;
+        let depth = 0;
+        for (let i = 0; i < css.length; ++i) {
+            const char = css[i];
+            if (char === '}') {
+                --depth;
+                if (depth !== 0)
+                    continue;
+                const attr = $bog_vmap_app_code_last(css.slice(code_start, body_start), /\[([\w]+)\]/g)?.toLowerCase();
+                const name = attr?.startsWith(prefix) ? attr.slice(prefix.length) : '';
+                if (name) {
+                    props.set(name, css.slice(code_start, i + 1).trim());
+                    code_start = i + 1;
+                }
+            }
+            else if (char === '{') {
+                if (depth === 0)
+                    body_start = i;
+                ++depth;
+            }
+        }
+        if (depth !== 0)
+            return this.$mol_fail(new Error('Curly braces is not balanced'));
+        $bog_vmap_app_code_tail(props, css, code_start);
+        return props;
+    }
+    $.$bog_vmap_app_code_props_css = $bog_vmap_app_code_props_css;
+    /**
+     * The LAST capture of a pattern in a piece of text, or nothing.
+     *
+     * Deviation from studio, which takes the first. Everything the previous
+     * property did not eat is in front of the name — a rule about another class,
+     * a comment with a bracket in it — and the first match would be that instead
+     * of the name. Studio then skips the property, and skipping is what loses it.
+     */
+    function $bog_vmap_app_code_last(text, pattern) {
+        const found = [...text.matchAll(pattern)];
+        return found[found.length - 1]?.[1];
+    }
+    /**
+     * Whatever is left after the last recognized property, kept under the empty key.
+     *
+     * Text before a recognized property is already carried by it, because the cut
+     * starts where the previous one ended. The tail has nothing after it to ride
+     * on, and without a place of its own it would vanish the first time a single
+     * property was edited — silently, which is the one thing an editor may not do.
+     * The empty string is not a property name, so nothing ever asks for this slot.
+     */
+    function $bog_vmap_app_code_tail(props, text, from) {
+        const tail = text.slice(from).trim();
+        if (tail)
+            props.set('', tail);
+    }
+    /** Sliced properties put back together into one text, in their own order. */
+    function $bog_vmap_app_code_joined(props) {
+        return [...props.values()].join('\n\n');
+    }
+    $.$bog_vmap_app_code_joined = $bog_vmap_app_code_joined;
+    /**
+     * One property replaced in the slicing, with the unrecognized tail kept last.
+     *
+     * A property the text does not carry yet is appended, and the tail is moved
+     * behind it: a `Map` keeps insertion order, so without the move a new property
+     * would land after the leftovers and the two would swap places on every edit.
+     */
+    function $bog_vmap_app_code_with(props, name, code) {
+        const tail = props.get('');
+        props.set(name, code);
+        if (tail !== undefined && name !== '') {
+            props.delete('');
+            props.set('', tail);
+        }
+        return props;
+    }
+    $.$bog_vmap_app_code_with = $bog_vmap_app_code_with;
+    /**
+     * Empty method of a property, for when the body declares none yet.
+     *
+     * The signature follows the property: `*` gives a key, `?` gives a next, and
+     * a plain property takes neither. Same rule as `source_js_prop_default` of
+     * studio, which reads them off the property model instead of a signature.
+     */
+    function $bog_vmap_app_code_js_default(name, key = false, next = false) {
+        const params = [...key ? ['key'] : [], ...next ? ['next'] : []].join(', ');
+        return `${name}( ${params} ) {\n\t\n}`;
+    }
+    $.$bog_vmap_app_code_js_default = $bog_vmap_app_code_js_default;
+    /** Empty rule of a property, addressed by the attribute $mol writes on its node. */
+    function $bog_vmap_app_code_css_default(name, klass) {
+        return `[${$bog_vmap_app_code_attr(klass)}_${name.toLowerCase()}] {\n\t\n}`;
+    }
+    $.$bog_vmap_app_code_css_default = $bog_vmap_app_code_css_default;
+    /**
+     * Attribute $mol writes for a class: the name without the leading sigil, lower
+     * case. `attr_static()` lowercases the whole thing, so a selector that does not
+     * would simply never match.
+     */
+    function $bog_vmap_app_code_attr(klass) {
+        return klass.replace(/\$/g, '').toLowerCase();
+    }
+    $.$bog_vmap_app_code_attr = $bog_vmap_app_code_attr;
+})($ || ($ = {}));
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Editor of the three sources of a node.
+         *
+         * Every text goes through one pair of plain methods, read and write on the same
+         * path: none of them is a `@ $mol_mem`, because writing to a cell freezes its
+         * dependencies and the field would stop following the document after the first
+         * edit made in it. What the cells here hold is only what nothing else can
+         * recompute — the text that failed to parse, and why.
+         *
+         * @see ../../ARCHITECTURE.md sections 1 and 2
+         */
+        class $bog_vmap_app_code extends $.$bog_vmap_app_code {
+            /** Whether one node is being edited rather than the class it belongs to. */
+            sliced() {
+                return Boolean(this.prop()) && !this.whole();
+            }
+            scope_note() {
+                const prop = this.prop();
+                if (!prop)
+                    return `Весь класс ${this.klass()}`;
+                return this.whole() ? `Весь класс ${this.klass()}` : `Узел ${prop}`;
+            }
+            /**
+             * Text typed into a field that the document refused, or `null`.
+             *
+             * Kept so that a broken `view.tree` can be fixed where it was written
+             * instead of vanishing on the next redraw. Cleared by the write that parses.
+             */
+            draft(slot, next) {
+                return next ?? null;
+            }
+            /** Why the last edit was not written into the document. Empty when it was. */
+            refusal(next) {
+                return next ?? '';
+            }
+            /**
+             * Writes a text through, keeping it in the field when it is refused.
+             *
+             * A throw out of a setter of `$mol_string` goes into `setCustomValidity`,
+             * which outside a form is nowhere at all, so the message is put on a channel
+             * of our own before anything is thrown. A suspended read passes through
+             * untouched — swallowing it would turn a wait into an error.
+             */
+            written(slot, next, write) {
+                try {
+                    write(next);
+                }
+                catch (error) {
+                    if (this.$.$mol_promise_like(error))
+                        return this.$.$mol_fail_hidden(error);
+                    this.draft(slot, next);
+                    this.refusal(String(error?.message ?? error));
+                    return next;
+                }
+                this.draft(slot, null);
+                this.refusal('');
+                return next;
+            }
+            /** `view.tree` of the node, or of the whole document. */
+            tree_text(next) {
+                if (next === undefined) {
+                    return this.draft('tree') ?? (this.sliced() ? this.node_source() : this.source());
+                }
+                return this.written('tree', next, text => {
+                    if (this.sliced())
+                        this.node_source(text);
+                    else
+                        this.source(text);
+                });
+            }
+            /** Properties of the class body, or the reason it could not be cut into them. */
+            props_js() {
+                return this.$.$bog_vmap_app_code_props_js(this.js());
+            }
+            /** Properties of the class styles, the same way. */
+            props_css() {
+                return this.$.$bog_vmap_app_code_props_css(this.css(), this.klass());
+            }
+            js_text(next) {
+                if (!this.sliced()) {
+                    if (next === undefined)
+                        return this.draft('js') ?? this.js();
+                    return this.written('js', next, text => this.js(text));
+                }
+                const prop = this.prop();
+                if (next === undefined) {
+                    return this.draft('js') ?? this.sliced_read(() => this.props_js().get(prop), () => this.$.$bog_vmap_app_code_js_default(prop, this.prop_key(), this.prop_next()));
+                }
+                return this.written('js', next, text => this.js(this.$.$bog_vmap_app_code_joined(this.$.$bog_vmap_app_code_with(this.props_js(), prop, text))));
+            }
+            css_text(next) {
+                if (!this.sliced()) {
+                    if (next === undefined)
+                        return this.draft('css') ?? this.css();
+                    return this.written('css', next, text => this.css(text));
+                }
+                const prop = this.prop();
+                const key = prop.toLowerCase();
+                if (next === undefined) {
+                    return this.draft('css') ?? this.sliced_read(() => this.props_css().get(key), () => this.$.$bog_vmap_app_code_css_default(prop, this.klass()));
+                }
+                return this.written('css', next, text => this.css(this.$.$bog_vmap_app_code_joined(this.$.$bog_vmap_app_code_with(this.props_css(), key, text))));
+            }
+            /**
+             * The slice of one property, or the empty one when the text has no such
+             * property and when it cannot be cut at all.
+             *
+             * A text that does not slice is a state of the panel, not an exception: the
+             * class is still there, still compiles for all we know, and the way out is
+             * the switch to the whole class, which the message names.
+             */
+            sliced_read(read, empty) {
+                try {
+                    return read() ?? empty();
+                }
+                catch (error) {
+                    if (this.$.$mol_promise_like(error))
+                        return this.$.$mol_fail_hidden(error);
+                    return empty();
+                }
+            }
+            /**
+             * Whether the class texts can be cut by property at all.
+             *
+             * A pure derivation, so it is a cell: it reads the two texts and nothing
+             * else, and says the same thing the read path silently works around.
+             */
+            sliceable() {
+                try {
+                    this.props_js();
+                    this.props_css();
+                    return true;
+                }
+                catch (error) {
+                    if (this.$.$mol_promise_like(error))
+                        return this.$.$mol_fail_hidden(error);
+                    return false;
+                }
+            }
+            head_content() {
+                return [
+                    this.Scope_note(),
+                    ...this.prop() ? [this.Scope()] : [],
+                ];
+            }
+            content() {
+                return [
+                    this.Head(),
+                    ...this.error() ? [this.Alarm()] : [],
+                    ...this.note() ? [this.Refusal()] : [],
+                    this.Sources(),
+                ];
+            }
+            /** The refusal, or the standing reason the slicing is off. */
+            note() {
+                const refusal = this.refusal();
+                if (refusal)
+                    return refusal;
+                if (this.sliced() && !this.sliceable()) {
+                    return 'Тексты класса не разобрать по свойствам: скобки не сбалансированы. Включите «Весь класс»';
+                }
+                return '';
+            }
+        }
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_code.prototype, "draft", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_code.prototype, "refusal", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_code.prototype, "sliceable", null);
+        $$.$bog_vmap_app_code = $bog_vmap_app_code;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        $mol_style_define($bog_vmap_app_code, {
+            /** A side panel like the inspector: takes the height of whatever holds it. */
+            flex: { direction: 'column', grow: 1, shrink: 1 },
+            minHeight: 0,
+            minWidth: 0,
+            background: { color: $mol_theme.back },
+            color: $mol_theme.text,
+            Head: {
+                flex: { shrink: 0 },
+            },
+            Scope_note: {
+                flex: { grow: 1 },
+                font: { family: 'monospace', size: '.8rem' },
+                color: $mol_theme.shade,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+            },
+            /** The scene spoke about this node: loud, unlike the ordinary hints. */
+            Alarm: {
+                flex: { shrink: 0 },
+                padding: $mol_gap.text,
+                background: { color: $mol_theme.back },
+                color: $mol_theme.focus,
+                font: { size: '.75rem' },
+                whiteSpace: 'pre-wrap',
+            },
+            Refusal: {
+                flex: { shrink: 0 },
+                padding: $mol_gap.text,
+                color: $mol_theme.shade,
+                font: { size: '.75rem' },
+                whiteSpace: 'pre-wrap',
+            },
+            /** The three fields fill what is left; without this the deck sizes to its text. */
+            Sources: {
+                flex: { direction: 'column', grow: 1, shrink: 1 },
+                minHeight: 0,
+            },
+        });
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
 "use strict";
 var $;
 (function ($) {
@@ -29514,6 +30416,20 @@ var $;
 			(obj.drag_geometry) = () => ((this.wire_drag_geometry()));
 			return obj;
 		}
+		error_marks(){
+			return [];
+		}
+		Marks(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.error_marks()));
+			return obj;
+		}
+		mark_style(id){
+			return {};
+		}
+		mark_hint(id){
+			return "";
+		}
 		insert_style(){
 			return {};
 		}
@@ -29604,6 +30520,10 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		error_node(id, next){
+			if(next !== undefined) return next;
+			return "";
+		}
 		error(){
 			return "";
 		}
@@ -29629,7 +30549,18 @@ var $;
 			return obj;
 		}
 		sub(){
-			return [(this.Overlay()), (this.Wire())];
+			return [
+				(this.Overlay()), 
+				(this.Wire()), 
+				(this.Marks())
+			];
+		}
+		Mark(id){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.mark_style(id)));
+			(obj.attr) = () => ({...(this.$.$mol_view.prototype.attr.call(obj)), "title": (this.mark_hint(id))});
+			(obj.sub) = () => (["!"]);
+			return obj;
 		}
 		Insert(){
 			const obj = new this.$.$mol_view();
@@ -29645,6 +30576,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_release"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Overlay"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Wire"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Marks"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Touch"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "spots"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "selected"));
@@ -29655,10 +30587,12 @@ var $;
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "handshake"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "stalled"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_at"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_node"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_shift"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_zoom"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_generation"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Scene"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Mark"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Insert"));
 	($.$bog_vmap_app_pane_overlay) = class $bog_vmap_app_pane_overlay extends ($.$mol_view) {
 		press(next){
@@ -29967,6 +30901,49 @@ var $;
                 return [this.isolation(), this.error_at('compile'), this.error_at('runtime')]
                     .filter(Boolean)
                     .join('\n');
+            }
+            /**
+             * The two channels sorted onto the nodes they were attributed to.
+             *
+             * A failure the scene could not attribute stays on the strip alone: a mark
+             * on the wrong node would be worse than no mark, and there is nowhere else
+             * to put it. Both channels can name the same node, and then both texts go
+             * on it, and a channel cleared by the scene takes its mark off with it —
+             * the name of a node without a text of its own is not a failure.
+             */
+            errors() {
+                const res = {};
+                for (const at of ['compile', 'runtime']) {
+                    const node = this.error_node(at);
+                    const text = this.error_at(at);
+                    if (!node || !text)
+                        continue;
+                    res[node] = res[node] ? res[node] + '\n' + text : text;
+                }
+                return res;
+            }
+            /** What the scene said about one node, empty when it said nothing. */
+            node_error(name) {
+                return this.errors()[name] ?? '';
+            }
+            /** A mark per node the scene complained about, once it has been measured. */
+            error_marks() {
+                return Object.keys(this.errors())
+                    .filter(name => this.part_box(name))
+                    .map(name => this.Mark(name));
+            }
+            mark_hint(name) {
+                return this.node_error(name);
+            }
+            /** At the top left corner of the node, in screen pixels, like the ring. */
+            mark_style(name) {
+                const rect = this.part_box(name);
+                if (!rect)
+                    return {};
+                return {
+                    left: rect.left + 'px',
+                    top: rect.top + 'px',
+                };
             }
             /**
              * Which frame is the live one: the generation, and the pack it was raised
@@ -31052,6 +32029,7 @@ var $;
                     const label = at === 'compile' ? 'компиляция' : 'исполнение';
                     const node = message.node ? ` — ${message.node}` : '';
                     this.error_at(at, `${label}${node}: ${message.message}`);
+                    this.error_node(at, message.node ?? '');
                     return;
                 }
                 if (message.kind === 'values') {
@@ -31102,6 +32080,18 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "camera_reset", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "errors", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "error_marks", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "mark_hint", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "mark_style", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "scene_restart", null);
@@ -31255,6 +32245,33 @@ var $;
                 background: { color: $mol_theme.focus },
                 pointerEvents: 'none',
             },
+            /** The layer of the marks: a frame of reference, not a box of its own. */
+            Marks: {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+            },
+            /**
+             * A badge at the corner of a node the scene complained about. Takes the
+             * pointer, alone on this layer, so that the tooltip can be read at all.
+             */
+            Mark: {
+                position: 'absolute',
+                transform: 'translate(-50%, -50%)',
+                width: '1rem',
+                height: '1rem',
+                borderRadius: '50%',
+                flex: { direction: 'row' },
+                justifyContent: 'center',
+                alignItems: 'center',
+                background: { color: $mol_theme.focus },
+                color: $mol_theme.card,
+                font: { size: '.75rem', weight: 'bolder' },
+                pointerEvents: 'auto',
+            },
         });
         $mol_style_define($bog_vmap_app_pane_overlay, {
             /**
@@ -31348,6 +32365,13 @@ var $;
 			(obj.checked) = (next) => ((this.inspect_showed(next)));
 			return obj;
 		}
+		Code_check(){
+			const obj = new this.$.$mol_check();
+			(obj.title) = () => ("Код");
+			(obj.hint) = () => ("Три текста выбранного узла: view.tree, JS и CSS");
+			(obj.checked) = (next) => ((this.code_showed(next)));
+			return obj;
+		}
 		zoom_out(next){
 			if(next !== undefined) return next;
 			return null;
@@ -31424,10 +32448,18 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		node_js(){
+			return "";
+		}
+		node_css(){
+			return "";
+		}
 		Publish(){
 			const obj = new this.$.$bog_vmap_app_publish();
 			(obj.part) = () => ((this.publish_part()));
 			(obj.source) = () => ((this.node_source()));
+			(obj.js) = () => ((this.node_js()));
+			(obj.css) = () => ((this.node_css()));
 			(obj.doc) = () => ((this.doc_src()));
 			(obj.classes) = () => ([(this.doc_root())]);
 			return obj;
@@ -31487,6 +32519,18 @@ var $;
 		}
 		idle_note(){
 			return "Выберите узел на холсте, чтобы править его свойства";
+		}
+		code_prop(){
+			return "";
+		}
+		code_prop_key(){
+			return false;
+		}
+		code_prop_next(){
+			return false;
+		}
+		code_error(){
+			return "";
 		}
 		lands(){
 			return [];
@@ -31568,6 +32612,22 @@ var $;
 			if(next !== undefined) return next;
 			return true;
 		}
+		code_showed(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		doc_text(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		root_js(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		root_css(next){
+			if(next !== undefined) return next;
+			return "";
+		}
 		store(){
 			const obj = new this.$.$bog_vmap_app_store();
 			return obj;
@@ -31582,6 +32642,7 @@ var $;
 				(this.Scenes()), 
 				(this.Palette_check()), 
 				(this.Inspect_check()), 
+				(this.Code_check()), 
 				(this.Zoom_out()), 
 				(this.Zoom_title()), 
 				(this.Zoom_in()), 
@@ -31630,6 +32691,19 @@ var $;
 			(obj.sub) = () => ([(this.idle_note())]);
 			return obj;
 		}
+		Code(){
+			const obj = new this.$.$bog_vmap_app_code();
+			(obj.klass) = () => ((this.doc_root()));
+			(obj.prop) = () => ((this.code_prop()));
+			(obj.prop_key) = () => ((this.code_prop_key()));
+			(obj.prop_next) = () => ((this.code_prop_next()));
+			(obj.source) = (next) => ((this.doc_text(next)));
+			(obj.node_source) = (next) => ((this.node_source(next)));
+			(obj.js) = (next) => ((this.root_js(next)));
+			(obj.css) = (next) => ((this.root_css(next)));
+			(obj.error) = () => ((this.code_error()));
+			return obj;
+		}
 		Lib(){
 			const obj = new this.$.$bog_vmap_lib_land_stack();
 			(obj.pack) = () => ((this.pack_link()));
@@ -31668,6 +32742,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Scenes"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Palette_check"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Inspect_check"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Code_check"));
 	($mol_mem(($.$bog_vmap_app.prototype), "zoom_out"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Zoom_out"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Zoom_title"));
@@ -31694,6 +32769,10 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "links"));
 	($mol_mem(($.$bog_vmap_app.prototype), "palette_showed"));
 	($mol_mem(($.$bog_vmap_app.prototype), "inspect_showed"));
+	($mol_mem(($.$bog_vmap_app.prototype), "code_showed"));
+	($mol_mem(($.$bog_vmap_app.prototype), "doc_text"));
+	($mol_mem(($.$bog_vmap_app.prototype), "root_js"));
+	($mol_mem(($.$bog_vmap_app.prototype), "root_css"));
 	($mol_mem(($.$bog_vmap_app.prototype), "store"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Head"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Alarm"));
@@ -31703,6 +32782,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Aside"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Inspect"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Idle"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Code"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Lib"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Ghost"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Pane"));
@@ -31947,16 +33027,137 @@ var $;
             publish_part() {
                 return this.selected() ?? '';
             }
+            /** The whole document text, two way: what the code editor writes back through. */
+            doc_text(next) {
+                return this.doc_source(next);
+            }
+            /**
+             * The document as a model over the classes it declares.
+             *
+             * Beside `node()`, which is the root class alone. Both are read only
+             * derivations of the same text, and the code editor needs the list of
+             * classes that one cannot give.
+             */
+            doc_model() {
+                return this.$.$bog_vmap_lang_doc.make({
+                    $: this.$,
+                    source: (next) => this.doc_source(next),
+                });
+            }
+            /**
+             * Handwritten body of one class of the document, in the document or in the
+             * draft before there is one.
+             *
+             * A plain method, like everything in front of a Giper Baza atom: a cell
+             * there freezes at what was written through it.
+             */
+            class_js(klass, next) {
+                const store = this.store();
+                const doc = store.doc_current();
+                if (!doc)
+                    return this.draft_js(klass, next);
+                if (next !== undefined && !doc.can_change())
+                    return store.node_js(doc, klass);
+                return store.node_js(doc, klass, next);
+            }
+            /** Styles of one class, the same way. */
+            class_css(klass, next) {
+                const store = this.store();
+                const doc = store.doc_current();
+                if (!doc)
+                    return this.draft_css(klass, next);
+                if (next !== undefined && !doc.can_change())
+                    return store.node_css(doc, klass);
+                return store.node_css(doc, klass, next);
+            }
+            /** Body of a class while there is no document to keep it in. */
+            draft_js(klass, next) {
+                return next ?? '';
+            }
+            /** Styles of a class while there is no document to keep them in. */
+            draft_css(klass, next) {
+                return next ?? '';
+            }
+            root_js(next) {
+                return this.class_js(this.doc_root(), next);
+            }
+            root_css(next) {
+                return this.class_css(this.doc_root(), next);
+            }
+            /**
+             * Handwritten bodies of the document, by class name, as the scene takes them.
+             *
+             * A class with no body of its own is left out rather than sent empty: the
+             * scene wraps a class only when there is something to put in the wrapper.
+             */
+            doc_js() {
+                const bodies = {};
+                for (const name of this.doc_model().names()) {
+                    const js = this.class_js(name);
+                    if (js)
+                        bodies[name] = js;
+                }
+                return bodies;
+            }
             /**
              * CSS of the document itself: the only styling an export may ever carry.
              *
-             * Empty until the code editor of stage 4. Styles of a node are kept per node
-             * in the model of `app/doc/`, and that is what the export reads. Nothing
-             * about the canvas belongs here, and there is no longer anywhere to put it:
+             * The styles of every class, glued in the order the text declares them.
+             * Nothing about the canvas belongs here, and there is nowhere to put it:
              * placement travels on `spots` and is turned into rules by the scene.
              */
             doc_css() {
-                return '';
+                return this.doc_model().names()
+                    .map(name => this.class_css(name))
+                    .filter(Boolean)
+                    .join('\n\n');
+            }
+            /** The picked node as the code editor takes it: a name, empty for none. */
+            code_prop() {
+                return this.selected() ?? '';
+            }
+            /** Signature of the picked property: it shapes the empty method offered for it. */
+            code_prop_key() {
+                const name = this.selected();
+                return name ? this.node().property(name).key() : false;
+            }
+            code_prop_next() {
+                const name = this.selected();
+                return name ? this.node().property(name).next() : false;
+            }
+            /** What the scene said about the picked node last, empty when it said nothing. */
+            code_error() {
+                const name = this.selected();
+                return name ? this.pane().node_error(name) : '';
+            }
+            /** Method of the picked node, cut out of the body of its class. */
+            node_js() {
+                const name = this.selected();
+                if (!name)
+                    return '';
+                try {
+                    return this.$.$bog_vmap_app_code_props_js(this.root_js()).get(name) ?? '';
+                }
+                catch (error) {
+                    if (this.$.$mol_promise_like(error))
+                        return this.$.$mol_fail_hidden(error);
+                    return '';
+                }
+            }
+            /** Rule of the picked node, cut out of the styles of its class. */
+            node_css() {
+                const name = this.selected();
+                if (!name)
+                    return '';
+                try {
+                    return this.$.$bog_vmap_app_code_props_css(this.root_css(), this.doc_root())
+                        .get(name.toLowerCase()) ?? '';
+                }
+                catch (error) {
+                    if (this.$.$mol_promise_like(error))
+                        return this.$.$mol_fail_hidden(error);
+                    return '';
+                }
             }
             /**
              * The overlay may be cut open under the picked part, except while something
@@ -31982,6 +33183,7 @@ var $;
                     ...this.palette_showed() ? [this.Side()] : [],
                     this.Pane(),
                     ...this.inspect_showed() ? [this.Aside()] : [],
+                    ...this.code_showed() ? [this.Code()] : [],
                 ];
             }
             /**
@@ -32497,6 +33699,21 @@ var $;
         ], $bog_vmap_app.prototype, "selected", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app.prototype, "doc_model", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "draft_js", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "draft_css", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app.prototype, "doc_js", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app.prototype, "doc_css", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_app.prototype, "body", null);
         __decorate([
             $mol_mem
@@ -32593,6 +33810,13 @@ var $;
             Aside: {
                 flex: { direction: 'column', shrink: 0 },
                 width: '22rem',
+                minHeight: 0,
+                border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
+            },
+            /** Wider than the inspector: this one holds code, and code wraps badly. */
+            Code: {
+                flex: { direction: 'column', shrink: 0 },
+                width: '28rem',
                 minHeight: 0,
                 border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
             },

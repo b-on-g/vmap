@@ -42109,6 +42109,13 @@ declare namespace $ {
          * the fiber restarts this from the beginning on every `Promise` on the way,
          * and a document that arrived from another device while the proof of work
          * was being mined must not be pushed aside by ours.
+         *
+         * The check guards against that device and not against our own half made
+         * document, and it cannot confuse the two: a restart replays every read
+         * from the cache of the fiber itself, so the list here reads as it read
+         * when the fiber started — empty. Measured. That is what lets a restart in
+         * the middle of pouring the draft carry the pouring through instead of
+         * walking away from a document with no text in it.
          */
         doc_first(): void;
         /**
@@ -42129,12 +42136,17 @@ declare namespace $ {
          * The fiber is wrapped and not returned as it is: a cell answering with a
          * promise is a cell that never finished, and every reader of it suspends
          * for ever.
+         *
+         * **The wrapper deliberately has no `destructor`, so this cell holds the
+         * handle and not the life.** The draft is poured AFTER the document is in
+         * the list, so there is a window in which `boot` already answers `ready`,
+         * the last reader looks away and a cell nobody reads is collected. Owning
+         * the fiber here would end it inside that window, and what would be lost is
+         * the text the user typed, silently. Measured; there is a test. Nothing
+         * leaks by it: a one-shot fiber destructs itself the moment it completes.
          */
         doc_first_task(): {
-            task: Promise<void> & {
-                destructor?(): void;
-            };
-            destructor: () => void | undefined;
+            task: Promise<void>;
         };
         /**
          * Makes sure there is a document, from the start of the session.
@@ -48619,6 +48631,458 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
+
+	type $mol_textarea_edit__value_mol_textarea_1 = $mol_type_enforce<
+		ReturnType< $mol_textarea['value'] >
+		,
+		ReturnType< $mol_textarea_edit['value'] >
+	>
+	type $mol_textarea_edit__hint_mol_textarea_2 = $mol_type_enforce<
+		ReturnType< $mol_textarea['hint'] >
+		,
+		ReturnType< $mol_textarea_edit['hint'] >
+	>
+	type $mol_textarea_edit__enabled_mol_textarea_3 = $mol_type_enforce<
+		ReturnType< $mol_textarea['enabled'] >
+		,
+		ReturnType< $mol_textarea_edit['enabled'] >
+	>
+	type $mol_textarea_edit__spellcheck_mol_textarea_4 = $mol_type_enforce<
+		ReturnType< $mol_textarea['spellcheck'] >
+		,
+		ReturnType< $mol_textarea_edit['spellcheck'] >
+	>
+	type $mol_textarea_edit__length_max_mol_textarea_5 = $mol_type_enforce<
+		ReturnType< $mol_textarea['length_max'] >
+		,
+		ReturnType< $mol_textarea_edit['length_max'] >
+	>
+	type $mol_textarea_edit__selection_mol_textarea_6 = $mol_type_enforce<
+		ReturnType< $mol_textarea['selection'] >
+		,
+		ReturnType< $mol_textarea_edit['selection'] >
+	>
+	type $mol_textarea_edit__submit_mol_textarea_7 = $mol_type_enforce<
+		ReturnType< $mol_textarea['submit'] >
+		,
+		ReturnType< $mol_textarea_edit['submit'] >
+	>
+	type $mol_textarea_edit__submit_with_ctrl_mol_textarea_8 = $mol_type_enforce<
+		ReturnType< $mol_textarea['submit_with_ctrl'] >
+		,
+		ReturnType< $mol_textarea_edit['submit_with_ctrl'] >
+	>
+	type $mol_text_code__text_mol_textarea_9 = $mol_type_enforce<
+		ReturnType< $mol_textarea['value'] >
+		,
+		ReturnType< $mol_text_code['text'] >
+	>
+	type $mol_text_code__render_visible_only_mol_textarea_10 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_text_code['render_visible_only'] >
+	>
+	type $mol_text_code__row_numb_mol_textarea_11 = $mol_type_enforce<
+		ReturnType< $mol_textarea['row_numb'] >
+		,
+		ReturnType< $mol_text_code['row_numb'] >
+	>
+	type $mol_text_code__sidebar_showed_mol_textarea_12 = $mol_type_enforce<
+		ReturnType< $mol_textarea['sidebar_showed'] >
+		,
+		ReturnType< $mol_text_code['sidebar_showed'] >
+	>
+	type $mol_text_code__highlight_mol_textarea_13 = $mol_type_enforce<
+		ReturnType< $mol_textarea['highlight'] >
+		,
+		ReturnType< $mol_text_code['highlight'] >
+	>
+	type $mol_text_code__syntax_mol_textarea_14 = $mol_type_enforce<
+		ReturnType< $mol_textarea['syntax'] >
+		,
+		ReturnType< $mol_text_code['syntax'] >
+	>
+	export class $mol_textarea extends $mol_stack {
+		clickable( next?: boolean ): boolean
+		sidebar_showed( ): boolean
+		press( next?: any ): any
+		hover( next?: any ): any
+		value( next?: string ): string
+		hint( ): string
+		enabled( ): boolean
+		spellcheck( ): boolean
+		length_max( ): number
+		selection( next?: readonly(number)[] ): readonly(number)[]
+		bring( ): ReturnType< ReturnType< $mol_textarea['Edit'] >['bring'] >
+		submit( next?: any ): any
+		submit_with_ctrl( ): boolean
+		Edit( ): $mol_textarea_edit
+		row_numb( id: any): number
+		highlight( ): string
+		syntax( ): $mol_syntax2
+		View( ): $mol_text_code
+		attr( ): ({ 
+			'mol_textarea_clickable': ReturnType< $mol_textarea['clickable'] >,
+			'mol_textarea_sidebar_showed': ReturnType< $mol_textarea['sidebar_showed'] >,
+		})  & ReturnType< $mol_stack['attr'] >
+		event( ): ({ 
+			keydown( next?: ReturnType< $mol_textarea['press'] > ): ReturnType< $mol_textarea['press'] >,
+			pointermove( next?: ReturnType< $mol_textarea['hover'] > ): ReturnType< $mol_textarea['hover'] >,
+		}) 
+		sub( ): readonly(any)[]
+		symbols_alt( ): Record<string, string>
+		symbols_alt_ctrl( ): Record<string, string>
+		symbols_alt_shift( ): Record<string, string>
+	}
+	
+	export class $mol_textarea_edit extends $mol_string {
+		dom_name( ): string
+		enter( ): string
+		field( ): ({ 
+			'scrollTop': number,
+		})  & ReturnType< $mol_string['field'] >
+	}
+	
+}
+
+//# sourceMappingURL=textarea.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * An input field for entering multiline text.
+     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_textarea_demo
+     */
+    class $mol_textarea extends $.$mol_textarea {
+        indent_inc(): void;
+        indent_dec(): void;
+        symbol_insert(event: KeyboardEvent): void;
+        clickable(next?: boolean): boolean;
+        hover(event: PointerEvent): void;
+        press(event: KeyboardEvent): void;
+        row_numb(index: number): number;
+        syntax(): $mol_syntax2<{
+            'code-indent': RegExp;
+            'code-docs': RegExp;
+            'code-comment-block': RegExp;
+            'code-link': RegExp;
+            'code-comment-inline': RegExp;
+            'code-string': RegExp;
+            'code-number': RegExp;
+            'code-call': RegExp;
+            'code-sexpr': RegExp;
+            'code-field': RegExp;
+            'code-keyword': RegExp;
+            'code-global': RegExp;
+            'code-word': RegExp;
+            'code-decorator': RegExp;
+            'code-tag': RegExp;
+            'code-punctuation': RegExp;
+        }>;
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
+
+	type $mol_switch__value_mol_deck_1 = $mol_type_enforce<
+		ReturnType< $mol_deck['current'] >
+		,
+		ReturnType< $mol_switch['value'] >
+	>
+	type $mol_switch__options_mol_deck_2 = $mol_type_enforce<
+		ReturnType< $mol_deck['switch_options'] >
+		,
+		ReturnType< $mol_switch['options'] >
+	>
+	export class $mol_deck extends $mol_list {
+		current( next?: string ): string
+		switch_options( ): Record<string, any>
+		Switch( ): $mol_switch
+		Content( ): $mol_view
+		items( ): readonly($mol_view)[]
+		rows( ): readonly($mol_view)[]
+	}
+	
+}
+
+//# sourceMappingURL=deck.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * The component which arrange content in multiple tabs.
+     * @seehttps://mol.hyoo.ru/#!section=demos/demo=mol_deck_demo
+     */
+    class $mol_deck extends $.$mol_deck {
+        current(next?: string): string;
+        switch_options(): Record<string, string>;
+        Content(): $mol_view;
+    }
+}
+
+declare namespace $ {
+    /**
+     * Slicing of the handwritten sources by property.
+     *
+     * Port of `props_js()`, `props_css()` and the `source_*_prop` family of
+     * `hyoo_studio`. Kept as plain functions with no view around them, because
+     * the whole of stage 4.2 is text in and text out.
+     *
+     * @see ../../ARCHITECTURE.md section 2
+     */
+    /** A property of a class body, and the code that declares it. */
+    type $bog_vmap_app_code_props = Map<string, string>;
+    /**
+     * Class body cut into properties, keyed by property name.
+     *
+     * Counts braces rather than parsing: a body is arbitrary JS, and everything
+     * between the end of the previous property and the opening brace of this one
+     * is where the name lives. Studio does it this way and it holds on real
+     * bodies, comments and nested functions included.
+     */
+    function $bog_vmap_app_code_props_js(this: $, body: string): $bog_vmap_app_code_props;
+    /**
+     * Styles cut into properties, keyed by the property the rule belongs to.
+     *
+     * The selector of a sub-view is the attribute `[<class>_<prop>]` that $mol
+     * writes on it, so the property name is the tail of the attribute once the
+     * name of the class is taken off. A rule about anything else is skipped.
+     */
+    function $bog_vmap_app_code_props_css(this: $, css: string, klass: string): $bog_vmap_app_code_props;
+    /** Sliced properties put back together into one text, in their own order. */
+    function $bog_vmap_app_code_joined(props: $bog_vmap_app_code_props): string;
+    /**
+     * One property replaced in the slicing, with the unrecognized tail kept last.
+     *
+     * A property the text does not carry yet is appended, and the tail is moved
+     * behind it: a `Map` keeps insertion order, so without the move a new property
+     * would land after the leftovers and the two would swap places on every edit.
+     */
+    function $bog_vmap_app_code_with(props: $bog_vmap_app_code_props, name: string, code: string): $bog_vmap_app_code_props;
+    /**
+     * Empty method of a property, for when the body declares none yet.
+     *
+     * The signature follows the property: `*` gives a key, `?` gives a next, and
+     * a plain property takes neither. Same rule as `source_js_prop_default` of
+     * studio, which reads them off the property model instead of a signature.
+     */
+    function $bog_vmap_app_code_js_default(name: string, key?: boolean, next?: boolean): string;
+    /** Empty rule of a property, addressed by the attribute $mol writes on its node. */
+    function $bog_vmap_app_code_css_default(name: string, klass: string): string;
+    /**
+     * Attribute $mol writes for a class: the name without the leading sigil, lower
+     * case. `attr_static()` lowercases the whole thing, so a selector that does not
+     * would simply never match.
+     */
+    function $bog_vmap_app_code_attr(klass: string): string;
+}
+
+declare namespace $ {
+
+	type $mol_textarea__title_bog_vmap_app_code_1 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['title'] >
+	>
+	type $mol_textarea__hint_bog_vmap_app_code_2 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['hint'] >
+	>
+	type $mol_textarea__sidebar_showed_bog_vmap_app_code_3 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_textarea['sidebar_showed'] >
+	>
+	type $mol_textarea__value_bog_vmap_app_code_4 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['tree_text'] >
+		,
+		ReturnType< $mol_textarea['value'] >
+	>
+	type $mol_textarea__title_bog_vmap_app_code_5 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['title'] >
+	>
+	type $mol_textarea__hint_bog_vmap_app_code_6 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['hint'] >
+	>
+	type $mol_textarea__sidebar_showed_bog_vmap_app_code_7 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_textarea['sidebar_showed'] >
+	>
+	type $mol_textarea__value_bog_vmap_app_code_8 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['js_text'] >
+		,
+		ReturnType< $mol_textarea['value'] >
+	>
+	type $mol_textarea__title_bog_vmap_app_code_9 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['title'] >
+	>
+	type $mol_textarea__hint_bog_vmap_app_code_10 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['hint'] >
+	>
+	type $mol_textarea__sidebar_showed_bog_vmap_app_code_11 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_textarea['sidebar_showed'] >
+	>
+	type $mol_textarea__value_bog_vmap_app_code_12 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['css_text'] >
+		,
+		ReturnType< $mol_textarea['value'] >
+	>
+	type $mol_bar__sub_bog_vmap_app_code_13 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['head_content'] >
+		,
+		ReturnType< $mol_bar['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_code_14 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_check__title_bog_vmap_app_code_15 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_check['title'] >
+	>
+	type $mol_check__hint_bog_vmap_app_code_16 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_check['hint'] >
+	>
+	type $mol_check__checked_bog_vmap_app_code_17 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['whole'] >
+		,
+		ReturnType< $mol_check['checked'] >
+	>
+	type $mol_view__sub_bog_vmap_app_code_18 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_code_19 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_deck__items_bog_vmap_app_code_20 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_deck['items'] >
+	>
+	export class $bog_vmap_app_code extends $mol_view {
+		content( ): readonly($mol_view)[]
+		head_content( ): readonly($mol_view)[]
+		scope_note( ): string
+		note( ): string
+		tree_text( next?: string ): string
+		Tree( ): $mol_textarea
+		js_text( next?: string ): string
+		Js( ): $mol_textarea
+		css_text( next?: string ): string
+		Css( ): $mol_textarea
+		klass( ): string
+		prop( ): string
+		prop_key( ): boolean
+		prop_next( ): boolean
+		source( next?: string ): string
+		node_source( next?: string ): string
+		js( next?: string ): string
+		css( next?: string ): string
+		error( ): string
+		whole( next?: boolean ): boolean
+		refusal( next?: string ): string
+		sub( ): ReturnType< $bog_vmap_app_code['content'] >
+		Head( ): $mol_bar
+		Scope_note( ): $mol_view
+		Scope( ): $mol_check
+		Alarm( ): $mol_view
+		Refusal( ): $mol_view
+		Sources( ): $mol_deck
+	}
+	
+}
+
+//# sourceMappingURL=code.view.tree.d.ts.map
+declare namespace $.$$ {
+    /** Which of the three texts a draft belongs to. */
+    type $bog_vmap_app_code_slot = 'tree' | 'js' | 'css';
+    /**
+     * Editor of the three sources of a node.
+     *
+     * Every text goes through one pair of plain methods, read and write on the same
+     * path: none of them is a `@ $mol_mem`, because writing to a cell freezes its
+     * dependencies and the field would stop following the document after the first
+     * edit made in it. What the cells here hold is only what nothing else can
+     * recompute — the text that failed to parse, and why.
+     *
+     * @see ../../ARCHITECTURE.md sections 1 and 2
+     */
+    class $bog_vmap_app_code extends $.$bog_vmap_app_code {
+        /** Whether one node is being edited rather than the class it belongs to. */
+        sliced(): boolean;
+        scope_note(): string;
+        /**
+         * Text typed into a field that the document refused, or `null`.
+         *
+         * Kept so that a broken `view.tree` can be fixed where it was written
+         * instead of vanishing on the next redraw. Cleared by the write that parses.
+         */
+        draft(slot: $bog_vmap_app_code_slot, next?: string | null): string | null;
+        /** Why the last edit was not written into the document. Empty when it was. */
+        refusal(next?: string): string;
+        /**
+         * Writes a text through, keeping it in the field when it is refused.
+         *
+         * A throw out of a setter of `$mol_string` goes into `setCustomValidity`,
+         * which outside a form is nowhere at all, so the message is put on a channel
+         * of our own before anything is thrown. A suspended read passes through
+         * untouched — swallowing it would turn a wait into an error.
+         */
+        written(slot: $bog_vmap_app_code_slot, next: string, write: (next: string) => void): string;
+        /** `view.tree` of the node, or of the whole document. */
+        tree_text(next?: string): string;
+        /** Properties of the class body, or the reason it could not be cut into them. */
+        props_js(): $bog_vmap_app_code_props;
+        /** Properties of the class styles, the same way. */
+        props_css(): $bog_vmap_app_code_props;
+        js_text(next?: string): string;
+        css_text(next?: string): string;
+        /**
+         * The slice of one property, or the empty one when the text has no such
+         * property and when it cannot be cut at all.
+         *
+         * A text that does not slice is a state of the panel, not an exception: the
+         * class is still there, still compiles for all we know, and the way out is
+         * the switch to the whole class, which the message names.
+         */
+        sliced_read(read: () => string | undefined, empty: () => string): string;
+        /**
+         * Whether the class texts can be cut by property at all.
+         *
+         * A pure derivation, so it is a cell: it reads the two texts and nothing
+         * else, and says the same thing the read path silently works around.
+         */
+        sliceable(): boolean;
+        head_content(): readonly $mol_view[];
+        content(): readonly $mol_view[];
+        /** The refusal, or the standing reason the slicing is off. */
+        note(): string;
+    }
+}
+
+declare namespace $.$$ {
+}
+
+declare namespace $ {
     /**
      * Wire protocol between the vmap host and its sandboxed scene.
      *
@@ -49433,42 +49897,64 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_wire['drag_geometry'] >
 	>
-	type $mol_touch__allow_draw_bog_vmap_app_pane_10 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_10 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['error_marks'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_touch__allow_draw_bog_vmap_app_pane_11 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_touch['allow_draw'] >
 	>
-	type $mol_touch__allow_pan_bog_vmap_app_pane_11 = $mol_type_enforce<
+	type $mol_touch__allow_pan_bog_vmap_app_pane_12 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_touch['allow_pan'] >
 	>
-	type $mol_touch__allow_zoom_bog_vmap_app_pane_12 = $mol_type_enforce<
+	type $mol_touch__allow_zoom_bog_vmap_app_pane_13 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_touch['allow_zoom'] >
 	>
-	type $mol_touch__pan_bog_vmap_app_pane_13 = $mol_type_enforce<
+	type $mol_touch__pan_bog_vmap_app_pane_14 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['camera_shift'] >
 		,
 		ReturnType< $mol_touch['pan'] >
 	>
-	type $mol_touch__zoom_bog_vmap_app_pane_14 = $mol_type_enforce<
+	type $mol_touch__zoom_bog_vmap_app_pane_15 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['camera_zoom'] >
 		,
 		ReturnType< $mol_touch['zoom'] >
 	>
-	type $mol_vector_2d__bog_vmap_app_pane_15 = $mol_type_enforce<
+	type $mol_vector_2d__bog_vmap_app_pane_16 = $mol_type_enforce<
 		[ number, number ]
 		,
 		ConstructorParameters< typeof $mol_vector_2d<number> >
 	>
-	type $bog_vmap_app_pane_frame__html_bog_vmap_app_pane_16 = $mol_type_enforce<
+	type $bog_vmap_app_pane_frame__html_bog_vmap_app_pane_17 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['scene_html'] >
 		,
 		ReturnType< $bog_vmap_app_pane_frame['html'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_17 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_18 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['mark_style'] >
+		,
+		ReturnType< $mol_view['style'] >
+	>
+	type $mol_view__attr_bog_vmap_app_pane_19 = $mol_type_enforce<
+		({ 
+			'title': ReturnType< $bog_vmap_app_pane['mark_hint'] >,
+		})  & ReturnType< $mol_view['attr'] >
+		,
+		ReturnType< $mol_view['attr'] >
+	>
+	type $mol_view__sub_bog_vmap_app_pane_20 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__style_bog_vmap_app_pane_21 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['insert_style'] >
 		,
 		ReturnType< $mol_view['style'] >
@@ -49485,6 +49971,10 @@ declare namespace $ {
 		wire_dots( ): readonly($bog_vmap_app_wire_dot)[]
 		wire_drag_geometry( ): string
 		Wire( ): $bog_vmap_app_wire
+		error_marks( ): readonly($mol_view)[]
+		Marks( ): $mol_view
+		mark_style( id: any): Record<string, any>
+		mark_hint( id: any): string
 		insert_style( ): Record<string, any>
 		Touch( ): $mol_touch
 		scene_bundle( ): string
@@ -49510,6 +50000,7 @@ declare namespace $ {
 		ready( ): boolean
 		stalled( next?: boolean ): boolean
 		error_at( id: any, next?: string ): string
+		error_node( id: any, next?: string ): string
 		error( ): string
 		isolation( ): string
 		camera_shift( next?: $mol_vector_2d<number> ): $mol_vector_2d<number>
@@ -49517,6 +50008,7 @@ declare namespace $ {
 		scene_generation( next?: number ): number
 		Scene( id: any): $bog_vmap_app_pane_frame
 		sub( ): readonly(any)[]
+		Mark( id: any): $mol_view
 		Insert( ): $mol_view
 		plugins( ): readonly(any)[]
 	}
@@ -49634,6 +50126,27 @@ declare namespace $.$$ {
          * slot would let a fixed compile erase a runtime failure that is still live.
          */
         error(): string;
+        /**
+         * The two channels sorted onto the nodes they were attributed to.
+         *
+         * A failure the scene could not attribute stays on the strip alone: a mark
+         * on the wrong node would be worse than no mark, and there is nowhere else
+         * to put it. Both channels can name the same node, and then both texts go
+         * on it, and a channel cleared by the scene takes its mark off with it —
+         * the name of a node without a text of its own is not a failure.
+         */
+        errors(): {
+            readonly [node: string]: string;
+        };
+        /** What the scene said about one node, empty when it said nothing. */
+        node_error(name: string): string;
+        /** A mark per node the scene complained about, once it has been measured. */
+        error_marks(): $mol_view[];
+        mark_hint(name: string): string;
+        /** At the top left corner of the node, in screen pixels, like the ring. */
+        mark_style(name: string): {
+            readonly [prop: string]: string;
+        };
         /**
          * Which frame is the live one: the generation, and the pack it was raised
          * with. A new key is a new `$mol_frame`, a new element and a new document.
@@ -50231,63 +50744,63 @@ declare namespace $ {
 		,
 		ReturnType< $mol_check['checked'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_7 = $mol_type_enforce<
+	type $mol_check__title_bog_vmap_app_7 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_check['title'] >
+	>
+	type $mol_check__hint_bog_vmap_app_8 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_check['hint'] >
+	>
+	type $mol_check__checked_bog_vmap_app_9 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['code_showed'] >
+		,
+		ReturnType< $mol_check['checked'] >
+	>
+	type $mol_button_minor__title_bog_vmap_app_10 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_8 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_11 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_9 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_12 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['zoom_out'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_view__sub_bog_vmap_app_10 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_13 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_button_minor__title_bog_vmap_app_11 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_button_minor['title'] >
-	>
-	type $mol_button_minor__hint_bog_vmap_app_12 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_button_minor['hint'] >
-	>
-	type $mol_button_minor__click_bog_vmap_app_13 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['zoom_in'] >
-		,
-		ReturnType< $mol_button_minor['click'] >
 	>
 	type $mol_button_minor__title_bog_vmap_app_14 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_15 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['camera_reset'] >
-		,
-		ReturnType< $mol_button_minor['click'] >
-	>
-	type $mol_button_minor__title_bog_vmap_app_16 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_button_minor['title'] >
-	>
-	type $mol_button_minor__hint_bog_vmap_app_17 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_15 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
+	type $mol_button_minor__click_bog_vmap_app_16 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['zoom_in'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__title_bog_vmap_app_17 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
 	type $mol_button_minor__click_bog_vmap_app_18 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['board_add'] >
+		ReturnType< $bog_vmap_app['camera_reset'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
@@ -50297,146 +50810,216 @@ declare namespace $ {
 		ReturnType< $mol_button_minor['title'] >
 	>
 	type $mol_button_minor__hint_bog_vmap_app_20 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['delete_hint'] >
+		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__enabled_bog_vmap_app_21 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['selection_showed'] >
-		,
-		ReturnType< $mol_button_minor['enabled'] >
-	>
-	type $mol_button_minor__click_bog_vmap_app_22 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_delete'] >
+	type $mol_button_minor__click_bog_vmap_app_21 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['board_add'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $bog_vmap_app_publish__part_bog_vmap_app_23 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['publish_part'] >
-		,
-		ReturnType< $bog_vmap_app_publish['part'] >
-	>
-	type $bog_vmap_app_publish__source_bog_vmap_app_24 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_source'] >
-		,
-		ReturnType< $bog_vmap_app_publish['source'] >
-	>
-	type $bog_vmap_app_publish__doc_bog_vmap_app_25 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['doc_src'] >
-		,
-		ReturnType< $bog_vmap_app_publish['doc'] >
-	>
-	type $bog_vmap_app_publish__classes_bog_vmap_app_26 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $bog_vmap_app_publish['classes'] >
-	>
-	type $mol_view__sub_bog_vmap_app_27 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_28 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_button_minor__title_bog_vmap_app_29 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_22 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_30 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_23 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['delete_hint'] >
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_bog_vmap_app_24 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['selection_showed'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_bog_vmap_app_25 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_delete'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $bog_vmap_app_publish__part_bog_vmap_app_26 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['publish_part'] >
+		,
+		ReturnType< $bog_vmap_app_publish['part'] >
+	>
+	type $bog_vmap_app_publish__source_bog_vmap_app_27 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_source'] >
+		,
+		ReturnType< $bog_vmap_app_publish['source'] >
+	>
+	type $bog_vmap_app_publish__js_bog_vmap_app_28 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_js'] >
+		,
+		ReturnType< $bog_vmap_app_publish['js'] >
+	>
+	type $bog_vmap_app_publish__css_bog_vmap_app_29 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_css'] >
+		,
+		ReturnType< $bog_vmap_app_publish['css'] >
+	>
+	type $bog_vmap_app_publish__doc_bog_vmap_app_30 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['doc_src'] >
+		,
+		ReturnType< $bog_vmap_app_publish['doc'] >
+	>
+	type $bog_vmap_app_publish__classes_bog_vmap_app_31 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $bog_vmap_app_publish['classes'] >
+	>
+	type $mol_view__sub_bog_vmap_app_32 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_33 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_button_minor__title_bog_vmap_app_34 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_bog_vmap_app_35 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_31 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_36 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_restart'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $bog_vmap_app_palette__compact_bog_vmap_app_32 = $mol_type_enforce<
+	type $bog_vmap_app_palette__compact_bog_vmap_app_37 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $bog_vmap_app_palette['compact'] >
 	>
-	type $bog_vmap_app_palette__links_bog_vmap_app_33 = $mol_type_enforce<
+	type $bog_vmap_app_palette__links_bog_vmap_app_38 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['links'] >
 		,
 		ReturnType< $bog_vmap_app_palette['links'] >
 	>
-	type $bog_vmap_app_palette__pack_link_bog_vmap_app_34 = $mol_type_enforce<
+	type $bog_vmap_app_palette__pack_link_bog_vmap_app_39 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_app_palette['pack_link'] >
 	>
-	type $bog_vmap_app_palette__land_classes_bog_vmap_app_35 = $mol_type_enforce<
+	type $bog_vmap_app_palette__land_classes_bog_vmap_app_40 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lib_classes'] >
 		,
 		ReturnType< $bog_vmap_app_palette['land_classes'] >
 	>
-	type $mol_bar__sub_bog_vmap_app_36 = $mol_type_enforce<
+	type $mol_bar__sub_bog_vmap_app_41 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_bar['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_37 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_42 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_38 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_43 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_39 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_44 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['body_main'] >
 		,
 		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_40 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_41 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['aside_content'] >
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $bog_vmap_app_inspect__source_bog_vmap_app_42 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_source'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['source'] >
-	>
-	type $bog_vmap_app_inspect__peers_bog_vmap_app_43 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_peers'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['peers'] >
-	>
-	type $bog_vmap_app_inspect__pack_bog_vmap_app_44 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['pack_link'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['pack'] >
 	>
 	type $mol_view__sub_bog_vmap_app_45 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_46 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_46 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['aside_content'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $bog_vmap_app_inspect__source_bog_vmap_app_47 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_source'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['source'] >
+	>
+	type $bog_vmap_app_inspect__peers_bog_vmap_app_48 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_peers'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['peers'] >
+	>
+	type $bog_vmap_app_inspect__pack_bog_vmap_app_49 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['pack_link'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['pack'] >
+	>
+	type $mol_view__sub_bog_vmap_app_50 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $bog_vmap_app_code__klass_bog_vmap_app_51 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['doc_root'] >
+		,
+		ReturnType< $bog_vmap_app_code['klass'] >
+	>
+	type $bog_vmap_app_code__prop_bog_vmap_app_52 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['code_prop'] >
+		,
+		ReturnType< $bog_vmap_app_code['prop'] >
+	>
+	type $bog_vmap_app_code__prop_key_bog_vmap_app_53 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['code_prop_key'] >
+		,
+		ReturnType< $bog_vmap_app_code['prop_key'] >
+	>
+	type $bog_vmap_app_code__prop_next_bog_vmap_app_54 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['code_prop_next'] >
+		,
+		ReturnType< $bog_vmap_app_code['prop_next'] >
+	>
+	type $bog_vmap_app_code__source_bog_vmap_app_55 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['doc_text'] >
+		,
+		ReturnType< $bog_vmap_app_code['source'] >
+	>
+	type $bog_vmap_app_code__node_source_bog_vmap_app_56 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_source'] >
+		,
+		ReturnType< $bog_vmap_app_code['node_source'] >
+	>
+	type $bog_vmap_app_code__js_bog_vmap_app_57 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['root_js'] >
+		,
+		ReturnType< $bog_vmap_app_code['js'] >
+	>
+	type $bog_vmap_app_code__css_bog_vmap_app_58 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['root_css'] >
+		,
+		ReturnType< $bog_vmap_app_code['css'] >
+	>
+	type $bog_vmap_app_code__error_bog_vmap_app_59 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['code_error'] >
+		,
+		ReturnType< $bog_vmap_app_code['error'] >
+	>
+	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_60 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['pack'] >
 	>
-	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_47 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_61 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lands'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['lands'] >
 	>
-	type $mol_view__style_bog_vmap_app_48 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_62 = $mol_type_enforce<
 		({ 
 			'left': ReturnType< $bog_vmap_app['ghost_left'] >,
 			'top': ReturnType< $bog_vmap_app['ghost_top'] >,
@@ -50444,92 +51027,92 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_49 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_63 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_app_pane__scene_bundle_bog_vmap_app_50 = $mol_type_enforce<
+	type $bog_vmap_app_pane__scene_bundle_bog_vmap_app_64 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_bundle'] >
 		,
 		ReturnType< $bog_vmap_app_pane['scene_bundle'] >
 	>
-	type $bog_vmap_app_pane__pack_uri_bog_vmap_app_51 = $mol_type_enforce<
+	type $bog_vmap_app_pane__pack_uri_bog_vmap_app_65 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_script'] >
 		,
 		ReturnType< $bog_vmap_app_pane['pack_uri'] >
 	>
-	type $bog_vmap_app_pane__doc_src_bog_vmap_app_52 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_src_bog_vmap_app_66 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_src'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_src'] >
 	>
-	type $bog_vmap_app_pane__doc_css_bog_vmap_app_53 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_css_bog_vmap_app_67 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_css'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_css'] >
 	>
-	type $bog_vmap_app_pane__spots_bog_vmap_app_54 = $mol_type_enforce<
+	type $bog_vmap_app_pane__spots_bog_vmap_app_68 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['spots'] >
 		,
 		ReturnType< $bog_vmap_app_pane['spots'] >
 	>
-	type $bog_vmap_app_pane__selected_bog_vmap_app_55 = $mol_type_enforce<
+	type $bog_vmap_app_pane__selected_bog_vmap_app_69 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['selected'] >
 		,
 		ReturnType< $bog_vmap_app_pane['selected'] >
 	>
-	type $bog_vmap_app_pane__doc_js_bog_vmap_app_56 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_js_bog_vmap_app_70 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_js'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_js'] >
 	>
-	type $bog_vmap_app_pane__doc_root_bog_vmap_app_57 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_root_bog_vmap_app_71 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_root'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_root'] >
 	>
-	type $bog_vmap_app_pane__libs_bog_vmap_app_58 = $mol_type_enforce<
+	type $bog_vmap_app_pane__libs_bog_vmap_app_72 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['libs'] >
 		,
 		ReturnType< $bog_vmap_app_pane['libs'] >
 	>
-	type $bog_vmap_app_pane__hole_allowed_bog_vmap_app_59 = $mol_type_enforce<
+	type $bog_vmap_app_pane__hole_allowed_bog_vmap_app_73 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['hole_allowed'] >
 		,
 		ReturnType< $bog_vmap_app_pane['hole_allowed'] >
 	>
-	type $bog_vmap_app_pane__wires_bog_vmap_app_60 = $mol_type_enforce<
+	type $bog_vmap_app_pane__wires_bog_vmap_app_74 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_wires'] >
 		,
 		ReturnType< $bog_vmap_app_pane['wires'] >
 	>
-	type $bog_vmap_app_pane__part_ports_bog_vmap_app_61 = $mol_type_enforce<
+	type $bog_vmap_app_pane__part_ports_bog_vmap_app_75 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['part_ports'] >
 		,
 		ReturnType< $bog_vmap_app_pane['part_ports'] >
 	>
-	type $bog_vmap_app_pane__link_add_bog_vmap_app_62 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_add_bog_vmap_app_76 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_add'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_add'] >
 	>
-	type $bog_vmap_app_pane__link_drop_bog_vmap_app_63 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_drop_bog_vmap_app_77 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_drop'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_drop'] >
 	>
-	type $bog_vmap_app_pane__containers_bog_vmap_app_64 = $mol_type_enforce<
+	type $bog_vmap_app_pane__containers_bog_vmap_app_78 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_containers'] >
 		,
 		ReturnType< $bog_vmap_app_pane['containers'] >
 	>
-	type $bog_vmap_app_pane__axis_bog_vmap_app_65 = $mol_type_enforce<
+	type $bog_vmap_app_pane__axis_bog_vmap_app_79 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_axis'] >
 		,
 		ReturnType< $bog_vmap_app_pane['axis'] >
 	>
-	type $bog_vmap_app_pane__tree_move_bog_vmap_app_66 = $mol_type_enforce<
+	type $bog_vmap_app_pane__tree_move_bog_vmap_app_80 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['tree_move'] >
 		,
 		ReturnType< $bog_vmap_app_pane['tree_move'] >
@@ -50540,6 +51123,7 @@ declare namespace $ {
 		Scenes( ): $bog_vmap_app_scenes
 		Palette_check( ): $mol_check
 		Inspect_check( ): $mol_check
+		Code_check( ): $mol_check
 		zoom_out( next?: any ): any
 		Zoom_out( ): $mol_button_minor
 		zoom_title( ): string
@@ -50556,6 +51140,8 @@ declare namespace $ {
 		Delete( ): $mol_button_minor
 		publish_part( ): string
 		node_source( next?: string ): string
+		node_js( ): string
+		node_css( ): string
 		Publish( ): $bog_vmap_app_publish
 		status( ): string
 		Status( ): $mol_view
@@ -50571,6 +51157,10 @@ declare namespace $ {
 		node_peers( ): readonly($mol_tree2)[]
 		pack_link( ): string
 		idle_note( ): string
+		code_prop( ): string
+		code_prop_key( ): boolean
+		code_prop_next( ): boolean
+		code_error( ): string
 		lands( ): readonly(string)[]
 		ghost_left( ): string
 		ghost_top( ): string
@@ -50595,6 +51185,10 @@ declare namespace $ {
 		links( next?: string ): string
 		palette_showed( next?: boolean ): boolean
 		inspect_showed( next?: boolean ): boolean
+		code_showed( next?: boolean ): boolean
+		doc_text( next?: string ): string
+		root_js( next?: string ): string
+		root_css( next?: string ): string
 		store( ): $bog_vmap_app_store
 		sub( ): ReturnType< $bog_vmap_app['body'] >
 		Head( ): $mol_bar
@@ -50605,6 +51199,7 @@ declare namespace $ {
 		Aside( ): $mol_view
 		Inspect( ): $bog_vmap_app_inspect
 		Idle( ): $mol_view
+		Code( ): $bog_vmap_app_code
 		Lib( ): $bog_vmap_lib_land_stack
 		Ghost( ): $mol_view
 		Pane( ): $bog_vmap_app_pane
@@ -50779,15 +51374,60 @@ declare namespace $.$$ {
         selection_showed(): boolean;
         /** The pick as the publish button takes it: a name, empty for none. */
         publish_part(): string;
+        /** The whole document text, two way: what the code editor writes back through. */
+        doc_text(next?: string): string;
+        /**
+         * The document as a model over the classes it declares.
+         *
+         * Beside `node()`, which is the root class alone. Both are read only
+         * derivations of the same text, and the code editor needs the list of
+         * classes that one cannot give.
+         */
+        doc_model(): $bog_vmap_lang_doc;
+        /**
+         * Handwritten body of one class of the document, in the document or in the
+         * draft before there is one.
+         *
+         * A plain method, like everything in front of a Giper Baza atom: a cell
+         * there freezes at what was written through it.
+         */
+        class_js(klass: string, next?: string): string;
+        /** Styles of one class, the same way. */
+        class_css(klass: string, next?: string): string;
+        /** Body of a class while there is no document to keep it in. */
+        draft_js(klass: string, next?: string): string;
+        /** Styles of a class while there is no document to keep them in. */
+        draft_css(klass: string, next?: string): string;
+        root_js(next?: string): string;
+        root_css(next?: string): string;
+        /**
+         * Handwritten bodies of the document, by class name, as the scene takes them.
+         *
+         * A class with no body of its own is left out rather than sent empty: the
+         * scene wraps a class only when there is something to put in the wrapper.
+         */
+        doc_js(): {
+            [klass: string]: string;
+        };
         /**
          * CSS of the document itself: the only styling an export may ever carry.
          *
-         * Empty until the code editor of stage 4. Styles of a node are kept per node
-         * in the model of `app/doc/`, and that is what the export reads. Nothing
-         * about the canvas belongs here, and there is no longer anywhere to put it:
+         * The styles of every class, glued in the order the text declares them.
+         * Nothing about the canvas belongs here, and there is nowhere to put it:
          * placement travels on `spots` and is turned into rules by the scene.
          */
         doc_css(): string;
+        /** The picked node as the code editor takes it: a name, empty for none. */
+        code_prop(): string;
+        /** Signature of the picked property: it shapes the empty method offered for it. */
+        code_prop_key(): boolean;
+        code_prop_next(): boolean;
+        /** What the scene said about the picked node last, empty when it said nothing. */
+        code_error(): string;
+        /** Method of the picked node, cut out of the body of its class. */
+        node_js(): string;
+        /** Rule of the picked node, cut out of the styles of its class. */
+        node_css(): string;
         /**
          * The overlay may be cut open under the picked part, except while something
          * is carried from the palette: that drag has no pointer capture, and a release
