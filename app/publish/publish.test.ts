@@ -34,12 +34,13 @@ namespace $ {
 		})
 	}
 
-	function view( $: $, s: $bog_vmap_app_publish_store, part: string, source: string ) {
+	function view( $: $, s: $bog_vmap_app_publish_store, part: string, source: string, classes: readonly string[] = [] ) {
 		return $bog_vmap_app_publish.make({
 			$,
 			store: ()=> s,
 			part: ()=> part,
 			source: ()=> source,
+			classes: ()=> classes,
 		}) as $$.$bog_vmap_app_publish
 	}
 
@@ -208,6 +209,163 @@ namespace $ {
 				s.class_source( 'Button_minor', src_button ),
 				`${ klass_button } ${d}mol_view\n\ttitle \\Hi\n\tminimal true\n`,
 			)
+
+		},
+
+		/**
+		 * A bare `<=`, a `<=>` or a `=` inside a part points at the document, and
+		 * the library has no document: the part is refused with the names it hangs
+		 * on, and nothing is made — no library, no land.
+		 */
+		'a part wired to the document is refused and names the wire'( $ ) {
+
+			const s = store( $ )
+
+			const one_way = `Label ${d}mol_view\n\tsub / <= calc_result\n`
+			const two_way = `Field ${d}mol_string\n\tvalue? <=> field_value?\n`
+			const chain = `Label ${d}mol_view\n\tsum = Calc result\n`
+			const many = `Label ${d}mol_view\n\tsub / <= calc_result\n\tvalue? <=> field_value?\n\tsum = Calc result\n`
+
+			$mol_assert_like( s.bound_names( one_way ), [ 'calc_result' ] )
+			$mol_assert_like( s.bound_names( two_way ), [ 'field_value' ] )
+			$mol_assert_like( s.bound_names( chain ), [ 'Calc' ] )
+			$mol_assert_like( s.bound_names( many ), [ 'calc_result', 'field_value', 'Calc' ] )
+			$mol_assert_like( s.bound_names( src_button ), [] )
+
+			$mol_assert_equal(
+				s.refusal( 'Label', one_way ),
+				'деталь Label ссылается на calc_result документа, отвяжите провод перед публикацией',
+			)
+			$mol_assert_equal(
+				s.refusal( 'Field', two_way ),
+				'деталь Field ссылается на field_value документа, отвяжите провод перед публикацией',
+			)
+			$mol_assert_equal(
+				s.refusal( 'Label', many ),
+				'деталь Label ссылается на calc_result, field_value, Calc документа, отвяжите провод перед публикацией',
+			)
+			$mol_assert_equal( s.refusal( 'Button_minor', src_button ), '' )
+
+			$mol_assert_fail( ()=> s.publish( 'Label', one_way ), s.refusal( 'Label', one_way ) )
+			$mol_assert_fail( ()=> s.publish( 'Field', two_way ), s.refusal( 'Field', two_way ) )
+			$mol_assert_fail(
+				()=> s.publish( 'Label', chain ),
+				'деталь Label ссылается на Calc документа, отвяжите провод перед публикацией',
+			)
+			$mol_assert_equal( s.shelf(), null )
+
+		},
+
+		/**
+		 * `<= title` inside a part reads `title` of the ROOT, whatever the part
+		 * overrides under the same name: published, the same line would read the
+		 * class itself and mean something else. Refused as a wire, by name.
+		 */
+		'a reference to a name the part only overrides is still a wire to the document'( $ ) {
+
+			const s = store( $ )
+			const free = `Label ${d}mol_view\n\tsub / <= title\n\ttitle \\Hi\n`
+
+			$mol_assert_like( s.bound_names( free ), [ 'title' ] )
+			$mol_assert_ok( s.refusal( 'Label', free ).includes( 'title' ) )
+
+		},
+
+		/**
+		 * A reference WITH kids declares its name where it stands, through `upper`:
+		 * `<= Inner $mol_view …` travels with the class and resolves there. Not a
+		 * wire, so the part goes out. A wire inside that sub-view is still a wire.
+		 */
+		async 'a part with a sub-view of its own is published, a wire inside the sub-view is not'( $ ) {
+
+			const s = store( $ )
+
+			const nested = `Card ${d}mol_view\n\tsub /\n\t\t<= Inner ${d}mol_view\n\t\t\ttitle \\Hi\n\t\t<= Inner\n`
+			const nested_wired = `Card ${d}mol_view\n\tsub /\n\t\t<= Inner ${d}mol_view\n\t\t\ttitle <= root_title\n`
+
+			$mol_assert_like( s.bound_names( nested ), [] )
+			$mol_assert_equal( s.refusal( 'Card', nested ), '' )
+
+			$mol_assert_like( s.bound_names( nested_wired ), [ 'root_title' ] )
+			$mol_assert_fail(
+				()=> s.publish( 'Card', nested_wired ),
+				'деталь Card ссылается на root_title документа, отвяжите провод перед публикацией',
+			)
+			$mol_assert_equal( s.shelf(), null )
+
+			await $mol_wire_async( s ).publish( 'Card', nested )
+
+			const parts = s.shelf()!.parts()
+			$mol_assert_equal( parts.length, 1 )
+			$mol_assert_equal( $bog_vmap_lib_land_name( parts[ 0 ].tree() ), `${d}bog_vmap_pub_card` )
+
+		},
+
+		/** A base the document itself declares stays in the document. */
+		'a part based on a class of the document is refused'( $ ) {
+
+			const s = store( $ )
+			const classes = [ `${d}bog_vmap_app_page`, `${d}bog_vmap_app_card` ]
+			const heir = `Promo ${d}bog_vmap_app_card\n\ttitle \\Hi\n`
+
+			$mol_assert_equal(
+				s.refusal( 'Promo', heir, classes ),
+				`деталь Promo наследует класс ${d}bog_vmap_app_card документа, выберите базу из библиотеки перед публикацией`,
+			)
+			$mol_assert_equal( s.refusal( 'Promo', heir ), '' )
+			$mol_assert_equal( s.refusal( 'Button_minor', src_button, classes ), '' )
+
+			$mol_assert_fail( ()=> s.publish( 'Promo', heir, '', '', classes ), s.refusal( 'Promo', heir, classes ) )
+			$mol_assert_equal( s.shelf(), null )
+
+		},
+
+		/**
+		 * The click on a wired part: the reason lands on the bar as the note, with
+		 * the name of the wire in it, and the library is not even made. A throw out
+		 * of the handler would go to the fiber and never reach the user.
+		 */
+		'the click on a wired part shows the refusal and publishes nothing'( $ ) {
+
+			const s = store( $ )
+			const wired = `Label ${d}mol_view\n\tsub / <= calc_result\n`
+
+			const v = view( $, s, 'Label', wired )
+			$mol_assert_equal( v.enabled(), true )
+
+			$mol_assert_equal( v.publish(), null )
+			$mol_assert_ok( v.note().includes( 'calc_result' ) )
+			$mol_assert_ok( v.note().includes( 'Label' ) )
+			$mol_assert_equal( v.published(), '' )
+			$mol_assert_equal( v.lib_link(), '' )
+			$mol_assert_equal( s.shelf(), null )
+			$mol_assert_like( v.content(), [ v.Publish(), v.Note() ] )
+			$mol_assert_like( v.Note().sub(), [ v.note() ] )
+
+			const heir = view( $, s, 'Promo', `Promo ${d}bog_vmap_app_page\n`, [ `${d}bog_vmap_app_page` ] )
+			$mol_assert_equal( heir.publish(), null )
+			$mol_assert_ok( heir.note().includes( `${d}bog_vmap_app_page` ) )
+			$mol_assert_equal( s.shelf(), null )
+
+		},
+
+		/** After a refusal a clean part goes out, and the note follows. */
+		async 'a refusal is cleared by the next successful click'( $ ) {
+
+			const s = store( $ )
+			let source = `Label ${d}mol_view\n\tsub / <= calc_result\n`
+
+			const v = view( $, s, 'Label', '' )
+			v.source = ()=> source
+
+			v.publish()
+			$mol_assert_ok( v.note().includes( 'calc_result' ) )
+
+			source = `Label ${d}mol_view\n\ttitle \\Hi\n`
+			await $mol_wire_async( v ).publish()
+
+			$mol_assert_equal( v.note(), `опубликовано ${d}bog_vmap_pub_label:` )
+			$mol_assert_equal( s.shelf()!.parts().length, 1 )
 
 		},
 

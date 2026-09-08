@@ -107,13 +107,71 @@ namespace $ {
 		 */
 		class_source( part: string, source: string ) {
 
-			const tree = this.$.$mol_tree2_from_string(
-				source.replace( /\n?$/, '\n' ), 'vmap.view.tree',
-			).kids[ 0 ]
-
+			const tree = this.tree( source )
 			if( !tree ) return this.$.$mol_fail( new Error( 'No class declared in the source' ) )
 
 			return tree.struct( this.class_name( part ), tree.kids ).toString()
+		}
+
+		/** The declaration of a part parsed, or null for an empty source. */
+		tree( source: string ) {
+			return this.$.$mol_tree2_from_string(
+				source.replace( /\n?$/, '\n' ), 'vmap.view.tree',
+			).kids[ 0 ] ?? null
+		}
+
+		/**
+		 * Properties of the DOCUMENT a part is wired to, by name.
+		 *
+		 * Every `<=` and `<=>` inside a part compiles to `this.name()` on the ROOT,
+		 * see section 1. A reference with kids, `<= Inner $mol_view …`, declares
+		 * `Inner` right there through `upper`, so the declaration travels with the
+		 * published class and resolves. A bare one, and the node of a `=`, declares
+		 * nothing: published alone, the class resolves them against itself, where
+		 * nothing has them — a green compile and a hole at run time. Those are the
+		 * names here, unless the part declares them itself.
+		 */
+		bound_names( source: string ) {
+
+			const bare = ( node: $mol_tree2 )=> node.type.replace( /[*?!]+$/, '' )
+
+			const owned = new Set< string >()
+			const refs = new Set< string >()
+
+			const walk = ( node: $mol_tree2 )=> {
+
+				const ref = node.kids[ 0 ]
+
+				if( ref && ( node.type === '<=' || node.type === '<=>' ) ) {
+					( ref.kids.length ? owned : refs ).add( bare( ref ) )
+				}
+
+				if( ref && node.type === '=' ) refs.add( bare( ref ) )
+
+				for( const kid of node.kids ) walk( kid )
+			}
+
+			for( const kid of this.tree( source )?.kids ?? [] ) walk( kid )
+
+			return [ ... refs ].filter( name => !owned.has( name ) )
+		}
+
+		/**
+		 * The refusal in the user's words, or empty when the part may go. `classes`
+		 * are the classes the document authors: a part based on one of them takes
+		 * its base along nowhere.
+		 */
+		refusal( part: string, source: string, classes: readonly string[] = [] ) {
+
+			const base = this.tree( source )?.kids[ 0 ]?.type ?? ''
+			if( classes.includes( base ) ) {
+				return `деталь ${ part } наследует класс ${ base } документа, выберите базу из библиотеки перед публикацией`
+			}
+
+			const bound = this.bound_names( source )
+			if( !bound.length ) return ''
+
+			return `деталь ${ part } ссылается на ${ bound.join( ', ' ) } документа, отвяжите провод перед публикацией`
 		}
 
 		/** The part of the library declaring this class, or null. */
@@ -131,8 +189,14 @@ namespace $ {
 		 * texts taken before the call: the first publication grabs the land, and a
 		 * plain method inside one fiber is what lets the proof of work be cached
 		 * across the retries. Answers the link of the library.
+		 *
+		 * A part wired to the document, or based on a class of it, is refused before
+		 * anything is written, see `refusal`; the view asks it first and shows it.
 		 */
-		publish( part: string, source: string, js = '', css = '' ) {
+		publish( part: string, source: string, js = '', css = '', classes: readonly string[] = [] ) {
+
+			const refusal = this.refusal( part, source, classes )
+			if( refusal ) return this.$.$mol_fail( new Error( refusal ) )
 
 			const tree = this.class_source( part, source )
 			const klass = this.class_name( part )

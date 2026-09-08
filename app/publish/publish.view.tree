@@ -13,6 +13,9 @@ $bog_vmap_app_publish $mol_view
 	- them per part; the shape is here so that it plugs in without a change.
 	js \
 	css \
+	- Names of the classes the document authors, root included: a part based on
+	- one of them is refused, its base would stay behind.
+	classes /string
 	- Link of the library land, empty before the first publication.
 	lib_link \
 	sub <= content /$mol_view

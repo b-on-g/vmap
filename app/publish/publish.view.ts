@@ -38,7 +38,15 @@ namespace $.$$ {
 			return next ?? ''
 		}
 
+		/** Why the last click did nothing, in the user's words. Empty when it did. */
+		@ $mol_mem
+		refused( next?: string ) {
+			return next ?? ''
+		}
+
 		override note() {
+			const refused = this.refused()
+			if( refused ) return refused
 			const klass = this.published()
 			return klass ? `опубликовано ${ klass }:` : ''
 		}
@@ -48,7 +56,8 @@ namespace $.$$ {
 		 *
 		 * The handler is a fiber already, and the store method runs inside it: the
 		 * first publication grabs a land, and the proof of work is cached for the
-		 * retries of this very fiber. The texts are read before the write.
+		 * retries of this very fiber. The texts are read before the write. A part
+		 * wired to the document is refused with the reason on the bar, nothing written.
 		 */
 		override publish( next?: Event | null ) {
 
@@ -56,8 +65,15 @@ namespace $.$$ {
 			if( !part ) return null
 
 			const klass = this.store().class_name( part )
+			const source = this.source()
 
-			this.store().publish( part, this.source(), this.js(), this.css() )
+			// A wired part is a state of the bar, not an exception on the button: a
+			// throw out of the handler goes to the fiber, and the user sees nothing.
+			const refusal = this.store().refusal( part, source, this.classes() )
+			this.refused( refusal )
+			if( refusal ) return null
+
+			this.store().publish( part, source, this.js(), this.css(), this.classes() )
 			this.published( klass )
 
 			return null
