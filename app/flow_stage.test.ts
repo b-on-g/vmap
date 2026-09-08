@@ -122,7 +122,18 @@ namespace $ {
 	 * Points are in the screen space of the pane and go through `stage.client()`,
 	 * which is the only place that knows where the pane sits.
 	 */
-	export function $bog_vmap_app_flow_stage( $: $, store_own: $bog_vmap_app_store | null = null ) {
+	/** What a scenario may set up differently. Everything else is the editor as it is. */
+	export type $bog_vmap_app_flow_over = {
+
+		/** The store to open the editor on. Default: a fresh document in the home land. */
+		readonly store?: $bog_vmap_app_store
+
+		/** Leave the scene silent, so the editor is seen while the frame is still booting. */
+		readonly mute?: boolean
+
+	}
+
+	export function $bog_vmap_app_flow_stage( $: $, over: $bog_vmap_app_flow_over = {} ) {
 
 		browser_gaps( $ )
 
@@ -156,8 +167,8 @@ namespace $ {
 		// A store of the scenario's own is how a document that is still loading, or
 		// somebody else's, is put on the stand; the default one is a fresh document
 		// in the home land, made here so that nothing waits on `boot`.
-		const store = store_own ?? $bog_vmap_app_store.make({ $, doc_land_config: ()=> null })
-		if( !store_own ) store.doc_add( 'Сцена 1' )
+		const store = over.store ?? $bog_vmap_app_store.make({ $, doc_land_config: ()=> null })
+		if( !over.store ) store.doc_add( 'Сцена 1' )
 
 		const app = $bog_vmap_app.make({ $, store: ()=> store }) as $$.$bog_vmap_app
 		$bog_vmap_app_flow_last = app
@@ -221,9 +232,21 @@ namespace $ {
 		 * pushed is still computing.
 		 */
 		let silent = false
+		let exposed = false
 
 		const peer = {
-			origin: 'null',
+
+			/**
+			 * A frame in a sandbox has an opaque origin, and reading it from outside
+			 * throws — which is how the host tells a working sandbox from a missing
+			 * one. So the peer throws by default, and answers only for the scenario
+			 * that asks what happens when the sandbox is gone.
+			 */
+			get origin() {
+				if( exposed ) return 'http://localhost'
+				return $mol_fail( new Error( 'SecurityError: cross-origin frame' ) )
+			},
+
 			postMessage( data: unknown ) {
 
 				const message = data as $bog_vmap_app_flow_sent
@@ -274,6 +297,19 @@ namespace $ {
 			silence() {
 				silent = true
 				queue.length = 0
+			},
+
+			/** The frame boots and announces itself, as a scene does on load. */
+			hello() {
+				deliver({ kind: 'ready' })
+				app.dom_tree()
+				this.flush()
+			},
+
+			/** The sandbox is gone: the origin of the frame reads back from the host. */
+			expose() {
+				exposed = true
+				app.dom_tree()
 			},
 
 		}
