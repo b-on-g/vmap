@@ -359,4 +359,36 @@ namespace $ {
 
 	})
 
+	/**
+	 * WAITS FOR A FIX of `node_delete` in `app/app.view.ts`: deleting a part leaves
+	 * the wires that ran to it, so the document keeps `calc_result = Calc result`
+	 * and `zoom <= calc_result` pointing at a node that no longer exists.
+	 *
+	 * Written and deliberately NOT registered: `mam` runs `node.test.js` in the
+	 * build, so a red test in a shared module stops everybody. Move it into the
+	 * call above, as one line, the moment the delete takes its wires with it.
+	 */
+	export async function $bog_vmap_app_flow_delete_wired( $: $ ) {
+
+		const stage = $bog_vmap_app_flow_stage( $ )
+
+		stage.drop( calc, stage.client([ 100, 100 ]) )
+		stage.drop( map, stage.client([ 400, 100 ]) )
+		stage.tap( stage.part_center( 'Calc' ) )
+
+		const overlay = stage.overlay()
+		stage.press( overlay, stage.port_dot( 'Calc', 'result', 'out' ) )
+		stage.move( overlay, stage.port_dot( 'Map', 'zoom', 'in' ) )
+		stage.release( overlay, stage.port_dot( 'Map', 'zoom', 'in' ) )
+		stage.redraw()
+
+		stage.tap( stage.part_center( 'Calc' ) )
+		stage.click( stage.button( 'Удалить' ) )
+
+		// The end of the wire is gone, so the wire has to be gone with it.
+		$mol_assert_equal( stage.app.doc_source().includes( 'calc_result' ), false )
+		$mol_assert_like( stage.app.doc_wires(), [] )
+
+	}
+
 }

@@ -97,6 +97,27 @@ namespace $ {
 	 * network), the sandbox (a peer that answers like a scene), the geometry of the
 	 * pane (jsdom has no layout), the timers (they must not fire by themselves),
 	 * and the land of the documents (the home land, so no proof of work).
+	 *
+	 * A NEW SCENARIO NEEDS NONE OF THAT. One line makes the editor,
+	 * `const stage = $bog_vmap_app_flow_stage( $ )`, and from then on everything is
+	 * a gesture of the user:
+	 *
+	 * - `stage.drop( klass, stage.client([ x, y ]) )` carries a class out of the
+	 *   palette onto the canvas, `stage.tap( stage.part_center( name ) )` clicks a
+	 *   part, `stage.press/move/release( stage.overlay(), point )` is any gesture
+	 *   in between, and `stage.port_dot( part, port, 'out' )` is where a wire starts;
+	 * - `stage.button( 'Удалить' )`, `stage.field( 'Palette().Links()' )` and
+	 *   `stage.class_row( klass )` find what to press, and fail by name when it is
+	 *   not on screen; `stage.click` and `stage.type` press and type into them;
+	 * - `stage.text()` is the whole editor as text, `stage.app` and `stage.pane`
+	 *   the state behind it;
+	 * - `stage.scene.last( 'doc_set' )` is what the sandbox was told last,
+	 *   `stage.scene.values({ … })` is the sandbox answering, `stage.scene.silence()`
+	 *   is the sandbox dying. Answers are delivered by `stage.scene.flush()`, and
+	 *   every gesture above flushes on its own.
+	 *
+	 * Points are in the screen space of the pane and go through `stage.client()`,
+	 * which is the only place that knows where the pane sits.
 	 */
 	export function $bog_vmap_app_flow_stage( $: $ ) {
 
