@@ -18807,41 +18807,44 @@ var $;
      * Base address of a sibling module of the pack, derived from the address of the
      * page asking. Always ends with a slash, so `new URL` keeps its last segment.
      *
-     * The two layouts of one pack differ by a single segment. The dev server serves
-     * a module out of `<pack>/<module>/-/`, while a deploy publishes the content of
-     * `-/` into `<pack>/<module>/` — measured in section 5 on two live packs. So the
-     * layout is readable off the page itself: a trailing `-` means the dev server,
-     * its absence means a deploy, and nothing has to be configured or typed.
+     * The two layouts are told apart by a trailing `-`, and they are not two
+     * spellings of one rule but two different places, so the code says so.
+     *
+     * The dev server serves every module of a pack out of `<pack>/<module>/-/`, so
+     * the modules are siblings there in the plain sense: the segment naming ours is
+     * replaced by the one asked for, and the `-` goes back on.
+     *
+     * A deploy has only ONE page in the whole project — the editor, published at
+     * the root of the site — and the other modules are published as folders beneath
+     * it, `web.js` and `web.view.tree` without a page of their own. So there is
+     * nothing to replace: the module asked for is a folder inside the one the
+     * editor is served from.
      *
      * A last segment ending in `.html` is the page file — `index.html`, `test.html`
      * are the only two a module has — and is dropped first. Anything else is a
-     * folder, which is how `https://b-on-g.github.io/vmap/app` reads the same as the
+     * folder, which is how `https://b-on-g.github.io/vmap` reads the same as the
      * same address with its slash.
      *
      * The test is the extension and not merely a dot in the name, because a folder
-     * may carry one: a deploy versioned as `/vmap/v1.2/app/` is ordinary, and on a
-     * dot the segment `v1.2` would be taken for a page, one more segment eaten, and
-     * both addresses would point a level above where they live.
+     * may carry one: a deploy versioned as `/vmap/v1.2/` is ordinary, and on a dot
+     * the segment `v1.2` would be taken for a page and eaten.
      *
-     * A page with no folder above it — the editor deployed as the site root — leaves
-     * nothing to replace, and the siblings then lie at the root beside it. Popping an
-     * empty list is a no op, so no address ever climbs above the root.
-     *
-     * @see ../ARCHITECTURE.md section 5
+     * @see ../ARCHITECTURE.md sections 5 and 7
      */
     function $bog_vmap_lib_sibling(page, module) {
         const url = new URL(page);
         const path = url.pathname.split('/').filter(Boolean);
         if (/\.html?$/i.test(path[path.length - 1] ?? ''))
             path.pop();
-        const dev = path[path.length - 1] === '-';
-        if (dev)
+        // on the dev server the modules stand side by side, each in its own `-`
+        if (path[path.length - 1] === '-') {
             path.pop();
-        // the folder of the module we are served from; the sibling takes its place
-        path.pop();
-        path.push(module);
-        if (dev)
-            path.push('-');
+            path.pop();
+            path.push(module, '-');
+        }
+        else {
+            path.push(module);
+        }
         return `${url.origin}/${path.join('/')}/`;
     }
     $.$bog_vmap_lib_sibling = $bog_vmap_lib_sibling;
@@ -19300,44 +19303,40 @@ var $;
             $mol_assert_equal($bog_vmap_lib_sibling('http://localhost:9080/bog/vmap/app/-/index.html', 'scene'), 'http://localhost:9080/bog/vmap/scene/-/');
         },
         /**
-         * A deploy publishes the content of `-/` into the folder of the module, so
-         * the same three modules are siblings one level up. The address of the pack
-         * itself is then `<origin>/vmap/part/`, which is where `web.view.tree` is.
+         * A deploy publishes the editor at the root of the site and every other
+         * module as a folder beneath it, so a sibling is a folder INSIDE the one the
+         * editor is served from. The address of the pack is then `<site>/part/`,
+         * which is where `web.view.tree` is, and the bundle of the sandbox is
+         * `<site>/scene/web.js` — neither of them a page.
          */
-        'a sibling module on a deploy has no build folder'($) {
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/app/', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/app/', 'part'), 'https://b-on-g.github.io/vmap/part/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/app/index.html', 'part'), 'https://b-on-g.github.io/vmap/part/');
+        'a sibling module on a deploy is a folder under the editor'($) {
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/', 'part'), 'https://b-on-g.github.io/vmap/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/index.html', 'part'), 'https://b-on-g.github.io/vmap/part/');
         },
         /**
          * A folder address without its slash reads the same: a last segment with no
          * dot in it is a folder, not a page file. GitHub Pages answers both.
          */
         'a page address without a trailing slash reads as a folder'($) {
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/app', 'part'), 'https://b-on-g.github.io/vmap/part/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/app?x=1#y', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
-        },
-        /** A pack served from the root of an origin has one segment less and no more. */
-        'a pack at the root of an origin'($) {
-            $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example.org/app/', 'part'), 'https://vmap.example.org/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap', 'part'), 'https://b-on-g.github.io/vmap/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap?x=1#y', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
         },
         /**
          * A dot in a FOLDER name does not make it a page. A versioned deploy is the
-         * ordinary way to get one, and taking `v1.2` for a page would eat a second
+         * ordinary way to get one, and taking `v1.2` for a page would eat the
          * segment and point both addresses a level above where they live.
          */
         'a dot in a folder name is not a page file'($) {
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/app/', 'part'), 'https://b-on-g.github.io/vmap/v1.2/part/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/app/index.html', 'scene'), 'https://b-on-g.github.io/vmap/v1.2/scene/');
-            // a module folder may carry one as well
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/app.v2/', 'part'), 'https://b-on-g.github.io/vmap/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/', 'part'), 'https://b-on-g.github.io/vmap/v1.2/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/index.html', 'scene'), 'https://b-on-g.github.io/vmap/v1.2/scene/');
         },
         /**
-         * The editor deployed as the site root has no folder to replace, so the
-         * siblings lie at the root beside it. Nothing is eaten and no address climbs
-         * above the root, which is the one thing that must never happen here.
+         * The editor on a domain of its own is served from the root itself, so the
+         * siblings are the first segment there. Nothing is eaten and no address
+         * climbs above the root, which is the one thing that must never happen here.
          */
-        'a page at the root of a site keeps its siblings at the root'($) {
+        'an editor served from the root of a site keeps its siblings under it'($) {
             $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/', 'part'), 'https://vmap.example/part/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/index.html', 'scene'), 'https://vmap.example/scene/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example', 'part'), 'https://vmap.example/part/');
