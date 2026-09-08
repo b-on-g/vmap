@@ -5986,11 +5986,12 @@ declare namespace $ {
         /**
          * Sources of the land libraries attached to the document.
          *
-         * On the bridge and NOT in the frame address, unlike the pack: a land
-         * arrives as text and is compiled into the same sandbox as the document,
-         * so a change of the list is a recompile, not a reload. The whole list
-         * every time, in the order the classes should be declared — the scene
-         * sorts by inheritance anyway and merges nothing.
+         * A land arrives as text and is compiled into the same sandbox as the
+         * document, so a change of the list is a recompile — unlike `pack_set`,
+         * which travels the same wire but is answered by a fresh frame, because a
+         * realm cannot unload a bundle. The whole list every time, in the order
+         * the classes should be declared — the scene sorts by inheritance anyway
+         * and merges nothing.
          *
          * The host reads the lands, because only the host may touch the
          * database; the scene sees strings.
@@ -5998,6 +5999,27 @@ declare namespace $ {
          */
         readonly kind: 'libs_set';
         readonly parts: readonly $bog_vmap_bridge_part[];
+    } | {
+        /**
+         * Donor pack the scene is to load into its realm, as an absolute URL of
+         * the `web.js` of a deployed module. Empty means no pack, which the scene
+         * answers by compiling nothing at all.
+         *
+         * On the bridge and not in the address of the frame, because the frame
+         * has no address: it is raised from markup handed to it, so there is no
+         * query string to carry anything. The rule of section 5 — one pack per
+         * realm, a second one poisons the palette silently — is held by the host
+         * instead: the address of the pack is part of the key of the frame, so a
+         * different pack is a different frame element and a fresh realm.
+         *
+         * Sent first of everything after the handshake. A document compiled
+         * before the pack lands inherits the scene's own `$mol_view` and no later
+         * load can move it, so the scene waits for this message before it
+         * compiles anything.
+         * @see ../ARCHITECTURE.md sections 4 and 5
+         */
+        readonly kind: 'pack_set';
+        readonly uri: string;
     } | {
         /**
          * Which wires the host wants values for: the root properties of the
@@ -6684,12 +6706,19 @@ declare namespace $.$$ {
         grid_scale(): $mol_vector_2d<number>;
         camera_transform(): string;
         /**
-         * Donor pack of this frame, from the query of our own address. A message
-         * would not do: a realm cannot unload a bundle, and a second pack over the
-         * first poisons the palette silently. Not a cell: a new address is a new document.
+         * Donor pack of this realm, as the host names it in `pack_set`.
+         *
+         * This frame has no address of its own — it is raised from markup, so there
+         * is no query to read a pack out of. The rule of section 5 still holds and
+         * still holds by construction: a realm cannot unload a bundle, so the host
+         * makes the address of the pack part of the key of the frame, and a second
+         * pack arrives in a frame that has never seen a first one.
+         *
+         * Empty until the message lands, and that is an ORDINARY state now rather
+         * than an impossible one, which is why `instance()` refuses to compile in it.
          * @see ../ARCHITECTURE.md section 5
          */
-        pack_uri(): string;
+        pack_uri(next?: string): string;
         /**
          * Pulls the pack bundle into this realm.
          *

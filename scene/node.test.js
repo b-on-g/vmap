@@ -14811,13 +14811,20 @@ var $;
                 return `translate(${-x * zoom}px,${-y * zoom}px) scale(${zoom})`;
             }
             /**
-             * Donor pack of this frame, from the query of our own address. A message
-             * would not do: a realm cannot unload a bundle, and a second pack over the
-             * first poisons the palette silently. Not a cell: a new address is a new document.
+             * Donor pack of this realm, as the host names it in `pack_set`.
+             *
+             * This frame has no address of its own — it is raised from markup, so there
+             * is no query to read a pack out of. The rule of section 5 still holds and
+             * still holds by construction: a realm cannot unload a bundle, so the host
+             * makes the address of the pack part of the key of the frame, and a second
+             * pack arrives in a frame that has never seen a first one.
+             *
+             * Empty until the message lands, and that is an ORDINARY state now rather
+             * than an impossible one, which is why `instance()` refuses to compile in it.
              * @see ../ARCHITECTURE.md section 5
              */
-            pack_uri() {
-                return new URLSearchParams(this.$.$mol_dom_context.location?.search ?? '').get('pack') ?? '';
+            pack_uri(next) {
+                return next ?? '';
             }
             /**
              * Pulls the pack bundle into this realm.
@@ -14865,7 +14872,7 @@ var $;
             pack_note() {
                 const uri = this.pack_uri();
                 if (!uri)
-                    return '';
+                    return 'Ожидание библиотеки компонентов…';
                 try {
                     this.pack_ready();
                     return '';
@@ -15048,7 +15055,12 @@ var $;
             instance() {
                 const src = this.doc_src();
                 const root = this.doc_root();
-                if (!src.trim() || !root) {
+                // No pack, no compile. The pack arrives by message now, so the first
+                // moments of every frame are spent without one, and a document built in
+                // that window would inherit OUR `$mol_view` — a class picks its base once
+                // and no later load can move it. An empty canvas for a few hundred
+                // milliseconds is the cheap outcome; a silently wrong base is not.
+                if (!src.trim() || !root || !this.pack_uri()) {
                     this.compile_error = '';
                     this.instance_live = null;
                     return null;
@@ -15310,6 +15322,13 @@ var $;
                         this.doc_js(bodies && typeof bodies === 'object' ? bodies : {});
                         return;
                     }
+                    // First message of every handshake, before the document and the
+                    // libraries. A host older than this contract never sends it, and the
+                    // scene then compiles nothing, which is the honest outcome: without a
+                    // pack every class of the document would inherit our own `$mol_view`.
+                    case 'pack_set':
+                        this.pack_uri(String(message.uri ?? ''));
+                        return;
                     case 'css_set':
                         this.doc_css(message.css);
                         return;
@@ -15641,6 +15660,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "grid_scale", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "pack_uri", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "pack_ready", null);
@@ -22497,96 +22519,6 @@ var $;
 ;
 "use strict";
 var $;
-(function ($) {
-    $mol_test({
-        'Vector limiting'() {
-            let point = new $mol_vector_3d(7, 10, 13);
-            const res = point.limited([[1, 5], [15, 20], [5, 10]]);
-            $mol_assert_equal(res.x, 5);
-            $mol_assert_equal(res.y, 15);
-            $mol_assert_equal(res.z, 10);
-        },
-        'Vector adding scalar'() {
-            let point = new $mol_vector_3d(1, 2, 3);
-            let res = point.added0(5);
-            $mol_assert_equal(res.x, 6);
-            $mol_assert_equal(res.y, 7);
-            $mol_assert_equal(res.z, 8);
-        },
-        'Vector adding vector'() {
-            let point = new $mol_vector_3d(1, 2, 3);
-            let res = point.added1([5, 10, 15]);
-            $mol_assert_equal(res.x, 6);
-            $mol_assert_equal(res.y, 12);
-            $mol_assert_equal(res.z, 18);
-        },
-        'Vector multiplying scalar'() {
-            let point = new $mol_vector_3d(2, 3, 4);
-            let res = point.multed0(-1);
-            $mol_assert_equal(res.x, -2);
-            $mol_assert_equal(res.y, -3);
-            $mol_assert_equal(res.z, -4);
-        },
-        'Vector multiplying vector'() {
-            let point = new $mol_vector_3d(2, 3, 4);
-            let res = point.multed1([5, 2, -2]);
-            $mol_assert_equal(res.x, 10);
-            $mol_assert_equal(res.y, 6);
-            $mol_assert_equal(res.z, -8);
-        },
-        'Matrix adding matrix'() {
-            let matrix = new $mol_vector_matrix(...[[1, 2], [3, 4], [5, 6]]);
-            let res = matrix.added2([[10, 20], [30, 40], [50, 60]]);
-            $mol_assert_equal(res[0][0], 11);
-            $mol_assert_equal(res[0][1], 22);
-            $mol_assert_equal(res[1][0], 33);
-            $mol_assert_equal(res[1][1], 44);
-            $mol_assert_equal(res[2][0], 55);
-            $mol_assert_equal(res[2][1], 66);
-        },
-        'Matrix multiplying matrix'() {
-            let matrix = new $mol_vector_matrix(...[[2, 3], [4, 5], [6, 7]]);
-            let res = matrix.multed2([[2, 3], [4, 5], [6, 7]]);
-            $mol_assert_equal(res[0][0], 4);
-            $mol_assert_equal(res[0][1], 9);
-            $mol_assert_equal(res[1][0], 16);
-            $mol_assert_equal(res[1][1], 25);
-            $mol_assert_equal(res[2][0], 36);
-            $mol_assert_equal(res[2][1], 49);
-        },
-        'Range expanding'() {
-            let range = $mol_vector_range_full.inversed;
-            const expanded = range.expanded0(10).expanded0(5);
-            $mol_assert_like([...expanded], [5, 10]);
-        },
-        'Vector of range expanding by vector'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = dimensions.expanded1([1, 7]).expanded1([3, 5]);
-            $mol_assert_like([...expanded.x], [1, 3]);
-            $mol_assert_like([...expanded.y], [5, 7]);
-        },
-        'Vector of range expanding by vector of range'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = dimensions
-                .expanded2([[1, 3], [7, 9]])
-                .expanded2([[2, 4], [6, 8]]);
-            $mol_assert_like([...expanded.x], [1, 4]);
-            $mol_assert_like([...expanded.y], [6, 9]);
-        },
-        'Vector of infinity range expanding by vector of range'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const next = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = next
-                .expanded2(dimensions);
-            $mol_assert_like([...expanded.x], [Infinity, -Infinity]);
-            $mol_assert_like([...expanded.y], [Infinity, -Infinity]);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
 (function ($_1) {
     /**
      * Tests of the wire protocol: what goes in through `send` comes out of `read`,
@@ -22670,6 +22602,96 @@ var $;
             const data = { ns: $bog_vmap_bridge_ns, kind: 'click_at', x: 1, y: 2, mods: {} };
             $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, peer), null);
             $mol_assert_equal($bog_vmap_bridge_read({ data, source: peer }, peer)?.kind, 'click_at');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'Vector limiting'() {
+            let point = new $mol_vector_3d(7, 10, 13);
+            const res = point.limited([[1, 5], [15, 20], [5, 10]]);
+            $mol_assert_equal(res.x, 5);
+            $mol_assert_equal(res.y, 15);
+            $mol_assert_equal(res.z, 10);
+        },
+        'Vector adding scalar'() {
+            let point = new $mol_vector_3d(1, 2, 3);
+            let res = point.added0(5);
+            $mol_assert_equal(res.x, 6);
+            $mol_assert_equal(res.y, 7);
+            $mol_assert_equal(res.z, 8);
+        },
+        'Vector adding vector'() {
+            let point = new $mol_vector_3d(1, 2, 3);
+            let res = point.added1([5, 10, 15]);
+            $mol_assert_equal(res.x, 6);
+            $mol_assert_equal(res.y, 12);
+            $mol_assert_equal(res.z, 18);
+        },
+        'Vector multiplying scalar'() {
+            let point = new $mol_vector_3d(2, 3, 4);
+            let res = point.multed0(-1);
+            $mol_assert_equal(res.x, -2);
+            $mol_assert_equal(res.y, -3);
+            $mol_assert_equal(res.z, -4);
+        },
+        'Vector multiplying vector'() {
+            let point = new $mol_vector_3d(2, 3, 4);
+            let res = point.multed1([5, 2, -2]);
+            $mol_assert_equal(res.x, 10);
+            $mol_assert_equal(res.y, 6);
+            $mol_assert_equal(res.z, -8);
+        },
+        'Matrix adding matrix'() {
+            let matrix = new $mol_vector_matrix(...[[1, 2], [3, 4], [5, 6]]);
+            let res = matrix.added2([[10, 20], [30, 40], [50, 60]]);
+            $mol_assert_equal(res[0][0], 11);
+            $mol_assert_equal(res[0][1], 22);
+            $mol_assert_equal(res[1][0], 33);
+            $mol_assert_equal(res[1][1], 44);
+            $mol_assert_equal(res[2][0], 55);
+            $mol_assert_equal(res[2][1], 66);
+        },
+        'Matrix multiplying matrix'() {
+            let matrix = new $mol_vector_matrix(...[[2, 3], [4, 5], [6, 7]]);
+            let res = matrix.multed2([[2, 3], [4, 5], [6, 7]]);
+            $mol_assert_equal(res[0][0], 4);
+            $mol_assert_equal(res[0][1], 9);
+            $mol_assert_equal(res[1][0], 16);
+            $mol_assert_equal(res[1][1], 25);
+            $mol_assert_equal(res[2][0], 36);
+            $mol_assert_equal(res[2][1], 49);
+        },
+        'Range expanding'() {
+            let range = $mol_vector_range_full.inversed;
+            const expanded = range.expanded0(10).expanded0(5);
+            $mol_assert_like([...expanded], [5, 10]);
+        },
+        'Vector of range expanding by vector'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = dimensions.expanded1([1, 7]).expanded1([3, 5]);
+            $mol_assert_like([...expanded.x], [1, 3]);
+            $mol_assert_like([...expanded.y], [5, 7]);
+        },
+        'Vector of range expanding by vector of range'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = dimensions
+                .expanded2([[1, 3], [7, 9]])
+                .expanded2([[2, 4], [6, 8]]);
+            $mol_assert_like([...expanded.x], [1, 4]);
+            $mol_assert_like([...expanded.y], [6, 9]);
+        },
+        'Vector of infinity range expanding by vector of range'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const next = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = next
+                .expanded2(dimensions);
+            $mol_assert_like([...expanded.x], [Infinity, -Infinity]);
+            $mol_assert_like([...expanded.y], [Infinity, -Infinity]);
         },
     });
 })($ || ($ = {}));
@@ -23161,6 +23183,119 @@ var $;
         /** A zoom of zero comes from outside, and a viewport of `Infinity` is not an answer. */
         'a zoom of zero does not make the world infinite'($) {
             $mol_assert_like($bog_vmap_scene_viewport({ x: 0, y: 0, zoom: 0 }, { width: 1000, height: 800 }), { x: 0, y: 0, width: 1000, height: 800 });
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * What the scene does with the pack now that the pack arrives by message.
+     *
+     * The frame has no address of its own — it is raised from markup handed to it —
+     * so `pack_set` is the only way a pack is ever named, and there is a real
+     * window, at the start of every frame, in which no pack has been named yet.
+     * These check that the window is spent doing nothing rather than compiling a
+     * document against the wrong `$mol_view`.
+     *
+     * `d` keeps `$` out of the string literals — mam builds its dependency graph by
+     * a regexp over sources, literals included.
+     * @see ../ARCHITECTURE.md sections 4 and 5
+     */
+    const d = '$';
+    const root = `${d}scene_probe_page`;
+    /** A document of one class, the smallest thing that compiles. */
+    const source = `${root} ${d}mol_view\n\tsub /\n`;
+    /**
+     * A scene whose pack never leaves the process: `pack_fetch` is the one method
+     * that touches the network, and it is the only thing replaced here.
+     */
+    function scene($) {
+        const loaded = [];
+        const made = $bog_vmap_scene.make({ $ });
+        made.pack_fetch = async (uri) => {
+            loaded.push(uri);
+            return uri;
+        };
+        return { made, loaded };
+    }
+    /** A message from the host, delivered the way the frame delivers one. */
+    function deliver($, made, data) {
+        const dom = $.$mol_dom_context;
+        const event = new dom.MessageEvent('message', { data: { ns: $bog_vmap_bridge_ns, ...data } });
+        Object.defineProperty(event, 'source', { value: made.peer() });
+        made.message_receive(event);
+    }
+    /**
+     * Reads a cell that suspends on the fetch of the pack, from outside a fiber.
+     *
+     * The suspension is a thrown promise and nothing else here is asynchronous, so
+     * the retry is the whole of it: any other failure is rethrown at once rather
+     * than waited out until the limit.
+     */
+    async function settled(read, limit = 300) {
+        const till = Date.now() + limit;
+        for (;;) {
+            try {
+                return read();
+            }
+            catch (error) {
+                if (!$mol_promise_like(error))
+                    return $mol_fail(error);
+                if (Date.now() > till)
+                    return $mol_fail(new Error('the pack never landed'));
+                await new Promise(next => setTimeout(next, 2));
+            }
+        }
+    }
+    $mol_test({
+        /**
+         * The state every frame starts in: a document is on hand, a pack is not.
+         * Nothing is compiled and nothing throws, and the wait has a face.
+         */
+        'a scene with no pack compiles nothing and says what it waits for'($) {
+            const { made, loaded } = scene($);
+            made.doc_root(root);
+            made.doc_src(source);
+            $mol_assert_equal(made.pack_uri(), '');
+            $mol_assert_equal(made.instance(), null);
+            $mol_assert_like(loaded, []);
+            $mol_assert_equal(made.pack_note(), 'Ожидание библиотеки компонентов…');
+        },
+        /**
+         * The pack lands and the same document compiles. The bundle is pulled into
+         * the realm exactly once, by the address the host named.
+         */
+        async 'a scene compiles once the pack has been named'($) {
+            const { made, loaded } = scene($);
+            made.doc_root(root);
+            made.doc_src(source);
+            deliver($, made, { kind: 'pack_set', uri: 'https://pack.test/web.js' });
+            $mol_assert_equal(made.pack_uri(), 'https://pack.test/web.js');
+            $mol_assert_ok(await settled(() => made.instance()));
+            $mol_assert_like(loaded, ['https://pack.test/web.js']);
+            $mol_assert_equal(made.pack_note(), '');
+        },
+        /**
+         * `pack_set` goes through the same reader as everything else, so a window
+         * that is not the host is not heard — the check that kept a stray debug
+         * frame from taking the bridge over on stage 1.
+         */
+        'a pack named by a stranger is not heard'($) {
+            const { made, loaded } = scene($);
+            const dom = $.$mol_dom_context;
+            made.doc_root(root);
+            made.doc_src(source);
+            const event = new dom.MessageEvent('message', {
+                data: { ns: $bog_vmap_bridge_ns, kind: 'pack_set', uri: 'https://evil.test/web.js' },
+            });
+            Object.defineProperty(event, 'source', { value: {} });
+            made.message_receive(event);
+            $mol_assert_equal(made.pack_uri(), '');
+            $mol_assert_like(loaded, []);
+            $mol_assert_equal(made.instance(), null);
         },
     });
 })($ || ($ = {}));

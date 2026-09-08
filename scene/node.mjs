@@ -14820,13 +14820,20 @@ var $;
                 return `translate(${-x * zoom}px,${-y * zoom}px) scale(${zoom})`;
             }
             /**
-             * Donor pack of this frame, from the query of our own address. A message
-             * would not do: a realm cannot unload a bundle, and a second pack over the
-             * first poisons the palette silently. Not a cell: a new address is a new document.
+             * Donor pack of this realm, as the host names it in `pack_set`.
+             *
+             * This frame has no address of its own — it is raised from markup, so there
+             * is no query to read a pack out of. The rule of section 5 still holds and
+             * still holds by construction: a realm cannot unload a bundle, so the host
+             * makes the address of the pack part of the key of the frame, and a second
+             * pack arrives in a frame that has never seen a first one.
+             *
+             * Empty until the message lands, and that is an ORDINARY state now rather
+             * than an impossible one, which is why `instance()` refuses to compile in it.
              * @see ../ARCHITECTURE.md section 5
              */
-            pack_uri() {
-                return new URLSearchParams(this.$.$mol_dom_context.location?.search ?? '').get('pack') ?? '';
+            pack_uri(next) {
+                return next ?? '';
             }
             /**
              * Pulls the pack bundle into this realm.
@@ -14874,7 +14881,7 @@ var $;
             pack_note() {
                 const uri = this.pack_uri();
                 if (!uri)
-                    return '';
+                    return 'Ожидание библиотеки компонентов…';
                 try {
                     this.pack_ready();
                     return '';
@@ -15057,7 +15064,12 @@ var $;
             instance() {
                 const src = this.doc_src();
                 const root = this.doc_root();
-                if (!src.trim() || !root) {
+                // No pack, no compile. The pack arrives by message now, so the first
+                // moments of every frame are spent without one, and a document built in
+                // that window would inherit OUR `$mol_view` — a class picks its base once
+                // and no later load can move it. An empty canvas for a few hundred
+                // milliseconds is the cheap outcome; a silently wrong base is not.
+                if (!src.trim() || !root || !this.pack_uri()) {
                     this.compile_error = '';
                     this.instance_live = null;
                     return null;
@@ -15319,6 +15331,13 @@ var $;
                         this.doc_js(bodies && typeof bodies === 'object' ? bodies : {});
                         return;
                     }
+                    // First message of every handshake, before the document and the
+                    // libraries. A host older than this contract never sends it, and the
+                    // scene then compiles nothing, which is the honest outcome: without a
+                    // pack every class of the document would inherit our own `$mol_view`.
+                    case 'pack_set':
+                        this.pack_uri(String(message.uri ?? ''));
+                        return;
                     case 'css_set':
                         this.doc_css(message.css);
                         return;
@@ -15650,6 +15669,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "grid_scale", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "pack_uri", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "pack_ready", null);
