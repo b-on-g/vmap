@@ -16,6 +16,8 @@ namespace $ {
 		stale: number
 		/** Atoms dropped because the property changed shape or stopped being a cell. */
 		dropped: number
+		/** Atoms holding a failure, woken whatever changed: they have nothing to keep. */
+		failed: number
 	}
 
 	type Atom = $mol_wire_atom< unknown, readonly unknown[], unknown >
@@ -58,7 +60,7 @@ namespace $ {
 		shape_of: ( name: string )=> $bog_vmap_scene_shape | null,
 	): $bog_vmap_scene_swap_report {
 
-		const report = { swapped: 0, moved: 0, stale: 0, dropped: 0 }
+		const report = { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0 }
 
 		const seen = new Set< object >()
 		const queue = [ root ]
@@ -100,7 +102,17 @@ namespace $ {
 				const prop = field.slice( 0, -2 ).trim()
 
 				for( const atom of atoms ) {
+
 					for( const kid of kids_of( atom ) ) queue.push( kid )
+
+					// A failed atom has nothing to keep and is woken whatever changed:
+					// the method it was missing may have been written in another class,
+					// where no text of its own would ever point back at it.
+					if( !( atom.cache instanceof Error ) ) continue
+					Reflect.set( atom, 'cursor', $mol_wire_cursor.stale )
+					atom.emit()
+					report.failed += 1
+
 				}
 
 				if( !shape ) continue

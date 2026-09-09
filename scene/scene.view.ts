@@ -254,7 +254,16 @@ namespace $.$$ {
 		pack_ready() {
 
 			const uri = this.pack_uri()
-			if( uri ) this.$.$mol_import.script( uri )
+			if( !uri ) return uri
+
+			this.$.$mol_import.script( uri )
+
+			// Two copies of `$mol_try_web` now listen on `self`, each calling a
+			// `handler` private to its own bundle, so a dispatch from one copy throws
+			// `handler is not a function` in the other. Plain try/catch for both.
+			this.$.$mol_try = handler => {
+				try { return handler() } catch( error ) { return error as Error }
+			}
 
 			return uri
 		}
@@ -435,40 +444,23 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Applies the decorators studio applies in `source_js_decorators()`.
-		 *
-		 * A decorator cannot be written inside the string handed to
-		 * `new Function`, so it goes as a separate expression after the class.
-		 * An undecorated property has no atom, hence no subscribers, hence the
-		 * hot swap of stage 4.3 cannot wake anything: the method would return a
-		 * new value while the DOM keeps the old one.
+		 * The call that makes cells of the handwritten body, emitted right after the
+		 * class: a decorator cannot be written into the string handed to
+		 * `new Function`. What the tree says is keyed or changeable goes along as
+		 * data, the rest `$bog_vmap_scene_cells` reads off the class itself.
 		 */
-		decorators( self: $mol_tree2, js: string ) {
+		cells_code( self: $mol_tree2 ) {
 
-			const cls = JSON.stringify( self.type )
-			const list = [] as string[]
+			const keyed = [] as string[]
+			const changeable = [] as string[]
 
 			for( const prop of self.kids[0]?.kids ?? [] ) {
-
 				const { name, key, next } = this.$.$mol_view_tree2_prop_parts( prop )
-				if( !key && !next ) continue
-				if( !this.js_defines( js, name ) ) continue
-
-				list.push( `( $.$mol_mem${ key ? '_key' : '' }( $[ ${ cls } ].prototype, ${ JSON.stringify( name ) } ) );` )
-
+				if( key ) keyed.push( name )
+				else if( next ) changeable.push( name )
 			}
 
-			return list.join( '\n' )
-		}
-
-		/**
-		 * Studio asks for an explicit marker comment. A plain method definition
-		 * counts here as well, because a body written without markers would lose
-		 * memoization silently, and silence is exactly what this must not do.
-		 */
-		js_defines( js: string, name: string ) {
-			if( js.includes( `/${ '*' }${ name }${ '*' }/` ) ) return true
-			return new RegExp( `(^|[^\\w.$])${ name }\\s*\\(`, 'm' ).test( js )
+			return `$.$bog_vmap_scene_cells( $[ ${ JSON.stringify( self.type ) } ], ${ JSON.stringify( keyed ) }, ${ JSON.stringify( changeable ) } );`
 		}
 
 		/**
@@ -576,7 +568,7 @@ namespace $.$$ {
 				`;$[ ${ cls } ] = class ${ name } extends $[ ${ cls } ] {`,
 				js,
 				'}',
-				';' + this.decorators( def, js ) + ';',
+				';' + this.cells_code( def ) + ';',
 			)
 
 			return chunks
