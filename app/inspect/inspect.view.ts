@@ -76,17 +76,24 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The refusal goes under the head, and only when there is one: a strip that
-		 * is always there but usually empty is a strip nobody reads.
+		 * What the panel is made of.
+		 *
+		 * A list, and never a splice into `super.sub()` by index: an index is a fact
+		 * about the order somebody else wrote, so a child added to the tree moves
+		 * the refusal to a place nobody chose, silently. The refusal goes under the
+		 * head and only when there is one — a strip that is always there but usually
+		 * empty is a strip nobody reads.
 		 */
-		override sub() {
+		override body() {
 
 			if( !this.class_ready() ) return [ this.Empty() ] as readonly $mol_view[]
 
-			const sub = super.sub() as readonly $mol_view[]
-			if( !this.title_note() ) return sub
-
-			return [ sub[ 0 ], this.Note(), ... sub.slice( 1 ) ]
+			return [
+				this.Head(),
+				... this.title_note() ? [ this.Note() ] : [],
+				this.Flex(),
+				this.Body(),
+			] as readonly $mol_view[]
 		}
 
 		/**
