@@ -42497,1169 +42497,16 @@ declare namespace $ {
 }
 
 declare namespace $ {
+}
 
-	export class $mol_icon_clipboard extends $mol_icon {
-		path( ): string
+declare namespace $ {
+
+	export class $mol_bar extends $mol_view {
 	}
 	
 }
 
-//# sourceMappingURL=clipboard.view.tree.d.ts.map
-declare namespace $ {
-
-	export class $mol_icon_clipboard_outline extends $mol_icon {
-		path( ): string
-	}
-	
-}
-
-//# sourceMappingURL=outline.view.tree.d.ts.map
-declare namespace $ {
-    function $mol_html_encode(text: string): string;
-}
-
-declare namespace $ {
-
-	type $mol_blob__mol_button_copy_1 = $mol_type_enforce<
-		[ readonly(BlobPart)[], ({ 
-			'type': string,
-		})  ]
-		,
-		ConstructorParameters< typeof $mol_blob >
-	>
-	type $mol_blob__mol_button_copy_2 = $mol_type_enforce<
-		[ readonly(BlobPart)[], ({ 
-			'type': string,
-		})  ]
-		,
-		ConstructorParameters< typeof $mol_blob >
-	>
-	export class $mol_button_copy extends $mol_button_minor {
-		text( ): ReturnType< $mol_button_copy['title'] >
-		text_blob( next?: $mol_blob ): $mol_blob
-		html( ): string
-		html_blob( next?: $mol_blob ): $mol_blob
-		Icon( ): $mol_icon_clipboard_outline
-		title( ): string
-		blobs( ): readonly($mol_blob)[]
-		data( ): Record<string, any>
-		sub( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=copy.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Button copy text() value to clipboard
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_button_demo
-     */
-    class $mol_button_copy extends $.$mol_button_copy {
-        data(): {
-            [k: string]: Blob;
-        };
-        html(): string;
-        attachments(): ClipboardItem[];
-        click(event?: Event): void;
-    }
-}
-
-declare namespace $ {
-    type $mol_style_pseudo_class = ':active' | ':any' | ':any-link' | ':checked' | ':default' | ':defined' | ':dir(rtl)' | ':dir(ltr)' | ':disabled' | ':empty' | ':enabled' | ':first' | ':first-child' | ':first-of-type' | ':fullscreen' | ':focus' | ':focus-visible' | ':focus-within' | ':hover' | ':indeterminate' | ':in-range' | ':invalid' | ':last-child' | ':last-of-type' | ':left' | ':link' | `:not(${string})` | `:nth-child(${string})` | `:nth-last-child(${string})` | `:nth-of-type(${string})` | `:nth-last-of-type(${string})` | ':only-child' | ':only-of-type' | ':optional' | ':out-of-range' | ':placeholder-shown' | ':read-only' | ':read-write' | ':required' | ':right' | ':root' | ':scope' | ':target' | ':valid' | ':visited';
-}
-
-declare namespace $ {
-    type $mol_style_pseudo_element = '::after' | '::before' | '::cue' | '::first-letter' | '::first-line' | '::selection' | '::slotted' | '::backdrop' | '::placeholder' | '::marker' | '::spelling-error' | '::grammar-error' | '::-webkit-calendar-picker-indicator' | '::-webkit-color-swatch' | '::-webkit-color-swatch-wrapper' | '::-webkit-details-marker' | '::-webkit-file-upload-button' | '::-webkit-image-inner-element' | '::-webkit-inner-spin-button' | '::-webkit-input-placeholder' | '::-webkit-input-speech-button' | '::-webkit-keygen-select' | '::-webkit-media-controls-panel' | '::-webkit-media-controls-timeline-container' | '::-webkit-media-slider-container' | '::-webkit-meter-bar' | '::-webkit-meter-even-less-good-value' | '::-webkit-meter-optimum-value' | '::-webkit-meter-suboptimal-value' | '::-webkit-progress-bar' | '::-webkit-progress-value' | '::-webkit-resizer' | '::-webkit-resizer:window-inactive' | '::-webkit-scrollbar' | '::-webkit-scrollbar-button' | '::-webkit-scrollbar-button:disabled' | '::-webkit-scrollbar-button:double-button:horizontal:end:decrement' | '::-webkit-scrollbar-button:double-button:horizontal:end:increment' | '::-webkit-scrollbar-button:double-button:horizontal:end:increment:corner-present' | '::-webkit-scrollbar-button:double-button:horizontal:start:decrement' | '::-webkit-scrollbar-button:double-button:horizontal:start:increment' | '::-webkit-scrollbar-button:double-button:vertical:end:decrement' | '::-webkit-scrollbar-button:double-button:vertical:end:increment' | '::-webkit-scrollbar-button:double-button:vertical:end:increment:corner-present' | '::-webkit-scrollbar-button:double-button:vertical:start:decrement' | '::-webkit-scrollbar-button:double-button:vertical:start:increment' | '::-webkit-scrollbar-button:end' | '::-webkit-scrollbar-button:end:decrement' | '::-webkit-scrollbar-button:end:increment' | '::-webkit-scrollbar-button:horizontal' | '::-webkit-scrollbar-button:horizontal:decrement' | '::-webkit-scrollbar-button:horizontal:decrement:active' | '::-webkit-scrollbar-button:horizontal:decrement:hover' | '::-webkit-scrollbar-button:horizontal:decrement:window-inactive' | '::-webkit-scrollbar-button:horizontal:end' | '::-webkit-scrollbar-button:horizontal:end:decrement' | '::-webkit-scrollbar-button:horizontal:end:increment' | '::-webkit-scrollbar-button:horizontal:end:increment:corner-present' | '::-webkit-scrollbar-button:horizontal:increment' | '::-webkit-scrollbar-button:horizontal:increment:active' | '::-webkit-scrollbar-button:horizontal:increment:hover' | '::-webkit-scrollbar-button:horizontal:increment:window-inactive' | '::-webkit-scrollbar-button:horizontal:start' | '::-webkit-scrollbar-button:horizontal:start:decrement' | '::-webkit-scrollbar-button:horizontal:start:increment' | '::-webkit-scrollbar-button:start' | '::-webkit-scrollbar-button:start:decrement' | '::-webkit-scrollbar-button:start:increment' | '::-webkit-scrollbar-button:vertical' | '::-webkit-scrollbar-button:vertical:decrement' | '::-webkit-scrollbar-button:vertical:decrement:active' | '::-webkit-scrollbar-button:vertical:decrement:hover' | '::-webkit-scrollbar-button:vertical:decrement:window-inactive' | '::-webkit-scrollbar-button:vertical:end' | '::-webkit-scrollbar-button:vertical:end:decrement' | '::-webkit-scrollbar-button:vertical:end:increment' | '::-webkit-scrollbar-button:vertical:end:increment:corner-present' | '::-webkit-scrollbar-button:vertical:increment' | '::-webkit-scrollbar-button:vertical:increment:active' | '::-webkit-scrollbar-button:vertical:increment:hover' | '::-webkit-scrollbar-button:vertical:increment:window-inactive' | '::-webkit-scrollbar-button:vertical:start' | '::-webkit-scrollbar-button:vertical:start:decrement' | '::-webkit-scrollbar-button:vertical:start:increment' | '::-webkit-scrollbar-corner' | '::-webkit-scrollbar-corner:window-inactive' | '::-webkit-scrollbar-thumb' | '::-webkit-scrollbar-thumb:horizontal' | '::-webkit-scrollbar-thumb:horizontal:active' | '::-webkit-scrollbar-thumb:horizontal:hover' | '::-webkit-scrollbar-thumb:horizontal:window-inactive' | '::-webkit-scrollbar-thumb:vertical' | '::-webkit-scrollbar-thumb:vertical:active' | '::-webkit-scrollbar-thumb:vertical:hover' | '::-webkit-scrollbar-thumb:vertical:window-inactive' | '::-webkit-scrollbar-track' | '::-webkit-scrollbar-track-piece' | '::-webkit-scrollbar-track-piece:disabled' | '::-webkit-scrollbar-track-piece:end' | '::-webkit-scrollbar-track-piece:horizontal:decrement' | '::-webkit-scrollbar-track-piece:horizontal:decrement:active' | '::-webkit-scrollbar-track-piece:horizontal:decrement:hover' | '::-webkit-scrollbar-track-piece:horizontal:end' | '::-webkit-scrollbar-track-piece:horizontal:end:corner-present' | '::-webkit-scrollbar-track-piece:horizontal:end:double-button' | '::-webkit-scrollbar-track-piece:horizontal:end:no-button' | '::-webkit-scrollbar-track-piece:horizontal:end:no-button:corner-present' | '::-webkit-scrollbar-track-piece:horizontal:end:single-button' | '::-webkit-scrollbar-track-piece:horizontal:increment' | '::-webkit-scrollbar-track-piece:horizontal:increment:active' | '::-webkit-scrollbar-track-piece:horizontal:increment:hover' | '::-webkit-scrollbar-track-piece:horizontal:start' | '::-webkit-scrollbar-track-piece:horizontal:start:double-button' | '::-webkit-scrollbar-track-piece:horizontal:start:no-button' | '::-webkit-scrollbar-track-piece:horizontal:start:single-button' | '::-webkit-scrollbar-track-piece:start' | '::-webkit-scrollbar-track-piece:vertical:decrement' | '::-webkit-scrollbar-track-piece:vertical:decrement:active' | '::-webkit-scrollbar-track-piece:vertical:decrement:hover' | '::-webkit-scrollbar-track-piece:vertical:end' | '::-webkit-scrollbar-track-piece:vertical:end:corner-present' | '::-webkit-scrollbar-track-piece:vertical:end:double-button' | '::-webkit-scrollbar-track-piece:vertical:end:no-button' | '::-webkit-scrollbar-track-piece:vertical:end:no-button:corner-present' | '::-webkit-scrollbar-track-piece:vertical:end:single-button' | '::-webkit-scrollbar-track-piece:vertical:increment' | '::-webkit-scrollbar-track-piece:vertical:increment:active' | '::-webkit-scrollbar-track-piece:vertical:increment:hover' | '::-webkit-scrollbar-track-piece:vertical:start' | '::-webkit-scrollbar-track-piece:vertical:start:double-button' | '::-webkit-scrollbar-track-piece:vertical:start:no-button' | '::-webkit-scrollbar-track-piece:vertical:start:single-button' | '::-webkit-scrollbar-track:disabled' | '::-webkit-scrollbar-track:horizontal' | '::-webkit-scrollbar-track:horizontal:disabled' | '::-webkit-scrollbar-track:horizontal:disabled:corner-present' | '::-webkit-scrollbar-track:vertical:disabled' | '::-webkit-scrollbar-track:vertical:disabled:corner-present' | '::-webkit-scrollbar:horizontal' | '::-webkit-scrollbar:horizontal:corner-present' | '::-webkit-scrollbar:horizontal:window-inactive' | '::-webkit-scrollbar:vertical' | '::-webkit-scrollbar:vertical:corner-present' | '::-webkit-scrollbar:vertical:window-inactive' | '::-webkit-search-cancel-button' | '::-webkit-search-decoration' | '::-webkit-search-results-button' | '::-webkit-search-results-decoration' | '::-webkit-slider-container' | '::-webkit-slider-runnable-track' | '::-webkit-slider-thumb' | '::-webkit-slider-thumb:disabled' | '::-webkit-slider-thumb:hover' | '::-webkit-textfield-decoration-container' | '::-webkit-validation-bubble' | '::-webkit-validation-bubble-arrow' | '::-webkit-validation-bubble-arrow-clipper' | '::-webkit-validation-bubble-heading' | '::-webkit-validation-bubble-message' | '::-webkit-validation-bubble-text-block';
-}
-
-declare namespace $ {
-    /** Returns error type, that don't match to normal value. */
-    type $mol_type_error<Message, Info = {}> = Message & {
-        $mol_type_error: Info;
-    };
-}
-
-declare namespace $ {
-    type Attrs<View extends $mol_view, Config, Attrs = ReturnType<View['attr']>> = {
-        [name in keyof Attrs]?: {
-            [val in keyof Config[Extract<name, keyof Config>]]: $mol_style_guard<View, Config[Extract<name, keyof Config>][val]>;
-        };
-    };
-    type Medias<View extends $mol_view, Config> = {
-        [query in keyof Config]: $mol_style_guard<View, Config[query]>;
-    };
-    type Keys<View extends $mol_view> = '>' | '@' | keyof $mol_style_properties | $mol_style_pseudo_element | $mol_style_pseudo_class | $mol_type_keys_extract<View, () => $mol_view> | `$${string}`;
-    export type $mol_style_guard<View extends $mol_view, Config> = {
-        [key in Keys<View>]?: unknown;
-    } & $mol_style_properties & {
-        [key in keyof Config]: key extends keyof $mol_style_properties ? $mol_style_properties[key] : key extends '>' | $mol_style_pseudo_class | $mol_style_pseudo_element ? $mol_style_guard<View, Config[key]> : key extends '@' ? Attrs<View, Config[key]> : key extends ('@media' | '@container') ? Medias<View, Config[key]> : key extends '@starting-style' ? $mol_style_guard<View, Config[key]> : key extends `[${string}]` ? {
-            [val in keyof Config[key]]: $mol_style_guard<View, Config[key][val]>;
-        } : key extends `--${string}` ? any : key extends keyof $ ? $mol_style_guard<InstanceType<Extract<$[key], typeof $mol_view>>, Config[key]> : key extends keyof View ? View[key] extends (id?: any) => infer Sub ? Sub extends $mol_view ? $mol_style_guard<Sub, Config[key]> : $mol_type_error<'Property returns non $mol_view', {
-            Returns: Sub;
-        }> : $mol_type_error<'Field is not a Property'> : key extends `$${string}` ? $mol_type_error<'Unknown View Class'> : $mol_type_error<'Unknown CSS Property'>;
-    };
-    export {};
-}
-
-declare namespace $ {
-    function $mol_style_sheet<Component extends $mol_view, Config extends $mol_style_guard<Component, Config>>(Component: new () => Component, config0: Config): string;
-}
-
-declare namespace $ {
-    /**
-     * CSS in TS.
-     * Statically typed CSS style sheets. Following samples show which CSS code are generated from TS code.
-     * @see https://mol.hyoo.ru/#!section=docs/=xwq9q5_f966fg
-     */
-    function $mol_style_define<Component extends $mol_view, Config extends $mol_style_guard<Component, Config>>(Component: new () => Component, config: Config): HTMLStyleElement | null;
-}
-
-declare namespace $ {
-    const $bog_vmap_app_publish_home_base: Omit<typeof $giper_baza_dict, "prototype"> & {
-        new (...args: any[]): $mol_type_override<$giper_baza_dict, {
-            readonly Libs: (auto?: any) => {
-                Value: Value;
-                remote_list(next?: readonly $bog_vmap_lib_land_shelf[] | undefined): readonly $bog_vmap_lib_land_shelf[];
-                remote_add(item: $bog_vmap_lib_land_shelf & $giper_baza_pawn): void;
-                make(config: null | number | $giper_baza_rank_preset | $giper_baza_land): $bog_vmap_lib_land_shelf;
-                items(next?: readonly $giper_baza_link[] | undefined): readonly $giper_baza_link[];
-                items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
-                find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
-                has(vary: $giper_baza_vary_type, next?: boolean, tag?: keyof typeof $giper_baza_unit_sand_tag): boolean;
-                add(vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
-                cut(vary: $giper_baza_vary_type): void;
-                move(from: number, to: number): void;
-                wipe(seat: number): void;
-                pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
-                [$mol_dev_format_head](): any[];
-                land(): $giper_baza_land;
-                head(): $giper_baza_link;
-                land_link(): $giper_baza_link;
-                link(): $giper_baza_link;
-                toJSON(): string;
-                cast<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1): InstanceType<Pawn_1>;
-                pawns<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1 | null): readonly InstanceType<Pawn_1>[];
-                units(): $giper_baza_unit_sand[];
-                units_of(peer: $giper_baza_link | null): $giper_baza_unit_sand[];
-                meta(next?: $giper_baza_link): $giper_baza_link | null;
-                meta_of(peer: $giper_baza_link | null): $giper_baza_link | null;
-                filled(): boolean;
-                can_change(): boolean;
-                last_change(): $mol_time_moment | null;
-                authors(): $giper_baza_auth_pass[];
-                get $(): $;
-                set $(next: $);
-                destructor(): void;
-                toString(): string;
-                [Symbol.toStringTag]: string;
-                [$mol_ambient_ref]: $;
-                [Symbol.dispose](): void;
-            } | null;
-        }>;
-        path: string;
-    } & {
-        schema: {
-            [x: string]: typeof $giper_baza_pawn;
-        } & {
-            readonly Libs: {
-                new (): {
-                    Value: () => typeof $bog_vmap_lib_land_shelf;
-                    remote_list(next?: readonly $bog_vmap_lib_land_shelf[] | undefined): readonly $bog_vmap_lib_land_shelf[];
-                    remote_add(item: $bog_vmap_lib_land_shelf & $giper_baza_pawn): void;
-                    make(config: null | number | $giper_baza_rank_preset | $giper_baza_land): $bog_vmap_lib_land_shelf;
-                    items(next?: readonly $giper_baza_link[] | undefined): readonly $giper_baza_link[];
-                    items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                    splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
-                    find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
-                    has(vary: $giper_baza_vary_type, next?: boolean, tag?: keyof typeof $giper_baza_unit_sand_tag): boolean;
-                    add(vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
-                    cut(vary: $giper_baza_vary_type): void;
-                    move(from: number, to: number): void;
-                    wipe(seat: number): void;
-                    pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
-                    [$mol_dev_format_head](): any[];
-                    land(): $giper_baza_land;
-                    head(): $giper_baza_link;
-                    land_link(): $giper_baza_link;
-                    link(): $giper_baza_link;
-                    toJSON(): string;
-                    cast<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1): InstanceType<Pawn_1>;
-                    pawns<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1 | null): readonly InstanceType<Pawn_1>[];
-                    units(): $giper_baza_unit_sand[];
-                    units_of(peer: $giper_baza_link | null): $giper_baza_unit_sand[];
-                    meta(next?: $giper_baza_link): $giper_baza_link | null;
-                    meta_of(peer: $giper_baza_link | null): $giper_baza_link | null;
-                    filled(): boolean;
-                    can_change(): boolean;
-                    last_change(): $mol_time_moment | null;
-                    authors(): $giper_baza_auth_pass[];
-                    get $(): $;
-                    set $(next: $);
-                    destructor(): void;
-                    toString(): string;
-                    [Symbol.toStringTag]: string;
-                    [$mol_ambient_ref]: $;
-                    [Symbol.dispose](): void;
-                };
-                toString(): any;
-                to<const Value extends unknown>(Value: Value): {
-                    new (): {
-                        Value: Value;
-                        remote_list(next?: readonly $mol_type_result<$mol_type_result<Value>>[] | undefined): readonly $mol_type_result<$mol_type_result<Value>>[];
-                        remote_add(item: $mol_type_result<$mol_type_result<Value>> & $giper_baza_pawn): void;
-                        make(config: null | number | $giper_baza_rank_preset | $giper_baza_land): $mol_type_result<$mol_type_result<Value>>;
-                        items(next?: readonly $giper_baza_link[] | undefined): readonly $giper_baza_link[];
-                        items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                        splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
-                        find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
-                        has(vary: $giper_baza_vary_type, next?: boolean, tag?: keyof typeof $giper_baza_unit_sand_tag): boolean;
-                        add(vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
-                        cut(vary: $giper_baza_vary_type): void;
-                        move(from: number, to: number): void;
-                        wipe(seat: number): void;
-                        pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
-                        [$mol_dev_format_head](): any[];
-                        land(): $giper_baza_land;
-                        head(): $giper_baza_link;
-                        land_link(): $giper_baza_link;
-                        link(): $giper_baza_link;
-                        toJSON(): string;
-                        cast<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1): InstanceType<Pawn_1>;
-                        pawns<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1 | null): readonly InstanceType<Pawn_1>[];
-                        units(): $giper_baza_unit_sand[];
-                        units_of(peer: $giper_baza_link | null): $giper_baza_unit_sand[];
-                        meta(next?: $giper_baza_link): $giper_baza_link | null;
-                        meta_of(peer: $giper_baza_link | null): $giper_baza_link | null;
-                        filled(): boolean;
-                        can_change(): boolean;
-                        last_change(): $mol_time_moment | null;
-                        authors(): $giper_baza_auth_pass[];
-                        get $(): $;
-                        set $(next: $);
-                        destructor(): void;
-                        toString(): string;
-                        [Symbol.toStringTag]: string;
-                        [$mol_ambient_ref]: $;
-                        [Symbol.dispose](): void;
-                    };
-                    toString(): any;
-                    to<const Value extends unknown>(Value: Value): /*elided*/ any;
-                    Item: {
-                        new (value?: any): {
-                            constructor: Function;
-                            toString(): string;
-                            toLocaleString(): string;
-                            valueOf(): Object;
-                            hasOwnProperty(v: PropertyKey): boolean;
-                            isPrototypeOf(v: Object): boolean;
-                            propertyIsEnumerable(v: PropertyKey): boolean;
-                        };
-                        Class: typeof $giper_baza_link;
-                        toString(): string;
-                        guard<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): Value_1 & This["default"];
-                        cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
-                        default: $giper_baza_link;
-                        check<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
-                        [Symbol.toStringTag]: string;
-                        [$mol_key_handle](): string;
-                        [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_3>(this: This, value: Value_3): value is Value_3 & This["default"];
-                        getPrototypeOf(o: any): any;
-                        getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
-                        getOwnPropertyNames(o: any): string[];
-                        create(o: object | null): any;
-                        create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
-                        defineProperty<T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T;
-                        defineProperties<T>(o: T, properties: PropertyDescriptorMap & ThisType<any>): T;
-                        seal<T>(o: T): T;
-                        freeze<T extends Function>(f: T): T;
-                        freeze<T extends {
-                            [idx: string]: U | null | undefined | object;
-                        }, U extends string | bigint | number | boolean | symbol>(o: T): Readonly<T>;
-                        freeze<T>(o: T): Readonly<T>;
-                        preventExtensions<T>(o: T): T;
-                        isSealed(o: any): boolean;
-                        isFrozen(o: any): boolean;
-                        isExtensible(o: any): boolean;
-                        keys(o: object): string[];
-                        keys(o: {}): string[];
-                        assign<T extends {}, U_1>(target: T, source: U_1): T & U_1;
-                        assign<T extends {}, U_2, V>(target: T, source1: U_2, source2: V): T & U_2 & V;
-                        assign<T extends {}, U_3, V_1, W>(target: T, source1: U_3, source2: V_1, source3: W): T & U_3 & V_1 & W;
-                        assign(target: object, ...sources: any[]): any;
-                        getOwnPropertySymbols(o: any): symbol[];
-                        is(value1: any, value2: any): boolean;
-                        setPrototypeOf(o: any, proto: object | null): any;
-                        values<T>(o: {
-                            [s: string]: T;
-                        } | ArrayLike<T>): T[];
-                        values(o: {}): any[];
-                        entries<T>(o: {
-                            [s: string]: T;
-                        } | ArrayLike<T>): [string, T][];
-                        entries(o: {}): [string, any][];
-                        getOwnPropertyDescriptors<T>(o: T): { [P in keyof T]: TypedPropertyDescriptor<T[P]>; } & {
-                            [x: string]: PropertyDescriptor;
-                        };
-                        fromEntries<T = any>(entries: Iterable<readonly [PropertyKey, T]>): {
-                            [k: string]: T;
-                        };
-                        fromEntries(entries: Iterable<readonly any[]>): any;
-                        hasOwn(o: object, v: PropertyKey): boolean;
-                        groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
-                    };
-                    tag: keyof typeof $giper_baza_unit_sand_tag;
-                    of<Init extends new (...args: any[]) => any>(init: Init): {
-                        new (): {
-                            items(next?: readonly (Init extends typeof $mol_schema_any ? Init : {
-                                new (value?: any): {
-                                    constructor: Function;
-                                    toString(): string;
-                                    toLocaleString(): string;
-                                    valueOf(): Object;
-                                    hasOwnProperty(v: PropertyKey): boolean;
-                                    isPrototypeOf(v: Object): boolean;
-                                    propertyIsEnumerable(v: PropertyKey): boolean;
-                                };
-                                Class: Init;
-                                toString(): string;
-                                guard<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): Value_1 & This["default"];
-                                cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
-                                default: InstanceType<Init>;
-                                check<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
-                                [Symbol.toStringTag]: string;
-                                [$mol_key_handle](): string;
-                                [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_3>(this: This, value: Value_3): value is Value_3 & This["default"];
-                                getPrototypeOf(o: any): any;
-                                getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
-                                getOwnPropertyNames(o: any): string[];
-                                create(o: object | null): any;
-                                create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
-                                defineProperty<T_1>(o: T_1, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T_1;
-                                defineProperties<T_1>(o: T_1, properties: PropertyDescriptorMap & ThisType<any>): T_1;
-                                seal<T_1>(o: T_1): T_1;
-                                freeze<T_1 extends Function>(f: T_1): T_1;
-                                freeze<T_1 extends {
-                                    [idx: string]: U | null | undefined | object;
-                                }, U extends string | bigint | number | boolean | symbol>(o: T_1): Readonly<T_1>;
-                                freeze<T_1>(o: T_1): Readonly<T_1>;
-                                preventExtensions<T_1>(o: T_1): T_1;
-                                isSealed(o: any): boolean;
-                                isFrozen(o: any): boolean;
-                                isExtensible(o: any): boolean;
-                                keys(o: object): string[];
-                                keys(o: {}): string[];
-                                assign<T_1 extends {}, U_1>(target: T_1, source: U_1): T_1 & U_1;
-                                assign<T_1 extends {}, U_2, V>(target: T_1, source1: U_2, source2: V): T_1 & U_2 & V;
-                                assign<T_1 extends {}, U_3, V_1, W>(target: T_1, source1: U_3, source2: V_1, source3: W): T_1 & U_3 & V_1 & W;
-                                assign(target: object, ...sources: any[]): any;
-                                getOwnPropertySymbols(o: any): symbol[];
-                                is(value1: any, value2: any): boolean;
-                                setPrototypeOf(o: any, proto: object | null): any;
-                                values<T_1>(o: {
-                                    [s: string]: T_1;
-                                } | ArrayLike<T_1>): T_1[];
-                                values(o: {}): any[];
-                                entries<T_1>(o: {
-                                    [s: string]: T_1;
-                                } | ArrayLike<T_1>): [string, T_1][];
-                                entries(o: {}): [string, any][];
-                                getOwnPropertyDescriptors<T_1>(o: T_1): { [P in keyof T_1]: TypedPropertyDescriptor<T_1[P]>; } & {
-                                    [x: string]: PropertyDescriptor;
-                                };
-                                fromEntries<T_1 = any>(entries: Iterable<readonly [PropertyKey, T_1]>): {
-                                    [k: string]: T_1;
-                                };
-                                fromEntries(entries: Iterable<readonly any[]>): any;
-                                hasOwn(o: object, v: PropertyKey): boolean;
-                                groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
-                            })["default"][]): readonly (Init extends typeof $mol_schema_any ? Init : {
-                                new (value?: any): {
-                                    constructor: Function;
-                                    toString(): string;
-                                    toLocaleString(): string;
-                                    valueOf(): Object;
-                                    hasOwnProperty(v: PropertyKey): boolean;
-                                    isPrototypeOf(v: Object): boolean;
-                                    propertyIsEnumerable(v: PropertyKey): boolean;
-                                };
-                                Class: Init;
-                                toString(): string;
-                                guard<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): Value_1 & This["default"];
-                                cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
-                                default: InstanceType<Init>;
-                                check<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
-                                [Symbol.toStringTag]: string;
-                                [$mol_key_handle](): string;
-                                [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_3>(this: This, value: Value_3): value is Value_3 & This["default"];
-                                getPrototypeOf(o: any): any;
-                                getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
-                                getOwnPropertyNames(o: any): string[];
-                                create(o: object | null): any;
-                                create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
-                                defineProperty<T_1>(o: T_1, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T_1;
-                                defineProperties<T_1>(o: T_1, properties: PropertyDescriptorMap & ThisType<any>): T_1;
-                                seal<T_1>(o: T_1): T_1;
-                                freeze<T_1 extends Function>(f: T_1): T_1;
-                                freeze<T_1 extends {
-                                    [idx: string]: U | null | undefined | object;
-                                }, U extends string | bigint | number | boolean | symbol>(o: T_1): Readonly<T_1>;
-                                freeze<T_1>(o: T_1): Readonly<T_1>;
-                                preventExtensions<T_1>(o: T_1): T_1;
-                                isSealed(o: any): boolean;
-                                isFrozen(o: any): boolean;
-                                isExtensible(o: any): boolean;
-                                keys(o: object): string[];
-                                keys(o: {}): string[];
-                                assign<T_1 extends {}, U_1>(target: T_1, source: U_1): T_1 & U_1;
-                                assign<T_1 extends {}, U_2, V>(target: T_1, source1: U_2, source2: V): T_1 & U_2 & V;
-                                assign<T_1 extends {}, U_3, V_1, W>(target: T_1, source1: U_3, source2: V_1, source3: W): T_1 & U_3 & V_1 & W;
-                                assign(target: object, ...sources: any[]): any;
-                                getOwnPropertySymbols(o: any): symbol[];
-                                is(value1: any, value2: any): boolean;
-                                setPrototypeOf(o: any, proto: object | null): any;
-                                values<T_1>(o: {
-                                    [s: string]: T_1;
-                                } | ArrayLike<T_1>): T_1[];
-                                values(o: {}): any[];
-                                entries<T_1>(o: {
-                                    [s: string]: T_1;
-                                } | ArrayLike<T_1>): [string, T_1][];
-                                entries(o: {}): [string, any][];
-                                getOwnPropertyDescriptors<T_1>(o: T_1): { [P in keyof T_1]: TypedPropertyDescriptor<T_1[P]>; } & {
-                                    [x: string]: PropertyDescriptor;
-                                };
-                                fromEntries<T_1 = any>(entries: Iterable<readonly [PropertyKey, T_1]>): {
-                                    [k: string]: T_1;
-                                };
-                                fromEntries(entries: Iterable<readonly any[]>): any;
-                                hasOwn(o: object, v: PropertyKey): boolean;
-                                groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
-                            })["default"][];
-                            items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                            splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
-                            find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
-                            has(vary: $giper_baza_vary_type, next?: boolean, tag?: keyof typeof $giper_baza_unit_sand_tag): boolean;
-                            add(vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
-                            cut(vary: $giper_baza_vary_type): void;
-                            move(from: number, to: number): void;
-                            wipe(seat: number): void;
-                            pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
-                            [$mol_dev_format_head](): any[];
-                            land(): $giper_baza_land;
-                            head(): $giper_baza_link;
-                            land_link(): $giper_baza_link;
-                            link(): $giper_baza_link;
-                            toJSON(): string;
-                            cast<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1): InstanceType<Pawn_1>;
-                            pawns<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1 | null): readonly InstanceType<Pawn_1>[];
-                            units(): $giper_baza_unit_sand[];
-                            units_of(peer: $giper_baza_link | null): $giper_baza_unit_sand[];
-                            meta(next?: $giper_baza_link): $giper_baza_link | null;
-                            meta_of(peer: $giper_baza_link | null): $giper_baza_link | null;
-                            filled(): boolean;
-                            can_change(): boolean;
-                            last_change(): $mol_time_moment | null;
-                            authors(): $giper_baza_auth_pass[];
-                            get $(): $;
-                            set $(next: $);
-                            destructor(): void;
-                            toString(): string;
-                            [Symbol.toStringTag]: string;
-                            [$mol_ambient_ref]: $;
-                            [Symbol.dispose](): void;
-                        };
-                        Item: Init extends typeof $mol_schema_any ? Init : {
-                            new (value?: any): {
-                                constructor: Function;
-                                toString(): string;
-                                toLocaleString(): string;
-                                valueOf(): Object;
-                                hasOwnProperty(v: PropertyKey): boolean;
-                                isPrototypeOf(v: Object): boolean;
-                                propertyIsEnumerable(v: PropertyKey): boolean;
-                            };
-                            Class: Init;
-                            toString(): string;
-                            guard<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): Value_1 & This["default"];
-                            cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
-                            default: InstanceType<Init>;
-                            check<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
-                            [Symbol.toStringTag]: string;
-                            [$mol_key_handle](): string;
-                            [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_3>(this: This, value: Value_3): value is Value_3 & This["default"];
-                            getPrototypeOf(o: any): any;
-                            getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
-                            getOwnPropertyNames(o: any): string[];
-                            create(o: object | null): any;
-                            create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
-                            defineProperty<T_1>(o: T_1, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T_1;
-                            defineProperties<T_1>(o: T_1, properties: PropertyDescriptorMap & ThisType<any>): T_1;
-                            seal<T_1>(o: T_1): T_1;
-                            freeze<T_1 extends Function>(f: T_1): T_1;
-                            freeze<T_1 extends {
-                                [idx: string]: U | null | undefined | object;
-                            }, U extends string | bigint | number | boolean | symbol>(o: T_1): Readonly<T_1>;
-                            freeze<T_1>(o: T_1): Readonly<T_1>;
-                            preventExtensions<T_1>(o: T_1): T_1;
-                            isSealed(o: any): boolean;
-                            isFrozen(o: any): boolean;
-                            isExtensible(o: any): boolean;
-                            keys(o: object): string[];
-                            keys(o: {}): string[];
-                            assign<T_1 extends {}, U_1>(target: T_1, source: U_1): T_1 & U_1;
-                            assign<T_1 extends {}, U_2, V>(target: T_1, source1: U_2, source2: V): T_1 & U_2 & V;
-                            assign<T_1 extends {}, U_3, V_1, W>(target: T_1, source1: U_3, source2: V_1, source3: W): T_1 & U_3 & V_1 & W;
-                            assign(target: object, ...sources: any[]): any;
-                            getOwnPropertySymbols(o: any): symbol[];
-                            is(value1: any, value2: any): boolean;
-                            setPrototypeOf(o: any, proto: object | null): any;
-                            values<T_1>(o: {
-                                [s: string]: T_1;
-                            } | ArrayLike<T_1>): T_1[];
-                            values(o: {}): any[];
-                            entries<T_1>(o: {
-                                [s: string]: T_1;
-                            } | ArrayLike<T_1>): [string, T_1][];
-                            entries(o: {}): [string, any][];
-                            getOwnPropertyDescriptors<T_1>(o: T_1): { [P in keyof T_1]: TypedPropertyDescriptor<T_1[P]>; } & {
-                                [x: string]: PropertyDescriptor;
-                            };
-                            fromEntries<T_1 = any>(entries: Iterable<readonly [PropertyKey, T_1]>): {
-                                [k: string]: T_1;
-                            };
-                            fromEntries(entries: Iterable<readonly any[]>): any;
-                            hasOwn(o: object, v: PropertyKey): boolean;
-                            groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
-                        };
-                        toString(): any;
-                        tag: keyof typeof $giper_baza_unit_sand_tag;
-                        of<Init extends new (...args: any[]) => any>(init: Init): /*elided*/ any;
-                        meta: null | $giper_baza_link;
-                        make<This extends typeof $mol_object>(this: This, config: Partial<InstanceType<This>>): InstanceType<This>;
-                        $: $;
-                        create<Instance>(this: new (init?: (instance: any) => void) => Instance, init?: (instance: $mol_type_writable<Instance>) => void): Instance;
-                        toJSON(): any;
-                        destructor(): void;
-                        [Symbol.toPrimitive](): any;
-                        [$mol_key_handle](): any;
-                    };
-                    meta: null | $giper_baza_link;
-                    make<This extends typeof $mol_object>(this: This, config: Partial<InstanceType<This>>): InstanceType<This>;
-                    $: $;
-                    create<Instance>(this: new (init?: (instance: any) => void) => Instance, init?: (instance: $mol_type_writable<Instance>) => void): Instance;
-                    toJSON(): any;
-                    destructor(): void;
-                    [Symbol.toPrimitive](): any;
-                    [$mol_key_handle](): any;
-                };
-                Item: {
-                    new (value?: any): {
-                        constructor: Function;
-                        toString(): string;
-                        toLocaleString(): string;
-                        valueOf(): Object;
-                        hasOwnProperty(v: PropertyKey): boolean;
-                        isPrototypeOf(v: Object): boolean;
-                        propertyIsEnumerable(v: PropertyKey): boolean;
-                    };
-                    Class: typeof $giper_baza_link;
-                    toString(): string;
-                    guard<This extends typeof $mol_schema_any, Value>(this: This, value: Value): Value & This["default"];
-                    cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
-                    default: $giper_baza_link;
-                    check<This extends typeof $mol_schema_any, Value>(this: This, value: Value): value is Value & This["default"];
-                    [Symbol.toStringTag]: string;
-                    [$mol_key_handle](): string;
-                    [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value>(this: This, value: Value): value is Value & This["default"];
-                    getPrototypeOf(o: any): any;
-                    getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
-                    getOwnPropertyNames(o: any): string[];
-                    create(o: object | null): any;
-                    create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
-                    defineProperty<T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T;
-                    defineProperties<T>(o: T, properties: PropertyDescriptorMap & ThisType<any>): T;
-                    seal<T>(o: T): T;
-                    freeze<T extends Function>(f: T): T;
-                    freeze<T extends {
-                        [idx: string]: U | null | undefined | object;
-                    }, U extends string | bigint | number | boolean | symbol>(o: T): Readonly<T>;
-                    freeze<T>(o: T): Readonly<T>;
-                    preventExtensions<T>(o: T): T;
-                    isSealed(o: any): boolean;
-                    isFrozen(o: any): boolean;
-                    isExtensible(o: any): boolean;
-                    keys(o: object): string[];
-                    keys(o: {}): string[];
-                    assign<T extends {}, U>(target: T, source: U): T & U;
-                    assign<T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V;
-                    assign<T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W;
-                    assign(target: object, ...sources: any[]): any;
-                    getOwnPropertySymbols(o: any): symbol[];
-                    is(value1: any, value2: any): boolean;
-                    setPrototypeOf(o: any, proto: object | null): any;
-                    values<T>(o: {
-                        [s: string]: T;
-                    } | ArrayLike<T>): T[];
-                    values(o: {}): any[];
-                    entries<T>(o: {
-                        [s: string]: T;
-                    } | ArrayLike<T>): [string, T][];
-                    entries(o: {}): [string, any][];
-                    getOwnPropertyDescriptors<T>(o: T): { [P in keyof T]: TypedPropertyDescriptor<T[P]>; } & {
-                        [x: string]: PropertyDescriptor;
-                    };
-                    fromEntries<T = any>(entries: Iterable<readonly [PropertyKey, T]>): {
-                        [k: string]: T;
-                    };
-                    fromEntries(entries: Iterable<readonly any[]>): any;
-                    hasOwn(o: object, v: PropertyKey): boolean;
-                    groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
-                };
-                tag: keyof typeof $giper_baza_unit_sand_tag;
-                of<Init extends new (...args: any[]) => any>(init: Init): {
-                    new (): {
-                        items(next?: readonly (Init extends typeof $mol_schema_any ? Init : {
-                            new (value?: any): {
-                                constructor: Function;
-                                toString(): string;
-                                toLocaleString(): string;
-                                valueOf(): Object;
-                                hasOwnProperty(v: PropertyKey): boolean;
-                                isPrototypeOf(v: Object): boolean;
-                                propertyIsEnumerable(v: PropertyKey): boolean;
-                            };
-                            Class: Init;
-                            toString(): string;
-                            guard<This extends typeof $mol_schema_any, Value>(this: This, value: Value): Value & This["default"];
-                            cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
-                            default: InstanceType<Init>;
-                            check<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): value is Value_1 & This["default"];
-                            [Symbol.toStringTag]: string;
-                            [$mol_key_handle](): string;
-                            [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
-                            getPrototypeOf(o: any): any;
-                            getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
-                            getOwnPropertyNames(o: any): string[];
-                            create(o: object | null): any;
-                            create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
-                            defineProperty<T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T;
-                            defineProperties<T>(o: T, properties: PropertyDescriptorMap & ThisType<any>): T;
-                            seal<T>(o: T): T;
-                            freeze<T extends Function>(f: T): T;
-                            freeze<T extends {
-                                [idx: string]: U | null | undefined | object;
-                            }, U extends string | bigint | number | boolean | symbol>(o: T): Readonly<T>;
-                            freeze<T>(o: T): Readonly<T>;
-                            preventExtensions<T>(o: T): T;
-                            isSealed(o: any): boolean;
-                            isFrozen(o: any): boolean;
-                            isExtensible(o: any): boolean;
-                            keys(o: object): string[];
-                            keys(o: {}): string[];
-                            assign<T extends {}, U_1>(target: T, source: U_1): T & U_1;
-                            assign<T extends {}, U_2, V>(target: T, source1: U_2, source2: V): T & U_2 & V;
-                            assign<T extends {}, U_3, V_1, W>(target: T, source1: U_3, source2: V_1, source3: W): T & U_3 & V_1 & W;
-                            assign(target: object, ...sources: any[]): any;
-                            getOwnPropertySymbols(o: any): symbol[];
-                            is(value1: any, value2: any): boolean;
-                            setPrototypeOf(o: any, proto: object | null): any;
-                            values<T>(o: {
-                                [s: string]: T;
-                            } | ArrayLike<T>): T[];
-                            values(o: {}): any[];
-                            entries<T>(o: {
-                                [s: string]: T;
-                            } | ArrayLike<T>): [string, T][];
-                            entries(o: {}): [string, any][];
-                            getOwnPropertyDescriptors<T>(o: T): { [P in keyof T]: TypedPropertyDescriptor<T[P]>; } & {
-                                [x: string]: PropertyDescriptor;
-                            };
-                            fromEntries<T = any>(entries: Iterable<readonly [PropertyKey, T]>): {
-                                [k: string]: T;
-                            };
-                            fromEntries(entries: Iterable<readonly any[]>): any;
-                            hasOwn(o: object, v: PropertyKey): boolean;
-                            groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
-                        })["default"][]): readonly (Init extends typeof $mol_schema_any ? Init : {
-                            new (value?: any): {
-                                constructor: Function;
-                                toString(): string;
-                                toLocaleString(): string;
-                                valueOf(): Object;
-                                hasOwnProperty(v: PropertyKey): boolean;
-                                isPrototypeOf(v: Object): boolean;
-                                propertyIsEnumerable(v: PropertyKey): boolean;
-                            };
-                            Class: Init;
-                            toString(): string;
-                            guard<This extends typeof $mol_schema_any, Value>(this: This, value: Value): Value & This["default"];
-                            cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
-                            default: InstanceType<Init>;
-                            check<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): value is Value_1 & This["default"];
-                            [Symbol.toStringTag]: string;
-                            [$mol_key_handle](): string;
-                            [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
-                            getPrototypeOf(o: any): any;
-                            getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
-                            getOwnPropertyNames(o: any): string[];
-                            create(o: object | null): any;
-                            create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
-                            defineProperty<T_1>(o: T_1, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T_1;
-                            defineProperties<T_1>(o: T_1, properties: PropertyDescriptorMap & ThisType<any>): T_1;
-                            seal<T_1>(o: T_1): T_1;
-                            freeze<T_1 extends Function>(f: T_1): T_1;
-                            freeze<T_1 extends {
-                                [idx: string]: U | null | undefined | object;
-                            }, U extends string | bigint | number | boolean | symbol>(o: T_1): Readonly<T_1>;
-                            freeze<T_1>(o: T_1): Readonly<T_1>;
-                            preventExtensions<T_1>(o: T_1): T_1;
-                            isSealed(o: any): boolean;
-                            isFrozen(o: any): boolean;
-                            isExtensible(o: any): boolean;
-                            keys(o: object): string[];
-                            keys(o: {}): string[];
-                            assign<T_1 extends {}, U_1>(target: T_1, source: U_1): T_1 & U_1;
-                            assign<T_1 extends {}, U_2, V>(target: T_1, source1: U_2, source2: V): T_1 & U_2 & V;
-                            assign<T_1 extends {}, U_3, V_1, W>(target: T_1, source1: U_3, source2: V_1, source3: W): T_1 & U_3 & V_1 & W;
-                            assign(target: object, ...sources: any[]): any;
-                            getOwnPropertySymbols(o: any): symbol[];
-                            is(value1: any, value2: any): boolean;
-                            setPrototypeOf(o: any, proto: object | null): any;
-                            values<T_1>(o: {
-                                [s: string]: T_1;
-                            } | ArrayLike<T_1>): T_1[];
-                            values(o: {}): any[];
-                            entries<T_1>(o: {
-                                [s: string]: T_1;
-                            } | ArrayLike<T_1>): [string, T_1][];
-                            entries(o: {}): [string, any][];
-                            getOwnPropertyDescriptors<T_1>(o: T_1): { [P in keyof T_1]: TypedPropertyDescriptor<T_1[P]>; } & {
-                                [x: string]: PropertyDescriptor;
-                            };
-                            fromEntries<T_1 = any>(entries: Iterable<readonly [PropertyKey, T_1]>): {
-                                [k: string]: T_1;
-                            };
-                            fromEntries(entries: Iterable<readonly any[]>): any;
-                            hasOwn(o: object, v: PropertyKey): boolean;
-                            groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
-                        })["default"][];
-                        items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                        splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
-                        find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
-                        has(vary: $giper_baza_vary_type, next?: boolean, tag?: keyof typeof $giper_baza_unit_sand_tag): boolean;
-                        add(vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
-                        cut(vary: $giper_baza_vary_type): void;
-                        move(from: number, to: number): void;
-                        wipe(seat: number): void;
-                        pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
-                        [$mol_dev_format_head](): any[];
-                        land(): $giper_baza_land;
-                        head(): $giper_baza_link;
-                        land_link(): $giper_baza_link;
-                        link(): $giper_baza_link;
-                        toJSON(): string;
-                        cast<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1): InstanceType<Pawn_1>;
-                        pawns<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1 | null): readonly InstanceType<Pawn_1>[];
-                        units(): $giper_baza_unit_sand[];
-                        units_of(peer: $giper_baza_link | null): $giper_baza_unit_sand[];
-                        meta(next?: $giper_baza_link): $giper_baza_link | null;
-                        meta_of(peer: $giper_baza_link | null): $giper_baza_link | null;
-                        filled(): boolean;
-                        can_change(): boolean;
-                        last_change(): $mol_time_moment | null;
-                        authors(): $giper_baza_auth_pass[];
-                        get $(): $;
-                        set $(next: $);
-                        destructor(): void;
-                        toString(): string;
-                        [Symbol.toStringTag]: string;
-                        [$mol_ambient_ref]: $;
-                        [Symbol.dispose](): void;
-                    };
-                    Item: Init extends typeof $mol_schema_any ? Init : {
-                        new (value?: any): {
-                            constructor: Function;
-                            toString(): string;
-                            toLocaleString(): string;
-                            valueOf(): Object;
-                            hasOwnProperty(v: PropertyKey): boolean;
-                            isPrototypeOf(v: Object): boolean;
-                            propertyIsEnumerable(v: PropertyKey): boolean;
-                        };
-                        Class: Init;
-                        toString(): string;
-                        guard<This extends typeof $mol_schema_any, Value>(this: This, value: Value): Value & This["default"];
-                        cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
-                        default: InstanceType<Init>;
-                        check<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): value is Value_1 & This["default"];
-                        [Symbol.toStringTag]: string;
-                        [$mol_key_handle](): string;
-                        [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
-                        getPrototypeOf(o: any): any;
-                        getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
-                        getOwnPropertyNames(o: any): string[];
-                        create(o: object | null): any;
-                        create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
-                        defineProperty<T_1>(o: T_1, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T_1;
-                        defineProperties<T_1>(o: T_1, properties: PropertyDescriptorMap & ThisType<any>): T_1;
-                        seal<T_1>(o: T_1): T_1;
-                        freeze<T_1 extends Function>(f: T_1): T_1;
-                        freeze<T_1 extends {
-                            [idx: string]: U | null | undefined | object;
-                        }, U extends string | bigint | number | boolean | symbol>(o: T_1): Readonly<T_1>;
-                        freeze<T_1>(o: T_1): Readonly<T_1>;
-                        preventExtensions<T_1>(o: T_1): T_1;
-                        isSealed(o: any): boolean;
-                        isFrozen(o: any): boolean;
-                        isExtensible(o: any): boolean;
-                        keys(o: object): string[];
-                        keys(o: {}): string[];
-                        assign<T_1 extends {}, U_1>(target: T_1, source: U_1): T_1 & U_1;
-                        assign<T_1 extends {}, U_2, V>(target: T_1, source1: U_2, source2: V): T_1 & U_2 & V;
-                        assign<T_1 extends {}, U_3, V_1, W>(target: T_1, source1: U_3, source2: V_1, source3: W): T_1 & U_3 & V_1 & W;
-                        assign(target: object, ...sources: any[]): any;
-                        getOwnPropertySymbols(o: any): symbol[];
-                        is(value1: any, value2: any): boolean;
-                        setPrototypeOf(o: any, proto: object | null): any;
-                        values<T_1>(o: {
-                            [s: string]: T_1;
-                        } | ArrayLike<T_1>): T_1[];
-                        values(o: {}): any[];
-                        entries<T_1>(o: {
-                            [s: string]: T_1;
-                        } | ArrayLike<T_1>): [string, T_1][];
-                        entries(o: {}): [string, any][];
-                        getOwnPropertyDescriptors<T_1>(o: T_1): { [P in keyof T_1]: TypedPropertyDescriptor<T_1[P]>; } & {
-                            [x: string]: PropertyDescriptor;
-                        };
-                        fromEntries<T_1 = any>(entries: Iterable<readonly [PropertyKey, T_1]>): {
-                            [k: string]: T_1;
-                        };
-                        fromEntries(entries: Iterable<readonly any[]>): any;
-                        hasOwn(o: object, v: PropertyKey): boolean;
-                        groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
-                    };
-                    toString(): any;
-                    tag: keyof typeof $giper_baza_unit_sand_tag;
-                    of<Init extends new (...args: any[]) => any>(init: Init): /*elided*/ any;
-                    meta: null | $giper_baza_link;
-                    make<This extends typeof $mol_object>(this: This, config: Partial<InstanceType<This>>): InstanceType<This>;
-                    $: $;
-                    create<Instance>(this: new (init?: (instance: any) => void) => Instance, init?: (instance: $mol_type_writable<Instance>) => void): Instance;
-                    toJSON(): any;
-                    destructor(): void;
-                    [Symbol.toPrimitive](): any;
-                    [$mol_key_handle](): any;
-                };
-                meta: null | $giper_baza_link;
-                make<This extends typeof $mol_object>(this: This, config: Partial<InstanceType<This>>): InstanceType<This>;
-                $: $;
-                create<Instance>(this: new (init?: (instance: any) => void) => Instance, init?: (instance: $mol_type_writable<Instance>) => void): Instance;
-                toJSON(): any;
-                destructor(): void;
-                [Symbol.toPrimitive](): any;
-                [$mol_key_handle](): any;
-            };
-        };
-    };
-    /**
-     * Anchor of the component library of a user, in the home land.
-     *
-     * A neighbour of `$bog_vmap_app_doc_home` on the same root pawn, not a field on
-     * it: fields are keyed by name inside the pawn, so `Libs` sits beside `Docs`
-     * without the document schema learning about libraries.
-     *
-     * A LIST and not one link, on purpose. A pointer made «when there is none» is
-     * forked by a second device whose cache has not caught up yet, and with one atom
-     * the later write wins and the first library is orphaned with everything in it.
-     * A list merges instead, and the first item is the one everybody publishes to.
-     */
-    export class $bog_vmap_app_publish_home extends $bog_vmap_app_publish_home_base {
-    }
-    /**
-     * Publishing a component of the document into the library of the user.
-     *
-     * The CRUD over the shelf of `lib/land`: which land the library is grabbed
-     * into, how a part of the document becomes a class of the library, how a second
-     * publication of the same class finds the first. The schema stays pure.
-     *
-     * Every accessor delegating into an atom is a plain method, see section 9.
-     *
-     * @see ../../ARCHITECTURE.md sections 5 and 9
-     */
-    /** The name a reference carries, without the `?*!` signs. */
-    export function $bog_vmap_app_publish_bare(node: $mol_tree2): string;
-    export class $bog_vmap_app_publish_store extends $mol_object {
-        /** Plain method: a Giper Baza object under `@ $mol_mem` is destructed on a rebuild. */
-        home(): $bog_vmap_app_publish_home;
-        /** Links of every library of the user, merged from every device. */
-        shelf_links(): readonly $giper_baza_link[];
-        /**
-         * The library, or null before the first publication.
-         *
-         * The first of the list: after a merge every device sees the same first
-         * item, so a fork of the pointer costs at most one stray empty library.
-         */
-        shelf(): $bog_vmap_lib_land_shelf | null;
-        /**
-         * Rights of the library land: readable by anybody holding the link, which is
-         * what a link into somebody else's palette needs. A preset with `null` in it
-         * is also an unencrypted land. Tests hand in a land to make an area of,
-         * which costs no proof of work; the editor never does.
-         */
-        shelf_land_config(): $giper_baza_rank_preset | $giper_baza_land;
-        shelf_title(): string;
-        /**
-         * The library, made on first use. **Reach this from a fiber only**: grabbing
-         * the land mines proof of work, and the task doing it is cached per fiber.
-         * Checked at the top, so a retry of the fiber does not make a second one.
-         */
-        shelf_ensure(): $bog_vmap_lib_land_shelf;
-        /**
-         * Link of the library land, as the palette field of another scene takes it,
-         * or empty before the first publication.
-         */
-        link(): string;
-        /**
-         * Name of the library class a part of the document is published as.
-         *
-         * A part is a property of the root class, `Button_minor $mol_button_minor`,
-         * and a property name cannot start with `$`, while a class of a library must:
-         * the scene compiles nothing else. So `Button_minor` becomes
-         * `$bog_vmap_pub_button_minor`. Its own prefix, so that a part called `App`
-         * or `Scene` cannot shadow a real module of this pack.
-         */
-        class_name(part: string): string;
-        /**
-         * Declaration of the part as a class of the library: the same tree under the
-         * library name. Only the first token changes, the body is byte for byte.
-         */
-        class_source(part: string, source: string): string;
-        /** The declaration of a part parsed, or null for an empty source. */
-        tree(source: string): $mol_tree2;
-        /**
-         * The body of a part with the sub-views of the document put back in.
-         *
-         * The editor keeps the document normalized: `upper` hoists every nested
-         * `<= Inner $mol_view …` onto the root and leaves a bare `<= Inner` in the
-         * part. Published alone, that bare name is a hole. This is the reverse: a
-         * bare reference to a root property declared as a NODE, `Inner Class …`,
-         * gets that declaration back in its place, and so on down, so the class
-         * carries the whole tree. `doc` is the root class; empty leaves the body as
-         * it is.
-         *
-         * A name met again on the way down is a loop of the document and stays
-         * bare, so the refusal names it. `shared` are the sub-views somebody else in
-         * the document reads too: they go out as a copy, and the note says so.
-         */
-        inlined(source: string, doc: string): {
-            source: string;
-            shared: readonly string[];
-        };
-        /**
-         * Properties of the DOCUMENT a part is wired to, by name.
-         *
-         * Every `<=` and `<=>` inside a part compiles to `this.name()` on the ROOT,
-         * see section 1. A reference with kids, `<= Inner $mol_view …`, declares
-         * `Inner` right there through `upper`, so the declaration travels with the
-         * published class and resolves. A bare one, and the node of a `=`, declares
-         * nothing: published alone, the class resolves them against itself, where
-         * nothing has them — a green compile and a hole at run time. Those are the
-         * names here, unless the part declares them itself. Runs on the body after
-         * `inlined`, so what is left bare is a value of the document or a wire.
-         */
-        bound_names(source: string): string[];
-        /**
-         * The refusal in the user's words, or empty when the part may go. `classes`
-         * are the classes the document authors: a part based on one of them takes
-         * its base along nowhere.
-         */
-        refusal(part: string, source: string, classes?: readonly string[]): string;
-        /** The part of the library declaring this class, or null. */
-        part_of(shelf: $bog_vmap_lib_land_shelf, klass: string): $bog_vmap_lib_land_part | null;
-        /**
-         * Publishes a part of the document: its declaration, body and styles become
-         * one part of the library, or replace the one already declaring this class.
-         *
-         * **From a fiber only**, `$mol_wire_async( store ).publish( … )`, with the
-         * texts taken before the call: the first publication grabs the land, and a
-         * plain method inside one fiber is what lets the proof of work be cached
-         * across the retries. Answers the link of the library.
-         *
-         * A part wired to the document, or based on a class of it, is refused before
-         * anything is written, see `refusal`; the view asks it first and shows it.
-         */
-        publish(part: string, source: string, js?: string, css?: string, classes?: readonly string[]): string;
-        /**
-         * Puts a class brought from OUTSIDE into the library under the name it
-         * already carries, replacing the one that declared that name before.
-         *
-         * The difference from `publish` is the name and only the name. A part of a
-         * document is a property, `Calc`, and has to be given a class name to
-         * become a component at all; a file names its class itself, and its
-         * neighbours in the same module refer to it by that name — renaming it
-         * would cut every one of those references, silently, because a base nobody
-         * declares compiles green and fails at run time.
-         *
-         * **From a fiber only**, for the reason spelled out at `publish`.
-         */
-        import_class(source: string, js?: string, css?: string): string;
-    }
-    export {};
-}
-
-declare namespace $ {
-
-	type $mol_button_minor__title_bog_vmap_app_publish_1 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_button_minor['title'] >
-	>
-	type $mol_button_minor__hint_bog_vmap_app_publish_2 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_publish['publish_hint'] >
-		,
-		ReturnType< $mol_button_minor['hint'] >
-	>
-	type $mol_button_minor__enabled_bog_vmap_app_publish_3 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_publish['enabled'] >
-		,
-		ReturnType< $mol_button_minor['enabled'] >
-	>
-	type $mol_button_minor__click_bog_vmap_app_publish_4 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_publish['publish'] >
-		,
-		ReturnType< $mol_button_minor['click'] >
-	>
-	type $mol_button_copy__hint_bog_vmap_app_publish_5 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_button_copy['hint'] >
-	>
-	type $mol_button_copy__text_bog_vmap_app_publish_6 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_publish['lib_link'] >
-		,
-		ReturnType< $mol_button_copy['text'] >
-	>
-	type $mol_button_copy__title_bog_vmap_app_publish_7 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_publish['lib_link'] >
-		,
-		ReturnType< $mol_button_copy['title'] >
-	>
-	type $mol_view__sub_bog_vmap_app_publish_8 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	export class $bog_vmap_app_publish extends $mol_view {
-		content( ): readonly($mol_view)[]
-		publish_hint( ): string
-		enabled( ): boolean
-		publish( next?: any ): any
-		note( ): string
-		store( ): $bog_vmap_app_publish_store
-		part( ): string
-		source( ): string
-		js( ): string
-		css( ): string
-		doc( ): string
-		classes( ): readonly(string)[]
-		lib_link( ): string
-		sub( ): ReturnType< $bog_vmap_app_publish['content'] >
-		Publish( ): $mol_button_minor
-		Copy( ): $mol_button_copy
-		Note( ): $mol_view
-	}
-	
-}
-
-//# sourceMappingURL=publish.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * The publish button of the head bar and the link it produces.
-     *
-     * Every value read from the store is a plain method: the values behind them are
-     * atoms, and a `@ $mol_mem` in front of an atom freezes at what was written
-     * through it. The one memoized cell here is what was published this session.
-     *
-     * @see ../../ARCHITECTURE.md sections 5 and 9
-     */
-    class $bog_vmap_app_publish extends $.$bog_vmap_app_publish {
-        enabled(): boolean;
-        /** Library class the picked part would be published as, or empty. */
-        class_name(): string;
-        publish_hint(): string;
-        lib_link(): string;
-        /** Class published this session, last. Empty until the first click. */
-        published(next?: string): string;
-        /** Why the last click did nothing, in the user's words. Empty when it did. */
-        refused(next?: string): string;
-        /** Sub-views that went out as a copy because the document reads them too. */
-        shared(next?: readonly string[]): readonly string[];
-        note(): string;
-        /**
-         * Publishes the picked part. The handler is a fiber already, and the store
-         * method runs inside it: the first publication grabs a land, and the proof
-         * of work is cached for the retries of this very fiber.
-         *
-         * Nothing leaves here but a suspension. A throw out of a click handler is a
-         * speck on the button and a promise nobody awaits, which on the screen is
-         * nothing: measured on the deploy, where a node picked inside another part
-         * has no text of its own and the click died with words nobody saw. So an
-         * error is words on the bar as well, and a suspension is let through — it
-         * is how the fiber waits for the land, and a retry starts over from here.
-         */
-        publish(next?: Event | null): null;
-        /**
-         * One try at publishing the part, texts read before the write. Answers the
-         * refusal in the user's words, empty once the part went out. A part the
-         * document does not declare — a node picked inside another part — has no
-         * text, and is refused before the store could throw over it.
-         */
-        attempt(part: string): string;
-        /** The button always; the link once there is one; the note once something went out. */
-        content(): readonly $mol_view[];
-    }
-}
-
-declare namespace $.$$ {
-}
-
-declare namespace $ {
-
-	export class $mol_icon_download extends $mol_icon {
-		path( ): string
-	}
-	
-}
-
-//# sourceMappingURL=download.view.tree.d.ts.map
-/** @jsx $mol_jsx */
-declare namespace $.$$ {
-    /**
-     * Button download file from uri() or a blob()
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_button_demo
-     */
-    class $mol_button_download extends $.$mol_button_download {
-        uri(): string;
-        click(): void;
-    }
-}
-
-declare namespace $ {
-
-	export class $mol_button_download extends $mol_button_minor {
-		Icon( ): $mol_icon_download
-		title( ): string
-		blob( ): any
-		uri( ): string
-		file_name( ): string
-		sub( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=download.view.tree.d.ts.map
+//# sourceMappingURL=bar.view.tree.d.ts.map
 declare namespace $ {
     function $mol_support_css_overflow_anchor(this: $): boolean;
 }
@@ -43733,758 +42580,151 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /** Canvas places by the property name they occupy on the root class. */
-    type $bog_vmap_app_store_spots = {
-        readonly [name: string]: {
-            readonly x: number;
-            readonly y: number;
-        };
-    };
-    /**
-     * Persistence of the editor: the documents of a user in Giper Baza.
-     *
-     * The CRUD lives here so the schema can stay pure, and the views ask this
-     * object instead of touching pawns.
-     *
-     * **Every accessor delegating into an atom is a plain method**, never a cell:
-     * a cell of that shape freezes at the value written through it and stops
-     * seeing remote edits. Reactivity is not lost by it, the atom is a cell already.
-     *
-     * Masters are not named here: a module works against whatever node the
-     * application chose.
-     *
-     * @see ../../ARCHITECTURE.md section 9
-     */
-    class $bog_vmap_app_store extends $mol_object {
-        /**
-         * Anchor of the documents in the home land of the user.
-         *
-         * The root pawn the profile lives on, read through our dictionary, so the
-         * list sits beside whatever else the home land carries. Plain method: a
-         * Giper Baza object held by a cell is destructed on a graph rebuild and
-         * drags the yard into a circular subscription.
-         */
-        home(): $bog_vmap_app_doc_home;
-        /** Links of every document of the user, in the order they were made. */
-        doc_links(): readonly $giper_baza_link[];
-        /**
-         * A document by its link.
-         *
-         * Through the glob and not through the home land, because a document is a
-         * land of its own — that is what lets a link to it be shared. Reading any
-         * field of it asks the land to sync on the way (`sand_ordered` does, see
-         * `land.ts`), so nothing has to be done here for a document made elsewhere.
-         */
-        doc(link: $giper_baza_link): $bog_vmap_app_doc;
-        /**
-         * Link of the current document as written in the address, or null.
-         *
-         * In the fragment, never the query: the query of this page belongs to the
-         * pack address of the scene frame.
-         */
-        doc_arg(next?: string | null): string | null;
-        /**
-         * The document the editor is on: the addressed one, else the last made,
-         * else none while `boot` makes the first.
-         *
-         * A malformed value in the address counts as no address rather than as an
-         * error: a hand edited URL is an ordinary state of a page.
-         */
-        doc_current(): $bog_vmap_app_doc | null;
-        /** Makes the document with this link current, and null goes back to the default. */
-        doc_pick(link: $giper_baza_link | null): void;
-        /**
-         * Whether the current document takes our writes.
-         *
-         * A link in the address opens anybody's public document, and a write into
-         * one made by somebody else fails deep inside the atom. Asked before every
-         * write, so the refusal is a state of the editor rather than an exception
-         * in whichever handler wrote first.
-         */
-        doc_editable(): boolean;
-        /**
-         * What the editor is doing about its document: `ready` to edit, `making`
-         * one in the background, `readonly` on somebody else's document.
-         */
-        stage(): 'ready' | 'making' | 'readonly';
-        /**
-         * Rights of a fresh document land: readable by anybody holding the link.
-         *
-         * Public read is the point and not a default left alone — the address of a
-         * document IS its land link, and a link opens for somebody else only if the
-         * land does. It also leaves the land unencrypted.
-         *
-         * Answering `null` instead means «in the home land, no land of its own»,
-         * which costs no proof of work: that is what the tests hand in, never the
-         * editor.
-         */
-        doc_land_config(): null | $giper_baza_rank_preset;
-        /** Name for the next document: one more than there are. */
-        title_next(): string;
-        /**
-         * Makes a new document, current from now on.
-         *
-         * **Reach this from a fiber only.** Grabbing the land mines proof of work,
-         * and the task doing it is cached per fiber; outside one, every promise
-         * thrown on the way restarts the caller with a fresh proof of work, for
-         * ever. Plain method and not an action for the same reason: an action opens
-         * a fiber per call, which is that fresh task per retry.
-         *
-         * The root is recorded rather than derived from the order, so that
-         * reordering the classes later does not move which one is the page.
-         */
-        doc_add(title?: string, source?: string, spots?: $bog_vmap_app_store_spots, pack?: string): $bog_vmap_app_doc;
-        /**
-         * The first document of a user, made from whatever was drafted meanwhile.
-         *
-         * The check at the top is what makes the retries safe: a document that
-         * arrived from another device while the proof of work was being mined must
-         * not be pushed aside by ours.
-         *
-         * It guards against that device and not against our own half made document,
-         * and cannot confuse the two: a restarted fiber replays its reads from its
-         * own cache, so the list here reads as it read at the start — empty. That
-         * is what carries a pouring interrupted halfway through to the end.
-         */
-        doc_first(): void;
-        /**
-         * The one fiber making the first document, held by a cell of its own.
-         *
-         * A cell that reads NOTHING and answers with the fiber it made. Reading
-         * nothing is the point: an invalidation arriving while a cell computes is
-         * dropped on the spot, and the document landing is exactly such an
-         * invalidation, so a cell with no dependencies has nothing to lose that way.
-         * Reading it again while the proof of work is still mining gives back the
-         * same object, which is what keeps one fiber one fiber.
-         *
-         * The fiber is wrapped rather than returned as it is: a cell answering with
-         * a promise is a cell that never finished, and every reader of it suspends
-         * for ever.
-         *
-         * **The wrapper has no destructor, so this cell holds the handle and not
-         * the life.** The draft is poured after the document is already in the list,
-         * so there is a window where a cell nobody reads gets collected; owning the
-         * fiber would end it inside that window and lose the typed text silently.
-         * Nothing leaks by it — a one-shot fiber destructs itself on completion.
-         */
-        doc_first_task(): {
-            task: Promise<void>;
-        };
-        /**
-         * Makes sure there is a document, from the start of the session.
-         *
-         * Suspends while the home land loads, so «there are none» is decided on the
-         * loaded list and not on an empty cache, then answers at once so that
-         * nothing waits on the proof of work.
-         *
-         * A plain method and not a cell: a cell here answered `making` for good,
-         * because the document lands while it is still computing and the
-         * invalidation that causes is dropped rather than remembered.
-         */
-        boot(): 'ready' | 'making';
-        /**
-         * Text the editor works on before it has a document, and never after: the
-         * background fiber pours it into the first document in one go.
-         */
-        draft_source(next?: string): string;
-        draft_spots(next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
-        draft_pack(next?: string): string;
-        /**
-         * Nodes of a document, resolved in the document's own land.
-         *
-         * Resolved by hand rather than through the remote list: that one goes out
-         * through the static glob and waits on a master. The nodes were made in
-         * this very land, so reading them here is correct and not merely cheaper.
-         */
-        nodes(doc: $bog_vmap_app_doc): $bog_vmap_app_doc_node[];
-        /**
-         * Text of a document: its classes, one per node, as one source.
-         *
-         * Classes are matched to nodes BY NAME, which is what makes an edit of one
-         * class one atom on the wire — and what makes a rename arrive as a new node,
-         * so whatever is stored per class name has to be carried by whoever renames.
-         *
-         * Parsed plainly and not normalized: this is transport, and the model above
-         * is the one that decides what canonical looks like. Round trip is byte for
-         * byte on text already in that shape.
-         */
-        doc_source(doc: $bog_vmap_app_doc, next?: string): string;
-        /** Node of a document by the name of the class it declares, or null. */
-        node(doc: $bog_vmap_app_doc, name: string): $bog_vmap_app_doc_node | null;
-        /** Hand written class body of one node, by class name. */
-        node_js(doc: $bog_vmap_app_doc, name: string, next?: string): string;
-        /** Styles of one node, by class name. */
-        node_css(doc: $bog_vmap_app_doc, name: string, next?: string): string;
-        /**
-         * Name of the class the document opens with, or empty. Writing a class name
-         * makes that class the one it opens with.
-         *
-         * Read as a raw link, never through the typed getter: that one resolves
-         * through the static glob, and the node is in this very land anyway.
-         *
-         * The write is what a rename of the root needs, because a renamed class
-         * arrives as a node of its own. A name the document does not carry is
-         * ignored: a pointer at a node outside the list is the state this exists to
-         * prevent.
-         */
-        doc_root(doc: $bog_vmap_app_doc, next?: string): string;
-        /**
-         * Canvas places of a document, as one dictionary in both directions.
-         *
-         * Written whole, so a place gone from the dictionary is cut from the stored
-         * one and a deleted part does not come back at its old coordinates. Read
-         * back in name order: the stored order is the order of the units, which
-         * nobody chose, and a reader comparing deep would see a change where the
-         * places are the same.
-         */
-        doc_spots(doc: $bog_vmap_app_doc, next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
-        /**
-         * Text of the current document, or the draft while the first one is being
-         * made.
-         *
-         * On somebody else's document a write is refused quietly — the text stays
-         * what it was and the stage says why — because the atom would otherwise
-         * throw from inside whatever handler wrote first.
-         */
-        source(next?: string): string;
-        /** Canvas places of the current document, the same way as `source`. */
-        spots(next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
-        /** Human name of the current document. Nothing to name before there is one. */
-        title(next?: string): string;
-        /**
-         * Library of the current document, stored as the string it is typed as.
-         *
-         * Not parsed here on purpose: what the string means is known to the panel
-         * that offers the components, not to the store that keeps it.
-         */
-        pack(next?: string): string;
-    }
-    /**
-     * Name of the class a source declares, or empty when it declares none.
-     *
-     * Asked of the text every time: a stored copy would be a second source of
-     * truth for a fact the text already carries.
-     */
-    function $bog_vmap_app_store_class_name(source: string): string;
-}
 
-declare namespace $ {
-
-	export class $bog_vmap_app_palette_item extends $mol_button_minor {
-		current( ): boolean
-		minimal_height( ): number
-		drag_start( next?: any ): any
-		attr( ): ({ 
-			'bog_vmap_app_palette_item_current': ReturnType< $bog_vmap_app_palette_item['current'] >,
-		})  & ReturnType< $mol_button_minor['attr'] >
-		event( ): ({ 
-			pointerdown( next?: ReturnType< $bog_vmap_app_palette_item['drag_start'] > ): ReturnType< $bog_vmap_app_palette_item['drag_start'] >,
-		})  & ReturnType< $mol_button_minor['event'] >
+	type $mol_check__checked_mol_check_list_1 = $mol_type_enforce<
+		ReturnType< $mol_check_list['option_checked'] >
+		,
+		ReturnType< $mol_check['checked'] >
+	>
+	type $mol_check__label_mol_check_list_2 = $mol_type_enforce<
+		ReturnType< $mol_check_list['option_label'] >
+		,
+		ReturnType< $mol_check['label'] >
+	>
+	type $mol_check__enabled_mol_check_list_3 = $mol_type_enforce<
+		ReturnType< $mol_check_list['option_enabled'] >
+		,
+		ReturnType< $mol_check['enabled'] >
+	>
+	type $mol_check__hint_mol_check_list_4 = $mol_type_enforce<
+		ReturnType< $mol_check_list['option_hint'] >
+		,
+		ReturnType< $mol_check['hint'] >
+	>
+	type $mol_check__minimal_height_mol_check_list_5 = $mol_type_enforce<
+		number
+		,
+		ReturnType< $mol_check['minimal_height'] >
+	>
+	export class $mol_check_list extends $mol_view {
+		option_checked( id: any, next?: boolean ): boolean
+		option_title( id: any): string
+		option_label( id: any): readonly(any)[]
+		enabled( ): boolean
+		option_enabled( id: any): ReturnType< $mol_check_list['enabled'] >
+		option_hint( id: any): string
+		items( ): readonly($mol_check)[]
+		dictionary( ): Record<string, any>
+		Option( id: any): $mol_check
+		options( ): Record<string, any>
+		keys( ): readonly(string)[]
+		sub( ): ReturnType< $mol_check_list['items'] >
 	}
 	
 }
 
-//# sourceMappingURL=item.view.tree.d.ts.map
-declare namespace $.$$ {
-}
-
-declare namespace $ {
-
-	export class $mol_scroll extends $mol_view {
-		tabindex( ): number
-		event_scroll( next?: any ): any
-		scroll_top( next?: number ): number
-		scroll_left( next?: number ): number
-		attr( ): ({ 
-			'tabindex': ReturnType< $mol_scroll['tabindex'] >,
-		})  & ReturnType< $mol_view['attr'] >
-		event( ): ({ 
-			scroll( next?: ReturnType< $mol_scroll['event_scroll'] > ): ReturnType< $mol_scroll['event_scroll'] >,
-		})  & ReturnType< $mol_view['event'] >
-	}
-	
-}
-
-//# sourceMappingURL=scroll.view.tree.d.ts.map
+//# sourceMappingURL=list.view.tree.d.ts.map
 declare namespace $.$$ {
     /**
-     * Scrolling pane.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_scroll_demo
+     * List of checkboxes
+     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_check_list_demo
      */
-    class $mol_scroll extends $.$mol_scroll {
-        scroll_top(next?: number, cache?: 'cache'): number;
-        scroll_left(next?: number, cache?: 'cache'): number;
-        event_scroll(next?: Event): void;
-        minimal_height(): number;
-        minimal_width(): number;
+    class $mol_check_list extends $.$mol_check_list {
+        options(): {
+            [key: string]: string;
+        };
+        dictionary(next?: Record<string, boolean>): Record<string, boolean>;
+        option_checked(id: string, next?: boolean | null): boolean;
+        keys(): readonly string[];
+        items(): $.$mol_check[];
+        option_title(key: string): string;
     }
 }
 
-declare namespace $.$$ {
-}
-
 declare namespace $ {
 }
 
 declare namespace $ {
-
-	export class $mol_bar extends $mol_view {
-	}
-	
-}
-
-//# sourceMappingURL=bar.view.tree.d.ts.map
-declare namespace $ {
-
-	type $mol_view__sub_bog_vmap_app_palette_port_1 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_palette_port_2 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_palette_port_3 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	export class $bog_vmap_app_palette_port extends $mol_view {
-		Sign( ): $mol_view
-		Body( ): $mol_view
-		Owner( ): $mol_view
-		sign( ): string
-		body( ): string
-		owner( ): string
-		inherited( ): boolean
-		attr( ): ({ 
-			'bog_vmap_app_palette_port_inherited': ReturnType< $bog_vmap_app_palette_port['inherited'] >,
-		})  & ReturnType< $mol_view['attr'] >
-		sub( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=port.view.tree.d.ts.map
-declare namespace $.$$ {
-}
-
-declare namespace $ {
-
-	type $mol_view__sub_bog_vmap_app_palette_1 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_string__hint_bog_vmap_app_palette_2 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_string['hint'] >
-	>
-	type $mol_string__value_bog_vmap_app_palette_3 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['query'] >
-		,
-		ReturnType< $mol_string['value'] >
-	>
-	type $mol_view__sub_bog_vmap_app_palette_4 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_list__rows_bog_vmap_app_palette_5 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['class_rows'] >
-		,
-		ReturnType< $mol_list['rows'] >
-	>
-	type $mol_view__sub_bog_vmap_app_palette_6 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_palette_7 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_palette_8 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_list__rows_bog_vmap_app_palette_9 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['port_rows'] >
-		,
-		ReturnType< $mol_list['rows'] >
-	>
-	type $mol_scroll__sub_bog_vmap_app_palette_10 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_scroll['sub'] >
-	>
-	type $mol_bar__sub_bog_vmap_app_palette_11 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_bar['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_palette_12 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['body_content'] >
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_scroll__sub_bog_vmap_app_palette_13 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_scroll['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_palette_14 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $bog_vmap_app_palette_item__title_bog_vmap_app_palette_15 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['class_title'] >
-		,
-		ReturnType< $bog_vmap_app_palette_item['title'] >
-	>
-	type $bog_vmap_app_palette_item__click_bog_vmap_app_palette_16 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['class_click'] >
-		,
-		ReturnType< $bog_vmap_app_palette_item['click'] >
-	>
-	type $bog_vmap_app_palette_item__current_bog_vmap_app_palette_17 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['class_current'] >
-		,
-		ReturnType< $bog_vmap_app_palette_item['current'] >
-	>
-	type $bog_vmap_app_palette_item__drag_start_bog_vmap_app_palette_18 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['class_drag'] >
-		,
-		ReturnType< $bog_vmap_app_palette_item['drag_start'] >
-	>
-	type $bog_vmap_app_palette_port__sign_bog_vmap_app_palette_19 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['port_sign'] >
-		,
-		ReturnType< $bog_vmap_app_palette_port['sign'] >
-	>
-	type $bog_vmap_app_palette_port__body_bog_vmap_app_palette_20 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['port_body'] >
-		,
-		ReturnType< $bog_vmap_app_palette_port['body'] >
-	>
-	type $bog_vmap_app_palette_port__owner_bog_vmap_app_palette_21 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['port_owner'] >
-		,
-		ReturnType< $bog_vmap_app_palette_port['owner'] >
-	>
-	type $bog_vmap_app_palette_port__inherited_bog_vmap_app_palette_22 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['port_inherited'] >
-		,
-		ReturnType< $bog_vmap_app_palette_port['inherited'] >
-	>
-	type $bog_vmap_lib__pack_bog_vmap_app_palette_23 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['pack_link'] >
-		,
-		ReturnType< $bog_vmap_lib['pack'] >
-	>
-	type $bog_vmap_lib__classes_bog_vmap_app_palette_24 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_palette['land_classes'] >
-		,
-		ReturnType< $bog_vmap_lib['classes'] >
-	>
-	export class $bog_vmap_app_palette extends $mol_view {
-		body( ): readonly($mol_view)[]
-		Brand( ): $mol_view
-		Query( ): $mol_string
-		total( ): string
-		Total( ): $mol_view
-		body_content( ): readonly($mol_view)[]
-		class_rows( ): readonly(any)[]
-		Class_list( ): $mol_list
-		selected_title( ): string
-		Selected( ): $mol_view
-		chain_title( ): string
-		Chain( ): $mol_view
-		Ports_head( ): $mol_view
-		port_rows( ): readonly(any)[]
-		Port_list( ): $mol_list
-		Ports_scroll( ): $mol_scroll
-		class_title( id: any): string
-		class_click( id: any, next?: any ): any
-		class_current( id: any): boolean
-		class_drag( id: any, next?: any ): any
-		port_sign( id: any): string
-		port_body( id: any): string
-		port_owner( id: any): string
-		port_inherited( id: any): boolean
-		pack_link( ): string
-		query( next?: string ): string
-		selected( next?: string ): string
-		compact( ): boolean
-		dragged( next?: string ): string
-		drag_x( next?: number ): number
-		drag_y( next?: number ): number
-		land_classes( ): readonly($mol_tree2)[]
-		attr( ): ({ 
-			'bog_vmap_app_palette_compact': ReturnType< $bog_vmap_app_palette['compact'] >,
-		})  & ReturnType< $mol_view['attr'] >
-		sub( ): ReturnType< $bog_vmap_app_palette['body'] >
-		Head( ): $mol_bar
-		Body( ): $mol_view
-		Classes( ): $mol_scroll
-		Ports( ): $mol_view
-		Class_row( id: any): $bog_vmap_app_palette_item
-		Port_row( id: any): $bog_vmap_app_palette_port
-		Lib( ): $bog_vmap_lib
-	}
-	
-}
-
-//# sourceMappingURL=palette.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Palette of a component library: every class of a deployed pack, searchable,
-     * with the ports of whichever class is picked.
-     *
-     * Shows, searches and announces the start of a drag. Where the dragged class
-     * lands is a canvas question and is answered by whoever owns the canvas.
-     *
-     * @see ../../ARCHITECTURE.md section 5
-     */
-    class $bog_vmap_app_palette extends $.$bog_vmap_app_palette {
-        /**
-         * Header first, then either both panes or just the list.
-         *
-         * The compact layout drops the ports pane instead of squeezing it: at panel
-         * width the signature column alone eats the row.
-         */
-        body(): readonly $mol_view[];
-        body_content(): readonly $mol_view[];
-        /**
-         * A press on a class row starts carrying it.
-         *
-         * Selection stays on `click`: a press that turns into a drag never becomes a
-         * click, so the two do not fight, and a press that ends where it began picks
-         * the class for the ports pane as before.
-         */
-        class_drag(name: string, event?: PointerEvent | null): void;
-        /**
-         * Classes matching the query, or all of them for an empty query —
-         * `$mol_match_text` of nothing matches everything, so no branch is needed.
-         *
-         * SUSPENSION PASSES THROUGH, a failure does not, and the difference is the
-         * whole point. `$mol_view` turns a suspension into its waiting state, which
-         * is right; it turns a failure into a strip carrying whatever `$mol_fetch`
-         * threw, which is the status line and nothing else — a mistyped address
-         * reached the counter as a bare «Not Found», naming neither the file that
-         * was missing nor the field to fix. Seen on the deploy 09.09.2026.
-         *
-         * So the failure is caught and worded once, here, and read by the counter;
-         * the list is empty meanwhile, which is what a dead pack has to offer.
-         */
-        class_state(): {
-            readonly list: readonly string[];
-            readonly error: string;
+    class $mol_state_session<Value> extends $mol_object {
+        static 'native()': Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+        static native(): Storage | {
+            getItem(key: string): any;
+            setItem(key: string, value: string): void;
+            removeItem(key: string): void;
         };
-        class_list(): readonly string[];
-        class_rows(): $bog_vmap_app_palette_item[];
-        class_title(name: string): string;
-        class_current(name: string): boolean;
-        class_click(name: string): void;
-        /** How many classes are on screen, or why there are none at all. */
-        total(): string;
-        selected_title(): string;
-        /** Where the ports come from, nearest base first. */
-        chain_title(): string;
-        /**
-         * Ports of the selected class in the order `props_map` gives them, which is
-         * the order of first declaration up the chain: the base ports of
-         * `$mol_view` first, everything the class added itself last.
-         */
-        port_list(): string[];
-        port_rows(): $bog_vmap_app_palette_port[];
-        /** Declaration of a port, or `null` between a click and the next redraw. */
-        port_node(name: string): $mol_tree2 | null;
-        /**
-         * Name of the port as it is written in the source, suffixes included, so
-         * `click?` is visibly a two-way port and `Menu_option*` visibly a keyed one.
-         */
-        port_sign(name: string): string;
-        /**
-         * First line of the declaration. A port can carry a whole sub tree under it
-         * and the rest of that tree is of no use in a one line row.
-         */
-        port_body(name: string): string;
-        port_owner(name: string): string;
-        port_inherited(name: string): boolean;
+        static value<Value>(key: string, next?: Value): Value;
+        prefix(): string;
+        value(key: string, next?: Value): Value;
     }
 }
 
+declare namespace $ {
+
+	export class $mol_switch extends $mol_check_list {
+		value( next?: string ): string
+	}
+	
+}
+
+//# sourceMappingURL=switch.view.tree.d.ts.map
 declare namespace $.$$ {
+    /**
+     * Buttons which switching the state
+     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_switch_demo
+     */
+    class $mol_switch extends $.$mol_switch {
+        value(next?: string): string;
+        option_checked(key: string, next?: boolean): boolean;
+    }
 }
 
 declare namespace $ {
 
-	type $mol_view__sub_bog_vmap_app_scenes_1 = $mol_type_enforce<
-		readonly(any)[]
+	type $mol_switch__value_mol_deck_1 = $mol_type_enforce<
+		ReturnType< $mol_deck['current'] >
 		,
-		ReturnType< $mol_view['sub'] >
+		ReturnType< $mol_switch['value'] >
 	>
-	type $mol_list__rows_bog_vmap_app_scenes_2 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_scenes['scene_rows'] >
+	type $mol_switch__options_mol_deck_2 = $mol_type_enforce<
+		ReturnType< $mol_deck['switch_options'] >
 		,
-		ReturnType< $mol_list['rows'] >
+		ReturnType< $mol_switch['options'] >
 	>
-	type $mol_string__hint_bog_vmap_app_scenes_3 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_string['hint'] >
-	>
-	type $mol_string__enabled_bog_vmap_app_scenes_4 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_scenes['current_exists'] >
-		,
-		ReturnType< $mol_string['enabled'] >
-	>
-	type $mol_string__value_bog_vmap_app_scenes_5 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_scenes['title'] >
-		,
-		ReturnType< $mol_string['value'] >
-	>
-	type $mol_button_minor__title_bog_vmap_app_scenes_6 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_button_minor['title'] >
-	>
-	type $mol_button_minor__hint_bog_vmap_app_scenes_7 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_button_minor['hint'] >
-	>
-	type $mol_button_minor__click_bog_vmap_app_scenes_8 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_scenes['add'] >
-		,
-		ReturnType< $mol_button_minor['click'] >
-	>
-	type $bog_vmap_app_palette_item__title_bog_vmap_app_scenes_9 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_scenes['scene_title'] >
-		,
-		ReturnType< $bog_vmap_app_palette_item['title'] >
-	>
-	type $bog_vmap_app_palette_item__hint_bog_vmap_app_scenes_10 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_scenes['scene_title'] >
-		,
-		ReturnType< $bog_vmap_app_palette_item['hint'] >
-	>
-	type $bog_vmap_app_palette_item__current_bog_vmap_app_scenes_11 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_scenes['scene_current'] >
-		,
-		ReturnType< $bog_vmap_app_palette_item['current'] >
-	>
-	type $bog_vmap_app_palette_item__click_bog_vmap_app_scenes_12 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_scenes['scene_click'] >
-		,
-		ReturnType< $bog_vmap_app_palette_item['click'] >
-	>
-	export class $bog_vmap_app_scenes extends $mol_view {
-		Head( ): $mol_view
-		scene_rows( ): readonly(any)[]
-		List( ): $mol_list
-		Title( ): $mol_string
-		add( next?: any ): any
-		Add( ): $mol_button_minor
-		scene_title( id: any): string
-		scene_current( id: any): boolean
-		scene_click( id: any, next?: any ): any
-		store( ): $bog_vmap_app_store
+	export class $mol_deck extends $mol_list {
 		current( next?: string ): string
-		title( next?: string ): string
-		current_exists( ): boolean
-		sub( ): readonly(any)[]
-		Scene_row( id: any): $bog_vmap_app_palette_item
+		switch_options( ): Record<string, any>
+		Switch( ): $mol_switch
+		Content( ): $mol_view
+		items( ): readonly($mol_view)[]
+		rows( ): readonly($mol_view)[]
 	}
 	
 }
 
-//# sourceMappingURL=scenes.view.tree.d.ts.map
+//# sourceMappingURL=deck.view.tree.d.ts.map
 declare namespace $.$$ {
     /**
-     * List of documents down the left edge of the editor.
-     *
-     * Every accessor that writes into the store is a plain method: the values
-     * behind them are atoms, and a `@ $mol_mem` in front of an atom freezes at the
-     * value written through it. The one memoized cell here is read only.
-     *
-     * @see ../../ARCHITECTURE.md section 9
+     * The component which arrange content in multiple tabs.
+     * @seehttps://mol.hyoo.ru/#!section=demos/demo=mol_deck_demo
      */
-    class $bog_vmap_app_scenes extends $.$bog_vmap_app_scenes {
-        /**
-         * Links of the documents, as strings, in the order the store keeps them.
-         *
-         * Read only, so memoization is safe and worth having: the list is rebuilt
-         * from the land on every unrelated change of it, and deep comparison in the
-         * cell spares the rows a rebuild.
-         */
-        scene_links(): readonly string[];
-        scene_rows(): $bog_vmap_app_palette_item[];
-        /** The link object behind a string, or nothing when it is gone from the list. */
-        scene_link(link: string): $giper_baza_link | null;
-        scene_title(link: string): string;
-        scene_current(link: string): boolean;
-        scene_click(link: string, event?: Event | null): void;
-        /**
-         * The open document, by link. Writing picks; an empty or malformed value
-         * goes back to the default, which is the last document made.
-         */
+    class $mol_deck extends $.$mol_deck {
         current(next?: string): string;
-        current_exists(): boolean;
-        title(next?: string): string;
-        /** Name of the next document, the store's count. */
-        add_title(): string;
-        /**
-         * Makes a new document and opens it.
-         *
-         * The store method is handed to a fiber of its own, and the name is taken
-         * before it: grabbing a land mines proof of work, the fiber retries on every
-         * `Promise` thrown on the way with its sub-tasks cached, and an argument
-         * computed inside the retry would be recomputed — the list is longer once
-         * the document lands — and would start the work over.
-         */
-        add(next?: Event | null): null;
-    }
-}
-
-declare namespace $.$$ {
-}
-
-declare namespace $ {
-    interface $mol_locale_dict {
-        [key: string]: string;
-    }
-    /**
-     * Localisation in $mol framework
-     * @see https://mol.hyoo.ru/#!section=docs/=s5aqnb_odub8l
-     */
-    class $mol_locale extends $mol_object {
-        static lang_default(): string;
-        static lang(next?: string): string;
-        static langs_rtl(): string[];
-        static direction(): "ltr" | "rtl";
-        static source(lang: string): any;
-        static texts(lang: string, next?: $mol_locale_dict): $mol_locale_dict;
-        static text(key: string): string;
-        static warn(key: string): null;
+        switch_options(): Record<string, string>;
+        Content(): $mol_view;
     }
 }
 
 declare namespace $ {
-    function $mol_tree2_js_is_number(type: string): boolean | RegExpMatchArray;
 }
 
 declare namespace $ {
-    function $mol_view_tree2_to_js(this: $, descr: $mol_tree2): $mol_tree2;
+
+	export class $mol_stack extends $mol_view {
+	}
+	
 }
 
+//# sourceMappingURL=stack.view.tree.d.ts.map
 declare namespace $ {
 
 	export class $mol_paragraph extends $mol_view {
@@ -44511,17 +42751,6 @@ declare namespace $.$$ {
 declare namespace $ {
 }
 
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_stack extends $mol_view {
-	}
-	
-}
-
-//# sourceMappingURL=stack.view.tree.d.ts.map
 declare namespace $ {
 
 	type $mol_paragraph__sub_mol_dimmer_1 = $mol_type_enforce<
@@ -44561,6 +42790,56 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
+}
+
+declare namespace $ {
+    type $mol_style_pseudo_class = ':active' | ':any' | ':any-link' | ':checked' | ':default' | ':defined' | ':dir(rtl)' | ':dir(ltr)' | ':disabled' | ':empty' | ':enabled' | ':first' | ':first-child' | ':first-of-type' | ':fullscreen' | ':focus' | ':focus-visible' | ':focus-within' | ':hover' | ':indeterminate' | ':in-range' | ':invalid' | ':last-child' | ':last-of-type' | ':left' | ':link' | `:not(${string})` | `:nth-child(${string})` | `:nth-last-child(${string})` | `:nth-of-type(${string})` | `:nth-last-of-type(${string})` | ':only-child' | ':only-of-type' | ':optional' | ':out-of-range' | ':placeholder-shown' | ':read-only' | ':read-write' | ':required' | ':right' | ':root' | ':scope' | ':target' | ':valid' | ':visited';
+}
+
+declare namespace $ {
+    type $mol_style_pseudo_element = '::after' | '::before' | '::cue' | '::first-letter' | '::first-line' | '::selection' | '::slotted' | '::backdrop' | '::placeholder' | '::marker' | '::spelling-error' | '::grammar-error' | '::-webkit-calendar-picker-indicator' | '::-webkit-color-swatch' | '::-webkit-color-swatch-wrapper' | '::-webkit-details-marker' | '::-webkit-file-upload-button' | '::-webkit-image-inner-element' | '::-webkit-inner-spin-button' | '::-webkit-input-placeholder' | '::-webkit-input-speech-button' | '::-webkit-keygen-select' | '::-webkit-media-controls-panel' | '::-webkit-media-controls-timeline-container' | '::-webkit-media-slider-container' | '::-webkit-meter-bar' | '::-webkit-meter-even-less-good-value' | '::-webkit-meter-optimum-value' | '::-webkit-meter-suboptimal-value' | '::-webkit-progress-bar' | '::-webkit-progress-value' | '::-webkit-resizer' | '::-webkit-resizer:window-inactive' | '::-webkit-scrollbar' | '::-webkit-scrollbar-button' | '::-webkit-scrollbar-button:disabled' | '::-webkit-scrollbar-button:double-button:horizontal:end:decrement' | '::-webkit-scrollbar-button:double-button:horizontal:end:increment' | '::-webkit-scrollbar-button:double-button:horizontal:end:increment:corner-present' | '::-webkit-scrollbar-button:double-button:horizontal:start:decrement' | '::-webkit-scrollbar-button:double-button:horizontal:start:increment' | '::-webkit-scrollbar-button:double-button:vertical:end:decrement' | '::-webkit-scrollbar-button:double-button:vertical:end:increment' | '::-webkit-scrollbar-button:double-button:vertical:end:increment:corner-present' | '::-webkit-scrollbar-button:double-button:vertical:start:decrement' | '::-webkit-scrollbar-button:double-button:vertical:start:increment' | '::-webkit-scrollbar-button:end' | '::-webkit-scrollbar-button:end:decrement' | '::-webkit-scrollbar-button:end:increment' | '::-webkit-scrollbar-button:horizontal' | '::-webkit-scrollbar-button:horizontal:decrement' | '::-webkit-scrollbar-button:horizontal:decrement:active' | '::-webkit-scrollbar-button:horizontal:decrement:hover' | '::-webkit-scrollbar-button:horizontal:decrement:window-inactive' | '::-webkit-scrollbar-button:horizontal:end' | '::-webkit-scrollbar-button:horizontal:end:decrement' | '::-webkit-scrollbar-button:horizontal:end:increment' | '::-webkit-scrollbar-button:horizontal:end:increment:corner-present' | '::-webkit-scrollbar-button:horizontal:increment' | '::-webkit-scrollbar-button:horizontal:increment:active' | '::-webkit-scrollbar-button:horizontal:increment:hover' | '::-webkit-scrollbar-button:horizontal:increment:window-inactive' | '::-webkit-scrollbar-button:horizontal:start' | '::-webkit-scrollbar-button:horizontal:start:decrement' | '::-webkit-scrollbar-button:horizontal:start:increment' | '::-webkit-scrollbar-button:start' | '::-webkit-scrollbar-button:start:decrement' | '::-webkit-scrollbar-button:start:increment' | '::-webkit-scrollbar-button:vertical' | '::-webkit-scrollbar-button:vertical:decrement' | '::-webkit-scrollbar-button:vertical:decrement:active' | '::-webkit-scrollbar-button:vertical:decrement:hover' | '::-webkit-scrollbar-button:vertical:decrement:window-inactive' | '::-webkit-scrollbar-button:vertical:end' | '::-webkit-scrollbar-button:vertical:end:decrement' | '::-webkit-scrollbar-button:vertical:end:increment' | '::-webkit-scrollbar-button:vertical:end:increment:corner-present' | '::-webkit-scrollbar-button:vertical:increment' | '::-webkit-scrollbar-button:vertical:increment:active' | '::-webkit-scrollbar-button:vertical:increment:hover' | '::-webkit-scrollbar-button:vertical:increment:window-inactive' | '::-webkit-scrollbar-button:vertical:start' | '::-webkit-scrollbar-button:vertical:start:decrement' | '::-webkit-scrollbar-button:vertical:start:increment' | '::-webkit-scrollbar-corner' | '::-webkit-scrollbar-corner:window-inactive' | '::-webkit-scrollbar-thumb' | '::-webkit-scrollbar-thumb:horizontal' | '::-webkit-scrollbar-thumb:horizontal:active' | '::-webkit-scrollbar-thumb:horizontal:hover' | '::-webkit-scrollbar-thumb:horizontal:window-inactive' | '::-webkit-scrollbar-thumb:vertical' | '::-webkit-scrollbar-thumb:vertical:active' | '::-webkit-scrollbar-thumb:vertical:hover' | '::-webkit-scrollbar-thumb:vertical:window-inactive' | '::-webkit-scrollbar-track' | '::-webkit-scrollbar-track-piece' | '::-webkit-scrollbar-track-piece:disabled' | '::-webkit-scrollbar-track-piece:end' | '::-webkit-scrollbar-track-piece:horizontal:decrement' | '::-webkit-scrollbar-track-piece:horizontal:decrement:active' | '::-webkit-scrollbar-track-piece:horizontal:decrement:hover' | '::-webkit-scrollbar-track-piece:horizontal:end' | '::-webkit-scrollbar-track-piece:horizontal:end:corner-present' | '::-webkit-scrollbar-track-piece:horizontal:end:double-button' | '::-webkit-scrollbar-track-piece:horizontal:end:no-button' | '::-webkit-scrollbar-track-piece:horizontal:end:no-button:corner-present' | '::-webkit-scrollbar-track-piece:horizontal:end:single-button' | '::-webkit-scrollbar-track-piece:horizontal:increment' | '::-webkit-scrollbar-track-piece:horizontal:increment:active' | '::-webkit-scrollbar-track-piece:horizontal:increment:hover' | '::-webkit-scrollbar-track-piece:horizontal:start' | '::-webkit-scrollbar-track-piece:horizontal:start:double-button' | '::-webkit-scrollbar-track-piece:horizontal:start:no-button' | '::-webkit-scrollbar-track-piece:horizontal:start:single-button' | '::-webkit-scrollbar-track-piece:start' | '::-webkit-scrollbar-track-piece:vertical:decrement' | '::-webkit-scrollbar-track-piece:vertical:decrement:active' | '::-webkit-scrollbar-track-piece:vertical:decrement:hover' | '::-webkit-scrollbar-track-piece:vertical:end' | '::-webkit-scrollbar-track-piece:vertical:end:corner-present' | '::-webkit-scrollbar-track-piece:vertical:end:double-button' | '::-webkit-scrollbar-track-piece:vertical:end:no-button' | '::-webkit-scrollbar-track-piece:vertical:end:no-button:corner-present' | '::-webkit-scrollbar-track-piece:vertical:end:single-button' | '::-webkit-scrollbar-track-piece:vertical:increment' | '::-webkit-scrollbar-track-piece:vertical:increment:active' | '::-webkit-scrollbar-track-piece:vertical:increment:hover' | '::-webkit-scrollbar-track-piece:vertical:start' | '::-webkit-scrollbar-track-piece:vertical:start:double-button' | '::-webkit-scrollbar-track-piece:vertical:start:no-button' | '::-webkit-scrollbar-track-piece:vertical:start:single-button' | '::-webkit-scrollbar-track:disabled' | '::-webkit-scrollbar-track:horizontal' | '::-webkit-scrollbar-track:horizontal:disabled' | '::-webkit-scrollbar-track:horizontal:disabled:corner-present' | '::-webkit-scrollbar-track:vertical:disabled' | '::-webkit-scrollbar-track:vertical:disabled:corner-present' | '::-webkit-scrollbar:horizontal' | '::-webkit-scrollbar:horizontal:corner-present' | '::-webkit-scrollbar:horizontal:window-inactive' | '::-webkit-scrollbar:vertical' | '::-webkit-scrollbar:vertical:corner-present' | '::-webkit-scrollbar:vertical:window-inactive' | '::-webkit-search-cancel-button' | '::-webkit-search-decoration' | '::-webkit-search-results-button' | '::-webkit-search-results-decoration' | '::-webkit-slider-container' | '::-webkit-slider-runnable-track' | '::-webkit-slider-thumb' | '::-webkit-slider-thumb:disabled' | '::-webkit-slider-thumb:hover' | '::-webkit-textfield-decoration-container' | '::-webkit-validation-bubble' | '::-webkit-validation-bubble-arrow' | '::-webkit-validation-bubble-arrow-clipper' | '::-webkit-validation-bubble-heading' | '::-webkit-validation-bubble-message' | '::-webkit-validation-bubble-text-block';
+}
+
+declare namespace $ {
+    /** Returns error type, that don't match to normal value. */
+    type $mol_type_error<Message, Info = {}> = Message & {
+        $mol_type_error: Info;
+    };
+}
+
+declare namespace $ {
+    type Attrs<View extends $mol_view, Config, Attrs = ReturnType<View['attr']>> = {
+        [name in keyof Attrs]?: {
+            [val in keyof Config[Extract<name, keyof Config>]]: $mol_style_guard<View, Config[Extract<name, keyof Config>][val]>;
+        };
+    };
+    type Medias<View extends $mol_view, Config> = {
+        [query in keyof Config]: $mol_style_guard<View, Config[query]>;
+    };
+    type Keys<View extends $mol_view> = '>' | '@' | keyof $mol_style_properties | $mol_style_pseudo_element | $mol_style_pseudo_class | $mol_type_keys_extract<View, () => $mol_view> | `$${string}`;
+    export type $mol_style_guard<View extends $mol_view, Config> = {
+        [key in Keys<View>]?: unknown;
+    } & $mol_style_properties & {
+        [key in keyof Config]: key extends keyof $mol_style_properties ? $mol_style_properties[key] : key extends '>' | $mol_style_pseudo_class | $mol_style_pseudo_element ? $mol_style_guard<View, Config[key]> : key extends '@' ? Attrs<View, Config[key]> : key extends ('@media' | '@container') ? Medias<View, Config[key]> : key extends '@starting-style' ? $mol_style_guard<View, Config[key]> : key extends `[${string}]` ? {
+            [val in keyof Config[key]]: $mol_style_guard<View, Config[key][val]>;
+        } : key extends `--${string}` ? any : key extends keyof $ ? $mol_style_guard<InstanceType<Extract<$[key], typeof $mol_view>>, Config[key]> : key extends keyof View ? View[key] extends (id?: any) => infer Sub ? Sub extends $mol_view ? $mol_style_guard<Sub, Config[key]> : $mol_type_error<'Property returns non $mol_view', {
+            Returns: Sub;
+        }> : $mol_type_error<'Field is not a Property'> : key extends `$${string}` ? $mol_type_error<'Unknown View Class'> : $mol_type_error<'Unknown CSS Property'>;
+    };
+    export {};
+}
+
+declare namespace $ {
+    function $mol_style_sheet<Component extends $mol_view, Config extends $mol_style_guard<Component, Config>>(Component: new () => Component, config0: Config): string;
+}
+
+declare namespace $ {
+    /**
+     * CSS in TS.
+     * Statically typed CSS style sheets. Following samples show which CSS code are generated from TS code.
+     * @see https://mol.hyoo.ru/#!section=docs/=xwq9q5_f966fg
+     */
+    function $mol_style_define<Component extends $mol_view, Config extends $mol_style_guard<Component, Config>>(Component: new () => Component, config: Config): HTMLStyleElement | null;
 }
 
 declare namespace $ {
@@ -44740,6 +43019,94 @@ declare namespace $.$$ {
 
 declare namespace $ {
 
+	export class $mol_icon_clipboard extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=clipboard.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_clipboard_outline extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=outline.view.tree.d.ts.map
+declare namespace $ {
+    function $mol_html_encode(text: string): string;
+}
+
+declare namespace $ {
+
+	type $mol_blob__mol_button_copy_1 = $mol_type_enforce<
+		[ readonly(BlobPart)[], ({ 
+			'type': string,
+		})  ]
+		,
+		ConstructorParameters< typeof $mol_blob >
+	>
+	type $mol_blob__mol_button_copy_2 = $mol_type_enforce<
+		[ readonly(BlobPart)[], ({ 
+			'type': string,
+		})  ]
+		,
+		ConstructorParameters< typeof $mol_blob >
+	>
+	export class $mol_button_copy extends $mol_button_minor {
+		text( ): ReturnType< $mol_button_copy['title'] >
+		text_blob( next?: $mol_blob ): $mol_blob
+		html( ): string
+		html_blob( next?: $mol_blob ): $mol_blob
+		Icon( ): $mol_icon_clipboard_outline
+		title( ): string
+		blobs( ): readonly($mol_blob)[]
+		data( ): Record<string, any>
+		sub( ): readonly(any)[]
+	}
+	
+}
+
+//# sourceMappingURL=copy.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * Button copy text() value to clipboard
+     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_button_demo
+     */
+    class $mol_button_copy extends $.$mol_button_copy {
+        data(): {
+            [k: string]: Blob;
+        };
+        html(): string;
+        attachments(): ClipboardItem[];
+        click(event?: Event): void;
+    }
+}
+
+declare namespace $ {
+    interface $mol_locale_dict {
+        [key: string]: string;
+    }
+    /**
+     * Localisation in $mol framework
+     * @see https://mol.hyoo.ru/#!section=docs/=s5aqnb_odub8l
+     */
+    class $mol_locale extends $mol_object {
+        static lang_default(): string;
+        static lang(next?: string): string;
+        static langs_rtl(): string[];
+        static direction(): "ltr" | "rtl";
+        static source(lang: string): any;
+        static texts(lang: string, next?: $mol_locale_dict): $mol_locale_dict;
+        static text(key: string): string;
+        static warn(key: string): null;
+    }
+}
+
+declare namespace $ {
+
 	type $mol_text_code_line__numb_showed_mol_text_code_1 = $mol_type_enforce<
 		ReturnType< $mol_text_code['sidebar_showed'] >
 		,
@@ -44865,6 +43232,167 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
+
+	type $mol_textarea_edit__value_mol_textarea_1 = $mol_type_enforce<
+		ReturnType< $mol_textarea['value'] >
+		,
+		ReturnType< $mol_textarea_edit['value'] >
+	>
+	type $mol_textarea_edit__hint_mol_textarea_2 = $mol_type_enforce<
+		ReturnType< $mol_textarea['hint'] >
+		,
+		ReturnType< $mol_textarea_edit['hint'] >
+	>
+	type $mol_textarea_edit__enabled_mol_textarea_3 = $mol_type_enforce<
+		ReturnType< $mol_textarea['enabled'] >
+		,
+		ReturnType< $mol_textarea_edit['enabled'] >
+	>
+	type $mol_textarea_edit__spellcheck_mol_textarea_4 = $mol_type_enforce<
+		ReturnType< $mol_textarea['spellcheck'] >
+		,
+		ReturnType< $mol_textarea_edit['spellcheck'] >
+	>
+	type $mol_textarea_edit__length_max_mol_textarea_5 = $mol_type_enforce<
+		ReturnType< $mol_textarea['length_max'] >
+		,
+		ReturnType< $mol_textarea_edit['length_max'] >
+	>
+	type $mol_textarea_edit__selection_mol_textarea_6 = $mol_type_enforce<
+		ReturnType< $mol_textarea['selection'] >
+		,
+		ReturnType< $mol_textarea_edit['selection'] >
+	>
+	type $mol_textarea_edit__submit_mol_textarea_7 = $mol_type_enforce<
+		ReturnType< $mol_textarea['submit'] >
+		,
+		ReturnType< $mol_textarea_edit['submit'] >
+	>
+	type $mol_textarea_edit__submit_with_ctrl_mol_textarea_8 = $mol_type_enforce<
+		ReturnType< $mol_textarea['submit_with_ctrl'] >
+		,
+		ReturnType< $mol_textarea_edit['submit_with_ctrl'] >
+	>
+	type $mol_text_code__text_mol_textarea_9 = $mol_type_enforce<
+		ReturnType< $mol_textarea['value'] >
+		,
+		ReturnType< $mol_text_code['text'] >
+	>
+	type $mol_text_code__render_visible_only_mol_textarea_10 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_text_code['render_visible_only'] >
+	>
+	type $mol_text_code__row_numb_mol_textarea_11 = $mol_type_enforce<
+		ReturnType< $mol_textarea['row_numb'] >
+		,
+		ReturnType< $mol_text_code['row_numb'] >
+	>
+	type $mol_text_code__sidebar_showed_mol_textarea_12 = $mol_type_enforce<
+		ReturnType< $mol_textarea['sidebar_showed'] >
+		,
+		ReturnType< $mol_text_code['sidebar_showed'] >
+	>
+	type $mol_text_code__highlight_mol_textarea_13 = $mol_type_enforce<
+		ReturnType< $mol_textarea['highlight'] >
+		,
+		ReturnType< $mol_text_code['highlight'] >
+	>
+	type $mol_text_code__syntax_mol_textarea_14 = $mol_type_enforce<
+		ReturnType< $mol_textarea['syntax'] >
+		,
+		ReturnType< $mol_text_code['syntax'] >
+	>
+	export class $mol_textarea extends $mol_stack {
+		clickable( next?: boolean ): boolean
+		sidebar_showed( ): boolean
+		press( next?: any ): any
+		hover( next?: any ): any
+		value( next?: string ): string
+		hint( ): string
+		enabled( ): boolean
+		spellcheck( ): boolean
+		length_max( ): number
+		selection( next?: readonly(number)[] ): readonly(number)[]
+		bring( ): ReturnType< ReturnType< $mol_textarea['Edit'] >['bring'] >
+		submit( next?: any ): any
+		submit_with_ctrl( ): boolean
+		Edit( ): $mol_textarea_edit
+		row_numb( id: any): number
+		highlight( ): string
+		syntax( ): $mol_syntax2
+		View( ): $mol_text_code
+		attr( ): ({ 
+			'mol_textarea_clickable': ReturnType< $mol_textarea['clickable'] >,
+			'mol_textarea_sidebar_showed': ReturnType< $mol_textarea['sidebar_showed'] >,
+		})  & ReturnType< $mol_stack['attr'] >
+		event( ): ({ 
+			keydown( next?: ReturnType< $mol_textarea['press'] > ): ReturnType< $mol_textarea['press'] >,
+			pointermove( next?: ReturnType< $mol_textarea['hover'] > ): ReturnType< $mol_textarea['hover'] >,
+		}) 
+		sub( ): readonly(any)[]
+		symbols_alt( ): Record<string, string>
+		symbols_alt_ctrl( ): Record<string, string>
+		symbols_alt_shift( ): Record<string, string>
+	}
+	
+	export class $mol_textarea_edit extends $mol_string {
+		dom_name( ): string
+		enter( ): string
+		field( ): ({ 
+			'scrollTop': number,
+		})  & ReturnType< $mol_string['field'] >
+	}
+	
+}
+
+//# sourceMappingURL=textarea.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * An input field for entering multiline text.
+     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_textarea_demo
+     */
+    class $mol_textarea extends $.$mol_textarea {
+        indent_inc(): void;
+        indent_dec(): void;
+        symbol_insert(event: KeyboardEvent): void;
+        clickable(next?: boolean): boolean;
+        hover(event: PointerEvent): void;
+        press(event: KeyboardEvent): void;
+        row_numb(index: number): number;
+        syntax(): $mol_syntax2<{
+            'code-indent': RegExp;
+            'code-docs': RegExp;
+            'code-comment-block': RegExp;
+            'code-link': RegExp;
+            'code-comment-inline': RegExp;
+            'code-string': RegExp;
+            'code-number': RegExp;
+            'code-call': RegExp;
+            'code-sexpr': RegExp;
+            'code-field': RegExp;
+            'code-keyword': RegExp;
+            'code-global': RegExp;
+            'code-word': RegExp;
+            'code-decorator': RegExp;
+            'code-tag': RegExp;
+            'code-punctuation': RegExp;
+        }>;
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
+    function $mol_tree2_js_is_number(type: string): boolean | RegExpMatchArray;
+}
+
+declare namespace $ {
+    function $mol_view_tree2_to_js(this: $, descr: $mol_tree2): $mol_tree2;
+}
+
+declare namespace $ {
 }
 
 declare namespace $ {
@@ -44917,20 +43445,6 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
-}
-
-declare namespace $ {
-    class $mol_state_session<Value> extends $mol_object {
-        static 'native()': Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
-        static native(): Storage | {
-            getItem(key: string): any;
-            setItem(key: string, value: string): void;
-            removeItem(key: string): void;
-        };
-        static value<Value>(key: string, next?: Value): Value;
-        prefix(): string;
-        value(key: string, next?: Value): Value;
-    }
 }
 
 declare namespace $ {
@@ -45240,6 +43754,41 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
+}
+
+declare namespace $ {
+
+	export class $mol_scroll extends $mol_view {
+		tabindex( ): number
+		event_scroll( next?: any ): any
+		scroll_top( next?: number ): number
+		scroll_left( next?: number ): number
+		attr( ): ({ 
+			'tabindex': ReturnType< $mol_scroll['tabindex'] >,
+		})  & ReturnType< $mol_view['attr'] >
+		event( ): ({ 
+			scroll( next?: ReturnType< $mol_scroll['event_scroll'] > ): ReturnType< $mol_scroll['event_scroll'] >,
+		})  & ReturnType< $mol_view['event'] >
+	}
+	
+}
+
+//# sourceMappingURL=scroll.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * Scrolling pane.
+     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_scroll_demo
+     */
+    class $mol_scroll extends $.$mol_scroll {
+        scroll_top(next?: number, cache?: 'cache'): number;
+        scroll_left(next?: number, cache?: 'cache'): number;
+        event_scroll(next?: Event): void;
+        minimal_height(): number;
+        minimal_width(): number;
+    }
+}
+
+declare namespace $.$$ {
 }
 
 declare namespace $ {
@@ -46634,6 +45183,2244 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    /**
+     * Export of a document as a real MAM module.
+     *
+     * Not an abstract «project»: the output is a folder that builds untouched.
+     * That closes the circle of section 5 as well — a built module is a donor pack,
+     * so what is assembled here is a component library for the next document.
+     *
+     * Pure functions over text, with no storage and no DOM behind them: the caller
+     * hands over the sources of its classes and gets files back.
+     *
+     * @see ../../ARCHITECTURE.md section 10
+     */
+    /** One class of the document, as the three sources the editor keeps. */
+    type $bog_vmap_app_export_node = {
+        /** `view.tree` declaration. Carries the class name in its first token. */
+        readonly source: string;
+        /** Hand written class body: method definitions, no wrapping class. */
+        readonly js?: string;
+        /** Raw CSS. */
+        readonly css?: string;
+    };
+    /**
+     * One file of the module. Text only.
+     *
+     * A flat list of named files precisely so that assets can be appended to it
+     * later instead of reworking the shape of the result.
+     */
+    type $bog_vmap_app_export_file = {
+        readonly name: string;
+        readonly text: string;
+    };
+    type $bog_vmap_app_export_module = {
+        /** Folder the module must be placed at, relative to the MAM root. */
+        readonly path: string;
+        /** Last segment of the path, and the base name of every source file. */
+        readonly name: string;
+        /** Class instantiated by `index.html`. */
+        readonly root: string;
+        readonly files: readonly $bog_vmap_app_export_file[];
+    };
+    /**
+     * Folder the classes of a document oblige it to live in.
+     *
+     * The folder is not free: mam turns a class name into a path by replacing every
+     * underscore with a slash, so a module placed anywhere else fails to build
+     * while looking perfectly correct. The document therefore names its own folder,
+     * by the longest common prefix of its class names.
+     *
+     * A prefix shorter than two segments means classes from different packs.
+     * Refused: renaming the author's classes to fit would break «byte for byte from
+     * the editor», and emitting them as they are would produce a folder that does
+     * not build.
+     *
+     * **What this cannot check is whether the root pack exists** — only the machine
+     * doing the build knows that, and this runs in a browser. A well shaped path
+     * into a pack nobody has still fails there. Hence the rule for the interface:
+     * the folder is written where the author reads it, so the first segment is a
+     * decision they see rather than one made for them.
+     */
+    function $bog_vmap_app_export_path(this: $, names: readonly string[]): string;
+    /**
+     * Whether a hand written body defines a method of this name.
+     *
+     * Deliberately the same test the scene applies before decorating, so a property
+     * memoized in the preview is memoized in the export and the two cannot drift.
+     * An override of a memoized property left undecorated loses its atom outright,
+     * and nothing reports it: the method returns a fresh value while the DOM keeps
+     * the old one.
+     */
+    function $bog_vmap_app_export_defines(js: string, name: string): boolean;
+    /** One reason a hand written body would not survive the export. */
+    type $bog_vmap_app_export_complaint = {
+        /** 1-based, counted inside the body the editor shows. */
+        readonly line: number;
+        readonly method: string;
+        readonly param: string;
+        /** Ready to show, in the language of the editor. */
+        readonly text: string;
+    };
+    /**
+     * Parameters of methods that carry no type.
+     *
+     * The divergence of section 10: in the scene a body runs as plain JS, in the
+     * export the same body is compiled with `strict` and `noImplicitAny`. An
+     * untyped parameter is that divergence in practice — it works in the preview
+     * and fails the build, where the author is not.
+     *
+     * Not a type checker: a real compiler in the browser costs megabytes for one
+     * class of error. What needs types to catch — an unknown member, a wrong
+     * type — stays a build failure.
+     *
+     * **The cost of the two mistakes is not the same, so the check is built to miss
+     * rather than to lie.** A complaint refuses the export, and a false one locks
+     * the author inside the editor with no way out; a missed one costs a build
+     * failure with a message of its own. Everything doubtful is therefore passed
+     * over in silence:
+     *
+     * - strings and comments are blanked before anything is read, so a signature
+     *   quoted inside a template literal is not a signature;
+     * - a head is only a head at the indent of the body itself and only when a `{`
+     *   follows, which is what separates a definition from a call and from an
+     *   overload signature;
+     * - only a plain identifier is reported. A destructured parameter is an error
+     *   of the same kind, but naming it sensibly is beyond this, and half a name in
+     *   a refusal is worse than no refusal;
+     * - a default value is a type, an arrow is typed by its context, and a
+     *   parameter list holding brackets of its own is left alone.
+     */
+    function $bog_vmap_app_export_untyped(js: string): readonly $bog_vmap_app_export_complaint[];
+    /**
+     * The same text with every string and comment replaced by spaces.
+     *
+     * Length and line breaks are kept, so a position in the result is the same
+     * position in the source and the line of a complaint stays true. Without it a
+     * signature quoted inside a literal reads as a signature, and that is a refusal
+     * over text that is not code.
+     *
+     * A regular expression literal is not understood, deliberately: telling one
+     * from a division needs a parser, and the whole cost of getting it wrong is a
+     * complaint not raised.
+     */
+    function $bog_vmap_app_export_blanked(js: string): string;
+    /** Indents a hand written body into a class declaration. */
+    function $bog_vmap_app_export_indent(text: string, depth?: number): string;
+    /**
+     * Builds the module.
+     *
+     * @param nodes classes of the document, in any order
+     * @param root class `index.html` instantiates; defaults to the first node
+     */
+    function $bog_vmap_app_export_build(this: $, nodes: readonly $bog_vmap_app_export_node[], root?: string): $bog_vmap_app_export_module;
+    /**
+     * Pages of a document: the artboards its root class draws.
+     *
+     * A node with a `sub` of its own is an artboard, and that is the only mark it
+     * has — the same reading the canvas takes, see section 8. A free part carries
+     * no `sub`, so the router never shows it, and the desk coordinates have nothing
+     * to leak into here.
+     */
+    function $bog_vmap_app_export_pages(model: $bog_vmap_lang_node): string[];
+    /**
+     * A hand written body with the memoizing decorator written above the methods
+     * that need it.
+     *
+     * The decorator over the method is how a person writes it, and what comes out of
+     * here has to read like a module somebody wrote by hand. The expression after
+     * the class is what the SCENE has to do, because a decorator cannot be written
+     * into a string handed to a compiler at run time; a file has no such excuse.
+     *
+     * Where a method starts is not guessed: the body is cut by the same function the
+     * code panel cuts it with, so the two agree about the start of a property by
+     * construction rather than by two implementations happening to match. The
+     * decorator lands under whatever comment belongs to the method and over the
+     * method itself, where a reader looks for it.
+     *
+     * **A body the slicer cannot cut keeps the expression form.** Braces are counted
+     * rather than parsed, so a `}` inside a string is enough to defeat it — and a
+     * body that loses its decorators loses its atoms silently, which is the one
+     * outcome worth an ugly file.
+     */
+    function $bog_vmap_app_export_decorated(this: $, js: string, klass: string, memos: ReadonlyMap<string, string>): {
+        readonly body: string;
+        readonly after: readonly string[];
+    };
+}
+
+declare namespace $ {
+    /**
+     * Slicing of the handwritten sources by property.
+     *
+     * Port of `props_js()`, `props_css()` and the `source_*_prop` family of
+     * `hyoo_studio`. Kept as plain functions with no view around them, because
+     * the whole of stage 4.2 is text in and text out.
+     *
+     * @see ../../ARCHITECTURE.md section 2
+     */
+    /** A property of a class body, and the code that declares it. */
+    type $bog_vmap_app_code_props = Map<string, string>;
+    /**
+     * Class body cut into properties, keyed by property name.
+     *
+     * Counts braces rather than parsing: a body is arbitrary JS, and everything
+     * between the end of the previous property and the opening brace of this one
+     * is where the name lives. Studio does it this way and it holds on real
+     * bodies, comments and nested functions included.
+     */
+    function $bog_vmap_app_code_props_js(this: $, body: string): $bog_vmap_app_code_props;
+    /**
+     * Styles cut into properties, keyed by the property the rule belongs to.
+     *
+     * The selector of a sub-view is the attribute `[<class>_<prop>]` that $mol
+     * writes on it, so the property name is the tail of the attribute once the
+     * name of the class is taken off. A rule about anything else is skipped.
+     */
+    function $bog_vmap_app_code_props_css(this: $, css: string, klass: string): $bog_vmap_app_code_props;
+    /** Sliced properties put back together into one text, in their own order. */
+    function $bog_vmap_app_code_joined(props: $bog_vmap_app_code_props): string;
+    /**
+     * One property replaced in the slicing, with the unrecognized tail kept last.
+     *
+     * A property the text does not carry yet is appended, and the tail is moved
+     * behind it: a `Map` keeps insertion order, so without the move a new property
+     * would land after the leftovers and the two would swap places on every edit.
+     */
+    function $bog_vmap_app_code_with(props: $bog_vmap_app_code_props, name: string, code: string): $bog_vmap_app_code_props;
+    /**
+     * Empty method of a property, for when the body declares none yet.
+     *
+     * The signature follows the property: `*` gives a key, `?` gives a next, and
+     * a plain property takes neither. Same rule as `source_js_prop_default` of
+     * studio, which reads them off the property model instead of a signature.
+     */
+    function $bog_vmap_app_code_js_default(name: string, key?: boolean, next?: boolean): string;
+    /** Empty rule of a property, addressed by the attribute $mol writes on its node. */
+    function $bog_vmap_app_code_css_default(name: string, klass: string): string;
+    /**
+     * Attribute $mol writes for a class: the name without the leading sigil, lower
+     * case. `attr_static()` lowercases the whole thing, so a selector that does not
+     * would simply never match.
+     */
+    function $bog_vmap_app_code_attr(klass: string): string;
+}
+
+declare namespace $ {
+
+	type $mol_bar__sub_bog_vmap_app_code_1 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['head_content'] >
+		,
+		ReturnType< $mol_bar['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_code_2 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_check__title_bog_vmap_app_code_3 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_check['title'] >
+	>
+	type $mol_check__hint_bog_vmap_app_code_4 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_check['hint'] >
+	>
+	type $mol_check__checked_bog_vmap_app_code_5 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['whole'] >
+		,
+		ReturnType< $mol_check['checked'] >
+	>
+	type $mol_view__sub_bog_vmap_app_code_6 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_code_7 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_code_8 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['typing_rows'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_code_9 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_deck__items_bog_vmap_app_code_10 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['source_tabs'] >
+		,
+		ReturnType< $mol_deck['items'] >
+	>
+	type $mol_textarea__title_bog_vmap_app_code_11 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['title'] >
+	>
+	type $mol_textarea__hint_bog_vmap_app_code_12 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['hint'] >
+	>
+	type $mol_textarea__sidebar_showed_bog_vmap_app_code_13 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_textarea['sidebar_showed'] >
+	>
+	type $mol_textarea__value_bog_vmap_app_code_14 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['tree_text'] >
+		,
+		ReturnType< $mol_textarea['value'] >
+	>
+	type $mol_textarea__title_bog_vmap_app_code_15 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['title'] >
+	>
+	type $mol_textarea__hint_bog_vmap_app_code_16 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['hint'] >
+	>
+	type $mol_textarea__sidebar_showed_bog_vmap_app_code_17 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_textarea['sidebar_showed'] >
+	>
+	type $mol_textarea__value_bog_vmap_app_code_18 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['js_text'] >
+		,
+		ReturnType< $mol_textarea['value'] >
+	>
+	type $mol_view__title_bog_vmap_app_code_19 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_view['title'] >
+	>
+	type $mol_view__sub_bog_vmap_app_code_20 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_textarea__title_bog_vmap_app_code_21 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['title'] >
+	>
+	type $mol_textarea__hint_bog_vmap_app_code_22 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['hint'] >
+	>
+	type $mol_textarea__sidebar_showed_bog_vmap_app_code_23 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_textarea['sidebar_showed'] >
+	>
+	type $mol_textarea__value_bog_vmap_app_code_24 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_code['css_text'] >
+		,
+		ReturnType< $mol_textarea['value'] >
+	>
+	export class $bog_vmap_app_code extends $mol_view {
+		content( ): readonly($mol_view)[]
+		head_content( ): readonly($mol_view)[]
+		scope_note( ): string
+		note( ): string
+		typing_rows( ): readonly($mol_view)[]
+		typing_text( id: any): string
+		source_tabs( ): readonly($mol_view)[]
+		tree_text( next?: string ): string
+		js_text( next?: string ): string
+		js_idle_note( ): string
+		css_text( next?: string ): string
+		klass( ): string
+		prop( ): string
+		hooks( ): readonly(string)[]
+		source( next?: string ): string
+		node_source( next?: string ): string
+		js( next?: string ): string
+		css( next?: string ): string
+		error( ): string
+		whole( next?: boolean ): boolean
+		refusal( next?: string ): string
+		sub( ): ReturnType< $bog_vmap_app_code['content'] >
+		Head( ): $mol_bar
+		Scope_note( ): $mol_view
+		Scope( ): $mol_check
+		Alarm( ): $mol_view
+		Refusal( ): $mol_view
+		Typing( ): $mol_view
+		Typing_row( id: any): $mol_view
+		Sources( ): $mol_deck
+		Tree( ): $mol_textarea
+		Js( ): $mol_textarea
+		Js_idle( ): $mol_view
+		Css( ): $mol_textarea
+	}
+	
+}
+
+//# sourceMappingURL=code.view.tree.d.ts.map
+declare namespace $.$$ {
+    /** Which of the three texts a draft belongs to. */
+    type $bog_vmap_app_code_slot = 'tree' | 'js' | 'css';
+    /**
+     * Editor of the three sources of a node.
+     *
+     * Every text goes through one pair of plain methods, read and write on the same
+     * path: none of them is a `@ $mol_mem`, because writing to a cell freezes its
+     * dependencies and the field would stop following the document after the first
+     * edit made in it. What the cells here hold is only what nothing else can
+     * recompute — the text that failed to parse, and why.
+     *
+     * @see ../../ARCHITECTURE.md sections 1 and 2
+     */
+    class $bog_vmap_app_code extends $.$bog_vmap_app_code {
+        /** Whether one node is being edited rather than the class it belongs to. */
+        sliced(): boolean;
+        scope_note(): string;
+        /**
+         * Text typed into a field that the document refused, or `null`.
+         *
+         * Kept so that a broken `view.tree` can be fixed where it was written
+         * instead of vanishing on the next redraw. Cleared by the write that parses.
+         *
+         * Keyed by the tab AND by what is being edited in it. Keyed by the tab alone
+         * it would follow the panel rather than the text: a refused edit made on one
+         * node would show up under the name of the next node picked, and correcting
+         * it there would write it into that other node.
+         */
+        draft(id: string, next?: string | null): string | null;
+        /** Address of a draft: the tab, plus the node when one is being edited. */
+        draft_id(slot: $bog_vmap_app_code_slot): string;
+        /** Why the last edit was not written into the document. Empty when it was. */
+        refusal(next?: string): string;
+        /**
+         * Writes a text through, keeping it in the field when it is refused.
+         *
+         * A throw out of a setter of `$mol_string` goes into `setCustomValidity`,
+         * which outside a form is nowhere at all, so the message is put on a channel
+         * of our own before anything is thrown. A suspended read passes through
+         * untouched — swallowing it would turn a wait into an error.
+         */
+        written(slot: $bog_vmap_app_code_slot, next: string, write: (next: string) => void): string;
+        /** `view.tree` of the node, or of the whole document. */
+        tree_text(next?: string): string;
+        /** Properties of the class body, or the reason it could not be cut into them. */
+        props_js(): $bog_vmap_app_code_props;
+        /** Properties of the class styles, the same way. */
+        props_css(): $bog_vmap_app_code_props;
+        /**
+         * Body of the node, which is the methods its declaration asks for.
+         *
+         * NOT one method named after the node. That name belongs to the factory of
+         * the sub-view in the generated class, so a handwritten method of that name
+         * shadows the factory and the node leaves the canvas — measured on the
+         * generator, which emits `Calc(){ const obj = new this.$.$mol_view(); … }`
+         * for a node called `Calc`. What a person opens this tab to write is the
+         * other side of a binding: `title <= greeting` wants `greeting()`.
+         */
+        js_text(next?: string): string;
+        /** Whether the JS tab has anything for this node to edit at all. */
+        js_writable(): boolean;
+        js_idle_note(): string;
+        /** The JS tab: the field when there is something to write in it, the reason when not. */
+        source_tabs(): readonly $mol_view[];
+        css_text(next?: string): string;
+        /**
+         * The slice of one property, or the empty one when the text has no such
+         * property and when it cannot be cut at all.
+         *
+         * A text that does not slice is a state of the panel, not an exception: the
+         * class is still there, still compiles for all we know, and the way out is
+         * the switch to the whole class, which the message names.
+         */
+        sliced_read(read: () => string | undefined, empty: () => string): string;
+        /**
+         * Whether the class texts can be cut by property at all.
+         *
+         * A pure derivation, so it is a cell: it reads the two texts and nothing
+         * else, and says the same thing the read path silently works around.
+         */
+        sliceable(): boolean;
+        /**
+         * Untyped parameters of the body, as the export names them.
+         *
+         * The same check the export refuses on, called here so that the author reads
+         * the complaint where the mistake was made rather than at the outbound gate.
+         * A body in the scene goes through `new Function`, which takes any JS, so
+         * nothing else in the editor would ever say a word about this.
+         *
+         * Checked on the text the tab is SHOWING, not on the whole class. That is
+         * what makes the line number true in both modes, and it removes the filter
+         * this used to carry: filtering by the name of the node hid every complaint
+         * a person could actually make, because the one method they must never write
+         * is the one named after the node.
+         */
+        complaints(): readonly $bog_vmap_app_export_complaint[];
+        typing_rows(): $mol_view[];
+        typing_text(index: number): string;
+        head_content(): readonly $mol_view[];
+        content(): readonly $mol_view[];
+        /** The refusal, or the standing reason the slicing is off. */
+        note(): string;
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $.$$ {
+}
+
+declare namespace $ {
+    const $bog_vmap_app_publish_home_base: Omit<typeof $giper_baza_dict, "prototype"> & {
+        new (...args: any[]): $mol_type_override<$giper_baza_dict, {
+            readonly Libs: (auto?: any) => {
+                Value: Value;
+                remote_list(next?: readonly $bog_vmap_lib_land_shelf[] | undefined): readonly $bog_vmap_lib_land_shelf[];
+                remote_add(item: $bog_vmap_lib_land_shelf & $giper_baza_pawn): void;
+                make(config: null | number | $giper_baza_rank_preset | $giper_baza_land): $bog_vmap_lib_land_shelf;
+                items(next?: readonly $giper_baza_link[] | undefined): readonly $giper_baza_link[];
+                items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
+                splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
+                has(vary: $giper_baza_vary_type, next?: boolean, tag?: keyof typeof $giper_baza_unit_sand_tag): boolean;
+                add(vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                cut(vary: $giper_baza_vary_type): void;
+                move(from: number, to: number): void;
+                wipe(seat: number): void;
+                pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
+                [$mol_dev_format_head](): any[];
+                land(): $giper_baza_land;
+                head(): $giper_baza_link;
+                land_link(): $giper_baza_link;
+                link(): $giper_baza_link;
+                toJSON(): string;
+                cast<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1): InstanceType<Pawn_1>;
+                pawns<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1 | null): readonly InstanceType<Pawn_1>[];
+                units(): $giper_baza_unit_sand[];
+                units_of(peer: $giper_baza_link | null): $giper_baza_unit_sand[];
+                meta(next?: $giper_baza_link): $giper_baza_link | null;
+                meta_of(peer: $giper_baza_link | null): $giper_baza_link | null;
+                filled(): boolean;
+                can_change(): boolean;
+                last_change(): $mol_time_moment | null;
+                authors(): $giper_baza_auth_pass[];
+                get $(): $;
+                set $(next: $);
+                destructor(): void;
+                toString(): string;
+                [Symbol.toStringTag]: string;
+                [$mol_ambient_ref]: $;
+                [Symbol.dispose](): void;
+            } | null;
+        }>;
+        path: string;
+    } & {
+        schema: {
+            [x: string]: typeof $giper_baza_pawn;
+        } & {
+            readonly Libs: {
+                new (): {
+                    Value: () => typeof $bog_vmap_lib_land_shelf;
+                    remote_list(next?: readonly $bog_vmap_lib_land_shelf[] | undefined): readonly $bog_vmap_lib_land_shelf[];
+                    remote_add(item: $bog_vmap_lib_land_shelf & $giper_baza_pawn): void;
+                    make(config: null | number | $giper_baza_rank_preset | $giper_baza_land): $bog_vmap_lib_land_shelf;
+                    items(next?: readonly $giper_baza_link[] | undefined): readonly $giper_baza_link[];
+                    items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
+                    splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                    find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
+                    has(vary: $giper_baza_vary_type, next?: boolean, tag?: keyof typeof $giper_baza_unit_sand_tag): boolean;
+                    add(vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                    cut(vary: $giper_baza_vary_type): void;
+                    move(from: number, to: number): void;
+                    wipe(seat: number): void;
+                    pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
+                    [$mol_dev_format_head](): any[];
+                    land(): $giper_baza_land;
+                    head(): $giper_baza_link;
+                    land_link(): $giper_baza_link;
+                    link(): $giper_baza_link;
+                    toJSON(): string;
+                    cast<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1): InstanceType<Pawn_1>;
+                    pawns<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1 | null): readonly InstanceType<Pawn_1>[];
+                    units(): $giper_baza_unit_sand[];
+                    units_of(peer: $giper_baza_link | null): $giper_baza_unit_sand[];
+                    meta(next?: $giper_baza_link): $giper_baza_link | null;
+                    meta_of(peer: $giper_baza_link | null): $giper_baza_link | null;
+                    filled(): boolean;
+                    can_change(): boolean;
+                    last_change(): $mol_time_moment | null;
+                    authors(): $giper_baza_auth_pass[];
+                    get $(): $;
+                    set $(next: $);
+                    destructor(): void;
+                    toString(): string;
+                    [Symbol.toStringTag]: string;
+                    [$mol_ambient_ref]: $;
+                    [Symbol.dispose](): void;
+                };
+                toString(): any;
+                to<const Value extends unknown>(Value: Value): {
+                    new (): {
+                        Value: Value;
+                        remote_list(next?: readonly $mol_type_result<$mol_type_result<Value>>[] | undefined): readonly $mol_type_result<$mol_type_result<Value>>[];
+                        remote_add(item: $mol_type_result<$mol_type_result<Value>> & $giper_baza_pawn): void;
+                        make(config: null | number | $giper_baza_rank_preset | $giper_baza_land): $mol_type_result<$mol_type_result<Value>>;
+                        items(next?: readonly $giper_baza_link[] | undefined): readonly $giper_baza_link[];
+                        items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
+                        splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                        find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
+                        has(vary: $giper_baza_vary_type, next?: boolean, tag?: keyof typeof $giper_baza_unit_sand_tag): boolean;
+                        add(vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                        cut(vary: $giper_baza_vary_type): void;
+                        move(from: number, to: number): void;
+                        wipe(seat: number): void;
+                        pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
+                        [$mol_dev_format_head](): any[];
+                        land(): $giper_baza_land;
+                        head(): $giper_baza_link;
+                        land_link(): $giper_baza_link;
+                        link(): $giper_baza_link;
+                        toJSON(): string;
+                        cast<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1): InstanceType<Pawn_1>;
+                        pawns<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1 | null): readonly InstanceType<Pawn_1>[];
+                        units(): $giper_baza_unit_sand[];
+                        units_of(peer: $giper_baza_link | null): $giper_baza_unit_sand[];
+                        meta(next?: $giper_baza_link): $giper_baza_link | null;
+                        meta_of(peer: $giper_baza_link | null): $giper_baza_link | null;
+                        filled(): boolean;
+                        can_change(): boolean;
+                        last_change(): $mol_time_moment | null;
+                        authors(): $giper_baza_auth_pass[];
+                        get $(): $;
+                        set $(next: $);
+                        destructor(): void;
+                        toString(): string;
+                        [Symbol.toStringTag]: string;
+                        [$mol_ambient_ref]: $;
+                        [Symbol.dispose](): void;
+                    };
+                    toString(): any;
+                    to<const Value extends unknown>(Value: Value): /*elided*/ any;
+                    Item: {
+                        new (value?: any): {
+                            constructor: Function;
+                            toString(): string;
+                            toLocaleString(): string;
+                            valueOf(): Object;
+                            hasOwnProperty(v: PropertyKey): boolean;
+                            isPrototypeOf(v: Object): boolean;
+                            propertyIsEnumerable(v: PropertyKey): boolean;
+                        };
+                        Class: typeof $giper_baza_link;
+                        toString(): string;
+                        guard<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): Value_1 & This["default"];
+                        cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
+                        default: $giper_baza_link;
+                        check<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
+                        [Symbol.toStringTag]: string;
+                        [$mol_key_handle](): string;
+                        [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_3>(this: This, value: Value_3): value is Value_3 & This["default"];
+                        getPrototypeOf(o: any): any;
+                        getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
+                        getOwnPropertyNames(o: any): string[];
+                        create(o: object | null): any;
+                        create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
+                        defineProperty<T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T;
+                        defineProperties<T>(o: T, properties: PropertyDescriptorMap & ThisType<any>): T;
+                        seal<T>(o: T): T;
+                        freeze<T extends Function>(f: T): T;
+                        freeze<T extends {
+                            [idx: string]: U | null | undefined | object;
+                        }, U extends string | bigint | number | boolean | symbol>(o: T): Readonly<T>;
+                        freeze<T>(o: T): Readonly<T>;
+                        preventExtensions<T>(o: T): T;
+                        isSealed(o: any): boolean;
+                        isFrozen(o: any): boolean;
+                        isExtensible(o: any): boolean;
+                        keys(o: object): string[];
+                        keys(o: {}): string[];
+                        assign<T extends {}, U_1>(target: T, source: U_1): T & U_1;
+                        assign<T extends {}, U_2, V>(target: T, source1: U_2, source2: V): T & U_2 & V;
+                        assign<T extends {}, U_3, V_1, W>(target: T, source1: U_3, source2: V_1, source3: W): T & U_3 & V_1 & W;
+                        assign(target: object, ...sources: any[]): any;
+                        getOwnPropertySymbols(o: any): symbol[];
+                        is(value1: any, value2: any): boolean;
+                        setPrototypeOf(o: any, proto: object | null): any;
+                        values<T>(o: {
+                            [s: string]: T;
+                        } | ArrayLike<T>): T[];
+                        values(o: {}): any[];
+                        entries<T>(o: {
+                            [s: string]: T;
+                        } | ArrayLike<T>): [string, T][];
+                        entries(o: {}): [string, any][];
+                        getOwnPropertyDescriptors<T>(o: T): { [P in keyof T]: TypedPropertyDescriptor<T[P]>; } & {
+                            [x: string]: PropertyDescriptor;
+                        };
+                        fromEntries<T = any>(entries: Iterable<readonly [PropertyKey, T]>): {
+                            [k: string]: T;
+                        };
+                        fromEntries(entries: Iterable<readonly any[]>): any;
+                        hasOwn(o: object, v: PropertyKey): boolean;
+                        groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
+                    };
+                    tag: keyof typeof $giper_baza_unit_sand_tag;
+                    of<Init extends new (...args: any[]) => any>(init: Init): {
+                        new (): {
+                            items(next?: readonly (Init extends typeof $mol_schema_any ? Init : {
+                                new (value?: any): {
+                                    constructor: Function;
+                                    toString(): string;
+                                    toLocaleString(): string;
+                                    valueOf(): Object;
+                                    hasOwnProperty(v: PropertyKey): boolean;
+                                    isPrototypeOf(v: Object): boolean;
+                                    propertyIsEnumerable(v: PropertyKey): boolean;
+                                };
+                                Class: Init;
+                                toString(): string;
+                                guard<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): Value_1 & This["default"];
+                                cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
+                                default: InstanceType<Init>;
+                                check<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
+                                [Symbol.toStringTag]: string;
+                                [$mol_key_handle](): string;
+                                [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_3>(this: This, value: Value_3): value is Value_3 & This["default"];
+                                getPrototypeOf(o: any): any;
+                                getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
+                                getOwnPropertyNames(o: any): string[];
+                                create(o: object | null): any;
+                                create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
+                                defineProperty<T_1>(o: T_1, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T_1;
+                                defineProperties<T_1>(o: T_1, properties: PropertyDescriptorMap & ThisType<any>): T_1;
+                                seal<T_1>(o: T_1): T_1;
+                                freeze<T_1 extends Function>(f: T_1): T_1;
+                                freeze<T_1 extends {
+                                    [idx: string]: U | null | undefined | object;
+                                }, U extends string | bigint | number | boolean | symbol>(o: T_1): Readonly<T_1>;
+                                freeze<T_1>(o: T_1): Readonly<T_1>;
+                                preventExtensions<T_1>(o: T_1): T_1;
+                                isSealed(o: any): boolean;
+                                isFrozen(o: any): boolean;
+                                isExtensible(o: any): boolean;
+                                keys(o: object): string[];
+                                keys(o: {}): string[];
+                                assign<T_1 extends {}, U_1>(target: T_1, source: U_1): T_1 & U_1;
+                                assign<T_1 extends {}, U_2, V>(target: T_1, source1: U_2, source2: V): T_1 & U_2 & V;
+                                assign<T_1 extends {}, U_3, V_1, W>(target: T_1, source1: U_3, source2: V_1, source3: W): T_1 & U_3 & V_1 & W;
+                                assign(target: object, ...sources: any[]): any;
+                                getOwnPropertySymbols(o: any): symbol[];
+                                is(value1: any, value2: any): boolean;
+                                setPrototypeOf(o: any, proto: object | null): any;
+                                values<T_1>(o: {
+                                    [s: string]: T_1;
+                                } | ArrayLike<T_1>): T_1[];
+                                values(o: {}): any[];
+                                entries<T_1>(o: {
+                                    [s: string]: T_1;
+                                } | ArrayLike<T_1>): [string, T_1][];
+                                entries(o: {}): [string, any][];
+                                getOwnPropertyDescriptors<T_1>(o: T_1): { [P in keyof T_1]: TypedPropertyDescriptor<T_1[P]>; } & {
+                                    [x: string]: PropertyDescriptor;
+                                };
+                                fromEntries<T_1 = any>(entries: Iterable<readonly [PropertyKey, T_1]>): {
+                                    [k: string]: T_1;
+                                };
+                                fromEntries(entries: Iterable<readonly any[]>): any;
+                                hasOwn(o: object, v: PropertyKey): boolean;
+                                groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
+                            })["default"][]): readonly (Init extends typeof $mol_schema_any ? Init : {
+                                new (value?: any): {
+                                    constructor: Function;
+                                    toString(): string;
+                                    toLocaleString(): string;
+                                    valueOf(): Object;
+                                    hasOwnProperty(v: PropertyKey): boolean;
+                                    isPrototypeOf(v: Object): boolean;
+                                    propertyIsEnumerable(v: PropertyKey): boolean;
+                                };
+                                Class: Init;
+                                toString(): string;
+                                guard<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): Value_1 & This["default"];
+                                cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
+                                default: InstanceType<Init>;
+                                check<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
+                                [Symbol.toStringTag]: string;
+                                [$mol_key_handle](): string;
+                                [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_3>(this: This, value: Value_3): value is Value_3 & This["default"];
+                                getPrototypeOf(o: any): any;
+                                getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
+                                getOwnPropertyNames(o: any): string[];
+                                create(o: object | null): any;
+                                create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
+                                defineProperty<T_1>(o: T_1, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T_1;
+                                defineProperties<T_1>(o: T_1, properties: PropertyDescriptorMap & ThisType<any>): T_1;
+                                seal<T_1>(o: T_1): T_1;
+                                freeze<T_1 extends Function>(f: T_1): T_1;
+                                freeze<T_1 extends {
+                                    [idx: string]: U | null | undefined | object;
+                                }, U extends string | bigint | number | boolean | symbol>(o: T_1): Readonly<T_1>;
+                                freeze<T_1>(o: T_1): Readonly<T_1>;
+                                preventExtensions<T_1>(o: T_1): T_1;
+                                isSealed(o: any): boolean;
+                                isFrozen(o: any): boolean;
+                                isExtensible(o: any): boolean;
+                                keys(o: object): string[];
+                                keys(o: {}): string[];
+                                assign<T_1 extends {}, U_1>(target: T_1, source: U_1): T_1 & U_1;
+                                assign<T_1 extends {}, U_2, V>(target: T_1, source1: U_2, source2: V): T_1 & U_2 & V;
+                                assign<T_1 extends {}, U_3, V_1, W>(target: T_1, source1: U_3, source2: V_1, source3: W): T_1 & U_3 & V_1 & W;
+                                assign(target: object, ...sources: any[]): any;
+                                getOwnPropertySymbols(o: any): symbol[];
+                                is(value1: any, value2: any): boolean;
+                                setPrototypeOf(o: any, proto: object | null): any;
+                                values<T_1>(o: {
+                                    [s: string]: T_1;
+                                } | ArrayLike<T_1>): T_1[];
+                                values(o: {}): any[];
+                                entries<T_1>(o: {
+                                    [s: string]: T_1;
+                                } | ArrayLike<T_1>): [string, T_1][];
+                                entries(o: {}): [string, any][];
+                                getOwnPropertyDescriptors<T_1>(o: T_1): { [P in keyof T_1]: TypedPropertyDescriptor<T_1[P]>; } & {
+                                    [x: string]: PropertyDescriptor;
+                                };
+                                fromEntries<T_1 = any>(entries: Iterable<readonly [PropertyKey, T_1]>): {
+                                    [k: string]: T_1;
+                                };
+                                fromEntries(entries: Iterable<readonly any[]>): any;
+                                hasOwn(o: object, v: PropertyKey): boolean;
+                                groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
+                            })["default"][];
+                            items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
+                            splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                            find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
+                            has(vary: $giper_baza_vary_type, next?: boolean, tag?: keyof typeof $giper_baza_unit_sand_tag): boolean;
+                            add(vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                            cut(vary: $giper_baza_vary_type): void;
+                            move(from: number, to: number): void;
+                            wipe(seat: number): void;
+                            pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
+                            [$mol_dev_format_head](): any[];
+                            land(): $giper_baza_land;
+                            head(): $giper_baza_link;
+                            land_link(): $giper_baza_link;
+                            link(): $giper_baza_link;
+                            toJSON(): string;
+                            cast<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1): InstanceType<Pawn_1>;
+                            pawns<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1 | null): readonly InstanceType<Pawn_1>[];
+                            units(): $giper_baza_unit_sand[];
+                            units_of(peer: $giper_baza_link | null): $giper_baza_unit_sand[];
+                            meta(next?: $giper_baza_link): $giper_baza_link | null;
+                            meta_of(peer: $giper_baza_link | null): $giper_baza_link | null;
+                            filled(): boolean;
+                            can_change(): boolean;
+                            last_change(): $mol_time_moment | null;
+                            authors(): $giper_baza_auth_pass[];
+                            get $(): $;
+                            set $(next: $);
+                            destructor(): void;
+                            toString(): string;
+                            [Symbol.toStringTag]: string;
+                            [$mol_ambient_ref]: $;
+                            [Symbol.dispose](): void;
+                        };
+                        Item: Init extends typeof $mol_schema_any ? Init : {
+                            new (value?: any): {
+                                constructor: Function;
+                                toString(): string;
+                                toLocaleString(): string;
+                                valueOf(): Object;
+                                hasOwnProperty(v: PropertyKey): boolean;
+                                isPrototypeOf(v: Object): boolean;
+                                propertyIsEnumerable(v: PropertyKey): boolean;
+                            };
+                            Class: Init;
+                            toString(): string;
+                            guard<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): Value_1 & This["default"];
+                            cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
+                            default: InstanceType<Init>;
+                            check<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
+                            [Symbol.toStringTag]: string;
+                            [$mol_key_handle](): string;
+                            [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_3>(this: This, value: Value_3): value is Value_3 & This["default"];
+                            getPrototypeOf(o: any): any;
+                            getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
+                            getOwnPropertyNames(o: any): string[];
+                            create(o: object | null): any;
+                            create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
+                            defineProperty<T_1>(o: T_1, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T_1;
+                            defineProperties<T_1>(o: T_1, properties: PropertyDescriptorMap & ThisType<any>): T_1;
+                            seal<T_1>(o: T_1): T_1;
+                            freeze<T_1 extends Function>(f: T_1): T_1;
+                            freeze<T_1 extends {
+                                [idx: string]: U | null | undefined | object;
+                            }, U extends string | bigint | number | boolean | symbol>(o: T_1): Readonly<T_1>;
+                            freeze<T_1>(o: T_1): Readonly<T_1>;
+                            preventExtensions<T_1>(o: T_1): T_1;
+                            isSealed(o: any): boolean;
+                            isFrozen(o: any): boolean;
+                            isExtensible(o: any): boolean;
+                            keys(o: object): string[];
+                            keys(o: {}): string[];
+                            assign<T_1 extends {}, U_1>(target: T_1, source: U_1): T_1 & U_1;
+                            assign<T_1 extends {}, U_2, V>(target: T_1, source1: U_2, source2: V): T_1 & U_2 & V;
+                            assign<T_1 extends {}, U_3, V_1, W>(target: T_1, source1: U_3, source2: V_1, source3: W): T_1 & U_3 & V_1 & W;
+                            assign(target: object, ...sources: any[]): any;
+                            getOwnPropertySymbols(o: any): symbol[];
+                            is(value1: any, value2: any): boolean;
+                            setPrototypeOf(o: any, proto: object | null): any;
+                            values<T_1>(o: {
+                                [s: string]: T_1;
+                            } | ArrayLike<T_1>): T_1[];
+                            values(o: {}): any[];
+                            entries<T_1>(o: {
+                                [s: string]: T_1;
+                            } | ArrayLike<T_1>): [string, T_1][];
+                            entries(o: {}): [string, any][];
+                            getOwnPropertyDescriptors<T_1>(o: T_1): { [P in keyof T_1]: TypedPropertyDescriptor<T_1[P]>; } & {
+                                [x: string]: PropertyDescriptor;
+                            };
+                            fromEntries<T_1 = any>(entries: Iterable<readonly [PropertyKey, T_1]>): {
+                                [k: string]: T_1;
+                            };
+                            fromEntries(entries: Iterable<readonly any[]>): any;
+                            hasOwn(o: object, v: PropertyKey): boolean;
+                            groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
+                        };
+                        toString(): any;
+                        tag: keyof typeof $giper_baza_unit_sand_tag;
+                        of<Init extends new (...args: any[]) => any>(init: Init): /*elided*/ any;
+                        meta: null | $giper_baza_link;
+                        make<This extends typeof $mol_object>(this: This, config: Partial<InstanceType<This>>): InstanceType<This>;
+                        $: $;
+                        create<Instance>(this: new (init?: (instance: any) => void) => Instance, init?: (instance: $mol_type_writable<Instance>) => void): Instance;
+                        toJSON(): any;
+                        destructor(): void;
+                        [Symbol.toPrimitive](): any;
+                        [$mol_key_handle](): any;
+                    };
+                    meta: null | $giper_baza_link;
+                    make<This extends typeof $mol_object>(this: This, config: Partial<InstanceType<This>>): InstanceType<This>;
+                    $: $;
+                    create<Instance>(this: new (init?: (instance: any) => void) => Instance, init?: (instance: $mol_type_writable<Instance>) => void): Instance;
+                    toJSON(): any;
+                    destructor(): void;
+                    [Symbol.toPrimitive](): any;
+                    [$mol_key_handle](): any;
+                };
+                Item: {
+                    new (value?: any): {
+                        constructor: Function;
+                        toString(): string;
+                        toLocaleString(): string;
+                        valueOf(): Object;
+                        hasOwnProperty(v: PropertyKey): boolean;
+                        isPrototypeOf(v: Object): boolean;
+                        propertyIsEnumerable(v: PropertyKey): boolean;
+                    };
+                    Class: typeof $giper_baza_link;
+                    toString(): string;
+                    guard<This extends typeof $mol_schema_any, Value>(this: This, value: Value): Value & This["default"];
+                    cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
+                    default: $giper_baza_link;
+                    check<This extends typeof $mol_schema_any, Value>(this: This, value: Value): value is Value & This["default"];
+                    [Symbol.toStringTag]: string;
+                    [$mol_key_handle](): string;
+                    [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value>(this: This, value: Value): value is Value & This["default"];
+                    getPrototypeOf(o: any): any;
+                    getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
+                    getOwnPropertyNames(o: any): string[];
+                    create(o: object | null): any;
+                    create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
+                    defineProperty<T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T;
+                    defineProperties<T>(o: T, properties: PropertyDescriptorMap & ThisType<any>): T;
+                    seal<T>(o: T): T;
+                    freeze<T extends Function>(f: T): T;
+                    freeze<T extends {
+                        [idx: string]: U | null | undefined | object;
+                    }, U extends string | bigint | number | boolean | symbol>(o: T): Readonly<T>;
+                    freeze<T>(o: T): Readonly<T>;
+                    preventExtensions<T>(o: T): T;
+                    isSealed(o: any): boolean;
+                    isFrozen(o: any): boolean;
+                    isExtensible(o: any): boolean;
+                    keys(o: object): string[];
+                    keys(o: {}): string[];
+                    assign<T extends {}, U>(target: T, source: U): T & U;
+                    assign<T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V;
+                    assign<T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W;
+                    assign(target: object, ...sources: any[]): any;
+                    getOwnPropertySymbols(o: any): symbol[];
+                    is(value1: any, value2: any): boolean;
+                    setPrototypeOf(o: any, proto: object | null): any;
+                    values<T>(o: {
+                        [s: string]: T;
+                    } | ArrayLike<T>): T[];
+                    values(o: {}): any[];
+                    entries<T>(o: {
+                        [s: string]: T;
+                    } | ArrayLike<T>): [string, T][];
+                    entries(o: {}): [string, any][];
+                    getOwnPropertyDescriptors<T>(o: T): { [P in keyof T]: TypedPropertyDescriptor<T[P]>; } & {
+                        [x: string]: PropertyDescriptor;
+                    };
+                    fromEntries<T = any>(entries: Iterable<readonly [PropertyKey, T]>): {
+                        [k: string]: T;
+                    };
+                    fromEntries(entries: Iterable<readonly any[]>): any;
+                    hasOwn(o: object, v: PropertyKey): boolean;
+                    groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
+                };
+                tag: keyof typeof $giper_baza_unit_sand_tag;
+                of<Init extends new (...args: any[]) => any>(init: Init): {
+                    new (): {
+                        items(next?: readonly (Init extends typeof $mol_schema_any ? Init : {
+                            new (value?: any): {
+                                constructor: Function;
+                                toString(): string;
+                                toLocaleString(): string;
+                                valueOf(): Object;
+                                hasOwnProperty(v: PropertyKey): boolean;
+                                isPrototypeOf(v: Object): boolean;
+                                propertyIsEnumerable(v: PropertyKey): boolean;
+                            };
+                            Class: Init;
+                            toString(): string;
+                            guard<This extends typeof $mol_schema_any, Value>(this: This, value: Value): Value & This["default"];
+                            cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
+                            default: InstanceType<Init>;
+                            check<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): value is Value_1 & This["default"];
+                            [Symbol.toStringTag]: string;
+                            [$mol_key_handle](): string;
+                            [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
+                            getPrototypeOf(o: any): any;
+                            getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
+                            getOwnPropertyNames(o: any): string[];
+                            create(o: object | null): any;
+                            create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
+                            defineProperty<T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T;
+                            defineProperties<T>(o: T, properties: PropertyDescriptorMap & ThisType<any>): T;
+                            seal<T>(o: T): T;
+                            freeze<T extends Function>(f: T): T;
+                            freeze<T extends {
+                                [idx: string]: U | null | undefined | object;
+                            }, U extends string | bigint | number | boolean | symbol>(o: T): Readonly<T>;
+                            freeze<T>(o: T): Readonly<T>;
+                            preventExtensions<T>(o: T): T;
+                            isSealed(o: any): boolean;
+                            isFrozen(o: any): boolean;
+                            isExtensible(o: any): boolean;
+                            keys(o: object): string[];
+                            keys(o: {}): string[];
+                            assign<T extends {}, U_1>(target: T, source: U_1): T & U_1;
+                            assign<T extends {}, U_2, V>(target: T, source1: U_2, source2: V): T & U_2 & V;
+                            assign<T extends {}, U_3, V_1, W>(target: T, source1: U_3, source2: V_1, source3: W): T & U_3 & V_1 & W;
+                            assign(target: object, ...sources: any[]): any;
+                            getOwnPropertySymbols(o: any): symbol[];
+                            is(value1: any, value2: any): boolean;
+                            setPrototypeOf(o: any, proto: object | null): any;
+                            values<T>(o: {
+                                [s: string]: T;
+                            } | ArrayLike<T>): T[];
+                            values(o: {}): any[];
+                            entries<T>(o: {
+                                [s: string]: T;
+                            } | ArrayLike<T>): [string, T][];
+                            entries(o: {}): [string, any][];
+                            getOwnPropertyDescriptors<T>(o: T): { [P in keyof T]: TypedPropertyDescriptor<T[P]>; } & {
+                                [x: string]: PropertyDescriptor;
+                            };
+                            fromEntries<T = any>(entries: Iterable<readonly [PropertyKey, T]>): {
+                                [k: string]: T;
+                            };
+                            fromEntries(entries: Iterable<readonly any[]>): any;
+                            hasOwn(o: object, v: PropertyKey): boolean;
+                            groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
+                        })["default"][]): readonly (Init extends typeof $mol_schema_any ? Init : {
+                            new (value?: any): {
+                                constructor: Function;
+                                toString(): string;
+                                toLocaleString(): string;
+                                valueOf(): Object;
+                                hasOwnProperty(v: PropertyKey): boolean;
+                                isPrototypeOf(v: Object): boolean;
+                                propertyIsEnumerable(v: PropertyKey): boolean;
+                            };
+                            Class: Init;
+                            toString(): string;
+                            guard<This extends typeof $mol_schema_any, Value>(this: This, value: Value): Value & This["default"];
+                            cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
+                            default: InstanceType<Init>;
+                            check<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): value is Value_1 & This["default"];
+                            [Symbol.toStringTag]: string;
+                            [$mol_key_handle](): string;
+                            [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
+                            getPrototypeOf(o: any): any;
+                            getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
+                            getOwnPropertyNames(o: any): string[];
+                            create(o: object | null): any;
+                            create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
+                            defineProperty<T_1>(o: T_1, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T_1;
+                            defineProperties<T_1>(o: T_1, properties: PropertyDescriptorMap & ThisType<any>): T_1;
+                            seal<T_1>(o: T_1): T_1;
+                            freeze<T_1 extends Function>(f: T_1): T_1;
+                            freeze<T_1 extends {
+                                [idx: string]: U | null | undefined | object;
+                            }, U extends string | bigint | number | boolean | symbol>(o: T_1): Readonly<T_1>;
+                            freeze<T_1>(o: T_1): Readonly<T_1>;
+                            preventExtensions<T_1>(o: T_1): T_1;
+                            isSealed(o: any): boolean;
+                            isFrozen(o: any): boolean;
+                            isExtensible(o: any): boolean;
+                            keys(o: object): string[];
+                            keys(o: {}): string[];
+                            assign<T_1 extends {}, U_1>(target: T_1, source: U_1): T_1 & U_1;
+                            assign<T_1 extends {}, U_2, V>(target: T_1, source1: U_2, source2: V): T_1 & U_2 & V;
+                            assign<T_1 extends {}, U_3, V_1, W>(target: T_1, source1: U_3, source2: V_1, source3: W): T_1 & U_3 & V_1 & W;
+                            assign(target: object, ...sources: any[]): any;
+                            getOwnPropertySymbols(o: any): symbol[];
+                            is(value1: any, value2: any): boolean;
+                            setPrototypeOf(o: any, proto: object | null): any;
+                            values<T_1>(o: {
+                                [s: string]: T_1;
+                            } | ArrayLike<T_1>): T_1[];
+                            values(o: {}): any[];
+                            entries<T_1>(o: {
+                                [s: string]: T_1;
+                            } | ArrayLike<T_1>): [string, T_1][];
+                            entries(o: {}): [string, any][];
+                            getOwnPropertyDescriptors<T_1>(o: T_1): { [P in keyof T_1]: TypedPropertyDescriptor<T_1[P]>; } & {
+                                [x: string]: PropertyDescriptor;
+                            };
+                            fromEntries<T_1 = any>(entries: Iterable<readonly [PropertyKey, T_1]>): {
+                                [k: string]: T_1;
+                            };
+                            fromEntries(entries: Iterable<readonly any[]>): any;
+                            hasOwn(o: object, v: PropertyKey): boolean;
+                            groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
+                        })["default"][];
+                        items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
+                        splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                        find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
+                        has(vary: $giper_baza_vary_type, next?: boolean, tag?: keyof typeof $giper_baza_unit_sand_tag): boolean;
+                        add(vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                        cut(vary: $giper_baza_vary_type): void;
+                        move(from: number, to: number): void;
+                        wipe(seat: number): void;
+                        pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
+                        [$mol_dev_format_head](): any[];
+                        land(): $giper_baza_land;
+                        head(): $giper_baza_link;
+                        land_link(): $giper_baza_link;
+                        link(): $giper_baza_link;
+                        toJSON(): string;
+                        cast<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1): InstanceType<Pawn_1>;
+                        pawns<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1 | null): readonly InstanceType<Pawn_1>[];
+                        units(): $giper_baza_unit_sand[];
+                        units_of(peer: $giper_baza_link | null): $giper_baza_unit_sand[];
+                        meta(next?: $giper_baza_link): $giper_baza_link | null;
+                        meta_of(peer: $giper_baza_link | null): $giper_baza_link | null;
+                        filled(): boolean;
+                        can_change(): boolean;
+                        last_change(): $mol_time_moment | null;
+                        authors(): $giper_baza_auth_pass[];
+                        get $(): $;
+                        set $(next: $);
+                        destructor(): void;
+                        toString(): string;
+                        [Symbol.toStringTag]: string;
+                        [$mol_ambient_ref]: $;
+                        [Symbol.dispose](): void;
+                    };
+                    Item: Init extends typeof $mol_schema_any ? Init : {
+                        new (value?: any): {
+                            constructor: Function;
+                            toString(): string;
+                            toLocaleString(): string;
+                            valueOf(): Object;
+                            hasOwnProperty(v: PropertyKey): boolean;
+                            isPrototypeOf(v: Object): boolean;
+                            propertyIsEnumerable(v: PropertyKey): boolean;
+                        };
+                        Class: Init;
+                        toString(): string;
+                        guard<This extends typeof $mol_schema_any, Value>(this: This, value: Value): Value & This["default"];
+                        cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
+                        default: InstanceType<Init>;
+                        check<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): value is Value_1 & This["default"];
+                        [Symbol.toStringTag]: string;
+                        [$mol_key_handle](): string;
+                        [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
+                        getPrototypeOf(o: any): any;
+                        getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
+                        getOwnPropertyNames(o: any): string[];
+                        create(o: object | null): any;
+                        create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
+                        defineProperty<T_1>(o: T_1, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T_1;
+                        defineProperties<T_1>(o: T_1, properties: PropertyDescriptorMap & ThisType<any>): T_1;
+                        seal<T_1>(o: T_1): T_1;
+                        freeze<T_1 extends Function>(f: T_1): T_1;
+                        freeze<T_1 extends {
+                            [idx: string]: U | null | undefined | object;
+                        }, U extends string | bigint | number | boolean | symbol>(o: T_1): Readonly<T_1>;
+                        freeze<T_1>(o: T_1): Readonly<T_1>;
+                        preventExtensions<T_1>(o: T_1): T_1;
+                        isSealed(o: any): boolean;
+                        isFrozen(o: any): boolean;
+                        isExtensible(o: any): boolean;
+                        keys(o: object): string[];
+                        keys(o: {}): string[];
+                        assign<T_1 extends {}, U_1>(target: T_1, source: U_1): T_1 & U_1;
+                        assign<T_1 extends {}, U_2, V>(target: T_1, source1: U_2, source2: V): T_1 & U_2 & V;
+                        assign<T_1 extends {}, U_3, V_1, W>(target: T_1, source1: U_3, source2: V_1, source3: W): T_1 & U_3 & V_1 & W;
+                        assign(target: object, ...sources: any[]): any;
+                        getOwnPropertySymbols(o: any): symbol[];
+                        is(value1: any, value2: any): boolean;
+                        setPrototypeOf(o: any, proto: object | null): any;
+                        values<T_1>(o: {
+                            [s: string]: T_1;
+                        } | ArrayLike<T_1>): T_1[];
+                        values(o: {}): any[];
+                        entries<T_1>(o: {
+                            [s: string]: T_1;
+                        } | ArrayLike<T_1>): [string, T_1][];
+                        entries(o: {}): [string, any][];
+                        getOwnPropertyDescriptors<T_1>(o: T_1): { [P in keyof T_1]: TypedPropertyDescriptor<T_1[P]>; } & {
+                            [x: string]: PropertyDescriptor;
+                        };
+                        fromEntries<T_1 = any>(entries: Iterable<readonly [PropertyKey, T_1]>): {
+                            [k: string]: T_1;
+                        };
+                        fromEntries(entries: Iterable<readonly any[]>): any;
+                        hasOwn(o: object, v: PropertyKey): boolean;
+                        groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
+                    };
+                    toString(): any;
+                    tag: keyof typeof $giper_baza_unit_sand_tag;
+                    of<Init extends new (...args: any[]) => any>(init: Init): /*elided*/ any;
+                    meta: null | $giper_baza_link;
+                    make<This extends typeof $mol_object>(this: This, config: Partial<InstanceType<This>>): InstanceType<This>;
+                    $: $;
+                    create<Instance>(this: new (init?: (instance: any) => void) => Instance, init?: (instance: $mol_type_writable<Instance>) => void): Instance;
+                    toJSON(): any;
+                    destructor(): void;
+                    [Symbol.toPrimitive](): any;
+                    [$mol_key_handle](): any;
+                };
+                meta: null | $giper_baza_link;
+                make<This extends typeof $mol_object>(this: This, config: Partial<InstanceType<This>>): InstanceType<This>;
+                $: $;
+                create<Instance>(this: new (init?: (instance: any) => void) => Instance, init?: (instance: $mol_type_writable<Instance>) => void): Instance;
+                toJSON(): any;
+                destructor(): void;
+                [Symbol.toPrimitive](): any;
+                [$mol_key_handle](): any;
+            };
+        };
+    };
+    /**
+     * Anchor of the component library of a user, in the home land.
+     *
+     * A neighbour of `$bog_vmap_app_doc_home` on the same root pawn, not a field on
+     * it: fields are keyed by name inside the pawn, so `Libs` sits beside `Docs`
+     * without the document schema learning about libraries.
+     *
+     * A LIST and not one link, on purpose. A pointer made «when there is none» is
+     * forked by a second device whose cache has not caught up yet, and with one atom
+     * the later write wins and the first library is orphaned with everything in it.
+     * A list merges instead, and the first item is the one everybody publishes to.
+     */
+    export class $bog_vmap_app_publish_home extends $bog_vmap_app_publish_home_base {
+    }
+    /**
+     * Publishing a component of the document into the library of the user.
+     *
+     * The CRUD over the shelf of `lib/land`: which land the library is grabbed
+     * into, how a part of the document becomes a class of the library, how a second
+     * publication of the same class finds the first. The schema stays pure.
+     *
+     * Every accessor delegating into an atom is a plain method, see section 9.
+     *
+     * @see ../../ARCHITECTURE.md sections 5 and 9
+     */
+    /** The name a reference carries, without the `?*!` signs. */
+    export function $bog_vmap_app_publish_bare(node: $mol_tree2): string;
+    export class $bog_vmap_app_publish_store extends $mol_object {
+        /** Plain method: a Giper Baza object under `@ $mol_mem` is destructed on a rebuild. */
+        home(): $bog_vmap_app_publish_home;
+        /** Links of every library of the user, merged from every device. */
+        shelf_links(): readonly $giper_baza_link[];
+        /**
+         * The library, or null before the first publication.
+         *
+         * The first of the list: after a merge every device sees the same first
+         * item, so a fork of the pointer costs at most one stray empty library.
+         */
+        shelf(): $bog_vmap_lib_land_shelf | null;
+        /**
+         * Rights of the library land: readable by anybody holding the link, which is
+         * what a link into somebody else's palette needs. A preset with `null` in it
+         * is also an unencrypted land. Tests hand in a land to make an area of,
+         * which costs no proof of work; the editor never does.
+         */
+        shelf_land_config(): $giper_baza_rank_preset | $giper_baza_land;
+        shelf_title(): string;
+        /**
+         * The library, made on first use. **Reach this from a fiber only**: grabbing
+         * the land mines proof of work, and the task doing it is cached per fiber.
+         * Checked at the top, so a retry of the fiber does not make a second one.
+         */
+        shelf_ensure(): $bog_vmap_lib_land_shelf;
+        /**
+         * Link of the library land, as the palette field of another scene takes it,
+         * or empty before the first publication.
+         */
+        link(): string;
+        /**
+         * Name of the library class a part of the document is published as.
+         *
+         * A part is a property of the root class, `Button_minor $mol_button_minor`,
+         * and a property name cannot start with `$`, while a class of a library must:
+         * the scene compiles nothing else. So `Button_minor` becomes
+         * `$bog_vmap_pub_button_minor`. Its own prefix, so that a part called `App`
+         * or `Scene` cannot shadow a real module of this pack.
+         */
+        class_name(part: string): string;
+        /**
+         * Declaration of the part as a class of the library: the same tree under the
+         * library name. Only the first token changes, the body is byte for byte.
+         */
+        class_source(part: string, source: string): string;
+        /** The declaration of a part parsed, or null for an empty source. */
+        tree(source: string): $mol_tree2;
+        /**
+         * The body of a part with the sub-views of the document put back in.
+         *
+         * The editor keeps the document normalized: `upper` hoists every nested
+         * `<= Inner $mol_view …` onto the root and leaves a bare `<= Inner` in the
+         * part. Published alone, that bare name is a hole. This is the reverse: a
+         * bare reference to a root property declared as a NODE, `Inner Class …`,
+         * gets that declaration back in its place, and so on down, so the class
+         * carries the whole tree. `doc` is the root class; empty leaves the body as
+         * it is.
+         *
+         * A name met again on the way down is a loop of the document and stays
+         * bare, so the refusal names it. `shared` are the sub-views somebody else in
+         * the document reads too: they go out as a copy, and the note says so.
+         */
+        inlined(source: string, doc: string): {
+            source: string;
+            shared: readonly string[];
+        };
+        /**
+         * Properties of the DOCUMENT a part is wired to, by name.
+         *
+         * Every `<=` and `<=>` inside a part compiles to `this.name()` on the ROOT,
+         * see section 1. A reference with kids, `<= Inner $mol_view …`, declares
+         * `Inner` right there through `upper`, so the declaration travels with the
+         * published class and resolves. A bare one, and the node of a `=`, declares
+         * nothing: published alone, the class resolves them against itself, where
+         * nothing has them — a green compile and a hole at run time. Those are the
+         * names here, unless the part declares them itself. Runs on the body after
+         * `inlined`, so what is left bare is a value of the document or a wire.
+         */
+        bound_names(source: string): string[];
+        /**
+         * The refusal in the user's words, or empty when the part may go. `classes`
+         * are the classes the document authors: a part based on one of them takes
+         * its base along nowhere.
+         */
+        refusal(part: string, source: string, classes?: readonly string[]): string;
+        /**
+         * The rule of a part, re-addressed to the class it goes out as.
+         *
+         * A rule written in a document names the sub view by the attribute mol puts
+         * on it there — the root class plus the property, `[my_site_page_card]`. The
+         * copy is a class of its own and carries `[bog_vmap_pub_card]` instead, so
+         * the rule as written addresses an element that does not exist in any
+         * document but the one it came from: measured, the styles of a published
+         * part simply never applied.
+         *
+         * A prefix replacement and not a parse, deliberately. What has to change is
+         * the name, the rest is the author's text, and a stylesheet that fails to
+         * parse would lose rules instead of moving them.
+         */
+        css_moved(css: string, from: string, to: string): string;
+        /** The part of the library declaring this class, or null. */
+        part_of(shelf: $bog_vmap_lib_land_shelf, klass: string): $bog_vmap_lib_land_part | null;
+        /**
+         * Publishes a part of the document: its declaration, body and styles become
+         * one part of the library, or replace the one already declaring this class.
+         *
+         * **From a fiber only**, `$mol_wire_async( store ).publish( … )`, with the
+         * texts taken before the call: the first publication grabs the land, and a
+         * plain method inside one fiber is what lets the proof of work be cached
+         * across the retries. Answers the link of the library.
+         *
+         * A part wired to the document, or based on a class of it, is refused before
+         * anything is written, see `refusal`; the view asks it first and shows it.
+         */
+        publish(part: string, source: string, js?: string, css?: string, classes?: readonly string[]): string;
+        /**
+         * Puts a class brought from OUTSIDE into the library under the name it
+         * already carries, replacing the one that declared that name before.
+         *
+         * The difference from `publish` is the name and only the name. A part of a
+         * document is a property, `Calc`, and has to be given a class name to
+         * become a component at all; a file names its class itself, and its
+         * neighbours in the same module refer to it by that name — renaming it
+         * would cut every one of those references, silently, because a base nobody
+         * declares compiles green and fails at run time.
+         *
+         * **From a fiber only**, for the reason spelled out at `publish`.
+         */
+        import_class(source: string, js?: string, css?: string): string;
+    }
+    export {};
+}
+
+declare namespace $ {
+
+	type $mol_button_minor__title_bog_vmap_app_publish_1 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_bog_vmap_app_publish_2 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_publish['publish_hint'] >
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_bog_vmap_app_publish_3 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_publish['enabled'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_bog_vmap_app_publish_4 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_publish['publish'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_copy__hint_bog_vmap_app_publish_5 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_copy['hint'] >
+	>
+	type $mol_button_copy__text_bog_vmap_app_publish_6 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_publish['lib_link'] >
+		,
+		ReturnType< $mol_button_copy['text'] >
+	>
+	type $mol_button_copy__title_bog_vmap_app_publish_7 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_publish['lib_link'] >
+		,
+		ReturnType< $mol_button_copy['title'] >
+	>
+	type $mol_view__sub_bog_vmap_app_publish_8 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	export class $bog_vmap_app_publish extends $mol_view {
+		content( ): readonly($mol_view)[]
+		publish_hint( ): string
+		enabled( ): boolean
+		publish( next?: any ): any
+		note( ): string
+		store( ): $bog_vmap_app_publish_store
+		part( ): string
+		source( ): string
+		js( ): string
+		css( ): string
+		doc( ): string
+		classes( ): readonly(string)[]
+		lib_link( ): string
+		sub( ): ReturnType< $bog_vmap_app_publish['content'] >
+		Publish( ): $mol_button_minor
+		Copy( ): $mol_button_copy
+		Note( ): $mol_view
+	}
+	
+}
+
+//# sourceMappingURL=publish.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * The publish button of the head bar and the link it produces.
+     *
+     * Every value read from the store is a plain method: the values behind them are
+     * atoms, and a `@ $mol_mem` in front of an atom freezes at what was written
+     * through it. The one memoized cell here is what was published this session.
+     *
+     * @see ../../ARCHITECTURE.md sections 5 and 9
+     */
+    class $bog_vmap_app_publish extends $.$bog_vmap_app_publish {
+        enabled(): boolean;
+        /** Library class the picked part would be published as, or empty. */
+        class_name(): string;
+        publish_hint(): string;
+        lib_link(): string;
+        /** Class published this session, last. Empty until the first click. */
+        published(next?: string): string;
+        /** Why the last click did nothing, in the user's words. Empty when it did. */
+        refused(next?: string): string;
+        /** Sub-views that went out as a copy because the document reads them too. */
+        shared(next?: readonly string[]): readonly string[];
+        note(): string;
+        /**
+         * Publishes the picked part. The handler is a fiber already, and the store
+         * method runs inside it: the first publication grabs a land, and the proof
+         * of work is cached for the retries of this very fiber.
+         *
+         * Nothing leaves here but a suspension. A throw out of a click handler is a
+         * speck on the button and a promise nobody awaits, which on the screen is
+         * nothing: measured on the deploy, where a node picked inside another part
+         * has no text of its own and the click died with words nobody saw. So an
+         * error is words on the bar as well, and a suspension is let through — it
+         * is how the fiber waits for the land, and a retry starts over from here.
+         */
+        publish(next?: Event | null): null;
+        /**
+         * One try at publishing the part, texts read before the write. Answers the
+         * refusal in the user's words, empty once the part went out. A part the
+         * document does not declare — a node picked inside another part — has no
+         * text, and is refused before the store could throw over it.
+         */
+        attempt(part: string): string;
+        /** The button always; the link once there is one; the note once something went out. */
+        content(): readonly $mol_view[];
+    }
+}
+
+declare namespace $.$$ {
+}
+
+declare namespace $ {
+
+	export class $mol_icon_download extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=download.view.tree.d.ts.map
+/** @jsx $mol_jsx */
+declare namespace $.$$ {
+    /**
+     * Button download file from uri() or a blob()
+     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_button_demo
+     */
+    class $mol_button_download extends $.$mol_button_download {
+        uri(): string;
+        click(): void;
+    }
+}
+
+declare namespace $ {
+
+	export class $mol_button_download extends $mol_button_minor {
+		Icon( ): $mol_icon_download
+		title( ): string
+		blob( ): any
+		uri( ): string
+		file_name( ): string
+		sub( ): readonly(any)[]
+	}
+	
+}
+
+//# sourceMappingURL=download.view.tree.d.ts.map
+declare namespace $ {
+    /** Canvas places by the property name they occupy on the root class. */
+    type $bog_vmap_app_store_spots = {
+        readonly [name: string]: {
+            readonly x: number;
+            readonly y: number;
+        };
+    };
+    /**
+     * Persistence of the editor: the documents of a user in Giper Baza.
+     *
+     * The CRUD lives here so the schema can stay pure, and the views ask this
+     * object instead of touching pawns.
+     *
+     * **Every accessor delegating into an atom is a plain method**, never a cell:
+     * a cell of that shape freezes at the value written through it and stops
+     * seeing remote edits. Reactivity is not lost by it, the atom is a cell already.
+     *
+     * Masters are not named here: a module works against whatever node the
+     * application chose.
+     *
+     * @see ../../ARCHITECTURE.md section 9
+     */
+    class $bog_vmap_app_store extends $mol_object {
+        /**
+         * Anchor of the documents in the home land of the user.
+         *
+         * The root pawn the profile lives on, read through our dictionary, so the
+         * list sits beside whatever else the home land carries. Plain method: a
+         * Giper Baza object held by a cell is destructed on a graph rebuild and
+         * drags the yard into a circular subscription.
+         */
+        home(): $bog_vmap_app_doc_home;
+        /** Links of every document of the user, in the order they were made. */
+        doc_links(): readonly $giper_baza_link[];
+        /**
+         * A document by its link.
+         *
+         * Through the glob and not through the home land, because a document is a
+         * land of its own — that is what lets a link to it be shared. Reading any
+         * field of it asks the land to sync on the way (`sand_ordered` does, see
+         * `land.ts`), so nothing has to be done here for a document made elsewhere.
+         */
+        doc(link: $giper_baza_link): $bog_vmap_app_doc;
+        /**
+         * Link of the current document as written in the address, or null.
+         *
+         * In the fragment, never the query: the query of this page belongs to the
+         * pack address of the scene frame.
+         */
+        doc_arg(next?: string | null): string | null;
+        /**
+         * The document the editor is on: the addressed one, else the last made,
+         * else none while `boot` makes the first.
+         *
+         * A malformed value in the address counts as no address rather than as an
+         * error: a hand edited URL is an ordinary state of a page.
+         */
+        doc_current(): $bog_vmap_app_doc | null;
+        /** Makes the document with this link current, and null goes back to the default. */
+        doc_pick(link: $giper_baza_link | null): void;
+        /**
+         * Whether the current document takes our writes.
+         *
+         * A link in the address opens anybody's public document, and a write into
+         * one made by somebody else fails deep inside the atom. Asked before every
+         * write, so the refusal is a state of the editor rather than an exception
+         * in whichever handler wrote first.
+         */
+        doc_editable(): boolean;
+        /**
+         * What the editor is doing about its document: `ready` to edit, `making`
+         * one in the background, `readonly` on somebody else's document.
+         */
+        stage(): 'ready' | 'making' | 'readonly';
+        /**
+         * Rights of a fresh document land: readable by anybody holding the link.
+         *
+         * Public read is the point and not a default left alone — the address of a
+         * document IS its land link, and a link opens for somebody else only if the
+         * land does. It also leaves the land unencrypted.
+         *
+         * Answering `null` instead means «in the home land, no land of its own»,
+         * which costs no proof of work: that is what the tests hand in, never the
+         * editor.
+         */
+        doc_land_config(): null | $giper_baza_rank_preset;
+        /** Name for the next document: one more than there are. */
+        title_next(): string;
+        /**
+         * Makes a new document, current from now on.
+         *
+         * **Reach this from a fiber only.** Grabbing the land mines proof of work,
+         * and the task doing it is cached per fiber; outside one, every promise
+         * thrown on the way restarts the caller with a fresh proof of work, for
+         * ever. Plain method and not an action for the same reason: an action opens
+         * a fiber per call, which is that fresh task per retry.
+         *
+         * The root is recorded rather than derived from the order, so that
+         * reordering the classes later does not move which one is the page.
+         */
+        doc_add(title?: string, source?: string, spots?: $bog_vmap_app_store_spots, pack?: string): $bog_vmap_app_doc;
+        /**
+         * The first document of a user, made from whatever was drafted meanwhile.
+         *
+         * The check at the top is what makes the retries safe: a document that
+         * arrived from another device while the proof of work was being mined must
+         * not be pushed aside by ours.
+         *
+         * It guards against that device and not against our own half made document,
+         * and cannot confuse the two: a restarted fiber replays its reads from its
+         * own cache, so the list here reads as it read at the start — empty. That
+         * is what carries a pouring interrupted halfway through to the end.
+         */
+        doc_first(): void;
+        /**
+         * The one fiber making the first document, held by a cell of its own.
+         *
+         * A cell that reads NOTHING and answers with the fiber it made. Reading
+         * nothing is the point: an invalidation arriving while a cell computes is
+         * dropped on the spot, and the document landing is exactly such an
+         * invalidation, so a cell with no dependencies has nothing to lose that way.
+         * Reading it again while the proof of work is still mining gives back the
+         * same object, which is what keeps one fiber one fiber.
+         *
+         * The fiber is wrapped rather than returned as it is: a cell answering with
+         * a promise is a cell that never finished, and every reader of it suspends
+         * for ever.
+         *
+         * **The wrapper has no destructor, so this cell holds the handle and not
+         * the life.** The draft is poured after the document is already in the list,
+         * so there is a window where a cell nobody reads gets collected; owning the
+         * fiber would end it inside that window and lose the typed text silently.
+         * Nothing leaks by it — a one-shot fiber destructs itself on completion.
+         */
+        doc_first_task(): {
+            task: Promise<void>;
+        };
+        /**
+         * Makes sure there is a document, from the start of the session.
+         *
+         * Suspends while the home land loads, so «there are none» is decided on the
+         * loaded list and not on an empty cache, then answers at once so that
+         * nothing waits on the proof of work.
+         *
+         * A plain method and not a cell: a cell here answered `making` for good,
+         * because the document lands while it is still computing and the
+         * invalidation that causes is dropped rather than remembered.
+         */
+        boot(): 'ready' | 'making';
+        /**
+         * Text the editor works on before it has a document, and never after: the
+         * background fiber pours it into the first document in one go.
+         */
+        draft_source(next?: string): string;
+        draft_spots(next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
+        draft_pack(next?: string): string;
+        /**
+         * Nodes of a document, resolved in the document's own land.
+         *
+         * Resolved by hand rather than through the remote list: that one goes out
+         * through the static glob and waits on a master. The nodes were made in
+         * this very land, so reading them here is correct and not merely cheaper.
+         */
+        nodes(doc: $bog_vmap_app_doc): $bog_vmap_app_doc_node[];
+        /**
+         * Text of a document: its classes, one per node, as one source.
+         *
+         * Classes are matched to nodes BY NAME, which is what makes an edit of one
+         * class one atom on the wire — and what makes a rename arrive as a new node,
+         * so whatever is stored per class name has to be carried by whoever renames.
+         *
+         * Parsed plainly and not normalized: this is transport, and the model above
+         * is the one that decides what canonical looks like. Round trip is byte for
+         * byte on text already in that shape.
+         */
+        doc_source(doc: $bog_vmap_app_doc, next?: string): string;
+        /** Node of a document by the name of the class it declares, or null. */
+        node(doc: $bog_vmap_app_doc, name: string): $bog_vmap_app_doc_node | null;
+        /** Hand written class body of one node, by class name. */
+        node_js(doc: $bog_vmap_app_doc, name: string, next?: string): string;
+        /** Styles of one node, by class name. */
+        node_css(doc: $bog_vmap_app_doc, name: string, next?: string): string;
+        /**
+         * Name of the class the document opens with, or empty. Writing a class name
+         * makes that class the one it opens with.
+         *
+         * Read as a raw link, never through the typed getter: that one resolves
+         * through the static glob, and the node is in this very land anyway.
+         *
+         * The write is what a rename of the root needs, because a renamed class
+         * arrives as a node of its own. A name the document does not carry is
+         * ignored: a pointer at a node outside the list is the state this exists to
+         * prevent.
+         */
+        doc_root(doc: $bog_vmap_app_doc, next?: string): string;
+        /**
+         * Canvas places of a document, as one dictionary in both directions.
+         *
+         * Written whole, so a place gone from the dictionary is cut from the stored
+         * one and a deleted part does not come back at its old coordinates. Read
+         * back in name order: the stored order is the order of the units, which
+         * nobody chose, and a reader comparing deep would see a change where the
+         * places are the same.
+         */
+        doc_spots(doc: $bog_vmap_app_doc, next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
+        /**
+         * Text of the current document, or the draft while the first one is being
+         * made.
+         *
+         * On somebody else's document a write is refused quietly — the text stays
+         * what it was and the stage says why — because the atom would otherwise
+         * throw from inside whatever handler wrote first.
+         */
+        source(next?: string): string;
+        /** Canvas places of the current document, the same way as `source`. */
+        spots(next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
+        /** Human name of the current document. Nothing to name before there is one. */
+        title(next?: string): string;
+        /**
+         * Library of the current document, stored as the string it is typed as.
+         *
+         * Not parsed here on purpose: what the string means is known to the panel
+         * that offers the components, not to the store that keeps it.
+         */
+        pack(next?: string): string;
+    }
+    /**
+     * Name of the class a source declares, or empty when it declares none.
+     *
+     * Asked of the text every time: a stored copy would be a second source of
+     * truth for a fact the text already carries.
+     */
+    function $bog_vmap_app_store_class_name(source: string): string;
+}
+
+declare namespace $ {
+
+	export class $bog_vmap_app_palette_item extends $mol_button_minor {
+		current( ): boolean
+		minimal_height( ): number
+		drag_start( next?: any ): any
+		attr( ): ({ 
+			'bog_vmap_app_palette_item_current': ReturnType< $bog_vmap_app_palette_item['current'] >,
+		})  & ReturnType< $mol_button_minor['attr'] >
+		event( ): ({ 
+			pointerdown( next?: ReturnType< $bog_vmap_app_palette_item['drag_start'] > ): ReturnType< $bog_vmap_app_palette_item['drag_start'] >,
+		})  & ReturnType< $mol_button_minor['event'] >
+	}
+	
+}
+
+//# sourceMappingURL=item.view.tree.d.ts.map
+declare namespace $.$$ {
+}
+
+declare namespace $ {
+
+	type $mol_view__sub_bog_vmap_app_palette_port_1 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_palette_port_2 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_palette_port_3 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	export class $bog_vmap_app_palette_port extends $mol_view {
+		Sign( ): $mol_view
+		Body( ): $mol_view
+		Owner( ): $mol_view
+		sign( ): string
+		body( ): string
+		owner( ): string
+		inherited( ): boolean
+		attr( ): ({ 
+			'bog_vmap_app_palette_port_inherited': ReturnType< $bog_vmap_app_palette_port['inherited'] >,
+		})  & ReturnType< $mol_view['attr'] >
+		sub( ): readonly(any)[]
+	}
+	
+}
+
+//# sourceMappingURL=port.view.tree.d.ts.map
+declare namespace $.$$ {
+}
+
+declare namespace $ {
+
+	type $mol_view__sub_bog_vmap_app_palette_1 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_string__hint_bog_vmap_app_palette_2 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_string['hint'] >
+	>
+	type $mol_string__value_bog_vmap_app_palette_3 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['query'] >
+		,
+		ReturnType< $mol_string['value'] >
+	>
+	type $mol_view__sub_bog_vmap_app_palette_4 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_list__rows_bog_vmap_app_palette_5 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['class_rows'] >
+		,
+		ReturnType< $mol_list['rows'] >
+	>
+	type $mol_view__sub_bog_vmap_app_palette_6 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_palette_7 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_palette_8 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_list__rows_bog_vmap_app_palette_9 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['port_rows'] >
+		,
+		ReturnType< $mol_list['rows'] >
+	>
+	type $mol_scroll__sub_bog_vmap_app_palette_10 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_scroll['sub'] >
+	>
+	type $mol_bar__sub_bog_vmap_app_palette_11 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_bar['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_palette_12 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['body_content'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_scroll__sub_bog_vmap_app_palette_13 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_scroll['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_palette_14 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $bog_vmap_app_palette_item__title_bog_vmap_app_palette_15 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['class_title'] >
+		,
+		ReturnType< $bog_vmap_app_palette_item['title'] >
+	>
+	type $bog_vmap_app_palette_item__click_bog_vmap_app_palette_16 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['class_click'] >
+		,
+		ReturnType< $bog_vmap_app_palette_item['click'] >
+	>
+	type $bog_vmap_app_palette_item__current_bog_vmap_app_palette_17 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['class_current'] >
+		,
+		ReturnType< $bog_vmap_app_palette_item['current'] >
+	>
+	type $bog_vmap_app_palette_item__drag_start_bog_vmap_app_palette_18 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['class_drag'] >
+		,
+		ReturnType< $bog_vmap_app_palette_item['drag_start'] >
+	>
+	type $bog_vmap_app_palette_port__sign_bog_vmap_app_palette_19 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['port_sign'] >
+		,
+		ReturnType< $bog_vmap_app_palette_port['sign'] >
+	>
+	type $bog_vmap_app_palette_port__body_bog_vmap_app_palette_20 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['port_body'] >
+		,
+		ReturnType< $bog_vmap_app_palette_port['body'] >
+	>
+	type $bog_vmap_app_palette_port__owner_bog_vmap_app_palette_21 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['port_owner'] >
+		,
+		ReturnType< $bog_vmap_app_palette_port['owner'] >
+	>
+	type $bog_vmap_app_palette_port__inherited_bog_vmap_app_palette_22 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['port_inherited'] >
+		,
+		ReturnType< $bog_vmap_app_palette_port['inherited'] >
+	>
+	type $bog_vmap_lib__pack_bog_vmap_app_palette_23 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['pack_link'] >
+		,
+		ReturnType< $bog_vmap_lib['pack'] >
+	>
+	type $bog_vmap_lib__classes_bog_vmap_app_palette_24 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_palette['land_classes'] >
+		,
+		ReturnType< $bog_vmap_lib['classes'] >
+	>
+	export class $bog_vmap_app_palette extends $mol_view {
+		body( ): readonly($mol_view)[]
+		Brand( ): $mol_view
+		Query( ): $mol_string
+		total( ): string
+		Total( ): $mol_view
+		body_content( ): readonly($mol_view)[]
+		class_rows( ): readonly(any)[]
+		Class_list( ): $mol_list
+		selected_title( ): string
+		Selected( ): $mol_view
+		chain_title( ): string
+		Chain( ): $mol_view
+		Ports_head( ): $mol_view
+		port_rows( ): readonly(any)[]
+		Port_list( ): $mol_list
+		Ports_scroll( ): $mol_scroll
+		class_title( id: any): string
+		class_click( id: any, next?: any ): any
+		class_current( id: any): boolean
+		class_drag( id: any, next?: any ): any
+		port_sign( id: any): string
+		port_body( id: any): string
+		port_owner( id: any): string
+		port_inherited( id: any): boolean
+		pack_link( ): string
+		query( next?: string ): string
+		selected( next?: string ): string
+		compact( ): boolean
+		dragged( next?: string ): string
+		drag_x( next?: number ): number
+		drag_y( next?: number ): number
+		land_classes( ): readonly($mol_tree2)[]
+		attr( ): ({ 
+			'bog_vmap_app_palette_compact': ReturnType< $bog_vmap_app_palette['compact'] >,
+		})  & ReturnType< $mol_view['attr'] >
+		sub( ): ReturnType< $bog_vmap_app_palette['body'] >
+		Head( ): $mol_bar
+		Body( ): $mol_view
+		Classes( ): $mol_scroll
+		Ports( ): $mol_view
+		Class_row( id: any): $bog_vmap_app_palette_item
+		Port_row( id: any): $bog_vmap_app_palette_port
+		Lib( ): $bog_vmap_lib
+	}
+	
+}
+
+//# sourceMappingURL=palette.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * Palette of a component library: every class of a deployed pack, searchable,
+     * with the ports of whichever class is picked.
+     *
+     * Shows, searches and announces the start of a drag. Where the dragged class
+     * lands is a canvas question and is answered by whoever owns the canvas.
+     *
+     * @see ../../ARCHITECTURE.md section 5
+     */
+    class $bog_vmap_app_palette extends $.$bog_vmap_app_palette {
+        /**
+         * Header first, then either both panes or just the list.
+         *
+         * The compact layout drops the ports pane instead of squeezing it: at panel
+         * width the signature column alone eats the row.
+         */
+        body(): readonly $mol_view[];
+        body_content(): readonly $mol_view[];
+        /**
+         * A press on a class row starts carrying it.
+         *
+         * Selection stays on `click`: a press that turns into a drag never becomes a
+         * click, so the two do not fight, and a press that ends where it began picks
+         * the class for the ports pane as before.
+         */
+        class_drag(name: string, event?: PointerEvent | null): void;
+        /**
+         * Classes matching the query, or all of them for an empty query —
+         * `$mol_match_text` of nothing matches everything, so no branch is needed.
+         *
+         * SUSPENSION PASSES THROUGH, a failure does not, and the difference is the
+         * whole point. `$mol_view` turns a suspension into its waiting state, which
+         * is right; it turns a failure into a strip carrying whatever `$mol_fetch`
+         * threw, which is the status line and nothing else — a mistyped address
+         * reached the counter as a bare «Not Found», naming neither the file that
+         * was missing nor the field to fix. Seen on the deploy 09.09.2026.
+         *
+         * So the failure is caught and worded once, here, and read by the counter;
+         * the list is empty meanwhile, which is what a dead pack has to offer.
+         */
+        class_state(): {
+            readonly list: readonly string[];
+            readonly error: string;
+        };
+        class_list(): readonly string[];
+        class_rows(): $bog_vmap_app_palette_item[];
+        class_title(name: string): string;
+        class_current(name: string): boolean;
+        class_click(name: string): void;
+        /** How many classes are on screen, or why there are none at all. */
+        total(): string;
+        selected_title(): string;
+        /** Where the ports come from, nearest base first. */
+        chain_title(): string;
+        /**
+         * Ports of the selected class in the order `props_map` gives them, which is
+         * the order of first declaration up the chain: the base ports of
+         * `$mol_view` first, everything the class added itself last.
+         */
+        port_list(): string[];
+        port_rows(): $bog_vmap_app_palette_port[];
+        /** Declaration of a port, or `null` between a click and the next redraw. */
+        port_node(name: string): $mol_tree2 | null;
+        /**
+         * Name of the port as it is written in the source, suffixes included, so
+         * `click?` is visibly a two-way port and `Menu_option*` visibly a keyed one.
+         */
+        port_sign(name: string): string;
+        /**
+         * First line of the declaration. A port can carry a whole sub tree under it
+         * and the rest of that tree is of no use in a one line row.
+         */
+        port_body(name: string): string;
+        port_owner(name: string): string;
+        port_inherited(name: string): boolean;
+    }
+}
+
+declare namespace $.$$ {
+}
+
+declare namespace $ {
+
+	type $mol_view__sub_bog_vmap_app_scenes_1 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_list__rows_bog_vmap_app_scenes_2 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['scene_rows'] >
+		,
+		ReturnType< $mol_list['rows'] >
+	>
+	type $mol_string__hint_bog_vmap_app_scenes_3 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_string['hint'] >
+	>
+	type $mol_string__enabled_bog_vmap_app_scenes_4 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['current_exists'] >
+		,
+		ReturnType< $mol_string['enabled'] >
+	>
+	type $mol_string__value_bog_vmap_app_scenes_5 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['title'] >
+		,
+		ReturnType< $mol_string['value'] >
+	>
+	type $mol_button_minor__title_bog_vmap_app_scenes_6 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_bog_vmap_app_scenes_7 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__click_bog_vmap_app_scenes_8 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['add'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $bog_vmap_app_palette_item__title_bog_vmap_app_scenes_9 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['scene_title'] >
+		,
+		ReturnType< $bog_vmap_app_palette_item['title'] >
+	>
+	type $bog_vmap_app_palette_item__hint_bog_vmap_app_scenes_10 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['scene_title'] >
+		,
+		ReturnType< $bog_vmap_app_palette_item['hint'] >
+	>
+	type $bog_vmap_app_palette_item__current_bog_vmap_app_scenes_11 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['scene_current'] >
+		,
+		ReturnType< $bog_vmap_app_palette_item['current'] >
+	>
+	type $bog_vmap_app_palette_item__click_bog_vmap_app_scenes_12 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['scene_click'] >
+		,
+		ReturnType< $bog_vmap_app_palette_item['click'] >
+	>
+	export class $bog_vmap_app_scenes extends $mol_view {
+		Head( ): $mol_view
+		scene_rows( ): readonly(any)[]
+		List( ): $mol_list
+		Title( ): $mol_string
+		add( next?: any ): any
+		Add( ): $mol_button_minor
+		scene_title( id: any): string
+		scene_current( id: any): boolean
+		scene_click( id: any, next?: any ): any
+		store( ): $bog_vmap_app_store
+		current( next?: string ): string
+		title( next?: string ): string
+		current_exists( ): boolean
+		sub( ): readonly(any)[]
+		Scene_row( id: any): $bog_vmap_app_palette_item
+	}
+	
+}
+
+//# sourceMappingURL=scenes.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * List of documents down the left edge of the editor.
+     *
+     * Every accessor that writes into the store is a plain method: the values
+     * behind them are atoms, and a `@ $mol_mem` in front of an atom freezes at the
+     * value written through it. The one memoized cell here is read only.
+     *
+     * @see ../../ARCHITECTURE.md section 9
+     */
+    class $bog_vmap_app_scenes extends $.$bog_vmap_app_scenes {
+        /**
+         * Links of the documents, as strings, in the order the store keeps them.
+         *
+         * Read only, so memoization is safe and worth having: the list is rebuilt
+         * from the land on every unrelated change of it, and deep comparison in the
+         * cell spares the rows a rebuild.
+         */
+        scene_links(): readonly string[];
+        scene_rows(): $bog_vmap_app_palette_item[];
+        /** The link object behind a string, or nothing when it is gone from the list. */
+        scene_link(link: string): $giper_baza_link | null;
+        scene_title(link: string): string;
+        scene_current(link: string): boolean;
+        scene_click(link: string, event?: Event | null): void;
+        /**
+         * The open document, by link. Writing picks; an empty or malformed value
+         * goes back to the default, which is the last document made.
+         */
+        current(next?: string): string;
+        current_exists(): boolean;
+        title(next?: string): string;
+        /** Name of the next document, the store's count. */
+        add_title(): string;
+        /**
+         * Makes a new document and opens it.
+         *
+         * The store method is handed to a fiber of its own, and the name is taken
+         * before it: grabbing a land mines proof of work, the fiber retries on every
+         * `Promise` thrown on the way with its sub-tasks cached, and an argument
+         * computed inside the retry would be recomputed — the list is longer once
+         * the document lands — and would start the work over.
+         */
+        add(next?: Event | null): null;
+    }
+}
+
+declare namespace $.$$ {
+}
+
+declare namespace $ {
 
 	export class $mol_icon_upload extends $mol_icon {
 		path( ): string
@@ -47238,91 +48025,6 @@ declare namespace $.$$ {
 }
 
 declare namespace $.$$ {
-}
-
-declare namespace $ {
-
-	type $mol_check__checked_mol_check_list_1 = $mol_type_enforce<
-		ReturnType< $mol_check_list['option_checked'] >
-		,
-		ReturnType< $mol_check['checked'] >
-	>
-	type $mol_check__label_mol_check_list_2 = $mol_type_enforce<
-		ReturnType< $mol_check_list['option_label'] >
-		,
-		ReturnType< $mol_check['label'] >
-	>
-	type $mol_check__enabled_mol_check_list_3 = $mol_type_enforce<
-		ReturnType< $mol_check_list['option_enabled'] >
-		,
-		ReturnType< $mol_check['enabled'] >
-	>
-	type $mol_check__hint_mol_check_list_4 = $mol_type_enforce<
-		ReturnType< $mol_check_list['option_hint'] >
-		,
-		ReturnType< $mol_check['hint'] >
-	>
-	type $mol_check__minimal_height_mol_check_list_5 = $mol_type_enforce<
-		number
-		,
-		ReturnType< $mol_check['minimal_height'] >
-	>
-	export class $mol_check_list extends $mol_view {
-		option_checked( id: any, next?: boolean ): boolean
-		option_title( id: any): string
-		option_label( id: any): readonly(any)[]
-		enabled( ): boolean
-		option_enabled( id: any): ReturnType< $mol_check_list['enabled'] >
-		option_hint( id: any): string
-		items( ): readonly($mol_check)[]
-		dictionary( ): Record<string, any>
-		Option( id: any): $mol_check
-		options( ): Record<string, any>
-		keys( ): readonly(string)[]
-		sub( ): ReturnType< $mol_check_list['items'] >
-	}
-	
-}
-
-//# sourceMappingURL=list.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * List of checkboxes
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_check_list_demo
-     */
-    class $mol_check_list extends $.$mol_check_list {
-        options(): {
-            [key: string]: string;
-        };
-        dictionary(next?: Record<string, boolean>): Record<string, boolean>;
-        option_checked(id: string, next?: boolean | null): boolean;
-        keys(): readonly string[];
-        items(): $.$mol_check[];
-        option_title(key: string): string;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_switch extends $mol_check_list {
-		value( next?: string ): string
-	}
-	
-}
-
-//# sourceMappingURL=switch.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Buttons which switching the state
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_switch_demo
-     */
-    class $mol_switch extends $.$mol_switch {
-        value(next?: string): string;
-        option_checked(key: string, next?: boolean): boolean;
-    }
 }
 
 declare namespace $ {
@@ -49372,690 +50074,6 @@ declare namespace $.$$ {
          * document splices it back, and the classes around it are untouched.
          */
         class_source(next?: string): string;
-    }
-}
-
-declare namespace $.$$ {
-}
-
-declare namespace $ {
-
-	type $mol_switch__value_mol_deck_1 = $mol_type_enforce<
-		ReturnType< $mol_deck['current'] >
-		,
-		ReturnType< $mol_switch['value'] >
-	>
-	type $mol_switch__options_mol_deck_2 = $mol_type_enforce<
-		ReturnType< $mol_deck['switch_options'] >
-		,
-		ReturnType< $mol_switch['options'] >
-	>
-	export class $mol_deck extends $mol_list {
-		current( next?: string ): string
-		switch_options( ): Record<string, any>
-		Switch( ): $mol_switch
-		Content( ): $mol_view
-		items( ): readonly($mol_view)[]
-		rows( ): readonly($mol_view)[]
-	}
-	
-}
-
-//# sourceMappingURL=deck.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * The component which arrange content in multiple tabs.
-     * @seehttps://mol.hyoo.ru/#!section=demos/demo=mol_deck_demo
-     */
-    class $mol_deck extends $.$mol_deck {
-        current(next?: string): string;
-        switch_options(): Record<string, string>;
-        Content(): $mol_view;
-    }
-}
-
-declare namespace $ {
-
-	type $mol_textarea_edit__value_mol_textarea_1 = $mol_type_enforce<
-		ReturnType< $mol_textarea['value'] >
-		,
-		ReturnType< $mol_textarea_edit['value'] >
-	>
-	type $mol_textarea_edit__hint_mol_textarea_2 = $mol_type_enforce<
-		ReturnType< $mol_textarea['hint'] >
-		,
-		ReturnType< $mol_textarea_edit['hint'] >
-	>
-	type $mol_textarea_edit__enabled_mol_textarea_3 = $mol_type_enforce<
-		ReturnType< $mol_textarea['enabled'] >
-		,
-		ReturnType< $mol_textarea_edit['enabled'] >
-	>
-	type $mol_textarea_edit__spellcheck_mol_textarea_4 = $mol_type_enforce<
-		ReturnType< $mol_textarea['spellcheck'] >
-		,
-		ReturnType< $mol_textarea_edit['spellcheck'] >
-	>
-	type $mol_textarea_edit__length_max_mol_textarea_5 = $mol_type_enforce<
-		ReturnType< $mol_textarea['length_max'] >
-		,
-		ReturnType< $mol_textarea_edit['length_max'] >
-	>
-	type $mol_textarea_edit__selection_mol_textarea_6 = $mol_type_enforce<
-		ReturnType< $mol_textarea['selection'] >
-		,
-		ReturnType< $mol_textarea_edit['selection'] >
-	>
-	type $mol_textarea_edit__submit_mol_textarea_7 = $mol_type_enforce<
-		ReturnType< $mol_textarea['submit'] >
-		,
-		ReturnType< $mol_textarea_edit['submit'] >
-	>
-	type $mol_textarea_edit__submit_with_ctrl_mol_textarea_8 = $mol_type_enforce<
-		ReturnType< $mol_textarea['submit_with_ctrl'] >
-		,
-		ReturnType< $mol_textarea_edit['submit_with_ctrl'] >
-	>
-	type $mol_text_code__text_mol_textarea_9 = $mol_type_enforce<
-		ReturnType< $mol_textarea['value'] >
-		,
-		ReturnType< $mol_text_code['text'] >
-	>
-	type $mol_text_code__render_visible_only_mol_textarea_10 = $mol_type_enforce<
-		boolean
-		,
-		ReturnType< $mol_text_code['render_visible_only'] >
-	>
-	type $mol_text_code__row_numb_mol_textarea_11 = $mol_type_enforce<
-		ReturnType< $mol_textarea['row_numb'] >
-		,
-		ReturnType< $mol_text_code['row_numb'] >
-	>
-	type $mol_text_code__sidebar_showed_mol_textarea_12 = $mol_type_enforce<
-		ReturnType< $mol_textarea['sidebar_showed'] >
-		,
-		ReturnType< $mol_text_code['sidebar_showed'] >
-	>
-	type $mol_text_code__highlight_mol_textarea_13 = $mol_type_enforce<
-		ReturnType< $mol_textarea['highlight'] >
-		,
-		ReturnType< $mol_text_code['highlight'] >
-	>
-	type $mol_text_code__syntax_mol_textarea_14 = $mol_type_enforce<
-		ReturnType< $mol_textarea['syntax'] >
-		,
-		ReturnType< $mol_text_code['syntax'] >
-	>
-	export class $mol_textarea extends $mol_stack {
-		clickable( next?: boolean ): boolean
-		sidebar_showed( ): boolean
-		press( next?: any ): any
-		hover( next?: any ): any
-		value( next?: string ): string
-		hint( ): string
-		enabled( ): boolean
-		spellcheck( ): boolean
-		length_max( ): number
-		selection( next?: readonly(number)[] ): readonly(number)[]
-		bring( ): ReturnType< ReturnType< $mol_textarea['Edit'] >['bring'] >
-		submit( next?: any ): any
-		submit_with_ctrl( ): boolean
-		Edit( ): $mol_textarea_edit
-		row_numb( id: any): number
-		highlight( ): string
-		syntax( ): $mol_syntax2
-		View( ): $mol_text_code
-		attr( ): ({ 
-			'mol_textarea_clickable': ReturnType< $mol_textarea['clickable'] >,
-			'mol_textarea_sidebar_showed': ReturnType< $mol_textarea['sidebar_showed'] >,
-		})  & ReturnType< $mol_stack['attr'] >
-		event( ): ({ 
-			keydown( next?: ReturnType< $mol_textarea['press'] > ): ReturnType< $mol_textarea['press'] >,
-			pointermove( next?: ReturnType< $mol_textarea['hover'] > ): ReturnType< $mol_textarea['hover'] >,
-		}) 
-		sub( ): readonly(any)[]
-		symbols_alt( ): Record<string, string>
-		symbols_alt_ctrl( ): Record<string, string>
-		symbols_alt_shift( ): Record<string, string>
-	}
-	
-	export class $mol_textarea_edit extends $mol_string {
-		dom_name( ): string
-		enter( ): string
-		field( ): ({ 
-			'scrollTop': number,
-		})  & ReturnType< $mol_string['field'] >
-	}
-	
-}
-
-//# sourceMappingURL=textarea.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * An input field for entering multiline text.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_textarea_demo
-     */
-    class $mol_textarea extends $.$mol_textarea {
-        indent_inc(): void;
-        indent_dec(): void;
-        symbol_insert(event: KeyboardEvent): void;
-        clickable(next?: boolean): boolean;
-        hover(event: PointerEvent): void;
-        press(event: KeyboardEvent): void;
-        row_numb(index: number): number;
-        syntax(): $mol_syntax2<{
-            'code-indent': RegExp;
-            'code-docs': RegExp;
-            'code-comment-block': RegExp;
-            'code-link': RegExp;
-            'code-comment-inline': RegExp;
-            'code-string': RegExp;
-            'code-number': RegExp;
-            'code-call': RegExp;
-            'code-sexpr': RegExp;
-            'code-field': RegExp;
-            'code-keyword': RegExp;
-            'code-global': RegExp;
-            'code-word': RegExp;
-            'code-decorator': RegExp;
-            'code-tag': RegExp;
-            'code-punctuation': RegExp;
-        }>;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-    /**
-     * Export of a document as a real MAM module.
-     *
-     * Not an abstract «project»: the output is a folder that builds untouched.
-     * That closes the circle of section 5 as well — a built module is a donor pack,
-     * so what is assembled here is a component library for the next document.
-     *
-     * Pure functions over text, with no storage and no DOM behind them: the caller
-     * hands over the sources of its classes and gets files back.
-     *
-     * @see ../../ARCHITECTURE.md section 10
-     */
-    /** One class of the document, as the three sources the editor keeps. */
-    type $bog_vmap_app_export_node = {
-        /** `view.tree` declaration. Carries the class name in its first token. */
-        readonly source: string;
-        /** Hand written class body: method definitions, no wrapping class. */
-        readonly js?: string;
-        /** Raw CSS. */
-        readonly css?: string;
-    };
-    /**
-     * One file of the module. Text only.
-     *
-     * A flat list of named files precisely so that assets can be appended to it
-     * later instead of reworking the shape of the result.
-     */
-    type $bog_vmap_app_export_file = {
-        readonly name: string;
-        readonly text: string;
-    };
-    type $bog_vmap_app_export_module = {
-        /** Folder the module must be placed at, relative to the MAM root. */
-        readonly path: string;
-        /** Last segment of the path, and the base name of every source file. */
-        readonly name: string;
-        /** Class instantiated by `index.html`. */
-        readonly root: string;
-        readonly files: readonly $bog_vmap_app_export_file[];
-    };
-    /**
-     * Folder the classes of a document oblige it to live in.
-     *
-     * The folder is not free: mam turns a class name into a path by replacing every
-     * underscore with a slash, so a module placed anywhere else fails to build
-     * while looking perfectly correct. The document therefore names its own folder,
-     * by the longest common prefix of its class names.
-     *
-     * A prefix shorter than two segments means classes from different packs.
-     * Refused: renaming the author's classes to fit would break «byte for byte from
-     * the editor», and emitting them as they are would produce a folder that does
-     * not build.
-     *
-     * **What this cannot check is whether the root pack exists** — only the machine
-     * doing the build knows that, and this runs in a browser. A well shaped path
-     * into a pack nobody has still fails there. Hence the rule for the interface:
-     * the folder is written where the author reads it, so the first segment is a
-     * decision they see rather than one made for them.
-     */
-    function $bog_vmap_app_export_path(this: $, names: readonly string[]): string;
-    /**
-     * Whether a hand written body defines a method of this name.
-     *
-     * Deliberately the same test the scene applies before decorating, so a property
-     * memoized in the preview is memoized in the export and the two cannot drift.
-     * An override of a memoized property left undecorated loses its atom outright,
-     * and nothing reports it: the method returns a fresh value while the DOM keeps
-     * the old one.
-     */
-    function $bog_vmap_app_export_defines(js: string, name: string): boolean;
-    /** One reason a hand written body would not survive the export. */
-    type $bog_vmap_app_export_complaint = {
-        /** 1-based, counted inside the body the editor shows. */
-        readonly line: number;
-        readonly method: string;
-        readonly param: string;
-        /** Ready to show, in the language of the editor. */
-        readonly text: string;
-    };
-    /**
-     * Parameters of methods that carry no type.
-     *
-     * The divergence of section 10: in the scene a body runs as plain JS, in the
-     * export the same body is compiled with `strict` and `noImplicitAny`. An
-     * untyped parameter is that divergence in practice — it works in the preview
-     * and fails the build, where the author is not.
-     *
-     * Not a type checker: a real compiler in the browser costs megabytes for one
-     * class of error. What needs types to catch — an unknown member, a wrong
-     * type — stays a build failure.
-     *
-     * **The cost of the two mistakes is not the same, so the check is built to miss
-     * rather than to lie.** A complaint refuses the export, and a false one locks
-     * the author inside the editor with no way out; a missed one costs a build
-     * failure with a message of its own. Everything doubtful is therefore passed
-     * over in silence:
-     *
-     * - strings and comments are blanked before anything is read, so a signature
-     *   quoted inside a template literal is not a signature;
-     * - a head is only a head at the indent of the body itself and only when a `{`
-     *   follows, which is what separates a definition from a call and from an
-     *   overload signature;
-     * - only a plain identifier is reported. A destructured parameter is an error
-     *   of the same kind, but naming it sensibly is beyond this, and half a name in
-     *   a refusal is worse than no refusal;
-     * - a default value is a type, an arrow is typed by its context, and a
-     *   parameter list holding brackets of its own is left alone.
-     */
-    function $bog_vmap_app_export_untyped(js: string): readonly $bog_vmap_app_export_complaint[];
-    /**
-     * The same text with every string and comment replaced by spaces.
-     *
-     * Length and line breaks are kept, so a position in the result is the same
-     * position in the source and the line of a complaint stays true. Without it a
-     * signature quoted inside a literal reads as a signature, and that is a refusal
-     * over text that is not code.
-     *
-     * A regular expression literal is not understood, deliberately: telling one
-     * from a division needs a parser, and the whole cost of getting it wrong is a
-     * complaint not raised.
-     */
-    function $bog_vmap_app_export_blanked(js: string): string;
-    /** Indents a hand written body into a class declaration. */
-    function $bog_vmap_app_export_indent(text: string, depth?: number): string;
-    /**
-     * Builds the module.
-     *
-     * @param nodes classes of the document, in any order
-     * @param root class `index.html` instantiates; defaults to the first node
-     */
-    function $bog_vmap_app_export_build(this: $, nodes: readonly $bog_vmap_app_export_node[], root?: string): $bog_vmap_app_export_module;
-    /**
-     * Pages of a document: the artboards its root class draws.
-     *
-     * A node with a `sub` of its own is an artboard, and that is the only mark it
-     * has — the same reading the canvas takes, see section 8. A free part carries
-     * no `sub`, so the router never shows it, and the desk coordinates have nothing
-     * to leak into here.
-     */
-    function $bog_vmap_app_export_pages(model: $bog_vmap_lang_node): string[];
-    /**
-     * A hand written body with the memoizing decorator written above the methods
-     * that need it.
-     *
-     * The decorator over the method is how a person writes it, and what comes out of
-     * here has to read like a module somebody wrote by hand. The expression after
-     * the class is what the SCENE has to do, because a decorator cannot be written
-     * into a string handed to a compiler at run time; a file has no such excuse.
-     *
-     * Where a method starts is not guessed: the body is cut by the same function the
-     * code panel cuts it with, so the two agree about the start of a property by
-     * construction rather than by two implementations happening to match. The
-     * decorator lands under whatever comment belongs to the method and over the
-     * method itself, where a reader looks for it.
-     *
-     * **A body the slicer cannot cut keeps the expression form.** Braces are counted
-     * rather than parsed, so a `}` inside a string is enough to defeat it — and a
-     * body that loses its decorators loses its atoms silently, which is the one
-     * outcome worth an ugly file.
-     */
-    function $bog_vmap_app_export_decorated(this: $, js: string, klass: string, memos: ReadonlyMap<string, string>): {
-        readonly body: string;
-        readonly after: readonly string[];
-    };
-}
-
-declare namespace $ {
-    /**
-     * Slicing of the handwritten sources by property.
-     *
-     * Port of `props_js()`, `props_css()` and the `source_*_prop` family of
-     * `hyoo_studio`. Kept as plain functions with no view around them, because
-     * the whole of stage 4.2 is text in and text out.
-     *
-     * @see ../../ARCHITECTURE.md section 2
-     */
-    /** A property of a class body, and the code that declares it. */
-    type $bog_vmap_app_code_props = Map<string, string>;
-    /**
-     * Class body cut into properties, keyed by property name.
-     *
-     * Counts braces rather than parsing: a body is arbitrary JS, and everything
-     * between the end of the previous property and the opening brace of this one
-     * is where the name lives. Studio does it this way and it holds on real
-     * bodies, comments and nested functions included.
-     */
-    function $bog_vmap_app_code_props_js(this: $, body: string): $bog_vmap_app_code_props;
-    /**
-     * Styles cut into properties, keyed by the property the rule belongs to.
-     *
-     * The selector of a sub-view is the attribute `[<class>_<prop>]` that $mol
-     * writes on it, so the property name is the tail of the attribute once the
-     * name of the class is taken off. A rule about anything else is skipped.
-     */
-    function $bog_vmap_app_code_props_css(this: $, css: string, klass: string): $bog_vmap_app_code_props;
-    /** Sliced properties put back together into one text, in their own order. */
-    function $bog_vmap_app_code_joined(props: $bog_vmap_app_code_props): string;
-    /**
-     * One property replaced in the slicing, with the unrecognized tail kept last.
-     *
-     * A property the text does not carry yet is appended, and the tail is moved
-     * behind it: a `Map` keeps insertion order, so without the move a new property
-     * would land after the leftovers and the two would swap places on every edit.
-     */
-    function $bog_vmap_app_code_with(props: $bog_vmap_app_code_props, name: string, code: string): $bog_vmap_app_code_props;
-    /**
-     * Empty method of a property, for when the body declares none yet.
-     *
-     * The signature follows the property: `*` gives a key, `?` gives a next, and
-     * a plain property takes neither. Same rule as `source_js_prop_default` of
-     * studio, which reads them off the property model instead of a signature.
-     */
-    function $bog_vmap_app_code_js_default(name: string, key?: boolean, next?: boolean): string;
-    /** Empty rule of a property, addressed by the attribute $mol writes on its node. */
-    function $bog_vmap_app_code_css_default(name: string, klass: string): string;
-    /**
-     * Attribute $mol writes for a class: the name without the leading sigil, lower
-     * case. `attr_static()` lowercases the whole thing, so a selector that does not
-     * would simply never match.
-     */
-    function $bog_vmap_app_code_attr(klass: string): string;
-}
-
-declare namespace $ {
-
-	type $mol_bar__sub_bog_vmap_app_code_1 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_code['head_content'] >
-		,
-		ReturnType< $mol_bar['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_code_2 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_check__title_bog_vmap_app_code_3 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_check['title'] >
-	>
-	type $mol_check__hint_bog_vmap_app_code_4 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_check['hint'] >
-	>
-	type $mol_check__checked_bog_vmap_app_code_5 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_code['whole'] >
-		,
-		ReturnType< $mol_check['checked'] >
-	>
-	type $mol_view__sub_bog_vmap_app_code_6 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_code_7 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_code_8 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_code['typing_rows'] >
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_code_9 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_deck__items_bog_vmap_app_code_10 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_code['source_tabs'] >
-		,
-		ReturnType< $mol_deck['items'] >
-	>
-	type $mol_textarea__title_bog_vmap_app_code_11 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_textarea['title'] >
-	>
-	type $mol_textarea__hint_bog_vmap_app_code_12 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_textarea['hint'] >
-	>
-	type $mol_textarea__sidebar_showed_bog_vmap_app_code_13 = $mol_type_enforce<
-		boolean
-		,
-		ReturnType< $mol_textarea['sidebar_showed'] >
-	>
-	type $mol_textarea__value_bog_vmap_app_code_14 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_code['tree_text'] >
-		,
-		ReturnType< $mol_textarea['value'] >
-	>
-	type $mol_textarea__title_bog_vmap_app_code_15 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_textarea['title'] >
-	>
-	type $mol_textarea__hint_bog_vmap_app_code_16 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_textarea['hint'] >
-	>
-	type $mol_textarea__sidebar_showed_bog_vmap_app_code_17 = $mol_type_enforce<
-		boolean
-		,
-		ReturnType< $mol_textarea['sidebar_showed'] >
-	>
-	type $mol_textarea__value_bog_vmap_app_code_18 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_code['js_text'] >
-		,
-		ReturnType< $mol_textarea['value'] >
-	>
-	type $mol_view__title_bog_vmap_app_code_19 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_view['title'] >
-	>
-	type $mol_view__sub_bog_vmap_app_code_20 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_textarea__title_bog_vmap_app_code_21 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_textarea['title'] >
-	>
-	type $mol_textarea__hint_bog_vmap_app_code_22 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_textarea['hint'] >
-	>
-	type $mol_textarea__sidebar_showed_bog_vmap_app_code_23 = $mol_type_enforce<
-		boolean
-		,
-		ReturnType< $mol_textarea['sidebar_showed'] >
-	>
-	type $mol_textarea__value_bog_vmap_app_code_24 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_code['css_text'] >
-		,
-		ReturnType< $mol_textarea['value'] >
-	>
-	export class $bog_vmap_app_code extends $mol_view {
-		content( ): readonly($mol_view)[]
-		head_content( ): readonly($mol_view)[]
-		scope_note( ): string
-		note( ): string
-		typing_rows( ): readonly($mol_view)[]
-		typing_text( id: any): string
-		source_tabs( ): readonly($mol_view)[]
-		tree_text( next?: string ): string
-		js_text( next?: string ): string
-		js_idle_note( ): string
-		css_text( next?: string ): string
-		klass( ): string
-		prop( ): string
-		hooks( ): readonly(string)[]
-		source( next?: string ): string
-		node_source( next?: string ): string
-		js( next?: string ): string
-		css( next?: string ): string
-		error( ): string
-		whole( next?: boolean ): boolean
-		refusal( next?: string ): string
-		sub( ): ReturnType< $bog_vmap_app_code['content'] >
-		Head( ): $mol_bar
-		Scope_note( ): $mol_view
-		Scope( ): $mol_check
-		Alarm( ): $mol_view
-		Refusal( ): $mol_view
-		Typing( ): $mol_view
-		Typing_row( id: any): $mol_view
-		Sources( ): $mol_deck
-		Tree( ): $mol_textarea
-		Js( ): $mol_textarea
-		Js_idle( ): $mol_view
-		Css( ): $mol_textarea
-	}
-	
-}
-
-//# sourceMappingURL=code.view.tree.d.ts.map
-declare namespace $.$$ {
-    /** Which of the three texts a draft belongs to. */
-    type $bog_vmap_app_code_slot = 'tree' | 'js' | 'css';
-    /**
-     * Editor of the three sources of a node.
-     *
-     * Every text goes through one pair of plain methods, read and write on the same
-     * path: none of them is a `@ $mol_mem`, because writing to a cell freezes its
-     * dependencies and the field would stop following the document after the first
-     * edit made in it. What the cells here hold is only what nothing else can
-     * recompute — the text that failed to parse, and why.
-     *
-     * @see ../../ARCHITECTURE.md sections 1 and 2
-     */
-    class $bog_vmap_app_code extends $.$bog_vmap_app_code {
-        /** Whether one node is being edited rather than the class it belongs to. */
-        sliced(): boolean;
-        scope_note(): string;
-        /**
-         * Text typed into a field that the document refused, or `null`.
-         *
-         * Kept so that a broken `view.tree` can be fixed where it was written
-         * instead of vanishing on the next redraw. Cleared by the write that parses.
-         *
-         * Keyed by the tab AND by what is being edited in it. Keyed by the tab alone
-         * it would follow the panel rather than the text: a refused edit made on one
-         * node would show up under the name of the next node picked, and correcting
-         * it there would write it into that other node.
-         */
-        draft(id: string, next?: string | null): string | null;
-        /** Address of a draft: the tab, plus the node when one is being edited. */
-        draft_id(slot: $bog_vmap_app_code_slot): string;
-        /** Why the last edit was not written into the document. Empty when it was. */
-        refusal(next?: string): string;
-        /**
-         * Writes a text through, keeping it in the field when it is refused.
-         *
-         * A throw out of a setter of `$mol_string` goes into `setCustomValidity`,
-         * which outside a form is nowhere at all, so the message is put on a channel
-         * of our own before anything is thrown. A suspended read passes through
-         * untouched — swallowing it would turn a wait into an error.
-         */
-        written(slot: $bog_vmap_app_code_slot, next: string, write: (next: string) => void): string;
-        /** `view.tree` of the node, or of the whole document. */
-        tree_text(next?: string): string;
-        /** Properties of the class body, or the reason it could not be cut into them. */
-        props_js(): $bog_vmap_app_code_props;
-        /** Properties of the class styles, the same way. */
-        props_css(): $bog_vmap_app_code_props;
-        /**
-         * Body of the node, which is the methods its declaration asks for.
-         *
-         * NOT one method named after the node. That name belongs to the factory of
-         * the sub-view in the generated class, so a handwritten method of that name
-         * shadows the factory and the node leaves the canvas — measured on the
-         * generator, which emits `Calc(){ const obj = new this.$.$mol_view(); … }`
-         * for a node called `Calc`. What a person opens this tab to write is the
-         * other side of a binding: `title <= greeting` wants `greeting()`.
-         */
-        js_text(next?: string): string;
-        /** Whether the JS tab has anything for this node to edit at all. */
-        js_writable(): boolean;
-        js_idle_note(): string;
-        /** The JS tab: the field when there is something to write in it, the reason when not. */
-        source_tabs(): readonly $mol_view[];
-        css_text(next?: string): string;
-        /**
-         * The slice of one property, or the empty one when the text has no such
-         * property and when it cannot be cut at all.
-         *
-         * A text that does not slice is a state of the panel, not an exception: the
-         * class is still there, still compiles for all we know, and the way out is
-         * the switch to the whole class, which the message names.
-         */
-        sliced_read(read: () => string | undefined, empty: () => string): string;
-        /**
-         * Whether the class texts can be cut by property at all.
-         *
-         * A pure derivation, so it is a cell: it reads the two texts and nothing
-         * else, and says the same thing the read path silently works around.
-         */
-        sliceable(): boolean;
-        /**
-         * Untyped parameters of the body, as the export names them.
-         *
-         * The same check the export refuses on, called here so that the author reads
-         * the complaint where the mistake was made rather than at the outbound gate.
-         * A body in the scene goes through `new Function`, which takes any JS, so
-         * nothing else in the editor would ever say a word about this.
-         *
-         * Checked on the text the tab is SHOWING, not on the whole class. That is
-         * what makes the line number true in both modes, and it removes the filter
-         * this used to carry: filtering by the name of the node hid every complaint
-         * a person could actually make, because the one method they must never write
-         * is the one named after the node.
-         */
-        complaints(): readonly $bog_vmap_app_export_complaint[];
-        typing_rows(): $mol_view[];
-        typing_text(index: number): string;
-        head_content(): readonly $mol_view[];
-        content(): readonly $mol_view[];
-        /** The refusal, or the standing reason the slicing is off. */
-        note(): string;
     }
 }
 
