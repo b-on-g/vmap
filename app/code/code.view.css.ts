@@ -54,6 +54,21 @@ namespace $.$$ {
 		Sources: {
 			flex: { direction: 'column', grow: 1, shrink: 1 },
 			minHeight: 0,
+
+			/**
+			 * The tabs are as wide as their three words and no wider.
+			 *
+			 * `$mol_check_list` is `flex: 1 1 auto`, so in a page it fills a line and
+			 * that is right; in a panel of twenty-odd rems it became a bar of 280 to
+			 * 370 px with «view.tree JS CSS» huddled at one end of it. Measured on
+			 * the deploy. The options themselves never stretched — `$mol_check` is
+			 * `flex: 0 0 auto` — so it is the bar around them that has to stop.
+			 */
+			'$mol_switch': {
+				alignSelf: 'flex-start',
+				flex: { grow: 0 },
+			},
+
 		},
 
 	} )
