@@ -1065,6 +1065,69 @@ namespace $ {
 
 		},
 
+		/**
+		 * A pick belongs to the document it was made in.
+		 *
+		 * One pick for the whole editor left a ring hanging over the empty canvas of
+		 * a brand new scene and opened the inspector on a node that scene never had;
+		 * the panel then answered with a red strip in every field, grew the page and
+		 * pushed the head bar off screen. Seen on the deploy, 09.09.2026.
+		 */
+		async 'a pick belongs to its scene, and a new scene opens with none'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( `${d}flow_calc`, stage.client([ 200, 150 ]) )
+
+			const first = stage.store.doc_current()!.link().str
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+
+			stage.click( stage.button( 'Новая сцена' ) )
+
+			// The store makes the document in a fiber of its own, as the click does.
+			await $bog_vmap_app_flow_settle( ()=> stage.store.doc_links().length > 1 )
+			stage.redraw()
+
+			// Nothing picked, so no ring on the canvas and an invitation in the panel
+			// instead of an inspector opened on a node the document does not have.
+			$mol_assert_equal( stage.app.selected(), null )
+			$mol_assert_equal( stage.root.querySelector( '[bog_vmap_app_pane_handle]' ), null )
+			$mol_assert_ok( stage.text().includes( 'Выберите узел на холсте' ) )
+
+			// Back to the first scene, and the pick is where it was left.
+			const scenes = stage.app.Scenes() as $$.$bog_vmap_app_scenes
+			scenes.current( first )
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+
+		},
+
+		/**
+		 * A pick that names nothing the document declares is no pick at all.
+		 *
+		 * The other half of the same defect, and the one that would come back
+		 * elsewhere: the panel asks the document rather than trusting the name, so a
+		 * document that does not parse gives an invitation and not twenty failures.
+		 */
+		'a pick naming nothing in the document leaves the panel inviting'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( `${d}flow_calc`, stage.client([ 200, 150 ]) )
+			$mol_assert_equal( stage.app.selection_alive(), true )
+
+			// The node goes out of the text under the pick, as a rename or an edit
+			// in the code panel can do.
+			stage.app.doc_source( `${ stage.app.doc_root() } ${d}mol_view\n\tsub /\n` )
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+			$mol_assert_equal( stage.app.selection_alive(), false )
+			$mol_assert_ok( stage.text().includes( 'Выберите узел на холсте' ) )
+
+		},
+
 	})
 
 }
