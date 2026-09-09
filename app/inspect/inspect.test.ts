@@ -242,6 +242,31 @@ namespace $ {
 
 		},
 
+
+		/**
+		 * A source with no class in it is a state, not a failure.
+		 *
+		 * Every cell of this panel derives from one class, so with none they all
+		 * fail at once and the panel answers with a wall of red strips. It happened
+		 * on the deploy, where a pick outlived the document it was made in.
+		 */
+		'a source naming no class leaves an invitation, not twenty failures'( $ ) {
+
+			const one = inspect_of( $, '' )
+
+			$mol_assert_equal( one.class_ready(), false )
+			$mol_assert_like( one.sub(), [ one.Empty() ] )
+
+			// Nothing else is even asked, so nothing else can throw.
+			$mol_assert_ok( one.sub().length === 1 )
+
+			// And a real class brings the panel back whole.
+			one.source( `${d}my_card ${d}mol_view\n\ttitle \\Hi\n` )
+
+			$mol_assert_equal( one.class_ready(), true )
+			$mol_assert_ok( one.sub().length > 1 )
+
+		},
 	})
 
 	/** `d` keeps `$` out of the literals: mam reads them when building its graph. */

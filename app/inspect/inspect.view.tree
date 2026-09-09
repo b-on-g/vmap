@@ -52,6 +52,12 @@ $bog_vmap_app_inspect $mol_view
 	- reads as a bug.
 	Note $mol_view
 		sub / <= title_note \
+	- What stands here when the source names no class at all. A state and not a
+	- blank: every cell below derives from one class, and with none they all fail
+	- at once — the panel used to answer with a red strip in each of its twenty
+	- fields, which grew the page and pushed the head bar off the screen.
+	Empty $mol_view
+		sub / <= empty_note \Нечего править: в исходнике нет объявления класса
 	- The document model. `source` is bound both ways, so a write through any
 	- property below serializes the whole class and comes back out here as text.
 	Node $bog_vmap_lang_node

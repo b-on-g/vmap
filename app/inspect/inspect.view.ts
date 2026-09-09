@@ -81,10 +81,35 @@ namespace $.$$ {
 		 */
 		override sub() {
 
+			if( !this.class_ready() ) return [ this.Empty() ] as readonly $mol_view[]
+
 			const sub = super.sub() as readonly $mol_view[]
 			if( !this.title_note() ) return sub
 
 			return [ sub[ 0 ], this.Note(), ... sub.slice( 1 ) ]
+		}
+
+		/**
+		 * Whether there is a class here to inspect at all.
+		 *
+		 * EVERY cell of this panel derives from one class, so a source with none in
+		 * it does not fail in one place — it fails in twenty at once, and the panel
+		 * answers with a wall of red strips that grows the page. Measured on the
+		 * deploy 09.09.2026, where the pick outlived the document it was made in.
+		 *
+		 * Whoever owns the pick should not hand such a source over, and the editor
+		 * no longer does; this is the panel refusing to fall apart when somebody
+		 * else does. A failure to parse means «no class», which is what it means
+		 * here; a suspension is re-thrown, or a document still arriving would be
+		 * read as an empty one.
+		 */
+		class_ready() {
+			try {
+				return Boolean( this.Node().tree() )
+			} catch( error: unknown ) {
+				if( $mol_promise_like( error ) ) return $mol_fail_hidden( error )
+				return false
+			}
 		}
 
 		base_title() {
