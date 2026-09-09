@@ -47,12 +47,18 @@ namespace $ {
 			const lib = part_lib( $ )
 			const list = lib.class_list()
 
-			for( const name of [ 'mol_view', 'mol_button', 'mol_button_major', 'mol_string', 'mol_number', 'mol_check_box', 'mol_map_yandex', 'mol_text', 'mol_link', 'mol_image', 'mol_page' ] ) {
+			for( const name of [ 'mol_view', 'mol_button', 'mol_button_major', 'mol_string', 'mol_number', 'mol_check_box', 'mol_map_yandex', 'mol_text', 'mol_link', 'mol_image' ] ) {
 				$mol_assert_ok( list.includes( d + name ) )
 			}
 
-			// more than the handful named here: the palette has to be worth opening
+			// more than the handful named here: the second level of the panel has to
+			// be worth opening
 			$mol_assert_ok( list.length > 50 )
+
+			// And no application shell: a page in vmap is an artboard, an ordinary
+			// node with a `sub` of its own — section 8 — so `$mol_page` would offer
+			// a title bar and a scroll where a rectangle is meant.
+			$mol_assert_equal( list.includes( `${d}mol_page` ), false )
 
 		},
 

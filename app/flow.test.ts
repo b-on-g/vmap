@@ -44,10 +44,19 @@ namespace $ {
 			$mol_assert_ok( text.includes( 'Выберите узел на холсте' ) )
 
 			// The panel opens on ready made things, not on a catalogue of classes.
-			const shelf = [ ... stage.root.querySelectorAll( '[bog_vmap_app_shelf_item_row]' ) ]
-				.map( el => el.textContent )
+			const shelf = [ ... stage.root.querySelectorAll(
+				'[bog_vmap_app_shelf_items] [bog_vmap_app_shelf_item_row]',
+			) ].map( el => el.textContent )
 
 			$mol_assert_like( shelf, [ 'Блок', 'Калькулятор', 'Карта', 'Калькулятор и карта' ] )
+
+			// Under them, the objects of the connected application: what its author
+			// declared, by their own names and without a line of mol among them.
+			const apps = [ ... stage.root.querySelectorAll(
+				'[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]',
+			) ].map( el => el.textContent )
+
+			$mol_assert_like( apps, [ 'Button', 'Calc', 'Map' ] )
 
 			// The classes of the pack are a level down, folded away until asked for,
 			// and then they are all there, the `$mol_view` stub included.
@@ -101,6 +110,38 @@ namespace $ {
 
 			// Picked by the drop itself, as a dragged part is.
 			$mol_assert_equal( stage.app.selected(), 'Pair' )
+
+		},
+
+		/**
+		 * An application is added by its address, and its own objects are on the
+		 * shelf right after.
+		 *
+		 * Nothing is asked of whoever deployed it: a mol module carries the tree of
+		 * its classes beside its bundle, so any deployed application is a library
+		 * already. What the shelf shows is what its author wrote, without the
+		 * framework the bundle carries along.
+		 */
+		'an application added by its address puts its objects on the shelf'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.type( stage.field( 'Shelf().Links()' ), $bog_vmap_app_flow_other )
+
+			// The frame is a new one — a realm cannot unload a bundle — and it boots.
+			stage.scene.hello()
+
+			const apps = [ ... stage.root.querySelectorAll(
+				'[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]',
+			) ].map( el => el.textContent )
+
+			$mol_assert_like( apps, [ 'Basket' ] )
+
+			// And an object of somebody else's application lies down like any other.
+			stage.click( stage.shelf_row( 'Basket' ) )
+
+			$mol_assert_ok( stage.app.doc_source().includes( `Basket ${d}shop_basket` ) )
+			$mol_assert_equal( stage.app.selected(), 'Basket' )
 
 		},
 
@@ -249,7 +290,7 @@ namespace $ {
 			$mol_assert_ok( stage.text().includes( 'опубликовано' ) )
 			$mol_assert_ok( stage.text().includes( link ) )
 
-			stage.type( stage.field( 'Palette().Links()' ), link )
+			stage.type( stage.field( 'Shelf().Links()' ), link )
 
 			$mol_assert_like( stage.app.lands(), [ link ] )
 			$mol_assert_like(
@@ -360,7 +401,7 @@ namespace $ {
 		'a new pack gives a new frame, a new land keeps the old one'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )
-			const field = stage.field( 'Palette().Links()' )
+			const field = stage.field( 'Shelf().Links()' )
 
 			const before = stage.frame()
 
@@ -418,7 +459,7 @@ namespace $ {
 			const sent = stage.scene.posted.length
 			const armed = watch()
 
-			stage.type( stage.field( 'Palette().Links()' ), 'http://pack.test/' )
+			stage.type( stage.field( 'Shelf().Links()' ), 'http://pack.test/' )
 
 			// a frame that has said nothing, and nothing said to it
 			$mol_assert_equal( stage.pane.ready(), false )
@@ -448,7 +489,7 @@ namespace $ {
 
 			const stage = $bog_vmap_app_flow_stage( $ )
 
-			const field = stage.field( 'Palette().Links()' )
+			const field = stage.field( 'Shelf().Links()' )
 			stage.type( field, 'http://pack.test/, AbCdEfGh' )
 
 			$mol_assert_equal( stage.app.pack_link(), 'http://pack.test/' )
@@ -465,7 +506,7 @@ namespace $ {
 
 			// The frame is the one it already was: no reload.
 			$mol_assert_equal( stage.pane.scene_key(), key )
-			$mol_assert_equal( stage.field( 'Palette().Links()' ).value, 'http://pack.test/, AbCdEfGh, http://other.test/' )
+			$mol_assert_equal( stage.field( 'Shelf().Links()' ).value, 'http://pack.test/, AbCdEfGh, http://other.test/' )
 
 		},
 

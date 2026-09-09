@@ -33,6 +33,21 @@ namespace $ {
 		``,
 	].join( '\n' )
 
+	/**
+	 * A SECOND application, served at an address of its own.
+	 *
+	 * There to be added by hand: a person pastes the address of a deployed mol
+	 * application and its own classes join the shelf. One class is enough for that,
+	 * and a name of its own is what makes the difference visible.
+	 */
+	export const $bog_vmap_app_flow_other = 'http://other.pack/'
+
+	export const $bog_vmap_app_flow_other_pack = [
+		`${d}shop_basket ${d}mol_view`,
+		`\ttitle \\`,
+		``,
+	].join( '\n' )
+
 	/** Where the pane sits in the viewport. jsdom lays nothing out, so it is told. */
 	export const $bog_vmap_app_flow_rect = {
 		left: 200, top: 50, width: 600, height: 500, right: 800, bottom: 550,
@@ -109,7 +124,7 @@ namespace $ {
 	 *   palette onto the canvas, `stage.tap( stage.part_center( name ) )` clicks a
 	 *   part, `stage.press/move/release( stage.overlay(), point )` is any gesture
 	 *   in between, and `stage.port_dot( part, port, 'out' )` is where a wire starts;
-	 * - `stage.button( 'Удалить' )`, `stage.field( 'Palette().Links()' )` and
+	 * - `stage.button( 'Удалить' )`, `stage.field( 'Shelf().Links()' )` and
 	 *   `stage.class_row( klass )` find what to press, and fail by name when it is
 	 *   not on screen; `stage.click` and `stage.type` press and type into them;
 	 * - `stage.text()` is the whole editor as text, `stage.app` and `stage.pane`
@@ -158,6 +173,7 @@ namespace $ {
 		class $mol_fetch_flow extends $mol_fetch {
 			static override text( input: RequestInfo ) {
 				const uri = String( input )
+				if( uri === $bog_vmap_app_flow_other + 'web.view.tree' ) return $bog_vmap_app_flow_other_pack
 				if( uri.endsWith( 'web.view.tree' ) ) return $bog_vmap_app_flow_pack
 				return $mol_fail( new Error( 'network in a test: ' + uri ) )
 			}
@@ -406,18 +422,8 @@ namespace $ {
 				return found( '[bog_vmap_app_shelf_item_row]', `shelf row ${ title }`, el => el.textContent === title )
 			},
 
-			/**
-			 * A text field, addressed by the tail of the id $mol builds out of the
-			 * path to it.
-			 *
-			 * A field of the palette is on the second level of the panel, which is
-			 * folded when the editor opens, so asking for one unfolds it first: a
-			 * scenario says which field it types into and should not have to say
-			 * which panel it lives on.
-			 */
+			/** A text field, addressed by the tail of the id $mol builds out of the path to it. */
 			field( tail: string ) {
-
-				if( tail.startsWith( 'Palette()' ) ) this.classes_open()
 
 				return found( 'input, textarea', `field ${ tail }`, el => el.getAttribute( 'id' )?.endsWith( tail ) ?? false ) as HTMLInputElement
 			},

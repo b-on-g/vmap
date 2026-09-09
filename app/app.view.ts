@@ -899,6 +899,18 @@ namespace $.$$ {
 		}
 
 		/**
+		 * Names of every class of the library: the pack and the lands on it.
+		 *
+		 * NOT read here — this is a binding the shelf pulls, and pulling it fetches
+		 * the class tree of the pack. Reading it in the editor would put a dead
+		 * address in the way of the whole screen instead of in the way of the one
+		 * list that shows what the address brought.
+		 */
+		override lib_class_list() {
+			return this.Lib().class_list()
+		}
+
+		/**
 		 * Sources of the lands, for the scene.
 		 *
 		 * Both this and the pack travel the same bridge now, and the split is still

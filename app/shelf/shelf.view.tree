@@ -6,9 +6,18 @@
 $bog_vmap_app_shelf $mol_view
 	- The palette field, held by the editor and passed through: the shelf shows what
 	- the scene has actually loaded, so there is one value and not two.
+	- Links separated by commas, stored exactly as typed. The first http(s) one is
+	- the application whose objects join the shelf, the rest are lands of Giper Baza
+	- holding component sources; anything else is refused and said so under the
+	- field. One pack per frame, so a second address is refused by construction.
 	links? \
 	pack_link \
 	land_classes /$mol_tree2
+	- Names of every class the library holds — the pack and the lands on it —
+	- handed in by the editor, which owns the one library of the session. Read
+	- inside `Apps` and nowhere else: reading it fetches, and a dead address must
+	- take down that one list rather than the panel around it.
+	class_list /string
 	- What the pointer is carrying, BY ITS ID, empty when nothing is being dragged,
 	- and where the pointer is in viewport coordinates. The same protocol the
 	- palette has always spoken, and now spoken in one place: a class row of the
@@ -32,6 +41,33 @@ $bog_vmap_app_shelf $mol_view
 	Items $mol_list
 		rows <= item_rows /
 	-
+	- Where an application comes from. Outside `Apps` on purpose: a mistyped address
+	- must leave the field it was typed into reachable, and the list is exactly what
+	- a bad address takes down.
+	Source $mol_view
+		sub <= source_content /$mol_view
+	-
+	Links $mol_string
+		hint \Адрес приложения, ленды через запятую
+		value? <=> links?
+	-
+	- What was typed and not taken, and why, right under the field. Rendered only
+	- while there is something to say: a second pack is refused by construction and
+	- a person who typed one has to learn that from the screen, not from a log.
+	Note $mol_view
+		sub / <= rejected_note \
+	-
+	- Objects of the connected application: every class it declares that is not
+	- part of mol itself. A deployed mol application is a library of components
+	- already, so this needs nothing of the application's author.
+	Apps $mol_view
+		sub /
+			<= Apps_head $mol_view
+				sub /
+					<= apps_title \
+			<= App_list $mol_list
+				rows <= app_rows /
+	-
 	- The second level, folded away by default. A check and not an expander: the
 	- palette has to GROW into whatever the shelf left, and inside an expander it
 	- would sit in a list that sizes itself by its content, so the class list would
@@ -45,7 +81,6 @@ $bog_vmap_app_shelf $mol_view
 	- so a folded panel does not fetch a pack tree it is not showing.
 	Palette $bog_vmap_app_palette
 		compact true
-		links? <=> links?
 		pack_link <= pack_link
 		land_classes <= land_classes
 		dragged? <=> dragged?

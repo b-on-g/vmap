@@ -45,6 +45,43 @@ namespace $.$$ {
 			background: { color: $mol_theme.card },
 		},
 
+		Source: {
+			flex: { direction: 'column', shrink: 0 },
+			padding: { left: $mol_gap.space, right: $mol_gap.space },
+			gap: $mol_gap.space,
+		},
+
+		Links: {
+			background: { color: $mol_theme.field },
+			font: { family: 'monospace', size: '.8rem' },
+		},
+
+		/**
+		 * Refused links under the field. Rendered only while there is something to
+		 * say, so it never takes room from the lists on a clean field.
+		 */
+		Note: {
+			color: $mol_theme.focus,
+			font: { family: 'monospace', size: '.75rem' },
+			whiteSpace: 'pre-wrap',
+		},
+
+		/** The objects of the application, sized by their own number. */
+		Apps: {
+			flex: { direction: 'column', shrink: 0 },
+			maxHeight: '14rem',
+			overflow: { y: 'auto' },
+			padding: { top: $mol_gap.space, bottom: $mol_gap.space },
+			gap: $mol_gap.space,
+		},
+
+		/** A caption of a section, not a heading of the panel. */
+		Apps_head: {
+			padding: { left: $mol_gap.text, right: $mol_gap.text },
+			color: $mol_theme.shade,
+			font: { size: '.8rem' },
+		},
+
 		/** The switch of the second level, on the line between the two. */
 		Level: {
 			flex: { shrink: 0 },

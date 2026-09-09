@@ -21,19 +21,22 @@ namespace $ {
 	const source = `${root} ${d}mol_view\n\tsub /\n`
 
 	/**
-	 * A scene whose pack never leaves the process: `pack_fetch` is the one method
-	 * that touches the network, and it is the only thing replaced here.
+	 * A scene whose pack never leaves the process: `$mol_import.script_async` is
+	 * the one thing that touches the network, and it is the only thing replaced.
 	 */
 	function scene( $: $ ) {
 
 		const loaded = [] as string[]
+		const ctx = Object.create( $ ) as $
 
-		const made = $bog_vmap_scene.make({ $ }) as $$.$bog_vmap_scene
+		Reflect.set( ctx, '$mol_import', class extends $mol_import {
+			static override script_async( uri: string ) {
+				loaded.push( uri )
+				return Promise.resolve( uri )
+			}
+		} )
 
-		made.pack_fetch = async ( uri: string )=> {
-			loaded.push( uri )
-			return uri
-		}
+		const made = $bog_vmap_scene.make({ $: ctx }) as $$.$bog_vmap_scene
 
 		return { made, loaded }
 	}

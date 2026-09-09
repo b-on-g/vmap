@@ -24,9 +24,59 @@ namespace $.$$ {
 			return [
 				this.Title(),
 				this.Items(),
+				this.Source(),
+				this.Apps(),
 				this.Level(),
 				... this.classes_showed() ? [ this.Palette() ] : [],
 			] as readonly $mol_view[]
+		}
+
+		/** The field, and under it whatever was refused. */
+		source_content() {
+			return [
+				this.Links(),
+				... this.rejected_note() ? [ this.Note() ] : [],
+			] as readonly $mol_view[]
+		}
+
+		/**
+		 * The field, parsed. The editor parses the same string for its own needs,
+		 * and that is fine: the parse is pure and costs nothing next to a cell
+		 * shared across two modules.
+		 */
+		@ $mol_mem
+		links_parsed() {
+			return this.$.$bog_vmap_lib_links_parse( this.links() )
+		}
+
+		/** Refused links with their reasons, one per line; empty hides the strip. */
+		rejected_note() {
+			return this.$.$bog_vmap_lib_links_note( this.links_parsed() )
+		}
+
+		/**
+		 * Classes of the connected application, as items.
+		 *
+		 * Everything the library holds except mol itself: a pack carries the whole
+		 * framework in its bundle, and the framework is what the second level is
+		 * for. What is left is what the application's author wrote, plus the
+		 * components of any land attached, which are somebody's own just the same.
+		 *
+		 * Suspends while the pack is loading and throws when the pack is dead. Both
+		 * are meant to reach the view that reads it, and the view that reads it is
+		 * `Apps` alone.
+		 */
+		app_list() {
+			return this.class_list().filter( name => !name.startsWith( '$mol_' ) )
+		}
+
+		app_rows() {
+			return this.app_list().map( name => this.Item_row( name ) )
+		}
+
+		apps_title() {
+			const found = this.app_list().length
+			return found ? 'Объекты приложения' : 'Приложение не подключено'
 		}
 
 		/** Everything the shelf offers, in the order it offers it. */

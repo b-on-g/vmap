@@ -39,6 +39,61 @@ namespace $ {
 
 	$mol_test({
 
+		'the field is stored as typed and what was refused is said under it'( $ ) {
+
+			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
+
+			shelf.links( 'https://mol.hyoo.ru, https://b-on-g.github.io/gram/' )
+
+			// Stored exactly as typed: growing a slash here would make an address
+			// impossible to finish typing.
+			$mol_assert_equal( shelf.links(), 'https://mol.hyoo.ru, https://b-on-g.github.io/gram/' )
+
+			// One pack per frame, so the second is refused rather than dropped in
+			// silence, and the refusal is on screen under the field.
+			$mol_assert_equal(
+				shelf.rejected_note(),
+				'https://b-on-g.github.io/gram/: ' + $bog_vmap_lib_links_reason.pack_second,
+			)
+			$mol_assert_equal( shelf.source_content().includes( shelf.Note() ), true )
+
+			shelf.links( 'https://mol.hyoo.ru' )
+			$mol_assert_equal( shelf.source_content().includes( shelf.Note() ), false )
+
+		},
+
+		'the objects of the application are its own classes, mol left out'( $ ) {
+
+			const d = '$'
+
+			const shelf = $bog_vmap_app_shelf.make({
+				$,
+				class_list: ()=> [ `${d}mol_view`, `${d}mol_button_minor`, `${d}bog_gram`, `${d}bog_gram_chat` ],
+			}) as $$.$bog_vmap_app_shelf
+
+			// What the author of the application wrote, and nothing of the framework
+			// their pack carries in its bundle.
+			$mol_assert_like( shelf.app_list(), [ `${d}bog_gram`, `${d}bog_gram_chat` ] )
+			$mol_assert_equal( shelf.apps_title(), 'Объекты приложения' )
+
+			// Each of them is an item like any other, and lays down the same way.
+			$mol_assert_equal( shelf.item_title( `${d}bog_gram_chat` ), 'Gram_chat' )
+			$mol_assert_ok( shelf.item( `${d}bog_gram_chat` )!.source.includes( `${d}bog_gram_chat` ) )
+
+		},
+
+		'nothing connected is a state and not a failure'( $ ) {
+
+			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
+
+			$mol_assert_like( shelf.app_list(), [] )
+			$mol_assert_equal( shelf.apps_title(), 'Приложение не подключено' )
+
+			// The shelf itself stands whatever the address does.
+			$mol_assert_equal( shelf.items().length, 4 )
+
+		},
+
 		'the shelf offers ready made things and every one of them is a class'( $ ) {
 
 			const items = $bog_vmap_app_shelf_presets()

@@ -181,6 +181,11 @@ $bog_vmap_app $mol_view
 				- very deploy, and only the host knows where that is.
 				pack_link <= pack_link
 				land_classes <= lib_classes /$mol_tree2
+				- Names of the classes the library holds, for the objects of the
+				- connected application. A binding and not a read of our own: the
+				- fetch behind it must happen inside the panel, where a dead address
+				- shows up on the one list it belongs to.
+				class_list <= lib_class_list /string
 				- An item asked for by a click rather than by a drag. The shelf says
 				- which one; where it goes is the canvas's answer.
 				place? <=> shelf_place? \

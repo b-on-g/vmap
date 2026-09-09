@@ -22,9 +22,15 @@ namespace $ {
 	/** A scene whose pack never leaves the process. */
 	function scene( $: $ ) {
 
-		const made = $bog_vmap_scene.make({ $ }) as $$.$bog_vmap_scene
+		const ctx = Object.create( $ ) as $
 
-		made.pack_fetch = async ( uri: string )=> uri
+		Reflect.set( ctx, '$mol_import', class extends $mol_import {
+			static override script_async( uri: string ) {
+				return Promise.resolve( uri )
+			}
+		} )
+
+		const made = $bog_vmap_scene.make({ $: ctx }) as $$.$bog_vmap_scene
 		made.pack_uri( pack )
 
 		return made
