@@ -1183,6 +1183,17 @@ namespace $ {
 			$mol_assert_ok( box )
 			$mol_assert_ok( spot.y >= box.y + box.height )
 
+			// And a SECOND click clears the block it just put there, not only the
+			// page: two pieces at one point look like one thing on the canvas.
+			stage.click( stage.shelf_row( 'Блок' ) )
+
+			const next = stage.app.selected()!
+			const below = stage.app.spots()[ next ]!
+			const first = stage.pane.part_size( block )!
+
+			$mol_assert_ok( next !== block )
+			$mol_assert_ok( below.y >= first.y + first.height )
+
 		},
 		/**
 		 * What is typed stays in the field after a refusal, and the name the node
@@ -1256,6 +1267,26 @@ namespace $ {
 			stage.click( stage.scene_row( 'Сцена 1' ) )
 
 			$mol_assert_equal( stage.store.doc_current()!.link().str, first )
+			$mol_assert_equal( $.$mol_state_arg.value( 'doc' ), first )
+
+			// A THIRD and a FOURTH, because the report from the deploy was about the
+			// fourth: the address is written by a fiber that has already run twice,
+			// and a fiber replays its reads from its own cache — if the address were
+			// rebuilt from a stale copy of itself, it would show up here.
+			stage.click( stage.button( 'Новая сцена' ) )
+			await $bog_vmap_app_flow_settle( ()=> stage.store.doc_links().length > 2 )
+
+			stage.click( stage.button( 'Новая сцена' ) )
+			await $bog_vmap_app_flow_settle( ()=> stage.store.doc_links().length > 3 )
+			stage.redraw()
+
+			const fourth = stage.store.doc_current()!.link().str
+
+			$mol_assert_equal( stage.store.doc_links().length, 4 )
+			$mol_assert_equal( $.$mol_state_arg.value( 'doc' ), fourth )
+
+			// And back to the first from there, by a click on its row.
+			stage.click( stage.scene_row( 'Сцена 1' ) )
 			$mol_assert_equal( $.$mol_state_arg.value( 'doc' ), first )
 
 		},

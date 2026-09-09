@@ -60,7 +60,24 @@ namespace $.$$ {
 			return this.Pane().stalled()
 		}
 
+		/**
+		 * What the strip says, and it says two different things.
+		 *
+		 * A frame that HAD been answering and went quiet is one story: something
+		 * stopped it, a fresh frame is very likely to come up. A frame that never
+		 * answered at all is another: the code that stopped it is in the document, so
+		 * it will stop the next frame too, and reloading the page will not help
+		 * either. Telling the second story as the first sends the user round a loop
+		 * of restarts, which is exactly what the strip exists to prevent.
+		 */
 		override stall_note() {
+
+			if( !this.pane().warmed() ) {
+				return 'Сцена не запустилась: её остановил код документа. Он исполнится снова'
+					+ ' в любом новом кадре и после перезагрузки страницы, поэтому сначала'
+					+ ' исправьте код в панели, а потом нажмите «Перезагрузить сцену».'
+			}
+
 			return 'Сцена не отвечает. Скорее всего её остановил код документа: он исполняется'
 				+ ' в песочнице и делит с ней поток. Редактор и документ целы.'
 		}
@@ -1336,22 +1353,45 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The middle of the canvas, moved clear of whatever container covers it.
+		 * The middle of the canvas, moved clear of whatever already covers it.
 		 *
-		 * Beside and not inside: a free part left at the middle of a page would be
-		 * drawn over it and read as a part OF it, which is the very confusion the
-		 * click is being kept out of. Below the box, because pages grow downwards.
+		 * ANYTHING drawn there counts, not only a container. A page is the obvious
+		 * case — a free part left in the middle of one is drawn over it and reads as
+		 * a part OF it — but a free part is just as much in the way: two clicks in a
+		 * row put the second piece exactly on top of the first, and what looks like
+		 * one thing on the canvas is two.
+		 *
+		 * The LOWEST box wins, so a third click clears the second and not the first.
+		 * Below and not beside, because pages grow downwards and a column of pieces
+		 * is what a person expects from clicking a list.
 		 */
 		free_spot() {
 
-			const [ x, y ] = this.canvas_center()
+			const [ x, start ] = this.canvas_center()
+			const boxes = this.pane().nodes_measured().map( node => node.box )
 
-			const owner = this.pane().container_at([ x, y ])
-			const box = owner ? this.pane().part_size( owner ) : null
+			const covers = ( box: $bog_vmap_bridge_rect, y: number )=> {
+				return x >= box.x && x <= box.x + box.width
+					&& y >= box.y && y <= box.y + box.height
+			}
 
-			if( !box ) return [ x, y ] as const
+			let y = start
 
-			return [ box.x, box.y + box.height + 24 ] as const
+			// A LOOP and not one step down: the piece put there by the previous click
+			// no longer covers the middle — it was moved below it — so one step would
+			// keep answering with the same place and stack every click on the same
+			// spot. Bounded by the number of boxes, and every pass moves strictly
+			// down, so it ends.
+			for( let step = 0; step <= boxes.length; ++step ) {
+
+				const hit = boxes.find( box => covers( box, y ) )
+				if( !hit ) break
+
+				y = hit.y + hit.height + 24
+
+			}
+
+			return [ x, y ] as const
 		}
 
 		/**
