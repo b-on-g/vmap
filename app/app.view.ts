@@ -819,34 +819,7 @@ namespace $.$$ {
 		 * it would put a parse failure where a hint belongs.
 		 */
 		aside_content() {
-			return ( this.selection_alive() ? [ this.Inspect() ] : [ this.Idle() ] ) as readonly $mol_view[]
-		}
-
-		/**
-		 * Whether the pick still names something the document declares.
-		 *
-		 * A name alone is not enough. A document that does not parse, or one that
-		 * never had this node, gave the inspector a source with no class in it, and
-		 * it answered with a red strip in every one of its twenty fields — a wall of
-		 * failures where an invitation belongs. The panel asks the document instead
-		 * of trusting the name.
-		 *
-		 * A failure to parse counts as «not declared», because that is what it means
-		 * to the panel; a suspension is re-thrown, or the wait for a document still
-		 * arriving would be read as an answer.
-		 */
-		selection_alive() {
-
-			const name = this.selected()
-			if( !name ) return false
-
-			try {
-				return this.node().prop_names().includes( name )
-			} catch( error ) {
-				if( $mol_promise_like( error ) ) return $mol_fail_hidden( error )
-				return false
-			}
-
+			return ( this.selected() ? [ this.Inspect() ] : [ this.Idle() ] ) as readonly $mol_view[]
 		}
 
 		/**

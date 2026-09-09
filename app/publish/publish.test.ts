@@ -45,6 +45,13 @@ namespace $ {
 		}) as $$.$bog_vmap_app_publish
 	}
 
+	/** A click as the browser sends one: on the node of the button, bubbling. */
+	function click( $: $, node: Element ) {
+		const event = $.$mol_dom_context.document.createEvent( 'mouseevent' )
+		event.initEvent( 'click', true, true )
+		node.dispatchEvent( event )
+	}
+
 	/** A normalized document: every sub-view hoisted onto the root, two levels deep. */
 	const doc_nested = [
 		`${d}bog_vmap_app_page ${d}mol_view`,
@@ -485,6 +492,93 @@ namespace $ {
 			$mol_assert_equal( heir.publish(), null )
 			$mol_assert_ok( heir.note().includes( `${d}bog_vmap_app_page` ) )
 			$mol_assert_equal( s.shelf(), null )
+
+		},
+
+		/**
+		 * The whole way to the eye: a real click on the rendered button, and the
+		 * refusal read back off the DOM, not off a cell. What the cell holds and
+		 * what the screen shows are two different facts, and only the second one is
+		 * what a person sees.
+		 */
+		async 'a click on the rendered button puts the refusal on the screen'( $ ) {
+
+			const s = store( $ )
+			const v = view( $, s, 'Label', `Label ${d}mol_view\n\tsub / <= calc_result\n` )
+
+			const root = v.dom_tree()
+			$mol_assert_equal( root.textContent!.includes( 'calc_result' ), false )
+
+			click( $, v.Publish().dom_tree() )
+			v.dom_tree()
+
+			$mol_assert_ok( root.textContent!.includes(
+				'деталь Label ссылается на calc_result документа, отвяжите провод перед публикацией'
+			) )
+			$mol_assert_equal( s.shelf(), null )
+
+			// A refusal is a state of the bar, not an error of the button.
+			await Promise.resolve()
+			$mol_assert_equal( v.Publish().error(), '' )
+
+		},
+
+		/**
+		 * A node picked inside another part — the scene names what was clicked,
+		 * and that may be a button of a calculator — is not a property of the
+		 * document: its text is empty. Measured on the deploy: the click died in
+		 * the store with words nobody saw. Now the words are on the bar.
+		 */
+		async 'a click on a part the document does not declare is refused in words'( $ ) {
+
+			const s = store( $ )
+			const v = view( $, s, 'Option(mul)', '' )
+			$mol_assert_equal( v.enabled(), true )
+
+			const root = v.dom_tree()
+			click( $, v.Publish().dom_tree() )
+			v.dom_tree()
+
+			$mol_assert_ok( root.textContent!.includes(
+				'деталь Option(mul) не объявлена в документе, выберите деталь верхнего уровня'
+			) )
+			$mol_assert_equal( s.shelf(), null )
+
+			await Promise.resolve()
+			$mol_assert_equal( v.Publish().error(), '' )
+
+		},
+
+		/**
+		 * Whatever the reading of the texts throws is words on the bar as well: the
+		 * handler is a fiber, and a throw out of it is a speck and a promise nobody
+		 * awaits. A suspension is the one thing let through — it is how the fiber
+		 * waits for the land — and it comes out untouched, the bar as it was.
+		 */
+		async 'an error while reading the part is words on the bar, a suspension passes through'( $ ) {
+
+			const s = store( $ )
+			const v = view( $, s, 'Label', '' )
+			v.source = ()=> $.$mol_fail( new Error( 'boom' ) )
+
+			const root = v.dom_tree()
+			click( $, v.Publish().dom_tree() )
+			v.dom_tree()
+
+			$mol_assert_ok( root.textContent!.includes( 'не удалось опубликовать Label: boom' ) )
+			$mol_assert_equal( s.shelf(), null )
+
+			await Promise.resolve()
+			$mol_assert_equal( v.Publish().error(), '' )
+
+			const wait = new Promise< string >( ()=> {} )
+			v.source = ()=> { throw wait }
+
+			let caught: unknown = null
+			try { v.publish() } catch( error: unknown ) { caught = error }
+
+			$mol_assert_equal( caught, wait )
+			$mol_assert_equal( v.note(), 'не удалось опубликовать Label: boom' )
 
 		},
 

@@ -67,32 +67,58 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Publishes the picked part.
+		 * Publishes the picked part. The handler is a fiber already, and the store
+		 * method runs inside it: the first publication grabs a land, and the proof
+		 * of work is cached for the retries of this very fiber.
 		 *
-		 * The handler is a fiber already, and the store method runs inside it: the
-		 * first publication grabs a land, and the proof of work is cached for the
-		 * retries of this very fiber. The texts are read before the write. A part
-		 * wired to the document is refused with the reason on the bar, nothing written.
+		 * Nothing leaves here but a suspension. A throw out of a click handler is a
+		 * speck on the button and a promise nobody awaits, which on the screen is
+		 * nothing: measured on the deploy, where a node picked inside another part
+		 * has no text of its own and the click died with words nobody saw. So an
+		 * error is words on the bar as well, and a suspension is let through — it
+		 * is how the fiber waits for the land, and a retry starts over from here.
 		 */
 		override publish( next?: Event | null ) {
 
 			const part = this.part()
 			if( !part ) return null
 
-			const klass = this.store().class_name( part )
-			const { source, shared } = this.store().inlined( this.source(), this.doc() )
+			let note = ''
 
-			// A wired part is a state of the bar, not an exception on the button: a
-			// throw out of the handler goes to the fiber, and the user sees nothing.
-			const refusal = this.store().refusal( part, source, this.classes() )
-			this.refused( refusal )
-			if( refusal ) return null
+			try {
+				note = this.attempt( part )
+			} catch( error: unknown ) {
+				if( this.$.$mol_promise_like( error ) ) return this.$.$mol_fail_hidden( error )
+				note = `не удалось опубликовать ${ part }: ${ this.$.$mol_error_message( error ) }`
+			}
 
-			this.store().publish( part, source, this.js(), this.css(), this.classes() )
-			this.published( klass )
-			this.shared( shared )
+			this.refused( note )
 
 			return null
+		}
+
+		/**
+		 * One try at publishing the part, texts read before the write. Answers the
+		 * refusal in the user's words, empty once the part went out. A part the
+		 * document does not declare — a node picked inside another part — has no
+		 * text, and is refused before the store could throw over it.
+		 */
+		attempt( part: string ) {
+
+			const source = this.source()
+			if( !source ) return `деталь ${ part } не объявлена в документе, выберите деталь верхнего уровня`
+
+			const klass = this.store().class_name( part )
+			const inlined = this.store().inlined( source, this.doc() )
+
+			const refusal = this.store().refusal( part, inlined.source, this.classes() )
+			if( refusal ) return refusal
+
+			this.store().publish( part, inlined.source, this.js(), this.css(), this.classes() )
+			this.published( klass )
+			this.shared( inlined.shared )
+
+			return ''
 		}
 
 		/** The button always; the link once there is one; the note once something went out. */
