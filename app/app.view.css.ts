@@ -83,9 +83,12 @@ namespace $.$$ {
 		 * the overflow is then taken from whoever may shrink; each panel keeps a
 		 * minimum of its own, so «yields» never becomes «vanishes».
 		 *
-		 * Below about 1090 px with all three panels open the floors no longer fit
-		 * and the last panel is clipped. That is the honest end of the trade, and
-		 * the head bar folds any of the three away in one click.
+		 * Below about 1200 px with all three panels open the floors no longer fit
+		 * and the last panel is clipped: 12 plus 13 plus 22 rem of panels and 28 of
+		 * canvas. That is the honest end of the trade, and the head bar folds any of
+		 * the three away in one click. It was ~1090 until the code panel got a floor
+		 * of 22 rem instead of 15 — code that does not wrap has to be readable
+		 * without scrolling on a short line.
 		 */
 		Side: {
 			flex: { direction: 'column', grow: 0, shrink: 1, basis: '20rem' },
@@ -104,10 +107,15 @@ namespace $.$$ {
 			border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
 		},
 
-		/** Wider than the inspector: this one holds code, and code wraps badly. */
+		/**
+		 * Wider than the inspector, and with a floor of its own: this one holds
+		 * code, and code does not wrap — it scrolls sideways. A panel narrow enough
+		 * to need scrolling on an ordinary declaration is a panel nobody reads in,
+		 * so 22 rem, which holds the short ones whole.
+		 */
 		Code: {
 			flex: { direction: 'column', grow: 0, shrink: 1, basis: '28rem' },
-			minWidth: '15rem',
+			minWidth: '22rem',
 			maxWidth: '28rem',
 			minHeight: 0,
 			border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
