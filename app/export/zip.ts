@@ -11,6 +11,12 @@ namespace $ {
 	 * library in the bundle or a dependency on `CompressionStream`, which is async
 	 * and would drag the whole path into a fiber.
 	 *
+	 * The alternative not taken: asking the browser for a folder and writing the
+	 * files into it straight, which would need no archive at all. It exists in
+	 * Chrome only, asks the person for a permission of its own before a single byte
+	 * is written, and leaves every other browser with nothing — an archive works
+	 * everywhere and needs no permission.
+	 *
 	 * @see ../../ARCHITECTURE.md section 10
 	 */
 
