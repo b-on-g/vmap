@@ -19,14 +19,24 @@ namespace $.$$ {
 		},
 
 		/**
-		 * The scrolling middle. Takes what the heading and the switch left, and
-		 * `minHeight: 0` is what lets it be shorter than its content — without it a
-		 * flex child refuses to shrink past what it holds, and the panel grows the
-		 * page instead of scrolling.
+		 * The scrolling middle. Takes what the heading and the switch left, and it
+		 * SHRINKS — a flex child refuses to go below its content without being told
+		 * it may, and the panel then grows the page instead of scrolling.
+		 *
+		 * A FLOOR, and the second level below has one too. Before the
+		 * scroll existed, the shelf, the field and the objects were all unshrinkable
+		 * and ate the whole column: the class list was measured at `clientHeight` 0
+		 * against `scrollHeight` 2520 — open, and not a row of it reachable. Now
+		 * both halves shrink, so flex divides the squeeze between them by content
+		 * instead of starving one; the floors make that independent of how much
+		 * content either happens to hold.
+		 *
+		 * Together they are about twenty rems with the heading and the switch, which
+		 * fits any window an editor is used in.
 		 */
 		Stack: {
 			flex: { grow: 1, shrink: 1 },
-			minHeight: 0,
+			minHeight: '6rem',
 		},
 
 		Stack_body: {
@@ -121,6 +131,17 @@ namespace $.$$ {
 			padding: { left: $mol_gap.text, right: $mol_gap.text },
 			color: $mol_theme.shade,
 			font: { size: '.8rem' },
+		},
+
+		/**
+		 * The second level, when it is open. Its own scroll is inside it, and this
+		 * is the height that scroll gets to work in: a `$mol_list` virtualizes by
+		 * the height of the scroll around it, so a level squeezed to nothing renders
+		 * nothing and scrolls nowhere.
+		 */
+		Palette: {
+			flex: { grow: 1, shrink: 1 },
+			minHeight: '10rem',
 		},
 
 		/** The switch of the second level, on the line between the two. */
