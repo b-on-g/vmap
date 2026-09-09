@@ -214,3 +214,10 @@
 	deploy \/giper/baza/docker/autopull_and_restart.sh
 \/mol/view/tree2/to/js
 	include \/mol/view/tree2/to/js/test
+\/hyoo/sync
+	- build $hyoo_sync_revision \git rev-parse --short HEAD
+	build $hyoo_sync_revision \echo echo
+\/hyoo/page
+	include \/mol/offline/install
+	deploy \/hyoo/page/logo/logo.svg
+	deploy \/hyoo/page/logo/logo.png
