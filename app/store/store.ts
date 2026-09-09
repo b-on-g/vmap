@@ -8,19 +8,15 @@ namespace $ {
 	/**
 	 * Persistence of the editor: the documents of a user in Giper Baza.
 	 *
-	 * This is where the CRUD over `app/doc/` lives. The schema stays pure, so
-	 * every operation on it — which land a document is grabbed into, how a text is
-	 * cut into nodes and glued back, what «the current document» means — is a
-	 * method here, and the views ask this object instead of touching pawns.
+	 * The CRUD lives here so the schema can stay pure, and the views ask this
+	 * object instead of touching pawns.
 	 *
-	 * **Every accessor delegating into an atom is a plain method.** An accessor of
-	 * that shape under `@ $mol_mem` freezes at the value written through it and
-	 * never sees a remote edit again, see the note at `bog_vmap_app_doc_node.source`.
-	 * Nothing is lost: `val()` inside the pawn is a wire cell already, so a view
-	 * reading through here stays reactive.
+	 * **Every accessor delegating into an atom is a plain method**, never a cell:
+	 * a cell of that shape freezes at the value written through it and stops
+	 * seeing remote edits. Reactivity is not lost by it, the atom is a cell already.
 	 *
-	 * Masters are not named here and `masters()` is not overridden: a module works
-	 * against whatever node the application chose.
+	 * Masters are not named here: a module works against whatever node the
+	 * application chose.
 	 *
 	 * @see ../../ARCHITECTURE.md section 9
 	 */
@@ -29,11 +25,10 @@ namespace $ {
 		/**
 		 * Anchor of the documents in the home land of the user.
 		 *
-		 * The same root pawn the profile lives on, viewed through our dictionary:
-		 * fields are keyed by name inside it, so `Docs` sits beside whatever else the
-		 * home land carries. Plain method — a Giper Baza object under `@ $mol_mem`
-		 * gets destructed on a graph rebuild and drags the yard into a circular
-		 * subscription.
+		 * The root pawn the profile lives on, read through our dictionary, so the
+		 * list sits beside whatever else the home land carries. Plain method: a
+		 * Giper Baza object held by a cell is destructed on a graph rebuild and
+		 * drags the yard into a circular subscription.
 		 */
 		home() {
 			return this.$.$giper_baza_glob.home().land().Data( $bog_vmap_app_doc_home )
@@ -59,20 +54,16 @@ namespace $ {
 		/**
 		 * Link of the current document as written in the address, or null.
 		 *
-		 * The key is `doc`, the value is the link of the document land. In the
-		 * fragment, where `$mol_state_arg` lives; the query is taken by the pack
-		 * address of the scene frame and is not ours.
+		 * In the fragment, never the query: the query of this page belongs to the
+		 * pack address of the scene frame.
 		 */
 		doc_arg( next?: string | null ) {
 			return this.$.$mol_state_arg.value( 'doc', next )
 		}
 
 		/**
-		 * The document the editor is on.
-		 *
-		 * An address names one; without an address it is the last one made; with
-		 * no documents at all it is null, and the editor works on the draft below
-		 * while `boot` makes one in the background.
+		 * The document the editor is on: the addressed one, else the last made,
+		 * else none while `boot` makes the first.
 		 *
 		 * A malformed value in the address counts as no address rather than as an
 		 * error: a hand edited URL is an ordinary state of a page.
@@ -95,11 +86,10 @@ namespace $ {
 		/**
 		 * Whether the current document takes our writes.
 		 *
-		 * A link in the address opens anybody's public document; the land of one
-		 * made by somebody else answers our rank as `read`, and a write into it
-		 * fails with «Rank too low» deep inside the atom. Asked before every write
-		 * so that the failure becomes a state of the editor, not an exception in
-		 * the handler that happened to write first.
+		 * A link in the address opens anybody's public document, and a write into
+		 * one made by somebody else fails deep inside the atom. Asked before every
+		 * write, so the refusal is a state of the editor rather than an exception
+		 * in whichever handler wrote first.
 		 */
 		doc_editable() {
 			const doc = this.doc_current()
@@ -119,12 +109,13 @@ namespace $ {
 		/**
 		 * Rights of a fresh document land: readable by anybody holding the link.
 		 *
-		 * Public read is the point, not a default left alone: the address of a
-		 * document is its land link, and a link only opens for somebody else if the
-		 * land does. A preset with `null` in it also means the land is not encrypted.
+		 * Public read is the point and not a default left alone — the address of a
+		 * document IS its land link, and a link opens for somebody else only if the
+		 * land does. It also leaves the land unencrypted.
 		 *
-		 * `null` here means «in the home land, no land of its own», which costs no
-		 * proof of work. That is what the tests hand in; the editor never does.
+		 * Answering `null` instead means «in the home land, no land of its own»,
+		 * which costs no proof of work: that is what the tests hand in, never the
+		 * editor.
 		 */
 		doc_land_config(): null | $giper_baza_rank_preset {
 			return [[ null, this.$.$giper_baza_rank_read ]]
@@ -138,18 +129,14 @@ namespace $ {
 		/**
 		 * Makes a new document, current from now on.
 		 *
-		 * **Reach this from a fiber only** — `$mol_wire_async( store ).doc_add( … )`
-		 * from a handler, or from inside an event handler, which `$mol_view` already
-		 * runs as one. Grabbing the land mines proof of work; the task doing it is
-		 * cached per fiber, and outside a fiber every `Promise` thrown on the way
-		 * restarts the caller from the top with a fresh proof of work, forever.
+		 * **Reach this from a fiber only.** Grabbing the land mines proof of work,
+		 * and the task doing it is cached per fiber; outside one, every promise
+		 * thrown on the way restarts the caller with a fresh proof of work, for
+		 * ever. Plain method and not an action for the same reason: an action opens
+		 * a fiber per call, which is that fresh task per retry.
 		 *
-		 * Plain method, not `@ $mol_action`: an action opens a fiber of its own per
-		 * call, which is exactly the fresh-task-per-retry this has to avoid.
-		 *
-		 * `Root` is set to the first class of the text: the page is the class the
-		 * document opens with, and the choice has to be recorded, not derived from
-		 * the order, so that reordering later does not move it.
+		 * The root is recorded rather than derived from the order, so that
+		 * reordering the classes later does not move which one is the page.
 		 */
 		doc_add( title = '', source = '', spots: $bog_vmap_app_store_spots = {}, pack = '' ) {
 
@@ -171,17 +158,14 @@ namespace $ {
 		/**
 		 * The first document of a user, made from whatever was drafted meanwhile.
 		 *
-		 * Checked again at the top, and the check is what makes the retries safe:
-		 * the fiber restarts this from the beginning on every `Promise` on the way,
-		 * and a document that arrived from another device while the proof of work
-		 * was being mined must not be pushed aside by ours.
+		 * The check at the top is what makes the retries safe: a document that
+		 * arrived from another device while the proof of work was being mined must
+		 * not be pushed aside by ours.
 		 *
-		 * The check guards against that device and not against our own half made
-		 * document, and it cannot confuse the two: a restart replays every read
-		 * from the cache of the fiber itself, so the list here reads as it read
-		 * when the fiber started — empty. Measured. That is what lets a restart in
-		 * the middle of pouring the draft carry the pouring through instead of
-		 * walking away from a document with no text in it.
+		 * It guards against that device and not against our own half made document,
+		 * and cannot confuse the two: a restarted fiber replays its reads from its
+		 * own cache, so the list here reads as it read at the start — empty. That
+		 * is what carries a pouring interrupted halfway through to the end.
 		 */
 		doc_first() {
 
@@ -199,35 +183,22 @@ namespace $ {
 		/**
 		 * The one fiber making the first document, held by a cell of its own.
 		 *
-		 * A cell that reads nothing and answers with the fiber it made. That is the
-		 * shape a `$mol` effect takes — the same one `message_listener` and
-		 * `resize_watch` take in `scene/` — and it is what makes one fiber one
-		 * fiber: read this again while the proof of work is still being mined and
-		 * the same object comes back, so no second document is ever started.
+		 * A cell that reads NOTHING and answers with the fiber it made. Reading
+		 * nothing is the point: an invalidation arriving while a cell computes is
+		 * dropped on the spot, and the document landing is exactly such an
+		 * invalidation, so a cell with no dependencies has nothing to lose that way.
+		 * Reading it again while the proof of work is still mining gives back the
+		 * same object, which is what keeps one fiber one fiber.
 		 *
-		 * Reading nothing is the point and not an accident. An invalidation
-		 * arriving while a cell computes is dropped on the spot — `absorb` returns
-		 * early on a cursor that is still tracking — and the document landing is
-		 * exactly such an invalidation. A cell with no dependencies has nothing to
-		 * lose that way.
-		 *
-		 * The fiber is wrapped and not returned as it is: a cell answering with a
-		 * promise is a cell that never finished, and every reader of it suspends
+		 * The fiber is wrapped rather than returned as it is: a cell answering with
+		 * a promise is a cell that never finished, and every reader of it suspends
 		 * for ever.
 		 *
-		 * **The wrapper deliberately has no `destructor`, so this cell holds the
-		 * handle and not the life.** The draft is poured AFTER the document is in
-		 * the list, so there is a window in which `boot` already answers `ready`,
-		 * the last reader looks away and a cell nobody reads is collected. Owning
-		 * the fiber here would end it inside that window, and what would be lost is
-		 * the text the user typed, silently. Measured; there is a test. Nothing
-		 * leaks by it: a one-shot fiber destructs itself the moment it completes.
-		 *
-		 * What opens that window is `make()` standing first in `doc_add` and the
-		 * pouring standing after it — NOT `doc_pick`, which is last. Without an
-		 * address, and there is none on a first run, `doc_current` answers with the
-		 * last link of the list, and the link is in the list from `make()` on, with
-		 * an empty document behind it.
+		 * **The wrapper has no destructor, so this cell holds the handle and not
+		 * the life.** The draft is poured after the document is already in the list,
+		 * so there is a window where a cell nobody reads gets collected; owning the
+		 * fiber would end it inside that window and lose the typed text silently.
+		 * Nothing leaks by it — a one-shot fiber destructs itself on completion.
 		 */
 		@ $mol_mem
 		doc_first_task() {
@@ -237,16 +208,13 @@ namespace $ {
 		/**
 		 * Makes sure there is a document, from the start of the session.
 		 *
-		 * Read from `auto()` of the application. Suspends while the home land loads,
-		 * so the decision «there are none» is taken on the loaded list and not on an
-		 * empty cache; then asks for the fiber above and answers at once, so that
+		 * Suspends while the home land loads, so «there are none» is decided on the
+		 * loaded list and not on an empty cache, then answers at once so that
 		 * nothing waits on the proof of work.
 		 *
-		 * A plain method, deliberately. Under `@ $mol_mem` this answered `making`
-		 * for good: with no proof of work to wait on, the document lands while the
-		 * cell is still computing, and the invalidation it causes is dropped rather
-		 * than remembered. Measured. Read afresh every time there is nothing to go
-		 * stale, and the answer follows `doc_current` for free.
+		 * A plain method and not a cell: a cell here answered `making` for good,
+		 * because the document lands while it is still computing and the
+		 * invalidation that causes is dropped rather than remembered.
 		 */
 		boot(): 'ready' | 'making' {
 
@@ -279,9 +247,9 @@ namespace $ {
 		/**
 		 * Nodes of a document, resolved in the document's own land.
 		 *
-		 * Not `remote_list()`: that resolves through the static glob into a land
-		 * instance of its own, which waits on a master. `make( null )` put the nodes
-		 * into this very land, so this is correct and not merely convenient.
+		 * Resolved by hand rather than through the remote list: that one goes out
+		 * through the static glob and waits on a master. The nodes were made in
+		 * this very land, so reading them here is correct and not merely cheaper.
 		 */
 		nodes( doc: $bog_vmap_app_doc ) {
 
@@ -294,20 +262,15 @@ namespace $ {
 		}
 
 		/**
-		 * Text of a document: its classes in the order of `Nodes`, one `view.tree`.
+		 * Text of a document: its classes, one per node, as one source.
 		 *
-		 * One class per node, the whole text per document. Reading glues the node
-		 * texts with a newline guaranteed after each; writing cuts the text into
-		 * classes with the plain parser — NOT normalized, this is transport and
-		 * `lang` is the one that normalizes — and matches them to nodes by class
-		 * name, the first token. A name already stored gets its text updated (the
-		 * atom skips a write of an equal value), a new name gets a node made in the
-		 * same land, a name gone from the text leaves the list. Two classes of one
-		 * name are matched in order, so nothing a caller wrote is lost here.
+		 * Classes are matched to nodes BY NAME, which is what makes an edit of one
+		 * class one atom on the wire — and what makes a rename arrive as a new node,
+		 * so whatever is stored per class name has to be carried by whoever renames.
 		 *
-		 * Byte for byte on a round trip when the text is in canonical `tree2`
-		 * formatting, which is what `lang` writes after its first edit; a hand
-		 * written file is reformatted on that first edit, as it always was.
+		 * Parsed plainly and not normalized: this is transport, and the model above
+		 * is the one that decides what canonical looks like. Round trip is byte for
+		 * byte on text already in that shape.
 		 */
 		doc_source( doc: $bog_vmap_app_doc, next?: string ): string {
 
@@ -375,14 +338,13 @@ namespace $ {
 		 * Name of the class the document opens with, or empty. Writing a class name
 		 * makes that class the one it opens with.
 		 *
-		 * Read as a raw link, never through `remote()`: the typed getter resolves
+		 * Read as a raw link, never through the typed getter: that one resolves
 		 * through the static glob, and the node is in this very land anyway.
 		 *
-		 * The write is what a rename of the root needs: nodes are matched to classes
-		 * BY NAME, so a renamed class arrives as a node of its own and the recorded
-		 * choice would go on pointing at the node that used to hold it. A name the
-		 * document does not carry is ignored rather than recorded — a link to a node
-		 * that is not in the list is exactly the state this exists to prevent.
+		 * The write is what a rename of the root needs, because a renamed class
+		 * arrives as a node of its own. A name the document does not carry is
+		 * ignored: a pointer at a node outside the list is the state this exists to
+		 * prevent.
 		 */
 		doc_root( doc: $bog_vmap_app_doc, next?: string ) {
 
@@ -402,11 +364,10 @@ namespace $ {
 		/**
 		 * Canvas places of a document, as one dictionary in both directions.
 		 *
-		 * Written whole because that is how the canvas hands it over; a place gone
-		 * from the dictionary is cut from the stored one, so a deleted part does not
-		 * come back at its old coordinates on reload. Read back with the keys in
-		 * name order: the dictionary keeps them in the order of the units, which
-		 * nobody chose, and a cell comparing this deep would see a change where the
+		 * Written whole, so a place gone from the dictionary is cut from the stored
+		 * one and a deleted part does not come back at its old coordinates. Read
+		 * back in name order: the stored order is the order of the units, which
+		 * nobody chose, and a reader comparing deep would see a change where the
 		 * places are the same.
 		 */
 		doc_spots( doc: $bog_vmap_app_doc, next?: $bog_vmap_app_store_spots ): $bog_vmap_app_store_spots {
@@ -445,12 +406,12 @@ namespace $ {
 		}
 
 		/**
-		 * Text of the current document.
+		 * Text of the current document, or the draft while the first one is being
+		 * made.
 		 *
-		 * With no document yet, the draft: `boot` is making one and will pour the
-		 * draft into it. On somebody else's document a write is refused quietly —
-		 * the text stays what it was, and `stage` says why — because the atom would
-		 * throw «Rank too low» from inside whatever handler wrote first.
+		 * On somebody else's document a write is refused quietly — the text stays
+		 * what it was and the stage says why — because the atom would otherwise
+		 * throw from inside whatever handler wrote first.
 		 */
 		source( next?: string ): string {
 
@@ -485,11 +446,10 @@ namespace $ {
 		}
 
 		/**
-		 * Palette of the current document, stored as the string it is typed as.
+		 * Library of the current document, stored as the string it is typed as.
 		 *
-		 * Not parsed here on purpose: today it is one pack address, soon a list of
-		 * links separated by commas, and the one who knows what the string means is
-		 * the palette, not the store.
+		 * Not parsed here on purpose: what the string means is known to the panel
+		 * that offers the components, not to the store that keeps it.
 		 */
 		pack( next?: string ) {
 
@@ -504,9 +464,10 @@ namespace $ {
 	}
 
 	/**
-	 * Name of the class a `view.tree` source declares, or empty when it declares
-	 * none. The first token of the text — asked of the text every time, because a
-	 * stored copy of it would be the second source of truth for a derivable fact.
+	 * Name of the class a source declares, or empty when it declares none.
+	 *
+	 * Asked of the text every time: a stored copy would be a second source of
+	 * truth for a fact the text already carries.
 	 */
 	export function $bog_vmap_app_store_class_name( source: string ) {
 		return /^(\S+)/.exec( source.trimStart() )?.[ 1 ] ?? ''

@@ -3,14 +3,12 @@ namespace $ {
 	/**
 	 * Export of a document as a real MAM module.
 	 *
-	 * Not an abstract «project»: the output is a folder that drops into `bog/` and
-	 * builds with `npx mam` untouched. That is the acceptance criterion of the
-	 * stage, and it is also what closes the circle of section 5 — a built module is
-	 * a donor pack, so anything assembled here becomes a component library for the
-	 * next document.
+	 * Not an abstract «project»: the output is a folder that builds untouched.
+	 * That closes the circle of section 5 as well — a built module is a donor pack,
+	 * so what is assembled here is a component library for the next document.
 	 *
-	 * Pure functions over text. Knows nothing of Giper Baza and nothing of the DOM,
-	 * so the caller maps its stored nodes onto `doc_export_node` and gets files back.
+	 * Pure functions over text, with no storage and no DOM behind them: the caller
+	 * hands over the sources of its classes and gets files back.
 	 *
 	 * @see ../../ARCHITECTURE.md section 10
 	 */
@@ -30,12 +28,10 @@ namespace $ {
 	}
 
 	/**
-	 * One file of the module.
+	 * One file of the module. Text only.
 	 *
-	 * Text only for now. Assets arrive at stage 5.1 as separate blob lands, and
-	 * they will need a binary sibling of this type plus an `assets/` prefix in the
-	 * name — the shape is a flat list of named files precisely so that adding them
-	 * appends entries instead of reworking the result.
+	 * A flat list of named files precisely so that assets can be appended to it
+	 * later instead of reworking the shape of the result.
 	 */
 	export type $bog_vmap_app_export_file = {
 		readonly name: string
@@ -60,29 +56,21 @@ namespace $ {
 	/**
 	 * Folder the classes of a document oblige it to live in.
 	 *
-	 * Section 10 says the export is a MAM module and says nothing about where it
-	 * goes, but the two are not independent: mam turns a class name into a path by
-	 * replacing every underscore with a slash, so a document placed anywhere else
-	 * fails to build while looking perfectly correct. The document therefore names
-	 * its own folder, by the longest common prefix of its class names.
+	 * The folder is not free: mam turns a class name into a path by replacing every
+	 * underscore with a slash, so a module placed anywhere else fails to build
+	 * while looking perfectly correct. The document therefore names its own folder,
+	 * by the longest common prefix of its class names.
 	 *
-	 * A lone `bog_site_page` gives `bog/site/page`; together with `bog_site_hero`
-	 * it gives `bog/site`. Both resolve, because a missing last segment collapses
-	 * onto the longest existing prefix — the same rule that makes demo classes safe
-	 * to name after their own module.
+	 * A prefix shorter than two segments means classes from different packs.
+	 * Refused: renaming the author's classes to fit would break «byte for byte from
+	 * the editor», and emitting them as they are would produce a folder that does
+	 * not build.
 	 *
-	 * A prefix shorter than two segments means classes from different packs, or a
-	 * module at the root of a pack. Refused: renaming the user's classes to fit
-	 * would break «byte for byte from the editor», and emitting them as they are
-	 * would produce a folder that does not build.
-	 *
-	 * **What this cannot check: whether the root pack exists.** Only the machine
-	 * doing the build knows that, and we run in a browser. Classes named
-	 * `my_doc_page` give a perfectly well formed `my/doc/page`, and mam then fails
-	 * with `Root package "my" not found` — the length test above does not catch it,
-	 * because nothing is wrong with the shape. The export UI has to say out loud
-	 * which folder the module is going to, so that the first segment is a decision
-	 * the author sees rather than one made for them.
+	 * **What this cannot check is whether the root pack exists** — only the machine
+	 * doing the build knows that, and this runs in a browser. A well shaped path
+	 * into a pack nobody has still fails there. Hence the rule for the interface:
+	 * the folder is written where the author reads it, so the first segment is a
+	 * decision they see rather than one made for them.
 	 */
 	export function $bog_vmap_app_export_path(
 		this: $,
@@ -120,11 +108,11 @@ namespace $ {
 	/**
 	 * Whether a hand written body defines a method of this name.
 	 *
-	 * Deliberately the same test the scene applies before decorating, so that a
-	 * property memoized in the preview is memoized in the export and the two cannot
-	 * drift. A property decorated in the generated base but overridden here without
-	 * a decorator loses its atom outright, and nothing reports it: the method just
-	 * returns a fresh value while the DOM keeps the old one.
+	 * Deliberately the same test the scene applies before decorating, so a property
+	 * memoized in the preview is memoized in the export and the two cannot drift.
+	 * An override of a memoized property left undecorated loses its atom outright,
+	 * and nothing reports it: the method returns a fresh value while the DOM keeps
+	 * the old one.
 	 */
 	export function $bog_vmap_app_export_defines( js: string, name: string ) {
 		if( js.includes( `/${ '*' }${ name }${ '*' }/` ) ) return true
@@ -148,16 +136,14 @@ namespace $ {
 	/**
 	 * Parameters of methods that carry no type.
 	 *
-	 * The divergence of section 10: in the scene a body goes through `new Function`,
-	 * where any JS runs, and in the export the same body is compiled by TypeScript
-	 * with `strict` and `noImplicitAny`. An untyped parameter is the whole of that
-	 * divergence in practice — it works in the preview and fails the build, and the
-	 * author learns about it neither where nor when the mistake was made.
+	 * The divergence of section 10: in the scene a body runs as plain JS, in the
+	 * export the same body is compiled with `strict` and `noImplicitAny`. An
+	 * untyped parameter is that divergence in practice — it works in the preview
+	 * and fails the build, where the author is not.
 	 *
-	 * Not a type checker and not pretending to be one: a real `tsc` in the browser
-	 * costs megabytes in the bundle of an editor that would use it for one class of
-	 * error. What is not caught here is what needs types to catch — an unknown
-	 * member, a wrong type — and those stay a build failure.
+	 * Not a type checker: a real compiler in the browser costs megabytes for one
+	 * class of error. What needs types to catch — an unknown member, a wrong
+	 * type — stays a build failure.
 	 *
 	 * **The cost of the two mistakes is not the same, so the check is built to miss
 	 * rather than to lie.** A complaint refuses the export, and a false one locks
@@ -235,13 +221,13 @@ namespace $ {
 	 * The same text with every string and comment replaced by spaces.
 	 *
 	 * Length and line breaks are kept, so a position in the result is the same
-	 * position in the source and the line of a complaint stays true. Without this a
-	 * signature quoted inside a template literal reads as a signature, and that is
-	 * a refusal over text that is not code at all.
+	 * position in the source and the line of a complaint stays true. Without it a
+	 * signature quoted inside a literal reads as a signature, and that is a refusal
+	 * over text that is not code.
 	 *
 	 * A regular expression literal is not understood, deliberately: telling one
-	 * from a division needs a parser. An apostrophe inside one blanks more than it
-	 * should, and the whole cost of that is a complaint not raised.
+	 * from a division needs a parser, and the whole cost of getting it wrong is a
+	 * complaint not raised.
 	 */
 	export function $bog_vmap_app_export_blanked( js: string ) {
 
@@ -376,10 +362,8 @@ namespace $ {
 
 		/**
 		 * Parsed through the same model the editor edits with, so the export sees
-		 * exactly the classes the editor sees, reformatting included.
-		 *
-		 * This is also where the `asset:` rewrite of stage 5.1 belongs: one place,
-		 * before anything reads the text.
+		 * exactly the classes the editor sees, reformatting included. One place, and
+		 * the place where a rewrite of asset links belongs when it arrives.
 		 */
 		const parsed = nodes.map( node => {
 
@@ -392,9 +376,9 @@ namespace $ {
 		const names = parsed.map( item => item.name )
 
 		/**
-		 * Bodies are checked before anything is written, so that the answer names the
-		 * mistake instead of leaving a module that only fails on the build machine.
-		 * Section 10: the preview forgives what the export does not.
+		 * Bodies are checked before anything is written, so the answer names the
+		 * mistake instead of leaving a module that fails on a machine the author
+		 * never sees.
 		 */
 		const complaints = parsed.flatMap( item => {
 			const js = item.node.js?.trim()
@@ -427,12 +411,9 @@ namespace $ {
 		const pages = $bog_vmap_app_export_pages( parsed.find( item => item.name === entry )!.model )
 
 		/**
-		 * Two pages or more get a router, one page gets nothing at all.
-		 *
-		 * A single page document stays exactly what it was: the same five files and
-		 * the document itself at the root. A router over one page would be a class
-		 * that always answers the same thing, and an address key that always holds
-		 * the same value.
+		 * Two pages or more get a router, one page gets nothing at all: a router
+		 * over one page would be a class that always answers the same thing, and an
+		 * address key that always holds the same value.
 		 */
 		const router = pages.length > 1 ? router_name( path, names ) : ''
 
@@ -462,11 +443,10 @@ namespace $ {
 	/**
 	 * Pages of a document: the artboards its root class draws.
 	 *
-	 * An artboard is a node with a `sub` of its own, and that is the only mark it
-	 * has — the same reading the canvas does in `doc_containers`, and section 8
-	 * says there is no other. A free part carries no `sub`, so it is not a page and
-	 * the router never shows it, which is also why the desk coordinates have
-	 * nothing to leak into here.
+	 * A node with a `sub` of its own is an artboard, and that is the only mark it
+	 * has — the same reading the canvas takes, see section 8. A free part carries
+	 * no `sub`, so the router never shows it, and the desk coordinates have nothing
+	 * to leak into here.
 	 */
 	export function $bog_vmap_app_export_pages( model: $bog_vmap_lang_node ) {
 		return ( model.sub_names() ?? [] ).filter( name => name && model.sub_names( name ) )
@@ -475,11 +455,10 @@ namespace $ {
 	/**
 	 * Name of the router class, free of collisions.
 	 *
-	 * Built out of the module path rather than out of the root class, so that it
-	 * adds no segment to the longest common prefix and the module stays in the
-	 * folder the document already chose: `bog/site` gives `$bog_site_app`,
-	 * `bog/site/page` gives `$bog_site_page_app`. A document that already holds
-	 * that name gets the next free one instead of a class declared twice.
+	 * Built out of the module path and not out of the root class, so it adds no
+	 * segment to the longest common prefix and the module stays in the folder the
+	 * document already chose. A document already holding that name gets the next
+	 * free one instead of a class declared twice.
 	 */
 	function router_name( path: string, taken: readonly string[] ) {
 
@@ -494,21 +473,16 @@ namespace $ {
 	/**
 	 * Declaration of the router.
 	 *
-	 * `$mol_view` and not the document class, although inheriting would be shorter:
-	 * an heir declared in the SAME `.view.tree` silently loses the hand written body
-	 * of its base, because the generated file of the whole tree is ordered before
-	 * the single `.view.ts` of the module, where the wrapper overwrites the
-	 * generated class rather than extending it. The document therefore lies inside
-	 * the router as `Doc`.
+	 * A plain view and not an heir of the document, although inheriting would be
+	 * shorter: an heir declared in the SAME declaration file silently loses the hand
+	 * written body of its base. The document therefore lies INSIDE the router,
+	 * declared and never put into `sub` — one lazy instance and no DOM, the free
+	 * part of section 1 — and its artboards are flat properties of it, which is what
+	 * lets the router reach a page by name.
 	 *
-	 * `Doc` is declared and never put into `sub`, so it costs one lazy memoized
-	 * instance and no DOM — the free part of section 1. Its artboards are flat
-	 * properties of it thanks to `upper`, which is what lets the router reach a page
-	 * by name at all.
-	 *
-	 * No `sub` here: an empty list in the tree would be generated as a method
-	 * returning `never[]`, and an override widening that is a type error. The list
-	 * belongs to the body, where it is picked by the address anyway.
+	 * No `sub` in the declaration: an empty list is generated as a method returning
+	 * `never[]`, and an override widening that is a type error. The list belongs to
+	 * the body, where the address picks from it anyway.
 	 */
 	function router_tree( router: string, doc: string ) {
 		return `${ router } $mol_view\n\tDoc ${ doc }\n`
@@ -517,16 +491,14 @@ namespace $ {
 	/**
 	 * Body of the router: one page, named by the address.
 	 *
-	 * `$mol_state_arg` and nothing of our own, because that is the standard address
-	 * of $mol: a link from page to page is an ordinary `$mol_link` with
-	 * `arg * page \Page_1` written in the document itself, and it works without a
-	 * line of code from us. The first artboard is the default, so the bare address
-	 * opens the site rather than an empty screen, and an unknown page name lands
-	 * there as well instead of showing nothing.
+	 * The standard address of mol and nothing of our own, so a link from page to
+	 * page is an ordinary link written in the document itself and works without a
+	 * line of code from here. The first artboard is the default, so a bare address
+	 * opens the site, and an unknown page name lands there rather than on nothing.
 	 *
-	 * A `switch` over literal names rather than a lookup by string: a property read
-	 * by a computed name would need a cast, and the export must compile under
-	 * `strict` with no `as any` anywhere in it.
+	 * A `switch` over literal names and not a lookup by string: a property read by
+	 * a computed name needs a cast, and what goes out has to compile under `strict`
+	 * with no casts in it.
 	 */
 	function router_ts( router: string, pages: readonly string[] ) {
 
@@ -554,27 +526,24 @@ namespace $ {
 	}
 
 	/**
-	 * A hand written body with `@ $mol_mem` written above the methods that need it.
+	 * A hand written body with the memoizing decorator written above the methods
+	 * that need it.
 	 *
-	 * The decorator over the method is how a person writes it, and what comes out
-	 * of here has to read like a module somebody wrote by hand. The alternative —
-	 * `$mol_mem( Klass.prototype, "name" )` as an expression after the class — is
-	 * what the SCENE has to do, because a decorator cannot be written into the
-	 * string handed to `new Function`; an exported file is compiled by TypeScript
-	 * and has no such excuse.
+	 * The decorator over the method is how a person writes it, and what comes out of
+	 * here has to read like a module somebody wrote by hand. The expression after
+	 * the class is what the SCENE has to do, because a decorator cannot be written
+	 * into a string handed to a compiler at run time; a file has no such excuse.
 	 *
-	 * Finding where a method starts is not guesswork either: the body is cut by
-	 * the same `$bog_vmap_app_code_props_js` the code panel cuts it with, so the
-	 * export and the panel agree about where a property begins by construction
-	 * rather than by two implementations happening to match.
+	 * Where a method starts is not guessed: the body is cut by the same function the
+	 * code panel cuts it with, so the two agree about the start of a property by
+	 * construction rather than by two implementations happening to match. The
+	 * decorator lands under whatever comment belongs to the method and over the
+	 * method itself, where a reader looks for it.
 	 *
-	 * The decorator goes under whatever comment belongs to the method and directly
-	 * over the method itself, which is where a reader looks for it.
-	 *
-	 * **A body the slicer cannot cut keeps the old form**, expressions after the
-	 * class. Braces are counted rather than parsed, so a `}` inside a string is
-	 * enough to defeat it — and a body that loses its decorators loses its atoms
-	 * silently, which is the one outcome worth an ugly file.
+	 * **A body the slicer cannot cut keeps the expression form.** Braces are counted
+	 * rather than parsed, so a `}` inside a string is enough to defeat it — and a
+	 * body that loses its decorators loses its atoms silently, which is the one
+	 * outcome worth an ugly file.
 	 */
 	export function $bog_vmap_app_export_decorated(
 		this: $,
@@ -669,15 +638,13 @@ namespace $ {
 	/**
 	 * Styles, as a stylesheet and not as a program that attaches one.
 	 *
-	 * What the editor holds is raw CSS text, so the file that carries it is a
-	 * `.view.css` — mam compiles every stylesheet of a module into the bundle
-	 * itself, the way `mol/view/view/view.css` and `mol/theme/theme.css` travel,
-	 * and the page needs no link and no attaching code.
+	 * What the editor holds is raw CSS text, and mam compiles the stylesheet of a
+	 * module into the bundle itself, the way the stylesheets of mol travel — so the
+	 * page needs no link and no attaching code.
 	 *
-	 * That also takes user text out of a JavaScript literal. `$mol_style_attach`
-	 * had to be handed the stylesheet through `JSON.stringify`, because a backtick
-	 * or a `${` in it would tear the literal apart; a `.css` file has nothing to
-	 * escape into.
+	 * It also takes user text out of a JavaScript literal, where a backtick tore
+	 * the string apart and had to be escaped. A stylesheet has nothing to escape
+	 * into.
 	 */
 	function view_css( items: readonly Parsed[] ) {
 

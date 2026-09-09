@@ -2,20 +2,16 @@ namespace $ {
 
 	/**
 	 * The module as one archive, so that a browser can hand it over in a single
-	 * gesture. Nothing in mam packs files — measured across `mol` and `hyoo`, there
-	 * is no archiver of any kind — so the format is written here, in the stored
-	 * flavour that needs no compressor at all.
+	 * gesture. Nothing in the ecosystem packs files, so the format is written here,
+	 * in the stored flavour that needs no compressor.
 	 *
-	 * Stored and not deflated on purpose: an export is five text files of a few
-	 * kilobytes, and compressing them would buy nothing while costing either a
-	 * library in the bundle or a dependency on `CompressionStream`, which is async
-	 * and would drag the whole path into a fiber.
+	 * Stored and not deflated on purpose: a handful of small text files gain
+	 * nothing by compression, while a compressor costs either a library in the
+	 * bundle or an async browser API that would drag this whole path into a fiber.
 	 *
-	 * The alternative not taken: asking the browser for a folder and writing the
-	 * files into it straight, which would need no archive at all. It exists in
-	 * Chrome only, asks the person for a permission of its own before a single byte
-	 * is written, and leaves every other browser with nothing — an archive works
-	 * everywhere and needs no permission.
+	 * The alternative not taken — asking the browser for a folder and writing into
+	 * it — exists in one browser, asks for a permission of its own, and leaves
+	 * every other browser with nothing.
 	 *
 	 * @see ../../ARCHITECTURE.md section 10
 	 */
