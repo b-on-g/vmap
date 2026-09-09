@@ -252,6 +252,25 @@ namespace $ {
 			return `деталь ${ part } ссылается на ${ bound.join( ', ' ) } документа, отвяжите провод перед публикацией`
 		}
 
+		/**
+		 * The rule of a part, re-addressed to the class it goes out as.
+		 *
+		 * A rule written in a document names the sub view by the attribute mol puts
+		 * on it there — the root class plus the property, `[my_site_page_card]`. The
+		 * copy is a class of its own and carries `[bog_vmap_pub_card]` instead, so
+		 * the rule as written addresses an element that does not exist in any
+		 * document but the one it came from: measured, the styles of a published
+		 * part simply never applied.
+		 *
+		 * A prefix replacement and not a parse, deliberately. What has to change is
+		 * the name, the rest is the author's text, and a stylesheet that fails to
+		 * parse would lose rules instead of moving them.
+		 */
+		css_moved( css: string, from: string, to: string ) {
+			if( !css || !from || from === to ) return css
+			return css.split( '[' + from ).join( '[' + to )
+		}
+
 		/** The part of the library declaring this class, or null. */
 		part_of( shelf: $bog_vmap_lib_land_shelf, klass: string ) {
 			return shelf.parts().find(
@@ -279,6 +298,14 @@ namespace $ {
 			const tree = this.class_source( part, source )
 			const klass = this.class_name( part )
 
+			// The rule travels re-addressed: in the document it names the sub view
+			// of the document, and out here the part is a class of its own.
+			const moved = this.css_moved(
+				css,
+				this.$.$bog_vmap_app_code_attr( ( classes[ 0 ] ?? '' ) + '_' + part ),
+				this.$.$bog_vmap_app_code_attr( klass ),
+			)
+
 			const shelf = this.shelf_ensure()
 			const one = this.part_of( shelf, klass ) ?? shelf.Parts( null )!.make( null )
 
@@ -287,7 +314,7 @@ namespace $ {
 			// An empty text is not written into a part that never had one: the
 			// atom would be made only to hold nothing.
 			if( js || one.js() ) one.js( js )
-			if( css || one.css() ) one.css( css )
+			if( moved || one.css() ) one.css( moved )
 
 			return shelf.land().link().str
 		}

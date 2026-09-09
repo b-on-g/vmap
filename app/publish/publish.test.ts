@@ -80,6 +80,58 @@ namespace $ {
 
 		},
 
+		/**
+		 * WHAT A COPY IS MADE OF, and the rule that made it come out a different
+		 * shape than the original.
+		 *
+		 * A rule written in a document addresses the sub view by the attribute mol
+		 * puts on it THERE — the root class plus the property. The copy is a class
+		 * of its own and carries an attribute of its own, so the rule as written
+		 * names an element that exists in no document but the one it came from, and
+		 * the styles of a published part never applied at all. It travels
+		 * re-addressed.
+		 */
+		async 'the rule of a part is re-addressed to the class it goes out as'( $ ) {
+
+			const s = store( $ )
+
+			await $mol_wire_async( s ).publish(
+				'Button_minor',
+				src_button,
+				'',
+				'[my_site_page_button_minor] {\n\tcolor: red;\n}',
+				[ `${d}my_site_page` ],
+			)
+
+			$mol_assert_equal(
+				s.shelf()!.parts()[ 0 ].css(),
+				'[bog_vmap_pub_button_minor] {\n\tcolor: red;\n}',
+			)
+
+		},
+
+		/**
+		 * A part taken from the pack goes out as an HEIR of the pack class and
+		 * carries no texts of its own — and that is right, not a loss: mol writes an
+		 * attribute for every class of the chain, so the copy is addressed by the
+		 * stylesheet of the pack exactly as the original is.
+		 */
+		'a part of the pack goes out as an heir, with nothing copied'( $ ) {
+
+			const s = store( $ )
+			const source = `Calc ${d}bog_vmap_part_calc\n`
+
+			$mol_assert_equal(
+				s.class_source( 'Calc', source ),
+				`${ klass_calc } ${d}bog_vmap_part_calc\n`,
+			)
+
+			// Nothing of the document belongs to it: the editor hands over the body
+			// and the rule of the DOCUMENT, and a pack detail has neither.
+			$mol_assert_equal( s.css_moved( '', 'my_site_page_calc', 'bog_vmap_pub_calc' ), '' )
+
+		},
+
 		async 'a part of the document becomes a class of the library, body and styles with it'( $ ) {
 
 			const s = store( $ )
