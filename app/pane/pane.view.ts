@@ -1216,6 +1216,17 @@ namespace $.$$ {
 
 			this.entered( this.primary() )
 
+			// The keyboard has to follow the pointer inside. `focus()` on the element
+			// INSIDE the frame is the scene's half and it is not enough by itself:
+			// measured in the browser, after a relayed click the active element of
+			// the frame document was still `body` and typing went nowhere. Focusing
+			// the frame element is the host's half, it is allowed across origins, and
+			// it is what puts the frame's document in the keyboard's way. Best effort
+			// for the same reason the pointer capture is: a test DOM may not have it.
+			try {
+				( this.Scene( this.scene_key() ).dom_node() as HTMLElement ).focus()
+			} catch {}
+
 			this.click_send( press.world, event )
 
 		}

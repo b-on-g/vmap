@@ -269,6 +269,38 @@ namespace $ {
 		},
 
 		/**
+		 * REPRO: entering a part gave it the pointer but not the keyboard. The scene
+		 * focuses the element under the click, and that alone left the active element
+		 * of the frame at `body` — typing went nowhere at all.
+		 */
+		'entering a part hands the keyboard to the frame'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			// A drop picks the part, so a click on it would already be the second of
+			// the pair. Bare canvas first, to start from nothing picked.
+			stage.tap( stage.client([ 500, 400 ]) )
+			$mol_assert_equal( stage.app.selected(), null )
+
+			let focused = 0
+			stage.frame().focus = ()=> { focused ++ }
+
+			// The first click only picks: the keyboard stays with the editor.
+			stage.tap( stage.part_center( 'Calc' ) )
+			$mol_assert_equal( stage.pane.inside(), false )
+			$mol_assert_equal( focused, 0 )
+
+			// The second lets the pointer in, and the keys go with it.
+			stage.tap( stage.part_center( 'Calc' ) )
+
+			$mol_assert_equal( stage.pane.inside(), true )
+			$mol_assert_equal( focused, 1 )
+
+		},
+
+		/**
 		 * Inside a part the keys belong to the part, and the strip says so with the
 		 * way out. Nothing else on screen would explain why Delete stopped deleting.
 		 */
