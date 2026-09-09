@@ -259,10 +259,54 @@ namespace $.$$ {
 		 * The truth is here rather than in the pane so that a reader does not have to
 		 * reach through the canvas to learn what is picked; the pane writes it back
 		 * through a two way binding.
+		 *
+		 * KEYED BY THE DOCUMENT, and a plain method for that reason. A pick belongs
+		 * to the document it was made in: switching scenes hands over that scene's
+		 * pick — empty for a fresh one — and coming back finds it where it was left.
+		 * One pick for the whole editor left a ring hanging over an empty canvas and
+		 * an inspector opened on a node the new document never had.
+		 *
+		 * A `@ $mol_mem` here would freeze on the first write: writing to a cell
+		 * freezes its dependencies, and the dependency frozen would be the very
+		 * document key this is meant to follow.
 		 */
-		@ $mol_mem
+		override picked( next?: readonly string[] ): readonly string[] {
+			return this.picked_at( this.doc_key().slice( 0, 0 ), next )
+		}
+
+		/**
+		 * Which document a pick belongs to: the link of the open one, empty while
+		 * there is none. The link and not the text, so that editing a document does
+		 * not drop what is picked in it.
+		 */
+		doc_key() {
+			return this.store().doc_current()?.link().str ?? ''
+		}
+
+		/** What is picked in one document. The cell the pick actually lives in. */
+		@ $mol_mem_key
+		picked_at( key: string, next?: readonly string[] ): readonly string[] {
+			return next ?? []
+		}
+
+		/**
+		 * The primary of the picked, which is the last one taken.
+		 *
+		 * A projection of `picked()` and not a cell of its own: two cells holding
+		 * one fact would have to be kept in step by somebody, and the reading path
+		 * would stop being the writing path — which is how a `@ $mol_mem` in front of
+		 * another one freezes. Writing a name here is picking exactly that one, which
+		 * is what every caller outside the canvas means by it.
+		 */
 		override selected( next?: string | null ): string | null {
-			return next ?? null
+
+			if( next !== undefined ) {
+				this.picked( next ? [ next ] : [] )
+				return next
+			}
+
+			const picked = this.picked()
+			return picked.length ? picked[ picked.length - 1 ] : null
 		}
 
 		/** Whether anything is picked at all, for the views that only need the flag. */
@@ -1337,8 +1381,8 @@ namespace $.$$ {
 		@ $mol_action
 		node_delete() {
 
-			const name = this.selected()
-			if( !name ) return
+			const picked = this.picked()
+			if( !picked.length ) return
 
 			const node = this.node()
 
@@ -1346,7 +1390,7 @@ namespace $.$$ {
 			// children would stay declared and referenced by nothing — a legitimate
 			// state for a free part, and a trap for a page: nothing draws them, so
 			// nothing can select them, so nothing can ever take them out again.
-			const doomed = [ name ]
+			const doomed = [ ... picked ]
 			for( const dead of doomed ) for( const kid of node.sub_names( dead ) ?? [] ) {
 				if( kid && !doomed.includes( kid ) ) doomed.push( kid )
 			}
