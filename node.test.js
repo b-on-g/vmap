@@ -53465,9 +53465,21 @@ var $;
         pane.dom_node().getBoundingClientRect = () => rect;
         pane.view_rect = () => rect;
         pane.Touch().view_rect = () => rect;
-        deliver({ kind: 'ready' });
-        app.dom_tree();
-        scene.flush();
+        // A muted stand is the frame that boots and then says nothing: the scene
+        // announces itself and stops, which is what document code looping on the
+        // first compile looks like from here. The editor never sees geometry, so it
+        // never warms, and that is the state the cold watch exists for.
+        if (over.mute) {
+            deliver({ kind: 'ready' });
+            silent = true;
+            queue.length = 0;
+            app.dom_tree();
+        }
+        else {
+            deliver({ kind: 'ready' });
+            app.dom_tree();
+            scene.flush();
+        }
         const found = (selector, note, match) => {
             const el = [...root.querySelectorAll(selector)].find(match);
             if (!el)
@@ -53525,6 +53537,10 @@ var $;
                 app.Shelf().classes_showed(true);
                 app.dom_tree();
                 scene.flush();
+            },
+            /** A row of the scene list, addressed by the name of the document. */
+            scene_row(title) {
+                return found('[bog_vmap_app_scenes_scene_row]', `scene row ${title}`, el => el.textContent === title);
             },
             /** A row of the shelf, addressed by what it says. */
             shelf_row(title) {
@@ -54502,6 +54518,39 @@ var $;
             $mol_assert_equal(stage.field('Inspect().Title()').value, 'Кнопка');
             // And the panel says which name the node actually has.
             $mol_assert_ok(stage.text().includes('Узел по-прежнему называется «Calc»'));
+        },
+        /**
+         * «Новая сцена» makes a document, opens it, and puts it in the ADDRESS —
+         * checked through a real click on the button and a real click on a row.
+         *
+         * The address was the untested half: scenarios switched documents by calling
+         * the picker directly, so nothing ever proved that a gesture reaches
+         * `$mol_state_arg` at all. A report from the deploy that the list does not
+         * grow and the address does not follow had no test to answer it.
+         *
+         * WHAT THIS CANNOT SAY ANYTHING ABOUT is the timing in a browser: the node
+         * build of `$mol_state_arg` writes the address into a cell at once, while
+         * the web build defers it into `$mol_after_frame`, that is into
+         * `requestAnimationFrame` — which does not tick in a hidden tab. This test
+         * proves the wiring; a frame is a thing only a visible window has.
+         */
+        async 'a click on «Новая сцена» makes a scene, and the address follows the pick'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const first = stage.store.doc_current().link().str;
+            $mol_assert_equal(stage.store.doc_links().length, 1);
+            stage.click(stage.button('Новая сцена'));
+            // The store makes the document in a fiber of its own, as the click does.
+            await $bog_vmap_app_flow_settle(() => stage.store.doc_links().length > 1);
+            stage.redraw();
+            const second = stage.store.doc_current().link().str;
+            $mol_assert_equal(stage.store.doc_links().length, 2);
+            $mol_assert_ok(second !== first);
+            // In the address, which is what a reload and a shared link read.
+            $mol_assert_equal($.$mol_state_arg.value('doc'), second);
+            // Both scenes are on screen, and a click on a row moves the address back.
+            stage.click(stage.scene_row('Сцена 1'));
+            $mol_assert_equal(stage.store.doc_current().link().str, first);
+            $mol_assert_equal($.$mol_state_arg.value('doc'), first);
         },
     });
 })($ || ($ = {}));
