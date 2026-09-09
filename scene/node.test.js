@@ -10576,6 +10576,23 @@ var $;
     }
     $.$bog_vmap_lang_token = $bog_vmap_lang_token;
     /**
+     * Whether a name can be the name of a class of a document.
+     *
+     * Stricter than the compiler on purpose. `$mol_view_tree2_class_match` takes
+     * anything starting with a dollar or a capital, generics and quotes included,
+     * because it also has to recognize the classes of somebody else's code; a class
+     * WE write has to survive one more step, and that step is mam resolving the
+     * name into a folder. Every underscore is a level of folders, so the name is a
+     * dollar and at least two lowercase segments, and nothing else fits in a path.
+     *
+     * A refusal here is a message to a person, so this answers yes or no and leaves
+     * the wording to the caller, who knows in what language to say it.
+     */
+    function $bog_vmap_lang_class_ok(name) {
+        return /^\$[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(name);
+    }
+    $.$bog_vmap_lang_class_ok = $bog_vmap_lang_class_ok;
+    /**
      * Builds the tree of a wire: `name = Node prop`.
      *
      * The operator is `=` and nothing else. `<= Node prop` looks like the same thing
@@ -10779,6 +10796,43 @@ var $;
             return next;
         }
         /**
+         * Renames a class of the document together with every mention of it.
+         *
+         * A class name is spelled in more places than its own declaration: it is the
+         * base of an heir (`site_card site_page`, both with a leading dollar) and the
+         * value of a part declared with it (`Card site_card`, same). Retyping the
+         * declaration alone leaves those
+         * spelling a class nobody declares, which compiles into `Class extends value
+         * undefined` or into a part of a class that is not there — so the mentions
+         * are rewritten in the SAME write, over every class of the document.
+         *
+         * A mention is any tree node typed exactly with the old name. Only structural
+         * tokens carry a type in `tree2`; a literal is a data node, so a class name
+         * written inside a string is not touched and cannot be.
+         *
+         * A name already declared is refused, like the rename of a property: two
+         * classes of one name is a document that disagrees with itself about which is
+         * real, and the class index of a library keeps the last of such a pair.
+         *
+         * Whoever holds a `node( from )` has to ask for `node( to )` afterwards; the
+         * old handle addresses a class the document no longer carries, exactly as the
+         * property handle does after `prop_rename`.
+         */
+        class_rename(from, to) {
+            if (from === to)
+                return;
+            const trees = this.trees();
+            if (!trees.some(tree => tree.type === from))
+                return this.$.$mol_fail(new Error(`Class ${JSON.stringify(from)} is not declared in the document`));
+            if (trees.some(tree => tree.type === to))
+                return this.$.$mol_fail(new Error(`Class ${JSON.stringify(to)} is already declared in the document`));
+            const renamed = (tree) => {
+                const kids = tree.kids.map(renamed);
+                return tree.type === from ? tree.struct(to, kids) : tree.clone(kids);
+            };
+            this.source(this.$.$mol_tree2.list(trees.map(renamed)).toString());
+        }
+        /**
          * One class of the document as a node model.
          *
          * `source` is replaced with a slice of the document on the instance itself.
@@ -10801,6 +10855,9 @@ var $;
     __decorate([
         $mol_mem
     ], $bog_vmap_lang_doc.prototype, "names", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_doc.prototype, "class_rename", null);
     __decorate([
         $mol_mem_key
     ], $bog_vmap_lang_doc.prototype, "node", null);
@@ -22765,6 +22822,69 @@ var $;
                 `	count 2`,
                 ``,
             ].join('\n'));
+        },
+        /**
+         * Renaming a class moves the name of the class and nothing else about the
+         * document: the properties keep their names, their order and their values,
+         * so the pick, the placement and the wires of the editor — all keyed by
+         * property name — have nothing to be orphaned by.
+         */
+        'renaming a class touches the class name alone'($) {
+            const d1 = pair_doc();
+            d1.class_rename(`${d}bog_vmap_lang_test_one`, `${d}my_site_page`);
+            $mol_assert_equal(d1.source(), [
+                `${d}my_site_page ${d}mol_view`,
+                `	label \\Первая`,
+                `	count 1`,
+                `${d}bog_vmap_lang_test_two ${d}mol_view`,
+                `	caption \\Вторая`,
+                `	count 2`,
+                ``,
+            ].join('\n'));
+        },
+        /**
+         * The half a rename of the declaration alone would leave broken: an heir
+         * spells its base, and a part spells the class it is declared with. Both
+         * mentions live in ANOTHER class of the document, so both are rewritten in
+         * the same write or the document stops compiling.
+         */
+        'a rename rewrites the mentions of the class in its neighbours'($) {
+            const d1 = $bog_vmap_lang_doc.make({});
+            d1.source([
+                `${d}bog_vmap_lang_test_base ${d}mol_view`,
+                `	label \\Первая`,
+                `${d}bog_vmap_lang_test_heir ${d}bog_vmap_lang_test_base`,
+                `	Card ${d}bog_vmap_lang_test_base`,
+                `	sub / <= Card`,
+                ``,
+            ].join('\n'));
+            d1.class_rename(`${d}bog_vmap_lang_test_base`, `${d}bog_vmap_lang_test_root`);
+            $mol_assert_equal(d1.source(), [
+                `${d}bog_vmap_lang_test_root ${d}mol_view label \\Первая`,
+                `${d}bog_vmap_lang_test_heir ${d}bog_vmap_lang_test_root`,
+                `	Card ${d}bog_vmap_lang_test_root`,
+                `	sub / <= Card`,
+                ``,
+            ].join('\n'));
+        },
+        /** A literal is a data node, so a class name written inside one is text. */
+        'a rename does not reach into a string'($) {
+            const d1 = $bog_vmap_lang_doc.make({});
+            d1.source(`${d}bog_vmap_lang_test_one ${d}mol_view\n\tlabel \\${d}bog_vmap_lang_test_one\n`);
+            d1.class_rename(`${d}bog_vmap_lang_test_one`, `${d}bog_vmap_lang_test_four`);
+            $mol_assert_equal(d1.source(), `${d}bog_vmap_lang_test_four ${d}mol_view label \\${d}bog_vmap_lang_test_one\n`);
+        },
+        'a rename onto a name the document already carries is refused'($) {
+            const d1 = pair_doc();
+            $mol_assert_fail(() => d1.class_rename(`${d}bog_vmap_lang_test_one`, `${d}bog_vmap_lang_test_two`), Error);
+            $mol_assert_like(d1.names(), [
+                `${d}bog_vmap_lang_test_one`,
+                `${d}bog_vmap_lang_test_two`,
+            ]);
+        },
+        'a rename of a class the document lacks is refused'($) {
+            const d1 = pair_doc();
+            $mol_assert_fail(() => d1.class_rename(`${d}bog_vmap_lang_test_absent`, `${d}bog_vmap_lang_test_four`), Error);
         },
         /**
          * The canvas gesture in model terms. Two parts, no wire; after a link there

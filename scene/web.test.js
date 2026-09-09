@@ -6349,6 +6349,69 @@ var $;
             ].join('\n'));
         },
         /**
+         * Renaming a class moves the name of the class and nothing else about the
+         * document: the properties keep their names, their order and their values,
+         * so the pick, the placement and the wires of the editor — all keyed by
+         * property name — have nothing to be orphaned by.
+         */
+        'renaming a class touches the class name alone'($) {
+            const d1 = pair_doc();
+            d1.class_rename(`${d}bog_vmap_lang_test_one`, `${d}my_site_page`);
+            $mol_assert_equal(d1.source(), [
+                `${d}my_site_page ${d}mol_view`,
+                `	label \\Первая`,
+                `	count 1`,
+                `${d}bog_vmap_lang_test_two ${d}mol_view`,
+                `	caption \\Вторая`,
+                `	count 2`,
+                ``,
+            ].join('\n'));
+        },
+        /**
+         * The half a rename of the declaration alone would leave broken: an heir
+         * spells its base, and a part spells the class it is declared with. Both
+         * mentions live in ANOTHER class of the document, so both are rewritten in
+         * the same write or the document stops compiling.
+         */
+        'a rename rewrites the mentions of the class in its neighbours'($) {
+            const d1 = $bog_vmap_lang_doc.make({});
+            d1.source([
+                `${d}bog_vmap_lang_test_base ${d}mol_view`,
+                `	label \\Первая`,
+                `${d}bog_vmap_lang_test_heir ${d}bog_vmap_lang_test_base`,
+                `	Card ${d}bog_vmap_lang_test_base`,
+                `	sub / <= Card`,
+                ``,
+            ].join('\n'));
+            d1.class_rename(`${d}bog_vmap_lang_test_base`, `${d}bog_vmap_lang_test_root`);
+            $mol_assert_equal(d1.source(), [
+                `${d}bog_vmap_lang_test_root ${d}mol_view label \\Первая`,
+                `${d}bog_vmap_lang_test_heir ${d}bog_vmap_lang_test_root`,
+                `	Card ${d}bog_vmap_lang_test_root`,
+                `	sub / <= Card`,
+                ``,
+            ].join('\n'));
+        },
+        /** A literal is a data node, so a class name written inside one is text. */
+        'a rename does not reach into a string'($) {
+            const d1 = $bog_vmap_lang_doc.make({});
+            d1.source(`${d}bog_vmap_lang_test_one ${d}mol_view\n\tlabel \\${d}bog_vmap_lang_test_one\n`);
+            d1.class_rename(`${d}bog_vmap_lang_test_one`, `${d}bog_vmap_lang_test_four`);
+            $mol_assert_equal(d1.source(), `${d}bog_vmap_lang_test_four ${d}mol_view label \\${d}bog_vmap_lang_test_one\n`);
+        },
+        'a rename onto a name the document already carries is refused'($) {
+            const d1 = pair_doc();
+            $mol_assert_fail(() => d1.class_rename(`${d}bog_vmap_lang_test_one`, `${d}bog_vmap_lang_test_two`), Error);
+            $mol_assert_like(d1.names(), [
+                `${d}bog_vmap_lang_test_one`,
+                `${d}bog_vmap_lang_test_two`,
+            ]);
+        },
+        'a rename of a class the document lacks is refused'($) {
+            const d1 = pair_doc();
+            $mol_assert_fail(() => d1.class_rename(`${d}bog_vmap_lang_test_absent`, `${d}bog_vmap_lang_test_four`), Error);
+        },
+        /**
          * The canvas gesture in model terms. Two parts, no wire; after a link there
          * are exactly two new lines: the wire on the root and the reference in the
          * target declaration.

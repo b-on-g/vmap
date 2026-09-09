@@ -4522,6 +4522,20 @@ declare namespace $ {
      */
     function $bog_vmap_lang_token(this: $, token: string, role: string): string;
     /**
+     * Whether a name can be the name of a class of a document.
+     *
+     * Stricter than the compiler on purpose. `$mol_view_tree2_class_match` takes
+     * anything starting with a dollar or a capital, generics and quotes included,
+     * because it also has to recognize the classes of somebody else's code; a class
+     * WE write has to survive one more step, and that step is mam resolving the
+     * name into a folder. Every underscore is a level of folders, so the name is a
+     * dollar and at least two lowercase segments, and nothing else fits in a path.
+     *
+     * A refusal here is a message to a person, so this answers yes or no and leaves
+     * the wording to the caller, who knows in what language to say it.
+     */
+    function $bog_vmap_lang_class_ok(name: string): boolean;
+    /**
      * Builds the tree of a wire: `name = Node prop`.
      *
      * The operator is `=` and nothing else. `<= Node prop` looks like the same thing
@@ -4643,6 +4657,30 @@ declare namespace $ {
          * to gain either.
          */
         class_source(name: string, next?: string): string;
+        /**
+         * Renames a class of the document together with every mention of it.
+         *
+         * A class name is spelled in more places than its own declaration: it is the
+         * base of an heir (`site_card site_page`, both with a leading dollar) and the
+         * value of a part declared with it (`Card site_card`, same). Retyping the
+         * declaration alone leaves those
+         * spelling a class nobody declares, which compiles into `Class extends value
+         * undefined` or into a part of a class that is not there — so the mentions
+         * are rewritten in the SAME write, over every class of the document.
+         *
+         * A mention is any tree node typed exactly with the old name. Only structural
+         * tokens carry a type in `tree2`; a literal is a data node, so a class name
+         * written inside a string is not touched and cannot be.
+         *
+         * A name already declared is refused, like the rename of a property: two
+         * classes of one name is a document that disagrees with itself about which is
+         * real, and the class index of a library keeps the last of such a pair.
+         *
+         * Whoever holds a `node( from )` has to ask for `node( to )` afterwards; the
+         * old handle addresses a class the document no longer carries, exactly as the
+         * property handle does after `prop_rename`.
+         */
+        class_rename(from: string, to: string): undefined;
         /**
          * One class of the document as a node model.
          *
