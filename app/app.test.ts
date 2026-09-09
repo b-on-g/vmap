@@ -1064,6 +1064,15 @@ namespace $ {
 			$mol_assert_ok( app.root_title_note().includes( 'Страница' ) )
 			$mol_assert_ok( app.body().includes( app.Root_note() ) )
 
+			// And the name the document still carries. The field keeps the refused
+			// one — there has to be something to correct — so without this the real
+			// name would be nowhere on the screen at all.
+			app.root_draft( 'Страница' )
+			app.root_submit()
+
+			$mol_assert_equal( app.root_draft(), 'Страница' )
+			$mol_assert_ok( app.root_title_note().includes( `${d}my_site_page` ) )
+
 			// A single segment is not a path either: mam resolves every underscore
 			// into a folder, and the export refuses a prefix shorter than two.
 			$mol_assert_equal( app.root_title( `${d}page` ), `${d}my_site_page` )

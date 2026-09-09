@@ -1805,7 +1805,7 @@ namespace $.$$ {
 			if( !next || next === name ) return name
 
 			if( !this.$.$bog_vmap_lang_class_ok( next ) ) {
-				this.root_title_note( `Имя «${ next }» не годится: имя класса это доллар`
+				this.root_title_refusal( `Имя «${ next }» не годится: имя класса это доллар`
 					+ ' и не меньше двух частей через подчёркивание, латиницей в нижнем'
 					+ ' регистре — из них и складывается папка модуля' )
 				return name
@@ -1815,19 +1815,35 @@ namespace $.$$ {
 				this.class_rename( name, next )
 			} catch( error ) {
 				if( this.$.$mol_promise_like( error ) ) return this.$.$mol_fail_hidden( error )
-				this.root_title_note( this.$.$mol_error_message( error ) )
+				this.root_title_refusal( this.$.$mol_error_message( error ) )
 				return name
 			}
 
-			this.root_title_note( '' )
+			this.root_title_refusal( '' )
 
 			return next
 		}
 
 		/** Why the root was not renamed. Empty when it was, or when nobody tried. */
 		@ $mol_mem
-		override root_title_note( next?: string ) {
+		root_title_refusal( next?: string ) {
 			return next ?? ''
+		}
+
+		/**
+		 * The refusal, and with it the name the root class still carries.
+		 *
+		 * The same fork as the name of a node, and the same answer: the field keeps
+		 * what was typed, so after a refusal the toolbar shows a name the document
+		 * does not have and the real one is nowhere. It goes into the refusal itself
+		 * rather than into a line of its own — the two are one thought, and a strip
+		 * that appears only with the refusal cannot go stale after it.
+		 */
+		override root_title_note() {
+
+			const note = this.root_title_refusal()
+
+			return note ? `${ note }. Корневой класс по-прежнему «${ this.doc_root() }»` : ''
 		}
 
 
