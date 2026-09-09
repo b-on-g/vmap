@@ -28,9 +28,9 @@ namespace $.$$ {
 		},
 
 		/**
-		 * A class name is long and is read as a whole: `$bog_vmap_app_page` cut in
-		 * the middle says nothing about the folder it chooses. Wide enough for a
-		 * three segment name, and no growing — the toolbar wraps instead.
+		 * A class name is long and is read as a whole: cut in the middle it says
+		 * nothing about the folder it chooses. Wide enough for a name of three
+		 * segments, and no growing — the toolbar wraps instead.
 		 */
 		Root_name: {
 			minWidth: '14rem',

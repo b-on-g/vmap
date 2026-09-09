@@ -96,17 +96,17 @@ namespace $ {
 		'the checksum is the one every reader computes'( $ ) {
 
 			$mol_assert_equal(
-				$.$bog_vmap_app_export_crc32( new TextEncoder().encode( 'hello' ) ),
+				$.$bog_vmap_app_export_zip_crc32( new TextEncoder().encode( 'hello' ) ),
 				907060870,
 			)
 
 			$mol_assert_equal(
-				$.$bog_vmap_app_export_crc32( new TextEncoder().encode( 'привет' ) ),
+				$.$bog_vmap_app_export_zip_crc32( new TextEncoder().encode( 'привет' ) ),
 				779501134,
 			)
 
 			// An empty entry is a normal one, and its checksum is not a special case.
-			$mol_assert_equal( $.$bog_vmap_app_export_crc32( new Uint8Array( 0 ) ), 0 )
+			$mol_assert_equal( $.$bog_vmap_app_export_zip_crc32( new Uint8Array( 0 ) ), 0 )
 
 		},
 
@@ -143,7 +143,7 @@ namespace $ {
 				const file = module.files.find( file => file.name === entry.name )!
 
 				$mol_assert_equal( body_of( bytes, entry.offset ), file.text )
-				$mol_assert_equal( entry.crc, $.$bog_vmap_app_export_crc32(
+				$mol_assert_equal( entry.crc, $.$bog_vmap_app_export_zip_crc32(
 					new TextEncoder().encode( file.text )
 				) )
 
@@ -204,7 +204,7 @@ namespace $ {
 		 */
 		'the archive carries the module folder'( $ ) {
 
-			const names = entries_of( $.$bog_vmap_app_export_archive( module ) )
+			const names = entries_of( $.$bog_vmap_app_export_zip_archive( module ) )
 				.map( entry => entry.name )
 
 			$mol_assert_equal(

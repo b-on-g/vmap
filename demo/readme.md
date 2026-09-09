@@ -36,10 +36,11 @@ it at `bog/vmap/demo`.
 
 Regenerated 09.09.2026 **through the editor** rather than by calling the export
 on two strings: the two classes were opened as one document, a part was dropped
-on the canvas and deleted again, the root class was renamed from
-`$bog_vmap_app_page` — the name a fresh document gets — to `$bog_vmap_demo_page`,
-and only then was the module written out. Every file came back byte for byte
-what it had been.
+on the canvas and deleted again, the root class was renamed from the name a fresh
+document gets — `my_site_page`, with a dollar in front, spelled without one here
+because mam reads dollar names even out of prose — to `$bog_vmap_demo_page`, and
+only then was the module written out. Every file came back byte for byte what it
+had been.
 
 That is what the folder is worth as a fixture now. It says that an edit of one
 class does not eat the other, that a rename of the root moves the module folder

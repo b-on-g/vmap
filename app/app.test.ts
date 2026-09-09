@@ -571,7 +571,7 @@ namespace $ {
 			const module = app.export_state().module!
 
 			$mol_assert_equal( app.export_ready(), true )
-			$mol_assert_equal( module.path, 'bog/vmap/app/page' )
+			$mol_assert_equal( module.path, 'my/site/page' )
 			$mol_assert_equal( module.name, 'page' )
 			$mol_assert_equal(
 				module.files.map( file => file.name ).join( ' ' ),
@@ -586,9 +586,9 @@ namespace $ {
 
 			// And the folder is on the button itself, where it is read without
 			// hovering: section 10, the folder is not free and the author chose it.
-			$mol_assert_equal( app.export_title(), 'Скачать bog/vmap/app/page' )
+			$mol_assert_equal( app.export_title(), 'Скачать my/site/page' )
 			$mol_assert_equal( app.export_file(), 'page.zip' )
-			$mol_assert_ok( app.export_hint().includes( 'npx mam bog/vmap/app/page' ) )
+			$mol_assert_ok( app.export_hint().includes( 'npx mam my/site/page' ) )
 
 		},
 
@@ -602,11 +602,11 @@ namespace $ {
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
 
-			const bytes = $.$bog_vmap_app_export_archive( app.export_state().module! )
+			const bytes = $.$bog_vmap_app_export_zip_archive( app.export_state().module! )
 			const text = new TextDecoder().decode( bytes )
 
-			$mol_assert_ok( text.includes( 'bog/vmap/app/page/page.view.tree' ) )
-			$mol_assert_ok( text.includes( 'bog/vmap/app/page/index.html' ) )
+			$mol_assert_ok( text.includes( 'my/site/page/page.view.tree' ) )
+			$mol_assert_ok( text.includes( 'my/site/page/index.html' ) )
 
 			// Stored, not compressed, so the sources travel as themselves.
 			$mol_assert_ok( text.includes( `${d}mol_button_minor` ) )
@@ -662,7 +662,7 @@ namespace $ {
 			const notes = app.export_notes()
 
 			$mol_assert_equal( notes.length, 2 )
-			$mol_assert_ok( notes[ 1 ].includes( `${d}bog_vmap_app_page` ) )
+			$mol_assert_ok( notes[ 1 ].includes( `${d}my_site_page` ) )
 			$mol_assert_ok( notes[ 1 ].includes( 'строка 1' ) )
 			$mol_assert_ok( notes[ 1 ].includes( 'greeting' ) )
 			$mol_assert_ok( notes[ 1 ].includes( 'who' ) )
@@ -729,8 +729,12 @@ namespace $ {
 
 			$mol_assert_equal( app.export_ready(), true )
 			$mol_assert_equal( module.files.length, 5 )
-			$mol_assert_equal( module.root, `${d}bog_vmap_app_page` )
-			$mol_assert_equal( module.files[ 0 ].text, `${d}bog_vmap_app_page ${d}mol_view sub /\n` )
+			$mol_assert_equal( module.root, `${d}my_site_page` )
+			$mol_assert_equal( module.files[ 0 ].text, `${d}my_site_page ${d}mol_view sub /\n` )
+
+			// Out of this pack, in a folder of the author's own: an untouched
+			// document used to be unpacked inside the editor itself.
+			$mol_assert_equal( module.path, 'my/site/page' )
 
 			// No hand written body anywhere, so no subclass and no rule is emitted.
 			$mol_assert_equal( module.files[ 1 ].text.includes( 'export class' ), false )
@@ -815,19 +819,55 @@ namespace $ {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
-			$mol_assert_equal( app.export_state().module!.path, 'bog/vmap/app/page' )
+			$mol_assert_equal( app.export_state().module!.path, 'my/site/page' )
 
-			app.root_title( `${d}my_site_page` )
+			app.root_title( `${d}my_shop_page` )
 
-			$mol_assert_equal( app.doc_root(), `${d}my_site_page` )
-			$mol_assert_equal( app.root_title(), `${d}my_site_page` )
+			$mol_assert_equal( app.doc_root(), `${d}my_shop_page` )
+			$mol_assert_equal( app.root_title(), `${d}my_shop_page` )
 
 			const module = app.export_state().module!
 
-			$mol_assert_equal( module.path, 'my/site/page' )
-			$mol_assert_equal( module.root, `${d}my_site_page` )
-			$mol_assert_equal( app.export_title(), 'Скачать my/site/page' )
-			$mol_assert_ok( module.files[ 0 ].text.startsWith( `${d}my_site_page ` ) )
+			$mol_assert_equal( module.path, 'my/shop/page' )
+			$mol_assert_equal( module.root, `${d}my_shop_page` )
+			$mol_assert_equal( app.export_title(), 'Скачать my/shop/page' )
+			$mol_assert_ok( module.files[ 0 ].text.startsWith( `${d}my_shop_page ` ) )
+
+		},
+
+		/**
+		 * A rename and its undo, because the two halves fail apart: the text is
+		 * rewritten by the model and the body and the styles are carried by hand, so
+		 * a rename that lost them on the way back would be a rename that loses them,
+		 * full stop. Everything has to come back to the byte it started from.
+		 */
+		'a rename and the rename back leave the document as it was'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.doc_source([
+				`${d}my_site_page ${d}mol_view sub /`,
+				`${d}my_site_card ${d}mol_view title \\Карточка`,
+				``,
+			].join( '\n' ) )
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+			app.root_js( 'greeting(){\n\treturn 1\n}\n' )
+			app.class_js( `${d}my_site_card`, 'note(){\n\treturn 2\n}\n' )
+			app.root_css( '[my] {\n\tcolor: red;\n}' )
+
+			const source = app.doc_source()
+
+			app.root_title( `${d}my_shop_page` )
+			app.root_title( `${d}my_site_page` )
+
+			$mol_assert_equal( app.doc_source(), source )
+			$mol_assert_equal( app.doc_root(), `${d}my_site_page` )
+			$mol_assert_equal( app.root_js(), 'greeting(){\n\treturn 1\n}\n' )
+			$mol_assert_equal( app.root_css(), '[my] {\n\tcolor: red;\n}' )
+
+			// The class that was never renamed kept its own body throughout.
+			$mol_assert_equal( app.class_js( `${d}my_site_card` ), 'note(){\n\treturn 2\n}\n' )
 
 		},
 
@@ -852,7 +892,7 @@ namespace $ {
 			const spots = JSON.stringify( app.spots() )
 			const wires = JSON.stringify( app.doc_wires() )
 
-			app.root_title( `${d}my_site_page` )
+			app.root_title( `${d}my_shop_page` )
 
 			$mol_assert_equal( app.root_js(), 'greeting(){\n\treturn 1\n}\n' )
 			$mol_assert_equal( app.root_css(), '[my] {\n\tcolor: red;\n}' )
@@ -863,7 +903,7 @@ namespace $ {
 			// The text differs in the class name and in nothing else.
 			$mol_assert_equal(
 				app.doc_source(),
-				source.replace( `${d}bog_vmap_app_page`, `${d}my_site_page` ),
+				source.replace( `${d}my_site_page`, `${d}my_shop_page` ),
 			)
 
 		},
@@ -883,18 +923,18 @@ namespace $ {
 			const before = app.doc_source()
 
 			app.root_draft( `${d}my` )
-			app.root_draft( `${d}my_site` )
-			app.root_draft( `${d}my_site_page` )
+			app.root_draft( `${d}my_shop` )
+			app.root_draft( `${d}my_shop_page` )
 
 			$mol_assert_equal( app.doc_source(), before )
-			$mol_assert_equal( app.doc_root(), `${d}bog_vmap_app_page` )
+			$mol_assert_equal( app.doc_root(), `${d}my_site_page` )
 
 			app.root_submit()
 
-			$mol_assert_equal( app.doc_root(), `${d}my_site_page` )
+			$mol_assert_equal( app.doc_root(), `${d}my_shop_page` )
 			// The draft is keyed by the name it started from, so the field now shows
 			// the new name with nothing to clear.
-			$mol_assert_equal( app.root_draft(), `${d}my_site_page` )
+			$mol_assert_equal( app.root_draft(), `${d}my_shop_page` )
 
 		},
 
@@ -910,19 +950,19 @@ namespace $ {
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
 			const before = app.doc_source()
 
-			$mol_assert_equal( app.root_title( 'Страница' ), `${d}bog_vmap_app_page` )
+			$mol_assert_equal( app.root_title( 'Страница' ), `${d}my_site_page` )
 			$mol_assert_equal( app.doc_source(), before )
 			$mol_assert_ok( app.root_title_note().includes( 'Страница' ) )
 			$mol_assert_ok( app.body().includes( app.Root_note() ) )
 
 			// A single segment is not a path either: mam resolves every underscore
 			// into a folder, and the export refuses a prefix shorter than two.
-			$mol_assert_equal( app.root_title( `${d}page` ), `${d}bog_vmap_app_page` )
+			$mol_assert_equal( app.root_title( `${d}page` ), `${d}my_site_page` )
 			$mol_assert_equal( app.doc_source(), before )
 
 			// And a name another class of the document already carries.
-			app.doc_source( before + `${d}bog_vmap_app_card ${d}mol_view title \\Карточка\n` )
-			$mol_assert_equal( app.root_title( `${d}bog_vmap_app_card` ), `${d}bog_vmap_app_page` )
+			app.doc_source( before + `${d}my_site_card ${d}mol_view title \\Карточка\n` )
+			$mol_assert_equal( app.root_title( `${d}my_site_card` ), `${d}my_site_page` )
 			$mol_assert_ok( app.root_title_note().includes( 'already declared' ) )
 
 		},

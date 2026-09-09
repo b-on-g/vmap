@@ -87,12 +87,19 @@ namespace $.$$ {
 		/**
 		 * Name the root class of a fresh document gets.
 		 *
-		 * A name of this pack, which is where an untouched document would be
-		 * unpacked; the author renames it, and the button says where the module goes
-		 * meanwhile.
+		 * `my` is the namespace the docs of `mol` use for one's own code: it belongs
+		 * to nobody and collides with nothing, and the three segments make a module
+		 * path — `my/site/page` — that lands in a folder of the author's own instead
+		 * of inside the pack of this editor, which is where a document named after
+		 * this pack used to be unpacked.
+		 *
+		 * The dollar is glued on and not written into the literal: mam reads string
+		 * literals when it builds the dependency graph and resolves a dollar name
+		 * into a package, and there is no root package `my` — the whole module would
+		 * stop building over a default value.
 		 */
 		doc_root_default() {
-			return '$bog_vmap_app_page'
+			return '$' + 'my_site_page'
 		}
 
 		/** Source of an empty page. Everything else arrives from the palette. */
@@ -472,7 +479,7 @@ namespace $.$$ {
 			)
 
 			return new this.$.$mol_blob(
-				[ this.$.$bog_vmap_app_export_archive( state.module ) ],
+				[ this.$.$bog_vmap_app_export_zip_archive( state.module ) ],
 				{ type: 'application/zip' },
 			)
 

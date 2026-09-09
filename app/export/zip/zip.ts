@@ -38,7 +38,7 @@ namespace $ {
 	} )()
 
 	/** Checksum zip keeps beside every entry, and the one every reader verifies. */
-	export function $bog_vmap_app_export_crc32( bytes: Uint8Array ) {
+	export function $bog_vmap_app_export_zip_crc32( bytes: Uint8Array ) {
 
 		let crc = 0xFFFFFFFF
 
@@ -95,7 +95,7 @@ namespace $ {
 
 			const name = encoder.encode( file.name )
 			const body = encoder.encode( file.text )
-			const crc = $bog_vmap_app_export_crc32( body )
+			const crc = $bog_vmap_app_export_zip_crc32( body )
 
 			const local = [
 				number_bytes( 0x04034b50, 4 ),
@@ -183,7 +183,7 @@ namespace $ {
 	 * names oblige it to be — section 10, where a module in the wrong folder builds
 	 * into `Root package not found` while looking entirely correct.
 	 */
-	export function $bog_vmap_app_export_archive(
+	export function $bog_vmap_app_export_zip_archive(
 		this: $,
 		module: $bog_vmap_app_export_module,
 	) {
