@@ -141,6 +141,37 @@ namespace $ {
 		},
 
 		/**
+		 * WHY A RENAME HAS TO CARRY THE BODY AND THE STYLES BY HAND, measured at the
+		 * level where it happens.
+		 *
+		 * Classes are matched to nodes by NAME, so a class renamed in the text has no
+		 * match: a node is made for the new name with nothing in it, and the old one
+		 * leaves the list taking its `Js` and `Css` with it. Everything the editor
+		 * keeps about a class outside its text therefore has to be read BEFORE the
+		 * text is written and put back after — there is no name in between that
+		 * answers for it.
+		 */
+		'a class renamed in the text arrives as an empty node and the old one leaves'( $ ) {
+
+			const s = store( $ )
+			const doc = s.doc_add( 'Landing', src_page + src_calc )
+
+			s.node( doc, `${d}bog_vmap_app_store_test_calc` )!.js( 'result(){ return 42 }' )
+
+			const renamed = src_calc.replace( '_calc ', '_total ' )
+			s.source( src_page + renamed )
+
+			$mol_assert_equal( s.nodes( doc ).length, 2 )
+			$mol_assert_equal( s.node( doc, `${d}bog_vmap_app_store_test_calc` ), null )
+
+			// The new name is a new node, and it is empty. This is the loss the editor
+			// closes above it, not a defect of the store: the text is the truth, and
+			// the text says there is no such class any more.
+			$mol_assert_equal( s.node_js( doc, `${d}bog_vmap_app_store_test_total` ), '' )
+
+		},
+
+		/**
 		 * The recorded choice can be moved, and that is what a rename of the root
 		 * needs: classes are matched to nodes by NAME, so a renamed class arrives as
 		 * a node of its own and nothing would move the pointer to it otherwise.
