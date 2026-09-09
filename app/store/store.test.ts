@@ -140,6 +140,28 @@ namespace $ {
 
 		},
 
+		/**
+		 * The recorded choice can be moved, and that is what a rename of the root
+		 * needs: classes are matched to nodes by NAME, so a renamed class arrives as
+		 * a node of its own and nothing would move the pointer to it otherwise.
+		 */
+		'the root can be pointed at another class of the document'( $ ) {
+
+			const s = store( $ )
+			const doc = s.doc_add( 'Landing', src_page + src_calc )
+
+			s.doc_root( doc, `${d}bog_vmap_app_store_test_calc` )
+
+			$mol_assert_equal( s.doc_root( doc ), `${d}bog_vmap_app_store_test_calc` )
+
+			// A name the document does not carry is ignored: a pointer at a node
+			// outside the list is the state this exists to prevent.
+			s.doc_root( doc, `${d}bog_vmap_app_store_test_absent` )
+
+			$mol_assert_equal( s.doc_root( doc ), `${d}bog_vmap_app_store_test_calc` )
+
+		},
+
 		'two documents are independent'( $ ) {
 
 			const s = store( $ )
