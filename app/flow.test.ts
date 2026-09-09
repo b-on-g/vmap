@@ -48,8 +48,8 @@ namespace $ {
 				'[bog_vmap_app_shelf_items] [bog_vmap_app_shelf_item_row]',
 			) ].map( el => el.textContent )
 
-			$mol_assert_like( shelf.slice( 0, 5 ), [
-				'Блок', 'Ячейка кода', 'Калькулятор', 'Карта', 'Калькулятор и карта',
+			$mol_assert_like( shelf.slice( 0, 6 ), [
+				'Блок', 'Ячейка кода', 'График', 'Калькулятор', 'Карта', 'Калькулятор и карта',
 			] )
 
 			// And the widgets of input under them, which is what drives the rest.

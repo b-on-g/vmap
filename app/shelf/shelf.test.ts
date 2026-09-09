@@ -240,7 +240,7 @@ namespace $ {
 			$mol_assert_like(
 				items.map( item => item.id ),
 				[
-					'block', 'cell', 'calc', 'map', 'pair',
+					'block', 'cell', 'plot', 'calc', 'map', 'pair',
 					'input_string', 'input_number', 'input_select',
 					'input_switch', 'input_check_box', 'input_paragraph',
 				],

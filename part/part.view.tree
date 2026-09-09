@@ -23,6 +23,7 @@ $bog_vmap_part $mol_view
 	Calc $bog_vmap_part_calc
 	Map $bog_vmap_part_map
 	Cell $bog_vmap_part_cell
+	Plot $bog_vmap_part_plot
 	-
 	Button_major $mol_button_major
 	Button_minor $mol_button_minor
