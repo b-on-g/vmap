@@ -405,12 +405,15 @@
     "$mol_textarea",
     "$bog_vmap_app_export",
     "$bog_vmap_app_pane",
-    "$bog_vmap_bridge",
     "$bog_vmap_app_wire",
     "$mol_svg_text",
     "$mol_svg_circle",
     "$mol_touch",
     "$mol_vector",
+    "$bog_vmap_bridge",
+    "$bog_vmap_app_pane_screen",
+    "$bog_vmap_app_pane_slot",
+    "$bog_vmap_app_pane_hole",
     "$bog_vmap_app_export_zip"
   ],
   "dependencies": {

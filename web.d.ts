@@ -50736,19 +50736,19 @@ declare namespace $ {
 		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_view__sub_bog_vmap_app_inspect_8 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['rows'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_inspect_9 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_app_inspect_flex__value_bog_vmap_app_inspect_9 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_flex__value_bog_vmap_app_inspect_10 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['flex_value'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_flex['value'] >
-	>
-	type $mol_view__sub_bog_vmap_app_inspect_10 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_inspect['rows'] >
-		,
-		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_scroll__sub_bog_vmap_app_inspect_11 = $mol_type_enforce<
 		readonly(any)[]
@@ -50826,6 +50826,7 @@ declare namespace $ {
 		ReturnType< $bog_vmap_app_inspect_row['nodes'] >
 	>
 	export class $bog_vmap_app_inspect extends $mol_view {
+		body( ): readonly($mol_view)[]
 		title_value( next?: string ): string
 		title_submit( next?: any ): any
 		Title( ): $mol_string
@@ -50833,12 +50834,9 @@ declare namespace $ {
 		Base( ): $mol_view
 		total( ): string
 		Total( ): $mol_view
-		Head( ): $mol_view
 		flex_value( id: any, next?: string ): string
-		Flex( ): $bog_vmap_app_inspect_flex
 		rows( ): readonly(any)[]
 		Rows( ): $mol_view
-		Body( ): $mol_scroll
 		title_note( ): string
 		empty_note( ): string
 		classes( ): readonly(any)[]
@@ -50855,7 +50853,10 @@ declare namespace $ {
 		peers( ): readonly($mol_tree2)[]
 		pack( next?: string ): string
 		class_title( next?: string ): string
-		sub( ): readonly(any)[]
+		sub( ): ReturnType< $bog_vmap_app_inspect['body'] >
+		Head( ): $mol_view
+		Flex( ): $bog_vmap_app_inspect_flex
+		Body( ): $mol_scroll
 		Note( ): $mol_view
 		Empty( ): $mol_view
 		Node( ): $bog_vmap_lang_node
@@ -50985,10 +50986,15 @@ declare namespace $.$$ {
         /** Commits the draft, and says nothing when there is nothing to commit. */
         title_submit(event?: Event): void;
         /**
-         * The refusal goes under the head, and only when there is one: a strip that
-         * is always there but usually empty is a strip nobody reads.
+         * What the panel is made of.
+         *
+         * A list, and never a splice into `super.sub()` by index: an index is a fact
+         * about the order somebody else wrote, so a child added to the tree moves
+         * the refusal to a place nobody chose, silently. The refusal goes under the
+         * head and only when there is one — a strip that is always there but usually
+         * empty is a strip nobody reads.
          */
-        sub(): readonly $mol_view[];
+        body(): readonly $mol_view[];
         /**
          * Whether there is a class here to inspect at all.
          *
@@ -51697,6 +51703,210 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
+
+	export class $mol_svg_circle extends $mol_svg {
+		radius( ): string
+		pos_x( ): string
+		pos_y( ): string
+		dom_name( ): string
+		pos( ): readonly(any)[]
+		attr( ): ({ 
+			'r': ReturnType< $mol_svg_circle['radius'] >,
+			'cx': ReturnType< $mol_svg_circle['pos_x'] >,
+			'cy': ReturnType< $mol_svg_circle['pos_y'] >,
+		})  & ReturnType< $mol_svg['attr'] >
+	}
+	
+}
+
+//# sourceMappingURL=circle.view.tree.d.ts.map
+declare namespace $.$$ {
+    class $mol_svg_circle extends $.$mol_svg_circle {
+        pos_x(): any;
+        pos_y(): any;
+    }
+}
+
+declare namespace $ {
+    /** A box in screen pixels of the pane. */
+    type $bog_vmap_app_wire_box = {
+        readonly left: number;
+        readonly top: number;
+        readonly width: number;
+        readonly height: number;
+    };
+    /** A port of a part's class: name, `?` in the signature, shape of the default value. */
+    type $bog_vmap_app_wire_port = {
+        readonly name: string;
+        readonly next: boolean;
+        readonly kind: $bog_vmap_app_inspect_value_kind;
+    };
+    /** Inputs are drawn on the left edge of a part, outputs on the right. */
+    type $bog_vmap_app_wire_side = 'in' | 'out';
+    /** A port dot on screen. `lit` — may take the wire in hand; `linked` — an input with a wire already. */
+    type $bog_vmap_app_wire_dot = {
+        readonly node: string;
+        readonly port: $bog_vmap_app_wire_port;
+        readonly side: $bog_vmap_app_wire_side;
+        readonly x: number;
+        readonly y: number;
+        readonly lit: boolean;
+        readonly linked: boolean;
+    };
+    /** A drawn wire: its path and the label at its middle. */
+    type $bog_vmap_app_wire_line = {
+        readonly key: string;
+        readonly geometry: string;
+        readonly label: string;
+        readonly label_x: number;
+        readonly label_y: number;
+    };
+    /** Height of one port row, in screen pixels whatever the zoom. */
+    const $bog_vmap_app_wire_row = 14;
+    /**
+     * Distance from the edge of the box to the centre of a dot, in screen pixels.
+     * Strictly outside the box: under the picked part the overlay is cut open along
+     * the box, and a dot inside it would take no press. The radius stays under this.
+     */
+    const $bog_vmap_app_wire_gap = 12;
+    const $bog_vmap_app_wire_radius = 5;
+    /** Radius within which a point counts as over a dot. Wider than the dot. */
+    const $bog_vmap_app_wire_hit = 8;
+    /** Ports of a class fit for wiring, from its `props_map`, in its order: bases first. */
+    function $bog_vmap_app_wire_ports(this: $, props: ReadonlyMap<string, $mol_tree2>): readonly $bog_vmap_app_wire_port[];
+    /**
+     * Whether a value of one shape may feed a port of another: equal shapes fit,
+     * `null` and a reference say nothing about the shape and fit anything, a
+     * localized string is a string.
+     */
+    function $bog_vmap_app_wire_fits(out: $bog_vmap_app_inspect_value_kind, into: $bog_vmap_app_inspect_value_kind): boolean;
+    /** Centre of the dot of the `index`th port on a side of a box. Rows run down from the top. */
+    function $bog_vmap_app_wire_port_point(box: $bog_vmap_app_wire_box, side: $bog_vmap_app_wire_side, index: number): readonly [number, number];
+    /** A cubic Bezier from an output to an input, as an SVG path. */
+    function $bog_vmap_app_wire_curve(from: readonly [number, number], to: readonly [number, number]): string;
+    /** The point of the curve at t = 1/2, where the label goes. */
+    function $bog_vmap_app_wire_curve_mid(from: readonly [number, number], to: readonly [number, number]): readonly [number, number];
+    /** The dot under a point, or `null`. The last one wins: what is drawn later is on top. */
+    function $bog_vmap_app_wire_dot_at(dots: readonly $bog_vmap_app_wire_dot[], point: readonly [number, number]): $bog_vmap_app_wire_dot | null;
+}
+
+declare namespace $ {
+
+	type $mol_svg_path__geometry_bog_vmap_app_wire_1 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_wire['line_geometry'] >
+		,
+		ReturnType< $mol_svg_path['geometry'] >
+	>
+	type $mol_svg_text__pos_bog_vmap_app_wire_2 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_wire['label_pos'] >
+		,
+		ReturnType< $mol_svg_text['pos'] >
+	>
+	type $mol_svg_text__text_bog_vmap_app_wire_3 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_wire['label_text'] >
+		,
+		ReturnType< $mol_svg_text['text'] >
+	>
+	type $mol_svg_circle__radius_bog_vmap_app_wire_4 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_wire['dot_radius'] >
+		,
+		ReturnType< $mol_svg_circle['radius'] >
+	>
+	type $mol_svg_circle__pos_bog_vmap_app_wire_5 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_wire['dot_pos'] >
+		,
+		ReturnType< $mol_svg_circle['pos'] >
+	>
+	type $mol_svg_circle__attr_bog_vmap_app_wire_6 = $mol_type_enforce<
+		({ 
+			'bog_vmap_app_wire_dot_side': ReturnType< $bog_vmap_app_wire['dot_side'] >,
+			'bog_vmap_app_wire_dot_lit': ReturnType< $bog_vmap_app_wire['dot_lit'] >,
+			'bog_vmap_app_wire_dot_linked': ReturnType< $bog_vmap_app_wire['dot_linked'] >,
+		})  & ReturnType< $mol_svg_circle['attr'] >
+		,
+		ReturnType< $mol_svg_circle['attr'] >
+	>
+	type $mol_svg_text__pos_bog_vmap_app_wire_7 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_wire['name_pos'] >
+		,
+		ReturnType< $mol_svg_text['pos'] >
+	>
+	type $mol_svg_text__align_bog_vmap_app_wire_8 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_wire['name_align'] >
+		,
+		ReturnType< $mol_svg_text['align'] >
+	>
+	type $mol_svg_text__text_bog_vmap_app_wire_9 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_wire['name_text'] >
+		,
+		ReturnType< $mol_svg_text['text'] >
+	>
+	type $mol_svg_path__geometry_bog_vmap_app_wire_10 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_wire['drag_geometry'] >
+		,
+		ReturnType< $mol_svg_path['geometry'] >
+	>
+	export class $bog_vmap_app_wire extends $mol_svg_root {
+		shapes( ): readonly($mol_view)[]
+		line_geometry( id: any): string
+		label_pos( id: any): readonly(number)[]
+		label_text( id: any): string
+		dot_radius( ): string
+		dot_pos( id: any): readonly(number)[]
+		dot_side( id: any): string
+		dot_lit( id: any): boolean
+		dot_linked( id: any): boolean
+		name_pos( id: any): readonly(number)[]
+		name_align( id: any): string
+		name_text( id: any): string
+		attr( ): ({ 
+			'viewBox': any,
+		})  & ReturnType< $mol_svg_root['attr'] >
+		lines( ): readonly($bog_vmap_app_wire_line)[]
+		dots( ): readonly($bog_vmap_app_wire_dot)[]
+		drag_geometry( ): string
+		sub( ): ReturnType< $bog_vmap_app_wire['shapes'] >
+		Line( id: any): $mol_svg_path
+		Label( id: any): $mol_svg_text
+		Dot( id: any): $mol_svg_circle
+		Name( id: any): $mol_svg_text
+		Drag( ): $mol_svg_path
+	}
+	
+}
+
+//# sourceMappingURL=wire.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * Draws what the pane computed: a path and a label per wire, a dot and a name
+     * per port, one path for the wire in hand. Sub views are keyed by the stable
+     * key of each thing, so a wire keeps its element while the camera moves.
+     */
+    class $bog_vmap_app_wire extends $.$bog_vmap_app_wire {
+        shapes(): $mol_view[];
+        lines_map(): Map<string, $bog_vmap_app_wire_line>;
+        line_of(key: string): $bog_vmap_app_wire_line | null;
+        line_geometry(key: string): string;
+        label_pos(key: string): number[];
+        label_text(key: string): string;
+        dot_key(dot: $bog_vmap_app_wire_dot): string;
+        dots_map(): Map<string, $bog_vmap_app_wire_dot>;
+        dot_of(key: string): $bog_vmap_app_wire_dot | null;
+        dot_pos(key: string): number[];
+        dot_side(key: string): "" | $bog_vmap_app_wire_side;
+        dot_lit(key: string): boolean;
+        dot_linked(key: string): boolean;
+        /** The name stands off the dot, away from the box: left of an input, right of an output. */
+        name_pos(key: string): number[];
+        name_align(key: string): "end" | "start";
+        name_text(key: string): string;
+    }
+}
+
+declare namespace $.$$ {
+}
+
+declare namespace $ {
     /**
      * Wire protocol between the vmap host and its sandboxed scene.
      *
@@ -51981,210 +52191,6 @@ declare namespace $ {
 }
 
 declare namespace $ {
-
-	export class $mol_svg_circle extends $mol_svg {
-		radius( ): string
-		pos_x( ): string
-		pos_y( ): string
-		dom_name( ): string
-		pos( ): readonly(any)[]
-		attr( ): ({ 
-			'r': ReturnType< $mol_svg_circle['radius'] >,
-			'cx': ReturnType< $mol_svg_circle['pos_x'] >,
-			'cy': ReturnType< $mol_svg_circle['pos_y'] >,
-		})  & ReturnType< $mol_svg['attr'] >
-	}
-	
-}
-
-//# sourceMappingURL=circle.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_svg_circle extends $.$mol_svg_circle {
-        pos_x(): any;
-        pos_y(): any;
-    }
-}
-
-declare namespace $ {
-    /** A box in screen pixels of the pane. */
-    type $bog_vmap_app_wire_box = {
-        readonly left: number;
-        readonly top: number;
-        readonly width: number;
-        readonly height: number;
-    };
-    /** A port of a part's class: name, `?` in the signature, shape of the default value. */
-    type $bog_vmap_app_wire_port = {
-        readonly name: string;
-        readonly next: boolean;
-        readonly kind: $bog_vmap_app_inspect_value_kind;
-    };
-    /** Inputs are drawn on the left edge of a part, outputs on the right. */
-    type $bog_vmap_app_wire_side = 'in' | 'out';
-    /** A port dot on screen. `lit` — may take the wire in hand; `linked` — an input with a wire already. */
-    type $bog_vmap_app_wire_dot = {
-        readonly node: string;
-        readonly port: $bog_vmap_app_wire_port;
-        readonly side: $bog_vmap_app_wire_side;
-        readonly x: number;
-        readonly y: number;
-        readonly lit: boolean;
-        readonly linked: boolean;
-    };
-    /** A drawn wire: its path and the label at its middle. */
-    type $bog_vmap_app_wire_line = {
-        readonly key: string;
-        readonly geometry: string;
-        readonly label: string;
-        readonly label_x: number;
-        readonly label_y: number;
-    };
-    /** Height of one port row, in screen pixels whatever the zoom. */
-    const $bog_vmap_app_wire_row = 14;
-    /**
-     * Distance from the edge of the box to the centre of a dot, in screen pixels.
-     * Strictly outside the box: under the picked part the overlay is cut open along
-     * the box, and a dot inside it would take no press. The radius stays under this.
-     */
-    const $bog_vmap_app_wire_gap = 12;
-    const $bog_vmap_app_wire_radius = 5;
-    /** Radius within which a point counts as over a dot. Wider than the dot. */
-    const $bog_vmap_app_wire_hit = 8;
-    /** Ports of a class fit for wiring, from its `props_map`, in its order: bases first. */
-    function $bog_vmap_app_wire_ports(this: $, props: ReadonlyMap<string, $mol_tree2>): readonly $bog_vmap_app_wire_port[];
-    /**
-     * Whether a value of one shape may feed a port of another: equal shapes fit,
-     * `null` and a reference say nothing about the shape and fit anything, a
-     * localized string is a string.
-     */
-    function $bog_vmap_app_wire_fits(out: $bog_vmap_app_inspect_value_kind, into: $bog_vmap_app_inspect_value_kind): boolean;
-    /** Centre of the dot of the `index`th port on a side of a box. Rows run down from the top. */
-    function $bog_vmap_app_wire_port_point(box: $bog_vmap_app_wire_box, side: $bog_vmap_app_wire_side, index: number): readonly [number, number];
-    /** A cubic Bezier from an output to an input, as an SVG path. */
-    function $bog_vmap_app_wire_curve(from: readonly [number, number], to: readonly [number, number]): string;
-    /** The point of the curve at t = 1/2, where the label goes. */
-    function $bog_vmap_app_wire_curve_mid(from: readonly [number, number], to: readonly [number, number]): readonly [number, number];
-    /** The dot under a point, or `null`. The last one wins: what is drawn later is on top. */
-    function $bog_vmap_app_wire_dot_at(dots: readonly $bog_vmap_app_wire_dot[], point: readonly [number, number]): $bog_vmap_app_wire_dot | null;
-}
-
-declare namespace $ {
-
-	type $mol_svg_path__geometry_bog_vmap_app_wire_1 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_wire['line_geometry'] >
-		,
-		ReturnType< $mol_svg_path['geometry'] >
-	>
-	type $mol_svg_text__pos_bog_vmap_app_wire_2 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_wire['label_pos'] >
-		,
-		ReturnType< $mol_svg_text['pos'] >
-	>
-	type $mol_svg_text__text_bog_vmap_app_wire_3 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_wire['label_text'] >
-		,
-		ReturnType< $mol_svg_text['text'] >
-	>
-	type $mol_svg_circle__radius_bog_vmap_app_wire_4 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_wire['dot_radius'] >
-		,
-		ReturnType< $mol_svg_circle['radius'] >
-	>
-	type $mol_svg_circle__pos_bog_vmap_app_wire_5 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_wire['dot_pos'] >
-		,
-		ReturnType< $mol_svg_circle['pos'] >
-	>
-	type $mol_svg_circle__attr_bog_vmap_app_wire_6 = $mol_type_enforce<
-		({ 
-			'bog_vmap_app_wire_dot_side': ReturnType< $bog_vmap_app_wire['dot_side'] >,
-			'bog_vmap_app_wire_dot_lit': ReturnType< $bog_vmap_app_wire['dot_lit'] >,
-			'bog_vmap_app_wire_dot_linked': ReturnType< $bog_vmap_app_wire['dot_linked'] >,
-		})  & ReturnType< $mol_svg_circle['attr'] >
-		,
-		ReturnType< $mol_svg_circle['attr'] >
-	>
-	type $mol_svg_text__pos_bog_vmap_app_wire_7 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_wire['name_pos'] >
-		,
-		ReturnType< $mol_svg_text['pos'] >
-	>
-	type $mol_svg_text__align_bog_vmap_app_wire_8 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_wire['name_align'] >
-		,
-		ReturnType< $mol_svg_text['align'] >
-	>
-	type $mol_svg_text__text_bog_vmap_app_wire_9 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_wire['name_text'] >
-		,
-		ReturnType< $mol_svg_text['text'] >
-	>
-	type $mol_svg_path__geometry_bog_vmap_app_wire_10 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_wire['drag_geometry'] >
-		,
-		ReturnType< $mol_svg_path['geometry'] >
-	>
-	export class $bog_vmap_app_wire extends $mol_svg_root {
-		shapes( ): readonly($mol_view)[]
-		line_geometry( id: any): string
-		label_pos( id: any): readonly(number)[]
-		label_text( id: any): string
-		dot_radius( ): string
-		dot_pos( id: any): readonly(number)[]
-		dot_side( id: any): string
-		dot_lit( id: any): boolean
-		dot_linked( id: any): boolean
-		name_pos( id: any): readonly(number)[]
-		name_align( id: any): string
-		name_text( id: any): string
-		attr( ): ({ 
-			'viewBox': any,
-		})  & ReturnType< $mol_svg_root['attr'] >
-		lines( ): readonly($bog_vmap_app_wire_line)[]
-		dots( ): readonly($bog_vmap_app_wire_dot)[]
-		drag_geometry( ): string
-		sub( ): ReturnType< $bog_vmap_app_wire['shapes'] >
-		Line( id: any): $mol_svg_path
-		Label( id: any): $mol_svg_text
-		Dot( id: any): $mol_svg_circle
-		Name( id: any): $mol_svg_text
-		Drag( ): $mol_svg_path
-	}
-	
-}
-
-//# sourceMappingURL=wire.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Draws what the pane computed: a path and a label per wire, a dot and a name
-     * per port, one path for the wire in hand. Sub views are keyed by the stable
-     * key of each thing, so a wire keeps its element while the camera moves.
-     */
-    class $bog_vmap_app_wire extends $.$bog_vmap_app_wire {
-        shapes(): $mol_view[];
-        lines_map(): Map<string, $bog_vmap_app_wire_line>;
-        line_of(key: string): $bog_vmap_app_wire_line | null;
-        line_geometry(key: string): string;
-        label_pos(key: string): number[];
-        label_text(key: string): string;
-        dot_key(dot: $bog_vmap_app_wire_dot): string;
-        dots_map(): Map<string, $bog_vmap_app_wire_dot>;
-        dot_of(key: string): $bog_vmap_app_wire_dot | null;
-        dot_pos(key: string): number[];
-        dot_side(key: string): "" | $bog_vmap_app_wire_side;
-        dot_lit(key: string): boolean;
-        dot_linked(key: string): boolean;
-        /** The name stands off the dot, away from the box: left of an input, right of an output. */
-        name_pos(key: string): number[];
-        name_align(key: string): "end" | "start";
-        name_text(key: string): string;
-    }
-}
-
-declare namespace $.$$ {
-}
-
-declare namespace $ {
     /** A rectangle in screen pixels of the pane. */
     type $bog_vmap_app_pane_screen_box = {
         readonly left: number;
@@ -52200,27 +52206,6 @@ declare namespace $ {
      * selection ring and the hole in the overlay are cut from the same numbers.
      */
     function $bog_vmap_app_pane_screen(box: $bog_vmap_bridge_rect, zoom: number, shift: ArrayLike<number>): $bog_vmap_app_pane_screen_box;
-    /**
-     * The overlay with a rectangle cut out of it, as a `clip-path` value.
-     *
-     * The editor takes every pointer event on its overlay, so a live component
-     * under it never gets a real one. For the picked part that is undone here: the
-     * overlay is clipped to everything BUT the part's box, and inside the box the
-     * frame is the topmost thing on the page, so hover, scroll, text selection and
-     * dragging inside the component all work for real. Outside the box the overlay
-     * is whole and keeps its gestures; the ring and its handles are drawn around
-     * the hole, not in it, which is what makes them grabbable.
-     *
-     * `evenodd` is what turns the inner rectangle into a hole rather than a second
-     * fill. The outer ring is stated in percentages so that the value does not
-     * have to know how big the pane is and does not go stale when it resizes.
-     *
-     * `none` and not an absent key when nothing is picked: inline styles are
-     * written by `$mol_dom_render_styles`, which sets the keys it is given and
-     * removes nothing, so a key that disappears from the dictionary leaves its last
-     * value on the element.
-     */
-    function $bog_vmap_app_pane_hole(rect: $bog_vmap_app_pane_screen_box | null): string;
 }
 
 declare namespace $ {
@@ -52253,7 +52238,7 @@ declare namespace $ {
      * preset sets. It has to be set: `[mol_view]` is `display: flex` with no
      * direction at all, which is a ROW.
      */
-    function $bog_vmap_app_pane_axis(boxes: readonly $bog_vmap_bridge_rect[], declared?: string): "row" | "column";
+    function $bog_vmap_app_pane_slot_axis(boxes: readonly $bog_vmap_bridge_rect[], declared?: string): "row" | "column";
     /**
      * Position a point aims at among the children of a container, and the line to
      * draw for it.
@@ -52269,6 +52254,30 @@ declare namespace $ {
      * with, and turning world into screen is done once, for both.
      */
     function $bog_vmap_app_pane_slot(owner: string, box: $bog_vmap_bridge_rect, kids: readonly $bog_vmap_bridge_rect[], point: readonly [number, number], declared?: string): $bog_vmap_app_pane_slot;
+}
+
+declare namespace $ {
+    /**
+     * The overlay with a rectangle cut out of it, as a `clip-path` value.
+     *
+     * The editor takes every pointer event on its overlay, so a live component
+     * under it never gets a real one. For the picked part that is undone here: the
+     * overlay is clipped to everything BUT the part's box, and inside the box the
+     * frame is the topmost thing on the page, so hover, scroll, text selection and
+     * dragging inside the component all work for real. Outside the box the overlay
+     * is whole and keeps its gestures; the ring and its handles are drawn around
+     * the hole, not in it, which is what makes them grabbable.
+     *
+     * `evenodd` is what turns the inner rectangle into a hole rather than a second
+     * fill. The outer ring is stated in percentages so that the value does not
+     * have to know how big the pane is and does not go stale when it resizes.
+     *
+     * `none` and not an absent key when nothing is picked: inline styles are
+     * written by `$mol_dom_render_styles`, which sets the keys it is given and
+     * removes nothing, so a key that disappears from the dictionary leaves its last
+     * value on the element.
+     */
+    function $bog_vmap_app_pane_hole(rect: $bog_vmap_app_pane_screen_box | null): string;
 }
 
 declare namespace $ {
@@ -52765,14 +52774,22 @@ declare namespace $.$$ {
             readonly [node: string]: $bog_vmap_bridge_rect;
         };
         /**
-         * Drops the remembered boxes of a part that is gone from the document.
+         * Drops every remembered box of a node: the node itself wherever it was
+         * drawn, and everything that was drawn inside it.
          *
          * The counterpart of the merge in `message_receive`. Since a missing name no
          * longer means «has no size», something has to say when a name means nothing
-         * at all, and only the delete knows that. A node removed by editing the text
-         * by hand is not covered and will leave a box behind — harmless, because
-         * nothing looks up a name the document no longer carries, and worth fixing
-         * when the code editor of stage 4 makes that path real.
+         * where it used to, and only the two writes that move or remove a node know
+         * that. A node removed by editing the text by hand is not covered and will
+         * leave a box behind — worth fixing when the code editor of stage 4 makes
+         * that path real.
+         *
+         * BY SEGMENT AND NOT BY PREFIX, which is the whole difference between this
+         * and what it was. A node carried into a container is measured at a NEW path,
+         * and the old key kept its last box beside it: two boxes answered to one
+         * name, and everything that looks a node up by name — the ring, the hit test,
+         * the port dots — could get either. Measured on the deploy: `…/Schet` with
+         * its free coordinate living next to `…/Pair/Schet`.
          */
         sizes_forget(name: string): void;
         /**
@@ -54399,7 +54416,16 @@ declare namespace $.$$ {
          * nothing and outlives every drag.
          */
         tree_move(next?: $bog_vmap_app_pane_tree_move | null): $bog_vmap_app_pane_tree_move | null;
-        /** A wire drawn on the canvas goes into the document as two lines, see `link_add` of the model. */
+        /**
+         * A wire drawn on the canvas goes into the document as two lines, see
+         * `link_add` of the model.
+         *
+         * An input that already carries a wire is UNPLUGGED first. Written straight
+         * over, the binding changed and the old source line stayed behind, read by
+         * nobody — an orphan in the document and one more name in every list built
+         * off the text. The drop is the operation that knows to take the source with
+         * it when the last reader goes.
+         */
         link_add(next?: $bog_vmap_app_pane_link_new | null): $bog_vmap_app_pane_link_new | null;
         link_drop(next?: $bog_vmap_app_pane_link_end | null): $bog_vmap_app_pane_link_end | null;
         /**
@@ -54573,7 +54599,15 @@ declare namespace $.$$ {
          * the middle of the canvas, which is the only place a click can mean.
          */
         shelf_place(next?: string): string;
-        /** Layout of a fresh artboard: the page of a desktop, stacked downwards. */
+        /**
+         * Layout of a fresh artboard: the page of a desktop, stacked downwards.
+         *
+         * A literal colour and NOT a token of the theme, which is the one place in
+         * the editor where that is right: these values are written into the
+         * document, travel into the export and end up on somebody's site. A theme
+         * token here would put the colours of this editor into a page that has
+         * nothing to do with it, and would resolve to nothing outside it.
+         */
         board_style(): {
             readonly [key: string]: string;
         };
@@ -54657,6 +54691,16 @@ declare namespace $.$$ {
          * path that can make it wrong, which is how a stale message survives.
          */
         node_title_note_at(name: string, next?: string): string;
+        /**
+         * The refusal, and with it the name the node still carries.
+         *
+         * The field keeps what was typed — losing it would mean typing the whole
+         * name again to fix one letter — so after a refusal the panel shows a name
+         * the document does not have, and the real one is nowhere. It goes into the
+         * refusal itself rather than into a line of its own: the two are one thought
+         * («this did not work, you are still here»), and a strip that appears only
+         * with the refusal cannot go stale after it.
+         */
         node_title_note(): string;
         /**
          * Renames a class of the document with everything the editor keys by its
@@ -54732,7 +54776,17 @@ declare namespace $.$$ {
          */
         root_title(next?: string): string;
         /** Why the root was not renamed. Empty when it was, or when nobody tried. */
-        root_title_note(next?: string): string;
+        root_title_refusal(next?: string): string;
+        /**
+         * The refusal, and with it the name the root class still carries.
+         *
+         * The same fork as the name of a node, and the same answer: the field keeps
+         * what was typed, so after a refusal the toolbar shows a name the document
+         * does not have and the real one is nowhere. It goes into the refusal itself
+         * rather than into a line of its own — the two are one thought, and a strip
+         * that appears only with the refusal cannot go stale after it.
+         */
+        root_title_note(): string;
         /**
          * Del anywhere in the editor, as long as the keystroke is not somebody's text.
          *

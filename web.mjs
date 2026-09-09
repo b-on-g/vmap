@@ -36841,9 +36841,19 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
+        /**
+         * Styles of the value editors of the inspector.
+         *
+         * Only what the theme and the components do NOT already do: the compact rhythm
+         * of a two dozen row panel and the monospace face that says a value is code.
+         * What a field of mol paints itself — its background, its minimum width, its
+         * stretch in a row — is left to it.
+         */
         $mol_style_define($bog_vmap_app_inspect_value, {
             flex: { direction: 'column', grow: 1, shrink: 1 },
             minWidth: 0,
+            /** Once for everything below: a field of mol takes its font by inheritance. */
+            font: { family: 'monospace', size: '.8rem' },
             /**
              * The reason an edit was refused, under the field that refused it. Rendered
              * only while there is one, so the row does not carry an empty strip: an
@@ -36862,11 +36872,9 @@ var $;
          */
         $mol_style_define($bog_vmap_app_inspect_value_area, {
             flex: { grow: 1 },
-            minWidth: 0,
             minHeight: '1.5rem',
             padding: { top: '.2rem', bottom: '.2rem', left: '.4rem', right: '.4rem' },
             background: { color: $mol_theme.field },
-            font: { family: 'monospace', size: '.8rem' },
             resize: 'vertical',
         });
         $mol_style_define($bog_vmap_app_inspect_value_string, {
@@ -36879,19 +36887,14 @@ var $;
                 minHeight: '1.5rem',
                 minWidth: '1.5rem',
                 padding: { top: 0, bottom: 0, left: '.3rem', right: '.3rem' },
-                font: { family: 'monospace', size: '.8rem' },
             },
         });
         $mol_style_define($bog_vmap_app_inspect_value_number, {
             flex: { direction: 'row', grow: 1 },
             minWidth: 0,
             Num: {
-                flex: { grow: 1 },
-                minWidth: 0,
                 minHeight: '1.5rem',
                 padding: { top: '.2rem', bottom: '.2rem', left: '.4rem', right: '.4rem' },
-                background: { color: $mol_theme.field },
-                font: { family: 'monospace', size: '.8rem' },
             },
         });
         $mol_style_define($bog_vmap_app_inspect_value_bool, {
@@ -36899,7 +36902,6 @@ var $;
             Flag: {
                 minHeight: '1.5rem',
                 padding: { top: 0, bottom: 0, left: '.4rem', right: '.4rem' },
-                font: { family: 'monospace', size: '.8rem' },
             },
         });
         /**
@@ -36912,7 +36914,6 @@ var $;
             minHeight: '1.5rem',
             padding: { top: '.2rem', bottom: '.2rem', left: '.4rem', right: '.4rem' },
             color: $mol_theme.shade,
-            font: { family: 'monospace', size: '.8rem' },
             whiteSpace: 'pre',
             overflow: 'auto',
         });
@@ -36922,14 +36923,11 @@ var $;
             gap: '.15rem',
             minWidth: 0,
             Class_name: {
-                flex: { grow: 1 },
                 alignSelf: 'stretch',
-                minWidth: 0,
                 minHeight: '1.5rem',
                 padding: { top: '.2rem', bottom: '.2rem', left: '.4rem', right: '.4rem' },
-                background: { color: $mol_theme.field },
                 color: $mol_theme.current,
-                font: { family: 'monospace', size: '.8rem', weight: 'bold' },
+                font: { weight: 'bold' },
             },
             Items: {
                 flex: { direction: 'column', grow: 1 },
@@ -36959,8 +36957,6 @@ var $;
                 width: '7rem',
                 minHeight: '1.5rem',
                 padding: { top: '.2rem', bottom: '.2rem', left: '.4rem', right: '.4rem' },
-                background: { color: $mol_theme.field },
-                font: { family: 'monospace', size: '.8rem' },
             },
             Drop: {
                 flex: { shrink: 0 },
@@ -36982,15 +36978,15 @@ var $;
                 minHeight: '1.5rem',
                 padding: { left: '.2rem', right: '.2rem' },
                 color: $mol_theme.shade,
-                font: { family: 'monospace', size: '.8rem', weight: 'bold' },
+                font: { weight: 'bold' },
             },
+            /** A picker is a button and paints no field, so this one is ours to give. */
             Target: {
                 flex: { grow: 1 },
                 minWidth: '4rem',
                 minHeight: '1.5rem',
                 background: { color: $mol_theme.field },
                 color: $mol_theme.current,
-                font: { family: 'monospace', size: '.8rem' },
             },
         });
         $mol_style_define($bog_vmap_app_inspect_value_wire, {
@@ -37004,7 +37000,8 @@ var $;
             },
             /**
              * Both pickers are sized like the fields they replaced, so that swapping a
-             * text field for a list does not move the row it sits in.
+             * text field for a list does not move the row it sits in. Their background is
+             * ours for the same reason as `Target`.
              */
             Origin: {
                 flex: { grow: 1 },
@@ -37012,14 +37009,13 @@ var $;
                 minHeight: '1.5rem',
                 background: { color: $mol_theme.field },
                 color: $mol_theme.current,
-                font: { family: 'monospace', size: '.8rem', weight: 'bold' },
+                font: { weight: 'bold' },
             },
             Port_pick: {
                 flex: { grow: 1 },
                 minWidth: '3rem',
                 minHeight: '1.5rem',
                 background: { color: $mol_theme.field },
-                font: { family: 'monospace', size: '.8rem' },
             },
             Note: {
                 padding: { top: '.15rem', left: '.4rem', right: '.4rem' },
@@ -37030,20 +37026,17 @@ var $;
                 flex: { shrink: 0 },
                 padding: { left: '.2rem', right: '.2rem' },
                 color: $mol_theme.shade,
-                font: { family: 'monospace', size: '.8rem', weight: 'bold' },
+                font: { weight: 'bold' },
             },
             Dot: {
                 flex: { shrink: 0 },
                 color: $mol_theme.shade,
-                font: { family: 'monospace', size: '.8rem' },
             },
             Port_free: {
                 flex: { grow: 1 },
                 minWidth: '3rem',
                 minHeight: '1.5rem',
                 padding: { top: '.2rem', bottom: '.2rem', left: '.4rem', right: '.4rem' },
-                background: { color: $mol_theme.field },
-                font: { family: 'monospace', size: '.8rem' },
             },
         });
     })($$ = $.$$ || ($.$$ = {}));
@@ -37273,6 +37266,9 @@ var $;
 
 ;
 	($.$bog_vmap_app_inspect) = class $bog_vmap_app_inspect extends ($.$mol_view) {
+		body(){
+			return [];
+		}
 		title_value(next){
 			if(next !== undefined) return next;
 			return "";
@@ -37306,23 +37302,9 @@ var $;
 			(obj.sub) = () => ([(this.total())]);
 			return obj;
 		}
-		Head(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([
-				(this.Title()), 
-				(this.Base()), 
-				(this.Total())
-			]);
-			return obj;
-		}
 		flex_value(id, next){
 			if(next !== undefined) return next;
 			return "";
-		}
-		Flex(){
-			const obj = new this.$.$bog_vmap_app_inspect_flex();
-			(obj.value) = (id, next) => ((this.flex_value(id, next)));
-			return obj;
 		}
 		rows(){
 			return [];
@@ -37330,11 +37312,6 @@ var $;
 		Rows(){
 			const obj = new this.$.$mol_view();
 			(obj.sub) = () => ((this.rows()));
-			return obj;
-		}
-		Body(){
-			const obj = new this.$.$mol_scroll();
-			(obj.sub) = () => ([(this.Rows())]);
 			return obj;
 		}
 		title_note(){
@@ -37394,11 +37371,26 @@ var $;
 			return "";
 		}
 		sub(){
-			return [
-				(this.Head()), 
-				(this.Flex()), 
-				(this.Body())
-			];
+			return (this.body());
+		}
+		Head(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([
+				(this.Title()), 
+				(this.Base()), 
+				(this.Total())
+			]);
+			return obj;
+		}
+		Flex(){
+			const obj = new this.$.$bog_vmap_app_inspect_flex();
+			(obj.value) = (id, next) => ((this.flex_value(id, next)));
+			return obj;
+		}
+		Body(){
+			const obj = new this.$.$mol_scroll();
+			(obj.sub) = () => ([(this.Rows())]);
+			return obj;
 		}
 		Note(){
 			const obj = new this.$.$mol_view();
@@ -37440,11 +37432,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Title"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Base"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Total"));
-	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Head"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "flex_value"));
-	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Flex"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Rows"));
-	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Body"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "row_value"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "row_keyed"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "row_changeable"));
@@ -37452,6 +37441,9 @@ var $;
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "source"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "pack"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "class_title"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Head"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Flex"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Body"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Note"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Empty"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Node"));
@@ -37607,16 +37599,23 @@ var $;
                 this.class_title(draft);
             }
             /**
-             * The refusal goes under the head, and only when there is one: a strip that
-             * is always there but usually empty is a strip nobody reads.
+             * What the panel is made of.
+             *
+             * A list, and never a splice into `super.sub()` by index: an index is a fact
+             * about the order somebody else wrote, so a child added to the tree moves
+             * the refusal to a place nobody chose, silently. The refusal goes under the
+             * head and only when there is one — a strip that is always there but usually
+             * empty is a strip nobody reads.
              */
-            sub() {
+            body() {
                 if (!this.class_ready())
                     return [this.Empty()];
-                const sub = super.sub();
-                if (!this.title_note())
-                    return sub;
-                return [sub[0], this.Note(), ...sub.slice(1)];
+                return [
+                    this.Head(),
+                    ...this.title_note() ? [this.Note()] : [],
+                    this.Flex(),
+                    this.Body(),
+                ];
             }
             /**
              * Whether there is a class here to inspect at all.
@@ -38018,9 +38017,15 @@ var $;
                 background: { color: 'transparent' },
                 padding: 0,
             },
-            /** The refusal, where the eye already is: right under the name it is about. */
+            /**
+             * The refusal, where the eye already is: right under the name it is about.
+             *
+             * The attention colour of the theme and not a red of our own: it is the one
+             * the theme paints «look here» with, so it follows the hue and the light or
+             * dark the reader chose instead of staying the same red in both.
+             */
             Note: {
-                color: '#c0392b',
+                color: $mol_theme.focus,
                 font: { size: '.75rem' },
                 whiteSpace: 'normal',
             },
@@ -39363,63 +39368,22 @@ var $;
             Sources: {
                 flex: { direction: 'column', grow: 1, shrink: 1 },
                 minHeight: 0,
+                /**
+                 * The tabs are as wide as their three words and no wider.
+                 *
+                 * `$mol_check_list` is `flex: 1 1 auto`, so in a page it fills a line and
+                 * that is right; in a panel of twenty-odd rems it became a bar of 280 to
+                 * 370 px with «view.tree JS CSS» huddled at one end of it. Measured on
+                 * the deploy. The options themselves never stretched — `$mol_check` is
+                 * `flex: 0 0 auto` — so it is the bar around them that has to stop.
+                 */
+                '$mol_switch': {
+                    alignSelf: 'flex-start',
+                    flex: { grow: 0 },
+                },
             },
         });
     })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * Wire protocol between the vmap host and its sandboxed scene.
-     *
-     * The scene lives in an opaque origin, so `postMessage` is the only channel.
-     * Everything here is plain data: it must survive a structured clone.
-     *
-     * Direction is part of the type on purpose. The host owns the document text,
-     * the camera and the geometry; the scene only compiles, renders and measures.
-     * @see ../ARCHITECTURE.md section 4
-     */
-    $.$bog_vmap_bridge_ns = 'bog_vmap';
-    /** Puts a message on the wire. Target is the peer window. */
-    function $bog_vmap_bridge_send(target, message) {
-        target.postMessage({ ns: $.$bog_vmap_bridge_ns, ...message }, '*');
-    }
-    $.$bog_vmap_bridge_send = $bog_vmap_bridge_send;
-    /**
-     * Takes a message off the wire, or null when it is not ours.
-     *
-     * The channel has no origin to check against, because the scene runs in an
-     * opaque origin, so anything able to reach this window can post here.
-     * Unknown shapes are dropped rather than trusted.
-     *
-     * Always pass `peer` on the host side. Without it any window that posts a
-     * `ready` can take the channel over, and the host will happily talk to it:
-     * seen for real on stage 1, where a stray debug frame stole the bridge and
-     * the host spent an hour posting into a dead window. Identity of the peer
-     * comes from `Scene().dom_node().contentWindow`, never from `event.source`.
-     *
-     * Passing the argument at all turns the check on, so a peer that is not
-     * known yet rejects every message instead of letting everything through.
-     * Omitting it entirely is the only way to opt out, and only the scene may:
-     * it has exactly one correspondent and answers into the same window.
-     */
-    function $bog_vmap_bridge_read(event, peer) {
-        if (arguments.length > 1 && event.source !== peer)
-            return null;
-        const data = event.data;
-        if (!data || typeof data !== 'object')
-            return null;
-        const record = data;
-        if (record.ns !== $.$bog_vmap_bridge_ns)
-            return null;
-        if (typeof record.kind !== 'string')
-            return null;
-        return data;
-    }
-    $.$bog_vmap_bridge_read = $bog_vmap_bridge_read;
 })($ || ($ = {}));
 
 ;
@@ -40166,6 +40130,60 @@ var $;
 var $;
 (function ($) {
     /**
+     * Wire protocol between the vmap host and its sandboxed scene.
+     *
+     * The scene lives in an opaque origin, so `postMessage` is the only channel.
+     * Everything here is plain data: it must survive a structured clone.
+     *
+     * Direction is part of the type on purpose. The host owns the document text,
+     * the camera and the geometry; the scene only compiles, renders and measures.
+     * @see ../ARCHITECTURE.md section 4
+     */
+    $.$bog_vmap_bridge_ns = 'bog_vmap';
+    /** Puts a message on the wire. Target is the peer window. */
+    function $bog_vmap_bridge_send(target, message) {
+        target.postMessage({ ns: $.$bog_vmap_bridge_ns, ...message }, '*');
+    }
+    $.$bog_vmap_bridge_send = $bog_vmap_bridge_send;
+    /**
+     * Takes a message off the wire, or null when it is not ours.
+     *
+     * The channel has no origin to check against, because the scene runs in an
+     * opaque origin, so anything able to reach this window can post here.
+     * Unknown shapes are dropped rather than trusted.
+     *
+     * Always pass `peer` on the host side. Without it any window that posts a
+     * `ready` can take the channel over, and the host will happily talk to it:
+     * seen for real on stage 1, where a stray debug frame stole the bridge and
+     * the host spent an hour posting into a dead window. Identity of the peer
+     * comes from `Scene().dom_node().contentWindow`, never from `event.source`.
+     *
+     * Passing the argument at all turns the check on, so a peer that is not
+     * known yet rejects every message instead of letting everything through.
+     * Omitting it entirely is the only way to opt out, and only the scene may:
+     * it has exactly one correspondent and answers into the same window.
+     */
+    function $bog_vmap_bridge_read(event, peer) {
+        if (arguments.length > 1 && event.source !== peer)
+            return null;
+        const data = event.data;
+        if (!data || typeof data !== 'object')
+            return null;
+        const record = data;
+        if (record.ns !== $.$bog_vmap_bridge_ns)
+            return null;
+        if (typeof record.kind !== 'string')
+            return null;
+        return data;
+    }
+    $.$bog_vmap_bridge_read = $bog_vmap_bridge_read;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
      * A measured box in screen pixels of the pane.
      *
      * World to screen is `world * zoom + shift`, the same transform the scene puts
@@ -40181,6 +40199,83 @@ var $;
         };
     }
     $.$bog_vmap_app_pane_screen = $bog_vmap_app_pane_screen;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Which way the children of a container are stacked: what the node DECLARES,
+     * else what its children came out as, else a column.
+     *
+     * The declaration comes first because it is not a guess about CSS — it is a
+     * line of the document, which the host owns and reads directly. Geometry is the
+     * fallback and not the source: it degenerates on nought or one child, where
+     * there is nothing to read a direction off at all.
+     *
+     * A direction the document states in some other way — `row-reverse` and its
+     * kind — falls through to the geometry rather than being taken at its word: the
+     * children of a reversed box come out in the opposite order from the one `sub`
+     * lists them in, and a position counted along the boxes would be the mirror of
+     * the position written into the tree. Guessing from where things are is then
+     * strictly better than trusting a word we do not act on.
+     *
+     * The last resort is a column, the way a page stacks and what the artboard
+     * preset sets. It has to be set: `[mol_view]` is `display: flex` with no
+     * direction at all, which is a ROW.
+     */
+    function $bog_vmap_app_pane_slot_axis(boxes, declared = '') {
+        if (declared === 'row')
+            return 'row';
+        if (declared === 'column')
+            return 'column';
+        if (boxes.length < 2)
+            return 'column';
+        const mid_x = boxes.map(box => box.x + box.width / 2);
+        const mid_y = boxes.map(box => box.y + box.height / 2);
+        const spread = (mids) => Math.max(...mids) - Math.min(...mids);
+        return spread(mid_x) > spread(mid_y) ? 'row' : 'column';
+    }
+    $.$bog_vmap_app_pane_slot_axis = $bog_vmap_app_pane_slot_axis;
+    /**
+     * Position a point aims at among the children of a container, and the line to
+     * draw for it.
+     *
+     * The position is decided by the MIDDLE of each child, not by the gaps between
+     * them: children of a flex box usually touch, so a rule that only fired between
+     * boxes would have nowhere to fire, and pointing at the upper half of a child
+     * plainly means «above this one».
+     *
+     * The line is drawn on the boundary rather than on the child: at the middle of
+     * the gap when there is one, on the outer edge at either end. In world units,
+     * because the host draws it with the same transform it draws the selection ring
+     * with, and turning world into screen is done once, for both.
+     */
+    function $bog_vmap_app_pane_slot(owner, box, kids, point, declared = '') {
+        const row = $bog_vmap_app_pane_slot_axis(kids, declared) === 'row';
+        const start = (kid) => row ? kid.x : kid.y;
+        const end = (kid) => row ? kid.x + kid.width : kid.y + kid.height;
+        const at = point[row ? 0 : 1];
+        const index = kids.filter(kid => (start(kid) + end(kid)) / 2 < at).length;
+        const before = kids[index - 1];
+        const after = kids[index];
+        const bound = before && after ? (end(before) + start(after)) / 2
+            : before ? end(before)
+                : after ? start(after)
+                    : row ? box.x : box.y;
+        const line = row
+            ? { x: bound, y: box.y, width: 0, height: box.height }
+            : { x: box.x, y: bound, width: box.width, height: 0 };
+        return { owner, index, line };
+    }
+    $.$bog_vmap_app_pane_slot = $bog_vmap_app_pane_slot;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     /**
      * The overlay with a rectangle cut out of it, as a `clip-path` value.
      *
@@ -40213,77 +40308,6 @@ var $;
             + `${right}px ${bottom}px, ${left}px ${bottom}px, ${left}px ${top}px)`;
     }
     $.$bog_vmap_app_pane_hole = $bog_vmap_app_pane_hole;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * Which way the children of a container are stacked: what the node DECLARES,
-     * else what its children came out as, else a column.
-     *
-     * The declaration comes first because it is not a guess about CSS — it is a
-     * line of the document, which the host owns and reads directly. Geometry is the
-     * fallback and not the source: it degenerates on nought or one child, where
-     * there is nothing to read a direction off at all.
-     *
-     * A direction the document states in some other way — `row-reverse` and its
-     * kind — falls through to the geometry rather than being taken at its word: the
-     * children of a reversed box come out in the opposite order from the one `sub`
-     * lists them in, and a position counted along the boxes would be the mirror of
-     * the position written into the tree. Guessing from where things are is then
-     * strictly better than trusting a word we do not act on.
-     *
-     * The last resort is a column, the way a page stacks and what the artboard
-     * preset sets. It has to be set: `[mol_view]` is `display: flex` with no
-     * direction at all, which is a ROW.
-     */
-    function $bog_vmap_app_pane_axis(boxes, declared = '') {
-        if (declared === 'row')
-            return 'row';
-        if (declared === 'column')
-            return 'column';
-        if (boxes.length < 2)
-            return 'column';
-        const mid_x = boxes.map(box => box.x + box.width / 2);
-        const mid_y = boxes.map(box => box.y + box.height / 2);
-        const spread = (mids) => Math.max(...mids) - Math.min(...mids);
-        return spread(mid_x) > spread(mid_y) ? 'row' : 'column';
-    }
-    $.$bog_vmap_app_pane_axis = $bog_vmap_app_pane_axis;
-    /**
-     * Position a point aims at among the children of a container, and the line to
-     * draw for it.
-     *
-     * The position is decided by the MIDDLE of each child, not by the gaps between
-     * them: children of a flex box usually touch, so a rule that only fired between
-     * boxes would have nowhere to fire, and pointing at the upper half of a child
-     * plainly means «above this one».
-     *
-     * The line is drawn on the boundary rather than on the child: at the middle of
-     * the gap when there is one, on the outer edge at either end. In world units,
-     * because the host draws it with the same transform it draws the selection ring
-     * with, and turning world into screen is done once, for both.
-     */
-    function $bog_vmap_app_pane_slot(owner, box, kids, point, declared = '') {
-        const row = $bog_vmap_app_pane_axis(kids, declared) === 'row';
-        const start = (kid) => row ? kid.x : kid.y;
-        const end = (kid) => row ? kid.x + kid.width : kid.y + kid.height;
-        const at = point[row ? 0 : 1];
-        const index = kids.filter(kid => (start(kid) + end(kid)) / 2 < at).length;
-        const before = kids[index - 1];
-        const after = kids[index];
-        const bound = before && after ? (end(before) + start(after)) / 2
-            : before ? end(before)
-                : after ? start(after)
-                    : row ? box.x : box.y;
-        const line = row
-            ? { x: bound, y: box.y, width: 0, height: box.height }
-            : { x: box.x, y: bound, width: box.width, height: 0 };
-        return { owner, index, line };
-    }
-    $.$bog_vmap_app_pane_slot = $bog_vmap_app_pane_slot;
 })($ || ($ = {}));
 
 ;
@@ -40702,20 +40726,29 @@ var $;
                 return this.sizes_last;
             }
             /**
-             * Drops the remembered boxes of a part that is gone from the document.
+             * Drops every remembered box of a node: the node itself wherever it was
+             * drawn, and everything that was drawn inside it.
              *
              * The counterpart of the merge in `message_receive`. Since a missing name no
              * longer means «has no size», something has to say when a name means nothing
-             * at all, and only the delete knows that. A node removed by editing the text
-             * by hand is not covered and will leave a box behind — harmless, because
-             * nothing looks up a name the document no longer carries, and worth fixing
-             * when the code editor of stage 4 makes that path real.
+             * where it used to, and only the two writes that move or remove a node know
+             * that. A node removed by editing the text by hand is not covered and will
+             * leave a box behind — worth fixing when the code editor of stage 4 makes
+             * that path real.
+             *
+             * BY SEGMENT AND NOT BY PREFIX, which is the whole difference between this
+             * and what it was. A node carried into a container is measured at a NEW path,
+             * and the old key kept its last box beside it: two boxes answered to one
+             * name, and everything that looks a node up by name — the ring, the hit test,
+             * the port dots — could get either. Measured on the deploy: `…/Schet` with
+             * its free coordinate living next to `…/Pair/Schet`.
              */
             sizes_forget(name) {
-                const prefix = this.doc_root() + '/' + name;
+                const prefix = this.doc_root() + '/';
                 const kept = {};
                 for (const key of Object.keys(this.sizes_last)) {
-                    if (key === prefix || key.startsWith(prefix + '/'))
+                    const path = key.startsWith(prefix) ? key.slice(prefix.length).split('/') : [];
+                    if (path.includes(name))
                         continue;
                     kept[key] = this.sizes_last[key];
                 }
@@ -43701,12 +43734,29 @@ var $;
                 const spots = { ...this.spots() };
                 delete spots[next.name];
                 this.spots(spots);
+                // The node is measured at a new path from now on, and the box under the
+                // old one would answer to the same name for ever. Two boxes for one name
+                // is how a wire lands on the neighbour of the part it was dropped on.
+                this.pane().sizes_forget(next.name);
                 return next;
             }
-            /** A wire drawn on the canvas goes into the document as two lines, see `link_add` of the model. */
+            /**
+             * A wire drawn on the canvas goes into the document as two lines, see
+             * `link_add` of the model.
+             *
+             * An input that already carries a wire is UNPLUGGED first. Written straight
+             * over, the binding changed and the old source line stayed behind, read by
+             * nobody — an orphan in the document and one more name in every list built
+             * off the text. The drop is the operation that knows to take the source with
+             * it when the last reader goes.
+             */
             link_add(next) {
-                if (next)
+                if (next) {
+                    const taken = this.doc_wires().some(link => link.to === next.to && link.to_prop === next.to_prop);
+                    if (taken)
+                        this.node().link_drop(next.to, next.to_prop);
                     this.node().link_add(next);
+                }
                 return next ?? null;
             }
             link_drop(next) {
@@ -44011,7 +44061,15 @@ var $;
                     this.preset_place(source);
                 return '';
             }
-            /** Layout of a fresh artboard: the page of a desktop, stacked downwards. */
+            /**
+             * Layout of a fresh artboard: the page of a desktop, stacked downwards.
+             *
+             * A literal colour and NOT a token of the theme, which is the one place in
+             * the editor where that is right: these values are written into the
+             * document, travel into the export and end up on somebody's site. A theme
+             * token here would put the colours of this editor into a page that has
+             * nothing to do with it, and would resolve to nothing outside it.
+             */
             board_style() {
                 return {
                     width: '1280px',
@@ -44215,8 +44273,20 @@ var $;
             node_title_note_at(name, next) {
                 return next ?? '';
             }
+            /**
+             * The refusal, and with it the name the node still carries.
+             *
+             * The field keeps what was typed — losing it would mean typing the whole
+             * name again to fix one letter — so after a refusal the panel shows a name
+             * the document does not have, and the real one is nowhere. It goes into the
+             * refusal itself rather than into a line of its own: the two are one thought
+             * («this did not work, you are still here»), and a strip that appears only
+             * with the refusal cannot go stale after it.
+             */
             node_title_note() {
-                return this.node_title_note_at(this.selected() ?? '');
+                const name = this.selected() ?? '';
+                const note = this.node_title_note_at(name);
+                return note ? `${note}. Узел по-прежнему называется «${name}»` : '';
             }
             /**
              * Renames a class of the document with everything the editor keys by its
@@ -44317,7 +44387,7 @@ var $;
                 if (!next || next === name)
                     return name;
                 if (!this.$.$bog_vmap_lang_class_ok(next)) {
-                    this.root_title_note(`Имя «${next}» не годится: имя класса это доллар`
+                    this.root_title_refusal(`Имя «${next}» не годится: имя класса это доллар`
                         + ' и не меньше двух частей через подчёркивание, латиницей в нижнем'
                         + ' регистре — из них и складывается папка модуля');
                     return name;
@@ -44328,15 +44398,28 @@ var $;
                 catch (error) {
                     if (this.$.$mol_promise_like(error))
                         return this.$.$mol_fail_hidden(error);
-                    this.root_title_note(this.$.$mol_error_message(error));
+                    this.root_title_refusal(this.$.$mol_error_message(error));
                     return name;
                 }
-                this.root_title_note('');
+                this.root_title_refusal('');
                 return next;
             }
             /** Why the root was not renamed. Empty when it was, or when nobody tried. */
-            root_title_note(next) {
+            root_title_refusal(next) {
                 return next ?? '';
+            }
+            /**
+             * The refusal, and with it the name the root class still carries.
+             *
+             * The same fork as the name of a node, and the same answer: the field keeps
+             * what was typed, so after a refusal the toolbar shows a name the document
+             * does not have and the real one is nowhere. It goes into the refusal itself
+             * rather than into a line of its own — the two are one thought, and a strip
+             * that appears only with the refusal cannot go stale after it.
+             */
+            root_title_note() {
+                const note = this.root_title_refusal();
+                return note ? `${note}. Корневой класс по-прежнему «${this.doc_root()}»` : '';
             }
             /**
              * Del anywhere in the editor, as long as the keystroke is not somebody's text.
@@ -44485,7 +44568,7 @@ var $;
         ], $bog_vmap_app.prototype, "root_submit", null);
         __decorate([
             $mol_mem
-        ], $bog_vmap_app.prototype, "root_title_note", null);
+        ], $bog_vmap_app.prototype, "root_title_refusal", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "hotkeys", null);
@@ -44561,26 +44644,53 @@ var $;
                 flex: { grow: 1, shrink: 1 },
                 minHeight: 0,
             },
-            /** Panel of the palette. Fixed width, so the canvas takes the rest. */
+            /**
+             * THE CANVAS COMES FIRST WHEN THE ROOM RUNS OUT, and the three panels give
+             * way to it. Fixed widths did the opposite: 20, 22 and 28 rem never yielded,
+             * so with all three open on a 1440 px screen the canvas — the thing the
+             * editor is for — was left about 160 px. Measured on the deploy 09.09.2026.
+             *
+             * What gives the canvas its width is a floor on the canvas plus shrink on
+             * the panels. The floor makes the row ASK for more than the window has, and
+             * the overflow is then taken from whoever may shrink; each panel keeps a
+             * minimum of its own, so «yields» never becomes «vanishes».
+             *
+             * Below about 1090 px with all three panels open the floors no longer fit
+             * and the last panel is clipped. That is the honest end of the trade, and
+             * the head bar folds any of the three away in one click.
+             */
             Side: {
-                flex: { direction: 'column', shrink: 0 },
-                width: '20rem',
+                flex: { direction: 'column', grow: 0, shrink: 1, basis: '20rem' },
+                minWidth: '12rem',
+                maxWidth: '20rem',
                 minHeight: 0,
                 border: { right: { width: '1px', style: 'solid', color: $mol_theme.line } },
             },
             /** Panel of the inspector. Mirror of `Side`, on the far edge. */
             Aside: {
-                flex: { direction: 'column', shrink: 0 },
-                width: '22rem',
+                flex: { direction: 'column', grow: 0, shrink: 1, basis: '22rem' },
+                minWidth: '13rem',
+                maxWidth: '22rem',
                 minHeight: 0,
                 border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
             },
             /** Wider than the inspector: this one holds code, and code wraps badly. */
             Code: {
-                flex: { direction: 'column', shrink: 0 },
-                width: '28rem',
+                flex: { direction: 'column', grow: 0, shrink: 1, basis: '28rem' },
+                minWidth: '15rem',
+                maxWidth: '28rem',
                 minHeight: 0,
                 border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
+            },
+            /**
+             * The canvas: takes everything left, and asks for a floor of its own so that
+             * there is something to take. Without the floor the row fits exactly, no
+             * panel is asked to shrink, and the canvas gets the remainder — which is how
+             * it came to 160 px.
+             */
+            Pane: {
+                flex: { grow: 1, shrink: 1 },
+                minWidth: '28rem',
             },
             Idle: {
                 padding: $mol_gap.block,
@@ -44611,26 +44721,33 @@ var $;
                 whiteSpace: 'nowrap',
                 box: { shadow: [[0, '.25rem', '.75rem', 0, $mol_style_func.hsla(0, 0, 0, .5)]] },
             },
+            /**
+             * The attention colour of the theme, filled, with the page colour for text.
+             * A red of our own stayed the same red in a light theme and in a dark one,
+             * and said nothing to a reader who had moved the hue.
+             */
             Alarm: {
                 flex: { shrink: 0 },
                 padding: $mol_gap.text,
-                background: { color: '#c62828' },
-                color: 'white',
+                background: { color: $mol_theme.focus },
+                color: $mol_theme.back,
                 font: { family: 'monospace', size: '.8rem' },
                 whiteSpace: 'pre-wrap',
             },
             /**
-             * Amber and not the red of `Alarm`, because it is not the same kind of news.
-             * Red says the document is wrong; this says the preview stopped and offers
-             * the one thing that helps.
+             * The OTHER accent of the theme, not the one the error strip uses, because
+             * this is not the same kind of news: the error says the document is wrong,
+             * this says the preview stopped and offers the one thing that helps. Two
+             * accents the theme already carries keep them apart without inventing a
+             * colour that ignores it.
              */
             Stall: {
                 flex: { direction: 'row', shrink: 0, wrap: 'wrap' },
                 align: { items: 'center' },
                 gap: $mol_gap.text,
                 padding: $mol_gap.text,
-                background: { color: '#8d6e00' },
-                color: 'white',
+                background: { color: $mol_theme.special },
+                color: $mol_theme.back,
             },
             Stall_note: {
                 flex: { grow: 1, shrink: 1 },
@@ -44639,23 +44756,27 @@ var $;
                 whiteSpace: 'normal',
             },
             /**
-             * Amber like `Stall` and not red like `Alarm`, because it is the same kind of
-             * news as the stall: the document itself works, and one thing about it does
-             * not. Wraps, unlike the error strip: these are sentences, not a stack.
+             * The accent of the stall and not of the error, because it is the same kind
+             * of news: the document works, and one thing about it does not. Wraps,
+             * unlike the error strip: these are sentences, not a stack.
              */
             Export_note: {
                 flex: { direction: 'column', shrink: 0 },
                 gap: '.25rem',
                 padding: $mol_gap.text,
-                background: { color: '#8d6e00' },
-                color: 'white',
+                background: { color: $mol_theme.special },
+                color: $mol_theme.back,
                 font: { size: '.8rem' },
                 whiteSpace: 'normal',
             },
+            /**
+             * Only the text colour, so the button reads on the filled strip it stands on.
+             * Its own surface is left to the theme: a button already lights up on hover
+             * by itself, and a wash of our own painted over that.
+             */
             Stall_reload: {
                 flex: { shrink: 0 },
-                color: 'white',
-                background: { color: '#00000033' },
+                color: $mol_theme.back,
             },
         });
     })($$ = $.$$ || ($.$$ = {}));

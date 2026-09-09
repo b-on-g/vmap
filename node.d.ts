@@ -48943,19 +48943,19 @@ declare namespace $ {
 		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_view__sub_bog_vmap_app_inspect_8 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['rows'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_inspect_9 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_app_inspect_flex__value_bog_vmap_app_inspect_9 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_flex__value_bog_vmap_app_inspect_10 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['flex_value'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_flex['value'] >
-	>
-	type $mol_view__sub_bog_vmap_app_inspect_10 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_inspect['rows'] >
-		,
-		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_scroll__sub_bog_vmap_app_inspect_11 = $mol_type_enforce<
 		readonly(any)[]
@@ -49033,6 +49033,7 @@ declare namespace $ {
 		ReturnType< $bog_vmap_app_inspect_row['nodes'] >
 	>
 	export class $bog_vmap_app_inspect extends $mol_view {
+		body( ): readonly($mol_view)[]
 		title_value( next?: string ): string
 		title_submit( next?: any ): any
 		Title( ): $mol_string
@@ -49040,12 +49041,9 @@ declare namespace $ {
 		Base( ): $mol_view
 		total( ): string
 		Total( ): $mol_view
-		Head( ): $mol_view
 		flex_value( id: any, next?: string ): string
-		Flex( ): $bog_vmap_app_inspect_flex
 		rows( ): readonly(any)[]
 		Rows( ): $mol_view
-		Body( ): $mol_scroll
 		title_note( ): string
 		empty_note( ): string
 		classes( ): readonly(any)[]
@@ -49062,7 +49060,10 @@ declare namespace $ {
 		peers( ): readonly($mol_tree2)[]
 		pack( next?: string ): string
 		class_title( next?: string ): string
-		sub( ): readonly(any)[]
+		sub( ): ReturnType< $bog_vmap_app_inspect['body'] >
+		Head( ): $mol_view
+		Flex( ): $bog_vmap_app_inspect_flex
+		Body( ): $mol_scroll
 		Note( ): $mol_view
 		Empty( ): $mol_view
 		Node( ): $bog_vmap_lang_node
@@ -49192,10 +49193,15 @@ declare namespace $.$$ {
         /** Commits the draft, and says nothing when there is nothing to commit. */
         title_submit(event?: Event): void;
         /**
-         * The refusal goes under the head, and only when there is one: a strip that
-         * is always there but usually empty is a strip nobody reads.
+         * What the panel is made of.
+         *
+         * A list, and never a splice into `super.sub()` by index: an index is a fact
+         * about the order somebody else wrote, so a child added to the tree moves
+         * the refusal to a place nobody chose, silently. The refusal goes under the
+         * head and only when there is one — a strip that is always there but usually
+         * empty is a strip nobody reads.
          */
-        sub(): readonly $mol_view[];
+        body(): readonly $mol_view[];
         /**
          * Whether there is a class here to inspect at all.
          *
@@ -50057,290 +50063,6 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
-    /**
-     * Wire protocol between the vmap host and its sandboxed scene.
-     *
-     * The scene lives in an opaque origin, so `postMessage` is the only channel.
-     * Everything here is plain data: it must survive a structured clone.
-     *
-     * Direction is part of the type on purpose. The host owns the document text,
-     * the camera and the geometry; the scene only compiles, renders and measures.
-     * @see ../ARCHITECTURE.md section 4
-     */
-    const $bog_vmap_bridge_ns = "bog_vmap";
-    type $bog_vmap_bridge_camera = {
-        /** World coordinate under the left edge of the viewport. */
-        readonly x: number;
-        /** World coordinate under the top edge of the viewport. */
-        readonly y: number;
-        /** Isotropic zoom, as in Figma. Never per-axis. */
-        readonly zoom: number;
-    };
-    type $bog_vmap_bridge_rect = {
-        readonly x: number;
-        readonly y: number;
-        readonly width: number;
-        readonly height: number;
-    };
-    /**
-     * One component of a land library: the three sources a class is built from.
-     * Texts and nothing else, the scene has no way to reach the land itself.
-     */
-    type $bog_vmap_bridge_part = {
-        readonly tree: string;
-        readonly js: string;
-        readonly css: string;
-    };
-    /** Modifier keys of a relayed click. Named as `MouseEventInit` names them, so they spread straight into one. */
-    type $bog_vmap_bridge_mods = {
-        readonly altKey: boolean;
-        readonly ctrlKey: boolean;
-        readonly metaKey: boolean;
-        readonly shiftKey: boolean;
-    };
-    /**
-     * Host to scene.
-     *
-     * `doc_set` carries the whole document, not a patch: the scene holds no
-     * source of truth of its own and must never have to merge.
-     */
-    type $bog_vmap_bridge_down = {
-        readonly kind: 'doc_set';
-        /**
-         * Full document source in view.tree.
-         *
-         * Declaration order is NOT guaranteed: sorting is the scene's job,
-         * because only the scene knows the whole set of classes going into
-         * one `new Function` — the document's own plus everything its
-         * libraries contribute.
-         */
-        readonly src: string;
-        /**
-         * Bodies of the document classes, as JS source.
-         *
-         * A component is built from three sources, and this is the second.
-         * Without it every property stays undecorated, and an undecorated
-         * property is invisible to the hot swap of stage 4.
-         * Keyed by class name; a class with no handwritten body is absent.
-         */
-        readonly js: {
-            readonly [klass: string]: string;
-        };
-        /** Name of the root class to instantiate. */
-        readonly root: string;
-    } | {
-        readonly kind: 'css_set';
-        /** Styles travel apart from the source so that a CSS edit keeps live state. */
-        readonly css: string;
-    } | {
-        readonly kind: 'camera_set';
-        readonly camera: $bog_vmap_bridge_camera;
-    } | {
-        /**
-         * Where free details sit on the canvas, in world coordinates.
-         *
-         * A channel of its own, apart from `css_set`, and that is the whole
-         * point: the scene hangs these as its own style element, so the
-         * document's styles never carry them and the export cannot see them
-         * even by accident. Placement is editor state, not site content.
-         *
-         * Scaffolding until artboards (stage 6): inside an artboard layout is
-         * a plain $mol flex tree, and only free details lie by coordinates.
-         * The "everything absolute" model was considered and rejected.
-         */
-        readonly kind: 'spots_set';
-        readonly spots: {
-            readonly [node: string]: {
-                readonly x: number;
-                readonly y: number;
-            };
-        };
-    } | {
-        /**
-         * A click that landed on the host overlay and is meant for the document.
-         *
-         * There are no editor modes: the overlay takes every gesture, so a plain
-         * click — press and release without movement — is relayed here, and the
-         * scene replays it on the element under the point as synthetic pointer
-         * and click events, with focus. One click therefore both picks a part
-         * on the host and presses the live component in the sandbox.
-         *
-         * World coordinates, not screen ones: the host resolves its camera the
-         * same way it does for the hit test, and the scene resolves its own,
-         * so neither side has to know the other's pixel geometry.
-         *
-         * Answered like every other push, with `sizes`: a click is the most
-         * likely thing to start a loop in document code, so a scene that takes
-         * one and says nothing back is exactly what the watchdog has to notice.
-         */
-        readonly kind: 'click_at';
-        readonly x: number;
-        readonly y: number;
-        readonly mods: $bog_vmap_bridge_mods;
-    } | {
-        /**
-         * Are you alive.
-         *
-         * Штатный трафик уже несёт пульс: всякий толчок хоста сцена обязана
-         * подтвердить `sizes`. Слепая зона одна — код документа завис, когда его
-         * никто не толкал: живой компонент нажат настоящим событием сквозь дыру
-         * в оверлее, хосту толкать нечего, документ не менялся.
-         *
-         * Поэтому пульс идёт всегда, начиная с первого `sizes`.
-         */
-        readonly kind: 'ping';
-        readonly nonce: number;
-    } | {
-        readonly kind: 'asset_put';
-        readonly id: string;
-        readonly mime: string;
-        /** Bytes, not a blob: URL. A host blob: URL is dead in an opaque origin. */
-        readonly bytes: ArrayBuffer;
-    } | {
-        /**
-         * Sources of the land libraries attached to the document.
-         *
-         * A land arrives as text and is compiled into the same sandbox as the
-         * document, so a change of the list is a recompile — unlike `pack_set`,
-         * which travels the same wire but is answered by a fresh frame, because a
-         * realm cannot unload a bundle. The whole list every time, in the order
-         * the classes should be declared — the scene sorts by inheritance anyway
-         * and merges nothing.
-         *
-         * The host reads the lands, because only the host may touch the
-         * database; the scene sees strings.
-         * @see ../ARCHITECTURE.md sections 4 and 5
-         */
-        readonly kind: 'libs_set';
-        readonly parts: readonly $bog_vmap_bridge_part[];
-    } | {
-        /**
-         * Donor pack the scene is to load into its realm, as an absolute URL of
-         * the `web.js` of a deployed module. Empty means no pack, which the scene
-         * answers by compiling nothing at all.
-         *
-         * On the bridge and not in the address of the frame, because the frame
-         * has no address: it is raised from markup handed to it, so there is no
-         * query string to carry anything. The rule of section 5 — one pack per
-         * realm, a second one poisons the palette silently — is held by the host
-         * instead: the address of the pack is part of the key of the frame, so a
-         * different pack is a different frame element and a fresh realm.
-         *
-         * Sent first of everything after the handshake. A document compiled
-         * before the pack lands inherits the scene's own `$mol_view` and no later
-         * load can move it, so the scene waits for this message before it
-         * compiles anything.
-         * @see ../ARCHITECTURE.md sections 4 and 5
-         */
-        readonly kind: 'pack_set';
-        readonly uri: string;
-    } | {
-        /**
-         * Which wires the host wants values for: the root properties of the
-         * wires drawn on screen right now, and only those. The whole list every
-         * time; an empty list stops the flow. The host knows what is visible,
-         * the scene knows the values, so the question goes down and the answer
-         * comes up as `values`.
-         */
-        readonly kind: 'values_want';
-        readonly names: readonly string[];
-    };
-    /** Scene to host. */
-    type $bog_vmap_bridge_up = {
-        readonly kind: 'ready';
-    } | {
-        /** Ответ на `ping` тем же `nonce`. Живой поток, а не живой кадр. */
-        readonly kind: 'pong';
-        readonly nonce: number;
-    } | {
-        /**
-         * Геометрия узлов, ОТРИСОВАННЫХ в этот раз, а не всех существующих.
-         *
-         * С появлением culling молчание про узел значит «не рисовался», а НЕ
-         * «узла нет». Поэтому хост обязан **мержить**, а не заменять: иначе
-         * коробки всего только что скрытого стираются, и рамка выделения,
-         * которая рисуется ровно из них, мигает на краю холста.
-         *
-         * Раз молчание больше не означает отсутствия, про отсутствие должен
-         * сказать кто-то явно — это делает удаление узла из документа.
-         */
-        readonly kind: 'sizes';
-        readonly sizes: {
-            readonly [node: string]: $bog_vmap_bridge_rect;
-        };
-    } | {
-        /**
-         * Current values of the wires the host asked for in `values_want`,
-         * keyed by the root property of the wire, as short text. A read that
-         * throws comes back as the text of the error, so a broken wire is
-         * labelled rather than the scene taken down. Throttled by the scene.
-         */
-        readonly kind: 'values';
-        readonly values: {
-            readonly [wire: string]: string;
-        };
-    } | {
-        readonly kind: 'asset_want';
-        readonly id: string;
-    } | {
-        /**
-         * A key pressed while the focus was inside the frame, relayed for the
-         * editor to act on: with the pointer let inside a part the keydown lands
-         * in the document of the frame and the host's listener never sees it.
-         * Only keys the editor reacts to travel — `Escape` — never what is being
-         * typed into the document.
-         */
-        readonly kind: 'key';
-        readonly key: 'Escape';
-    } | {
-        readonly kind: 'error';
-        /** Channel. The two clear independently. */
-        readonly at: 'compile' | 'runtime';
-        /**
-         * `null` means the channel is clear again.
-         *
-         * Errors are edge-triggered: the scene posts only on change, so a
-         * repeated identical failure stays silent. Without an explicit
-         * "clear" the host cannot tell a fixed document from a still
-         * broken one, because silence means both.
-         *
-         * Null rather than an empty string on purpose: an empty error text
-         * is a plausible bug, and it must not read as good news.
-         */
-        readonly message: string | null;
-        /** Node the failure belongs to, when the scene can attribute it. */
-        readonly node?: string;
-    };
-    type $bog_vmap_bridge_message = $bog_vmap_bridge_down | $bog_vmap_bridge_up;
-    /** Puts a message on the wire. Target is the peer window. */
-    function $bog_vmap_bridge_send<Message extends $bog_vmap_bridge_message>(target: {
-        postMessage(data: unknown, origin: string): void;
-    }, message: Message): void;
-    /**
-     * Takes a message off the wire, or null when it is not ours.
-     *
-     * The channel has no origin to check against, because the scene runs in an
-     * opaque origin, so anything able to reach this window can post here.
-     * Unknown shapes are dropped rather than trusted.
-     *
-     * Always pass `peer` on the host side. Without it any window that posts a
-     * `ready` can take the channel over, and the host will happily talk to it:
-     * seen for real on stage 1, where a stray debug frame stole the bridge and
-     * the host spent an hour posting into a dead window. Identity of the peer
-     * comes from `Scene().dom_node().contentWindow`, never from `event.source`.
-     *
-     * Passing the argument at all turns the check on, so a peer that is not
-     * known yet rejects every message instead of letting everything through.
-     * Omitting it entirely is the only way to opt out, and only the scene may:
-     * it has exactly one correspondent and answers into the same window.
-     */
-    function $bog_vmap_bridge_read<Message extends $bog_vmap_bridge_message>(event: {
-        data?: unknown;
-        source?: unknown;
-    }, peer?: unknown): Message | null;
-}
-
-declare namespace $ {
 
 	export class $mol_svg_text extends $mol_svg {
 		pos_x( ): string
@@ -50748,6 +50470,290 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
+    /**
+     * Wire protocol between the vmap host and its sandboxed scene.
+     *
+     * The scene lives in an opaque origin, so `postMessage` is the only channel.
+     * Everything here is plain data: it must survive a structured clone.
+     *
+     * Direction is part of the type on purpose. The host owns the document text,
+     * the camera and the geometry; the scene only compiles, renders and measures.
+     * @see ../ARCHITECTURE.md section 4
+     */
+    const $bog_vmap_bridge_ns = "bog_vmap";
+    type $bog_vmap_bridge_camera = {
+        /** World coordinate under the left edge of the viewport. */
+        readonly x: number;
+        /** World coordinate under the top edge of the viewport. */
+        readonly y: number;
+        /** Isotropic zoom, as in Figma. Never per-axis. */
+        readonly zoom: number;
+    };
+    type $bog_vmap_bridge_rect = {
+        readonly x: number;
+        readonly y: number;
+        readonly width: number;
+        readonly height: number;
+    };
+    /**
+     * One component of a land library: the three sources a class is built from.
+     * Texts and nothing else, the scene has no way to reach the land itself.
+     */
+    type $bog_vmap_bridge_part = {
+        readonly tree: string;
+        readonly js: string;
+        readonly css: string;
+    };
+    /** Modifier keys of a relayed click. Named as `MouseEventInit` names them, so they spread straight into one. */
+    type $bog_vmap_bridge_mods = {
+        readonly altKey: boolean;
+        readonly ctrlKey: boolean;
+        readonly metaKey: boolean;
+        readonly shiftKey: boolean;
+    };
+    /**
+     * Host to scene.
+     *
+     * `doc_set` carries the whole document, not a patch: the scene holds no
+     * source of truth of its own and must never have to merge.
+     */
+    type $bog_vmap_bridge_down = {
+        readonly kind: 'doc_set';
+        /**
+         * Full document source in view.tree.
+         *
+         * Declaration order is NOT guaranteed: sorting is the scene's job,
+         * because only the scene knows the whole set of classes going into
+         * one `new Function` — the document's own plus everything its
+         * libraries contribute.
+         */
+        readonly src: string;
+        /**
+         * Bodies of the document classes, as JS source.
+         *
+         * A component is built from three sources, and this is the second.
+         * Without it every property stays undecorated, and an undecorated
+         * property is invisible to the hot swap of stage 4.
+         * Keyed by class name; a class with no handwritten body is absent.
+         */
+        readonly js: {
+            readonly [klass: string]: string;
+        };
+        /** Name of the root class to instantiate. */
+        readonly root: string;
+    } | {
+        readonly kind: 'css_set';
+        /** Styles travel apart from the source so that a CSS edit keeps live state. */
+        readonly css: string;
+    } | {
+        readonly kind: 'camera_set';
+        readonly camera: $bog_vmap_bridge_camera;
+    } | {
+        /**
+         * Where free details sit on the canvas, in world coordinates.
+         *
+         * A channel of its own, apart from `css_set`, and that is the whole
+         * point: the scene hangs these as its own style element, so the
+         * document's styles never carry them and the export cannot see them
+         * even by accident. Placement is editor state, not site content.
+         *
+         * Scaffolding until artboards (stage 6): inside an artboard layout is
+         * a plain $mol flex tree, and only free details lie by coordinates.
+         * The "everything absolute" model was considered and rejected.
+         */
+        readonly kind: 'spots_set';
+        readonly spots: {
+            readonly [node: string]: {
+                readonly x: number;
+                readonly y: number;
+            };
+        };
+    } | {
+        /**
+         * A click that landed on the host overlay and is meant for the document.
+         *
+         * There are no editor modes: the overlay takes every gesture, so a plain
+         * click — press and release without movement — is relayed here, and the
+         * scene replays it on the element under the point as synthetic pointer
+         * and click events, with focus. One click therefore both picks a part
+         * on the host and presses the live component in the sandbox.
+         *
+         * World coordinates, not screen ones: the host resolves its camera the
+         * same way it does for the hit test, and the scene resolves its own,
+         * so neither side has to know the other's pixel geometry.
+         *
+         * Answered like every other push, with `sizes`: a click is the most
+         * likely thing to start a loop in document code, so a scene that takes
+         * one and says nothing back is exactly what the watchdog has to notice.
+         */
+        readonly kind: 'click_at';
+        readonly x: number;
+        readonly y: number;
+        readonly mods: $bog_vmap_bridge_mods;
+    } | {
+        /**
+         * Are you alive.
+         *
+         * Штатный трафик уже несёт пульс: всякий толчок хоста сцена обязана
+         * подтвердить `sizes`. Слепая зона одна — код документа завис, когда его
+         * никто не толкал: живой компонент нажат настоящим событием сквозь дыру
+         * в оверлее, хосту толкать нечего, документ не менялся.
+         *
+         * Поэтому пульс идёт всегда, начиная с первого `sizes`.
+         */
+        readonly kind: 'ping';
+        readonly nonce: number;
+    } | {
+        readonly kind: 'asset_put';
+        readonly id: string;
+        readonly mime: string;
+        /** Bytes, not a blob: URL. A host blob: URL is dead in an opaque origin. */
+        readonly bytes: ArrayBuffer;
+    } | {
+        /**
+         * Sources of the land libraries attached to the document.
+         *
+         * A land arrives as text and is compiled into the same sandbox as the
+         * document, so a change of the list is a recompile — unlike `pack_set`,
+         * which travels the same wire but is answered by a fresh frame, because a
+         * realm cannot unload a bundle. The whole list every time, in the order
+         * the classes should be declared — the scene sorts by inheritance anyway
+         * and merges nothing.
+         *
+         * The host reads the lands, because only the host may touch the
+         * database; the scene sees strings.
+         * @see ../ARCHITECTURE.md sections 4 and 5
+         */
+        readonly kind: 'libs_set';
+        readonly parts: readonly $bog_vmap_bridge_part[];
+    } | {
+        /**
+         * Donor pack the scene is to load into its realm, as an absolute URL of
+         * the `web.js` of a deployed module. Empty means no pack, which the scene
+         * answers by compiling nothing at all.
+         *
+         * On the bridge and not in the address of the frame, because the frame
+         * has no address: it is raised from markup handed to it, so there is no
+         * query string to carry anything. The rule of section 5 — one pack per
+         * realm, a second one poisons the palette silently — is held by the host
+         * instead: the address of the pack is part of the key of the frame, so a
+         * different pack is a different frame element and a fresh realm.
+         *
+         * Sent first of everything after the handshake. A document compiled
+         * before the pack lands inherits the scene's own `$mol_view` and no later
+         * load can move it, so the scene waits for this message before it
+         * compiles anything.
+         * @see ../ARCHITECTURE.md sections 4 and 5
+         */
+        readonly kind: 'pack_set';
+        readonly uri: string;
+    } | {
+        /**
+         * Which wires the host wants values for: the root properties of the
+         * wires drawn on screen right now, and only those. The whole list every
+         * time; an empty list stops the flow. The host knows what is visible,
+         * the scene knows the values, so the question goes down and the answer
+         * comes up as `values`.
+         */
+        readonly kind: 'values_want';
+        readonly names: readonly string[];
+    };
+    /** Scene to host. */
+    type $bog_vmap_bridge_up = {
+        readonly kind: 'ready';
+    } | {
+        /** Ответ на `ping` тем же `nonce`. Живой поток, а не живой кадр. */
+        readonly kind: 'pong';
+        readonly nonce: number;
+    } | {
+        /**
+         * Геометрия узлов, ОТРИСОВАННЫХ в этот раз, а не всех существующих.
+         *
+         * С появлением culling молчание про узел значит «не рисовался», а НЕ
+         * «узла нет». Поэтому хост обязан **мержить**, а не заменять: иначе
+         * коробки всего только что скрытого стираются, и рамка выделения,
+         * которая рисуется ровно из них, мигает на краю холста.
+         *
+         * Раз молчание больше не означает отсутствия, про отсутствие должен
+         * сказать кто-то явно — это делает удаление узла из документа.
+         */
+        readonly kind: 'sizes';
+        readonly sizes: {
+            readonly [node: string]: $bog_vmap_bridge_rect;
+        };
+    } | {
+        /**
+         * Current values of the wires the host asked for in `values_want`,
+         * keyed by the root property of the wire, as short text. A read that
+         * throws comes back as the text of the error, so a broken wire is
+         * labelled rather than the scene taken down. Throttled by the scene.
+         */
+        readonly kind: 'values';
+        readonly values: {
+            readonly [wire: string]: string;
+        };
+    } | {
+        readonly kind: 'asset_want';
+        readonly id: string;
+    } | {
+        /**
+         * A key pressed while the focus was inside the frame, relayed for the
+         * editor to act on: with the pointer let inside a part the keydown lands
+         * in the document of the frame and the host's listener never sees it.
+         * Only keys the editor reacts to travel — `Escape` — never what is being
+         * typed into the document.
+         */
+        readonly kind: 'key';
+        readonly key: 'Escape';
+    } | {
+        readonly kind: 'error';
+        /** Channel. The two clear independently. */
+        readonly at: 'compile' | 'runtime';
+        /**
+         * `null` means the channel is clear again.
+         *
+         * Errors are edge-triggered: the scene posts only on change, so a
+         * repeated identical failure stays silent. Without an explicit
+         * "clear" the host cannot tell a fixed document from a still
+         * broken one, because silence means both.
+         *
+         * Null rather than an empty string on purpose: an empty error text
+         * is a plausible bug, and it must not read as good news.
+         */
+        readonly message: string | null;
+        /** Node the failure belongs to, when the scene can attribute it. */
+        readonly node?: string;
+    };
+    type $bog_vmap_bridge_message = $bog_vmap_bridge_down | $bog_vmap_bridge_up;
+    /** Puts a message on the wire. Target is the peer window. */
+    function $bog_vmap_bridge_send<Message extends $bog_vmap_bridge_message>(target: {
+        postMessage(data: unknown, origin: string): void;
+    }, message: Message): void;
+    /**
+     * Takes a message off the wire, or null when it is not ours.
+     *
+     * The channel has no origin to check against, because the scene runs in an
+     * opaque origin, so anything able to reach this window can post here.
+     * Unknown shapes are dropped rather than trusted.
+     *
+     * Always pass `peer` on the host side. Without it any window that posts a
+     * `ready` can take the channel over, and the host will happily talk to it:
+     * seen for real on stage 1, where a stray debug frame stole the bridge and
+     * the host spent an hour posting into a dead window. Identity of the peer
+     * comes from `Scene().dom_node().contentWindow`, never from `event.source`.
+     *
+     * Passing the argument at all turns the check on, so a peer that is not
+     * known yet rejects every message instead of letting everything through.
+     * Omitting it entirely is the only way to opt out, and only the scene may:
+     * it has exactly one correspondent and answers into the same window.
+     */
+    function $bog_vmap_bridge_read<Message extends $bog_vmap_bridge_message>(event: {
+        data?: unknown;
+        source?: unknown;
+    }, peer?: unknown): Message | null;
+}
+
+declare namespace $ {
     /** A rectangle in screen pixels of the pane. */
     type $bog_vmap_app_pane_screen_box = {
         readonly left: number;
@@ -50763,27 +50769,6 @@ declare namespace $ {
      * selection ring and the hole in the overlay are cut from the same numbers.
      */
     function $bog_vmap_app_pane_screen(box: $bog_vmap_bridge_rect, zoom: number, shift: ArrayLike<number>): $bog_vmap_app_pane_screen_box;
-    /**
-     * The overlay with a rectangle cut out of it, as a `clip-path` value.
-     *
-     * The editor takes every pointer event on its overlay, so a live component
-     * under it never gets a real one. For the picked part that is undone here: the
-     * overlay is clipped to everything BUT the part's box, and inside the box the
-     * frame is the topmost thing on the page, so hover, scroll, text selection and
-     * dragging inside the component all work for real. Outside the box the overlay
-     * is whole and keeps its gestures; the ring and its handles are drawn around
-     * the hole, not in it, which is what makes them grabbable.
-     *
-     * `evenodd` is what turns the inner rectangle into a hole rather than a second
-     * fill. The outer ring is stated in percentages so that the value does not
-     * have to know how big the pane is and does not go stale when it resizes.
-     *
-     * `none` and not an absent key when nothing is picked: inline styles are
-     * written by `$mol_dom_render_styles`, which sets the keys it is given and
-     * removes nothing, so a key that disappears from the dictionary leaves its last
-     * value on the element.
-     */
-    function $bog_vmap_app_pane_hole(rect: $bog_vmap_app_pane_screen_box | null): string;
 }
 
 declare namespace $ {
@@ -50816,7 +50801,7 @@ declare namespace $ {
      * preset sets. It has to be set: `[mol_view]` is `display: flex` with no
      * direction at all, which is a ROW.
      */
-    function $bog_vmap_app_pane_axis(boxes: readonly $bog_vmap_bridge_rect[], declared?: string): "row" | "column";
+    function $bog_vmap_app_pane_slot_axis(boxes: readonly $bog_vmap_bridge_rect[], declared?: string): "row" | "column";
     /**
      * Position a point aims at among the children of a container, and the line to
      * draw for it.
@@ -50832,6 +50817,30 @@ declare namespace $ {
      * with, and turning world into screen is done once, for both.
      */
     function $bog_vmap_app_pane_slot(owner: string, box: $bog_vmap_bridge_rect, kids: readonly $bog_vmap_bridge_rect[], point: readonly [number, number], declared?: string): $bog_vmap_app_pane_slot;
+}
+
+declare namespace $ {
+    /**
+     * The overlay with a rectangle cut out of it, as a `clip-path` value.
+     *
+     * The editor takes every pointer event on its overlay, so a live component
+     * under it never gets a real one. For the picked part that is undone here: the
+     * overlay is clipped to everything BUT the part's box, and inside the box the
+     * frame is the topmost thing on the page, so hover, scroll, text selection and
+     * dragging inside the component all work for real. Outside the box the overlay
+     * is whole and keeps its gestures; the ring and its handles are drawn around
+     * the hole, not in it, which is what makes them grabbable.
+     *
+     * `evenodd` is what turns the inner rectangle into a hole rather than a second
+     * fill. The outer ring is stated in percentages so that the value does not
+     * have to know how big the pane is and does not go stale when it resizes.
+     *
+     * `none` and not an absent key when nothing is picked: inline styles are
+     * written by `$mol_dom_render_styles`, which sets the keys it is given and
+     * removes nothing, so a key that disappears from the dictionary leaves its last
+     * value on the element.
+     */
+    function $bog_vmap_app_pane_hole(rect: $bog_vmap_app_pane_screen_box | null): string;
 }
 
 declare namespace $ {
@@ -51328,14 +51337,22 @@ declare namespace $.$$ {
             readonly [node: string]: $bog_vmap_bridge_rect;
         };
         /**
-         * Drops the remembered boxes of a part that is gone from the document.
+         * Drops every remembered box of a node: the node itself wherever it was
+         * drawn, and everything that was drawn inside it.
          *
          * The counterpart of the merge in `message_receive`. Since a missing name no
          * longer means «has no size», something has to say when a name means nothing
-         * at all, and only the delete knows that. A node removed by editing the text
-         * by hand is not covered and will leave a box behind — harmless, because
-         * nothing looks up a name the document no longer carries, and worth fixing
-         * when the code editor of stage 4 makes that path real.
+         * where it used to, and only the two writes that move or remove a node know
+         * that. A node removed by editing the text by hand is not covered and will
+         * leave a box behind — worth fixing when the code editor of stage 4 makes
+         * that path real.
+         *
+         * BY SEGMENT AND NOT BY PREFIX, which is the whole difference between this
+         * and what it was. A node carried into a container is measured at a NEW path,
+         * and the old key kept its last box beside it: two boxes answered to one
+         * name, and everything that looks a node up by name — the ring, the hit test,
+         * the port dots — could get either. Measured on the deploy: `…/Schet` with
+         * its free coordinate living next to `…/Pair/Schet`.
          */
         sizes_forget(name: string): void;
         /**
@@ -52962,7 +52979,16 @@ declare namespace $.$$ {
          * nothing and outlives every drag.
          */
         tree_move(next?: $bog_vmap_app_pane_tree_move | null): $bog_vmap_app_pane_tree_move | null;
-        /** A wire drawn on the canvas goes into the document as two lines, see `link_add` of the model. */
+        /**
+         * A wire drawn on the canvas goes into the document as two lines, see
+         * `link_add` of the model.
+         *
+         * An input that already carries a wire is UNPLUGGED first. Written straight
+         * over, the binding changed and the old source line stayed behind, read by
+         * nobody — an orphan in the document and one more name in every list built
+         * off the text. The drop is the operation that knows to take the source with
+         * it when the last reader goes.
+         */
         link_add(next?: $bog_vmap_app_pane_link_new | null): $bog_vmap_app_pane_link_new | null;
         link_drop(next?: $bog_vmap_app_pane_link_end | null): $bog_vmap_app_pane_link_end | null;
         /**
@@ -53136,7 +53162,15 @@ declare namespace $.$$ {
          * the middle of the canvas, which is the only place a click can mean.
          */
         shelf_place(next?: string): string;
-        /** Layout of a fresh artboard: the page of a desktop, stacked downwards. */
+        /**
+         * Layout of a fresh artboard: the page of a desktop, stacked downwards.
+         *
+         * A literal colour and NOT a token of the theme, which is the one place in
+         * the editor where that is right: these values are written into the
+         * document, travel into the export and end up on somebody's site. A theme
+         * token here would put the colours of this editor into a page that has
+         * nothing to do with it, and would resolve to nothing outside it.
+         */
         board_style(): {
             readonly [key: string]: string;
         };
@@ -53220,6 +53254,16 @@ declare namespace $.$$ {
          * path that can make it wrong, which is how a stale message survives.
          */
         node_title_note_at(name: string, next?: string): string;
+        /**
+         * The refusal, and with it the name the node still carries.
+         *
+         * The field keeps what was typed — losing it would mean typing the whole
+         * name again to fix one letter — so after a refusal the panel shows a name
+         * the document does not have, and the real one is nowhere. It goes into the
+         * refusal itself rather than into a line of its own: the two are one thought
+         * («this did not work, you are still here»), and a strip that appears only
+         * with the refusal cannot go stale after it.
+         */
         node_title_note(): string;
         /**
          * Renames a class of the document with everything the editor keys by its
@@ -53295,7 +53339,17 @@ declare namespace $.$$ {
          */
         root_title(next?: string): string;
         /** Why the root was not renamed. Empty when it was, or when nobody tried. */
-        root_title_note(next?: string): string;
+        root_title_refusal(next?: string): string;
+        /**
+         * The refusal, and with it the name the root class still carries.
+         *
+         * The same fork as the name of a node, and the same answer: the field keeps
+         * what was typed, so after a refusal the toolbar shows a name the document
+         * does not have and the real one is nowhere. It goes into the refusal itself
+         * rather than into a line of its own — the two are one thought, and a strip
+         * that appears only with the refusal cannot go stale after it.
+         */
+        root_title_note(): string;
         /**
          * Del anywhere in the editor, as long as the keystroke is not somebody's text.
          *

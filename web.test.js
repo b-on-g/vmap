@@ -2467,6 +2467,20 @@ var $;
 ;
 "use strict";
 var $;
+(function ($_1) {
+    /** A box in world units, as the scene reports one. */
+    const box = (x, y, width, height) => ({ x, y, width, height });
+    $mol_test({
+        /** World to screen: the same transform the scene puts on its stage, done here. */
+        'a measured box in screen pixels of the pane'($) {
+            $mol_assert_like($bog_vmap_app_pane_screen(box(10, 20, 30, 40), 2, [5, 7]), { left: 25, top: 47, width: 60, height: 80 });
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
 (function ($) {
     $mol_test({
         'Vector limiting'() {
@@ -7684,6 +7698,126 @@ var $;
 var $;
 (function ($_1) {
     /**
+     * Tests of where a drop into an artboard lands.
+     *
+     * Pure geometry, so a fixture is a container and a few boxes. What the document
+     * says about the layout never enters: the host does not compile it and has no
+     * layout of its own, and the boxes are all it is told.
+     */
+    const box = (x, y, width, height) => ({ x, y, width, height });
+    /** A page of three rows, stacked down the artboard. */
+    const column = [box(0, 0, 400, 100), box(0, 100, 400, 100), box(0, 200, 400, 100)];
+    /** The same three, laid side by side. */
+    const row = [box(0, 0, 100, 300), box(100, 0, 100, 300), box(200, 0, 100, 300)];
+    const board = box(0, 0, 400, 300);
+    $mol_test({
+        /**
+         * Three sources, in this order and for this reason: what the node declares is
+         * a line of the document rather than a guess; the boxes of the children are
+         * the fallback and say nothing when there are fewer than two of them; a
+         * column is the last resort and what a page is set to.
+         */
+        'the declared direction wins, then the geometry, then a column'($) {
+            // Declared, and the children say the opposite. The declaration is right:
+            // the boxes of a box that has just been re-declared are the old layout.
+            $mol_assert_equal($bog_vmap_app_pane_slot_axis(column, 'row'), 'row');
+            $mol_assert_equal($bog_vmap_app_pane_slot_axis(row, 'column'), 'column');
+            // Nothing declared: read off where the children came out.
+            $mol_assert_equal($bog_vmap_app_pane_slot_axis(column), 'column');
+            $mol_assert_equal($bog_vmap_app_pane_slot_axis(row), 'row');
+            $mol_assert_equal($bog_vmap_app_pane_slot_axis(column, ''), 'column');
+            // Neither: a column. One child is exactly as silent as none, which is why
+            // the declaration has to come first at all.
+            $mol_assert_equal($bog_vmap_app_pane_slot_axis([]), 'column');
+            $mol_assert_equal($bog_vmap_app_pane_slot_axis([column[0]]), 'column');
+            $mol_assert_equal($bog_vmap_app_pane_slot_axis([column[0]], 'row'), 'row');
+            // A direction we do not act on is not taken at its word: a reversed box
+            // lays its children out backwards from the order `sub` lists them, so a
+            // position counted along the boxes would be the mirror of the one written.
+            $mol_assert_equal($bog_vmap_app_pane_slot_axis(row, 'row-reverse'), 'row');
+            $mol_assert_equal($bog_vmap_app_pane_slot_axis(column, 'row-reverse'), 'column');
+        },
+        /** One child and a declared row: the position is counted across, not down. */
+        'a declared direction decides where a lone child is passed'($) {
+            const one = [box(0, 0, 100, 300)];
+            const before = $bog_vmap_app_pane_slot('Board', board, one, [20, 150], 'row');
+            const after = $bog_vmap_app_pane_slot('Board', board, one, [80, 150], 'row');
+            $mol_assert_equal(before.index, 0);
+            $mol_assert_equal(after.index, 1);
+            // Undeclared, the same lone child is judged down the column instead, so
+            // the very same point lands on the other side of it.
+            $mol_assert_equal($bog_vmap_app_pane_slot('Board', board, one, [20, 200]).index, 1);
+            $mol_assert_equal($bog_vmap_app_pane_slot('Board', board, one, [80, 200], 'row').index, 1);
+            $mol_assert_equal($bog_vmap_app_pane_slot('Board', board, one, [20, 200], 'row').index, 0);
+        },
+        /**
+         * The middle of a child decides, not the gap between children: children of a
+         * flex box usually touch, and pointing at the upper half of one plainly means
+         * «above this one».
+         */
+        'a point above the middle of a child goes before it'($) {
+            const at = (y) => $bog_vmap_app_pane_slot('Board', board, column, [200, y]).index;
+            $mol_assert_equal(at(10), 0);
+            $mol_assert_equal(at(49), 0);
+            $mol_assert_equal(at(51), 1);
+            $mol_assert_equal(at(149), 1);
+            $mol_assert_equal(at(151), 2);
+            $mol_assert_equal(at(290), 3);
+        },
+        'a row is judged along the other axis'($) {
+            const at = (x) => $bog_vmap_app_pane_slot('Board', board, row, [x, 150]).index;
+            $mol_assert_equal(at(10), 0);
+            $mol_assert_equal(at(120), 1);
+            $mol_assert_equal(at(290), 3);
+        },
+        /** The line lies on the boundary and spans the container, flat across it. */
+        'the line is drawn between the children, and at the edge at either end'($) {
+            const head = $bog_vmap_app_pane_slot('Board', board, column, [200, 10]);
+            $mol_assert_like(head.line, { x: 0, y: 0, width: 400, height: 0 });
+            const between = $bog_vmap_app_pane_slot('Board', board, column, [200, 120]);
+            $mol_assert_like(between.line, { x: 0, y: 100, width: 400, height: 0 });
+            const tail = $bog_vmap_app_pane_slot('Board', board, column, [200, 290]);
+            $mol_assert_like(tail.line, { x: 0, y: 300, width: 400, height: 0 });
+            const across = $bog_vmap_app_pane_slot('Board', board, row, [120, 150]);
+            $mol_assert_like(across.line, { x: 100, y: 0, width: 0, height: 300 });
+        },
+        /** An empty artboard takes the drop at its own top edge, at position zero. */
+        'an empty container offers the one position it has'($) {
+            const slot = $bog_vmap_app_pane_slot('Board', box(40, 60, 400, 300), [], [200, 200]);
+            $mol_assert_equal(slot.index, 0);
+            $mol_assert_like(slot.line, { x: 40, y: 60, width: 400, height: 0 });
+        },
+        /** A gap between children puts the line in the middle of it, not on a child. */
+        'the line splits the gap when there is one'($) {
+            const gapped = [box(0, 0, 400, 100), box(0, 140, 400, 100)];
+            const slot = $bog_vmap_app_pane_slot('Board', board, gapped, [200, 120]);
+            $mol_assert_equal(slot.index, 1);
+            $mol_assert_equal(slot.line.y, 120);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * The overlay cut open, as arithmetic: no pane and no camera, just the
+     * `clip-path` value the inner rectangle turns into.
+     */
+    $mol_test({
+        'the hole is a polygon with the box cut out of it'($) {
+            $mol_assert_equal($bog_vmap_app_pane_hole(null), 'none');
+            $mol_assert_equal($bog_vmap_app_pane_hole({ left: 1, top: 2, width: 3, height: 4 }), 'polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 1px 2px, 4px 2px, 4px 6px, 1px 6px, 1px 2px)');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
      * The gate over the scene: what a press, a move and a release do, without a
      * browser. The pane is given a geometry and a fake peer window, and what is
      * checked is what it picks, what it sends and when the watchdog is armed.
@@ -7693,6 +7827,8 @@ var $;
      */
     const d = '$';
     const root = `${d}doc`;
+    const calc = `${d}flow_calc`;
+    const map = `${d}flow_map`;
     /**
      * A pane with a scene that has said `ready`, a known rectangle and a listening
      * peer. The clock is the test's own and moves only when the test says so, or a
@@ -7761,6 +7897,181 @@ var $;
         return made;
     };
     $mol_test({
+        'a dropped part is carried by a drag across its body'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
+            // The overlay is whole: the body of the part just dropped is the handle.
+            $mol_assert_equal(stage.pane.overlay_style().clipPath, 'none');
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            stage.press(overlay, from);
+            stage.move(overlay, [from[0] + 60, from[1] + 40]);
+            stage.release(overlay, [from[0] + 60, from[1] + 40]);
+            stage.redraw();
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 260, y: 190 } });
+        },
+        'the second click lets the pointer inside the part, Escape takes it back out'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([400, 150]));
+            // The first click on another part only picks it, and no click reaches the scene.
+            const before = stage.scene.sent('click_at').length;
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            $mol_assert_equal(stage.pane.inside(), false);
+            $mol_assert_equal(stage.pane.overlay_style().clipPath, 'none');
+            $mol_assert_equal(stage.scene.sent('click_at').length, before);
+            // The second one lets the pointer inside, and the click goes on to the component.
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.pane.inside(), true);
+            $mol_assert_ok(stage.pane.overlay_style().clipPath.includes('200px 150px'));
+            $mol_assert_equal(stage.scene.sent('click_at').length, before + 1);
+            const dom = $.$mol_dom_context;
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            stage.redraw();
+            $mol_assert_equal(stage.pane.inside(), false);
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+        },
+        'the Delete key takes the picked part out of the document'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([300, 100]));
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            const dom = $.$mol_dom_context;
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+            stage.redraw();
+            $mol_assert_equal(stage.app.doc_source().includes('Calc'), false);
+            $mol_assert_equal(stage.app.selected(), null);
+        },
+        /**
+         * The band: a modified sweep over the canvas takes everything it overlaps, and
+         * from then on the whole set is one thing — it travels together and it goes
+         * together.
+         */
+        'a band takes several parts, and they move and delete as one'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([300, 100]));
+            // Only the last dropped one is picked, as a drop leaves it.
+            $mol_assert_like([...stage.app.picked()], ['Map']);
+            // A sweep with the modifier down, from above and left of both to below
+            // and right of both.
+            const overlay = stage.overlay();
+            const mods = { ctrlKey: true };
+            stage.press(overlay, stage.client([50, 50]), mods);
+            stage.move(overlay, stage.client([450, 200]), mods);
+            $mol_assert_ok(stage.pane.band() !== null);
+            stage.release(overlay, stage.client([450, 200]), mods);
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like([...stage.app.picked()], ['Calc', 'Map']);
+            $mol_assert_equal(stage.pane.band(), null);
+            // Carried by the body of one of them, both travel by the same offset.
+            const from = stage.part_center('Calc');
+            stage.press(overlay, from);
+            stage.move(overlay, [from[0] + 40, from[1] + 30]);
+            stage.release(overlay, [from[0] + 40, from[1] + 30]);
+            stage.redraw();
+            $mol_assert_like(stage.app.spots(), {
+                Calc: { x: 140, y: 130 },
+                Map: { x: 340, y: 130 },
+            });
+            // And deleted together: out of the document, out of `sub`, out of the desk.
+            stage.click(stage.button('Удалить'));
+            const source = stage.app.doc_source();
+            $mol_assert_equal(source.includes('Calc'), false);
+            $mol_assert_equal(source.includes('Map'), false);
+            $mol_assert_like(Object.keys(stage.app.spots()), []);
+            $mol_assert_like([...stage.app.picked()], []);
+        },
+        /**
+         * REPRO: a drop out of the palette while something is picked carried the
+         * picked node to the point of the drop as well.
+         */
+        /**
+         * Inside a part the keys belong to the part, and the strip says so with the
+         * way out. Nothing else on screen would explain why Delete stopped deleting.
+         */
+        'the strip says the pointer is inside a part, and how to get out'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_equal(stage.text().includes('Внутри'), false);
+            stage.tap(stage.part_center('Calc'));
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.pane.inside(), true);
+            $mol_assert_ok(stage.text().includes('Внутри Calc'));
+            $mol_assert_ok(stage.text().includes('Esc'));
+            const dom = $.$mol_dom_context;
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            stage.redraw();
+            $mol_assert_equal(stage.pane.inside(), false);
+            $mol_assert_equal(stage.text().includes('Внутри'), false);
+        },
+        /**
+         * REPRO: a wire drawn onto an input that already carries one used to be
+         * written straight over, leaving the previous source line in the document
+         * with nobody reading it.
+         */
+        'REPRO rebinding an occupied input leaves no orphan behind'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            // Two sources of the same shape, names sharing a prefix on purpose.
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(calc, stage.client([100, 300]));
+            stage.drop(map, stage.client([400, 100]));
+            const wire = (from, prop) => {
+                stage.press(stage.overlay(), stage.port_dot(from, prop, 'out'));
+                stage.move(stage.overlay(), stage.port_dot('Map', 'zoom', 'in'));
+                stage.release(stage.overlay(), stage.port_dot('Map', 'zoom', 'in'));
+                stage.redraw();
+                stage.scene.flush();
+            };
+            stage.tap(stage.part_center('Calc'));
+            wire('Calc', 'result');
+            $mol_assert_ok(stage.app.doc_source().includes('calc_result = Calc result'));
+            $mol_assert_like(stage.app.doc_wires().map(link => `${link.to}.${link.to_prop}`), ['Map.zoom']);
+            // The same input, a different source: the first wire goes with its line,
+            // and the wire lands on the part it was dropped on, prefix name and all.
+            stage.tap(stage.part_center('Calc_2'));
+            wire('Calc_2', 'result');
+            const source = stage.app.doc_source();
+            $mol_assert_equal(source.includes('calc_result ='), false);
+            $mol_assert_ok(source.includes('calc_2_result = Calc_2 result'));
+            $mol_assert_like(stage.app.doc_wires().map(link => `${link.to}.${link.to_prop} <= ${link.from}`), ['Map.zoom <= Calc_2']);
+        },
+        'REPRO a drop from the palette leaves the picked part where it was'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            // Picked by a click, the way a person picks before reaching for the palette.
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            stage.drop(map, stage.client([400, 300]));
+            $mol_assert_like(stage.app.spots(), {
+                Calc: { x: 100, y: 100 },
+                Map: { x: 400, y: 300 },
+            });
+        },
+        'a part inside a page is carried to another position in its tree'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.click(stage.button('Артборд'));
+            const page = stage.pane.part_box('Page');
+            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
+            stage.drop(map, stage.client([page.left + 200, page.top + 250]));
+            const node = stage.app.node();
+            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
+            // Carry the second one above the first: press on it, drag up, release.
+            const overlay = stage.overlay();
+            const from = stage.part_center('Map');
+            const to = stage.client([page.left + 200, page.top + 5]);
+            stage.press(overlay, from);
+            stage.move(overlay, to);
+            stage.release(overlay, to);
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like(node.sub_names('Page'), ['Map', 'Calc']);
+        },
         /**
          * The first click picks and nothing else: the body of the node stays the
          * editor's, to carry it by. The second one on the same node lets the pointer
@@ -7995,6 +8306,60 @@ var $;
             pane.node_release(pointer(400, 300, { buttons: 0 }));
             $mol_assert_like(pane.spots(), { A: { x: 0, y: 0 } });
         },
+        /**
+         * REPRO: a node carried into a container is measured at a new path, and the
+         * box under its old path kept answering to the same name. Two boxes for one
+         * name is how a wire lands on the neighbour of the part it was dropped on.
+         */
+        'REPRO a node that moved leaves no box behind at its old path'($) {
+            const { pane } = pane_make($, {}, { doc_names: () => ['Pair', 'Schet'] });
+            pane.sizes_last = {
+                [`${root}/Schet`]: box(700, 600),
+                [`${root}/Pair`]: box(0, 0, 400, 300),
+            };
+            // Carried into the pair: the scene will measure it at the new path, and
+            // the owner tells the canvas to forget where it used to be.
+            pane.sizes_forget('Schet');
+            $mol_assert_like(Object.keys(pane.sizes()), [`${root}/Pair`]);
+            // And the new report puts it inside, with one box answering to the name.
+            pane.sizes_last = { ...pane.sizes_last, [`${root}/Pair/Schet`]: box(10, 10) };
+            pane.sizes_version(pane.sizes_version() + 1);
+            $mol_assert_like(pane.part_size('Schet'), box(10, 10));
+            $mol_assert_equal(pane.part_names().filter(name => name === 'Schet').length, 1);
+            // Carried OUT of the pair, which is the case a rule written as a prefix of
+            // the root path cannot see: the stale key is a deep one.
+            pane.sizes_forget('Schet');
+            $mol_assert_like(Object.keys(pane.sizes()), [`${root}/Pair`]);
+        },
+        /**
+         * REPRO: two parts of one container whose names share a prefix. The dot the
+         * pointer is over belongs to the part it is drawn on, and to no other.
+         */
+        'REPRO a port dot belongs to the part it is drawn on, prefix or not'($) {
+            const ports = [
+                { name: 'zoom', next: false, kind: 'number' },
+                { name: 'marker', next: false, kind: 'string' },
+            ];
+            const { pane } = pane_make($, {}, {
+                doc_names: () => ['Pair', 'Map', 'Map_2'],
+                part_ports: () => ports,
+                wires: () => [],
+            });
+            // Stacked inside the pair, sharing a left edge: Map_2 above Map.
+            pane.sizes_last = {
+                [`${root}/Pair`]: box(0, 0, 400, 500),
+                [`${root}/Pair/Map_2`]: box(0, 0, 320, 220),
+                [`${root}/Pair/Map`]: box(0, 220, 320, 220),
+            };
+            pane.wire_drag({ from: 'Pair', from_prop: 'x', kind: 'number' });
+            const dots = pane.wire_dots();
+            const at = (x, y) => $bog_vmap_app_wire_dot_at(dots, [x, y]);
+            // The zoom dot of the upper map, and of the lower one.
+            $mol_assert_equal(at(-12, 7)?.node, 'Map_2');
+            $mol_assert_equal(at(-12, 227)?.node, 'Map');
+            // One dot set per part, not two.
+            $mol_assert_equal(dots.filter(dot => dot.node === 'Map').length, 2);
+        },
         /** A modified click without a sweep takes nothing and clears nothing. */
         'a modified click leaves the picked set alone'($) {
             const { pane } = pane_make($);
@@ -8025,11 +8390,6 @@ var $;
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
             // The ring itself stays: only the events stop going through.
             $mol_assert_equal(pane.frame_showed(), true);
-        },
-        'the hole geometry is pure arithmetic'($) {
-            $mol_assert_like($bog_vmap_app_pane_screen(box(10, 20, 30, 40), 2, [5, 7]), { left: 25, top: 47, width: 60, height: 80 });
-            $mol_assert_equal($bog_vmap_app_pane_hole(null), 'none');
-            $mol_assert_equal($bog_vmap_app_pane_hole({ left: 1, top: 2, width: 3, height: 4 }), 'polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 1px 2px, 4px 2px, 4px 6px, 1px 6px, 1px 2px)');
         },
         /**
          * THE PULSE HAS NO MODE. It runs as soon as the scene has proved itself and
@@ -8529,110 +8889,6 @@ var $;
         });
         return { ...made, node };
     }
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
-     * Tests of where a drop into an artboard lands.
-     *
-     * Pure geometry, so a fixture is a container and a few boxes. What the document
-     * says about the layout never enters: the host does not compile it and has no
-     * layout of its own, and the boxes are all it is told.
-     */
-    const box = (x, y, width, height) => ({ x, y, width, height });
-    /** A page of three rows, stacked down the artboard. */
-    const column = [box(0, 0, 400, 100), box(0, 100, 400, 100), box(0, 200, 400, 100)];
-    /** The same three, laid side by side. */
-    const row = [box(0, 0, 100, 300), box(100, 0, 100, 300), box(200, 0, 100, 300)];
-    const board = box(0, 0, 400, 300);
-    $mol_test({
-        /**
-         * Three sources, in this order and for this reason: what the node declares is
-         * a line of the document rather than a guess; the boxes of the children are
-         * the fallback and say nothing when there are fewer than two of them; a
-         * column is the last resort and what a page is set to.
-         */
-        'the declared direction wins, then the geometry, then a column'($) {
-            // Declared, and the children say the opposite. The declaration is right:
-            // the boxes of a box that has just been re-declared are the old layout.
-            $mol_assert_equal($bog_vmap_app_pane_axis(column, 'row'), 'row');
-            $mol_assert_equal($bog_vmap_app_pane_axis(row, 'column'), 'column');
-            // Nothing declared: read off where the children came out.
-            $mol_assert_equal($bog_vmap_app_pane_axis(column), 'column');
-            $mol_assert_equal($bog_vmap_app_pane_axis(row), 'row');
-            $mol_assert_equal($bog_vmap_app_pane_axis(column, ''), 'column');
-            // Neither: a column. One child is exactly as silent as none, which is why
-            // the declaration has to come first at all.
-            $mol_assert_equal($bog_vmap_app_pane_axis([]), 'column');
-            $mol_assert_equal($bog_vmap_app_pane_axis([column[0]]), 'column');
-            $mol_assert_equal($bog_vmap_app_pane_axis([column[0]], 'row'), 'row');
-            // A direction we do not act on is not taken at its word: a reversed box
-            // lays its children out backwards from the order `sub` lists them, so a
-            // position counted along the boxes would be the mirror of the one written.
-            $mol_assert_equal($bog_vmap_app_pane_axis(row, 'row-reverse'), 'row');
-            $mol_assert_equal($bog_vmap_app_pane_axis(column, 'row-reverse'), 'column');
-        },
-        /** One child and a declared row: the position is counted across, not down. */
-        'a declared direction decides where a lone child is passed'($) {
-            const one = [box(0, 0, 100, 300)];
-            const before = $bog_vmap_app_pane_slot('Board', board, one, [20, 150], 'row');
-            const after = $bog_vmap_app_pane_slot('Board', board, one, [80, 150], 'row');
-            $mol_assert_equal(before.index, 0);
-            $mol_assert_equal(after.index, 1);
-            // Undeclared, the same lone child is judged down the column instead, so
-            // the very same point lands on the other side of it.
-            $mol_assert_equal($bog_vmap_app_pane_slot('Board', board, one, [20, 200]).index, 1);
-            $mol_assert_equal($bog_vmap_app_pane_slot('Board', board, one, [80, 200], 'row').index, 1);
-            $mol_assert_equal($bog_vmap_app_pane_slot('Board', board, one, [20, 200], 'row').index, 0);
-        },
-        /**
-         * The middle of a child decides, not the gap between children: children of a
-         * flex box usually touch, and pointing at the upper half of one plainly means
-         * «above this one».
-         */
-        'a point above the middle of a child goes before it'($) {
-            const at = (y) => $bog_vmap_app_pane_slot('Board', board, column, [200, y]).index;
-            $mol_assert_equal(at(10), 0);
-            $mol_assert_equal(at(49), 0);
-            $mol_assert_equal(at(51), 1);
-            $mol_assert_equal(at(149), 1);
-            $mol_assert_equal(at(151), 2);
-            $mol_assert_equal(at(290), 3);
-        },
-        'a row is judged along the other axis'($) {
-            const at = (x) => $bog_vmap_app_pane_slot('Board', board, row, [x, 150]).index;
-            $mol_assert_equal(at(10), 0);
-            $mol_assert_equal(at(120), 1);
-            $mol_assert_equal(at(290), 3);
-        },
-        /** The line lies on the boundary and spans the container, flat across it. */
-        'the line is drawn between the children, and at the edge at either end'($) {
-            const head = $bog_vmap_app_pane_slot('Board', board, column, [200, 10]);
-            $mol_assert_like(head.line, { x: 0, y: 0, width: 400, height: 0 });
-            const between = $bog_vmap_app_pane_slot('Board', board, column, [200, 120]);
-            $mol_assert_like(between.line, { x: 0, y: 100, width: 400, height: 0 });
-            const tail = $bog_vmap_app_pane_slot('Board', board, column, [200, 290]);
-            $mol_assert_like(tail.line, { x: 0, y: 300, width: 400, height: 0 });
-            const across = $bog_vmap_app_pane_slot('Board', board, row, [120, 150]);
-            $mol_assert_like(across.line, { x: 100, y: 0, width: 0, height: 300 });
-        },
-        /** An empty artboard takes the drop at its own top edge, at position zero. */
-        'an empty container offers the one position it has'($) {
-            const slot = $bog_vmap_app_pane_slot('Board', box(40, 60, 400, 300), [], [200, 200]);
-            $mol_assert_equal(slot.index, 0);
-            $mol_assert_like(slot.line, { x: 40, y: 60, width: 400, height: 0 });
-        },
-        /** A gap between children puts the line in the middle of it, not on a child. */
-        'the line splits the gap when there is one'($) {
-            const gapped = [box(0, 0, 400, 100), box(0, 140, 400, 100)];
-            const slot = $bog_vmap_app_pane_slot('Board', board, gapped, [200, 120]);
-            $mol_assert_equal(slot.index, 1);
-            $mol_assert_equal(slot.line.y, 120);
-        },
-    });
 })($ || ($ = {}));
 
 ;
@@ -14550,170 +14806,6 @@ var $;
 var $;
 (function ($_1) {
     /**
-     * What a person does with a part right after putting it on the canvas: carry it,
-     * click into it, delete it. Every one of the three was reported broken, and none
-     * of them is broken in the model — the overlay used to be cut open under the
-     * picked part, so the frame took the presses and the focus.
-     *
-     * `d` keeps `$` out of the string literals — mam builds its dependency graph by
-     * a regexp over sources, literals included.
-     */
-    const d = '$';
-    const calc = `${d}flow_calc`;
-    const map = `${d}flow_map`;
-    $mol_test({
-        'a dropped part is carried by a drag across its body'($) {
-            const stage = $bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
-            // The overlay is whole: the body of the part just dropped is the handle.
-            $mol_assert_equal(stage.pane.overlay_style().clipPath, 'none');
-            const overlay = stage.overlay();
-            const from = stage.part_center('Calc');
-            stage.press(overlay, from);
-            stage.move(overlay, [from[0] + 60, from[1] + 40]);
-            stage.release(overlay, [from[0] + 60, from[1] + 40]);
-            stage.redraw();
-            $mol_assert_like(stage.app.spots(), { Calc: { x: 260, y: 190 } });
-        },
-        'the second click lets the pointer inside the part, Escape takes it back out'($) {
-            const stage = $bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            stage.drop(map, stage.client([400, 150]));
-            // The first click on another part only picks it, and no click reaches the scene.
-            const before = stage.scene.sent('click_at').length;
-            stage.tap(stage.part_center('Calc'));
-            $mol_assert_equal(stage.app.selected(), 'Calc');
-            $mol_assert_equal(stage.pane.inside(), false);
-            $mol_assert_equal(stage.pane.overlay_style().clipPath, 'none');
-            $mol_assert_equal(stage.scene.sent('click_at').length, before);
-            // The second one lets the pointer inside, and the click goes on to the component.
-            stage.tap(stage.part_center('Calc'));
-            $mol_assert_equal(stage.pane.inside(), true);
-            $mol_assert_ok(stage.pane.overlay_style().clipPath.includes('200px 150px'));
-            $mol_assert_equal(stage.scene.sent('click_at').length, before + 1);
-            const dom = $.$mol_dom_context;
-            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-            stage.redraw();
-            $mol_assert_equal(stage.pane.inside(), false);
-            $mol_assert_equal(stage.app.selected(), 'Calc');
-        },
-        'the Delete key takes the picked part out of the document'($) {
-            const stage = $bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([100, 100]));
-            stage.drop(map, stage.client([300, 100]));
-            stage.tap(stage.part_center('Calc'));
-            $mol_assert_equal(stage.app.selected(), 'Calc');
-            const dom = $.$mol_dom_context;
-            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
-            stage.redraw();
-            $mol_assert_equal(stage.app.doc_source().includes('Calc'), false);
-            $mol_assert_equal(stage.app.selected(), null);
-        },
-        /**
-         * The band: a modified sweep over the canvas takes everything it overlaps, and
-         * from then on the whole set is one thing — it travels together and it goes
-         * together.
-         */
-        'a band takes several parts, and they move and delete as one'($) {
-            const stage = $bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([100, 100]));
-            stage.drop(map, stage.client([300, 100]));
-            // Only the last dropped one is picked, as a drop leaves it.
-            $mol_assert_like([...stage.app.picked()], ['Map']);
-            // A sweep with the modifier down, from above and left of both to below
-            // and right of both.
-            const overlay = stage.overlay();
-            const mods = { ctrlKey: true };
-            stage.press(overlay, stage.client([50, 50]), mods);
-            stage.move(overlay, stage.client([450, 200]), mods);
-            $mol_assert_ok(stage.pane.band() !== null);
-            stage.release(overlay, stage.client([450, 200]), mods);
-            stage.redraw();
-            stage.scene.flush();
-            $mol_assert_like([...stage.app.picked()], ['Calc', 'Map']);
-            $mol_assert_equal(stage.pane.band(), null);
-            // Carried by the body of one of them, both travel by the same offset.
-            const from = stage.part_center('Calc');
-            stage.press(overlay, from);
-            stage.move(overlay, [from[0] + 40, from[1] + 30]);
-            stage.release(overlay, [from[0] + 40, from[1] + 30]);
-            stage.redraw();
-            $mol_assert_like(stage.app.spots(), {
-                Calc: { x: 140, y: 130 },
-                Map: { x: 340, y: 130 },
-            });
-            // And deleted together: out of the document, out of `sub`, out of the desk.
-            stage.click(stage.button('Удалить'));
-            const source = stage.app.doc_source();
-            $mol_assert_equal(source.includes('Calc'), false);
-            $mol_assert_equal(source.includes('Map'), false);
-            $mol_assert_like(Object.keys(stage.app.spots()), []);
-            $mol_assert_like([...stage.app.picked()], []);
-        },
-        /**
-         * REPRO: a drop out of the palette while something is picked carried the
-         * picked node to the point of the drop as well.
-         */
-        /**
-         * Inside a part the keys belong to the part, and the strip says so with the
-         * way out. Nothing else on screen would explain why Delete stopped deleting.
-         */
-        'the strip says the pointer is inside a part, and how to get out'($) {
-            const stage = $bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            $mol_assert_equal(stage.text().includes('Внутри'), false);
-            stage.tap(stage.part_center('Calc'));
-            stage.tap(stage.part_center('Calc'));
-            $mol_assert_equal(stage.pane.inside(), true);
-            $mol_assert_ok(stage.text().includes('Внутри Calc'));
-            $mol_assert_ok(stage.text().includes('Esc'));
-            const dom = $.$mol_dom_context;
-            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-            stage.redraw();
-            $mol_assert_equal(stage.pane.inside(), false);
-            $mol_assert_equal(stage.text().includes('Внутри'), false);
-        },
-        'REPRO a drop from the palette leaves the picked part where it was'($) {
-            const stage = $bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([100, 100]));
-            $mol_assert_equal(stage.app.selected(), 'Calc');
-            // Picked by a click, the way a person picks before reaching for the palette.
-            stage.tap(stage.part_center('Calc'));
-            $mol_assert_equal(stage.app.selected(), 'Calc');
-            stage.drop(map, stage.client([400, 300]));
-            $mol_assert_like(stage.app.spots(), {
-                Calc: { x: 100, y: 100 },
-                Map: { x: 400, y: 300 },
-            });
-        },
-        'a part inside a page is carried to another position in its tree'($) {
-            const stage = $bog_vmap_app_flow_stage($);
-            stage.click(stage.button('Артборд'));
-            const page = stage.pane.part_box('Page');
-            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
-            stage.drop(map, stage.client([page.left + 200, page.top + 250]));
-            const node = stage.app.node();
-            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
-            // Carry the second one above the first: press on it, drag up, release.
-            const overlay = stage.overlay();
-            const from = stage.part_center('Map');
-            const to = stage.client([page.left + 200, page.top + 5]);
-            stage.press(overlay, from);
-            stage.move(overlay, to);
-            stage.release(overlay, to);
-            stage.redraw();
-            stage.scene.flush();
-            $mol_assert_like(node.sub_names('Page'), ['Map', 'Calc']);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
      * The editor from the user's side: real clicks on real elements of a rendered
      * DOM, one scenario per test.
      *
@@ -15590,6 +15682,16 @@ var $;
                 app.dom_tree();
                 scene.flush();
             },
+            /**
+             * Leaves a field, which is how a name is committed without pressing
+             * Enter: the rename is bound to `blur` as well, because a person who
+             * typed a name and clicked elsewhere meant it.
+             */
+            blur(el) {
+                el.dispatchEvent(new dom.Event('blur', { bubbles: true }));
+                app.dom_tree();
+                scene.flush();
+            },
             click(el) {
                 el.dispatchEvent(new dom.MouseEvent('click', { bubbles: true, cancelable: true }));
                 app.dom_tree();
@@ -16003,7 +16105,7 @@ var $;
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_equal(app.selected(), 'Button_minor');
             // The exact words, because words are the whole point of this path.
-            $mol_assert_equal(app.node_title_note(), 'Имя «String» в этом документе уже занято');
+            $mol_assert_equal(app.node_title_note(), 'Имя «String» в этом документе уже занято. Узел по-прежнему называется «Button_minor»');
             // The message belongs to the node it is about, so another pick is clean.
             app.selected('String');
             $mol_assert_equal(app.node_title_note(), '');
@@ -16023,7 +16125,8 @@ var $;
             app.node_title('Кнопка');
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_equal(app.selected(), 'Button_minor');
-            $mol_assert_equal(app.node_title_note(), 'Имя «Кнопка» не годится: в имени узла только латинские буквы, цифры и подчёркивание');
+            $mol_assert_equal(app.node_title_note(), 'Имя «Кнопка» не годится: в имени узла только латинские буквы, цифры и подчёркивание.'
+                + ' Узел по-прежнему называется «Button_minor»');
             // A space is the other everyday way to write a name nothing can address.
             app.node_title('Send button');
             $mol_assert_equal(app.doc_source(), before);
@@ -16419,6 +16522,13 @@ var $;
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_ok(app.root_title_note().includes('Страница'));
             $mol_assert_ok(app.body().includes(app.Root_note()));
+            // And the name the document still carries. The field keeps the refused
+            // one — there has to be something to correct — so without this the real
+            // name would be nowhere on the screen at all.
+            app.root_draft('Страница');
+            app.root_submit();
+            $mol_assert_equal(app.root_draft(), 'Страница');
+            $mol_assert_ok(app.root_title_note().includes(`${d}my_site_page`));
             // A single segment is not a path either: mam resolves every underscore
             // into a folder, and the export refuses a prefix shorter than two.
             $mol_assert_equal(app.root_title(`${d}page`), `${d}my_site_page`);
@@ -16501,6 +16611,31 @@ var $;
             const spot = stage.app.spots()[block];
             $mol_assert_ok(box);
             $mol_assert_ok(spot.y >= box.y + box.height);
+        },
+        /**
+         * What is typed stays in the field after a refusal, and the name the node
+         * still carries is on screen beside it.
+         *
+         * Two halves of one decision. Clearing the field would mean typing the whole
+         * name again to fix one letter, which is the opposite of what a refusal is
+         * for; keeping it means the panel shows a name the document does not have,
+         * so the real one has to be visible or the person is left guessing which of
+         * the two is true.
+         */
+        'a refused name stays in the field, and the real one is in the refusal'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(`${d}flow_calc`, stage.client([200, 150]));
+            stage.tap(stage.part_center('Calc'));
+            const field = stage.field('Inspect().Title()');
+            stage.type(field, 'Кнопка');
+            // The submit is a separate gesture: a rename per keystroke would rename
+            // the node to every prefix of what is being typed.
+            stage.blur(field);
+            // Nothing moved, what was typed is still there to be fixed.
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            $mol_assert_equal(stage.field('Inspect().Title()').value, 'Кнопка');
+            // And the panel says which name the node actually has.
+            $mol_assert_ok(stage.text().includes('Узел по-прежнему называется «Calc»'));
         },
     });
 })($ || ($ = {}));
