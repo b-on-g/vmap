@@ -48287,104 +48287,132 @@ declare namespace $.$$ {
 
 declare namespace $ {
 
-	type $mol_view__sub_bog_vmap_app_inspect_1 = $mol_type_enforce<
+	type $mol_string__hint_bog_vmap_app_inspect_1 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_string['hint'] >
+	>
+	type $mol_string__minimal_height_bog_vmap_app_inspect_2 = $mol_type_enforce<
+		number
+		,
+		ReturnType< $mol_string['minimal_height'] >
+	>
+	type $mol_string__value_bog_vmap_app_inspect_3 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['title_value'] >
+		,
+		ReturnType< $mol_string['value'] >
+	>
+	type $mol_string__submit_bog_vmap_app_inspect_4 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['title_submit'] >
+		,
+		ReturnType< $mol_string['submit'] >
+	>
+	type $mol_string__event_bog_vmap_app_inspect_5 = $mol_type_enforce<
+		({ 
+			blur( next?: ReturnType< $bog_vmap_app_inspect['title_submit'] > ): ReturnType< $bog_vmap_app_inspect['title_submit'] >,
+		})  & ReturnType< $mol_string['event'] >
+		,
+		ReturnType< $mol_string['event'] >
+	>
+	type $mol_view__sub_bog_vmap_app_inspect_6 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_inspect_2 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_inspect_7 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_inspect_3 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_inspect_8 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_inspect_4 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $bog_vmap_app_inspect_flex__value_bog_vmap_app_inspect_5 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_flex__value_bog_vmap_app_inspect_9 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['flex_value'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_flex['value'] >
 	>
-	type $mol_view__sub_bog_vmap_app_inspect_6 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_inspect_10 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['rows'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_scroll__sub_bog_vmap_app_inspect_7 = $mol_type_enforce<
+	type $mol_scroll__sub_bog_vmap_app_inspect_11 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_scroll['sub'] >
 	>
-	type $bog_vmap_lang_node__source_bog_vmap_app_inspect_8 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_inspect_12 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $bog_vmap_lang_node__source_bog_vmap_app_inspect_13 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['source'] >
 		,
 		ReturnType< $bog_vmap_lang_node['source'] >
 	>
-	type $bog_vmap_lib__pack_bog_vmap_app_inspect_9 = $mol_type_enforce<
+	type $bog_vmap_lib__pack_bog_vmap_app_inspect_14 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['pack'] >
 		,
 		ReturnType< $bog_vmap_lib['pack'] >
 	>
-	type $bog_vmap_lib__classes_bog_vmap_app_inspect_10 = $mol_type_enforce<
+	type $bog_vmap_lib__classes_bog_vmap_app_inspect_15 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['classes'] >
 		,
 		ReturnType< $bog_vmap_lib['classes'] >
 	>
-	type $bog_vmap_app_inspect_row__sign_bog_vmap_app_inspect_11 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__sign_bog_vmap_app_inspect_16 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_sign'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['sign'] >
 	>
-	type $bog_vmap_app_inspect_row__owner_bog_vmap_app_inspect_12 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__owner_bog_vmap_app_inspect_17 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_owner'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['owner'] >
 	>
-	type $bog_vmap_app_inspect_row__inherited_bog_vmap_app_inspect_13 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__inherited_bog_vmap_app_inspect_18 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_inherited'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['inherited'] >
 	>
-	type $bog_vmap_app_inspect_row__value_bog_vmap_app_inspect_14 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__value_bog_vmap_app_inspect_19 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_value'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['value'] >
 	>
-	type $bog_vmap_app_inspect_row__keyed_bog_vmap_app_inspect_15 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__keyed_bog_vmap_app_inspect_20 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_keyed'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['keyed'] >
 	>
-	type $bog_vmap_app_inspect_row__changeable_bog_vmap_app_inspect_16 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__changeable_bog_vmap_app_inspect_21 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_changeable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['changeable'] >
 	>
-	type $bog_vmap_app_inspect_row__drop_bog_vmap_app_inspect_17 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__drop_bog_vmap_app_inspect_22 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_drop'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['drop'] >
 	>
-	type $bog_vmap_app_inspect_row__binds_bog_vmap_app_inspect_18 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__binds_bog_vmap_app_inspect_23 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['binds'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['binds'] >
 	>
-	type $bog_vmap_app_inspect_row__nodes_bog_vmap_app_inspect_19 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__nodes_bog_vmap_app_inspect_24 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['nodes'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['nodes'] >
 	>
 	export class $bog_vmap_app_inspect extends $mol_view {
-		class_title( ): string
-		Title( ): $mol_view
+		title_value( next?: string ): string
+		title_submit( next?: any ): any
+		Title( ): $mol_string
 		base_title( ): string
 		Base( ): $mol_view
 		total( ): string
@@ -48395,6 +48423,7 @@ declare namespace $ {
 		rows( ): readonly(any)[]
 		Rows( ): $mol_view
 		Body( ): $mol_scroll
+		title_note( ): string
 		classes( ): readonly(any)[]
 		row_sign( id: any): string
 		row_owner( id: any): string
@@ -48408,7 +48437,9 @@ declare namespace $ {
 		source( next?: string ): string
 		peers( ): readonly($mol_tree2)[]
 		pack( next?: string ): string
+		class_title( next?: string ): string
 		sub( ): readonly(any)[]
+		Note( ): $mol_view
 		Node( ): $bog_vmap_lang_node
 		Lib( ): $bog_vmap_lib
 		Row( id: any): $bog_vmap_app_inspect_row
@@ -48513,7 +48544,33 @@ declare namespace $.$$ {
          * live one being edited.
          */
         classes(): $mol_tree2[];
-        class_title(): string;
+        /**
+         * Name of the node, both ways.
+         *
+         * Reading is the class the declaration names. Writing renames it through the
+         * local model, which is all the stand can do and all it needs. The editor
+         * binds this to a rename of its own, which also carries the pick, the
+         * placement and every reference in the document — a rename is not a fact
+         * about one class, and the inspector is handed exactly one.
+         */
+        class_title(next?: string): string;
+        /**
+         * What stands in the field, keyed by the name it started from.
+         *
+         * A draft, because the commit is on Enter and on blur: between them the
+         * field holds a name the document does not have. Keyed by the current name
+         * so that picking another node, or a rename that lands, starts a fresh draft
+         * — there is no state to reset and none to go stale.
+         */
+        title_draft(name: string, next?: string): string;
+        title_value(next?: string): string;
+        /** Commits the draft, and says nothing when there is nothing to commit. */
+        title_submit(event?: Event): void;
+        /**
+         * The refusal goes under the head, and only when there is one: a strip that
+         * is always there but usually empty is a strip nobody reads.
+         */
+        sub(): readonly $mol_view[];
         base_title(): string;
         /** Declaration of every port of the class, own and inherited, by name. */
         ports(): Map<string, $mol_tree2>;
@@ -51227,62 +51284,72 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_inspect['pack'] >
 	>
-	type $mol_view__sub_bog_vmap_app_50 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__class_title_bog_vmap_app_50 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_title'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['class_title'] >
+	>
+	type $bog_vmap_app_inspect__title_note_bog_vmap_app_51 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_title_note'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['title_note'] >
+	>
+	type $mol_view__sub_bog_vmap_app_52 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_app_code__klass_bog_vmap_app_51 = $mol_type_enforce<
+	type $bog_vmap_app_code__klass_bog_vmap_app_53 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_root'] >
 		,
 		ReturnType< $bog_vmap_app_code['klass'] >
 	>
-	type $bog_vmap_app_code__prop_bog_vmap_app_52 = $mol_type_enforce<
+	type $bog_vmap_app_code__prop_bog_vmap_app_54 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_prop'] >
 		,
 		ReturnType< $bog_vmap_app_code['prop'] >
 	>
-	type $bog_vmap_app_code__hooks_bog_vmap_app_53 = $mol_type_enforce<
+	type $bog_vmap_app_code__hooks_bog_vmap_app_55 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_hooks'] >
 		,
 		ReturnType< $bog_vmap_app_code['hooks'] >
 	>
-	type $bog_vmap_app_code__source_bog_vmap_app_54 = $mol_type_enforce<
+	type $bog_vmap_app_code__source_bog_vmap_app_56 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_text'] >
 		,
 		ReturnType< $bog_vmap_app_code['source'] >
 	>
-	type $bog_vmap_app_code__node_source_bog_vmap_app_55 = $mol_type_enforce<
+	type $bog_vmap_app_code__node_source_bog_vmap_app_57 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['node_source'] >
 	>
-	type $bog_vmap_app_code__js_bog_vmap_app_56 = $mol_type_enforce<
+	type $bog_vmap_app_code__js_bog_vmap_app_58 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['root_js'] >
 		,
 		ReturnType< $bog_vmap_app_code['js'] >
 	>
-	type $bog_vmap_app_code__css_bog_vmap_app_57 = $mol_type_enforce<
+	type $bog_vmap_app_code__css_bog_vmap_app_59 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['root_css'] >
 		,
 		ReturnType< $bog_vmap_app_code['css'] >
 	>
-	type $bog_vmap_app_code__error_bog_vmap_app_58 = $mol_type_enforce<
+	type $bog_vmap_app_code__error_bog_vmap_app_60 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_error'] >
 		,
 		ReturnType< $bog_vmap_app_code['error'] >
 	>
-	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_59 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_61 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['pack'] >
 	>
-	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_60 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_62 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lands'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['lands'] >
 	>
-	type $mol_view__style_bog_vmap_app_61 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_63 = $mol_type_enforce<
 		({ 
 			'left': ReturnType< $bog_vmap_app['ghost_left'] >,
 			'top': ReturnType< $bog_vmap_app['ghost_top'] >,
@@ -51290,92 +51357,92 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_62 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_64 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_app_pane__scene_bundle_bog_vmap_app_63 = $mol_type_enforce<
+	type $bog_vmap_app_pane__scene_bundle_bog_vmap_app_65 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_bundle'] >
 		,
 		ReturnType< $bog_vmap_app_pane['scene_bundle'] >
 	>
-	type $bog_vmap_app_pane__pack_uri_bog_vmap_app_64 = $mol_type_enforce<
+	type $bog_vmap_app_pane__pack_uri_bog_vmap_app_66 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_script'] >
 		,
 		ReturnType< $bog_vmap_app_pane['pack_uri'] >
 	>
-	type $bog_vmap_app_pane__doc_src_bog_vmap_app_65 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_src_bog_vmap_app_67 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_src'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_src'] >
 	>
-	type $bog_vmap_app_pane__doc_css_bog_vmap_app_66 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_css_bog_vmap_app_68 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_css'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_css'] >
 	>
-	type $bog_vmap_app_pane__spots_bog_vmap_app_67 = $mol_type_enforce<
+	type $bog_vmap_app_pane__spots_bog_vmap_app_69 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['spots'] >
 		,
 		ReturnType< $bog_vmap_app_pane['spots'] >
 	>
-	type $bog_vmap_app_pane__selected_bog_vmap_app_68 = $mol_type_enforce<
+	type $bog_vmap_app_pane__selected_bog_vmap_app_70 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['selected'] >
 		,
 		ReturnType< $bog_vmap_app_pane['selected'] >
 	>
-	type $bog_vmap_app_pane__doc_js_bog_vmap_app_69 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_js_bog_vmap_app_71 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_js'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_js'] >
 	>
-	type $bog_vmap_app_pane__doc_root_bog_vmap_app_70 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_root_bog_vmap_app_72 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_root'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_root'] >
 	>
-	type $bog_vmap_app_pane__libs_bog_vmap_app_71 = $mol_type_enforce<
+	type $bog_vmap_app_pane__libs_bog_vmap_app_73 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['libs'] >
 		,
 		ReturnType< $bog_vmap_app_pane['libs'] >
 	>
-	type $bog_vmap_app_pane__hole_allowed_bog_vmap_app_72 = $mol_type_enforce<
+	type $bog_vmap_app_pane__hole_allowed_bog_vmap_app_74 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['hole_allowed'] >
 		,
 		ReturnType< $bog_vmap_app_pane['hole_allowed'] >
 	>
-	type $bog_vmap_app_pane__wires_bog_vmap_app_73 = $mol_type_enforce<
+	type $bog_vmap_app_pane__wires_bog_vmap_app_75 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_wires'] >
 		,
 		ReturnType< $bog_vmap_app_pane['wires'] >
 	>
-	type $bog_vmap_app_pane__part_ports_bog_vmap_app_74 = $mol_type_enforce<
+	type $bog_vmap_app_pane__part_ports_bog_vmap_app_76 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['part_ports'] >
 		,
 		ReturnType< $bog_vmap_app_pane['part_ports'] >
 	>
-	type $bog_vmap_app_pane__link_add_bog_vmap_app_75 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_add_bog_vmap_app_77 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_add'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_add'] >
 	>
-	type $bog_vmap_app_pane__link_drop_bog_vmap_app_76 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_drop_bog_vmap_app_78 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_drop'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_drop'] >
 	>
-	type $bog_vmap_app_pane__containers_bog_vmap_app_77 = $mol_type_enforce<
+	type $bog_vmap_app_pane__containers_bog_vmap_app_79 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_containers'] >
 		,
 		ReturnType< $bog_vmap_app_pane['containers'] >
 	>
-	type $bog_vmap_app_pane__axis_bog_vmap_app_78 = $mol_type_enforce<
+	type $bog_vmap_app_pane__axis_bog_vmap_app_80 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_axis'] >
 		,
 		ReturnType< $bog_vmap_app_pane['axis'] >
 	>
-	type $bog_vmap_app_pane__tree_move_bog_vmap_app_79 = $mol_type_enforce<
+	type $bog_vmap_app_pane__tree_move_bog_vmap_app_81 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['tree_move'] >
 		,
 		ReturnType< $bog_vmap_app_pane['tree_move'] >
@@ -51419,6 +51486,8 @@ declare namespace $ {
 		aside_content( ): readonly($mol_view)[]
 		node_peers( ): readonly($mol_tree2)[]
 		pack_link( ): string
+		node_title( next?: string ): string
+		node_title_note( ): string
 		idle_note( ): string
 		code_prop( ): string
 		code_hooks( ): readonly(string)[]
@@ -51959,6 +52028,30 @@ declare namespace $.$$ {
          * the node itself is going.
          */
         node_rename(name: string, next: string): void;
+        /**
+         * Name of the picked node as the inspector edits it, in both directions.
+         *
+         * Reading is the pick itself: the name of a node IS the property it occupies,
+         * so there is nothing to derive. Writing renames, and the refusal comes back
+         * as words rather than as an exception — a throw out of a `$mol_string`
+         * setter ends up in `setCustomValidity`, which is not where a person looks.
+         *
+         * The taken name is caught here and not left to the model, because only the
+         * message differs: the model refuses in English, at a caller that may not be
+         * a person. The model still refuses on its own and is tested doing so; this
+         * is the same rule spelled for the one who typed it.
+         */
+        node_title(next?: string): string;
+        /**
+         * The refusal in words, keyed by the node it is about.
+         *
+         * Keyed, so it clears itself: a rename that lands moves the pick to the new
+         * name and the message is read under a key nobody has written, and picking
+         * another node does the same. A single cell would need clearing from every
+         * path that can make it wrong, which is how a stale message survives.
+         */
+        node_title_note_at(name: string, next?: string): string;
+        node_title_note(): string;
         /**
          * Del anywhere in the editor, as long as the keystroke is not somebody's text.
          *

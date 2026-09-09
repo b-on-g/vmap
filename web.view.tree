@@ -2813,10 +2813,28 @@ $bog_vmap_app_inspect $mol_view
 	peers /$mol_tree2
 	- Deployed MAM module the inherited ports are read from.
 	pack? \https://mol.hyoo.ru
+	- Name of the node, both ways. Implemented over the local model here; the editor
+	- binds it to a rename of its own, which carries the pick and the placement too.
+	class_title? \
+	- Why the rename was refused, in words, or empty when there is nothing to say.
+	- Handed in from outside: the refusal belongs to whoever owns the document, and
+	- the inspector only has one class of it.
+	title_note \
 	sub /
 		<= Head $mol_view
 			sub /
-				<= Title $mol_view sub / <= class_title \
+				- The name of the node, editable in place. Committed on Enter and on
+				- leaving the field, NEVER on a keystroke: a rename rewrites the
+				- declaration and everything that points at it, so writing per letter
+				- would rename the node to every prefix of what is being typed.
+				<= Title $mol_string
+					hint \имя узла
+					minimal_height 28
+					value? <=> title_value? \
+					submit? <=> title_submit? null
+					event *
+						^
+						blur? <=> title_submit? null
 				<= Base $mol_view sub / <= base_title \
 				<= Total $mol_view sub / <= total \
 		- Layout of the node, above the ports: on a page these five decide what the
@@ -2827,6 +2845,11 @@ $bog_vmap_app_inspect $mol_view
 		<= Body $mol_scroll
 			sub /
 				<= Rows $mol_view sub <= rows /
+	- The refusal, shown under the head and only while there is one. Declared here
+	- rather than placed in `sub`, because an empty strip in a panel this narrow
+	- reads as a bug.
+	Note $mol_view
+		sub / <= title_note \
 	- The document model. `source` is bound both ways, so a write through any
 	- property below serializes the whole class and comes back out here as text.
 	Node $bog_vmap_lang_node
@@ -3340,6 +3363,12 @@ $bog_vmap_app $mol_view
 		source? <=> node_source? \
 		peers <= node_peers /$mol_tree2
 		pack <= pack_link \
+		- The name field renames through the editor and not through the class the
+		- inspector holds: the name of a node is also the key of the pick, of the
+		- placement and of every reference in the document, and only the editor knows
+		- all four. The refusal comes back the same way, in words.
+		class_title? <=> node_title? \
+		title_note <= node_title_note \
 	-
 	- What stands in the panel while nothing is picked. A state, not a blank: the
 	- inspector handed an empty source would fail to find a class in it and show an

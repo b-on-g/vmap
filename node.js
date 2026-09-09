@@ -27747,12 +27747,21 @@ var $;
 
 ;
 	($.$bog_vmap_app_inspect) = class $bog_vmap_app_inspect extends ($.$mol_view) {
-		class_title(){
+		title_value(next){
+			if(next !== undefined) return next;
 			return "";
 		}
+		title_submit(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		Title(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.class_title())]);
+			const obj = new this.$.$mol_string();
+			(obj.hint) = () => ("имя узла");
+			(obj.minimal_height) = () => (28);
+			(obj.value) = (next) => ((this.title_value(next)));
+			(obj.submit) = (next) => ((this.title_submit(next)));
+			(obj.event) = () => ({...(this.$.$mol_string.prototype.event.call(obj)), "blur": (next) => (this.title_submit(next))});
 			return obj;
 		}
 		base_title(){
@@ -27802,6 +27811,9 @@ var $;
 			(obj.sub) = () => ([(this.Rows())]);
 			return obj;
 		}
+		title_note(){
+			return "";
+		}
 		classes(){
 			return [];
 		}
@@ -27848,12 +27860,21 @@ var $;
 			if(next !== undefined) return next;
 			return "https://mol.hyoo.ru";
 		}
+		class_title(next){
+			if(next !== undefined) return next;
+			return "";
+		}
 		sub(){
 			return [
 				(this.Head()), 
 				(this.Flex()), 
 				(this.Body())
 			];
+		}
+		Note(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.title_note())]);
+			return obj;
 		}
 		Node(){
 			const obj = new this.$.$bog_vmap_lang_node();
@@ -27880,6 +27901,8 @@ var $;
 			return obj;
 		}
 	};
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "title_value"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "title_submit"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Title"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Base"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Total"));
@@ -27894,6 +27917,8 @@ var $;
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "row_drop"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "source"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "pack"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "class_title"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Note"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Node"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Lib"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "Row"));
@@ -28013,8 +28038,48 @@ var $;
                 const own = this.Node().tree();
                 return [own, ...this.peers().filter(tree => tree.type !== own.type)];
             }
-            class_title() {
-                return this.Node().name();
+            /**
+             * Name of the node, both ways.
+             *
+             * Reading is the class the declaration names. Writing renames it through the
+             * local model, which is all the stand can do and all it needs. The editor
+             * binds this to a rename of its own, which also carries the pick, the
+             * placement and every reference in the document — a rename is not a fact
+             * about one class, and the inspector is handed exactly one.
+             */
+            class_title(next) {
+                return this.Node().name(next);
+            }
+            /**
+             * What stands in the field, keyed by the name it started from.
+             *
+             * A draft, because the commit is on Enter and on blur: between them the
+             * field holds a name the document does not have. Keyed by the current name
+             * so that picking another node, or a rename that lands, starts a fresh draft
+             * — there is no state to reset and none to go stale.
+             */
+            title_draft(name, next) {
+                return next ?? name;
+            }
+            title_value(next) {
+                return this.title_draft(this.class_title(), next);
+            }
+            /** Commits the draft, and says nothing when there is nothing to commit. */
+            title_submit(event) {
+                const draft = this.title_value();
+                if (!draft || draft === this.class_title())
+                    return;
+                this.class_title(draft);
+            }
+            /**
+             * The refusal goes under the head, and only when there is one: a strip that
+             * is always there but usually empty is a strip nobody reads.
+             */
+            sub() {
+                const sub = super.sub();
+                if (!this.title_note())
+                    return sub;
+                return [sub[0], this.Note(), ...sub.slice(1)];
             }
             base_title() {
                 return this.Node().base();
@@ -28267,6 +28332,12 @@ var $;
             }
         }
         __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_inspect.prototype, "title_draft", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_inspect.prototype, "title_submit", null);
+        __decorate([
             $mol_mem
         ], $bog_vmap_app_inspect.prototype, "ports", null);
         __decorate([
@@ -28376,8 +28447,21 @@ var $;
                 background: { color: $mol_theme.card },
                 border: { bottom: { width: '1px', style: 'solid', color: $mol_theme.line } },
             },
+            /**
+             * A field that reads as the heading it replaced until it is touched: the
+             * name is the first thing the panel says, and a heavy input at the top of a
+             * narrow panel would make it the loudest.
+             */
             Title: {
                 font: { family: 'monospace', weight: 'bold' },
+                background: { color: 'transparent' },
+                padding: 0,
+            },
+            /** The refusal, where the eye already is: right under the name it is about. */
+            Note: {
+                color: '#c0392b',
+                font: { size: '.75rem' },
+                whiteSpace: 'normal',
             },
             Base: {
                 color: $mol_theme.shade,
@@ -33188,6 +33272,13 @@ var $;
 		pack_link(){
 			return "";
 		}
+		node_title(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		node_title_note(){
+			return "";
+		}
 		idle_note(){
 			return "Выберите узел на холсте, чтобы править его свойства";
 		}
@@ -33352,6 +33443,8 @@ var $;
 			(obj.source) = (next) => ((this.node_source(next)));
 			(obj.peers) = () => ((this.node_peers()));
 			(obj.pack) = () => ((this.pack_link()));
+			(obj.class_title) = (next) => ((this.node_title(next)));
+			(obj.title_note) = () => ((this.node_title_note()));
 			return obj;
 		}
 		Idle(){
@@ -33428,6 +33521,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "scene_restart"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Stall_reload"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Palette"));
+	($mol_mem(($.$bog_vmap_app.prototype), "node_title"));
 	($mol_mem(($.$bog_vmap_app.prototype), "link_add"));
 	($mol_mem(($.$bog_vmap_app.prototype), "link_drop"));
 	($mol_mem(($.$bog_vmap_app.prototype), "tree_move"));
@@ -34377,6 +34471,59 @@ var $;
                     this.selected(next);
             }
             /**
+             * Name of the picked node as the inspector edits it, in both directions.
+             *
+             * Reading is the pick itself: the name of a node IS the property it occupies,
+             * so there is nothing to derive. Writing renames, and the refusal comes back
+             * as words rather than as an exception — a throw out of a `$mol_string`
+             * setter ends up in `setCustomValidity`, which is not where a person looks.
+             *
+             * The taken name is caught here and not left to the model, because only the
+             * message differs: the model refuses in English, at a caller that may not be
+             * a person. The model still refuses on its own and is tested doing so; this
+             * is the same rule spelled for the one who typed it.
+             */
+            node_title(next) {
+                const name = this.selected();
+                if (next === undefined)
+                    return name ?? '';
+                if (!name || !next || next === name)
+                    return name ?? '';
+                // The one refusal a person can cause just by typing, so it is the one
+                // worded here. The model refuses it too and goes on doing so.
+                if (this.node().prop_names().includes(next)) {
+                    this.node_title_note_at(name, `Имя «${next}» в этом документе уже занято`);
+                    return name;
+                }
+                // Whatever else the model may refuse — a name no property signature
+                // matches, say — still has to reach the person, so it is shown in the
+                // model's own words rather than thrown into `setCustomValidity`.
+                try {
+                    this.node_rename(name, next);
+                }
+                catch (error) {
+                    if (this.$.$mol_promise_like(error))
+                        return this.$.$mol_fail_hidden(error);
+                    this.node_title_note_at(name, this.$.$mol_error_message(error));
+                    return name;
+                }
+                return next;
+            }
+            /**
+             * The refusal in words, keyed by the node it is about.
+             *
+             * Keyed, so it clears itself: a rename that lands moves the pick to the new
+             * name and the message is read under a key nobody has written, and picking
+             * another node does the same. A single cell would need clearing from every
+             * path that can make it wrong, which is how a stale message survives.
+             */
+            node_title_note_at(name, next) {
+                return next ?? '';
+            }
+            node_title_note() {
+                return this.node_title_note_at(this.selected() ?? '');
+            }
+            /**
              * Del anywhere in the editor, as long as the keystroke is not somebody's text.
              *
              * On the window and not on the canvas: the canvas is an iframe, and a focused
@@ -34479,6 +34626,9 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "node_rename", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "node_title_note_at", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "hotkeys", null);

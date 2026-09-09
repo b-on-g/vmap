@@ -7385,6 +7385,56 @@ var $;
             $mol_assert_equal(inspect.Flex().width(), '390px');
             $mol_assert_ok(inspect.Node().source().includes('width \\390px'));
         },
+        /**
+         * Typing is not renaming. A rename rewrites the declaration and everything
+         * that points at it, so a write per keystroke would rename the node to every
+         * prefix of what is being typed and drag the whole document along.
+         */
+        'the name field renames on submit and not on a keystroke'($) {
+            const inspect = inspect_of($, [
+                `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
+                '	sub /',
+                '',
+            ].join('\n'));
+            $mol_assert_equal(inspect.title_value(), `${d}bog_vmap_app_inspect_test_name`);
+            inspect.title_value(`${d}bog_vmap_app_inspect_test_hero`);
+            // Typed, not committed: the field shows it, the document does not have it.
+            $mol_assert_equal(inspect.title_value(), `${d}bog_vmap_app_inspect_test_hero`);
+            $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_name`);
+            inspect.title_submit();
+            $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_hero`);
+            $mol_assert_ok(inspect.Node().source().startsWith(`${d}bog_vmap_app_inspect_test_hero `));
+        },
+        /** A draft belongs to the name it started from, so a fresh name starts a fresh draft. */
+        'the field follows the name once the rename lands'($) {
+            const inspect = inspect_of($, [
+                `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
+                '	sub /',
+                '',
+            ].join('\n'));
+            inspect.title_value(`${d}bog_vmap_app_inspect_test_hero`);
+            inspect.title_submit();
+            $mol_assert_equal(inspect.title_value(), `${d}bog_vmap_app_inspect_test_hero`);
+            // Nothing to commit twice.
+            inspect.title_submit();
+            $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_hero`);
+        },
+        /** No refusal, no strip: an empty strip in a panel this narrow reads as a bug. */
+        'the refusal strip is there only while there is a refusal'($) {
+            const inspect = inspect_of($, [
+                `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
+                '	sub /',
+                '',
+            ].join('\n'));
+            $mol_assert_equal(inspect.sub().includes(inspect.Note()), false);
+            const refused = $.$bog_vmap_app_inspect.make({
+                $,
+                source: () => `${d}bog_vmap_app_inspect_test_name ${d}mol_view\n\tsub /\n`,
+                title_note: () => 'Имя занято',
+            });
+            // Right under the head, where the eye already is.
+            $mol_assert_equal(refused.sub()[1], refused.Note());
+        },
     });
     /** `d` keeps `$` out of the literals: mam reads them when building its graph. */
     const d = '$';
@@ -13053,6 +13103,65 @@ var $;
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_equal(JSON.stringify(app.spots()), spots);
             $mol_assert_equal(app.selected(), 'Button_minor');
+        },
+        /**
+         * The field of the inspector renames through the editor, so the pick and the
+         * placement travel with it. Bound rather than left to the class model the
+         * inspector holds: that one knows the text and nothing else.
+         */
+        'the name field of the inspector renames the picked node'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            app.selected('Button_minor');
+            $mol_assert_equal(app.node_title(), 'Button_minor');
+            app.node_title('Send');
+            $mol_assert_equal(app.selected(), 'Send');
+            $mol_assert_equal(app.node().prop_names().includes('Send'), true);
+            $mol_assert_equal(app.node_title(), 'Send');
+            $mol_assert_equal(app.node_title_note(), '');
+        },
+        /**
+         * The refusal has to reach the person in words: a throw out of a `$mol_string`
+         * setter lands in `setCustomValidity`, which is not where anybody looks.
+         */
+        'a name already taken is refused in words and moves nothing'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            app.part_drop(`${d}mol_string`, 300, 400);
+            app.selected('Button_minor');
+            const before = app.doc_source();
+            app.node_title('String');
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(app.selected(), 'Button_minor');
+            // The exact words, because words are the whole point of this path.
+            $mol_assert_equal(app.node_title_note(), 'Имя «String» в этом документе уже занято');
+            // The message belongs to the node it is about, so another pick is clean.
+            app.selected('String');
+            $mol_assert_equal(app.node_title_note(), '');
+        },
+        /**
+         * A wire spells the name of the node it reads, so a rename that misses it
+         * leaves a wire pointing at a name nothing declares — and the canvas draws
+         * it, because a wire is a line of the document like any other. The model is
+         * proven to rewrite references; what is pinned here is that the field of the
+         * inspector reaches that path and not some other one.
+         */
+        'renaming through the name field carries the wire'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_string`, 100, 200);
+            app.part_drop(`${d}mol_button_minor`, 300, 400);
+            app.link_add({ from: 'String', from_prop: 'value', to: 'Button_minor', to_prop: 'title' });
+            $mol_assert_equal(app.doc_wires().length, 1);
+            $mol_assert_equal(app.doc_wires()[0].from, 'String');
+            app.selected('String');
+            app.node_title('Field');
+            $mol_assert_equal(app.selected(), 'Field');
+            // One wire still, reading the node under its new name. Not dropped, and
+            // not doubled by a second one left behind under the old name.
+            $mol_assert_equal(app.doc_wires().length, 1);
+            $mol_assert_equal(app.doc_wires()[0].from, 'Field');
+            $mol_assert_equal(app.doc_wires()[0].to, 'Button_minor');
+            $mol_assert_equal(app.node().prop_names().includes('String'), false);
         },
     });
 })($ || ($ = {}));
