@@ -21,6 +21,9 @@ namespace $ {
 		const pane = $$.$bog_vmap_app_pane.make({
 			$,
 			doc_root: ()=> root,
+			// The one node these scenarios are about. The canvas only knows the nodes
+			// the document declares, and a mark stands on a node of the document.
+			doc_names: ()=> [ 'Calc' ],
 			pane_rect: ()=> ({ left: 0, top: 0, width: 1000, height: 800 }),
 			scene_peer: ()=> peer,
 		})

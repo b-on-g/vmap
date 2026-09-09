@@ -27,11 +27,12 @@ $bog_vmap_app_pane $mol_view
 	- On the bridge and not in `scene_uri`: a change of lands is a recompile, a
 	- change of pack is a reload, see section 5.
 	libs /$bog_vmap_bridge_part
-	- Whether the overlay may be cut open under the picked part. The host turns
-	- this off while something is carried from the palette: that gesture has no
-	- pointer capture, so a release over the hole would land in the frame and the
-	- host would never hear of the drop.
-	hole_allowed true
+	- Whether something is being carried from the palette right now. That gesture
+	- belongs to the owner and crosses this canvas, so while it is on the canvas
+	- takes no gesture of its own and the overlay stays whole: it has no pointer
+	- capture, so a release over the hole would land in the frame and the host
+	- would never hear of the drop.
+	carrying false
 	- Wires of the document and the wirable ports of each part's class, from the
 	- owner. The pane draws them and writes back through the two events below; it
 	- never touches the document itself.
@@ -43,6 +44,10 @@ $bog_vmap_app_pane $mol_view
 	- tree inside one. A drop inside one of these goes into the tree at a position,
 	- see section 8; a drop anywhere else lands on the canvas by coordinates.
 	containers /string
+	- Every property the document declares. The boundary of the canvas: the scene
+	- measures the whole rendered tree, insides of pack classes included, and only
+	- these names are nodes the editor may pick, carry or delete.
+	doc_names /string
 	- `flexDirection` the node declares, empty when it declares none. From the
 	- document, which the host owns, and so a statement rather than a guess: the
 	- boxes of the children say nothing when there are fewer than two of them.

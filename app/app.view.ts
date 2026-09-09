@@ -774,12 +774,14 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The overlay may be cut open under the picked part, except while something
-		 * is carried from the palette: that drag has no pointer capture, and a release
-		 * over the hole would land in the frame, with the host never hearing of it.
+		 * Whether a class is being carried out of the palette right now.
+		 *
+		 * The canvas turns its own gestures off while it is, and leaves the overlay
+		 * whole: that drag has no pointer capture, so a release over the hole would
+		 * land in the frame and the drop would be lost.
 		 */
-		override hole_allowed() {
-			return !this.dragged()
+		override carrying() {
+			return Boolean( this.dragged() )
 		}
 
 		@ $mol_mem
@@ -940,6 +942,22 @@ namespace $.$$ {
 		 * and free parts are properties of the same root class, and the only
 		 * difference between them is in the text.
 		 */
+		/**
+		 * Every property the document declares, which is every node the canvas may
+		 * touch.
+		 *
+		 * The scene measures the whole rendered tree — a pack class is drawn out of
+		 * its own views, and they are measured too — so the boundary between «a node
+		 * of the document» and «the insides of a part» has to come from the document,
+		 * and the host is the one holding it. Section 1: every named node is a flat
+		 * property of the root class whatever its depth, so one flat list of names
+		 * answers the question at every level.
+		 */
+		@ $mol_mem
+		override doc_names() {
+			return this.node().prop_names()
+		}
+
 		@ $mol_mem
 		override doc_containers() {
 			const node = this.node()
@@ -1144,7 +1162,7 @@ namespace $.$$ {
 		 * whole gesture untestable here. The overlay of the pane eats pointer events
 		 * in the host document, so a move across the canvas reaches this listener —
 		 * and the hole under the picked part is closed for the whole drag, see
-		 * `hole_allowed()`, so a release over the canvas cannot fall into the frame.
+		 * `carrying()`, so a release over the canvas cannot fall into the frame.
 		 */
 		@ $mol_mem
 		drag_listeners() {

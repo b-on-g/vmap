@@ -144,6 +144,30 @@ namespace $ {
 
 		},
 
+		/**
+		 * REPRO: a drop out of the palette while something is picked carried the
+		 * picked node to the point of the drop as well.
+		 */
+		'REPRO a drop from the palette leaves the picked part where it was'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 100, 100 ]) )
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+
+			// Picked by a click, the way a person picks before reaching for the palette.
+			stage.tap( stage.part_center( 'Calc' ) )
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+
+			stage.drop( map, stage.client([ 400, 300 ]) )
+
+			$mol_assert_like( stage.app.spots(), {
+				Calc: { x: 100, y: 100 },
+				Map: { x: 400, y: 300 },
+			} )
+
+		},
+
 		'a part inside a page is carried to another position in its tree'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )

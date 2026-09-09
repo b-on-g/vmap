@@ -34,9 +34,22 @@ namespace $ {
 
 		const clock = { now: 1000 }
 
+		// Every name the geometry mentions is a node of the document, unless the
+		// scenario says otherwise: these tests hand in the boxes themselves, and
+		// what they hand in is what they mean. A scenario about the boundary
+		// between the document and the insides of a pack class says so outright.
+		const declared = ()=> {
+			const names = new Set< string >()
+			for( const key of Object.keys( pane.sizes_last ) ) {
+				for( const step of key.split( '/' ).slice( 1 ) ) names.add( step )
+			}
+			return [ ... names ]
+		}
+
 		const pane = $$.$bog_vmap_app_pane.make({
 			$,
 			doc_root: ()=> root,
+			doc_names: declared,
 			pane_rect: ()=> ({ left: 0, top: 0, width: 1000, height: 800, ... rect }),
 			scene_peer: ()=> peer,
 			now: ()=> clock.now,
@@ -352,6 +365,73 @@ namespace $ {
 
 		},
 
+		/**
+		 * REPRO: the hit test walks the insides of a pack class and picks a view the
+		 * document never declared. Everything below the part is the part's body.
+		 */
+		'REPRO the hit test stops at the nodes the document declares'( $ ) {
+
+			const { pane } = pane_make( $, {}, { doc_names: ()=> [ 'Calc' ] } )
+
+			// A part of the document, and two views of its class inside it.
+			pane.sizes_last = {
+				[ `${root}/Calc` ]: box( 0, 0, 200, 100 ),
+				[ `${root}/Calc/Head` ]: box( 0, 0, 200, 30 ),
+				[ `${root}/Calc/Head/String` ]: box( 10, 5, 80, 20 ),
+			}
+
+			$mol_assert_equal( pane.node_at([ 50, 15 ]), 'Calc' )
+			$mol_assert_equal( pane.node_at([ 100, 50 ]), 'Calc' )
+			$mol_assert_like( pane.part_names(), [ 'Calc' ] )
+
+			// And the ring is the box of the part, not of the view inside it.
+			pane.picked([ 'Calc' ])
+			$mol_assert_like( pane.frame_style( 'Calc' ), { left: '0px', top: '0px', width: '200px', height: '100px' } )
+
+		},
+
+		/** A node of the document inside an artboard is still reached, at any depth. */
+		'REPRO the deepest node of the document wins, the pack inside it does not'( $ ) {
+
+			const { pane } = pane_make( $, {}, { doc_names: ()=> [ 'Page', 'Calc' ] } )
+
+			pane.sizes_last = {
+				[ `${root}/Page` ]: box( 0, 0, 400, 300 ),
+				[ `${root}/Page/Calc` ]: box( 0, 0, 200, 100 ),
+				[ `${root}/Page/Calc/Head` ]: box( 0, 0, 200, 30 ),
+			}
+
+			$mol_assert_equal( pane.node_at([ 100, 15 ]), 'Calc' )
+			$mol_assert_equal( pane.node_at([ 300, 200 ]), 'Page' )
+
+		},
+
+		/**
+		 * REPRO: a press whose release never came back left the carry live, and the
+		 * next drag across the canvas — the one out of the palette — carried the
+		 * picked node with it, grabbed where it had last been pressed.
+		 */
+		'REPRO a drag from the palette carries nothing of the canvas'( $ ) {
+
+			const { pane } = pane_make( $ )
+
+			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
+			pane.spots({ A: { x: 0, y: 0 } })
+
+			// Picked and grabbed in the middle; the release fell into the hole and
+			// never reached the overlay, so the gesture was never ended.
+			pane.node_press( pointer( 50, 25 ) )
+
+			// The owner now carries a class across the canvas, button down.
+			pane.carrying = ()=> true
+
+			pane.node_move( pointer( 400, 300 ) )
+			pane.node_release( pointer( 400, 300, { buttons: 0 } ) )
+
+			$mol_assert_like( pane.spots(), { A: { x: 0, y: 0 } } )
+
+		},
+
 		/** A modified click without a sweep takes nothing and clears nothing. */
 		'a modified click leaves the picked set alone'( $ ) {
 
@@ -392,7 +472,7 @@ namespace $ {
 			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
 			pane.picked([ 'A' ])
 			pane.entered( 'A' )
-			pane.hole_allowed = ()=> false
+			pane.carrying = ()=> true
 
 			$mol_assert_equal( pane.overlay_style().clipPath, 'none' )
 			// The ring itself stays: only the events stop going through.

@@ -276,7 +276,7 @@ $bog_vmap_app $mol_view
 		doc_js <= doc_js
 		doc_root <= doc_root
 		libs <= libs /$bog_vmap_bridge_part
-		hole_allowed <= hole_allowed true
+		carrying <= carrying false
 		- Wires: the pane draws them from the document and its ports, and writes a
 		- new or a dropped one back through these two events, never into the text.
 		wires <= doc_wires /$bog_vmap_lang_link
@@ -286,5 +286,6 @@ $bog_vmap_app $mol_view
 		- Nodes that carry a `sub` of their own, so the pane knows where a drop goes
 		- into the tree instead of onto the canvas, and where to draw the line.
 		containers <= doc_containers /string
+		doc_names <= doc_names /string
 		axis* <= doc_axis* \
 		tree_move? <=> tree_move? null

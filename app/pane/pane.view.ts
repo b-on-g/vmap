@@ -536,6 +536,7 @@ namespace $.$$ {
 		nodes_measured() {
 
 			const prefix = this.doc_root() + '/'
+			const known = new Set( this.doc_names() )
 			const nodes = [] as { name: string, path: readonly string[], box: $bog_vmap_bridge_rect }[]
 
 			for( const key of Object.keys( this.sizes() ) ) {
@@ -543,6 +544,20 @@ namespace $.$$ {
 				if( !key.startsWith( prefix ) ) continue
 
 				const path = key.slice( prefix.length ).split( '/' )
+
+				// EVERY segment has to be a node the document declares. The scene walks
+				// the whole rendered tree, so a part of two hundred pixels reports the
+				// button and the field inside it as well, and without this the hit test
+				// handed back a view the document never named: the ring came out the
+				// size of an inner control, the inspector had no declaration to show,
+				// and the part itself could not be picked, carried or deleted.
+				//
+				// Every segment and not only the last, because a name of the document
+				// may repeat inside a pack class, and the ancestry is what tells the two
+				// apart. The cost is a node put inside a pack property rather than into
+				// `sub` — which this editor cannot author, and a foreign document can:
+				// such a node draws, and stays out of reach of the pointer.
+				if( path.some( step => !known.has( step ) ) ) continue
 
 				nodes.push({ name: path[ path.length - 1 ], path, box: this.sizes()[ key ] })
 			}
@@ -922,6 +937,13 @@ namespace $.$$ {
 			if( !event ) return
 			if( event.button !== 0 ) return
 
+			// The drag crossing this canvas is the owner's, not ours. Measured cost of
+			// not saying so: a press whose release fell into the hole leaves the carry
+			// live, and the next pointer to cross the overlay with a button down —
+			// which is exactly a drag out of the palette — moves the picked node to
+			// wherever it is let go, grabbed where it was last pressed.
+			if( this.carrying() ) return
+
 			// A dot before a part: dots lie on the grip strip of the part they belong
 			// to, and the wire is the finer target.
 			const dot = $bog_vmap_app_wire_dot_at( this.wire_dots(), this.screen_point( event ) )
@@ -1020,6 +1042,7 @@ namespace $.$$ {
 		node_move( event?: PointerEvent ) {
 
 			if( !event ) return
+			if( this.carrying() ) return
 
 			this.press_track( event )
 
@@ -1078,6 +1101,7 @@ namespace $.$$ {
 		node_release( event?: PointerEvent ) {
 
 			if( !event ) return
+			if( this.carrying() ) return
 
 			const press = this.press
 			if( press ) this.press_track( event )
@@ -1114,6 +1138,9 @@ namespace $.$$ {
 
 				if( drag && slot ) this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index })
 
+				// Cleared, not merely switched off: a carry left standing is a carry
+				// that some later pointer can pick up again.
+				this.drag = null
 				this.drag_live = false
 
 				try {
@@ -1292,13 +1319,13 @@ namespace $.$$ {
 		 * which is what the part is carried by.
 		 *
 		 * Open under the node the pointer has been let INSIDE of, which is the second
-		 * click on it and not the pick — see `entered`. Closed as well while
-		 * `hole_allowed()` is off: a drop from the palette has no pointer capture and
-		 * would fall into the frame.
+		 * click on it and not the pick — see `entered`. Closed as well while the
+		 * palette is carrying: that drag has no pointer capture and a release over
+		 * the hole would fall into the frame.
 		 */
 		@ $mol_mem
 		override overlay_style(): { readonly [ prop: string ]: string } {
-			const rect = this.hole_allowed() && this.inside() ? this.frame_box() : null
+			const rect = !this.carrying() && this.inside() ? this.frame_box() : null
 			return { clipPath: this.$.$bog_vmap_app_pane_hole( rect ) }
 		}
 
