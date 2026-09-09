@@ -41,7 +41,7 @@ $bog_vmap_app_code $mol_view
 		sub / <= scope_note \
 	Scope $mol_check
 		title \Весь класс
-		hint \Править три текста класса целиком, а не только выбранный узел
+		hint \Править класс целиком, а не выбранный узел. Какой это класс, сказано в шапке: у узла со своим классом — его, у остальных — тот, который узел объявляет
 		checked? <=> whole?
 	- The failure the scene reported for this node. Here and not only in the status
 	- strip: an error belongs where the code that caused it is being written.
