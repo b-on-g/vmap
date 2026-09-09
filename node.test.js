@@ -19624,12 +19624,6 @@ var $;
 			(obj.sub) = () => (["Палитра"]);
 			return obj;
 		}
-		Links(){
-			const obj = new this.$.$mol_string();
-			(obj.hint) = () => ("Пак и ленды через запятую");
-			(obj.value) = (next) => ((this.links(next)));
-			return obj;
-		}
 		Query(){
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("Поиск по имени");
@@ -19643,9 +19637,6 @@ var $;
 			const obj = new this.$.$mol_view();
 			(obj.sub) = () => ([(this.total())]);
 			return obj;
-		}
-		rejected_note(){
-			return "";
 		}
 		body_content(){
 			return [];
@@ -19721,10 +19712,6 @@ var $;
 		pack_link(){
 			return "";
 		}
-		links(next){
-			if(next !== undefined) return next;
-			return "http://localhost:9080/bog/vmap/part/-/";
-		}
 		query(next){
 			if(next !== undefined) return next;
 			return "";
@@ -19761,15 +19748,9 @@ var $;
 			const obj = new this.$.$mol_bar();
 			(obj.sub) = () => ([
 				(this.Brand()), 
-				(this.Links()), 
 				(this.Query()), 
 				(this.Total())
 			]);
-			return obj;
-		}
-		Note(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.rejected_note())]);
 			return obj;
 		}
 		Body(){
@@ -19811,7 +19792,6 @@ var $;
 		}
 	};
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "Brand"));
-	($mol_mem(($.$bog_vmap_app_palette.prototype), "Links"));
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "Query"));
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "Total"));
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "Class_list"));
@@ -19822,14 +19802,12 @@ var $;
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "Ports_scroll"));
 	($mol_mem_key(($.$bog_vmap_app_palette.prototype), "class_click"));
 	($mol_mem_key(($.$bog_vmap_app_palette.prototype), "class_drag"));
-	($mol_mem(($.$bog_vmap_app_palette.prototype), "links"));
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "query"));
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "selected"));
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "dragged"));
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "drag_x"));
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "drag_y"));
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "Head"));
-	($mol_mem(($.$bog_vmap_app_palette.prototype), "Note"));
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "Body"));
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "Classes"));
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "Ports"));
@@ -19837,91 +19815,6 @@ var $;
 	($mol_mem_key(($.$bog_vmap_app_palette.prototype), "Port_row"));
 	($mol_mem(($.$bog_vmap_app_palette.prototype), "Lib"));
 
-
-;
-"use strict";
-var $;
-(function ($) {
-    /** A deployed pack is addressed by http(s) and by nothing else. */
-    const $bog_vmap_lib_links_pack = /^https?:\/\//i;
-    /**
-     * Grammar of a Giper Baza link: up to four groups of eight, joined by `_`.
-     *
-     * COPIED from the constructor of the link class of Giper Baza, and a copy is the
-     * lesser evil here. Naming that class — even in this comment, mam reads doc
-     * comments for dependencies, measured: 21 mentions of the database in this
-     * bundle from one name here — would pull the database into `lib/`, whose bundle
-     * has zero mentions of it by measurement, and the palette pays for that bundle.
-     * The copy is guarded by a test in `lib/land`, which lives on the database side
-     * and checks a sample of tokens against the original.
-     *
-     * The original also accepts the empty string and bare underscores; a token has
-     * to carry at least one group to be a link to anything, hence the second test.
-     */
-    const $bog_vmap_lib_links_land = /^(([a-zæA-ZÆ0-9]{8})?_){0,3}([a-zæA-ZÆ0-9]{8})?$/;
-    const $bog_vmap_lib_links_group = /[a-zæA-ZÆ0-9]{8}/;
-    /** Wording of the refusals, kept in one place so the tests and the field agree. */
-    $.$bog_vmap_lib_links_reason = {
-        /** @see ../../ARCHITECTURE.md section 5, «Донорский пак ровно один на кадр» */
-        pack_second: 'второй пак на кадр невозможен, подключайте компоненты ссылкой на ленд',
-        unknown: 'не адрес пака (http…) и не ссылка на ленд Гипер Базы',
-    };
-    /**
-     * Splits the field into the pack, the lands and the refused.
-     *
-     * Commas separate; whitespace, including line breaks, separates as well, so a
-     * list pasted one link per line reads the same as one typed with commas. Empty
-     * tokens, and with them trailing commas and doubled separators, are nothing and
-     * are not even reported.
-     *
-     * The FIRST http(s) link is the pack, wherever it stands in the list. The second
-     * one is refused, and refused with the reason a user can act on, rather than
-     * silently dropped: the second pack over the first poisons the palette without a
-     * signal, which is exactly why it must not reach the frame — and exactly why the
-     * person typing it has to be told.
-     */
-    function $bog_vmap_lib_links_parse(text) {
-        let pack = null;
-        const lands = [];
-        const rejected = [];
-        for (const token of text.split(/[,\s]+/)) {
-            if (!token)
-                continue;
-            if ($bog_vmap_lib_links_pack.test(token)) {
-                if (pack === null)
-                    pack = token;
-                else
-                    rejected.push({ link: token, reason: $.$bog_vmap_lib_links_reason.pack_second });
-                continue;
-            }
-            if ($bog_vmap_lib_links_land.test(token) && $bog_vmap_lib_links_group.test(token)) {
-                if (!lands.includes(token))
-                    lands.push(token);
-                continue;
-            }
-            rejected.push({ link: token, reason: $.$bog_vmap_lib_links_reason.unknown });
-        }
-        return { pack, lands, rejected };
-    }
-    $.$bog_vmap_lib_links_parse = $bog_vmap_lib_links_parse;
-    /**
-     * Is this token a land link by the grammar above. Exposed for the guard test on
-     * the database side; the palette needs only `parse`.
-     */
-    function $bog_vmap_lib_links_is_land(token) {
-        return $bog_vmap_lib_links_land.test(token) && $bog_vmap_lib_links_group.test(token);
-    }
-    $.$bog_vmap_lib_links_is_land = $bog_vmap_lib_links_is_land;
-    /**
-     * The refusals as one text for a status line, one refusal per line, or an empty
-     * string when there is nothing to say. An empty string and not a placeholder,
-     * so that a view can hide the line by testing the text.
-     */
-    function $bog_vmap_lib_links_note(links) {
-        return links.rejected.map(item => `${item.link}: ${item.reason}`).join('\n');
-    }
-    $.$bog_vmap_lib_links_note = $bog_vmap_lib_links_note;
-})($ || ($ = {}));
 
 ;
 "use strict";
@@ -19952,31 +19845,8 @@ var $;
             body() {
                 return [
                     this.Head(),
-                    ...this.rejected_note() ? [this.Note()] : [],
                     this.Body(),
                 ];
-            }
-            /**
-             * The field, parsed. The owner of the palette parses the same string for
-             * its own needs, and that is fine: the parse is pure and costs nothing
-             * next to a cell shared across two modules.
-             */
-            links_parsed() {
-                return this.$.$bog_vmap_lib_links_parse(this.links());
-            }
-            /**
-             * The donor pack with its trailing slash, or empty when the list has none.
-             *
-             * Derived and never written back: the slash grows here, so the field can
-             * still be typed into character by character.
-             */
-            pack_link() {
-                const pack = this.links_parsed().pack;
-                return pack ? this.$.$bog_vmap_lib_slashed(pack) : '';
-            }
-            /** Refused links with their reasons, one per line; empty hides the strip. */
-            rejected_note() {
-                return this.$.$bog_vmap_lib_links_note(this.links_parsed());
             }
             body_content() {
                 return (this.compact()
@@ -20084,9 +19954,6 @@ var $;
             }
         }
         __decorate([
-            $mol_mem
-        ], $bog_vmap_app_palette.prototype, "links_parsed", null);
-        __decorate([
             $mol_action
         ], $bog_vmap_app_palette.prototype, "class_drag", null);
         __decorate([
@@ -20129,24 +19996,6 @@ var $;
             Brand: {
                 font: { weight: 'bold' },
                 padding: { right: $mol_gap.text },
-            },
-            Links: {
-                flex: { grow: 1 },
-                minWidth: '14rem',
-                background: { color: $mol_theme.field },
-                font: { family: 'monospace', size: '.8rem' },
-            },
-            /**
-             * Refused links under the field. Rendered only while there is something to
-             * say, so it never takes room from the list on a clean field.
-             */
-            Note: {
-                flex: { shrink: 0 },
-                padding: { top: '.25rem', bottom: '.25rem', left: $mol_gap.text, right: $mol_gap.text },
-                color: $mol_theme.focus,
-                font: { family: 'monospace', size: '.75rem' },
-                whiteSpace: 'pre-wrap',
-                border: { bottom: { width: '1px', style: 'solid', color: $mol_theme.line } },
             },
             Query: {
                 flex: { grow: 1 },
@@ -20241,7 +20090,6 @@ var $;
                             align: { items: 'stretch' },
                             gap: '.25rem',
                         },
-                        Links: { minWidth: 0 },
                         Query: { minWidth: 0 },
                         Total: {
                             alignSelf: 'flex-end',
@@ -24908,6 +24756,28 @@ var $;
 		item_rows(){
 			return [];
 		}
+		source_content(){
+			return [];
+		}
+		rejected_note(){
+			return "";
+		}
+		apps_title(){
+			return "";
+		}
+		Apps_head(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.apps_title())]);
+			return obj;
+		}
+		app_rows(){
+			return [];
+		}
+		App_list(){
+			const obj = new this.$.$mol_list();
+			(obj.rows) = () => ((this.app_rows()));
+			return obj;
+		}
 		item_title(id){
 			return "";
 		}
@@ -24930,6 +24800,9 @@ var $;
 			return "";
 		}
 		land_classes(){
+			return [];
+		}
+		class_list(){
 			return [];
 		}
 		dragged(next){
@@ -24965,6 +24838,27 @@ var $;
 			(obj.rows) = () => ((this.item_rows()));
 			return obj;
 		}
+		Source(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.source_content()));
+			return obj;
+		}
+		Links(){
+			const obj = new this.$.$mol_string();
+			(obj.hint) = () => ("Адрес приложения, ленды через запятую");
+			(obj.value) = (next) => ((this.links(next)));
+			return obj;
+		}
+		Note(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.rejected_note())]);
+			return obj;
+		}
+		Apps(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.Apps_head()), (this.App_list())]);
+			return obj;
+		}
 		Level(){
 			const obj = new this.$.$mol_check();
 			(obj.title) = () => ("Все классы пака");
@@ -24975,7 +24869,6 @@ var $;
 		Palette(){
 			const obj = new this.$.$bog_vmap_app_palette();
 			(obj.compact) = () => (true);
-			(obj.links) = (next) => ((this.links(next)));
 			(obj.pack_link) = () => ((this.pack_link()));
 			(obj.land_classes) = () => ((this.land_classes()));
 			(obj.dragged) = (next) => ((this.dragged(next)));
@@ -24992,6 +24885,8 @@ var $;
 			return obj;
 		}
 	};
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Apps_head"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "App_list"));
 	($mol_mem_key(($.$bog_vmap_app_shelf.prototype), "item_click"));
 	($mol_mem_key(($.$bog_vmap_app_shelf.prototype), "item_drag"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "links"));
@@ -25002,10 +24897,99 @@ var $;
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "classes_showed"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Title"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Items"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Source"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Links"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Note"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Apps"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Level"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Palette"));
 	($mol_mem_key(($.$bog_vmap_app_shelf.prototype), "Item_row"));
 
+
+;
+"use strict";
+var $;
+(function ($) {
+    /** A deployed pack is addressed by http(s) and by nothing else. */
+    const $bog_vmap_lib_links_pack = /^https?:\/\//i;
+    /**
+     * Grammar of a Giper Baza link: up to four groups of eight, joined by `_`.
+     *
+     * COPIED from the constructor of the link class of Giper Baza, and a copy is the
+     * lesser evil here. Naming that class — even in this comment, mam reads doc
+     * comments for dependencies, measured: 21 mentions of the database in this
+     * bundle from one name here — would pull the database into `lib/`, whose bundle
+     * has zero mentions of it by measurement, and the palette pays for that bundle.
+     * The copy is guarded by a test in `lib/land`, which lives on the database side
+     * and checks a sample of tokens against the original.
+     *
+     * The original also accepts the empty string and bare underscores; a token has
+     * to carry at least one group to be a link to anything, hence the second test.
+     */
+    const $bog_vmap_lib_links_land = /^(([a-zæA-ZÆ0-9]{8})?_){0,3}([a-zæA-ZÆ0-9]{8})?$/;
+    const $bog_vmap_lib_links_group = /[a-zæA-ZÆ0-9]{8}/;
+    /** Wording of the refusals, kept in one place so the tests and the field agree. */
+    $.$bog_vmap_lib_links_reason = {
+        /** @see ../../ARCHITECTURE.md section 5, «Донорский пак ровно один на кадр» */
+        pack_second: 'второй пак на кадр невозможен, подключайте компоненты ссылкой на ленд',
+        unknown: 'не адрес пака (http…) и не ссылка на ленд Гипер Базы',
+    };
+    /**
+     * Splits the field into the pack, the lands and the refused.
+     *
+     * Commas separate; whitespace, including line breaks, separates as well, so a
+     * list pasted one link per line reads the same as one typed with commas. Empty
+     * tokens, and with them trailing commas and doubled separators, are nothing and
+     * are not even reported.
+     *
+     * The FIRST http(s) link is the pack, wherever it stands in the list. The second
+     * one is refused, and refused with the reason a user can act on, rather than
+     * silently dropped: the second pack over the first poisons the palette without a
+     * signal, which is exactly why it must not reach the frame — and exactly why the
+     * person typing it has to be told.
+     */
+    function $bog_vmap_lib_links_parse(text) {
+        let pack = null;
+        const lands = [];
+        const rejected = [];
+        for (const token of text.split(/[,\s]+/)) {
+            if (!token)
+                continue;
+            if ($bog_vmap_lib_links_pack.test(token)) {
+                if (pack === null)
+                    pack = token;
+                else
+                    rejected.push({ link: token, reason: $.$bog_vmap_lib_links_reason.pack_second });
+                continue;
+            }
+            if ($bog_vmap_lib_links_land.test(token) && $bog_vmap_lib_links_group.test(token)) {
+                if (!lands.includes(token))
+                    lands.push(token);
+                continue;
+            }
+            rejected.push({ link: token, reason: $.$bog_vmap_lib_links_reason.unknown });
+        }
+        return { pack, lands, rejected };
+    }
+    $.$bog_vmap_lib_links_parse = $bog_vmap_lib_links_parse;
+    /**
+     * Is this token a land link by the grammar above. Exposed for the guard test on
+     * the database side; the palette needs only `parse`.
+     */
+    function $bog_vmap_lib_links_is_land(token) {
+        return $bog_vmap_lib_links_land.test(token) && $bog_vmap_lib_links_group.test(token);
+    }
+    $.$bog_vmap_lib_links_is_land = $bog_vmap_lib_links_is_land;
+    /**
+     * The refusals as one text for a status line, one refusal per line, or an empty
+     * string when there is nothing to say. An empty string and not a placeholder,
+     * so that a view can hide the line by testing the text.
+     */
+    function $bog_vmap_lib_links_note(links) {
+        return links.rejected.map(item => `${item.link}: ${item.reason}`).join('\n');
+    }
+    $.$bog_vmap_lib_links_note = $bog_vmap_lib_links_note;
+})($ || ($ = {}));
 
 ;
 "use strict";
@@ -25239,9 +25223,52 @@ var $;
                 return [
                     this.Title(),
                     this.Items(),
+                    this.Source(),
+                    this.Apps(),
                     this.Level(),
                     ...this.classes_showed() ? [this.Palette()] : [],
                 ];
+            }
+            /** The field, and under it whatever was refused. */
+            source_content() {
+                return [
+                    this.Links(),
+                    ...this.rejected_note() ? [this.Note()] : [],
+                ];
+            }
+            /**
+             * The field, parsed. The editor parses the same string for its own needs,
+             * and that is fine: the parse is pure and costs nothing next to a cell
+             * shared across two modules.
+             */
+            links_parsed() {
+                return this.$.$bog_vmap_lib_links_parse(this.links());
+            }
+            /** Refused links with their reasons, one per line; empty hides the strip. */
+            rejected_note() {
+                return this.$.$bog_vmap_lib_links_note(this.links_parsed());
+            }
+            /**
+             * Classes of the connected application, as items.
+             *
+             * Everything the library holds except mol itself: a pack carries the whole
+             * framework in its bundle, and the framework is what the second level is
+             * for. What is left is what the application's author wrote, plus the
+             * components of any land attached, which are somebody's own just the same.
+             *
+             * Suspends while the pack is loading and throws when the pack is dead. Both
+             * are meant to reach the view that reads it, and the view that reads it is
+             * `Apps` alone.
+             */
+            app_list() {
+                return this.class_list().filter(name => !name.startsWith('$mol_'));
+            }
+            app_rows() {
+                return this.app_list().map(name => this.Item_row(name));
+            }
+            apps_title() {
+                const found = this.app_list().length;
+                return found ? 'Объекты приложения' : 'Приложение не подключено';
             }
             /** Everything the shelf offers, in the order it offers it. */
             items() {
@@ -25302,6 +25329,9 @@ var $;
             }
         }
         __decorate([
+            $mol_mem
+        ], $bog_vmap_app_shelf.prototype, "links_parsed", null);
+        __decorate([
             $mol_action
         ], $bog_vmap_app_shelf.prototype, "item_drag", null);
         __decorate([
@@ -25356,6 +25386,38 @@ var $;
                     color: $mol_theme.line,
                 },
                 background: { color: $mol_theme.card },
+            },
+            Source: {
+                flex: { direction: 'column', shrink: 0 },
+                padding: { left: $mol_gap.space, right: $mol_gap.space },
+                gap: $mol_gap.space,
+            },
+            Links: {
+                background: { color: $mol_theme.field },
+                font: { family: 'monospace', size: '.8rem' },
+            },
+            /**
+             * Refused links under the field. Rendered only while there is something to
+             * say, so it never takes room from the lists on a clean field.
+             */
+            Note: {
+                color: $mol_theme.focus,
+                font: { family: 'monospace', size: '.75rem' },
+                whiteSpace: 'pre-wrap',
+            },
+            /** The objects of the application, sized by their own number. */
+            Apps: {
+                flex: { direction: 'column', shrink: 0 },
+                maxHeight: '14rem',
+                overflow: { y: 'auto' },
+                padding: { top: $mol_gap.space, bottom: $mol_gap.space },
+                gap: $mol_gap.space,
+            },
+            /** A caption of a section, not a heading of the panel. */
+            Apps_head: {
+                padding: { left: $mol_gap.text, right: $mol_gap.text },
+                color: $mol_theme.shade,
+                font: { size: '.8rem' },
             },
             /** The switch of the second level, on the line between the two. */
             Level: {
@@ -29629,7 +29691,7 @@ var $;
 		Scope(){
 			const obj = new this.$.$mol_check();
 			(obj.title) = () => ("Весь класс");
-			(obj.hint) = () => ("Править три текста класса целиком, а не только выбранный узел");
+			(obj.hint) = () => ("Править класс целиком, а не выбранный узел. Какой это класс, сказано в шапке: у узла со своим классом — его, у остальных — тот, который узел объявляет");
 			(obj.checked) = (next) => ((this.whole(next)));
 			return obj;
 		}
@@ -29711,171 +29773,6 @@ var $;
 	($mol_mem(($.$bog_vmap_app_code.prototype), "Js_idle"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "Css"));
 
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * The module as one archive, so that a browser can hand it over in a single
-     * gesture. Nothing in mam packs files — measured across `mol` and `hyoo`, there
-     * is no archiver of any kind — so the format is written here, in the stored
-     * flavour that needs no compressor at all.
-     *
-     * Stored and not deflated on purpose: an export is five text files of a few
-     * kilobytes, and compressing them would buy nothing while costing either a
-     * library in the bundle or a dependency on `CompressionStream`, which is async
-     * and would drag the whole path into a fiber.
-     *
-     * The alternative not taken: asking the browser for a folder and writing the
-     * files into it straight, which would need no archive at all. It exists in
-     * Chrome only, asks the person for a permission of its own before a single byte
-     * is written, and leaves every other browser with nothing — an archive works
-     * everywhere and needs no permission.
-     *
-     * @see ../../ARCHITECTURE.md section 10
-     */
-    /** Table of the CRC32 polynomial, built once. Zip stores a checksum per entry. */
-    const crc_table = (() => {
-        const table = new Uint32Array(256);
-        for (let i = 0; i < 256; ++i) {
-            let value = i;
-            for (let bit = 0; bit < 8; ++bit) {
-                value = value & 1 ? 0xEDB88320 ^ (value >>> 1) : value >>> 1;
-            }
-            table[i] = value >>> 0;
-        }
-        return table;
-    })();
-    /** Checksum zip keeps beside every entry, and the one every reader verifies. */
-    function $bog_vmap_app_export_crc32(bytes) {
-        let crc = 0xFFFFFFFF;
-        for (const byte of bytes)
-            crc = crc_table[(crc ^ byte) & 0xFF] ^ (crc >>> 8);
-        return (crc ^ 0xFFFFFFFF) >>> 0;
-    }
-    $.$bog_vmap_app_export_crc32 = $bog_vmap_app_export_crc32;
-    /** Little endian integer of a fixed width, which is how zip writes every number. */
-    function number_bytes(value, size) {
-        const out = new Uint8Array(size);
-        for (let i = 0; i < size; ++i)
-            out[i] = (value >>> (8 * i)) & 0xFF;
-        return out;
-    }
-    /**
-     * A date every reader accepts.
-     *
-     * The real time of the export is not written: a zero date shows up as
-     * `00-00-1980` and makes some unpackers complain, and the wall clock would make
-     * the same document produce a different archive every time, which is a thing no
-     * test can pin down. This is the first representable moment instead.
-     */
-    const dos_date = 0x0021;
-    const dos_time = 0;
-    /** Flag bit 11: names are UTF-8, which is what keeps a non-ascii path readable. */
-    const flag_utf8 = 0x0800;
-    /**
-     * Files as one zip archive, in the stored method.
-     *
-     * Byte for byte deterministic: same files in, same bytes out, so the whole
-     * format is checkable by a test instead of by opening it. Directories are not
-     * written as entries of their own — a name with slashes in it creates them, and
-     * every unpacker does that.
-     */
-    function $bog_vmap_app_export_zip(files) {
-        const encoder = new TextEncoder();
-        const chunks = [];
-        const directory = [];
-        let offset = 0;
-        for (const file of files) {
-            const name = encoder.encode(file.name);
-            const body = encoder.encode(file.text);
-            const crc = $bog_vmap_app_export_crc32(body);
-            const local = [
-                number_bytes(0x04034b50, 4),
-                number_bytes(20, 2),
-                number_bytes(flag_utf8, 2),
-                number_bytes(0, 2),
-                number_bytes(dos_time, 2),
-                number_bytes(dos_date, 2),
-                number_bytes(crc, 4),
-                number_bytes(body.length, 4),
-                number_bytes(body.length, 4),
-                number_bytes(name.length, 2),
-                number_bytes(0, 2),
-                name,
-            ];
-            for (const part of local)
-                chunks.push(part);
-            chunks.push(body);
-            directory.push([
-                number_bytes(0x02014b50, 4),
-                number_bytes(20, 2),
-                number_bytes(20, 2),
-                number_bytes(flag_utf8, 2),
-                number_bytes(0, 2),
-                number_bytes(dos_time, 2),
-                number_bytes(dos_date, 2),
-                number_bytes(crc, 4),
-                number_bytes(body.length, 4),
-                number_bytes(body.length, 4),
-                number_bytes(name.length, 2),
-                number_bytes(0, 2),
-                number_bytes(0, 2),
-                number_bytes(0, 2),
-                number_bytes(0, 2),
-                number_bytes(0, 4),
-                number_bytes(offset, 4),
-                name,
-            ]);
-            offset += local.reduce((sum, part) => sum + part.length, 0) + body.length;
-        }
-        const directory_at = offset;
-        let directory_size = 0;
-        for (const record of directory) {
-            for (const part of record) {
-                chunks.push(part);
-                directory_size += part.length;
-            }
-        }
-        const end = [
-            number_bytes(0x06054b50, 4),
-            number_bytes(0, 2),
-            number_bytes(0, 2),
-            number_bytes(directory.length, 2),
-            number_bytes(directory.length, 2),
-            number_bytes(directory_size, 4),
-            number_bytes(directory_at, 4),
-            number_bytes(0, 2),
-        ];
-        for (const part of end)
-            chunks.push(part);
-        const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-        const out = new Uint8Array(total);
-        let at = 0;
-        for (const chunk of chunks) {
-            out.set(chunk, at);
-            at += chunk.length;
-        }
-        return out;
-    }
-    $.$bog_vmap_app_export_zip = $bog_vmap_app_export_zip;
-    /**
-     * The built module as an archive, with its folder inside.
-     *
-     * Every entry carries the whole module path and not a bare file name, so that
-     * unpacking at the root of a mam checkout puts the module where its own class
-     * names oblige it to be — section 10, where a module in the wrong folder builds
-     * into `Root package not found` while looking entirely correct.
-     */
-    function $bog_vmap_app_export_archive(module) {
-        return this.$bog_vmap_app_export_zip(module.files.map(file => ({
-            name: `${module.path}/${file.name}`,
-            text: file.text,
-        })));
-    }
-    $.$bog_vmap_app_export_archive = $bog_vmap_app_export_archive;
-})($ || ($ = {}));
 
 ;
 "use strict";
@@ -34159,6 +34056,9 @@ var $;
 		lib_classes(){
 			return [];
 		}
+		lib_class_list(){
+			return [];
+		}
 		shelf_place(next){
 			if(next !== undefined) return next;
 			return "";
@@ -34168,6 +34068,7 @@ var $;
 			(obj.links) = (next) => ((this.links(next)));
 			(obj.pack_link) = () => ((this.pack_link()));
 			(obj.land_classes) = () => ((this.lib_classes()));
+			(obj.class_list) = () => ((this.lib_class_list()));
 			(obj.place) = (next) => ((this.shelf_place(next)));
 			return obj;
 		}
@@ -34503,6 +34404,171 @@ var $;
 
 ;
 "use strict";
+var $;
+(function ($) {
+    /**
+     * The module as one archive, so that a browser can hand it over in a single
+     * gesture. Nothing in mam packs files — measured across `mol` and `hyoo`, there
+     * is no archiver of any kind — so the format is written here, in the stored
+     * flavour that needs no compressor at all.
+     *
+     * Stored and not deflated on purpose: an export is five text files of a few
+     * kilobytes, and compressing them would buy nothing while costing either a
+     * library in the bundle or a dependency on `CompressionStream`, which is async
+     * and would drag the whole path into a fiber.
+     *
+     * The alternative not taken: asking the browser for a folder and writing the
+     * files into it straight, which would need no archive at all. It exists in
+     * Chrome only, asks the person for a permission of its own before a single byte
+     * is written, and leaves every other browser with nothing — an archive works
+     * everywhere and needs no permission.
+     *
+     * @see ../../ARCHITECTURE.md section 10
+     */
+    /** Table of the CRC32 polynomial, built once. Zip stores a checksum per entry. */
+    const crc_table = (() => {
+        const table = new Uint32Array(256);
+        for (let i = 0; i < 256; ++i) {
+            let value = i;
+            for (let bit = 0; bit < 8; ++bit) {
+                value = value & 1 ? 0xEDB88320 ^ (value >>> 1) : value >>> 1;
+            }
+            table[i] = value >>> 0;
+        }
+        return table;
+    })();
+    /** Checksum zip keeps beside every entry, and the one every reader verifies. */
+    function $bog_vmap_app_export_zip_crc32(bytes) {
+        let crc = 0xFFFFFFFF;
+        for (const byte of bytes)
+            crc = crc_table[(crc ^ byte) & 0xFF] ^ (crc >>> 8);
+        return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+    $.$bog_vmap_app_export_zip_crc32 = $bog_vmap_app_export_zip_crc32;
+    /** Little endian integer of a fixed width, which is how zip writes every number. */
+    function number_bytes(value, size) {
+        const out = new Uint8Array(size);
+        for (let i = 0; i < size; ++i)
+            out[i] = (value >>> (8 * i)) & 0xFF;
+        return out;
+    }
+    /**
+     * A date every reader accepts.
+     *
+     * The real time of the export is not written: a zero date shows up as
+     * `00-00-1980` and makes some unpackers complain, and the wall clock would make
+     * the same document produce a different archive every time, which is a thing no
+     * test can pin down. This is the first representable moment instead.
+     */
+    const dos_date = 0x0021;
+    const dos_time = 0;
+    /** Flag bit 11: names are UTF-8, which is what keeps a non-ascii path readable. */
+    const flag_utf8 = 0x0800;
+    /**
+     * Files as one zip archive, in the stored method.
+     *
+     * Byte for byte deterministic: same files in, same bytes out, so the whole
+     * format is checkable by a test instead of by opening it. Directories are not
+     * written as entries of their own — a name with slashes in it creates them, and
+     * every unpacker does that.
+     */
+    function $bog_vmap_app_export_zip(files) {
+        const encoder = new TextEncoder();
+        const chunks = [];
+        const directory = [];
+        let offset = 0;
+        for (const file of files) {
+            const name = encoder.encode(file.name);
+            const body = encoder.encode(file.text);
+            const crc = $bog_vmap_app_export_zip_crc32(body);
+            const local = [
+                number_bytes(0x04034b50, 4),
+                number_bytes(20, 2),
+                number_bytes(flag_utf8, 2),
+                number_bytes(0, 2),
+                number_bytes(dos_time, 2),
+                number_bytes(dos_date, 2),
+                number_bytes(crc, 4),
+                number_bytes(body.length, 4),
+                number_bytes(body.length, 4),
+                number_bytes(name.length, 2),
+                number_bytes(0, 2),
+                name,
+            ];
+            for (const part of local)
+                chunks.push(part);
+            chunks.push(body);
+            directory.push([
+                number_bytes(0x02014b50, 4),
+                number_bytes(20, 2),
+                number_bytes(20, 2),
+                number_bytes(flag_utf8, 2),
+                number_bytes(0, 2),
+                number_bytes(dos_time, 2),
+                number_bytes(dos_date, 2),
+                number_bytes(crc, 4),
+                number_bytes(body.length, 4),
+                number_bytes(body.length, 4),
+                number_bytes(name.length, 2),
+                number_bytes(0, 2),
+                number_bytes(0, 2),
+                number_bytes(0, 2),
+                number_bytes(0, 2),
+                number_bytes(0, 4),
+                number_bytes(offset, 4),
+                name,
+            ]);
+            offset += local.reduce((sum, part) => sum + part.length, 0) + body.length;
+        }
+        const directory_at = offset;
+        let directory_size = 0;
+        for (const record of directory) {
+            for (const part of record) {
+                chunks.push(part);
+                directory_size += part.length;
+            }
+        }
+        const end = [
+            number_bytes(0x06054b50, 4),
+            number_bytes(0, 2),
+            number_bytes(0, 2),
+            number_bytes(directory.length, 2),
+            number_bytes(directory.length, 2),
+            number_bytes(directory_size, 4),
+            number_bytes(directory_at, 4),
+            number_bytes(0, 2),
+        ];
+        for (const part of end)
+            chunks.push(part);
+        const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+        const out = new Uint8Array(total);
+        let at = 0;
+        for (const chunk of chunks) {
+            out.set(chunk, at);
+            at += chunk.length;
+        }
+        return out;
+    }
+    $.$bog_vmap_app_export_zip = $bog_vmap_app_export_zip;
+    /**
+     * The built module as an archive, with its folder inside.
+     *
+     * Every entry carries the whole module path and not a bare file name, so that
+     * unpacking at the root of a mam checkout puts the module where its own class
+     * names oblige it to be — section 10, where a module in the wrong folder builds
+     * into `Root package not found` while looking entirely correct.
+     */
+    function $bog_vmap_app_export_zip_archive(module) {
+        return this.$bog_vmap_app_export_zip(module.files.map(file => ({
+            name: `${module.path}/${file.name}`,
+            text: file.text,
+        })));
+    }
+    $.$bog_vmap_app_export_zip_archive = $bog_vmap_app_export_zip_archive;
+})($ || ($ = {}));
+
+;
+"use strict";
 
 
 ;
@@ -34590,12 +34656,19 @@ var $;
             /**
              * Name the root class of a fresh document gets.
              *
-             * A name of this pack, which is where an untouched document would be
-             * unpacked; the author renames it, and the button says where the module goes
-             * meanwhile.
+             * `my` is the namespace the docs of `mol` use for one's own code: it belongs
+             * to nobody and collides with nothing, and the three segments make a module
+             * path — `my/site/page` — that lands in a folder of the author's own instead
+             * of inside the pack of this editor, which is where a document named after
+             * this pack used to be unpacked.
+             *
+             * The dollar is glued on and not written into the literal: mam reads string
+             * literals when it builds the dependency graph and resolves a dollar name
+             * into a package, and there is no root package `my` — the whole module would
+             * stop building over a default value.
              */
             doc_root_default() {
-                return '$bog_vmap_app_page';
+                return '$' + 'my_site_page';
             }
             /** Source of an empty page. Everything else arrives from the palette. */
             doc_source_initial() {
@@ -34922,7 +34995,7 @@ var $;
                 const state = this.export_state();
                 if (!state.module)
                     return this.$.$mol_fail(new Error(state.refusal || 'Документ ещё загружается'));
-                return new this.$.$mol_blob([this.$.$bog_vmap_app_export_archive(state.module)], { type: 'application/zip' });
+                return new this.$.$mol_blob([this.$.$bog_vmap_app_export_zip_archive(state.module)], { type: 'application/zip' });
             }
             /**
              * The refusal, line by line, as the export words it. Each line already names
@@ -35288,6 +35361,17 @@ var $;
             /** Classes of the lands, for the palette and the inspector. No stub in them. */
             lib_classes() {
                 return this.Lib().land_trees();
+            }
+            /**
+             * Names of every class of the library: the pack and the lands on it.
+             *
+             * NOT read here — this is a binding the shelf pulls, and pulling it fetches
+             * the class tree of the pack. Reading it in the editor would put a dead
+             * address in the way of the whole screen instead of in the way of the one
+             * list that shows what the address brought.
+             */
+            lib_class_list() {
+                return this.Lib().class_list();
             }
             /**
              * Sources of the lands, for the scene.
@@ -35978,9 +36062,9 @@ var $;
                 color: $mol_theme.shade,
             },
             /**
-             * A class name is long and is read as a whole: `$bog_vmap_app_page` cut in
-             * the middle says nothing about the folder it chooses. Wide enough for a
-             * three segment name, and no growing — the toolbar wraps instead.
+             * A class name is long and is read as a whole: cut in the middle it says
+             * nothing about the folder it chooses. Wide enough for a name of three
+             * segments, and no growing — the toolbar wraps instead.
              */
             Root_name: {
                 minWidth: '14rem',
@@ -47806,160 +47890,6 @@ var $;
 var $;
 (function ($_1) {
     /**
-     * Tests of the archive.
-     *
-     * A format nobody in the project reads back: the readers are the unpacker of
-     * the operating system and the archiver of the browser, and neither is here.
-     * So the bytes are checked against the specification directly — signatures,
-     * offsets, checksums — and the checksum against a value produced by zlib, which
-     * is a witness of its own rather than this code agreeing with itself.
-     *
-     * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-     * a regexp over sources, literals included.
-     */
-    const d = '$';
-    /** Little endian integer at a position, the way every zip reader takes one. */
-    function number_at(bytes, at, size) {
-        let value = 0;
-        for (let i = size - 1; i >= 0; --i)
-            value = value * 256 + bytes[at + i];
-        return value;
-    }
-    function text_at(bytes, at, size) {
-        return new TextDecoder().decode(bytes.slice(at, at + size));
-    }
-    /**
-     * Entries as the central directory declares them, which is where a reader
-     * looks. Walking the local headers instead would prove nothing about the
-     * directory, and the directory is what an unpacker trusts.
-     */
-    function entries_of(bytes) {
-        const count = number_at(bytes, bytes.length - 12, 2);
-        let at = number_at(bytes, bytes.length - 6, 4);
-        const out = [];
-        for (let i = 0; i < count; ++i) {
-            const name_size = number_at(bytes, at + 28, 2);
-            out.push({
-                signature: number_at(bytes, at, 4),
-                crc: number_at(bytes, at + 16, 4),
-                size: number_at(bytes, at + 24, 4),
-                name: text_at(bytes, at + 46, name_size),
-                offset: number_at(bytes, at + 42, 4),
-            });
-            at += 46 + name_size;
-        }
-        return out;
-    }
-    /** Content of one entry, read through its local header the way an unpacker does. */
-    function body_of(bytes, offset) {
-        const name_size = number_at(bytes, offset + 26, 2);
-        const extra_size = number_at(bytes, offset + 28, 2);
-        const size = number_at(bytes, offset + 18, 4);
-        const at = offset + 30 + name_size + extra_size;
-        return text_at(bytes, at, size);
-    }
-    const module = {
-        path: 'bog/site',
-        name: 'site',
-        root: `${d}bog_site_page`,
-        files: [
-            { name: 'site.view.tree', text: `${d}bog_site_page ${d}mol_view\n\tsub /\n` },
-            { name: 'index.html', text: '<!doctype html>\n' },
-        ],
-    };
-    $mol_test({
-        /**
-         * The checksum against zlib, not against a second implementation of the same
-         * table: a table wrong in the same way twice would pass any self comparison,
-         * and a wrong checksum is exactly what makes an archive refuse to open.
-         */
-        'the checksum is the one every reader computes'($) {
-            $mol_assert_equal($.$bog_vmap_app_export_crc32(new TextEncoder().encode('hello')), 907060870);
-            $mol_assert_equal($.$bog_vmap_app_export_crc32(new TextEncoder().encode('привет')), 779501134);
-            // An empty entry is a normal one, and its checksum is not a special case.
-            $mol_assert_equal($.$bog_vmap_app_export_crc32(new Uint8Array(0)), 0);
-        },
-        /** Signatures and counts, so that a reader finds the directory at all. */
-        'the archive ends with a directory of every file'($) {
-            const bytes = $.$bog_vmap_app_export_zip(module.files);
-            $mol_assert_equal(number_at(bytes, 0, 4), 0x04034b50);
-            $mol_assert_equal(number_at(bytes, bytes.length - 22, 4), 0x06054b50);
-            $mol_assert_equal(number_at(bytes, bytes.length - 12, 2), 2);
-            const entries = entries_of(bytes);
-            $mol_assert_equal(entries.length, 2);
-            $mol_assert_equal(entries[0].signature, 0x02014b50);
-            $mol_assert_equal(entries[1].signature, 0x02014b50);
-        },
-        /**
-         * THE POINT OF THE WHOLE FILE: what the directory promises is what lies at
-         * the offset it promises it at. An archive whose offsets are off by a header
-         * opens as empty, or as garbage, and nothing else in the editor would notice.
-         */
-        'every entry lies where the directory says it does'($) {
-            const bytes = $.$bog_vmap_app_export_zip(module.files);
-            for (const entry of entries_of(bytes)) {
-                $mol_assert_equal(number_at(bytes, entry.offset, 4), 0x04034b50);
-                const file = module.files.find(file => file.name === entry.name);
-                $mol_assert_equal(body_of(bytes, entry.offset), file.text);
-                $mol_assert_equal(entry.crc, $.$bog_vmap_app_export_crc32(new TextEncoder().encode(file.text)));
-            }
-        },
-        /**
-         * Text is stored in UTF-8, and the size in the header is the size in bytes.
-         * A size counted in characters cuts a russian comment in half, and the
-         * document of a russian speaking author is the ordinary case here.
-         */
-        'non ascii text keeps its bytes'($) {
-            const bytes = $.$bog_vmap_app_export_zip([
-                { name: 'note.txt', text: 'привет' },
-            ]);
-            const entry = entries_of(bytes)[0];
-            $mol_assert_equal(entry.size, 12);
-            $mol_assert_equal(body_of(bytes, entry.offset), 'привет');
-        },
-        /** Bit 11 of the flags, without which a non ascii NAME arrives mojibake. */
-        'names are marked as utf-8'($) {
-            const bytes = $.$bog_vmap_app_export_zip(module.files);
-            $mol_assert_equal(number_at(bytes, 6, 2), 0x0800);
-        },
-        /**
-         * A date, and a fixed one. Zero shows up as `00-00-1980` and makes unpackers
-         * complain; the wall clock would make one document produce different bytes on
-         * every export, which no test could then pin down.
-         */
-        'entries carry a valid date and the same bytes every time'($) {
-            const bytes = $.$bog_vmap_app_export_zip(module.files);
-            $mol_assert_equal(number_at(bytes, 12, 2), 0x0021);
-            const again = $.$bog_vmap_app_export_zip(module.files);
-            $mol_assert_equal(bytes.length, again.length);
-            $mol_assert_equal([...bytes].join(), [...again].join());
-        },
-        /**
-         * The module folder travels INSIDE the archive, so unpacking at the root of a
-         * checkout puts the module where its class names oblige it to be. Section 10:
-         * a module in the wrong folder builds into `Root package not found` while
-         * looking entirely correct.
-         */
-        'the archive carries the module folder'($) {
-            const names = entries_of($.$bog_vmap_app_export_archive(module))
-                .map(entry => entry.name);
-            $mol_assert_equal(names.join(' '), 'bog/site/site.view.tree bog/site/index.html');
-        },
-        /** An archive of nothing is still an archive: a directory of zero entries. */
-        'an empty list makes an empty archive'($) {
-            const bytes = $.$bog_vmap_app_export_zip([]);
-            $mol_assert_equal(bytes.length, 22);
-            $mol_assert_equal(number_at(bytes, 0, 4), 0x06054b50);
-            $mol_assert_equal(entries_of(bytes).length, 0);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
      * Tests of the export.
      *
      * The real acceptance is elsewhere and cannot be a unit test: the output has to
@@ -48348,6 +48278,160 @@ var $;
                 { source: `${d}bog_site_a ${d}bog_site_b\n\tx \\1\n` },
                 { source: `${d}bog_site_b ${d}bog_site_a\n\ty \\2\n` },
             ]), Error);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * Tests of the archive.
+     *
+     * A format nobody in the project reads back: the readers are the unpacker of
+     * the operating system and the archiver of the browser, and neither is here.
+     * So the bytes are checked against the specification directly — signatures,
+     * offsets, checksums — and the checksum against a value produced by zlib, which
+     * is a witness of its own rather than this code agreeing with itself.
+     *
+     * `d` keeps `$` out of the string literals: mam builds its dependency graph by
+     * a regexp over sources, literals included.
+     */
+    const d = '$';
+    /** Little endian integer at a position, the way every zip reader takes one. */
+    function number_at(bytes, at, size) {
+        let value = 0;
+        for (let i = size - 1; i >= 0; --i)
+            value = value * 256 + bytes[at + i];
+        return value;
+    }
+    function text_at(bytes, at, size) {
+        return new TextDecoder().decode(bytes.slice(at, at + size));
+    }
+    /**
+     * Entries as the central directory declares them, which is where a reader
+     * looks. Walking the local headers instead would prove nothing about the
+     * directory, and the directory is what an unpacker trusts.
+     */
+    function entries_of(bytes) {
+        const count = number_at(bytes, bytes.length - 12, 2);
+        let at = number_at(bytes, bytes.length - 6, 4);
+        const out = [];
+        for (let i = 0; i < count; ++i) {
+            const name_size = number_at(bytes, at + 28, 2);
+            out.push({
+                signature: number_at(bytes, at, 4),
+                crc: number_at(bytes, at + 16, 4),
+                size: number_at(bytes, at + 24, 4),
+                name: text_at(bytes, at + 46, name_size),
+                offset: number_at(bytes, at + 42, 4),
+            });
+            at += 46 + name_size;
+        }
+        return out;
+    }
+    /** Content of one entry, read through its local header the way an unpacker does. */
+    function body_of(bytes, offset) {
+        const name_size = number_at(bytes, offset + 26, 2);
+        const extra_size = number_at(bytes, offset + 28, 2);
+        const size = number_at(bytes, offset + 18, 4);
+        const at = offset + 30 + name_size + extra_size;
+        return text_at(bytes, at, size);
+    }
+    const module = {
+        path: 'bog/site',
+        name: 'site',
+        root: `${d}bog_site_page`,
+        files: [
+            { name: 'site.view.tree', text: `${d}bog_site_page ${d}mol_view\n\tsub /\n` },
+            { name: 'index.html', text: '<!doctype html>\n' },
+        ],
+    };
+    $mol_test({
+        /**
+         * The checksum against zlib, not against a second implementation of the same
+         * table: a table wrong in the same way twice would pass any self comparison,
+         * and a wrong checksum is exactly what makes an archive refuse to open.
+         */
+        'the checksum is the one every reader computes'($) {
+            $mol_assert_equal($.$bog_vmap_app_export_zip_crc32(new TextEncoder().encode('hello')), 907060870);
+            $mol_assert_equal($.$bog_vmap_app_export_zip_crc32(new TextEncoder().encode('привет')), 779501134);
+            // An empty entry is a normal one, and its checksum is not a special case.
+            $mol_assert_equal($.$bog_vmap_app_export_zip_crc32(new Uint8Array(0)), 0);
+        },
+        /** Signatures and counts, so that a reader finds the directory at all. */
+        'the archive ends with a directory of every file'($) {
+            const bytes = $.$bog_vmap_app_export_zip(module.files);
+            $mol_assert_equal(number_at(bytes, 0, 4), 0x04034b50);
+            $mol_assert_equal(number_at(bytes, bytes.length - 22, 4), 0x06054b50);
+            $mol_assert_equal(number_at(bytes, bytes.length - 12, 2), 2);
+            const entries = entries_of(bytes);
+            $mol_assert_equal(entries.length, 2);
+            $mol_assert_equal(entries[0].signature, 0x02014b50);
+            $mol_assert_equal(entries[1].signature, 0x02014b50);
+        },
+        /**
+         * THE POINT OF THE WHOLE FILE: what the directory promises is what lies at
+         * the offset it promises it at. An archive whose offsets are off by a header
+         * opens as empty, or as garbage, and nothing else in the editor would notice.
+         */
+        'every entry lies where the directory says it does'($) {
+            const bytes = $.$bog_vmap_app_export_zip(module.files);
+            for (const entry of entries_of(bytes)) {
+                $mol_assert_equal(number_at(bytes, entry.offset, 4), 0x04034b50);
+                const file = module.files.find(file => file.name === entry.name);
+                $mol_assert_equal(body_of(bytes, entry.offset), file.text);
+                $mol_assert_equal(entry.crc, $.$bog_vmap_app_export_zip_crc32(new TextEncoder().encode(file.text)));
+            }
+        },
+        /**
+         * Text is stored in UTF-8, and the size in the header is the size in bytes.
+         * A size counted in characters cuts a russian comment in half, and the
+         * document of a russian speaking author is the ordinary case here.
+         */
+        'non ascii text keeps its bytes'($) {
+            const bytes = $.$bog_vmap_app_export_zip([
+                { name: 'note.txt', text: 'привет' },
+            ]);
+            const entry = entries_of(bytes)[0];
+            $mol_assert_equal(entry.size, 12);
+            $mol_assert_equal(body_of(bytes, entry.offset), 'привет');
+        },
+        /** Bit 11 of the flags, without which a non ascii NAME arrives mojibake. */
+        'names are marked as utf-8'($) {
+            const bytes = $.$bog_vmap_app_export_zip(module.files);
+            $mol_assert_equal(number_at(bytes, 6, 2), 0x0800);
+        },
+        /**
+         * A date, and a fixed one. Zero shows up as `00-00-1980` and makes unpackers
+         * complain; the wall clock would make one document produce different bytes on
+         * every export, which no test could then pin down.
+         */
+        'entries carry a valid date and the same bytes every time'($) {
+            const bytes = $.$bog_vmap_app_export_zip(module.files);
+            $mol_assert_equal(number_at(bytes, 12, 2), 0x0021);
+            const again = $.$bog_vmap_app_export_zip(module.files);
+            $mol_assert_equal(bytes.length, again.length);
+            $mol_assert_equal([...bytes].join(), [...again].join());
+        },
+        /**
+         * The module folder travels INSIDE the archive, so unpacking at the root of a
+         * checkout puts the module where its class names oblige it to be. Section 10:
+         * a module in the wrong folder builds into `Root package not found` while
+         * looking entirely correct.
+         */
+        'the archive carries the module folder'($) {
+            const names = entries_of($.$bog_vmap_app_export_zip_archive(module))
+                .map(entry => entry.name);
+            $mol_assert_equal(names.join(' '), 'bog/site/site.view.tree bog/site/index.html');
+        },
+        /** An archive of nothing is still an archive: a directory of zero entries. */
+        'an empty list makes an empty archive'($) {
+            const bytes = $.$bog_vmap_app_export_zip([]);
+            $mol_assert_equal(bytes.length, 22);
+            $mol_assert_equal(number_at(bytes, 0, 4), 0x06054b50);
+            $mol_assert_equal(entries_of(bytes).length, 0);
         },
     });
 })($ || ($ = {}));
@@ -49362,34 +49446,24 @@ var $;
 var $;
 (function ($_1) {
     /**
-     * Tests of the palette field: what the list of links becomes on the way to the
-     * library and to the status line. Nothing renders and nothing is fetched — the
-     * library is never asked for its tree here.
+     * Tests of the palette: what the address and the land trees handed in become on
+     * the way to the library. Nothing renders and nothing is fetched — the library
+     * is never asked for its tree here.
+     *
+     * The FIELD is not here any more. It moved to the shelf, which is the level of
+     * the panel that is always on screen, and its tests moved with it.
      */
     $mol_test({
-        'the field is stored as typed and the pack address is derived with its slash'($) {
-            const palette = $bog_vmap_app_palette.make({ $ });
-            palette.links('https://b-on-g.github.io/gram');
-            $mol_assert_equal(palette.links(), 'https://b-on-g.github.io/gram');
-            $mol_assert_equal(palette.pack_link(), 'https://b-on-g.github.io/gram/');
+        'the address handed in reaches the library, slash and all'($) {
+            const palette = $bog_vmap_app_palette.make({
+                $,
+                pack_link: () => 'https://b-on-g.github.io/gram/',
+            });
             $mol_assert_equal(palette.Lib().pack(), 'https://b-on-g.github.io/gram/');
             $mol_assert_equal(palette.Lib().script_link(), 'https://b-on-g.github.io/gram/web.js');
-            $mol_assert_equal(palette.rejected_note(), '');
         },
-        'a second pack is shown under the field and does not reach the library'($) {
+        'no address gives an empty library, not a failure'($) {
             const palette = $bog_vmap_app_palette.make({ $ });
-            palette.links('https://mol.hyoo.ru, https://b-on-g.github.io/gram/');
-            $mol_assert_equal(palette.pack_link(), 'https://mol.hyoo.ru/');
-            $mol_assert_equal(palette.rejected_note(), 'https://b-on-g.github.io/gram/: ' + $bog_vmap_lib_links_reason.pack_second);
-            // the strip is in the body only while there is something to say
-            $mol_assert_equal(palette.body().includes(palette.Note()), true);
-            palette.links('https://mol.hyoo.ru');
-            $mol_assert_equal(palette.body().includes(palette.Note()), false);
-        },
-        'a field with no pack gives an empty address and an empty library, not a failure'($) {
-            const palette = $bog_vmap_app_palette.make({ $ });
-            palette.links('AbCdEfGh_12345678_ZyXwVuTs');
-            $mol_assert_equal(palette.pack_link(), '');
             $mol_assert_equal(palette.Lib().script_link(), '');
             $mol_assert_like(palette.Lib().class_list(), ['$' + 'mol_view']);
         },
@@ -49400,7 +49474,6 @@ var $;
                 $,
                 land_classes: () => $.$mol_tree2_from_string(`${d}my_card ${d}mol_view\n\tprice 0\n`).kids,
             });
-            palette.links('');
             $mol_assert_like(palette.Lib().class_list(), [`${d}mol_view`, `${d}my_card`]);
             $mol_assert_ok([...palette.Lib().props_map(`${d}my_card`).keys()].includes('sub'));
         },
@@ -49521,6 +49594,40 @@ var $;
         return $bog_vmap_app_shelf_presets().find(item => item.id === id).source;
     }
     $mol_test({
+        'the field is stored as typed and what was refused is said under it'($) {
+            const shelf = $bog_vmap_app_shelf.make({ $ });
+            shelf.links('https://mol.hyoo.ru, https://b-on-g.github.io/gram/');
+            // Stored exactly as typed: growing a slash here would make an address
+            // impossible to finish typing.
+            $mol_assert_equal(shelf.links(), 'https://mol.hyoo.ru, https://b-on-g.github.io/gram/');
+            // One pack per frame, so the second is refused rather than dropped in
+            // silence, and the refusal is on screen under the field.
+            $mol_assert_equal(shelf.rejected_note(), 'https://b-on-g.github.io/gram/: ' + $bog_vmap_lib_links_reason.pack_second);
+            $mol_assert_equal(shelf.source_content().includes(shelf.Note()), true);
+            shelf.links('https://mol.hyoo.ru');
+            $mol_assert_equal(shelf.source_content().includes(shelf.Note()), false);
+        },
+        'the objects of the application are its own classes, mol left out'($) {
+            const d = '$';
+            const shelf = $bog_vmap_app_shelf.make({
+                $,
+                class_list: () => [`${d}mol_view`, `${d}mol_button_minor`, `${d}bog_gram`, `${d}bog_gram_chat`],
+            });
+            // What the author of the application wrote, and nothing of the framework
+            // their pack carries in its bundle.
+            $mol_assert_like(shelf.app_list(), [`${d}bog_gram`, `${d}bog_gram_chat`]);
+            $mol_assert_equal(shelf.apps_title(), 'Объекты приложения');
+            // Each of them is an item like any other, and lays down the same way.
+            $mol_assert_equal(shelf.item_title(`${d}bog_gram_chat`), 'Gram_chat');
+            $mol_assert_ok(shelf.item(`${d}bog_gram_chat`).source.includes(`${d}bog_gram_chat`));
+        },
+        'nothing connected is a state and not a failure'($) {
+            const shelf = $bog_vmap_app_shelf.make({ $ });
+            $mol_assert_like(shelf.app_list(), []);
+            $mol_assert_equal(shelf.apps_title(), 'Приложение не подключено');
+            // The shelf itself stands whatever the address does.
+            $mol_assert_equal(shelf.items().length, 4);
+        },
         'the shelf offers ready made things and every one of them is a class'($) {
             const items = $bog_vmap_app_shelf_presets();
             $mol_assert_like(items.map(item => item.id), ['block', 'calc', 'map', 'pair']);
@@ -50573,16 +50680,16 @@ var $;
             app.part_drop(`${d}mol_button_minor`, 100, 200);
             const module = app.export_state().module;
             $mol_assert_equal(app.export_ready(), true);
-            $mol_assert_equal(module.path, 'bog/vmap/app/page');
+            $mol_assert_equal(module.path, 'my/site/page');
             $mol_assert_equal(module.name, 'page');
             $mol_assert_equal(module.files.map(file => file.name).join(' '), 'page.view.tree page.view.ts page.view.css.ts page.meta.tree index.html');
             // The declaration downloaded is the document, not a rendering of it.
             $mol_assert_equal(module.files[0].text, app.doc_source());
             // And the folder is on the button itself, where it is read without
             // hovering: section 10, the folder is not free and the author chose it.
-            $mol_assert_equal(app.export_title(), 'Скачать bog/vmap/app/page');
+            $mol_assert_equal(app.export_title(), 'Скачать my/site/page');
             $mol_assert_equal(app.export_file(), 'page.zip');
-            $mol_assert_ok(app.export_hint().includes('npx mam bog/vmap/app/page'));
+            $mol_assert_ok(app.export_hint().includes('npx mam my/site/page'));
         },
         /**
          * The archive carries the module folder inside, so unpacking at the root of a
@@ -50591,10 +50698,10 @@ var $;
         'the archive is the module in its folder'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
-            const bytes = $.$bog_vmap_app_export_archive(app.export_state().module);
+            const bytes = $.$bog_vmap_app_export_zip_archive(app.export_state().module);
             const text = new TextDecoder().decode(bytes);
-            $mol_assert_ok(text.includes('bog/vmap/app/page/page.view.tree'));
-            $mol_assert_ok(text.includes('bog/vmap/app/page/index.html'));
+            $mol_assert_ok(text.includes('my/site/page/page.view.tree'));
+            $mol_assert_ok(text.includes('my/site/page/index.html'));
             // Stored, not compressed, so the sources travel as themselves.
             $mol_assert_ok(text.includes(`${d}mol_button_minor`));
         },
@@ -50634,7 +50741,7 @@ var $;
             $mol_assert_equal(app.export_title(), 'Скачать');
             const notes = app.export_notes();
             $mol_assert_equal(notes.length, 2);
-            $mol_assert_ok(notes[1].includes(`${d}bog_vmap_app_page`));
+            $mol_assert_ok(notes[1].includes(`${d}my_site_page`));
             $mol_assert_ok(notes[1].includes('строка 1'));
             $mol_assert_ok(notes[1].includes('greeting'));
             $mol_assert_ok(notes[1].includes('who'));
@@ -50687,8 +50794,11 @@ var $;
             const module = app.export_state().module;
             $mol_assert_equal(app.export_ready(), true);
             $mol_assert_equal(module.files.length, 5);
-            $mol_assert_equal(module.root, `${d}bog_vmap_app_page`);
-            $mol_assert_equal(module.files[0].text, `${d}bog_vmap_app_page ${d}mol_view sub /\n`);
+            $mol_assert_equal(module.root, `${d}my_site_page`);
+            $mol_assert_equal(module.files[0].text, `${d}my_site_page ${d}mol_view sub /\n`);
+            // Out of this pack, in a folder of the author's own: an untouched
+            // document used to be unpacked inside the editor itself.
+            $mol_assert_equal(module.path, 'my/site/page');
             // No hand written body anywhere, so no subclass and no rule is emitted.
             $mol_assert_equal(module.files[1].text.includes('export class'), false);
             $mol_assert_equal(module.files[2].text.includes('style_attach'), false);
@@ -50751,15 +50861,42 @@ var $;
         'renaming the root moves the module and the folder on the button'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
-            $mol_assert_equal(app.export_state().module.path, 'bog/vmap/app/page');
-            app.root_title(`${d}my_site_page`);
-            $mol_assert_equal(app.doc_root(), `${d}my_site_page`);
-            $mol_assert_equal(app.root_title(), `${d}my_site_page`);
+            $mol_assert_equal(app.export_state().module.path, 'my/site/page');
+            app.root_title(`${d}my_shop_page`);
+            $mol_assert_equal(app.doc_root(), `${d}my_shop_page`);
+            $mol_assert_equal(app.root_title(), `${d}my_shop_page`);
             const module = app.export_state().module;
-            $mol_assert_equal(module.path, 'my/site/page');
-            $mol_assert_equal(module.root, `${d}my_site_page`);
-            $mol_assert_equal(app.export_title(), 'Скачать my/site/page');
-            $mol_assert_ok(module.files[0].text.startsWith(`${d}my_site_page `));
+            $mol_assert_equal(module.path, 'my/shop/page');
+            $mol_assert_equal(module.root, `${d}my_shop_page`);
+            $mol_assert_equal(app.export_title(), 'Скачать my/shop/page');
+            $mol_assert_ok(module.files[0].text.startsWith(`${d}my_shop_page `));
+        },
+        /**
+         * A rename and its undo, because the two halves fail apart: the text is
+         * rewritten by the model and the body and the styles are carried by hand, so
+         * a rename that lost them on the way back would be a rename that loses them,
+         * full stop. Everything has to come back to the byte it started from.
+         */
+        'a rename and the rename back leave the document as it was'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.doc_source([
+                `${d}my_site_page ${d}mol_view sub /`,
+                `${d}my_site_card ${d}mol_view title \\Карточка`,
+                ``,
+            ].join('\n'));
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            app.root_js('greeting(){\n\treturn 1\n}\n');
+            app.class_js(`${d}my_site_card`, 'note(){\n\treturn 2\n}\n');
+            app.root_css('[my] {\n\tcolor: red;\n}');
+            const source = app.doc_source();
+            app.root_title(`${d}my_shop_page`);
+            app.root_title(`${d}my_site_page`);
+            $mol_assert_equal(app.doc_source(), source);
+            $mol_assert_equal(app.doc_root(), `${d}my_site_page`);
+            $mol_assert_equal(app.root_js(), 'greeting(){\n\treturn 1\n}\n');
+            $mol_assert_equal(app.root_css(), '[my] {\n\tcolor: red;\n}');
+            // The class that was never renamed kept its own body throughout.
+            $mol_assert_equal(app.class_js(`${d}my_site_card`), 'note(){\n\treturn 2\n}\n');
         },
         /**
          * What a rename must not cost. The pick, the placement and the wires are keyed
@@ -50778,14 +50915,14 @@ var $;
             const source = app.doc_source();
             const spots = JSON.stringify(app.spots());
             const wires = JSON.stringify(app.doc_wires());
-            app.root_title(`${d}my_site_page`);
+            app.root_title(`${d}my_shop_page`);
             $mol_assert_equal(app.root_js(), 'greeting(){\n\treturn 1\n}\n');
             $mol_assert_equal(app.root_css(), '[my] {\n\tcolor: red;\n}');
             $mol_assert_equal(app.selected(), 'String');
             $mol_assert_equal(JSON.stringify(app.spots()), spots);
             $mol_assert_equal(JSON.stringify(app.doc_wires()), wires);
             // The text differs in the class name and in nothing else.
-            $mol_assert_equal(app.doc_source(), source.replace(`${d}bog_vmap_app_page`, `${d}my_site_page`));
+            $mol_assert_equal(app.doc_source(), source.replace(`${d}my_site_page`, `${d}my_shop_page`));
         },
         /**
          * Typing is not renaming. Every letter of a name is a prefix of it, and most
@@ -50799,15 +50936,15 @@ var $;
             app.part_drop(`${d}mol_button_minor`, 100, 200);
             const before = app.doc_source();
             app.root_draft(`${d}my`);
-            app.root_draft(`${d}my_site`);
-            app.root_draft(`${d}my_site_page`);
+            app.root_draft(`${d}my_shop`);
+            app.root_draft(`${d}my_shop_page`);
             $mol_assert_equal(app.doc_source(), before);
-            $mol_assert_equal(app.doc_root(), `${d}bog_vmap_app_page`);
-            app.root_submit();
             $mol_assert_equal(app.doc_root(), `${d}my_site_page`);
+            app.root_submit();
+            $mol_assert_equal(app.doc_root(), `${d}my_shop_page`);
             // The draft is keyed by the name it started from, so the field now shows
             // the new name with nothing to clear.
-            $mol_assert_equal(app.root_draft(), `${d}my_site_page`);
+            $mol_assert_equal(app.root_draft(), `${d}my_shop_page`);
         },
         /**
          * A name that cannot become a folder is refused where it was typed, in words,
@@ -50818,17 +50955,17 @@ var $;
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
             const before = app.doc_source();
-            $mol_assert_equal(app.root_title('Страница'), `${d}bog_vmap_app_page`);
+            $mol_assert_equal(app.root_title('Страница'), `${d}my_site_page`);
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_ok(app.root_title_note().includes('Страница'));
             $mol_assert_ok(app.body().includes(app.Root_note()));
             // A single segment is not a path either: mam resolves every underscore
             // into a folder, and the export refuses a prefix shorter than two.
-            $mol_assert_equal(app.root_title(`${d}page`), `${d}bog_vmap_app_page`);
+            $mol_assert_equal(app.root_title(`${d}page`), `${d}my_site_page`);
             $mol_assert_equal(app.doc_source(), before);
             // And a name another class of the document already carries.
-            app.doc_source(before + `${d}bog_vmap_app_card ${d}mol_view title \\Карточка\n`);
-            $mol_assert_equal(app.root_title(`${d}bog_vmap_app_card`), `${d}bog_vmap_app_page`);
+            app.doc_source(before + `${d}my_site_card ${d}mol_view title \\Карточка\n`);
+            $mol_assert_equal(app.root_title(`${d}my_site_card`), `${d}my_site_page`);
             $mol_assert_ok(app.root_title_note().includes('already declared'));
         },
     });
@@ -50962,9 +51099,12 @@ var $;
             $mol_assert_ok(text.includes('100%'));
             $mol_assert_ok(text.includes('Выберите узел на холсте'));
             // The panel opens on ready made things, not on a catalogue of classes.
-            const shelf = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_item_row]')]
-                .map(el => el.textContent);
+            const shelf = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_items] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
             $mol_assert_like(shelf, ['Блок', 'Калькулятор', 'Карта', 'Калькулятор и карта']);
+            // Under them, the objects of the connected application: what its author
+            // declared, by their own names and without a line of mol among them.
+            const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
+            $mol_assert_like(apps, ['Button', 'Calc', 'Map']);
             // The classes of the pack are a level down, folded away until asked for,
             // and then they are all there, the `$mol_view` stub included.
             $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_palette_class_row]'), null);
@@ -51001,6 +51141,27 @@ var $;
             $mol_assert_equal(stage.scene.last('doc_set').src, stage.app.doc_source());
             // Picked by the drop itself, as a dragged part is.
             $mol_assert_equal(stage.app.selected(), 'Pair');
+        },
+        /**
+         * An application is added by its address, and its own objects are on the
+         * shelf right after.
+         *
+         * Nothing is asked of whoever deployed it: a mol module carries the tree of
+         * its classes beside its bundle, so any deployed application is a library
+         * already. What the shelf shows is what its author wrote, without the
+         * framework the bundle carries along.
+         */
+        'an application added by its address puts its objects on the shelf'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.type(stage.field('Shelf().Links()'), $bog_vmap_app_flow_other);
+            // The frame is a new one — a realm cannot unload a bundle — and it boots.
+            stage.scene.hello();
+            const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
+            $mol_assert_like(apps, ['Basket']);
+            // And an object of somebody else's application lies down like any other.
+            stage.click(stage.shelf_row('Basket'));
+            $mol_assert_ok(stage.app.doc_source().includes(`Basket ${d}shop_basket`));
+            $mol_assert_equal(stage.app.selected(), 'Basket');
         },
         /**
          * A component is carried out of the palette onto the canvas: it is declared,
@@ -51107,7 +51268,7 @@ var $;
             $mol_assert_ok(link);
             $mol_assert_ok(stage.text().includes('опубликовано'));
             $mol_assert_ok(stage.text().includes(link));
-            stage.type(stage.field('Palette().Links()'), link);
+            stage.type(stage.field('Shelf().Links()'), link);
             $mol_assert_like(stage.app.lands(), [link]);
             $mol_assert_like(stage.app.lib_classes().map(tree => tree.type), [`${d}bog_vmap_pub_button`]);
             // In the palette beside the classes of the pack, and it drops like them.
@@ -51187,7 +51348,7 @@ var $;
          */
         'a new pack gives a new frame, a new land keeps the old one'($) {
             const stage = $bog_vmap_app_flow_stage($);
-            const field = stage.field('Palette().Links()');
+            const field = stage.field('Shelf().Links()');
             const before = stage.frame();
             stage.type(field, 'http://pack.test/, AbCdEfGh');
             $mol_assert_ok(stage.frame() !== before);
@@ -51232,7 +51393,7 @@ var $;
             $mol_assert_equal(stage.pane.warmed(), true);
             const sent = stage.scene.posted.length;
             const armed = watch();
-            stage.type(stage.field('Palette().Links()'), 'http://pack.test/');
+            stage.type(stage.field('Shelf().Links()'), 'http://pack.test/');
             // a frame that has said nothing, and nothing said to it
             $mol_assert_equal(stage.pane.ready(), false);
             $mol_assert_equal(stage.scene.posted.length, sent);
@@ -51254,7 +51415,7 @@ var $;
          */
         'the palette field takes a pack with lands and says why it refuses a second'($) {
             const stage = $bog_vmap_app_flow_stage($);
-            const field = stage.field('Palette().Links()');
+            const field = stage.field('Shelf().Links()');
             stage.type(field, 'http://pack.test/, AbCdEfGh');
             $mol_assert_equal(stage.app.pack_link(), 'http://pack.test/');
             $mol_assert_like(stage.app.lands(), ['AbCdEfGh']);
@@ -51266,7 +51427,7 @@ var $;
             $mol_assert_ok(stage.text().includes('http://other.test/'));
             // The frame is the one it already was: no reload.
             $mol_assert_equal(stage.pane.scene_key(), key);
-            $mol_assert_equal(stage.field('Palette().Links()').value, 'http://pack.test/, AbCdEfGh, http://other.test/');
+            $mol_assert_equal(stage.field('Shelf().Links()').value, 'http://pack.test/, AbCdEfGh, http://other.test/');
         },
         /**
          * The delete button takes the picked part out of the document, and the
@@ -51470,6 +51631,19 @@ var $;
         `\tmarker \\`,
         ``,
     ].join('\n');
+    /**
+     * A SECOND application, served at an address of its own.
+     *
+     * There to be added by hand: a person pastes the address of a deployed mol
+     * application and its own classes join the shelf. One class is enough for that,
+     * and a name of its own is what makes the difference visible.
+     */
+    $_1.$bog_vmap_app_flow_other = 'http://other.pack/';
+    $_1.$bog_vmap_app_flow_other_pack = [
+        `${d}shop_basket ${d}mol_view`,
+        `\ttitle \\`,
+        ``,
+    ].join('\n');
     /** Where the pane sits in the viewport. jsdom lays nothing out, so it is told. */
     $_1.$bog_vmap_app_flow_rect = {
         left: 200, top: 50, width: 600, height: 500, right: 800, bottom: 550,
@@ -51534,6 +51708,8 @@ var $;
         class $mol_fetch_flow extends $mol_fetch {
             static text(input) {
                 const uri = String(input);
+                if (uri === $_1.$bog_vmap_app_flow_other + 'web.view.tree')
+                    return $_1.$bog_vmap_app_flow_other_pack;
                 if (uri.endsWith('web.view.tree'))
                     return $_1.$bog_vmap_app_flow_pack;
                 return $mol_fail(new Error('network in a test: ' + uri));
@@ -51740,18 +51916,8 @@ var $;
             shelf_row(title) {
                 return found('[bog_vmap_app_shelf_item_row]', `shelf row ${title}`, el => el.textContent === title);
             },
-            /**
-             * A text field, addressed by the tail of the id $mol builds out of the
-             * path to it.
-             *
-             * A field of the palette is on the second level of the panel, which is
-             * folded when the editor opens, so asking for one unfolds it first: a
-             * scenario says which field it types into and should not have to say
-             * which panel it lives on.
-             */
+            /** A text field, addressed by the tail of the id $mol builds out of the path to it. */
             field(tail) {
-                if (tail.startsWith('Palette()'))
-                    this.classes_open();
                 return found('input, textarea', `field ${tail}`, el => el.getAttribute('id')?.endsWith(tail) ?? false);
             },
             overlay() {

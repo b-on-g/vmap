@@ -2065,10 +2065,11 @@ $bog_vmap_app_palette_port $mol_view
 		<= Owner $mol_view sub / <= owner
 
 $bog_vmap_app_palette $mol_view
-	- Links separated by commas. The first http(s) one is the donor pack, the rest
-	- are lands of Giper Baza holding component sources; anything else is refused
-	- and said so under the field. Stored exactly as typed, see `pack_link`.
-	links? \http://localhost:9080/bog/vmap/part/-/
+	- Address of the pack, with its slash, handed in by the owner. The FIELD it
+	- comes from lives on the shelf: a person adds an application to the editor
+	- whether or not they have the list of classes open, so the field cannot be
+	- inside a level that folds away.
+	pack_link \
 	query? \
 	selected? \
 	- Narrow layout for a side panel of the editor: header in a column, ports pane
@@ -2095,19 +2096,10 @@ $bog_vmap_app_palette $mol_view
 	Head $mol_bar
 		sub /
 			<= Brand $mol_view sub / \Палитра
-			<= Links $mol_string
-				hint \Пак и ленды через запятую
-				value? <=> links?
 			<= Query $mol_string
 				hint \Поиск по имени
 				value? <=> query?
 			<= Total $mol_view sub / <= total \
-	-
-	- What was typed and not taken, and why, right under the field. Rendered only
-	- while there is something to say: a second pack is refused by construction
-	- and a person who typed one has to learn that from the screen, not from a log.
-	Note $mol_view
-		sub / <= rejected_note \
 	-
 	Body $mol_view
 		sub <= body_content /$mol_view
@@ -2144,12 +2136,10 @@ $bog_vmap_app_palette $mol_view
 		owner <= port_owner* \
 		inherited <= port_inherited* false
 	-
-	- The model. The pack address is DERIVED from the field: the first http(s) link
-	- of the list, with its slash grown here and not in the field, so that typing
-	- an address is possible at all. Empty when the list names no pack, and the
-	- library is then the lands alone.
+	- The model. An empty address is a state and not a failure: the library is then
+	- the lands alone, and with no lands it is the stub by itself.
 	Lib $bog_vmap_lib
-		pack <= pack_link \
+		pack <= pack_link
 		classes <= land_classes
 
 - Documents of the user, listed down the left edge of the editor: which one is
@@ -2437,9 +2427,18 @@ $mol_text_list_item $mol_paragraph
 $bog_vmap_app_shelf $mol_view
 	- The palette field, held by the editor and passed through: the shelf shows what
 	- the scene has actually loaded, so there is one value and not two.
+	- Links separated by commas, stored exactly as typed. The first http(s) one is
+	- the application whose objects join the shelf, the rest are lands of Giper Baza
+	- holding component sources; anything else is refused and said so under the
+	- field. One pack per frame, so a second address is refused by construction.
 	links? \
 	pack_link \
 	land_classes /$mol_tree2
+	- Names of every class the library holds — the pack and the lands on it —
+	- handed in by the editor, which owns the one library of the session. Read
+	- inside `Apps` and nowhere else: reading it fetches, and a dead address must
+	- take down that one list rather than the panel around it.
+	class_list /string
 	- What the pointer is carrying, BY ITS ID, empty when nothing is being dragged,
 	- and where the pointer is in viewport coordinates. The same protocol the
 	- palette has always spoken, and now spoken in one place: a class row of the
@@ -2463,6 +2462,33 @@ $bog_vmap_app_shelf $mol_view
 	Items $mol_list
 		rows <= item_rows /
 	-
+	- Where an application comes from. Outside `Apps` on purpose: a mistyped address
+	- must leave the field it was typed into reachable, and the list is exactly what
+	- a bad address takes down.
+	Source $mol_view
+		sub <= source_content /$mol_view
+	-
+	Links $mol_string
+		hint \Адрес приложения, ленды через запятую
+		value? <=> links?
+	-
+	- What was typed and not taken, and why, right under the field. Rendered only
+	- while there is something to say: a second pack is refused by construction and
+	- a person who typed one has to learn that from the screen, not from a log.
+	Note $mol_view
+		sub / <= rejected_note \
+	-
+	- Objects of the connected application: every class it declares that is not
+	- part of mol itself. A deployed mol application is a library of components
+	- already, so this needs nothing of the application's author.
+	Apps $mol_view
+		sub /
+			<= Apps_head $mol_view
+				sub /
+					<= apps_title \
+			<= App_list $mol_list
+				rows <= app_rows /
+	-
 	- The second level, folded away by default. A check and not an expander: the
 	- palette has to GROW into whatever the shelf left, and inside an expander it
 	- would sit in a list that sizes itself by its content, so the class list would
@@ -2476,7 +2502,6 @@ $bog_vmap_app_shelf $mol_view
 	- so a folded panel does not fetch a pack tree it is not showing.
 	Palette $bog_vmap_app_palette
 		compact true
-		links? <=> links?
 		pack_link <= pack_link
 		land_classes <= land_classes
 		dragged? <=> dragged?
@@ -3030,7 +3055,7 @@ $bog_vmap_app_code $mol_view
 		sub / <= scope_note \
 	Scope $mol_check
 		title \Весь класс
-		hint \Править три текста класса целиком, а не только выбранный узел
+		hint \Править класс целиком, а не выбранный узел. Какой это класс, сказано в шапке: у узла со своим классом — его, у остальных — тот, который узел объявляет
 		checked? <=> whole?
 	- The failure the scene reported for this node. Here and not only in the status
 	- strip: an error belongs where the code that caused it is being written.
@@ -3471,6 +3496,11 @@ $bog_vmap_app $mol_view
 				- very deploy, and only the host knows where that is.
 				pack_link <= pack_link
 				land_classes <= lib_classes /$mol_tree2
+				- Names of the classes the library holds, for the objects of the
+				- connected application. A binding and not a read of our own: the
+				- fetch behind it must happen inside the panel, where a dead address
+				- shows up on the one list it belongs to.
+				class_list <= lib_class_list /string
 				- An item asked for by a click rather than by a drag. The shelf says
 				- which one; where it goes is the canvas's answer.
 				place? <=> shelf_place? \

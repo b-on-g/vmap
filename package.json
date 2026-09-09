@@ -340,7 +340,6 @@
     "$mol_scroll",
     "$mol_bar",
     "$bog_vmap_app_palette_port",
-    "$bog_vmap_lib_links",
     "$bog_vmap_app_shelf",
     "$bog_vmap_lang",
     "$mol_view_tree2_to_js",
@@ -381,6 +380,7 @@
     "$mol_embed_rutube",
     "$mol_embed_vklive",
     "$mol_expander",
+    "$bog_vmap_lib_links",
     "$bog_vmap_app_inspect",
     "$bog_vmap_app_inspect_flex",
     "$mol_switch",
@@ -408,7 +408,8 @@
     "$mol_svg_text",
     "$mol_svg_circle",
     "$mol_touch",
-    "$mol_vector"
+    "$mol_vector",
+    "$bog_vmap_app_export_zip"
   ],
   "dependencies": {
     "autoinstall": "*",
