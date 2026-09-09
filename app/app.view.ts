@@ -850,7 +850,9 @@ namespace $.$$ {
 
 		/**
 		 * Which panels are open, kept in the session so a reload finds the editor
-		 * as it was left. `$hyoo_page` keeps its own panels the same way.
+		 * as it was left. The wiki page of hyoo keeps its own panels the same way,
+		 * and is named here in words: a real class name in a doc comment is read by
+		 * the dependency graph and pulls that whole pack into the bundle.
 		 *
 		 * IN THE SESSION AND NOT IN THE ADDRESS. The address says WHAT is open —
 		 * `doc` — and is a link a person shares; a layout in it would travel to
