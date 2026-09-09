@@ -136,6 +136,21 @@ namespace $.$$ {
 			whiteSpace: 'normal',
 		},
 
+		/**
+		 * Amber like `Stall` and not red like `Alarm`, because it is the same kind of
+		 * news as the stall: the document itself works, and one thing about it does
+		 * not. Wraps, unlike the error strip: these are sentences, not a stack.
+		 */
+		Export_note: {
+			flex: { direction: 'column', shrink: 0 },
+			gap: '.25rem',
+			padding: $mol_gap.text,
+			background: { color: '#8d6e00' },
+			color: 'white',
+			font: { size: '.8rem' },
+			whiteSpace: 'normal',
+		},
+
 		Stall_reload: {
 			flex: { shrink: 0 },
 			color: 'white',

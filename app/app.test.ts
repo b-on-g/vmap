@@ -555,6 +555,189 @@ namespace $ {
 
 		},
 
+		/**
+		 * The button hands over the module the export builds, folder included.
+		 *
+		 * Names spelled out rather than compared against a second call of the same
+		 * builder: a comparison of the export with itself would pass on any wiring at
+		 * all, including one where the button downloads the wrong document.
+		 */
+		'the download offers the module the export builds'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+
+			const module = app.export_state().module!
+
+			$mol_assert_equal( app.export_ready(), true )
+			$mol_assert_equal( module.path, 'bog/vmap/app/page' )
+			$mol_assert_equal( module.name, 'page' )
+			$mol_assert_equal(
+				module.files.map( file => file.name ).join( ' ' ),
+				'page.view.tree page.view.ts page.view.css.ts page.meta.tree index.html',
+			)
+
+			// The declaration downloaded is the document, not a rendering of it.
+			$mol_assert_equal(
+				module.files[ 0 ].text,
+				app.doc_source(),
+			)
+
+			// And the folder is on the button itself, where it is read without
+			// hovering: section 10, the folder is not free and the author chose it.
+			$mol_assert_equal( app.export_title(), 'Скачать bog/vmap/app/page' )
+			$mol_assert_equal( app.export_file(), 'page.zip' )
+			$mol_assert_ok( app.export_hint().includes( 'npx mam bog/vmap/app/page' ) )
+
+		},
+
+		/**
+		 * The archive carries the module folder inside, so unpacking at the root of a
+		 * checkout puts the files where mam resolves the class names to.
+		 */
+		'the archive is the module in its folder'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+
+			const bytes = $.$bog_vmap_app_export_archive( app.export_state().module! )
+			const text = new TextDecoder().decode( bytes )
+
+			$mol_assert_ok( text.includes( 'bog/vmap/app/page/page.view.tree' ) )
+			$mol_assert_ok( text.includes( 'bog/vmap/app/page/index.html' ) )
+
+			// Stored, not compressed, so the sources travel as themselves.
+			$mol_assert_ok( text.includes( `${d}mol_button_minor` ) )
+
+		},
+
+		/** Two artboards make a site of two pages, and the download carries its router. */
+		'a document of two artboards downloads with a router'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.doc_source([
+				`${d}bog_vmap_app_page ${d}mol_view`,
+				`	Home ${d}mol_view sub /`,
+				`	About ${d}mol_view sub /`,
+				`	sub /`,
+				`		<= Home`,
+				`		<= About`,
+				``,
+			].join( '\n' ) )
+
+			const module = app.export_state().module!
+
+			$mol_assert_equal( module.root, `${d}bog_vmap_app_page_app` )
+			$mol_assert_equal( module.path, 'bog/vmap/app/page' )
+
+			const tree = module.files[ 0 ].text
+			$mol_assert_ok( tree.includes( `${d}bog_vmap_app_page_app ${d}mol_view` ) )
+
+			// The address key is the standard one, so a link between the pages is an
+			// ordinary link written in the document itself.
+			$mol_assert_ok( module.files[ 1 ].text.includes( `${d}mol_state_arg` ) )
+			$mol_assert_ok( module.files[ 4 ].text.includes( `${d}bog_vmap_app_page_app` ) )
+
+		},
+
+		/**
+		 * A body that works in the preview and would not compile refuses the whole
+		 * download, and the reason stands on the screen in words instead of in a
+		 * console. Without this the person meets it as a build failure on a machine
+		 * the editor never sees.
+		 */
+		'an untyped body refuses the download and says why'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+			app.root_js( 'greeting( who ) {\n\treturn who\n}\n' )
+
+			$mol_assert_equal( app.export_ready(), false )
+			$mol_assert_equal( app.export_title(), 'Скачать' )
+
+			const notes = app.export_notes()
+
+			$mol_assert_equal( notes.length, 2 )
+			$mol_assert_ok( notes[ 1 ].includes( `${d}bog_vmap_app_page` ) )
+			$mol_assert_ok( notes[ 1 ].includes( 'строка 1' ) )
+			$mol_assert_ok( notes[ 1 ].includes( 'greeting' ) )
+			$mol_assert_ok( notes[ 1 ].includes( 'who' ) )
+
+			// The rows are on the screen, and they are the sentences themselves.
+			$mol_assert_equal( app.export_rows().length, 2 )
+			$mol_assert_equal( app.export_text( 1 ), notes[ 1 ] )
+			$mol_assert_ok( app.body().includes( app.Export_note() ) )
+
+			// And nothing can be taken out of the editor while it is refused.
+			$mol_assert_fail( ()=> app.export_blob(), Error )
+
+			// The strip goes as soon as the body is typed, and the button comes back.
+			app.root_js( 'greeting( who: string ) {\n\treturn who\n}\n' )
+
+			$mol_assert_equal( app.export_ready(), true )
+			$mol_assert_equal( app.export_notes().length, 0 )
+			$mol_assert_equal( app.body().includes( app.Export_note() ), false )
+
+		},
+
+		/**
+		 * The button must not make the editor wait for the document.
+		 *
+		 * A document opened by a link lives in a land that suspends every read until
+		 * it syncs, and the toolbar is drawn from the same cell the button reads. A
+		 * suspension passed on from here suspends the whole editor, frame included,
+		 * and the sandbox never comes up — measured, the standing test of that
+		 * invariant went red the moment this was wired to the toolbar with a rethrow.
+		 */
+		'a document still on its way holds nothing up'( $ ) {
+
+			const waiting = new Promise( ()=> {} )
+
+			const app = $bog_vmap_app.make({
+				$,
+				store: ()=> $bog_vmap_app_store.make({
+					$,
+					doc_land_config: ()=> null,
+					source: ()=> { throw waiting },
+					spots: ()=> { throw waiting },
+					pack: ()=> { throw waiting },
+				}),
+			}) as $$.$bog_vmap_app
+
+			// Nothing to download yet, and nothing to complain about either: a wait is
+			// not a refusal, so no strip stands on the screen saying it is.
+			$mol_assert_equal( app.export_ready(), false )
+			$mol_assert_equal( app.export_notes().length, 0 )
+			$mol_assert_equal( app.body().includes( app.Export_note() ), false )
+			$mol_assert_equal( app.export_hint(), 'Документ ещё загружается' )
+
+		},
+
+		/**
+		 * An untouched editor downloads too, and downloads a module that builds: an
+		 * empty page is a legal document, not a state to be guarded against.
+		 */
+		'an untouched document downloads as the empty page'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			const module = app.export_state().module!
+
+			$mol_assert_equal( app.export_ready(), true )
+			$mol_assert_equal( module.files.length, 5 )
+			$mol_assert_equal( module.root, `${d}bog_vmap_app_page` )
+			$mol_assert_equal( module.files[ 0 ].text, `${d}bog_vmap_app_page ${d}mol_view sub /\n` )
+
+			// No hand written body anywhere, so no subclass and no rule is emitted.
+			$mol_assert_equal( module.files[ 1 ].text.includes( 'export class' ), false )
+			$mol_assert_equal( module.files[ 2 ].text.includes( 'style_attach' ), false )
+
+		},
+
 	})
 
 }

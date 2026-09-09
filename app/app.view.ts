@@ -355,6 +355,134 @@ namespace $.$$ {
 				.join( '\n\n' )
 		}
 
+		/**
+		 * Classes of the document as the export takes them: declaration, body, rule.
+		 *
+		 * Read out of the document model rather than out of the scene, so what is
+		 * downloaded is the text the editor holds and not what a preview made of it.
+		 */
+		export_nodes(): readonly $bog_vmap_app_export_node[] {
+
+			const doc = this.doc_model()
+
+			return doc.names().map( name => ({
+				source: doc.class_source( name ),
+				js: this.class_js( name ),
+				css: this.class_css( name ),
+			}) )
+
+		}
+
+		/**
+		 * The module the document builds into, or the reason it does not.
+		 *
+		 * One cell for both, because the export answers both at once and a second
+		 * call would parse every class a second time to learn what this one already
+		 * knows. A refusal is a value here and not a throw: it has to be readable on
+		 * the toolbar, and a throw on the path of the toolbar takes the toolbar down.
+		 *
+		 * A SUSPENSION IS NOT PASSED ON EITHER, and that is the harder half. The
+		 * toolbar is drawn from this, and a document opened by a link lives in a land
+		 * that suspends every read until it syncs — so rethrowing here suspended the
+		 * whole editor, frame and all, and the sandbox never came up. Measured: the
+		 * standing test of that invariant went red the moment this cell was wired to
+		 * the toolbar. The subscription is recorded before the throw, so nothing is
+		 * lost: this recomputes the moment the text arrives. The same shape as
+		 * `store_links`, and for the same reason.
+		 */
+		@ $mol_mem
+		export_state(): {
+			readonly module: $bog_vmap_app_export_module | null,
+			readonly refusal: string,
+		} {
+
+			try {
+
+				return {
+					module: this.$.$bog_vmap_app_export_build( this.export_nodes(), this.doc_root() ),
+					refusal: '',
+				}
+
+			} catch( error: unknown ) {
+				// Still on its way: nothing to download and nothing to complain about.
+				if( this.$.$mol_promise_like( error ) ) return { module: null, refusal: '' }
+				return { module: null, refusal: String( ( error as Error )?.message ?? error ) }
+			}
+
+		}
+
+		/** Whether the document can be downloaded at all. */
+		override export_ready() {
+			return Boolean( this.export_state().module )
+		}
+
+		/**
+		 * The folder the module goes to, in the title of the button itself.
+		 *
+		 * Section 10: the folder follows from the class names and is not free, and
+		 * mam turns a wrong one into `Root package not found` at build time, far from
+		 * the editor. Written where it is read without hovering, because it is a
+		 * decision the author is making whether they see it or not.
+		 */
+		override export_title() {
+			const module = this.export_state().module
+			return module ? `Скачать ${ module.path }` : 'Скачать'
+		}
+
+		override export_file() {
+			const module = this.export_state().module
+			return `${ module?.name ?? 'vmap' }.zip`
+		}
+
+		override export_hint() {
+
+			const state = this.export_state()
+			if( state.refusal ) return 'Документ не выгружается. Причина под шапкой'
+
+			const module = state.module
+			if( !module ) return 'Документ ещё загружается'
+
+			return `${ module.files.length } файлов модуля ${ module.path }.`
+				+ ` Распаковать в корень MAM и собрать «npx mam ${ module.path }»`
+
+		}
+
+		/**
+		 * The archive itself. A plain method: it is read once, by the click, and a
+		 * cell in front of it would keep the whole file alive for nothing.
+		 */
+		override export_blob() {
+
+			const state = this.export_state()
+			if( !state.module ) return this.$.$mol_fail(
+				new Error( state.refusal || 'Документ ещё загружается' )
+			)
+
+			return new this.$.$mol_blob(
+				[ this.$.$bog_vmap_app_export_archive( state.module ) ],
+				{ type: 'application/zip' },
+			)
+
+		}
+
+		/**
+		 * The refusal, line by line, as the export words it. Each line already names
+		 * the class, the line, the method and the fix, so nothing is added here.
+		 */
+		export_notes(): readonly string[] {
+			const refusal = this.export_state().refusal
+			return refusal ? refusal.split( '\n' ).filter( Boolean ) : []
+		}
+
+		override export_rows() {
+			return this.export_notes().map( ( _, index )=> this.Export_row( index ) )
+		}
+
+		@ $mol_mem_key
+		override export_text( index: number ) {
+			return this.export_notes()[ index ] ?? ''
+		}
+
 		/** The picked node as the code editor takes it: a name, empty for none. */
 		code_prop() {
 			return this.selected() ?? ''
@@ -457,6 +585,10 @@ namespace $.$$ {
 				// error under it stale, and the action that helps is on this one.
 				... this.stalled() ? [ this.Stall() ] : [],
 				... this.error() ? [ this.Alarm() ] : [],
+				// Beside the dead button and not inside the code panel: that panel is
+				// folded by default and speaks about the picked node, while this is
+				// about the document and can name a class nobody has open.
+				... this.export_notes().length ? [ this.Export_note() ] : [],
 				this.Body(),
 				... this.dragged() ? [ this.Ghost() ] : [],
 			] as readonly $mol_view[]
