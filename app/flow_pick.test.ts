@@ -175,6 +175,46 @@ namespace $ {
 
 		},
 
+		/**
+		 * REPRO: a wire drawn onto an input that already carries one used to be
+		 * written straight over, leaving the previous source line in the document
+		 * with nobody reading it.
+		 */
+		'REPRO rebinding an occupied input leaves no orphan behind'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			// Two sources of the same shape, names sharing a prefix on purpose.
+			stage.drop( calc, stage.client([ 100, 100 ]) )
+			stage.drop( calc, stage.client([ 100, 300 ]) )
+			stage.drop( map, stage.client([ 400, 100 ]) )
+
+			const wire = ( from: string, prop: string )=> {
+				stage.press( stage.overlay(), stage.port_dot( from, prop, 'out' ) )
+				stage.move( stage.overlay(), stage.port_dot( 'Map', 'zoom', 'in' ) )
+				stage.release( stage.overlay(), stage.port_dot( 'Map', 'zoom', 'in' ) )
+				stage.redraw()
+				stage.scene.flush()
+			}
+
+			stage.tap( stage.part_center( 'Calc' ) )
+			wire( 'Calc', 'result' )
+
+			$mol_assert_ok( stage.app.doc_source().includes( 'calc_result = Calc result' ) )
+			$mol_assert_like( stage.app.doc_wires().map( link => `${ link.to }.${ link.to_prop }` ), [ 'Map.zoom' ] )
+
+			// The same input, a different source: the first wire goes with its line,
+			// and the wire lands on the part it was dropped on, prefix name and all.
+			stage.tap( stage.part_center( 'Calc_2' ) )
+			wire( 'Calc_2', 'result' )
+
+			const source = stage.app.doc_source()
+			$mol_assert_equal( source.includes( 'calc_result =' ), false )
+			$mol_assert_ok( source.includes( 'calc_2_result = Calc_2 result' ) )
+			$mol_assert_like( stage.app.doc_wires().map( link => `${ link.to }.${ link.to_prop } <= ${ link.from }` ), [ 'Map.zoom <= Calc_2' ] )
+
+		},
+
 		'REPRO a drop from the palette leaves the picked part where it was'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )

@@ -497,22 +497,31 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Drops the remembered boxes of a part that is gone from the document.
+		 * Drops every remembered box of a node: the node itself wherever it was
+		 * drawn, and everything that was drawn inside it.
 		 *
 		 * The counterpart of the merge in `message_receive`. Since a missing name no
 		 * longer means «has no size», something has to say when a name means nothing
-		 * at all, and only the delete knows that. A node removed by editing the text
-		 * by hand is not covered and will leave a box behind — harmless, because
-		 * nothing looks up a name the document no longer carries, and worth fixing
-		 * when the code editor of stage 4 makes that path real.
+		 * where it used to, and only the two writes that move or remove a node know
+		 * that. A node removed by editing the text by hand is not covered and will
+		 * leave a box behind — worth fixing when the code editor of stage 4 makes
+		 * that path real.
+		 *
+		 * BY SEGMENT AND NOT BY PREFIX, which is the whole difference between this
+		 * and what it was. A node carried into a container is measured at a NEW path,
+		 * and the old key kept its last box beside it: two boxes answered to one
+		 * name, and everything that looks a node up by name — the ring, the hit test,
+		 * the port dots — could get either. Measured on the deploy: `…/Schet` with
+		 * its free coordinate living next to `…/Pair/Schet`.
 		 */
 		sizes_forget( name: string ) {
 
-			const prefix = this.doc_root() + '/' + name
+			const prefix = this.doc_root() + '/'
 			const kept = {} as { [ node: string ]: $bog_vmap_bridge_rect }
 
 			for( const key of Object.keys( this.sizes_last ) ) {
-				if( key === prefix || key.startsWith( prefix + '/' ) ) continue
+				const path = key.startsWith( prefix ) ? key.slice( prefix.length ).split( '/' ) : []
+				if( path.includes( name ) ) continue
 				kept[ key ] = this.sizes_last[ key ]
 			}
 

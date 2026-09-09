@@ -450,6 +450,79 @@ namespace $ {
 
 		},
 
+		/**
+		 * REPRO: a node carried into a container is measured at a new path, and the
+		 * box under its old path kept answering to the same name. Two boxes for one
+		 * name is how a wire lands on the neighbour of the part it was dropped on.
+		 */
+		'REPRO a node that moved leaves no box behind at its old path'( $ ) {
+
+			const { pane } = pane_make( $, {}, { doc_names: ()=> [ 'Pair', 'Schet' ] } )
+
+			pane.sizes_last = {
+				[ `${root}/Schet` ]: box( 700, 600 ),
+				[ `${root}/Pair` ]: box( 0, 0, 400, 300 ),
+			}
+
+			// Carried into the pair: the scene will measure it at the new path, and
+			// the owner tells the canvas to forget where it used to be.
+			pane.sizes_forget( 'Schet' )
+
+			$mol_assert_like( Object.keys( pane.sizes() ), [ `${root}/Pair` ] )
+
+			// And the new report puts it inside, with one box answering to the name.
+			pane.sizes_last = { ... pane.sizes_last, [ `${root}/Pair/Schet` ]: box( 10, 10 ) }
+			pane.sizes_version( pane.sizes_version() + 1 )
+
+			$mol_assert_like( pane.part_size( 'Schet' ), box( 10, 10 ) )
+			$mol_assert_equal( pane.part_names().filter( name => name === 'Schet' ).length, 1 )
+
+			// Carried OUT of the pair, which is the case a rule written as a prefix of
+			// the root path cannot see: the stale key is a deep one.
+			pane.sizes_forget( 'Schet' )
+
+			$mol_assert_like( Object.keys( pane.sizes() ), [ `${root}/Pair` ] )
+
+		},
+
+		/**
+		 * REPRO: two parts of one container whose names share a prefix. The dot the
+		 * pointer is over belongs to the part it is drawn on, and to no other.
+		 */
+		'REPRO a port dot belongs to the part it is drawn on, prefix or not'( $ ) {
+
+			const ports = [
+				{ name: 'zoom', next: false, kind: 'number' as const },
+				{ name: 'marker', next: false, kind: 'string' as const },
+			]
+
+			const { pane } = pane_make( $, {}, {
+				doc_names: ()=> [ 'Pair', 'Map', 'Map_2' ],
+				part_ports: ()=> ports,
+				wires: ()=> [],
+			} )
+
+			// Stacked inside the pair, sharing a left edge: Map_2 above Map.
+			pane.sizes_last = {
+				[ `${root}/Pair` ]: box( 0, 0, 400, 500 ),
+				[ `${root}/Pair/Map_2` ]: box( 0, 0, 320, 220 ),
+				[ `${root}/Pair/Map` ]: box( 0, 220, 320, 220 ),
+			}
+
+			pane.wire_drag({ from: 'Pair', from_prop: 'x', kind: 'number' })
+
+			const dots = pane.wire_dots()
+			const at = ( x: number, y: number )=> $bog_vmap_app_wire_dot_at( dots, [ x, y ] )
+
+			// The zoom dot of the upper map, and of the lower one.
+			$mol_assert_equal( at( -12, 7 )?.node, 'Map_2' )
+			$mol_assert_equal( at( -12, 227 )?.node, 'Map' )
+
+			// One dot set per part, not two.
+			$mol_assert_equal( dots.filter( dot => dot.node === 'Map' ).length, 2 )
+
+		},
+
 		/** A modified click without a sweep takes nothing and clears nothing. */
 		'a modified click leaves the picked set alone'( $ ) {
 
