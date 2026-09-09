@@ -6,7 +6,9 @@ namespace $.$$ {
 		gap: $mol_gap.space,
 		padding: $mol_gap.block,
 		maxWidth: '28rem',
-		minWidth: 0,
+
+		/** A floor of its own, like every detail of the shelf: see the map. */
+		minWidth: '12rem',
 		background: { color: $mol_theme.card },
 		border: { radius: $mol_gap.round },
 		boxShadow: `0 0 0 1px ${ $mol_theme.line }`,

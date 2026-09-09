@@ -111,6 +111,43 @@ namespace $ {
 
 		},
 
+		/**
+		 * A DETAIL CARRIES ITS OWN FLOOR, and the canvas is where that is not
+		 * optional: a free part is placed absolutely inside the root of a document,
+		 * which has no width of its own, so a `max-width` in per cent resolves to
+		 * zero and a `min-width` of zero has nothing to stop it. A minimum beats a
+		 * maximum in CSS, which is what keeps the box on screen.
+		 *
+		 * Read off the stylesheet the class attached, so what is checked is what the
+		 * browser will be handed. Only the first rule is read: it belongs to the
+		 * component itself, and the ones after it are its sub views, which may well
+		 * have a floor of zero and should.
+		 *
+		 * The pixels themselves are not checked here and cannot be: a mol test has
+		 * no layout. What this holds is the rule; a box measured on screen is the
+		 * user's check.
+		 */
+		'every detail of the shelf declares a floor of its own'( $ ) {
+
+			const doc = $.$mol_dom_context.document
+			$mol_assert_ok( doc )
+
+			for( const part of [ 'calc', 'cell', 'map', 'plot' ] ) {
+
+				const el = doc.getElementById( `${d}mol_style_attach:${d}bog_vmap_part_${ part }` )
+				$mol_assert_ok( el )
+
+				const own = ( el!.textContent ?? '' ).split( '}' )[ 0 ]
+				const floor = /min-width:\s*([^;]+)/.exec( own )?.[ 1 ]?.trim() ?? ''
+
+				// Declared at all, and not the zero that lets a box vanish.
+				$mol_assert_ok( floor )
+				$mol_assert_equal( floor === '0' || floor === '0px', false )
+
+			}
+
+		},
+
 		'the dev server address of the pack derives both links'( $ ) {
 
 			const lib = $.$bog_vmap_lib.make({ $ })
