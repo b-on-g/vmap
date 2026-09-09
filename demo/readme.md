@@ -18,10 +18,13 @@ What the built bundle is checked to contain:
 - both classes of the document;
 - `this.Calc().result()` — a wire, both links intact, so the mechanism of
   section 1 survives export;
-- `$mol_mem( $bog_vmap_demo_calc.prototype, "sum" )` — a hand written body still
-  memoized, applied as a separate expression after the class the way studio does
-  it in `source_js_decorators()`;
-- `$mol_style_attach` carrying the stylesheet.
+- `$mol_mem( ( $.$bog_vmap_demo_calc.prototype ), "sum" )` in the BUNDLE, which is
+  what TypeScript makes of the `@ $mol_mem` the source carries over the method:
+  a hand written body is still memoized, and the source says so the way a person
+  writes it rather than as an expression after the class;
+- the CSS rule itself, compiled into the bundle out of `demo.view.css` — mam
+  carries a stylesheet of a module the way it carries `mol/view/view/view.css`,
+  so nothing attaches it at run time and the page links nothing.
 
 It also closes the second half of the circle of section 5: the `-/web.view.tree`
 this module builds parses with the library model of `../lib/`, which reads the
