@@ -573,9 +573,11 @@ namespace $ {
 			$mol_assert_equal( app.export_ready(), true )
 			$mol_assert_equal( module.path, 'my/site/page' )
 			$mol_assert_equal( module.name, 'page' )
+			// A dropped component writes no body and no styles, so the module carries
+			// neither file: what comes out is what a person would have written.
 			$mol_assert_equal(
 				module.files.map( file => file.name ).join( ' ' ),
-				'page.view.tree page.view.ts page.view.css.ts page.meta.tree index.html',
+				'page.view.tree page.meta.tree index.html',
 			)
 
 			// The declaration downloaded is the document, not a rendering of it.
@@ -637,9 +639,13 @@ namespace $ {
 			$mol_assert_ok( tree.includes( `${d}bog_vmap_app_page_app ${d}mol_view` ) )
 
 			// The address key is the standard one, so a link between the pages is an
-			// ordinary link written in the document itself.
-			$mol_assert_ok( module.files[ 1 ].text.includes( `${d}mol_state_arg` ) )
-			$mol_assert_ok( module.files[ 4 ].text.includes( `${d}bog_vmap_app_page_app` ) )
+			// ordinary link written in the document itself. Addressed by name and not
+			// by number: which files a module carries follows from what it has.
+			const file_of = ( suffix: string )=>
+				module.files.find( file => file.name.endsWith( suffix ) )?.text ?? ''
+
+			$mol_assert_ok( file_of( '.view.ts' ).includes( `${d}mol_state_arg` ) )
+			$mol_assert_ok( file_of( 'index.html' ).includes( `${d}bog_vmap_app_page_app` ) )
 
 		},
 
@@ -728,7 +734,6 @@ namespace $ {
 			const module = app.export_state().module!
 
 			$mol_assert_equal( app.export_ready(), true )
-			$mol_assert_equal( module.files.length, 5 )
 			$mol_assert_equal( module.root, `${d}my_site_page` )
 			$mol_assert_equal( module.files[ 0 ].text, `${d}my_site_page ${d}mol_view sub /\n` )
 
@@ -736,9 +741,11 @@ namespace $ {
 			// document used to be unpacked inside the editor itself.
 			$mol_assert_equal( module.path, 'my/site/page' )
 
-			// No hand written body anywhere, so no subclass and no rule is emitted.
-			$mol_assert_equal( module.files[ 1 ].text.includes( 'export class' ), false )
-			$mol_assert_equal( module.files[ 2 ].text.includes( 'style_attach' ), false )
+			// No body and no styles anywhere, so neither file is written at all.
+			$mol_assert_like(
+				module.files.map( file => file.name ),
+				[ 'page.view.tree', 'page.meta.tree', 'index.html' ],
+			)
 
 		},
 

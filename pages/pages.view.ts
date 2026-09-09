@@ -2,6 +2,7 @@ namespace $.$$ {
 
 	export class $bog_vmap_pages_hero extends $.$bog_vmap_pages_hero {
 
+		@ $mol_mem
 		count( next?: number ) {
 			return next ?? 7
 		}
@@ -11,7 +12,6 @@ namespace $.$$ {
 		}
 
 	}
-	;( $mol_mem( $bog_vmap_pages_hero.prototype, "count" ) )
 
 	export class $bog_vmap_pages_app extends $.$bog_vmap_pages_app {
 

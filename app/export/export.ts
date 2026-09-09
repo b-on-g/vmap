@@ -436,14 +436,22 @@ namespace $ {
 		 */
 		const router = pages.length > 1 ? router_name( path, names ) : ''
 
+		/**
+		 * A file with nothing in it is not written at all, because a module written
+		 * by a person does not carry one: no class has a body, there is no
+		 * `.view.ts`; nobody styled anything, there is no stylesheet.
+		 */
+		const body = view_ts.call( this, sorted, router, pages )
+		const style = view_css( sorted )
+
 		const files = [
 			{
 				name: `${ name }.view.tree`,
 				text: sorted.map( item => item.tree.toString() ).join( '' )
 					+ ( router ? router_tree( router, entry ) : '' ),
 			},
-			{ name: `${ name }.view.ts`, text: view_ts.call( this, sorted, router, pages ) },
-			{ name: `${ name }.view.css.ts`, text: view_css_ts.call( this, sorted ) },
+			... body.includes( 'export class' ) ? [ { name: `${ name }.view.ts`, text: body } ] : [],
+			... style ? [ { name: `${ name }.view.css`, text: style } ] : [],
 			{ name: `${ name }.meta.tree`, text: 'include \\/mol/theme/auto\n' },
 			{ name: 'index.html', text: index_html( router || entry ) },
 		]
@@ -546,16 +554,75 @@ namespace $ {
 	}
 
 	/**
+	 * A hand written body with `@ $mol_mem` written above the methods that need it.
+	 *
+	 * The decorator over the method is how a person writes it, and what comes out
+	 * of here has to read like a module somebody wrote by hand. The alternative —
+	 * `$mol_mem( Klass.prototype, "name" )` as an expression after the class — is
+	 * what the SCENE has to do, because a decorator cannot be written into the
+	 * string handed to `new Function`; an exported file is compiled by TypeScript
+	 * and has no such excuse.
+	 *
+	 * Finding where a method starts is not guesswork either: the body is cut by
+	 * the same `$bog_vmap_app_code_props_js` the code panel cuts it with, so the
+	 * export and the panel agree about where a property begins by construction
+	 * rather than by two implementations happening to match.
+	 *
+	 * The decorator goes under whatever comment belongs to the method and directly
+	 * over the method itself, which is where a reader looks for it.
+	 *
+	 * **A body the slicer cannot cut keeps the old form**, expressions after the
+	 * class. Braces are counted rather than parsed, so a `}` inside a string is
+	 * enough to defeat it — and a body that loses its decorators loses its atoms
+	 * silently, which is the one outcome worth an ugly file.
+	 */
+	export function $bog_vmap_app_export_decorated(
+		this: $,
+		js: string,
+		klass: string,
+		memos: ReadonlyMap< string, string >,
+	): { readonly body: string, readonly after: readonly string[] } {
+
+		const after = ()=> [ ... memos ].map(
+			( [ name, mem ] )=> `\t;( ${ mem }( ${ klass }.prototype, ${ JSON.stringify( name ) } ) )\n`
+		)
+
+		if( !memos.size ) return { body: js, after: [] }
+
+		let props: $bog_vmap_app_code_props
+
+		try {
+			props = this.$bog_vmap_app_code_props_js( js )
+		} catch( error: unknown ) {
+			if( this.$mol_promise_like( error ) ) return this.$mol_fail_hidden( error )
+			return { body: js, after: after() }
+		}
+
+		const decorated = new Map( props )
+
+		for( const [ name, mem ] of memos ) {
+
+			const code = props.get( name )
+			if( code === undefined ) continue
+
+			const at = code.search( new RegExp( `(^|[^\\w.$])${ name }\\s*\\(`, 'm' ) )
+			if( at < 0 ) continue
+
+			const line = code.lastIndexOf( '\n', at ) + 1
+
+			decorated.set( name, code.slice( 0, line ) + `@ ${ mem }\n` + code.slice( line ) )
+
+		}
+
+		return { body: this.$bog_vmap_app_code_joined( decorated ), after: [] }
+	}
+
+	/**
 	 * Hand written bodies, one subclass per class that has one.
 	 *
-	 * Decorators go as separate expressions after the class, the way studio applies
-	 * them in `source_js_decorators()`. Writing `@ $mol_mem` into the user's text
-	 * would mean finding where each method starts, and getting that wrong produces
-	 * a file that does not compile.
-	 *
-	 * The leading `;` is not decoration. A generated line starting with `(` and no
-	 * semicolon above it gets glued to the previous expression by ASI, and the
-	 * result is `$( … )` and a `TypeError` at load.
+	 * The leading `;` of the fallback form is not decoration. A generated line
+	 * starting with `(` and no semicolon above it gets glued to the previous
+	 * expression by ASI, and the result is `$( … )` and a `TypeError` at load.
 	 */
 	function view_ts(
 		this: $,
@@ -571,7 +638,7 @@ namespace $ {
 			const js = item.node.js?.trim()
 			if( !js ) continue
 
-			const decorators = [] as string[]
+			const memos = new Map< string, string >()
 
 			for( const prop of item.tree.kids[ 0 ]?.kids ?? [] ) {
 
@@ -579,16 +646,16 @@ namespace $ {
 				if( !key && !next ) continue
 				if( ! this.$bog_vmap_app_export_defines( js, name ) ) continue
 
-				decorators.push(
-					`\t;( $mol_mem${ key ? '_key' : '' }( ${ item.name }.prototype, ${ JSON.stringify( name ) } ) )\n`
-				)
+				memos.set( name, `$mol_mem${ key ? '_key' : '' }` )
 
 			}
 
+			const made = this.$bog_vmap_app_export_decorated( js, item.name, memos )
+
 			out.push( `\n\texport class ${ item.name } extends $.${ item.name } {\n\n` )
-			out.push( this.$bog_vmap_app_export_indent( js ) + '\n' )
+			out.push( this.$bog_vmap_app_export_indent( made.body ) + '\n' )
 			out.push( '\n\t}\n' )
-			out.push( ... decorators )
+			out.push( ... made.after )
 
 		}
 
@@ -600,29 +667,32 @@ namespace $ {
 	}
 
 	/**
-	 * Styles.
+	 * Styles, as a stylesheet and not as a program that attaches one.
 	 *
-	 * `$mol_style_attach` rather than `$mol_style_define`, because what the editor
-	 * holds is raw CSS text and not a dictionary of properties. Name and CSS both
-	 * go in through `JSON.stringify`: a stylesheet containing a backtick or a `${`
-	 * would tear a template literal apart, and that is user text.
+	 * What the editor holds is raw CSS text, so the file that carries it is a
+	 * `.view.css` — mam compiles every stylesheet of a module into the bundle
+	 * itself, the way `mol/view/view/view.css` and `mol/theme/theme.css` travel,
+	 * and the page needs no link and no attaching code.
+	 *
+	 * That also takes user text out of a JavaScript literal. `$mol_style_attach`
+	 * had to be handed the stylesheet through `JSON.stringify`, because a backtick
+	 * or a `${` in it would tear the literal apart; a `.css` file has nothing to
+	 * escape into.
 	 */
-	function view_css_ts( this: $, items: readonly Parsed[] ) {
+	function view_css( items: readonly Parsed[] ) {
 
-		const out = [ 'namespace $.$$ {\n' ]
+		const out = [] as string[]
 
 		for( const item of items ) {
 
 			const css = item.node.css?.trim()
 			if( !css ) continue
 
-			out.push( `\n\t$mol_style_attach( ${ JSON.stringify( item.name ) }, ${ JSON.stringify( css ) } )\n` )
+			out.push( css + '\n' )
 
 		}
 
-		out.push( '\n}\n' )
-
-		return out.join( '' )
+		return out.join( '\n' )
 	}
 
 	function index_html( root: string ) {

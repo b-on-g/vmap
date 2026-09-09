@@ -42,8 +42,9 @@ namespace $ {
 		``,
 	].join( '\n' )
 
+	/** Text of one file of the module, or empty when the module carries none. */
 	function file_of( module: $bog_vmap_app_export_module, suffix: string ) {
-		return module.files.find( file => file.name.endsWith( suffix ) )!.text
+		return module.files.find( file => file.name.endsWith( suffix ) )?.text ?? ''
 	}
 
 	$mol_test({
@@ -145,7 +146,12 @@ namespace $ {
 			const ts = file_of( module, '.view.ts' )
 
 			$mol_assert_equal( ts.includes( `export class ${d}bog_site_hero extends $.${d}bog_site_hero {` ), true )
-			$mol_assert_equal( ts.includes( `;( ${d}mol_mem( ${d}bog_site_hero.prototype, "count" ) )` ), true )
+
+			// Over the method, the way a person writes it, and nowhere else: the
+			// expression form belongs to the scene, which cannot write a decorator
+			// into the string it hands to `new Function`.
+			$mol_assert_equal( ts.includes( `\t\t@ ${d}mol_mem\n\t\tcount( next?: number ) {` ), true )
+			$mol_assert_equal( ts.includes( '.prototype' ), false )
 
 			/** `title` and `plain` carry no sign, so the generated base does not memoize them either. */
 			$mol_assert_equal( ts.includes( '"title"' ), false )
@@ -153,19 +159,85 @@ namespace $ {
 
 		},
 
-		'a class without a body gets no subclass at all'( $ ) {
+		/**
+		 * The file that goes out is still a file the editor can read back: the body
+		 * with decorators in it slices into exactly the properties it was cut from.
+		 * The export and the code panel cut with the same function, so this is a
+		 * check that the decorator did not land somewhere that breaks the cut.
+		 */
+		'the decorated body slices back into the same properties'( $ ) {
 
-			const module = $.$bog_vmap_app_export_build([ { source: page }, { source: hero } ])
+			const module = $.$bog_vmap_app_export_build([
+				{ source: page },
+				{ source: hero, js: 'count( next?: number ) {\n\treturn next ?? 7\n}\n' },
+			])
 
-			$mol_assert_equal( file_of( module, '.view.ts' ), 'namespace $.$$ {\n\n}\n' )
+			const ts = file_of( module, '.view.ts' )
+			const body = ts.slice(
+				ts.indexOf( '{', ts.indexOf( 'export class' ) ) + 1,
+				ts.lastIndexOf( '\t}' ),
+			)
+
+			$mol_assert_like( [ ... $.$bog_vmap_app_code_props_js( body ).keys() ], [ 'count' ] )
+
+		},
+
+		/** The decorator goes under the comment of the method, not above it. */
+		'a documented method keeps its comment over the decorator'( $ ) {
+
+			const module = $.$bog_vmap_app_export_build([
+				{ source: page },
+				{
+					source: hero,
+					js: '/** How many. */\ncount( next?: number ) {\n\treturn next ?? 7\n}\n',
+				},
+			])
+
+			$mol_assert_equal(
+				file_of( module, '.view.ts' ).includes(
+					`\t\t/** How many. */\n\t\t@ ${d}mol_mem\n\t\tcount( next?: number ) {`
+				),
+				true,
+			)
 
 		},
 
 		/**
-		 * The stylesheet is user text. A backtick or a `${` in it would tear a
-		 * template literal apart, which is why both ends go through `JSON.stringify`.
+		 * A body the slicer cannot cut keeps the old form: braces are counted, not
+		 * parsed, so a `}` inside a string defeats it. An ugly file is the right
+		 * trade — a body that loses its decorators loses its atoms silently.
 		 */
-		'a stylesheet is embedded as data, not as a template literal'( $ ) {
+		'a body that cannot be sliced keeps the decorators after the class'( $ ) {
+
+			const module = $.$bog_vmap_app_export_build([
+				{ source: page },
+				{ source: hero, js: 'count( next?: number ) {\n\treturn next ?? "}"\n}\n' },
+			])
+
+			const ts = file_of( module, '.view.ts' )
+
+			$mol_assert_equal( ts.includes( `;( ${d}mol_mem( ${d}bog_site_hero.prototype, "count" ) )` ), true )
+
+		},
+
+		'a class without a body gets no file of its own at all'( $ ) {
+
+			const module = $.$bog_vmap_app_export_build([ { source: page }, { source: hero } ])
+
+			// Not an empty namespace: a module written by a person carries no file
+			// with nothing in it.
+			$mol_assert_equal( module.files.some( file => file.name.endsWith( '.view.ts' ) ), false )
+			$mol_assert_equal( module.files.some( file => file.name.endsWith( '.view.css' ) ), false )
+
+		},
+
+		/**
+		 * The stylesheet goes out as a stylesheet. mam compiles every `.css` of a
+		 * module into the bundle, the way `mol/view/view/view.css` travels, so there
+		 * is nothing to attach and nothing to escape: user text that would have torn
+		 * a template literal apart is just text in a file.
+		 */
+		'a stylesheet is a stylesheet, verbatim'( $ ) {
 
 			const css = '[bog_site_hero]{ content: "` ' + '${x}' + '" }'
 
@@ -174,20 +246,8 @@ namespace $ {
 				{ source: hero, css },
 			])
 
-			const out = file_of( module, '.view.css.ts' )
-
-			/**
-			 * The whole emitted call, spelled out. A backtick does survive into the
-			 * file — it just sits inside a double quoted string, where it is one more
-			 * character. Asserting its absence would be asserting the wrong thing; what
-			 * matters is that neither it nor the `${` can terminate the literal.
-			 */
-			$mol_assert_equal(
-				out.includes(
-					`\t${d}mol_style_attach( ${ JSON.stringify( `${d}bog_site_hero` ) }, ${ JSON.stringify( css ) } )`
-				),
-				true,
-			)
+			$mol_assert_equal( file_of( module, '.view.css' ), css + '\n' )
+			$mol_assert_equal( module.files.some( file => file.name.endsWith( '.view.css.ts' ) ), false )
 
 		},
 
@@ -203,7 +263,12 @@ namespace $ {
 
 		},
 
-		'the module is exactly five files'( $ ) {
+		/**
+		 * The module carries what a person would have written and nothing else: the
+		 * declaration, what mam needs to build it, and a page. A body and a
+		 * stylesheet appear only when the document has them.
+		 */
+		'the module is the files a person would have written'( $ ) {
 
 			const module = $.$bog_vmap_app_export_build([ { source: page }, { source: hero } ])
 
@@ -214,8 +279,22 @@ namespace $ {
 				module.files.map( file => file.name ),
 				[
 					'site.view.tree',
+					'site.meta.tree',
+					'index.html',
+				],
+			)
+
+			const full = $.$bog_vmap_app_export_build([
+				{ source: page },
+				{ source: hero, js: 'count( next?: number ) {\n\treturn next ?? 7\n}\n', css: '[bog_site_hero]{}' },
+			])
+
+			$mol_assert_like(
+				full.files.map( file => file.name ),
+				[
+					'site.view.tree',
 					'site.view.ts',
-					'site.view.css.ts',
+					'site.view.css',
 					'site.meta.tree',
 					'index.html',
 				],
@@ -277,7 +356,7 @@ namespace $ {
 
 			// Nothing of the desk: no coordinates, and no absolute positioning to
 			// apply them with.
-			const css = file_of( $.$bog_vmap_app_export_build([ { source: board } ]), '.view.css.ts' )
+			const css = file_of( $.$bog_vmap_app_export_build([ { source: board } ]), '.view.css' )
 			$mol_assert_equal( /\bleft\b|\btop\b|position/.test( css ), false )
 
 		},
@@ -327,14 +406,15 @@ namespace $ {
 
 			const module = $.$bog_vmap_app_export_build([ { source: pages }, { source: hero } ])
 
-			$mol_assert_equal( /\bleft\b|\btop\b|position/.test( file_of( module, '.view.css.ts' ) ), false )
+			$mol_assert_equal( /\bleft\b|\btop\b|position/.test( file_of( module, '.view.css' ) ), false )
 			$mol_assert_equal( /\bx\b|\by\b|spot/.test( file_of( module, '.view.ts' ) ), false )
 
 		},
 
 		/**
 		 * A router over one page would be a class that always answers the same thing.
-		 * One page stays one page: the same five files and the document at the root.
+		 * One page stays one page: no router class, no file to put it in, and the
+		 * document itself at the root.
 		 */
 		'a document of one artboard gets no router'( $ ) {
 
@@ -349,9 +429,13 @@ namespace $ {
 			const module = $.$bog_vmap_app_export_build([ { source: one } ])
 
 			$mol_assert_equal( file_of( module, '.view.tree' ), one )
-			$mol_assert_equal( file_of( module, '.view.ts' ), 'namespace $.$$ {\n\n}\n' )
 			$mol_assert_equal( module.root, `${d}bog_site_page` )
-			$mol_assert_equal( module.files.length, 5 )
+			// One class, so the path is `bog/site/page` and the module is named after
+			// its last segment.
+			$mol_assert_like(
+				module.files.map( file => file.name ),
+				[ 'page.view.tree', 'page.meta.tree', 'index.html' ],
+			)
 
 		},
 
