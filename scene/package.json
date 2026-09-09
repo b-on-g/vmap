@@ -237,6 +237,7 @@
     "$mol_plot_pane",
     "$mol_touch",
     "$bog_vmap_bridge",
+    "$mol_import",
     "$mol_tree2_text_to_string_mapped",
     "$mol_tree2_text_to_string",
     "$mol_tree2_text_to",

@@ -6194,6 +6194,18 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    /** Dynamic sources import. */
+    class $mol_import extends $mol_object2 {
+        static module(uri: string): any;
+        static module_async(uri: string): Promise<any>;
+        static script(uri: string): any;
+        static script_async(uri: string): Promise<any>;
+        static style(uri: string): any;
+        static style_async(uri: string): any;
+    }
+}
+
+declare namespace $ {
     function $mol_tree2_text_to_string(this: $, text: $mol_tree2): string;
 }
 
@@ -6708,6 +6720,17 @@ declare namespace $ {
 
 //# sourceMappingURL=scene.view.tree.d.ts.map
 declare namespace $.$$ {
+    /** One compile round: the live root, the identity it was built under, the failure. */
+    type mounted = {
+        readonly made: $mol_view | null;
+        readonly pack: string;
+        readonly root: string;
+        readonly supers: {
+            readonly [klass: string]: string;
+        };
+        readonly error: string;
+        readonly klass: string;
+    };
     /**
      * Sandbox application of $bog_vmap.
      *
@@ -6717,33 +6740,7 @@ declare namespace $.$$ {
      *
      * @see ../ARCHITECTURE.md sections 3 and 4
      */
-    class $bog_vmap_scene extends $.$bog_vmap_scene {
-        /**
-         * Instance kept across a failed rebuild, see `mount()`.
-         *
-         * A plain field and not a cell, because it is the memo of the cell that
-         * builds it: `mount()` needs to know what it built last time, and a cell
-         * cannot read its own previous value. Nobody else writes it.
-         */
-        instance_live: $mol_view | null;
-        /** Pack the live instance was built against. See `identity_kept()`. */
-        pack_live: string;
-        /** Root class the live instance is an instance of. */
-        root_live: string;
-        /**
-         * Bases of every class this instance has ever been compiled with.
-         *
-         * Accumulated rather than replaced: a class deleted from the document and
-         * written again with another base would otherwise slip through, because the
-         * round in between has no opinion about a name it never saw.
-         */
-        supers_live: {
-            readonly [klass: string]: string;
-        };
-        /** Asset ids the document references but the host has not delivered. */
-        assets_missing: Set<string>;
-        /** Ids already asked for, so a report round does not re-ask every 120ms. */
-        assets_asked: Set<string>;
+    export class $bog_vmap_scene extends $.$bog_vmap_scene {
         /** Last failure sent per stage, `null` when the stage is clear. See `error_post()`. */
         error_sent: {
             compile: string | null;
@@ -6783,67 +6780,44 @@ declare namespace $.$$ {
         /**
          * Last measured box of every free part, remembered across culling.
          *
-         * A plain field, and it is never pruned by measurement: a part that has just
-         * been culled is not in the DOM, so there is nothing to measure, and taking
-         * that for «it has no size» would flip it between shown and hidden forever.
-         * What is remembered is the last truth, not the last observation.
+         * Merged by `sizes_remember()`, never replaced: a part just culled is not in
+         * the DOM, so its absence from a report is not «no size» but «not drawn», and
+         * taking it for a size would flip the part between shown and hidden forever.
          */
-        sizes_seen: {
-            [name: string]: $bog_vmap_scene_box;
+        sizes_seen(next?: {
+            readonly [name: string]: $bog_vmap_scene_box;
+        }): {
+            readonly [name: string]: $bog_vmap_scene_box;
         };
-        /** Bumped when the frame is resized, so the viewport is a reactive value. */
-        screen_version(next?: number): number;
         /**
-         * The frame's own size, which is the viewport of the canvas.
-         *
-         * Taken from this window rather than sent by the host: the frame is stretched
-         * to the pane, so the two are the same rectangle by construction, and asking
-         * the host would put a message on the wire for something already known here.
+         * Viewport of the canvas: the frame's own box, which is the scene's, since
+         * the scene fills the frame. `null` until the first layout — `view_rect()`
+         * refuses to touch the DOM in the middle of a render, and polls after.
          */
         screen(): {
             width: number;
             height: number;
-        };
-        screen_listener(): $mol_dom_listener;
+        } | null;
         /**
-         * Names of the parts the canvas has to draw right now.
-         *
-         * Only parts the host has placed are judged. Anything else — a sub view of a
-         * part, a node the editor never put a coordinate on — is drawn unconditionally,
-         * because culling by a coordinate nobody assigned would be a guess.
-         *
-         * Reading this from `sub()` is what makes the camera move the canvas: the
-         * document's `dom_tree()` subscribes to this cell through its own `sub()`,
-         * and the document shares the reactive graph with the scene, so a camera
-         * message re-renders exactly the root and nothing else.
+         * Names of the placed parts the canvas has to draw right now. Parts nobody
+         * placed are drawn unconditionally, and so is everything while the viewport
+         * is unknown: culling by a coordinate or a box nobody has is a guess, and a
+         * part hidden on a guess would never be measured out of it.
          */
         shown(): Set<string>;
         /**
          * Children of the document root, minus the ones off screen.
          *
-         * **Culling changes what is drawn and never what is stored.** Nothing here
-         * reaches the document text, which lives in the host and is pushed down whole;
-         * this filter sits between the compiled class and the DOM and is undone by
-         * simply not applying it.
-         *
-         * A child whose owning property cannot be read is kept. The name comes from
-         * the atom that holds the view, and a view held by something else is a case
-         * this does not understand — and a case it does not understand is a case it
-         * must not hide.
+         * Culling changes what is drawn and never what is stored: nothing here
+         * reaches the document text. A child whose owning property cannot be read
+         * is kept, because a case this does not understand is one it must not hide.
          */
         sub_shown(kids: readonly $mol_view_content[]): $mol_view_content[];
         /**
-         * Puts the filter between the document root and the DOM.
-         *
-         * An own property on the instance rather than a wrapper class in `code()`:
-         * compilation stays exactly what the document says, and the hot swap of stage
-         * 4.3 replaces the prototype without touching own properties, so the filter
-         * survives a rebuild instead of having to be re-emitted into it.
-         *
-         * The prototype is looked up at call time, not captured: after a prototype
-         * swap a captured `sub` would be the previous implementation, and the canvas
-         * would keep drawing the old document while every other property followed the
-         * new one.
+         * Puts the filter between the document root and the DOM, as `sub_visible()`:
+         * the hook `$mol_view.render()` draws by and `$mol_list` narrows the same way,
+         * so `sub()` stays whole for every other reader — the walks, the seek, the
+         * values. An own property, which the prototype swap of a rebuild leaves be.
          */
         cull_attach(made: $mol_view): void;
         /** Delivered assets: id to `blob:` URL of this realm. */
@@ -6881,20 +6855,11 @@ declare namespace $.$$ {
          */
         pack_uri(next?: string): string;
         /**
-         * Pulls the pack bundle into this realm.
-         *
-         * A cross-origin `<script src>` needs no permission of its own inside the
-         * boundary: measured at 463 ms and 812 `$mol_*` globals in a frame where
-         * `localStorage` and `parent.location` both throw.
-         */
-        pack_fetch(uri: string): Promise<string>;
-        /**
-         * Suspends until the pack is in the realm, then stays resolved.
-         *
-         * Everything that compiles reads this first. A document compiled before
-         * the pack arrives inherits the scene's own `$mol_view`, and there is no
-         * way to move it onto the pack's afterwards: a class computes its base
-         * once, at definition time.
+         * Suspends until the pack bundle is in the realm, then stays resolved.
+         * Everything that compiles reads this first: a class picks its base once, at
+         * definition time, and a document compiled before the pack lands would keep
+         * the scene's own `$mol_view` for good. A cross-origin `<script src>` needs
+         * no permission of its own inside the boundary.
          */
         pack_ready(): string;
         /**
@@ -7056,50 +7021,33 @@ declare namespace $.$$ {
          */
         culprit(): string;
         /**
-         * May the live instance be moved onto the freshly compiled classes.
-         *
-         * Three things it cannot survive. A different pack, because the context of a
-         * live instance is cached under a symbol private to a bundle and silently
-         * falls back to the global one the moment another bundle lands. A different
-         * root class, because then it is another document. And a changed base of ANY
-         * class, because a DOM node takes `attr_static()` off its base at creation
-         * and nothing recomputes it — the panel would read as the new base and behave
-         * as the old one.
-         *
-         * Classes the live instance has never seen are not an obstacle: a new
-         * declaration takes nothing away from anybody.
-         * @see ../ARCHITECTURE.md section 3
+         * May the live instance be moved onto the freshly compiled classes. Three
+         * things it cannot survive: another pack (the context of a live instance is
+         * cached under a symbol private to a bundle), another root class (another
+         * document), a changed base of any class it has ever been compiled with (a
+         * DOM node takes `attr_static()` off its base once). A class it has never
+         * seen takes nothing away. @see ../ARCHITECTURE.md section 3
          */
-        identity_kept(pack: string, root: string, supers: {
+        identity_kept(live: mounted, pack: string, root: string, supers: {
             readonly [klass: string]: string;
         }): boolean;
         /**
-         * The live root instance and why the last compile failed, in one value.
-         *
-         * One cell and not two, because they are one computation: the compile either
-         * yields a component or a reason, and asking twice would compile twice. The
-         * two are split apart again right below, so that each moves only its own
-         * readers — a plain record, which `$mol_owning_catch` refuses, so nothing
-         * here is stamped or destroyed by holding it.
+         * The live root instance, the identity it was built under and why the last
+         * compile failed, in one value: one computation, one cell. `instance()` and
+         * `compile_error()` split it so that each moves only its own readers. A plain
+         * record, which `$mol_owning_catch` refuses to stamp or destroy.
          *
          * An edit moves the living component onto the new classes instead of
          * building another one: cells are own fields of an instance, so a prototype
-         * swap keeps every value, every subscription and the DOM node itself — with
-         * the caret, the focus and the scroll position, which no snapshot can carry
-         * because they never reach a cell. Measured on the S2 bench at 6.1 ms against
-         * 8.7 ms for a rebuild, and unlike a rebuild it does not grow with the size
-         * of the component.
+         * swap keeps every value, every subscription and the DOM node with its caret,
+         * focus and scroll, which no snapshot carries. 6.1 ms against 8.7 ms for a
+         * rebuild on the S2 bench, and flat in the size of the component.
          *
-         * A failed rebuild returns the previous instance, so the value does not
-         * change, no subscriber is woken and the living component stays whole. The
-         * failure travels to the host as an `error` message instead of taking the
-         * page down.
+         * What it built last time is read off its own cache through `$mol_wire_probe`,
+         * the way `view_rect()` does. A failed rebuild answers with that instance, so
+         * `instance()` keeps its value and the living component stays whole.
          */
-        mount(): {
-            readonly made: $mol_view | null;
-            readonly error: string;
-            readonly klass: string;
-        };
+        mount(): mounted;
         /**
          * The live root instance.
          *
@@ -7196,14 +7144,23 @@ declare namespace $.$$ {
          */
         styles_sweep(keep: string): void;
         /**
-         * Swaps `asset:` for `blob:`.
-         *
-         * The bytes arrive over the bridge and the URL is made here: a `blob:`
-         * URL minted by the host belongs to the host origin and simply does not
-         * open in an opaque one. An id with no bytes yet is left in place and
-         * queued for a lazy request.
+         * Swaps `asset:` for `blob:`. The bytes arrive over the bridge and the URL
+         * is made here: one minted by the host belongs to the host origin and does
+         * not open in an opaque one. An id with no bytes yet is left in place.
          */
         assets_apply(text: string): string;
+        /** Every text of the document an address can stand in. */
+        texts(): string[];
+        /** Ids the document mentions and the host has not delivered, in order of mention. */
+        assets_missing(): string[];
+        /**
+         * Asks the host for one asset. Once, for as long as the id stays missing:
+         * the cell is read by `assets_push()` while it is, swept when it is not, and
+         * made anew — asking again — should the id ever go missing again.
+         */
+        asset_ask(id: string): string;
+        /** Projection of `assets_missing()` onto the wire, read from `auto()`. */
+        assets_push(): string[];
         /**
          * Mounted content.
          *
@@ -7308,16 +7265,9 @@ declare namespace $.$$ {
         report_send(): void;
         report_post(): void;
         /**
-         * Keeps the boxes of the free parts for the next culling round.
-         *
-         * Merged, never replaced: what is missing from a report is not a part without
-         * a size, it is a part that was not drawn, and culling is what did that. A
-         * replacing write would erase the box of everything just culled and the rule
-         * would start judging by placement points alone — which is the very state it
-         * only tolerates until the first measurement.
-         *
-         * Only the direct children of the root are kept, the same set `shown()` judges:
-         * one path segment is exactly one free part.
+         * Keeps the boxes of the free parts for the next culling round, merged into
+         * `sizes_seen()`. Only the direct children of the root are kept, the same
+         * set `shown()` judges: one path segment is exactly one free part.
          */
         sizes_remember(sizes: {
             readonly [node: string]: $bog_vmap_bridge_rect;
@@ -7438,6 +7388,7 @@ declare namespace $.$$ {
         view_prop(view: $mol_view): string;
         auto(): any[];
     }
+    export {};
 }
 
 declare namespace $.$$ {

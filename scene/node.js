@@ -13623,6 +13623,60 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    /** Dynamic sources import. */
+    class $mol_import extends $mol_object2 {
+        static module(uri) {
+            $mol_wire_solid();
+            return $mol_wire_sync(this).module_async(uri);
+        }
+        static module_async(uri) {
+            return import(uri);
+        }
+        static script(uri) {
+            $mol_wire_solid();
+            return $mol_wire_sync(this).script_async(uri);
+        }
+        static script_async(uri) {
+            const doc = $mol_dom_context.document;
+            const script = doc.createElement('script');
+            script.src = uri;
+            doc.head.appendChild(script);
+            return new Promise((done, fail) => {
+                script.onload = () => done($mol_dom_context);
+                script.onerror = () => fail(new Error(`Can not import ${uri}`));
+            });
+        }
+        static style(uri) {
+            return $mol_wire_sync(this).style_async(uri);
+        }
+        static style_async(uri) {
+            const doc = $mol_dom_context.document;
+            const style = doc.createElement('link');
+            style.rel = 'stylesheet';
+            style.href = uri;
+            doc.head.appendChild(style);
+            return new Promise((done, fail) => {
+                style.onload = () => done(style.sheet);
+                style.onerror = () => fail(new Error(`Can not import ${uri}`));
+            });
+        }
+    }
+    __decorate([
+        $mol_mem_key
+    ], $mol_import, "module", null);
+    __decorate([
+        $mol_mem_key
+    ], $mol_import, "script", null);
+    __decorate([
+        $mol_mem_key
+    ], $mol_import, "style", null);
+    $.$mol_import = $mol_import;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     function $mol_tree2_text_to_string(text) {
         let res = '';
         function visit(text, prefix, inline) {
@@ -14941,6 +14995,7 @@ var $;
          * source, so a malformed one must be rejected with a readable error rather
          * than a syntax error a hundred lines down. */
         const class_name_ok = /^\$[a-zA-Z][\w$]*$/;
+        const unmounted = { made: null, pack: '', root: '', supers: {}, error: '', klass: '' };
         /**
          * Sandbox application of $bog_vmap.
          *
@@ -14951,30 +15006,6 @@ var $;
          * @see ../ARCHITECTURE.md sections 3 and 4
          */
         class $bog_vmap_scene extends $.$bog_vmap_scene {
-            /**
-             * Instance kept across a failed rebuild, see `mount()`.
-             *
-             * A plain field and not a cell, because it is the memo of the cell that
-             * builds it: `mount()` needs to know what it built last time, and a cell
-             * cannot read its own previous value. Nobody else writes it.
-             */
-            instance_live = null;
-            /** Pack the live instance was built against. See `identity_kept()`. */
-            pack_live = '';
-            /** Root class the live instance is an instance of. */
-            root_live = '';
-            /**
-             * Bases of every class this instance has ever been compiled with.
-             *
-             * Accumulated rather than replaced: a class deleted from the document and
-             * written again with another base would otherwise slip through, because the
-             * round in between has no opinion about a name it never saw.
-             */
-            supers_live = {};
-            /** Asset ids the document references but the host has not delivered. */
-            assets_missing = new Set();
-            /** Ids already asked for, so a report round does not re-ask every 120ms. */
-            assets_asked = new Set();
             /** Last failure sent per stage, `null` when the stage is clear. See `error_post()`. */
             error_sent = { compile: null, runtime: null };
             /** Document source, view.tree text. Full document, never a patch. */
@@ -15007,64 +15038,46 @@ var $;
             /**
              * Last measured box of every free part, remembered across culling.
              *
-             * A plain field, and it is never pruned by measurement: a part that has just
-             * been culled is not in the DOM, so there is nothing to measure, and taking
-             * that for «it has no size» would flip it between shown and hidden forever.
-             * What is remembered is the last truth, not the last observation.
+             * Merged by `sizes_remember()`, never replaced: a part just culled is not in
+             * the DOM, so its absence from a report is not «no size» but «not drawn», and
+             * taking it for a size would flip the part between shown and hidden forever.
              */
-            sizes_seen = {};
-            /** Bumped when the frame is resized, so the viewport is a reactive value. */
-            screen_version(next) {
-                return next ?? 0;
+            sizes_seen(next) {
+                return next ?? {};
             }
             /**
-             * The frame's own size, which is the viewport of the canvas.
-             *
-             * Taken from this window rather than sent by the host: the frame is stretched
-             * to the pane, so the two are the same rectangle by construction, and asking
-             * the host would put a message on the wire for something already known here.
+             * Viewport of the canvas: the frame's own box, which is the scene's, since
+             * the scene fills the frame. `null` until the first layout — `view_rect()`
+             * refuses to touch the DOM in the middle of a render, and polls after.
              */
             screen() {
-                this.screen_version();
-                const win = this.$.$mol_dom_context;
-                return { width: win.innerWidth || 0, height: win.innerHeight || 0 };
-            }
-            screen_listener() {
-                return new this.$.$mol_dom_listener(this.$.$mol_dom_context, 'resize', () => this.screen_version(this.screen_version() + 1));
+                const rect = this.view_rect();
+                return rect && { width: rect.width, height: rect.height };
             }
             /**
-             * Names of the parts the canvas has to draw right now.
-             *
-             * Only parts the host has placed are judged. Anything else — a sub view of a
-             * part, a node the editor never put a coordinate on — is drawn unconditionally,
-             * because culling by a coordinate nobody assigned would be a guess.
-             *
-             * Reading this from `sub()` is what makes the camera move the canvas: the
-             * document's `dom_tree()` subscribes to this cell through its own `sub()`,
-             * and the document shares the reactive graph with the scene, so a camera
-             * message re-renders exactly the root and nothing else.
+             * Names of the placed parts the canvas has to draw right now. Parts nobody
+             * placed are drawn unconditionally, and so is everything while the viewport
+             * is unknown: culling by a coordinate or a box nobody has is a guess, and a
+             * part hidden on a guess would never be measured out of it.
              */
             shown() {
                 const spots = this.spots();
                 const names = Object.keys(spots);
                 if (!names.length)
                     return new Set();
-                const view = this.$.$bog_vmap_scene_viewport(this.camera(), this.screen());
+                const screen = this.screen();
+                if (!screen)
+                    return new Set(names);
+                const view = this.$.$bog_vmap_scene_viewport(this.camera(), screen);
                 const slack = Math.max(cull_slack_min, Math.max(view.width, view.height) / 2);
-                return this.$.$bog_vmap_scene_shown(spots, this.sizes_seen, view, slack, names);
+                return this.$.$bog_vmap_scene_shown(spots, this.sizes_seen(), view, slack, names);
             }
             /**
              * Children of the document root, minus the ones off screen.
              *
-             * **Culling changes what is drawn and never what is stored.** Nothing here
-             * reaches the document text, which lives in the host and is pushed down whole;
-             * this filter sits between the compiled class and the DOM and is undone by
-             * simply not applying it.
-             *
-             * A child whose owning property cannot be read is kept. The name comes from
-             * the atom that holds the view, and a view held by something else is a case
-             * this does not understand — and a case it does not understand is a case it
-             * must not hide.
+             * Culling changes what is drawn and never what is stored: nothing here
+             * reaches the document text. A child whose owning property cannot be read
+             * is kept, because a case this does not understand is one it must not hide.
              */
             sub_shown(kids) {
                 const spots = this.spots();
@@ -15081,23 +15094,16 @@ var $;
                 });
             }
             /**
-             * Puts the filter between the document root and the DOM.
-             *
-             * An own property on the instance rather than a wrapper class in `code()`:
-             * compilation stays exactly what the document says, and the hot swap of stage
-             * 4.3 replaces the prototype without touching own properties, so the filter
-             * survives a rebuild instead of having to be re-emitted into it.
-             *
-             * The prototype is looked up at call time, not captured: after a prototype
-             * swap a captured `sub` would be the previous implementation, and the canvas
-             * would keep drawing the old document while every other property followed the
-             * new one.
+             * Puts the filter between the document root and the DOM, as `sub_visible()`:
+             * the hook `$mol_view.render()` draws by and `$mol_list` narrows the same way,
+             * so `sub()` stays whole for every other reader — the walks, the seek, the
+             * values. An own property, which the prototype swap of a rebuild leaves be.
              */
             cull_attach(made) {
-                Object.defineProperty(made, 'sub', {
+                Object.defineProperty(made, 'sub_visible', {
                     configurable: true,
                     writable: true,
-                    value: () => this.sub_shown(Object.getPrototypeOf(made).sub.call(made) ?? []),
+                    value: () => this.sub_shown(made.sub() ?? []),
                 });
             }
             /** Delivered assets: id to `blob:` URL of this realm. */
@@ -15146,39 +15152,17 @@ var $;
                 return next ?? '';
             }
             /**
-             * Pulls the pack bundle into this realm.
-             *
-             * A cross-origin `<script src>` needs no permission of its own inside the
-             * boundary: measured at 463 ms and 812 `$mol_*` globals in a frame where
-             * `localStorage` and `parent.location` both throw.
-             */
-            async pack_fetch(uri) {
-                const doc = this.$.$mol_dom_context.document;
-                if (!doc)
-                    return uri;
-                await new Promise((done, fail) => {
-                    const el = doc.createElement('script');
-                    el.setAttribute('charset', 'utf-8');
-                    el.onload = () => done();
-                    el.onerror = () => fail(new Error(`Пак не загрузился: ${uri}`));
-                    el.src = uri;
-                    doc.head.appendChild(el);
-                });
-                return uri;
-            }
-            /**
-             * Suspends until the pack is in the realm, then stays resolved.
-             *
-             * Everything that compiles reads this first. A document compiled before
-             * the pack arrives inherits the scene's own `$mol_view`, and there is no
-             * way to move it onto the pack's afterwards: a class computes its base
-             * once, at definition time.
+             * Suspends until the pack bundle is in the realm, then stays resolved.
+             * Everything that compiles reads this first: a class picks its base once, at
+             * definition time, and a document compiled before the pack lands would keep
+             * the scene's own `$mol_view` for good. A cross-origin `<script src>` needs
+             * no permission of its own inside the boundary.
              */
             pack_ready() {
                 const uri = this.pack_uri();
-                if (!uri)
-                    return '';
-                return this.$.$mol_wire_sync(this).pack_fetch(uri);
+                if (uri)
+                    this.$.$mol_import.script(uri);
+                return uri;
             }
             /**
              * Why the canvas is empty, or an empty string when it is not.
@@ -15478,102 +15462,75 @@ var $;
                 return '';
             }
             /**
-             * May the live instance be moved onto the freshly compiled classes.
-             *
-             * Three things it cannot survive. A different pack, because the context of a
-             * live instance is cached under a symbol private to a bundle and silently
-             * falls back to the global one the moment another bundle lands. A different
-             * root class, because then it is another document. And a changed base of ANY
-             * class, because a DOM node takes `attr_static()` off its base at creation
-             * and nothing recomputes it — the panel would read as the new base and behave
-             * as the old one.
-             *
-             * Classes the live instance has never seen are not an obstacle: a new
-             * declaration takes nothing away from anybody.
-             * @see ../ARCHITECTURE.md section 3
+             * May the live instance be moved onto the freshly compiled classes. Three
+             * things it cannot survive: another pack (the context of a live instance is
+             * cached under a symbol private to a bundle), another root class (another
+             * document), a changed base of any class it has ever been compiled with (a
+             * DOM node takes `attr_static()` off its base once). A class it has never
+             * seen takes nothing away. @see ../ARCHITECTURE.md section 3
              */
-            identity_kept(pack, root, supers) {
-                if (!this.instance_live)
+            identity_kept(live, pack, root, supers) {
+                if (!live.made)
                     return false;
-                if (this.pack_live !== pack)
+                if (live.pack !== pack)
                     return false;
-                if (this.root_live !== root)
+                if (live.root !== root)
                     return false;
                 for (const name of Object.keys(supers)) {
-                    const was = this.supers_live[name];
+                    const was = live.supers[name];
                     if (was !== undefined && was !== supers[name])
                         return false;
                 }
                 return true;
             }
             /**
-             * The live root instance and why the last compile failed, in one value.
-             *
-             * One cell and not two, because they are one computation: the compile either
-             * yields a component or a reason, and asking twice would compile twice. The
-             * two are split apart again right below, so that each moves only its own
-             * readers — a plain record, which `$mol_owning_catch` refuses, so nothing
-             * here is stamped or destroyed by holding it.
+             * The live root instance, the identity it was built under and why the last
+             * compile failed, in one value: one computation, one cell. `instance()` and
+             * `compile_error()` split it so that each moves only its own readers. A plain
+             * record, which `$mol_owning_catch` refuses to stamp or destroy.
              *
              * An edit moves the living component onto the new classes instead of
              * building another one: cells are own fields of an instance, so a prototype
-             * swap keeps every value, every subscription and the DOM node itself — with
-             * the caret, the focus and the scroll position, which no snapshot can carry
-             * because they never reach a cell. Measured on the S2 bench at 6.1 ms against
-             * 8.7 ms for a rebuild, and unlike a rebuild it does not grow with the size
-             * of the component.
+             * swap keeps every value, every subscription and the DOM node with its caret,
+             * focus and scroll, which no snapshot carries. 6.1 ms against 8.7 ms for a
+             * rebuild on the S2 bench, and flat in the size of the component.
              *
-             * A failed rebuild returns the previous instance, so the value does not
-             * change, no subscriber is woken and the living component stays whole. The
-             * failure travels to the host as an `error` message instead of taking the
-             * page down.
+             * What it built last time is read off its own cache through `$mol_wire_probe`,
+             * the way `view_rect()` does. A failed rebuild answers with that instance, so
+             * `instance()` keeps its value and the living component stays whole.
              */
             mount() {
+                const prev = $mol_wire_probe(() => this.mount()) ?? unmounted;
                 const src = this.doc_src();
                 const root = this.doc_root();
-                // No pack, no compile. The pack arrives by message now, so the first
-                // moments of every frame are spent without one, and a document built in
-                // that window would inherit OUR `$mol_view` — a class picks its base once
-                // and no later load can move it. An empty canvas for a few hundred
-                // milliseconds is the cheap outcome; a silently wrong base is not.
+                // No pack, no compile: a document built before the pack lands would
+                // inherit OUR `$mol_view`, and a class picks its base once for good.
                 const pack = this.pack_uri();
-                if (!src.trim() || !root || !pack) {
-                    this.instance_live = null;
-                    return { made: null, error: '', klass: '' };
-                }
+                if (!src.trim() || !root || !pack)
+                    return unmounted;
                 try {
-                    // First read of the body, and it suspends: an `@ $mol_action`
-                    // style rule that holds here for the same reason. Everything
-                    // below defines classes, and a class picks its base once — a
-                    // document compiled a moment too early inherits the scene's own
-                    // `$mol_view` and no later load can move it.
+                    // First read of the body, and it suspends — everything below defines
+                    // classes, and a class picks its base once.
                     this.pack_ready();
                     const Root = this.build().Root;
                     const supers = this.supers();
-                    const live = this.instance_live;
-                    if (live && this.identity_kept(pack, root, supers)) {
-                        this.$.$bog_vmap_scene_swap(live, name => Reflect.get(this.sandbox(), name), name => this.shapes()[name] ?? null);
-                        this.supers_live = { ...this.supers_live, ...supers };
-                        // The very same object: `instance()` keeps its value, nobody is
-                        // woken by the swap itself, and only the atoms whose code
-                        // really changed recompute.
-                        return { made: live, error: '', klass: '' };
+                    if (this.identity_kept(prev, pack, root, supers)) {
+                        this.$.$bog_vmap_scene_swap(prev.made, name => Reflect.get(this.sandbox(), name), name => this.shapes()[name] ?? null);
+                        // Bases accumulate: a class deleted and declared again with another
+                        // base would otherwise slip past a round that never saw the name.
+                        return { ...prev, supers: { ...prev.supers, ...supers }, error: '', klass: '' };
                     }
                     const made = Root.make({ $: this.sandbox() });
                     // Before anything reads `dom_tree()`, so the first paint is already
                     // culled and a thousand node document never builds a thousand nodes.
                     this.cull_attach(made);
-                    this.pack_live = pack;
-                    this.root_live = root;
-                    this.supers_live = supers;
-                    this.instance_live = made;
-                    return { made, error: '', klass: '' };
+                    return { made, pack, root, supers, error: '', klass: '' };
                 }
                 catch (error) {
                     if (this.$.$mol_promise_like(error))
                         return this.$.$mol_fail_hidden(error);
                     return {
-                        made: this.instance_live,
+                        ...prev,
                         error: String(error?.message ?? error),
                         klass: String(error?.klass ?? ''),
                     };
@@ -15726,22 +15683,46 @@ var $;
                 }
             }
             /**
-             * Swaps `asset:` for `blob:`.
-             *
-             * The bytes arrive over the bridge and the URL is made here: a `blob:`
-             * URL minted by the host belongs to the host origin and simply does not
-             * open in an opaque one. An id with no bytes yet is left in place and
-             * queued for a lazy request.
+             * Swaps `asset:` for `blob:`. The bytes arrive over the bridge and the URL
+             * is made here: one minted by the host belongs to the host origin and does
+             * not open in an opaque one. An id with no bytes yet is left in place.
              */
             assets_apply(text) {
                 const known = this.assets();
-                return text.replace(asset_ref, (whole, id) => {
-                    const uri = known[id];
-                    if (uri)
-                        return uri;
-                    this.assets_missing.add(id);
-                    return whole;
-                });
+                return text.replace(asset_ref, (whole, id) => known[id] ?? whole);
+            }
+            /** Every text of the document an address can stand in. */
+            texts() {
+                return [
+                    this.doc_src(),
+                    this.doc_css(),
+                    ...this.libs().flatMap(part => [part.tree, part.css]),
+                ];
+            }
+            /** Ids the document mentions and the host has not delivered, in order of mention. */
+            assets_missing() {
+                const known = this.assets();
+                const missing = new Set();
+                for (const text of this.texts()) {
+                    for (const [, id] of text.matchAll(asset_ref)) {
+                        if (!known[id])
+                            missing.add(id);
+                    }
+                }
+                return [...missing];
+            }
+            /**
+             * Asks the host for one asset. Once, for as long as the id stays missing:
+             * the cell is read by `assets_push()` while it is, swept when it is not, and
+             * made anew — asking again — should the id ever go missing again.
+             */
+            asset_ask(id) {
+                this.post({ kind: 'asset_want', id });
+                return id;
+            }
+            /** Projection of `assets_missing()` onto the wire, read from `auto()`. */
+            assets_push() {
+                return this.assets_missing().map(id => this.asset_ask(id));
             }
             /**
              * Mounted content.
@@ -15894,7 +15875,6 @@ var $;
                         const stale = this.assets()[message.id];
                         const uri = URL.createObjectURL(new Blob([message.bytes], { type: message.mime }));
                         this.assets({ ...this.assets(), [message.id]: uri });
-                        this.assets_missing.delete(message.id);
                         if (stale)
                             URL.revokeObjectURL(stale);
                         return;
@@ -15999,12 +15979,6 @@ var $;
             }
             report_post() {
                 const made = this.instance();
-                for (const id of this.assets_missing) {
-                    if (this.assets_asked.has(id))
-                        continue;
-                    this.assets_asked.add(id);
-                    this.post({ kind: 'asset_want', id });
-                }
                 const compiled = this.compile_error();
                 this.error_post('compile', compiled, compiled && made ? this.class_node(made, this.compile_class()) : '');
                 const measured = made ? this.sizes_of(made) : { sizes: {}, nodes: [] };
@@ -16016,27 +15990,22 @@ var $;
                 this.error_post('runtime', failed.message, failed.node);
             }
             /**
-             * Keeps the boxes of the free parts for the next culling round.
-             *
-             * Merged, never replaced: what is missing from a report is not a part without
-             * a size, it is a part that was not drawn, and culling is what did that. A
-             * replacing write would erase the box of everything just culled and the rule
-             * would start judging by placement points alone — which is the very state it
-             * only tolerates until the first measurement.
-             *
-             * Only the direct children of the root are kept, the same set `shown()` judges:
-             * one path segment is exactly one free part.
+             * Keeps the boxes of the free parts for the next culling round, merged into
+             * `sizes_seen()`. Only the direct children of the root are kept, the same
+             * set `shown()` judges: one path segment is exactly one free part.
              */
             sizes_remember(sizes) {
                 const prefix = this.doc_root() + '/';
+                const seen = { ...this.sizes_seen() };
                 for (const key of Object.keys(sizes)) {
                     if (!key.startsWith(prefix))
                         continue;
                     const name = key.slice(prefix.length);
                     if (name.includes('/'))
                         continue;
-                    this.sizes_seen[name] = sizes[key];
+                    seen[name] = sizes[key];
                 }
+                this.sizes_seen(seen);
             }
             /**
              * The failure of the last render, and the node it belongs to.
@@ -16225,7 +16194,7 @@ var $;
                     this.boot(),
                     this.report_task(),
                     this.values_task(),
-                    this.screen_listener(),
+                    this.assets_push(),
                 ];
             }
         }
@@ -16246,10 +16215,7 @@ var $;
         ], $bog_vmap_scene.prototype, "spots", null);
         __decorate([
             $mol_mem
-        ], $bog_vmap_scene.prototype, "screen_version", null);
-        __decorate([
-            $mol_mem
-        ], $bog_vmap_scene.prototype, "screen_listener", null);
+        ], $bog_vmap_scene.prototype, "sizes_seen", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "shown", null);
@@ -16322,6 +16288,15 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "libs_css_attach", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "assets_missing", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_scene.prototype, "asset_ask", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "assets_push", null);
         __decorate([
             $mol_mem
             /**
