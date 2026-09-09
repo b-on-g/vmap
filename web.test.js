@@ -7867,6 +7867,19 @@ var $;
             pane.node_release(pointer(5, 5, { buttons: 0 }));
             $mol_assert_equal(posted.length, 0);
         },
+        /**
+         * REPRO: the zoom pivots on the middle of the canvas, and the FIRST one after
+         * a load did not — the box it reads answers `null` until something has read
+         * it once, and an unread box put the pivot in the corner.
+         */
+        'the first zoom after a load pivots on the middle of the canvas'($) {
+            const { pane } = pane_make($);
+            // Nothing has read the geometry yet, exactly as after a fresh load.
+            pane.zoom_by(1.25);
+            // 1000 x 800, so the middle is 500, 400; the pivot keeps it still.
+            $mol_assert_equal(pane.camera_zoom(), 1.25);
+            $mol_assert_like([...pane.camera_shift()], [-125, -100]);
+        },
         /** The grip is a strip of screen pixels, so it does not shrink away when zooming out. */
         'the grip around a part is measured in screen pixels'($) {
             const { pane } = pane_make($);

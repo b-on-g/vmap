@@ -46898,19 +46898,15 @@ declare namespace $ {
     /**
      * Persistence of the editor: the documents of a user in Giper Baza.
      *
-     * This is where the CRUD over `app/doc/` lives. The schema stays pure, so
-     * every operation on it — which land a document is grabbed into, how a text is
-     * cut into nodes and glued back, what «the current document» means — is a
-     * method here, and the views ask this object instead of touching pawns.
+     * The CRUD lives here so the schema can stay pure, and the views ask this
+     * object instead of touching pawns.
      *
-     * **Every accessor delegating into an atom is a plain method.** An accessor of
-     * that shape under `@ $mol_mem` freezes at the value written through it and
-     * never sees a remote edit again, see the note at `bog_vmap_app_doc_node.source`.
-     * Nothing is lost: `val()` inside the pawn is a wire cell already, so a view
-     * reading through here stays reactive.
+     * **Every accessor delegating into an atom is a plain method**, never a cell:
+     * a cell of that shape freezes at the value written through it and stops
+     * seeing remote edits. Reactivity is not lost by it, the atom is a cell already.
      *
-     * Masters are not named here and `masters()` is not overridden: a module works
-     * against whatever node the application chose.
+     * Masters are not named here: a module works against whatever node the
+     * application chose.
      *
      * @see ../../ARCHITECTURE.md section 9
      */
@@ -46918,11 +46914,10 @@ declare namespace $ {
         /**
          * Anchor of the documents in the home land of the user.
          *
-         * The same root pawn the profile lives on, viewed through our dictionary:
-         * fields are keyed by name inside it, so `Docs` sits beside whatever else the
-         * home land carries. Plain method — a Giper Baza object under `@ $mol_mem`
-         * gets destructed on a graph rebuild and drags the yard into a circular
-         * subscription.
+         * The root pawn the profile lives on, read through our dictionary, so the
+         * list sits beside whatever else the home land carries. Plain method: a
+         * Giper Baza object held by a cell is destructed on a graph rebuild and
+         * drags the yard into a circular subscription.
          */
         home(): $bog_vmap_app_doc_home;
         /** Links of every document of the user, in the order they were made. */
@@ -46939,17 +46934,13 @@ declare namespace $ {
         /**
          * Link of the current document as written in the address, or null.
          *
-         * The key is `doc`, the value is the link of the document land. In the
-         * fragment, where `$mol_state_arg` lives; the query is taken by the pack
-         * address of the scene frame and is not ours.
+         * In the fragment, never the query: the query of this page belongs to the
+         * pack address of the scene frame.
          */
         doc_arg(next?: string | null): string | null;
         /**
-         * The document the editor is on.
-         *
-         * An address names one; without an address it is the last one made; with
-         * no documents at all it is null, and the editor works on the draft below
-         * while `boot` makes one in the background.
+         * The document the editor is on: the addressed one, else the last made,
+         * else none while `boot` makes the first.
          *
          * A malformed value in the address counts as no address rather than as an
          * error: a hand edited URL is an ordinary state of a page.
@@ -46960,11 +46951,10 @@ declare namespace $ {
         /**
          * Whether the current document takes our writes.
          *
-         * A link in the address opens anybody's public document; the land of one
-         * made by somebody else answers our rank as `read`, and a write into it
-         * fails with «Rank too low» deep inside the atom. Asked before every write
-         * so that the failure becomes a state of the editor, not an exception in
-         * the handler that happened to write first.
+         * A link in the address opens anybody's public document, and a write into
+         * one made by somebody else fails deep inside the atom. Asked before every
+         * write, so the refusal is a state of the editor rather than an exception
+         * in whichever handler wrote first.
          */
         doc_editable(): boolean;
         /**
@@ -46975,12 +46965,13 @@ declare namespace $ {
         /**
          * Rights of a fresh document land: readable by anybody holding the link.
          *
-         * Public read is the point, not a default left alone: the address of a
-         * document is its land link, and a link only opens for somebody else if the
-         * land does. A preset with `null` in it also means the land is not encrypted.
+         * Public read is the point and not a default left alone — the address of a
+         * document IS its land link, and a link opens for somebody else only if the
+         * land does. It also leaves the land unencrypted.
          *
-         * `null` here means «in the home land, no land of its own», which costs no
-         * proof of work. That is what the tests hand in; the editor never does.
+         * Answering `null` instead means «in the home land, no land of its own»,
+         * which costs no proof of work: that is what the tests hand in, never the
+         * editor.
          */
         doc_land_config(): null | $giper_baza_rank_preset;
         /** Name for the next document: one more than there are. */
@@ -46988,68 +46979,48 @@ declare namespace $ {
         /**
          * Makes a new document, current from now on.
          *
-         * **Reach this from a fiber only** — `$mol_wire_async( store ).doc_add( … )`
-         * from a handler, or from inside an event handler, which `$mol_view` already
-         * runs as one. Grabbing the land mines proof of work; the task doing it is
-         * cached per fiber, and outside a fiber every `Promise` thrown on the way
-         * restarts the caller from the top with a fresh proof of work, forever.
+         * **Reach this from a fiber only.** Grabbing the land mines proof of work,
+         * and the task doing it is cached per fiber; outside one, every promise
+         * thrown on the way restarts the caller with a fresh proof of work, for
+         * ever. Plain method and not an action for the same reason: an action opens
+         * a fiber per call, which is that fresh task per retry.
          *
-         * Plain method, not `@ $mol_action`: an action opens a fiber of its own per
-         * call, which is exactly the fresh-task-per-retry this has to avoid.
-         *
-         * `Root` is set to the first class of the text: the page is the class the
-         * document opens with, and the choice has to be recorded, not derived from
-         * the order, so that reordering later does not move it.
+         * The root is recorded rather than derived from the order, so that
+         * reordering the classes later does not move which one is the page.
          */
         doc_add(title?: string, source?: string, spots?: $bog_vmap_app_store_spots, pack?: string): $bog_vmap_app_doc;
         /**
          * The first document of a user, made from whatever was drafted meanwhile.
          *
-         * Checked again at the top, and the check is what makes the retries safe:
-         * the fiber restarts this from the beginning on every `Promise` on the way,
-         * and a document that arrived from another device while the proof of work
-         * was being mined must not be pushed aside by ours.
+         * The check at the top is what makes the retries safe: a document that
+         * arrived from another device while the proof of work was being mined must
+         * not be pushed aside by ours.
          *
-         * The check guards against that device and not against our own half made
-         * document, and it cannot confuse the two: a restart replays every read
-         * from the cache of the fiber itself, so the list here reads as it read
-         * when the fiber started — empty. Measured. That is what lets a restart in
-         * the middle of pouring the draft carry the pouring through instead of
-         * walking away from a document with no text in it.
+         * It guards against that device and not against our own half made document,
+         * and cannot confuse the two: a restarted fiber replays its reads from its
+         * own cache, so the list here reads as it read at the start — empty. That
+         * is what carries a pouring interrupted halfway through to the end.
          */
         doc_first(): void;
         /**
          * The one fiber making the first document, held by a cell of its own.
          *
-         * A cell that reads nothing and answers with the fiber it made. That is the
-         * shape a `$mol` effect takes — the same one `message_listener` and
-         * `resize_watch` take in `scene/` — and it is what makes one fiber one
-         * fiber: read this again while the proof of work is still being mined and
-         * the same object comes back, so no second document is ever started.
+         * A cell that reads NOTHING and answers with the fiber it made. Reading
+         * nothing is the point: an invalidation arriving while a cell computes is
+         * dropped on the spot, and the document landing is exactly such an
+         * invalidation, so a cell with no dependencies has nothing to lose that way.
+         * Reading it again while the proof of work is still mining gives back the
+         * same object, which is what keeps one fiber one fiber.
          *
-         * Reading nothing is the point and not an accident. An invalidation
-         * arriving while a cell computes is dropped on the spot — `absorb` returns
-         * early on a cursor that is still tracking — and the document landing is
-         * exactly such an invalidation. A cell with no dependencies has nothing to
-         * lose that way.
-         *
-         * The fiber is wrapped and not returned as it is: a cell answering with a
-         * promise is a cell that never finished, and every reader of it suspends
+         * The fiber is wrapped rather than returned as it is: a cell answering with
+         * a promise is a cell that never finished, and every reader of it suspends
          * for ever.
          *
-         * **The wrapper deliberately has no `destructor`, so this cell holds the
-         * handle and not the life.** The draft is poured AFTER the document is in
-         * the list, so there is a window in which `boot` already answers `ready`,
-         * the last reader looks away and a cell nobody reads is collected. Owning
-         * the fiber here would end it inside that window, and what would be lost is
-         * the text the user typed, silently. Measured; there is a test. Nothing
-         * leaks by it: a one-shot fiber destructs itself the moment it completes.
-         *
-         * What opens that window is `make()` standing first in `doc_add` and the
-         * pouring standing after it — NOT `doc_pick`, which is last. Without an
-         * address, and there is none on a first run, `doc_current` answers with the
-         * last link of the list, and the link is in the list from `make()` on, with
-         * an empty document behind it.
+         * **The wrapper has no destructor, so this cell holds the handle and not
+         * the life.** The draft is poured after the document is already in the list,
+         * so there is a window where a cell nobody reads gets collected; owning the
+         * fiber would end it inside that window and lose the typed text silently.
+         * Nothing leaks by it — a one-shot fiber destructs itself on completion.
          */
         doc_first_task(): {
             task: Promise<void>;
@@ -47057,16 +47028,13 @@ declare namespace $ {
         /**
          * Makes sure there is a document, from the start of the session.
          *
-         * Read from `auto()` of the application. Suspends while the home land loads,
-         * so the decision «there are none» is taken on the loaded list and not on an
-         * empty cache; then asks for the fiber above and answers at once, so that
+         * Suspends while the home land loads, so «there are none» is decided on the
+         * loaded list and not on an empty cache, then answers at once so that
          * nothing waits on the proof of work.
          *
-         * A plain method, deliberately. Under `@ $mol_mem` this answered `making`
-         * for good: with no proof of work to wait on, the document lands while the
-         * cell is still computing, and the invalidation it causes is dropped rather
-         * than remembered. Measured. Read afresh every time there is nothing to go
-         * stale, and the answer follows `doc_current` for free.
+         * A plain method and not a cell: a cell here answered `making` for good,
+         * because the document lands while it is still computing and the
+         * invalidation that causes is dropped rather than remembered.
          */
         boot(): 'ready' | 'making';
         /**
@@ -47079,26 +47047,21 @@ declare namespace $ {
         /**
          * Nodes of a document, resolved in the document's own land.
          *
-         * Not `remote_list()`: that resolves through the static glob into a land
-         * instance of its own, which waits on a master. `make( null )` put the nodes
-         * into this very land, so this is correct and not merely convenient.
+         * Resolved by hand rather than through the remote list: that one goes out
+         * through the static glob and waits on a master. The nodes were made in
+         * this very land, so reading them here is correct and not merely cheaper.
          */
         nodes(doc: $bog_vmap_app_doc): $bog_vmap_app_doc_node[];
         /**
-         * Text of a document: its classes in the order of `Nodes`, one `view.tree`.
+         * Text of a document: its classes, one per node, as one source.
          *
-         * One class per node, the whole text per document. Reading glues the node
-         * texts with a newline guaranteed after each; writing cuts the text into
-         * classes with the plain parser — NOT normalized, this is transport and
-         * `lang` is the one that normalizes — and matches them to nodes by class
-         * name, the first token. A name already stored gets its text updated (the
-         * atom skips a write of an equal value), a new name gets a node made in the
-         * same land, a name gone from the text leaves the list. Two classes of one
-         * name are matched in order, so nothing a caller wrote is lost here.
+         * Classes are matched to nodes BY NAME, which is what makes an edit of one
+         * class one atom on the wire — and what makes a rename arrive as a new node,
+         * so whatever is stored per class name has to be carried by whoever renames.
          *
-         * Byte for byte on a round trip when the text is in canonical `tree2`
-         * formatting, which is what `lang` writes after its first edit; a hand
-         * written file is reformatted on that first edit, as it always was.
+         * Parsed plainly and not normalized: this is transport, and the model above
+         * is the one that decides what canonical looks like. Round trip is byte for
+         * byte on text already in that shape.
          */
         doc_source(doc: $bog_vmap_app_doc, next?: string): string;
         /** Node of a document by the name of the class it declares, or null. */
@@ -47111,34 +47074,32 @@ declare namespace $ {
          * Name of the class the document opens with, or empty. Writing a class name
          * makes that class the one it opens with.
          *
-         * Read as a raw link, never through `remote()`: the typed getter resolves
+         * Read as a raw link, never through the typed getter: that one resolves
          * through the static glob, and the node is in this very land anyway.
          *
-         * The write is what a rename of the root needs: nodes are matched to classes
-         * BY NAME, so a renamed class arrives as a node of its own and the recorded
-         * choice would go on pointing at the node that used to hold it. A name the
-         * document does not carry is ignored rather than recorded — a link to a node
-         * that is not in the list is exactly the state this exists to prevent.
+         * The write is what a rename of the root needs, because a renamed class
+         * arrives as a node of its own. A name the document does not carry is
+         * ignored: a pointer at a node outside the list is the state this exists to
+         * prevent.
          */
         doc_root(doc: $bog_vmap_app_doc, next?: string): string;
         /**
          * Canvas places of a document, as one dictionary in both directions.
          *
-         * Written whole because that is how the canvas hands it over; a place gone
-         * from the dictionary is cut from the stored one, so a deleted part does not
-         * come back at its old coordinates on reload. Read back with the keys in
-         * name order: the dictionary keeps them in the order of the units, which
-         * nobody chose, and a cell comparing this deep would see a change where the
+         * Written whole, so a place gone from the dictionary is cut from the stored
+         * one and a deleted part does not come back at its old coordinates. Read
+         * back in name order: the stored order is the order of the units, which
+         * nobody chose, and a reader comparing deep would see a change where the
          * places are the same.
          */
         doc_spots(doc: $bog_vmap_app_doc, next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
         /**
-         * Text of the current document.
+         * Text of the current document, or the draft while the first one is being
+         * made.
          *
-         * With no document yet, the draft: `boot` is making one and will pour the
-         * draft into it. On somebody else's document a write is refused quietly —
-         * the text stays what it was, and `stage` says why — because the atom would
-         * throw «Rank too low» from inside whatever handler wrote first.
+         * On somebody else's document a write is refused quietly — the text stays
+         * what it was and the stage says why — because the atom would otherwise
+         * throw from inside whatever handler wrote first.
          */
         source(next?: string): string;
         /** Canvas places of the current document, the same way as `source`. */
@@ -47146,18 +47107,18 @@ declare namespace $ {
         /** Human name of the current document. Nothing to name before there is one. */
         title(next?: string): string;
         /**
-         * Palette of the current document, stored as the string it is typed as.
+         * Library of the current document, stored as the string it is typed as.
          *
-         * Not parsed here on purpose: today it is one pack address, soon a list of
-         * links separated by commas, and the one who knows what the string means is
-         * the palette, not the store.
+         * Not parsed here on purpose: what the string means is known to the panel
+         * that offers the components, not to the store that keeps it.
          */
         pack(next?: string): string;
     }
     /**
-     * Name of the class a `view.tree` source declares, or empty when it declares
-     * none. The first token of the text — asked of the text every time, because a
-     * stored copy of it would be the second source of truth for a derivable fact.
+     * Name of the class a source declares, or empty when it declares none.
+     *
+     * Asked of the text every time: a stored copy would be a second source of
+     * truth for a fact the text already carries.
      */
     function $bog_vmap_app_store_class_name(source: string): string;
 }
@@ -51242,6 +51203,173 @@ declare namespace $.$$ {
 
 declare namespace $ {
     /**
+     * Export of a document as a real MAM module.
+     *
+     * Not an abstract «project»: the output is a folder that builds untouched.
+     * That closes the circle of section 5 as well — a built module is a donor pack,
+     * so what is assembled here is a component library for the next document.
+     *
+     * Pure functions over text, with no storage and no DOM behind them: the caller
+     * hands over the sources of its classes and gets files back.
+     *
+     * @see ../../ARCHITECTURE.md section 10
+     */
+    /** One class of the document, as the three sources the editor keeps. */
+    type $bog_vmap_app_export_node = {
+        /** `view.tree` declaration. Carries the class name in its first token. */
+        readonly source: string;
+        /** Hand written class body: method definitions, no wrapping class. */
+        readonly js?: string;
+        /** Raw CSS. */
+        readonly css?: string;
+    };
+    /**
+     * One file of the module. Text only.
+     *
+     * A flat list of named files precisely so that assets can be appended to it
+     * later instead of reworking the shape of the result.
+     */
+    type $bog_vmap_app_export_file = {
+        readonly name: string;
+        readonly text: string;
+    };
+    type $bog_vmap_app_export_module = {
+        /** Folder the module must be placed at, relative to the MAM root. */
+        readonly path: string;
+        /** Last segment of the path, and the base name of every source file. */
+        readonly name: string;
+        /** Class instantiated by `index.html`. */
+        readonly root: string;
+        readonly files: readonly $bog_vmap_app_export_file[];
+    };
+    /**
+     * Folder the classes of a document oblige it to live in.
+     *
+     * The folder is not free: mam turns a class name into a path by replacing every
+     * underscore with a slash, so a module placed anywhere else fails to build
+     * while looking perfectly correct. The document therefore names its own folder,
+     * by the longest common prefix of its class names.
+     *
+     * A prefix shorter than two segments means classes from different packs.
+     * Refused: renaming the author's classes to fit would break «byte for byte from
+     * the editor», and emitting them as they are would produce a folder that does
+     * not build.
+     *
+     * **What this cannot check is whether the root pack exists** — only the machine
+     * doing the build knows that, and this runs in a browser. A well shaped path
+     * into a pack nobody has still fails there. Hence the rule for the interface:
+     * the folder is written where the author reads it, so the first segment is a
+     * decision they see rather than one made for them.
+     */
+    function $bog_vmap_app_export_path(this: $, names: readonly string[]): string;
+    /**
+     * Whether a hand written body defines a method of this name.
+     *
+     * Deliberately the same test the scene applies before decorating, so a property
+     * memoized in the preview is memoized in the export and the two cannot drift.
+     * An override of a memoized property left undecorated loses its atom outright,
+     * and nothing reports it: the method returns a fresh value while the DOM keeps
+     * the old one.
+     */
+    function $bog_vmap_app_export_defines(js: string, name: string): boolean;
+    /** One reason a hand written body would not survive the export. */
+    type $bog_vmap_app_export_complaint = {
+        /** 1-based, counted inside the body the editor shows. */
+        readonly line: number;
+        readonly method: string;
+        readonly param: string;
+        /** Ready to show, in the language of the editor. */
+        readonly text: string;
+    };
+    /**
+     * Parameters of methods that carry no type.
+     *
+     * The divergence of section 10: in the scene a body runs as plain JS, in the
+     * export the same body is compiled with `strict` and `noImplicitAny`. An
+     * untyped parameter is that divergence in practice — it works in the preview
+     * and fails the build, where the author is not.
+     *
+     * Not a type checker: a real compiler in the browser costs megabytes for one
+     * class of error. What needs types to catch — an unknown member, a wrong
+     * type — stays a build failure.
+     *
+     * **The cost of the two mistakes is not the same, so the check is built to miss
+     * rather than to lie.** A complaint refuses the export, and a false one locks
+     * the author inside the editor with no way out; a missed one costs a build
+     * failure with a message of its own. Everything doubtful is therefore passed
+     * over in silence:
+     *
+     * - strings and comments are blanked before anything is read, so a signature
+     *   quoted inside a template literal is not a signature;
+     * - a head is only a head at the indent of the body itself and only when a `{`
+     *   follows, which is what separates a definition from a call and from an
+     *   overload signature;
+     * - only a plain identifier is reported. A destructured parameter is an error
+     *   of the same kind, but naming it sensibly is beyond this, and half a name in
+     *   a refusal is worse than no refusal;
+     * - a default value is a type, an arrow is typed by its context, and a
+     *   parameter list holding brackets of its own is left alone.
+     */
+    function $bog_vmap_app_export_untyped(js: string): readonly $bog_vmap_app_export_complaint[];
+    /**
+     * The same text with every string and comment replaced by spaces.
+     *
+     * Length and line breaks are kept, so a position in the result is the same
+     * position in the source and the line of a complaint stays true. Without it a
+     * signature quoted inside a literal reads as a signature, and that is a refusal
+     * over text that is not code.
+     *
+     * A regular expression literal is not understood, deliberately: telling one
+     * from a division needs a parser, and the whole cost of getting it wrong is a
+     * complaint not raised.
+     */
+    function $bog_vmap_app_export_blanked(js: string): string;
+    /** Indents a hand written body into a class declaration. */
+    function $bog_vmap_app_export_indent(text: string, depth?: number): string;
+    /**
+     * Builds the module.
+     *
+     * @param nodes classes of the document, in any order
+     * @param root class `index.html` instantiates; defaults to the first node
+     */
+    function $bog_vmap_app_export_build(this: $, nodes: readonly $bog_vmap_app_export_node[], root?: string): $bog_vmap_app_export_module;
+    /**
+     * Pages of a document: the artboards its root class draws.
+     *
+     * A node with a `sub` of its own is an artboard, and that is the only mark it
+     * has — the same reading the canvas takes, see section 8. A free part carries
+     * no `sub`, so the router never shows it, and the desk coordinates have nothing
+     * to leak into here.
+     */
+    function $bog_vmap_app_export_pages(model: $bog_vmap_lang_node): string[];
+    /**
+     * A hand written body with the memoizing decorator written above the methods
+     * that need it.
+     *
+     * The decorator over the method is how a person writes it, and what comes out of
+     * here has to read like a module somebody wrote by hand. The expression after
+     * the class is what the SCENE has to do, because a decorator cannot be written
+     * into a string handed to a compiler at run time; a file has no such excuse.
+     *
+     * Where a method starts is not guessed: the body is cut by the same function the
+     * code panel cuts it with, so the two agree about the start of a property by
+     * construction rather than by two implementations happening to match. The
+     * decorator lands under whatever comment belongs to the method and over the
+     * method itself, where a reader looks for it.
+     *
+     * **A body the slicer cannot cut keeps the expression form.** Braces are counted
+     * rather than parsed, so a `}` inside a string is enough to defeat it — and a
+     * body that loses its decorators loses its atoms silently, which is the one
+     * outcome worth an ugly file.
+     */
+    function $bog_vmap_app_export_decorated(this: $, js: string, klass: string, memos: ReadonlyMap<string, string>): {
+        readonly body: string;
+        readonly after: readonly string[];
+    };
+}
+
+declare namespace $ {
+    /**
      * Slicing of the handwritten sources by property.
      *
      * Port of `props_js()`, `props_css()` and the `source_*_prop` family of
@@ -51794,6 +51922,16 @@ declare namespace $ {
     } | {
         readonly kind: 'asset_want';
         readonly id: string;
+    } | {
+        /**
+         * A key pressed while the focus was inside the frame, relayed for the
+         * editor to act on: with the pointer let inside a part the keydown lands
+         * in the document of the frame and the host's listener never sees it.
+         * Only keys the editor reacts to travel — `Escape` — never what is being
+         * typed into the document.
+         */
+        readonly kind: 'key';
+        readonly key: 'Escape';
     } | {
         readonly kind: 'error';
         /** Channel. The two clear independently. */
@@ -52747,10 +52885,14 @@ declare namespace $.$$ {
         /**
          * Where this pane sits in the viewport.
          *
-         * Read off the DOM rather than through `view_rect()`: that one is a watched
-         * cell, and a handler subscribed to it gets re-run by the very layout change
-         * its own drop or drag causes. A method of its own so that a test can hand in
-         * a geometry the test DOM has no way to lay out.
+         * `view_rect()` and not a `getBoundingClientRect()` of our own. The reason
+         * written here before — that a handler reading the watched cell would be
+         * re-run by the layout its own gesture causes — was wrong: the handlers run
+         * as one shot tasks through `event_async()` and subscribe to nothing. What is
+         * true of that cell is that its FIRST read answers `null` on purpose, to keep
+         * a reflow out of the render; `$mol_touch` answers that by reading it in
+         * `auto()`, and so does this pane. A method of its own so that a test can
+         * hand in a geometry the test DOM has no way to lay out.
          */
         pane_rect(): $bog_vmap_app_pane_screen_box;
         /** Point of a pointer event in screen pixels of this pane, the space the wires are drawn in. */
@@ -53086,191 +53228,6 @@ declare namespace $.$$ {
 }
 
 declare namespace $.$$ {
-}
-
-declare namespace $ {
-    /**
-     * Export of a document as a real MAM module.
-     *
-     * Not an abstract «project»: the output is a folder that drops into `bog/` and
-     * builds with `npx mam` untouched. That is the acceptance criterion of the
-     * stage, and it is also what closes the circle of section 5 — a built module is
-     * a donor pack, so anything assembled here becomes a component library for the
-     * next document.
-     *
-     * Pure functions over text. Knows nothing of Giper Baza and nothing of the DOM,
-     * so the caller maps its stored nodes onto `doc_export_node` and gets files back.
-     *
-     * @see ../../ARCHITECTURE.md section 10
-     */
-    /** One class of the document, as the three sources the editor keeps. */
-    type $bog_vmap_app_export_node = {
-        /** `view.tree` declaration. Carries the class name in its first token. */
-        readonly source: string;
-        /** Hand written class body: method definitions, no wrapping class. */
-        readonly js?: string;
-        /** Raw CSS. */
-        readonly css?: string;
-    };
-    /**
-     * One file of the module.
-     *
-     * Text only for now. Assets arrive at stage 5.1 as separate blob lands, and
-     * they will need a binary sibling of this type plus an `assets/` prefix in the
-     * name — the shape is a flat list of named files precisely so that adding them
-     * appends entries instead of reworking the result.
-     */
-    type $bog_vmap_app_export_file = {
-        readonly name: string;
-        readonly text: string;
-    };
-    type $bog_vmap_app_export_module = {
-        /** Folder the module must be placed at, relative to the MAM root. */
-        readonly path: string;
-        /** Last segment of the path, and the base name of every source file. */
-        readonly name: string;
-        /** Class instantiated by `index.html`. */
-        readonly root: string;
-        readonly files: readonly $bog_vmap_app_export_file[];
-    };
-    /**
-     * Folder the classes of a document oblige it to live in.
-     *
-     * Section 10 says the export is a MAM module and says nothing about where it
-     * goes, but the two are not independent: mam turns a class name into a path by
-     * replacing every underscore with a slash, so a document placed anywhere else
-     * fails to build while looking perfectly correct. The document therefore names
-     * its own folder, by the longest common prefix of its class names.
-     *
-     * A lone `bog_site_page` gives `bog/site/page`; together with `bog_site_hero`
-     * it gives `bog/site`. Both resolve, because a missing last segment collapses
-     * onto the longest existing prefix — the same rule that makes demo classes safe
-     * to name after their own module.
-     *
-     * A prefix shorter than two segments means classes from different packs, or a
-     * module at the root of a pack. Refused: renaming the user's classes to fit
-     * would break «byte for byte from the editor», and emitting them as they are
-     * would produce a folder that does not build.
-     *
-     * **What this cannot check: whether the root pack exists.** Only the machine
-     * doing the build knows that, and we run in a browser. Classes named
-     * `my_doc_page` give a perfectly well formed `my/doc/page`, and mam then fails
-     * with `Root package "my" not found` — the length test above does not catch it,
-     * because nothing is wrong with the shape. The export UI has to say out loud
-     * which folder the module is going to, so that the first segment is a decision
-     * the author sees rather than one made for them.
-     */
-    function $bog_vmap_app_export_path(this: $, names: readonly string[]): string;
-    /**
-     * Whether a hand written body defines a method of this name.
-     *
-     * Deliberately the same test the scene applies before decorating, so that a
-     * property memoized in the preview is memoized in the export and the two cannot
-     * drift. A property decorated in the generated base but overridden here without
-     * a decorator loses its atom outright, and nothing reports it: the method just
-     * returns a fresh value while the DOM keeps the old one.
-     */
-    function $bog_vmap_app_export_defines(js: string, name: string): boolean;
-    /** One reason a hand written body would not survive the export. */
-    type $bog_vmap_app_export_complaint = {
-        /** 1-based, counted inside the body the editor shows. */
-        readonly line: number;
-        readonly method: string;
-        readonly param: string;
-        /** Ready to show, in the language of the editor. */
-        readonly text: string;
-    };
-    /**
-     * Parameters of methods that carry no type.
-     *
-     * The divergence of section 10: in the scene a body goes through `new Function`,
-     * where any JS runs, and in the export the same body is compiled by TypeScript
-     * with `strict` and `noImplicitAny`. An untyped parameter is the whole of that
-     * divergence in practice — it works in the preview and fails the build, and the
-     * author learns about it neither where nor when the mistake was made.
-     *
-     * Not a type checker and not pretending to be one: a real `tsc` in the browser
-     * costs megabytes in the bundle of an editor that would use it for one class of
-     * error. What is not caught here is what needs types to catch — an unknown
-     * member, a wrong type — and those stay a build failure.
-     *
-     * **The cost of the two mistakes is not the same, so the check is built to miss
-     * rather than to lie.** A complaint refuses the export, and a false one locks
-     * the author inside the editor with no way out; a missed one costs a build
-     * failure with a message of its own. Everything doubtful is therefore passed
-     * over in silence:
-     *
-     * - strings and comments are blanked before anything is read, so a signature
-     *   quoted inside a template literal is not a signature;
-     * - a head is only a head at the indent of the body itself and only when a `{`
-     *   follows, which is what separates a definition from a call and from an
-     *   overload signature;
-     * - only a plain identifier is reported. A destructured parameter is an error
-     *   of the same kind, but naming it sensibly is beyond this, and half a name in
-     *   a refusal is worse than no refusal;
-     * - a default value is a type, an arrow is typed by its context, and a
-     *   parameter list holding brackets of its own is left alone.
-     */
-    function $bog_vmap_app_export_untyped(js: string): readonly $bog_vmap_app_export_complaint[];
-    /**
-     * The same text with every string and comment replaced by spaces.
-     *
-     * Length and line breaks are kept, so a position in the result is the same
-     * position in the source and the line of a complaint stays true. Without this a
-     * signature quoted inside a template literal reads as a signature, and that is
-     * a refusal over text that is not code at all.
-     *
-     * A regular expression literal is not understood, deliberately: telling one
-     * from a division needs a parser. An apostrophe inside one blanks more than it
-     * should, and the whole cost of that is a complaint not raised.
-     */
-    function $bog_vmap_app_export_blanked(js: string): string;
-    /** Indents a hand written body into a class declaration. */
-    function $bog_vmap_app_export_indent(text: string, depth?: number): string;
-    /**
-     * Builds the module.
-     *
-     * @param nodes classes of the document, in any order
-     * @param root class `index.html` instantiates; defaults to the first node
-     */
-    function $bog_vmap_app_export_build(this: $, nodes: readonly $bog_vmap_app_export_node[], root?: string): $bog_vmap_app_export_module;
-    /**
-     * Pages of a document: the artboards its root class draws.
-     *
-     * An artboard is a node with a `sub` of its own, and that is the only mark it
-     * has — the same reading the canvas does in `doc_containers`, and section 8
-     * says there is no other. A free part carries no `sub`, so it is not a page and
-     * the router never shows it, which is also why the desk coordinates have
-     * nothing to leak into here.
-     */
-    function $bog_vmap_app_export_pages(model: $bog_vmap_lang_node): string[];
-    /**
-     * A hand written body with `@ $mol_mem` written above the methods that need it.
-     *
-     * The decorator over the method is how a person writes it, and what comes out
-     * of here has to read like a module somebody wrote by hand. The alternative —
-     * `$mol_mem( Klass.prototype, "name" )` as an expression after the class — is
-     * what the SCENE has to do, because a decorator cannot be written into the
-     * string handed to `new Function`; an exported file is compiled by TypeScript
-     * and has no such excuse.
-     *
-     * Finding where a method starts is not guesswork either: the body is cut by
-     * the same `$bog_vmap_app_code_props_js` the code panel cuts it with, so the
-     * export and the panel agree about where a property begins by construction
-     * rather than by two implementations happening to match.
-     *
-     * The decorator goes under whatever comment belongs to the method and directly
-     * over the method itself, which is where a reader looks for it.
-     *
-     * **A body the slicer cannot cut keeps the old form**, expressions after the
-     * class. Braces are counted rather than parsed, so a `}` inside a string is
-     * enough to defeat it — and a body that loses its decorators loses its atoms
-     * silently, which is the one outcome worth an ugly file.
-     */
-    function $bog_vmap_app_export_decorated(this: $, js: string, klass: string, memos: ReadonlyMap<string, string>): {
-        readonly body: string;
-        readonly after: readonly string[];
-    };
 }
 
 declare namespace $ {
