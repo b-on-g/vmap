@@ -46814,16 +46814,17 @@ declare namespace $ {
     /** A preset made of one class of the library, as the second level hands it over. */
     function $bog_vmap_app_shelf_single(klass: string): string;
     /**
-     * The shelf as it comes out of the box.
+     * The shelf as it comes out of the box: a handful of things a person
+     * recognises, not a catalogue. Everything else arrives by address or by file
+     * and lands in the same list.
      *
-     * Four items and no more: a person opening the editor has to see things they
-     * recognise, not a catalogue. Everything else arrives by address or by file and
-     * lands in the same list.
-     *
-     * The pair is here because a wire is the point of the tool and is the one thing
-     * nobody guesses on their own: it lies down as ONE node holding both parts, so
-     * that a single gesture leaves a working pair on the canvas rather than two
-     * pieces to arrange.
+     * Order is what it is for a reason. The **code cell** comes first because it is
+     * what a board is actually built out of — without it a shelf is a display case
+     * and with it a tool. The **pair** is here because a wire is the point of the
+     * whole editor and the one thing nobody guesses on their own: it lies down as
+     * ONE node holding both parts, so a single gesture leaves a working pair on the
+     * canvas rather than two pieces to arrange. The **inputs** come last because
+     * they are what drives everything above them.
      */
     function $bog_vmap_app_shelf_presets(): readonly $bog_vmap_app_shelf_item[];
     /** A file brought from the disk: its name and what is inside it. */
@@ -52762,6 +52763,20 @@ declare namespace $.$$ {
          * it would put a parse failure where a hint belongs.
          */
         aside_content(): readonly $mol_view[];
+        /**
+         * Whether the pick still names something the document declares.
+         *
+         * A name alone is not enough. A document that does not parse, or one that
+         * never had this node, gave the inspector a source with no class in it, and
+         * it answered with a red strip in every one of its twenty fields — a wall of
+         * failures where an invitation belongs. The panel asks the document instead
+         * of trusting the name.
+         *
+         * A failure to parse counts as «not declared», because that is what it means
+         * to the panel; a suspension is re-thrown, or the wait for a document still
+         * arriving would be read as an answer.
+         */
+        selection_alive(): boolean;
         /**
          * Declaration of the picked part, as text, in both directions.
          *

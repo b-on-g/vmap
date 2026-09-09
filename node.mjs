@@ -25262,16 +25262,42 @@ var $;
     }
     $.$bog_vmap_app_shelf_single = $bog_vmap_app_shelf_single;
     /**
-     * The shelf as it comes out of the box.
+     * Widgets of input, each with a port a wire can take: what a person puts on a
+     * board to drive everything else on it.
      *
-     * Four items and no more: a person opening the editor has to see things they
-     * recognise, not a catalogue. Everything else arrives by address or by file and
-     * lands in the same list.
+     * Classes of mol and nothing of ours, so the pack grows by none. Their names
+     * are split for the reason given above: whole, they would be read as imports
+     * by the dependency graph and pull modules into the bundle of the editor that
+     * it does not otherwise carry.
+     */
+    function $bog_vmap_app_shelf_inputs() {
+        const mol = '$mol' + '_';
+        return [
+            ['string', 'Поле', 'Строка. Порт `value` отдаёт набранное'],
+            ['number', 'Число', 'Число. Порт `value` отдаёт его как число'],
+            ['select', 'Выбор', 'Список вариантов, порт `value` отдаёт выбранный'],
+            ['switch', 'Переключатель', 'Несколько вариантов в ряд, порт `value`'],
+            ['check_box', 'Флажок', 'Да или нет, порт `checked`'],
+            ['paragraph', 'Текст', 'Абзац текста, порт `title` принимает провод'],
+        ].map(([name, title, hint]) => ({
+            id: 'input_' + name,
+            title,
+            hint,
+            source: $bog_vmap_app_shelf_single(mol + name),
+        }));
+    }
+    /**
+     * The shelf as it comes out of the box: a handful of things a person
+     * recognises, not a catalogue. Everything else arrives by address or by file
+     * and lands in the same list.
      *
-     * The pair is here because a wire is the point of the tool and is the one thing
-     * nobody guesses on their own: it lies down as ONE node holding both parts, so
-     * that a single gesture leaves a working pair on the canvas rather than two
-     * pieces to arrange.
+     * Order is what it is for a reason. The **code cell** comes first because it is
+     * what a board is actually built out of — without it a shelf is a display case
+     * and with it a tool. The **pair** is here because a wire is the point of the
+     * whole editor and the one thing nobody guesses on their own: it lies down as
+     * ONE node holding both parts, so a single gesture leaves a working pair on the
+     * canvas rather than two pieces to arrange. The **inputs** come last because
+     * they are what drives everything above them.
      */
     function $bog_vmap_app_shelf_presets() {
         const pack = $bog_vmap_app_shelf_pack;
@@ -25290,6 +25316,12 @@ var $;
                     + '\n\t\tsub /'
                     + '\n\tsub /'
                     + '\n\t\t<= Block\n',
+            },
+            {
+                id: 'cell',
+                title: 'Ячейка кода',
+                hint: 'Тело функции, кнопка «Выполнить» и время. Ответ уходит проводом',
+                source: `${head}\n\tCell ${pack}_cell\n\tsub /\n\t\t<= Cell\n`,
             },
             {
                 id: 'calc',
@@ -25321,6 +25353,7 @@ var $;
                     + '\n\tsub /'
                     + '\n\t\t<= Pair\n',
             },
+            ...$bog_vmap_app_shelf_inputs(),
         ];
     }
     $.$bog_vmap_app_shelf_presets = $bog_vmap_app_shelf_presets;
@@ -25636,14 +25669,19 @@ var $;
             item(id) {
                 if (!id)
                     return null;
-                if (id[0] === '$')
-                    return {
-                        id,
-                        title: this.$.$bog_vmap_app_shelf_short(id),
-                        hint: id,
-                        source: this.$.$bog_vmap_app_shelf_single(id),
-                    };
-                return this.items().find(item => item.id === id) ?? null;
+                // The shelf answers first: an item of its own says what it is in the
+                // words the shelf chose, even when its id happens to be a class name.
+                const own = this.items().find(item => item.id === id);
+                if (own)
+                    return own;
+                if (id[0] !== '$')
+                    return null;
+                return {
+                    id,
+                    title: this.$.$bog_vmap_app_shelf_short(id),
+                    hint: id,
+                    source: this.$.$bog_vmap_app_shelf_single(id),
+                };
             }
             item_rows() {
                 return this.items().map(item => this.Item_row(item.id));
@@ -33562,8 +33600,13 @@ var $;
                 const box = this.band_box();
                 if (box) {
                     this.band(null);
-                    if (press?.moved)
-                        this.picked(this.nodes_covered(box));
+                    if (!press?.moved)
+                        return;
+                    // The pointer goes back outside: a band that happened to end on the
+                    // node it was left inside of would otherwise cut the overlay open
+                    // with no second click, which is the whole rule it would break.
+                    this.entered(null);
+                    this.picked(this.nodes_covered(box));
                     return;
                 }
                 if (this.drag_live) {
@@ -35827,7 +35870,33 @@ var $;
              * it would put a parse failure where a hint belongs.
              */
             aside_content() {
-                return (this.selected() ? [this.Inspect()] : [this.Idle()]);
+                return (this.selection_alive() ? [this.Inspect()] : [this.Idle()]);
+            }
+            /**
+             * Whether the pick still names something the document declares.
+             *
+             * A name alone is not enough. A document that does not parse, or one that
+             * never had this node, gave the inspector a source with no class in it, and
+             * it answered with a red strip in every one of its twenty fields — a wall of
+             * failures where an invitation belongs. The panel asks the document instead
+             * of trusting the name.
+             *
+             * A failure to parse counts as «not declared», because that is what it means
+             * to the panel; a suspension is re-thrown, or the wait for a document still
+             * arriving would be read as an answer.
+             */
+            selection_alive() {
+                const name = this.selected();
+                if (!name)
+                    return false;
+                try {
+                    return this.node().prop_names().includes(name);
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return $mol_fail_hidden(error);
+                    return false;
+                }
             }
             /**
              * Declaration of the picked part, as text, in both directions.
