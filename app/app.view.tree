@@ -6,8 +6,12 @@ $bog_vmap_app $mol_view
 	doc_css \
 	spots? *
 	- Property name of the node picked on the canvas, `null` when nothing is picked.
-	- Read this to follow the selection; it is the whole public shape of it.
+	- The primary of `picked` below: the one the inspector is open on. Read this to
+	- follow a single selection, and `picked` where a whole set matters.
 	selected? null
+	- Every node picked on the canvas, in the order they were taken. A band swept
+	- over the canvas writes here, and a carry and a delete read it.
+	picked? /string
 	doc_js *
 	doc_root \
 	- The sandbox is a sibling module with no page of its own, so what is derived
@@ -268,7 +272,7 @@ $bog_vmap_app $mol_view
 		doc_src <= doc_src
 		doc_css <= doc_css
 		spots? <=> spots?
-		selected? <=> selected?
+		picked? <=> picked?
 		doc_js <= doc_js
 		doc_root <= doc_root
 		libs <= libs /$bog_vmap_bridge_part
