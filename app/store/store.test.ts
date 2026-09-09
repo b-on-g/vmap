@@ -172,6 +172,170 @@ namespace $ {
 		},
 
 		/**
+		 * THE PROMISE OF STAGE 1: a reload comes back to the same scene.
+		 *
+		 * Nothing else in the pack says a word about it, and nothing could: the
+		 * standing mocks switch persistence off on BOTH sides — `$giper_baza_land
+		 * .sync()`, the one method that loads and saves, is stubbed to a no-op, and
+		 * the mine is replaced by the empty base, whose `units_load` answers with
+		 * nothing. Both are put back here.
+		 *
+		 * The mine below keeps units in memory, in the shape the IndexedDB driver
+		 * uses in a browser: one record per unit, and the payload of a big one in a
+		 * store of its own. What is NOT covered is that driver itself, which needs a
+		 * browser; everything between the store and it is the product path exactly.
+		 *
+		 * A SESSION IS A SET OF CLASSES WITH FRESH CACHES and the same identity —
+		 * what a reloaded page has, its key restored out of local storage.
+		 *
+		 * **Each session keeps a live reader, and without one this test lies:** the
+		 * graph sweeps a cell nobody reads, the land object goes with it and comes
+		 * back empty, which looks exactly like the loss under test. Measured on the
+		 * stand this grew out of, where the first version reported a loss that was
+		 * its own doing.
+		 *
+		 * **Balls are half of what is being checked.** A text longer than a unit
+		 * holds inline lives in a ball beside it, and a mine that keeps units but
+		 * forgets balls gives back a document list with titles and documents with no
+		 * text at all — measured here by leaving `ball_load` out, and it is the same
+		 * picture the editor showed on a reloaded page of the deploy.
+		 */
+		async 'a document written in one session comes back in the next'( $ ) {
+
+			type Kept = { bin: ArrayBuffer, ball: Uint8Array< ArrayBuffer > | null }
+
+			/** The disk, shared by the sessions and by nothing else. */
+			const disk = new Map< string, Map< string, Kept > >()
+
+			class mine extends $giper_baza_mine_temp {
+
+				override units_save( diff: $giper_baza_mine_diff ) {
+
+					const key = this.land().str
+					let kept = disk.get( key )
+					if( !kept ) disk.set( key, kept = new Map )
+
+					for( const unit of diff.del ) kept.delete( unit.path() )
+
+					for( const unit of diff.ins ) {
+
+						const ball = unit instanceof $giper_baza_unit_sand && unit.big()
+							? unit.ball()
+							: null
+
+						kept.set( unit.path(), {
+							bin: unit.buffer.slice( unit.byteOffset, unit.byteOffset + unit.byteLength ),
+							ball: ball && new Uint8Array( ball.buffer.slice(
+								ball.byteOffset, ball.byteOffset + ball.byteLength,
+							) ),
+						} )
+
+						this.units_persisted.add( unit )
+
+					}
+
+				}
+
+				override units_load() {
+
+					const kept = disk.get( this.land().str )
+					if( !kept ) return []
+
+					const units = [ ... kept.values() ].map( one => $giper_baza_unit_base.narrow( one.bin ) )
+					for( const unit of units ) this.units_persisted.add( unit )
+
+					return units as readonly $giper_baza_unit[]
+				}
+
+				override ball_load( sand: $giper_baza_unit_sand ) {
+					return disk.get( this.land().str )?.get( sand.path() )?.ball
+						?? new Uint8Array()
+				}
+
+			}
+
+			const session = ()=> {
+
+				const ctx = Object.create( $ ) as typeof $
+
+				// The real land, whose `sync()` loads and saves.
+				ctx.$giper_baza_land = class extends $$.$giper_baza_land {} as any
+				ctx.$giper_baza_mine = class extends mine {} as any
+
+				const glob = class extends $.$giper_baza_glob {
+					static override lands_touched = new $mol_wire_set< string >()
+				}
+				glob.$ = ctx
+				ctx.$giper_baza_glob = glob as any
+
+				ctx.$mol_state_arg = class extends $.$mol_state_arg {} as any
+
+				// A browser answers with a quota; the base class answers zero, and
+				// zero reads as «storage full» to the sharding rule of `persisted()`.
+				ctx.$mol_storage = class extends $.$mol_storage {
+					static override total() { return 1e9 }
+					static override used() { return 0 }
+				} as any
+
+				const store = $bog_vmap_app_store.make({
+					$: ctx,
+					doc_land_config: ()=> [[ null, $giper_baza_rank_read ]] as $giper_baza_rank_preset,
+				})
+
+				// What a view does: read, and stay subscribed.
+				const eye = new $mol_wire_atom( 'eye', ()=> {
+					try {
+						return store.doc_links().length + ':' + store.source().length
+					} catch( error ) {
+						if( $mol_promise_like( error ) ) return $mol_fail_hidden( error )
+						return -1
+					}
+				} )
+
+				/** A frame drawn. Suspends while a land loads, like any first frame. */
+				const look = ()=> { try { eye.fresh() } catch( error ) {} }
+
+				return { store, look }
+			}
+
+			const read = < Name extends keyof $bog_vmap_app_store >(
+				store: $bog_vmap_app_store,
+				name: Name,
+				... args: any[]
+			)=> ( $mol_wire_async( store )[ name ] as any )( ... args )
+
+			const one = session()
+			one.look()
+
+			const made = await read( one.store, 'doc_add', 'Сцена 1', src_page ) as $bog_vmap_app_doc
+			const link = made.link().str
+			one.look()
+
+			// Saving is driven by the yard, which has no master here, so it is asked
+			// for directly: what this checks is the round trip, not the timer.
+			await $mol_wire_async( one.store.home().land() ).units_saving()
+			await $mol_wire_async( made.land() ).units_saving()
+
+			// A reload: same identity, same disk, every cache new.
+			const two = session()
+			two.look()
+
+			$mol_assert_equal( ( await read( two.store, 'doc_links' ) ).length, 1 )
+			$mol_assert_equal( await read( two.store, 'title' ), 'Сцена 1' )
+			$mol_assert_equal( await read( two.store, 'source' ), src_page )
+
+			// And by the address, which is how a shared link opens.
+			const three = session()
+			await read( three.store, 'doc_arg', link )
+			three.look()
+
+			const current = await read( three.store, 'doc_current' ) as $bog_vmap_app_doc
+			$mol_assert_equal( current.link().str, link )
+			$mol_assert_equal( await read( three.store, 'source' ), src_page )
+
+		},
+
+		/**
 		 * The recorded choice can be moved, and that is what a rename of the root
 		 * needs: classes are matched to nodes by NAME, so a renamed class arrives as
 		 * a node of its own and nothing would move the pointer to it otherwise.
