@@ -1,7 +1,7 @@
 namespace $ {
 
 	/** A rectangle in world units. Same shape the bridge reports geometry in. */
-	export type $bog_vmap_scene_box = {
+	export type $bog_vmap_scene_cull_box = {
 		readonly x: number
 		readonly y: number
 		readonly width: number
@@ -26,10 +26,10 @@ namespace $ {
 	 * @param view world rectangle currently on screen
 	 * @param slack world units added to every side of the viewport
 	 */
-	export function $bog_vmap_scene_shown(
+	export function $bog_vmap_scene_cull(
 		spots: { readonly [ name: string ]: { readonly x: number, readonly y: number } },
-		sizes: { readonly [ name: string ]: $bog_vmap_scene_box },
-		view: $bog_vmap_scene_box,
+		sizes: { readonly [ name: string ]: $bog_vmap_scene_cull_box },
+		view: $bog_vmap_scene_cull_box,
 		slack: number,
 		names: readonly string[],
 	) {
@@ -84,10 +84,10 @@ namespace $ {
 	 * the host clamps it well away from there, but a division that can produce
 	 * `Infinity` on a message from outside is not worth leaving open.
 	 */
-	export function $bog_vmap_scene_viewport(
+	export function $bog_vmap_scene_cull_viewport(
 		camera: { readonly x: number, readonly y: number, readonly zoom: number },
 		screen: { readonly width: number, readonly height: number },
-	): $bog_vmap_scene_box {
+	): $bog_vmap_scene_cull_box {
 
 		const zoom = camera.zoom > 0 ? camera.zoom : 1
 

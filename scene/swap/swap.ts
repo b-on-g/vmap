@@ -1,7 +1,7 @@
 namespace $ {
 
 	/** Shape of one recompiled class: what it declares and what of that is keyed. */
-	export type $bog_vmap_scene_shape = {
+	export type $bog_vmap_scene_swap_shape = {
 		readonly declared: ReadonlySet< string >
 		readonly keyed: ReadonlySet< string >
 	}
@@ -51,13 +51,13 @@ namespace $ {
 	 * Instances of classes the document does not declare — components of the donor
 	 * pack — keep their prototype and are only walked through, because a document
 	 * class may well sit inside one.
-	 * @see ../ARCHITECTURE.md section 3, spike/S2.md
+	 * @see ../../ARCHITECTURE.md section 3, ../../spike/S2.md
 	 */
 	export function $bog_vmap_scene_swap(
 		this: $,
 		root: object,
 		klass_of: ( name: string )=> unknown,
-		shape_of: ( name: string )=> $bog_vmap_scene_shape | null,
+		shape_of: ( name: string )=> $bog_vmap_scene_swap_shape | null,
 	): $bog_vmap_scene_swap_report {
 
 		const report = { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0 }
@@ -150,7 +150,7 @@ namespace $ {
 		field: string,
 		prop: string,
 		atoms: readonly Atom[],
-		shape: $bog_vmap_scene_shape,
+		shape: $bog_vmap_scene_swap_shape,
 		report: $bog_vmap_scene_swap_report,
 	) {
 

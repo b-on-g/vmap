@@ -136,17 +136,17 @@ namespace $ {
 				unobserve: ( node: string )=> log.push( '-' + node ),
 			}
 
-			const first = $bog_vmap_scene_watch( watcher, new Set< string >(), [ 'a', 'b' ] )
+			const first = $bog_vmap_scene_measure_watch( watcher, new Set< string >(), [ 'a', 'b' ] )
 			$mol_assert_like( log, [ '+a', '+b' ] )
 
 			// A node still there is NOT observed again: every fresh `observe` gets a
 			// box delivered, and a report that re-observes everything would answer
 			// its own delivery with another report.
-			const second = $bog_vmap_scene_watch( watcher, first, [ 'b', 'c' ] )
+			const second = $bog_vmap_scene_measure_watch( watcher, first, [ 'b', 'c' ] )
 			$mol_assert_like( log, [ '+a', '+b', '-a', '+c' ] )
 			$mol_assert_like( [ ... second ], [ 'b', 'c' ] )
 
-			$bog_vmap_scene_watch( watcher, second, [] )
+			$bog_vmap_scene_measure_watch( watcher, second, [] )
 			$mol_assert_like( log, [ '+a', '+b', '-a', '+c', '-b', '-c' ] )
 
 		},

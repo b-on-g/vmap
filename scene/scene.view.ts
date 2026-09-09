@@ -110,7 +110,7 @@ namespace $.$$ {
 		 * taking it for a size would flip the part between shown and hidden forever.
 		 */
 		@ $mol_mem
-		sizes_seen( next?: { readonly [ name: string ]: $bog_vmap_scene_box } ) {
+		sizes_seen( next?: { readonly [ name: string ]: $bog_vmap_scene_cull_box } ) {
 			return next ?? {}
 		}
 
@@ -140,10 +140,10 @@ namespace $.$$ {
 			const screen = this.screen()
 			if( !screen ) return new Set( names )
 
-			const view = this.$.$bog_vmap_scene_viewport( this.camera(), screen )
+			const view = this.$.$bog_vmap_scene_cull_viewport( this.camera(), screen )
 			const slack = Math.max( cull_slack_min, Math.max( view.width, view.height ) / 2 )
 
-			return this.$.$bog_vmap_scene_shown( spots, this.sizes_seen(), view, slack, names )
+			return this.$.$bog_vmap_scene_cull( spots, this.sizes_seen(), view, slack, names )
 		}
 
 		/**
@@ -453,7 +453,7 @@ namespace $.$$ {
 
 			}
 
-			return own as { readonly [ klass: string ]: $bog_vmap_scene_shape }
+			return own as { readonly [ klass: string ]: $bog_vmap_scene_swap_shape }
 		}
 
 		/**
@@ -1235,7 +1235,7 @@ namespace $.$$ {
 		/** Watches exactly the nodes of the last measurement, and nothing else. */
 		resize_sync( nodes: readonly Element[] ) {
 
-			this.resize_seen = this.$.$bog_vmap_scene_watch(
+			this.resize_seen = this.$.$bog_vmap_scene_measure_watch(
 				this.resize_watch().observer,
 				this.resize_seen,
 				nodes,

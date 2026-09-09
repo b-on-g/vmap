@@ -1,7 +1,7 @@
 namespace $ {
 
 	/** As much of a DOM node as measuring needs. */
-	export type $bog_vmap_scene_rect_source = {
+	export type $bog_vmap_scene_measure_rect = {
 		readonly isConnected: boolean
 		getBoundingClientRect(): {
 			readonly left: number
@@ -12,8 +12,8 @@ namespace $ {
 	}
 
 	/** What the walk of one rendered document came out to. */
-	export type $bog_vmap_scene_measured< Node > = {
-		readonly sizes: { readonly [ node: string ]: $bog_vmap_scene_box }
+	export type $bog_vmap_scene_measure_result< Node > = {
+		readonly sizes: { readonly [ node: string ]: $bog_vmap_scene_cull_box }
 		readonly nodes: readonly Node[]
 	}
 
@@ -38,7 +38,7 @@ namespace $ {
 	 *        owns the camera, is told world units
 	 */
 	export function $bog_vmap_scene_measure<
-		View extends { dom_node(): $bog_vmap_scene_rect_source },
+		View extends { dom_node(): $bog_vmap_scene_measure_rect },
 	>(
 		root: View,
 		how: {
@@ -51,9 +51,9 @@ namespace $ {
 			/** Property the view is held by, empty when it is held by nothing named. */
 			readonly prop_of: ( view: View )=> string
 		},
-	): $bog_vmap_scene_measured< ReturnType< View[ 'dom_node' ] > > {
+	): $bog_vmap_scene_measure_result< ReturnType< View[ 'dom_node' ] > > {
 
-		const sizes = {} as { [ node: string ]: $bog_vmap_scene_box }
+		const sizes = {} as { [ node: string ]: $bog_vmap_scene_cull_box }
 		const nodes = [] as ReturnType< View[ 'dom_node' ] >[]
 
 		const base = root.dom_node().getBoundingClientRect()
@@ -111,7 +111,7 @@ namespace $ {
 	 * `observe()`, and re-observing the whole tree after every report would answer
 	 * its own delivery with another report, forever.
 	 */
-	export function $bog_vmap_scene_watch< Node >(
+	export function $bog_vmap_scene_measure_watch< Node >(
 		watcher: {
 			observe( node: Node ): void
 			unobserve( node: Node ): void
