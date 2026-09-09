@@ -132,17 +132,63 @@ namespace $.$$ {
 		 * are meant to reach the view that reads it, and the view that reads it is
 		 * `Apps` alone.
 		 */
+		@ $mol_mem
+		app_state(): { readonly list: readonly string[], readonly error: string } {
+
+			try {
+				return {
+					list: this.class_list().filter( name => !name.startsWith( '$mol_' ) ),
+					error: '',
+				}
+			} catch( error: unknown ) {
+
+				// A suspension is not an answer: the pack is still on its way and
+				// the panel has to keep waiting, not report a dead address.
+				if( $mol_promise_like( error ) ) return $mol_fail_hidden( error )
+
+				return {
+					list: [],
+					error: this.$.$bog_vmap_lib_pack_note( this.pack_tree_link(), error ),
+				}
+			}
+
+		}
+
+		/**
+		 * The address that was actually fetched, for the complaint to name.
+		 *
+		 * Asked of the palette's library rather than built here: the rule that
+		 * grows `web.view.tree` onto a pack address lives there, and a second copy
+		 * of it would word the complaint about a file we never asked for.
+		 */
+		pack_tree_link() {
+			return this.Palette().Lib().tree_link()
+		}
+
 		app_list() {
-			return this.class_list().filter( name => !name.startsWith( '$mol_' ) )
+			return this.app_state().list
 		}
 
 		app_rows() {
 			return this.app_list().map( name => this.Item_row( name ) )
 		}
 
+		/** Why there are no objects, when the reason is a dead address. */
+		app_error() {
+			return this.app_state().error
+		}
+
+		/** The caption, then either the objects or the reason there are none. */
+		apps_content() {
+			return [
+				this.Apps_head(),
+				... this.app_error() ? [ this.Apps_note() ] : [ this.App_list() ],
+			] as readonly $mol_view[]
+		}
+
 		apps_title() {
-			const found = this.app_list().length
-			return found ? 'Объекты приложения' : 'Приложение не подключено'
+			if( this.app_error() ) return 'Приложение не отвечает'
+			return this.app_list().length ? 'Объекты приложения' : 'Приложение не подключено'
 		}
 
 		/** Everything the shelf offers, in the order it offers it. */

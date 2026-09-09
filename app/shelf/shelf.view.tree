@@ -88,12 +88,20 @@ $bog_vmap_app_shelf $mol_view
 	- part of mol itself. A deployed mol application is a library of components
 	- already, so this needs nothing of the application's author.
 	Apps $mol_view
+		sub <= apps_content /$mol_view
+	-
+	Apps_head $mol_view
 		sub /
-			<= Apps_head $mol_view
-				sub /
-					<= apps_title \
-			<= App_list $mol_list
-				rows <= app_rows /
+			<= apps_title \
+	-
+	App_list $mol_list
+		rows <= app_rows /
+	-
+	- Why an address brought nothing. In place of the list and not beside it: there
+	- is nothing to list, and a dead address is the whole content of the section
+	- until it is fixed.
+	Apps_note $mol_view
+		sub / <= app_error \
 	-
 	- The second level, folded away by default. A check and not an expander: the
 	- palette has to GROW into whatever the shelf left, and inside an expander it

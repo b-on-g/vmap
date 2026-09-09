@@ -82,6 +82,29 @@ namespace $ {
 
 		},
 
+		'a dead address takes down its own list and says why'( $ ) {
+
+			const shelf = $bog_vmap_app_shelf.make({
+				$,
+				pack_link: ()=> 'http://dead.test/',
+				class_list: ()=> $mol_fail( new Error( 'Not Found' ) ),
+			}) as $$.$bog_vmap_app_shelf
+
+			// The list is empty and the section says what happened, in place of it.
+			$mol_assert_like( shelf.app_list(), [] )
+			$mol_assert_equal( shelf.apps_title(), 'Приложение не отвечает' )
+			$mol_assert_ok( shelf.app_error().includes( 'Not Found' ) )
+			$mol_assert_ok( shelf.app_error().includes( 'http://dead.test/web.view.tree' ) )
+			$mol_assert_equal( shelf.apps_content().includes( shelf.Apps_note() ), true )
+			$mol_assert_equal( shelf.apps_content().includes( shelf.App_list() ), false )
+
+			// And the shelf itself stands: the failure belongs to one list, not to
+			// the panel around it.
+			$mol_assert_ok( shelf.items().length > 4 )
+			$mol_assert_ok( shelf.body().includes( shelf.Items() ) )
+
+		},
+
 		'nothing connected is a state and not a failure'( $ ) {
 
 			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf

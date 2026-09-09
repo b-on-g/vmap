@@ -93,6 +93,14 @@ namespace $.$$ {
 			gap: $mol_gap.space,
 		},
 
+		/** Why an address brought nothing. Same voice as the refusals of the field. */
+		Apps_note: {
+			padding: { left: $mol_gap.text, right: $mol_gap.text },
+			color: $mol_theme.focus,
+			font: { size: '.75rem' },
+			whiteSpace: 'pre-wrap',
+		},
+
 		/** A caption of a section, not a heading of the panel. */
 		Apps_head: {
 			padding: { left: $mol_gap.text, right: $mol_gap.text },

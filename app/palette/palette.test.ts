@@ -31,6 +31,32 @@ namespace $ {
 
 		},
 
+		/**
+		 * A dead address is answered in words, not by the status line of the
+		 * response. `$mol_fetch` throws «Not Found» and nothing else, and that
+		 * reached the counter as the whole explanation.
+		 */
+		'a pack that does not answer says so, and says what was looked for'( $ ) {
+
+			const palette = $bog_vmap_app_palette.make({
+				$,
+				pack_link: ()=> 'http://dead.test/',
+				Lib: ()=> $bog_vmap_lib.make({
+					$,
+					pack: ()=> 'http://dead.test/',
+					tree: ()=> $mol_fail( new Error( 'Not Found' ) ),
+				}),
+			}) as $$.$bog_vmap_app_palette
+
+			// No list, and the counter carries the reason instead of a number.
+			$mol_assert_like( palette.class_list(), [] )
+
+			const note = palette.total()
+			$mol_assert_ok( note.includes( 'Not Found' ) )
+			$mol_assert_ok( note.includes( 'http://dead.test/web.view.tree' ) )
+
+		},
+
 		/** Land classes handed in by the owner resolve against the pack stub like any class. */
 		'classes of the lands join the list'( $ ) {
 

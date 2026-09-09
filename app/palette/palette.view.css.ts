@@ -32,11 +32,16 @@ namespace $.$$ {
 			background: { color: $mol_theme.field },
 		},
 
+		/**
+		 * The counter, and when the pack is dead the reason instead of it. Wrapping
+		 * is allowed for exactly that case: a sentence set `nowrap` would run off
+		 * the panel it is meant to be read in.
+		 */
 		Total: {
 			flex: { shrink: 0 },
 			color: $mol_theme.shade,
 			font: { size: '.8rem' },
-			whiteSpace: 'nowrap',
+			whiteSpace: 'pre-wrap',
 		},
 
 		/**

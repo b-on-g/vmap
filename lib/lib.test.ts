@@ -428,6 +428,29 @@ namespace $ {
 
 		},
 
+		/**
+		 * The wording of a dead pack. A status line alone — «Not Found» — is true
+		 * and useless: it names neither the file that was missing nor the field to
+		 * correct, and that is exactly what reached the screen.
+		 */
+		'a dead pack is worded with the address that was fetched'( $ ) {
+
+			const note = $.$bog_vmap_lib_pack_note(
+				'https://dead.test/web.view.tree',
+				new Error( 'Not Found' ),
+			)
+
+			$mol_assert_ok( note.includes( 'Not Found' ) )
+			$mol_assert_ok( note.includes( 'https://dead.test/web.view.tree' ) )
+
+			// With no address to name — a library of lands alone — it says the one
+			// thing it knows rather than an empty «Ожидался ».
+			const bare = $.$bog_vmap_lib_pack_note( '', new Error( 'Failed to fetch' ) )
+
+			$mol_assert_equal( bare, 'Пак не отвечает: Failed to fetch' )
+
+		},
+
 	})
 
 }

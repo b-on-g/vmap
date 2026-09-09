@@ -54,14 +54,30 @@ namespace $.$$ {
 		 * Classes matching the query, or all of them for an empty query —
 		 * `$mol_match_text` of nothing matches everything, so no branch is needed.
 		 *
-		 * Suspends while the pack is loading and throws when the pack is dead.
-		 * Both are meant to reach the views that read it: `$mol_view` turns the
-		 * first into its waiting state and the second into an error strip, and a
-		 * try/catch here would replace both with a silently empty palette.
+		 * SUSPENSION PASSES THROUGH, a failure does not, and the difference is the
+		 * whole point. `$mol_view` turns a suspension into its waiting state, which
+		 * is right; it turns a failure into a strip carrying whatever `$mol_fetch`
+		 * threw, which is the status line and nothing else — a mistyped address
+		 * reached the counter as a bare «Not Found», naming neither the file that
+		 * was missing nor the field to fix. Seen on the deploy 09.09.2026.
+		 *
+		 * So the failure is caught and worded once, here, and read by the counter;
+		 * the list is empty meanwhile, which is what a dead pack has to offer.
 		 */
 		@ $mol_mem
+		class_state(): { readonly list: readonly string[], readonly error: string } {
+
+			try {
+				return { list: this.Lib().class_search( this.query() ), error: '' }
+			} catch( error: unknown ) {
+				if( $mol_promise_like( error ) ) return $mol_fail_hidden( error )
+				return { list: [], error: this.$.$bog_vmap_lib_pack_note( this.Lib().tree_link(), error ) }
+			}
+
+		}
+
 		class_list() {
-			return this.Lib().class_search( this.query() )
+			return this.class_state().list
 		}
 
 		class_rows() {
@@ -81,9 +97,15 @@ namespace $.$$ {
 			this.selected( name )
 		}
 
+		/** How many classes are on screen, or why there are none at all. */
 		total() {
+
+			const error = this.class_state().error
+			if( error ) return error
+
 			const found = this.class_list().length
 			const all = this.Lib().class_list().length
+
 			return found === all ? `${ all } классов` : `${ found } из ${ all }`
 		}
 

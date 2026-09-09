@@ -68,6 +68,30 @@ namespace $ {
 	}
 
 	/**
+	 * Why a pack did not load, in words somebody can act on.
+	 *
+	 * `$mol_fetch` throws the status line of the response and nothing else, so a
+	 * mistyped address reaches the screen as a bare «Not Found» — true and
+	 * useless: it names neither what was looked for nor where to correct it. Seen
+	 * on the deploy in the counter of the class list, 09.09.2026.
+	 *
+	 * The address is repeated back because the field it came from may be scrolled
+	 * away or, in the case of the default, never typed at all. It is the ADDRESS
+	 * THAT WAS FETCHED and not the one that was typed, and it is handed in rather
+	 * than derived here: the rule that grows `web.view.tree` onto a pack lives in
+	 * `tree_link` and must not be written a second time to word a complaint.
+	 */
+	export function $bog_vmap_lib_pack_note( link: string, error: unknown ) {
+
+		const reason = String( ( error as Error )?.message || error )
+
+		if( !link ) return `Пак не отвечает: ${ reason }`
+
+		return `Пак не отвечает (${ reason }). Ожидался ${ link }`
+			+ ' — дерево классов, которое сборка кладёт рядом с бандлом'
+	}
+
+	/**
 	 * Base address of a sibling module of the pack, derived from the address of the
 	 * page asking. Always ends with a slash, so `new URL` keeps its last segment.
 	 *
