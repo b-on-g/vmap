@@ -148,6 +148,33 @@ namespace $ {
 		 * REPRO: a drop out of the palette while something is picked carried the
 		 * picked node to the point of the drop as well.
 		 */
+		/**
+		 * Inside a part the keys belong to the part, and the strip says so with the
+		 * way out. Nothing else on screen would explain why Delete stopped deleting.
+		 */
+		'the strip says the pointer is inside a part, and how to get out'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			$mol_assert_equal( stage.text().includes( 'Внутри' ), false )
+
+			stage.tap( stage.part_center( 'Calc' ) )
+			stage.tap( stage.part_center( 'Calc' ) )
+
+			$mol_assert_equal( stage.pane.inside(), true )
+			$mol_assert_ok( stage.text().includes( 'Внутри Calc' ) )
+			$mol_assert_ok( stage.text().includes( 'Esc' ) )
+
+			const dom = $.$mol_dom_context
+			dom.document.dispatchEvent( new dom.KeyboardEvent( 'keydown', { key: 'Escape', bubbles: true } ) )
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.inside(), false )
+			$mol_assert_equal( stage.text().includes( 'Внутри' ), false )
+
+		},
+
 		'REPRO a drop from the palette leaves the picked part where it was'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )

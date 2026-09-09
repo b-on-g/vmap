@@ -156,6 +156,13 @@ $bog_vmap_app $mol_view
 	Root_note $mol_view
 		sub / <= root_title_note \
 	-
+	- The pointer has been let inside a part, so the keys belong to the part and no
+	- longer to the editor. Said outright, because nothing else on screen says it
+	- and the way out is not guessable: Delete stops deleting and typing goes into
+	- the component, with no sign of why.
+	Inside_note $mol_view
+		sub / <= inside_note \
+	-
 	- The scene has stopped answering. Its own strip and not the error one: an
 	- error means the scene spoke, this means it did not, and the only thing that
 	- helps is on this strip.

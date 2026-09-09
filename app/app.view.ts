@@ -784,10 +784,28 @@ namespace $.$$ {
 			return Boolean( this.dragged() )
 		}
 
+		/**
+		 * What is said while the pointer is inside a part, empty otherwise.
+		 *
+		 * The way out names the click first and the key second, and that order is
+		 * the measurement, not a preference: inside the part the focus is in the
+		 * sandbox, so a keydown goes to the document of the frame and the listener
+		 * of the editor never sees it. The click on bare canvas always works,
+		 * because the overlay is whole everywhere outside the box of the part; Esc
+		 * works while the part has taken no focus of its own.
+		 */
+		inside_note() {
+			const name = this.pane().entered()
+			return name ? `Внутри ${ name }: клавиши уходят компоненту. Клик по холсту или Esc — выйти` : ''
+		}
+
 		@ $mol_mem
 		override body() {
 			return [
 				this.Head(),
+				// Above everything: the editor stopped answering the keyboard, and
+				// nothing else on screen would explain why.
+				... this.inside_note() ? [ this.Inside_note() ] : [],
 				// Above the error strip: a scene that stopped answering makes every
 				// error under it stale, and the action that helps is on this one.
 				... this.stalled() ? [ this.Stall() ] : [],
