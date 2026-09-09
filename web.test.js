@@ -12384,6 +12384,30 @@ var $;
             $mol_assert_equal(s.source(), src_page + src_calc);
         },
         /**
+         * WHY A RENAME HAS TO CARRY THE BODY AND THE STYLES BY HAND, measured at the
+         * level where it happens.
+         *
+         * Classes are matched to nodes by NAME, so a class renamed in the text has no
+         * match: a node is made for the new name with nothing in it, and the old one
+         * leaves the list taking its `Js` and `Css` with it. Everything the editor
+         * keeps about a class outside its text therefore has to be read BEFORE the
+         * text is written and put back after — there is no name in between that
+         * answers for it.
+         */
+        'a class renamed in the text arrives as an empty node and the old one leaves'($) {
+            const s = store($);
+            const doc = s.doc_add('Landing', src_page + src_calc);
+            s.node(doc, `${d}bog_vmap_app_store_test_calc`).js('result(){ return 42 }');
+            const renamed = src_calc.replace('_calc ', '_total ');
+            s.source(src_page + renamed);
+            $mol_assert_equal(s.nodes(doc).length, 2);
+            $mol_assert_equal(s.node(doc, `${d}bog_vmap_app_store_test_calc`), null);
+            // The new name is a new node, and it is empty. This is the loss the editor
+            // closes above it, not a defect of the store: the text is the truth, and
+            // the text says there is no such class any more.
+            $mol_assert_equal(s.node_js(doc, `${d}bog_vmap_app_store_test_total`), '');
+        },
+        /**
          * The recorded choice can be moved, and that is what a rename of the root
          * needs: classes are matched to nodes by NAME, so a renamed class arrives as
          * a node of its own and nothing would move the pointer to it otherwise.
@@ -13299,6 +13323,94 @@ var $;
             $mol_assert_equal(shelf.apps_title(), 'Приложение не подключено');
             // The shelf itself stands whatever the address does.
             $mol_assert_equal(shelf.items().length, 4);
+        },
+        'files of a module give one source per class, as their author wrote them'($) {
+            const text = [
+                `${d}my_card ${d}mol_view`,
+                `\tprice 0`,
+                `${d}my_price ${d}my_card`,
+                `\tprice 42`,
+                ``,
+            ].join('\n');
+            const taken = $.$bog_vmap_app_shelf_intake([{ name: 'card.view.tree', text }]);
+            // Two components and not one text: a library resolves neighbours by
+            // name, so a class that inherits the one beside it still finds it.
+            $mol_assert_equal(taken.classes.length, 2);
+            $mol_assert_ok(taken.classes[0].startsWith(`${d}my_card ${d}mol_view`));
+            $mol_assert_ok(taken.classes[1].includes(`${d}my_price ${d}my_card`));
+            $mol_assert_like(taken.refused, []);
+        },
+        'what cannot be taken is refused by name, with the reason on screen'($) {
+            const taken = $.$bog_vmap_app_shelf_intake([
+                { name: 'card.view.ts', text: 'namespace $ {}' },
+                { name: 'web.view.tree', text: `${d}mol_view ${d}mol_object\n` },
+                { name: 'empty.view.tree', text: '- just a comment\n' },
+            ]);
+            $mol_assert_like(taken.classes, []);
+            $mol_assert_like(taken.refused.map(item => item.reason), [
+                $bog_vmap_app_shelf_refuse.kind,
+                $bog_vmap_app_shelf_refuse.built,
+                $bog_vmap_app_shelf_refuse.empty,
+            ]);
+            // The note names the file, so a person knows which one to fix.
+            $mol_assert_ok($bog_vmap_app_shelf_intake_note(taken).includes('card.view.ts'));
+        },
+        async 'a class brought from a file keeps the name it came with'($) {
+            const store = $bog_vmap_app_publish_store.make({
+                $,
+                shelf_land_config: () => $.$giper_baza_glob.home().land(),
+            });
+            const source = `${d}my_card ${d}mol_view\n\tprice 0\n`;
+            // Through a fiber, as the panel does it: making the area encodes units.
+            const link = await $mol_wire_async(store).import_class(source);
+            const shelf = store.shelf();
+            $mol_assert_equal(link, shelf.land().link().str);
+            $mol_assert_equal(shelf.parts().length, 1);
+            // Under its OWN name: renaming it would cut every reference a neighbour
+            // of the same module makes to it, and cut it silently.
+            $mol_assert_equal(shelf.parts()[0].tree(), source);
+            // A second import of the same class replaces it instead of doubling it:
+            // two declarations of one name and the library disagrees with itself
+            // about which is real.
+            await $mol_wire_async(store).import_class(`${d}my_card ${d}mol_view\n\tprice 42\n`);
+            $mol_assert_equal(shelf.parts().length, 1);
+            $mol_assert_ok(shelf.parts()[0].tree().includes('price 42'));
+        },
+        async 'files brought to the panel end up in the library, whose link joins the field'($) {
+            const shelf = $bog_vmap_app_shelf.make({
+                $,
+                Store: () => $bog_vmap_app_publish_store.make({
+                    $,
+                    shelf_land_config: () => $.$giper_baza_glob.home().land(),
+                }),
+            });
+            const source = `${d}my_card ${d}mol_view\n\tprice 0\n`;
+            await $mol_wire_async(shelf).intake([
+                { name: 'card.view.tree', text: async () => source },
+                { name: 'card.view.ts', text: async () => 'namespace $ {}' },
+            ]);
+            // What was taken is in the library, under its own name. In canonical
+            // `tree2` formatting, which puts an only child on the line of its
+            // parent: the splitter serializes each declaration through `tree2`, and
+            // that form is what every other reader of the library expects.
+            const parts = shelf.Store().shelf().parts();
+            $mol_assert_equal(parts.length, 1);
+            $mol_assert_equal(parts[0].tree(), `${d}my_card ${d}mol_view price 0\n`);
+            // And the library is attached to the scene by the same field an address
+            // goes into: from here on it is the library any other scene would get.
+            $mol_assert_equal(shelf.links(), shelf.Store().link());
+            // What was not taken is said on screen, by file name.
+            $mol_assert_ok(shelf.import_note().includes('card.view.ts'));
+            $mol_assert_ok(shelf.source_content().includes(shelf.Import_note()));
+        },
+        'a declaration that names no class is refused before anything is written'($) {
+            const store = $bog_vmap_app_publish_store.make({
+                $,
+                shelf_land_config: () => $.$giper_baza_glob.home().land(),
+            });
+            // No land is made and nothing is written: the check is the first line.
+            $mol_assert_fail(() => store.import_class(`card ${d}mol_view\n`), 'Объявление начинается с "card", а имя класса начинается с доллара');
+            $mol_assert_equal(store.shelf(), null);
         },
         'the shelf offers ready made things and every one of them is a class'($) {
             const items = $bog_vmap_app_shelf_presets();
@@ -14260,6 +14372,75 @@ var $;
             $mol_assert_equal(JSON.stringify(app.doc_wires()), wires);
             // The text differs in the class name and in nothing else.
             $mol_assert_equal(app.doc_source(), source.replace(`${d}my_site_page`, `${d}my_shop_page`));
+        },
+        /**
+         * A name changed in the TEXT of a class is a rename too, and the body and the
+         * styles have to follow it there as well.
+         *
+         * Measured before they did: they stayed under the old name, so what the scene
+         * is handed — `doc_js` and `doc_css` — came out empty, and the behaviour the
+         * person had written stopped working in the document with nothing on the
+         * screen saying so. The text is the truth of section 1, so the fix is to
+         * follow it rather than to forbid editing the name here.
+         */
+        'a class renamed in its own text carries its body and its styles'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            app.root_js('greeting(){\n\treturn 1\n}\n');
+            app.root_css('[my] {\n\tcolor: red;\n}');
+            app.code_whole(true);
+            app.code_source(app.code_source().replace(`${d}my_site_page`, `${d}my_shop_page`));
+            $mol_assert_equal(app.doc_root(), `${d}my_shop_page`);
+            $mol_assert_equal(app.class_js(`${d}my_shop_page`), 'greeting(){\n\treturn 1\n}\n');
+            $mol_assert_equal(app.class_css(`${d}my_shop_page`), '[my] {\n\tcolor: red;\n}');
+            // What the scene is handed, which is where the loss actually showed.
+            $mol_assert_equal(app.doc_js()[`${d}my_shop_page`], 'greeting(){\n\treturn 1\n}\n');
+            $mol_assert_ok(app.doc_css().includes('color: red'));
+        },
+        /**
+         * One name gone and one arrived is a rename. Two of either is somebody
+         * rewriting the slot, and there is no telling which became which — a guess
+         * would move a body into a class that never had one. Nothing travels, and
+         * nothing is lost: what was stored still answers to the name it was stored
+         * under.
+         */
+        'a slot rewritten into two classes carries nothing and loses nothing'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            app.root_js('greeting(){\n\treturn 1\n}\n');
+            app.code_whole(true);
+            app.code_source([
+                `${d}my_shop_page ${d}mol_view sub /`,
+                `${d}my_shop_card ${d}mol_view title \\Карточка`,
+                ``,
+            ].join('\n'));
+            $mol_assert_like(app.doc_model().names(), [
+                `${d}my_shop_page`,
+                `${d}my_shop_card`,
+            ]);
+            $mol_assert_equal(app.class_js(`${d}my_shop_page`), '');
+            $mol_assert_equal(app.class_js(`${d}my_shop_card`), '');
+            // Still under the name it was written under, and still readable there.
+            $mol_assert_equal(app.class_js(`${d}my_site_page`), 'greeting(){\n\treturn 1\n}\n');
+        },
+        /**
+         * The other way a slot grows a class: the one on screen stays and a second is
+         * typed under it. No name left the document, so nothing is a rename, and the
+         * class that stayed keeps everything it had.
+         */
+        'a second class typed under the first carries nothing away from it'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            app.root_js('greeting(){\n\treturn 1\n}\n');
+            app.code_whole(true);
+            app.code_source(app.code_source() + `${d}my_site_card ${d}mol_view title \\Карточка\n`);
+            $mol_assert_like(app.doc_model().names(), [
+                `${d}my_site_page`,
+                `${d}my_site_card`,
+            ]);
+            $mol_assert_equal(app.doc_root(), `${d}my_site_page`);
+            $mol_assert_equal(app.class_js(`${d}my_site_page`), 'greeting(){\n\treturn 1\n}\n');
+            $mol_assert_equal(app.class_js(`${d}my_site_card`), '');
         },
         /**
          * Typing is not renaming. Every letter of a name is a prefix of it, and most

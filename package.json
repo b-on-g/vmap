@@ -380,6 +380,8 @@
     "$mol_embed_rutube",
     "$mol_embed_vklive",
     "$mol_expander",
+    "$mol_button_open",
+    "$mol_icon_upload",
     "$bog_vmap_lib_links",
     "$bog_vmap_app_inspect",
     "$bog_vmap_app_inspect_flex",

@@ -43476,6 +43476,20 @@ declare namespace $ {
          * anything is written, see `refusal`; the view asks it first and shows it.
          */
         publish(part: string, source: string, js?: string, css?: string, classes?: readonly string[]): string;
+        /**
+         * Puts a class brought from OUTSIDE into the library under the name it
+         * already carries, replacing the one that declared that name before.
+         *
+         * The difference from `publish` is the name and only the name. A part of a
+         * document is a property, `Calc`, and has to be given a class name to
+         * become a component at all; a file names its class itself, and its
+         * neighbours in the same module refer to it by that name — renaming it
+         * would cut every one of those references, silently, because a base nobody
+         * declares compiles green and fails at run time.
+         *
+         * **From a fiber only**, for the reason spelled out at `publish`.
+         */
+        import_class(source: string, js?: string, css?: string): string;
     }
     export {};
 }
@@ -46623,6 +46637,78 @@ declare namespace $ {
 }
 
 declare namespace $ {
+
+	export class $mol_icon_upload extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=upload.view.tree.d.ts.map
+declare namespace $ {
+
+	type $mol_button_open_native__files_mol_button_open_1 = $mol_type_enforce<
+		ReturnType< $mol_button_open['files_handled'] >
+		,
+		ReturnType< $mol_button_open_native['files'] >
+	>
+	type $mol_button_open_native__accept_mol_button_open_2 = $mol_type_enforce<
+		ReturnType< $mol_button_open['accept'] >
+		,
+		ReturnType< $mol_button_open_native['accept'] >
+	>
+	type $mol_button_open_native__multiple_mol_button_open_3 = $mol_type_enforce<
+		ReturnType< $mol_button_open['multiple'] >
+		,
+		ReturnType< $mol_button_open_native['multiple'] >
+	>
+	export class $mol_button_open extends $mol_button_minor {
+		Icon( ): $mol_icon_upload
+		files( next?: readonly(File)[] ): readonly(File)[]
+		files_handled( next?: ReturnType< $mol_button_open['files'] > ): ReturnType< $mol_button_open['files'] >
+		accept( ): string
+		multiple( ): boolean
+		Native( ): $mol_button_open_native
+		sub( ): readonly(any)[]
+	}
+	
+	export class $mol_button_open_native extends $mol_view {
+		accept( ): string
+		multiple( ): boolean
+		picked( next?: any ): any
+		dom_name( ): string
+		files( next?: readonly(File)[] ): readonly(File)[]
+		attr( ): ({ 
+			'type': string,
+			'accept': ReturnType< $mol_button_open_native['accept'] >,
+			'multiple': ReturnType< $mol_button_open_native['multiple'] >,
+		}) 
+		event( ): ({ 
+			change( next?: ReturnType< $mol_button_open_native['picked'] > ): ReturnType< $mol_button_open_native['picked'] >,
+		}) 
+	}
+	
+}
+
+//# sourceMappingURL=open.view.tree.d.ts.map
+declare namespace $.$$ {
+    class $mol_button_open extends $.$mol_button_open {
+        files_handled(next?: readonly File[]): readonly File[];
+    }
+    /**
+     * File open button
+     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_button_demo
+     */
+    class $mol_button_open_native extends $.$mol_button_open_native {
+        dom_node(): HTMLInputElement;
+        picked(): void;
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
     /**
      * The palette field, parsed: a list of links separated by commas into a donor
      * pack, the lands of Giper Baza to compile on top of it, and what was refused.
@@ -46729,6 +46815,48 @@ declare namespace $ {
      * pieces to arrange.
      */
     function $bog_vmap_app_shelf_presets(): readonly $bog_vmap_app_shelf_item[];
+    /** A file brought from the disk: its name and what is inside it. */
+    type $bog_vmap_app_shelf_file = {
+        readonly name: string;
+        readonly text: string;
+    };
+    /** What the files gave, and what was refused with the reason in the user's words. */
+    type $bog_vmap_app_shelf_intake = {
+        /** One source per class, in the order the files declared them. */
+        readonly classes: readonly string[];
+        readonly refused: readonly {
+            readonly name: string;
+            readonly reason: string;
+        }[];
+    };
+    /**
+     * Wording of the refusals, in one place so the tests and the panel agree.
+     *
+     * A mol module is two kinds of text and only one of them can be taken. The
+     * declarations compile in the sandbox as they are; the behaviour is
+     * TypeScript, and what runs a component's body there is `new Function` over
+     * JavaScript. There is no compiler in the page and pretending otherwise would
+     * mean a component that arrives looking whole and does nothing.
+     */
+    const $bog_vmap_app_shelf_refuse: {
+        readonly kind: string;
+        readonly built: string;
+        readonly empty: "ни одного класса: объявление начинается с имени на доллар";
+    };
+    /**
+     * Splits the files brought from the disk into one source per class.
+     *
+     * Split and not merged, because a component of a library is one class and the
+     * library resolves neighbours by name: a file with three classes in it gives
+     * three components that still find each other.
+     *
+     * The text of each declaration goes out as its author wrote it, without
+     * normalizing: what a person brought from their own module is theirs, and the
+     * editor normalizes a document only when the document is edited.
+     */
+    function $bog_vmap_app_shelf_intake(this: $, files: readonly $bog_vmap_app_shelf_file[]): $bog_vmap_app_shelf_intake;
+    /** The refusals as one text, one per line, or empty when there is nothing to say. */
+    function $bog_vmap_app_shelf_intake_note(taken: $bog_vmap_app_shelf_intake): string;
     /**
      * Renames references to parts inside an override, wherever they sit.
      *
@@ -46758,112 +46886,147 @@ declare namespace $ {
 
 declare namespace $ {
 
-	type $mol_view__sub_bog_vmap_app_shelf_1 = $mol_type_enforce<
+	type $mol_button_open__hint_bog_vmap_app_shelf_1 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_open['hint'] >
+	>
+	type $mol_button_open__accept_bog_vmap_app_shelf_2 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_open['accept'] >
+	>
+	type $mol_button_open__multiple_bog_vmap_app_shelf_3 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_button_open['multiple'] >
+	>
+	type $mol_button_open__files_bog_vmap_app_shelf_4 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_shelf['files'] >
+		,
+		ReturnType< $mol_button_open['files'] >
+	>
+	type $mol_view__sub_bog_vmap_app_shelf_5 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_list__rows_bog_vmap_app_shelf_2 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_shelf_6 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_list__rows_bog_vmap_app_shelf_7 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['app_rows'] >
 		,
 		ReturnType< $mol_list['rows'] >
-	>
-	type $mol_view__sub_bog_vmap_app_shelf_3 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_list__rows_bog_vmap_app_shelf_4 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_shelf['item_rows'] >
-		,
-		ReturnType< $mol_list['rows'] >
-	>
-	type $mol_view__sub_bog_vmap_app_shelf_5 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_shelf['source_content'] >
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_string__hint_bog_vmap_app_shelf_6 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_string['hint'] >
-	>
-	type $mol_string__value_bog_vmap_app_shelf_7 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_shelf['links'] >
-		,
-		ReturnType< $mol_string['value'] >
 	>
 	type $mol_view__sub_bog_vmap_app_shelf_8 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_shelf_9 = $mol_type_enforce<
+	type $mol_list__rows_bog_vmap_app_shelf_9 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_shelf['item_rows'] >
+		,
+		ReturnType< $mol_list['rows'] >
+	>
+	type $mol_view__sub_bog_vmap_app_shelf_10 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_shelf['source_content'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_string__hint_bog_vmap_app_shelf_11 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_string['hint'] >
+	>
+	type $mol_string__value_bog_vmap_app_shelf_12 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_shelf['links'] >
+		,
+		ReturnType< $mol_string['value'] >
+	>
+	type $mol_view__sub_bog_vmap_app_shelf_13 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_check__title_bog_vmap_app_shelf_10 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_shelf_14 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_shelf_15 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_shelf_16 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_check__title_bog_vmap_app_shelf_17 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['title'] >
 	>
-	type $mol_check__hint_bog_vmap_app_shelf_11 = $mol_type_enforce<
+	type $mol_check__hint_bog_vmap_app_shelf_18 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['hint'] >
 	>
-	type $mol_check__checked_bog_vmap_app_shelf_12 = $mol_type_enforce<
+	type $mol_check__checked_bog_vmap_app_shelf_19 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['classes_showed'] >
 		,
 		ReturnType< $mol_check['checked'] >
 	>
-	type $bog_vmap_app_palette__compact_bog_vmap_app_shelf_13 = $mol_type_enforce<
+	type $bog_vmap_app_palette__compact_bog_vmap_app_shelf_20 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $bog_vmap_app_palette['compact'] >
 	>
-	type $bog_vmap_app_palette__pack_link_bog_vmap_app_shelf_14 = $mol_type_enforce<
+	type $bog_vmap_app_palette__pack_link_bog_vmap_app_shelf_21 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['pack_link'] >
 		,
 		ReturnType< $bog_vmap_app_palette['pack_link'] >
 	>
-	type $bog_vmap_app_palette__land_classes_bog_vmap_app_shelf_15 = $mol_type_enforce<
+	type $bog_vmap_app_palette__land_classes_bog_vmap_app_shelf_22 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['land_classes'] >
 		,
 		ReturnType< $bog_vmap_app_palette['land_classes'] >
 	>
-	type $bog_vmap_app_palette__dragged_bog_vmap_app_shelf_16 = $mol_type_enforce<
+	type $bog_vmap_app_palette__dragged_bog_vmap_app_shelf_23 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['dragged'] >
 		,
 		ReturnType< $bog_vmap_app_palette['dragged'] >
 	>
-	type $bog_vmap_app_palette__drag_x_bog_vmap_app_shelf_17 = $mol_type_enforce<
+	type $bog_vmap_app_palette__drag_x_bog_vmap_app_shelf_24 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['drag_x'] >
 		,
 		ReturnType< $bog_vmap_app_palette['drag_x'] >
 	>
-	type $bog_vmap_app_palette__drag_y_bog_vmap_app_shelf_18 = $mol_type_enforce<
+	type $bog_vmap_app_palette__drag_y_bog_vmap_app_shelf_25 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['drag_y'] >
 		,
 		ReturnType< $bog_vmap_app_palette['drag_y'] >
 	>
-	type $bog_vmap_app_palette_item__title_bog_vmap_app_shelf_19 = $mol_type_enforce<
+	type $bog_vmap_app_palette_item__title_bog_vmap_app_shelf_26 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['item_title'] >
 		,
 		ReturnType< $bog_vmap_app_palette_item['title'] >
 	>
-	type $bog_vmap_app_palette_item__hint_bog_vmap_app_shelf_20 = $mol_type_enforce<
+	type $bog_vmap_app_palette_item__hint_bog_vmap_app_shelf_27 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['item_hint'] >
 		,
 		ReturnType< $bog_vmap_app_palette_item['hint'] >
 	>
-	type $bog_vmap_app_palette_item__click_bog_vmap_app_shelf_21 = $mol_type_enforce<
+	type $bog_vmap_app_palette_item__click_bog_vmap_app_shelf_28 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['item_click'] >
 		,
 		ReturnType< $bog_vmap_app_palette_item['click'] >
 	>
-	type $bog_vmap_app_palette_item__drag_start_bog_vmap_app_shelf_22 = $mol_type_enforce<
+	type $bog_vmap_app_palette_item__drag_start_bog_vmap_app_shelf_29 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['item_drag'] >
 		,
 		ReturnType< $bog_vmap_app_palette_item['drag_start'] >
@@ -46872,6 +47035,9 @@ declare namespace $ {
 		body( ): readonly($mol_view)[]
 		item_rows( ): readonly(any)[]
 		source_content( ): readonly($mol_view)[]
+		Import_open( ): $mol_button_open
+		Import_title( ): $mol_view
+		import_note( next?: string ): string
 		rejected_note( ): string
 		apps_title( ): string
 		Apps_head( ): $mol_view
@@ -46889,12 +47055,16 @@ declare namespace $ {
 		drag_x( next?: number ): number
 		drag_y( next?: number ): number
 		place( next?: string ): string
+		files( next?: readonly(File)[] ): readonly(File)[]
 		classes_showed( next?: boolean ): boolean
 		sub( ): ReturnType< $bog_vmap_app_shelf['body'] >
 		Title( ): $mol_view
 		Items( ): $mol_list
 		Source( ): $mol_view
 		Links( ): $mol_string
+		Import( ): $mol_view
+		Import_note( ): $mol_view
+		Store( ): $bog_vmap_app_publish_store
 		Note( ): $mol_view
 		Apps( ): $mol_view
 		Level( ): $mol_check
@@ -46926,8 +47096,40 @@ declare namespace $.$$ {
          * drawn, and a panel nobody opened should not pay for it.
          */
         body(): readonly $mol_view[];
-        /** The field, and under it whatever was refused. */
+        /** The field, the button, and under them whatever was refused. */
         source_content(): readonly $mol_view[];
+        /**
+         * Files picked in the dialog. Answers empty: what came of them is in the
+         * library and in the note, and the panel keeps no list of files.
+         *
+         * The work goes to a fiber of its own, because all of it is asynchronous:
+         * reading a file is a promise, and making the library land mines proof of
+         * work.
+         */
+        files(next?: readonly File[]): readonly File[];
+        /**
+         * Reads the files and puts what they declare into the library of the user.
+         *
+         * **From a fiber only.** Every read goes through `$mol_wire_sync`, so the
+         * fiber suspends on each file and picks up where it left off; a retry
+         * replays the reads from its own cache and writes the same classes again,
+         * which lands on the same components because a class already in the library
+         * is replaced rather than added.
+         *
+         * The link of the library is appended to the field afterwards and not
+         * before: the field is what the scene loads, and there is nothing to load
+         * until something is written.
+         *
+         * Files are taken by their shape — a name and a text — rather than by the
+         * type `File`, so a test hands in two strings instead of forging a browser
+         * object with a cast.
+         */
+        intake(files: readonly {
+            readonly name: string;
+            text(): Promise<string>;
+        }[]): void;
+        /** Adds a land link to the field, unless the field already names it. */
+        link_attach(link: string): void;
         /**
          * The field, parsed. The editor parses the same string for its own needs,
          * and that is fine: the parse is pure and costs nothing next to a cell
@@ -52373,8 +52575,36 @@ declare namespace $.$$ {
          * A SECOND CLASS IS ADDED HERE, by writing one under the one on screen: the
          * document model replaces the slot with everything the text parses to, so two
          * declarations typed in place of one become two classes of the document.
+         *
+         * A NAME CHANGED IN THIS TEXT IS A RENAME, and is carried like one. Measured
+         * before it was: the body and the styles of the class stayed under the old
+         * name, so `doc_js` and `doc_css` came out empty and the behaviour the person
+         * had written stopped reaching the scene — with nothing on the screen saying
+         * so. The text is the truth of section 1, so the answer is to follow it, not
+         * to forbid editing the name here.
+         *
+         * What counts as a rename is decided by names alone: one name gone, one name
+         * arrived, every other class of the document where it was. Two gone or two
+         * arrived is somebody rewriting the slot, and guessing which of them became
+         * which would move a body into a class that never had one. Nothing is carried
+         * then, and nothing is lost either — what is stored keeps answering to the
+         * name it was stored under.
+         *
+         * The mentions of the old name in OTHER classes stay as they are, unlike a
+         * rename through the field. An edit made in the text of one class must not
+         * rewrite the text of another; that is the invariant this whole level exists
+         * for, and the field is where a rename across the document is asked for.
          */
         code_source(next?: string): string;
+        /**
+         * Names the document would declare with this text in the slot of that class.
+         *
+         * Parsed plainly and not normalized: what is asked of it is the first token
+         * of every declaration, which normalization does not move, and a text broken
+         * enough to fail here fails again in the write a line below, where the panel
+         * already turns it into a refusal on the screen.
+         */
+        class_names_after(klass: string, next: string): string[];
         /** Handwritten body of the class in scope, two way. */
         code_js(next?: string): string;
         /** Styles of the class in scope, two way. */
@@ -52735,6 +52965,36 @@ declare namespace $.$$ {
          * are keyed by property and not by class, have nothing to be orphaned by.
          */
         class_rename(name: string, next: string): void;
+        /**
+         * Everything the editor keeps about a class OUTSIDE its text, snapshotted.
+         *
+         * Read before a rename is written, because after it there is no name that
+         * answers for any of it: the node of the document is found by the class its
+         * text declares, so a class renamed in the text arrives as a node of its own
+         * and the old one leaves the list carrying its `Js` and `Css` with it.
+         */
+        class_stored(name: string): {
+            js: string;
+            css: string;
+            rooted: boolean;
+        };
+        /**
+         * Puts what was stored under one class name under another one.
+         *
+         * The counterpart of `class_stored`, and the second half of every rename
+         * whatever caused it: the field in the toolbar, or a name changed by hand in
+         * the text of the class. Only what is keyed by the class NAME travels — the
+         * body, the styles and the recorded choice of which class the document opens
+         * with. The text is not touched here: whoever renamed has already written it.
+         *
+         * The recorded root moves only when it WAS this class. A rename of any other
+         * class must not make it the page.
+         */
+        class_carry(name: string, next: string, carried: {
+            js: string;
+            css: string;
+            rooted: boolean;
+        }): void;
         /**
          * What stands in the field of the root name, keyed by the name it started
          * from.

@@ -786,6 +786,26 @@ $mol_text_list_item $mol_paragraph
 		^
 		mol_text_list_item_index <= index 0
 
+$mol_icon_upload $mol_icon path \M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z
+
+$mol_button_open $mol_button_minor
+	sub /
+		<= Icon $mol_icon_upload
+		<= Native $mol_button_open_native
+			files? <=> files_handled? <=> files? /File
+			accept <= accept \
+			multiple <= multiple true
+
+$mol_button_open_native $mol_view
+	dom_name \input
+	files? /File
+	attr *
+		type \file
+		accept <= accept \
+		multiple <= multiple true
+	event *
+		change? <=> picked? null
+
 - The shelf: ready made things to put on the canvas, one gesture each.
 - A person opening the editor is offered objects they recognise — a calculator, a
 - map, the two of them already wired, a plain block — and not the several hundred
@@ -819,6 +839,9 @@ $bog_vmap_app_shelf $mol_view
 	- it in the middle of the canvas. A press that turns into a drag never becomes a
 	- click, so the two gestures do not fight.
 	place? \
+	- Files picked in the dialog. Written by the button, answered empty: this is an
+	- event carrying a payload, not a list the panel keeps.
+	files? /File
 	classes_showed? false
 	sub <= body /$mol_view
 	-
@@ -838,6 +861,30 @@ $bog_vmap_app_shelf $mol_view
 	Links $mol_string
 		hint \Адрес приложения, ленды через запятую
 		value? <=> links?
+	-
+	- Files of a mol module brought straight from the disk. What they carry goes
+	- into the component library of the user, whose link joins the field above, so
+	- from that moment on it is the same library another scene would be handed.
+	Import $mol_view
+		sub /
+			<= Import_open $mol_button_open
+				hint \Файлы .view.tree модуля mol. Объявления приедут, поведение — нет
+				accept \.tree
+				multiple true
+				files? <=> files?
+			<= Import_title $mol_view
+				sub /
+					\Файлы модуля
+	-
+	- Which files were not taken, and why. Rendered only while there is something
+	- to say, like the refusals of the field above it.
+	Import_note $mol_view
+		sub / <= import_note? \
+	-
+	- CRUD over the library of the user. The same store the publish button holds:
+	- both write into the one library the home land points at, and both find it
+	- through the same list of pointers.
+	Store $bog_vmap_app_publish_store
 	-
 	- What was typed and not taken, and why, right under the field. Rendered only
 	- while there is something to say: a second pack is refused by construction and
