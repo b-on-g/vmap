@@ -34480,15 +34480,28 @@ var $;
                     return name ?? '';
                 if (!name || !next || next === name)
                     return name ?? '';
-                // The one refusal a person can cause just by typing, so it is the one
-                // worded here. The model refuses it too and goes on doing so.
+                // The two refusals a person causes just by typing, so they are the two
+                // worded here. The model refuses both on its own, in English and at a
+                // caller that may not be a person, and goes on doing so untouched.
+                //
+                // A name is a property name, so `view.tree` allows it latin letters,
+                // digits and `_` and nothing else — and this field stands in a Russian
+                // interface, where a Russian name is the first thing anybody tries.
+                const parts = [...next.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
+                if (parts?.name !== next) {
+                    this.node_title_note_at(name, `Имя «${next}» не годится:`
+                        + ' в имени узла только латинские буквы, цифры и подчёркивание');
+                    return name;
+                }
                 if (this.node().prop_names().includes(next)) {
                     this.node_title_note_at(name, `Имя «${next}» в этом документе уже занято`);
                     return name;
                 }
-                // Whatever else the model may refuse — a name no property signature
-                // matches, say — still has to reach the person, so it is shown in the
-                // model's own words rather than thrown into `setCustomValidity`.
+                // What is left is what the editor did not foresee, and it still must not
+                // vanish: a throw out of a `$mol_string` setter ends up in
+                // `setCustomValidity`. Shown in the model's own words rather than
+                // translated — a translation here would be a guess at a message nobody
+                // has read yet.
                 try {
                     this.node_rename(name, next);
                 }
@@ -48371,6 +48384,31 @@ var $;
             $mol_assert_equal(app.node_title_note(), 'Имя «String» в этом документе уже занято');
             // The message belongs to the node it is about, so another pick is clean.
             app.selected('String');
+            $mol_assert_equal(app.node_title_note(), '');
+        },
+        /**
+         * The interface is Russian and the field asks for a name, so a Russian name
+         * is the first thing anybody types into it — and a node name is a property
+         * name, which `view.tree` allows latin letters, digits and `_` and nothing
+         * else. Left to the model this came back as `Bad property signature`, which
+         * is neither the language of the person nor an answer to what they did.
+         */
+        'a name the language does not allow is refused in words and moves nothing'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            app.selected('Button_minor');
+            const before = app.doc_source();
+            app.node_title('Кнопка');
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(app.selected(), 'Button_minor');
+            $mol_assert_equal(app.node_title_note(), 'Имя «Кнопка» не годится: в имени узла только латинские буквы, цифры и подчёркивание');
+            // A space is the other everyday way to write a name nothing can address.
+            app.node_title('Send button');
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_ok(app.node_title_note().startsWith('Имя «Send button» не годится'));
+            // And a name the language does allow still goes through.
+            app.node_title('Send');
+            $mol_assert_equal(app.selected(), 'Send');
             $mol_assert_equal(app.node_title_note(), '');
         },
         /**

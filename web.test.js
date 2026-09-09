@@ -13140,6 +13140,31 @@ var $;
             $mol_assert_equal(app.node_title_note(), '');
         },
         /**
+         * The interface is Russian and the field asks for a name, so a Russian name
+         * is the first thing anybody types into it — and a node name is a property
+         * name, which `view.tree` allows latin letters, digits and `_` and nothing
+         * else. Left to the model this came back as `Bad property signature`, which
+         * is neither the language of the person nor an answer to what they did.
+         */
+        'a name the language does not allow is refused in words and moves nothing'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            app.selected('Button_minor');
+            const before = app.doc_source();
+            app.node_title('Кнопка');
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(app.selected(), 'Button_minor');
+            $mol_assert_equal(app.node_title_note(), 'Имя «Кнопка» не годится: в имени узла только латинские буквы, цифры и подчёркивание');
+            // A space is the other everyday way to write a name nothing can address.
+            app.node_title('Send button');
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_ok(app.node_title_note().startsWith('Имя «Send button» не годится'));
+            // And a name the language does allow still goes through.
+            app.node_title('Send');
+            $mol_assert_equal(app.selected(), 'Send');
+            $mol_assert_equal(app.node_title_note(), '');
+        },
+        /**
          * A wire spells the name of the node it reads, so a rename that misses it
          * leaves a wire pointing at a name nothing declares — and the canvas draws
          * it, because a wire is a line of the document like any other. The model is
