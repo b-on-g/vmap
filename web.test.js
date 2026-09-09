@@ -12368,6 +12368,21 @@ var $;
             $mol_assert_equal(s.doc_root(doc), `${d}bog_vmap_app_store_test_page`);
             $mol_assert_equal(s.source(), src_page + src_calc);
         },
+        /**
+         * The recorded choice can be moved, and that is what a rename of the root
+         * needs: classes are matched to nodes by NAME, so a renamed class arrives as
+         * a node of its own and nothing would move the pointer to it otherwise.
+         */
+        'the root can be pointed at another class of the document'($) {
+            const s = store($);
+            const doc = s.doc_add('Landing', src_page + src_calc);
+            s.doc_root(doc, `${d}bog_vmap_app_store_test_calc`);
+            $mol_assert_equal(s.doc_root(doc), `${d}bog_vmap_app_store_test_calc`);
+            // A name the document does not carry is ignored: a pointer at a node
+            // outside the list is the state this exists to prevent.
+            s.doc_root(doc, `${d}bog_vmap_app_store_test_absent`);
+            $mol_assert_equal(s.doc_root(doc), `${d}bog_vmap_app_store_test_calc`);
+        },
         'two documents are independent'($) {
             const s = store($);
             const first = s.doc_add('First', src_page);
@@ -14109,6 +14124,30 @@ var $;
                 `${d}bog_vmap_app_page`,
                 `${d}bog_vmap_app_card`,
             ]);
+        },
+        /**
+         * A base always stands above its heir in the exported file, whatever order
+         * the document keeps them in: `class $A extends $[ '$B' ]` takes its base at
+         * the moment it is declared, and the generator walks the file downwards. The
+         * document is free to hold them in any order, and does — a class is added
+         * where the text was typed.
+         */
+        'the exported file puts a base above its heir after an edit'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.doc_source([
+                `${d}bog_vmap_app_page ${d}bog_vmap_app_base sub /`,
+                `${d}bog_vmap_app_base ${d}mol_view title \\Основа`,
+                ``,
+            ].join('\n'));
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            // The document keeps the order it was written in.
+            $mol_assert_like(app.doc_model().names(), [
+                `${d}bog_vmap_app_page`,
+                `${d}bog_vmap_app_base`,
+            ]);
+            const tree = app.export_state().module.files[0].text;
+            $mol_assert_ok(tree.indexOf(`${d}bog_vmap_app_base ${d}mol_view`)
+                < tree.indexOf(`${d}bog_vmap_app_page ${d}bog_vmap_app_base`));
         },
         /**
          * The root class is the first class of the text and follows it, so renaming
