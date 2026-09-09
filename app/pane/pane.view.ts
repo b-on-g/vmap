@@ -315,7 +315,7 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Wall clock of the last push the scene owes an answer to.
+		 * Serial of the last push the scene owes an answer to.
 		 *
 		 * A plain field, written from inside the `*_push` cells. Writing a field there
 		 * is fine and writing a CELL there would not be: a cell set from the body of
@@ -324,12 +324,30 @@ namespace $.$$ {
 		 */
 		poke_at = 0
 
-		/** Wall clock of the last message the scene sent, of any kind. */
+		/** Serial of the last message the scene sent, of any kind. */
 		answer_at = 0
 
 		/** The clock both stamps are taken from. A method so that a test can move it by hand. */
 		now() {
 			return Date.now()
+		}
+
+		/**
+		 * Serial the two stamps are taken from, so a question and an answer can never
+		 * share one.
+		 *
+		 * A wall clock cannot promise that. The host answers `ready` by pushing the
+		 * document again, and both the answer and the questions it causes land inside
+		 * the same millisecond — `Date.now()` stamps them equally, `poke <= answer`
+		 * reads as «answered», and the watch disarms over a scene that was never
+		 * asked anything it managed to reply to. Caught by a test of the cold frame
+		 * that passed alone and failed in a full run, which is what a clock used as
+		 * an order does.
+		 */
+		stamp_last = 0
+
+		stamp() {
+			return ++ this.stamp_last
 		}
 
 		/** Bumped for every message accepted, so `watchdog()` recomputes on an answer. */
@@ -371,6 +389,23 @@ namespace $.$$ {
 		 */
 		answer_limit() {
 			return 8000
+		}
+
+		/**
+		 * How long a frame that has never reported geometry may stay silent.
+		 *
+		 * Much longer than the warm limit, and on for the same reason the warm one
+		 * is. A cold frame is legitimately mute for a while: the pack is fetched into
+		 * a fresh realm, `report_task` suspends on `pack_ready()`, and a suspended
+		 * cell arms no timer and posts nothing. That is why this watch used to be off
+		 * altogether — and off, it left the one case with no way out at all. Document
+		 * code that loops on the first compile stops the scene BEFORE any geometry,
+		 * so the frame never warms, the strip never appears, and the canvas sits in
+		 * «ожидание сцены…» with no button to press. The generous limit buys the slow
+		 * line its time and still ends in a sentence instead of silence.
+		 */
+		cold_limit() {
+			return 30000
 		}
 
 		@ $mol_mem
@@ -468,10 +503,12 @@ namespace $.$$ {
 			// …and disarmed by anything the scene says back.
 			this.traffic_version()
 
-			if( !this.warmed() ) return null
 			if( this.poke_at <= this.answer_at ) return null
 
-			return new this.$.$mol_after_timeout( this.answer_limit(), () => this.stalled( true ) )
+			// A cold frame is watched too, on a limit of its own. See `cold_limit()`.
+			const limit = this.warmed() ? this.answer_limit() : this.cold_limit()
+
+			return new this.$.$mol_after_timeout( limit, () => this.stalled( true ) )
 		}
 
 		/**
@@ -1569,7 +1606,7 @@ namespace $.$$ {
 		 */
 		post( target: { postMessage( data: unknown, origin: string ): void }, message: $bog_vmap_bridge_down ) {
 			this.$.$bog_vmap_bridge_send( target, message )
-			this.poke_at = this.now()
+			this.poke_at = this.stamp()
 		}
 
 		/**
@@ -1724,7 +1761,7 @@ namespace $.$$ {
 			// Any message at all is proof of life, whatever it says: an `error` means
 			// the scene compiled, failed and got as far as telling us, which is a
 			// working bridge. The claim being retracted here is only about silence.
-			this.answer_at = this.now()
+			this.answer_at = this.stamp()
 			this.traffic_version( this.traffic_version() + 1 )
 			this.stalled( false )
 

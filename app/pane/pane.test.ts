@@ -238,6 +238,37 @@ namespace $ {
 		 * picked node to the point of the drop as well.
 		 */
 		/**
+		 * REPRO end to end: a frame that boots and stops before any geometry. The
+		 * canvas used to sit in «ожидание сцены…» with no strip and no button, since
+		 * the watch was off until the frame had warmed.
+		 */
+		'a scene that never came up says so, and says what to do about it'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $, { mute: true } )
+
+			$mol_assert_equal( stage.pane.warmed(), false )
+			$mol_assert_equal( stage.app.stalled(), false )
+
+			// The watch is armed on the cold limit; time passes and it fires.
+			const timer = stage.timers.at( -1 )!
+			$mol_assert_ok( stage.pane.watchdog() !== null )
+			$mol_assert_equal( stage.pane.watchdog()!.delay, stage.pane.cold_limit() )
+
+			stage.pane.watchdog()!.task()
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.stalled(), true )
+
+			const text = stage.text()
+			$mol_assert_ok( text.includes( 'Сцена не запустилась' ) )
+			$mol_assert_ok( text.includes( 'исправьте код в панели' ) )
+			stage.button( 'Перезагрузить сцену' )
+
+			$mol_assert_ok( timer !== null )
+
+		},
+
+		/**
 		 * Inside a part the keys belong to the part, and the strip says so with the
 		 * way out. Nothing else on screen would explain why Delete stopped deleting.
 		 */
@@ -1023,7 +1054,12 @@ namespace $ {
 		},
 
 		/** Not warmed yet, the pulse is quiet and the watch is off, whatever was pushed. */
-		'before the first sizes nothing is asked and nothing is accused'( $ ) {
+		/**
+		 * The pulse waits for the scene to prove itself; the watch does not, since
+		 * E9 — see the scenario below. A ping into a frame that has not loaded would
+		 * be a question asked of nobody, and every answer to it a false all clear.
+		 */
+		'before the first sizes the pulse is quiet'( $ ) {
 
 			timers_fake( $ )
 			const { pane } = pane_make( $ )
@@ -1032,7 +1068,36 @@ namespace $ {
 			pane.node_release( pointer( 5, 5, { buttons: 0 } ) )
 
 			$mol_assert_equal( pane.heartbeat(), null )
-			$mol_assert_equal( pane.watchdog(), null )
+
+		},
+
+		/**
+		 * REPRO: document code that loops on the first compile stops the scene before
+		 * any geometry, so the frame never warms. The watch used to be off until it
+		 * warmed, which left this one case with no strip, no button and no way out.
+		 */
+		'a frame that never answered at all is called out, on a limit of its own'( $ ) {
+
+			const timers = timers_fake( $ )
+			const { pane, clock, answer } = pane_make( $ )
+
+			// The frame boots and says `ready`, which proves nothing but the boot.
+			answer({ kind: 'ready' })
+
+			// The host asks its questions; the scene compiles the document and stops.
+			clock.now ++
+			pane.watchdog()
+
+			$mol_assert_equal( pane.warmed(), false )
+			$mol_assert_ok( pane.watchdog() !== null )
+
+			// The limit is the generous one, not the warm one.
+			$mol_assert_equal( timers.at( -1 )!.delay, pane.cold_limit() )
+			$mol_assert_ok( pane.cold_limit() > pane.answer_limit() )
+
+			timers.at( -1 )!.task()
+
+			$mol_assert_equal( pane.stalled(), true )
 
 		},
 
@@ -1233,8 +1298,16 @@ namespace $ {
 			pane.message_receive( { data: { ns: $bog_vmap_bridge_ns, kind: 'values', values: { calc_2_result: '42' } }, source: pane.scene_peer() } as unknown as MessageEvent )
 			$mol_assert_equal( pane.wire_lines().find( line => line.key === 'Map_2.zoom' )?.label, '42' )
 
-			// A question that owes no answer must not arm the watch.
-			$mol_assert_equal( pane.watchdog(), null )
+			// A question that owes no answer must not arm the watch. Asserted on the
+			// stamp and no longer on `watchdog()` being null: since the cold frame is
+			// watched too, the pushes of the boot arm it by themselves, and a null
+			// there would stop meaning «this question was free».
+			const stamped = pane.poke_at
+
+			pane.camera_shift( new $mol_vector_2d( -5000, -4000 ) )
+			pane.values_push()
+
+			$mol_assert_equal( pane.poke_at, stamped )
 
 		},
 
