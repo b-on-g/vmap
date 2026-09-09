@@ -2462,6 +2462,18 @@ $bog_vmap_app_shelf $mol_view
 		sub /
 			\Полка
 	-
+	- Everything above the second level scrolls as one: on a short window twelve
+	- items, the address field, the button and the objects of an application do not
+	- fit, and without a scroll of its own the panel pushed the whole page down and
+	- took the head bar off the screen with it.
+	-
+	- `$mol_scroll` lays every child into the same cell, so it holds exactly ONE
+	- node and the stack goes inside that one.
+	Stack $mol_scroll
+		sub /
+			<= Stack_body $mol_view
+				sub <= stack_content /$mol_view
+	-
 	Items $mol_list
 		rows <= item_rows /
 	-
@@ -2509,12 +2521,20 @@ $bog_vmap_app_shelf $mol_view
 	- part of mol itself. A deployed mol application is a library of components
 	- already, so this needs nothing of the application's author.
 	Apps $mol_view
+		sub <= apps_content /$mol_view
+	-
+	Apps_head $mol_view
 		sub /
-			<= Apps_head $mol_view
-				sub /
-					<= apps_title \
-			<= App_list $mol_list
-				rows <= app_rows /
+			<= apps_title \
+	-
+	App_list $mol_list
+		rows <= app_rows /
+	-
+	- Why an address brought nothing. In place of the list and not beside it: there
+	- is nothing to list, and a dead address is the whole content of the section
+	- until it is fixed.
+	Apps_note $mol_view
+		sub / <= app_error \
 	-
 	- The second level, folded away by default. A check and not an expander: the
 	- palette has to GROW into whatever the shelf left, and inside an expander it
@@ -2975,6 +2995,12 @@ $bog_vmap_app_inspect $mol_view
 	- reads as a bug.
 	Note $mol_view
 		sub / <= title_note \
+	- What stands here when the source names no class at all. A state and not a
+	- blank: every cell below derives from one class, and with none they all fail
+	- at once — the panel used to answer with a red strip in each of its twenty
+	- fields, which grew the page and pushed the head bar off the screen.
+	Empty $mol_view
+		sub / <= empty_note \Нечего править: в исходнике нет объявления класса
 	- The document model. `source` is bound both ways, so a write through any
 	- property below serializes the whole class and comes back out here as text.
 	Node $bog_vmap_lang_node
@@ -3194,11 +3220,12 @@ $bog_vmap_app_pane $mol_view
 	- On the bridge and not in `scene_uri`: a change of lands is a recompile, a
 	- change of pack is a reload, see section 5.
 	libs /$bog_vmap_bridge_part
-	- Whether the overlay may be cut open under the picked part. The host turns
-	- this off while something is carried from the palette: that gesture has no
-	- pointer capture, so a release over the hole would land in the frame and the
-	- host would never hear of the drop.
-	hole_allowed true
+	- Whether something is being carried from the palette right now. That gesture
+	- belongs to the owner and crosses this canvas, so while it is on the canvas
+	- takes no gesture of its own and the overlay stays whole: it has no pointer
+	- capture, so a release over the hole would land in the frame and the host
+	- would never hear of the drop.
+	carrying false
 	- Wires of the document and the wirable ports of each part's class, from the
 	- owner. The pane draws them and writes back through the two events below; it
 	- never touches the document itself.
@@ -3210,6 +3237,10 @@ $bog_vmap_app_pane $mol_view
 	- tree inside one. A drop inside one of these goes into the tree at a position,
 	- see section 8; a drop anywhere else lands on the canvas by coordinates.
 	containers /string
+	- Every property the document declares. The boundary of the canvas: the scene
+	- measures the whole rendered tree, insides of pack classes included, and only
+	- these names are nodes the editor may pick, carry or delete.
+	doc_names /string
 	- `flexDirection` the node declares, empty when it declares none. From the
 	- document, which the host owns, and so a statement rather than a guess: the
 	- boxes of the children say nothing when there are fewer than two of them.
@@ -3504,6 +3535,13 @@ $bog_vmap_app $mol_view
 	Root_note $mol_view
 		sub / <= root_title_note \
 	-
+	- The pointer has been let inside a part, so the keys belong to the part and no
+	- longer to the editor. Said outright, because nothing else on screen says it
+	- and the way out is not guessable: Delete stops deleting and typing goes into
+	- the component, with no sign of why.
+	Inside_note $mol_view
+		sub / <= inside_note \
+	-
 	- The scene has stopped answering. Its own strip and not the error one: an
 	- error means the scene spoke, this means it did not, and the only thing that
 	- helps is on this strip.
@@ -3624,7 +3662,7 @@ $bog_vmap_app $mol_view
 		doc_js <= doc_js
 		doc_root <= doc_root
 		libs <= libs /$bog_vmap_bridge_part
-		hole_allowed <= hole_allowed true
+		carrying <= carrying false
 		- Wires: the pane draws them from the document and its ports, and writes a
 		- new or a dropped one back through these two events, never into the text.
 		wires <= doc_wires /$bog_vmap_lang_link
@@ -3634,5 +3672,6 @@ $bog_vmap_app $mol_view
 		- Nodes that carry a `sub` of their own, so the pane knows where a drop goes
 		- into the tree instead of onto the canvas, and where to draw the line.
 		containers <= doc_containers /string
+		doc_names <= doc_names /string
 		axis* <= doc_axis* \
 		tree_move? <=> tree_move? null

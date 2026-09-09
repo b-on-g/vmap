@@ -16393,6 +16393,193 @@ var $;
 
 ;
 "use strict";
+var $;
+(function ($) {
+    function pass(data) {
+        return data;
+    }
+    function $mol_error_fence(task, fallback, loading = pass) {
+        try {
+            return task();
+        }
+        catch (error) {
+            let normalized;
+            try {
+                normalized = $mol_promise_like(error) ? loading(error) : fallback(error);
+            }
+            catch (sub_error) {
+                normalized = $mol_promise_like(sub_error) ? sub_error : new $mol_error_mix(sub_error.message, { error }, sub_error);
+            }
+            if (normalized instanceof Error || $mol_promise_like(normalized)) {
+                $mol_fail_hidden(normalized);
+            }
+            return normalized;
+        }
+    }
+    $.$mol_error_fence = $mol_error_fence;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_error_enriched(cause, cb) {
+        return $mol_error_fence(cb, e => new $mol_error_mix(e.message, cause, e));
+    }
+    $.$mol_error_enriched = $mol_error_enriched;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    class $mol_fetch_response extends $mol_object {
+        native;
+        request;
+        status() {
+            const types = ['unknown', 'inform', 'success', 'redirect', 'wrong', 'failed'];
+            return types[Math.floor(this.native.status / 100)];
+        }
+        code() {
+            return this.native.status;
+        }
+        ok() {
+            return this.native.ok;
+        }
+        message() {
+            return $mol_rest_code[this.code()] || `HTTP Error ${this.code()}`;
+        }
+        headers() {
+            return this.native.headers;
+        }
+        mime() {
+            return this.headers().get('content-type');
+        }
+        stream() {
+            return this.native.body;
+        }
+        text() {
+            const buffer = this.buffer();
+            const mime = this.mime() || '';
+            const [, charset] = /charset=(.*)/.exec(mime) || [, 'utf-8'];
+            const decoder = new TextDecoder(charset);
+            return decoder.decode(buffer);
+        }
+        json() {
+            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).json());
+        }
+        blob() {
+            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).blob());
+        }
+        buffer() {
+            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).arrayBuffer());
+        }
+        xml() {
+            return $mol_dom_parse(this.text(), 'application/xml');
+        }
+        xhtml() {
+            return $mol_dom_parse(this.text(), 'application/xhtml+xml');
+        }
+        html() {
+            return $mol_dom_parse(this.text(), 'text/html');
+        }
+    }
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "stream", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "text", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "xml", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "xhtml", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "html", null);
+    $.$mol_fetch_response = $mol_fetch_response;
+    class $mol_fetch_request extends $mol_object {
+        native;
+        response_async() {
+            const controller = new AbortController();
+            let done = false;
+            const request = new Request(this.native, { signal: controller.signal });
+            const promise = fetch(request).finally(() => {
+                done = true;
+            });
+            return Object.assign(promise, {
+                destructor: () => {
+                    // Abort of done request breaks response parsing
+                    if (!done && !controller.signal.aborted)
+                        controller.abort();
+                },
+            });
+        }
+        response() {
+            const native = $mol_error_enriched(this, () => $mol_wire_sync(this).response_async());
+            return this.$.$mol_fetch_response.make({
+                native,
+                request: this
+            });
+        }
+        success() {
+            const response = this.response();
+            if (response.status() === 'success')
+                return response;
+            throw new Error(response.message(), { cause: response });
+        }
+    }
+    __decorate([
+        $mol_action
+    ], $mol_fetch_request.prototype, "response", null);
+    $.$mol_fetch_request = $mol_fetch_request;
+    class $mol_fetch extends $mol_object {
+        static request(input, init) {
+            return this.$.$mol_fetch_request.make({
+                native: new Request(input, init)
+            });
+        }
+        static response(input, init) {
+            return this.request(input, init).response();
+        }
+        static success(input, init) {
+            return this.request(input, init).success();
+        }
+        static stream(input, init) {
+            return this.success(input, init).stream();
+        }
+        static text(input, init) {
+            return this.success(input, init).text();
+        }
+        static json(input, init) {
+            return this.success(input, init).json();
+        }
+        static blob(input, init) {
+            return this.success(input, init).blob();
+        }
+        static buffer(input, init) {
+            return this.success(input, init).buffer();
+        }
+        static xml(input, init) {
+            return this.success(input, init).xml();
+        }
+        static xhtml(input, init) {
+            return this.success(input, init).xhtml();
+        }
+        static html(input, init) {
+            return this.success(input, init).html();
+        }
+    }
+    __decorate([
+        $mol_action
+    ], $mol_fetch, "request", null);
+    $.$mol_fetch = $mol_fetch;
+})($ || ($ = {}));
+
+;
+"use strict";
 
 ;
 "use strict";
@@ -16758,193 +16945,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    function pass(data) {
-        return data;
-    }
-    function $mol_error_fence(task, fallback, loading = pass) {
-        try {
-            return task();
-        }
-        catch (error) {
-            let normalized;
-            try {
-                normalized = $mol_promise_like(error) ? loading(error) : fallback(error);
-            }
-            catch (sub_error) {
-                normalized = $mol_promise_like(sub_error) ? sub_error : new $mol_error_mix(sub_error.message, { error }, sub_error);
-            }
-            if (normalized instanceof Error || $mol_promise_like(normalized)) {
-                $mol_fail_hidden(normalized);
-            }
-            return normalized;
-        }
-    }
-    $.$mol_error_fence = $mol_error_fence;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_error_enriched(cause, cb) {
-        return $mol_error_fence(cb, e => new $mol_error_mix(e.message, cause, e));
-    }
-    $.$mol_error_enriched = $mol_error_enriched;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    class $mol_fetch_response extends $mol_object {
-        native;
-        request;
-        status() {
-            const types = ['unknown', 'inform', 'success', 'redirect', 'wrong', 'failed'];
-            return types[Math.floor(this.native.status / 100)];
-        }
-        code() {
-            return this.native.status;
-        }
-        ok() {
-            return this.native.ok;
-        }
-        message() {
-            return $mol_rest_code[this.code()] || `HTTP Error ${this.code()}`;
-        }
-        headers() {
-            return this.native.headers;
-        }
-        mime() {
-            return this.headers().get('content-type');
-        }
-        stream() {
-            return this.native.body;
-        }
-        text() {
-            const buffer = this.buffer();
-            const mime = this.mime() || '';
-            const [, charset] = /charset=(.*)/.exec(mime) || [, 'utf-8'];
-            const decoder = new TextDecoder(charset);
-            return decoder.decode(buffer);
-        }
-        json() {
-            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).json());
-        }
-        blob() {
-            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).blob());
-        }
-        buffer() {
-            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).arrayBuffer());
-        }
-        xml() {
-            return $mol_dom_parse(this.text(), 'application/xml');
-        }
-        xhtml() {
-            return $mol_dom_parse(this.text(), 'application/xhtml+xml');
-        }
-        html() {
-            return $mol_dom_parse(this.text(), 'text/html');
-        }
-    }
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "stream", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "text", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "xml", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "xhtml", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "html", null);
-    $.$mol_fetch_response = $mol_fetch_response;
-    class $mol_fetch_request extends $mol_object {
-        native;
-        response_async() {
-            const controller = new AbortController();
-            let done = false;
-            const request = new Request(this.native, { signal: controller.signal });
-            const promise = fetch(request).finally(() => {
-                done = true;
-            });
-            return Object.assign(promise, {
-                destructor: () => {
-                    // Abort of done request breaks response parsing
-                    if (!done && !controller.signal.aborted)
-                        controller.abort();
-                },
-            });
-        }
-        response() {
-            const native = $mol_error_enriched(this, () => $mol_wire_sync(this).response_async());
-            return this.$.$mol_fetch_response.make({
-                native,
-                request: this
-            });
-        }
-        success() {
-            const response = this.response();
-            if (response.status() === 'success')
-                return response;
-            throw new Error(response.message(), { cause: response });
-        }
-    }
-    __decorate([
-        $mol_action
-    ], $mol_fetch_request.prototype, "response", null);
-    $.$mol_fetch_request = $mol_fetch_request;
-    class $mol_fetch extends $mol_object {
-        static request(input, init) {
-            return this.$.$mol_fetch_request.make({
-                native: new Request(input, init)
-            });
-        }
-        static response(input, init) {
-            return this.request(input, init).response();
-        }
-        static success(input, init) {
-            return this.request(input, init).success();
-        }
-        static stream(input, init) {
-            return this.success(input, init).stream();
-        }
-        static text(input, init) {
-            return this.success(input, init).text();
-        }
-        static json(input, init) {
-            return this.success(input, init).json();
-        }
-        static blob(input, init) {
-            return this.success(input, init).blob();
-        }
-        static buffer(input, init) {
-            return this.success(input, init).buffer();
-        }
-        static xml(input, init) {
-            return this.success(input, init).xml();
-        }
-        static xhtml(input, init) {
-            return this.success(input, init).xhtml();
-        }
-        static html(input, init) {
-            return this.success(input, init).html();
-        }
-    }
-    __decorate([
-        $mol_action
-    ], $mol_fetch, "request", null);
-    $.$mol_fetch = $mol_fetch;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
     const class_regex = /^[$A-Z][$\w<>\[\]()"'?|,]+$/;
     function $mol_view_tree2_class_match(klass) {
         if (!klass?.type)
@@ -17131,6 +17131,28 @@ var $;
         return uri.replace(/\/?$/, '/');
     }
     $.$bog_vmap_lib_slashed = $bog_vmap_lib_slashed;
+    /**
+     * Why a pack did not load, in words somebody can act on.
+     *
+     * `$mol_fetch` throws the status line of the response and nothing else, so a
+     * mistyped address reaches the screen as a bare «Not Found» — true and
+     * useless: it names neither what was looked for nor where to correct it. Seen
+     * on the deploy in the counter of the class list, 09.09.2026.
+     *
+     * The address is repeated back because the field it came from may be scrolled
+     * away or, in the case of the default, never typed at all. It is the ADDRESS
+     * THAT WAS FETCHED and not the one that was typed, and it is handed in rather
+     * than derived here: the rule that grows `web.view.tree` onto a pack lives in
+     * `tree_link` and must not be written a second time to word a complaint.
+     */
+    function $bog_vmap_lib_pack_note(link, error) {
+        const reason = String(error?.message || error);
+        if (!link)
+            return `Пак не отвечает: ${reason}`;
+        return `Пак не отвечает (${reason}). Ожидался ${link}`
+            + ' — дерево классов, которое сборка кладёт рядом с бандлом';
+    }
+    $.$bog_vmap_lib_pack_note = $bog_vmap_lib_pack_note;
     /**
      * Base address of a sibling module of the pack, derived from the address of the
      * page asking. Always ends with a slash, so `new URL` keeps its last segment.
@@ -19929,13 +19951,28 @@ var $;
              * Classes matching the query, or all of them for an empty query —
              * `$mol_match_text` of nothing matches everything, so no branch is needed.
              *
-             * Suspends while the pack is loading and throws when the pack is dead.
-             * Both are meant to reach the views that read it: `$mol_view` turns the
-             * first into its waiting state and the second into an error strip, and a
-             * try/catch here would replace both with a silently empty palette.
+             * SUSPENSION PASSES THROUGH, a failure does not, and the difference is the
+             * whole point. `$mol_view` turns a suspension into its waiting state, which
+             * is right; it turns a failure into a strip carrying whatever `$mol_fetch`
+             * threw, which is the status line and nothing else — a mistyped address
+             * reached the counter as a bare «Not Found», naming neither the file that
+             * was missing nor the field to fix. Seen on the deploy 09.09.2026.
+             *
+             * So the failure is caught and worded once, here, and read by the counter;
+             * the list is empty meanwhile, which is what a dead pack has to offer.
              */
+            class_state() {
+                try {
+                    return { list: this.Lib().class_search(this.query()), error: '' };
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return $mol_fail_hidden(error);
+                    return { list: [], error: this.$.$bog_vmap_lib_pack_note(this.Lib().tree_link(), error) };
+                }
+            }
             class_list() {
-                return this.Lib().class_search(this.query());
+                return this.class_state().list;
             }
             class_rows() {
                 return this.class_list().map(name => this.Class_row(name));
@@ -19949,7 +19986,11 @@ var $;
             class_click(name) {
                 this.selected(name);
             }
+            /** How many classes are on screen, or why there are none at all. */
             total() {
+                const error = this.class_state().error;
+                if (error)
+                    return error;
                 const found = this.class_list().length;
                 const all = this.Lib().class_list().length;
                 return found === all ? `${all} классов` : `${found} из ${all}`;
@@ -20016,7 +20057,7 @@ var $;
         ], $bog_vmap_app_palette.prototype, "class_drag", null);
         __decorate([
             $mol_mem
-        ], $bog_vmap_app_palette.prototype, "class_list", null);
+        ], $bog_vmap_app_palette.prototype, "class_state", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_palette.prototype, "class_click", null);
@@ -20060,11 +20101,16 @@ var $;
                 minWidth: '10rem',
                 background: { color: $mol_theme.field },
             },
+            /**
+             * The counter, and when the pack is dead the reason instead of it. Wrapping
+             * is allowed for exactly that case: a sentence set `nowrap` would run off
+             * the panel it is meant to be read in.
+             */
             Total: {
                 flex: { shrink: 0 },
                 color: $mol_theme.shade,
                 font: { size: '.8rem' },
-                whiteSpace: 'nowrap',
+                whiteSpace: 'pre-wrap',
             },
             /**
              * `shrink: 1` is not decoration. `[mol_view]` ships `flex-shrink: 0`, so with
@@ -24940,6 +24986,14 @@ var $;
 		body(){
 			return [];
 		}
+		stack_content(){
+			return [];
+		}
+		Stack_body(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.stack_content()));
+			return obj;
+		}
 		item_rows(){
 			return [];
 		}
@@ -24966,21 +25020,17 @@ var $;
 		rejected_note(){
 			return "";
 		}
+		apps_content(){
+			return [];
+		}
 		apps_title(){
 			return "";
-		}
-		Apps_head(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.apps_title())]);
-			return obj;
 		}
 		app_rows(){
 			return [];
 		}
-		App_list(){
-			const obj = new this.$.$mol_list();
-			(obj.rows) = () => ((this.app_rows()));
-			return obj;
+		app_error(){
+			return "";
 		}
 		item_title(id){
 			return "";
@@ -25041,6 +25091,11 @@ var $;
 			(obj.sub) = () => (["Полка"]);
 			return obj;
 		}
+		Stack(){
+			const obj = new this.$.$mol_scroll();
+			(obj.sub) = () => ([(this.Stack_body())]);
+			return obj;
+		}
 		Items(){
 			const obj = new this.$.$mol_list();
 			(obj.rows) = () => ((this.item_rows()));
@@ -25078,7 +25133,22 @@ var $;
 		}
 		Apps(){
 			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.Apps_head()), (this.App_list())]);
+			(obj.sub) = () => ((this.apps_content()));
+			return obj;
+		}
+		Apps_head(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.apps_title())]);
+			return obj;
+		}
+		App_list(){
+			const obj = new this.$.$mol_list();
+			(obj.rows) = () => ((this.app_rows()));
+			return obj;
+		}
+		Apps_note(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.app_error())]);
 			return obj;
 		}
 		Level(){
@@ -25107,11 +25177,10 @@ var $;
 			return obj;
 		}
 	};
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Stack_body"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Import_open"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Import_title"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "import_note"));
-	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Apps_head"));
-	($mol_mem(($.$bog_vmap_app_shelf.prototype), "App_list"));
 	($mol_mem_key(($.$bog_vmap_app_shelf.prototype), "item_click"));
 	($mol_mem_key(($.$bog_vmap_app_shelf.prototype), "item_drag"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "links"));
@@ -25122,6 +25191,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "files"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "classes_showed"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Title"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Stack"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Items"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Source"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Links"));
@@ -25130,6 +25200,9 @@ var $;
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Store"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Note"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Apps"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Apps_head"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "App_list"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Apps_note"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Level"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Palette"));
 	($mol_mem_key(($.$bog_vmap_app_shelf.prototype), "Item_row"));
@@ -25558,11 +25631,24 @@ var $;
             body() {
                 return [
                     this.Title(),
+                    this.Stack(),
+                    this.Level(),
+                    ...this.classes_showed() ? [this.Palette()] : [],
+                ];
+            }
+            /**
+             * What scrolls: the shelf, the address and the objects of the application.
+             *
+             * The heading and the switch of the second level stay put, because they are
+             * how a person gets back out of a long list; the second level scrolls inside
+             * itself and must not be nested in this one, or its own list would render
+             * all four hundred rows into an unbounded height.
+             */
+            stack_content() {
+                return [
                     this.Items(),
                     this.Source(),
                     this.Apps(),
-                    this.Level(),
-                    ...this.classes_showed() ? [this.Palette()] : [],
                 ];
             }
             /** The field, the button, and under them whatever was refused. */
@@ -25651,15 +25737,55 @@ var $;
              * are meant to reach the view that reads it, and the view that reads it is
              * `Apps` alone.
              */
+            app_state() {
+                try {
+                    return {
+                        list: this.class_list().filter(name => !name.startsWith('$mol_')),
+                        error: '',
+                    };
+                }
+                catch (error) {
+                    // A suspension is not an answer: the pack is still on its way and
+                    // the panel has to keep waiting, not report a dead address.
+                    if ($mol_promise_like(error))
+                        return $mol_fail_hidden(error);
+                    return {
+                        list: [],
+                        error: this.$.$bog_vmap_lib_pack_note(this.pack_tree_link(), error),
+                    };
+                }
+            }
+            /**
+             * The address that was actually fetched, for the complaint to name.
+             *
+             * Asked of the palette's library rather than built here: the rule that
+             * grows `web.view.tree` onto a pack address lives there, and a second copy
+             * of it would word the complaint about a file we never asked for.
+             */
+            pack_tree_link() {
+                return this.Palette().Lib().tree_link();
+            }
             app_list() {
-                return this.class_list().filter(name => !name.startsWith('$mol_'));
+                return this.app_state().list;
             }
             app_rows() {
                 return this.app_list().map(name => this.Item_row(name));
             }
+            /** Why there are no objects, when the reason is a dead address. */
+            app_error() {
+                return this.app_state().error;
+            }
+            /** The caption, then either the objects or the reason there are none. */
+            apps_content() {
+                return [
+                    this.Apps_head(),
+                    ...this.app_error() ? [this.Apps_note()] : [this.App_list()],
+                ];
+            }
             apps_title() {
-                const found = this.app_list().length;
-                return found ? 'Объекты приложения' : 'Приложение не подключено';
+                if (this.app_error())
+                    return 'Приложение не отвечает';
+                return this.app_list().length ? 'Объекты приложения' : 'Приложение не подключено';
             }
             /** Everything the shelf offers, in the order it offers it. */
             items() {
@@ -25728,6 +25854,9 @@ var $;
             $mol_mem
         ], $bog_vmap_app_shelf.prototype, "links_parsed", null);
         __decorate([
+            $mol_mem
+        ], $bog_vmap_app_shelf.prototype, "app_state", null);
+        __decorate([
             $mol_action
         ], $bog_vmap_app_shelf.prototype, "item_drag", null);
         __decorate([
@@ -25757,6 +25886,19 @@ var $;
                 padding: $mol_gap.text,
                 font: { weight: 'bold' },
                 border: { bottom: { width: '1px', style: 'solid', color: $mol_theme.line } },
+            },
+            /**
+             * The scrolling middle. Takes what the heading and the switch left, and
+             * `minHeight: 0` is what lets it be shorter than its content — without it a
+             * flex child refuses to shrink past what it holds, and the panel grows the
+             * page instead of scrolling.
+             */
+            Stack: {
+                flex: { grow: 1, shrink: 1 },
+                minHeight: 0,
+            },
+            Stack_body: {
+                flex: { direction: 'column' },
             },
             /** The shelf itself takes the room it needs and no more; the rest is below. */
             Items: {
@@ -25823,6 +25965,13 @@ var $;
                 overflow: { y: 'auto' },
                 padding: { top: $mol_gap.space, bottom: $mol_gap.space },
                 gap: $mol_gap.space,
+            },
+            /** Why an address brought nothing. Same voice as the refusals of the field. */
+            Apps_note: {
+                padding: { left: $mol_gap.text, right: $mol_gap.text },
+                color: $mol_theme.focus,
+                font: { size: '.75rem' },
+                whiteSpace: 'pre-wrap',
             },
             /** A caption of a section, not a heading of the panel. */
             Apps_head: {
@@ -28933,6 +29082,9 @@ var $;
 		title_note(){
 			return "";
 		}
+		empty_note(){
+			return "Нечего править: в исходнике нет объявления класса";
+		}
 		classes(){
 			return [];
 		}
@@ -28995,6 +29147,11 @@ var $;
 			(obj.sub) = () => ([(this.title_note())]);
 			return obj;
 		}
+		Empty(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.empty_note())]);
+			return obj;
+		}
 		Node(){
 			const obj = new this.$.$bog_vmap_lang_node();
 			(obj.source) = (next) => ((this.source(next)));
@@ -29038,6 +29195,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "pack"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "class_title"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Note"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Empty"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Node"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Lib"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "Row"));
@@ -29195,10 +29353,36 @@ var $;
              * is always there but usually empty is a strip nobody reads.
              */
             sub() {
+                if (!this.class_ready())
+                    return [this.Empty()];
                 const sub = super.sub();
                 if (!this.title_note())
                     return sub;
                 return [sub[0], this.Note(), ...sub.slice(1)];
+            }
+            /**
+             * Whether there is a class here to inspect at all.
+             *
+             * EVERY cell of this panel derives from one class, so a source with none in
+             * it does not fail in one place — it fails in twenty at once, and the panel
+             * answers with a wall of red strips that grows the page. Measured on the
+             * deploy 09.09.2026, where the pick outlived the document it was made in.
+             *
+             * Whoever owns the pick should not hand such a source over, and the editor
+             * no longer does; this is the panel refusing to fall apart when somebody
+             * else does. A failure to parse means «no class», which is what it means
+             * here; a suspension is re-thrown, or a document still arriving would be
+             * read as an empty one.
+             */
+            class_ready() {
+                try {
+                    return Boolean(this.Node().tree());
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return $mol_fail_hidden(error);
+                    return false;
+                }
             }
             base_title() {
                 return this.Node().base();
@@ -30190,497 +30374,6 @@ var $;
 var $;
 (function ($) {
     /**
-     * Export of a document as a real MAM module.
-     *
-     * Not an abstract «project»: the output is a folder that drops into `bog/` and
-     * builds with `npx mam` untouched. That is the acceptance criterion of the
-     * stage, and it is also what closes the circle of section 5 — a built module is
-     * a donor pack, so anything assembled here becomes a component library for the
-     * next document.
-     *
-     * Pure functions over text. Knows nothing of Giper Baza and nothing of the DOM,
-     * so the caller maps its stored nodes onto `doc_export_node` and gets files back.
-     *
-     * @see ../../ARCHITECTURE.md section 10
-     */
-    /**
-     * Folder the classes of a document oblige it to live in.
-     *
-     * Section 10 says the export is a MAM module and says nothing about where it
-     * goes, but the two are not independent: mam turns a class name into a path by
-     * replacing every underscore with a slash, so a document placed anywhere else
-     * fails to build while looking perfectly correct. The document therefore names
-     * its own folder, by the longest common prefix of its class names.
-     *
-     * A lone `bog_site_page` gives `bog/site/page`; together with `bog_site_hero`
-     * it gives `bog/site`. Both resolve, because a missing last segment collapses
-     * onto the longest existing prefix — the same rule that makes demo classes safe
-     * to name after their own module.
-     *
-     * A prefix shorter than two segments means classes from different packs, or a
-     * module at the root of a pack. Refused: renaming the user's classes to fit
-     * would break «byte for byte from the editor», and emitting them as they are
-     * would produce a folder that does not build.
-     *
-     * **What this cannot check: whether the root pack exists.** Only the machine
-     * doing the build knows that, and we run in a browser. Classes named
-     * `my_doc_page` give a perfectly well formed `my/doc/page`, and mam then fails
-     * with `Root package "my" not found` — the length test above does not catch it,
-     * because nothing is wrong with the shape. The export UI has to say out loud
-     * which folder the module is going to, so that the first segment is a decision
-     * the author sees rather than one made for them.
-     */
-    function $bog_vmap_app_export_path(names) {
-        if (!names.length)
-            this.$mol_fail(new Error('Nothing to export'));
-        const parts = names.map(name => {
-            if (name[0] !== '$')
-                this.$mol_fail(new Error(`Class name must start with $, got ${JSON.stringify(name)}`));
-            return name.slice(1).split('_');
-        });
-        const common = [];
-        for (let i = 0; i < parts[0].length; ++i) {
-            const segment = parts[0][i];
-            if (!parts.every(part => part[i] === segment))
-                break;
-            common.push(segment);
-        }
-        if (common.length < 2)
-            this.$mol_fail(new Error(`Classes ${names.join(', ')} share no module path.`
-                + ` A document must name its classes after one module,`
-                + ` so that they agree on at least two leading segments.`));
-        return common.join('/');
-    }
-    $.$bog_vmap_app_export_path = $bog_vmap_app_export_path;
-    /**
-     * Whether a hand written body defines a method of this name.
-     *
-     * Deliberately the same test the scene applies before decorating, so that a
-     * property memoized in the preview is memoized in the export and the two cannot
-     * drift. A property decorated in the generated base but overridden here without
-     * a decorator loses its atom outright, and nothing reports it: the method just
-     * returns a fresh value while the DOM keeps the old one.
-     */
-    function $bog_vmap_app_export_defines(js, name) {
-        if (js.includes(`/${'*'}${name}${'*'}/`))
-            return true;
-        return new RegExp(`(^|[^\\w.$])${name}\\s*\\(`, 'm').test(js);
-    }
-    $.$bog_vmap_app_export_defines = $bog_vmap_app_export_defines;
-    /**
-     * Parameters of methods that carry no type.
-     *
-     * The divergence of section 10: in the scene a body goes through `new Function`,
-     * where any JS runs, and in the export the same body is compiled by TypeScript
-     * with `strict` and `noImplicitAny`. An untyped parameter is the whole of that
-     * divergence in practice — it works in the preview and fails the build, and the
-     * author learns about it neither where nor when the mistake was made.
-     *
-     * Not a type checker and not pretending to be one: a real `tsc` in the browser
-     * costs megabytes in the bundle of an editor that would use it for one class of
-     * error. What is not caught here is what needs types to catch — an unknown
-     * member, a wrong type — and those stay a build failure.
-     *
-     * **The cost of the two mistakes is not the same, so the check is built to miss
-     * rather than to lie.** A complaint refuses the export, and a false one locks
-     * the author inside the editor with no way out; a missed one costs a build
-     * failure with a message of its own. Everything doubtful is therefore passed
-     * over in silence:
-     *
-     * - strings and comments are blanked before anything is read, so a signature
-     *   quoted inside a template literal is not a signature;
-     * - a head is only a head at the indent of the body itself and only when a `{`
-     *   follows, which is what separates a definition from a call and from an
-     *   overload signature;
-     * - only a plain identifier is reported. A destructured parameter is an error
-     *   of the same kind, but naming it sensibly is beyond this, and half a name in
-     *   a refusal is worse than no refusal;
-     * - a default value is a type, an arrow is typed by its context, and a
-     *   parameter list holding brackets of its own is left alone.
-     */
-    function $bog_vmap_app_export_untyped(js) {
-        const out = [];
-        const clean = $bog_vmap_app_export_blanked(js);
-        const base = base_indent(clean);
-        const heads = new RegExp('(?:^|\\n)([ \\t]*)'
-            + '((?:(?:async|static|override|public|private|protected|get|set)[ \\t]+)*)'
-            + '(\\*[ \\t]*)?([A-Za-z_$][\\w$]*)[ \\t]*'
-            + '(?:<[^<>()\\n]*>[ \\t]*)?'
-            + '\\(([^()]*)\\)[ \\t]*(?::[^\\n{;]*)?\\{', 'g');
-        // Words that begin a statement and would otherwise read as a method name.
-        const keywords = [
-            'if', 'for', 'while', 'switch', 'catch', 'return', 'do', 'else', 'with',
-            'function', 'typeof', 'await', 'yield', 'new', 'delete', 'void', 'super',
-            'this', 'case', 'throw', 'try', 'finally',
-        ];
-        for (const head of clean.matchAll(heads)) {
-            // At the indent of the body and nowhere deeper: what stands inside a
-            // method is a statement, however much it looks like a signature.
-            if (head[1].length !== base)
-                continue;
-            const method = head[4];
-            if (keywords.includes(method))
-                continue;
-            const at = (head.index ?? 0) + (head[0][0] === '\n' ? 1 : 0);
-            const line = clean.slice(0, at).split('\n').length;
-            for (const param of params_of(head[5])) {
-                const sample = param.rest ? `... ${param.name}: number[]` : `${param.name}?: number`;
-                out.push({
-                    line,
-                    method,
-                    param: param.name,
-                    text: `У метода «${method}» параметр «${param.name}» без типа.`
-                        + ` В превью это работает, а выгрузка компилируется TypeScript'ом со strict и упадёт на noImplicitAny.`
-                        + ` Допишите тип, например «${method}( ${sample} )».`,
-                });
-            }
-        }
-        return out;
-    }
-    $.$bog_vmap_app_export_untyped = $bog_vmap_app_export_untyped;
-    /**
-     * The same text with every string and comment replaced by spaces.
-     *
-     * Length and line breaks are kept, so a position in the result is the same
-     * position in the source and the line of a complaint stays true. Without this a
-     * signature quoted inside a template literal reads as a signature, and that is
-     * a refusal over text that is not code at all.
-     *
-     * A regular expression literal is not understood, deliberately: telling one
-     * from a division needs a parser. An apostrophe inside one blanks more than it
-     * should, and the whole cost of that is a complaint not raised.
-     */
-    function $bog_vmap_app_export_blanked(js) {
-        const blank = (text) => text.replace(/[^\n]/g, ' ');
-        let out = '';
-        let i = 0;
-        while (i < js.length) {
-            const char = js[i];
-            if (char === '/' && js[i + 1] === '/') {
-                const end = js.indexOf('\n', i);
-                const stop = end < 0 ? js.length : end;
-                out += blank(js.slice(i, stop));
-                i = stop;
-                continue;
-            }
-            if (char === '/' && js[i + 1] === '*') {
-                const end = js.indexOf('*/', i + 2);
-                const stop = end < 0 ? js.length : end + 2;
-                out += blank(js.slice(i, stop));
-                i = stop;
-                continue;
-            }
-            if (char === '"' || char === "'" || char === '`') {
-                let j = i + 1;
-                while (j < js.length) {
-                    if (js[j] === '\\') {
-                        j += 2;
-                        continue;
-                    }
-                    if (js[j] === char) {
-                        ++j;
-                        break;
-                    }
-                    if (char !== '`' && js[j] === '\n')
-                        break;
-                    ++j;
-                }
-                out += blank(js.slice(i, j));
-                i = j;
-                continue;
-            }
-            out += char;
-            ++i;
-        }
-        return out;
-    }
-    $.$bog_vmap_app_export_blanked = $bog_vmap_app_export_blanked;
-    /** Indent the body itself stands at, which is the indent its methods stand at. */
-    function base_indent(js) {
-        let base = Infinity;
-        for (const line of js.split('\n')) {
-            if (!line.trim())
-                continue;
-            base = Math.min(base, /^[ \t]*/.exec(line)[0].length);
-        }
-        return base === Infinity ? 0 : base;
-    }
-    /**
-     * Parameters that carry neither a type nor a default value, by name.
-     *
-     * Anything that is not a plain identifier — a destructuring, a parameter whose
-     * own brackets confuse the split — leaves without a word said, see the rule
-     * above.
-     */
-    function params_of(list) {
-        const out = [];
-        let depth = 0;
-        let typed = false;
-        let text = '';
-        const close = () => {
-            const written = text.trim();
-            text = '';
-            const was_typed = typed;
-            typed = false;
-            if (!written || was_typed)
-                return;
-            const parts = /^(\.\.\.[ \t]*)?([A-Za-z_$][\w$]*)\??$/.exec(written);
-            if (!parts)
-                return;
-            out.push({ name: parts[2], rest: Boolean(parts[1]) });
-        };
-        for (const char of list) {
-            if ('<{(['.includes(char))
-                ++depth;
-            if ('>})]'.includes(char) && depth > 0)
-                --depth;
-            if (depth === 0 && (char === ':' || char === '='))
-                typed = true;
-            if (depth === 0 && char === ',') {
-                close();
-                continue;
-            }
-            if (!typed)
-                text += char;
-        }
-        close();
-        return out;
-    }
-    /** Indents a hand written body into a class declaration. */
-    function $bog_vmap_app_export_indent(text, depth = 2) {
-        const pad = '\t'.repeat(depth);
-        return text.replace(/\n?$/, '').split('\n')
-            .map(line => line.trim() ? pad + line : '')
-            .join('\n');
-    }
-    $.$bog_vmap_app_export_indent = $bog_vmap_app_export_indent;
-    /**
-     * Builds the module.
-     *
-     * @param nodes classes of the document, in any order
-     * @param root class `index.html` instantiates; defaults to the first node
-     */
-    function $bog_vmap_app_export_build(nodes, root) {
-        if (!nodes.length)
-            this.$mol_fail(new Error('Nothing to export'));
-        /**
-         * Parsed through the same model the editor edits with, so the export sees
-         * exactly the classes the editor sees, reformatting included.
-         *
-         * This is also where the `asset:` rewrite of stage 5.1 belongs: one place,
-         * before anything reads the text.
-         */
-        const parsed = nodes.map(node => {
-            const model = this.$bog_vmap_lang_node.make({});
-            model.source(node.source);
-            return { node, model, tree: model.tree(), name: model.name() };
-        });
-        const names = parsed.map(item => item.name);
-        /**
-         * Bodies are checked before anything is written, so that the answer names the
-         * mistake instead of leaving a module that only fails on the build machine.
-         * Section 10: the preview forgives what the export does not.
-         */
-        const complaints = parsed.flatMap(item => {
-            const js = item.node.js?.trim();
-            return js
-                ? this.$bog_vmap_app_export_untyped(js).map(note => `${item.name}, строка ${note.line}: ${note.text}`)
-                : [];
-        });
-        if (complaints.length)
-            this.$mol_fail(new Error(`Код узлов не переживёт выгрузку:\n${complaints.join('\n')}`));
-        const twice = names.filter((name, i) => names.indexOf(name) !== i);
-        if (twice.length)
-            this.$mol_fail(new Error(`Class ${twice[0]} is declared twice`));
-        const path = this.$bog_vmap_app_export_path(names);
-        const name = path.slice(path.lastIndexOf('/') + 1);
-        const entry = root ?? names[0];
-        if (!names.includes(entry))
-            this.$mol_fail(new Error(`Root class ${JSON.stringify(entry)} is not among the document classes`));
-        const order = this.$bog_vmap_lang_sorted(parsed.map(item => item.tree));
-        const by_tree = new Map(parsed.map(item => [item.tree, item]));
-        const sorted = order.map(tree => by_tree.get(tree));
-        const pages = $bog_vmap_app_export_pages(parsed.find(item => item.name === entry).model);
-        /**
-         * Two pages or more get a router, one page gets nothing at all.
-         *
-         * A single page document stays exactly what it was: the same five files and
-         * the document itself at the root. A router over one page would be a class
-         * that always answers the same thing, and an address key that always holds
-         * the same value.
-         */
-        const router = pages.length > 1 ? router_name(path, names) : '';
-        const files = [
-            {
-                name: `${name}.view.tree`,
-                text: sorted.map(item => item.tree.toString()).join('')
-                    + (router ? router_tree(router, entry) : ''),
-            },
-            { name: `${name}.view.ts`, text: view_ts.call(this, sorted, router, pages) },
-            { name: `${name}.view.css.ts`, text: view_css_ts.call(this, sorted) },
-            { name: `${name}.meta.tree`, text: 'include \\/mol/theme/auto\n' },
-            { name: 'index.html', text: index_html(router || entry) },
-        ];
-        return { path, name, root: router || entry, files };
-    }
-    $.$bog_vmap_app_export_build = $bog_vmap_app_export_build;
-    /**
-     * Pages of a document: the artboards its root class draws.
-     *
-     * An artboard is a node with a `sub` of its own, and that is the only mark it
-     * has — the same reading the canvas does in `doc_containers`, and section 8
-     * says there is no other. A free part carries no `sub`, so it is not a page and
-     * the router never shows it, which is also why the desk coordinates have
-     * nothing to leak into here.
-     */
-    function $bog_vmap_app_export_pages(model) {
-        return (model.sub_names() ?? []).filter(name => name && model.sub_names(name));
-    }
-    $.$bog_vmap_app_export_pages = $bog_vmap_app_export_pages;
-    /**
-     * Name of the router class, free of collisions.
-     *
-     * Built out of the module path rather than out of the root class, so that it
-     * adds no segment to the longest common prefix and the module stays in the
-     * folder the document already chose: `bog/site` gives `$bog_site_app`,
-     * `bog/site/page` gives `$bog_site_page_app`. A document that already holds
-     * that name gets the next free one instead of a class declared twice.
-     */
-    function router_name(path, taken) {
-        const base = '$' + path.replace(/\//g, '_') + '_app';
-        let name = base;
-        for (let i = 2; taken.includes(name); ++i)
-            name = base + i;
-        return name;
-    }
-    /**
-     * Declaration of the router.
-     *
-     * `$mol_view` and not the document class, although inheriting would be shorter:
-     * an heir declared in the SAME `.view.tree` silently loses the hand written body
-     * of its base, because the generated file of the whole tree is ordered before
-     * the single `.view.ts` of the module, where the wrapper overwrites the
-     * generated class rather than extending it. The document therefore lies inside
-     * the router as `Doc`.
-     *
-     * `Doc` is declared and never put into `sub`, so it costs one lazy memoized
-     * instance and no DOM — the free part of section 1. Its artboards are flat
-     * properties of it thanks to `upper`, which is what lets the router reach a page
-     * by name at all.
-     *
-     * No `sub` here: an empty list in the tree would be generated as a method
-     * returning `never[]`, and an override widening that is a type error. The list
-     * belongs to the body, where it is picked by the address anyway.
-     */
-    function router_tree(router, doc) {
-        return `${router} $mol_view\n\tDoc ${doc}\n`;
-    }
-    /**
-     * Body of the router: one page, named by the address.
-     *
-     * `$mol_state_arg` and nothing of our own, because that is the standard address
-     * of $mol: a link from page to page is an ordinary `$mol_link` with
-     * `arg * page \Page_1` written in the document itself, and it works without a
-     * line of code from us. The first artboard is the default, so the bare address
-     * opens the site rather than an empty screen, and an unknown page name lands
-     * there as well instead of showing nothing.
-     *
-     * A `switch` over literal names rather than a lookup by string: a property read
-     * by a computed name would need a cast, and the export must compile under
-     * `strict` with no `as any` anywhere in it.
-     */
-    function router_ts(router, pages) {
-        const rest = pages.slice(1).map(page => `\t\t\t\tcase ${JSON.stringify(page)}: return [ doc.${page}() ]\n`);
-        return ''
-            + `\n\texport class ${router} extends $.${router} {\n\n`
-            + `\t\toverride sub() {\n\n`
-            + `\t\t\tconst doc = this.Doc()\n\n`
-            + `\t\t\tswitch( this.$.$mol_state_arg.value( 'page' ) ) {\n`
-            + rest.join('')
-            + `\t\t\t\tdefault: return [ doc.${pages[0]}() ]\n`
-            + `\t\t\t}\n\n`
-            + `\t\t}\n\n`
-            + `\t}\n`;
-    }
-    /**
-     * Hand written bodies, one subclass per class that has one.
-     *
-     * Decorators go as separate expressions after the class, the way studio applies
-     * them in `source_js_decorators()`. Writing `@ $mol_mem` into the user's text
-     * would mean finding where each method starts, and getting that wrong produces
-     * a file that does not compile.
-     *
-     * The leading `;` is not decoration. A generated line starting with `(` and no
-     * semicolon above it gets glued to the previous expression by ASI, and the
-     * result is `$( … )` and a `TypeError` at load.
-     */
-    function view_ts(items, router, pages) {
-        const out = ['namespace $.$$ {\n'];
-        for (const item of items) {
-            const js = item.node.js?.trim();
-            if (!js)
-                continue;
-            const decorators = [];
-            for (const prop of item.tree.kids[0]?.kids ?? []) {
-                const { name, key, next } = this.$mol_view_tree2_prop_parts(prop);
-                if (!key && !next)
-                    continue;
-                if (!this.$bog_vmap_app_export_defines(js, name))
-                    continue;
-                decorators.push(`\t;( $mol_mem${key ? '_key' : ''}( ${item.name}.prototype, ${JSON.stringify(name)} ) )\n`);
-            }
-            out.push(`\n\texport class ${item.name} extends $.${item.name} {\n\n`);
-            out.push(this.$bog_vmap_app_export_indent(js) + '\n');
-            out.push('\n\t}\n');
-            out.push(...decorators);
-        }
-        if (router)
-            out.push(router_ts(router, pages));
-        out.push('\n}\n');
-        return out.join('');
-    }
-    /**
-     * Styles.
-     *
-     * `$mol_style_attach` rather than `$mol_style_define`, because what the editor
-     * holds is raw CSS text and not a dictionary of properties. Name and CSS both
-     * go in through `JSON.stringify`: a stylesheet containing a backtick or a `${`
-     * would tear a template literal apart, and that is user text.
-     */
-    function view_css_ts(items) {
-        const out = ['namespace $.$$ {\n'];
-        for (const item of items) {
-            const css = item.node.css?.trim();
-            if (!css)
-                continue;
-            out.push(`\n\t$mol_style_attach( ${JSON.stringify(item.name)}, ${JSON.stringify(css)} )\n`);
-        }
-        out.push('\n}\n');
-        return out.join('');
-    }
-    function index_html(root) {
-        return [
-            '<!doctype html>',
-            '<html mol_view_root>',
-            '\t<head>',
-            '\t\t<meta charset="utf-8" />',
-            '\t\t<meta name="viewport" content="width=device-width, initial-scale=1" />',
-            '\t</head>',
-            '\t<body mol_view_root>',
-            `\t\t<div mol_view_root="${root}"></div>`,
-            '\t\t<script src="web.js"></script>',
-            '\t</body>',
-            '</html>',
-            '',
-        ].join('\n');
-    }
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
      * Slicing of the handwritten sources by property.
      *
      * Port of `props_js()`, `props_css()` and the `source_*_prop` family of
@@ -31498,22 +31191,48 @@ var $;
         return [x, y];
     }
     $.$bog_vmap_app_wire_port_point = $bog_vmap_app_wire_port_point;
-    /** Reach of the horizontal tangents, so short wires still bend. */
-    function wire_reach(from, to) {
-        return Math.max(40, Math.abs(to[0] - from[0]) / 2);
+    /** Reach of the tangents, so short wires still bend. */
+    function wire_reach(span) {
+        return Math.max(40, Math.abs(span) / 2);
     }
-    /** A cubic Bezier from an output to an input with horizontal tangents, as an SVG path. */
+    /**
+     * The two control points of the wire, chosen by which way it actually goes.
+     *
+     * Outputs sit on the right edge of a part and inputs on the left, so a wire
+     * that runs forwards has its ends already pointing at each other and horizontal
+     * tangents draw the plain S everybody expects.
+     *
+     * BACKWARDS IS THE COMMON CASE INSIDE A CONTAINER, not an exotic one: two
+     * children stacked in one box sit at the same left edge, so the output of the
+     * upper one is a dozen pixels to the RIGHT of the input of the lower one.
+     * Horizontal tangents there send the curve out past the right edge of the box
+     * and bring it back in from the left — a loop around the whole part, which
+     * reads as a broken wire rather than a short one. Turning the tangents vertical
+     * keeps every control point between the two ends, so the curve stays in the
+     * band between them and reads as what it is: a step down from one child to the
+     * next.
+     */
+    function wire_control(from, to) {
+        if (to[0] >= from[0]) {
+            const reach = wire_reach(to[0] - from[0]);
+            return [[from[0] + reach, from[1]], [to[0] - reach, to[1]]];
+        }
+        const reach = wire_reach(to[1] - from[1]);
+        const down = to[1] >= from[1] ? 1 : -1;
+        return [[from[0], from[1] + reach * down], [to[0], to[1] - reach * down]];
+    }
+    /** A cubic Bezier from an output to an input, as an SVG path. */
     function $bog_vmap_app_wire_curve(from, to) {
-        const reach = wire_reach(from, to);
-        return `M ${from[0]} ${from[1]} C ${from[0] + reach} ${from[1]}, ${to[0] - reach} ${to[1]}, ${to[0]} ${to[1]}`;
+        const [one, two] = wire_control(from, to);
+        return `M ${from[0]} ${from[1]} C ${one[0]} ${one[1]}, ${two[0]} ${two[1]}, ${to[0]} ${to[1]}`;
     }
     $.$bog_vmap_app_wire_curve = $bog_vmap_app_wire_curve;
     /** The point of the curve at t = 1/2, where the label goes. */
     function $bog_vmap_app_wire_curve_mid(from, to) {
-        const reach = wire_reach(from, to);
+        const [one, two] = wire_control(from, to);
         return [
-            (from[0] + 3 * (from[0] + reach) + 3 * (to[0] - reach) + to[0]) / 8,
-            (from[1] + to[1]) / 2,
+            (from[0] + 3 * one[0] + 3 * two[0] + to[0]) / 8,
+            (from[1] + 3 * one[1] + 3 * two[1] + to[1]) / 8,
         ];
     }
     $.$bog_vmap_app_wire_curve_mid = $bog_vmap_app_wire_curve_mid;
@@ -32351,8 +32070,8 @@ var $;
 		libs(){
 			return [];
 		}
-		hole_allowed(){
-			return true;
+		carrying(){
+			return false;
 		}
 		wires(){
 			return [];
@@ -32369,6 +32088,9 @@ var $;
 			return null;
 		}
 		containers(){
+			return [];
+		}
+		doc_names(){
 			return [];
 		}
 		axis(id){
@@ -33135,11 +32857,26 @@ var $;
              */
             nodes_measured() {
                 const prefix = this.doc_root() + '/';
+                const known = new Set(this.doc_names());
                 const nodes = [];
                 for (const key of Object.keys(this.sizes())) {
                     if (!key.startsWith(prefix))
                         continue;
                     const path = key.slice(prefix.length).split('/');
+                    // EVERY segment has to be a node the document declares. The scene walks
+                    // the whole rendered tree, so a part of two hundred pixels reports the
+                    // button and the field inside it as well, and without this the hit test
+                    // handed back a view the document never named: the ring came out the
+                    // size of an inner control, the inspector had no declaration to show,
+                    // and the part itself could not be picked, carried or deleted.
+                    //
+                    // Every segment and not only the last, because a name of the document
+                    // may repeat inside a pack class, and the ancestry is what tells the two
+                    // apart. The cost is a node put inside a pack property rather than into
+                    // `sub` — which this editor cannot author, and a foreign document can:
+                    // such a node draws, and stays out of reach of the pointer.
+                    if (path.some(step => !known.has(step)))
+                        continue;
                     nodes.push({ name: path[path.length - 1], path, box: this.sizes()[key] });
                 }
                 return nodes;
@@ -33456,6 +33193,13 @@ var $;
                     return;
                 if (event.button !== 0)
                     return;
+                // The drag crossing this canvas is the owner's, not ours. Measured cost of
+                // not saying so: a press whose release fell into the hole leaves the carry
+                // live, and the next pointer to cross the overlay with a button down —
+                // which is exactly a drag out of the palette — moves the picked node to
+                // wherever it is let go, grabbed where it was last pressed.
+                if (this.carrying())
+                    return;
                 // A dot before a part: dots lie on the grip strip of the part they belong
                 // to, and the wire is the finer target.
                 const dot = $bog_vmap_app_wire_dot_at(this.wire_dots(), this.screen_point(event));
@@ -33545,6 +33289,8 @@ var $;
             node_move(event) {
                 if (!event)
                     return;
+                if (this.carrying())
+                    return;
                 this.press_track(event);
                 if (this.wire_drag()) {
                     if (!event.buttons)
@@ -33594,6 +33340,8 @@ var $;
             node_release(event) {
                 if (!event)
                     return;
+                if (this.carrying())
+                    return;
                 const press = this.press;
                 if (press)
                     this.press_track(event);
@@ -33623,6 +33371,9 @@ var $;
                     this.slot(null);
                     if (drag && slot)
                         this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index });
+                    // Cleared, not merely switched off: a carry left standing is a carry
+                    // that some later pointer can pick up again.
+                    this.drag = null;
                     this.drag_live = false;
                     try {
                         this.Overlay().dom_node().releasePointerCapture(event.pointerId);
@@ -33763,12 +33514,12 @@ var $;
              * which is what the part is carried by.
              *
              * Open under the node the pointer has been let INSIDE of, which is the second
-             * click on it and not the pick — see `entered`. Closed as well while
-             * `hole_allowed()` is off: a drop from the palette has no pointer capture and
-             * would fall into the frame.
+             * click on it and not the pick — see `entered`. Closed as well while the
+             * palette is carrying: that drag has no pointer capture and a release over
+             * the hole would fall into the frame.
              */
             overlay_style() {
-                const rect = this.hole_allowed() && this.inside() ? this.frame_box() : null;
+                const rect = !this.carrying() && this.inside() ? this.frame_box() : null;
                 return { clipPath: this.$.$bog_vmap_app_pane_hole(rect) };
             }
             link_add(next) {
@@ -34428,6 +34179,554 @@ var $;
 })($ || ($ = {}));
 
 ;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Export of a document as a real MAM module.
+     *
+     * Not an abstract «project»: the output is a folder that drops into `bog/` and
+     * builds with `npx mam` untouched. That is the acceptance criterion of the
+     * stage, and it is also what closes the circle of section 5 — a built module is
+     * a donor pack, so anything assembled here becomes a component library for the
+     * next document.
+     *
+     * Pure functions over text. Knows nothing of Giper Baza and nothing of the DOM,
+     * so the caller maps its stored nodes onto `doc_export_node` and gets files back.
+     *
+     * @see ../../ARCHITECTURE.md section 10
+     */
+    /**
+     * Folder the classes of a document oblige it to live in.
+     *
+     * Section 10 says the export is a MAM module and says nothing about where it
+     * goes, but the two are not independent: mam turns a class name into a path by
+     * replacing every underscore with a slash, so a document placed anywhere else
+     * fails to build while looking perfectly correct. The document therefore names
+     * its own folder, by the longest common prefix of its class names.
+     *
+     * A lone `bog_site_page` gives `bog/site/page`; together with `bog_site_hero`
+     * it gives `bog/site`. Both resolve, because a missing last segment collapses
+     * onto the longest existing prefix — the same rule that makes demo classes safe
+     * to name after their own module.
+     *
+     * A prefix shorter than two segments means classes from different packs, or a
+     * module at the root of a pack. Refused: renaming the user's classes to fit
+     * would break «byte for byte from the editor», and emitting them as they are
+     * would produce a folder that does not build.
+     *
+     * **What this cannot check: whether the root pack exists.** Only the machine
+     * doing the build knows that, and we run in a browser. Classes named
+     * `my_doc_page` give a perfectly well formed `my/doc/page`, and mam then fails
+     * with `Root package "my" not found` — the length test above does not catch it,
+     * because nothing is wrong with the shape. The export UI has to say out loud
+     * which folder the module is going to, so that the first segment is a decision
+     * the author sees rather than one made for them.
+     */
+    function $bog_vmap_app_export_path(names) {
+        if (!names.length)
+            this.$mol_fail(new Error('Nothing to export'));
+        const parts = names.map(name => {
+            if (name[0] !== '$')
+                this.$mol_fail(new Error(`Class name must start with $, got ${JSON.stringify(name)}`));
+            return name.slice(1).split('_');
+        });
+        const common = [];
+        for (let i = 0; i < parts[0].length; ++i) {
+            const segment = parts[0][i];
+            if (!parts.every(part => part[i] === segment))
+                break;
+            common.push(segment);
+        }
+        if (common.length < 2)
+            this.$mol_fail(new Error(`Classes ${names.join(', ')} share no module path.`
+                + ` A document must name its classes after one module,`
+                + ` so that they agree on at least two leading segments.`));
+        return common.join('/');
+    }
+    $.$bog_vmap_app_export_path = $bog_vmap_app_export_path;
+    /**
+     * Whether a hand written body defines a method of this name.
+     *
+     * Deliberately the same test the scene applies before decorating, so that a
+     * property memoized in the preview is memoized in the export and the two cannot
+     * drift. A property decorated in the generated base but overridden here without
+     * a decorator loses its atom outright, and nothing reports it: the method just
+     * returns a fresh value while the DOM keeps the old one.
+     */
+    function $bog_vmap_app_export_defines(js, name) {
+        if (js.includes(`/${'*'}${name}${'*'}/`))
+            return true;
+        return new RegExp(`(^|[^\\w.$])${name}\\s*\\(`, 'm').test(js);
+    }
+    $.$bog_vmap_app_export_defines = $bog_vmap_app_export_defines;
+    /**
+     * Parameters of methods that carry no type.
+     *
+     * The divergence of section 10: in the scene a body goes through `new Function`,
+     * where any JS runs, and in the export the same body is compiled by TypeScript
+     * with `strict` and `noImplicitAny`. An untyped parameter is the whole of that
+     * divergence in practice — it works in the preview and fails the build, and the
+     * author learns about it neither where nor when the mistake was made.
+     *
+     * Not a type checker and not pretending to be one: a real `tsc` in the browser
+     * costs megabytes in the bundle of an editor that would use it for one class of
+     * error. What is not caught here is what needs types to catch — an unknown
+     * member, a wrong type — and those stay a build failure.
+     *
+     * **The cost of the two mistakes is not the same, so the check is built to miss
+     * rather than to lie.** A complaint refuses the export, and a false one locks
+     * the author inside the editor with no way out; a missed one costs a build
+     * failure with a message of its own. Everything doubtful is therefore passed
+     * over in silence:
+     *
+     * - strings and comments are blanked before anything is read, so a signature
+     *   quoted inside a template literal is not a signature;
+     * - a head is only a head at the indent of the body itself and only when a `{`
+     *   follows, which is what separates a definition from a call and from an
+     *   overload signature;
+     * - only a plain identifier is reported. A destructured parameter is an error
+     *   of the same kind, but naming it sensibly is beyond this, and half a name in
+     *   a refusal is worse than no refusal;
+     * - a default value is a type, an arrow is typed by its context, and a
+     *   parameter list holding brackets of its own is left alone.
+     */
+    function $bog_vmap_app_export_untyped(js) {
+        const out = [];
+        const clean = $bog_vmap_app_export_blanked(js);
+        const base = base_indent(clean);
+        const heads = new RegExp('(?:^|\\n)([ \\t]*)'
+            + '((?:(?:async|static|override|public|private|protected|get|set)[ \\t]+)*)'
+            + '(\\*[ \\t]*)?([A-Za-z_$][\\w$]*)[ \\t]*'
+            + '(?:<[^<>()\\n]*>[ \\t]*)?'
+            + '\\(([^()]*)\\)[ \\t]*(?::[^\\n{;]*)?\\{', 'g');
+        // Words that begin a statement and would otherwise read as a method name.
+        const keywords = [
+            'if', 'for', 'while', 'switch', 'catch', 'return', 'do', 'else', 'with',
+            'function', 'typeof', 'await', 'yield', 'new', 'delete', 'void', 'super',
+            'this', 'case', 'throw', 'try', 'finally',
+        ];
+        for (const head of clean.matchAll(heads)) {
+            // At the indent of the body and nowhere deeper: what stands inside a
+            // method is a statement, however much it looks like a signature.
+            if (head[1].length !== base)
+                continue;
+            const method = head[4];
+            if (keywords.includes(method))
+                continue;
+            const at = (head.index ?? 0) + (head[0][0] === '\n' ? 1 : 0);
+            const line = clean.slice(0, at).split('\n').length;
+            for (const param of params_of(head[5])) {
+                const sample = param.rest ? `... ${param.name}: number[]` : `${param.name}?: number`;
+                out.push({
+                    line,
+                    method,
+                    param: param.name,
+                    text: `У метода «${method}» параметр «${param.name}» без типа.`
+                        + ` В превью это работает, а выгрузка компилируется TypeScript'ом со strict и упадёт на noImplicitAny.`
+                        + ` Допишите тип, например «${method}( ${sample} )».`,
+                });
+            }
+        }
+        return out;
+    }
+    $.$bog_vmap_app_export_untyped = $bog_vmap_app_export_untyped;
+    /**
+     * The same text with every string and comment replaced by spaces.
+     *
+     * Length and line breaks are kept, so a position in the result is the same
+     * position in the source and the line of a complaint stays true. Without this a
+     * signature quoted inside a template literal reads as a signature, and that is
+     * a refusal over text that is not code at all.
+     *
+     * A regular expression literal is not understood, deliberately: telling one
+     * from a division needs a parser. An apostrophe inside one blanks more than it
+     * should, and the whole cost of that is a complaint not raised.
+     */
+    function $bog_vmap_app_export_blanked(js) {
+        const blank = (text) => text.replace(/[^\n]/g, ' ');
+        let out = '';
+        let i = 0;
+        while (i < js.length) {
+            const char = js[i];
+            if (char === '/' && js[i + 1] === '/') {
+                const end = js.indexOf('\n', i);
+                const stop = end < 0 ? js.length : end;
+                out += blank(js.slice(i, stop));
+                i = stop;
+                continue;
+            }
+            if (char === '/' && js[i + 1] === '*') {
+                const end = js.indexOf('*/', i + 2);
+                const stop = end < 0 ? js.length : end + 2;
+                out += blank(js.slice(i, stop));
+                i = stop;
+                continue;
+            }
+            if (char === '"' || char === "'" || char === '`') {
+                let j = i + 1;
+                while (j < js.length) {
+                    if (js[j] === '\\') {
+                        j += 2;
+                        continue;
+                    }
+                    if (js[j] === char) {
+                        ++j;
+                        break;
+                    }
+                    if (char !== '`' && js[j] === '\n')
+                        break;
+                    ++j;
+                }
+                out += blank(js.slice(i, j));
+                i = j;
+                continue;
+            }
+            out += char;
+            ++i;
+        }
+        return out;
+    }
+    $.$bog_vmap_app_export_blanked = $bog_vmap_app_export_blanked;
+    /** Indent the body itself stands at, which is the indent its methods stand at. */
+    function base_indent(js) {
+        let base = Infinity;
+        for (const line of js.split('\n')) {
+            if (!line.trim())
+                continue;
+            base = Math.min(base, /^[ \t]*/.exec(line)[0].length);
+        }
+        return base === Infinity ? 0 : base;
+    }
+    /**
+     * Parameters that carry neither a type nor a default value, by name.
+     *
+     * Anything that is not a plain identifier — a destructuring, a parameter whose
+     * own brackets confuse the split — leaves without a word said, see the rule
+     * above.
+     */
+    function params_of(list) {
+        const out = [];
+        let depth = 0;
+        let typed = false;
+        let text = '';
+        const close = () => {
+            const written = text.trim();
+            text = '';
+            const was_typed = typed;
+            typed = false;
+            if (!written || was_typed)
+                return;
+            const parts = /^(\.\.\.[ \t]*)?([A-Za-z_$][\w$]*)\??$/.exec(written);
+            if (!parts)
+                return;
+            out.push({ name: parts[2], rest: Boolean(parts[1]) });
+        };
+        for (const char of list) {
+            if ('<{(['.includes(char))
+                ++depth;
+            if ('>})]'.includes(char) && depth > 0)
+                --depth;
+            if (depth === 0 && (char === ':' || char === '='))
+                typed = true;
+            if (depth === 0 && char === ',') {
+                close();
+                continue;
+            }
+            if (!typed)
+                text += char;
+        }
+        close();
+        return out;
+    }
+    /** Indents a hand written body into a class declaration. */
+    function $bog_vmap_app_export_indent(text, depth = 2) {
+        const pad = '\t'.repeat(depth);
+        return text.replace(/\n?$/, '').split('\n')
+            .map(line => line.trim() ? pad + line : '')
+            .join('\n');
+    }
+    $.$bog_vmap_app_export_indent = $bog_vmap_app_export_indent;
+    /**
+     * Builds the module.
+     *
+     * @param nodes classes of the document, in any order
+     * @param root class `index.html` instantiates; defaults to the first node
+     */
+    function $bog_vmap_app_export_build(nodes, root) {
+        if (!nodes.length)
+            this.$mol_fail(new Error('Nothing to export'));
+        /**
+         * Parsed through the same model the editor edits with, so the export sees
+         * exactly the classes the editor sees, reformatting included.
+         *
+         * This is also where the `asset:` rewrite of stage 5.1 belongs: one place,
+         * before anything reads the text.
+         */
+        const parsed = nodes.map(node => {
+            const model = this.$bog_vmap_lang_node.make({});
+            model.source(node.source);
+            return { node, model, tree: model.tree(), name: model.name() };
+        });
+        const names = parsed.map(item => item.name);
+        /**
+         * Bodies are checked before anything is written, so that the answer names the
+         * mistake instead of leaving a module that only fails on the build machine.
+         * Section 10: the preview forgives what the export does not.
+         */
+        const complaints = parsed.flatMap(item => {
+            const js = item.node.js?.trim();
+            return js
+                ? this.$bog_vmap_app_export_untyped(js).map(note => `${item.name}, строка ${note.line}: ${note.text}`)
+                : [];
+        });
+        if (complaints.length)
+            this.$mol_fail(new Error(`Код узлов не переживёт выгрузку:\n${complaints.join('\n')}`));
+        const twice = names.filter((name, i) => names.indexOf(name) !== i);
+        if (twice.length)
+            this.$mol_fail(new Error(`Class ${twice[0]} is declared twice`));
+        const path = this.$bog_vmap_app_export_path(names);
+        const name = path.slice(path.lastIndexOf('/') + 1);
+        const entry = root ?? names[0];
+        if (!names.includes(entry))
+            this.$mol_fail(new Error(`Root class ${JSON.stringify(entry)} is not among the document classes`));
+        const order = this.$bog_vmap_lang_sorted(parsed.map(item => item.tree));
+        const by_tree = new Map(parsed.map(item => [item.tree, item]));
+        const sorted = order.map(tree => by_tree.get(tree));
+        const pages = $bog_vmap_app_export_pages(parsed.find(item => item.name === entry).model);
+        /**
+         * Two pages or more get a router, one page gets nothing at all.
+         *
+         * A single page document stays exactly what it was: the same five files and
+         * the document itself at the root. A router over one page would be a class
+         * that always answers the same thing, and an address key that always holds
+         * the same value.
+         */
+        const router = pages.length > 1 ? router_name(path, names) : '';
+        /**
+         * A file with nothing in it is not written at all, because a module written
+         * by a person does not carry one: no class has a body, there is no
+         * `.view.ts`; nobody styled anything, there is no stylesheet.
+         */
+        const body = view_ts.call(this, sorted, router, pages);
+        const style = view_css(sorted);
+        const files = [
+            {
+                name: `${name}.view.tree`,
+                text: sorted.map(item => item.tree.toString()).join('')
+                    + (router ? router_tree(router, entry) : ''),
+            },
+            ...body.includes('export class') ? [{ name: `${name}.view.ts`, text: body }] : [],
+            ...style ? [{ name: `${name}.view.css`, text: style }] : [],
+            { name: `${name}.meta.tree`, text: 'include \\/mol/theme/auto\n' },
+            { name: 'index.html', text: index_html(router || entry) },
+        ];
+        return { path, name, root: router || entry, files };
+    }
+    $.$bog_vmap_app_export_build = $bog_vmap_app_export_build;
+    /**
+     * Pages of a document: the artboards its root class draws.
+     *
+     * An artboard is a node with a `sub` of its own, and that is the only mark it
+     * has — the same reading the canvas does in `doc_containers`, and section 8
+     * says there is no other. A free part carries no `sub`, so it is not a page and
+     * the router never shows it, which is also why the desk coordinates have
+     * nothing to leak into here.
+     */
+    function $bog_vmap_app_export_pages(model) {
+        return (model.sub_names() ?? []).filter(name => name && model.sub_names(name));
+    }
+    $.$bog_vmap_app_export_pages = $bog_vmap_app_export_pages;
+    /**
+     * Name of the router class, free of collisions.
+     *
+     * Built out of the module path rather than out of the root class, so that it
+     * adds no segment to the longest common prefix and the module stays in the
+     * folder the document already chose: `bog/site` gives `$bog_site_app`,
+     * `bog/site/page` gives `$bog_site_page_app`. A document that already holds
+     * that name gets the next free one instead of a class declared twice.
+     */
+    function router_name(path, taken) {
+        const base = '$' + path.replace(/\//g, '_') + '_app';
+        let name = base;
+        for (let i = 2; taken.includes(name); ++i)
+            name = base + i;
+        return name;
+    }
+    /**
+     * Declaration of the router.
+     *
+     * `$mol_view` and not the document class, although inheriting would be shorter:
+     * an heir declared in the SAME `.view.tree` silently loses the hand written body
+     * of its base, because the generated file of the whole tree is ordered before
+     * the single `.view.ts` of the module, where the wrapper overwrites the
+     * generated class rather than extending it. The document therefore lies inside
+     * the router as `Doc`.
+     *
+     * `Doc` is declared and never put into `sub`, so it costs one lazy memoized
+     * instance and no DOM — the free part of section 1. Its artboards are flat
+     * properties of it thanks to `upper`, which is what lets the router reach a page
+     * by name at all.
+     *
+     * No `sub` here: an empty list in the tree would be generated as a method
+     * returning `never[]`, and an override widening that is a type error. The list
+     * belongs to the body, where it is picked by the address anyway.
+     */
+    function router_tree(router, doc) {
+        return `${router} $mol_view\n\tDoc ${doc}\n`;
+    }
+    /**
+     * Body of the router: one page, named by the address.
+     *
+     * `$mol_state_arg` and nothing of our own, because that is the standard address
+     * of $mol: a link from page to page is an ordinary `$mol_link` with
+     * `arg * page \Page_1` written in the document itself, and it works without a
+     * line of code from us. The first artboard is the default, so the bare address
+     * opens the site rather than an empty screen, and an unknown page name lands
+     * there as well instead of showing nothing.
+     *
+     * A `switch` over literal names rather than a lookup by string: a property read
+     * by a computed name would need a cast, and the export must compile under
+     * `strict` with no `as any` anywhere in it.
+     */
+    function router_ts(router, pages) {
+        const rest = pages.slice(1).map(page => `\t\t\t\tcase ${JSON.stringify(page)}: return [ doc.${page}() ]\n`);
+        return ''
+            + `\n\texport class ${router} extends $.${router} {\n\n`
+            + `\t\toverride sub() {\n\n`
+            + `\t\t\tconst doc = this.Doc()\n\n`
+            + `\t\t\tswitch( this.$.$mol_state_arg.value( 'page' ) ) {\n`
+            + rest.join('')
+            + `\t\t\t\tdefault: return [ doc.${pages[0]}() ]\n`
+            + `\t\t\t}\n\n`
+            + `\t\t}\n\n`
+            + `\t}\n`;
+    }
+    /**
+     * A hand written body with `@ $mol_mem` written above the methods that need it.
+     *
+     * The decorator over the method is how a person writes it, and what comes out
+     * of here has to read like a module somebody wrote by hand. The alternative —
+     * `$mol_mem( Klass.prototype, "name" )` as an expression after the class — is
+     * what the SCENE has to do, because a decorator cannot be written into the
+     * string handed to `new Function`; an exported file is compiled by TypeScript
+     * and has no such excuse.
+     *
+     * Finding where a method starts is not guesswork either: the body is cut by
+     * the same `$bog_vmap_app_code_props_js` the code panel cuts it with, so the
+     * export and the panel agree about where a property begins by construction
+     * rather than by two implementations happening to match.
+     *
+     * The decorator goes under whatever comment belongs to the method and directly
+     * over the method itself, which is where a reader looks for it.
+     *
+     * **A body the slicer cannot cut keeps the old form**, expressions after the
+     * class. Braces are counted rather than parsed, so a `}` inside a string is
+     * enough to defeat it — and a body that loses its decorators loses its atoms
+     * silently, which is the one outcome worth an ugly file.
+     */
+    function $bog_vmap_app_export_decorated(js, klass, memos) {
+        const after = () => [...memos].map(([name, mem]) => `\t;( ${mem}( ${klass}.prototype, ${JSON.stringify(name)} ) )\n`);
+        if (!memos.size)
+            return { body: js, after: [] };
+        let props;
+        try {
+            props = this.$bog_vmap_app_code_props_js(js);
+        }
+        catch (error) {
+            if (this.$mol_promise_like(error))
+                return this.$mol_fail_hidden(error);
+            return { body: js, after: after() };
+        }
+        const decorated = new Map(props);
+        for (const [name, mem] of memos) {
+            const code = props.get(name);
+            if (code === undefined)
+                continue;
+            const at = code.search(new RegExp(`(^|[^\\w.$])${name}\\s*\\(`, 'm'));
+            if (at < 0)
+                continue;
+            const line = code.lastIndexOf('\n', at) + 1;
+            decorated.set(name, code.slice(0, line) + `@ ${mem}\n` + code.slice(line));
+        }
+        return { body: this.$bog_vmap_app_code_joined(decorated), after: [] };
+    }
+    $.$bog_vmap_app_export_decorated = $bog_vmap_app_export_decorated;
+    /**
+     * Hand written bodies, one subclass per class that has one.
+     *
+     * The leading `;` of the fallback form is not decoration. A generated line
+     * starting with `(` and no semicolon above it gets glued to the previous
+     * expression by ASI, and the result is `$( … )` and a `TypeError` at load.
+     */
+    function view_ts(items, router, pages) {
+        const out = ['namespace $.$$ {\n'];
+        for (const item of items) {
+            const js = item.node.js?.trim();
+            if (!js)
+                continue;
+            const memos = new Map();
+            for (const prop of item.tree.kids[0]?.kids ?? []) {
+                const { name, key, next } = this.$mol_view_tree2_prop_parts(prop);
+                if (!key && !next)
+                    continue;
+                if (!this.$bog_vmap_app_export_defines(js, name))
+                    continue;
+                memos.set(name, `$mol_mem${key ? '_key' : ''}`);
+            }
+            const made = this.$bog_vmap_app_export_decorated(js, item.name, memos);
+            out.push(`\n\texport class ${item.name} extends $.${item.name} {\n\n`);
+            out.push(this.$bog_vmap_app_export_indent(made.body) + '\n');
+            out.push('\n\t}\n');
+            out.push(...made.after);
+        }
+        if (router)
+            out.push(router_ts(router, pages));
+        out.push('\n}\n');
+        return out.join('');
+    }
+    /**
+     * Styles, as a stylesheet and not as a program that attaches one.
+     *
+     * What the editor holds is raw CSS text, so the file that carries it is a
+     * `.view.css` — mam compiles every stylesheet of a module into the bundle
+     * itself, the way `mol/view/view/view.css` and `mol/theme/theme.css` travel,
+     * and the page needs no link and no attaching code.
+     *
+     * That also takes user text out of a JavaScript literal. `$mol_style_attach`
+     * had to be handed the stylesheet through `JSON.stringify`, because a backtick
+     * or a `${` in it would tear the literal apart; a `.css` file has nothing to
+     * escape into.
+     */
+    function view_css(items) {
+        const out = [];
+        for (const item of items) {
+            const css = item.node.css?.trim();
+            if (!css)
+                continue;
+            out.push(css + '\n');
+        }
+        return out.join('\n');
+    }
+    function index_html(root) {
+        return [
+            '<!doctype html>',
+            '<html mol_view_root>',
+            '\t<head>',
+            '\t\t<meta charset="utf-8" />',
+            '\t\t<meta name="viewport" content="width=device-width, initial-scale=1" />',
+            '\t</head>',
+            '\t<body mol_view_root>',
+            `\t\t<div mol_view_root="${root}"></div>`,
+            '\t\t<script src="web.js"></script>',
+            '\t</body>',
+            '</html>',
+            '',
+        ].join('\n');
+    }
+})($ || ($ = {}));
+
+;
 	($.$bog_vmap_app) = class $bog_vmap_app extends ($.$mol_view) {
 		body(){
 			return [];
@@ -34609,6 +34908,9 @@ var $;
 		root_title_note(){
 			return "";
 		}
+		inside_note(){
+			return "";
+		}
 		stall_note(){
 			return "";
 		}
@@ -34704,8 +35006,8 @@ var $;
 		libs(){
 			return [];
 		}
-		hole_allowed(){
-			return true;
+		carrying(){
+			return false;
 		}
 		doc_wires(){
 			return [];
@@ -34722,6 +35024,9 @@ var $;
 			return null;
 		}
 		doc_containers(){
+			return [];
+		}
+		doc_names(){
 			return [];
 		}
 		doc_axis(id){
@@ -34845,6 +35150,11 @@ var $;
 			(obj.sub) = () => ([(this.root_title_note())]);
 			return obj;
 		}
+		Inside_note(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.inside_note())]);
+			return obj;
+		}
 		Stall(){
 			const obj = new this.$.$mol_view();
 			(obj.sub) = () => ([(this.Stall_note()), (this.Stall_reload())]);
@@ -34915,12 +35225,13 @@ var $;
 			(obj.doc_js) = () => ((this.doc_js()));
 			(obj.doc_root) = () => ((this.doc_root()));
 			(obj.libs) = () => ((this.libs()));
-			(obj.hole_allowed) = () => ((this.hole_allowed()));
+			(obj.carrying) = () => ((this.carrying()));
 			(obj.wires) = () => ((this.doc_wires()));
 			(obj.part_ports) = (id) => ((this.part_ports(id)));
 			(obj.link_add) = (next) => ((this.link_add(next)));
 			(obj.link_drop) = (next) => ((this.link_drop(next)));
 			(obj.containers) = () => ((this.doc_containers()));
+			(obj.doc_names) = () => ((this.doc_names()));
 			(obj.axis) = (id) => ((this.doc_axis(id)));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
 			return obj;
@@ -34978,6 +35289,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Export_note"));
 	($mol_mem_key(($.$bog_vmap_app.prototype), "Export_row"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Root_note"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Inside_note"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Stall"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Body"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Side"));
@@ -35835,16 +36147,35 @@ var $;
                 }
             }
             /**
-             * The overlay may be cut open under the picked part, except while something
-             * is carried from the palette: that drag has no pointer capture, and a release
-             * over the hole would land in the frame, with the host never hearing of it.
+             * Whether a class is being carried out of the palette right now.
+             *
+             * The canvas turns its own gestures off while it is, and leaves the overlay
+             * whole: that drag has no pointer capture, so a release over the hole would
+             * land in the frame and the drop would be lost.
              */
-            hole_allowed() {
-                return !this.dragged();
+            carrying() {
+                return Boolean(this.dragged());
+            }
+            /**
+             * What is said while the pointer is inside a part, empty otherwise.
+             *
+             * The way out names the click first and the key second, and that order is
+             * the measurement, not a preference: inside the part the focus is in the
+             * sandbox, so a keydown goes to the document of the frame and the listener
+             * of the editor never sees it. The click on bare canvas always works,
+             * because the overlay is whole everywhere outside the box of the part; Esc
+             * works while the part has taken no focus of its own.
+             */
+            inside_note() {
+                const name = this.pane().entered();
+                return name ? `Внутри ${name}: клавиши уходят компоненту. Клик по холсту или Esc — выйти` : '';
             }
             body() {
                 return [
                     this.Head(),
+                    // Above everything: the editor stopped answering the keyboard, and
+                    // nothing else on screen would explain why.
+                    ...this.inside_note() ? [this.Inside_note()] : [],
                     // Above the error strip: a scene that stopped answering makes every
                     // error under it stale, and the action that helps is on this one.
                     ...this.stalled() ? [this.Stall()] : [],
@@ -35983,6 +36314,20 @@ var $;
              * and free parts are properties of the same root class, and the only
              * difference between them is in the text.
              */
+            /**
+             * Every property the document declares, which is every node the canvas may
+             * touch.
+             *
+             * The scene measures the whole rendered tree — a pack class is drawn out of
+             * its own views, and they are measured too — so the boundary between «a node
+             * of the document» and «the insides of a part» has to come from the document,
+             * and the host is the one holding it. Section 1: every named node is a flat
+             * property of the root class whatever its depth, so one flat list of names
+             * answers the question at every level.
+             */
+            doc_names() {
+                return this.node().prop_names();
+            }
             doc_containers() {
                 const node = this.node();
                 return node.prop_names().filter(name => node.sub_names(name));
@@ -36159,7 +36504,7 @@ var $;
              * whole gesture untestable here. The overlay of the pane eats pointer events
              * in the host document, so a move across the canvas reaches this listener —
              * and the hole under the picked part is closed for the whole drag, see
-             * `hole_allowed()`, so a release over the canvas cannot fall into the frame.
+             * `carrying()`, so a release over the canvas cannot fall into the frame.
              */
             drag_listeners() {
                 return [
@@ -36194,10 +36539,10 @@ var $;
             /**
              * World coordinates of a pointer event, or `null` if it is not over the canvas.
              *
-             * The rectangle comes from the DOM and not from `view_rect()` on purpose:
-             * `view_rect` is a watched cell, and a handler that subscribes to it would be
-             * re-run by the very layout change its own drop causes — adding the part a
-             * second time.
+             * The rectangle is the canvas's own reading, which is `view_rect()` warmed in
+             * its `auto()`. The reason written here before — that a handler subscribed to
+             * the watched cell would be re-run by the layout its own drop causes — was
+             * wrong: these handlers run as one shot tasks and subscribe to nothing.
              *
              * The camera is a screen-pixel shift plus an isotropic zoom, and the scene
              * puts the stage at `transform-origin: 0 0` inside a frame pinned to the top
@@ -36205,8 +36550,7 @@ var $;
              * is that solved for world.
              */
             canvas_point(event) {
-                const node = this.Pane().dom_node();
-                const rect = node.getBoundingClientRect();
+                const rect = this.pane().pane_rect();
                 const x = event.clientX - rect.left;
                 const y = event.clientY - rect.top;
                 if (x < 0 || y < 0 || x > rect.width || y > rect.height)
@@ -36252,12 +36596,47 @@ var $;
              * and what is on the page.
              */
             preset_drop(source, x, y) {
+                this.preset_apply(source, x, y, this.pane().insert_slot([x, y]));
+            }
+            /**
+             * The same piece, put where a CLICK can mean: free on the canvas, in the
+             * middle of it.
+             *
+             * A click is «add this», a drag is «add it HERE». Whoever clicked aimed at
+             * nothing, so the piece must not fall into whatever happens to cover the
+             * middle of the view — it did, and a map asked for by a click landed between
+             * the two halves of a wired pair. Measured on the deploy 09.09.2026.
+             */
+            preset_place(source) {
+                const spot = this.free_spot();
+                this.preset_apply(source, spot[0], spot[1], null);
+            }
+            /**
+             * The middle of the canvas, moved clear of whatever container covers it.
+             *
+             * Beside and not inside: a free part left at the middle of a page would be
+             * drawn over it and read as a part OF it, which is the very confusion the
+             * click is being kept out of. Below the box, because pages grow downwards.
+             */
+            free_spot() {
+                const [x, y] = this.canvas_center();
+                const owner = this.pane().container_at([x, y]);
+                const box = owner ? this.pane().part_size(owner) : null;
+                if (!box)
+                    return [x, y];
+                return [box.x, box.y + box.height + 24];
+            }
+            /**
+             * Writes the piece into the document and places what it left loose: into the
+             * tree of a container when the gesture aimed at one, by a coordinate when it
+             * did not.
+             */
+            preset_apply(source, x, y, slot) {
                 const node = this.node();
-                const slot = this.pane().insert_slot([x, y]);
                 const placed = this.$.$bog_vmap_app_shelf_apply(node, source, (name) => this.name_free(name));
-                // Into the tree of the artboard it was dropped into, or onto the canvas
-                // by a coordinate. One gesture, two ways of being laid out, told apart
-                // by where the release happened and nowhere else. A piece that leaves
+                // Into the tree of the container the gesture aimed at, or onto the canvas
+                // by a coordinate. Two ways of being laid out, told apart by the caller
+                // and nowhere else. A piece that leaves
                 // several loose names stacks them down and to the right, so that two
                 // parts of one item are both visible instead of exactly overlapping.
                 placed.forEach((name, i) => {
@@ -36288,10 +36667,8 @@ var $;
              */
             shelf_place(next) {
                 const source = next && this.shelf().item(next)?.source;
-                if (source) {
-                    const spot = this.canvas_center();
-                    this.preset_drop(source, spot[0], spot[1]);
-                }
+                if (source)
+                    this.preset_place(source);
                 return '';
             }
             /** Layout of a fresh artboard: the page of a desktop, stacked downwards. */
@@ -36335,7 +36712,7 @@ var $;
              * the layout change its own drop causes.
              */
             canvas_center() {
-                const rect = this.Pane().dom_node().getBoundingClientRect();
+                const rect = this.pane().pane_rect();
                 const shift = this.pane().camera_shift();
                 const zoom = this.pane().camera_zoom();
                 return [
@@ -36717,6 +37094,9 @@ var $;
         ], $bog_vmap_app.prototype, "part_ports", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app.prototype, "doc_names", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_app.prototype, "doc_containers", null);
         __decorate([
             $mol_mem_key
@@ -36730,6 +37110,12 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "preset_drop", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "preset_place", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "preset_apply", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "part_drop", null);
@@ -36776,6 +37162,15 @@ var $;
         $mol_style_define($bog_vmap_app, {
             flex: { direction: 'column' },
             height: '100vh',
+            /**
+             * The PAGE never scrolls; the panels scroll inside themselves.
+             *
+             * Without this a panel taller than the window pushed the document past
+             * `100vh`, the wheel over it moved the whole page, and the head bar — every
+             * button of the editor — went off the top of the screen. Seen on the deploy
+             * 09.09.2026 with the shelf open on a short window.
+             */
+            overflow: 'hidden',
             background: { color: $mol_theme.back },
             color: $mol_theme.text,
             Head: {
