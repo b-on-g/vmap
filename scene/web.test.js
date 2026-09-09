@@ -817,64 +817,6 @@ var $;
 ;
 "use strict";
 var $;
-(function ($_1) {
-    $mol_test({
-        'Collect deps'() {
-            const pub1 = new $mol_wire_pub;
-            const pub2 = new $mol_wire_pub;
-            const sub = new $mol_wire_pub_sub;
-            const bu1 = sub.track_on();
-            try {
-                pub1.promote();
-                pub2.promote();
-                pub2.promote();
-            }
-            finally {
-                sub.track_cut();
-                sub.track_off(bu1);
-            }
-            pub1.emit();
-            pub2.emit();
-            $mol_assert_like(sub.pub_list, [pub1, pub2, pub2]);
-            const bu2 = sub.track_on();
-            try {
-                pub1.promote();
-                pub1.promote();
-                pub2.promote();
-            }
-            finally {
-                sub.track_cut();
-                sub.track_off(bu2);
-            }
-            pub1.emit();
-            pub2.emit();
-            $mol_assert_like(sub.pub_list, [pub1, pub1, pub2]);
-        },
-        'cyclic detection'($) {
-            const sub1 = new $mol_wire_pub_sub;
-            const sub2 = new $mol_wire_pub_sub;
-            const bu1 = sub1.track_on();
-            try {
-                const bu2 = sub2.track_on();
-                try {
-                    $mol_assert_fail(() => sub1.promote(), 'Circular subscription');
-                }
-                finally {
-                    sub2.track_cut();
-                    sub2.track_off(bu2);
-                }
-            }
-            finally {
-                sub1.track_cut();
-                sub1.track_off(bu1);
-            }
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
 (function ($) {
     $mol_test({
         'get'() {
@@ -937,6 +879,664 @@ var $;
 
 ;
 "use strict";
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'span for same uri'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const child = span.span(4, 5, 8);
+            $mol_assert_equal(child.uri, 'test.ts');
+            $mol_assert_equal(child.row, 4);
+            $mol_assert_equal(child.col, 5);
+            $mol_assert_equal(child.length, 8);
+        },
+        'span after of given position'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const child = span.after(11);
+            $mol_assert_equal(child.uri, 'test.ts');
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 7);
+            $mol_assert_equal(child.length, 11);
+        },
+        'slice span - regular'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            const child = span.slice(1, 4);
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 4);
+            $mol_assert_equal(child.length, 3);
+            const child2 = span.slice(2, 2);
+            $mol_assert_equal(child2.col, 5);
+            $mol_assert_equal(child2.length, 0);
+        },
+        'slice span - negative'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            const child = span.slice(-3, -1);
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 5);
+            $mol_assert_equal(child.length, 2);
+        },
+        'slice span - out of range'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            $mol_assert_fail(() => span.slice(-1, 3), `End value '3' can't be less than begin value (test.ts#1:3/5)`);
+            $mol_assert_fail(() => span.slice(1, 6), `End value '6' out of range (test.ts#1:3/5)`);
+            $mol_assert_fail(() => span.slice(1, 10), `End value '10' out of range (test.ts#1:3/5)`);
+        },
+        'error handling'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const error = span.error('Some error');
+            $mol_assert_equal(error.message, 'Some error (test.ts#1:3/4)');
+        }
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'tree parsing'($) {
+            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids.length, 2);
+            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids[1].type, "bar");
+            $mol_assert_equal($.$mol_tree2_from_string("foo\n\n\n").kids.length, 1);
+            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids.length, 2);
+            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids[1].value, "bar");
+            $mol_assert_equal($.$mol_tree2_from_string("foo bar \\pol\n").kids[0].kids[0].kids[0].value, "pol");
+            $mol_assert_equal($.$mol_tree2_from_string("foo bar\n\t\\pol\n\t\\men\n").kids[0].kids[0].kids[1].value, "men");
+            $mol_assert_equal($.$mol_tree2_from_string('foo bar \\text\n').toString(), 'foo bar \\text\n');
+        },
+        'Too many tabs'($) {
+            const tree = `
+				foo
+						bar
+			`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Too many tabs\ntest#3:1/6\n!!!!!!\n\t\t\t\t\t\tbar');
+        },
+        'Too few tabs'($) {
+            const tree = `
+					foo
+				bar
+			`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Too few tabs\ntest#3:1/4\n!!!!\n\t\t\t\tbar');
+        },
+        'Wrong nodes separator at start'($) {
+            const tree = `foo\n \tbar\n`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Wrong nodes separator\ntest#2:1/2\n!!\n \tbar');
+        },
+        'Wrong nodes separator in the middle'($) {
+            const tree = `foo  bar\n`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar');
+        },
+        'Unexpected EOF, LF required'($) {
+            const tree = `	foo`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Unexpected EOF, LF required\ntest#1:5/1\n	   !\n	foo');
+        },
+        'Errors skip and collect'($) {
+            const tree = `foo  bar`;
+            const errors = [];
+            const $$ = $.$mol_ambient({
+                $mol_fail: (error) => {
+                    errors.push(error.message);
+                    return null;
+                }
+            });
+            const res = $$.$mol_tree2_from_string(tree, 'test');
+            $mol_assert_like(errors, [
+                'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar',
+                'Unexpected EOF, LF required\ntest#1:9/1\n        !\nfoo  bar',
+            ]);
+            $mol_assert_equal(res.toString(), 'foo bar\n');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'all cases of using maybe'() {
+            $mol_assert_equal($mol_maybe(0)[0], 0);
+            $mol_assert_equal($mol_maybe(false)[0], false);
+            $mol_assert_equal($mol_maybe(null)[0], void 0);
+            $mol_assert_equal($mol_maybe(void 0)[0], void 0);
+            $mol_assert_equal($mol_maybe(void 0).map(v => v.toString())[0], void 0);
+            $mol_assert_equal($mol_maybe(0).map(v => v.toString())[0], '0');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    function check(tree, ideal) {
+        $mol_assert_equal(tree.toString(), $$.$mol_tree2_from_string(ideal).toString());
+    }
+    $mol_test({
+        'inserting'($) {
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c'), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c', 'd'), `
+					a b c x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`)
+                .insert($mol_tree2.struct('x'), 0, 0, 0), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`)
+                .insert($mol_tree2.struct('x'), 0, 0, 0, 0), `
+					a b \\
+						x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`)
+                .insert($mol_tree2.struct('x'), null, null, null), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`)
+                .insert($mol_tree2.struct('x'), null, null, null, null), `
+					a b \\
+						x
+				`);
+        },
+        'updating'($) {
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([], 'a', 'b', 'c')[0], `
+					a b
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([$mol_tree2.struct('x')])[0], `
+					x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([$mol_tree2.struct('x'), $mol_tree2.struct('y')], 'a', 'b', 'c')[0], `
+					a b
+						x
+						y
+				`);
+        },
+        'deleting'($) {
+            const base = $.$mol_tree2_from_string(`
+				a b c d
+			`);
+            check(base.insert(null, 'a', 'b', 'c'), `
+					a b
+				`);
+            check(base.update(base.select('a', 'b', 'c', null).kids, 'a', 'b', 'c')[0], `
+					a b d
+				`);
+            check(base.insert(null, 0, 0, 0), `
+					a b
+				`);
+        },
+        'hack'($) {
+            const res = $.$mol_tree2_from_string(`
+				foo bar xxx
+			`)
+                .hack({
+                'bar': (input, belt) => [input.struct('777', input.hack(belt))],
+            });
+            $mol_assert_equal(res.map(String), ['foo 777 xxx\n']);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'escape'() {
+            const specials = $mol_regexp.from('.*+?^${}()|[]\\');
+            $mol_assert_equal(specials.source, '\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\');
+        },
+        'char code'() {
+            const space = $mol_regexp.from(32);
+            $mol_assert_like(' '.match(space), [' ']);
+        },
+        'repeat fixed'() {
+            const { repeat, decimal_only: digit } = $mol_regexp;
+            const year = repeat(digit, 4, 4);
+            $mol_assert_like('#2020#'.match(year), ['2020']);
+        },
+        'greedy repeat'() {
+            const { repeat, repeat_greedy, latin_only: letter } = $mol_regexp;
+            $mol_assert_like('abc'.match(repeat(letter, 1, 2)), ['a', 'b', 'c']);
+            $mol_assert_like('abc'.match(repeat_greedy(letter, 1, 2)), ['ab', 'c']);
+        },
+        'repeat range'() {
+            const { repeat_greedy, decimal_only: digit } = $mol_regexp;
+            const year = repeat_greedy(digit, 2, 4);
+            $mol_assert_like('#2#'.match(year), null);
+            $mol_assert_like('#20#'.match(year), ['20']);
+            $mol_assert_like('#2020#'.match(year), ['2020']);
+            $mol_assert_like('#20201#'.match(year), ['2020']);
+        },
+        'repeat from'() {
+            const { repeat_greedy, latin_only: letter } = $mol_regexp;
+            const name = repeat_greedy(letter, 2);
+            $mol_assert_like('##'.match(name), null);
+            $mol_assert_like('#a#'.match(name), null);
+            $mol_assert_like('#ab#'.match(name), ['ab']);
+            $mol_assert_like('#abc#'.match(name), ['abc']);
+        },
+        'from string'() {
+            const regexp = $mol_regexp.from('[\\d]');
+            $mol_assert_equal(regexp.source, '\\[\\\\d\\]');
+            $mol_assert_equal(regexp.flags, 'gsu');
+        },
+        'from regexp'() {
+            const regexp = $mol_regexp.from(/[\d]/i);
+            $mol_assert_equal(regexp.source, '[\\d]');
+            $mol_assert_equal(regexp.flags, 'i');
+        },
+        'split'() {
+            const regexp = $mol_regexp.from(';');
+            $mol_assert_like('aaa;bbb;ccc'.split(regexp), ['aaa', ';', 'bbb', ';', 'ccc']);
+            $mol_assert_like('aaa;;ccc'.split(regexp), ['aaa', ';', '', ';', 'ccc']);
+            $mol_assert_like('aaa'.split(regexp), ['aaa']);
+            $mol_assert_like(''.split(regexp), ['']);
+        },
+        'test for matching'() {
+            const regexp = $mol_regexp.from('foo');
+            $mol_assert_like(regexp.test(''), false);
+            $mol_assert_like(regexp.test('fo'), false);
+            $mol_assert_like(regexp.test('foo'), true);
+            $mol_assert_like(regexp.test('foobar'), true);
+            $mol_assert_like(regexp.test('barfoo'), true);
+        },
+        'case ignoring'() {
+            const xxx = $mol_regexp.from('x', { ignoreCase: true });
+            $mol_assert_like(xxx.flags, 'gisu');
+            $mol_assert_like(xxx.exec('xx')[0], 'x');
+            $mol_assert_like(xxx.exec('XX')[0], 'X');
+        },
+        'multiline mode'() {
+            const { end, from } = $mol_regexp;
+            const xxx = from(['x', end], { multiline: true });
+            $mol_assert_like(xxx.exec('x\ny')[0], 'x');
+            $mol_assert_like(xxx.flags, 'gmsu');
+        },
+        'flags override'() {
+            const triplet = $mol_regexp.from($mol_regexp.from(/.../, { ignoreCase: true }), { multiline: true });
+            $mol_assert_like(triplet.toString(), '/.../gmsu');
+        },
+        'sequence'() {
+            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
+            const year = repeat(digit, 4, 4);
+            const dash = '-';
+            const month = repeat(digit, 2, 2);
+            const day = repeat(digit, 2, 2);
+            const date = from([begin, year, dash, month, dash, day, end]);
+            $mol_assert_like(date.exec('2020-01-02')[0], '2020-01-02');
+        },
+        'optional'() {
+            const name = $mol_regexp.from(['A', ['4']]);
+            $mol_assert_equal('AB'.match(name)[0], 'A');
+            $mol_assert_equal('A4'.match(name)[0], 'A4');
+        },
+        'anon variants'() {
+            const name = $mol_regexp.from(['A', $mol_regexp.vary(['4', '5'])]);
+            $mol_assert_equal('AB'.match(name), null);
+            $mol_assert_equal('A4'.match(name)[0], 'A4');
+            $mol_assert_equal('A5'.match(name)[0], 'A5');
+        },
+        'only groups'() {
+            const regexp = $mol_regexp.from({ dog: '@' });
+            $mol_assert_like([...'#'.matchAll(regexp)][0].groups, undefined);
+            $mol_assert_like([...'@'.matchAll(regexp)][0].groups, { dog: '@' });
+        },
+        'catch skipped'() {
+            const regexp = $mol_regexp.from(/(@)(\d?)/g);
+            $mol_assert_like([...'[[@]]'.matchAll(regexp)].map(f => [...f]), [
+                ['[['],
+                ['@', '@', ''],
+                [']]'],
+            ]);
+        },
+        'enum variants'() {
+            let Sex;
+            (function (Sex) {
+                Sex["male"] = "male";
+                Sex["female"] = "female";
+            })(Sex || (Sex = {}));
+            const sexism = $mol_regexp.from(Sex);
+            $mol_assert_like([...''.matchAll(sexism)].length, 0);
+            $mol_assert_like([...'trans'.matchAll(sexism)][0].groups, undefined);
+            $mol_assert_like([...'male'.matchAll(sexism)][0].groups, { male: 'male', female: '' });
+            $mol_assert_like([...'female'.matchAll(sexism)][0].groups, { male: '', female: 'female' });
+        },
+        'recursive only groups'() {
+            let Sex;
+            (function (Sex) {
+                Sex["male"] = "male";
+                Sex["female"] = "female";
+            })(Sex || (Sex = {}));
+            const sexism = $mol_regexp.from({ Sex });
+            $mol_assert_like([...''.matchAll(sexism)].length, 0);
+            $mol_assert_like([...'male'.matchAll(sexism)][0].groups, { Sex: 'male', male: 'male', female: '' });
+            $mol_assert_like([...'female'.matchAll(sexism)][0].groups, { Sex: 'female', male: '', female: 'female' });
+        },
+        'sequence with groups'() {
+            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
+            const year = repeat(digit, 4, 4);
+            const dash = '-';
+            const month = repeat(digit, 2, 2);
+            const day = repeat(digit, 2, 2);
+            const regexp = from([begin, { year }, dash, { month }, dash, { day }, end]);
+            const found = [...'2020-01-02'.matchAll(regexp)];
+            $mol_assert_like(found[0].groups, {
+                year: '2020',
+                month: '01',
+                day: '02',
+            });
+        },
+        'sequence with groups of mixed type'() {
+            const prefix = '/';
+            const postfix = '/';
+            const regexp = $mol_regexp.from([{ prefix }, /(\w+)/, { postfix }, /([gumi]*)/]);
+            $mol_assert_like([...'/foo/mi'.matchAll(regexp)], [
+                Object.assign(["/foo/mi", "/", "foo", "/", "mi"], {
+                    groups: {
+                        prefix: '/',
+                        postfix: '/',
+                    },
+                    index: 0,
+                    input: "/",
+                }),
+            ]);
+        },
+        'recursive sequence with groups'() {
+            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
+            const year = repeat(digit, 4, 4);
+            const dash = '-';
+            const month = repeat(digit, 2, 2);
+            const day = repeat(digit, 2, 2);
+            const regexp = from([
+                begin, { date: [{ year }, dash, { month }] }, dash, { day }, end
+            ]);
+            const found = [...'2020-01-02'.matchAll(regexp)];
+            $mol_assert_like(found[0].groups, {
+                date: '2020-01',
+                year: '2020',
+                month: '01',
+                day: '02',
+            });
+        },
+        'parse multiple'() {
+            const { decimal_only: digit, from } = $mol_regexp;
+            const regexp = from({ digit });
+            $mol_assert_like([...'123'.matchAll(regexp)].map(f => f.groups), [
+                { digit: '1' },
+                { digit: '2' },
+                { digit: '3' },
+            ]);
+        },
+        'named variants'() {
+            const { begin, or, end, from } = $mol_regexp;
+            const sexism = from([
+                begin, 'sex = ', { sex: ['male', or, 'female'] }, end
+            ]);
+            $mol_assert_like([...'sex = male'.matchAll(sexism)][0].groups, { sex: 'male' });
+            $mol_assert_like([...'sex = female'.matchAll(sexism)][0].groups, { sex: 'female' });
+            $mol_assert_like([...'sex = malefemale'.matchAll(sexism)][0].groups, undefined);
+        },
+        'force after'() {
+            const { latin_only: letter, force_after, from } = $mol_regexp;
+            const regexp = from([letter, force_after('.')]);
+            $mol_assert_like('x.'.match(regexp), ['x']);
+            $mol_assert_like('x,'.match(regexp), null);
+        },
+        'forbid after'() {
+            const { latin_only: letter, forbid_after, from } = $mol_regexp;
+            const regexp = from([letter, forbid_after('.')]);
+            $mol_assert_like('x.'.match(regexp), null);
+            $mol_assert_like('x,'.match(regexp), ['x']);
+        },
+        'char except'() {
+            const { char_except, latin_only, tab } = $mol_regexp;
+            const name = char_except(latin_only, tab);
+            $mol_assert_like('a'.match(name), null);
+            $mol_assert_like('\t'.match(name), null);
+            $mol_assert_like('('.match(name), ['(']);
+        },
+        'unicode only'() {
+            const { unicode_only, from } = $mol_regexp;
+            const name = from([
+                unicode_only('Script', 'Cyrillic'),
+                unicode_only('Hex_Digit'),
+            ]);
+            $mol_assert_like('FF'.match(name), null);
+            $mol_assert_like('ФG'.match(name), null);
+            $mol_assert_like('ФF'.match(name), ['ФF']);
+        },
+        'generate by optional with inner group'() {
+            const { begin, end, from } = $mol_regexp;
+            const animals = from([begin, '#', ['^', { dog: '@' }], end]);
+            $mol_assert_equal(animals.generate({}), '#');
+            $mol_assert_equal(animals.generate({ dog: false }), '#');
+            $mol_assert_equal(animals.generate({ dog: true }), '#^@');
+            $mol_assert_fail(() => animals.generate({ dog: '$' }), 'Wrong param: dog=$');
+        },
+        'generate by optional with inner group with variants'() {
+            const { begin, end, from } = $mol_regexp;
+            const animals = from([begin, '#', ['^', { animal: { dog: '@', fox: '&' } }], end]);
+            $mol_assert_equal(animals.generate({}), '#');
+            $mol_assert_equal(animals.generate({ dog: true }), '#^@');
+            $mol_assert_equal(animals.generate({ fox: true }), '#^&');
+            $mol_assert_fail(() => animals.generate({ dog: '$' }), 'Wrong param: dog=$');
+        },
+        'complex example'() {
+            const { begin, end, char_only, char_range, latin_only, slash_back, repeat_greedy, from, } = $mol_regexp;
+            const atom_char = char_only(latin_only, "!#$%&'*+/=?^`{|}~-");
+            const atom = repeat_greedy(atom_char, 1);
+            const dot_atom = from([atom, repeat_greedy(['.', atom])]);
+            const name_letter = char_only(char_range(0x01, 0x08), 0x0b, 0x0c, char_range(0x0e, 0x1f), 0x21, char_range(0x23, 0x5b), char_range(0x5d, 0x7f));
+            const quoted_pair = from([
+                slash_back,
+                char_only(char_range(0x01, 0x09), 0x0b, 0x0c, char_range(0x0e, 0x7f))
+            ]);
+            const name = repeat_greedy({ name_letter, quoted_pair });
+            const quoted_name = from(['"', { name }, '"']);
+            const local_part = from({ dot_atom, quoted_name });
+            const domain = dot_atom;
+            const mail = from([begin, local_part, '@', { domain }, end]);
+            $mol_assert_equal('foo..bar@example.org'.match(mail), null);
+            $mol_assert_equal('foo..bar"@example.org'.match(mail), null);
+            $mol_assert_like([...'foo.bar@example.org'.matchAll(mail)][0].groups, {
+                dot_atom: "foo.bar",
+                quoted_name: "",
+                name: "",
+                name_letter: "",
+                quoted_pair: "",
+                domain: "example.org",
+            });
+            $mol_assert_like([...'"foo..bar"@example.org'.matchAll(mail)][0].groups, {
+                dot_atom: "",
+                quoted_name: '"foo..bar"',
+                name: "foo..bar",
+                name_letter: "r",
+                quoted_pair: "",
+                domain: "example.org",
+            });
+            $mol_assert_equal(mail.generate({ dot_atom: 'foo.bar', domain: 'example.org' }), 'foo.bar@example.org');
+            $mol_assert_equal(mail.generate({ name: 'foo..bar', domain: 'example.org' }), '"foo..bar"@example.org');
+            $mol_assert_fail(() => mail.generate({ dot_atom: 'foo..bar', domain: 'example.org' }), 'Wrong param: dot_atom=foo..bar');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    function get_parts(str) {
+        return $$.$mol_view_tree2_prop_parts($mol_tree2.struct(str));
+    }
+    $mol_test({
+        'wrong order'($) {
+            $mol_assert_fail(() => {
+                get_parts('some_bla?*');
+            }, 'Required prop like some*? at `?#1:1/0`');
+        },
+        'empty'($) {
+            $mol_assert_fail(() => {
+                get_parts('');
+            }, 'Required prop like some*? at `?#1:1/0`');
+        },
+        'prop in upper case'($) {
+            const parts = get_parts('Close_icon');
+            $mol_assert_equal(parts.name, 'Close_icon');
+            $mol_assert_equal(parts.key, '');
+            $mol_assert_equal(parts.next, '');
+        },
+        'prop with index'($) {
+            const parts = get_parts('some_bla*');
+            $mol_assert_equal(parts.name, 'some_bla');
+            $mol_assert_equal(parts.key, '*');
+            $mol_assert_equal(parts.next, '');
+        },
+        'prop with index and value'($) {
+            const parts = get_parts('some_bla*?');
+            $mol_assert_equal(parts.name, 'some_bla');
+            $mol_assert_equal(parts.key, '*');
+            $mol_assert_equal(parts.next, '?');
+        },
+        'legacy indexed'($) {
+            const parts = get_parts('Some*default');
+            $mol_assert_equal(parts.name, 'Some');
+            $mol_assert_equal(parts.key, '*default');
+            $mol_assert_equal(parts.next, '');
+        },
+        'legacy indexed value'($) {
+            const parts = get_parts('Some*k?v');
+            $mol_assert_equal(parts.name, 'Some');
+            $mol_assert_equal(parts.key, '*k');
+            $mol_assert_equal(parts.next, '?');
+        }
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'init with overload'() {
+            class X extends $mol_object {
+                foo() {
+                    return 1;
+                }
+            }
+            var x = X.make({
+                foo: () => 2,
+            });
+            $mol_assert_equal(x.foo(), 2);
+        },
+        'Context in instance inherits from class'($) {
+            const custom = $.$mol_ambient({});
+            class X extends $.$mol_object {
+                static $ = custom;
+            }
+            $mol_assert_equal(new X().$, custom);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'Collect deps'() {
+            const pub1 = new $mol_wire_pub;
+            const pub2 = new $mol_wire_pub;
+            const sub = new $mol_wire_pub_sub;
+            const bu1 = sub.track_on();
+            try {
+                pub1.promote();
+                pub2.promote();
+                pub2.promote();
+            }
+            finally {
+                sub.track_cut();
+                sub.track_off(bu1);
+            }
+            pub1.emit();
+            pub2.emit();
+            $mol_assert_like(sub.pub_list, [pub1, pub2, pub2]);
+            const bu2 = sub.track_on();
+            try {
+                pub1.promote();
+                pub1.promote();
+                pub2.promote();
+            }
+            finally {
+                sub.track_cut();
+                sub.track_off(bu2);
+            }
+            pub1.emit();
+            pub2.emit();
+            $mol_assert_like(sub.pub_list, [pub1, pub1, pub2]);
+        },
+        'cyclic detection'($) {
+            const sub1 = new $mol_wire_pub_sub;
+            const sub2 = new $mol_wire_pub_sub;
+            const bu1 = sub1.track_on();
+            try {
+                const bu2 = sub2.track_on();
+                try {
+                    $mol_assert_fail(() => sub1.promote(), 'Circular subscription');
+                }
+                finally {
+                    sub2.track_cut();
+                    sub2.track_off(bu2);
+                }
+            }
+            finally {
+                sub1.track_cut();
+                sub1.track_off(bu1);
+            }
+        },
+    });
+})($ || ($ = {}));
 
 ;
 "use strict";
@@ -1070,110 +1670,6 @@ var $;
 
 ;
 "use strict";
-/** @jsx $mol_jsx */
-var $;
-(function ($) {
-    $mol_test({
-        'Primitives'() {
-            $mol_assert_equal($mol_key(null), 'null');
-            $mol_assert_equal($mol_key(false), 'false');
-            $mol_assert_equal($mol_key(true), 'true');
-            $mol_assert_equal($mol_key(0), '0');
-            $mol_assert_equal($mol_key(1n << 64n), '18446744073709551616n');
-            $mol_assert_equal($mol_key(''), '""');
-        },
-        'Array & POJO'() {
-            $mol_assert_equal($mol_key([null]), '[null]');
-            $mol_assert_equal($mol_key({ foo: 0 }), '{"foo":0}');
-            $mol_assert_equal($mol_key({ foo: [false] }), '{"foo":[false]}');
-        },
-        'Uint8Array'() {
-            $mol_assert_equal($mol_key(new Uint8Array([1, 2])), 'Uint8Array([1,2])');
-            $mol_assert_equal($mol_key([new Uint8Array([1, 2])]), '[Uint8Array([1,2])]');
-            $mol_assert_equal($mol_key({ foo: new Uint8Array([1, 2]) }), '{"foo":Uint8Array([1,2])}');
-        },
-        'Function'() {
-            const func = () => { };
-            $mol_assert_equal($mol_key(func), $mol_key(func));
-            $mol_assert_unique($mol_key(func), $mol_key(() => { }));
-        },
-        'Objects'() {
-            class User {
-            }
-            const jin = new User();
-            $mol_assert_equal($mol_key(jin), $mol_key(jin));
-            $mol_assert_unique($mol_key(jin), $mol_key(new User()));
-        },
-        'Elements'() {
-            const foo = $mol_jsx("div", null, "bar");
-            $mol_assert_equal($mol_key(foo), $mol_key(foo));
-            $mol_assert_unique($mol_key(foo), $mol_key($mol_jsx("div", null, "bar")));
-        },
-        'Custom JSON representation'() {
-            class User {
-                toJSON() { return 'jin'; }
-            }
-            $mol_assert_unique([$mol_key(new User)], [$mol_key(new User)]);
-        },
-        'Custom key handler'() {
-            class User {
-                name;
-                age;
-                constructor(name, age) {
-                    this.name = name;
-                    this.age = age;
-                }
-                [$mol_key_handle]() { return `User(${JSON.stringify(this.name)})`; }
-            }
-            $mol_assert_equal($mol_key([new User('jin', 16)]), $mol_key([new User('jin', 18)]), '[User("jin")]');
-        },
-        'Special native classes'() {
-            $mol_assert_equal($mol_key(new Date('xyz')), 'Date(NaN)');
-            $mol_assert_equal($mol_key(new Date(12345)), 'Date(12345)');
-            $mol_assert_equal($mol_key(/./), '/./');
-            $mol_assert_equal($mol_key(/\./gimsu), '/\\./gimsu');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test_mocks.push($ => {
-        $.$mol_after_frame = $mol_after_mock_commmon;
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'return result without errors'() {
-            $mol_assert_equal($mol_try(() => false), false);
-        },
-        //'return error if thrown'() {
-        //	
-        //	const error = new Error( '$mol_try test error' )
-        //	$mol_assert_equal( $mol_try( ()=> { throw error } ) , error )
-        //	
-        //} ,
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test_mocks.push($ => $.$mol_fail_log = () => false);
-})($ || ($ = {}));
 
 ;
 "use strict";
@@ -2041,6 +2537,110 @@ var $;
 
 ;
 "use strict";
+/** @jsx $mol_jsx */
+var $;
+(function ($) {
+    $mol_test({
+        'Primitives'() {
+            $mol_assert_equal($mol_key(null), 'null');
+            $mol_assert_equal($mol_key(false), 'false');
+            $mol_assert_equal($mol_key(true), 'true');
+            $mol_assert_equal($mol_key(0), '0');
+            $mol_assert_equal($mol_key(1n << 64n), '18446744073709551616n');
+            $mol_assert_equal($mol_key(''), '""');
+        },
+        'Array & POJO'() {
+            $mol_assert_equal($mol_key([null]), '[null]');
+            $mol_assert_equal($mol_key({ foo: 0 }), '{"foo":0}');
+            $mol_assert_equal($mol_key({ foo: [false] }), '{"foo":[false]}');
+        },
+        'Uint8Array'() {
+            $mol_assert_equal($mol_key(new Uint8Array([1, 2])), 'Uint8Array([1,2])');
+            $mol_assert_equal($mol_key([new Uint8Array([1, 2])]), '[Uint8Array([1,2])]');
+            $mol_assert_equal($mol_key({ foo: new Uint8Array([1, 2]) }), '{"foo":Uint8Array([1,2])}');
+        },
+        'Function'() {
+            const func = () => { };
+            $mol_assert_equal($mol_key(func), $mol_key(func));
+            $mol_assert_unique($mol_key(func), $mol_key(() => { }));
+        },
+        'Objects'() {
+            class User {
+            }
+            const jin = new User();
+            $mol_assert_equal($mol_key(jin), $mol_key(jin));
+            $mol_assert_unique($mol_key(jin), $mol_key(new User()));
+        },
+        'Elements'() {
+            const foo = $mol_jsx("div", null, "bar");
+            $mol_assert_equal($mol_key(foo), $mol_key(foo));
+            $mol_assert_unique($mol_key(foo), $mol_key($mol_jsx("div", null, "bar")));
+        },
+        'Custom JSON representation'() {
+            class User {
+                toJSON() { return 'jin'; }
+            }
+            $mol_assert_unique([$mol_key(new User)], [$mol_key(new User)]);
+        },
+        'Custom key handler'() {
+            class User {
+                name;
+                age;
+                constructor(name, age) {
+                    this.name = name;
+                    this.age = age;
+                }
+                [$mol_key_handle]() { return `User(${JSON.stringify(this.name)})`; }
+            }
+            $mol_assert_equal($mol_key([new User('jin', 16)]), $mol_key([new User('jin', 18)]), '[User("jin")]');
+        },
+        'Special native classes'() {
+            $mol_assert_equal($mol_key(new Date('xyz')), 'Date(NaN)');
+            $mol_assert_equal($mol_key(new Date(12345)), 'Date(12345)');
+            $mol_assert_equal($mol_key(/./), '/./');
+            $mol_assert_equal($mol_key(/\./gimsu), '/\\./gimsu');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test_mocks.push($ => {
+        $.$mol_after_frame = $mol_after_mock_commmon;
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'return result without errors'() {
+            $mol_assert_equal($mol_try(() => false), false);
+        },
+        //'return error if thrown'() {
+        //	
+        //	const error = new Error( '$mol_try test error' )
+        //	$mol_assert_equal( $mol_try( ()=> { throw error } ) , error )
+        //	
+        //} ,
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test_mocks.push($ => $.$mol_fail_log = () => false);
+})($ || ($ = {}));
+
+;
+"use strict";
 var $;
 (function ($) {
     /** Watch and logs reactive states. Logger automatically added to test bundle which is adding to `test.html`. */
@@ -2111,606 +2711,6 @@ var $;
 var $;
 (function ($) {
     $mol_wire_log.active();
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'span for same uri'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const child = span.span(4, 5, 8);
-            $mol_assert_equal(child.uri, 'test.ts');
-            $mol_assert_equal(child.row, 4);
-            $mol_assert_equal(child.col, 5);
-            $mol_assert_equal(child.length, 8);
-        },
-        'span after of given position'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const child = span.after(11);
-            $mol_assert_equal(child.uri, 'test.ts');
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 7);
-            $mol_assert_equal(child.length, 11);
-        },
-        'slice span - regular'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            const child = span.slice(1, 4);
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 4);
-            $mol_assert_equal(child.length, 3);
-            const child2 = span.slice(2, 2);
-            $mol_assert_equal(child2.col, 5);
-            $mol_assert_equal(child2.length, 0);
-        },
-        'slice span - negative'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            const child = span.slice(-3, -1);
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 5);
-            $mol_assert_equal(child.length, 2);
-        },
-        'slice span - out of range'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            $mol_assert_fail(() => span.slice(-1, 3), `End value '3' can't be less than begin value (test.ts#1:3/5)`);
-            $mol_assert_fail(() => span.slice(1, 6), `End value '6' out of range (test.ts#1:3/5)`);
-            $mol_assert_fail(() => span.slice(1, 10), `End value '10' out of range (test.ts#1:3/5)`);
-        },
-        'error handling'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const error = span.error('Some error');
-            $mol_assert_equal(error.message, 'Some error (test.ts#1:3/4)');
-        }
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'tree parsing'($) {
-            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids.length, 2);
-            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids[1].type, "bar");
-            $mol_assert_equal($.$mol_tree2_from_string("foo\n\n\n").kids.length, 1);
-            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids.length, 2);
-            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids[1].value, "bar");
-            $mol_assert_equal($.$mol_tree2_from_string("foo bar \\pol\n").kids[0].kids[0].kids[0].value, "pol");
-            $mol_assert_equal($.$mol_tree2_from_string("foo bar\n\t\\pol\n\t\\men\n").kids[0].kids[0].kids[1].value, "men");
-            $mol_assert_equal($.$mol_tree2_from_string('foo bar \\text\n').toString(), 'foo bar \\text\n');
-        },
-        'Too many tabs'($) {
-            const tree = `
-				foo
-						bar
-			`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Too many tabs\ntest#3:1/6\n!!!!!!\n\t\t\t\t\t\tbar');
-        },
-        'Too few tabs'($) {
-            const tree = `
-					foo
-				bar
-			`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Too few tabs\ntest#3:1/4\n!!!!\n\t\t\t\tbar');
-        },
-        'Wrong nodes separator at start'($) {
-            const tree = `foo\n \tbar\n`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Wrong nodes separator\ntest#2:1/2\n!!\n \tbar');
-        },
-        'Wrong nodes separator in the middle'($) {
-            const tree = `foo  bar\n`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar');
-        },
-        'Unexpected EOF, LF required'($) {
-            const tree = `	foo`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Unexpected EOF, LF required\ntest#1:5/1\n	   !\n	foo');
-        },
-        'Errors skip and collect'($) {
-            const tree = `foo  bar`;
-            const errors = [];
-            const $$ = $.$mol_ambient({
-                $mol_fail: (error) => {
-                    errors.push(error.message);
-                    return null;
-                }
-            });
-            const res = $$.$mol_tree2_from_string(tree, 'test');
-            $mol_assert_like(errors, [
-                'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar',
-                'Unexpected EOF, LF required\ntest#1:9/1\n        !\nfoo  bar',
-            ]);
-            $mol_assert_equal(res.toString(), 'foo bar\n');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'all cases of using maybe'() {
-            $mol_assert_equal($mol_maybe(0)[0], 0);
-            $mol_assert_equal($mol_maybe(false)[0], false);
-            $mol_assert_equal($mol_maybe(null)[0], void 0);
-            $mol_assert_equal($mol_maybe(void 0)[0], void 0);
-            $mol_assert_equal($mol_maybe(void 0).map(v => v.toString())[0], void 0);
-            $mol_assert_equal($mol_maybe(0).map(v => v.toString())[0], '0');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    function check(tree, ideal) {
-        $mol_assert_equal(tree.toString(), $$.$mol_tree2_from_string(ideal).toString());
-    }
-    $mol_test({
-        'inserting'($) {
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c'), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c', 'd'), `
-					a b c x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`)
-                .insert($mol_tree2.struct('x'), 0, 0, 0), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`)
-                .insert($mol_tree2.struct('x'), 0, 0, 0, 0), `
-					a b \\
-						x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`)
-                .insert($mol_tree2.struct('x'), null, null, null), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`)
-                .insert($mol_tree2.struct('x'), null, null, null, null), `
-					a b \\
-						x
-				`);
-        },
-        'updating'($) {
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([], 'a', 'b', 'c')[0], `
-					a b
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([$mol_tree2.struct('x')])[0], `
-					x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([$mol_tree2.struct('x'), $mol_tree2.struct('y')], 'a', 'b', 'c')[0], `
-					a b
-						x
-						y
-				`);
-        },
-        'deleting'($) {
-            const base = $.$mol_tree2_from_string(`
-				a b c d
-			`);
-            check(base.insert(null, 'a', 'b', 'c'), `
-					a b
-				`);
-            check(base.update(base.select('a', 'b', 'c', null).kids, 'a', 'b', 'c')[0], `
-					a b d
-				`);
-            check(base.insert(null, 0, 0, 0), `
-					a b
-				`);
-        },
-        'hack'($) {
-            const res = $.$mol_tree2_from_string(`
-				foo bar xxx
-			`)
-                .hack({
-                'bar': (input, belt) => [input.struct('777', input.hack(belt))],
-            });
-            $mol_assert_equal(res.map(String), ['foo 777 xxx\n']);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'escape'() {
-            const specials = $mol_regexp.from('.*+?^${}()|[]\\');
-            $mol_assert_equal(specials.source, '\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\');
-        },
-        'char code'() {
-            const space = $mol_regexp.from(32);
-            $mol_assert_like(' '.match(space), [' ']);
-        },
-        'repeat fixed'() {
-            const { repeat, decimal_only: digit } = $mol_regexp;
-            const year = repeat(digit, 4, 4);
-            $mol_assert_like('#2020#'.match(year), ['2020']);
-        },
-        'greedy repeat'() {
-            const { repeat, repeat_greedy, latin_only: letter } = $mol_regexp;
-            $mol_assert_like('abc'.match(repeat(letter, 1, 2)), ['a', 'b', 'c']);
-            $mol_assert_like('abc'.match(repeat_greedy(letter, 1, 2)), ['ab', 'c']);
-        },
-        'repeat range'() {
-            const { repeat_greedy, decimal_only: digit } = $mol_regexp;
-            const year = repeat_greedy(digit, 2, 4);
-            $mol_assert_like('#2#'.match(year), null);
-            $mol_assert_like('#20#'.match(year), ['20']);
-            $mol_assert_like('#2020#'.match(year), ['2020']);
-            $mol_assert_like('#20201#'.match(year), ['2020']);
-        },
-        'repeat from'() {
-            const { repeat_greedy, latin_only: letter } = $mol_regexp;
-            const name = repeat_greedy(letter, 2);
-            $mol_assert_like('##'.match(name), null);
-            $mol_assert_like('#a#'.match(name), null);
-            $mol_assert_like('#ab#'.match(name), ['ab']);
-            $mol_assert_like('#abc#'.match(name), ['abc']);
-        },
-        'from string'() {
-            const regexp = $mol_regexp.from('[\\d]');
-            $mol_assert_equal(regexp.source, '\\[\\\\d\\]');
-            $mol_assert_equal(regexp.flags, 'gsu');
-        },
-        'from regexp'() {
-            const regexp = $mol_regexp.from(/[\d]/i);
-            $mol_assert_equal(regexp.source, '[\\d]');
-            $mol_assert_equal(regexp.flags, 'i');
-        },
-        'split'() {
-            const regexp = $mol_regexp.from(';');
-            $mol_assert_like('aaa;bbb;ccc'.split(regexp), ['aaa', ';', 'bbb', ';', 'ccc']);
-            $mol_assert_like('aaa;;ccc'.split(regexp), ['aaa', ';', '', ';', 'ccc']);
-            $mol_assert_like('aaa'.split(regexp), ['aaa']);
-            $mol_assert_like(''.split(regexp), ['']);
-        },
-        'test for matching'() {
-            const regexp = $mol_regexp.from('foo');
-            $mol_assert_like(regexp.test(''), false);
-            $mol_assert_like(regexp.test('fo'), false);
-            $mol_assert_like(regexp.test('foo'), true);
-            $mol_assert_like(regexp.test('foobar'), true);
-            $mol_assert_like(regexp.test('barfoo'), true);
-        },
-        'case ignoring'() {
-            const xxx = $mol_regexp.from('x', { ignoreCase: true });
-            $mol_assert_like(xxx.flags, 'gisu');
-            $mol_assert_like(xxx.exec('xx')[0], 'x');
-            $mol_assert_like(xxx.exec('XX')[0], 'X');
-        },
-        'multiline mode'() {
-            const { end, from } = $mol_regexp;
-            const xxx = from(['x', end], { multiline: true });
-            $mol_assert_like(xxx.exec('x\ny')[0], 'x');
-            $mol_assert_like(xxx.flags, 'gmsu');
-        },
-        'flags override'() {
-            const triplet = $mol_regexp.from($mol_regexp.from(/.../, { ignoreCase: true }), { multiline: true });
-            $mol_assert_like(triplet.toString(), '/.../gmsu');
-        },
-        'sequence'() {
-            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
-            const year = repeat(digit, 4, 4);
-            const dash = '-';
-            const month = repeat(digit, 2, 2);
-            const day = repeat(digit, 2, 2);
-            const date = from([begin, year, dash, month, dash, day, end]);
-            $mol_assert_like(date.exec('2020-01-02')[0], '2020-01-02');
-        },
-        'optional'() {
-            const name = $mol_regexp.from(['A', ['4']]);
-            $mol_assert_equal('AB'.match(name)[0], 'A');
-            $mol_assert_equal('A4'.match(name)[0], 'A4');
-        },
-        'anon variants'() {
-            const name = $mol_regexp.from(['A', $mol_regexp.vary(['4', '5'])]);
-            $mol_assert_equal('AB'.match(name), null);
-            $mol_assert_equal('A4'.match(name)[0], 'A4');
-            $mol_assert_equal('A5'.match(name)[0], 'A5');
-        },
-        'only groups'() {
-            const regexp = $mol_regexp.from({ dog: '@' });
-            $mol_assert_like([...'#'.matchAll(regexp)][0].groups, undefined);
-            $mol_assert_like([...'@'.matchAll(regexp)][0].groups, { dog: '@' });
-        },
-        'catch skipped'() {
-            const regexp = $mol_regexp.from(/(@)(\d?)/g);
-            $mol_assert_like([...'[[@]]'.matchAll(regexp)].map(f => [...f]), [
-                ['[['],
-                ['@', '@', ''],
-                [']]'],
-            ]);
-        },
-        'enum variants'() {
-            let Sex;
-            (function (Sex) {
-                Sex["male"] = "male";
-                Sex["female"] = "female";
-            })(Sex || (Sex = {}));
-            const sexism = $mol_regexp.from(Sex);
-            $mol_assert_like([...''.matchAll(sexism)].length, 0);
-            $mol_assert_like([...'trans'.matchAll(sexism)][0].groups, undefined);
-            $mol_assert_like([...'male'.matchAll(sexism)][0].groups, { male: 'male', female: '' });
-            $mol_assert_like([...'female'.matchAll(sexism)][0].groups, { male: '', female: 'female' });
-        },
-        'recursive only groups'() {
-            let Sex;
-            (function (Sex) {
-                Sex["male"] = "male";
-                Sex["female"] = "female";
-            })(Sex || (Sex = {}));
-            const sexism = $mol_regexp.from({ Sex });
-            $mol_assert_like([...''.matchAll(sexism)].length, 0);
-            $mol_assert_like([...'male'.matchAll(sexism)][0].groups, { Sex: 'male', male: 'male', female: '' });
-            $mol_assert_like([...'female'.matchAll(sexism)][0].groups, { Sex: 'female', male: '', female: 'female' });
-        },
-        'sequence with groups'() {
-            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
-            const year = repeat(digit, 4, 4);
-            const dash = '-';
-            const month = repeat(digit, 2, 2);
-            const day = repeat(digit, 2, 2);
-            const regexp = from([begin, { year }, dash, { month }, dash, { day }, end]);
-            const found = [...'2020-01-02'.matchAll(regexp)];
-            $mol_assert_like(found[0].groups, {
-                year: '2020',
-                month: '01',
-                day: '02',
-            });
-        },
-        'sequence with groups of mixed type'() {
-            const prefix = '/';
-            const postfix = '/';
-            const regexp = $mol_regexp.from([{ prefix }, /(\w+)/, { postfix }, /([gumi]*)/]);
-            $mol_assert_like([...'/foo/mi'.matchAll(regexp)], [
-                Object.assign(["/foo/mi", "/", "foo", "/", "mi"], {
-                    groups: {
-                        prefix: '/',
-                        postfix: '/',
-                    },
-                    index: 0,
-                    input: "/",
-                }),
-            ]);
-        },
-        'recursive sequence with groups'() {
-            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
-            const year = repeat(digit, 4, 4);
-            const dash = '-';
-            const month = repeat(digit, 2, 2);
-            const day = repeat(digit, 2, 2);
-            const regexp = from([
-                begin, { date: [{ year }, dash, { month }] }, dash, { day }, end
-            ]);
-            const found = [...'2020-01-02'.matchAll(regexp)];
-            $mol_assert_like(found[0].groups, {
-                date: '2020-01',
-                year: '2020',
-                month: '01',
-                day: '02',
-            });
-        },
-        'parse multiple'() {
-            const { decimal_only: digit, from } = $mol_regexp;
-            const regexp = from({ digit });
-            $mol_assert_like([...'123'.matchAll(regexp)].map(f => f.groups), [
-                { digit: '1' },
-                { digit: '2' },
-                { digit: '3' },
-            ]);
-        },
-        'named variants'() {
-            const { begin, or, end, from } = $mol_regexp;
-            const sexism = from([
-                begin, 'sex = ', { sex: ['male', or, 'female'] }, end
-            ]);
-            $mol_assert_like([...'sex = male'.matchAll(sexism)][0].groups, { sex: 'male' });
-            $mol_assert_like([...'sex = female'.matchAll(sexism)][0].groups, { sex: 'female' });
-            $mol_assert_like([...'sex = malefemale'.matchAll(sexism)][0].groups, undefined);
-        },
-        'force after'() {
-            const { latin_only: letter, force_after, from } = $mol_regexp;
-            const regexp = from([letter, force_after('.')]);
-            $mol_assert_like('x.'.match(regexp), ['x']);
-            $mol_assert_like('x,'.match(regexp), null);
-        },
-        'forbid after'() {
-            const { latin_only: letter, forbid_after, from } = $mol_regexp;
-            const regexp = from([letter, forbid_after('.')]);
-            $mol_assert_like('x.'.match(regexp), null);
-            $mol_assert_like('x,'.match(regexp), ['x']);
-        },
-        'char except'() {
-            const { char_except, latin_only, tab } = $mol_regexp;
-            const name = char_except(latin_only, tab);
-            $mol_assert_like('a'.match(name), null);
-            $mol_assert_like('\t'.match(name), null);
-            $mol_assert_like('('.match(name), ['(']);
-        },
-        'unicode only'() {
-            const { unicode_only, from } = $mol_regexp;
-            const name = from([
-                unicode_only('Script', 'Cyrillic'),
-                unicode_only('Hex_Digit'),
-            ]);
-            $mol_assert_like('FF'.match(name), null);
-            $mol_assert_like('ФG'.match(name), null);
-            $mol_assert_like('ФF'.match(name), ['ФF']);
-        },
-        'generate by optional with inner group'() {
-            const { begin, end, from } = $mol_regexp;
-            const animals = from([begin, '#', ['^', { dog: '@' }], end]);
-            $mol_assert_equal(animals.generate({}), '#');
-            $mol_assert_equal(animals.generate({ dog: false }), '#');
-            $mol_assert_equal(animals.generate({ dog: true }), '#^@');
-            $mol_assert_fail(() => animals.generate({ dog: '$' }), 'Wrong param: dog=$');
-        },
-        'generate by optional with inner group with variants'() {
-            const { begin, end, from } = $mol_regexp;
-            const animals = from([begin, '#', ['^', { animal: { dog: '@', fox: '&' } }], end]);
-            $mol_assert_equal(animals.generate({}), '#');
-            $mol_assert_equal(animals.generate({ dog: true }), '#^@');
-            $mol_assert_equal(animals.generate({ fox: true }), '#^&');
-            $mol_assert_fail(() => animals.generate({ dog: '$' }), 'Wrong param: dog=$');
-        },
-        'complex example'() {
-            const { begin, end, char_only, char_range, latin_only, slash_back, repeat_greedy, from, } = $mol_regexp;
-            const atom_char = char_only(latin_only, "!#$%&'*+/=?^`{|}~-");
-            const atom = repeat_greedy(atom_char, 1);
-            const dot_atom = from([atom, repeat_greedy(['.', atom])]);
-            const name_letter = char_only(char_range(0x01, 0x08), 0x0b, 0x0c, char_range(0x0e, 0x1f), 0x21, char_range(0x23, 0x5b), char_range(0x5d, 0x7f));
-            const quoted_pair = from([
-                slash_back,
-                char_only(char_range(0x01, 0x09), 0x0b, 0x0c, char_range(0x0e, 0x7f))
-            ]);
-            const name = repeat_greedy({ name_letter, quoted_pair });
-            const quoted_name = from(['"', { name }, '"']);
-            const local_part = from({ dot_atom, quoted_name });
-            const domain = dot_atom;
-            const mail = from([begin, local_part, '@', { domain }, end]);
-            $mol_assert_equal('foo..bar@example.org'.match(mail), null);
-            $mol_assert_equal('foo..bar"@example.org'.match(mail), null);
-            $mol_assert_like([...'foo.bar@example.org'.matchAll(mail)][0].groups, {
-                dot_atom: "foo.bar",
-                quoted_name: "",
-                name: "",
-                name_letter: "",
-                quoted_pair: "",
-                domain: "example.org",
-            });
-            $mol_assert_like([...'"foo..bar"@example.org'.matchAll(mail)][0].groups, {
-                dot_atom: "",
-                quoted_name: '"foo..bar"',
-                name: "foo..bar",
-                name_letter: "r",
-                quoted_pair: "",
-                domain: "example.org",
-            });
-            $mol_assert_equal(mail.generate({ dot_atom: 'foo.bar', domain: 'example.org' }), 'foo.bar@example.org');
-            $mol_assert_equal(mail.generate({ name: 'foo..bar', domain: 'example.org' }), '"foo..bar"@example.org');
-            $mol_assert_fail(() => mail.generate({ dot_atom: 'foo..bar', domain: 'example.org' }), 'Wrong param: dot_atom=foo..bar');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    function get_parts(str) {
-        return $$.$mol_view_tree2_prop_parts($mol_tree2.struct(str));
-    }
-    $mol_test({
-        'wrong order'($) {
-            $mol_assert_fail(() => {
-                get_parts('some_bla?*');
-            }, 'Required prop like some*? at `?#1:1/0`');
-        },
-        'empty'($) {
-            $mol_assert_fail(() => {
-                get_parts('');
-            }, 'Required prop like some*? at `?#1:1/0`');
-        },
-        'prop in upper case'($) {
-            const parts = get_parts('Close_icon');
-            $mol_assert_equal(parts.name, 'Close_icon');
-            $mol_assert_equal(parts.key, '');
-            $mol_assert_equal(parts.next, '');
-        },
-        'prop with index'($) {
-            const parts = get_parts('some_bla*');
-            $mol_assert_equal(parts.name, 'some_bla');
-            $mol_assert_equal(parts.key, '*');
-            $mol_assert_equal(parts.next, '');
-        },
-        'prop with index and value'($) {
-            const parts = get_parts('some_bla*?');
-            $mol_assert_equal(parts.name, 'some_bla');
-            $mol_assert_equal(parts.key, '*');
-            $mol_assert_equal(parts.next, '?');
-        },
-        'legacy indexed'($) {
-            const parts = get_parts('Some*default');
-            $mol_assert_equal(parts.name, 'Some');
-            $mol_assert_equal(parts.key, '*default');
-            $mol_assert_equal(parts.next, '');
-        },
-        'legacy indexed value'($) {
-            const parts = get_parts('Some*k?v');
-            $mol_assert_equal(parts.name, 'Some');
-            $mol_assert_equal(parts.key, '*k');
-            $mol_assert_equal(parts.next, '?');
-        }
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'init with overload'() {
-            class X extends $mol_object {
-                foo() {
-                    return 1;
-                }
-            }
-            var x = X.make({
-                foo: () => 2,
-            });
-            $mol_assert_equal(x.foo(), 2);
-        },
-        'Context in instance inherits from class'($) {
-            const custom = $.$mol_ambient({});
-            class X extends $.$mol_object {
-                static $ = custom;
-            }
-            $mol_assert_equal(new X().$, custom);
-        },
-    });
 })($ || ($ = {}));
 
 ;
@@ -6970,6 +6970,49 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
+    $mol_test({
+        /**
+         * The rule the hot swap depends on: a zero argument method is a cell whether
+         * or not the tree knows it. One with arguments is left alone, because a cell
+         * would take its first argument for a write, and an async one too.
+         */
+        'zero argument methods of a body become cells, the rest stay methods'($) {
+            class Probe {
+                count = 0;
+                plain() { return ++this.count; }
+                with_arg(x) { return x; }
+                async later() { return 1; }
+            }
+            $bog_vmap_scene_cells(Probe, [], []);
+            const probe = new Probe;
+            $mol_assert_equal(probe.plain(), 1);
+            $mol_assert_equal(probe.plain(), 1);
+            $mol_assert_ok(Reflect.get(probe, 'plain()'));
+            $mol_assert_equal(probe.with_arg(5), 5);
+            $mol_assert_equal(Reflect.get(probe, 'with_arg()'), undefined);
+            $mol_assert_ok($mol_promise_like(probe.later()));
+            $mol_assert_equal(Reflect.get(probe, 'later()'), undefined);
+        },
+        /** What the tree declares keyed or changeable is decorated as such, arguments or not. */
+        'the tree decides for keyed and changeable methods'($) {
+            class Probe {
+                row(id) { return id; }
+                note(next) { return next ?? ''; }
+            }
+            $bog_vmap_scene_cells(Probe, ['row'], ['note']);
+            const probe = new Probe;
+            $mol_assert_equal(probe.row('a'), 'a');
+            $mol_assert_ok(Reflect.get(probe, 'row()') instanceof Map);
+            $mol_assert_equal(probe.note('typed'), 'typed');
+            $mol_assert_equal(probe.note(), 'typed');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
     /**
      * Tests of the measurement walk and of what it hands the observer.
      *
@@ -7443,484 +7486,6 @@ var $;
 var $;
 (function ($_1) {
     /**
-     * Hot recompilation: an edit moves the living component onto the new classes
-     * instead of building another one.
-     *
-     * Everything here is checked on a document of SEVERAL classes, because that is
-     * the mode the editor works in and the one the S2 bench never ran. Two failures
-     * of this are silent rather than loud, so both have a test of their own: a
-     * recreated sandbox would cut live instances off the fresh classes, and
-     * unsorted declarations would let an heir inherit the previous version of its
-     * base with no error anywhere.
-     *
-     * `d` keeps `$` out of the string literals — mam builds its dependency graph by
-     * a regexp over sources, literals included.
-     * @see ../ARCHITECTURE.md section 3, ../spike/S2.md
-     */
-    const d = '$';
-    const pack = 'https://pack.test/web.js';
-    /** A scene whose pack never leaves the process. */
-    function scene($) {
-        const ctx = Object.create($);
-        Reflect.set(ctx, '$mol_import', class extends $mol_import {
-            static script_async(uri) {
-                return Promise.resolve(uri);
-            }
-        });
-        const made = $bog_vmap_scene.make({ $: ctx });
-        made.pack_uri(pack);
-        return made;
-    }
-    /**
-     * Reads a cell that suspends on the fetch of the pack, from outside a fiber.
-     * Any other failure is rethrown at once rather than waited out.
-     */
-    async function settled(read, limit = 300) {
-        const till = Date.now() + limit;
-        for (;;) {
-            try {
-                return read();
-            }
-            catch (error) {
-                if (!$mol_promise_like(error))
-                    return $mol_fail(error);
-                if (Date.now() > till)
-                    return $mol_fail(new Error('the pack never landed'));
-                await new Promise(next => setTimeout(next, 2));
-            }
-        }
-    }
-    /**
-     * Collects what the scene puts on the wire, in order.
-     *
-     * `ResizeObserver` is stubbed along the way: node has none, and without it a
-     * report round dies on the resize step before it ever reaches the error it was
-     * called to send. Nothing about attribution is replaced, only a browser API.
-     */
-    function wired(made) {
-        const sent = [];
-        made.post = (message) => { sent.push(message); };
-        const observer = { observe: () => { }, unobserve: () => { }, disconnect: () => { } };
-        made.resize_watch = () => ({ observer: observer, destructor: () => { } });
-        return sent;
-    }
-    /** The last failure the scene reported on one channel. */
-    function failure(sent, at) {
-        const errors = sent.filter(m => m.kind === 'error' && m.at === at);
-        return errors[errors.length - 1];
-    }
-    /** Compiles a source and hands back the live root. */
-    async function grown(made, root, src) {
-        made.doc_root(root);
-        made.doc_src(src);
-        return await settled(() => made.instance());
-    }
-    $mol_test({
-        /**
-         * The whole point of the stage, on the shape a document actually has.
-         *
-         * An edit of one class leaves the instances of its neighbour untouched —
-         * the same objects, with the same values — while the edited class picks
-         * the new code up. Instance identity is asserted and not merely the
-         * values, because a rebuild that restored the values would also lose
-         * the caret, the focus and the scroll of the real thing.
-         */
-        async 'an edit of one class leaves the instances of its neighbour alone'($) {
-            const made = scene($);
-            const root = `${d}hot_two_page`;
-            const src = (tag) => `${root} ${d}mol_view\n`
-                + `\tsub /\n\t\t<= Kid ${d}hot_two_kid\n\t\t<= Tail ${d}hot_two_tail\n`
-                + `${d}hot_two_kid ${d}mol_view\n\tnote? \\\n`
-                + `${d}hot_two_tail ${d}mol_view\n\ttag \\${tag}\n`;
-            const first = await grown(made, root, src('one'));
-            const kid = first.Kid();
-            const tail = first.Tail();
-            kid.note('typed by hand');
-            const second = await grown(made, root, src('two'));
-            $mol_assert_equal(second, first);
-            $mol_assert_equal(second.Kid(), kid);
-            $mol_assert_equal(second.Tail(), tail);
-            // the untouched neighbour keeps what was written into it
-            $mol_assert_equal(kid.note(), 'typed by hand');
-            // and the edited class serves the new code, on the same object
-            $mol_assert_equal(tail.tag(), 'two');
-        },
-        /**
-         * An heir written ABOVE its base, which is the order that breaks silently.
-         *
-         * A class computes its base at definition time, and the generator emits
-         * declarations in the order it got them. Unsorted, the second compile finds
-         * the previous version of the base already in the sandbox and inherits THAT:
-         * no error, no failure on the bridge, the edit simply does not arrive.
-         * Measured before this test was written, on this very source.
-         */
-        async 'an heir declared above its base follows an edit of that base'($) {
-            const made = scene($);
-            const root = `${d}hot_heir_page`;
-            const src = (tag) => `${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_heir_kid\n`
-                + `${d}hot_heir_kid ${d}hot_heir_base\n`
-                + `${d}hot_heir_base ${d}mol_view\n\ttag \\${tag}\n`;
-            const first = await grown(made, root, src('one'));
-            $mol_assert_equal(first.Kid().tag(), 'one');
-            const second = await grown(made, root, src('two'));
-            $mol_assert_equal(second, first);
-            $mol_assert_equal(second.Kid().tag(), 'two');
-        },
-        /**
-         * One sandbox per document, and a live instance still reaches through it.
-         *
-         * A fresh `Object.create` on every compile would be invisible from the
-         * outside: the context of an instance is cached at its first read and never
-         * looked up again, so an old child would keep resolving names in the sandbox
-         * of the previous round while the new classes went into another one.
-         */
-        async 'the sandbox is one per document and holds the fresh classes'($) {
-            const made = scene($);
-            const root = `${d}hot_box_page`;
-            const src = (tag) => `${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_box_kid\n`
-                + `${d}hot_box_kid ${d}mol_view\n\ttag \\${tag}\n`;
-            const first = await grown(made, root, src('one'));
-            const box = made.sandbox();
-            const kid = first.Kid();
-            await grown(made, root, src('two'));
-            $mol_assert_equal(made.sandbox(), box);
-            $mol_assert_equal(kid.$, box);
-            // the class in the sandbox is the one the live child now answers by
-            $mol_assert_equal(Reflect.get(box, `${d}hot_box_kid`), kid.constructor);
-        },
-        /**
-         * What has to survive an edit, in the three forms a cell takes.
-         *
-         * A written solo value, a written keyed value and the text of a field are
-         * one mechanism — an own field of the instance holding an atom — so all
-         * three are asserted together. The caret, the focus and the scroll position
-         * are NOT here: they live in the DOM alone and a node run has no layout to
-         * put them in. They were measured on the S2 bench in a browser.
-         */
-        async 'written values survive a recompile'($) {
-            const made = scene($);
-            const root = `${d}hot_state_page`;
-            const src = (tag) => `${root} ${d}mol_view\n`
-                + `\ttag \\${tag}\n`
-                + `\tcount? 0\n`
-                + `\tslot*id? \\\n`
-                + `\ttext? \\\n`;
-            const first = await grown(made, root, src('one'));
-            first.count(7);
-            first.slot('left', 'held');
-            first.text('typed by hand');
-            const second = await grown(made, root, src('two'));
-            $mol_assert_equal(second, first);
-            $mol_assert_equal(second.tag(), 'two');
-            $mol_assert_equal(second.count(), 7);
-            $mol_assert_equal(second.slot('left'), 'held');
-            $mol_assert_equal(second.text(), 'typed by hand');
-        },
-        /**
-         * A changed base is the case the swap must refuse.
-         *
-         * State would survive it, and that is exactly the trap: the DOM node was
-         * built by the old base and carries ITS `attr_static()`, which nothing
-         * recomputes. The component would read as the new base and behave as the
-         * old one. Checked on a NESTED class, because a base changes far more often
-         * away from the root than at it.
-         */
-        async 'a changed base rebuilds instead of swapping'($) {
-            const made = scene($);
-            const root = `${d}hot_base_page`;
-            const src = (base) => `${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_base_kid\n`
-                + `${d}hot_base_kid ${d}hot_base_${base}\n`
-                + `${d}hot_base_one ${d}mol_view\n\ttag \\one\n`
-                + `${d}hot_base_two ${d}mol_view\n\ttag \\two\n`;
-            const first = await grown(made, root, src('one'));
-            $mol_assert_equal(first.Kid().tag(), 'one');
-            const second = await grown(made, root, src('two'));
-            $mol_assert_equal(second === first, false);
-            $mol_assert_equal(second.Kid().tag(), 'two');
-        },
-        /**
-         * A changed pack is the other case it must refuse.
-         *
-         * The context of a live instance is cached under a symbol private to a
-         * bundle, and the getter falls back to the global one the moment another
-         * bundle defines its own. Measured on S4: the same instance, the same living
-         * DOM, nothing on the error channel, and the sandbox simply gone.
-         */
-        async 'a changed pack rebuilds instead of swapping'($) {
-            const made = scene($);
-            const root = `${d}hot_pack_page`;
-            const src = `${root} ${d}mol_view\n\ttag \\one\n`;
-            const first = await grown(made, root, src);
-            made.pack_uri('https://other.test/web.js');
-            const second = await settled(() => made.instance());
-            $mol_assert_equal(second === first, false);
-        },
-        /**
-         * A property that changes between solo and keyed cannot keep its value,
-         * and must not leave the atom of the other shape behind either.
-         *
-         * A keyed read looks for a dictionary in the field a solo atom is sitting
-         * in, so the stale one is not merely useless, it throws `dict.get is not a
-         * function`.
-         *
-         * The `emit()` the atom gets before it is dropped is NOT isolated here, and
-         * cannot be by a test of this shape: waking dependants matters because
-         * unsubscribing marks nobody stale, but every dependant of a property that
-         * changes shape has its own code changed by the same edit, so it would
-         * recompute either way. It is asserted where it can be — the property is
-         * gone in its old shape and answers in the new one, on the same instance.
-         */
-        async 'a property that turns keyed leaves no atom of the old shape'($) {
-            const made = scene($);
-            const root = `${d}hot_shape_page`;
-            const solo = `${root} ${d}mol_view\n\tnote? \\\n`;
-            const keyed = `${root} ${d}mol_view\n\tnote*id? \\\n`;
-            const first = await grown(made, root, solo);
-            first.note('written');
-            $mol_assert_equal(first.note(), 'written');
-            $mol_assert_ok(Reflect.get(first, 'note()'));
-            const second = await grown(made, root, keyed);
-            $mol_assert_equal(second, first);
-            $mol_assert_equal(made.compile_error(), '');
-            // the solo atom is gone rather than left for a keyed read to trip over
-            $mol_assert_equal(Reflect.get(second, 'note()'), undefined);
-            // and the keyed property answers, on the same instance
-            $mol_assert_equal(second.note('a'), '');
-            $mol_assert_equal(second.note('a', 'again'), 'again');
-            $mol_assert_ok(Reflect.get(second, 'note()') instanceof Map);
-        },
-        /**
-         * The sort is the language's, not the scene's.
-         *
-         * Two copies of it would be one divergence away from an heir inheriting the
-         * previous version of its base, and the divergence would show as nothing at
-         * all. So the scene is asked to order declarations while the canonical sort
-         * is replaced: an answer that follows the replacement is proof there is no
-         * second copy.
-         */
-        'the scene orders declarations by the sort of the language'($) {
-            const asked = [];
-            const ctx = Object.create($);
-            Reflect.set(ctx, '$bog_vmap_lang_sorted', (defs) => {
-                asked.push(defs.length);
-                return [...defs].reverse();
-            });
-            const defs = $.$mol_tree2_from_string(`${d}hot_sort_a ${d}mol_view\n${d}hot_sort_b ${d}mol_view\n`).kids;
-            const out = ctx.$bog_vmap_scene_order([], defs);
-            $mol_assert_like(asked, [2]);
-            $mol_assert_like(out.map(def => def.type), [`${d}hot_sort_b`, `${d}hot_sort_a`]);
-        },
-        /**
-         * A broken source must cost nothing but a message.
-         *
-         * The failure is reported, the living component keeps its state and its
-         * node, and a fixed source lands back on the very same instance rather than
-         * on a replacement of it.
-         */
-        async 'a compile failure leaves the living instance whole'($) {
-            const made = scene($);
-            const root = `${d}hot_fail_page`;
-            const src = (tag) => `${root} ${d}mol_view\n\ttag \\${tag}\n\tnote? \\\n`;
-            const first = await grown(made, root, src('one'));
-            first.note('typed by hand');
-            // an heir of a class nobody declared: the generated code throws
-            const broken = await grown(made, root, src('one') + `${d}hot_fail_kid ${d}hot_fail_ghost\n`);
-            $mol_assert_equal(broken, first);
-            $mol_assert_ok(made.compile_error());
-            $mol_assert_equal(first.note(), 'typed by hand');
-            const fixed = await grown(made, root, src('two'));
-            $mol_assert_equal(fixed, first);
-            $mol_assert_equal(made.compile_error(), '');
-            $mol_assert_equal(fixed.tag(), 'two');
-            $mol_assert_equal(fixed.note(), 'typed by hand');
-        },
-        /**
-         * A failure of a nested node arrives named by that node.
-         *
-         * The name is the path `sizes` is keyed with, and it has to be, or the host
-         * looks the label up in a dictionary that does not have it. The element that
-         * failed does carry an attribute of its own, but that one is lowercased and
-         * joined by underscores — a different vocabulary, and a silently wrong one.
-         */
-        async 'a runtime failure names the node it belongs to'($) {
-            const made = scene($);
-            const sent = wired(made);
-            const root = `${d}hot_blame_page`;
-            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Tail ${d}hot_blame_tail\n`
-                + `${d}hot_blame_tail ${d}mol_view\n\tsub /\n\t\t<= Deep ${d}hot_blame_deep\n`
-                + `${d}hot_blame_deep ${d}mol_view\n\tsub /\n\t\t<= boom \\\n`);
-            made.doc_js({ [`${d}hot_blame_deep`]: 'boom() { throw new Error( "bang" ) }' });
-            await settled(() => made.instance());
-            try {
-                first.dom_tree();
-            }
-            catch { }
-            // the attribution itself: the free part the failure is inside, which is
-            // the only name the host can find a box by
-            $mol_assert_equal(made.render_error(first).node, 'Tail');
-            $mol_assert_ok(made.render_error(first).message);
-            // and the same thing as the host sees it
-            made.report_send();
-            const failed = failure(sent, 'runtime');
-            $mol_assert_equal(failed?.node, 'Tail');
-            $mol_assert_ok(failed?.message);
-        },
-        /**
-         * A failure nobody can be blamed for still travels, with an empty node.
-         *
-         * Empty and not absent: the host must not have to tell «this scene found no
-         * node» from «this scene is older than the field».
-         */
-        async 'a failure with no node to blame reports an empty one'($) {
-            const made = scene($);
-            const sent = wired(made);
-            const root = `${d}hot_blank_page`;
-            await grown(made, root, `${root} ${d}mol_view\n\ttag \\one\n`);
-            made.error_post('runtime', 'something nobody owns', '');
-            const failed = failure(sent, 'runtime');
-            $mol_assert_equal(failed?.message, 'something nobody owns');
-            $mol_assert_equal(failed?.node, '');
-        },
-        /**
-         * A COMPILE failure names a class, and a class is not a node. The tree still
-         * on the screen was built from the previous text, so the live instance of
-         * the class just broken is the node the user is looking at.
-         */
-        async 'a compile failure names the node of the class that broke'($) {
-            const made = scene($);
-            const sent = wired(made);
-            const root = `${d}hot_guilt_page`;
-            const src = (kid) => `${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_guilt_kid\n`
-                + `${d}hot_guilt_kid ${kid}\n\ttag \\one\n`;
-            const first = await grown(made, root, src(`${d}mol_view`));
-            $mol_assert_ok(first.Kid());
-            // the child now inherits a class nobody declared: the generated code throws
-            await grown(made, root, src(`${d}hot_guilt_ghost`));
-            $mol_assert_ok(made.compile_error());
-            $mol_assert_equal(made.compile_class(), `${d}hot_guilt_kid`);
-            made.report_send();
-            $mol_assert_equal(failure(sent, 'compile')?.node, 'Kid');
-        },
-        /**
-         * The error state lives in the graph, not in a field beside it.
-         *
-         * It used to be a plain field written from inside the cell that builds the
-         * instance, and a reader of a field is woken by nothing: the label on the
-         * node would light up a round late, or not until something else moved. So
-         * what is asserted is not the value but the waking — a subscriber that has
-         * read the failure answers with the new one without the scene being asked
-         * again — a cached atom nobody invalidated answers with what it remembers,
-         * which is precisely what a field beside the graph produces.
-         */
-        async 'a reader of the compile failure is woken when it changes'($) {
-            const made = scene($);
-            const root = `${d}hot_wake_page`;
-            const src = (tag) => `${root} ${d}mol_view\n\ttag \\${tag}\n`;
-            await grown(made, root, src('one'));
-            const seen = {};
-            const atom = $mol_wire_atom.solo(seen, function watcher() { return made.compile_error(); });
-            $mol_assert_equal(atom.sync(), '');
-            // an heir of a class nobody declared: the generated code throws
-            await grown(made, root, src('one') + `${d}hot_wake_kid ${d}hot_wake_ghost\n`);
-            // The subscriber is asked, not the scene. A cached atom nobody
-            // invalidated answers with what it remembers, and that is exactly the
-            // symptom of a failure kept in a field beside the graph.
-            $mol_assert_ok(atom.sync());
-            $mol_assert_equal(atom.sync(), made.compile_error());
-        },
-        /**
-         * The FORM of the name, which is what the two halves stick together by.
-         *
-         * The host finds the box of a node by a name out of `sizes`, and there only
-         * the direct children of the root are kept. A path, a class name or anything
-         * with a slash in it finds no box, so no mark appears — with no error, no log
-         * and nothing to notice. Hence a test on the shape of the string and not only
-         * on which node it points at.
-         */
-        async 'the reported node is a part name, not a path and not a class'($) {
-            const made = scene($);
-            const root = `${d}hot_shape_name_page`;
-            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Tail ${d}hot_shape_name_tail\n`
-                + `${d}hot_shape_name_tail ${d}mol_view\n\tsub /\n\t\t<= Deep ${d}hot_shape_name_deep\n`
-                + `${d}hot_shape_name_deep ${d}mol_view\n\tsub /\n\t\t<= boom \\\n`);
-            made.doc_js({ [`${d}hot_shape_name_deep`]: 'boom() { throw new Error( "bang" ) }' });
-            await settled(() => made.instance());
-            try {
-                first.dom_tree();
-            }
-            catch { }
-            const node = made.render_error(first).node;
-            $mol_assert_equal(node.includes('/'), false);
-            $mol_assert_equal(node.startsWith('$'), false);
-            // and it is one of the names the host is given for a box, not merely a
-            // string without a slash. Taken off the walk and not off `sizes`: a node
-            // run has no layout, so nothing is connected and nothing is measured.
-            const walk = made.walk_of(first);
-            const parts = walk.kids_of(first)
-                .map(kid => walk.view_of(kid))
-                .filter(Boolean)
-                .map(view => walk.prop_of(view));
-            $mol_assert_equal(parts.includes(node), true);
-        },
-        /**
-         * A failure of the document itself belongs to no node of the canvas.
-         *
-         * Naming the root class here would hand the host a class name where it
-         * expects a part name — a mark that silently never appears. An empty node
-         * says the same thing honestly, and the text still reaches the status line.
-         */
-        async 'a failure of the root itself is reported with no node'($) {
-            const made = scene($);
-            const root = `${d}hot_top_page`;
-            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= boom \\\n`);
-            made.doc_js({ [root]: 'boom() { throw new Error( "bang" ) }' });
-            await settled(() => made.instance());
-            try {
-                first.dom_tree();
-            }
-            catch { }
-            const failed = made.render_error(first);
-            $mol_assert_ok(failed.message);
-            $mol_assert_equal(failed.node, '');
-        },
-        /**
-         * A property declared AND written by hand keeps its state too, and its atom
-         * does not sit in the field its name suggests.
-         *
-         * The decorator copies the name off the base wrapper when the base was
-         * decorated already, and the copy carries a trailing space, so a property
-         * memoized both by the generator and by the body lives in `note ()` rather
-         * than in `note()`. That is exactly the shape the code editor produces, and
-         * a swap that built the field name by gluing `name + '()'` would find
-         * nothing, retarget nothing and lose what the user typed — silently, on
-         * every edit.
-         */
-        async 'a property memoized twice keeps its state across an edit'($) {
-            const made = scene($);
-            const root = `${d}hot_twice_page`;
-            const src = (tag) => `${root} ${d}mol_view\n\ttag \\${tag}\n\tnote? \\\n`;
-            made.doc_root(root);
-            made.doc_src(src('one'));
-            made.doc_js({ [root]: 'note( next ) { return next ?? "from body" }' });
-            const first = await settled(() => made.instance());
-            $mol_assert_equal(first.note(), 'from body');
-            // the atom is where the double decoration put it, not where the name says
-            $mol_assert_like(Object.getOwnPropertyNames(first).filter(key => key.endsWith('()')), ['note ()']);
-            first.note('typed by hand');
-            const second = await grown(made, root, src('two'));
-            $mol_assert_equal(second, first);
-            $mol_assert_equal(second.tag(), 'two');
-            $mol_assert_equal(second.note(), 'typed by hand');
-            $mol_assert_equal(made.compile_error(), '');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
      * Tests of the culling decision.
      *
      * Nothing here needs a DOM, a camera or a compiled document, which is the whole
@@ -7998,27 +7563,23 @@ var $;
 var $;
 (function ($_1) {
     /**
-     * What the scene does with the pack now that the pack arrives by message.
-     *
-     * The frame has no address of its own — it is raised from markup handed to it —
-     * so `pack_set` is the only way a pack is ever named, and there is a real
-     * window, at the start of every frame, in which no pack has been named yet.
-     * These check that the window is spent doing nothing rather than compiling a
-     * document against the wrong `$mol_view`.
+     * The scene end to end, on a pack that never leaves the process: what it does
+     * before a pack is named, hot recompilation of a document of several classes,
+     * attribution of failures to nodes, culling as the document sees it, and what
+     * wakes the graph behind the back of a camera message.
      *
      * `d` keeps `$` out of the string literals — mam builds its dependency graph by
      * a regexp over sources, literals included.
-     * @see ../ARCHITECTURE.md sections 4 and 5
+     * @see ../ARCHITECTURE.md sections 3, 4, 13, ../spike/S2.md
      */
     const d = '$';
-    const root = `${d}scene_probe_page`;
-    /** A document of one class, the smallest thing that compiles. */
-    const source = `${root} ${d}mol_view\n\tsub /\n`;
+    const pack = 'https://pack.test/web.js';
     /**
      * A scene whose pack never leaves the process: `$mol_import.script_async` is
      * the one thing that touches the network, and it is the only thing replaced.
+     * The pack is named up front unless a test wants the moments before that.
      */
-    function scene($) {
+    function scene($, uri = pack) {
         const loaded = [];
         const ctx = Object.create($);
         Reflect.set(ctx, '$mol_import', class extends $mol_import {
@@ -8028,7 +7589,9 @@ var $;
             }
         });
         const made = $bog_vmap_scene.make({ $: ctx });
-        return { made, loaded };
+        if (uri)
+            made.pack_uri(uri);
+        return { made, loaded, ctx };
     }
     /** A message from the host, delivered the way the frame delivers one. */
     function deliver($, made, data) {
@@ -8059,112 +7622,30 @@ var $;
             }
         }
     }
-    $mol_test({
-        /**
-         * The state every frame starts in: a document is on hand, a pack is not.
-         * Nothing is compiled and nothing throws, and the wait has a face.
-         *
-         * The class is checked for in the sandbox as well as the instance, because
-         * those are two different failures and only one of them shows. A document
-         * compiled here would inherit the `$mol_view` of the SCENE — a class computes
-         * its base once, and no later load of the pack can move it — so the damage is
-         * done at definition time, before anything is instantiated, and it is done
-         * for the life of the frame. Compilation is green, the bridge reports no
-         * error, and half the palette silently draws as text.
-         */
-        'a scene with no pack compiles nothing and says what it waits for'($) {
-            const { made, loaded } = scene($);
-            made.doc_root(root);
-            made.doc_src(source);
-            $mol_assert_equal(made.pack_uri(), '');
-            $mol_assert_equal(made.instance(), null);
-            $mol_assert_like(loaded, []);
-            // not merely uninstantiated: never defined
-            $mol_assert_equal(Reflect.get(made.sandbox(), root), undefined);
-            $mol_assert_equal(made.pack_note(), 'Ожидание библиотеки компонентов…');
-        },
-        /**
-         * The pack lands and the same document compiles. The bundle is pulled into
-         * the realm exactly once, by the address the host named.
-         */
-        async 'a scene compiles once the pack has been named'($) {
-            const { made, loaded } = scene($);
-            made.doc_root(root);
-            made.doc_src(source);
-            deliver($, made, { kind: 'pack_set', uri: 'https://pack.test/web.js' });
-            $mol_assert_equal(made.pack_uri(), 'https://pack.test/web.js');
-            $mol_assert_ok(await settled(() => made.instance()));
-            $mol_assert_like(loaded, ['https://pack.test/web.js']);
-            $mol_assert_equal(typeof Reflect.get(made.sandbox(), root), 'function');
-            $mol_assert_equal(made.pack_note(), '');
-        },
-        /**
-         * `pack_set` goes through the same reader as everything else, so a window
-         * that is not the host is not heard — the check that kept a stray debug
-         * frame from taking the bridge over on stage 1.
-         */
-        'a pack named by a stranger is not heard'($) {
-            const { made, loaded } = scene($);
-            const dom = $.$mol_dom_context;
-            made.doc_root(root);
-            made.doc_src(source);
-            const event = new dom.MessageEvent('message', {
-                data: { ns: $bog_vmap_bridge_ns, kind: 'pack_set', uri: 'https://evil.test/web.js' },
-            });
-            Object.defineProperty(event, 'source', { value: {} });
-            made.message_receive(event);
-            $mol_assert_equal(made.pack_uri(), '');
-            $mol_assert_like(loaded, []);
-            $mol_assert_equal(made.instance(), null);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
     /**
-     * Culling as the document sees it, and what wakes it.
+     * Collects what the scene puts on the wire, in order.
      *
-     * `cull.test.ts` proves the arithmetic; these prove where it is wired in: the
-     * filter narrows `sub_visible()` and nothing else, the viewport is the box of
-     * the scene, and a box that arrives late or an asset that goes missing moves
-     * the graph rather than waiting for the next camera message.
-     *
-     * `d` keeps `$` out of the string literals — mam builds its dependency graph by
-     * a regexp over sources, literals included.
-     * @see ../ARCHITECTURE.md section 4, section 13
+     * `ResizeObserver` is stubbed along the way: node has none, and without it a
+     * report round dies on the resize step before it ever reaches the error it was
+     * called to send. Nothing about attribution is replaced, only a browser API.
      */
-    const d = '$';
-    const pack = 'https://pack.test/web.js';
-    /** A scene whose pack never leaves the process. */
-    function scene($) {
-        const ctx = Object.create($);
-        Reflect.set(ctx, '$mol_import', class extends $mol_import {
-            static script_async(uri) {
-                return Promise.resolve(uri);
-            }
-        });
-        const made = $bog_vmap_scene.make({ $: ctx });
-        made.pack_uri(pack);
-        return made;
+    function wired(made) {
+        const sent = [];
+        made.post = (message) => { sent.push(message); };
+        const observer = { observe: () => { }, unobserve: () => { }, disconnect: () => { } };
+        made.resize_watch = () => ({ observer: observer, destructor: () => { } });
+        return sent;
     }
-    /** Reads a cell that suspends on the fetch of the pack, from outside a fiber. */
-    async function settled(read, limit = 300) {
-        const till = Date.now() + limit;
-        for (;;) {
-            try {
-                return read();
-            }
-            catch (error) {
-                if (!$mol_promise_like(error))
-                    return $mol_fail(error);
-                if (Date.now() > till)
-                    return $mol_fail(new Error('the pack never landed'));
-                await new Promise(next => setTimeout(next, 2));
-            }
-        }
+    /** The last failure the scene reported on one channel. */
+    function failure(sent, at) {
+        const errors = sent.filter(m => m.kind === 'error' && m.at === at);
+        return errors[errors.length - 1];
+    }
+    /** Compiles a source and hands back the live root. */
+    async function grown(made, root, src) {
+        made.doc_root(root);
+        made.doc_src(src);
+        return await settled(() => made.instance());
     }
     /**
      * A box for the scene, as the frame would give it one — and as a cell, the way
@@ -8179,14 +7660,534 @@ var $;
     }
     /** A document of two free parts, and the scene compiled up to its root. */
     async function two($) {
-        const made = scene($);
+        const { made } = scene($);
         const root = `${d}visible_page`;
-        made.doc_root(root);
-        made.doc_src(`${root} ${d}mol_view\n\tsub /\n\t\t<= Near ${d}mol_view\n\t\t<= Far ${d}mol_view\n`);
-        const doc = await settled(() => made.instance());
+        const doc = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Near ${d}mol_view\n\t\t<= Far ${d}mol_view\n`);
         return { made, doc, root, sized: boxed(made) };
     }
     $mol_test({
+        /**
+         * The state every frame starts in: a document is on hand, a pack is not.
+         * Nothing is compiled and nothing throws, and the wait has a face.
+         *
+         * The class is checked for in the sandbox as well as the instance, because
+         * those are two different failures and only one of them shows. A document
+         * compiled here would inherit the `$mol_view` of the SCENE — a class computes
+         * its base once, and no later load of the pack can move it — so the damage is
+         * done at definition time, before anything is instantiated, and it is done
+         * for the life of the frame. Compilation is green, the bridge reports no
+         * error, and half the palette silently draws as text.
+         */
+        'a scene with no pack compiles nothing and says what it waits for'($) {
+            const { made, loaded } = scene($, '');
+            const root = `${d}scene_probe_page`;
+            made.doc_root(root);
+            made.doc_src(`${root} ${d}mol_view\n\tsub /\n`);
+            $mol_assert_equal(made.pack_uri(), '');
+            $mol_assert_equal(made.instance(), null);
+            $mol_assert_like(loaded, []);
+            // not merely uninstantiated: never defined
+            $mol_assert_equal(Reflect.get(made.sandbox(), root), undefined);
+            $mol_assert_equal(made.pack_note(), 'Ожидание библиотеки компонентов…');
+        },
+        /**
+         * The pack lands and the same document compiles. The bundle is pulled into
+         * the realm exactly once, by the address the host named.
+         */
+        async 'a scene compiles once the pack has been named'($) {
+            const { made, loaded } = scene($, '');
+            const root = `${d}scene_probe_page`;
+            made.doc_root(root);
+            made.doc_src(`${root} ${d}mol_view\n\tsub /\n`);
+            deliver($, made, { kind: 'pack_set', uri: pack });
+            $mol_assert_equal(made.pack_uri(), pack);
+            $mol_assert_ok(await settled(() => made.instance()));
+            $mol_assert_like(loaded, [pack]);
+            $mol_assert_equal(typeof Reflect.get(made.sandbox(), root), 'function');
+            $mol_assert_equal(made.pack_note(), '');
+        },
+        /**
+         * `pack_set` goes through the same reader as everything else, so a window
+         * that is not the host is not heard — the check that kept a stray debug
+         * frame from taking the bridge over on stage 1.
+         */
+        'a pack named by a stranger is not heard'($) {
+            const { made, loaded } = scene($, '');
+            const dom = $.$mol_dom_context;
+            const root = `${d}scene_probe_page`;
+            made.doc_root(root);
+            made.doc_src(`${root} ${d}mol_view\n\tsub /\n`);
+            const event = new dom.MessageEvent('message', {
+                data: { ns: $bog_vmap_bridge_ns, kind: 'pack_set', uri: 'https://evil.test/web.js' },
+            });
+            Object.defineProperty(event, 'source', { value: {} });
+            made.message_receive(event);
+            $mol_assert_equal(made.pack_uri(), '');
+            $mol_assert_like(loaded, []);
+            $mol_assert_equal(made.instance(), null);
+        },
+        /**
+         * Two copies of `$mol_try_web` on one page — the scene's and the pack's —
+         * each listen on `self` and call a `handler` private to their own bundle, so
+         * a dispatch from one throws `handler is not a function` in the other: a
+         * failure of the document was answered by a second failure of our own. Once
+         * the pack has landed, `$mol_try` is plain try/catch and dispatches nothing.
+         */
+        async 'a failure of the document raises no second failure of the scene'($) {
+            const { made, ctx } = scene($, '');
+            const root = `${d}scene_try_page`;
+            let dispatched = 0;
+            Reflect.set(ctx, '$mol_try', (handler) => { dispatched++; return handler(); });
+            made.pack_uri(pack);
+            await grown(made, root, `${root} ${d}mol_view\n\tsub /\n`);
+            const boom = new Error('bang');
+            $mol_assert_equal(made.$.$mol_try(() => { throw boom; }), boom);
+            $mol_assert_equal(made.$.$mol_try(() => 'ok'), 'ok');
+            $mol_assert_equal(dispatched, 0);
+        },
+        /**
+         * The whole point of the stage, on the shape a document actually has.
+         *
+         * An edit of one class leaves the instances of its neighbour untouched —
+         * the same objects, with the same values — while the edited class picks
+         * the new code up. Instance identity is asserted and not merely the
+         * values, because a rebuild that restored the values would also lose
+         * the caret, the focus and the scroll of the real thing.
+         */
+        async 'an edit of one class leaves the instances of its neighbour alone'($) {
+            const { made } = scene($);
+            const root = `${d}hot_two_page`;
+            const src = (tag) => `${root} ${d}mol_view\n`
+                + `\tsub /\n\t\t<= Kid ${d}hot_two_kid\n\t\t<= Tail ${d}hot_two_tail\n`
+                + `${d}hot_two_kid ${d}mol_view\n\tnote? \\\n`
+                + `${d}hot_two_tail ${d}mol_view\n\ttag \\${tag}\n`;
+            const first = await grown(made, root, src('one'));
+            const kid = first.Kid();
+            const tail = first.Tail();
+            kid.note('typed by hand');
+            const second = await grown(made, root, src('two'));
+            $mol_assert_equal(second, first);
+            $mol_assert_equal(second.Kid(), kid);
+            $mol_assert_equal(second.Tail(), tail);
+            // the untouched neighbour keeps what was written into it
+            $mol_assert_equal(kid.note(), 'typed by hand');
+            // and the edited class serves the new code, on the same object
+            $mol_assert_equal(tail.tag(), 'two');
+        },
+        /**
+         * An heir written ABOVE its base, which is the order that breaks silently.
+         *
+         * A class computes its base at definition time, and the generator emits
+         * declarations in the order it got them. Unsorted, the second compile finds
+         * the previous version of the base already in the sandbox and inherits THAT:
+         * no error, no failure on the bridge, the edit simply does not arrive.
+         * Measured before this test was written, on this very source.
+         */
+        async 'an heir declared above its base follows an edit of that base'($) {
+            const { made } = scene($);
+            const root = `${d}hot_heir_page`;
+            const src = (tag) => `${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_heir_kid\n`
+                + `${d}hot_heir_kid ${d}hot_heir_base\n`
+                + `${d}hot_heir_base ${d}mol_view\n\ttag \\${tag}\n`;
+            const first = await grown(made, root, src('one'));
+            $mol_assert_equal(first.Kid().tag(), 'one');
+            const second = await grown(made, root, src('two'));
+            $mol_assert_equal(second, first);
+            $mol_assert_equal(second.Kid().tag(), 'two');
+        },
+        /**
+         * One sandbox per document, and a live instance still reaches through it.
+         *
+         * A fresh `Object.create` on every compile would be invisible from the
+         * outside: the context of an instance is cached at its first read and never
+         * looked up again, so an old child would keep resolving names in the sandbox
+         * of the previous round while the new classes went into another one.
+         */
+        async 'the sandbox is one per document and holds the fresh classes'($) {
+            const { made } = scene($);
+            const root = `${d}hot_box_page`;
+            const src = (tag) => `${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_box_kid\n`
+                + `${d}hot_box_kid ${d}mol_view\n\ttag \\${tag}\n`;
+            const first = await grown(made, root, src('one'));
+            const box = made.sandbox();
+            const kid = first.Kid();
+            await grown(made, root, src('two'));
+            $mol_assert_equal(made.sandbox(), box);
+            $mol_assert_equal(kid.$, box);
+            // the class in the sandbox is the one the live child now answers by
+            $mol_assert_equal(Reflect.get(box, `${d}hot_box_kid`), kid.constructor);
+        },
+        /**
+         * What has to survive an edit, in the three forms a cell takes.
+         *
+         * A written solo value, a written keyed value and the text of a field are
+         * one mechanism — an own field of the instance holding an atom — so all
+         * three are asserted together. The caret, the focus and the scroll position
+         * are NOT here: they live in the DOM alone and a node run has no layout to
+         * put them in. They were measured on the S2 bench in a browser.
+         */
+        async 'written values survive a recompile'($) {
+            const { made } = scene($);
+            const root = `${d}hot_state_page`;
+            const src = (tag) => `${root} ${d}mol_view\n`
+                + `\ttag \\${tag}\n`
+                + `\tcount? 0\n`
+                + `\tslot*id? \\\n`
+                + `\ttext? \\\n`;
+            const first = await grown(made, root, src('one'));
+            first.count(7);
+            first.slot('left', 'held');
+            first.text('typed by hand');
+            const second = await grown(made, root, src('two'));
+            $mol_assert_equal(second, first);
+            $mol_assert_equal(second.tag(), 'two');
+            $mol_assert_equal(second.count(), 7);
+            $mol_assert_equal(second.slot('left'), 'held');
+            $mol_assert_equal(second.text(), 'typed by hand');
+        },
+        /**
+         * A changed base is the case the swap must refuse.
+         *
+         * State would survive it, and that is exactly the trap: the DOM node was
+         * built by the old base and carries ITS `attr_static()`, which nothing
+         * recomputes. The component would read as the new base and behave as the
+         * old one. Checked on a NESTED class, because a base changes far more often
+         * away from the root than at it.
+         */
+        async 'a changed base rebuilds instead of swapping'($) {
+            const { made } = scene($);
+            const root = `${d}hot_base_page`;
+            const src = (base) => `${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_base_kid\n`
+                + `${d}hot_base_kid ${d}hot_base_${base}\n`
+                + `${d}hot_base_one ${d}mol_view\n\ttag \\one\n`
+                + `${d}hot_base_two ${d}mol_view\n\ttag \\two\n`;
+            const first = await grown(made, root, src('one'));
+            $mol_assert_equal(first.Kid().tag(), 'one');
+            const second = await grown(made, root, src('two'));
+            $mol_assert_equal(second === first, false);
+            $mol_assert_equal(second.Kid().tag(), 'two');
+        },
+        /**
+         * A changed pack is the other case it must refuse.
+         *
+         * The context of a live instance is cached under a symbol private to a
+         * bundle, and the getter falls back to the global one the moment another
+         * bundle defines its own. Measured on S4: the same instance, the same living
+         * DOM, nothing on the error channel, and the sandbox simply gone.
+         */
+        async 'a changed pack rebuilds instead of swapping'($) {
+            const { made } = scene($);
+            const root = `${d}hot_pack_page`;
+            const src = `${root} ${d}mol_view\n\ttag \\one\n`;
+            const first = await grown(made, root, src);
+            made.pack_uri('https://other.test/web.js');
+            const second = await settled(() => made.instance());
+            $mol_assert_equal(second === first, false);
+        },
+        /**
+         * A property that changes between solo and keyed cannot keep its value,
+         * and must not leave the atom of the other shape behind either.
+         *
+         * A keyed read looks for a dictionary in the field a solo atom is sitting
+         * in, so the stale one is not merely useless, it throws `dict.get is not a
+         * function`.
+         *
+         * The `emit()` the atom gets before it is dropped is NOT isolated here, and
+         * cannot be by a test of this shape: waking dependants matters because
+         * unsubscribing marks nobody stale, but every dependant of a property that
+         * changes shape has its own code changed by the same edit, so it would
+         * recompute either way. It is asserted where it can be — the property is
+         * gone in its old shape and answers in the new one, on the same instance.
+         */
+        async 'a property that turns keyed leaves no atom of the old shape'($) {
+            const { made } = scene($);
+            const root = `${d}hot_shape_page`;
+            const solo = `${root} ${d}mol_view\n\tnote? \\\n`;
+            const keyed = `${root} ${d}mol_view\n\tnote*id? \\\n`;
+            const first = await grown(made, root, solo);
+            first.note('written');
+            $mol_assert_equal(first.note(), 'written');
+            $mol_assert_ok(Reflect.get(first, 'note()'));
+            const second = await grown(made, root, keyed);
+            $mol_assert_equal(second, first);
+            $mol_assert_equal(made.compile_error(), '');
+            // the solo atom is gone rather than left for a keyed read to trip over
+            $mol_assert_equal(Reflect.get(second, 'note()'), undefined);
+            // and the keyed property answers, on the same instance
+            $mol_assert_equal(second.note('a'), '');
+            $mol_assert_equal(second.note('a', 'again'), 'again');
+            $mol_assert_ok(Reflect.get(second, 'note()') instanceof Map);
+        },
+        /**
+         * The sort is the language's, not the scene's.
+         *
+         * Two copies of it would be one divergence away from an heir inheriting the
+         * previous version of its base, and the divergence would show as nothing at
+         * all. So the scene is asked to order declarations while the canonical sort
+         * is replaced: an answer that follows the replacement is proof there is no
+         * second copy.
+         */
+        'the scene orders declarations by the sort of the language'($) {
+            const asked = [];
+            const ctx = Object.create($);
+            Reflect.set(ctx, '$bog_vmap_lang_sorted', (defs) => {
+                asked.push(defs.length);
+                return [...defs].reverse();
+            });
+            const defs = $.$mol_tree2_from_string(`${d}hot_sort_a ${d}mol_view\n${d}hot_sort_b ${d}mol_view\n`).kids;
+            const out = ctx.$bog_vmap_scene_order([], defs);
+            $mol_assert_like(asked, [2]);
+            $mol_assert_like(out.map(def => def.type), [`${d}hot_sort_b`, `${d}hot_sort_a`]);
+        },
+        /**
+         * A broken source must cost nothing but a message.
+         *
+         * The failure is reported, the living component keeps its state and its
+         * node, and a fixed source lands back on the very same instance rather than
+         * on a replacement of it.
+         */
+        async 'a compile failure leaves the living instance whole'($) {
+            const { made } = scene($);
+            const root = `${d}hot_fail_page`;
+            const src = (tag) => `${root} ${d}mol_view\n\ttag \\${tag}\n\tnote? \\\n`;
+            const first = await grown(made, root, src('one'));
+            first.note('typed by hand');
+            // an heir of a class nobody declared: the generated code throws
+            const broken = await grown(made, root, src('one') + `${d}hot_fail_kid ${d}hot_fail_ghost\n`);
+            $mol_assert_equal(broken, first);
+            $mol_assert_ok(made.compile_error());
+            $mol_assert_equal(first.note(), 'typed by hand');
+            const fixed = await grown(made, root, src('two'));
+            $mol_assert_equal(fixed, first);
+            $mol_assert_equal(made.compile_error(), '');
+            $mol_assert_equal(fixed.tag(), 'two');
+            $mol_assert_equal(fixed.note(), 'typed by hand');
+        },
+        /**
+         * A failure of a nested node arrives named by that node.
+         *
+         * The name is the path `sizes` is keyed with, and it has to be, or the host
+         * looks the label up in a dictionary that does not have it. The element that
+         * failed does carry an attribute of its own, but that one is lowercased and
+         * joined by underscores — a different vocabulary, and a silently wrong one.
+         */
+        async 'a runtime failure names the node it belongs to'($) {
+            const { made } = scene($);
+            const sent = wired(made);
+            const root = `${d}hot_blame_page`;
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Tail ${d}hot_blame_tail\n`
+                + `${d}hot_blame_tail ${d}mol_view\n\tsub /\n\t\t<= Deep ${d}hot_blame_deep\n`
+                + `${d}hot_blame_deep ${d}mol_view\n\tsub /\n\t\t<= boom \\\n`);
+            made.doc_js({ [`${d}hot_blame_deep`]: 'boom() { throw new Error( "bang" ) }' });
+            await settled(() => made.instance());
+            try {
+                first.dom_tree();
+            }
+            catch { }
+            // the attribution itself: the free part the failure is inside, which is
+            // the only name the host can find a box by
+            $mol_assert_equal(made.render_error(first).node, 'Tail');
+            $mol_assert_ok(made.render_error(first).message);
+            // and the same thing as the host sees it
+            made.report_send();
+            const failed = failure(sent, 'runtime');
+            $mol_assert_equal(failed?.node, 'Tail');
+            $mol_assert_ok(failed?.message);
+        },
+        /**
+         * A failure nobody can be blamed for still travels, with an empty node.
+         *
+         * Empty and not absent: the host must not have to tell «this scene found no
+         * node» from «this scene is older than the field».
+         */
+        async 'a failure with no node to blame reports an empty one'($) {
+            const { made } = scene($);
+            const sent = wired(made);
+            const root = `${d}hot_blank_page`;
+            await grown(made, root, `${root} ${d}mol_view\n\ttag \\one\n`);
+            made.error_post('runtime', 'something nobody owns', '');
+            const failed = failure(sent, 'runtime');
+            $mol_assert_equal(failed?.message, 'something nobody owns');
+            $mol_assert_equal(failed?.node, '');
+        },
+        /**
+         * A COMPILE failure names a class, and a class is not a node. The tree still
+         * on the screen was built from the previous text, so the live instance of
+         * the class just broken is the node the user is looking at.
+         */
+        async 'a compile failure names the node of the class that broke'($) {
+            const { made } = scene($);
+            const sent = wired(made);
+            const root = `${d}hot_guilt_page`;
+            const src = (kid) => `${root} ${d}mol_view\n\tsub /\n\t\t<= Kid ${d}hot_guilt_kid\n`
+                + `${d}hot_guilt_kid ${kid}\n\ttag \\one\n`;
+            const first = await grown(made, root, src(`${d}mol_view`));
+            $mol_assert_ok(first.Kid());
+            // the child now inherits a class nobody declared: the generated code throws
+            await grown(made, root, src(`${d}hot_guilt_ghost`));
+            $mol_assert_ok(made.compile_error());
+            $mol_assert_equal(made.compile_class(), `${d}hot_guilt_kid`);
+            made.report_send();
+            $mol_assert_equal(failure(sent, 'compile')?.node, 'Kid');
+        },
+        /**
+         * The error state lives in the graph, not in a field beside it.
+         *
+         * It used to be a plain field written from inside the cell that builds the
+         * instance, and a reader of a field is woken by nothing: the label on the
+         * node would light up a round late, or not until something else moved. So
+         * what is asserted is not the value but the waking — a subscriber that has
+         * read the failure answers with the new one without the scene being asked
+         * again — a cached atom nobody invalidated answers with what it remembers,
+         * which is precisely what a field beside the graph produces.
+         */
+        async 'a reader of the compile failure is woken when it changes'($) {
+            const { made } = scene($);
+            const root = `${d}hot_wake_page`;
+            const src = (tag) => `${root} ${d}mol_view\n\ttag \\${tag}\n`;
+            await grown(made, root, src('one'));
+            const seen = {};
+            const atom = $mol_wire_atom.solo(seen, function watcher() { return made.compile_error(); });
+            $mol_assert_equal(atom.sync(), '');
+            // an heir of a class nobody declared: the generated code throws
+            await grown(made, root, src('one') + `${d}hot_wake_kid ${d}hot_wake_ghost\n`);
+            // The subscriber is asked, not the scene. A cached atom nobody
+            // invalidated answers with what it remembers, and that is exactly the
+            // symptom of a failure kept in a field beside the graph.
+            $mol_assert_ok(atom.sync());
+            $mol_assert_equal(atom.sync(), made.compile_error());
+        },
+        /**
+         * The FORM of the name, which is what the two halves stick together by.
+         *
+         * The host finds the box of a node by a name out of `sizes`, and there only
+         * the direct children of the root are kept. A path, a class name or anything
+         * with a slash in it finds no box, so no mark appears — with no error, no log
+         * and nothing to notice. Hence a test on the shape of the string and not only
+         * on which node it points at.
+         */
+        async 'the reported node is a part name, not a path and not a class'($) {
+            const { made } = scene($);
+            const root = `${d}hot_shape_name_page`;
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Tail ${d}hot_shape_name_tail\n`
+                + `${d}hot_shape_name_tail ${d}mol_view\n\tsub /\n\t\t<= Deep ${d}hot_shape_name_deep\n`
+                + `${d}hot_shape_name_deep ${d}mol_view\n\tsub /\n\t\t<= boom \\\n`);
+            made.doc_js({ [`${d}hot_shape_name_deep`]: 'boom() { throw new Error( "bang" ) }' });
+            await settled(() => made.instance());
+            try {
+                first.dom_tree();
+            }
+            catch { }
+            const node = made.render_error(first).node;
+            $mol_assert_equal(node.includes('/'), false);
+            $mol_assert_equal(node.startsWith('$'), false);
+            // and it is one of the names the host is given for a box, not merely a
+            // string without a slash. Taken off the walk and not off `sizes`: a node
+            // run has no layout, so nothing is connected and nothing is measured.
+            const walk = made.walk_of(first);
+            const parts = walk.kids_of(first)
+                .map(kid => walk.view_of(kid))
+                .filter(Boolean)
+                .map(view => walk.prop_of(view));
+            $mol_assert_equal(parts.includes(node), true);
+        },
+        /**
+         * A failure of the document itself belongs to no node of the canvas.
+         *
+         * Naming the root class here would hand the host a class name where it
+         * expects a part name — a mark that silently never appears. An empty node
+         * says the same thing honestly, and the text still reaches the status line.
+         */
+        async 'a failure of the root itself is reported with no node'($) {
+            const { made } = scene($);
+            const root = `${d}hot_top_page`;
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= boom \\\n`);
+            made.doc_js({ [root]: 'boom() { throw new Error( "bang" ) }' });
+            await settled(() => made.instance());
+            try {
+                first.dom_tree();
+            }
+            catch { }
+            const failed = made.render_error(first);
+            $mol_assert_ok(failed.message);
+            $mol_assert_equal(failed.node, '');
+        },
+        /**
+         * A property declared AND written by hand keeps its state too, and its atom
+         * does not sit in the field its name suggests.
+         *
+         * The decorator copies the name off the base wrapper when the base was
+         * decorated already, and the copy carries a trailing space, so a property
+         * memoized both by the generator and by the body lives in `note ()` rather
+         * than in `note()`. That is exactly the shape the code editor produces, and
+         * a swap that built the field name by gluing `name + '()'` would find
+         * nothing, retarget nothing and lose what the user typed — silently, on
+         * every edit.
+         */
+        async 'a property memoized twice keeps its state across an edit'($) {
+            const { made } = scene($);
+            const root = `${d}hot_twice_page`;
+            const src = (tag) => `${root} ${d}mol_view\n\ttag \\${tag}\n\tnote? \\\n`;
+            made.doc_root(root);
+            made.doc_src(src('one'));
+            made.doc_js({ [root]: 'note( next ) { return next ?? "from body" }' });
+            const first = await settled(() => made.instance());
+            $mol_assert_equal(first.note(), 'from body');
+            // the atom is where the double decoration put it, not where the name says
+            $mol_assert_like(Object.getOwnPropertyNames(first).filter(key => key.endsWith('()')), ['note ()']);
+            first.note('typed by hand');
+            const second = await grown(made, root, src('two'));
+            $mol_assert_equal(second, first);
+            $mol_assert_equal(second.tag(), 'two');
+            $mol_assert_equal(second.note(), 'typed by hand');
+            $mol_assert_equal(made.compile_error(), '');
+        },
+        /**
+         * An edit of a handwritten body reaches the DOM, not only the method.
+         *
+         * Seen in a browser: the body of `greeting()` changed, `greeting()` answered
+         * the new text when called, and the node kept showing the old one until the
+         * next edit of the tree. A method the tree never declared was no cell, so
+         * the swap had nothing to wake. Asserted on the RENDERED text, because the
+         * value of the method was right all along.
+         */
+        async 'an edit of a handwritten body reaches the rendered text'($) {
+            const { made } = scene($);
+            const root = `${d}hot_paint_page`;
+            const kid = `${d}hot_paint_kid`;
+            made.doc_js({ [kid]: 'greeting() { return "Живая" }' });
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Knopka ${kid}\n`
+                + `${kid} ${d}mol_view\n\tsub /\n\t\t<= greeting \\\n`);
+            first.dom_tree();
+            $mol_assert_equal(first.Knopka().dom_node().textContent, 'Живая');
+            made.doc_js({ [kid]: 'greeting() { return "Ожила" }' });
+            $mol_assert_equal(await settled(() => made.instance()), first);
+            first.dom_tree();
+            $mol_assert_equal(first.Knopka().dom_node().textContent, 'Ожила');
+        },
+        /**
+         * The other half of the same defect: a method that appears heals the node
+         * that failed for want of it. Nothing in the text of `title()` changed, so
+         * no text can point at the failure; what points at it is the failure itself,
+         * and an atom holding one has nothing to lose by recomputing.
+         */
+        async 'a method that appears heals the node that failed for want of it'($) {
+            const { made } = scene($);
+            const root = `${d}hot_heal_page`;
+            const kid = `${d}hot_heal_kid`;
+            made.doc_js({ [kid]: 'title() { return this.greeting() }' });
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Knopka ${kid}\n`
+                + `${kid} ${d}mol_view\n\tsub /\n\t\t<= title \\\n`);
+            first.dom_tree();
+            // the failure is on the node; its text is not, jsdom having no `innerText`
+            const node = first.Knopka().dom_node();
+            $mol_assert_equal(node.getAttribute('mol_view_error'), 'TypeError');
+            made.doc_js({ [kid]: 'title() { return this.greeting() }\ngreeting() { return "Живая" }' });
+            $mol_assert_equal(await settled(() => made.instance()), first);
+            first.dom_tree();
+            $mol_assert_equal(node.getAttribute('mol_view_error'), null);
+            $mol_assert_equal(node.textContent, 'Живая');
+        },
         /**
          * The filter narrows what is DRAWN and nothing else. Every other reader of
          * the document — the walk that measures, the seek that blames a node, the
@@ -8258,7 +8259,7 @@ var $;
          * missing again. Delivery ends the asking without a message.
          */
         async 'a missing asset is asked for once, and again once it is missing again'($) {
-            const made = scene($);
+            const { made } = scene($);
             const sent = [];
             made.post = (message) => { sent.push(message); };
             const asks = () => sent.filter(m => m.kind === 'asset_want').map(m => m.id);
@@ -8286,7 +8287,7 @@ var $;
         },
         /** Every text an address can stand in is watched, not the source alone. */
         'assets are missed from the styles and the libraries too'($) {
-            const made = scene($);
+            const { made } = scene($);
             made.doc_css('a { background: url(asset:css1) }');
             made.libs([{ tree: `${d}visible_lib ${d}mol_view\n\turi \\asset:lib1\n`, js: '', css: 'b { background: url(asset:lib2) }' }]);
             $mol_assert_like(made.assets_missing(), ['css1', 'lib1', 'lib2']);

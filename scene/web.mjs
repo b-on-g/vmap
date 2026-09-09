@@ -32,566 +32,6 @@ $.$$ = $
 "use strict";
 var $;
 (function ($) {
-    /** Generates unique identifier. */
-    function $mol_guid(length = 8, exists = () => false) {
-        for (;;) {
-            let id = Math.random().toString(36).substring(2, length + 2).toUpperCase();
-            if (exists(id))
-                continue;
-            return id;
-        }
-    }
-    $.$mol_guid = $mol_guid;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_fail(error) {
-        throw error;
-    }
-    $.$mol_fail = $mol_fail;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /** Special status statuses. */
-    let $mol_wire_cursor;
-    (function ($mol_wire_cursor) {
-        /** Update required. */
-        $mol_wire_cursor[$mol_wire_cursor["stale"] = -1] = "stale";
-        /** Some of (transitive) pub update required. */
-        $mol_wire_cursor[$mol_wire_cursor["doubt"] = -2] = "doubt";
-        /** Actual state but may be dropped. */
-        $mol_wire_cursor[$mol_wire_cursor["fresh"] = -3] = "fresh";
-        /** State will never be changed. */
-        $mol_wire_cursor[$mol_wire_cursor["final"] = -4] = "final";
-    })($mol_wire_cursor = $.$mol_wire_cursor || ($.$mol_wire_cursor = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * Collects subscribers in compact array. 28B
-     */
-    class $mol_wire_pub extends Object {
-        constructor(id = `$mol_wire_pub:${$mol_guid()}`) {
-            super();
-            this[Symbol.toStringTag] = id;
-        }
-        [Symbol.toStringTag];
-        data = [];
-        // Derived objects should be Arrays.
-        static get [Symbol.species]() {
-            return Array;
-        }
-        /**
-         * Index of first subscriber.
-         */
-        sub_from = 0; // 4B
-        /**
-         * All current subscribers.
-         */
-        get sub_list() {
-            const res = [];
-            for (let i = this.sub_from; i < this.data.length; i += 2) {
-                res.push(this.data[i]);
-            }
-            return res;
-        }
-        /**
-         * Has any subscribers or not.
-         */
-        get sub_empty() {
-            return this.sub_from === this.data.length;
-        }
-        /**
-         * Subscribe subscriber to this publisher events and return position of subscriber that required to unsubscribe.
-         */
-        sub_on(sub, pub_pos) {
-            const pos = this.data.length;
-            this.data.push(sub, pub_pos);
-            return pos;
-        }
-        /**
-         * Unsubscribe subscriber from this publisher events by subscriber position provided by `on(pub)`.
-         */
-        sub_off(sub_pos) {
-            if (!(sub_pos < this.data.length)) {
-                $mol_fail(new Error(`Wrong pos ${sub_pos}`));
-            }
-            const end = this.data.length - 2;
-            if (sub_pos !== end) {
-                this.peer_move(end, sub_pos);
-            }
-            this.data.length = end;
-            if (end === this.sub_from)
-                this.reap();
-        }
-        /**
-         * Called when last sub was unsubscribed.
-         **/
-        reap() { }
-        /**
-         * Autowire this publisher with current subscriber.
-         **/
-        promote() {
-            $mol_wire_auto()?.track_next(this);
-        }
-        /**
-         * Enforce actualization. Should not throw errors.
-         */
-        fresh() { }
-        /**
-         * Allow to put data to caches in the subtree.
-         */
-        complete() { }
-        get incompleted() {
-            return false;
-        }
-        /**
-         * Notify subscribers about self changes.
-         */
-        emit(quant = $mol_wire_cursor.stale) {
-            for (let i = this.sub_from; i < this.data.length; i += 2) {
-                ;
-                this.data[i].absorb(quant, this.data[i + 1]);
-            }
-        }
-        /**
-         * Moves peer from one position to another. Doesn't clear data at old position!
-         */
-        peer_move(from_pos, to_pos) {
-            const peer = this.data[from_pos];
-            const self_pos = this.data[from_pos + 1];
-            this.data[to_pos] = peer;
-            this.data[to_pos + 1] = self_pos;
-            peer.peer_repos(self_pos, to_pos);
-        }
-        /**
-         * Updates self position in the peer.
-         */
-        peer_repos(peer_pos, self_pos) {
-            this.data[peer_pos + 1] = self_pos;
-        }
-    }
-    $.$mol_wire_pub = $mol_wire_pub;
-})($ || ($ = {}));
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($) {
-    $.$mol_wire_auto_sub = null;
-    /**
-     * When fulfilled, all publishers are promoted to this subscriber on access to its.
-     */
-    function $mol_wire_auto(next = $.$mol_wire_auto_sub) {
-        return $.$mol_wire_auto_sub = next;
-    }
-    $.$mol_wire_auto = $mol_wire_auto;
-    /**
-     * Affection queue. Used to prevent accidental stack overflow on emit.
-     */
-    $.$mol_wire_affected = [];
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_fail_hidden(error) {
-        throw error; /// Use 'Never Pause Here' breakpoint in DevTools or simply blackbox this script
-    }
-    $.$mol_fail_hidden = $mol_fail_hidden;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    // https://docs.google.com/document/d/1FTascZXT9cxfetuPRT2eXPQKXui4nWFivUnS_335T3U/preview#
-    $['devtoolsFormatters'] ||= [];
-    function $mol_dev_format_register(config) {
-        $['devtoolsFormatters'].push(config);
-    }
-    $.$mol_dev_format_register = $mol_dev_format_register;
-    $.$mol_dev_format_head = Symbol('$mol_dev_format_head');
-    $.$mol_dev_format_body = Symbol('$mol_dev_format_body');
-    function $mol_dev_format_button(label, click) {
-        return $mol_dev_format_auto({
-            [$.$mol_dev_format_head]() {
-                return $.$mol_dev_format_span({ color: 'cornflowerblue' }, label);
-            },
-            [$.$mol_dev_format_body]() {
-                Promise.resolve().then(click);
-                return $.$mol_dev_format_span({});
-            }
-        });
-    }
-    $mol_dev_format_register({
-        header: (val, config = false) => {
-            if (config)
-                return null;
-            if (!val)
-                return null;
-            if ($.$mol_dev_format_head in val) {
-                try {
-                    return val[$.$mol_dev_format_head]();
-                }
-                catch (error) {
-                    return $.$mol_dev_format_accent($mol_dev_format_native(val), '💨', $mol_dev_format_native(error), '');
-                }
-            }
-            if (typeof val === 'function') {
-                return $mol_dev_format_native(val);
-            }
-            if (val instanceof Error) {
-                return $.$mol_dev_format_span({}, $mol_dev_format_native(val), ' ', $mol_dev_format_button('throw', () => $mol_fail_hidden(val)));
-            }
-            if (val instanceof Promise) {
-                return $.$mol_dev_format_shade($mol_dev_format_native(val), ' ', val[Symbol.toStringTag] ?? '');
-            }
-            if (Symbol.toStringTag in val) {
-                return $mol_dev_format_native(val);
-            }
-            return null;
-        },
-        hasBody: (val, config = false) => {
-            if (config)
-                return false;
-            if (!val)
-                return false;
-            // if( Error.isError( val ) ) true
-            if (val[$.$mol_dev_format_body])
-                return true;
-            return false;
-        },
-        body: (val, config = false) => {
-            if (config)
-                return null;
-            if (!val)
-                return null;
-            if ($.$mol_dev_format_body in val) {
-                try {
-                    return val[$.$mol_dev_format_body]();
-                }
-                catch (error) {
-                    return $.$mol_dev_format_accent($mol_dev_format_native(val), '💨', $mol_dev_format_native(error), '');
-                }
-            }
-            // if( Error.isError( val ) ) {
-            // 	return $mol_dev_format_native( val )
-            // }
-            return null;
-        },
-    });
-    function $mol_dev_format_native(obj) {
-        if (typeof obj === 'undefined')
-            return $.$mol_dev_format_shade('undefined');
-        // if( ![ 'object', 'function', 'symbol' ].includes( typeof obj )  ) return obj
-        return [
-            'object',
-            {
-                object: obj,
-                config: true,
-            },
-        ];
-    }
-    $.$mol_dev_format_native = $mol_dev_format_native;
-    function $mol_dev_format_auto(obj) {
-        if (obj == null)
-            return $.$mol_dev_format_shade(String(obj));
-        return [
-            'object',
-            {
-                object: obj,
-                config: false,
-            },
-        ];
-    }
-    $.$mol_dev_format_auto = $mol_dev_format_auto;
-    function $mol_dev_format_element(element, style, ...content) {
-        const styles = [];
-        for (let key in style)
-            styles.push(`${key} : ${style[key]}`);
-        return [
-            element,
-            {
-                style: styles.join(' ; '),
-            },
-            ...content,
-        ];
-    }
-    $.$mol_dev_format_element = $mol_dev_format_element;
-    $.$mol_dev_format_span = $mol_dev_format_element.bind(null, 'span');
-    $.$mol_dev_format_div = $mol_dev_format_element.bind(null, 'div');
-    $.$mol_dev_format_ol = $mol_dev_format_element.bind(null, 'ol');
-    $.$mol_dev_format_li = $mol_dev_format_element.bind(null, 'li');
-    $.$mol_dev_format_table = $mol_dev_format_element.bind(null, 'table');
-    $.$mol_dev_format_tr = $mol_dev_format_element.bind(null, 'tr');
-    $.$mol_dev_format_td = $mol_dev_format_element.bind(null, 'td');
-    $.$mol_dev_format_accent = $.$mol_dev_format_span.bind(null, {
-        'color': 'magenta',
-    });
-    $.$mol_dev_format_strong = $.$mol_dev_format_span.bind(null, {
-        'font-weight': 'bold',
-    });
-    $.$mol_dev_format_string = $.$mol_dev_format_span.bind(null, {
-        'color': 'green',
-    });
-    $.$mol_dev_format_shade = $.$mol_dev_format_span.bind(null, {
-        'color': 'gray',
-    });
-    $.$mol_dev_format_indent = $.$mol_dev_format_div.bind(null, {
-        'margin-inline-start': '13px'
-    });
-    class Stack extends Array {
-        // [ Symbol.toPrimitive ]() {
-        // 	return this.toString()
-        // }
-        match(...args) {
-            return this.toString().match(...args);
-        }
-        split(...args) {
-            return this.toString().split(...args);
-        }
-        toString() {
-            return this.join('\n');
-        }
-    }
-    class Call extends Object {
-        type;
-        function;
-        method;
-        eval;
-        source;
-        offset;
-        pos;
-        object;
-        flags;
-        [Symbol.toStringTag];
-        constructor(call) {
-            super();
-            this.type = call.getTypeName() ?? '';
-            this.function = call.getFunctionName() ?? '';
-            this.method = call.getMethodName() ?? '';
-            if (this.method === this.function)
-                this.method = '';
-            // const func = c.getFunction()
-            this.pos = [call.getEnclosingLineNumber() ?? 0, call.getEnclosingColumnNumber() ?? 0];
-            this.eval = call.getEvalOrigin() ?? '';
-            this.source = call.getScriptNameOrSourceURL() ?? '';
-            this.object = call.getThis();
-            this.offset = call.getPosition();
-            const flags = [];
-            if (call.isAsync())
-                flags.push('async');
-            if (call.isConstructor())
-                flags.push('constructor');
-            if (call.isEval())
-                flags.push('eval');
-            if (call.isNative())
-                flags.push('native');
-            if (call.isPromiseAll())
-                flags.push('PromiseAll');
-            if (call.isToplevel())
-                flags.push('top');
-            this.flags = flags;
-            const type = this.type ? this.type + '.' : '';
-            const func = this.function || '<anon>';
-            const method = this.method ? ' [' + this.method + '] ' : '';
-            this[Symbol.toStringTag] = `${type}${func}${method}`;
-        }
-        [Symbol.toPrimitive]() {
-            return this.toString();
-        }
-        toString() {
-            const object = this.object || '';
-            const label = this[Symbol.toStringTag];
-            const source = `${this.source}:${this.pos.join(':')} #${this.offset}`;
-            return `\tat ${object}${label} (${source})`;
-        }
-        [$.$mol_dev_format_head]() {
-            return $.$mol_dev_format_div({}, $mol_dev_format_native(this), $.$mol_dev_format_shade(' '), ...this.object ? [
-                $mol_dev_format_native(this.object),
-            ] : [], ...this.method ? [$.$mol_dev_format_shade(' ', ' [', this.method, ']')] : [], $.$mol_dev_format_shade(' ', this.flags.join(', ')));
-        }
-    }
-    Error.prepareStackTrace ??= (error, stack) => new Stack(...stack.map(call => new Call(call)));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * Publisher that can auto collect other publishers. 32B
-     *
-     * 	P1 P2 P3 P4 S1 S2 S3
-     * 	^           ^
-     * 	pubs_from   subs_from
-     */
-    class $mol_wire_pub_sub extends $mol_wire_pub {
-        pub_from = 0; // 4B
-        cursor = $mol_wire_cursor.stale; // 4B
-        get temp() {
-            return false;
-        }
-        get pub_list() {
-            const res = [];
-            const max = this.cursor >= 0 ? this.cursor : this.sub_from;
-            for (let i = this.pub_from; i < max; i += 2) {
-                if (this.data[i])
-                    res.push(this.data[i]);
-            }
-            return res;
-        }
-        track_on() {
-            this.cursor = this.pub_from;
-            const sub = $mol_wire_auto();
-            $mol_wire_auto(this);
-            return sub;
-        }
-        promote() {
-            if (this.cursor >= this.pub_from) {
-                $mol_fail(new Error('Circular subscription'));
-            }
-            super.promote();
-        }
-        track_next(pub) {
-            if (this.cursor < 0)
-                $mol_fail(new Error('Promo to non begun sub'));
-            if (this.cursor < this.sub_from) {
-                const next = this.data[this.cursor];
-                if (pub === undefined)
-                    return next ?? null;
-                if (next === pub) {
-                    this.cursor += 2;
-                    return next;
-                }
-                if (next) {
-                    if (this.sub_from < this.data.length) {
-                        this.peer_move(this.sub_from, this.data.length);
-                    }
-                    this.peer_move(this.cursor, this.sub_from);
-                    this.sub_from += 2;
-                }
-            }
-            else {
-                if (pub === undefined)
-                    return null;
-                if (this.sub_from < this.data.length) {
-                    this.peer_move(this.sub_from, this.data.length);
-                }
-                this.sub_from += 2;
-            }
-            this.data[this.cursor] = pub;
-            this.data[this.cursor + 1] = pub.sub_on(this, this.cursor);
-            this.cursor += 2;
-            return pub;
-        }
-        track_off(sub) {
-            $mol_wire_auto(sub);
-            if (this.cursor < 0) {
-                $mol_fail(new Error('End of non begun sub'));
-            }
-            for (let cursor = this.pub_from; cursor < this.cursor; cursor += 2) {
-                const pub = this.data[cursor];
-                pub.fresh();
-            }
-            this.cursor = $mol_wire_cursor.fresh;
-        }
-        pub_off(sub_pos) {
-            this.data[sub_pos] = undefined;
-            this.data[sub_pos + 1] = undefined;
-        }
-        destructor() {
-            for (let cursor = this.data.length - 2; cursor >= this.sub_from; cursor -= 2) {
-                const sub = this.data[cursor];
-                const pos = this.data[cursor + 1];
-                sub.pub_off(pos);
-            }
-            this.data.length = this.sub_from;
-            this.cursor = this.pub_from;
-            this.track_cut();
-            this.cursor = $mol_wire_cursor.stale;
-        }
-        track_cut() {
-            if (this.cursor < this.pub_from) {
-                $mol_fail(new Error('Cut of non begun sub'));
-            }
-            let end = this.data.length;
-            for (let cursor = this.cursor; cursor < this.sub_from; cursor += 2) {
-                const pub = this.data[cursor];
-                pub?.sub_off(this.data[cursor + 1]);
-                end -= 2;
-                if (this.sub_from <= end)
-                    this.peer_move(end, cursor);
-            }
-            this.data.length = end;
-            this.sub_from = this.cursor;
-        }
-        complete() { }
-        complete_pubs() {
-            const limit = this.cursor < 0 ? this.sub_from : this.cursor;
-            for (let cursor = this.pub_from; cursor < limit; cursor += 2) {
-                const pub = this.data[cursor];
-                if (pub?.incompleted)
-                    return;
-            }
-            for (let cursor = this.pub_from; cursor < limit; cursor += 2) {
-                const pub = this.data[cursor];
-                pub?.complete();
-            }
-        }
-        absorb(quant = $mol_wire_cursor.stale, pos = -1) {
-            if (this.cursor === $mol_wire_cursor.final)
-                return;
-            if (this.cursor >= quant)
-                return;
-            this.cursor = quant;
-            this.emit($mol_wire_cursor.doubt);
-            // if( pos >= 0 && pos < this.sub_from - 2 ) {
-            // 	const pub = this.data[ pos ] as $mol_wire_pub
-            // 	if( pub instanceof $mol_wire_task ) return
-            // 	for(
-            // 		let cursor = this.pub_from;
-            // 		cursor < this.sub_from;
-            // 		cursor += 2
-            // 	) {
-            // 		const pub = this.data[ cursor ] as $mol_wire_pub
-            // 		if( pub instanceof $mol_wire_task ) {
-            // 			pub.destructor()
-            // 		}
-            // 	}
-            // }
-        }
-        [$mol_dev_format_head]() {
-            return $mol_dev_format_native(this);
-        }
-        /**
-         * Is subscribed to any publisher or not.
-         */
-        get pub_empty() {
-            return this.sub_from === this.pub_from;
-        }
-    }
-    $.$mol_wire_pub_sub = $mol_wire_pub_sub;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
     $.$mol_ambient_ref = Symbol('$mol_ambient_ref');
     function $mol_ambient(overrides) {
         return Object.setPrototypeOf(overrides, this || $);
@@ -699,6 +139,26 @@ var $;
 
 ;
 "use strict";
+var $;
+(function ($) {
+    function $mol_fail(error) {
+        throw error;
+    }
+    $.$mol_fail = $mol_fail;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_fail_hidden(error) {
+        throw error; /// Use 'Never Pause Here' breakpoint in DevTools or simply blackbox this script
+    }
+    $.$mol_fail_hidden = $mol_fail_hidden;
+})($ || ($ = {}));
+
+;
+"use strict";
 
 ;
 "use strict";
@@ -792,957 +252,6 @@ var $;
         }
     }
     $.$mol_object2 = $mol_object2;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    class $mol_after_tick extends $mol_object2 {
-        task;
-        static promise = null;
-        cancelled = false;
-        constructor(task) {
-            super();
-            this.task = task;
-            if (!$mol_after_tick.promise)
-                $mol_after_tick.promise = Promise.resolve().then(() => {
-                    $mol_after_tick.promise = null;
-                });
-            $mol_after_tick.promise.then(() => {
-                if (this.cancelled)
-                    return;
-                task();
-            });
-        }
-        destructor() {
-            this.cancelled = true;
-        }
-    }
-    $.$mol_after_tick = $mol_after_tick;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_promise_like(val) {
-        try {
-            return val && typeof val === 'object' && 'then' in val && typeof val.then === 'function';
-        }
-        catch {
-            return false;
-        }
-    }
-    $.$mol_promise_like = $mol_promise_like;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const wrappers = new WeakMap();
-    /**
-     * Suspendable task with support both sync/async api.
-     *
-     * 	A1 A2 A3 A4 P1 P2 P3 P4 S1 S2 S3
-     * 	^           ^           ^
-     * 	args_from   pubs_from   subs_from
-     **/
-    class $mol_wire_fiber extends $mol_wire_pub_sub {
-        task;
-        host;
-        static warm = true;
-        static planning = new Set();
-        static reaping = new Set();
-        static plan_task = null;
-        static plan() {
-            if (this.plan_task)
-                return;
-            this.plan_task = new $mol_after_tick(() => {
-                try {
-                    this.sync();
-                }
-                finally {
-                    $mol_wire_fiber.plan_task = null;
-                }
-            });
-        }
-        static sync() {
-            // Sync whole fiber graph
-            while (this.planning.size) {
-                for (const fiber of this.planning) {
-                    this.planning.delete(fiber);
-                    if (fiber.cursor >= 0)
-                        continue;
-                    if (fiber.cursor === $mol_wire_cursor.final)
-                        continue;
-                    fiber.fresh();
-                }
-            }
-            // Collect garbage
-            while (this.reaping.size) {
-                const fibers = this.reaping;
-                this.reaping = new Set;
-                for (const fiber of fibers) {
-                    if (!fiber.sub_empty)
-                        continue;
-                    fiber.destructor();
-                }
-            }
-        }
-        cache = undefined;
-        get args() {
-            return this.data.slice(0, this.pub_from);
-        }
-        result() {
-            if ($mol_promise_like(this.cache))
-                return;
-            if (this.cache instanceof Error)
-                return;
-            return this.cache;
-        }
-        get incompleted() {
-            return $mol_promise_like(this.cache);
-        }
-        field() {
-            return this.task.name + '()';
-        }
-        constructor(id, task, host, args) {
-            super(id);
-            this.task = task;
-            this.host = host;
-            if (args)
-                this.data.push(...args);
-            this.pub_from = this.sub_from = args?.length ?? 0;
-        }
-        plan() {
-            $mol_wire_fiber.planning.add(this);
-            $mol_wire_fiber.plan();
-            return this;
-        }
-        reap() {
-            $mol_wire_fiber.reaping.add(this);
-            $mol_wire_fiber.plan();
-        }
-        toString() {
-            return this[Symbol.toStringTag];
-        }
-        toJSON() {
-            return this[Symbol.toStringTag];
-        }
-        [$mol_dev_format_head]() {
-            const cursor = {
-                [$mol_wire_cursor.stale]: '🔴',
-                [$mol_wire_cursor.doubt]: '🟡',
-                [$mol_wire_cursor.fresh]: '🟢',
-                [$mol_wire_cursor.final]: '🔵',
-            }[this.cursor] ?? this.cursor.toString();
-            return $mol_dev_format_div({}, $mol_owning_check(this, this.cache)
-                ? $mol_dev_format_shade(cursor)
-                : $mol_dev_format_shade(this[Symbol.toStringTag], cursor), $mol_dev_format_auto(this.cache));
-        }
-        [$mol_dev_format_body]() { return null; }
-        get $() {
-            return (this.host ?? this.task)['$'];
-        }
-        emit(quant = $mol_wire_cursor.stale) {
-            if (this.sub_empty)
-                this.plan();
-            else
-                super.emit(quant);
-        }
-        fresh() {
-            if (this.cursor === $mol_wire_cursor.fresh)
-                return;
-            if (this.cursor === $mol_wire_cursor.final)
-                return;
-            check: if (this.cursor === $mol_wire_cursor.doubt) {
-                for (let i = this.pub_from; i < this.sub_from; i += 2) {
-                    ;
-                    this.data[i]?.fresh();
-                    if (this.cursor !== $mol_wire_cursor.doubt)
-                        break check;
-                }
-                this.cursor = $mol_wire_cursor.fresh;
-                return;
-            }
-            const bu = this.track_on();
-            let result;
-            try {
-                switch (this.pub_from) {
-                    case 0:
-                        result = this.task.call(this.host);
-                        break;
-                    case 1:
-                        result = this.task.call(this.host, this.data[0]);
-                        break;
-                    default:
-                        result = this.task.call(this.host, ...this.args);
-                        break;
-                }
-                if ($mol_promise_like(result)) {
-                    if (wrappers.has(result)) {
-                        result = wrappers.get(result).then(a => a);
-                    }
-                    else {
-                        const put = (res) => {
-                            if (this.cache === result)
-                                this.put(res);
-                            return res;
-                        };
-                        wrappers.set(result, result = Object.assign(result.then(put, put), { destructor: result.destructor || (() => { }) }));
-                        wrappers.set(result, result);
-                        const error = new Error(`Promise in ${this}`);
-                        Object.defineProperty(result, 'stack', { get: () => error.stack });
-                    }
-                }
-            }
-            catch (error) {
-                if (error instanceof Error || $mol_promise_like(error)) {
-                    result = error;
-                }
-                else {
-                    result = new Error(String(error), { cause: error });
-                }
-                if ($mol_promise_like(result)) {
-                    if (wrappers.has(result)) {
-                        result = wrappers.get(result);
-                    }
-                    else {
-                        const put = (v) => {
-                            if (this.cache === result)
-                                this.absorb();
-                            return v;
-                        };
-                        wrappers.set(result, result = Object.assign(result.then(put, put), { destructor: result.destructor || (() => { }) }));
-                        const error = new Error(`Promise in ${this}`);
-                        Object.defineProperty(result, 'stack', { get: () => error.stack });
-                    }
-                }
-            }
-            if (!$mol_promise_like(result)) {
-                this.track_cut();
-            }
-            this.track_off(bu);
-            this.put(result);
-            return this;
-        }
-        refresh() {
-            this.cursor = $mol_wire_cursor.stale;
-            this.fresh();
-        }
-        /**
-         * Synchronous execution. Throws Promise when waits async task (SuspenseAPI provider).
-         * Should be called inside SuspenseAPI consumer (ie fiber).
-         */
-        sync() {
-            if (!$mol_wire_fiber.warm) {
-                return this.result();
-            }
-            this.promote();
-            this.fresh();
-            if (this.cache instanceof Error) {
-                return $mol_fail_hidden(this.cache);
-            }
-            if ($mol_promise_like(this.cache)) {
-                return $mol_fail_hidden(this.cache);
-            }
-            return this.cache;
-        }
-        /**
-         * Asynchronous execution.
-         * It's SuspenseAPI consumer. So SuspenseAPI providers can be called inside.
-         */
-        async async_raw() {
-            while (true) {
-                this.fresh();
-                if (this.cache instanceof Error) {
-                    $mol_fail_hidden(this.cache);
-                }
-                if (!$mol_promise_like(this.cache))
-                    return this.cache;
-                await Promise.race([this.cache, this.step()]);
-                if (!$mol_promise_like(this.cache))
-                    return this.cache;
-                if (this.cursor === $mol_wire_cursor.final) {
-                    // never ends on destructed fiber
-                    await new Promise(() => { });
-                }
-            }
-        }
-        async() {
-            const promise = this.async_raw();
-            if (!promise.destructor)
-                promise.destructor = () => this.destructor();
-            return promise;
-        }
-        step() {
-            return new Promise(done => {
-                const sub = new $mol_wire_pub_sub;
-                const prev = sub.track_on();
-                sub.track_next(this);
-                sub.track_off(prev);
-                sub.absorb = () => {
-                    done(null);
-                    setTimeout(() => sub.destructor());
-                };
-            });
-        }
-        destructor() {
-            super.destructor();
-            $mol_wire_fiber.planning.delete(this);
-            if (!$mol_owning_check(this, this.cache))
-                return;
-            try {
-                this.cache.destructor();
-            }
-            catch (result) {
-                if ($mol_promise_like(result)) {
-                    const error = new Error(`Promise in ${this}.destructor()`);
-                    Object.defineProperty(result, 'stack', { get: () => error.stack });
-                }
-                $mol_fail_hidden(result);
-            }
-        }
-    }
-    $.$mol_wire_fiber = $mol_wire_fiber;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const TypedArray = Object.getPrototypeOf(Uint8Array);
-    /** Returns string key for any value. */
-    function $mol_key(value) {
-        primitives: {
-            if (typeof value === 'bigint')
-                return value.toString() + 'n';
-            if (typeof value === 'symbol')
-                return `Symbol(${value.description})`;
-            if (!value)
-                return JSON.stringify(value); // 0, null, ""
-            if (typeof value !== 'object' && typeof value !== 'function')
-                return JSON.stringify(value); // boolean, number, string
-        }
-        caching: {
-            let key = $mol_key_store.get(value);
-            if (key)
-                return key;
-        }
-        objects: {
-            if (value instanceof TypedArray) {
-                return `${value[Symbol.toStringTag]}([${[...value].map(v => $mol_key(v))}])`;
-            }
-            if (Array.isArray(value))
-                return `[${value.map(v => $mol_key(v))}]`;
-            if (value instanceof RegExp)
-                return value.toString();
-            if (value instanceof Date)
-                return `Date(${value.valueOf()})`;
-        }
-        structures: {
-            const proto = Reflect.getPrototypeOf(value);
-            if (!proto || !Reflect.getPrototypeOf(proto)) {
-                return `{${Object.entries(value).map(([k, v]) => JSON.stringify(k) + ':' + $mol_key(v))}}`;
-            }
-        }
-        handlers: {
-            if ($mol_key_handle in value) {
-                return value[$mol_key_handle]();
-            }
-        }
-        containers: {
-            const key = JSON.stringify('#' + $mol_guid());
-            $mol_key_store.set(value, key);
-            return key;
-        }
-    }
-    $.$mol_key = $mol_key;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    class $mol_after_frame extends $mol_object2 {
-        task;
-        static _promise = null;
-        static get promise() {
-            if (this._promise)
-                return this._promise;
-            return this._promise = new Promise(done => {
-                const complete = () => {
-                    this._promise = null;
-                    done();
-                };
-                if (typeof requestAnimationFrame === 'function') {
-                    requestAnimationFrame(complete);
-                }
-                else {
-                    setTimeout(complete, 16);
-                }
-            });
-        }
-        cancelled = false;
-        promise;
-        constructor(task) {
-            super();
-            this.task = task;
-            this.promise = $mol_after_frame.promise.then(() => {
-                if (this.cancelled)
-                    return;
-                task();
-            });
-        }
-        destructor() {
-            this.cancelled = true;
-        }
-    }
-    $.$mol_after_frame = $mol_after_frame;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $.$mol_compare_deep_cache = new WeakMap();
-    /**
-     * Deeply compares two values. Returns true if equal.
-     * Define `Symbol.toPrimitive` to customize.
-     */
-    function $mol_compare_deep(left, right) {
-        if (Object.is(left, right))
-            return true;
-        if (left === null)
-            return false;
-        if (right === null)
-            return false;
-        if (typeof left !== 'object')
-            return false;
-        if (typeof right !== 'object')
-            return false;
-        const left_proto = Reflect.getPrototypeOf(left);
-        const right_proto = Reflect.getPrototypeOf(right);
-        if (left_proto !== right_proto)
-            return false;
-        if (left instanceof Boolean)
-            return Object.is(left.valueOf(), right['valueOf']());
-        if (left instanceof Number)
-            return Object.is(left.valueOf(), right['valueOf']());
-        if (left instanceof String)
-            return Object.is(left.valueOf(), right['valueOf']());
-        if (left instanceof Date)
-            return Object.is(left.valueOf(), right['valueOf']());
-        if (left instanceof RegExp)
-            return left.source === right.source && left.flags === right.flags;
-        if (left instanceof Error)
-            return left.message === right.message && $mol_compare_deep(left.stack, right.stack);
-        let left_cache = $.$mol_compare_deep_cache.get(left);
-        if (left_cache) {
-            const right_cache = left_cache.get(right);
-            if (typeof right_cache === 'boolean')
-                return right_cache;
-        }
-        else {
-            left_cache = new WeakMap();
-            $.$mol_compare_deep_cache.set(left, left_cache);
-        }
-        left_cache.set(right, true);
-        let result;
-        try {
-            if (!left_proto)
-                result = compare_pojo(left, right);
-            else if (!Reflect.getPrototypeOf(left_proto))
-                result = compare_pojo(left, right);
-            else if (Symbol.toPrimitive in left)
-                result = compare_primitive(left, right);
-            else if (Array.isArray(left))
-                result = compare_array(left, right);
-            else if (left instanceof Set)
-                result = compare_set(left, right);
-            else if (left instanceof Map)
-                result = compare_map(left, right);
-            else if (ArrayBuffer.isView(left))
-                result = compare_buffer(left, right);
-            else if (Symbol.iterator in left)
-                result = compare_iterator(left[Symbol.iterator](), right[Symbol.iterator]());
-            else
-                result = false;
-        }
-        finally {
-            left_cache.set(right, result);
-        }
-        return result;
-    }
-    $.$mol_compare_deep = $mol_compare_deep;
-    function compare_array(left, right) {
-        const len = left.length;
-        if (len !== right.length)
-            return false;
-        for (let i = 0; i < len; ++i) {
-            if (!$mol_compare_deep(left[i], right[i]))
-                return false;
-        }
-        return true;
-    }
-    function compare_buffer(left, right) {
-        const len = left.byteLength;
-        if (len !== right.byteLength)
-            return false;
-        if (left instanceof DataView)
-            return compare_buffer(new Uint8Array(left.buffer, left.byteOffset, left.byteLength), new Uint8Array(right.buffer, right.byteOffset, right.byteLength));
-        for (let i = 0; i < len; ++i) {
-            if (left[i] !== right[i])
-                return false;
-        }
-        return true;
-    }
-    function compare_iterator(left, right) {
-        while (true) {
-            const left_next = left.next();
-            const right_next = right.next();
-            if (left_next.done !== right_next.done)
-                return false;
-            if (left_next.done)
-                break;
-            if (!$mol_compare_deep(left_next.value, right_next.value))
-                return false;
-        }
-        return true;
-    }
-    function compare_set(left, right) {
-        if (left.size !== right.size)
-            return false;
-        return compare_iterator(left.values(), right.values());
-    }
-    function compare_map(left, right) {
-        if (left.size !== right.size)
-            return false;
-        return compare_iterator(left.keys(), right.keys())
-            && compare_iterator(left.values(), right.values());
-    }
-    function compare_pojo(left, right) {
-        const left_keys = Object.getOwnPropertyNames(left);
-        const right_keys = Object.getOwnPropertyNames(right);
-        if (!compare_array(left_keys, right_keys))
-            return false;
-        for (let key of left_keys) {
-            if (!$mol_compare_deep(left[key], right[key]))
-                return false;
-        }
-        const left_syms = Object.getOwnPropertySymbols(left);
-        const right_syms = Object.getOwnPropertySymbols(right);
-        if (!compare_array(left_syms, right_syms))
-            return false;
-        for (let key of left_syms) {
-            if (!$mol_compare_deep(left[key], right[key]))
-                return false;
-        }
-        return true;
-    }
-    function compare_primitive(left, right) {
-        return Object.is(left[Symbol.toPrimitive]('default'), right[Symbol.toPrimitive]('default'));
-    }
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /** Log begin of collapsed group only when some logged inside, returns func to close group */
-    function $mol_log3_area_lazy(event) {
-        const self = this.$;
-        const stack = self.$mol_log3_stack;
-        const deep = stack.length;
-        let logged = false;
-        stack.push(() => {
-            logged = true;
-            self.$mol_log3_area.call(self, event);
-        });
-        return () => {
-            if (logged)
-                self.console.groupEnd();
-            if (stack.length > deep)
-                stack.length = deep;
-        };
-    }
-    $.$mol_log3_area_lazy = $mol_log3_area_lazy;
-    $.$mol_log3_stack = [];
-})($ || ($ = {}));
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_log3_web_make(level, color) {
-        return function $mol_log3_logger(event) {
-            const pending = this.$mol_log3_stack.pop();
-            if (pending)
-                pending();
-            let tpl = '%c';
-            const chunks = Object.entries(event);
-            for (let i = 0; i < chunks.length; ++i) {
-                tpl += (typeof chunks[i][1] === 'string') ? '%s: %s\n' : '%s: %o\n';
-            }
-            const style = `color:${color};font-weight:bolder`;
-            this.console[level](tpl.trim(), style, ...[].concat(...chunks));
-            const self = this;
-            return () => self.console.groupEnd();
-        };
-    }
-    $.$mol_log3_web_make = $mol_log3_web_make;
-    $.$mol_log3_come = $mol_log3_web_make('info', 'royalblue');
-    $.$mol_log3_done = $mol_log3_web_make('info', 'forestgreen');
-    $.$mol_log3_fail = $mol_log3_web_make('error', 'orangered');
-    $.$mol_log3_warn = $mol_log3_web_make('warn', 'goldenrod');
-    $.$mol_log3_rise = $mol_log3_web_make('log', 'magenta');
-    $.$mol_log3_area = $mol_log3_web_make('group', 'cyan');
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /** One-shot fiber */
-    class $mol_wire_task extends $mol_wire_fiber {
-        static getter(task) {
-            return function $mol_wire_task_get(host, args) {
-                const sub = $mol_wire_auto();
-                const existen = sub?.track_next();
-                let cause = '';
-                reuse: if (existen) {
-                    if (!existen.temp)
-                        break reuse;
-                    if (existen.host !== host) {
-                        cause = 'host';
-                        break reuse;
-                    }
-                    if (existen.task !== task) {
-                        cause = 'task';
-                        break reuse;
-                    }
-                    if (!$mol_compare_deep(existen.args, args)) {
-                        cause = 'args';
-                        break reuse;
-                    }
-                    return existen;
-                }
-                const key = (host?.[Symbol.toStringTag] ?? host) + ('.' + task.name + '<#>');
-                const next = new $mol_wire_task(key, task, host, args);
-                // Disabled because non-idempotency is required for try-catch
-                if (existen?.temp) {
-                    $$.$mol_log3_warn({
-                        place: '$mol_wire_task',
-                        message: `Different ${cause} on restart`,
-                        sub,
-                        prev: existen,
-                        next,
-                        hint: 'Maybe required additional memoization',
-                    });
-                }
-                return next;
-            };
-        }
-        get temp() {
-            return true;
-        }
-        complete() {
-            if ($mol_promise_like(this.cache))
-                return;
-            this.destructor();
-        }
-        put(next) {
-            const prev = this.cache;
-            this.cache = next;
-            if ($mol_promise_like(next)) {
-                this.cursor = $mol_wire_cursor.fresh;
-                if (next !== prev)
-                    this.emit();
-                if ($mol_owning_catch(this, next)) {
-                    try {
-                        next[Symbol.toStringTag] = this[Symbol.toStringTag];
-                    }
-                    catch { // Promises throw in strict mode
-                        Object.defineProperty(next, Symbol.toStringTag, { value: this[Symbol.toStringTag] });
-                    }
-                }
-                return next;
-            }
-            this.cursor = $mol_wire_cursor.final;
-            if (this.sub_empty)
-                this.destructor();
-            else if (next !== prev)
-                this.emit();
-            return next;
-        }
-        destructor() {
-            super.destructor();
-            this.cursor = $mol_wire_cursor.final;
-        }
-    }
-    $.$mol_wire_task = $mol_wire_task;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * Decorates method to fiber to ensure it is executed only once inside other fiber.
-     */
-    function $mol_wire_method(host, field, descr) {
-        if (!descr)
-            descr = Reflect.getOwnPropertyDescriptor(host, field);
-        const orig = descr?.value ?? host[field];
-        const sup = Reflect.getPrototypeOf(host);
-        if (typeof sup[field] === 'function') {
-            Object.defineProperty(orig, 'name', { value: sup[field].name });
-        }
-        const temp = $mol_wire_task.getter(orig);
-        const value = function (...args) {
-            const fiber = temp(this ?? null, args);
-            return fiber.sync();
-        };
-        Object.defineProperty(value, 'name', { value: orig.name + ' ' });
-        Object.assign(value, { orig });
-        const descr2 = { ...descr, value };
-        Reflect.defineProperty(host, field, descr2);
-        return descr2;
-    }
-    $.$mol_wire_method = $mol_wire_method;
-})($ || ($ = {}));
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($) {
-    const catched = new WeakSet();
-    function $mol_fail_catch(error) {
-        if (typeof error !== 'object')
-            return false;
-        if ($mol_promise_like(error))
-            $mol_fail_hidden(error);
-        if (catched.has(error))
-            return false;
-        catched.add(error);
-        return true;
-    }
-    $.$mol_fail_catch = $mol_fail_catch;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_try(handler) {
-        try {
-            return handler();
-        }
-        catch (error) {
-            console.error(error);
-            return error;
-        }
-    }
-    $.$mol_try = $mol_try;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    let error;
-    let result;
-    let handler;
-    /// Debugger will stop at exceptions but exception will be returned normally
-    function $mol_try_web(handler2) {
-        handler = handler2;
-        error = undefined;
-        result = undefined;
-        self.dispatchEvent(new Event('$mol_try'));
-        const error2 = error;
-        const result2 = result;
-        error = undefined;
-        result = undefined;
-        return error2 || result2;
-    }
-    $.$mol_try_web = $mol_try_web;
-    $.$mol_try = $mol_try_web;
-    self.addEventListener('$mol_try', (event) => {
-        result = handler();
-    }, true);
-    self.addEventListener('error', (event) => {
-        error = event.error;
-    }, true);
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_fail_log(error) {
-        if ($mol_promise_like(error))
-            return false;
-        if (!$mol_fail_catch(error))
-            return false;
-        $mol_try(() => { $mol_fail_hidden(error); });
-        return true;
-    }
-    $.$mol_fail_log = $mol_fail_log;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /** Long-living fiber. */
-    class $mol_wire_atom extends $mol_wire_fiber {
-        static solo(host, task) {
-            const field = task.name + '()';
-            const existen = Object.getOwnPropertyDescriptor(host ?? task, field)?.value;
-            if (existen)
-                return existen;
-            const prefix = host?.[Symbol.toStringTag] ?? (host instanceof Function ? $$.$mol_func_name(host) : host);
-            const key = prefix + ('.' + task.name + '<>');
-            const fiber = new $mol_wire_atom(key, task, host, []);
-            (host ?? task)[field] = fiber;
-            return fiber;
-        }
-        static plex(host, task, key) {
-            const field = task.name + '()';
-            let dict = Object.getOwnPropertyDescriptor(host ?? task, field)?.value;
-            const prefix = host?.[Symbol.toStringTag] ?? (host instanceof Function ? $$.$mol_func_name(host) : host);
-            const key_str = $mol_key(key);
-            if (dict) {
-                const existen = dict.get(key_str);
-                if (existen)
-                    return existen;
-            }
-            else {
-                dict = (host ?? task)[field] = new Map();
-            }
-            const id = prefix + ('.' + task.name) + ('<' + key_str.replace(/^"|"$/g, "'") + '>');
-            const fiber = new $mol_wire_atom(id, task, host, [key]);
-            dict.set(key_str, fiber);
-            return fiber;
-        }
-        static watching = new Set();
-        static watcher = null;
-        static watch() {
-            $mol_wire_atom.watcher = new $mol_after_frame($mol_wire_atom.watch);
-            for (const atom of $mol_wire_atom.watching) {
-                if (atom.cursor === $mol_wire_cursor.final) {
-                    $mol_wire_atom.watching.delete(atom);
-                }
-                else {
-                    atom.cursor = $mol_wire_cursor.stale;
-                    atom.fresh();
-                }
-            }
-        }
-        watch() {
-            if (!$mol_wire_atom.watcher) {
-                $mol_wire_atom.watcher = new $mol_after_frame($mol_wire_atom.watch);
-            }
-            $mol_wire_atom.watching.add(this);
-        }
-        /**
-         * Update atom value through another temp fiber.
-         */
-        resync(args) {
-            // enforce pulling tasks abort
-            for (let cursor = this.pub_from; cursor < this.sub_from; cursor += 2) {
-                const pub = this.data[cursor];
-                if (pub && pub instanceof $mol_wire_task) {
-                    pub.destructor();
-                }
-            }
-            return this.put(this.task.call(this.host, ...args));
-        }
-        once() {
-            return this.sync();
-        }
-        channel() {
-            return Object.assign((next) => {
-                if (next !== undefined)
-                    return this.resync([...this.args, next]);
-                if (!$mol_wire_fiber.warm)
-                    return this.result();
-                if ($mol_wire_auto()?.temp) {
-                    return this.once();
-                }
-                else {
-                    return this.sync();
-                }
-            }, { atom: this });
-        }
-        destructor() {
-            super.destructor();
-            if (this.pub_from === 0) {
-                ;
-                (this.host ?? this.task)[this.field()] = null;
-            }
-            else {
-                const key = $mol_key(this.args[0]);
-                const map = (this.host ?? this.task)[this.field()];
-                if (!map.has(key))
-                    this.$.$mol_log3_warn({
-                        place: this,
-                        message: 'Absent key on destruction',
-                        hint: 'Check for $mol_key(key) is not changed',
-                    });
-                map.delete(key);
-            }
-        }
-        put(next) {
-            const prev = this.cache;
-            update: if (next !== prev) {
-                try {
-                    if ($mol_compare_deep(prev, next))
-                        break update;
-                }
-                catch (error) {
-                    $mol_fail_log(error);
-                }
-                if ($mol_owning_check(this, prev)) {
-                    prev.destructor();
-                }
-                if ($mol_owning_catch(this, next)) {
-                    try {
-                        next[Symbol.toStringTag] = this[Symbol.toStringTag];
-                    }
-                    catch { // Promises throw in strict mode
-                        Object.defineProperty(next, Symbol.toStringTag, { value: this[Symbol.toStringTag] });
-                    }
-                }
-                if (!this.sub_empty)
-                    this.emit();
-            }
-            this.cache = next;
-            this.cursor = $mol_wire_cursor.fresh;
-            if ($mol_promise_like(next))
-                return next;
-            this.complete_pubs();
-            return next;
-        }
-    }
-    __decorate([
-        $mol_wire_method
-    ], $mol_wire_atom.prototype, "resync", null);
-    __decorate([
-        $mol_wire_method
-    ], $mol_wire_atom.prototype, "once", null);
-    $.$mol_wire_atom = $mol_wire_atom;
 })($ || ($ = {}));
 
 ;
@@ -2784,6 +1293,1497 @@ var $;
         }
     }
     $_1.$mol_object = $mol_object;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /** Generates unique identifier. */
+    function $mol_guid(length = 8, exists = () => false) {
+        for (;;) {
+            let id = Math.random().toString(36).substring(2, length + 2).toUpperCase();
+            if (exists(id))
+                continue;
+            return id;
+        }
+    }
+    $.$mol_guid = $mol_guid;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /** Special status statuses. */
+    let $mol_wire_cursor;
+    (function ($mol_wire_cursor) {
+        /** Update required. */
+        $mol_wire_cursor[$mol_wire_cursor["stale"] = -1] = "stale";
+        /** Some of (transitive) pub update required. */
+        $mol_wire_cursor[$mol_wire_cursor["doubt"] = -2] = "doubt";
+        /** Actual state but may be dropped. */
+        $mol_wire_cursor[$mol_wire_cursor["fresh"] = -3] = "fresh";
+        /** State will never be changed. */
+        $mol_wire_cursor[$mol_wire_cursor["final"] = -4] = "final";
+    })($mol_wire_cursor = $.$mol_wire_cursor || ($.$mol_wire_cursor = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Collects subscribers in compact array. 28B
+     */
+    class $mol_wire_pub extends Object {
+        constructor(id = `$mol_wire_pub:${$mol_guid()}`) {
+            super();
+            this[Symbol.toStringTag] = id;
+        }
+        [Symbol.toStringTag];
+        data = [];
+        // Derived objects should be Arrays.
+        static get [Symbol.species]() {
+            return Array;
+        }
+        /**
+         * Index of first subscriber.
+         */
+        sub_from = 0; // 4B
+        /**
+         * All current subscribers.
+         */
+        get sub_list() {
+            const res = [];
+            for (let i = this.sub_from; i < this.data.length; i += 2) {
+                res.push(this.data[i]);
+            }
+            return res;
+        }
+        /**
+         * Has any subscribers or not.
+         */
+        get sub_empty() {
+            return this.sub_from === this.data.length;
+        }
+        /**
+         * Subscribe subscriber to this publisher events and return position of subscriber that required to unsubscribe.
+         */
+        sub_on(sub, pub_pos) {
+            const pos = this.data.length;
+            this.data.push(sub, pub_pos);
+            return pos;
+        }
+        /**
+         * Unsubscribe subscriber from this publisher events by subscriber position provided by `on(pub)`.
+         */
+        sub_off(sub_pos) {
+            if (!(sub_pos < this.data.length)) {
+                $mol_fail(new Error(`Wrong pos ${sub_pos}`));
+            }
+            const end = this.data.length - 2;
+            if (sub_pos !== end) {
+                this.peer_move(end, sub_pos);
+            }
+            this.data.length = end;
+            if (end === this.sub_from)
+                this.reap();
+        }
+        /**
+         * Called when last sub was unsubscribed.
+         **/
+        reap() { }
+        /**
+         * Autowire this publisher with current subscriber.
+         **/
+        promote() {
+            $mol_wire_auto()?.track_next(this);
+        }
+        /**
+         * Enforce actualization. Should not throw errors.
+         */
+        fresh() { }
+        /**
+         * Allow to put data to caches in the subtree.
+         */
+        complete() { }
+        get incompleted() {
+            return false;
+        }
+        /**
+         * Notify subscribers about self changes.
+         */
+        emit(quant = $mol_wire_cursor.stale) {
+            for (let i = this.sub_from; i < this.data.length; i += 2) {
+                ;
+                this.data[i].absorb(quant, this.data[i + 1]);
+            }
+        }
+        /**
+         * Moves peer from one position to another. Doesn't clear data at old position!
+         */
+        peer_move(from_pos, to_pos) {
+            const peer = this.data[from_pos];
+            const self_pos = this.data[from_pos + 1];
+            this.data[to_pos] = peer;
+            this.data[to_pos + 1] = self_pos;
+            peer.peer_repos(self_pos, to_pos);
+        }
+        /**
+         * Updates self position in the peer.
+         */
+        peer_repos(peer_pos, self_pos) {
+            this.data[peer_pos + 1] = self_pos;
+        }
+    }
+    $.$mol_wire_pub = $mol_wire_pub;
+})($ || ($ = {}));
+
+;
+"use strict";
+
+;
+"use strict";
+var $;
+(function ($) {
+    $.$mol_wire_auto_sub = null;
+    /**
+     * When fulfilled, all publishers are promoted to this subscriber on access to its.
+     */
+    function $mol_wire_auto(next = $.$mol_wire_auto_sub) {
+        return $.$mol_wire_auto_sub = next;
+    }
+    $.$mol_wire_auto = $mol_wire_auto;
+    /**
+     * Affection queue. Used to prevent accidental stack overflow on emit.
+     */
+    $.$mol_wire_affected = [];
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    // https://docs.google.com/document/d/1FTascZXT9cxfetuPRT2eXPQKXui4nWFivUnS_335T3U/preview#
+    $['devtoolsFormatters'] ||= [];
+    function $mol_dev_format_register(config) {
+        $['devtoolsFormatters'].push(config);
+    }
+    $.$mol_dev_format_register = $mol_dev_format_register;
+    $.$mol_dev_format_head = Symbol('$mol_dev_format_head');
+    $.$mol_dev_format_body = Symbol('$mol_dev_format_body');
+    function $mol_dev_format_button(label, click) {
+        return $mol_dev_format_auto({
+            [$.$mol_dev_format_head]() {
+                return $.$mol_dev_format_span({ color: 'cornflowerblue' }, label);
+            },
+            [$.$mol_dev_format_body]() {
+                Promise.resolve().then(click);
+                return $.$mol_dev_format_span({});
+            }
+        });
+    }
+    $mol_dev_format_register({
+        header: (val, config = false) => {
+            if (config)
+                return null;
+            if (!val)
+                return null;
+            if ($.$mol_dev_format_head in val) {
+                try {
+                    return val[$.$mol_dev_format_head]();
+                }
+                catch (error) {
+                    return $.$mol_dev_format_accent($mol_dev_format_native(val), '💨', $mol_dev_format_native(error), '');
+                }
+            }
+            if (typeof val === 'function') {
+                return $mol_dev_format_native(val);
+            }
+            if (val instanceof Error) {
+                return $.$mol_dev_format_span({}, $mol_dev_format_native(val), ' ', $mol_dev_format_button('throw', () => $mol_fail_hidden(val)));
+            }
+            if (val instanceof Promise) {
+                return $.$mol_dev_format_shade($mol_dev_format_native(val), ' ', val[Symbol.toStringTag] ?? '');
+            }
+            if (Symbol.toStringTag in val) {
+                return $mol_dev_format_native(val);
+            }
+            return null;
+        },
+        hasBody: (val, config = false) => {
+            if (config)
+                return false;
+            if (!val)
+                return false;
+            // if( Error.isError( val ) ) true
+            if (val[$.$mol_dev_format_body])
+                return true;
+            return false;
+        },
+        body: (val, config = false) => {
+            if (config)
+                return null;
+            if (!val)
+                return null;
+            if ($.$mol_dev_format_body in val) {
+                try {
+                    return val[$.$mol_dev_format_body]();
+                }
+                catch (error) {
+                    return $.$mol_dev_format_accent($mol_dev_format_native(val), '💨', $mol_dev_format_native(error), '');
+                }
+            }
+            // if( Error.isError( val ) ) {
+            // 	return $mol_dev_format_native( val )
+            // }
+            return null;
+        },
+    });
+    function $mol_dev_format_native(obj) {
+        if (typeof obj === 'undefined')
+            return $.$mol_dev_format_shade('undefined');
+        // if( ![ 'object', 'function', 'symbol' ].includes( typeof obj )  ) return obj
+        return [
+            'object',
+            {
+                object: obj,
+                config: true,
+            },
+        ];
+    }
+    $.$mol_dev_format_native = $mol_dev_format_native;
+    function $mol_dev_format_auto(obj) {
+        if (obj == null)
+            return $.$mol_dev_format_shade(String(obj));
+        return [
+            'object',
+            {
+                object: obj,
+                config: false,
+            },
+        ];
+    }
+    $.$mol_dev_format_auto = $mol_dev_format_auto;
+    function $mol_dev_format_element(element, style, ...content) {
+        const styles = [];
+        for (let key in style)
+            styles.push(`${key} : ${style[key]}`);
+        return [
+            element,
+            {
+                style: styles.join(' ; '),
+            },
+            ...content,
+        ];
+    }
+    $.$mol_dev_format_element = $mol_dev_format_element;
+    $.$mol_dev_format_span = $mol_dev_format_element.bind(null, 'span');
+    $.$mol_dev_format_div = $mol_dev_format_element.bind(null, 'div');
+    $.$mol_dev_format_ol = $mol_dev_format_element.bind(null, 'ol');
+    $.$mol_dev_format_li = $mol_dev_format_element.bind(null, 'li');
+    $.$mol_dev_format_table = $mol_dev_format_element.bind(null, 'table');
+    $.$mol_dev_format_tr = $mol_dev_format_element.bind(null, 'tr');
+    $.$mol_dev_format_td = $mol_dev_format_element.bind(null, 'td');
+    $.$mol_dev_format_accent = $.$mol_dev_format_span.bind(null, {
+        'color': 'magenta',
+    });
+    $.$mol_dev_format_strong = $.$mol_dev_format_span.bind(null, {
+        'font-weight': 'bold',
+    });
+    $.$mol_dev_format_string = $.$mol_dev_format_span.bind(null, {
+        'color': 'green',
+    });
+    $.$mol_dev_format_shade = $.$mol_dev_format_span.bind(null, {
+        'color': 'gray',
+    });
+    $.$mol_dev_format_indent = $.$mol_dev_format_div.bind(null, {
+        'margin-inline-start': '13px'
+    });
+    class Stack extends Array {
+        // [ Symbol.toPrimitive ]() {
+        // 	return this.toString()
+        // }
+        match(...args) {
+            return this.toString().match(...args);
+        }
+        split(...args) {
+            return this.toString().split(...args);
+        }
+        toString() {
+            return this.join('\n');
+        }
+    }
+    class Call extends Object {
+        type;
+        function;
+        method;
+        eval;
+        source;
+        offset;
+        pos;
+        object;
+        flags;
+        [Symbol.toStringTag];
+        constructor(call) {
+            super();
+            this.type = call.getTypeName() ?? '';
+            this.function = call.getFunctionName() ?? '';
+            this.method = call.getMethodName() ?? '';
+            if (this.method === this.function)
+                this.method = '';
+            // const func = c.getFunction()
+            this.pos = [call.getEnclosingLineNumber() ?? 0, call.getEnclosingColumnNumber() ?? 0];
+            this.eval = call.getEvalOrigin() ?? '';
+            this.source = call.getScriptNameOrSourceURL() ?? '';
+            this.object = call.getThis();
+            this.offset = call.getPosition();
+            const flags = [];
+            if (call.isAsync())
+                flags.push('async');
+            if (call.isConstructor())
+                flags.push('constructor');
+            if (call.isEval())
+                flags.push('eval');
+            if (call.isNative())
+                flags.push('native');
+            if (call.isPromiseAll())
+                flags.push('PromiseAll');
+            if (call.isToplevel())
+                flags.push('top');
+            this.flags = flags;
+            const type = this.type ? this.type + '.' : '';
+            const func = this.function || '<anon>';
+            const method = this.method ? ' [' + this.method + '] ' : '';
+            this[Symbol.toStringTag] = `${type}${func}${method}`;
+        }
+        [Symbol.toPrimitive]() {
+            return this.toString();
+        }
+        toString() {
+            const object = this.object || '';
+            const label = this[Symbol.toStringTag];
+            const source = `${this.source}:${this.pos.join(':')} #${this.offset}`;
+            return `\tat ${object}${label} (${source})`;
+        }
+        [$.$mol_dev_format_head]() {
+            return $.$mol_dev_format_div({}, $mol_dev_format_native(this), $.$mol_dev_format_shade(' '), ...this.object ? [
+                $mol_dev_format_native(this.object),
+            ] : [], ...this.method ? [$.$mol_dev_format_shade(' ', ' [', this.method, ']')] : [], $.$mol_dev_format_shade(' ', this.flags.join(', ')));
+        }
+    }
+    Error.prepareStackTrace ??= (error, stack) => new Stack(...stack.map(call => new Call(call)));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Publisher that can auto collect other publishers. 32B
+     *
+     * 	P1 P2 P3 P4 S1 S2 S3
+     * 	^           ^
+     * 	pubs_from   subs_from
+     */
+    class $mol_wire_pub_sub extends $mol_wire_pub {
+        pub_from = 0; // 4B
+        cursor = $mol_wire_cursor.stale; // 4B
+        get temp() {
+            return false;
+        }
+        get pub_list() {
+            const res = [];
+            const max = this.cursor >= 0 ? this.cursor : this.sub_from;
+            for (let i = this.pub_from; i < max; i += 2) {
+                if (this.data[i])
+                    res.push(this.data[i]);
+            }
+            return res;
+        }
+        track_on() {
+            this.cursor = this.pub_from;
+            const sub = $mol_wire_auto();
+            $mol_wire_auto(this);
+            return sub;
+        }
+        promote() {
+            if (this.cursor >= this.pub_from) {
+                $mol_fail(new Error('Circular subscription'));
+            }
+            super.promote();
+        }
+        track_next(pub) {
+            if (this.cursor < 0)
+                $mol_fail(new Error('Promo to non begun sub'));
+            if (this.cursor < this.sub_from) {
+                const next = this.data[this.cursor];
+                if (pub === undefined)
+                    return next ?? null;
+                if (next === pub) {
+                    this.cursor += 2;
+                    return next;
+                }
+                if (next) {
+                    if (this.sub_from < this.data.length) {
+                        this.peer_move(this.sub_from, this.data.length);
+                    }
+                    this.peer_move(this.cursor, this.sub_from);
+                    this.sub_from += 2;
+                }
+            }
+            else {
+                if (pub === undefined)
+                    return null;
+                if (this.sub_from < this.data.length) {
+                    this.peer_move(this.sub_from, this.data.length);
+                }
+                this.sub_from += 2;
+            }
+            this.data[this.cursor] = pub;
+            this.data[this.cursor + 1] = pub.sub_on(this, this.cursor);
+            this.cursor += 2;
+            return pub;
+        }
+        track_off(sub) {
+            $mol_wire_auto(sub);
+            if (this.cursor < 0) {
+                $mol_fail(new Error('End of non begun sub'));
+            }
+            for (let cursor = this.pub_from; cursor < this.cursor; cursor += 2) {
+                const pub = this.data[cursor];
+                pub.fresh();
+            }
+            this.cursor = $mol_wire_cursor.fresh;
+        }
+        pub_off(sub_pos) {
+            this.data[sub_pos] = undefined;
+            this.data[sub_pos + 1] = undefined;
+        }
+        destructor() {
+            for (let cursor = this.data.length - 2; cursor >= this.sub_from; cursor -= 2) {
+                const sub = this.data[cursor];
+                const pos = this.data[cursor + 1];
+                sub.pub_off(pos);
+            }
+            this.data.length = this.sub_from;
+            this.cursor = this.pub_from;
+            this.track_cut();
+            this.cursor = $mol_wire_cursor.stale;
+        }
+        track_cut() {
+            if (this.cursor < this.pub_from) {
+                $mol_fail(new Error('Cut of non begun sub'));
+            }
+            let end = this.data.length;
+            for (let cursor = this.cursor; cursor < this.sub_from; cursor += 2) {
+                const pub = this.data[cursor];
+                pub?.sub_off(this.data[cursor + 1]);
+                end -= 2;
+                if (this.sub_from <= end)
+                    this.peer_move(end, cursor);
+            }
+            this.data.length = end;
+            this.sub_from = this.cursor;
+        }
+        complete() { }
+        complete_pubs() {
+            const limit = this.cursor < 0 ? this.sub_from : this.cursor;
+            for (let cursor = this.pub_from; cursor < limit; cursor += 2) {
+                const pub = this.data[cursor];
+                if (pub?.incompleted)
+                    return;
+            }
+            for (let cursor = this.pub_from; cursor < limit; cursor += 2) {
+                const pub = this.data[cursor];
+                pub?.complete();
+            }
+        }
+        absorb(quant = $mol_wire_cursor.stale, pos = -1) {
+            if (this.cursor === $mol_wire_cursor.final)
+                return;
+            if (this.cursor >= quant)
+                return;
+            this.cursor = quant;
+            this.emit($mol_wire_cursor.doubt);
+            // if( pos >= 0 && pos < this.sub_from - 2 ) {
+            // 	const pub = this.data[ pos ] as $mol_wire_pub
+            // 	if( pub instanceof $mol_wire_task ) return
+            // 	for(
+            // 		let cursor = this.pub_from;
+            // 		cursor < this.sub_from;
+            // 		cursor += 2
+            // 	) {
+            // 		const pub = this.data[ cursor ] as $mol_wire_pub
+            // 		if( pub instanceof $mol_wire_task ) {
+            // 			pub.destructor()
+            // 		}
+            // 	}
+            // }
+        }
+        [$mol_dev_format_head]() {
+            return $mol_dev_format_native(this);
+        }
+        /**
+         * Is subscribed to any publisher or not.
+         */
+        get pub_empty() {
+            return this.sub_from === this.pub_from;
+        }
+    }
+    $.$mol_wire_pub_sub = $mol_wire_pub_sub;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    class $mol_after_tick extends $mol_object2 {
+        task;
+        static promise = null;
+        cancelled = false;
+        constructor(task) {
+            super();
+            this.task = task;
+            if (!$mol_after_tick.promise)
+                $mol_after_tick.promise = Promise.resolve().then(() => {
+                    $mol_after_tick.promise = null;
+                });
+            $mol_after_tick.promise.then(() => {
+                if (this.cancelled)
+                    return;
+                task();
+            });
+        }
+        destructor() {
+            this.cancelled = true;
+        }
+    }
+    $.$mol_after_tick = $mol_after_tick;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_promise_like(val) {
+        try {
+            return val && typeof val === 'object' && 'then' in val && typeof val.then === 'function';
+        }
+        catch {
+            return false;
+        }
+    }
+    $.$mol_promise_like = $mol_promise_like;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const wrappers = new WeakMap();
+    /**
+     * Suspendable task with support both sync/async api.
+     *
+     * 	A1 A2 A3 A4 P1 P2 P3 P4 S1 S2 S3
+     * 	^           ^           ^
+     * 	args_from   pubs_from   subs_from
+     **/
+    class $mol_wire_fiber extends $mol_wire_pub_sub {
+        task;
+        host;
+        static warm = true;
+        static planning = new Set();
+        static reaping = new Set();
+        static plan_task = null;
+        static plan() {
+            if (this.plan_task)
+                return;
+            this.plan_task = new $mol_after_tick(() => {
+                try {
+                    this.sync();
+                }
+                finally {
+                    $mol_wire_fiber.plan_task = null;
+                }
+            });
+        }
+        static sync() {
+            // Sync whole fiber graph
+            while (this.planning.size) {
+                for (const fiber of this.planning) {
+                    this.planning.delete(fiber);
+                    if (fiber.cursor >= 0)
+                        continue;
+                    if (fiber.cursor === $mol_wire_cursor.final)
+                        continue;
+                    fiber.fresh();
+                }
+            }
+            // Collect garbage
+            while (this.reaping.size) {
+                const fibers = this.reaping;
+                this.reaping = new Set;
+                for (const fiber of fibers) {
+                    if (!fiber.sub_empty)
+                        continue;
+                    fiber.destructor();
+                }
+            }
+        }
+        cache = undefined;
+        get args() {
+            return this.data.slice(0, this.pub_from);
+        }
+        result() {
+            if ($mol_promise_like(this.cache))
+                return;
+            if (this.cache instanceof Error)
+                return;
+            return this.cache;
+        }
+        get incompleted() {
+            return $mol_promise_like(this.cache);
+        }
+        field() {
+            return this.task.name + '()';
+        }
+        constructor(id, task, host, args) {
+            super(id);
+            this.task = task;
+            this.host = host;
+            if (args)
+                this.data.push(...args);
+            this.pub_from = this.sub_from = args?.length ?? 0;
+        }
+        plan() {
+            $mol_wire_fiber.planning.add(this);
+            $mol_wire_fiber.plan();
+            return this;
+        }
+        reap() {
+            $mol_wire_fiber.reaping.add(this);
+            $mol_wire_fiber.plan();
+        }
+        toString() {
+            return this[Symbol.toStringTag];
+        }
+        toJSON() {
+            return this[Symbol.toStringTag];
+        }
+        [$mol_dev_format_head]() {
+            const cursor = {
+                [$mol_wire_cursor.stale]: '🔴',
+                [$mol_wire_cursor.doubt]: '🟡',
+                [$mol_wire_cursor.fresh]: '🟢',
+                [$mol_wire_cursor.final]: '🔵',
+            }[this.cursor] ?? this.cursor.toString();
+            return $mol_dev_format_div({}, $mol_owning_check(this, this.cache)
+                ? $mol_dev_format_shade(cursor)
+                : $mol_dev_format_shade(this[Symbol.toStringTag], cursor), $mol_dev_format_auto(this.cache));
+        }
+        [$mol_dev_format_body]() { return null; }
+        get $() {
+            return (this.host ?? this.task)['$'];
+        }
+        emit(quant = $mol_wire_cursor.stale) {
+            if (this.sub_empty)
+                this.plan();
+            else
+                super.emit(quant);
+        }
+        fresh() {
+            if (this.cursor === $mol_wire_cursor.fresh)
+                return;
+            if (this.cursor === $mol_wire_cursor.final)
+                return;
+            check: if (this.cursor === $mol_wire_cursor.doubt) {
+                for (let i = this.pub_from; i < this.sub_from; i += 2) {
+                    ;
+                    this.data[i]?.fresh();
+                    if (this.cursor !== $mol_wire_cursor.doubt)
+                        break check;
+                }
+                this.cursor = $mol_wire_cursor.fresh;
+                return;
+            }
+            const bu = this.track_on();
+            let result;
+            try {
+                switch (this.pub_from) {
+                    case 0:
+                        result = this.task.call(this.host);
+                        break;
+                    case 1:
+                        result = this.task.call(this.host, this.data[0]);
+                        break;
+                    default:
+                        result = this.task.call(this.host, ...this.args);
+                        break;
+                }
+                if ($mol_promise_like(result)) {
+                    if (wrappers.has(result)) {
+                        result = wrappers.get(result).then(a => a);
+                    }
+                    else {
+                        const put = (res) => {
+                            if (this.cache === result)
+                                this.put(res);
+                            return res;
+                        };
+                        wrappers.set(result, result = Object.assign(result.then(put, put), { destructor: result.destructor || (() => { }) }));
+                        wrappers.set(result, result);
+                        const error = new Error(`Promise in ${this}`);
+                        Object.defineProperty(result, 'stack', { get: () => error.stack });
+                    }
+                }
+            }
+            catch (error) {
+                if (error instanceof Error || $mol_promise_like(error)) {
+                    result = error;
+                }
+                else {
+                    result = new Error(String(error), { cause: error });
+                }
+                if ($mol_promise_like(result)) {
+                    if (wrappers.has(result)) {
+                        result = wrappers.get(result);
+                    }
+                    else {
+                        const put = (v) => {
+                            if (this.cache === result)
+                                this.absorb();
+                            return v;
+                        };
+                        wrappers.set(result, result = Object.assign(result.then(put, put), { destructor: result.destructor || (() => { }) }));
+                        const error = new Error(`Promise in ${this}`);
+                        Object.defineProperty(result, 'stack', { get: () => error.stack });
+                    }
+                }
+            }
+            if (!$mol_promise_like(result)) {
+                this.track_cut();
+            }
+            this.track_off(bu);
+            this.put(result);
+            return this;
+        }
+        refresh() {
+            this.cursor = $mol_wire_cursor.stale;
+            this.fresh();
+        }
+        /**
+         * Synchronous execution. Throws Promise when waits async task (SuspenseAPI provider).
+         * Should be called inside SuspenseAPI consumer (ie fiber).
+         */
+        sync() {
+            if (!$mol_wire_fiber.warm) {
+                return this.result();
+            }
+            this.promote();
+            this.fresh();
+            if (this.cache instanceof Error) {
+                return $mol_fail_hidden(this.cache);
+            }
+            if ($mol_promise_like(this.cache)) {
+                return $mol_fail_hidden(this.cache);
+            }
+            return this.cache;
+        }
+        /**
+         * Asynchronous execution.
+         * It's SuspenseAPI consumer. So SuspenseAPI providers can be called inside.
+         */
+        async async_raw() {
+            while (true) {
+                this.fresh();
+                if (this.cache instanceof Error) {
+                    $mol_fail_hidden(this.cache);
+                }
+                if (!$mol_promise_like(this.cache))
+                    return this.cache;
+                await Promise.race([this.cache, this.step()]);
+                if (!$mol_promise_like(this.cache))
+                    return this.cache;
+                if (this.cursor === $mol_wire_cursor.final) {
+                    // never ends on destructed fiber
+                    await new Promise(() => { });
+                }
+            }
+        }
+        async() {
+            const promise = this.async_raw();
+            if (!promise.destructor)
+                promise.destructor = () => this.destructor();
+            return promise;
+        }
+        step() {
+            return new Promise(done => {
+                const sub = new $mol_wire_pub_sub;
+                const prev = sub.track_on();
+                sub.track_next(this);
+                sub.track_off(prev);
+                sub.absorb = () => {
+                    done(null);
+                    setTimeout(() => sub.destructor());
+                };
+            });
+        }
+        destructor() {
+            super.destructor();
+            $mol_wire_fiber.planning.delete(this);
+            if (!$mol_owning_check(this, this.cache))
+                return;
+            try {
+                this.cache.destructor();
+            }
+            catch (result) {
+                if ($mol_promise_like(result)) {
+                    const error = new Error(`Promise in ${this}.destructor()`);
+                    Object.defineProperty(result, 'stack', { get: () => error.stack });
+                }
+                $mol_fail_hidden(result);
+            }
+        }
+    }
+    $.$mol_wire_fiber = $mol_wire_fiber;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const TypedArray = Object.getPrototypeOf(Uint8Array);
+    /** Returns string key for any value. */
+    function $mol_key(value) {
+        primitives: {
+            if (typeof value === 'bigint')
+                return value.toString() + 'n';
+            if (typeof value === 'symbol')
+                return `Symbol(${value.description})`;
+            if (!value)
+                return JSON.stringify(value); // 0, null, ""
+            if (typeof value !== 'object' && typeof value !== 'function')
+                return JSON.stringify(value); // boolean, number, string
+        }
+        caching: {
+            let key = $mol_key_store.get(value);
+            if (key)
+                return key;
+        }
+        objects: {
+            if (value instanceof TypedArray) {
+                return `${value[Symbol.toStringTag]}([${[...value].map(v => $mol_key(v))}])`;
+            }
+            if (Array.isArray(value))
+                return `[${value.map(v => $mol_key(v))}]`;
+            if (value instanceof RegExp)
+                return value.toString();
+            if (value instanceof Date)
+                return `Date(${value.valueOf()})`;
+        }
+        structures: {
+            const proto = Reflect.getPrototypeOf(value);
+            if (!proto || !Reflect.getPrototypeOf(proto)) {
+                return `{${Object.entries(value).map(([k, v]) => JSON.stringify(k) + ':' + $mol_key(v))}}`;
+            }
+        }
+        handlers: {
+            if ($mol_key_handle in value) {
+                return value[$mol_key_handle]();
+            }
+        }
+        containers: {
+            const key = JSON.stringify('#' + $mol_guid());
+            $mol_key_store.set(value, key);
+            return key;
+        }
+    }
+    $.$mol_key = $mol_key;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    class $mol_after_frame extends $mol_object2 {
+        task;
+        static _promise = null;
+        static get promise() {
+            if (this._promise)
+                return this._promise;
+            return this._promise = new Promise(done => {
+                const complete = () => {
+                    this._promise = null;
+                    done();
+                };
+                if (typeof requestAnimationFrame === 'function') {
+                    requestAnimationFrame(complete);
+                }
+                else {
+                    setTimeout(complete, 16);
+                }
+            });
+        }
+        cancelled = false;
+        promise;
+        constructor(task) {
+            super();
+            this.task = task;
+            this.promise = $mol_after_frame.promise.then(() => {
+                if (this.cancelled)
+                    return;
+                task();
+            });
+        }
+        destructor() {
+            this.cancelled = true;
+        }
+    }
+    $.$mol_after_frame = $mol_after_frame;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $.$mol_compare_deep_cache = new WeakMap();
+    /**
+     * Deeply compares two values. Returns true if equal.
+     * Define `Symbol.toPrimitive` to customize.
+     */
+    function $mol_compare_deep(left, right) {
+        if (Object.is(left, right))
+            return true;
+        if (left === null)
+            return false;
+        if (right === null)
+            return false;
+        if (typeof left !== 'object')
+            return false;
+        if (typeof right !== 'object')
+            return false;
+        const left_proto = Reflect.getPrototypeOf(left);
+        const right_proto = Reflect.getPrototypeOf(right);
+        if (left_proto !== right_proto)
+            return false;
+        if (left instanceof Boolean)
+            return Object.is(left.valueOf(), right['valueOf']());
+        if (left instanceof Number)
+            return Object.is(left.valueOf(), right['valueOf']());
+        if (left instanceof String)
+            return Object.is(left.valueOf(), right['valueOf']());
+        if (left instanceof Date)
+            return Object.is(left.valueOf(), right['valueOf']());
+        if (left instanceof RegExp)
+            return left.source === right.source && left.flags === right.flags;
+        if (left instanceof Error)
+            return left.message === right.message && $mol_compare_deep(left.stack, right.stack);
+        let left_cache = $.$mol_compare_deep_cache.get(left);
+        if (left_cache) {
+            const right_cache = left_cache.get(right);
+            if (typeof right_cache === 'boolean')
+                return right_cache;
+        }
+        else {
+            left_cache = new WeakMap();
+            $.$mol_compare_deep_cache.set(left, left_cache);
+        }
+        left_cache.set(right, true);
+        let result;
+        try {
+            if (!left_proto)
+                result = compare_pojo(left, right);
+            else if (!Reflect.getPrototypeOf(left_proto))
+                result = compare_pojo(left, right);
+            else if (Symbol.toPrimitive in left)
+                result = compare_primitive(left, right);
+            else if (Array.isArray(left))
+                result = compare_array(left, right);
+            else if (left instanceof Set)
+                result = compare_set(left, right);
+            else if (left instanceof Map)
+                result = compare_map(left, right);
+            else if (ArrayBuffer.isView(left))
+                result = compare_buffer(left, right);
+            else if (Symbol.iterator in left)
+                result = compare_iterator(left[Symbol.iterator](), right[Symbol.iterator]());
+            else
+                result = false;
+        }
+        finally {
+            left_cache.set(right, result);
+        }
+        return result;
+    }
+    $.$mol_compare_deep = $mol_compare_deep;
+    function compare_array(left, right) {
+        const len = left.length;
+        if (len !== right.length)
+            return false;
+        for (let i = 0; i < len; ++i) {
+            if (!$mol_compare_deep(left[i], right[i]))
+                return false;
+        }
+        return true;
+    }
+    function compare_buffer(left, right) {
+        const len = left.byteLength;
+        if (len !== right.byteLength)
+            return false;
+        if (left instanceof DataView)
+            return compare_buffer(new Uint8Array(left.buffer, left.byteOffset, left.byteLength), new Uint8Array(right.buffer, right.byteOffset, right.byteLength));
+        for (let i = 0; i < len; ++i) {
+            if (left[i] !== right[i])
+                return false;
+        }
+        return true;
+    }
+    function compare_iterator(left, right) {
+        while (true) {
+            const left_next = left.next();
+            const right_next = right.next();
+            if (left_next.done !== right_next.done)
+                return false;
+            if (left_next.done)
+                break;
+            if (!$mol_compare_deep(left_next.value, right_next.value))
+                return false;
+        }
+        return true;
+    }
+    function compare_set(left, right) {
+        if (left.size !== right.size)
+            return false;
+        return compare_iterator(left.values(), right.values());
+    }
+    function compare_map(left, right) {
+        if (left.size !== right.size)
+            return false;
+        return compare_iterator(left.keys(), right.keys())
+            && compare_iterator(left.values(), right.values());
+    }
+    function compare_pojo(left, right) {
+        const left_keys = Object.getOwnPropertyNames(left);
+        const right_keys = Object.getOwnPropertyNames(right);
+        if (!compare_array(left_keys, right_keys))
+            return false;
+        for (let key of left_keys) {
+            if (!$mol_compare_deep(left[key], right[key]))
+                return false;
+        }
+        const left_syms = Object.getOwnPropertySymbols(left);
+        const right_syms = Object.getOwnPropertySymbols(right);
+        if (!compare_array(left_syms, right_syms))
+            return false;
+        for (let key of left_syms) {
+            if (!$mol_compare_deep(left[key], right[key]))
+                return false;
+        }
+        return true;
+    }
+    function compare_primitive(left, right) {
+        return Object.is(left[Symbol.toPrimitive]('default'), right[Symbol.toPrimitive]('default'));
+    }
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /** Log begin of collapsed group only when some logged inside, returns func to close group */
+    function $mol_log3_area_lazy(event) {
+        const self = this.$;
+        const stack = self.$mol_log3_stack;
+        const deep = stack.length;
+        let logged = false;
+        stack.push(() => {
+            logged = true;
+            self.$mol_log3_area.call(self, event);
+        });
+        return () => {
+            if (logged)
+                self.console.groupEnd();
+            if (stack.length > deep)
+                stack.length = deep;
+        };
+    }
+    $.$mol_log3_area_lazy = $mol_log3_area_lazy;
+    $.$mol_log3_stack = [];
+})($ || ($ = {}));
+
+;
+"use strict";
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_log3_web_make(level, color) {
+        return function $mol_log3_logger(event) {
+            const pending = this.$mol_log3_stack.pop();
+            if (pending)
+                pending();
+            let tpl = '%c';
+            const chunks = Object.entries(event);
+            for (let i = 0; i < chunks.length; ++i) {
+                tpl += (typeof chunks[i][1] === 'string') ? '%s: %s\n' : '%s: %o\n';
+            }
+            const style = `color:${color};font-weight:bolder`;
+            this.console[level](tpl.trim(), style, ...[].concat(...chunks));
+            const self = this;
+            return () => self.console.groupEnd();
+        };
+    }
+    $.$mol_log3_web_make = $mol_log3_web_make;
+    $.$mol_log3_come = $mol_log3_web_make('info', 'royalblue');
+    $.$mol_log3_done = $mol_log3_web_make('info', 'forestgreen');
+    $.$mol_log3_fail = $mol_log3_web_make('error', 'orangered');
+    $.$mol_log3_warn = $mol_log3_web_make('warn', 'goldenrod');
+    $.$mol_log3_rise = $mol_log3_web_make('log', 'magenta');
+    $.$mol_log3_area = $mol_log3_web_make('group', 'cyan');
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /** One-shot fiber */
+    class $mol_wire_task extends $mol_wire_fiber {
+        static getter(task) {
+            return function $mol_wire_task_get(host, args) {
+                const sub = $mol_wire_auto();
+                const existen = sub?.track_next();
+                let cause = '';
+                reuse: if (existen) {
+                    if (!existen.temp)
+                        break reuse;
+                    if (existen.host !== host) {
+                        cause = 'host';
+                        break reuse;
+                    }
+                    if (existen.task !== task) {
+                        cause = 'task';
+                        break reuse;
+                    }
+                    if (!$mol_compare_deep(existen.args, args)) {
+                        cause = 'args';
+                        break reuse;
+                    }
+                    return existen;
+                }
+                const key = (host?.[Symbol.toStringTag] ?? host) + ('.' + task.name + '<#>');
+                const next = new $mol_wire_task(key, task, host, args);
+                // Disabled because non-idempotency is required for try-catch
+                if (existen?.temp) {
+                    $$.$mol_log3_warn({
+                        place: '$mol_wire_task',
+                        message: `Different ${cause} on restart`,
+                        sub,
+                        prev: existen,
+                        next,
+                        hint: 'Maybe required additional memoization',
+                    });
+                }
+                return next;
+            };
+        }
+        get temp() {
+            return true;
+        }
+        complete() {
+            if ($mol_promise_like(this.cache))
+                return;
+            this.destructor();
+        }
+        put(next) {
+            const prev = this.cache;
+            this.cache = next;
+            if ($mol_promise_like(next)) {
+                this.cursor = $mol_wire_cursor.fresh;
+                if (next !== prev)
+                    this.emit();
+                if ($mol_owning_catch(this, next)) {
+                    try {
+                        next[Symbol.toStringTag] = this[Symbol.toStringTag];
+                    }
+                    catch { // Promises throw in strict mode
+                        Object.defineProperty(next, Symbol.toStringTag, { value: this[Symbol.toStringTag] });
+                    }
+                }
+                return next;
+            }
+            this.cursor = $mol_wire_cursor.final;
+            if (this.sub_empty)
+                this.destructor();
+            else if (next !== prev)
+                this.emit();
+            return next;
+        }
+        destructor() {
+            super.destructor();
+            this.cursor = $mol_wire_cursor.final;
+        }
+    }
+    $.$mol_wire_task = $mol_wire_task;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Decorates method to fiber to ensure it is executed only once inside other fiber.
+     */
+    function $mol_wire_method(host, field, descr) {
+        if (!descr)
+            descr = Reflect.getOwnPropertyDescriptor(host, field);
+        const orig = descr?.value ?? host[field];
+        const sup = Reflect.getPrototypeOf(host);
+        if (typeof sup[field] === 'function') {
+            Object.defineProperty(orig, 'name', { value: sup[field].name });
+        }
+        const temp = $mol_wire_task.getter(orig);
+        const value = function (...args) {
+            const fiber = temp(this ?? null, args);
+            return fiber.sync();
+        };
+        Object.defineProperty(value, 'name', { value: orig.name + ' ' });
+        Object.assign(value, { orig });
+        const descr2 = { ...descr, value };
+        Reflect.defineProperty(host, field, descr2);
+        return descr2;
+    }
+    $.$mol_wire_method = $mol_wire_method;
+})($ || ($ = {}));
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+var $;
+(function ($) {
+    const catched = new WeakSet();
+    function $mol_fail_catch(error) {
+        if (typeof error !== 'object')
+            return false;
+        if ($mol_promise_like(error))
+            $mol_fail_hidden(error);
+        if (catched.has(error))
+            return false;
+        catched.add(error);
+        return true;
+    }
+    $.$mol_fail_catch = $mol_fail_catch;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_try(handler) {
+        try {
+            return handler();
+        }
+        catch (error) {
+            console.error(error);
+            return error;
+        }
+    }
+    $.$mol_try = $mol_try;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    let error;
+    let result;
+    let handler;
+    /// Debugger will stop at exceptions but exception will be returned normally
+    function $mol_try_web(handler2) {
+        handler = handler2;
+        error = undefined;
+        result = undefined;
+        self.dispatchEvent(new Event('$mol_try'));
+        const error2 = error;
+        const result2 = result;
+        error = undefined;
+        result = undefined;
+        return error2 || result2;
+    }
+    $.$mol_try_web = $mol_try_web;
+    $.$mol_try = $mol_try_web;
+    self.addEventListener('$mol_try', (event) => {
+        result = handler();
+    }, true);
+    self.addEventListener('error', (event) => {
+        error = event.error;
+    }, true);
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_fail_log(error) {
+        if ($mol_promise_like(error))
+            return false;
+        if (!$mol_fail_catch(error))
+            return false;
+        $mol_try(() => { $mol_fail_hidden(error); });
+        return true;
+    }
+    $.$mol_fail_log = $mol_fail_log;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /** Long-living fiber. */
+    class $mol_wire_atom extends $mol_wire_fiber {
+        static solo(host, task) {
+            const field = task.name + '()';
+            const existen = Object.getOwnPropertyDescriptor(host ?? task, field)?.value;
+            if (existen)
+                return existen;
+            const prefix = host?.[Symbol.toStringTag] ?? (host instanceof Function ? $$.$mol_func_name(host) : host);
+            const key = prefix + ('.' + task.name + '<>');
+            const fiber = new $mol_wire_atom(key, task, host, []);
+            (host ?? task)[field] = fiber;
+            return fiber;
+        }
+        static plex(host, task, key) {
+            const field = task.name + '()';
+            let dict = Object.getOwnPropertyDescriptor(host ?? task, field)?.value;
+            const prefix = host?.[Symbol.toStringTag] ?? (host instanceof Function ? $$.$mol_func_name(host) : host);
+            const key_str = $mol_key(key);
+            if (dict) {
+                const existen = dict.get(key_str);
+                if (existen)
+                    return existen;
+            }
+            else {
+                dict = (host ?? task)[field] = new Map();
+            }
+            const id = prefix + ('.' + task.name) + ('<' + key_str.replace(/^"|"$/g, "'") + '>');
+            const fiber = new $mol_wire_atom(id, task, host, [key]);
+            dict.set(key_str, fiber);
+            return fiber;
+        }
+        static watching = new Set();
+        static watcher = null;
+        static watch() {
+            $mol_wire_atom.watcher = new $mol_after_frame($mol_wire_atom.watch);
+            for (const atom of $mol_wire_atom.watching) {
+                if (atom.cursor === $mol_wire_cursor.final) {
+                    $mol_wire_atom.watching.delete(atom);
+                }
+                else {
+                    atom.cursor = $mol_wire_cursor.stale;
+                    atom.fresh();
+                }
+            }
+        }
+        watch() {
+            if (!$mol_wire_atom.watcher) {
+                $mol_wire_atom.watcher = new $mol_after_frame($mol_wire_atom.watch);
+            }
+            $mol_wire_atom.watching.add(this);
+        }
+        /**
+         * Update atom value through another temp fiber.
+         */
+        resync(args) {
+            // enforce pulling tasks abort
+            for (let cursor = this.pub_from; cursor < this.sub_from; cursor += 2) {
+                const pub = this.data[cursor];
+                if (pub && pub instanceof $mol_wire_task) {
+                    pub.destructor();
+                }
+            }
+            return this.put(this.task.call(this.host, ...args));
+        }
+        once() {
+            return this.sync();
+        }
+        channel() {
+            return Object.assign((next) => {
+                if (next !== undefined)
+                    return this.resync([...this.args, next]);
+                if (!$mol_wire_fiber.warm)
+                    return this.result();
+                if ($mol_wire_auto()?.temp) {
+                    return this.once();
+                }
+                else {
+                    return this.sync();
+                }
+            }, { atom: this });
+        }
+        destructor() {
+            super.destructor();
+            if (this.pub_from === 0) {
+                ;
+                (this.host ?? this.task)[this.field()] = null;
+            }
+            else {
+                const key = $mol_key(this.args[0]);
+                const map = (this.host ?? this.task)[this.field()];
+                if (!map.has(key))
+                    this.$.$mol_log3_warn({
+                        place: this,
+                        message: 'Absent key on destruction',
+                        hint: 'Check for $mol_key(key) is not changed',
+                    });
+                map.delete(key);
+            }
+        }
+        put(next) {
+            const prev = this.cache;
+            update: if (next !== prev) {
+                try {
+                    if ($mol_compare_deep(prev, next))
+                        break update;
+                }
+                catch (error) {
+                    $mol_fail_log(error);
+                }
+                if ($mol_owning_check(this, prev)) {
+                    prev.destructor();
+                }
+                if ($mol_owning_catch(this, next)) {
+                    try {
+                        next[Symbol.toStringTag] = this[Symbol.toStringTag];
+                    }
+                    catch { // Promises throw in strict mode
+                        Object.defineProperty(next, Symbol.toStringTag, { value: this[Symbol.toStringTag] });
+                    }
+                }
+                if (!this.sub_empty)
+                    this.emit();
+            }
+            this.cache = next;
+            this.cursor = $mol_wire_cursor.fresh;
+            if ($mol_promise_like(next))
+                return next;
+            this.complete_pubs();
+            return next;
+        }
+    }
+    __decorate([
+        $mol_wire_method
+    ], $mol_wire_atom.prototype, "resync", null);
+    __decorate([
+        $mol_wire_method
+    ], $mol_wire_atom.prototype, "once", null);
+    $.$mol_wire_atom = $mol_wire_atom;
 })($ || ($ = {}));
 
 ;
@@ -13747,6 +13747,50 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    /**
+     * Makes a cell of every method a handwritten body defines: keyed and
+     * changeable ones as the tree says, the way studio's `source_js_decorators()`
+     * does, and every zero argument method besides, whatever the tree says. The
+     * generated code calls it right after the class, since a decorator cannot be
+     * written into a string for `new Function`, and it reads the class rather
+     * than the text, so a nested `if( x ) {` cannot pass for a method.
+     *
+     * Without an atom the hot swap has nothing to wake when the text of a method
+     * changes: its callers keep the old value and the DOM keeps the old text.
+     */
+    function $bog_vmap_scene_cells(Klass, keyed, changeable) {
+        const proto = Klass.prototype;
+        for (const name of Object.getOwnPropertyNames(proto)) {
+            if (name === 'constructor' || name === 'destructor')
+                continue;
+            const descr = Object.getOwnPropertyDescriptor(proto, name);
+            const method = descr.value;
+            if (typeof method !== 'function')
+                continue;
+            if (keyed.includes(name)) {
+                $mol_mem_key(proto, name, descr);
+                continue;
+            }
+            if (changeable.includes(name)) {
+                $mol_mem(proto, name, descr);
+                continue;
+            }
+            // A method with arguments is no cell: the first one would be taken for a
+            // write. An async one answers a promise, which a cell would wait on.
+            if (method.length)
+                continue;
+            if (method.constructor !== Function)
+                continue;
+            $mol_mem(proto, name, descr);
+        }
+    }
+    $.$bog_vmap_scene_cells = $bog_vmap_scene_cells;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     function $mol_tree2_text_to_string(text) {
         let res = '';
         function visit(text, prefix, inline) {
@@ -14720,146 +14764,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /** Atoms behind one own field: a solo one, or every value of a keyed dictionary. */
-    function atoms_of(holder) {
-        if (holder instanceof Map)
-            return [...holder.values()];
-        if (holder && typeof holder === 'object')
-            return [holder];
-        return [];
-    }
-    /** Told by shape, like everywhere else on this side of the boundary. */
-    function view_like(value) {
-        return typeof value?.dom_node === 'function';
-    }
-    /**
-     * Moves a live component onto the freshly compiled classes, keeping its state.
-     *
-     * A cell lives as an OWN field of the instance, so replacing the prototype
-     * touches no value, no subscription and no DOM node — caret, focus and scroll
-     * position included. The one thing the prototype does not reach is the
-     * implementation a fiber captured in its constructor, and that is what is
-     * redirected here, taking the new one off the wrapper the decorator left it on.
-     *
-     * The walk goes over the atom caches and never over `sub()`: free parts are not
-     * in `sub` at all, `sub()` of a generated class is not memoized, so calling it
-     * would run user code and could create children that do not exist yet, and a
-     * child temporarily out of `sub` is still a live instance.
-     *
-     * Instances of classes the document does not declare — components of the donor
-     * pack — keep their prototype and are only walked through, because a document
-     * class may well sit inside one.
-     * @see ../ARCHITECTURE.md section 3, spike/S2.md
-     */
-    function $bog_vmap_scene_swap(root, klass_of, shape_of) {
-        const report = { swapped: 0, moved: 0, stale: 0, dropped: 0 };
-        const seen = new Set();
-        const queue = [root];
-        while (queue.length) {
-            const inst = queue.pop();
-            if (seen.has(inst))
-                continue;
-            seen.add(inst);
-            // The plain name, never the lookup helper of mol: the helper scans the
-            // whole ambient for a class it cannot find, and every class here is
-            // named by construction — an unnamed one is a defect on its own.
-            const name = inst.constructor?.name ?? '';
-            const shape = name ? shape_of(name) : null;
-            if (shape) {
-                const klass = klass_of(name);
-                if (typeof klass === 'function' && klass.prototype !== Object.getPrototypeOf(inst)) {
-                    Object.setPrototypeOf(inst, klass.prototype);
-                    report.swapped += 1;
-                }
-            }
-            for (const field of Object.getOwnPropertyNames(inst)) {
-                if (!field.endsWith('()'))
-                    continue;
-                const holder = Reflect.get(inst, field);
-                const atoms = atoms_of(holder);
-                if (!atoms.length)
-                    continue;
-                // The field is not simply `name()`: a property decorated both in the
-                // generated base and in the handwritten body carries a trailing space,
-                // because the decorator copies the name off the base wrapper.
-                const prop = field.slice(0, -2).trim();
-                for (const atom of atoms) {
-                    for (const kid of kids_of(atom))
-                        queue.push(kid);
-                }
-                if (!shape)
-                    continue;
-                retarget(inst, field, prop, atoms, shape, report);
-            }
-        }
-        return report;
-    }
-    $.$bog_vmap_scene_swap = $bog_vmap_scene_swap;
-    /** Views held by one atom, whether it holds one or a list of them. */
-    function kids_of(atom) {
-        const value = atom.result();
-        if (view_like(value))
-            return [value];
-        if (Array.isArray(value))
-            return value.filter(view_like);
-        return [];
-    }
-    /**
-     * Points the atoms of one property at the new implementation, or drops them.
-     *
-     * Only the atoms whose implementation actually changed are woken, and that is
-     * the whole economy of the strategy: a class is generated anew in full, so every
-     * function object is new, while the TEXT differs only for what was edited.
-     */
-    function retarget(inst, field, prop, atoms, shape, report) {
-        const wrapper = Reflect.get(inst, prop);
-        const next = typeof wrapper === 'function' ? Reflect.get(wrapper, 'orig') : null;
-        const decorated = typeof next === 'function';
-        const keyed_was = Reflect.get(inst, field) instanceof Map;
-        const keyed_now = shape.keyed.has(prop);
-        // A property the class no longer declares is judged by whether anything
-        // answers to its name at all; one it does declare must still be a cell of
-        // the same shape, or the atoms behind it mean nothing.
-        const broken = shape.declared.has(prop)
-            ? (!decorated || keyed_was !== keyed_now)
-            : (!decorated && !(prop in inst));
-        if (broken) {
-            // `destructor()` only unsubscribes, it does not mark anyone stale, so
-            // dependants would silently keep serving the value of a property that
-            // no longer exists.
-            for (const atom of atoms) {
-                atom.emit();
-                atom.destructor();
-            }
-            Reflect.deleteProperty(inst, field);
-            report.dropped += atoms.length;
-            return;
-        }
-        if (!decorated)
-            return;
-        for (const atom of atoms) {
-            const prev = atom.task;
-            if (prev === next)
-                continue;
-            Reflect.set(atom, 'task', next);
-            report.moved += 1;
-            if (String(prev) === String(next))
-                continue;
-            // Invalidation, not a recompute: waking the graph from inside the cell
-            // that owns the instance would run document code in the middle of our
-            // own computation. The value is read back a moment later by `stage()`,
-            // in the same pass.
-            Reflect.set(atom, 'cursor', $mol_wire_cursor.stale);
-            atom.emit();
-            report.stale += 1;
-        }
-    }
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
     /**
      * Replays a click the host overlay took on the element under the point.
      *
@@ -15230,8 +15134,20 @@ var $;
              */
             pack_ready() {
                 const uri = this.pack_uri();
-                if (uri)
-                    this.$.$mol_import.script(uri);
+                if (!uri)
+                    return uri;
+                this.$.$mol_import.script(uri);
+                // Two copies of `$mol_try_web` now listen on `self`, each calling a
+                // `handler` private to its own bundle, so a dispatch from one copy throws
+                // `handler is not a function` in the other. Plain try/catch for both.
+                this.$.$mol_try = handler => {
+                    try {
+                        return handler();
+                    }
+                    catch (error) {
+                        return error;
+                    }
+                };
                 return uri;
             }
             /**
@@ -15370,36 +15286,22 @@ var $;
                 return own;
             }
             /**
-             * Applies the decorators studio applies in `source_js_decorators()`.
-             *
-             * A decorator cannot be written inside the string handed to
-             * `new Function`, so it goes as a separate expression after the class.
-             * An undecorated property has no atom, hence no subscribers, hence the
-             * hot swap of stage 4.3 cannot wake anything: the method would return a
-             * new value while the DOM keeps the old one.
+             * The call that makes cells of the handwritten body, emitted right after the
+             * class: a decorator cannot be written into the string handed to
+             * `new Function`. What the tree says is keyed or changeable goes along as
+             * data, the rest `$bog_vmap_scene_cells` reads off the class itself.
              */
-            decorators(self, js) {
-                const cls = JSON.stringify(self.type);
-                const list = [];
+            cells_code(self) {
+                const keyed = [];
+                const changeable = [];
                 for (const prop of self.kids[0]?.kids ?? []) {
                     const { name, key, next } = this.$.$mol_view_tree2_prop_parts(prop);
-                    if (!key && !next)
-                        continue;
-                    if (!this.js_defines(js, name))
-                        continue;
-                    list.push(`( $.$mol_mem${key ? '_key' : ''}( $[ ${cls} ].prototype, ${JSON.stringify(name)} ) );`);
+                    if (key)
+                        keyed.push(name);
+                    else if (next)
+                        changeable.push(name);
                 }
-                return list.join('\n');
-            }
-            /**
-             * Studio asks for an explicit marker comment. A plain method definition
-             * counts here as well, because a body written without markers would lose
-             * memoization silently, and silence is exactly what this must not do.
-             */
-            js_defines(js, name) {
-                if (js.includes(`/${'*'}${name}${'*'}/`))
-                    return true;
-                return new RegExp(`(^|[^\\w.$])${name}\\s*\\(`, 'm').test(js);
+                return `$.$bog_vmap_scene_cells( $[ ${JSON.stringify(self.type)} ], ${JSON.stringify(keyed)}, ${JSON.stringify(changeable)} );`;
             }
             /**
              * Generated source of the whole document.
@@ -15478,7 +15380,7 @@ var $;
                 // The class is named. An anonymous one drops `dom_name()` to
                 // `div` and gives every sub view a bare `_echo`, the same one in
                 // every document.
-                chunks.push(`;$[ ${cls} ] = class ${name} extends $[ ${cls} ] {`, js, '}', ';' + this.decorators(def, js) + ';');
+                chunks.push(`;$[ ${cls} ] = class ${name} extends $[ ${cls} ] {`, js, '}', ';' + this.cells_code(def) + ';');
                 return chunks;
             }
             /**
@@ -16479,6 +16381,154 @@ var $;
             },
         });
     })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /** Atoms behind one own field: a solo one, or every value of a keyed dictionary. */
+    function atoms_of(holder) {
+        if (holder instanceof Map)
+            return [...holder.values()];
+        if (holder && typeof holder === 'object')
+            return [holder];
+        return [];
+    }
+    /** Told by shape, like everywhere else on this side of the boundary. */
+    function view_like(value) {
+        return typeof value?.dom_node === 'function';
+    }
+    /**
+     * Moves a live component onto the freshly compiled classes, keeping its state.
+     *
+     * A cell lives as an OWN field of the instance, so replacing the prototype
+     * touches no value, no subscription and no DOM node — caret, focus and scroll
+     * position included. The one thing the prototype does not reach is the
+     * implementation a fiber captured in its constructor, and that is what is
+     * redirected here, taking the new one off the wrapper the decorator left it on.
+     *
+     * The walk goes over the atom caches and never over `sub()`: free parts are not
+     * in `sub` at all, `sub()` of a generated class is not memoized, so calling it
+     * would run user code and could create children that do not exist yet, and a
+     * child temporarily out of `sub` is still a live instance.
+     *
+     * Instances of classes the document does not declare — components of the donor
+     * pack — keep their prototype and are only walked through, because a document
+     * class may well sit inside one.
+     * @see ../ARCHITECTURE.md section 3, spike/S2.md
+     */
+    function $bog_vmap_scene_swap(root, klass_of, shape_of) {
+        const report = { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0 };
+        const seen = new Set();
+        const queue = [root];
+        while (queue.length) {
+            const inst = queue.pop();
+            if (seen.has(inst))
+                continue;
+            seen.add(inst);
+            // The plain name, never the lookup helper of mol: the helper scans the
+            // whole ambient for a class it cannot find, and every class here is
+            // named by construction — an unnamed one is a defect on its own.
+            const name = inst.constructor?.name ?? '';
+            const shape = name ? shape_of(name) : null;
+            if (shape) {
+                const klass = klass_of(name);
+                if (typeof klass === 'function' && klass.prototype !== Object.getPrototypeOf(inst)) {
+                    Object.setPrototypeOf(inst, klass.prototype);
+                    report.swapped += 1;
+                }
+            }
+            for (const field of Object.getOwnPropertyNames(inst)) {
+                if (!field.endsWith('()'))
+                    continue;
+                const holder = Reflect.get(inst, field);
+                const atoms = atoms_of(holder);
+                if (!atoms.length)
+                    continue;
+                // The field is not simply `name()`: a property decorated both in the
+                // generated base and in the handwritten body carries a trailing space,
+                // because the decorator copies the name off the base wrapper.
+                const prop = field.slice(0, -2).trim();
+                for (const atom of atoms) {
+                    for (const kid of kids_of(atom))
+                        queue.push(kid);
+                    // A failed atom has nothing to keep and is woken whatever changed:
+                    // the method it was missing may have been written in another class,
+                    // where no text of its own would ever point back at it.
+                    if (!(atom.cache instanceof Error))
+                        continue;
+                    Reflect.set(atom, 'cursor', $mol_wire_cursor.stale);
+                    atom.emit();
+                    report.failed += 1;
+                }
+                if (!shape)
+                    continue;
+                retarget(inst, field, prop, atoms, shape, report);
+            }
+        }
+        return report;
+    }
+    $.$bog_vmap_scene_swap = $bog_vmap_scene_swap;
+    /** Views held by one atom, whether it holds one or a list of them. */
+    function kids_of(atom) {
+        const value = atom.result();
+        if (view_like(value))
+            return [value];
+        if (Array.isArray(value))
+            return value.filter(view_like);
+        return [];
+    }
+    /**
+     * Points the atoms of one property at the new implementation, or drops them.
+     *
+     * Only the atoms whose implementation actually changed are woken, and that is
+     * the whole economy of the strategy: a class is generated anew in full, so every
+     * function object is new, while the TEXT differs only for what was edited.
+     */
+    function retarget(inst, field, prop, atoms, shape, report) {
+        const wrapper = Reflect.get(inst, prop);
+        const next = typeof wrapper === 'function' ? Reflect.get(wrapper, 'orig') : null;
+        const decorated = typeof next === 'function';
+        const keyed_was = Reflect.get(inst, field) instanceof Map;
+        const keyed_now = shape.keyed.has(prop);
+        // A property the class no longer declares is judged by whether anything
+        // answers to its name at all; one it does declare must still be a cell of
+        // the same shape, or the atoms behind it mean nothing.
+        const broken = shape.declared.has(prop)
+            ? (!decorated || keyed_was !== keyed_now)
+            : (!decorated && !(prop in inst));
+        if (broken) {
+            // `destructor()` only unsubscribes, it does not mark anyone stale, so
+            // dependants would silently keep serving the value of a property that
+            // no longer exists.
+            for (const atom of atoms) {
+                atom.emit();
+                atom.destructor();
+            }
+            Reflect.deleteProperty(inst, field);
+            report.dropped += atoms.length;
+            return;
+        }
+        if (!decorated)
+            return;
+        for (const atom of atoms) {
+            const prev = atom.task;
+            if (prev === next)
+                continue;
+            Reflect.set(atom, 'task', next);
+            report.moved += 1;
+            if (String(prev) === String(next))
+                continue;
+            // Invalidation, not a recompute: waking the graph from inside the cell
+            // that owns the instance would run document code in the middle of our
+            // own computation. The value is read back a moment later by `stage()`,
+            // in the same pass.
+            Reflect.set(atom, 'cursor', $mol_wire_cursor.stale);
+            atom.emit();
+            report.stale += 1;
+        }
+    }
 })($ || ($ = {}));
 
 
