@@ -1,39 +1,3 @@
-$mol_scroll $mol_view
-	scroll_top? 0
-	scroll_left? 0
-	attr *
-		^
-		tabindex <= tabindex -1
-	event *
-		^
-		scroll? <=> event_scroll? null
-
-$mol_page $mol_view
-	dom_name \article
-	attr *
-		^
-		tabIndex <= tabindex -1
-	sub /
-		<= Head $mol_view
-			minimal_height 64
-			dom_name \header
-			sub <= head /
-				<= Title $mol_view
-					dom_name \h1
-					sub <= title_content /
-						<= Logo null
-						<= title
-				<= Tools $mol_view
-					sub <= tools /$mol_view_content
-		<= Body $mol_scroll
-			scroll_top? => body_scroll_top?
-			sub <= body_content /
-				<= Body_content $mol_view
-					sub <= body /$mol_view
-		<= Foot $mol_view
-			dom_name \footer
-			sub <= foot /$mol_view
-
 $mol_hotkey $mol_plugin
 	event *
 		^
@@ -528,6 +492,16 @@ $mol_pop_bubble $mol_view
 		^
 		tabindex 0
 		popover \manual
+
+$mol_scroll $mol_view
+	scroll_top? 0
+	scroll_left? 0
+	attr *
+		^
+		tabindex <= tabindex -1
+	event *
+		^
+		scroll? <=> event_scroll? null
 
 $mol_pick $mol_pop
 	event *
@@ -1026,51 +1000,38 @@ $mol_text_list_item $mol_paragraph
 		^
 		mol_text_list_item_index <= index 0
 
-$bog_vmap_part $mol_page
-	title \Базовые детали vmap
-	- The showcase of the pack: the two parts wired together, and the common
-	- components of mol beside them, so that a palette fed by this pack has the
-	- basics and not the two parts alone.
-	calc_result = Calc result
-	body /
-		<= Calc $bog_vmap_part_calc
-		<= Map $bog_vmap_part_map
-			zoom <= calc_result
-		<= Kit $mol_list
-			rows /
-				<= Button_major $mol_button_major
-					title \Кнопка
-				<= Button_minor $mol_button_minor
-					title \Кнопка
-				<= String $mol_string
-					hint \Строка
-				<= Textarea $mol_textarea
-					hint \Текст
-				<= Number $mol_number
-				<= Check $mol_check_box
-					title \Флажок
-				<= Switch $mol_switch
-					options *
-						one \Раз
-						two \Два
-				<= Select $mol_select
-					options /
-						\Раз
-						\Два
-				<= Link $mol_link
-					title \Ссылка
-					uri \https://mol.hyoo.ru
-				<= Image $mol_image
-					uri \https://mol.hyoo.ru/mol/logo/logo.svg
-				<= Text $mol_text
-					text \**Разметка**
-				<= Paragraph $mol_paragraph
-					title \Абзац
-				<= Labeler $mol_labeler
-					title \Подпись
-					content / \Значение
-				<= Row $mol_row
-				<= Card $mol_card
-				<= Form $mol_form
-				<= Field $mol_form_field
-					name \Поле
+- The pack of parts: a LIBRARY, not a page.
+-
+- A class reaches `web.js` and `web.view.tree` by being named here, and that is
+- all the editor needs of this module: the shelf offers the two parts, the second
+- level of its panel offers the primitives, and both read the tree beside the
+- bundle. Nothing is drawn, so there is nothing to configure and nothing to keep
+- in step with the editor.
+-
+- The showcase page this used to be — a title, a demo wiring and seventeen
+- components with sample values in them — was scaffolding for a palette that no
+- longer opens first. What it proved is proved by the tests instead.
+$bog_vmap_part $mol_view
+	- The parts of this pack. Everything else below is mol itself, carried along
+	- so that a page can be laid out and not only assembled.
+	Calc $bog_vmap_part_calc
+	Map $bog_vmap_part_map
+	-
+	Button_major $mol_button_major
+	Button_minor $mol_button_minor
+	String $mol_string
+	Textarea $mol_textarea
+	Number $mol_number
+	Check_box $mol_check_box
+	Switch $mol_switch
+	Select $mol_select
+	Link $mol_link
+	Image $mol_image
+	Text $mol_text
+	Paragraph $mol_paragraph
+	Labeler $mol_labeler
+	Row $mol_row
+	Card $mol_card
+	List $mol_list
+	Form $mol_form
+	Form_field $mol_form_field
