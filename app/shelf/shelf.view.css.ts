@@ -39,8 +39,13 @@ namespace $.$$ {
 			minHeight: '6rem',
 		},
 
+		/**
+		 * A hand's width under the last row, so the bottom of the list clears the
+		 * switch pinned below the stack instead of ending flush against it.
+		 */
 		Stack_body: {
 			flex: { direction: 'column' },
+			padding: { bottom: '2.5rem' },
 		},
 
 		/** The shelf itself takes the room it needs and no more; the rest is below. */
@@ -110,10 +115,20 @@ namespace $.$$ {
 		},
 
 		/** The objects of the application, sized by their own number. */
+		/**
+		 * ONE SCROLL IN THE PANEL, and it is the stack above.
+		 *
+		 * This list had a scroll of its own inside that one, and two scrolls one
+		 * inside the other trap what is between them: the last object sat under the
+		 * switch of the second level, the inner scroll had 64 px of travel and could
+		 * not reach it, and the outer one was not at the bottom yet. Twice a drag
+		 * started on the switch instead of on the row. Measured on the deploy.
+		 *
+		 * So the list is as tall as it is and the stack scrolls it. Nothing is
+		 * hidden under anything, because there is one thing that moves.
+		 */
 		Apps: {
 			flex: { direction: 'column', shrink: 0 },
-			maxHeight: '14rem',
-			overflow: { y: 'auto' },
 			padding: { top: $mol_gap.space, bottom: $mol_gap.space },
 			gap: $mol_gap.space,
 		},
