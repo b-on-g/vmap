@@ -46845,14 +46845,25 @@ declare namespace $.$$ {
         shared(next?: readonly string[]): readonly string[];
         note(): string;
         /**
-         * Publishes the picked part.
+         * Publishes the picked part. The handler is a fiber already, and the store
+         * method runs inside it: the first publication grabs a land, and the proof
+         * of work is cached for the retries of this very fiber.
          *
-         * The handler is a fiber already, and the store method runs inside it: the
-         * first publication grabs a land, and the proof of work is cached for the
-         * retries of this very fiber. The texts are read before the write. A part
-         * wired to the document is refused with the reason on the bar, nothing written.
+         * Nothing leaves here but a suspension. A throw out of a click handler is a
+         * speck on the button and a promise nobody awaits, which on the screen is
+         * nothing: measured on the deploy, where a node picked inside another part
+         * has no text of its own and the click died with words nobody saw. So an
+         * error is words on the bar as well, and a suspension is let through — it
+         * is how the fiber waits for the land, and a retry starts over from here.
          */
         publish(next?: Event | null): null;
+        /**
+         * One try at publishing the part, texts read before the write. Answers the
+         * refusal in the user's words, empty once the part went out. A part the
+         * document does not declare — a node picked inside another part — has no
+         * text, and is refused before the store could throw over it.
+         */
+        attempt(part: string): string;
         /** The button always; the link once there is one; the note once something went out. */
         content(): readonly $mol_view[];
     }
@@ -52182,10 +52193,10 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_pane_overlay['style'] >
 	>
-	type $bog_vmap_app_pane_overlay__frame_showed_bog_vmap_app_pane_2 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_pane['frame_showed'] >
+	type $bog_vmap_app_pane_overlay__frames_bog_vmap_app_pane_2 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['frames'] >
 		,
-		ReturnType< $bog_vmap_app_pane_overlay['frame_showed'] >
+		ReturnType< $bog_vmap_app_pane_overlay['frames'] >
 	>
 	type $bog_vmap_app_pane_overlay__frame_style_bog_vmap_app_pane_3 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['frame_style'] >
@@ -52284,10 +52295,15 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['style'] >
 	>
+	type $mol_view__style_bog_vmap_app_pane_22 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['band_style'] >
+		,
+		ReturnType< $mol_view['style'] >
+	>
 	export class $bog_vmap_app_pane extends $mol_view {
 		overlay_style( ): Record<string, any>
-		frame_showed( ): boolean
-		frame_style( ): Record<string, any>
+		frames( ): readonly(string)[]
+		frame_style( id: any): Record<string, any>
 		node_press( next?: any ): any
 		node_move( next?: any ): any
 		node_release( next?: any ): any
@@ -52301,6 +52317,7 @@ declare namespace $ {
 		mark_style( id: any): Record<string, any>
 		mark_hint( id: any): string
 		insert_style( ): Record<string, any>
+		band_style( ): Record<string, any>
 		Touch( ): $mol_touch
 		scene_bundle( ): string
 		scene_html( ): string
@@ -52308,7 +52325,7 @@ declare namespace $ {
 		doc_src( ): string
 		doc_css( ): string
 		spots( next?: Record<string, any> ): Record<string, any>
-		selected( next?: any ): any
+		picked( next?: readonly(string)[] ): readonly(string)[]
 		doc_js( ): Record<string, any>
 		doc_root( ): string
 		libs( ): readonly($bog_vmap_bridge_part)[]
@@ -52335,6 +52352,7 @@ declare namespace $ {
 		sub( ): readonly(any)[]
 		Mark( id: any): $mol_view
 		Insert( ): $mol_view
+		Band( ): $mol_view
 		plugins( ): readonly(any)[]
 	}
 	
@@ -52372,18 +52390,18 @@ declare namespace $ {
 		press( next?: any ): any
 		move( next?: any ): any
 		release( next?: any ): any
-		frame_style( ): Record<string, any>
+		frame_style( id: any): Record<string, any>
 		Handle_nw( ): $bog_vmap_app_pane_handle
 		Handle_ne( ): $bog_vmap_app_pane_handle
 		Handle_sw( ): $bog_vmap_app_pane_handle
 		Handle_se( ): $bog_vmap_app_pane_handle
-		frame_showed( ): boolean
+		frames( ): readonly(string)[]
 		event( ): ({ 
 			pointerdown( next?: ReturnType< $bog_vmap_app_pane_overlay['press'] > ): ReturnType< $bog_vmap_app_pane_overlay['press'] >,
 			pointermove( next?: ReturnType< $bog_vmap_app_pane_overlay['move'] > ): ReturnType< $bog_vmap_app_pane_overlay['move'] >,
 			pointerup( next?: ReturnType< $bog_vmap_app_pane_overlay['release'] > ): ReturnType< $bog_vmap_app_pane_overlay['release'] >,
 		})  & ReturnType< $mol_view['event'] >
-		Frame( ): $mol_view
+		Frame( id: any): $mol_view
 	}
 	
 	export class $bog_vmap_app_pane_handle extends $mol_view {
@@ -52720,9 +52738,12 @@ declare namespace $.$$ {
          */
         drag: {
             name: string;
-            spot: {
-                readonly x: number;
-                readonly y: number;
+            /** Where every node being carried started, by name. A group moves as one. */
+            spots: {
+                readonly [name: string]: {
+                    readonly x: number;
+                    readonly y: number;
+                };
             };
             grab: readonly [number, number];
             version: number;
@@ -52747,6 +52768,8 @@ declare namespace $.$$ {
             world: readonly [number, number];
             moved: boolean;
             entering: boolean;
+            /** The node under the press, `null` for bare canvas. */
+            name: string | null;
         } | null;
         /**
          * The node the pointer has been let inside of, or `null`.
@@ -52759,10 +52782,18 @@ declare namespace $.$$ {
          * the hole took the keyboard into the frame, where the Delete of the editor
          * never arrives.
          *
-         * Compared against `selected()` rather than cleared by hand: a pick of
+         * Compared against `primary()` rather than cleared by hand: a pick of
          * anything else closes the hole by itself, and nothing has to remember to.
          */
         entered(next?: string | null): string | null;
+        /**
+         * The primary of the picked nodes: the last one taken.
+         *
+         * The hole, the wire dots and the inspector all speak about ONE node, and
+         * this is which one. Derived from `picked()` and never stored beside it: two
+         * cells for one fact need somebody to keep them in step.
+         */
+        primary(): string | null;
         /** Whether the pointer is inside the picked node, i.e. the overlay is cut open. */
         inside(): boolean;
         /**
@@ -52831,6 +52862,49 @@ declare namespace $.$$ {
         slot(next?: $bog_vmap_app_pane_slot | null): $bog_vmap_app_pane_slot | null;
         tree_move(next?: $bog_vmap_app_pane_tree_move | null): $bog_vmap_app_pane_tree_move | null;
         /**
+         * The band being swept over the canvas, in world units, or `null`.
+         *
+         * A cell and not a field for the reason the slot is one: the band is drawn
+         * from it and has to follow the pointer. Kept as the two corners the gesture
+         * has rather than as a normalised rectangle, because a sweep upwards or to
+         * the left is an ordinary sweep and normalising is one line where it is used.
+         */
+        band(next?: {
+            readonly from: readonly [number, number];
+            readonly to: readonly [number, number];
+        } | null): {
+            readonly from: readonly [number, number];
+            readonly to: readonly [number, number];
+        } | null;
+        /**
+         * Whether this press sweeps a band rather than picks.
+         *
+         * Control or command, which is what the user asked for and what leaves the
+         * plain drag alone: over bare canvas that is still the pan, and over a node
+         * it is still the carry. Shift is left free — it is the natural key for
+         * adding one more node to a selection, and spending it on the band would
+         * cost the gesture that is asked for next.
+         */
+        band_wanted(event: PointerEvent): boolean;
+        /** The band as a rectangle in world units, whichever way it was swept. */
+        band_box(): {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+        } | null;
+        /**
+         * The nodes a rectangle in world units takes: everything it OVERLAPS, and of
+         * a node and its container only the outer one.
+         *
+         * Overlap and not containment, because a band drawn across a wide page would
+         * otherwise take nothing at all, and a part half off the band is plainly
+         * being pointed at. The descendants of a taken node are dropped because they
+         * move with it: taking both would carry a child twice, once by its own spot
+         * and once inside its parent, and delete it twice over.
+         */
+        nodes_covered(box: $bog_vmap_bridge_rect): string[];
+        /**
          * Press picks, and a press on a part also starts carrying it.
          *
          * The pick is taken from `pointerdown` and never from `click`, because the
@@ -52861,7 +52935,7 @@ declare namespace $.$$ {
          * else, so writing one would leave a number in the document's desk layout
          * that moves nothing.
          */
-        node_move(event?: PointerEvent): void;
+        node_move(event?: PointerEvent): void | readonly string[];
         /**
          * Release ends whatever the press started, and a press that went nowhere is
          * a click and goes to the scene.
@@ -52871,7 +52945,7 @@ declare namespace $.$$ {
          * release. The distance is still measured, so the outcome does not depend on
          * that capture having happened.
          */
-        node_release(event?: PointerEvent): void;
+        node_release(event?: PointerEvent): void | readonly string[];
         /**
          * Relays a click to the scene, in world coordinates.
          *
@@ -52885,7 +52959,9 @@ declare namespace $.$$ {
          * document code.
          */
         click_send(point: readonly [number, number], event: PointerEvent): void;
-        /** The ring is drawn while something is picked and measured. */
+        /** Names of the picked nodes a ring can be drawn for: the measured ones. */
+        frames(): string[];
+        /** Whether a ring is drawn at all, for the tests and for anything that only needs the flag. */
         frame_showed(): boolean;
         /**
          * Where the picked part is on screen, in pixels of this pane, or `null`.
@@ -52906,7 +52982,11 @@ declare namespace $.$$ {
         insert_style(): {
             readonly [prop: string]: string;
         };
-        frame_style(): {
+        /** Where the band is on screen. Empty while none is being swept. */
+        band_style(): {
+            readonly [prop: string]: string;
+        };
+        frame_style(name: string): {
             readonly [prop: string]: string;
         };
         /**
@@ -53048,7 +53128,7 @@ declare namespace $.$$ {
      */
     class $bog_vmap_app_pane_overlay extends $.$bog_vmap_app_pane_overlay {
         /**
-         * The ring, or nothing at all.
+         * A ring per picked node, and nothing at all when nothing is picked.
          *
          * A node kept in the tree and merely hidden would still be a view to build,
          * measure and keep alive, and an empty canvas is the common state.
@@ -53505,10 +53585,10 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_pane['spots'] >
 	>
-	type $bog_vmap_app_pane__selected_bog_vmap_app_84 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['selected'] >
+	type $bog_vmap_app_pane__picked_bog_vmap_app_84 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['picked'] >
 		,
-		ReturnType< $bog_vmap_app_pane['selected'] >
+		ReturnType< $bog_vmap_app_pane['picked'] >
 	>
 	type $bog_vmap_app_pane__doc_js_bog_vmap_app_85 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_js'] >
@@ -53643,6 +53723,7 @@ declare namespace $ {
 		doc_css( ): string
 		spots( next?: Record<string, any> ): Record<string, any>
 		selected( next?: any ): any
+		picked( next?: readonly(string)[] ): readonly(string)[]
 		doc_js( ): Record<string, any>
 		doc_root( ): string
 		scene_bundle( ): string
@@ -53862,6 +53943,34 @@ declare namespace $.$$ {
          * The truth is here rather than in the pane so that a reader does not have to
          * reach through the canvas to learn what is picked; the pane writes it back
          * through a two way binding.
+         *
+         * KEYED BY THE DOCUMENT, and a plain method for that reason. A pick belongs
+         * to the document it was made in: switching scenes hands over that scene's
+         * pick — empty for a fresh one — and coming back finds it where it was left.
+         * One pick for the whole editor left a ring hanging over an empty canvas and
+         * an inspector opened on a node the new document never had.
+         *
+         * A `@ $mol_mem` here would freeze on the first write: writing to a cell
+         * freezes its dependencies, and the dependency frozen would be the very
+         * document key this is meant to follow.
+         */
+        picked(next?: readonly string[]): readonly string[];
+        /**
+         * Which document a pick belongs to: the link of the open one, empty while
+         * there is none. The link and not the text, so that editing a document does
+         * not drop what is picked in it.
+         */
+        doc_key(): string;
+        /** What is picked in one document. The cell the pick actually lives in. */
+        picked_at(key: string, next?: readonly string[]): readonly string[];
+        /**
+         * The primary of the picked, which is the last one taken.
+         *
+         * A projection of `picked()` and not a cell of its own: two cells holding
+         * one fact would have to be kept in step by somebody, and the reading path
+         * would stop being the writing path — which is how a `@ $mol_mem` in front of
+         * another one freezes. Writing a name here is picking exactly that one, which
+         * is what every caller outside the canvas means by it.
          */
         selected(next?: string | null): string | null;
         /** Whether anything is picked at all, for the views that only need the flag. */

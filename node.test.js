@@ -18423,29 +18423,52 @@ var $;
                 return `опубликовано ${klass}${copied}:`;
             }
             /**
-             * Publishes the picked part.
+             * Publishes the picked part. The handler is a fiber already, and the store
+             * method runs inside it: the first publication grabs a land, and the proof
+             * of work is cached for the retries of this very fiber.
              *
-             * The handler is a fiber already, and the store method runs inside it: the
-             * first publication grabs a land, and the proof of work is cached for the
-             * retries of this very fiber. The texts are read before the write. A part
-             * wired to the document is refused with the reason on the bar, nothing written.
+             * Nothing leaves here but a suspension. A throw out of a click handler is a
+             * speck on the button and a promise nobody awaits, which on the screen is
+             * nothing: measured on the deploy, where a node picked inside another part
+             * has no text of its own and the click died with words nobody saw. So an
+             * error is words on the bar as well, and a suspension is let through — it
+             * is how the fiber waits for the land, and a retry starts over from here.
              */
             publish(next) {
                 const part = this.part();
                 if (!part)
                     return null;
-                const klass = this.store().class_name(part);
-                const { source, shared } = this.store().inlined(this.source(), this.doc());
-                // A wired part is a state of the bar, not an exception on the button: a
-                // throw out of the handler goes to the fiber, and the user sees nothing.
-                const refusal = this.store().refusal(part, source, this.classes());
-                this.refused(refusal);
-                if (refusal)
-                    return null;
-                this.store().publish(part, source, this.js(), this.css(), this.classes());
-                this.published(klass);
-                this.shared(shared);
+                let note = '';
+                try {
+                    note = this.attempt(part);
+                }
+                catch (error) {
+                    if (this.$.$mol_promise_like(error))
+                        return this.$.$mol_fail_hidden(error);
+                    note = `не удалось опубликовать ${part}: ${this.$.$mol_error_message(error)}`;
+                }
+                this.refused(note);
                 return null;
+            }
+            /**
+             * One try at publishing the part, texts read before the write. Answers the
+             * refusal in the user's words, empty once the part went out. A part the
+             * document does not declare — a node picked inside another part — has no
+             * text, and is refused before the store could throw over it.
+             */
+            attempt(part) {
+                const source = this.source();
+                if (!source)
+                    return `деталь ${part} не объявлена в документе, выберите деталь верхнего уровня`;
+                const klass = this.store().class_name(part);
+                const inlined = this.store().inlined(source, this.doc());
+                const refusal = this.store().refusal(part, inlined.source, this.classes());
+                if (refusal)
+                    return refusal;
+                this.store().publish(part, inlined.source, this.js(), this.css(), this.classes());
+                this.published(klass);
+                this.shared(inlined.shared);
+                return '';
             }
             /** The button always; the link once there is one; the note once something went out. */
             content() {
@@ -32157,10 +32180,10 @@ var $;
 		overlay_style(){
 			return {};
 		}
-		frame_showed(){
-			return false;
+		frames(){
+			return [];
 		}
-		frame_style(){
+		frame_style(id){
 			return {};
 		}
 		node_press(next){
@@ -32178,8 +32201,8 @@ var $;
 		Overlay(){
 			const obj = new this.$.$bog_vmap_app_pane_overlay();
 			(obj.style) = () => ((this.overlay_style()));
-			(obj.frame_showed) = () => ((this.frame_showed()));
-			(obj.frame_style) = () => ((this.frame_style()));
+			(obj.frames) = () => ((this.frames()));
+			(obj.frame_style) = (id) => ((this.frame_style(id)));
 			(obj.press) = (next) => ((this.node_press(next)));
 			(obj.move) = (next) => ((this.node_move(next)));
 			(obj.release) = (next) => ((this.node_release(next)));
@@ -32218,6 +32241,9 @@ var $;
 		insert_style(){
 			return {};
 		}
+		band_style(){
+			return {};
+		}
 		Touch(){
 			const obj = new this.$.$mol_touch();
 			(obj.allow_draw) = () => (false);
@@ -32246,9 +32272,9 @@ var $;
 			if(next !== undefined) return next;
 			return {};
 		}
-		selected(next){
+		picked(next){
 			if(next !== undefined) return next;
-			return null;
+			return [];
 		}
 		doc_js(){
 			return {};
@@ -32352,6 +32378,11 @@ var $;
 			(obj.style) = () => ((this.insert_style()));
 			return obj;
 		}
+		Band(){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.band_style()));
+			return obj;
+		}
 		plugins(){
 			return [...(super.plugins()), (this.Touch())];
 		}
@@ -32364,7 +32395,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Marks"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Touch"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "spots"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "selected"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "picked"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_add"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_drop"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "tree_move"));
@@ -32379,6 +32410,7 @@ var $;
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Scene"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Mark"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Insert"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Band"));
 	($.$bog_vmap_app_pane_overlay) = class $bog_vmap_app_pane_overlay extends ($.$mol_view) {
 		press(next){
 			if(next !== undefined) return next;
@@ -32392,7 +32424,7 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
-		frame_style(){
+		frame_style(id){
 			return {};
 		}
 		Handle_nw(){
@@ -32415,8 +32447,8 @@ var $;
 			(obj.corner) = () => ("se");
 			return obj;
 		}
-		frame_showed(){
-			return false;
+		frames(){
+			return [];
 		}
 		event(){
 			return {
@@ -32426,9 +32458,9 @@ var $;
 				"pointerup": (next) => (this.release(next))
 			};
 		}
-		Frame(){
+		Frame(id){
 			const obj = new this.$.$mol_view();
-			(obj.style) = () => ((this.frame_style()));
+			(obj.style) = () => ((this.frame_style(id)));
 			(obj.sub) = () => ([
 				(this.Handle_nw()), 
 				(this.Handle_ne()), 
@@ -32445,7 +32477,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_ne"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_sw"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_se"));
-	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Frame"));
+	($mol_mem_key(($.$bog_vmap_app_pane_overlay.prototype), "Frame"));
 	($.$bog_vmap_app_pane_handle) = class $bog_vmap_app_pane_handle extends ($.$mol_view) {
 		corner(){
 			return "";
@@ -32802,6 +32834,7 @@ var $;
                     this.Overlay(),
                     this.Wire(),
                     ...this.slot() ? [this.Insert()] : [],
+                    ...this.band() ? [this.Band()] : [],
                 ];
             }
             /**
@@ -33116,15 +33149,26 @@ var $;
              * the hole took the keyboard into the frame, where the Delete of the editor
              * never arrives.
              *
-             * Compared against `selected()` rather than cleared by hand: a pick of
+             * Compared against `primary()` rather than cleared by hand: a pick of
              * anything else closes the hole by itself, and nothing has to remember to.
              */
             entered(next) {
                 return next ?? null;
             }
+            /**
+             * The primary of the picked nodes: the last one taken.
+             *
+             * The hole, the wire dots and the inspector all speak about ONE node, and
+             * this is which one. Derived from `picked()` and never stored beside it: two
+             * cells for one fact need somebody to keep them in step.
+             */
+            primary() {
+                const picked = this.picked();
+                return picked.length ? picked[picked.length - 1] : null;
+            }
             /** Whether the pointer is inside the picked node, i.e. the overlay is cut open. */
             inside() {
-                const name = this.selected();
+                const name = this.primary();
                 return Boolean(name) && this.entered() === name;
             }
             /**
@@ -33263,6 +33307,69 @@ var $;
                 return next ?? null;
             }
             /**
+             * The band being swept over the canvas, in world units, or `null`.
+             *
+             * A cell and not a field for the reason the slot is one: the band is drawn
+             * from it and has to follow the pointer. Kept as the two corners the gesture
+             * has rather than as a normalised rectangle, because a sweep upwards or to
+             * the left is an ordinary sweep and normalising is one line where it is used.
+             */
+            band(next) {
+                return next ?? null;
+            }
+            /**
+             * Whether this press sweeps a band rather than picks.
+             *
+             * Control or command, which is what the user asked for and what leaves the
+             * plain drag alone: over bare canvas that is still the pan, and over a node
+             * it is still the carry. Shift is left free — it is the natural key for
+             * adding one more node to a selection, and spending it on the band would
+             * cost the gesture that is asked for next.
+             */
+            band_wanted(event) {
+                return Boolean(event.ctrlKey || event.metaKey);
+            }
+            /** The band as a rectangle in world units, whichever way it was swept. */
+            band_box() {
+                const band = this.band();
+                if (!band)
+                    return null;
+                return {
+                    x: Math.min(band.from[0], band.to[0]),
+                    y: Math.min(band.from[1], band.to[1]),
+                    width: Math.abs(band.to[0] - band.from[0]),
+                    height: Math.abs(band.to[1] - band.from[1]),
+                };
+            }
+            /**
+             * The nodes a rectangle in world units takes: everything it OVERLAPS, and of
+             * a node and its container only the outer one.
+             *
+             * Overlap and not containment, because a band drawn across a wide page would
+             * otherwise take nothing at all, and a part half off the band is plainly
+             * being pointed at. The descendants of a taken node are dropped because they
+             * move with it: taking both would carry a child twice, once by its own spot
+             * and once inside its parent, and delete it twice over.
+             */
+            nodes_covered(box) {
+                const hit = this.nodes_measured().filter(node => {
+                    const own = node.box;
+                    if (own.x + own.width < box.x)
+                        return false;
+                    if (own.y + own.height < box.y)
+                        return false;
+                    if (own.x > box.x + box.width)
+                        return false;
+                    if (own.y > box.y + box.height)
+                        return false;
+                    return true;
+                });
+                const names = new Set(hit.map(node => node.name));
+                return hit
+                    .filter(node => !node.path.slice(0, -1).some(up => names.has(up)))
+                    .map(node => node.name);
+            }
+            /**
              * Press picks, and a press on a part also starts carrying it.
              *
              * The pick is taken from `pointerdown` and never from `click`, because the
@@ -33289,12 +33396,27 @@ var $;
                 if (dot)
                     return this.wire_press(dot, event);
                 const point = this.world_point(event);
+                // A modified pointer sweeps a band instead of picking: the modifier is
+                // what tells a sweep from a pan, and it is read here and nowhere else, so
+                // the rest of the gesture does not have to keep asking.
+                if (this.band_wanted(event)) {
+                    event.preventDefault();
+                    this.band({ from: point, to: point });
+                    this.press = { screen: [event.clientX, event.clientY], world: point, moved: false, entering: false, name: null };
+                    return;
+                }
                 const name = this.node_at(point);
-                // A press on the node already picked is the second click of the pair that
-                // lets the pointer inside it. Any other press picks and stays outside, so
-                // the body of the node stays the handle it is carried by.
-                const entering = Boolean(name) && name === this.selected();
-                this.selected(name);
+                // A press on something already picked leaves the set alone, so that a group
+                // is carried by the body of any one of it, and the body of a single node
+                // stays the handle it is carried by. Reducing the set to the node pressed
+                // is the business of the release, and only when nothing moved.
+                //
+                // The second press on a node picked alone is the one that lets the pointer
+                // inside it; every other press keeps the pointer out.
+                const already = Boolean(name) && this.picked().includes(name);
+                const entering = already && this.picked().length === 1;
+                if (!already)
+                    this.picked(name ? [name] : []);
                 if (!entering)
                     this.entered(null);
                 this.press = {
@@ -33302,13 +33424,22 @@ var $;
                     world: point,
                     moved: false,
                     entering,
+                    name,
                 };
                 if (!name)
                     return;
                 event.preventDefault();
+                // Everything picked travels, and only what lies by a coordinate can: a node
+                // inside an artboard is laid out by tree and has no spot to move.
+                const spots = {};
+                for (const picked of this.picked()) {
+                    if (this.node_path(picked).length)
+                        continue;
+                    spots[picked] = this.spots()[picked] ?? { x: 0, y: 0 };
+                }
                 this.drag = {
                     name,
-                    spot: this.spots()[name] ?? { x: 0, y: 0 },
+                    spots,
                     grab: point,
                     version: this.sizes_version(),
                     nested: this.node_path(name).length > 0,
@@ -33356,6 +33487,14 @@ var $;
                     this.wire_point(this.screen_point(event));
                     return;
                 }
+                const band = this.band();
+                if (band) {
+                    if (!event.buttons)
+                        return this.node_release(event);
+                    event.preventDefault();
+                    this.band({ from: band.from, to: this.world_point(event) });
+                    return;
+                }
                 const drag = this.drag;
                 if (!drag || !this.drag_live)
                     return;
@@ -33368,13 +33507,14 @@ var $;
                 this.slot(slot);
                 if (slot || drag.nested)
                     return;
-                this.spots({
-                    ...this.spots(),
-                    [drag.name]: {
-                        x: drag.spot.x + point[0] - drag.grab[0],
-                        y: drag.spot.y + point[1] - drag.grab[1],
-                    },
-                });
+                const next = { ...this.spots() };
+                for (const name of Object.keys(drag.spots)) {
+                    next[name] = {
+                        x: drag.spots[name].x + point[0] - drag.grab[0],
+                        y: drag.spots[name].y + point[1] - drag.grab[1],
+                    };
+                }
+                this.spots(next);
             }
             /**
              * Release ends whatever the press started, and a press that went nowhere is
@@ -33394,6 +33534,16 @@ var $;
                 this.press = null;
                 if (this.wire_drag())
                     return this.wire_release(event);
+                // A band that never grew is a modified click, and takes nothing: sweeping
+                // is a gesture with an area, and a stray click with a key held down
+                // should not silently clear what is picked.
+                const box = this.band_box();
+                if (box) {
+                    this.band(null);
+                    if (press?.moved)
+                        this.picked(this.nodes_covered(box));
+                    return;
+                }
                 if (this.drag_live) {
                     // The drop into a tree is asked for here and never written here: the
                     // pane owns the geometry of the gesture, the document is the owner's.
@@ -33414,12 +33564,16 @@ var $;
                     return;
                 if (press.moved)
                     return;
+                // A click on one node of a group means that one node: the group was kept
+                // through the press so that it could have been carried, and now it was not.
+                if (press.name && this.picked().length > 1)
+                    return this.picked([press.name]);
                 // Only the second click on one and the same node goes on to the live
                 // component. The first one is the editor's: it picks, and it leaves both
                 // the body of the node and the keyboard where the editor can use them.
                 if (!press.entering)
                     return;
-                this.entered(this.selected());
+                this.entered(this.primary());
                 this.click_send(press.world, event);
             }
             /**
@@ -33451,9 +33605,13 @@ var $;
                     },
                 });
             }
-            /** The ring is drawn while something is picked and measured. */
+            /** Names of the picked nodes a ring can be drawn for: the measured ones. */
+            frames() {
+                return this.picked().filter(name => this.part_box(name));
+            }
+            /** Whether a ring is drawn at all, for the tests and for anything that only needs the flag. */
             frame_showed() {
-                return Boolean(this.frame_box());
+                return this.frames().length > 0;
             }
             /**
              * Where the picked part is on screen, in pixels of this pane, or `null`.
@@ -33464,7 +33622,7 @@ var $;
              * cut from the same numbers.
              */
             frame_box() {
-                const name = this.selected();
+                const name = this.primary();
                 return name ? this.part_box(name) : null;
             }
             /**
@@ -33478,11 +33636,13 @@ var $;
                     return null;
                 const drag = this.drag;
                 const spot = this.spots()[name];
+                const start = drag?.spots[name];
                 // See `drag`: while the measured boxes are stale, and only then, the ring
-                // carries the offset the pointer has added since the grab.
-                const live = drag && drag.name === name && spot && this.sizes_version() === drag.version;
-                const dx = live ? spot.x - drag.spot.x : 0;
-                const dy = live ? spot.y - drag.spot.y : 0;
+                // carries the offset the pointer has added since the grab. Every node of
+                // a group gets its own, which is why the starts are kept by name.
+                const live = start && spot && this.sizes_version() === drag.version;
+                const dx = live ? spot.x - start.x : 0;
+                const dy = live ? spot.y - start.y : 0;
                 return this.$.$bog_vmap_app_pane_screen({ x: box.x + dx, y: box.y + dy, width: box.width, height: box.height }, this.camera_zoom(), this.camera_shift());
             }
             /** Where the line goes on screen. Flat in world units, two pixels thick here. */
@@ -33498,8 +33658,21 @@ var $;
                     height: Math.max(rect.height, 2) + 'px',
                 };
             }
-            frame_style() {
-                const rect = this.frame_box();
+            /** Where the band is on screen. Empty while none is being swept. */
+            band_style() {
+                const box = this.band_box();
+                if (!box)
+                    return {};
+                const rect = this.$.$bog_vmap_app_pane_screen(box, this.camera_zoom(), this.camera_shift());
+                return {
+                    left: rect.left + 'px',
+                    top: rect.top + 'px',
+                    width: rect.width + 'px',
+                    height: rect.height + 'px',
+                };
+            }
+            frame_style(name) {
+                const rect = this.part_box(name);
                 if (!rect)
                     return {};
                 return {
@@ -33599,7 +33772,7 @@ var $;
                     }
                     return dots;
                 }
-                const name = this.selected();
+                const name = this.primary();
                 if (name) {
                     add(name, 'in', () => true);
                     add(name, 'out', () => true);
@@ -33957,6 +34130,9 @@ var $;
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "slot", null);
         __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "band", null);
+        __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "part_box", null);
         __decorate([
@@ -33964,6 +34140,9 @@ var $;
         ], $bog_vmap_app_pane.prototype, "insert_style", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app_pane.prototype, "band_style", null);
+        __decorate([
+            $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "frame_style", null);
         __decorate([
             $mol_mem
@@ -34023,13 +34202,13 @@ var $;
          */
         class $bog_vmap_app_pane_overlay extends $.$bog_vmap_app_pane_overlay {
             /**
-             * The ring, or nothing at all.
+             * A ring per picked node, and nothing at all when nothing is picked.
              *
              * A node kept in the tree and merely hidden would still be a view to build,
              * measure and keep alive, and an empty canvas is the common state.
              */
             sub() {
-                return this.frame_showed() ? [this.Frame()] : [];
+                return this.frames().map(name => this.Frame(name));
             }
         }
         $$.$bog_vmap_app_pane_overlay = $bog_vmap_app_pane_overlay;
@@ -34071,6 +34250,17 @@ var $;
             Insert: {
                 position: 'absolute',
                 background: { color: $mol_theme.focus },
+                pointerEvents: 'none',
+            },
+            /**
+             * The band swept over the canvas. Placed by the inline style in screen
+             * pixels, painted here, and takes no pointer: the gesture drawing it is the
+             * overlay's, and a target here would swallow the release that ends it.
+             */
+            Band: {
+                position: 'absolute',
+                outline: '1px solid ' + String($mol_theme.focus),
+                background: { color: $mol_theme.hover },
                 pointerEvents: 'none',
             },
             /** The layer of the marks: a frame of reference, not a box of its own. */
@@ -34484,6 +34674,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		picked(next){
+			if(next !== undefined) return next;
+			return [];
+		}
 		doc_js(){
 			return {};
 		}
@@ -34646,7 +34840,7 @@ var $;
 			(obj.doc_src) = () => ((this.doc_src()));
 			(obj.doc_css) = () => ((this.doc_css()));
 			(obj.spots) = (next) => ((this.spots(next)));
-			(obj.selected) = (next) => ((this.selected(next)));
+			(obj.picked) = (next) => ((this.picked(next)));
 			(obj.doc_js) = () => ((this.doc_js()));
 			(obj.doc_root) = () => ((this.doc_root()));
 			(obj.libs) = () => ((this.libs()));
@@ -34696,6 +34890,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app.prototype), "spots"));
 	($mol_mem(($.$bog_vmap_app.prototype), "selected"));
+	($mol_mem(($.$bog_vmap_app.prototype), "picked"));
 	($mol_mem(($.$bog_vmap_app.prototype), "links"));
 	($mol_mem(($.$bog_vmap_app.prototype), "palette_showed"));
 	($mol_mem(($.$bog_vmap_app.prototype), "inspect_showed"));
@@ -35140,9 +35335,48 @@ var $;
              * The truth is here rather than in the pane so that a reader does not have to
              * reach through the canvas to learn what is picked; the pane writes it back
              * through a two way binding.
+             *
+             * KEYED BY THE DOCUMENT, and a plain method for that reason. A pick belongs
+             * to the document it was made in: switching scenes hands over that scene's
+             * pick — empty for a fresh one — and coming back finds it where it was left.
+             * One pick for the whole editor left a ring hanging over an empty canvas and
+             * an inspector opened on a node the new document never had.
+             *
+             * A `@ $mol_mem` here would freeze on the first write: writing to a cell
+             * freezes its dependencies, and the dependency frozen would be the very
+             * document key this is meant to follow.
+             */
+            picked(next) {
+                return this.picked_at(this.doc_key(), next);
+            }
+            /**
+             * Which document a pick belongs to: the link of the open one, empty while
+             * there is none. The link and not the text, so that editing a document does
+             * not drop what is picked in it.
+             */
+            doc_key() {
+                return this.store().doc_current()?.link().str ?? '';
+            }
+            /** What is picked in one document. The cell the pick actually lives in. */
+            picked_at(key, next) {
+                return next ?? [];
+            }
+            /**
+             * The primary of the picked, which is the last one taken.
+             *
+             * A projection of `picked()` and not a cell of its own: two cells holding
+             * one fact would have to be kept in step by somebody, and the reading path
+             * would stop being the writing path — which is how a `@ $mol_mem` in front of
+             * another one freezes. Writing a name here is picking exactly that one, which
+             * is what every caller outside the canvas means by it.
              */
             selected(next) {
-                return next ?? null;
+                if (next !== undefined) {
+                    this.picked(next ? [next] : []);
+                    return next;
+                }
+                const picked = this.picked();
+                return picked.length ? picked[picked.length - 1] : null;
             }
             /** Whether anything is picked at all, for the views that only need the flag. */
             selection_showed() {
@@ -36032,15 +36266,15 @@ var $;
              * an export would write stay the same string.
              */
             node_delete() {
-                const name = this.selected();
-                if (!name)
+                const picked = this.picked();
+                if (!picked.length)
                     return;
                 const node = this.node();
                 // An artboard goes with everything laid out inside it. Left behind, its
                 // children would stay declared and referenced by nothing — a legitimate
                 // state for a free part, and a trap for a page: nothing draws them, so
                 // nothing can select them, so nothing can ever take them out again.
-                const doomed = [name];
+                const doomed = [...picked];
                 for (const dead of doomed)
                     for (const kid of node.sub_names(dead) ?? []) {
                         if (kid && !doomed.includes(kid))
@@ -36346,8 +36580,8 @@ var $;
             $mol_mem
         ], $bog_vmap_app.prototype, "store", null);
         __decorate([
-            $mol_mem
-        ], $bog_vmap_app.prototype, "selected", null);
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "picked_at", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "doc_model", null);
@@ -44586,7 +44820,7 @@ var $;
             // World (50, 60) is screen 50*2+100+10, 60*2+50+20.
             pane.node_press(pointer(210, 190));
             pane.node_release(pointer(210, 190, { buttons: 0 }));
-            $mol_assert_equal(pane.selected(), 'A');
+            $mol_assert_equal(pane.primary(), 'A');
             $mol_assert_equal(pane.inside(), false);
             $mol_assert_equal(clicks(posted).length, 0);
             pane.node_press(pointer(210, 190));
@@ -44608,9 +44842,15 @@ var $;
             $mol_assert_equal(pane.inside(), true);
             pane.node_press(pointer(350, 25));
             pane.node_release(pointer(350, 25, { buttons: 0 }));
-            $mol_assert_equal(pane.selected(), 'B');
+            $mol_assert_equal(pane.primary(), 'B');
             $mol_assert_equal(pane.inside(), false);
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
+            // And coming back to the first one starts from outside again: it is a
+            // pick, not a return to where the pointer was left the time before.
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
+            $mol_assert_equal(pane.primary(), 'A');
+            $mol_assert_equal(pane.inside(), false);
         },
         'the modifiers travel with the click'($) {
             const { pane, posted } = pane_make($);
@@ -44629,7 +44869,7 @@ var $;
             pane.node_press(pointer(50, 25));
             pane.node_move(pointer(70, 25));
             pane.node_release(pointer(70, 25, { buttons: 0 }));
-            $mol_assert_equal(pane.selected(), 'A');
+            $mol_assert_equal(pane.primary(), 'A');
             $mol_assert_equal(pane.spots().A.x, 20);
             $mol_assert_equal(pane.spots().A.y, 0);
             $mol_assert_equal(clicks(posted).length, 0);
@@ -44659,10 +44899,10 @@ var $;
         'a click on bare canvas drops the selection and relays nothing'($) {
             const { pane, posted } = pane_make($);
             pane.sizes_last = { [`${root}/A`]: box(0, 0) };
-            pane.selected('A');
+            pane.picked(['A']);
             pane.node_press(pointer(500, 500));
             pane.node_release(pointer(500, 500, { buttons: 0 }));
-            $mol_assert_equal(pane.selected(), null);
+            $mol_assert_equal(pane.primary(), null);
             $mol_assert_equal(clicks(posted).length, 0);
         },
         'nothing is relayed while the scene is not listening'($) {
@@ -44690,19 +44930,63 @@ var $;
             pane.camera_zoom(2);
             pane.sizes_last = { [`${root}/A`]: box(30, 40, 100, 50) };
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
-            pane.selected('A');
+            pane.picked(['A']);
             // Picked and no more: the ring is drawn, the overlay is still whole.
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
             $mol_assert_equal(pane.frame_showed(), true);
             pane.entered('A');
             $mol_assert_like(pane.frame_box(), { left: 160, top: 130, width: 200, height: 100 });
             $mol_assert_equal(pane.overlay_style().clipPath, 'polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 160px 130px, 360px 130px, 360px 230px, 160px 230px, 160px 130px)');
-            $mol_assert_like(pane.frame_style(), { left: '160px', top: '130px', width: '200px', height: '100px' });
+            $mol_assert_like(pane.frame_style('A'), { left: '160px', top: '130px', width: '200px', height: '100px' });
+        },
+        /**
+         * The band takes what it OVERLAPS, and of a node and its container only the
+         * outer one: a child carried inside its parent must not be carried twice.
+         */
+        'a band takes what it overlaps, containers and not their children'($) {
+            const { pane } = pane_make($);
+            pane.sizes_last = {
+                [`${root}/A`]: box(0, 0, 100, 50),
+                [`${root}/Page`]: box(200, 0, 300, 200),
+                [`${root}/Page/B`]: box(200, 0, 100, 50),
+            };
+            // A sweep across the lot: the page comes, its child does not.
+            pane.node_press(pointer(-10, -10, { ctrlKey: true }));
+            pane.node_move(pointer(600, 300, { ctrlKey: true }));
+            pane.node_release(pointer(600, 300, { ctrlKey: true, buttons: 0 }));
+            $mol_assert_like([...pane.picked()], ['A', 'Page']);
+            $mol_assert_equal(pane.band(), null);
+            // A sweep that merely touches the corner of the first one still takes it.
+            pane.node_press(pointer(90, 40, { ctrlKey: true }));
+            pane.node_move(pointer(150, 100, { ctrlKey: true }));
+            pane.node_release(pointer(150, 100, { ctrlKey: true, buttons: 0 }));
+            $mol_assert_like([...pane.picked()], ['A']);
+        },
+        /** A modified click without a sweep takes nothing and clears nothing. */
+        'a modified click leaves the picked set alone'($) {
+            const { pane } = pane_make($);
+            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
+            pane.picked(['A']);
+            pane.node_press(pointer(500, 500, { ctrlKey: true }));
+            pane.node_release(pointer(500, 500, { ctrlKey: true, buttons: 0 }));
+            $mol_assert_like([...pane.picked()], ['A']);
+            $mol_assert_equal(pane.band(), null);
+        },
+        /** Everything picked travels by the same offset, each from its own start. */
+        'a carry moves the whole picked set'($) {
+            const { pane } = pane_make($);
+            pane.sizes_last = { [`${root}/A`]: box(0, 0), [`${root}/B`]: box(300, 0) };
+            pane.spots({ A: { x: 0, y: 0 }, B: { x: 300, y: 0 } });
+            pane.picked(['A', 'B']);
+            pane.node_press(pointer(50, 25));
+            pane.node_move(pointer(70, 45));
+            pane.node_release(pointer(70, 45, { buttons: 0 }));
+            $mol_assert_like(pane.spots(), { A: { x: 20, y: 20 }, B: { x: 320, y: 20 } });
         },
         'the hole is closed while a drop from the palette is on'($) {
             const { pane } = pane_make($);
             pane.sizes_last = { [`${root}/A`]: box(0, 0) };
-            pane.selected('A');
+            pane.picked(['A']);
             pane.entered('A');
             pane.hole_allowed = () => false;
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
@@ -44876,12 +45160,12 @@ var $;
             pane.camera_zoom(2);
             // Calc at world (0,0) is screen (100,50) 200×100; Map at world (300,0) is screen (700,50).
             pane.sizes_last = { [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) };
-            pane.selected('Calc');
+            pane.picked(['Calc']);
             const before = node.source();
             // Output `result` is the first row: right of the box by the gap, half a row down.
             pane.node_press(pointer(312, 57));
             $mol_assert_like(pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' });
-            $mol_assert_equal(pane.selected(), 'Calc');
+            $mol_assert_equal(pane.primary(), 'Calc');
             pane.node_move(pointer(600, 100));
             // In hand: the inputs of the other part, the number one lit, the string one not.
             $mol_assert_like(pane.wire_dots().map(dot => [dot.node, dot.port.name, dot.side, dot.x, dot.y, dot.lit]), [['Map', 'zoom', 'in', 688, 57, true], ['Map', 'marker', 'in', 688, 71, false]]);
@@ -44901,13 +45185,13 @@ var $;
             $mol_assert_equal(pane.wire_lines()[0].geometry.startsWith('M 312 57 C'), true);
             $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 688 57'), true);
             $mol_assert_equal(pane.wire_dots().find(dot => dot.port.name === 'zoom')?.linked, undefined);
-            pane.selected('Map');
+            pane.picked(['Map']);
             $mol_assert_equal(pane.wire_dots().find(dot => dot.port.name === 'zoom' && dot.side === 'in')?.linked, true);
         },
         'a drag let go over nothing, or over an input of the wrong shape, writes nothing'($) {
             const { pane, node } = wired_make($);
             pane.sizes_last = { [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) };
-            pane.selected('Calc');
+            pane.picked(['Calc']);
             const before = node.source();
             pane.node_press(pointer(112, 7));
             pane.node_move(pointer(200, 200));
@@ -44924,7 +45208,7 @@ var $;
             const { pane } = wired_make($);
             pane.camera_zoom(.5);
             pane.sizes_last = { [`${root}/Calc`]: box(0, 0) };
-            pane.selected('Calc');
+            pane.picked(['Calc']);
             // Box is 50 wide on screen, the dot at 62, the grip strip reaches 8 px past 50.
             pane.node_press(pointer(62, 7));
             $mol_assert_equal(pane.wire_drag() !== null, true);
@@ -44937,7 +45221,7 @@ var $;
             pane.sizes_last = { [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) };
             const before = node.source();
             node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' });
-            pane.selected('Map');
+            pane.picked(['Map']);
             pane.node_press(pointer(288, 7));
             $mol_assert_equal(node.source(), before);
             $mol_assert_like(pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' });
@@ -49522,6 +49806,12 @@ var $;
             doc: () => doc,
         });
     }
+    /** A click as the browser sends one: on the node of the button, bubbling. */
+    function click($, node) {
+        const event = $.$mol_dom_context.document.createEvent('mouseevent');
+        event.initEvent('click', true, true);
+        node.dispatchEvent(event);
+    }
     /** A normalized document: every sub-view hoisted onto the root, two levels deep. */
     const doc_nested = [
         `${d}bog_vmap_app_page ${d}mol_view`,
@@ -49821,6 +50111,72 @@ var $;
             $mol_assert_equal(heir.publish(), null);
             $mol_assert_ok(heir.note().includes(`${d}bog_vmap_app_page`));
             $mol_assert_equal(s.shelf(), null);
+        },
+        /**
+         * The whole way to the eye: a real click on the rendered button, and the
+         * refusal read back off the DOM, not off a cell. What the cell holds and
+         * what the screen shows are two different facts, and only the second one is
+         * what a person sees.
+         */
+        async 'a click on the rendered button puts the refusal on the screen'($) {
+            const s = store($);
+            const v = view($, s, 'Label', `Label ${d}mol_view\n\tsub / <= calc_result\n`);
+            const root = v.dom_tree();
+            $mol_assert_equal(root.textContent.includes('calc_result'), false);
+            click($, v.Publish().dom_tree());
+            v.dom_tree();
+            $mol_assert_ok(root.textContent.includes('деталь Label ссылается на calc_result документа, отвяжите провод перед публикацией'));
+            $mol_assert_equal(s.shelf(), null);
+            // A refusal is a state of the bar, not an error of the button.
+            await Promise.resolve();
+            $mol_assert_equal(v.Publish().error(), '');
+        },
+        /**
+         * A node picked inside another part — the scene names what was clicked,
+         * and that may be a button of a calculator — is not a property of the
+         * document: its text is empty. Measured on the deploy: the click died in
+         * the store with words nobody saw. Now the words are on the bar.
+         */
+        async 'a click on a part the document does not declare is refused in words'($) {
+            const s = store($);
+            const v = view($, s, 'Option(mul)', '');
+            $mol_assert_equal(v.enabled(), true);
+            const root = v.dom_tree();
+            click($, v.Publish().dom_tree());
+            v.dom_tree();
+            $mol_assert_ok(root.textContent.includes('деталь Option(mul) не объявлена в документе, выберите деталь верхнего уровня'));
+            $mol_assert_equal(s.shelf(), null);
+            await Promise.resolve();
+            $mol_assert_equal(v.Publish().error(), '');
+        },
+        /**
+         * Whatever the reading of the texts throws is words on the bar as well: the
+         * handler is a fiber, and a throw out of it is a speck and a promise nobody
+         * awaits. A suspension is the one thing let through — it is how the fiber
+         * waits for the land — and it comes out untouched, the bar as it was.
+         */
+        async 'an error while reading the part is words on the bar, a suspension passes through'($) {
+            const s = store($);
+            const v = view($, s, 'Label', '');
+            v.source = () => $.$mol_fail(new Error('boom'));
+            const root = v.dom_tree();
+            click($, v.Publish().dom_tree());
+            v.dom_tree();
+            $mol_assert_ok(root.textContent.includes('не удалось опубликовать Label: boom'));
+            $mol_assert_equal(s.shelf(), null);
+            await Promise.resolve();
+            $mol_assert_equal(v.Publish().error(), '');
+            const wait = new Promise(() => { });
+            v.source = () => { throw wait; };
+            let caught = null;
+            try {
+                v.publish();
+            }
+            catch (error) {
+                caught = error;
+            }
+            $mol_assert_equal(caught, wait);
+            $mol_assert_equal(v.note(), 'не удалось опубликовать Label: boom');
         },
         /** After a refusal a clean part goes out, and the note follows. */
         async 'a refusal is cleared by the next successful click'($) {
@@ -51619,6 +51975,47 @@ var $;
             stage.redraw();
             $mol_assert_equal(stage.app.doc_source().includes('Calc'), false);
             $mol_assert_equal(stage.app.selected(), null);
+        },
+        /**
+         * The band: a modified sweep over the canvas takes everything it overlaps, and
+         * from then on the whole set is one thing — it travels together and it goes
+         * together.
+         */
+        'a band takes several parts, and they move and delete as one'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([300, 100]));
+            // Only the last dropped one is picked, as a drop leaves it.
+            $mol_assert_like([...stage.app.picked()], ['Map']);
+            // A sweep with the modifier down, from above and left of both to below
+            // and right of both.
+            const overlay = stage.overlay();
+            const mods = { ctrlKey: true };
+            stage.press(overlay, stage.client([50, 50]), mods);
+            stage.move(overlay, stage.client([450, 200]), mods);
+            $mol_assert_ok(stage.pane.band() !== null);
+            stage.release(overlay, stage.client([450, 200]), mods);
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like([...stage.app.picked()], ['Calc', 'Map']);
+            $mol_assert_equal(stage.pane.band(), null);
+            // Carried by the body of one of them, both travel by the same offset.
+            const from = stage.part_center('Calc');
+            stage.press(overlay, from);
+            stage.move(overlay, [from[0] + 40, from[1] + 30]);
+            stage.release(overlay, [from[0] + 40, from[1] + 30]);
+            stage.redraw();
+            $mol_assert_like(stage.app.spots(), {
+                Calc: { x: 140, y: 130 },
+                Map: { x: 340, y: 130 },
+            });
+            // And deleted together: out of the document, out of `sub`, out of the desk.
+            stage.click(stage.button('Удалить'));
+            const source = stage.app.doc_source();
+            $mol_assert_equal(source.includes('Calc'), false);
+            $mol_assert_equal(source.includes('Map'), false);
+            $mol_assert_like(Object.keys(stage.app.spots()), []);
+            $mol_assert_like([...stage.app.picked()], []);
         },
         'a part inside a page is carried to another position in its tree'($) {
             const stage = $bog_vmap_app_flow_stage($);

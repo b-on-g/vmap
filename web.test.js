@@ -7704,7 +7704,7 @@ var $;
             // World (50, 60) is screen 50*2+100+10, 60*2+50+20.
             pane.node_press(pointer(210, 190));
             pane.node_release(pointer(210, 190, { buttons: 0 }));
-            $mol_assert_equal(pane.selected(), 'A');
+            $mol_assert_equal(pane.primary(), 'A');
             $mol_assert_equal(pane.inside(), false);
             $mol_assert_equal(clicks(posted).length, 0);
             pane.node_press(pointer(210, 190));
@@ -7726,9 +7726,15 @@ var $;
             $mol_assert_equal(pane.inside(), true);
             pane.node_press(pointer(350, 25));
             pane.node_release(pointer(350, 25, { buttons: 0 }));
-            $mol_assert_equal(pane.selected(), 'B');
+            $mol_assert_equal(pane.primary(), 'B');
             $mol_assert_equal(pane.inside(), false);
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
+            // And coming back to the first one starts from outside again: it is a
+            // pick, not a return to where the pointer was left the time before.
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
+            $mol_assert_equal(pane.primary(), 'A');
+            $mol_assert_equal(pane.inside(), false);
         },
         'the modifiers travel with the click'($) {
             const { pane, posted } = pane_make($);
@@ -7747,7 +7753,7 @@ var $;
             pane.node_press(pointer(50, 25));
             pane.node_move(pointer(70, 25));
             pane.node_release(pointer(70, 25, { buttons: 0 }));
-            $mol_assert_equal(pane.selected(), 'A');
+            $mol_assert_equal(pane.primary(), 'A');
             $mol_assert_equal(pane.spots().A.x, 20);
             $mol_assert_equal(pane.spots().A.y, 0);
             $mol_assert_equal(clicks(posted).length, 0);
@@ -7777,10 +7783,10 @@ var $;
         'a click on bare canvas drops the selection and relays nothing'($) {
             const { pane, posted } = pane_make($);
             pane.sizes_last = { [`${root}/A`]: box(0, 0) };
-            pane.selected('A');
+            pane.picked(['A']);
             pane.node_press(pointer(500, 500));
             pane.node_release(pointer(500, 500, { buttons: 0 }));
-            $mol_assert_equal(pane.selected(), null);
+            $mol_assert_equal(pane.primary(), null);
             $mol_assert_equal(clicks(posted).length, 0);
         },
         'nothing is relayed while the scene is not listening'($) {
@@ -7808,19 +7814,63 @@ var $;
             pane.camera_zoom(2);
             pane.sizes_last = { [`${root}/A`]: box(30, 40, 100, 50) };
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
-            pane.selected('A');
+            pane.picked(['A']);
             // Picked and no more: the ring is drawn, the overlay is still whole.
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
             $mol_assert_equal(pane.frame_showed(), true);
             pane.entered('A');
             $mol_assert_like(pane.frame_box(), { left: 160, top: 130, width: 200, height: 100 });
             $mol_assert_equal(pane.overlay_style().clipPath, 'polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 160px 130px, 360px 130px, 360px 230px, 160px 230px, 160px 130px)');
-            $mol_assert_like(pane.frame_style(), { left: '160px', top: '130px', width: '200px', height: '100px' });
+            $mol_assert_like(pane.frame_style('A'), { left: '160px', top: '130px', width: '200px', height: '100px' });
+        },
+        /**
+         * The band takes what it OVERLAPS, and of a node and its container only the
+         * outer one: a child carried inside its parent must not be carried twice.
+         */
+        'a band takes what it overlaps, containers and not their children'($) {
+            const { pane } = pane_make($);
+            pane.sizes_last = {
+                [`${root}/A`]: box(0, 0, 100, 50),
+                [`${root}/Page`]: box(200, 0, 300, 200),
+                [`${root}/Page/B`]: box(200, 0, 100, 50),
+            };
+            // A sweep across the lot: the page comes, its child does not.
+            pane.node_press(pointer(-10, -10, { ctrlKey: true }));
+            pane.node_move(pointer(600, 300, { ctrlKey: true }));
+            pane.node_release(pointer(600, 300, { ctrlKey: true, buttons: 0 }));
+            $mol_assert_like([...pane.picked()], ['A', 'Page']);
+            $mol_assert_equal(pane.band(), null);
+            // A sweep that merely touches the corner of the first one still takes it.
+            pane.node_press(pointer(90, 40, { ctrlKey: true }));
+            pane.node_move(pointer(150, 100, { ctrlKey: true }));
+            pane.node_release(pointer(150, 100, { ctrlKey: true, buttons: 0 }));
+            $mol_assert_like([...pane.picked()], ['A']);
+        },
+        /** A modified click without a sweep takes nothing and clears nothing. */
+        'a modified click leaves the picked set alone'($) {
+            const { pane } = pane_make($);
+            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
+            pane.picked(['A']);
+            pane.node_press(pointer(500, 500, { ctrlKey: true }));
+            pane.node_release(pointer(500, 500, { ctrlKey: true, buttons: 0 }));
+            $mol_assert_like([...pane.picked()], ['A']);
+            $mol_assert_equal(pane.band(), null);
+        },
+        /** Everything picked travels by the same offset, each from its own start. */
+        'a carry moves the whole picked set'($) {
+            const { pane } = pane_make($);
+            pane.sizes_last = { [`${root}/A`]: box(0, 0), [`${root}/B`]: box(300, 0) };
+            pane.spots({ A: { x: 0, y: 0 }, B: { x: 300, y: 0 } });
+            pane.picked(['A', 'B']);
+            pane.node_press(pointer(50, 25));
+            pane.node_move(pointer(70, 45));
+            pane.node_release(pointer(70, 45, { buttons: 0 }));
+            $mol_assert_like(pane.spots(), { A: { x: 20, y: 20 }, B: { x: 320, y: 20 } });
         },
         'the hole is closed while a drop from the palette is on'($) {
             const { pane } = pane_make($);
             pane.sizes_last = { [`${root}/A`]: box(0, 0) };
-            pane.selected('A');
+            pane.picked(['A']);
             pane.entered('A');
             pane.hole_allowed = () => false;
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
@@ -7994,12 +8044,12 @@ var $;
             pane.camera_zoom(2);
             // Calc at world (0,0) is screen (100,50) 200×100; Map at world (300,0) is screen (700,50).
             pane.sizes_last = { [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) };
-            pane.selected('Calc');
+            pane.picked(['Calc']);
             const before = node.source();
             // Output `result` is the first row: right of the box by the gap, half a row down.
             pane.node_press(pointer(312, 57));
             $mol_assert_like(pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' });
-            $mol_assert_equal(pane.selected(), 'Calc');
+            $mol_assert_equal(pane.primary(), 'Calc');
             pane.node_move(pointer(600, 100));
             // In hand: the inputs of the other part, the number one lit, the string one not.
             $mol_assert_like(pane.wire_dots().map(dot => [dot.node, dot.port.name, dot.side, dot.x, dot.y, dot.lit]), [['Map', 'zoom', 'in', 688, 57, true], ['Map', 'marker', 'in', 688, 71, false]]);
@@ -8019,13 +8069,13 @@ var $;
             $mol_assert_equal(pane.wire_lines()[0].geometry.startsWith('M 312 57 C'), true);
             $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 688 57'), true);
             $mol_assert_equal(pane.wire_dots().find(dot => dot.port.name === 'zoom')?.linked, undefined);
-            pane.selected('Map');
+            pane.picked(['Map']);
             $mol_assert_equal(pane.wire_dots().find(dot => dot.port.name === 'zoom' && dot.side === 'in')?.linked, true);
         },
         'a drag let go over nothing, or over an input of the wrong shape, writes nothing'($) {
             const { pane, node } = wired_make($);
             pane.sizes_last = { [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) };
-            pane.selected('Calc');
+            pane.picked(['Calc']);
             const before = node.source();
             pane.node_press(pointer(112, 7));
             pane.node_move(pointer(200, 200));
@@ -8042,7 +8092,7 @@ var $;
             const { pane } = wired_make($);
             pane.camera_zoom(.5);
             pane.sizes_last = { [`${root}/Calc`]: box(0, 0) };
-            pane.selected('Calc');
+            pane.picked(['Calc']);
             // Box is 50 wide on screen, the dot at 62, the grip strip reaches 8 px past 50.
             pane.node_press(pointer(62, 7));
             $mol_assert_equal(pane.wire_drag() !== null, true);
@@ -8055,7 +8105,7 @@ var $;
             pane.sizes_last = { [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) };
             const before = node.source();
             node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' });
-            pane.selected('Map');
+            pane.picked(['Map']);
             pane.node_press(pointer(288, 7));
             $mol_assert_equal(node.source(), before);
             $mol_assert_like(pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' });
@@ -12791,6 +12841,12 @@ var $;
             doc: () => doc,
         });
     }
+    /** A click as the browser sends one: on the node of the button, bubbling. */
+    function click($, node) {
+        const event = $.$mol_dom_context.document.createEvent('mouseevent');
+        event.initEvent('click', true, true);
+        node.dispatchEvent(event);
+    }
     /** A normalized document: every sub-view hoisted onto the root, two levels deep. */
     const doc_nested = [
         `${d}bog_vmap_app_page ${d}mol_view`,
@@ -13090,6 +13146,72 @@ var $;
             $mol_assert_equal(heir.publish(), null);
             $mol_assert_ok(heir.note().includes(`${d}bog_vmap_app_page`));
             $mol_assert_equal(s.shelf(), null);
+        },
+        /**
+         * The whole way to the eye: a real click on the rendered button, and the
+         * refusal read back off the DOM, not off a cell. What the cell holds and
+         * what the screen shows are two different facts, and only the second one is
+         * what a person sees.
+         */
+        async 'a click on the rendered button puts the refusal on the screen'($) {
+            const s = store($);
+            const v = view($, s, 'Label', `Label ${d}mol_view\n\tsub / <= calc_result\n`);
+            const root = v.dom_tree();
+            $mol_assert_equal(root.textContent.includes('calc_result'), false);
+            click($, v.Publish().dom_tree());
+            v.dom_tree();
+            $mol_assert_ok(root.textContent.includes('деталь Label ссылается на calc_result документа, отвяжите провод перед публикацией'));
+            $mol_assert_equal(s.shelf(), null);
+            // A refusal is a state of the bar, not an error of the button.
+            await Promise.resolve();
+            $mol_assert_equal(v.Publish().error(), '');
+        },
+        /**
+         * A node picked inside another part — the scene names what was clicked,
+         * and that may be a button of a calculator — is not a property of the
+         * document: its text is empty. Measured on the deploy: the click died in
+         * the store with words nobody saw. Now the words are on the bar.
+         */
+        async 'a click on a part the document does not declare is refused in words'($) {
+            const s = store($);
+            const v = view($, s, 'Option(mul)', '');
+            $mol_assert_equal(v.enabled(), true);
+            const root = v.dom_tree();
+            click($, v.Publish().dom_tree());
+            v.dom_tree();
+            $mol_assert_ok(root.textContent.includes('деталь Option(mul) не объявлена в документе, выберите деталь верхнего уровня'));
+            $mol_assert_equal(s.shelf(), null);
+            await Promise.resolve();
+            $mol_assert_equal(v.Publish().error(), '');
+        },
+        /**
+         * Whatever the reading of the texts throws is words on the bar as well: the
+         * handler is a fiber, and a throw out of it is a speck and a promise nobody
+         * awaits. A suspension is the one thing let through — it is how the fiber
+         * waits for the land — and it comes out untouched, the bar as it was.
+         */
+        async 'an error while reading the part is words on the bar, a suspension passes through'($) {
+            const s = store($);
+            const v = view($, s, 'Label', '');
+            v.source = () => $.$mol_fail(new Error('boom'));
+            const root = v.dom_tree();
+            click($, v.Publish().dom_tree());
+            v.dom_tree();
+            $mol_assert_ok(root.textContent.includes('не удалось опубликовать Label: boom'));
+            $mol_assert_equal(s.shelf(), null);
+            await Promise.resolve();
+            $mol_assert_equal(v.Publish().error(), '');
+            const wait = new Promise(() => { });
+            v.source = () => { throw wait; };
+            let caught = null;
+            try {
+                v.publish();
+            }
+            catch (error) {
+                caught = error;
+            }
+            $mol_assert_equal(caught, wait);
+            $mol_assert_equal(v.note(), 'не удалось опубликовать Label: boom');
         },
         /** After a refusal a clean part goes out, and the note follows. */
         async 'a refusal is cleared by the next successful click'($) {
@@ -14553,6 +14675,47 @@ var $;
             stage.redraw();
             $mol_assert_equal(stage.app.doc_source().includes('Calc'), false);
             $mol_assert_equal(stage.app.selected(), null);
+        },
+        /**
+         * The band: a modified sweep over the canvas takes everything it overlaps, and
+         * from then on the whole set is one thing — it travels together and it goes
+         * together.
+         */
+        'a band takes several parts, and they move and delete as one'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([300, 100]));
+            // Only the last dropped one is picked, as a drop leaves it.
+            $mol_assert_like([...stage.app.picked()], ['Map']);
+            // A sweep with the modifier down, from above and left of both to below
+            // and right of both.
+            const overlay = stage.overlay();
+            const mods = { ctrlKey: true };
+            stage.press(overlay, stage.client([50, 50]), mods);
+            stage.move(overlay, stage.client([450, 200]), mods);
+            $mol_assert_ok(stage.pane.band() !== null);
+            stage.release(overlay, stage.client([450, 200]), mods);
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like([...stage.app.picked()], ['Calc', 'Map']);
+            $mol_assert_equal(stage.pane.band(), null);
+            // Carried by the body of one of them, both travel by the same offset.
+            const from = stage.part_center('Calc');
+            stage.press(overlay, from);
+            stage.move(overlay, [from[0] + 40, from[1] + 30]);
+            stage.release(overlay, [from[0] + 40, from[1] + 30]);
+            stage.redraw();
+            $mol_assert_like(stage.app.spots(), {
+                Calc: { x: 140, y: 130 },
+                Map: { x: 340, y: 130 },
+            });
+            // And deleted together: out of the document, out of `sub`, out of the desk.
+            stage.click(stage.button('Удалить'));
+            const source = stage.app.doc_source();
+            $mol_assert_equal(source.includes('Calc'), false);
+            $mol_assert_equal(source.includes('Map'), false);
+            $mol_assert_like(Object.keys(stage.app.spots()), []);
+            $mol_assert_like([...stage.app.picked()], []);
         },
         'a part inside a page is carried to another position in its tree'($) {
             const stage = $bog_vmap_app_flow_stage($);
