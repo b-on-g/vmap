@@ -3134,18 +3134,6 @@ declare namespace $ {
 
 declare namespace $ {
 
-	export class $mol_button_major extends $mol_button_minor {
-		theme( ): string
-	}
-	
-}
-
-//# sourceMappingURL=major.view.tree.d.ts.map
-declare namespace $ {
-}
-
-declare namespace $ {
-
 	export class $mol_stack extends $mol_view {
 	}
 	
@@ -4203,6 +4191,157 @@ declare namespace $.$$ {
 declare namespace $ {
 }
 
+declare namespace $ {
+
+	type $mol_textarea__hint_bog_vmap_part_cell_1 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_textarea['hint'] >
+	>
+	type $mol_textarea__value_bog_vmap_part_cell_2 = $mol_type_enforce<
+		ReturnType< $bog_vmap_part_cell['code'] >
+		,
+		ReturnType< $mol_textarea['value'] >
+	>
+	type $mol_button_minor__title_bog_vmap_part_cell_3 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_bog_vmap_part_cell_4 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__click_bog_vmap_part_cell_5 = $mol_type_enforce<
+		ReturnType< $bog_vmap_part_cell['run'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_check__title_bog_vmap_part_cell_6 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_check['title'] >
+	>
+	type $mol_check__hint_bog_vmap_part_cell_7 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_check['hint'] >
+	>
+	type $mol_check__checked_bog_vmap_part_cell_8 = $mol_type_enforce<
+		ReturnType< $bog_vmap_part_cell['auto'] >
+		,
+		ReturnType< $mol_check['checked'] >
+	>
+	type $mol_view__sub_bog_vmap_part_cell_9 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_part_cell_10 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_part_cell_11 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_part_cell_12 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	export class $bog_vmap_part_cell extends $mol_view {
+		Code( ): $mol_textarea
+		run( next?: any ): any
+		Run( ): $mol_button_minor
+		Auto( ): $mol_check
+		Spent( ): $mol_view
+		Bar( ): $mol_view
+		Result( ): $mol_view
+		Error( ): $mol_view
+		code( next?: string ): string
+		auto( next?: boolean ): boolean
+		result_text( ): string
+		result_number( ): number
+		spent( ): string
+		error( ): string
+		sub( ): readonly(any)[]
+	}
+	
+}
+
+//# sourceMappingURL=cell.view.tree.d.ts.map
+declare namespace $.$$ {
+    /** What one run of the code left behind. */
+    type $bog_vmap_part_cell_run = {
+        /** Whether there was a run at all: an empty cell has not run, and 0 ms has. */
+        readonly ran: boolean;
+        readonly value: unknown;
+        readonly spent: number;
+        readonly error: string;
+    };
+    /**
+     * A cell of code: the body of a function, run on demand, answering through
+     * typed ports.
+     *
+     * The code runs inside the sandbox and nowhere else — this class is compiled
+     * into it like any other part of the pack — so it is exactly as trusted as the
+     * document around it and no more.
+     *
+     * @see ../../ARCHITECTURE.md sections 3 and 4
+     */
+    class $bog_vmap_part_cell extends $.$bog_vmap_part_cell {
+        /**
+         * The code as of the last run of the button, empty until it is pressed.
+         *
+         * The manual mode is this cell and the reactive mode is `code()` itself, so
+         * the difference between the two is which text the run depends on and
+         * nothing else. No timer, no flag outside the graph, no re-entry.
+         */
+        code_ran(next?: string): string;
+        /** The button. Takes what is in the field now as what to run. */
+        run(next?: Event | null): null;
+        /**
+         * One run: what it returned, what it cost and what it complained about, as
+         * ONE value.
+         *
+         * One and not three cells, because a cell may not write into its
+         * neighbours: three cells would mean a computation writing twice on the
+         * side, which is an invalidation loop dressed as bookkeeping. The three
+         * readings below take this apart, and a reader of the time is not woken by
+         * a value that happens to be equal.
+         */
+        run_result(): $bog_vmap_part_cell_run;
+        /**
+         * The answer as text. An object comes out as JSON, because a cell that
+         * answers `[object Object]` tells its author nothing about what it made.
+         */
+        result_text(): string;
+        /** The answer as a number, `NaN` when it is not one. */
+        result_number(): number;
+        spent(): string;
+        error(): string;
+    }
+}
+
+declare namespace $.$$ {
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
+
+	export class $mol_button_major extends $mol_button_minor {
+		theme( ): string
+	}
+	
+}
+
+//# sourceMappingURL=major.view.tree.d.ts.map
 declare namespace $ {
 
 	export class $mol_icon_tick extends $mol_icon {
@@ -6290,6 +6429,7 @@ declare namespace $ {
 	export class $bog_vmap_part extends $mol_view {
 		Calc( ): $bog_vmap_part_calc
 		Map( ): $bog_vmap_part_map
+		Cell( ): $bog_vmap_part_cell
 		Button_major( ): $mol_button_major
 		Button_minor( ): $mol_button_minor
 		String( ): $mol_string

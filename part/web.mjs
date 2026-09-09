@@ -6219,25 +6219,6 @@ var $;
 })($ || ($ = {}));
 
 ;
-	($.$mol_button_major) = class $mol_button_major extends ($.$mol_button_minor) {
-		theme(){
-			return "$mol_theme_base";
-		}
-	};
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/button/major/major.view.css", "[mol_button_major] {\n\tbackground-color: var(--mol_theme_back);\n\tcolor: var(--mol_theme_text);\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
 	($.$mol_stack) = class $mol_stack extends ($.$mol_view) {};
 
 
@@ -9080,6 +9061,263 @@ var $;
 (function ($) {
     $mol_style_attach("mol/textarea/textarea.view.css", "[mol_textarea] {\n\tflex: 1 0 auto;\n\tflex-direction: column;\n\tvertical-align: top;\n\tmin-height: max-content;\n\twhite-space: pre-wrap;\n\tword-break: break-word;\n\tborder-radius: var(--mol_gap_round);\n\tfont-family: monospace;\n\tposition: relative;\n\ttab-size: 4;\n}\n\n[mol_textarea_view] {\n\tpointer-events: none;\n\twhite-space: inherit;\n\tfont-family: inherit;\n\ttab-size: inherit;\n\tuser-select: none;\n}\n\n[mol_textarea_view_copy] {\n\tpointer-events: all;\n}\n\n[mol_textarea_clickable] > [mol_textarea_view] {\n\tpointer-events: all;\n\tuser-select: auto;\n}\n\n[mol_textarea_clickable] > [mol_textarea_edit] {\n\tuser-select: none;\n}\n\n[mol_textarea_edit] {\n\tfont-family: inherit;\n\tpadding: var(--mol_gap_text);\n\tcolor: transparent !important;\n\tcaret-color: var(--mol_theme_text);\n\tresize: none;\n\ttext-align: inherit;\n\twhite-space: inherit;\n\tborder-radius: inherit;\n\toverflow-anchor: none;\n\tposition: absolute;\n\theight: 100%;\n\twidth: 100%;\n\ttab-size: inherit;\n}\n\n[mol_textarea_sidebar_showed] [mol_textarea_edit] {\n\tleft: 1.75rem;\n\twidth: calc( 100% - 1.75rem );\n}\n\n[mol_textarea_edit]:hover + [mol_textarea_view] {\n\tz-index: var(--mol_layer_hover);\n}\n\n[mol_textarea_edit]:focus + [mol_textarea_view] {\n\tz-index: var(--mol_layer_focus);\n}\n");
 })($ || ($ = {}));
+
+;
+	($.$bog_vmap_part_cell) = class $bog_vmap_part_cell extends ($.$mol_view) {
+		Code(){
+			const obj = new this.$.$mol_textarea();
+			(obj.hint) = () => ("return 2 + 2");
+			(obj.value) = (next) => ((this.code(next)));
+			return obj;
+		}
+		run(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Run(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("Выполнить");
+			(obj.hint) = () => ("Выполнить тело функции и отдать результат в порты");
+			(obj.click) = (next) => ((this.run(next)));
+			return obj;
+		}
+		Auto(){
+			const obj = new this.$.$mol_check();
+			(obj.title) = () => ("Реактивно");
+			(obj.hint) = () => ("Выполнять на каждую правку кода, а не по кнопке");
+			(obj.checked) = (next) => ((this.auto(next)));
+			return obj;
+		}
+		Spent(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.spent())]);
+			return obj;
+		}
+		Bar(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([
+				(this.Run()), 
+				(this.Auto()), 
+				(this.Spent())
+			]);
+			return obj;
+		}
+		Result(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.result_text())]);
+			return obj;
+		}
+		Error(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.error())]);
+			return obj;
+		}
+		code(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		auto(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		result_text(){
+			return "";
+		}
+		result_number(){
+			return +NaN;
+		}
+		spent(){
+			return "";
+		}
+		error(){
+			return "";
+		}
+		sub(){
+			return [
+				(this.Code()), 
+				(this.Bar()), 
+				(this.Result()), 
+				(this.Error())
+			];
+		}
+	};
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "Code"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "run"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "Run"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "Auto"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "Spent"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "Bar"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "Result"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "Error"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "code"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "auto"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * A cell of code: the body of a function, run on demand, answering through
+         * typed ports.
+         *
+         * The code runs inside the sandbox and nowhere else — this class is compiled
+         * into it like any other part of the pack — so it is exactly as trusted as the
+         * document around it and no more.
+         *
+         * @see ../../ARCHITECTURE.md sections 3 and 4
+         */
+        class $bog_vmap_part_cell extends $.$bog_vmap_part_cell {
+            /**
+             * The code as of the last run of the button, empty until it is pressed.
+             *
+             * The manual mode is this cell and the reactive mode is `code()` itself, so
+             * the difference between the two is which text the run depends on and
+             * nothing else. No timer, no flag outside the graph, no re-entry.
+             */
+            code_ran(next) {
+                return next ?? '';
+            }
+            /** The button. Takes what is in the field now as what to run. */
+            run(next) {
+                this.code_ran(this.code());
+                return null;
+            }
+            /**
+             * One run: what it returned, what it cost and what it complained about, as
+             * ONE value.
+             *
+             * One and not three cells, because a cell may not write into its
+             * neighbours: three cells would mean a computation writing twice on the
+             * side, which is an invalidation loop dressed as bookkeeping. The three
+             * readings below take this apart, and a reader of the time is not woken by
+             * a value that happens to be equal.
+             */
+            run_result() {
+                const code = this.auto() ? this.code() : this.code_ran();
+                if (!code.trim())
+                    return { ran: false, value: null, spent: 0, error: '' };
+                const started = Date.now();
+                try {
+                    const value = new Function('$', code)(this.$);
+                    return { ran: true, value, spent: Date.now() - started, error: '' };
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return $mol_fail_hidden(error);
+                    return {
+                        ran: true,
+                        value: null,
+                        spent: Date.now() - started,
+                        error: String(error.message ?? error),
+                    };
+                }
+            }
+            /**
+             * The answer as text. An object comes out as JSON, because a cell that
+             * answers `[object Object]` tells its author nothing about what it made.
+             */
+            result_text() {
+                const value = this.run_result().value;
+                if (value === null || value === undefined)
+                    return '';
+                if (typeof value === 'object')
+                    return JSON.stringify(value, null, '\t');
+                return String(value);
+            }
+            /** The answer as a number, `NaN` when it is not one. */
+            result_number() {
+                const value = this.run_result().value;
+                return typeof value === 'number' ? value : Number.NaN;
+            }
+            spent() {
+                const run = this.run_result();
+                return run.ran ? `${run.spent} мс` : '';
+            }
+            error() {
+                return this.run_result().error;
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_part_cell.prototype, "code_ran", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_part_cell.prototype, "run", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_part_cell.prototype, "run_result", null);
+        $$.$bog_vmap_part_cell = $bog_vmap_part_cell;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        $mol_style_define($bog_vmap_part_cell, {
+            flex: { direction: 'column' },
+            gap: $mol_gap.space,
+            padding: $mol_gap.block,
+            maxWidth: '28rem',
+            minWidth: 0,
+            background: { color: $mol_theme.card },
+            border: { radius: $mol_gap.round },
+            boxShadow: `0 0 0 1px ${$mol_theme.line}`,
+            Code: {
+                minHeight: '4.5rem',
+                background: { color: $mol_theme.field },
+            },
+            Bar: {
+                flex: { direction: 'row' },
+                align: { items: 'center' },
+                gap: $mol_gap.text,
+            },
+            Spent: {
+                color: $mol_theme.shade,
+                font: { size: '.8rem' },
+                whiteSpace: 'nowrap',
+            },
+            Result: {
+                font: { family: 'monospace' },
+                whiteSpace: 'pre-wrap',
+            },
+            /** Only ever holds the complaint of a run; empty it takes no room. */
+            Error: {
+                color: $mol_theme.focus,
+                font: { family: 'monospace', size: '.8rem' },
+                whiteSpace: 'pre-wrap',
+            },
+        });
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$mol_button_major) = class $mol_button_major extends ($.$mol_button_minor) {
+		theme(){
+			return "$mol_theme_base";
+		}
+	};
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/button/major/major.view.css", "[mol_button_major] {\n\tbackground-color: var(--mol_theme_back);\n\tcolor: var(--mol_theme_text);\n}\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+
 
 ;
 	($.$mol_icon_tick) = class $mol_icon_tick extends ($.$mol_icon) {
@@ -13180,6 +13418,10 @@ var $;
 			const obj = new this.$.$bog_vmap_part_map();
 			return obj;
 		}
+		Cell(){
+			const obj = new this.$.$bog_vmap_part_cell();
+			return obj;
+		}
 		Button_major(){
 			const obj = new this.$.$mol_button_major();
 			return obj;
@@ -13255,6 +13497,7 @@ var $;
 	};
 	($mol_mem(($.$bog_vmap_part.prototype), "Calc"));
 	($mol_mem(($.$bog_vmap_part.prototype), "Map"));
+	($mol_mem(($.$bog_vmap_part.prototype), "Cell"));
 	($mol_mem(($.$bog_vmap_part.prototype), "Button_major"));
 	($mol_mem(($.$bog_vmap_part.prototype), "Button_minor"));
 	($mol_mem(($.$bog_vmap_part.prototype), "String"));
