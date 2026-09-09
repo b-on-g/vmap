@@ -108,7 +108,7 @@ namespace $ {
 			pane.node_press( pointer( 210, 190 ) )
 			pane.node_release( pointer( 210, 190, { buttons: 0 } ) )
 
-			$mol_assert_equal( pane.primary(), 'A' )
+			$mol_assert_equal( pane.selected(), 'A' )
 			$mol_assert_equal( pane.inside(), false )
 			$mol_assert_equal( clicks( posted ).length, 0 )
 
@@ -141,17 +141,9 @@ namespace $ {
 			pane.node_press( pointer( 350, 25 ) )
 			pane.node_release( pointer( 350, 25, { buttons: 0 } ) )
 
-			$mol_assert_equal( pane.primary(), 'B' )
+			$mol_assert_equal( pane.selected(), 'B' )
 			$mol_assert_equal( pane.inside(), false )
 			$mol_assert_equal( pane.overlay_style().clipPath, 'none' )
-
-			// And coming back to the first one starts from outside again: it is a
-			// pick, not a return to where the pointer was left the time before.
-			pane.node_press( pointer( 50, 25 ) )
-			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
-
-			$mol_assert_equal( pane.primary(), 'A' )
-			$mol_assert_equal( pane.inside(), false )
 
 		},
 
@@ -182,7 +174,7 @@ namespace $ {
 			pane.node_move( pointer( 70, 25 ) )
 			pane.node_release( pointer( 70, 25, { buttons: 0 } ) )
 
-			$mol_assert_equal( pane.primary(), 'A' )
+			$mol_assert_equal( pane.selected(), 'A' )
 			$mol_assert_equal( pane.spots().A.x, 20 )
 			$mol_assert_equal( pane.spots().A.y, 0 )
 			$mol_assert_equal( clicks( posted ).length, 0 )
@@ -228,12 +220,12 @@ namespace $ {
 			const { pane, posted } = pane_make( $ )
 
 			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
-			pane.picked([ 'A' ])
+			pane.selected( 'A' )
 
 			pane.node_press( pointer( 500, 500 ) )
 			pane.node_release( pointer( 500, 500, { buttons: 0 } ) )
 
-			$mol_assert_equal( pane.primary(), null )
+			$mol_assert_equal( pane.selected(), null )
 			$mol_assert_equal( clicks( posted ).length, 0 )
 
 		},
@@ -278,7 +270,7 @@ namespace $ {
 
 			$mol_assert_equal( pane.overlay_style().clipPath, 'none' )
 
-			pane.picked([ 'A' ])
+			pane.selected( 'A' )
 
 			// Picked and no more: the ring is drawn, the overlay is still whole.
 			$mol_assert_equal( pane.overlay_style().clipPath, 'none' )
@@ -292,71 +284,7 @@ namespace $ {
 				'polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 160px 130px, 360px 130px, 360px 230px, 160px 230px, 160px 130px)',
 			)
 
-			$mol_assert_like( pane.frame_style( 'A' ), { left: '160px', top: '130px', width: '200px', height: '100px' } )
-
-		},
-
-		/**
-		 * The band takes what it OVERLAPS, and of a node and its container only the
-		 * outer one: a child carried inside its parent must not be carried twice.
-		 */
-		'a band takes what it overlaps, containers and not their children'( $ ) {
-
-			const { pane } = pane_make( $ )
-
-			pane.sizes_last = {
-				[ `${root}/A` ]: box( 0, 0, 100, 50 ),
-				[ `${root}/Page` ]: box( 200, 0, 300, 200 ),
-				[ `${root}/Page/B` ]: box( 200, 0, 100, 50 ),
-			}
-
-			// A sweep across the lot: the page comes, its child does not.
-			pane.node_press( pointer( -10, -10, { ctrlKey: true } ) )
-			pane.node_move( pointer( 600, 300, { ctrlKey: true } ) )
-			pane.node_release( pointer( 600, 300, { ctrlKey: true, buttons: 0 } ) )
-
-			$mol_assert_like( [ ... pane.picked() ], [ 'A', 'Page' ] )
-			$mol_assert_equal( pane.band(), null )
-
-			// A sweep that merely touches the corner of the first one still takes it.
-			pane.node_press( pointer( 90, 40, { ctrlKey: true } ) )
-			pane.node_move( pointer( 150, 100, { ctrlKey: true } ) )
-			pane.node_release( pointer( 150, 100, { ctrlKey: true, buttons: 0 } ) )
-
-			$mol_assert_like( [ ... pane.picked() ], [ 'A' ] )
-
-		},
-
-		/** A modified click without a sweep takes nothing and clears nothing. */
-		'a modified click leaves the picked set alone'( $ ) {
-
-			const { pane } = pane_make( $ )
-
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
-			pane.picked([ 'A' ])
-
-			pane.node_press( pointer( 500, 500, { ctrlKey: true } ) )
-			pane.node_release( pointer( 500, 500, { ctrlKey: true, buttons: 0 } ) )
-
-			$mol_assert_like( [ ... pane.picked() ], [ 'A' ] )
-			$mol_assert_equal( pane.band(), null )
-
-		},
-
-		/** Everything picked travels by the same offset, each from its own start. */
-		'a carry moves the whole picked set'( $ ) {
-
-			const { pane } = pane_make( $ )
-
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ), [ `${root}/B` ]: box( 300, 0 ) }
-			pane.spots({ A: { x: 0, y: 0 }, B: { x: 300, y: 0 } })
-			pane.picked([ 'A', 'B' ])
-
-			pane.node_press( pointer( 50, 25 ) )
-			pane.node_move( pointer( 70, 45 ) )
-			pane.node_release( pointer( 70, 45, { buttons: 0 } ) )
-
-			$mol_assert_like( pane.spots(), { A: { x: 20, y: 20 }, B: { x: 320, y: 20 } } )
+			$mol_assert_like( pane.frame_style(), { left: '160px', top: '130px', width: '200px', height: '100px' } )
 
 		},
 
@@ -365,7 +293,7 @@ namespace $ {
 			const { pane } = pane_make( $ )
 
 			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
-			pane.picked([ 'A' ])
+			pane.selected( 'A' )
 			pane.entered( 'A' )
 			pane.hole_allowed = ()=> false
 
@@ -616,7 +544,7 @@ namespace $ {
 
 			// Calc at world (0,0) is screen (100,50) 200×100; Map at world (300,0) is screen (700,50).
 			pane.sizes_last = { [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) }
-			pane.picked([ 'Calc' ])
+			pane.selected( 'Calc' )
 
 			const before = node.source()
 
@@ -624,7 +552,7 @@ namespace $ {
 			pane.node_press( pointer( 312, 57 ) )
 
 			$mol_assert_like( pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' } )
-			$mol_assert_equal( pane.primary(), 'Calc' )
+			$mol_assert_equal( pane.selected(), 'Calc' )
 
 			pane.node_move( pointer( 600, 100 ) )
 
@@ -655,7 +583,7 @@ namespace $ {
 			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 688 57' ), true )
 			$mol_assert_equal( pane.wire_dots().find( dot => dot.port.name === 'zoom' )?.linked, undefined )
 
-			pane.picked([ 'Map' ])
+			pane.selected( 'Map' )
 			$mol_assert_equal( pane.wire_dots().find( dot => dot.port.name === 'zoom' && dot.side === 'in' )?.linked, true )
 
 		},
@@ -665,7 +593,7 @@ namespace $ {
 			const { pane, node } = wired_make( $ )
 
 			pane.sizes_last = { [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) }
-			pane.picked([ 'Calc' ])
+			pane.selected( 'Calc' )
 
 			const before = node.source()
 
@@ -691,7 +619,7 @@ namespace $ {
 
 			pane.camera_zoom( .5 )
 			pane.sizes_last = { [ `${root}/Calc` ]: box( 0, 0 ) }
-			pane.picked([ 'Calc' ])
+			pane.selected( 'Calc' )
 
 			// Box is 50 wide on screen, the dot at 62, the grip strip reaches 8 px past 50.
 			pane.node_press( pointer( 62, 7 ) )
@@ -713,7 +641,7 @@ namespace $ {
 			const before = node.source()
 			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' })
 
-			pane.picked([ 'Map' ])
+			pane.selected( 'Map' )
 			pane.node_press( pointer( 288, 7 ) )
 
 			$mol_assert_equal( node.source(), before )

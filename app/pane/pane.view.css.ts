@@ -36,18 +36,6 @@ namespace $.$$ {
 			pointerEvents: 'none',
 		},
 
-		/**
-		 * The band swept over the canvas. Placed by the inline style in screen
-		 * pixels, painted here, and takes no pointer: the gesture drawing it is the
-		 * overlay's, and a target here would swallow the release that ends it.
-		 */
-		Band: {
-			position: 'absolute',
-			outline: '1px solid ' + String( $mol_theme.focus ),
-			background: { color: $mol_theme.hover },
-			pointerEvents: 'none',
-		},
-
 		/** The layer of the marks: a frame of reference, not a box of its own. */
 		Marks: {
 			position: 'absolute',

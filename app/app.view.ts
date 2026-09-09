@@ -261,28 +261,8 @@ namespace $.$$ {
 		 * through a two way binding.
 		 */
 		@ $mol_mem
-		override picked( next?: readonly string[] ): readonly string[] {
-			return next ?? []
-		}
-
-		/**
-		 * The primary of the picked, which is the last one taken.
-		 *
-		 * A projection of `picked()` and not a cell of its own: two cells holding
-		 * one fact would have to be kept in step by somebody, and the reading path
-		 * would stop being the writing path — which is how a `@ $mol_mem` in front of
-		 * another one freezes. Writing a name here is picking exactly that one, which
-		 * is what every caller outside the canvas means by it.
-		 */
 		override selected( next?: string | null ): string | null {
-
-			if( next !== undefined ) {
-				this.picked( next ? [ next ] : [] )
-				return next
-			}
-
-			const picked = this.picked()
-			return picked.length ? picked[ picked.length - 1 ] : null
+			return next ?? null
 		}
 
 		/** Whether anything is picked at all, for the views that only need the flag. */
@@ -1295,8 +1275,8 @@ namespace $.$$ {
 		@ $mol_action
 		node_delete() {
 
-			const picked = this.picked()
-			if( !picked.length ) return
+			const name = this.selected()
+			if( !name ) return
 
 			const node = this.node()
 
@@ -1304,7 +1284,7 @@ namespace $.$$ {
 			// children would stay declared and referenced by nothing — a legitimate
 			// state for a free part, and a trap for a page: nothing draws them, so
 			// nothing can select them, so nothing can ever take them out again.
-			const doomed = [ ... picked ]
+			const doomed = [ name ]
 			for( const dead of doomed ) for( const kid of node.sub_names( dead ) ?? [] ) {
 				if( kid && !doomed.includes( kid ) ) doomed.push( kid )
 			}
