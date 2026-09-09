@@ -25,12 +25,16 @@ $bog_vmap_app $mol_view
 	palette_showed? true
 	inspect_showed? true
 	code_showed? false
-	- `view.tree` of the whole document, two way. `doc_src` is the same text read
-	- only, for the scene; this one is the one the code editor writes back through.
-	doc_text? \
-	- Handwritten body and styles of the root class, two way. Everything the code
-	- editor writes ends up in these two, and `doc_js`/`doc_css` carry them to the
-	- scene beside the text.
+	- The three texts of the class the code panel has in scope, two way, plus the
+	- switch that chooses the scope: one node of a class, or a whole class.
+	code_whole? false
+	code_source? \
+	code_js? \
+	code_css? \
+	- Handwritten body and styles of the ROOT class, two way. The code panel writes
+	- into the class it has in scope, which is this one whenever the picked node is
+	- not declared with a class of the document; `doc_js`/`doc_css` carry the bodies
+	- of every class to the scene beside the text.
 	root_js? \
 	root_css? \
 	- Persistence: the documents of the user in Giper Baza. One for the whole
@@ -95,6 +99,13 @@ $bog_vmap_app $mol_view
 				css <= node_css \
 				doc <= doc_src
 				classes / <= doc_root
+			- Name of the root class, editable, right beside the button that spells
+			- out the folder it chooses. The folder of an export follows from the
+			- class names — section 10 — so this field and that title are two halves
+			- of one decision and stand together.
+			<= Root_name $mol_string
+				hint \Имя корневого класса
+				value? <=> root_title? \
 			- Sources of the document, as one archive of a real MAM module. The whole
 			- promise of the tool ends here, so the folder the module must go to is
 			- written in the title itself and not only in the hint: section 10 says
@@ -126,6 +137,13 @@ $bog_vmap_app $mol_view
 		sub <= export_rows /$mol_view
 	Export_row* $mol_view
 		sub / <= export_text* \
+	-
+	- Why the root class was not renamed. On the strip beside the refusal of the
+	- export, because it is about the document as a whole; a `$mol_string` that
+	- throws out of its setter puts the message into `setCustomValidity`, which on
+	- a page without a form is nowhere at all.
+	Root_note $mol_view
+		sub / <= root_title_note \
 	-
 	- The scene has stopped answering. Its own strip and not the error one: an
 	- error means the scene spoke, this means it did not, and the only thing that
@@ -189,16 +207,22 @@ $bog_vmap_app $mol_view
 	- in the head bar, like the two panels beside it.
 	-
 	- `node_source` is the very binding the inspector edits, so a change made with
-	- the mouse shows up in the text with no path of its own; the body and the
-	- styles are the two texts of the root class, sliced by the panel.
+	- the mouse shows up in the text with no path of its own; the three texts of the
+	- class are those of the class in scope, sliced by the panel.
+	-
+	- The scope is the editor's and not the panel's: which class the three texts
+	- belong to depends on whether the picked node is declared with a class the
+	- document itself authors, and only the owner of the document knows that. That
+	- is also how the body and the styles of a second class are reached at all.
 	Code $bog_vmap_app_code
-		klass <= doc_root
+		klass <= code_klass \
 		prop <= code_prop \
 		hooks <= code_hooks /string
-		source? <=> doc_text?
+		whole? <=> code_whole?
+		source? <=> code_source?
 		node_source? <=> node_source?
-		js? <=> root_js?
-		css? <=> root_css?
+		js? <=> code_js?
+		css? <=> code_css?
 		error <= code_error \
 	-
 	- Component library of the host: the pack, with the lands of the field stacked

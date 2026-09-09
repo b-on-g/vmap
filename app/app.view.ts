@@ -66,20 +66,38 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Name of the root class, as a constant rather than as `node().name()`.
+		 * Name of the root class: the first class the document text declares.
 		 *
-		 * Parsing here would give the host a second way to die on a malformed
-		 * document: `doc_root` is read while pushing to the scene, and a throw there
-		 * takes down the toolbar as well. Broken text belongs in the scene's compile
-		 * error channel, which already reports it. Renaming the root is stage 2.6.
+		 * Read off the text with the same first-token rule the store matches classes
+		 * to nodes by, NOT by parsing. The rule is a regexp over a string and cannot
+		 * throw, which is the property that matters here: `doc_root` is read while
+		 * pushing to the scene and while drawing the toolbar, and a throw on either
+		 * path takes the editor down over text the scene already reports about.
+		 *
+		 * Derived and no longer a constant, because the folder an export goes to
+		 * follows from the class names — section 10 — so a document whose root
+		 * cannot be renamed is a document that can only be unpacked inside the pack
+		 * of the editor itself.
 		 */
 		override doc_root() {
+			return this.$.$bog_vmap_app_store_class_name( this.doc_source() )
+				|| this.doc_root_default()
+		}
+
+		/**
+		 * Name the root class of a fresh document gets.
+		 *
+		 * A name of this pack, which is where an untouched document would be
+		 * unpacked; the author renames it, and the button says where the module goes
+		 * meanwhile.
+		 */
+		doc_root_default() {
 			return '$bog_vmap_app_page'
 		}
 
 		/** Source of an empty page. Everything else arrives from the palette. */
 		doc_source_initial() {
-			return `${ this.doc_root() } $mol_view\n\tsub /\n`
+			return `${ this.doc_root_default() } $mol_view\n\tsub /\n`
 		}
 
 		/**
@@ -107,18 +125,17 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The document as a model over its AST.
+		 * The root class as a model over its AST: what the canvas edits.
 		 *
-		 * `source` is handed in as a delegate instead of being written into after
-		 * construction: writing another `@ $mol_mem` from the body of this one is an
-		 * invalidation loop, and the node has no other way to be seeded.
+		 * Taken from the DOCUMENT model and not made over the whole text. A node
+		 * models one class — `tree()` reads the first declaration and a write
+		 * serializes that one class as the entire source — so a node over a text
+		 * with two classes in it dropped the second on the first edit made anywhere.
+		 * Measured on the palette drop: two classes in, one class out, no error.
+		 * Through the document the neighbours come back out of their own trees.
 		 */
-		@ $mol_mem
 		node() {
-			return this.$.$bog_vmap_lang_node.make({
-				$: this.$,
-				source: ( next?: string )=> this.doc_source( next ),
-			})
+			return this.doc_model().node( this.doc_root() )
 		}
 
 		override doc_src() {
@@ -251,17 +268,13 @@ namespace $.$$ {
 			return this.selected() ?? ''
 		}
 
-		/** The whole document text, two way: what the code editor writes back through. */
-		override doc_text( next?: string ) {
-			return this.doc_source( next )
-		}
-
 		/**
 		 * The document as a model over the classes it declares.
 		 *
-		 * Beside `node()`, which is the root class alone. Both are read only
-		 * derivations of the same text, and the code editor needs the list of
-		 * classes that one cannot give.
+		 * The level everything editing goes through: `node()` is one class OF this,
+		 * so a write lands in the class it was made on and the neighbours come back
+		 * out of their own trees. Owning the text, it is also the only thing that can
+		 * answer what classes there are and rename one.
 		 */
 		@ $mol_mem
 		doc_model() {
@@ -489,6 +502,85 @@ namespace $.$$ {
 		}
 
 		/**
+		 * Whether the code panel edits a whole class instead of the picked node.
+		 *
+		 * Held by the editor and not by the panel, because it decides WHICH class the
+		 * three texts of the panel are: only the owner of the document knows that a
+		 * picked node is declared with a class the document itself authors.
+		 */
+		@ $mol_mem
+		override code_whole( next?: boolean ) {
+			return next ?? false
+		}
+
+		/**
+		 * The class the picked node is declared with, when the document declares that
+		 * class itself; the root class otherwise.
+		 *
+		 * A node whose class is a class of this document is the only way a second
+		 * class is reached at all: it is not on the canvas — the canvas draws nodes,
+		 * and a class is not a node — so the pick of the node is the pick of it.
+		 * A node declared with a library class has no text of its own, and the class
+		 * in scope is then the one that declares the node, which is the root.
+		 */
+		code_class() {
+
+			const name = this.selected()
+			if( !name ) return this.doc_root()
+
+			const klass = this.node().prop_decl( name )?.kids[ 0 ]
+			if( !klass || !$mol_view_tree2_class_match( klass ) ) return this.doc_root()
+
+			return this.doc_model().names().includes( klass.type ) ? klass.type : this.doc_root()
+		}
+
+		/**
+		 * The class the three texts of the panel belong to.
+		 *
+		 * Two answers, and the difference is not cosmetic. Editing the whole class,
+		 * the class is the one above — that is how the body and the styles of a
+		 * second class are reached, and until this existed they were reachable by
+		 * nothing at all, although the scene compiled them.
+		 *
+		 * Editing ONE NODE, the class is the one that declares the node, always the
+		 * root. The methods the node asks for are methods of its owner (`title <=
+		 * greeting` wants `greeting()` on the class that spells it), and the rule the
+		 * panel offers is addressed to the attribute `$mol` writes on the sub view of
+		 * its owner. Scoping the node mode to the node's own class would write both
+		 * into a class that never reads them.
+		 */
+		code_klass() {
+			return this.code_whole() ? this.code_class() : this.doc_root()
+		}
+
+		/**
+		 * `view.tree` of the class in scope, two way: what the panel shows on its
+		 * first tab when it edits a whole class.
+		 *
+		 * The class and not the whole document, which is what this used to be while
+		 * the panel called it «the whole class» in the very same breath. The three
+		 * texts of the panel now speak about one class, and that class is named in
+		 * the heading over them.
+		 *
+		 * A SECOND CLASS IS ADDED HERE, by writing one under the one on screen: the
+		 * document model replaces the slot with everything the text parses to, so two
+		 * declarations typed in place of one become two classes of the document.
+		 */
+		override code_source( next?: string ) {
+			return this.doc_model().class_source( this.code_klass(), next )
+		}
+
+		/** Handwritten body of the class in scope, two way. */
+		override code_js( next?: string ) {
+			return this.class_js( this.code_klass(), next )
+		}
+
+		/** Styles of the class in scope, two way. */
+		override code_css( next?: string ) {
+			return this.class_css( this.code_klass(), next )
+		}
+
+		/**
 		 * Methods of the class the picked node needs written by hand.
 		 *
 		 * Every name its declaration refers to with `<=` that the class does not
@@ -589,6 +681,9 @@ namespace $.$$ {
 				// folded by default and speaks about the picked node, while this is
 				// about the document and can name a class nobody has open.
 				... this.export_notes().length ? [ this.Export_note() ] : [],
+				// Beside the field that caused it, on the same strip as the refusal
+				// of the export: both are about the document as a whole.
+				... this.root_title_note() ? [ this.Root_note() ] : [],
 				this.Body(),
 				... this.dragged() ? [ this.Ghost() ] : [],
 			] as readonly $mol_view[]
@@ -1270,6 +1365,87 @@ namespace $.$$ {
 		node_title_note() {
 			return this.node_title_note_at( this.selected() ?? '' )
 		}
+
+		/**
+		 * Renames a class of the document with everything the editor keys by its
+		 * name: the text, the handwritten body, the styles, and the recorded choice
+		 * of which class the document opens with.
+		 *
+		 * The body and the styles are carried by hand, and that is not decoration.
+		 * They are stored per class NAME — a node of the document in Giper Baza is
+		 * found by the class its text declares, and a draft keeps them in cells keyed
+		 * the same way — so a class that arrives under a new name arrives as a new
+		 * node with nothing in it. Read before the write, written after: in between
+		 * there is no name that answers for them.
+		 *
+		 * The text goes through the document model, which rewrites every mention of
+		 * the class in its neighbours — the base of an heir, the class of a part —
+		 * and refuses a name already taken. Property names are untouched by all of
+		 * this, so the pick, the placement, the remembered boxes and the wires, which
+		 * are keyed by property and not by class, have nothing to be orphaned by.
+		 */
+		@ $mol_action
+		class_rename( name: string, next: string ) {
+
+			const js = this.class_js( name )
+			const css = this.class_css( name )
+
+			this.doc_model().class_rename( name, next )
+
+			if( js ) this.class_js( next, js )
+			if( css ) this.class_css( next, css )
+
+			const store = this.store()
+			const doc = store.doc_current()
+
+			if( doc && doc.can_change() && store.doc_root( doc ) !== next ) {
+				store.doc_root( doc, next )
+			}
+
+		}
+
+		/**
+		 * Name of the root class as the toolbar field edits it, in both directions.
+		 *
+		 * This is the name the folder of an export is made of — section 10 — so the
+		 * field stands beside the download button that spells the folder out. A
+		 * refusal comes back as words on the strip below, for the same reason the
+		 * node name field does it that way: a throw out of a `$mol_string` setter
+		 * ends up in `setCustomValidity`, where nobody looks.
+		 */
+		override root_title( next?: string ) {
+
+			const name = this.doc_root()
+
+			if( next === undefined ) return name
+			if( !next || next === name ) return name
+
+			if( !this.$.$bog_vmap_lang_class_ok( next ) ) {
+				this.root_title_note( `Имя «${ next }» не годится: имя класса это доллар`
+					+ ' и не меньше двух частей через подчёркивание, латиницей в нижнем'
+					+ ' регистре — из них и складывается папка модуля' )
+				return name
+			}
+
+			try {
+				this.class_rename( name, next )
+			} catch( error ) {
+				if( this.$.$mol_promise_like( error ) ) return this.$.$mol_fail_hidden( error )
+				this.root_title_note( this.$.$mol_error_message( error ) )
+				return name
+			}
+
+			this.root_title_note( '' )
+
+			return next
+		}
+
+		/** Why the root was not renamed. Empty when it was, or when nobody tried. */
+		@ $mol_mem
+		override root_title_note( next?: string ) {
+			return next ?? ''
+		}
+
 
 		/**
 		 * Del anywhere in the editor, as long as the keystroke is not somebody's text.

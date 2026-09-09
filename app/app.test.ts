@@ -738,6 +738,131 @@ namespace $ {
 
 		},
 
+		/**
+		 * THE INVARIANT OF A DOCUMENT OF SEVERAL CLASSES: an edit of one class is an
+		 * edit of one class.
+		 *
+		 * Measured before this was true: a drop off the palette left the text holding
+		 * the root alone, because the editor edited through a model of ONE class laid
+		 * over the WHOLE text — a write there serializes the class it touched as the
+		 * entire document. No error, no warning, the neighbour simply gone.
+		 */
+		'an edit of the root leaves the other classes byte for byte'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.doc_source([
+				`${d}bog_vmap_app_page ${d}mol_view sub /`,
+				`${d}bog_vmap_app_card ${d}mol_view title \\Карточка`,
+				``,
+			].join( '\n' ) )
+
+			const before = app.doc_model().class_source( `${d}bog_vmap_app_card` )
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+			app.node_rename( 'Button_minor', 'Btn' )
+			app.node_delete()
+
+			$mol_assert_equal( app.doc_model().class_source( `${d}bog_vmap_app_card` ), before )
+			$mol_assert_like( app.doc_model().names(), [
+				`${d}bog_vmap_app_page`,
+				`${d}bog_vmap_app_card`,
+			] )
+
+		},
+
+		/**
+		 * The root class is the first class of the text and follows it, so renaming
+		 * it moves the folder the module is unpacked into — which is the whole reason
+		 * the name is editable at all. Section 10: the folder is not free.
+		 */
+		'renaming the root moves the module and the folder on the button'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+			$mol_assert_equal( app.export_state().module!.path, 'bog/vmap/app/page' )
+
+			app.root_title( `${d}my_site_page` )
+
+			$mol_assert_equal( app.doc_root(), `${d}my_site_page` )
+			$mol_assert_equal( app.root_title(), `${d}my_site_page` )
+
+			const module = app.export_state().module!
+
+			$mol_assert_equal( module.path, 'my/site/page' )
+			$mol_assert_equal( module.root, `${d}my_site_page` )
+			$mol_assert_equal( app.export_title(), 'Скачать my/site/page' )
+			$mol_assert_ok( module.files[ 0 ].text.startsWith( `${d}my_site_page ` ) )
+
+		},
+
+		/**
+		 * What a rename must not cost. The pick, the placement and the wires are keyed
+		 * by PROPERTY name, and a rename of the class touches no property — but the
+		 * handwritten body and the styles are stored per CLASS name, so those two are
+		 * carried by hand and would be lost silently without it.
+		 */
+		'renaming the root carries the body and orphans nothing'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_string`, 100, 200 )
+			app.part_drop( `${d}mol_button_minor`, 300, 400 )
+			app.link_add({ from: 'String', from_prop: 'value', to: 'Button_minor', to_prop: 'title' })
+			app.selected( 'String' )
+			app.root_js( 'greeting(){\n\treturn 1\n}\n' )
+			app.root_css( '[my] {\n\tcolor: red;\n}' )
+
+			const source = app.doc_source()
+			const spots = JSON.stringify( app.spots() )
+			const wires = JSON.stringify( app.doc_wires() )
+
+			app.root_title( `${d}my_site_page` )
+
+			$mol_assert_equal( app.root_js(), 'greeting(){\n\treturn 1\n}\n' )
+			$mol_assert_equal( app.root_css(), '[my] {\n\tcolor: red;\n}' )
+			$mol_assert_equal( app.selected(), 'String' )
+			$mol_assert_equal( JSON.stringify( app.spots() ), spots )
+			$mol_assert_equal( JSON.stringify( app.doc_wires() ), wires )
+
+			// The text differs in the class name and in nothing else.
+			$mol_assert_equal(
+				app.doc_source(),
+				source.replace( `${d}bog_vmap_app_page`, `${d}my_site_page` ),
+			)
+
+		},
+
+		/**
+		 * A name that cannot become a folder is refused where it was typed, in words,
+		 * and the document is left alone. Without the refusal the mistake would only
+		 * show up as `Root package not found` on a build machine.
+		 */
+		'a root name that is not a module path is refused in words'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+			const before = app.doc_source()
+
+			$mol_assert_equal( app.root_title( 'Страница' ), `${d}bog_vmap_app_page` )
+			$mol_assert_equal( app.doc_source(), before )
+			$mol_assert_ok( app.root_title_note().includes( 'Страница' ) )
+			$mol_assert_ok( app.body().includes( app.Root_note() ) )
+
+			// A single segment is not a path either: mam resolves every underscore
+			// into a folder, and the export refuses a prefix shorter than two.
+			$mol_assert_equal( app.root_title( `${d}page` ), `${d}bog_vmap_app_page` )
+			$mol_assert_equal( app.doc_source(), before )
+
+			// And a name another class of the document already carries.
+			app.doc_source( before + `${d}bog_vmap_app_card ${d}mol_view title \\Карточка\n` )
+			$mol_assert_equal( app.root_title( `${d}bog_vmap_app_card` ), `${d}bog_vmap_app_page` )
+			$mol_assert_ok( app.root_title_note().includes( 'already declared' ) )
+
+		},
+
 	})
 
 }

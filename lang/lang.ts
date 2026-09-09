@@ -90,6 +90,23 @@ namespace $ {
 	}
 
 	/**
+	 * Whether a name can be the name of a class of a document.
+	 *
+	 * Stricter than the compiler on purpose. `$mol_view_tree2_class_match` takes
+	 * anything starting with a dollar or a capital, generics and quotes included,
+	 * because it also has to recognize the classes of somebody else's code; a class
+	 * WE write has to survive one more step, and that step is mam resolving the
+	 * name into a folder. Every underscore is a level of folders, so the name is a
+	 * dollar and at least two lowercase segments, and nothing else fits in a path.
+	 *
+	 * A refusal here is a message to a person, so this answers yes or no and leaves
+	 * the wording to the caller, who knows in what language to say it.
+	 */
+	export function $bog_vmap_lang_class_ok( name: string ) {
+		return /^\$[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test( name )
+	}
+
+	/**
 	 * Builds the tree of a wire: `name = Node prop`.
 	 *
 	 * The operator is `=` and nothing else. `<= Node prop` looks like the same thing

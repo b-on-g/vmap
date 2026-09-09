@@ -372,12 +372,25 @@ namespace $ {
 		}
 
 		/**
-		 * Name of the class the document opens with, or empty.
+		 * Name of the class the document opens with, or empty. Writing a class name
+		 * makes that class the one it opens with.
 		 *
 		 * Read as a raw link, never through `remote()`: the typed getter resolves
 		 * through the static glob, and the node is in this very land anyway.
+		 *
+		 * The write is what a rename of the root needs: nodes are matched to classes
+		 * BY NAME, so a renamed class arrives as a node of its own and the recorded
+		 * choice would go on pointing at the node that used to hold it. A name the
+		 * document does not carry is ignored rather than recorded — a link to a node
+		 * that is not in the list is exactly the state this exists to prevent.
 		 */
-		doc_root( doc: $bog_vmap_app_doc ) {
+		doc_root( doc: $bog_vmap_app_doc, next?: string ) {
+
+			if( next !== undefined ) {
+				const node = this.node( doc, next )
+				if( node ) doc.Root( null )!.val( node.link() )
+				return next
+			}
 
 			const link = doc.Root()?.val()
 			if( !link ) return ''

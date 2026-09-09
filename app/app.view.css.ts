@@ -27,6 +27,16 @@ namespace $.$$ {
 			color: $mol_theme.shade,
 		},
 
+		/**
+		 * A class name is long and is read as a whole: `$bog_vmap_app_page` cut in
+		 * the middle says nothing about the folder it chooses. Wide enough for a
+		 * three segment name, and no growing — the toolbar wraps instead.
+		 */
+		Root_name: {
+			minWidth: '14rem',
+			flex: { grow: 0, shrink: 1 },
+		},
+
 		Status: {
 			flex: { grow: 1 },
 			justify: { content: 'flex-end' },
