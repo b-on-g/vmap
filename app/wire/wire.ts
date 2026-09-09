@@ -115,20 +115,53 @@ namespace $ {
 		return [ x, y ]
 	}
 
-	/** Reach of the horizontal tangents, so short wires still bend. */
-	function wire_reach( from: readonly [ number, number ], to: readonly [ number, number ] ) {
-		return Math.max( 40, Math.abs( to[0] - from[0] ) / 2 )
+	/** Reach of the tangents, so short wires still bend. */
+	function wire_reach( span: number ) {
+		return Math.max( 40, Math.abs( span ) / 2 )
 	}
 
-	/** A cubic Bezier from an output to an input with horizontal tangents, as an SVG path. */
+	/**
+	 * The two control points of the wire, chosen by which way it actually goes.
+	 *
+	 * Outputs sit on the right edge of a part and inputs on the left, so a wire
+	 * that runs forwards has its ends already pointing at each other and horizontal
+	 * tangents draw the plain S everybody expects.
+	 *
+	 * BACKWARDS IS THE COMMON CASE INSIDE A CONTAINER, not an exotic one: two
+	 * children stacked in one box sit at the same left edge, so the output of the
+	 * upper one is a dozen pixels to the RIGHT of the input of the lower one.
+	 * Horizontal tangents there send the curve out past the right edge of the box
+	 * and bring it back in from the left — a loop around the whole part, which
+	 * reads as a broken wire rather than a short one. Turning the tangents vertical
+	 * keeps every control point between the two ends, so the curve stays in the
+	 * band between them and reads as what it is: a step down from one child to the
+	 * next.
+	 */
+	function wire_control(
+		from: readonly [ number, number ],
+		to: readonly [ number, number ],
+	): readonly [ readonly [ number, number ], readonly [ number, number ] ] {
+
+		if( to[0] >= from[0] ) {
+			const reach = wire_reach( to[0] - from[0] )
+			return [ [ from[0] + reach, from[1] ], [ to[0] - reach, to[1] ] ]
+		}
+
+		const reach = wire_reach( to[1] - from[1] )
+		const down = to[1] >= from[1] ? 1 : -1
+
+		return [ [ from[0], from[1] + reach * down ], [ to[0], to[1] - reach * down ] ]
+	}
+
+	/** A cubic Bezier from an output to an input, as an SVG path. */
 	export function $bog_vmap_app_wire_curve(
 		from: readonly [ number, number ],
 		to: readonly [ number, number ],
 	) {
 
-		const reach = wire_reach( from, to )
+		const [ one, two ] = wire_control( from, to )
 
-		return `M ${ from[0] } ${ from[1] } C ${ from[0] + reach } ${ from[1] }, ${ to[0] - reach } ${ to[1] }, ${ to[0] } ${ to[1] }`
+		return `M ${ from[0] } ${ from[1] } C ${ one[0] } ${ one[1] }, ${ two[0] } ${ two[1] }, ${ to[0] } ${ to[1] }`
 	}
 
 	/** The point of the curve at t = 1/2, where the label goes. */
@@ -137,11 +170,11 @@ namespace $ {
 		to: readonly [ number, number ],
 	): readonly [ number, number ] {
 
-		const reach = wire_reach( from, to )
+		const [ one, two ] = wire_control( from, to )
 
 		return [
-			( from[0] + 3 * ( from[0] + reach ) + 3 * ( to[0] - reach ) + to[0] ) / 8,
-			( from[1] + to[1] ) / 2,
+			( from[0] + 3 * one[0] + 3 * two[0] + to[0] ) / 8,
+			( from[1] + 3 * one[1] + 3 * two[1] + to[1] ) / 8,
 		]
 	}
 

@@ -69,10 +69,39 @@ namespace $ {
 
 		},
 
-		/** A wire drawn backwards, into a part on the left, still leaves and enters horizontally. */
-		'a short or backward wire keeps a minimal reach'( $ ) {
+		/**
+		 * REPRO: two children of one container sit at the same left edge, so the
+		 * output of the upper one is to the RIGHT of the input of the lower one.
+		 * Horizontal tangents there loop the wire out past the box and back in from
+		 * the far side, which reads as a wire that is broken rather than short.
+		 */
+		'a wire that runs backwards turns its tangents and stays between its ends'( $ ) {
 
-			$mol_assert_equal( $bog_vmap_app_wire_curve( [ 100, 0 ], [ 90, 0 ] ), 'M 100 0 C 140 0, 50 0, 90 0' )
+			// Upper child: box left 100, so its output dot is at 100 + 200 + 12.
+			// Lower child: same left edge, so its input dot is at 100 - 12.
+			const from = [ 312, 20 ] as const
+			const to = [ 88, 120 ] as const
+
+			const d = $bog_vmap_app_wire_curve( from, to )
+
+			// Every control point stays within the span of the ends: no loop outside.
+			const xs = d.match( /-?\d+(\.\d+)?/g )!.map( Number ).filter( ( _, i )=> i % 2 === 0 )
+
+			$mol_assert_equal( Math.max( ... xs ), from[0] )
+			$mol_assert_equal( Math.min( ... xs ), to[0] )
+
+			// The tangents are vertical: the curve steps down and comes in from above.
+			$mol_assert_equal( d, 'M 312 20 C 312 70, 88 70, 88 120' )
+
+			// The label rides the curve, not the straight line between the ends.
+			$mol_assert_like( $bog_vmap_app_wire_curve_mid( from, to ), [ 200, 70 ] )
+
+		},
+
+		/** A wire that runs forwards is unchanged: ends already point at each other. */
+		'a short forward wire keeps a minimal reach'( $ ) {
+
+			$mol_assert_equal( $bog_vmap_app_wire_curve( [ 0, 0 ], [ 10, 0 ] ), 'M 0 0 C 40 0, -30 0, 10 0' )
 
 		},
 
