@@ -1,39 +1,5 @@
 namespace $.$$ {
 
-	/**
-	 * Code does not wrap. Ever.
-	 *
-	 * `$mol_textarea` is `white-space: pre-wrap` with `word-break: break-word`,
-	 * which is right for prose and wrong for a declaration: in the panel at 1440
-	 * with all three open a line holds about 35 characters, and
-	 * `Map $bog_vmap_part_map zoom <= calc_result` broke across two — a break that
-	 * looks like a second property. So the panel scrolls sideways instead.
-	 *
-	 * Through `$mol_style_attach` and scoped under this panel, NOT
-	 * `$mol_style_define` on `$mol_textarea`: that one would repaint every textarea
-	 * of the pack, the document's own included. And through raw text because the
-	 * two layers that have to agree — the highlighted view and the real `textarea`
-	 * over it — are sub-views of a foreign class, not classes of their own, so the
-	 * typed form has no key for them.
-	 *
-	 * BOTH layers or neither: they overlay each other pixel for pixel, and a caret
-	 * that wraps over a view that does not is a caret in the wrong place. The view
-	 * and the edit both take `white-space: inherit` from the box, so the first rule
-	 * moves them together; the second gives the edit the full scrolled width, or it
-	 * would stay the width of the box and slide out from under the text.
-	 */
-	$mol_style_attach( '$bog_vmap_app_code', `
-		[bog_vmap_app_code] [mol_textarea] {
-			white-space: pre;
-			word-break: normal;
-			overflow-x: auto;
-		}
-		[bog_vmap_app_code] [mol_textarea_edit] {
-			min-width: 100%;
-			width: max-content;
-		}
-	` )
-
 	$mol_style_define( $bog_vmap_app_code, {
 
 		/** A side panel like the inspector: takes the height of whatever holds it. */

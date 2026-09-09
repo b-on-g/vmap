@@ -1,0 +1,38 @@
+/*
+
+Code does not wrap. Ever.
+
+`$mol_textarea` is `white-space: pre-wrap` with `word-break: break-word`, which
+is right for prose and wrong for a declaration: in the panel at 1440 with all
+three panels open a line holds about 35 characters, and
+`Map $bog_vmap_part_map zoom <= calc_result` broke across two — a break that
+reads as a second property.
+
+A file and not `$mol_style_define`, because the two layers that have to agree are
+SUB-VIEWS of a foreign class rather than classes of their own, and the typed form
+has no key for those. A file and not `$mol_style_attach`, because that one is for
+a class born at run time, which has no file to put this in; this module has one,
+and mam compiles it into the bundle by itself.
+
+Scoped under this panel, so the textareas the document itself draws inside the
+scene keep wrapping like the prose they usually hold.
+
+BOTH LAYERS OR NEITHER. The highlighted view and the real `textarea` over it lie
+pixel for pixel on each other, and a caret that wraps over a view that does not
+is a caret in the wrong place. Both take `white-space` from the box by
+inheritance, so the first rule moves them together; the second gives the editable
+layer the full scrolled width, or it would stay the width of the box and slide
+out from under the text as soon as the line ran past the edge.
+
+*/
+
+[bog_vmap_app_code_sources] [mol_textarea] {
+	white-space: pre;
+	word-break: normal;
+	overflow-x: auto;
+}
+
+[bog_vmap_app_code_sources] [mol_textarea_edit] {
+	min-width: 100%;
+	width: max-content;
+}
