@@ -20931,6 +20931,74 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$mol_icon_download) = class $mol_icon_download extends ($.$mol_icon) {
+		path(){
+			return "M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_button_download) = class $mol_button_download extends ($.$mol_button_minor) {
+		Icon(){
+			const obj = new this.$.$mol_icon_download();
+			return obj;
+		}
+		title(){
+			return "";
+		}
+		blob(){
+			return null;
+		}
+		uri(){
+			return "";
+		}
+		file_name(){
+			return "blob.bin";
+		}
+		sub(){
+			return [(this.Icon()), (this.title())];
+		}
+	};
+	($mol_mem(($.$mol_button_download.prototype), "Icon"));
+
+
+;
+"use strict";
+/** @jsx $mol_jsx */
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Button download file from uri() or a blob()
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_button_demo
+         */
+        class $mol_button_download extends $.$mol_button_download {
+            uri() {
+                return URL.createObjectURL(this.blob());
+            }
+            click() {
+                const a = $mol_jsx("a", { href: this.uri(), download: this.file_name() });
+                a.click();
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_button_download.prototype, "uri", null);
+        $$.$mol_button_download = $mol_button_download;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+
+
+;
 	($.$mol_bar) = class $mol_bar extends ($.$mol_view) {};
 
 
@@ -29062,6 +29130,165 @@ var $;
 var $;
 (function ($) {
     /**
+     * The module as one archive, so that a browser can hand it over in a single
+     * gesture. Nothing in mam packs files — measured across `mol` and `hyoo`, there
+     * is no archiver of any kind — so the format is written here, in the stored
+     * flavour that needs no compressor at all.
+     *
+     * Stored and not deflated on purpose: an export is five text files of a few
+     * kilobytes, and compressing them would buy nothing while costing either a
+     * library in the bundle or a dependency on `CompressionStream`, which is async
+     * and would drag the whole path into a fiber.
+     *
+     * @see ../../ARCHITECTURE.md section 10
+     */
+    /** Table of the CRC32 polynomial, built once. Zip stores a checksum per entry. */
+    const crc_table = (() => {
+        const table = new Uint32Array(256);
+        for (let i = 0; i < 256; ++i) {
+            let value = i;
+            for (let bit = 0; bit < 8; ++bit) {
+                value = value & 1 ? 0xEDB88320 ^ (value >>> 1) : value >>> 1;
+            }
+            table[i] = value >>> 0;
+        }
+        return table;
+    })();
+    /** Checksum zip keeps beside every entry, and the one every reader verifies. */
+    function $bog_vmap_app_export_crc32(bytes) {
+        let crc = 0xFFFFFFFF;
+        for (const byte of bytes)
+            crc = crc_table[(crc ^ byte) & 0xFF] ^ (crc >>> 8);
+        return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+    $.$bog_vmap_app_export_crc32 = $bog_vmap_app_export_crc32;
+    /** Little endian integer of a fixed width, which is how zip writes every number. */
+    function number_bytes(value, size) {
+        const out = new Uint8Array(size);
+        for (let i = 0; i < size; ++i)
+            out[i] = (value >>> (8 * i)) & 0xFF;
+        return out;
+    }
+    /**
+     * A date every reader accepts.
+     *
+     * The real time of the export is not written: a zero date shows up as
+     * `00-00-1980` and makes some unpackers complain, and the wall clock would make
+     * the same document produce a different archive every time, which is a thing no
+     * test can pin down. This is the first representable moment instead.
+     */
+    const dos_date = 0x0021;
+    const dos_time = 0;
+    /** Flag bit 11: names are UTF-8, which is what keeps a non-ascii path readable. */
+    const flag_utf8 = 0x0800;
+    /**
+     * Files as one zip archive, in the stored method.
+     *
+     * Byte for byte deterministic: same files in, same bytes out, so the whole
+     * format is checkable by a test instead of by opening it. Directories are not
+     * written as entries of their own — a name with slashes in it creates them, and
+     * every unpacker does that.
+     */
+    function $bog_vmap_app_export_zip(files) {
+        const encoder = new TextEncoder();
+        const chunks = [];
+        const directory = [];
+        let offset = 0;
+        for (const file of files) {
+            const name = encoder.encode(file.name);
+            const body = encoder.encode(file.text);
+            const crc = $bog_vmap_app_export_crc32(body);
+            const local = [
+                number_bytes(0x04034b50, 4),
+                number_bytes(20, 2),
+                number_bytes(flag_utf8, 2),
+                number_bytes(0, 2),
+                number_bytes(dos_time, 2),
+                number_bytes(dos_date, 2),
+                number_bytes(crc, 4),
+                number_bytes(body.length, 4),
+                number_bytes(body.length, 4),
+                number_bytes(name.length, 2),
+                number_bytes(0, 2),
+                name,
+            ];
+            for (const part of local)
+                chunks.push(part);
+            chunks.push(body);
+            directory.push([
+                number_bytes(0x02014b50, 4),
+                number_bytes(20, 2),
+                number_bytes(20, 2),
+                number_bytes(flag_utf8, 2),
+                number_bytes(0, 2),
+                number_bytes(dos_time, 2),
+                number_bytes(dos_date, 2),
+                number_bytes(crc, 4),
+                number_bytes(body.length, 4),
+                number_bytes(body.length, 4),
+                number_bytes(name.length, 2),
+                number_bytes(0, 2),
+                number_bytes(0, 2),
+                number_bytes(0, 2),
+                number_bytes(0, 2),
+                number_bytes(0, 4),
+                number_bytes(offset, 4),
+                name,
+            ]);
+            offset += local.reduce((sum, part) => sum + part.length, 0) + body.length;
+        }
+        const directory_at = offset;
+        let directory_size = 0;
+        for (const record of directory) {
+            for (const part of record) {
+                chunks.push(part);
+                directory_size += part.length;
+            }
+        }
+        const end = [
+            number_bytes(0x06054b50, 4),
+            number_bytes(0, 2),
+            number_bytes(0, 2),
+            number_bytes(directory.length, 2),
+            number_bytes(directory.length, 2),
+            number_bytes(directory_size, 4),
+            number_bytes(directory_at, 4),
+            number_bytes(0, 2),
+        ];
+        for (const part of end)
+            chunks.push(part);
+        const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+        const out = new Uint8Array(total);
+        let at = 0;
+        for (const chunk of chunks) {
+            out.set(chunk, at);
+            at += chunk.length;
+        }
+        return out;
+    }
+    $.$bog_vmap_app_export_zip = $bog_vmap_app_export_zip;
+    /**
+     * The built module as an archive, with its folder inside.
+     *
+     * Every entry carries the whole module path and not a bare file name, so that
+     * unpacking at the root of a mam checkout puts the module where its own class
+     * names oblige it to be — section 10, where a module in the wrong folder builds
+     * into `Root package not found` while looking entirely correct.
+     */
+    function $bog_vmap_app_export_archive(module) {
+        return this.$bog_vmap_app_export_zip(module.files.map(file => ({
+            name: `${module.path}/${file.name}`,
+            text: file.text,
+        })));
+    }
+    $.$bog_vmap_app_export_archive = $bog_vmap_app_export_archive;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
      * Export of a document as a real MAM module.
      *
      * Not an abstract «project»: the output is a folder that drops into `bog/` and
@@ -33210,6 +33437,31 @@ var $;
 			(obj.classes) = () => ([(this.doc_root())]);
 			return obj;
 		}
+		export_title(){
+			return "";
+		}
+		export_hint(){
+			return "";
+		}
+		export_ready(){
+			return false;
+		}
+		export_blob(){
+			const obj = new this.$.$mol_blob();
+			return obj;
+		}
+		export_file(){
+			return "";
+		}
+		Download(){
+			const obj = new this.$.$mol_button_download();
+			(obj.title) = () => ((this.export_title()));
+			(obj.hint) = () => ((this.export_hint()));
+			(obj.enabled) = () => ((this.export_ready()));
+			(obj.blob) = () => ((this.export_blob()));
+			(obj.file_name) = () => ((this.export_file()));
+			return obj;
+		}
 		status(){
 			return "";
 		}
@@ -33219,6 +33471,12 @@ var $;
 			return obj;
 		}
 		error(){
+			return "";
+		}
+		export_rows(){
+			return [];
+		}
+		export_text(id){
 			return "";
 		}
 		stall_note(){
@@ -33400,6 +33658,7 @@ var $;
 				(this.Board()), 
 				(this.Delete()), 
 				(this.Publish()), 
+				(this.Download()), 
 				(this.Status())
 			]);
 			return obj;
@@ -33407,6 +33666,16 @@ var $;
 		Alarm(){
 			const obj = new this.$.$mol_view();
 			(obj.sub) = () => ([(this.error())]);
+			return obj;
+		}
+		Export_note(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.export_rows()));
+			return obj;
+		}
+		Export_row(id){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.export_text(id))]);
 			return obj;
 		}
 		Stall(){
@@ -33507,6 +33776,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Delete"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_source"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Publish"));
+	($mol_mem(($.$bog_vmap_app.prototype), "export_blob"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Download"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Status"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Stall_note"));
 	($mol_mem(($.$bog_vmap_app.prototype), "scene_restart"));
@@ -33528,6 +33799,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "store"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Head"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Alarm"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Export_note"));
+	($mol_mem_key(($.$bog_vmap_app.prototype), "Export_row"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Stall"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Body"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Side"));
@@ -33864,6 +34137,105 @@ var $;
                     .filter(Boolean)
                     .join('\n\n');
             }
+            /**
+             * Classes of the document as the export takes them: declaration, body, rule.
+             *
+             * Read out of the document model rather than out of the scene, so what is
+             * downloaded is the text the editor holds and not what a preview made of it.
+             */
+            export_nodes() {
+                const doc = this.doc_model();
+                return doc.names().map(name => ({
+                    source: doc.class_source(name),
+                    js: this.class_js(name),
+                    css: this.class_css(name),
+                }));
+            }
+            /**
+             * The module the document builds into, or the reason it does not.
+             *
+             * One cell for both, because the export answers both at once and a second
+             * call would parse every class a second time to learn what this one already
+             * knows. A refusal is a value here and not a throw: it has to be readable on
+             * the toolbar, and a throw on the path of the toolbar takes the toolbar down.
+             *
+             * A SUSPENSION IS NOT PASSED ON EITHER, and that is the harder half. The
+             * toolbar is drawn from this, and a document opened by a link lives in a land
+             * that suspends every read until it syncs — so rethrowing here suspended the
+             * whole editor, frame and all, and the sandbox never came up. Measured: the
+             * standing test of that invariant went red the moment this cell was wired to
+             * the toolbar. The subscription is recorded before the throw, so nothing is
+             * lost: this recomputes the moment the text arrives. The same shape as
+             * `store_links`, and for the same reason.
+             */
+            export_state() {
+                try {
+                    return {
+                        module: this.$.$bog_vmap_app_export_build(this.export_nodes(), this.doc_root()),
+                        refusal: '',
+                    };
+                }
+                catch (error) {
+                    // Still on its way: nothing to download and nothing to complain about.
+                    if (this.$.$mol_promise_like(error))
+                        return { module: null, refusal: '' };
+                    return { module: null, refusal: String(error?.message ?? error) };
+                }
+            }
+            /** Whether the document can be downloaded at all. */
+            export_ready() {
+                return Boolean(this.export_state().module);
+            }
+            /**
+             * The folder the module goes to, in the title of the button itself.
+             *
+             * Section 10: the folder follows from the class names and is not free, and
+             * mam turns a wrong one into `Root package not found` at build time, far from
+             * the editor. Written where it is read without hovering, because it is a
+             * decision the author is making whether they see it or not.
+             */
+            export_title() {
+                const module = this.export_state().module;
+                return module ? `Скачать ${module.path}` : 'Скачать';
+            }
+            export_file() {
+                const module = this.export_state().module;
+                return `${module?.name ?? 'vmap'}.zip`;
+            }
+            export_hint() {
+                const state = this.export_state();
+                if (state.refusal)
+                    return 'Документ не выгружается. Причина под шапкой';
+                const module = state.module;
+                if (!module)
+                    return 'Документ ещё загружается';
+                return `${module.files.length} файлов модуля ${module.path}.`
+                    + ` Распаковать в корень MAM и собрать «npx mam ${module.path}»`;
+            }
+            /**
+             * The archive itself. A plain method: it is read once, by the click, and a
+             * cell in front of it would keep the whole file alive for nothing.
+             */
+            export_blob() {
+                const state = this.export_state();
+                if (!state.module)
+                    return this.$.$mol_fail(new Error(state.refusal || 'Документ ещё загружается'));
+                return new this.$.$mol_blob([this.$.$bog_vmap_app_export_archive(state.module)], { type: 'application/zip' });
+            }
+            /**
+             * The refusal, line by line, as the export words it. Each line already names
+             * the class, the line, the method and the fix, so nothing is added here.
+             */
+            export_notes() {
+                const refusal = this.export_state().refusal;
+                return refusal ? refusal.split('\n').filter(Boolean) : [];
+            }
+            export_rows() {
+                return this.export_notes().map((_, index) => this.Export_row(index));
+            }
+            export_text(index) {
+                return this.export_notes()[index] ?? '';
+            }
             /** The picked node as the code editor takes it: a name, empty for none. */
             code_prop() {
                 return this.selected() ?? '';
@@ -33954,6 +34326,10 @@ var $;
                     // error under it stale, and the action that helps is on this one.
                     ...this.stalled() ? [this.Stall()] : [],
                     ...this.error() ? [this.Alarm()] : [],
+                    // Beside the dead button and not inside the code panel: that panel is
+                    // folded by default and speaks about the picked node, while this is
+                    // about the document and can name a class nobody has open.
+                    ...this.export_notes().length ? [this.Export_note()] : [],
                     this.Body(),
                     ...this.dragged() ? [this.Ghost()] : [],
                 ];
@@ -34596,6 +34972,12 @@ var $;
         ], $bog_vmap_app.prototype, "doc_css", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app.prototype, "export_state", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "export_text", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_app.prototype, "code_hooks", null);
         __decorate([
             $mol_mem
@@ -34764,6 +35146,20 @@ var $;
             Stall_note: {
                 flex: { grow: 1, shrink: 1 },
                 minWidth: 0,
+                font: { size: '.8rem' },
+                whiteSpace: 'normal',
+            },
+            /**
+             * Amber like `Stall` and not red like `Alarm`, because it is the same kind of
+             * news as the stall: the document itself works, and one thing about it does
+             * not. Wraps, unlike the error strip: these are sentences, not a stack.
+             */
+            Export_note: {
+                flex: { direction: 'column', shrink: 0 },
+                gap: '.25rem',
+                padding: $mol_gap.text,
+                background: { color: '#8d6e00' },
+                color: 'white',
                 font: { size: '.8rem' },
                 whiteSpace: 'normal',
             },
@@ -46357,6 +46753,557 @@ var $;
 var $;
 (function ($_1) {
     /**
+     * Tests of the archive.
+     *
+     * A format nobody in the project reads back: the readers are the unpacker of
+     * the operating system and the archiver of the browser, and neither is here.
+     * So the bytes are checked against the specification directly — signatures,
+     * offsets, checksums — and the checksum against a value produced by zlib, which
+     * is a witness of its own rather than this code agreeing with itself.
+     *
+     * `d` keeps `$` out of the string literals: mam builds its dependency graph by
+     * a regexp over sources, literals included.
+     */
+    const d = '$';
+    /** Little endian integer at a position, the way every zip reader takes one. */
+    function number_at(bytes, at, size) {
+        let value = 0;
+        for (let i = size - 1; i >= 0; --i)
+            value = value * 256 + bytes[at + i];
+        return value;
+    }
+    function text_at(bytes, at, size) {
+        return new TextDecoder().decode(bytes.slice(at, at + size));
+    }
+    /**
+     * Entries as the central directory declares them, which is where a reader
+     * looks. Walking the local headers instead would prove nothing about the
+     * directory, and the directory is what an unpacker trusts.
+     */
+    function entries_of(bytes) {
+        const count = number_at(bytes, bytes.length - 12, 2);
+        let at = number_at(bytes, bytes.length - 6, 4);
+        const out = [];
+        for (let i = 0; i < count; ++i) {
+            const name_size = number_at(bytes, at + 28, 2);
+            out.push({
+                signature: number_at(bytes, at, 4),
+                crc: number_at(bytes, at + 16, 4),
+                size: number_at(bytes, at + 24, 4),
+                name: text_at(bytes, at + 46, name_size),
+                offset: number_at(bytes, at + 42, 4),
+            });
+            at += 46 + name_size;
+        }
+        return out;
+    }
+    /** Content of one entry, read through its local header the way an unpacker does. */
+    function body_of(bytes, offset) {
+        const name_size = number_at(bytes, offset + 26, 2);
+        const extra_size = number_at(bytes, offset + 28, 2);
+        const size = number_at(bytes, offset + 18, 4);
+        const at = offset + 30 + name_size + extra_size;
+        return text_at(bytes, at, size);
+    }
+    const module = {
+        path: 'bog/site',
+        name: 'site',
+        root: `${d}bog_site_page`,
+        files: [
+            { name: 'site.view.tree', text: `${d}bog_site_page ${d}mol_view\n\tsub /\n` },
+            { name: 'index.html', text: '<!doctype html>\n' },
+        ],
+    };
+    $mol_test({
+        /**
+         * The checksum against zlib, not against a second implementation of the same
+         * table: a table wrong in the same way twice would pass any self comparison,
+         * and a wrong checksum is exactly what makes an archive refuse to open.
+         */
+        'the checksum is the one every reader computes'($) {
+            $mol_assert_equal($.$bog_vmap_app_export_crc32(new TextEncoder().encode('hello')), 907060870);
+            $mol_assert_equal($.$bog_vmap_app_export_crc32(new TextEncoder().encode('привет')), 779501134);
+            // An empty entry is a normal one, and its checksum is not a special case.
+            $mol_assert_equal($.$bog_vmap_app_export_crc32(new Uint8Array(0)), 0);
+        },
+        /** Signatures and counts, so that a reader finds the directory at all. */
+        'the archive ends with a directory of every file'($) {
+            const bytes = $.$bog_vmap_app_export_zip(module.files);
+            $mol_assert_equal(number_at(bytes, 0, 4), 0x04034b50);
+            $mol_assert_equal(number_at(bytes, bytes.length - 22, 4), 0x06054b50);
+            $mol_assert_equal(number_at(bytes, bytes.length - 12, 2), 2);
+            const entries = entries_of(bytes);
+            $mol_assert_equal(entries.length, 2);
+            $mol_assert_equal(entries[0].signature, 0x02014b50);
+            $mol_assert_equal(entries[1].signature, 0x02014b50);
+        },
+        /**
+         * THE POINT OF THE WHOLE FILE: what the directory promises is what lies at
+         * the offset it promises it at. An archive whose offsets are off by a header
+         * opens as empty, or as garbage, and nothing else in the editor would notice.
+         */
+        'every entry lies where the directory says it does'($) {
+            const bytes = $.$bog_vmap_app_export_zip(module.files);
+            for (const entry of entries_of(bytes)) {
+                $mol_assert_equal(number_at(bytes, entry.offset, 4), 0x04034b50);
+                const file = module.files.find(file => file.name === entry.name);
+                $mol_assert_equal(body_of(bytes, entry.offset), file.text);
+                $mol_assert_equal(entry.crc, $.$bog_vmap_app_export_crc32(new TextEncoder().encode(file.text)));
+            }
+        },
+        /**
+         * Text is stored in UTF-8, and the size in the header is the size in bytes.
+         * A size counted in characters cuts a russian comment in half, and the
+         * document of a russian speaking author is the ordinary case here.
+         */
+        'non ascii text keeps its bytes'($) {
+            const bytes = $.$bog_vmap_app_export_zip([
+                { name: 'note.txt', text: 'привет' },
+            ]);
+            const entry = entries_of(bytes)[0];
+            $mol_assert_equal(entry.size, 12);
+            $mol_assert_equal(body_of(bytes, entry.offset), 'привет');
+        },
+        /** Bit 11 of the flags, without which a non ascii NAME arrives mojibake. */
+        'names are marked as utf-8'($) {
+            const bytes = $.$bog_vmap_app_export_zip(module.files);
+            $mol_assert_equal(number_at(bytes, 6, 2), 0x0800);
+        },
+        /**
+         * A date, and a fixed one. Zero shows up as `00-00-1980` and makes unpackers
+         * complain; the wall clock would make one document produce different bytes on
+         * every export, which no test could then pin down.
+         */
+        'entries carry a valid date and the same bytes every time'($) {
+            const bytes = $.$bog_vmap_app_export_zip(module.files);
+            $mol_assert_equal(number_at(bytes, 12, 2), 0x0021);
+            const again = $.$bog_vmap_app_export_zip(module.files);
+            $mol_assert_equal(bytes.length, again.length);
+            $mol_assert_equal([...bytes].join(), [...again].join());
+        },
+        /**
+         * The module folder travels INSIDE the archive, so unpacking at the root of a
+         * checkout puts the module where its class names oblige it to be. Section 10:
+         * a module in the wrong folder builds into `Root package not found` while
+         * looking entirely correct.
+         */
+        'the archive carries the module folder'($) {
+            const names = entries_of($.$bog_vmap_app_export_archive(module))
+                .map(entry => entry.name);
+            $mol_assert_equal(names.join(' '), 'bog/site/site.view.tree bog/site/index.html');
+        },
+        /** An archive of nothing is still an archive: a directory of zero entries. */
+        'an empty list makes an empty archive'($) {
+            const bytes = $.$bog_vmap_app_export_zip([]);
+            $mol_assert_equal(bytes.length, 22);
+            $mol_assert_equal(number_at(bytes, 0, 4), 0x06054b50);
+            $mol_assert_equal(entries_of(bytes).length, 0);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * Tests of the export.
+     *
+     * The real acceptance is elsewhere and cannot be a unit test: the output has to
+     * be dropped into `bog/` and built by mam. `bog/vmap/demo/` is that check,
+     * generated by this code and kept as a standing one. What is here are the
+     * decisions that would otherwise fail silently — placement, declaration order
+     * and decorators — plus the refusals.
+     *
+     * `d` keeps `$` out of the string literals: mam builds its dependency graph by
+     * a regexp over sources, literals included, so a fixture class name spelled
+     * literally would be resolved as a module path.
+     */
+    const d = '$';
+    const page = [
+        `${d}bog_site_page ${d}mol_view`,
+        `	Hero ${d}bog_site_hero`,
+        `	greeting = Hero title`,
+        `	sub / <= Hero`,
+        ``,
+    ].join('\n');
+    const hero = `${d}bog_site_hero ${d}mol_view\n\ttitle \\Hi\n\tcount? 0\n\tplain \\x\n`;
+    /**
+     * Two artboards and one free part beside them: `Home` and `About` carry a `sub`
+     * of their own and so are pages, `Loose` carries none and so is not.
+     */
+    const pages = [
+        `${d}bog_site_page ${d}mol_view`,
+        `	Head ${d}mol_view`,
+        `	Loose ${d}mol_view`,
+        `	Home ${d}mol_view sub / <= Head`,
+        `	About ${d}mol_view sub /`,
+        `	sub /`,
+        `		<= Home`,
+        `		<= About`,
+        `		<= Loose`,
+        ``,
+    ].join('\n');
+    function file_of(module, suffix) {
+        return module.files.find(file => file.name.endsWith(suffix)).text;
+    }
+    $mol_test({
+        /**
+         * Placement is not free. Mam turns a class name into a path by replacing every
+         * underscore with a slash, so a module put anywhere else fails to build while
+         * looking entirely correct — the one failure this whole task exists to rule out.
+         */
+        'module path comes from the class names'($) {
+            $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`, `${d}bog_site_hero`]), 'bog/site');
+            $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`]), 'bog/site/page');
+            $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`, `${d}bog_site_page_hero`]), 'bog/site/page');
+        },
+        'classes of different packs cannot be one module'($) {
+            $mol_assert_fail(() => $.$bog_vmap_app_export_path([`${d}bog_site_page`, `${d}hyoo_other_page`]), Error);
+            $mol_assert_fail(() => $.$bog_vmap_app_export_path([`${d}bog_one`, `${d}bog_two`]), Error);
+            $mol_assert_fail(() => $.$bog_vmap_app_export_path([]), Error);
+        },
+        /**
+         * `class $A extends $[ '$B' ]` takes its base at definition time and the
+         * generator emits declarations in the order it got them, so an heir above its
+         * base inherits `undefined`. The document is written heir first here on
+         * purpose.
+         */
+        'a base is declared before its heir'($) {
+            const own = `${d}bog_site_hero_big ${d}bog_site_hero\n\ttitle \\Big\n`;
+            const module = $.$bog_vmap_app_export_build([
+                { source: own },
+                { source: page },
+                { source: hero },
+            ], `${d}bog_site_page`);
+            const tree = file_of(module, '.view.tree');
+            $mol_assert_equal(tree.indexOf(`${d}bog_site_hero `) < tree.indexOf(`${d}bog_site_hero_big `), true);
+        },
+        'the emitted declaration parses back into the same classes'($) {
+            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
+            const back = $.$mol_view_tree2_normalize($.$mol_tree2_from_string(file_of(module, '.view.tree'), 'export'));
+            /**
+             * Input order, because neither is the base of the other. A sub-view
+             * reference does NOT constrain the order: the generator writes a
+             * `new this.$[ name ]()` resolved at call time, and only the `extends`
+             * clause is evaluated when the class is defined.
+             */
+            $mol_assert_like(back.kids.map(cl => cl.type), [`${d}bog_site_page`, `${d}bog_site_hero`]);
+        },
+        /**
+         * A property memoized in the preview has to be memoized in the export, or the
+         * two drift and nothing says so: an override without a decorator simply has no
+         * atom, so it returns a fresh value while the DOM keeps the old one.
+         */
+        'a hand written body carries its decorators'($) {
+            const module = $.$bog_vmap_app_export_build([
+                { source: page },
+                { source: hero, js: 'count( next?: number ) {\n\treturn next ?? 7\n}\n' },
+            ]);
+            const ts = file_of(module, '.view.ts');
+            $mol_assert_equal(ts.includes(`export class ${d}bog_site_hero extends $.${d}bog_site_hero {`), true);
+            $mol_assert_equal(ts.includes(`;( ${d}mol_mem( ${d}bog_site_hero.prototype, "count" ) )`), true);
+            /** `title` and `plain` carry no sign, so the generated base does not memoize them either. */
+            $mol_assert_equal(ts.includes('"title"'), false);
+            $mol_assert_equal(ts.includes('"plain"'), false);
+        },
+        'a class without a body gets no subclass at all'($) {
+            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
+            $mol_assert_equal(file_of(module, '.view.ts'), 'namespace $.$$ {\n\n}\n');
+        },
+        /**
+         * The stylesheet is user text. A backtick or a `${` in it would tear a
+         * template literal apart, which is why both ends go through `JSON.stringify`.
+         */
+        'a stylesheet is embedded as data, not as a template literal'($) {
+            const css = '[bog_site_hero]{ content: "` ' + '${x}' + '" }';
+            const module = $.$bog_vmap_app_export_build([
+                { source: page },
+                { source: hero, css },
+            ]);
+            const out = file_of(module, '.view.css.ts');
+            /**
+             * The whole emitted call, spelled out. A backtick does survive into the
+             * file — it just sits inside a double quoted string, where it is one more
+             * character. Asserting its absence would be asserting the wrong thing; what
+             * matters is that neither it nor the `${` can terminate the literal.
+             */
+            $mol_assert_equal(out.includes(`\t${d}mol_style_attach( ${JSON.stringify(`${d}bog_site_hero`)}, ${JSON.stringify(css)} )`), true);
+        },
+        'index.html instantiates the root class'($) {
+            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }], `${d}bog_site_page`);
+            $mol_assert_equal(module.root, `${d}bog_site_page`);
+            $mol_assert_equal(file_of(module, 'index.html').includes(`mol_view_root="${d}bog_site_page"`), true);
+        },
+        'the module is exactly five files'($) {
+            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
+            $mol_assert_equal(module.path, 'bog/site');
+            $mol_assert_equal(module.name, 'site');
+            $mol_assert_like(module.files.map(file => file.name), [
+                'site.view.tree',
+                'site.view.ts',
+                'site.view.css.ts',
+                'site.meta.tree',
+                'index.html',
+            ]);
+        },
+        'a root outside the document is refused'($) {
+            $mol_assert_fail(() => $.$bog_vmap_app_export_build([{ source: page }, { source: hero }], `${d}bog_site_nope`), Error);
+        },
+        'a class declared twice is refused'($) {
+            $mol_assert_fail(() => $.$bog_vmap_app_export_build([{ source: hero }, { source: hero }]), Error);
+        },
+        /**
+         * The acceptance of the artboards: what an export carries of a page is the
+         * tree it shows and the flex properties it was set with, and not one number
+         * of the canvas.
+         *
+         * The placement of free parts cannot leak here by construction — it never
+         * enters the document, it rides `spots` to the scene and is turned into
+         * rules there — and this is the test that keeps that true from the far end,
+         * where the leak would be shipped rather than merely visible.
+         */
+        'an artboard exports as the tree it shows, with no coordinate in it'($) {
+            const board = [
+                `${d}bog_site_page ${d}mol_view`,
+                `	Head ${d}mol_view`,
+                `	Foot ${d}mol_view`,
+                `	Loose ${d}mol_view`,
+                `	Board ${d}mol_view`,
+                `		style *`,
+                `			width \\1280px`,
+                `			flexDirection \\column`,
+                `		sub /`,
+                `			<= Head`,
+                `			<= Foot`,
+                `	sub /`,
+                `		<= Board`,
+                `		<= Loose`,
+                ``,
+            ].join('\n');
+            const tree = file_of($.$bog_vmap_app_export_build([{ source: board }]), '.view.tree');
+            $mol_assert_equal(tree, board);
+            // Nothing of the desk: no coordinates, and no absolute positioning to
+            // apply them with.
+            const css = file_of($.$bog_vmap_app_export_build([{ source: board }]), '.view.css.ts');
+            $mol_assert_equal(/\bleft\b|\btop\b|position/.test(css), false);
+        },
+        /**
+         * Two artboards are two pages, and pages need an address. The router is a
+         * class of its own rather than an edit of the document, because the document
+         * goes out byte for byte the way the editor holds it.
+         */
+        'a document of two artboards exports with a router over them'($) {
+            const module = $.$bog_vmap_app_export_build([{ source: pages }, { source: hero }]);
+            const tree = file_of(module, '.view.tree');
+            const ts = file_of(module, '.view.ts');
+            // The document itself is untouched, and the router is one class after it.
+            $mol_assert_equal(tree, pages + hero + `${d}bog_site_app ${d}mol_view\n\tDoc ${d}bog_site_page\n`);
+            // The base of the router is declared above it, as every base has to be.
+            $mol_assert_equal(tree.indexOf(`${d}bog_site_page `) < tree.indexOf(`${d}bog_site_app `), true);
+            // Both pages are addressable, and the first one is what a bare address opens.
+            $mol_assert_equal(ts.includes(`switch( this.$.${d}mol_state_arg.value( 'page' ) ) {`), true);
+            $mol_assert_equal(ts.includes(`case "About": return [ doc.About() ]`), true);
+            $mol_assert_equal(ts.includes(`default: return [ doc.Home() ]`), true);
+            // A free part is not a page: it has no `sub` of its own, and the router
+            // never names it.
+            $mol_assert_equal(ts.includes('Loose'), false);
+            // The page is reached through the document, which is declared and never
+            // drawn, so nothing but the chosen page builds any DOM.
+            $mol_assert_equal(ts.includes('const doc = this.Doc()'), true);
+            $mol_assert_equal(module.root, `${d}bog_site_app`);
+            $mol_assert_equal(file_of(module, 'index.html').includes(`mol_view_root="${d}bog_site_app"`), true);
+        },
+        /**
+         * The router carries no coordinate either. Two artboards lie side by side on
+         * the canvas by numbers that ride `spots`, and a page that came out placed
+         * absolutely would be that desk shipped to a reader.
+         */
+        'a routed document ships no placement'($) {
+            const module = $.$bog_vmap_app_export_build([{ source: pages }, { source: hero }]);
+            $mol_assert_equal(/\bleft\b|\btop\b|position/.test(file_of(module, '.view.css.ts')), false);
+            $mol_assert_equal(/\bx\b|\by\b|spot/.test(file_of(module, '.view.ts')), false);
+        },
+        /**
+         * A router over one page would be a class that always answers the same thing.
+         * One page stays one page: the same five files and the document at the root.
+         */
+        'a document of one artboard gets no router'($) {
+            const one = [
+                `${d}bog_site_page ${d}mol_view`,
+                `	Head ${d}mol_view`,
+                `	Home ${d}mol_view sub / <= Head`,
+                `	sub / <= Home`,
+                ``,
+            ].join('\n');
+            const module = $.$bog_vmap_app_export_build([{ source: one }]);
+            $mol_assert_equal(file_of(module, '.view.tree'), one);
+            $mol_assert_equal(file_of(module, '.view.ts'), 'namespace $.$$ {\n\n}\n');
+            $mol_assert_equal(module.root, `${d}bog_site_page`);
+            $mol_assert_equal(module.files.length, 5);
+        },
+        /**
+         * Placement is not free for the router either: a name adding a segment to the
+         * longest common prefix would move the whole module into a folder that does
+         * not exist.
+         */
+        'the router leaves the module where the document put it'($) {
+            const module = $.$bog_vmap_app_export_build([{ source: pages }, { source: hero }]);
+            $mol_assert_equal(module.path, 'bog/site');
+            $mol_assert_equal(module.root, `${d}bog_site_app`);
+            $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`, `${d}bog_site_hero`, module.root]), 'bog/site');
+            // A document of a single class sits one segment deeper, and the router
+            // follows it there instead of pulling it back up.
+            const deep = $.$bog_vmap_app_export_build([{ source: pages }]);
+            $mol_assert_equal(deep.path, 'bog/site/page');
+            $mol_assert_equal(deep.root, `${d}bog_site_page_app`);
+            $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`, deep.root]), 'bog/site/page');
+        },
+        'a router named by the document takes the next free name'($) {
+            const module = $.$bog_vmap_app_export_build([
+                { source: pages },
+                { source: `${d}bog_site_app ${d}mol_view\n\ttitle \\Taken\n` },
+            ], `${d}bog_site_page`);
+            $mol_assert_equal(module.root, `${d}bog_site_app2`);
+            $mol_assert_equal(file_of(module, '.view.tree').includes(`${d}bog_site_app2 ${d}mol_view`), true);
+        },
+        /**
+         * The divergence of section 10, caught where the author can still do
+         * something about it. A body without types runs in the preview through
+         * `new Function` and fails the export, which compiles it with `strict`.
+         */
+        'a body that would not pass strict is named before the export'($) {
+            const notes = $.$bog_vmap_app_export_untyped('count( next ) {\n\treturn next ?? 7\n}\n');
+            $mol_assert_equal(notes.length, 1);
+            $mol_assert_equal(notes[0].method, 'count');
+            $mol_assert_equal(notes[0].param, 'next');
+            $mol_assert_equal(notes[0].line, 1);
+            const error = $mol_assert_fail(() => $.$bog_vmap_app_export_build([
+                { source: page },
+                { source: hero, js: 'title() {\n\treturn "hi"\n}\n\ncount( next ) {\n\treturn next ?? 7\n}\n' },
+            ]), Error);
+            // The refusal names the class, the line, the method and the parameter —
+            // everything needed to go and fix it.
+            $mol_assert_equal(error.message.includes(`${d}bog_site_hero`), true);
+            $mol_assert_equal(error.message.includes('строка 5'), true);
+            $mol_assert_equal(error.message.includes('count'), true);
+            $mol_assert_equal(error.message.includes('next'), true);
+        },
+        /**
+         * What the check must NOT say, or the editor would cry over working code and
+         * be turned off. A default value is a type, an arrow is typed by context, and
+         * a statement is not a method.
+         */
+        'a typed body passes untouched'($) {
+            const js = [
+                `@ ${d}mol_mem`,
+                'count( next?: number ) {',
+                '	return next ?? 7',
+                '}',
+                '',
+                'sum( rest = 0 ) {',
+                '	return this.items().map( item => item.value() ).reduce( ( a: number, b: number )=> a + b, rest )',
+                '}',
+                '',
+                'title() {',
+                '	if( this.count() ) return "many"',
+                '	for( const item of this.items() ) return "one"',
+                '	return ""',
+                '}',
+                '',
+            ].join('\n');
+            $mol_assert_like($.$bog_vmap_app_export_untyped(js), []);
+            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero, js }]);
+            $mol_assert_equal(file_of(module, '.view.ts').includes('count( next?: number )'), true);
+        },
+        /**
+         * The forms a naive search for «a parameter without a type» gets wrong, one
+         * assertion each.
+         *
+         * The two mistakes do not cost the same. A complaint refuses the export, so a
+         * false one locks the author inside the editor with no way out, while a missed
+         * one costs a build failure that explains itself. Every line below is
+         * therefore an assertion of SILENCE, and the ones that are genuine errors
+         * passed over — the destructuring, the object literal method — are silence on
+         * purpose and named as misses in the docs.
+         */
+        'the check keeps quiet on everything it is not sure of'($) {
+            const quiet = (js) => $mol_assert_like($.$bog_vmap_app_export_untyped(js), []);
+            // A destructured parameter is an error of the same kind, and naming it
+            // sensibly is beyond a search over text. Missed on purpose.
+            quiet('render( { head, foot } ) {\n\treturn [ head, foot ]\n}\n');
+            // An arrow written as a class property. Its parameter is untyped, and the
+            // line is not a method head at all, so it is left alone.
+            quiet('handler = ( event )=> event.type\n');
+            // A `this` parameter is not a parameter of the caller.
+            quiet('pick( this: $, id: string ) {\n\treturn id\n}\n');
+            // A generic method, typed through its own type parameter.
+            quiet('first< Item >( list: Item[] ) {\n\treturn list[0]\n}\n');
+            // An overload signature carries no body, so it is not a head. Missed even
+            // with an untyped parameter, and that is the safe direction.
+            quiet('plus( a ): number\nplus( a: number ) {\n\treturn a\n}\n');
+            // Optional and rest parameters, both typed.
+            quiet('join( a?: string, ... rest: string[] ) {\n\treturn [ a, ... rest ]\n}\n');
+            // A signature quoted inside a template literal is not a signature. This is
+            // the one that would fire on text the author never meant as code.
+            quiet('sample() {\n\treturn `\ncount( next ) {\n`\n}\n');
+            // The same inside comments, both kinds.
+            quiet('sample() {\n\treturn 1\n}\n// count( next ) {\n');
+            quiet('sample() {\n\treturn 1\n}\n/*\ncount( next ) {\n*/\n');
+            // A method of an object literal inside a body: indented, therefore a
+            // statement rather than a head. Missed on purpose.
+            quiet('config() {\n\treturn {\n\t\topen( next ) { return next },\n\t}\n}\n');
+            // A call at the start of a line inside a method reads exactly like a head
+            // to a search that ignores indentation.
+            quiet('run() {\n\tsuper( next )\n\tthis.compute( x )\n}\n');
+        },
+        /**
+         * The other half of the same rule: what the check IS sure of, it says. A body
+         * that reaches the export in any of these shapes does not build.
+         */
+        'the check does say the parameter it is sure about'($) {
+            const first = (js) => $.$bog_vmap_app_export_untyped(js)[0];
+            // A `this` parameter beside an untyped one: only the second is named.
+            const beside = $.$bog_vmap_app_export_untyped('pick( this: $, id ) {\n\treturn id\n}\n');
+            $mol_assert_equal(beside.length, 1);
+            $mol_assert_equal(beside[0].param, 'id');
+            // A generic whose value parameter carries no type of its own.
+            $mol_assert_equal(first('first< Item >( list ) {\n\treturn list[0]\n}\n').param, 'list');
+            // A rest parameter, named without its dots and suggested with them.
+            const rest = first('join( ... parts ) {\n\treturn parts\n}\n');
+            $mol_assert_equal(rest.param, 'parts');
+            $mol_assert_equal(rest.text.includes('... parts: number[]'), true);
+            // An optional parameter without a type is untyped all the same.
+            $mol_assert_equal(first('load( id? ) {\n\treturn id\n}\n').param, 'id');
+            // A setter and an async method are heads like any other.
+            $mol_assert_equal(first('set title( next ) {\n\treturn next\n}\n').method, 'title');
+            $mol_assert_equal(first('async load( id ) {\n\treturn id\n}\n').method, 'load');
+            // A head split over several lines is still one head, reported at the line
+            // the author reads as its first.
+            const split = first('sum(\n\ta: number,\n\tb,\n) {\n\treturn a + b\n}\n');
+            $mol_assert_equal(split.param, 'b');
+            $mol_assert_equal(split.line, 1);
+            // A body written with an indent of its own is checked at that indent, or
+            // the check would silently do nothing for a whole class of editors.
+            const inset = first('\tcount( next ) {\n\t\treturn next\n\t}\n');
+            $mol_assert_equal(inset.param, 'next');
+            // The message is an instruction: what to write, spelled out.
+            $mol_assert_equal(first('count( next ) {\n\treturn next\n}\n').text.includes('count( next?: number )'), true);
+        },
+        'a cycle of bases is refused rather than hung'($) {
+            $mol_assert_fail(() => $.$bog_vmap_app_export_build([
+                { source: `${d}bog_site_a ${d}bog_site_b\n\tx \\1\n` },
+                { source: `${d}bog_site_b ${d}bog_site_a\n\ty \\2\n` },
+            ]), Error);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
      * Tests of the document schema.
      *
      * Everything runs on bare lands made in place, with no master and no network.
@@ -48435,6 +49382,138 @@ var $;
             $mol_assert_equal(app.doc_wires()[0].to, 'Button_minor');
             $mol_assert_equal(app.node().prop_names().includes('String'), false);
         },
+        /**
+         * The button hands over the module the export builds, folder included.
+         *
+         * Names spelled out rather than compared against a second call of the same
+         * builder: a comparison of the export with itself would pass on any wiring at
+         * all, including one where the button downloads the wrong document.
+         */
+        'the download offers the module the export builds'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            const module = app.export_state().module;
+            $mol_assert_equal(app.export_ready(), true);
+            $mol_assert_equal(module.path, 'bog/vmap/app/page');
+            $mol_assert_equal(module.name, 'page');
+            $mol_assert_equal(module.files.map(file => file.name).join(' '), 'page.view.tree page.view.ts page.view.css.ts page.meta.tree index.html');
+            // The declaration downloaded is the document, not a rendering of it.
+            $mol_assert_equal(module.files[0].text, app.doc_source());
+            // And the folder is on the button itself, where it is read without
+            // hovering: section 10, the folder is not free and the author chose it.
+            $mol_assert_equal(app.export_title(), 'Скачать bog/vmap/app/page');
+            $mol_assert_equal(app.export_file(), 'page.zip');
+            $mol_assert_ok(app.export_hint().includes('npx mam bog/vmap/app/page'));
+        },
+        /**
+         * The archive carries the module folder inside, so unpacking at the root of a
+         * checkout puts the files where mam resolves the class names to.
+         */
+        'the archive is the module in its folder'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            const bytes = $.$bog_vmap_app_export_archive(app.export_state().module);
+            const text = new TextDecoder().decode(bytes);
+            $mol_assert_ok(text.includes('bog/vmap/app/page/page.view.tree'));
+            $mol_assert_ok(text.includes('bog/vmap/app/page/index.html'));
+            // Stored, not compressed, so the sources travel as themselves.
+            $mol_assert_ok(text.includes(`${d}mol_button_minor`));
+        },
+        /** Two artboards make a site of two pages, and the download carries its router. */
+        'a document of two artboards downloads with a router'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.doc_source([
+                `${d}bog_vmap_app_page ${d}mol_view`,
+                `	Home ${d}mol_view sub /`,
+                `	About ${d}mol_view sub /`,
+                `	sub /`,
+                `		<= Home`,
+                `		<= About`,
+                ``,
+            ].join('\n'));
+            const module = app.export_state().module;
+            $mol_assert_equal(module.root, `${d}bog_vmap_app_page_app`);
+            $mol_assert_equal(module.path, 'bog/vmap/app/page');
+            const tree = module.files[0].text;
+            $mol_assert_ok(tree.includes(`${d}bog_vmap_app_page_app ${d}mol_view`));
+            // The address key is the standard one, so a link between the pages is an
+            // ordinary link written in the document itself.
+            $mol_assert_ok(module.files[1].text.includes(`${d}mol_state_arg`));
+            $mol_assert_ok(module.files[4].text.includes(`${d}bog_vmap_app_page_app`));
+        },
+        /**
+         * A body that works in the preview and would not compile refuses the whole
+         * download, and the reason stands on the screen in words instead of in a
+         * console. Without this the person meets it as a build failure on a machine
+         * the editor never sees.
+         */
+        'an untyped body refuses the download and says why'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            app.root_js('greeting( who ) {\n\treturn who\n}\n');
+            $mol_assert_equal(app.export_ready(), false);
+            $mol_assert_equal(app.export_title(), 'Скачать');
+            const notes = app.export_notes();
+            $mol_assert_equal(notes.length, 2);
+            $mol_assert_ok(notes[1].includes(`${d}bog_vmap_app_page`));
+            $mol_assert_ok(notes[1].includes('строка 1'));
+            $mol_assert_ok(notes[1].includes('greeting'));
+            $mol_assert_ok(notes[1].includes('who'));
+            // The rows are on the screen, and they are the sentences themselves.
+            $mol_assert_equal(app.export_rows().length, 2);
+            $mol_assert_equal(app.export_text(1), notes[1]);
+            $mol_assert_ok(app.body().includes(app.Export_note()));
+            // And nothing can be taken out of the editor while it is refused.
+            $mol_assert_fail(() => app.export_blob(), Error);
+            // The strip goes as soon as the body is typed, and the button comes back.
+            app.root_js('greeting( who: string ) {\n\treturn who\n}\n');
+            $mol_assert_equal(app.export_ready(), true);
+            $mol_assert_equal(app.export_notes().length, 0);
+            $mol_assert_equal(app.body().includes(app.Export_note()), false);
+        },
+        /**
+         * The button must not make the editor wait for the document.
+         *
+         * A document opened by a link lives in a land that suspends every read until
+         * it syncs, and the toolbar is drawn from the same cell the button reads. A
+         * suspension passed on from here suspends the whole editor, frame included,
+         * and the sandbox never comes up — measured, the standing test of that
+         * invariant went red the moment this was wired to the toolbar with a rethrow.
+         */
+        'a document still on its way holds nothing up'($) {
+            const waiting = new Promise(() => { });
+            const app = $bog_vmap_app.make({
+                $,
+                store: () => $bog_vmap_app_store.make({
+                    $,
+                    doc_land_config: () => null,
+                    source: () => { throw waiting; },
+                    spots: () => { throw waiting; },
+                    pack: () => { throw waiting; },
+                }),
+            });
+            // Nothing to download yet, and nothing to complain about either: a wait is
+            // not a refusal, so no strip stands on the screen saying it is.
+            $mol_assert_equal(app.export_ready(), false);
+            $mol_assert_equal(app.export_notes().length, 0);
+            $mol_assert_equal(app.body().includes(app.Export_note()), false);
+            $mol_assert_equal(app.export_hint(), 'Документ ещё загружается');
+        },
+        /**
+         * An untouched editor downloads too, and downloads a module that builds: an
+         * empty page is a legal document, not a state to be guarded against.
+         */
+        'an untouched document downloads as the empty page'($) {
+            const app = $bog_vmap_app.make({ $ });
+            const module = app.export_state().module;
+            $mol_assert_equal(app.export_ready(), true);
+            $mol_assert_equal(module.files.length, 5);
+            $mol_assert_equal(module.root, `${d}bog_vmap_app_page`);
+            $mol_assert_equal(module.files[0].text, `${d}bog_vmap_app_page ${d}mol_view sub /\n`);
+            // No hand written body anywhere, so no subclass and no rule is emitted.
+            $mol_assert_equal(module.files[1].text.includes('export class'), false);
+            $mol_assert_equal(module.files[2].text.includes('style_attach'), false);
+        },
     });
 })($ || ($ = {}));
 
@@ -49289,403 +50368,6 @@ var $;
         };
     }
     $_1.$bog_vmap_app_flow_stage = $bog_vmap_app_flow_stage;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
-     * Tests of the export.
-     *
-     * The real acceptance is elsewhere and cannot be a unit test: the output has to
-     * be dropped into `bog/` and built by mam. `bog/vmap/demo/` is that check,
-     * generated by this code and kept as a standing one. What is here are the
-     * decisions that would otherwise fail silently — placement, declaration order
-     * and decorators — plus the refusals.
-     *
-     * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-     * a regexp over sources, literals included, so a fixture class name spelled
-     * literally would be resolved as a module path.
-     */
-    const d = '$';
-    const page = [
-        `${d}bog_site_page ${d}mol_view`,
-        `	Hero ${d}bog_site_hero`,
-        `	greeting = Hero title`,
-        `	sub / <= Hero`,
-        ``,
-    ].join('\n');
-    const hero = `${d}bog_site_hero ${d}mol_view\n\ttitle \\Hi\n\tcount? 0\n\tplain \\x\n`;
-    /**
-     * Two artboards and one free part beside them: `Home` and `About` carry a `sub`
-     * of their own and so are pages, `Loose` carries none and so is not.
-     */
-    const pages = [
-        `${d}bog_site_page ${d}mol_view`,
-        `	Head ${d}mol_view`,
-        `	Loose ${d}mol_view`,
-        `	Home ${d}mol_view sub / <= Head`,
-        `	About ${d}mol_view sub /`,
-        `	sub /`,
-        `		<= Home`,
-        `		<= About`,
-        `		<= Loose`,
-        ``,
-    ].join('\n');
-    function file_of(module, suffix) {
-        return module.files.find(file => file.name.endsWith(suffix)).text;
-    }
-    $mol_test({
-        /**
-         * Placement is not free. Mam turns a class name into a path by replacing every
-         * underscore with a slash, so a module put anywhere else fails to build while
-         * looking entirely correct — the one failure this whole task exists to rule out.
-         */
-        'module path comes from the class names'($) {
-            $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`, `${d}bog_site_hero`]), 'bog/site');
-            $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`]), 'bog/site/page');
-            $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`, `${d}bog_site_page_hero`]), 'bog/site/page');
-        },
-        'classes of different packs cannot be one module'($) {
-            $mol_assert_fail(() => $.$bog_vmap_app_export_path([`${d}bog_site_page`, `${d}hyoo_other_page`]), Error);
-            $mol_assert_fail(() => $.$bog_vmap_app_export_path([`${d}bog_one`, `${d}bog_two`]), Error);
-            $mol_assert_fail(() => $.$bog_vmap_app_export_path([]), Error);
-        },
-        /**
-         * `class $A extends $[ '$B' ]` takes its base at definition time and the
-         * generator emits declarations in the order it got them, so an heir above its
-         * base inherits `undefined`. The document is written heir first here on
-         * purpose.
-         */
-        'a base is declared before its heir'($) {
-            const own = `${d}bog_site_hero_big ${d}bog_site_hero\n\ttitle \\Big\n`;
-            const module = $.$bog_vmap_app_export_build([
-                { source: own },
-                { source: page },
-                { source: hero },
-            ], `${d}bog_site_page`);
-            const tree = file_of(module, '.view.tree');
-            $mol_assert_equal(tree.indexOf(`${d}bog_site_hero `) < tree.indexOf(`${d}bog_site_hero_big `), true);
-        },
-        'the emitted declaration parses back into the same classes'($) {
-            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
-            const back = $.$mol_view_tree2_normalize($.$mol_tree2_from_string(file_of(module, '.view.tree'), 'export'));
-            /**
-             * Input order, because neither is the base of the other. A sub-view
-             * reference does NOT constrain the order: the generator writes a
-             * `new this.$[ name ]()` resolved at call time, and only the `extends`
-             * clause is evaluated when the class is defined.
-             */
-            $mol_assert_like(back.kids.map(cl => cl.type), [`${d}bog_site_page`, `${d}bog_site_hero`]);
-        },
-        /**
-         * A property memoized in the preview has to be memoized in the export, or the
-         * two drift and nothing says so: an override without a decorator simply has no
-         * atom, so it returns a fresh value while the DOM keeps the old one.
-         */
-        'a hand written body carries its decorators'($) {
-            const module = $.$bog_vmap_app_export_build([
-                { source: page },
-                { source: hero, js: 'count( next?: number ) {\n\treturn next ?? 7\n}\n' },
-            ]);
-            const ts = file_of(module, '.view.ts');
-            $mol_assert_equal(ts.includes(`export class ${d}bog_site_hero extends $.${d}bog_site_hero {`), true);
-            $mol_assert_equal(ts.includes(`;( ${d}mol_mem( ${d}bog_site_hero.prototype, "count" ) )`), true);
-            /** `title` and `plain` carry no sign, so the generated base does not memoize them either. */
-            $mol_assert_equal(ts.includes('"title"'), false);
-            $mol_assert_equal(ts.includes('"plain"'), false);
-        },
-        'a class without a body gets no subclass at all'($) {
-            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
-            $mol_assert_equal(file_of(module, '.view.ts'), 'namespace $.$$ {\n\n}\n');
-        },
-        /**
-         * The stylesheet is user text. A backtick or a `${` in it would tear a
-         * template literal apart, which is why both ends go through `JSON.stringify`.
-         */
-        'a stylesheet is embedded as data, not as a template literal'($) {
-            const css = '[bog_site_hero]{ content: "` ' + '${x}' + '" }';
-            const module = $.$bog_vmap_app_export_build([
-                { source: page },
-                { source: hero, css },
-            ]);
-            const out = file_of(module, '.view.css.ts');
-            /**
-             * The whole emitted call, spelled out. A backtick does survive into the
-             * file — it just sits inside a double quoted string, where it is one more
-             * character. Asserting its absence would be asserting the wrong thing; what
-             * matters is that neither it nor the `${` can terminate the literal.
-             */
-            $mol_assert_equal(out.includes(`\t${d}mol_style_attach( ${JSON.stringify(`${d}bog_site_hero`)}, ${JSON.stringify(css)} )`), true);
-        },
-        'index.html instantiates the root class'($) {
-            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }], `${d}bog_site_page`);
-            $mol_assert_equal(module.root, `${d}bog_site_page`);
-            $mol_assert_equal(file_of(module, 'index.html').includes(`mol_view_root="${d}bog_site_page"`), true);
-        },
-        'the module is exactly five files'($) {
-            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
-            $mol_assert_equal(module.path, 'bog/site');
-            $mol_assert_equal(module.name, 'site');
-            $mol_assert_like(module.files.map(file => file.name), [
-                'site.view.tree',
-                'site.view.ts',
-                'site.view.css.ts',
-                'site.meta.tree',
-                'index.html',
-            ]);
-        },
-        'a root outside the document is refused'($) {
-            $mol_assert_fail(() => $.$bog_vmap_app_export_build([{ source: page }, { source: hero }], `${d}bog_site_nope`), Error);
-        },
-        'a class declared twice is refused'($) {
-            $mol_assert_fail(() => $.$bog_vmap_app_export_build([{ source: hero }, { source: hero }]), Error);
-        },
-        /**
-         * The acceptance of the artboards: what an export carries of a page is the
-         * tree it shows and the flex properties it was set with, and not one number
-         * of the canvas.
-         *
-         * The placement of free parts cannot leak here by construction — it never
-         * enters the document, it rides `spots` to the scene and is turned into
-         * rules there — and this is the test that keeps that true from the far end,
-         * where the leak would be shipped rather than merely visible.
-         */
-        'an artboard exports as the tree it shows, with no coordinate in it'($) {
-            const board = [
-                `${d}bog_site_page ${d}mol_view`,
-                `	Head ${d}mol_view`,
-                `	Foot ${d}mol_view`,
-                `	Loose ${d}mol_view`,
-                `	Board ${d}mol_view`,
-                `		style *`,
-                `			width \\1280px`,
-                `			flexDirection \\column`,
-                `		sub /`,
-                `			<= Head`,
-                `			<= Foot`,
-                `	sub /`,
-                `		<= Board`,
-                `		<= Loose`,
-                ``,
-            ].join('\n');
-            const tree = file_of($.$bog_vmap_app_export_build([{ source: board }]), '.view.tree');
-            $mol_assert_equal(tree, board);
-            // Nothing of the desk: no coordinates, and no absolute positioning to
-            // apply them with.
-            const css = file_of($.$bog_vmap_app_export_build([{ source: board }]), '.view.css.ts');
-            $mol_assert_equal(/\bleft\b|\btop\b|position/.test(css), false);
-        },
-        /**
-         * Two artboards are two pages, and pages need an address. The router is a
-         * class of its own rather than an edit of the document, because the document
-         * goes out byte for byte the way the editor holds it.
-         */
-        'a document of two artboards exports with a router over them'($) {
-            const module = $.$bog_vmap_app_export_build([{ source: pages }, { source: hero }]);
-            const tree = file_of(module, '.view.tree');
-            const ts = file_of(module, '.view.ts');
-            // The document itself is untouched, and the router is one class after it.
-            $mol_assert_equal(tree, pages + hero + `${d}bog_site_app ${d}mol_view\n\tDoc ${d}bog_site_page\n`);
-            // The base of the router is declared above it, as every base has to be.
-            $mol_assert_equal(tree.indexOf(`${d}bog_site_page `) < tree.indexOf(`${d}bog_site_app `), true);
-            // Both pages are addressable, and the first one is what a bare address opens.
-            $mol_assert_equal(ts.includes(`switch( this.$.${d}mol_state_arg.value( 'page' ) ) {`), true);
-            $mol_assert_equal(ts.includes(`case "About": return [ doc.About() ]`), true);
-            $mol_assert_equal(ts.includes(`default: return [ doc.Home() ]`), true);
-            // A free part is not a page: it has no `sub` of its own, and the router
-            // never names it.
-            $mol_assert_equal(ts.includes('Loose'), false);
-            // The page is reached through the document, which is declared and never
-            // drawn, so nothing but the chosen page builds any DOM.
-            $mol_assert_equal(ts.includes('const doc = this.Doc()'), true);
-            $mol_assert_equal(module.root, `${d}bog_site_app`);
-            $mol_assert_equal(file_of(module, 'index.html').includes(`mol_view_root="${d}bog_site_app"`), true);
-        },
-        /**
-         * The router carries no coordinate either. Two artboards lie side by side on
-         * the canvas by numbers that ride `spots`, and a page that came out placed
-         * absolutely would be that desk shipped to a reader.
-         */
-        'a routed document ships no placement'($) {
-            const module = $.$bog_vmap_app_export_build([{ source: pages }, { source: hero }]);
-            $mol_assert_equal(/\bleft\b|\btop\b|position/.test(file_of(module, '.view.css.ts')), false);
-            $mol_assert_equal(/\bx\b|\by\b|spot/.test(file_of(module, '.view.ts')), false);
-        },
-        /**
-         * A router over one page would be a class that always answers the same thing.
-         * One page stays one page: the same five files and the document at the root.
-         */
-        'a document of one artboard gets no router'($) {
-            const one = [
-                `${d}bog_site_page ${d}mol_view`,
-                `	Head ${d}mol_view`,
-                `	Home ${d}mol_view sub / <= Head`,
-                `	sub / <= Home`,
-                ``,
-            ].join('\n');
-            const module = $.$bog_vmap_app_export_build([{ source: one }]);
-            $mol_assert_equal(file_of(module, '.view.tree'), one);
-            $mol_assert_equal(file_of(module, '.view.ts'), 'namespace $.$$ {\n\n}\n');
-            $mol_assert_equal(module.root, `${d}bog_site_page`);
-            $mol_assert_equal(module.files.length, 5);
-        },
-        /**
-         * Placement is not free for the router either: a name adding a segment to the
-         * longest common prefix would move the whole module into a folder that does
-         * not exist.
-         */
-        'the router leaves the module where the document put it'($) {
-            const module = $.$bog_vmap_app_export_build([{ source: pages }, { source: hero }]);
-            $mol_assert_equal(module.path, 'bog/site');
-            $mol_assert_equal(module.root, `${d}bog_site_app`);
-            $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`, `${d}bog_site_hero`, module.root]), 'bog/site');
-            // A document of a single class sits one segment deeper, and the router
-            // follows it there instead of pulling it back up.
-            const deep = $.$bog_vmap_app_export_build([{ source: pages }]);
-            $mol_assert_equal(deep.path, 'bog/site/page');
-            $mol_assert_equal(deep.root, `${d}bog_site_page_app`);
-            $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`, deep.root]), 'bog/site/page');
-        },
-        'a router named by the document takes the next free name'($) {
-            const module = $.$bog_vmap_app_export_build([
-                { source: pages },
-                { source: `${d}bog_site_app ${d}mol_view\n\ttitle \\Taken\n` },
-            ], `${d}bog_site_page`);
-            $mol_assert_equal(module.root, `${d}bog_site_app2`);
-            $mol_assert_equal(file_of(module, '.view.tree').includes(`${d}bog_site_app2 ${d}mol_view`), true);
-        },
-        /**
-         * The divergence of section 10, caught where the author can still do
-         * something about it. A body without types runs in the preview through
-         * `new Function` and fails the export, which compiles it with `strict`.
-         */
-        'a body that would not pass strict is named before the export'($) {
-            const notes = $.$bog_vmap_app_export_untyped('count( next ) {\n\treturn next ?? 7\n}\n');
-            $mol_assert_equal(notes.length, 1);
-            $mol_assert_equal(notes[0].method, 'count');
-            $mol_assert_equal(notes[0].param, 'next');
-            $mol_assert_equal(notes[0].line, 1);
-            const error = $mol_assert_fail(() => $.$bog_vmap_app_export_build([
-                { source: page },
-                { source: hero, js: 'title() {\n\treturn "hi"\n}\n\ncount( next ) {\n\treturn next ?? 7\n}\n' },
-            ]), Error);
-            // The refusal names the class, the line, the method and the parameter —
-            // everything needed to go and fix it.
-            $mol_assert_equal(error.message.includes(`${d}bog_site_hero`), true);
-            $mol_assert_equal(error.message.includes('строка 5'), true);
-            $mol_assert_equal(error.message.includes('count'), true);
-            $mol_assert_equal(error.message.includes('next'), true);
-        },
-        /**
-         * What the check must NOT say, or the editor would cry over working code and
-         * be turned off. A default value is a type, an arrow is typed by context, and
-         * a statement is not a method.
-         */
-        'a typed body passes untouched'($) {
-            const js = [
-                `@ ${d}mol_mem`,
-                'count( next?: number ) {',
-                '	return next ?? 7',
-                '}',
-                '',
-                'sum( rest = 0 ) {',
-                '	return this.items().map( item => item.value() ).reduce( ( a: number, b: number )=> a + b, rest )',
-                '}',
-                '',
-                'title() {',
-                '	if( this.count() ) return "many"',
-                '	for( const item of this.items() ) return "one"',
-                '	return ""',
-                '}',
-                '',
-            ].join('\n');
-            $mol_assert_like($.$bog_vmap_app_export_untyped(js), []);
-            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero, js }]);
-            $mol_assert_equal(file_of(module, '.view.ts').includes('count( next?: number )'), true);
-        },
-        /**
-         * The forms a naive search for «a parameter without a type» gets wrong, one
-         * assertion each.
-         *
-         * The two mistakes do not cost the same. A complaint refuses the export, so a
-         * false one locks the author inside the editor with no way out, while a missed
-         * one costs a build failure that explains itself. Every line below is
-         * therefore an assertion of SILENCE, and the ones that are genuine errors
-         * passed over — the destructuring, the object literal method — are silence on
-         * purpose and named as misses in the docs.
-         */
-        'the check keeps quiet on everything it is not sure of'($) {
-            const quiet = (js) => $mol_assert_like($.$bog_vmap_app_export_untyped(js), []);
-            // A destructured parameter is an error of the same kind, and naming it
-            // sensibly is beyond a search over text. Missed on purpose.
-            quiet('render( { head, foot } ) {\n\treturn [ head, foot ]\n}\n');
-            // An arrow written as a class property. Its parameter is untyped, and the
-            // line is not a method head at all, so it is left alone.
-            quiet('handler = ( event )=> event.type\n');
-            // A `this` parameter is not a parameter of the caller.
-            quiet('pick( this: $, id: string ) {\n\treturn id\n}\n');
-            // A generic method, typed through its own type parameter.
-            quiet('first< Item >( list: Item[] ) {\n\treturn list[0]\n}\n');
-            // An overload signature carries no body, so it is not a head. Missed even
-            // with an untyped parameter, and that is the safe direction.
-            quiet('plus( a ): number\nplus( a: number ) {\n\treturn a\n}\n');
-            // Optional and rest parameters, both typed.
-            quiet('join( a?: string, ... rest: string[] ) {\n\treturn [ a, ... rest ]\n}\n');
-            // A signature quoted inside a template literal is not a signature. This is
-            // the one that would fire on text the author never meant as code.
-            quiet('sample() {\n\treturn `\ncount( next ) {\n`\n}\n');
-            // The same inside comments, both kinds.
-            quiet('sample() {\n\treturn 1\n}\n// count( next ) {\n');
-            quiet('sample() {\n\treturn 1\n}\n/*\ncount( next ) {\n*/\n');
-            // A method of an object literal inside a body: indented, therefore a
-            // statement rather than a head. Missed on purpose.
-            quiet('config() {\n\treturn {\n\t\topen( next ) { return next },\n\t}\n}\n');
-            // A call at the start of a line inside a method reads exactly like a head
-            // to a search that ignores indentation.
-            quiet('run() {\n\tsuper( next )\n\tthis.compute( x )\n}\n');
-        },
-        /**
-         * The other half of the same rule: what the check IS sure of, it says. A body
-         * that reaches the export in any of these shapes does not build.
-         */
-        'the check does say the parameter it is sure about'($) {
-            const first = (js) => $.$bog_vmap_app_export_untyped(js)[0];
-            // A `this` parameter beside an untyped one: only the second is named.
-            const beside = $.$bog_vmap_app_export_untyped('pick( this: $, id ) {\n\treturn id\n}\n');
-            $mol_assert_equal(beside.length, 1);
-            $mol_assert_equal(beside[0].param, 'id');
-            // A generic whose value parameter carries no type of its own.
-            $mol_assert_equal(first('first< Item >( list ) {\n\treturn list[0]\n}\n').param, 'list');
-            // A rest parameter, named without its dots and suggested with them.
-            const rest = first('join( ... parts ) {\n\treturn parts\n}\n');
-            $mol_assert_equal(rest.param, 'parts');
-            $mol_assert_equal(rest.text.includes('... parts: number[]'), true);
-            // An optional parameter without a type is untyped all the same.
-            $mol_assert_equal(first('load( id? ) {\n\treturn id\n}\n').param, 'id');
-            // A setter and an async method are heads like any other.
-            $mol_assert_equal(first('set title( next ) {\n\treturn next\n}\n').method, 'title');
-            $mol_assert_equal(first('async load( id ) {\n\treturn id\n}\n').method, 'load');
-            // A head split over several lines is still one head, reported at the line
-            // the author reads as its first.
-            const split = first('sum(\n\ta: number,\n\tb,\n) {\n\treturn a + b\n}\n');
-            $mol_assert_equal(split.param, 'b');
-            $mol_assert_equal(split.line, 1);
-            // A body written with an indent of its own is checked at that indent, or
-            // the check would silently do nothing for a whole class of editors.
-            const inset = first('\tcount( next ) {\n\t\treturn next\n\t}\n');
-            $mol_assert_equal(inset.param, 'next');
-            // The message is an instruction: what to write, spelled out.
-            $mol_assert_equal(first('count( next ) {\n\treturn next\n}\n').text.includes('count( next?: number )'), true);
-        },
-        'a cycle of bases is refused rather than hung'($) {
-            $mol_assert_fail(() => $.$bog_vmap_app_export_build([
-                { source: `${d}bog_site_a ${d}bog_site_b\n\tx \\1\n` },
-                { source: `${d}bog_site_b ${d}bog_site_a\n\ty \\2\n` },
-            ]), Error);
-        },
-    });
 })($ || ($ = {}));
 
 ;

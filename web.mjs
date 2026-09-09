@@ -37273,6 +37273,165 @@ var $;
 var $;
 (function ($) {
     /**
+     * The module as one archive, so that a browser can hand it over in a single
+     * gesture. Nothing in mam packs files — measured across `mol` and `hyoo`, there
+     * is no archiver of any kind — so the format is written here, in the stored
+     * flavour that needs no compressor at all.
+     *
+     * Stored and not deflated on purpose: an export is five text files of a few
+     * kilobytes, and compressing them would buy nothing while costing either a
+     * library in the bundle or a dependency on `CompressionStream`, which is async
+     * and would drag the whole path into a fiber.
+     *
+     * @see ../../ARCHITECTURE.md section 10
+     */
+    /** Table of the CRC32 polynomial, built once. Zip stores a checksum per entry. */
+    const crc_table = (() => {
+        const table = new Uint32Array(256);
+        for (let i = 0; i < 256; ++i) {
+            let value = i;
+            for (let bit = 0; bit < 8; ++bit) {
+                value = value & 1 ? 0xEDB88320 ^ (value >>> 1) : value >>> 1;
+            }
+            table[i] = value >>> 0;
+        }
+        return table;
+    })();
+    /** Checksum zip keeps beside every entry, and the one every reader verifies. */
+    function $bog_vmap_app_export_crc32(bytes) {
+        let crc = 0xFFFFFFFF;
+        for (const byte of bytes)
+            crc = crc_table[(crc ^ byte) & 0xFF] ^ (crc >>> 8);
+        return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+    $.$bog_vmap_app_export_crc32 = $bog_vmap_app_export_crc32;
+    /** Little endian integer of a fixed width, which is how zip writes every number. */
+    function number_bytes(value, size) {
+        const out = new Uint8Array(size);
+        for (let i = 0; i < size; ++i)
+            out[i] = (value >>> (8 * i)) & 0xFF;
+        return out;
+    }
+    /**
+     * A date every reader accepts.
+     *
+     * The real time of the export is not written: a zero date shows up as
+     * `00-00-1980` and makes some unpackers complain, and the wall clock would make
+     * the same document produce a different archive every time, which is a thing no
+     * test can pin down. This is the first representable moment instead.
+     */
+    const dos_date = 0x0021;
+    const dos_time = 0;
+    /** Flag bit 11: names are UTF-8, which is what keeps a non-ascii path readable. */
+    const flag_utf8 = 0x0800;
+    /**
+     * Files as one zip archive, in the stored method.
+     *
+     * Byte for byte deterministic: same files in, same bytes out, so the whole
+     * format is checkable by a test instead of by opening it. Directories are not
+     * written as entries of their own — a name with slashes in it creates them, and
+     * every unpacker does that.
+     */
+    function $bog_vmap_app_export_zip(files) {
+        const encoder = new TextEncoder();
+        const chunks = [];
+        const directory = [];
+        let offset = 0;
+        for (const file of files) {
+            const name = encoder.encode(file.name);
+            const body = encoder.encode(file.text);
+            const crc = $bog_vmap_app_export_crc32(body);
+            const local = [
+                number_bytes(0x04034b50, 4),
+                number_bytes(20, 2),
+                number_bytes(flag_utf8, 2),
+                number_bytes(0, 2),
+                number_bytes(dos_time, 2),
+                number_bytes(dos_date, 2),
+                number_bytes(crc, 4),
+                number_bytes(body.length, 4),
+                number_bytes(body.length, 4),
+                number_bytes(name.length, 2),
+                number_bytes(0, 2),
+                name,
+            ];
+            for (const part of local)
+                chunks.push(part);
+            chunks.push(body);
+            directory.push([
+                number_bytes(0x02014b50, 4),
+                number_bytes(20, 2),
+                number_bytes(20, 2),
+                number_bytes(flag_utf8, 2),
+                number_bytes(0, 2),
+                number_bytes(dos_time, 2),
+                number_bytes(dos_date, 2),
+                number_bytes(crc, 4),
+                number_bytes(body.length, 4),
+                number_bytes(body.length, 4),
+                number_bytes(name.length, 2),
+                number_bytes(0, 2),
+                number_bytes(0, 2),
+                number_bytes(0, 2),
+                number_bytes(0, 2),
+                number_bytes(0, 4),
+                number_bytes(offset, 4),
+                name,
+            ]);
+            offset += local.reduce((sum, part) => sum + part.length, 0) + body.length;
+        }
+        const directory_at = offset;
+        let directory_size = 0;
+        for (const record of directory) {
+            for (const part of record) {
+                chunks.push(part);
+                directory_size += part.length;
+            }
+        }
+        const end = [
+            number_bytes(0x06054b50, 4),
+            number_bytes(0, 2),
+            number_bytes(0, 2),
+            number_bytes(directory.length, 2),
+            number_bytes(directory.length, 2),
+            number_bytes(directory_size, 4),
+            number_bytes(directory_at, 4),
+            number_bytes(0, 2),
+        ];
+        for (const part of end)
+            chunks.push(part);
+        const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+        const out = new Uint8Array(total);
+        let at = 0;
+        for (const chunk of chunks) {
+            out.set(chunk, at);
+            at += chunk.length;
+        }
+        return out;
+    }
+    $.$bog_vmap_app_export_zip = $bog_vmap_app_export_zip;
+    /**
+     * The built module as an archive, with its folder inside.
+     *
+     * Every entry carries the whole module path and not a bare file name, so that
+     * unpacking at the root of a mam checkout puts the module where its own class
+     * names oblige it to be — section 10, where a module in the wrong folder builds
+     * into `Root package not found` while looking entirely correct.
+     */
+    function $bog_vmap_app_export_archive(module) {
+        return this.$bog_vmap_app_export_zip(module.files.map(file => ({
+            name: `${module.path}/${file.name}`,
+            text: file.text,
+        })));
+    }
+    $.$bog_vmap_app_export_archive = $bog_vmap_app_export_archive;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
      * Export of a document as a real MAM module.
      *
      * Not an abstract «project»: the output is a folder that drops into `bog/` and
@@ -40794,6 +40953,31 @@ var $;
 			(obj.classes) = () => ([(this.doc_root())]);
 			return obj;
 		}
+		export_title(){
+			return "";
+		}
+		export_hint(){
+			return "";
+		}
+		export_ready(){
+			return false;
+		}
+		export_blob(){
+			const obj = new this.$.$mol_blob();
+			return obj;
+		}
+		export_file(){
+			return "";
+		}
+		Download(){
+			const obj = new this.$.$mol_button_download();
+			(obj.title) = () => ((this.export_title()));
+			(obj.hint) = () => ((this.export_hint()));
+			(obj.enabled) = () => ((this.export_ready()));
+			(obj.blob) = () => ((this.export_blob()));
+			(obj.file_name) = () => ((this.export_file()));
+			return obj;
+		}
 		status(){
 			return "";
 		}
@@ -40803,6 +40987,12 @@ var $;
 			return obj;
 		}
 		error(){
+			return "";
+		}
+		export_rows(){
+			return [];
+		}
+		export_text(id){
 			return "";
 		}
 		stall_note(){
@@ -40984,6 +41174,7 @@ var $;
 				(this.Board()), 
 				(this.Delete()), 
 				(this.Publish()), 
+				(this.Download()), 
 				(this.Status())
 			]);
 			return obj;
@@ -40991,6 +41182,16 @@ var $;
 		Alarm(){
 			const obj = new this.$.$mol_view();
 			(obj.sub) = () => ([(this.error())]);
+			return obj;
+		}
+		Export_note(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.export_rows()));
+			return obj;
+		}
+		Export_row(id){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.export_text(id))]);
 			return obj;
 		}
 		Stall(){
@@ -41091,6 +41292,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Delete"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_source"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Publish"));
+	($mol_mem(($.$bog_vmap_app.prototype), "export_blob"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Download"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Status"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Stall_note"));
 	($mol_mem(($.$bog_vmap_app.prototype), "scene_restart"));
@@ -41112,6 +41315,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "store"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Head"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Alarm"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Export_note"));
+	($mol_mem_key(($.$bog_vmap_app.prototype), "Export_row"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Stall"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Body"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Side"));
@@ -41448,6 +41653,105 @@ var $;
                     .filter(Boolean)
                     .join('\n\n');
             }
+            /**
+             * Classes of the document as the export takes them: declaration, body, rule.
+             *
+             * Read out of the document model rather than out of the scene, so what is
+             * downloaded is the text the editor holds and not what a preview made of it.
+             */
+            export_nodes() {
+                const doc = this.doc_model();
+                return doc.names().map(name => ({
+                    source: doc.class_source(name),
+                    js: this.class_js(name),
+                    css: this.class_css(name),
+                }));
+            }
+            /**
+             * The module the document builds into, or the reason it does not.
+             *
+             * One cell for both, because the export answers both at once and a second
+             * call would parse every class a second time to learn what this one already
+             * knows. A refusal is a value here and not a throw: it has to be readable on
+             * the toolbar, and a throw on the path of the toolbar takes the toolbar down.
+             *
+             * A SUSPENSION IS NOT PASSED ON EITHER, and that is the harder half. The
+             * toolbar is drawn from this, and a document opened by a link lives in a land
+             * that suspends every read until it syncs — so rethrowing here suspended the
+             * whole editor, frame and all, and the sandbox never came up. Measured: the
+             * standing test of that invariant went red the moment this cell was wired to
+             * the toolbar. The subscription is recorded before the throw, so nothing is
+             * lost: this recomputes the moment the text arrives. The same shape as
+             * `store_links`, and for the same reason.
+             */
+            export_state() {
+                try {
+                    return {
+                        module: this.$.$bog_vmap_app_export_build(this.export_nodes(), this.doc_root()),
+                        refusal: '',
+                    };
+                }
+                catch (error) {
+                    // Still on its way: nothing to download and nothing to complain about.
+                    if (this.$.$mol_promise_like(error))
+                        return { module: null, refusal: '' };
+                    return { module: null, refusal: String(error?.message ?? error) };
+                }
+            }
+            /** Whether the document can be downloaded at all. */
+            export_ready() {
+                return Boolean(this.export_state().module);
+            }
+            /**
+             * The folder the module goes to, in the title of the button itself.
+             *
+             * Section 10: the folder follows from the class names and is not free, and
+             * mam turns a wrong one into `Root package not found` at build time, far from
+             * the editor. Written where it is read without hovering, because it is a
+             * decision the author is making whether they see it or not.
+             */
+            export_title() {
+                const module = this.export_state().module;
+                return module ? `Скачать ${module.path}` : 'Скачать';
+            }
+            export_file() {
+                const module = this.export_state().module;
+                return `${module?.name ?? 'vmap'}.zip`;
+            }
+            export_hint() {
+                const state = this.export_state();
+                if (state.refusal)
+                    return 'Документ не выгружается. Причина под шапкой';
+                const module = state.module;
+                if (!module)
+                    return 'Документ ещё загружается';
+                return `${module.files.length} файлов модуля ${module.path}.`
+                    + ` Распаковать в корень MAM и собрать «npx mam ${module.path}»`;
+            }
+            /**
+             * The archive itself. A plain method: it is read once, by the click, and a
+             * cell in front of it would keep the whole file alive for nothing.
+             */
+            export_blob() {
+                const state = this.export_state();
+                if (!state.module)
+                    return this.$.$mol_fail(new Error(state.refusal || 'Документ ещё загружается'));
+                return new this.$.$mol_blob([this.$.$bog_vmap_app_export_archive(state.module)], { type: 'application/zip' });
+            }
+            /**
+             * The refusal, line by line, as the export words it. Each line already names
+             * the class, the line, the method and the fix, so nothing is added here.
+             */
+            export_notes() {
+                const refusal = this.export_state().refusal;
+                return refusal ? refusal.split('\n').filter(Boolean) : [];
+            }
+            export_rows() {
+                return this.export_notes().map((_, index) => this.Export_row(index));
+            }
+            export_text(index) {
+                return this.export_notes()[index] ?? '';
+            }
             /** The picked node as the code editor takes it: a name, empty for none. */
             code_prop() {
                 return this.selected() ?? '';
@@ -41538,6 +41842,10 @@ var $;
                     // error under it stale, and the action that helps is on this one.
                     ...this.stalled() ? [this.Stall()] : [],
                     ...this.error() ? [this.Alarm()] : [],
+                    // Beside the dead button and not inside the code panel: that panel is
+                    // folded by default and speaks about the picked node, while this is
+                    // about the document and can name a class nobody has open.
+                    ...this.export_notes().length ? [this.Export_note()] : [],
                     this.Body(),
                     ...this.dragged() ? [this.Ghost()] : [],
                 ];
@@ -42180,6 +42488,12 @@ var $;
         ], $bog_vmap_app.prototype, "doc_css", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app.prototype, "export_state", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "export_text", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_app.prototype, "code_hooks", null);
         __decorate([
             $mol_mem
@@ -42348,6 +42662,20 @@ var $;
             Stall_note: {
                 flex: { grow: 1, shrink: 1 },
                 minWidth: 0,
+                font: { size: '.8rem' },
+                whiteSpace: 'normal',
+            },
+            /**
+             * Amber like `Stall` and not red like `Alarm`, because it is the same kind of
+             * news as the stall: the document itself works, and one thing about it does
+             * not. Wraps, unlike the error strip: these are sentences, not a stack.
+             */
+            Export_note: {
+                flex: { direction: 'column', shrink: 0 },
+                gap: '.25rem',
+                padding: $mol_gap.text,
+                background: { color: '#8d6e00' },
+                color: 'white',
                 font: { size: '.8rem' },
                 whiteSpace: 'normal',
             },

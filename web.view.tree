@@ -3312,6 +3312,17 @@ $bog_vmap_app $mol_view
 				css <= node_css \
 				doc <= doc_src
 				classes / <= doc_root
+			- Sources of the document, as one archive of a real MAM module. The whole
+			- promise of the tool ends here, so the folder the module must go to is
+			- written in the title itself and not only in the hint: section 10 says
+			- the folder is not free, and the author has to see the one their class
+			- names chose.
+			<= Download $mol_button_download
+				title <= export_title \
+				hint <= export_hint \
+				enabled <= export_ready false
+				blob <= export_blob $mol_blob
+				file_name <= export_file \
 			<= Status $mol_view
 				sub /
 					<= status \
@@ -3319,6 +3330,19 @@ $bog_vmap_app $mol_view
 	Alarm $mol_view
 		sub /
 			<= error \
+	-
+	- Why the document does not export, in the very sentences the code panel says
+	- about the same mistake: both ask the export for its complaints, so there is
+	- one way of speaking about it and not two.
+	-
+	- On the strip and not in the panel alone, although the panel is where the code
+	- is written: the panel is folded by default and shows the picked node, while a
+	- refusal comes from the whole document and can name a class nobody has open.
+	- A person who pressed a dead button has to read the reason without hunting.
+	Export_note $mol_view
+		sub <= export_rows /$mol_view
+	Export_row* $mol_view
+		sub / <= export_text* \
 	-
 	- The scene has stopped answering. Its own strip and not the error one: an
 	- error means the scene spoke, this means it did not, and the only thing that

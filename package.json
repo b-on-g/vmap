@@ -347,6 +347,8 @@
     "$mol_icon_clipboard",
     "$mol_html_encode",
     "$mol_html",
+    "$mol_button_download",
+    "$mol_icon_download",
     "$bog_vmap_app_palette",
     "$mol_bar",
     "$bog_vmap_app_palette_item",
