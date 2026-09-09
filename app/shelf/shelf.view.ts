@@ -87,7 +87,7 @@ namespace $.$$ {
 			if( !taken.classes.length ) return
 
 			let link = ''
-			for( const source of taken.classes ) link = this.Store().import_class( source )
+			for( const one of taken.classes ) link = this.Store().import_class( one.tree, '', one.css )
 
 			this.link_attach( link )
 

@@ -111,13 +111,7 @@ namespace $ {
 				id: 'map',
 				title: 'Карта',
 				hint: 'Карта с масштабом, центром и меткой. Каждый порт принимает провод',
-				source: head
-					+ `\n\tMap ${ pack }_map`
-					+ '\n\t\tstyle *'
-					+ '\n\t\t\tminWidth \\320px'
-					+ '\n\t\t\tminHeight \\240px'
-					+ '\n\tsub /'
-					+ '\n\t\t<= Map\n',
+				source: `${ head }\n\tMap ${ pack }_map\n\tsub /\n\t\t<= Map\n`,
 			},
 
 			{
@@ -129,9 +123,6 @@ namespace $ {
 					+ `\n\tCalc ${ pack }_calc`
 					+ `\n\tMap ${ pack }_map`
 					+ '\n\t\tzoom <= zoom_of_calc'
-					+ '\n\t\tstyle *'
-					+ '\n\t\t\tminWidth \\320px'
-					+ '\n\t\t\tminHeight \\240px'
 					+ '\n\tPair $mol_view'
 					+ '\n\t\tstyle *'
 					+ '\n\t\t\tflexDirection \\column'
@@ -154,8 +145,16 @@ namespace $ {
 	/** What the files gave, and what was refused with the reason in the user's words. */
 	export type $bog_vmap_app_shelf_intake = {
 
-		/** One source per class, in the order the files declared them. */
-		readonly classes: readonly string[]
+		/** One component per class, in the order the files declared them. */
+		readonly classes: readonly {
+
+			/** `view.tree` declaration, the truth of the component. */
+			readonly tree: string
+
+			/** Plain CSS from a `.view.css` beside it, empty when there was none. */
+			readonly css: string
+
+		}[]
 
 		readonly refused: readonly {
 			readonly name: string
@@ -186,11 +185,17 @@ namespace $ {
 	} as const
 
 	/**
-	 * Splits the files brought from the disk into one source per class.
+	 * Splits the files brought from the disk into one component per class.
 	 *
 	 * Split and not merged, because a component of a library is one class and the
 	 * library resolves neighbours by name: a file with three classes in it gives
-	 * three components that still find each other.
+	 * three components that still find each other. A whole module folder can go in
+	 * at once for the same reason — every declaration in it lands in ONE library,
+	 * which is one namespace, so a component still inherits its neighbour.
+	 *
+	 * A plain `.view.css` beside a tree comes along, because it is CSS and not
+	 * TypeScript: the library holds it as it is and the sandbox attaches it. A
+	 * `.view.css.ts` is a program and gets the same refusal as any other.
 	 *
 	 * The text of each declaration goes out as its author wrote it, without
 	 * normalizing: what a person brought from their own module is theirs, and the
@@ -201,10 +206,21 @@ namespace $ {
 		files: readonly $bog_vmap_app_shelf_file[],
 	): $bog_vmap_app_shelf_intake {
 
-		const classes = [] as string[]
+		const classes = [] as { tree: string, css: string }[]
 		const refused = [] as { name: string, reason: string }[]
 
+		// Styles first, keyed by the name of the module file they belong to, so a
+		// `.view.css` is found whatever order the files came in.
+		const styles = new Map< string, string >()
+
 		for( const file of files ) {
+			const base = /^(.*)\.view\.css$/.exec( file.name )?.[ 1 ]
+			if( base ) styles.set( base, file.text )
+		}
+
+		for( const file of files ) {
+
+			if( /\.view\.css$/.test( file.name ) ) continue
 
 			if( /(^|\/)web\.view\.tree$/.test( file.name ) ) {
 				refused.push({ name: file.name, reason: $bog_vmap_app_shelf_refuse.built })
@@ -225,7 +241,15 @@ namespace $ {
 				continue
 			}
 
-			for( const kid of kids ) classes.push( kid.toString() )
+			// The styles of a file go to the FIRST class it declares: a `.view.css`
+			// belongs to a module, a module names itself by its main class, and
+			// splitting a stylesheet between classes would take guessing.
+			const css = styles.get( file.name.replace( /\.view\.tree$/, '' ) ) ?? ''
+
+			kids.forEach( ( kid, i )=> classes.push({
+				tree: kid.toString(),
+				css: i ? '' : css,
+			}) )
 
 		}
 
