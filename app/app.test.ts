@@ -12,6 +12,22 @@ namespace $ {
 	 */
 	const d = '$'
 
+	/**
+	 * A session of its own per test.
+	 *
+	 * `$mol_state_session` keeps its values on the CLASS — in `sessionStorage`
+	 * where there is one, in a field of the class where there is not — so without
+	 * this every test would inherit whatever the previous one folded away. A
+	 * subclass per test gets a store of its own, the same trick the address mock
+	 * uses in `app/store/store.test.ts`.
+	 */
+	$mol_test_mocks.push( $=> {
+		// Generic, because the base is: a plain `extends` drops the type parameter
+		// from the constructor and the assignment below is then refused.
+		class $mol_state_session_mock< Value > extends $.$mol_state_session< Value > {}
+		$.$mol_state_session = $mol_state_session_mock
+	} )
+
 	$mol_test({
 
 		/**
@@ -1288,6 +1304,37 @@ namespace $ {
 			// And back to the first from there, by a click on its row.
 			stage.click( stage.scene_row( 'Сцена 1' ) )
 			$mol_assert_equal( $.$mol_state_arg.value( 'doc' ), first )
+
+		},
+		/**
+		 * Folding a panel away survives a reload: the choice is in the session, so
+		 * a fresh editor in the same window opens as the last one was left.
+		 *
+		 * In the SESSION and not in the address: the address is a link somebody
+		 * shares, and a layout travelling with it would fold a stranger's panels.
+		 */
+		'which panels are open outlives the page'( $ ) {
+
+			const one = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			// The editor opens with the two panels and no code.
+			$mol_assert_equal( one.palette_showed(), true )
+			$mol_assert_equal( one.inspect_showed(), true )
+			$mol_assert_equal( one.code_showed(), false )
+
+			one.palette_showed( false )
+			one.code_showed( true )
+
+			// A NEW instance is what a reload makes, and it finds the same layout.
+			const two = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			$mol_assert_equal( two.palette_showed(), false )
+			$mol_assert_equal( two.inspect_showed(), true )
+			$mol_assert_equal( two.code_showed(), true )
+
+			// And the canvas is drawn without the panel that was folded away.
+			$mol_assert_equal( two.body_main().includes( two.Side() ), false )
+			$mol_assert_equal( two.body_main().includes( two.Code() ), true )
 
 		},
 	})

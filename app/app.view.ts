@@ -849,6 +849,37 @@ namespace $.$$ {
 		}
 
 		/**
+		 * Which panels are open, kept in the session so a reload finds the editor
+		 * as it was left. `$hyoo_page` keeps its own panels the same way.
+		 *
+		 * IN THE SESSION AND NOT IN THE ADDRESS. The address says WHAT is open —
+		 * `doc` — and is a link a person shares; a layout in it would travel to
+		 * somebody else's screen and fold their panels for them. The session is the
+		 * other half: it belongs to this window and never leaves it.
+		 *
+		 * The key carries the name of the pack, because `sessionStorage` is per
+		 * ORIGIN and our deploy shares one with every other application on
+		 * `b-on-g.github.io`. A bare `palette` would be the same slot as somebody
+		 * else's `palette`.
+		 *
+		 * Plain methods, not cells: the value already lives in a keyed cell of
+		 * `$mol_state_session`, and a `@ $mol_mem` in front of it would be a second
+		 * cell over one fact, frozen at what was written through it. That is the
+		 * deviation from the donor, which wraps each of its three in `@ $mol_mem`.
+		 */
+		override palette_showed( next?: boolean ) {
+			return this.$.$mol_state_session.value( 'vmap_palette', next ) ?? true
+		}
+
+		override inspect_showed( next?: boolean ) {
+			return this.$.$mol_state_session.value( 'vmap_inspect', next ) ?? true
+		}
+
+		override code_showed( next?: boolean ) {
+			return this.$.$mol_state_session.value( 'vmap_code', next ) ?? false
+		}
+
+		/**
 		 * The inspector, or the invitation to pick something.
 		 *
 		 * Swapped rather than emptied: `$bog_vmap_app_inspect` derives everything
