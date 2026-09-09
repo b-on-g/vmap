@@ -352,6 +352,53 @@ namespace $ {
 		}
 
 		/**
+		 * Renames a class of the document together with every mention of it.
+		 *
+		 * A class name is spelled in more places than its own declaration: it is the
+		 * base of an heir (`site_card site_page`, both with a leading dollar) and the
+		 * value of a part declared with it (`Card site_card`, same). Retyping the
+		 * declaration alone leaves those
+		 * spelling a class nobody declares, which compiles into `Class extends value
+		 * undefined` or into a part of a class that is not there — so the mentions
+		 * are rewritten in the SAME write, over every class of the document.
+		 *
+		 * A mention is any tree node typed exactly with the old name. Only structural
+		 * tokens carry a type in `tree2`; a literal is a data node, so a class name
+		 * written inside a string is not touched and cannot be.
+		 *
+		 * A name already declared is refused, like the rename of a property: two
+		 * classes of one name is a document that disagrees with itself about which is
+		 * real, and the class index of a library keeps the last of such a pair.
+		 *
+		 * Whoever holds a `node( from )` has to ask for `node( to )` afterwards; the
+		 * old handle addresses a class the document no longer carries, exactly as the
+		 * property handle does after `prop_rename`.
+		 */
+		@ $mol_action
+		class_rename( from: string, to: string ) {
+
+			if( from === to ) return
+
+			const trees = this.trees()
+
+			if( !trees.some( tree => tree.type === from ) ) return this.$.$mol_fail(
+				new Error( `Class ${ JSON.stringify( from ) } is not declared in the document` )
+			)
+
+			if( trees.some( tree => tree.type === to ) ) return this.$.$mol_fail(
+				new Error( `Class ${ JSON.stringify( to ) } is already declared in the document` )
+			)
+
+			const renamed = ( tree: $mol_tree2 ): $mol_tree2 => {
+				const kids = tree.kids.map( renamed )
+				return tree.type === from ? tree.struct( to, kids ) : tree.clone( kids )
+			}
+
+			this.source( this.$.$mol_tree2.list( trees.map( renamed ) ).toString() )
+
+		}
+
+		/**
 		 * One class of the document as a node model.
 		 *
 		 * `source` is replaced with a slice of the document on the instance itself.
