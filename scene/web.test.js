@@ -7727,6 +7727,34 @@ var $;
             $mol_assert_equal(made.instance(), null);
         },
         /**
+         * The pack is a whole `$mol` bundle and rewrites `$mol_import` in the global
+         * `$` as it lands. Read late-bound after that, the name gives the pack's copy
+         * with an empty cache, which loads the pack again — and that copy's `script`
+         * loads it again, forever: measured at six hundred script tags a second, the
+         * scene stuck on «Загрузка библиотеки…». The importer is resolved once.
+         */
+        async 'the pack is imported once, whatever the pack does to the importer'($) {
+            const { made, loaded, ctx } = scene($, '');
+            const root = `${d}scene_import_page`;
+            // the stub the scene starts with replaces itself the moment its script
+            // «lands», the way the pack replaces the real one
+            Reflect.set(ctx, '$mol_import', class extends $mol_import {
+                static script_async(uri) {
+                    loaded.push('first:' + uri);
+                    Reflect.set(ctx, '$mol_import', class extends $mol_import {
+                        static script_async(uri) {
+                            loaded.push('second:' + uri);
+                            return Promise.resolve(uri);
+                        }
+                    });
+                    return Promise.resolve(uri);
+                }
+            });
+            made.pack_uri(pack);
+            await grown(made, root, `${root} ${d}mol_view\n\tsub /\n`);
+            $mol_assert_like(loaded, ['first:' + pack]);
+        },
+        /**
          * Two copies of `$mol_try_web` on one page — the scene's and the pack's —
          * each listen on `self` and call a `handler` private to their own bundle, so
          * a dispatch from one throws `handler is not a function` in the other: a

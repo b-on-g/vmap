@@ -6833,6 +6833,16 @@ declare namespace $.$$ {
          */
         pack_uri(next?: string): string;
         /**
+         * The importer of THIS bundle, resolved once. The pack rewrites `$mol_import`
+         * in the global `$` as it lands, and read late-bound after that the name
+         * gives the pack's copy, whose cache is empty — which loads the pack again,
+         * and again, six hundred script tags a second. Measured in headless Chrome.
+         * A record around the class, which a cell would otherwise stamp and own.
+         */
+        importer(): {
+            script: (uri: string) => any;
+        };
+        /**
          * Suspends until the pack bundle is in the realm, then stays resolved.
          * Everything that compiles reads this first: a class picks its base once, at
          * definition time, and a document compiled before the pack lands would keep

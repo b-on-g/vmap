@@ -15047,6 +15047,17 @@ var $;
                 return next ?? '';
             }
             /**
+             * The importer of THIS bundle, resolved once. The pack rewrites `$mol_import`
+             * in the global `$` as it lands, and read late-bound after that the name
+             * gives the pack's copy, whose cache is empty — which loads the pack again,
+             * and again, six hundred script tags a second. Measured in headless Chrome.
+             * A record around the class, which a cell would otherwise stamp and own.
+             */
+            importer() {
+                const importer = this.$.$mol_import;
+                return { script: (uri) => importer.script(uri) };
+            }
+            /**
              * Suspends until the pack bundle is in the realm, then stays resolved.
              * Everything that compiles reads this first: a class picks its base once, at
              * definition time, and a document compiled before the pack lands would keep
@@ -15057,7 +15068,7 @@ var $;
                 const uri = this.pack_uri();
                 if (!uri)
                     return uri;
-                this.$.$mol_import.script(uri);
+                this.importer().script(uri);
                 // Two copies of `$mol_try_web` now listen on `self`, each calling a
                 // `handler` private to its own bundle, so a dispatch from one copy throws
                 // `handler is not a function` in the other. Plain try/catch for both.
@@ -16127,6 +16138,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "pack_uri", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "importer", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "pack_ready", null);
@@ -24225,6 +24239,34 @@ var $;
             $mol_assert_equal(made.pack_uri(), '');
             $mol_assert_like(loaded, []);
             $mol_assert_equal(made.instance(), null);
+        },
+        /**
+         * The pack is a whole `$mol` bundle and rewrites `$mol_import` in the global
+         * `$` as it lands. Read late-bound after that, the name gives the pack's copy
+         * with an empty cache, which loads the pack again — and that copy's `script`
+         * loads it again, forever: measured at six hundred script tags a second, the
+         * scene stuck on «Загрузка библиотеки…». The importer is resolved once.
+         */
+        async 'the pack is imported once, whatever the pack does to the importer'($) {
+            const { made, loaded, ctx } = scene($, '');
+            const root = `${d}scene_import_page`;
+            // the stub the scene starts with replaces itself the moment its script
+            // «lands», the way the pack replaces the real one
+            Reflect.set(ctx, '$mol_import', class extends $mol_import {
+                static script_async(uri) {
+                    loaded.push('first:' + uri);
+                    Reflect.set(ctx, '$mol_import', class extends $mol_import {
+                        static script_async(uri) {
+                            loaded.push('second:' + uri);
+                            return Promise.resolve(uri);
+                        }
+                    });
+                    return Promise.resolve(uri);
+                }
+            });
+            made.pack_uri(pack);
+            await grown(made, root, `${root} ${d}mol_view\n\tsub /\n`);
+            $mol_assert_like(loaded, ['first:' + pack]);
         },
         /**
          * Two copies of `$mol_try_web` on one page — the scene's and the pack's —
