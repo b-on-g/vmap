@@ -1090,8 +1090,16 @@ namespace $.$$ {
 			// should not silently clear what is picked.
 			const box = this.band_box()
 			if( box ) {
+
 				this.band( null )
-				if( press?.moved ) this.picked( this.nodes_covered( box ) )
+				if( !press?.moved ) return
+
+				// The pointer goes back outside: a band that happened to end on the
+				// node it was left inside of would otherwise cut the overlay open
+				// with no second click, which is the whole rule it would break.
+				this.entered( null )
+				this.picked( this.nodes_covered( box ) )
+
 				return
 			}
 

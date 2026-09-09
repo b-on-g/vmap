@@ -327,6 +327,31 @@ namespace $ {
 
 		},
 
+		/** A band puts the pointer back outside, wherever it ends. */
+		'a band takes the pointer out of the node it was let into'( $ ) {
+
+			const { pane } = pane_make( $ )
+
+			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
+
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
+
+			$mol_assert_equal( pane.inside(), true )
+
+			// A sweep that ends up picking the very same node, and nothing else.
+			pane.node_press( pointer( -10, -10, { ctrlKey: true } ) )
+			pane.node_move( pointer( 150, 60, { ctrlKey: true } ) )
+			pane.node_release( pointer( 150, 60, { ctrlKey: true, buttons: 0 } ) )
+
+			$mol_assert_like( [ ... pane.picked() ], [ 'A' ] )
+			$mol_assert_equal( pane.inside(), false )
+			$mol_assert_equal( pane.overlay_style().clipPath, 'none' )
+
+		},
+
 		/** A modified click without a sweep takes nothing and clears nothing. */
 		'a modified click leaves the picked set alone'( $ ) {
 
