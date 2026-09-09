@@ -445,6 +445,17 @@ namespace $ {
 				scene.flush()
 			},
 
+			/**
+			 * Leaves a field, which is how a name is committed without pressing
+			 * Enter: the rename is bound to `blur` as well, because a person who
+			 * typed a name and clicked elsewhere meant it.
+			 */
+			blur( el: Element ) {
+				el.dispatchEvent( new dom.Event( 'blur', { bubbles: true } ) )
+				app.dom_tree()
+				scene.flush()
+			},
+
 			click( el: Element ) {
 				el.dispatchEvent( new dom.MouseEvent( 'click', { bubbles: true, cancelable: true } ) )
 				app.dom_tree()

@@ -1018,12 +1018,32 @@ namespace $.$$ {
 			delete spots[ next.name ]
 			this.spots( spots )
 
+			// The node is measured at a new path from now on, and the box under the
+			// old one would answer to the same name for ever. Two boxes for one name
+			// is how a wire lands on the neighbour of the part it was dropped on.
+			this.pane().sizes_forget( next.name )
+
 			return next
 		}
 
-		/** A wire drawn on the canvas goes into the document as two lines, see `link_add` of the model. */
+		/**
+		 * A wire drawn on the canvas goes into the document as two lines, see
+		 * `link_add` of the model.
+		 *
+		 * An input that already carries a wire is UNPLUGGED first. Written straight
+		 * over, the binding changed and the old source line stayed behind, read by
+		 * nobody — an orphan in the document and one more name in every list built
+		 * off the text. The drop is the operation that knows to take the source with
+		 * it when the last reader goes.
+		 */
 		override link_add( next?: $bog_vmap_app_pane_link_new | null ) {
-			if( next ) this.node().link_add( next )
+
+			if( next ) {
+				const taken = this.doc_wires().some( link => link.to === next.to && link.to_prop === next.to_prop )
+				if( taken ) this.node().link_drop( next.to, next.to_prop )
+				this.node().link_add( next )
+			}
+
 			return next ?? null
 		}
 
@@ -1401,7 +1421,15 @@ namespace $.$$ {
 			return ''
 		}
 
-		/** Layout of a fresh artboard: the page of a desktop, stacked downwards. */
+		/**
+		 * Layout of a fresh artboard: the page of a desktop, stacked downwards.
+		 *
+		 * A literal colour and NOT a token of the theme, which is the one place in
+		 * the editor where that is right: these values are written into the
+		 * document, travel into the export and end up on somebody's site. A theme
+		 * token here would put the colours of this editor into a page that has
+		 * nothing to do with it, and would resolve to nothing outside it.
+		 */
 		board_style() {
 			return {
 				width: '1280px',
@@ -1639,8 +1667,22 @@ namespace $.$$ {
 			return next ?? ''
 		}
 
+		/**
+		 * The refusal, and with it the name the node still carries.
+		 *
+		 * The field keeps what was typed — losing it would mean typing the whole
+		 * name again to fix one letter — so after a refusal the panel shows a name
+		 * the document does not have, and the real one is nowhere. It goes into the
+		 * refusal itself rather than into a line of its own: the two are one thought
+		 * («this did not work, you are still here»), and a strip that appears only
+		 * with the refusal cannot go stale after it.
+		 */
 		node_title_note() {
-			return this.node_title_note_at( this.selected() ?? '' )
+
+			const name = this.selected() ?? ''
+			const note = this.node_title_note_at( name )
+
+			return note ? `${ note }. Узел по-прежнему называется «${ name }»` : ''
 		}
 
 		/**

@@ -477,7 +477,10 @@ namespace $ {
 			$mol_assert_equal( app.doc_source(), before )
 			$mol_assert_equal( app.selected(), 'Button_minor' )
 			// The exact words, because words are the whole point of this path.
-			$mol_assert_equal( app.node_title_note(), 'Имя «String» в этом документе уже занято' )
+			$mol_assert_equal(
+				app.node_title_note(),
+				'Имя «String» в этом документе уже занято. Узел по-прежнему называется «Button_minor»',
+			)
 
 			// The message belongs to the node it is about, so another pick is clean.
 			app.selected( 'String' )
@@ -507,7 +510,8 @@ namespace $ {
 			$mol_assert_equal( app.selected(), 'Button_minor' )
 			$mol_assert_equal(
 				app.node_title_note(),
-				'Имя «Кнопка» не годится: в имени узла только латинские буквы, цифры и подчёркивание',
+				'Имя «Кнопка» не годится: в имени узла только латинские буквы, цифры и подчёркивание.'
+					+ ' Узел по-прежнему называется «Button_minor»',
 			)
 
 			// A space is the other everyday way to write a name nothing can address.
@@ -1169,6 +1173,38 @@ namespace $ {
 
 			$mol_assert_ok( box )
 			$mol_assert_ok( spot.y >= box.y + box.height )
+
+		},
+		/**
+		 * What is typed stays in the field after a refusal, and the name the node
+		 * still carries is on screen beside it.
+		 *
+		 * Two halves of one decision. Clearing the field would mean typing the whole
+		 * name again to fix one letter, which is the opposite of what a refusal is
+		 * for; keeping it means the panel shows a name the document does not have,
+		 * so the real one has to be visible or the person is left guessing which of
+		 * the two is true.
+		 */
+		'a refused name stays in the field, and the real one is in the refusal'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( `${d}flow_calc`, stage.client([ 200, 150 ]) )
+			stage.tap( stage.part_center( 'Calc' ) )
+
+			const field = stage.field( 'Inspect().Title()' )
+			stage.type( field, 'Кнопка' )
+
+			// The submit is a separate gesture: a rename per keystroke would rename
+			// the node to every prefix of what is being typed.
+			stage.blur( field )
+
+			// Nothing moved, what was typed is still there to be fixed.
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+			$mol_assert_equal( stage.field( 'Inspect().Title()' ).value, 'Кнопка' )
+
+			// And the panel says which name the node actually has.
+			$mol_assert_ok( stage.text().includes( 'Узел по-прежнему называется «Calc»' ) )
 
 		},
 	})
