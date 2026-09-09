@@ -244,6 +244,19 @@ namespace $.$$ {
 		}
 
 		/**
+		 * The importer of THIS bundle, resolved once. The pack rewrites `$mol_import`
+		 * in the global `$` as it lands, and read late-bound after that the name
+		 * gives the pack's copy, whose cache is empty — which loads the pack again,
+		 * and again, six hundred script tags a second. Measured in headless Chrome.
+		 * A record around the class, which a cell would otherwise stamp and own.
+		 */
+		@ $mol_mem
+		importer() {
+			const importer = this.$.$mol_import
+			return { script: ( uri: string )=> importer.script( uri ) }
+		}
+
+		/**
 		 * Suspends until the pack bundle is in the realm, then stays resolved.
 		 * Everything that compiles reads this first: a class picks its base once, at
 		 * definition time, and a document compiled before the pack lands would keep
@@ -256,7 +269,7 @@ namespace $.$$ {
 			const uri = this.pack_uri()
 			if( !uri ) return uri
 
-			this.$.$mol_import.script( uri )
+			this.importer().script( uri )
 
 			// Two copies of `$mol_try_web` now listen on `self`, each calling a
 			// `handler` private to its own bundle, so a dispatch from one copy throws
