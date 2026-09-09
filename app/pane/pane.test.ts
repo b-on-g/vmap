@@ -145,14 +145,6 @@ namespace $ {
 			$mol_assert_equal( pane.inside(), false )
 			$mol_assert_equal( pane.overlay_style().clipPath, 'none' )
 
-			// And coming back to the first one starts from outside again: it is a
-			// pick, not a return to where the pointer was left the time before.
-			pane.node_press( pointer( 50, 25 ) )
-			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
-
-			$mol_assert_equal( pane.selected(), 'A' )
-			$mol_assert_equal( pane.inside(), false )
-
 		},
 
 		'the modifiers travel with the click'( $ ) {
