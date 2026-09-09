@@ -15,886 +15,6 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    const $mol_ambient_ref: unique symbol;
-    /** @deprecated use $ instead */
-    type $mol_ambient_context = $;
-    function $mol_ambient(this: $ | void, overrides: Partial<$>): $;
-}
-
-declare namespace $ {
-    /**
-     * Proxy that delegates all to lazy returned target.
-     *
-     * 	$mol_delegate( Array.prototype , ()=> fetch_array() )
-     */
-    function $mol_delegate<Value extends object>(proto: Value, target: () => Value): Value;
-}
-
-declare namespace $ {
-    const $mol_owning_map: WeakMap<any, any>;
-    function $mol_owning_allow<Having>(having: Having): having is Having & {
-        destructor(): void;
-    };
-    function $mol_owning_get<Having, Owner extends object>(having: Having, Owner?: {
-        new (): Owner;
-    }): Owner | null;
-    function $mol_owning_check<Owner, Having>(owner: Owner, having: Having): having is Having & {
-        destructor(): void;
-    };
-    function $mol_owning_catch<Owner, Having>(owner: Owner, having: Having): boolean;
-}
-
-declare namespace $ {
-    function $mol_fail(error: any): never;
-}
-
-declare namespace $ {
-    function $mol_fail_hidden(error: any): never;
-}
-
-declare namespace $ {
-    type $mol_type_writable<T> = {
-        -readonly [P in keyof T]: T[P];
-    };
-}
-
-declare namespace $ {
-    function $mol_func_name(this: $, func: Function): string;
-    function $mol_func_name_from<Target extends Function>(target: Target, source: Function): Target;
-}
-
-declare namespace $ {
-    const $mol_key_handle: unique symbol;
-    const $mol_key_store: WeakMap<object, string>;
-}
-
-declare namespace $ {
-    class $mol_object2 {
-        static $: $;
-        [Symbol.toStringTag]: string;
-        [$mol_ambient_ref]: $;
-        get $(): $;
-        set $(next: $);
-        static create<Instance>(this: new (init?: (instance: any) => void) => Instance, init?: (instance: $mol_type_writable<Instance>) => void): Instance;
-        static [Symbol.toPrimitive](): any;
-        static toString(): any;
-        static toJSON(): any;
-        static [$mol_key_handle](): any;
-        destructor(): void;
-        static destructor(): void;
-        [Symbol.dispose](): void;
-        toString(): string;
-    }
-}
-
-declare namespace $ {
-    /** Position in any resource. */
-    class $mol_span extends $mol_object2 {
-        readonly uri: string;
-        readonly source: string;
-        readonly row: number;
-        readonly col: number;
-        readonly length: number;
-        constructor(uri: string, source: string, row: number, col: number, length: number);
-        /** Span for begin of unknown resource */
-        static unknown: $mol_span;
-        /** Makes new span for begin of resource. */
-        static begin(uri: string, source?: string): $mol_span;
-        /** Makes new span for end of resource. */
-        static end(uri: string, source: string): $mol_span;
-        /** Makes new span for entire resource. */
-        static entire(uri: string, source: string): $mol_span;
-        toString(): string;
-        toJSON(): {
-            uri: string;
-            row: number;
-            col: number;
-            length: number;
-        };
-        /** Makes new error for this span. */
-        error(message: string, Class?: ErrorConstructor): Error;
-        /** Makes new span for same uri. */
-        span(row: number, col: number, length: number): $mol_span;
-        /** Makes new span after end of this. */
-        after(length?: number): $mol_span;
-        /** Makes new span between begin and end. */
-        slice(begin: number, end?: number): $mol_span;
-    }
-}
-
-declare namespace $ {
-    /** Syntax error with cordinates and source line snippet. */
-    class $mol_error_syntax extends SyntaxError {
-        reason: string;
-        line: string;
-        span: $mol_span;
-        constructor(reason: string, line: string, span: $mol_span);
-    }
-}
-
-declare namespace $ {
-    /** Parses tree format from string. */
-    function $mol_tree2_from_string(this: $, str: string, uri?: string): $mol_tree2;
-}
-
-declare namespace $ {
-    /** Serializes tree to string in tree format. */
-    function $mol_tree2_to_string(this: $, tree: $mol_tree2): string;
-}
-
-declare namespace $ {
-    function $mol_maybe<Value>(value: Value | null | undefined): Value[];
-}
-
-declare namespace $ {
-    /** Path by types in tree. */
-    type $mol_tree2_path = Array<string | number | null>;
-    /** Hask tool for processing node. */
-    type $mol_tree2_hack<Context> = (input: $mol_tree2, belt: $mol_tree2_belt<Context>, context: Context) => readonly $mol_tree2[];
-    /** Collection of hask tools for processing tree. */
-    type $mol_tree2_belt<Context> = Record<string, $mol_tree2_hack<Context>>;
-    /**
-     * Abstract Syntax Tree with human readable serialization.
-     * Avoid direct instantiation. Use static factories instead.
-     * @see https://github.com/nin-jin/tree.d
-     */
-    class $mol_tree2 extends Object {
-        /** Type of structural node, `value` should be empty */
-        readonly type: string;
-        /** Content of data node, `type` should be empty */
-        readonly value: string;
-        /** Child nodes */
-        readonly kids: readonly $mol_tree2[];
-        /** Position in most far source resource */
-        readonly span: $mol_span;
-        constructor(
-        /** Type of structural node, `value` should be empty */
-        type: string, 
-        /** Content of data node, `type` should be empty */
-        value: string, 
-        /** Child nodes */
-        kids: readonly $mol_tree2[], 
-        /** Position in most far source resource */
-        span: $mol_span);
-        /** Makes collection node. */
-        static list(kids: readonly $mol_tree2[], span?: $mol_span): $mol_tree2;
-        /** Makes new derived collection node. */
-        list(kids: readonly $mol_tree2[]): $mol_tree2;
-        /** Makes data node for any string. */
-        static data(value: string, kids?: readonly $mol_tree2[], span?: $mol_span): $mol_tree2;
-        /** Makes new derived data node. */
-        data(value: string, kids?: readonly $mol_tree2[]): $mol_tree2;
-        /** Makes struct node. */
-        static struct(type: string, kids?: readonly $mol_tree2[], span?: $mol_span): $mol_tree2;
-        /** Makes new derived structural node. */
-        struct(type: string, kids?: readonly $mol_tree2[]): $mol_tree2;
-        /** Makes new derived node with different kids id defined. */
-        clone(kids: readonly $mol_tree2[], span?: $mol_span): $mol_tree2;
-        /** Returns multiline text content. */
-        text(): string;
-        /** Parses tree format. */
-        /** @deprecated Use $mol_tree2_from_string */
-        static fromString(str: string, uri?: string): $mol_tree2;
-        /** Serializes to tree format. */
-        toString(): string;
-        /** Makes new tree with node overrided by path. */
-        insert(value: $mol_tree2 | null, ...path: $mol_tree2_path): $mol_tree2;
-        /** Makes new tree with node overrided by path. */
-        update(value: readonly $mol_tree2[], ...path: $mol_tree2_path): readonly $mol_tree2[];
-        /** Query nodes by path. */
-        select(...path: $mol_tree2_path): $mol_tree2;
-        /** Filter kids by path or value. */
-        filter(path: string[], value?: string): $mol_tree2;
-        hack_self<Context extends {
-            span?: $mol_span;
-            [key: string]: unknown;
-        } = {}>(belt: $mol_tree2_belt<Context>, context?: Context): readonly $mol_tree2[];
-        /** Transform tree through context with transformers */
-        hack<Context extends {
-            span?: $mol_span;
-            [key: string]: unknown;
-        } = {}>(belt: $mol_tree2_belt<Context>, context?: Context): $mol_tree2[];
-        /** Makes Error with node coordinates. */
-        error(message: string, Class?: ErrorConstructor): Error;
-    }
-    class $mol_tree2_empty extends $mol_tree2 {
-        constructor();
-    }
-}
-
-declare namespace $ {
-    class $mol_view_tree2_error extends Error {
-        readonly spans: readonly $mol_span[];
-        constructor(message: string, spans: readonly $mol_span[]);
-        toJSON(): {
-            message: string;
-            spans: readonly $mol_span[];
-        };
-    }
-    class $mol_view_tree2_error_suggestions {
-        readonly suggestions: readonly string[];
-        constructor(suggestions: readonly string[]);
-        toString(): string;
-        toJSON(): readonly string[];
-    }
-    function $mol_view_tree2_error_str(strings: readonly string[], ...parts: readonly ($mol_span | readonly $mol_span[] | string | number | $mol_view_tree2_error_suggestions)[]): $mol_view_tree2_error;
-}
-
-declare namespace $ {
-    function $mol_view_tree2_child(this: $, tree: $mol_tree2): $mol_tree2;
-}
-
-declare namespace $ {
-    function $mol_view_tree2_classes(defs: $mol_tree2): $mol_tree2;
-}
-
-declare namespace $ {
-    function $mol_view_tree2_normalize(this: $, defs: $mol_tree2): $mol_tree2;
-}
-
-declare namespace $ {
-    /**
-     * Return `unknown` when `A` and `B` are the same type. `never` otherwise.
-     *
-     * 	$mol_type_equals< unknown , any > & number // true
-     * 	$mol_type_equals< never , never > & number // false
-     */
-    type $mol_type_equals<A, B> = (<X>() => X extends A ? 1 : 2) extends (<X>() => X extends B ? 1 : 2) ? true : false;
-}
-
-declare namespace $ {
-    /**
-     * Reqursive converts intersection of records to record of intersections
-     *
-     * 	// { a : { x : 1 , y : 2 } }
-     * 	$mol_type_merge< { a : { x : 1 } }&{ a : { y : 2 } } >
-     */
-    type $mol_type_merge<Intersection> = Intersection extends (...a: any[]) => any ? Intersection : Intersection extends new (...a: any[]) => any ? Intersection : Intersection extends object ? $mol_type_merge_object<Intersection> extends Intersection ? true extends $mol_type_equals<{
-        [Key in keyof Intersection]: Intersection[Key];
-    }, Intersection> ? Intersection : {
-        [Key in keyof Intersection]: $mol_type_merge<Intersection[Key]>;
-    } : Intersection : Intersection;
-    /**
-     * Flat converts intersection of records to record of intersections
-     *
-     * 	// { a: 1, b: 2 }
-     * 	$mol_type_merge< { a: 1 } & { b: 2 } >
-     */
-    type $mol_type_merge_object<Intersection> = {
-        [Key in keyof Intersection]: Intersection[Key];
-    };
-}
-
-declare namespace $ {
-    /**
-     * Converts union of types to intersection of same types
-     *
-     * 	$mol_type_intersect< number | string > // number & string
-     */
-    type $mol_type_intersect<Union> = (Union extends any ? (_: Union) => void : never) extends ((_: infer Intersection) => void) ? Intersection : never;
-}
-
-declare namespace $ {
-    /** Replaces properties of `Base` record by properties from `Over`. */
-    type $mol_type_override<Base, Over> = Omit<Base, keyof Over> & Over;
-}
-
-declare namespace $ {
-    type $mol_unicode_category = [$mol_unicode_category_binary] | ['General_Category', $mol_char_category_general] | ['Script', $mol_unicode_category_script] | ['Script_Extensions', $mol_unicode_category_script];
-    type $mol_unicode_category_binary = 'ASCII' | 'ASCII_Hex_Digit' | 'Alphabetic' | 'Any' | 'Assigned' | 'Bidi_Control' | 'Bidi_Mirrored' | 'Case_Ignorable' | 'Cased' | 'Changes_When_Casefolded' | 'Changes_When_Casemapped' | 'Changes_When_Lowercased' | 'Changes_When_NFKC_Casefolded' | 'Changes_When_Titlecased' | 'Changes_When_Uppercased' | 'Dash' | 'Default_Ignorable_Code_Point' | 'Deprecated' | 'Diacritic' | 'Emoji' | 'Emoji_Component' | 'Emoji_Modifier' | 'Emoji_Modifier_Base' | 'Emoji_Presentation' | 'Extended_Pictographic' | 'Extender' | 'Grapheme_Base' | 'Grapheme_Extend' | 'Hex_Digit' | 'IDS_Binary_Operator' | 'IDS_Trinary_Operator' | 'ID_Continue' | 'ID_Start' | 'Ideographic' | 'Join_Control' | 'Logical_Order_Exception' | 'Lowercase' | 'Math' | 'Noncharacter_Code_Point' | 'Pattern_Syntax' | 'Pattern_White_Space' | 'Quotation_Mark' | 'Radical' | 'Regional_Indicator' | 'Sentence_Terminal' | 'Soft_Dotted' | 'Terminal_Punctuation' | 'Unified_Ideograph' | 'Uppercase' | 'Variation_Selector' | 'White_Space' | 'XID_Continue' | 'XID_Start';
-    type $mol_char_category_general = 'Cased_Letter' | 'Close_Punctuation' | 'Connector_Punctuation' | 'Control' | 'Currency_Symbol' | 'Dash_Punctuation' | 'Decimal_Number' | 'Enclosing_Mark' | 'Final_Punctuation' | 'Format' | 'Initial_Punctuation' | 'Letter' | 'Letter_Number' | 'Line_Separator' | 'Lowercase_Letter' | 'Mark' | 'Math_Symbol' | 'Modifier_Letter' | 'Modifier_Symbol' | 'Nonspacing_Mark' | 'Number' | 'Open_Punctuation' | 'Other' | 'Other_Letter' | 'Other_Number' | 'Other_Punctuation' | 'Other_Symbol' | 'Paragraph_Separator' | 'Private_Use' | 'Punctuation' | 'Separator' | 'Space_Separator' | 'Spacing_Mark' | 'Surrogate' | 'Symbol' | 'Titlecase_Letter' | 'Unassigned' | 'Uppercase_Letter';
-    type $mol_unicode_category_script = 'Adlam' | 'Ahom' | 'Anatolian_Hieroglyphs' | 'Arabic' | 'Armenian' | 'Avestan' | 'Balinese' | 'Bamum' | 'Bassa_Vah' | 'Batak' | 'Bengali' | 'Bhaiksuki' | 'Bopomofo' | 'Brahmi' | 'Braille' | 'Buginese' | 'Buhid' | 'Canadian_Aboriginal' | 'Carian' | 'Caucasian_Albanian' | 'Chakma' | 'Cham' | 'Chorasmian' | 'Cherokee' | 'Common' | 'Coptic' | 'Cuneiform' | 'Cypriot' | 'Cyrillic' | 'Deseret' | 'Devanagari' | 'Dives_Akuru' | 'Dogra' | 'Duployan' | 'Egyptian_Hieroglyphs' | 'Elbasan' | 'Elymaic' | 'Ethiopic' | 'Georgian' | 'Glagolitic' | 'Gothic' | 'Grantha' | 'Greek' | 'Gujarati' | 'Gunjala_Gondi' | 'Gurmukhi' | 'Han' | 'Hangul' | 'Hanifi_Rohingya' | 'Hanunoo' | 'Hatran' | 'Hebrew' | 'Hiragana' | 'Imperial_Aramaic' | 'Inherited' | 'Inscriptional_Pahlavi' | 'Inscriptional_Parthian' | 'Javanese' | 'Kaithi' | 'Kannada' | 'Katakana' | 'Kayah_Li' | 'Kharoshthi' | 'Khitan_Small_Script' | 'Khmer' | 'Khojki' | 'Khudawadi' | 'Lao' | 'Latin' | 'Lepcha' | 'Limbu' | 'Linear_A' | 'Linear_B' | 'Lisu' | 'Lycian' | 'Lydian' | 'Mahajani' | 'Makasar' | 'Malayalam' | 'Mandaic' | 'Manichaean' | 'Marchen' | 'Medefaidrin' | 'Masaram_Gondi' | 'Meetei_Mayek' | 'Mende_Kikakui' | 'Meroitic_Cursive' | 'Meroitic_Hieroglyphs' | 'Miao' | 'Modi' | 'Mongolian' | 'Mro' | 'Multani' | 'Myanmar' | 'Nabataean' | 'Nandinagari' | 'New_Tai_Lue' | 'Newa' | 'Nko' | 'Nushu' | 'Nyiakeng_Puachue_Hmong' | 'Ogham' | 'Ol_Chiki' | 'Old_Hungarian' | 'Old_Italic' | 'Old_North_Arabian' | 'Old_Permic' | 'Old_Persian' | 'Old_Sogdian' | 'Old_South_Arabian' | 'Old_Turkic' | 'Oriya' | 'Osage' | 'Osmanya' | 'Pahawh_Hmong' | 'Palmyrene' | 'Pau_Cin_Hau' | 'Phags_Pa' | 'Phoenician' | 'Psalter_Pahlavi' | 'Rejang' | 'Runic' | 'Samaritan' | 'Saurashtra' | 'Sharada' | 'Shavian' | 'Siddham' | 'SignWriting' | 'Sinhala' | 'Sogdian' | 'Sora_Sompeng' | 'Soyombo' | 'Sundanese' | 'Syloti_Nagri' | 'Syriac' | 'Tagalog' | 'Tagbanwa' | 'Tai_Le' | 'Tai_Tham' | 'Tai_Viet' | 'Takri' | 'Tamil' | 'Tangut' | 'Telugu' | 'Thaana' | 'Thai' | 'Tibetan' | 'Tifinagh' | 'Tirhuta' | 'Ugaritic' | 'Vai' | 'Wancho' | 'Warang_Citi' | 'Yezidi' | 'Yi' | 'Zanabazar_Square';
-}
-
-interface String {
-    match<RE extends RegExp>(regexp: RE): ReturnType<RE[typeof Symbol.match]>;
-    matchAll<RE extends RegExp>(regexp: RE): ReturnType<RE[typeof Symbol.matchAll]>;
-}
-declare namespace $ {
-    type Groups_to_params<T> = {
-        [P in keyof T]?: T[P] | boolean | undefined;
-    };
-    export type $mol_regexp_source = number | string | RegExp | {
-        [key in string]: $mol_regexp_source;
-    } | readonly [$mol_regexp_source, ...$mol_regexp_source[]];
-    export type $mol_regexp_groups<Source extends $mol_regexp_source> = Source extends number ? {} : Source extends string ? {} : Source extends $mol_regexp_source[] ? $mol_type_merge<$mol_type_intersect<{
-        [key in Extract<keyof Source, number>]: $mol_regexp_groups<Source[key]>;
-    }[Extract<keyof Source, number>]>> : Source extends RegExp ? Record<string, string> extends NonNullable<NonNullable<ReturnType<Source['exec']>>['groups']> ? {} : NonNullable<NonNullable<ReturnType<Source['exec']>>['groups']> : Source extends {
-        readonly [key in string]: $mol_regexp_source;
-    } ? $mol_type_merge<$mol_type_intersect<{
-        [key in keyof Source]: $mol_type_merge<$mol_type_override<{
-            readonly [k in Extract<keyof Source, string>]: string;
-        }, {
-            readonly [k in key]: Source[key] extends string ? Source[key] : string;
-        }> & $mol_regexp_groups<Source[key]>>;
-    }[keyof Source]>> : never;
-    /** Type safe reguar expression builder */
-    export class $mol_regexp<Groups extends Record<string, string>> extends RegExp {
-        readonly groups: (Extract<keyof Groups, string>)[];
-        /** Prefer to use $mol_regexp.from */
-        constructor(source: string, flags?: string, groups?: (Extract<keyof Groups, string>)[]);
-        [Symbol.matchAll](str: string): RegExpStringIterator<RegExpExecArray & $mol_type_override<RegExpExecArray, {
-            groups?: {
-                [key in keyof Groups]: string;
-            };
-        }>>;
-        /** Parses input and returns found capture groups or null */
-        [Symbol.match](str: string): null | RegExpMatchArray;
-        /** Splits string by regexp edges */
-        [Symbol.split](str: string): string[];
-        test(str: string): boolean;
-        exec(str: string): RegExpExecArray & $mol_type_override<RegExpExecArray, {
-            groups?: {
-                [key in keyof Groups]: string;
-            };
-        }> | null;
-        generate(params: Groups_to_params<Groups>): string | null;
-        get native(): RegExp;
-        /** Makes regexp that greedy repeats this pattern with delimiter */
-        static separated<Chunk extends $mol_regexp_source, Sep extends $mol_regexp_source>(chunk: Chunk, sep: Sep): $mol_regexp<[$mol_regexp<[[Chunk], Sep] extends infer T ? T extends [[Chunk], Sep] ? T extends $mol_regexp_source[] ? $mol_type_merge<$mol_type_intersect<{ [key in Extract<keyof T, number>]: $mol_regexp_groups<T[key]>; }[Extract<keyof T, number>]>> : T extends RegExp ? Record<string, string> extends NonNullable<NonNullable<ReturnType<T["exec"]>>["groups"]> ? {} : NonNullable<NonNullable<ReturnType<T["exec"]>>["groups"]> : T extends {
-            readonly [x: string]: $mol_regexp_source;
-        } ? $mol_type_merge<$mol_type_intersect<{ [key_1 in keyof T]: $mol_type_merge<Omit<{ readonly [k in Extract<keyof T, string>]: string; }, key_1> & { readonly [k_1 in key_1]: T[key_1] extends string ? T[key_1] : string; } & $mol_regexp_groups<T[key_1]>>; }[keyof T]>> : never : never : never>, Chunk] extends infer T_1 ? T_1 extends [$mol_regexp<[[Chunk], Sep] extends infer T_2 ? T_2 extends [[Chunk], Sep] ? T_2 extends $mol_regexp_source[] ? $mol_type_merge<$mol_type_intersect<{ [key_4 in Extract<keyof T_2, number>]: $mol_regexp_groups<T_2[key_4]>; }[Extract<keyof T_2, number>]>> : T_2 extends RegExp ? Record<string, string> extends NonNullable<NonNullable<ReturnType<T_2["exec"]>>["groups"]> ? {} : NonNullable<NonNullable<ReturnType<T_2["exec"]>>["groups"]> : T_2 extends {
-            readonly [x: string]: $mol_regexp_source;
-        } ? $mol_type_merge<$mol_type_intersect<{ [key_5 in keyof T_2]: $mol_type_merge<Omit<{ readonly [k in Extract<keyof T_2, string>]: string; }, key_5> & { readonly [k_1 in key_5]: T_2[key_5] extends string ? T_2[key_5] : string; } & $mol_regexp_groups<T_2[key_5]>>; }[keyof T_2]>> : never : never : never>, Chunk] ? T_1 extends $mol_regexp_source[] ? $mol_type_merge<$mol_type_intersect<{ [key_2 in Extract<keyof T_1, number>]: $mol_regexp_groups<T_1[key_2]>; }[Extract<keyof T_1, number>]>> : T_1 extends RegExp ? Record<string, string> extends NonNullable<NonNullable<ReturnType<T_1["exec"]>>["groups"]> ? {} : NonNullable<NonNullable<ReturnType<T_1["exec"]>>["groups"]> : T_1 extends {
-            readonly [x: string]: $mol_regexp_source;
-        } ? $mol_type_merge<$mol_type_intersect<{ [key_3 in keyof T_1]: $mol_type_merge<Omit<{ readonly [k in Extract<keyof T_1, string>]: string; }, key_3> & { readonly [k_1 in key_3]: T_1[key_3] extends string ? T_1[key_3] : string; } & $mol_regexp_groups<T_1[key_3]>>; }[keyof T_1]>> : never : never : never>;
-        /** Makes regexp that non-greedy repeats this pattern from min to max count */
-        static repeat<Source extends $mol_regexp_source>(source: Source, min?: number, max?: number): $mol_regexp<$mol_regexp_groups<Source>>;
-        /** Makes regexp that greedy repeats this pattern from min to max count */
-        static repeat_greedy<Source extends $mol_regexp_source>(source: Source, min?: number, max?: number): $mol_regexp<$mol_regexp_groups<Source>>;
-        /** Makes regexp that match any of options */
-        static vary<Sources extends readonly $mol_regexp_source[]>(sources: Sources, flags?: string): $mol_regexp<$mol_regexp_groups<Sources[number]>>;
-        /** Makes regexp that allow absent of this pattern */
-        static optional<Source extends $mol_regexp_source>(source: Source): $mol_regexp<$mol_regexp_groups<Source>>;
-        /** Makes regexp that look ahead for pattern */
-        static force_after(source: $mol_regexp_source): $mol_regexp<Record<string, string>>;
-        /** Makes regexp that look ahead for pattern */
-        static forbid_after(source: $mol_regexp_source): $mol_regexp<Record<string, string>>;
-        /** Converts some js values to regexp */
-        static from<Source extends $mol_regexp_source>(source: Source, { ignoreCase, multiline }?: Partial<Pick<RegExp, 'ignoreCase' | 'multiline'>>): $mol_regexp<$mol_regexp_groups<Source>>;
-        /** Makes regexp which includes only unicode category */
-        static unicode_only(...category: $mol_unicode_category): $mol_regexp<Record<string, string>>;
-        /** Makes regexp which excludes unicode category */
-        static unicode_except(...category: $mol_unicode_category): $mol_regexp<Record<string, string>>;
-        static char_range(from: number, to: number): $mol_regexp<{}>;
-        static char_only(...allowed: readonly [$mol_regexp_source, ...$mol_regexp_source[]]): $mol_regexp<{}>;
-        static char_except(...forbidden: readonly [$mol_regexp_source, ...$mol_regexp_source[]]): $mol_regexp<{}>;
-        static decimal_only: $mol_regexp<{}>;
-        static decimal_except: $mol_regexp<{}>;
-        static latin_only: $mol_regexp<{}>;
-        static latin_except: $mol_regexp<{}>;
-        static space_only: $mol_regexp<{}>;
-        static space_except: $mol_regexp<{}>;
-        static word_break_only: $mol_regexp<{}>;
-        static word_break_except: $mol_regexp<{}>;
-        static tab: $mol_regexp<{}>;
-        static slash_back: $mol_regexp<{}>;
-        static nul: $mol_regexp<{}>;
-        static char_any: $mol_regexp<{}>;
-        static begin: $mol_regexp<{}>;
-        static end: $mol_regexp<{}>;
-        static or: $mol_regexp<{}>;
-        static line_end: $mol_regexp<{
-            readonly win_end: string;
-            readonly mac_end: string;
-        }>;
-    }
-    export {};
-}
-
-declare namespace $ {
-    let $mol_view_tree2_prop_signature: $mol_regexp<{
-        readonly name: string;
-        readonly key: string;
-        readonly next: string;
-    }>;
-}
-
-declare namespace $ {
-    function $mol_view_tree2_prop_parts(this: $, prop: $mol_tree2): {
-        name: string;
-        key: string;
-        next: string;
-    };
-}
-
-declare namespace $ {
-    function $mol_view_tree2_prop_quote(name: $mol_tree2): $mol_tree2;
-}
-
-declare namespace $ {
-    function $mol_view_tree2_class_match(klass?: $mol_tree2): boolean;
-}
-
-declare namespace $ {
-    function $mol_view_tree2_class_super(this: $, klass: $mol_tree2): $mol_tree2;
-}
-
-declare namespace $ {
-    function $mol_view_tree2_class_props(this: $, klass: $mol_tree2): $mol_tree2[];
-}
-
-declare namespace $ {
-    namespace $$ { }
-    const $mol_object_field: unique symbol;
-    class $mol_object extends $mol_object2 {
-        static make<This extends typeof $mol_object>(this: This, config: Partial<InstanceType<This>>): InstanceType<This>;
-    }
-}
-
-declare namespace $ {
-    /** Generates unique identifier. */
-    function $mol_guid(length?: number, exists?: (id: string) => boolean): string;
-}
-
-declare namespace $ {
-    /** Special status statuses. */
-    enum $mol_wire_cursor {
-        /** Update required. */
-        stale = -1,
-        /** Some of (transitive) pub update required. */
-        doubt = -2,
-        /** Actual state but may be dropped. */
-        fresh = -3,
-        /** State will never be changed. */
-        final = -4
-    }
-}
-
-declare namespace $ {
-    /**
-     * Collects subscribers in compact array. 28B
-     */
-    class $mol_wire_pub extends Object {
-        constructor(id?: string);
-        [Symbol.toStringTag]: string;
-        data: unknown[];
-        static get [Symbol.species](): ArrayConstructor;
-        /**
-         * Index of first subscriber.
-         */
-        protected sub_from: number;
-        /**
-         * All current subscribers.
-         */
-        get sub_list(): readonly $mol_wire_sub[];
-        /**
-         * Has any subscribers or not.
-         */
-        get sub_empty(): boolean;
-        /**
-         * Subscribe subscriber to this publisher events and return position of subscriber that required to unsubscribe.
-         */
-        sub_on(sub: $mol_wire_pub, pub_pos: number): number;
-        /**
-         * Unsubscribe subscriber from this publisher events by subscriber position provided by `on(pub)`.
-         */
-        sub_off(sub_pos: number): void;
-        /**
-         * Called when last sub was unsubscribed.
-         **/
-        reap(): void;
-        /**
-         * Autowire this publisher with current subscriber.
-         **/
-        promote(): void;
-        /**
-         * Enforce actualization. Should not throw errors.
-         */
-        fresh(): void;
-        /**
-         * Allow to put data to caches in the subtree.
-         */
-        complete(): void;
-        get incompleted(): boolean;
-        /**
-         * Notify subscribers about self changes.
-         */
-        emit(quant?: $mol_wire_cursor): void;
-        /**
-         * Moves peer from one position to another. Doesn't clear data at old position!
-         */
-        peer_move(from_pos: number, to_pos: number): void;
-        /**
-         * Updates self position in the peer.
-         */
-        peer_repos(peer_pos: number, self_pos: number): void;
-    }
-}
-
-declare namespace $ {
-    /** Generic subscriber interface */
-    interface $mol_wire_sub extends $mol_wire_pub {
-        temp: boolean;
-        pub_list: $mol_wire_pub[];
-        /**
-         * Begin auto wire to publishers.
-         * Returns previous auto subscriber that must me transfer to the `end`.
-         */
-        track_on(): $mol_wire_sub | null;
-        /**
-         * Returns next auto wired publisher. It can be easely repormoted.
-         * Or promotes next publisher to auto wire its togeter.
-         * Must be used only between `track_on` and `track_off`.
-         */
-        track_next(pub?: $mol_wire_pub): $mol_wire_pub | null;
-        pub_off(pub_pos: number): void;
-        /**
-         * Unsubscribes from unpromoted publishers.
-         */
-        track_cut(sub: $mol_wire_pub | null): void;
-        /**
-         * Ends auto wire to publishers.
-         */
-        track_off(sub: $mol_wire_pub | null): void;
-        /**
-         * Receive notification about publisher changes.
-         */
-        absorb(quant: $mol_wire_cursor, pos: number): void;
-        /**
-         * Unsubscribes from all publishers.
-         */
-        destructor(): void;
-    }
-}
-
-declare namespace $ {
-    let $mol_wire_auto_sub: $mol_wire_sub | null;
-    /**
-     * When fulfilled, all publishers are promoted to this subscriber on access to its.
-     */
-    function $mol_wire_auto(next?: $mol_wire_sub | null): $mol_wire_sub | null;
-    /**
-     * Affection queue. Used to prevent accidental stack overflow on emit.
-     */
-    const $mol_wire_affected: ($mol_wire_sub | number)[];
-}
-
-declare namespace $ {
-    function $mol_dev_format_register(config: {
-        header: (val: any, config: any) => any;
-        hasBody: (val: any, config: any) => false;
-    } | {
-        header: (val: any, config: any) => any;
-        hasBody: (val: any, config: any) => boolean;
-        body: (val: any, config: any) => any;
-    }): void;
-    const $mol_dev_format_head: unique symbol;
-    const $mol_dev_format_body: unique symbol;
-    function $mol_dev_format_native(obj: any): any[];
-    function $mol_dev_format_auto(obj: any): any[];
-    function $mol_dev_format_element(element: string, style: object, ...content: any[]): any[];
-    let $mol_dev_format_span: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_div: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_ol: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_li: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_table: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_tr: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_td: (style: object, ...content: any[]) => any[];
-    let $mol_dev_format_accent: (...args: any[]) => any[];
-    let $mol_dev_format_strong: (...args: any[]) => any[];
-    let $mol_dev_format_string: (...args: any[]) => any[];
-    let $mol_dev_format_shade: (...args: any[]) => any[];
-    let $mol_dev_format_indent: (...args: any[]) => any[];
-}
-
-declare namespace $ {
-    /**
-     * Publisher that can auto collect other publishers. 32B
-     *
-     * 	P1 P2 P3 P4 S1 S2 S3
-     * 	^           ^
-     * 	pubs_from   subs_from
-     */
-    class $mol_wire_pub_sub extends $mol_wire_pub implements $mol_wire_sub {
-        protected pub_from: number;
-        protected cursor: $mol_wire_cursor;
-        get temp(): boolean;
-        get pub_list(): $mol_wire_pub[];
-        track_on(): $mol_wire_sub | null;
-        promote(): void;
-        track_next(pub?: $mol_wire_pub): $mol_wire_pub | null;
-        track_off(sub: $mol_wire_sub | null): void;
-        pub_off(sub_pos: number): void;
-        destructor(): void;
-        track_cut(): void;
-        complete(): void;
-        complete_pubs(): void;
-        absorb(quant?: $mol_wire_cursor, pos?: number): void;
-        [$mol_dev_format_head](): any[];
-        /**
-         * Is subscribed to any publisher or not.
-         */
-        get pub_empty(): boolean;
-    }
-}
-
-declare namespace $ {
-    class $mol_after_tick extends $mol_object2 {
-        task: () => void;
-        static promise: Promise<void> | null;
-        cancelled: boolean;
-        constructor(task: () => void);
-        destructor(): void;
-    }
-}
-
-declare namespace $ {
-    function $mol_promise_like(val: any): val is Promise<any>;
-}
-
-declare namespace $ {
-    /**
-     * Suspendable task with support both sync/async api.
-     *
-     * 	A1 A2 A3 A4 P1 P2 P3 P4 S1 S2 S3
-     * 	^           ^           ^
-     * 	args_from   pubs_from   subs_from
-     **/
-    abstract class $mol_wire_fiber<Host, Args extends readonly unknown[], Result> extends $mol_wire_pub_sub {
-        readonly task: (this: Host, ...args: Args) => Result;
-        readonly host?: Host | undefined;
-        static warm: boolean;
-        static planning: Set<$mol_wire_fiber<any, any, any>>;
-        static reaping: Set<$mol_wire_fiber<any, any, any>>;
-        static plan_task: $mol_after_tick | null;
-        static plan(): void;
-        static sync(): void;
-        cache: Result | Error | Promise<Result | Error>;
-        get args(): Args;
-        result(): Result | undefined;
-        get incompleted(): boolean;
-        field(): string;
-        constructor(id: string, task: (this: Host, ...args: Args) => Result, host?: Host | undefined, args?: Args);
-        plan(): this;
-        reap(): void;
-        toString(): string;
-        toJSON(): string;
-        [$mol_dev_format_head](): any[];
-        [$mol_dev_format_body](): null;
-        get $(): any;
-        emit(quant?: $mol_wire_cursor): void;
-        fresh(): this | undefined;
-        refresh(): void;
-        abstract put(next: Result | Error | Promise<Result | Error>): Result | Error | Promise<Result | Error>;
-        /**
-         * Synchronous execution. Throws Promise when waits async task (SuspenseAPI provider).
-         * Should be called inside SuspenseAPI consumer (ie fiber).
-         */
-        sync(): Awaited<Result>;
-        /**
-         * Asynchronous execution.
-         * It's SuspenseAPI consumer. So SuspenseAPI providers can be called inside.
-         */
-        async_raw(): Promise<Result>;
-        async(): Promise<Result> & {
-            destructor(): void;
-        };
-        step(): Promise<null>;
-        destructor(): void;
-    }
-}
-
-declare namespace $ {
-    /** Returns string key for any value. */
-    function $mol_key<Value>(value: Value): string;
-}
-
-declare namespace $ {
-    class $mol_after_frame extends $mol_object2 {
-        task: () => void;
-        static _promise: Promise<void> | null;
-        static get promise(): Promise<void>;
-        cancelled: boolean;
-        promise: Promise<void>;
-        constructor(task: () => void);
-        destructor(): void;
-    }
-}
-
-declare namespace $ {
-    let $mol_compare_deep_cache: WeakMap<any, WeakMap<any, boolean>>;
-    /**
-     * Deeply compares two values. Returns true if equal.
-     * Define `Symbol.toPrimitive` to customize.
-     */
-    function $mol_compare_deep<Value>(left: Value, right: Value): boolean;
-}
-
-declare namespace $ {
-    /** Logger event data */
-    type $mol_log3_event<Fields> = {
-        [key in string]: unknown;
-    } & {
-        /** Time of event creation */
-        time?: string;
-        /** Place of event creation */
-        place: unknown;
-        /** Short description of event */
-        message: string;
-    } & Fields;
-    /** Logger function */
-    type $mol_log3_logger<Fields, Res = void> = (this: $, event: $mol_log3_event<Fields>) => Res;
-    /** Log begin of some task */
-    let $mol_log3_come: $mol_log3_logger<{}>;
-    /** Log end of some task */
-    let $mol_log3_done: $mol_log3_logger<{}>;
-    /** Log error */
-    let $mol_log3_fail: $mol_log3_logger<{}>;
-    /** Log warning message */
-    let $mol_log3_warn: $mol_log3_logger<{
-        hint: string;
-    }>;
-    /** Log some generic event */
-    let $mol_log3_rise: $mol_log3_logger<{}>;
-    /** Log begin of log group, returns func to close group */
-    let $mol_log3_area: $mol_log3_logger<{}, () => void>;
-    /** Log begin of collapsed group only when some logged inside, returns func to close group */
-    function $mol_log3_area_lazy(this: $, event: $mol_log3_event<{}>): () => void;
-    let $mol_log3_stack: (() => void)[];
-}
-
-declare namespace $ {
-    /**
-     * Extracts keys from `Input` which values extends `Upper` and extendable by `Lower`.
-     *
-     * 	type MathConstants = $mol_type_keys_extract< Math , number > // "E" | "PI" ...
-     */
-    type $mol_type_keys_extract<Input, Upper, Lower = never> = {
-        [Field in keyof Input]: unknown extends Input[Field] ? never : Input[Field] extends never ? never : Input[Field] extends Upper ? [
-            Lower
-        ] extends [Input[Field]] ? Field : never : never;
-    }[keyof Input];
-}
-
-declare namespace $ {
-    function $mol_log3_web_make(level: $mol_type_keys_extract<Console, Function>, color: string): (this: $, event: $mol_log3_event<{}>) => () => void;
-}
-
-declare namespace $ {
-    /** One-shot fiber */
-    class $mol_wire_task<Host, Args extends readonly unknown[], Result> extends $mol_wire_fiber<Host, Args, Result> {
-        static getter<Host, Args extends readonly unknown[], Result>(task: (this: Host, ...args: Args) => Result): (host: Host, args: Args) => $mol_wire_task<Host, Args, Result>;
-        get temp(): boolean;
-        complete(): void;
-        put(next: Result | Error | Promise<Result | Error>): Error | Result | Promise<Error | Result>;
-        destructor(): void;
-    }
-}
-
-declare namespace $ {
-    /**
-     * Decorates method to fiber to ensure it is executed only once inside other fiber.
-     */
-    function $mol_wire_method<Host extends object, Args extends readonly any[]>(host: Host, field: PropertyKey, descr?: TypedPropertyDescriptor<(...args: Args) => any>): {
-        value: (this: Host, ...args: Args) => any;
-        enumerable?: boolean;
-        configurable?: boolean;
-        writable?: boolean;
-        get?: (() => (...args: Args) => any) | undefined;
-        set?: ((value: (...args: Args) => any) => void) | undefined;
-    };
-}
-
-declare namespace $ {
-    /**
-     * Returns `Tuple` without first element.
-     *
-     * 	$mol_type_tail<[ 1 , 2 , 3 ]> // [ 2, 3 ]
-     */
-    type $mol_type_tail<Tuple extends readonly any[]> = ((...tail: Tuple) => any) extends ((head: any, ...tail: infer Tail) => any) ? Tail : never;
-}
-
-declare namespace $ {
-    /**
-     * Returns last element of `Tuple`.
-     *
-     * 	$mol_type_tail<[ 1 , 2 , 3 ]> // 3
-     */
-    type $mol_type_foot<Tuple extends readonly any[]> = Tuple['length'] extends 0 ? never : Tuple[$mol_type_tail<Tuple>['length']];
-}
-
-declare namespace $ {
-    function $mol_fail_catch(error: unknown): boolean;
-}
-
-declare namespace $ {
-    function $mol_try<Result>(handler: () => Result): Result | Error;
-}
-
-declare namespace $ {
-    function $mol_try_web<Result>(handler2: () => Result): Result | Error;
-}
-
-declare namespace $ {
-    function $mol_fail_log(error: unknown): boolean;
-}
-
-declare namespace $ {
-    /** Long-living fiber. */
-    class $mol_wire_atom<Host, Args extends readonly unknown[], Result> extends $mol_wire_fiber<Host, Args, Result> {
-        static solo<Host, Args extends readonly unknown[], Result>(host: Host, task: (this: Host, ...args: Args) => Result): $mol_wire_atom<Host, Args, Result>;
-        static plex<Host, Args extends readonly unknown[], Result>(host: Host, task: (this: Host, ...args: Args) => Result, key: Args[0]): $mol_wire_atom<Host, Args, Result>;
-        static watching: Set<$mol_wire_atom<any, any, any>>;
-        static watcher: $mol_after_frame | null;
-        static watch(): void;
-        watch(): void;
-        /**
-         * Update atom value through another temp fiber.
-         */
-        resync(args: Args): Error | Result | Promise<Error | Result>;
-        once(): Awaited<Result>;
-        channel(): ((next?: $mol_type_foot<Args>) => Awaited<Result>) & {
-            atom: $mol_wire_atom<Host, Args, Result>;
-        };
-        destructor(): void;
-        put(next: Result | Error | Promise<Result | Error>): Error | Result | Promise<Error | Result>;
-    }
-}
-
-declare namespace $ {
-    /** Decorates solo object channel to [mol_wire_atom](../atom/atom.ts). */
-    export function $mol_wire_solo<Args extends any[]>(host: object, field: string, descr?: TypedPropertyDescriptor<(...args: Args) => any>): TypedPropertyDescriptor<(...args: First_optional<Args>) => any>;
-    type First_optional<Args extends any[]> = Args extends [] ? [] : [Args[0] | undefined, ...$mol_type_tail<Args>];
-    export {};
-}
-
-declare namespace $ {
-    /** Reactive memoizing multiplexed property decorator. */
-    function $mol_wire_plex<Args extends [any, ...any[]]>(host: object, field: string, descr?: TypedPropertyDescriptor<(...args: Args) => any>): {
-        value: (this: typeof host, ...args: Args) => any;
-        enumerable?: boolean;
-        configurable?: boolean;
-        writable?: boolean;
-        get?: (() => (...args: Args) => any) | undefined;
-        set?: ((value: (...args: Args) => any) => void) | undefined;
-    };
-}
-
-declare namespace $ {
-    /**
-     * Reactive memoizing solo property decorator from [mol_wire](../wire/README.md)
-     * @example
-     * '@' $mol_mem
-     * name(next?: string) {
-     * 	return next ?? 'default'
-     * }
-     * @see https://mol.hyoo.ru/#!section=docs/=qxmh6t_sinbmb
-     */
-    let $mol_mem: typeof $mol_wire_solo;
-    /**
-     * Reactive memoizing multiplexed property decorator [mol_wire](../wire/README.md)
-     * @example
-     * '@' $mol_mem_key
-     * name(id: number, next?: string) {
-     *  return next ?? 'default'
-     * }
-     * @see https://mol.hyoo.ru/#!section=docs/=qxmh6t_sinbmb
-     */
-    let $mol_mem_key: typeof $mol_wire_plex;
-}
-
-declare namespace $ {
     var $mol_dom_context: typeof globalThis;
 }
 
@@ -902,472 +22,7 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    class $mol_storage extends $mol_object2 {
-        /** Is storage a long term. */
-        static persisted(next?: boolean): boolean;
-        /** Total storage quota in bytes. */
-        static total(): number;
-        /** Total storage usage in bytes. */
-        static used(): number;
-        /** Minimum available free space in bytes. */
-        static free(): number;
-        /** Fulfillness of storage. */
-        static portion(): number;
-        /**
-         * Fulfillness logarithmic level.
-         * `0` - empty
-         * `1` - half free
-         * `2` - quart free
-         * `Infinity` - fulfilled
-         */
-        static level(): number;
-    }
-}
-
-declare namespace $ {
-    /**
-     * Disable reaping of current subscriber
-     */
-    function $mol_wire_solid(): void;
-}
-
-declare namespace $ {
-    let $mol_mem_persist: typeof $mol_wire_solid;
-}
-
-declare namespace $ {
-    /** Run code without state changes */
-    function $mol_wire_probe<Value>(task: () => Value, def?: Value): Value | undefined;
-}
-
-declare namespace $ {
-    let $mol_mem_cached: typeof $mol_wire_probe;
-}
-
-declare namespace $ {
     var $mol_dom: typeof globalThis;
-}
-
-declare namespace $ {
-    /**
-     * Convert asynchronous (promise-based) API to synchronous by wrapping function and method calls in a fiber.
-     * @see https://mol.hyoo.ru/#!section=docs/=1fcpsq_1wh0h2
-     */
-    export function $mol_wire_sync<Host extends object>(obj: Host): ObjectOrFunctionResultAwaited<Host>;
-    type FunctionResultAwaited<Some> = Some extends (...args: infer Args) => infer Res ? (...args: Args) => Awaited<Res> : Some;
-    type ConstructorResultAwaited<Some> = Some extends new (...args: infer Args) => infer Res ? new (...args: Args) => Res : {};
-    type MethodsResultAwaited<Host extends Object> = {
-        [K in keyof Host]: FunctionResultAwaited<Host[K]>;
-    };
-    type ObjectOrFunctionResultAwaited<Some> = (Some extends (...args: any) => unknown ? FunctionResultAwaited<Some> : {}) & (Some extends Object ? MethodsResultAwaited<Some> & ConstructorResultAwaited<Some> : Some);
-    export {};
-}
-
-declare namespace $ {
-    function $mol_wait_user_async(this: $): Promise<unknown>;
-    function $mol_wait_user(this: $): unknown;
-}
-
-declare namespace $ {
-    class $mol_after_timeout extends $mol_object2 {
-        delay: number;
-        task: () => void;
-        id: any;
-        constructor(delay: number, task: () => void);
-        destructor(): void;
-    }
-}
-
-declare namespace $ {
-    /** State of time moment */
-    class $mol_state_time extends $mol_object {
-        static task(precision: number, reset?: null): $mol_after_timeout | $mol_after_frame;
-        static now(precision: number): number;
-    }
-}
-
-declare namespace $ {
-    class $mol_storage_web extends $mol_storage {
-        static native(): StorageManager;
-        static persisted(next?: boolean, cache?: 'cache'): boolean;
-        static estimate(): StorageEstimate;
-        static total(): number;
-        static used(): number;
-        static free(): number;
-        static portion(): number;
-        static dir(): FileSystemDirectoryHandle;
-    }
-}
-
-declare namespace $ {
-    class $mol_state_local<Value> extends $mol_object {
-        static 'native()': Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
-        static native(): Storage | {
-            getItem(key: string): any;
-            setItem(key: string, value: string): void;
-            removeItem(key: string): void;
-        };
-        static changes(next?: StorageEvent): StorageEvent | undefined;
-        static value<Value>(key: string, next?: Value | null): Value | null;
-        prefix(): string;
-        value(key: string, next?: Value): Value | null;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-    /**
-     * Returns closure that returns constant value.
-     * @example
-     * const rnd = $mol_const( Math.random() )
-     */
-    function $mol_const<Value>(value: Value): {
-        (): Value;
-        '()': Value;
-    };
-}
-
-declare namespace $ {
-    /**
-     * Decorates method to fiber to ensure it is executed only once inside other fiber from [mol_wire](../wire/README.md)
-     * @see https://mol.hyoo.ru/#!section=docs/=1fcpsq_1wh0h2
-     */
-    let $mol_action: typeof $mol_wire_method;
-}
-
-declare namespace $ {
-    /** Convert a pseudo-synchronous (Suspense API) API to an explicit asynchronous one (for integrating with external systems). */
-    export function $mol_wire_async<Host extends object>(obj: Host): ObjectOrFunctionResultPromisify<Host>;
-    type FunctionResultPromisify<Some> = Some extends (...args: infer Args) => infer Res ? Res extends PromiseLike<unknown> ? Some : (...args: Args) => Promise<Res> : Some;
-    type MethodsResultPromisify<Host extends Object> = {
-        [K in keyof Host]: FunctionResultPromisify<Host[K]>;
-    };
-    type ObjectOrFunctionResultPromisify<Some> = (Some extends (...args: any) => unknown ? FunctionResultPromisify<Some> : {}) & (Some extends Object ? MethodsResultPromisify<Some> : Some);
-    export {};
-}
-
-declare namespace $ {
-    class $mol_lock extends $mol_object {
-        protected promise: null | Promise<void>;
-        wait(): Promise<() => void>;
-        grab(): () => void;
-    }
-}
-
-declare namespace $ {
-    function $mol_compare_array<Value extends ArrayLike<unknown>>(a: Value, b: Value): boolean;
-}
-
-declare namespace $ {
-    type $mol_charset_encoding = 'utf8' | 'utf-16le' | 'utf-16be' | 'ibm866' | 'iso-8859-2' | 'iso-8859-3' | 'iso-8859-4' | 'iso-8859-5' | 'iso-8859-6' | 'iso-8859-7' | 'iso-8859-8' | 'iso-8859-8i' | 'iso-8859-10' | 'iso-8859-13' | 'iso-8859-14' | 'iso-8859-15' | 'iso-8859-16' | 'koi8-r' | 'koi8-u' | 'koi8-r' | 'macintosh' | 'windows-874' | 'windows-1250' | 'windows-1251' | 'windows-1252' | 'windows-1253' | 'windows-1254' | 'windows-1255' | 'windows-1256' | 'windows-1257' | 'windows-1258' | 'x-mac-cyrillic' | 'gbk' | 'gb18030' | 'hz-gb-2312' | 'big5' | 'euc-jp' | 'iso-2022-jp' | 'shift-jis' | 'euc-kr' | 'iso-2022-kr';
-}
-
-declare namespace $ {
-    function $mol_charset_decode(buffer: AllowSharedBufferSource, encoding?: $mol_charset_encoding): string;
-}
-
-declare namespace $ {
-    /** Temporary buffer. Recursive usage isn't supported. */
-    function $mol_charset_buffer(size: number): Uint8Array<ArrayBuffer>;
-}
-
-declare namespace $ {
-    function $mol_charset_encode(str: string): Uint8Array<ArrayBuffer>;
-    function $mol_charset_encode_to(str: string, buf: Uint8Array<ArrayBuffer>, from?: number): number;
-    function $mol_charset_encode_size(str: string): number;
-}
-
-declare namespace $ {
-    type $mol_file_transaction_mode = 'create' | 'exists_truncate' | 'exists_fail' | 'read_only' | 'write_only' | 'read_write' | 'append';
-    type $mol_file_transaction_buffer = ArrayBufferView;
-    class $mol_file_transaction extends $mol_object {
-        path(): string;
-        modes(): readonly $mol_file_transaction_mode[];
-        write(options: {
-            buffer: ArrayBufferView | string | readonly ArrayBufferView[];
-            offset?: number | null;
-            length?: number | null;
-            position?: number | null;
-        }): number;
-        read(): Uint8Array<ArrayBuffer>;
-        truncate(size: number): void;
-        flush(): void;
-        close(): void;
-        destructor(): void;
-    }
-}
-
-declare namespace $ {
-    class $mol_file_base extends $mol_object {
-        static absolute<This extends typeof $mol_file_base>(this: This, path: string): InstanceType<This>;
-        static relative<This extends typeof $mol_file_base>(this: This, path: string): InstanceType<This>;
-        static base: string;
-        path(): string;
-        parent(): this;
-        exists_cut(): boolean;
-        protected root(): boolean;
-        protected stat(next?: $mol_file_stat | null, virt?: 'virt'): $mol_file_stat | null;
-        protected static changed: Set<$mol_file_base>;
-        protected static frame: null | $mol_after_timeout;
-        protected static changed_add(type: 'change' | 'rename', path: string): void;
-        /**
-         * Должно быть больше, чем время между событиями от вотчера при записи внешним процессом.
-         * Иначе запуск ресетов паралельно с изменением может привести к неконсистентности.
-         */
-        static watch_debounce(): number;
-        static flush(): void;
-        protected static watching: boolean;
-        protected static lock: $mol_lock;
-        protected static watch_off(path: string): void;
-        static unwatched<Result>(side_effect: () => Result, affected_dir: string): Result;
-        reset(): void;
-        modified(): Date | null;
-        version(): string;
-        protected info(path: string): null | $mol_file_stat;
-        protected ensure(): void;
-        protected drop(): void;
-        protected copy(to: string): void;
-        protected read(): Uint8Array<ArrayBuffer>;
-        protected write(buffer: Uint8Array<ArrayBuffer>): void;
-        protected kids(): readonly this[];
-        readable(opts: {
-            start?: number;
-            end?: number;
-        }): ReadableStream<Uint8Array<ArrayBuffer>>;
-        writable(opts: {
-            start?: number;
-        }): WritableStream<Uint8Array<ArrayBuffer>>;
-        buffer(next?: Uint8Array<ArrayBuffer>): Uint8Array<ArrayBuffer>;
-        stat_make(size: number): {
-            readonly type: "file";
-            readonly size: number;
-            readonly atime: Date;
-            readonly mtime: Date;
-            readonly ctime: Date;
-        };
-        clone(to: string): this | null;
-        watcher(): {
-            destructor(): void;
-        };
-        exists(next?: boolean): boolean;
-        type(): "" | $mol_file_type;
-        name(): string;
-        ext(): string;
-        text(next?: string, virt?: 'virt'): string;
-        text_int(next?: string, virt?: 'virt'): string;
-        sub(reset?: null): this[];
-        resolve(path: string): this;
-        relate(base?: $mol_file_base): string;
-        find(include?: RegExp, exclude?: RegExp): this[];
-        size(): number;
-        toJSON(): string;
-        open(...modes: readonly $mol_file_transaction_mode[]): $mol_file_transaction;
-    }
-}
-
-declare namespace $ {
-    type $mol_file_type = 'file' | 'dir' | 'link';
-    interface $mol_file_stat {
-        type: $mol_file_type;
-        size: number;
-        atime: Date;
-        mtime: Date;
-        ctime: Date;
-    }
-    class $mol_file extends $mol_file_base {
-    }
-}
-
-declare namespace $ {
-    enum $mol_rest_code {
-        'Continue' = 100,
-        'Switching protocols' = 101,
-        'Processing' = 102,
-        'OK' = 200,
-        'Created' = 201,
-        'Accepted' = 202,
-        'Non-Authoritative Information' = 203,
-        'No Content' = 204,
-        'Reset Content' = 205,
-        'Partial Content' = 206,
-        'Multi Status' = 207,
-        'Already Reported' = 208,
-        'IM Used' = 226,
-        'Multiple Choices' = 300,
-        'Moved Permanently' = 301,
-        'Found' = 302,
-        'See Other' = 303,
-        'Not Modified' = 304,
-        'Use Proxy' = 305,
-        'Temporary Redirect' = 307,
-        'Bad Request' = 400,
-        'Unauthorized' = 401,
-        'Payment Required' = 402,
-        'Forbidden' = 403,
-        'Not Found' = 404,
-        'Method Not Allowed' = 405,
-        'Not Acceptable' = 406,
-        'Proxy Authentication Required' = 407,
-        'Request Timeout' = 408,
-        'Conflict' = 409,
-        'Gone' = 410,
-        'Length Required' = 411,
-        'Precondition Failed' = 412,
-        'Request Entity Too Large' = 413,
-        'Request URI Too Long' = 414,
-        'Unsupported Media Type' = 415,
-        'Requested Range Not Satisfiable' = 416,
-        'Expectation Failed' = 417,
-        'Teapot' = 418,
-        'Unprocessable Entity' = 422,
-        'Locked' = 423,
-        'Failed Dependency' = 424,
-        'Upgrade Required' = 426,
-        'Precondition Required' = 428,
-        'Too Many Requests' = 429,
-        'Request Header Fields Too Large' = 431,
-        'Unavailable For Legal Reasons' = 451,
-        'Internal Server Error' = 500,
-        'Not Implemented' = 501,
-        'Bad Gateway' = 502,
-        'Service Unavailable' = 503,
-        'Gateway Timeout' = 504,
-        'HTTP Version Not Supported' = 505,
-        'Insufficient Storage' = 507,
-        'Loop Detected' = 508,
-        'Not Extended' = 510,
-        'Network Authentication Required' = 511,
-        'Network Read Timeout Error' = 598,
-        'Network Connect Timeout Error' = 599
-    }
-}
-
-declare namespace $ {
-    class $mol_error_mix<Cause extends {} = {}> extends AggregateError {
-        readonly cause: Cause;
-        name: string;
-        constructor(message: string, cause?: Cause, ...errors: readonly Error[]);
-        static [Symbol.toPrimitive](): string;
-        static toString(): string;
-        static make(...params: ConstructorParameters<typeof $mol_error_mix>): $mol_error_mix<{}>;
-    }
-}
-
-declare namespace $ {
-    function $mol_error_fence<Data>(task: () => Data, fallback: (parent: Error) => Error | Data | PromiseLike<Data>, loading?: (parent: PromiseLike<Data>) => Error | Data | PromiseLike<Data>): Data;
-}
-
-declare namespace $ {
-    function $mol_error_enriched<V>(cause: {}, cb: () => V): V;
-}
-
-declare namespace $ {
-    function $mol_dom_parse(text: string, type?: DOMParserSupportedType): Document;
-}
-
-declare namespace $ {
-    class $mol_fetch_response extends $mol_object {
-        readonly native: Response;
-        readonly request: $mol_fetch_request;
-        status(): "unknown" | "success" | "inform" | "redirect" | "wrong" | "failed";
-        code(): number;
-        ok(): boolean;
-        message(): string;
-        headers(): Headers;
-        mime(): string | null;
-        stream(): ReadableStream<Uint8Array<ArrayBuffer>> | null;
-        text(): string;
-        json(): unknown;
-        blob(): Blob;
-        buffer(): ArrayBuffer;
-        xml(): Document;
-        xhtml(): Document;
-        html(): Document;
-    }
-    class $mol_fetch_request extends $mol_object {
-        readonly native: Request;
-        response_async(): Promise<Response> & {
-            destructor: () => void;
-        };
-        response(): $mol_fetch_response;
-        success(): $mol_fetch_response;
-    }
-    class $mol_fetch extends $mol_object {
-        static request(input: RequestInfo, init?: RequestInit): $mol_fetch_request;
-        static response(input: RequestInfo, init?: RequestInit): $mol_fetch_response;
-        static success(input: RequestInfo, init?: RequestInit): $mol_fetch_response;
-        static stream(input: RequestInfo, init?: RequestInit): ReadableStream<Uint8Array<ArrayBuffer>> | null;
-        static text(input: RequestInfo, init?: RequestInit): string;
-        static json(input: RequestInfo, init?: RequestInit): unknown;
-        static blob(input: RequestInfo, init?: RequestInit): Blob;
-        static buffer(input: RequestInfo, init?: RequestInit): ArrayBuffer;
-        static xml(input: RequestInfo, init?: RequestInit): Document;
-        static xhtml(input: RequestInfo, init?: RequestInit): Document;
-        static html(input: RequestInfo, init?: RequestInit): Document;
-    }
-}
-
-declare namespace $ {
-    class $mol_file_webdav extends $mol_file_base {
-        static relative<This extends typeof $mol_file>(this: This, path: string): InstanceType<This>;
-        resolve(path: string): this;
-        static headers(): Record<string, string>;
-        headers(): Record<string, string>;
-        protected fetch(init: RequestInit): $mol_fetch_response;
-        protected read(): Uint8Array<ArrayBuffer>;
-        protected write(body: Uint8Array<ArrayBuffer>): void;
-        protected ensure(): void;
-        protected drop(): void;
-        protected copy(to: string): void;
-        protected kids(): this[];
-        readable(opts: {
-            start?: number;
-            end?: number;
-        }): ReadableStream<Uint8Array<ArrayBuffer>>;
-        protected info(): $mol_file_stat | null;
-    }
-}
-
-declare namespace $ {
-    class $mol_file_web extends $mol_file_webdav {
-        static base: string;
-        version(): string;
-        protected info(): $mol_file_stat | null;
-    }
-}
-
-declare namespace $ {
-    interface $mol_locale_dict {
-        [key: string]: string;
-    }
-    /**
-     * Localisation in $mol framework
-     * @see https://mol.hyoo.ru/#!section=docs/=s5aqnb_odub8l
-     */
-    class $mol_locale extends $mol_object {
-        static lang_default(): string;
-        static lang(next?: string): string;
-        static langs_rtl(): string[];
-        static direction(): "ltr" | "rtl";
-        static source(lang: string): any;
-        static texts(lang: string, next?: $mol_locale_dict): $mol_locale_dict;
-        static text(key: string): string;
-        static warn(key: string): null;
-    }
-}
-
-declare namespace $ {
-    function $mol_guard_defined<T>(value: T): value is NonNullable<T>;
-}
-
-declare namespace $ {
-    function $mol_tree2_js_is_number(type: string): boolean | RegExpMatchArray;
-}
-
-declare namespace $ {
-    function $mol_view_tree2_to_js(this: $, descr: $mol_tree2): $mol_tree2;
 }
 
 declare namespace $ {
@@ -1480,6 +135,11 @@ declare namespace $ {
         static sepia(value?: number | $mol_style_unit_str<'%'>): $mol_style_func<"sepia", string | number>;
         static saturate(value?: number | $mol_style_unit_str<'%'>): $mol_style_func<"saturate", string | number>;
     }
+}
+
+declare namespace $ {
+    /** Replaces properties of `Base` record by properties from `Over`. */
+    type $mol_type_override<Base, Over> = Omit<Base, keyof Over> & Over;
 }
 
 declare namespace $ {
@@ -1972,7 +632,7 @@ declare namespace $ {
      * Theme css variables
      * @see https://mol.hyoo.ru/#!section=demos/demo=mol_textarea_demo
      */
-    const $mol_theme: Record<"image" | "line" | "text" | "focus" | "back" | "hue" | "hover" | "card" | "current" | "special" | "control" | "shade" | "field" | "spirit" | "hue_spread", $mol_style_func<"var", unknown>>;
+    const $mol_theme: Record<"image" | "line" | "text" | "focus" | "hue" | "back" | "hover" | "card" | "current" | "special" | "control" | "shade" | "field" | "spirit" | "hue_spread", $mol_style_func<"var", unknown>>;
 }
 
 declare namespace $ {
@@ -1987,6 +647,15 @@ declare namespace $ {
 }
 
 declare namespace $ {
+}
+
+declare namespace $ {
+    function $mol_fail(error: any): never;
+}
+
+declare namespace $ {
+    function $mol_func_name(this: $, func: Function): string;
+    function $mol_func_name_from<Target extends Function>(target: Target, source: Function): Target;
 }
 
 declare namespace $ {
@@ -2048,6 +717,530 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    const $mol_ambient_ref: unique symbol;
+    /** @deprecated use $ instead */
+    type $mol_ambient_context = $;
+    function $mol_ambient(this: $ | void, overrides: Partial<$>): $;
+}
+
+declare namespace $ {
+    /**
+     * Proxy that delegates all to lazy returned target.
+     *
+     * 	$mol_delegate( Array.prototype , ()=> fetch_array() )
+     */
+    function $mol_delegate<Value extends object>(proto: Value, target: () => Value): Value;
+}
+
+declare namespace $ {
+    const $mol_owning_map: WeakMap<any, any>;
+    function $mol_owning_allow<Having>(having: Having): having is Having & {
+        destructor(): void;
+    };
+    function $mol_owning_get<Having, Owner extends object>(having: Having, Owner?: {
+        new (): Owner;
+    }): Owner | null;
+    function $mol_owning_check<Owner, Having>(owner: Owner, having: Having): having is Having & {
+        destructor(): void;
+    };
+    function $mol_owning_catch<Owner, Having>(owner: Owner, having: Having): boolean;
+}
+
+declare namespace $ {
+    function $mol_fail_hidden(error: any): never;
+}
+
+declare namespace $ {
+    type $mol_type_writable<T> = {
+        -readonly [P in keyof T]: T[P];
+    };
+}
+
+declare namespace $ {
+    const $mol_key_handle: unique symbol;
+    const $mol_key_store: WeakMap<object, string>;
+}
+
+declare namespace $ {
+    class $mol_object2 {
+        static $: $;
+        [Symbol.toStringTag]: string;
+        [$mol_ambient_ref]: $;
+        get $(): $;
+        set $(next: $);
+        static create<Instance>(this: new (init?: (instance: any) => void) => Instance, init?: (instance: $mol_type_writable<Instance>) => void): Instance;
+        static [Symbol.toPrimitive](): any;
+        static toString(): any;
+        static toJSON(): any;
+        static [$mol_key_handle](): any;
+        destructor(): void;
+        static destructor(): void;
+        [Symbol.dispose](): void;
+        toString(): string;
+    }
+}
+
+declare namespace $ {
+    namespace $$ { }
+    const $mol_object_field: unique symbol;
+    class $mol_object extends $mol_object2 {
+        static make<This extends typeof $mol_object>(this: This, config: Partial<InstanceType<This>>): InstanceType<This>;
+    }
+}
+
+declare namespace $ {
+    /** Generates unique identifier. */
+    function $mol_guid(length?: number, exists?: (id: string) => boolean): string;
+}
+
+declare namespace $ {
+    /** Special status statuses. */
+    enum $mol_wire_cursor {
+        /** Update required. */
+        stale = -1,
+        /** Some of (transitive) pub update required. */
+        doubt = -2,
+        /** Actual state but may be dropped. */
+        fresh = -3,
+        /** State will never be changed. */
+        final = -4
+    }
+}
+
+declare namespace $ {
+    /**
+     * Collects subscribers in compact array. 28B
+     */
+    class $mol_wire_pub extends Object {
+        constructor(id?: string);
+        [Symbol.toStringTag]: string;
+        data: unknown[];
+        static get [Symbol.species](): ArrayConstructor;
+        /**
+         * Index of first subscriber.
+         */
+        protected sub_from: number;
+        /**
+         * All current subscribers.
+         */
+        get sub_list(): readonly $mol_wire_sub[];
+        /**
+         * Has any subscribers or not.
+         */
+        get sub_empty(): boolean;
+        /**
+         * Subscribe subscriber to this publisher events and return position of subscriber that required to unsubscribe.
+         */
+        sub_on(sub: $mol_wire_pub, pub_pos: number): number;
+        /**
+         * Unsubscribe subscriber from this publisher events by subscriber position provided by `on(pub)`.
+         */
+        sub_off(sub_pos: number): void;
+        /**
+         * Called when last sub was unsubscribed.
+         **/
+        reap(): void;
+        /**
+         * Autowire this publisher with current subscriber.
+         **/
+        promote(): void;
+        /**
+         * Enforce actualization. Should not throw errors.
+         */
+        fresh(): void;
+        /**
+         * Allow to put data to caches in the subtree.
+         */
+        complete(): void;
+        get incompleted(): boolean;
+        /**
+         * Notify subscribers about self changes.
+         */
+        emit(quant?: $mol_wire_cursor): void;
+        /**
+         * Moves peer from one position to another. Doesn't clear data at old position!
+         */
+        peer_move(from_pos: number, to_pos: number): void;
+        /**
+         * Updates self position in the peer.
+         */
+        peer_repos(peer_pos: number, self_pos: number): void;
+    }
+}
+
+declare namespace $ {
+    /** Generic subscriber interface */
+    interface $mol_wire_sub extends $mol_wire_pub {
+        temp: boolean;
+        pub_list: $mol_wire_pub[];
+        /**
+         * Begin auto wire to publishers.
+         * Returns previous auto subscriber that must me transfer to the `end`.
+         */
+        track_on(): $mol_wire_sub | null;
+        /**
+         * Returns next auto wired publisher. It can be easely repormoted.
+         * Or promotes next publisher to auto wire its togeter.
+         * Must be used only between `track_on` and `track_off`.
+         */
+        track_next(pub?: $mol_wire_pub): $mol_wire_pub | null;
+        pub_off(pub_pos: number): void;
+        /**
+         * Unsubscribes from unpromoted publishers.
+         */
+        track_cut(sub: $mol_wire_pub | null): void;
+        /**
+         * Ends auto wire to publishers.
+         */
+        track_off(sub: $mol_wire_pub | null): void;
+        /**
+         * Receive notification about publisher changes.
+         */
+        absorb(quant: $mol_wire_cursor, pos: number): void;
+        /**
+         * Unsubscribes from all publishers.
+         */
+        destructor(): void;
+    }
+}
+
+declare namespace $ {
+    let $mol_wire_auto_sub: $mol_wire_sub | null;
+    /**
+     * When fulfilled, all publishers are promoted to this subscriber on access to its.
+     */
+    function $mol_wire_auto(next?: $mol_wire_sub | null): $mol_wire_sub | null;
+    /**
+     * Affection queue. Used to prevent accidental stack overflow on emit.
+     */
+    const $mol_wire_affected: ($mol_wire_sub | number)[];
+}
+
+declare namespace $ {
+    function $mol_dev_format_register(config: {
+        header: (val: any, config: any) => any;
+        hasBody: (val: any, config: any) => false;
+    } | {
+        header: (val: any, config: any) => any;
+        hasBody: (val: any, config: any) => boolean;
+        body: (val: any, config: any) => any;
+    }): void;
+    const $mol_dev_format_head: unique symbol;
+    const $mol_dev_format_body: unique symbol;
+    function $mol_dev_format_native(obj: any): any[];
+    function $mol_dev_format_auto(obj: any): any[];
+    function $mol_dev_format_element(element: string, style: object, ...content: any[]): any[];
+    let $mol_dev_format_span: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_div: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_ol: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_li: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_table: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_tr: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_td: (style: object, ...content: any[]) => any[];
+    let $mol_dev_format_accent: (...args: any[]) => any[];
+    let $mol_dev_format_strong: (...args: any[]) => any[];
+    let $mol_dev_format_string: (...args: any[]) => any[];
+    let $mol_dev_format_shade: (...args: any[]) => any[];
+    let $mol_dev_format_indent: (...args: any[]) => any[];
+}
+
+declare namespace $ {
+    /**
+     * Publisher that can auto collect other publishers. 32B
+     *
+     * 	P1 P2 P3 P4 S1 S2 S3
+     * 	^           ^
+     * 	pubs_from   subs_from
+     */
+    class $mol_wire_pub_sub extends $mol_wire_pub implements $mol_wire_sub {
+        protected pub_from: number;
+        protected cursor: $mol_wire_cursor;
+        get temp(): boolean;
+        get pub_list(): $mol_wire_pub[];
+        track_on(): $mol_wire_sub | null;
+        promote(): void;
+        track_next(pub?: $mol_wire_pub): $mol_wire_pub | null;
+        track_off(sub: $mol_wire_sub | null): void;
+        pub_off(sub_pos: number): void;
+        destructor(): void;
+        track_cut(): void;
+        complete(): void;
+        complete_pubs(): void;
+        absorb(quant?: $mol_wire_cursor, pos?: number): void;
+        [$mol_dev_format_head](): any[];
+        /**
+         * Is subscribed to any publisher or not.
+         */
+        get pub_empty(): boolean;
+    }
+}
+
+declare namespace $ {
+    class $mol_after_tick extends $mol_object2 {
+        task: () => void;
+        static promise: Promise<void> | null;
+        cancelled: boolean;
+        constructor(task: () => void);
+        destructor(): void;
+    }
+}
+
+declare namespace $ {
+    function $mol_promise_like(val: any): val is Promise<any>;
+}
+
+declare namespace $ {
+    /**
+     * Suspendable task with support both sync/async api.
+     *
+     * 	A1 A2 A3 A4 P1 P2 P3 P4 S1 S2 S3
+     * 	^           ^           ^
+     * 	args_from   pubs_from   subs_from
+     **/
+    abstract class $mol_wire_fiber<Host, Args extends readonly unknown[], Result> extends $mol_wire_pub_sub {
+        readonly task: (this: Host, ...args: Args) => Result;
+        readonly host?: Host | undefined;
+        static warm: boolean;
+        static planning: Set<$mol_wire_fiber<any, any, any>>;
+        static reaping: Set<$mol_wire_fiber<any, any, any>>;
+        static plan_task: $mol_after_tick | null;
+        static plan(): void;
+        static sync(): void;
+        cache: Result | Error | Promise<Result | Error>;
+        get args(): Args;
+        result(): Result | undefined;
+        get incompleted(): boolean;
+        field(): string;
+        constructor(id: string, task: (this: Host, ...args: Args) => Result, host?: Host | undefined, args?: Args);
+        plan(): this;
+        reap(): void;
+        toString(): string;
+        toJSON(): string;
+        [$mol_dev_format_head](): any[];
+        [$mol_dev_format_body](): null;
+        get $(): any;
+        emit(quant?: $mol_wire_cursor): void;
+        fresh(): this | undefined;
+        refresh(): void;
+        abstract put(next: Result | Error | Promise<Result | Error>): Result | Error | Promise<Result | Error>;
+        /**
+         * Synchronous execution. Throws Promise when waits async task (SuspenseAPI provider).
+         * Should be called inside SuspenseAPI consumer (ie fiber).
+         */
+        sync(): Awaited<Result>;
+        /**
+         * Asynchronous execution.
+         * It's SuspenseAPI consumer. So SuspenseAPI providers can be called inside.
+         */
+        async_raw(): Promise<Result>;
+        async(): Promise<Result> & {
+            destructor(): void;
+        };
+        step(): Promise<null>;
+        destructor(): void;
+    }
+}
+
+declare namespace $ {
+    /** Returns string key for any value. */
+    function $mol_key<Value>(value: Value): string;
+}
+
+declare namespace $ {
+    class $mol_after_frame extends $mol_object2 {
+        task: () => void;
+        static _promise: Promise<void> | null;
+        static get promise(): Promise<void>;
+        cancelled: boolean;
+        promise: Promise<void>;
+        constructor(task: () => void);
+        destructor(): void;
+    }
+}
+
+declare namespace $ {
+    let $mol_compare_deep_cache: WeakMap<any, WeakMap<any, boolean>>;
+    /**
+     * Deeply compares two values. Returns true if equal.
+     * Define `Symbol.toPrimitive` to customize.
+     */
+    function $mol_compare_deep<Value>(left: Value, right: Value): boolean;
+}
+
+declare namespace $ {
+    /** Logger event data */
+    type $mol_log3_event<Fields> = {
+        [key in string]: unknown;
+    } & {
+        /** Time of event creation */
+        time?: string;
+        /** Place of event creation */
+        place: unknown;
+        /** Short description of event */
+        message: string;
+    } & Fields;
+    /** Logger function */
+    type $mol_log3_logger<Fields, Res = void> = (this: $, event: $mol_log3_event<Fields>) => Res;
+    /** Log begin of some task */
+    let $mol_log3_come: $mol_log3_logger<{}>;
+    /** Log end of some task */
+    let $mol_log3_done: $mol_log3_logger<{}>;
+    /** Log error */
+    let $mol_log3_fail: $mol_log3_logger<{}>;
+    /** Log warning message */
+    let $mol_log3_warn: $mol_log3_logger<{
+        hint: string;
+    }>;
+    /** Log some generic event */
+    let $mol_log3_rise: $mol_log3_logger<{}>;
+    /** Log begin of log group, returns func to close group */
+    let $mol_log3_area: $mol_log3_logger<{}, () => void>;
+    /** Log begin of collapsed group only when some logged inside, returns func to close group */
+    function $mol_log3_area_lazy(this: $, event: $mol_log3_event<{}>): () => void;
+    let $mol_log3_stack: (() => void)[];
+}
+
+declare namespace $ {
+    /**
+     * Extracts keys from `Input` which values extends `Upper` and extendable by `Lower`.
+     *
+     * 	type MathConstants = $mol_type_keys_extract< Math , number > // "E" | "PI" ...
+     */
+    type $mol_type_keys_extract<Input, Upper, Lower = never> = {
+        [Field in keyof Input]: unknown extends Input[Field] ? never : Input[Field] extends never ? never : Input[Field] extends Upper ? [
+            Lower
+        ] extends [Input[Field]] ? Field : never : never;
+    }[keyof Input];
+}
+
+declare namespace $ {
+    function $mol_log3_web_make(level: $mol_type_keys_extract<Console, Function>, color: string): (this: $, event: $mol_log3_event<{}>) => () => void;
+}
+
+declare namespace $ {
+    /** One-shot fiber */
+    class $mol_wire_task<Host, Args extends readonly unknown[], Result> extends $mol_wire_fiber<Host, Args, Result> {
+        static getter<Host, Args extends readonly unknown[], Result>(task: (this: Host, ...args: Args) => Result): (host: Host, args: Args) => $mol_wire_task<Host, Args, Result>;
+        get temp(): boolean;
+        complete(): void;
+        put(next: Result | Error | Promise<Result | Error>): Error | Result | Promise<Error | Result>;
+        destructor(): void;
+    }
+}
+
+declare namespace $ {
+    /**
+     * Decorates method to fiber to ensure it is executed only once inside other fiber.
+     */
+    function $mol_wire_method<Host extends object, Args extends readonly any[]>(host: Host, field: PropertyKey, descr?: TypedPropertyDescriptor<(...args: Args) => any>): {
+        value: (this: Host, ...args: Args) => any;
+        enumerable?: boolean;
+        configurable?: boolean;
+        writable?: boolean;
+        get?: (() => (...args: Args) => any) | undefined;
+        set?: ((value: (...args: Args) => any) => void) | undefined;
+    };
+}
+
+declare namespace $ {
+    /**
+     * Returns `Tuple` without first element.
+     *
+     * 	$mol_type_tail<[ 1 , 2 , 3 ]> // [ 2, 3 ]
+     */
+    type $mol_type_tail<Tuple extends readonly any[]> = ((...tail: Tuple) => any) extends ((head: any, ...tail: infer Tail) => any) ? Tail : never;
+}
+
+declare namespace $ {
+    /**
+     * Returns last element of `Tuple`.
+     *
+     * 	$mol_type_tail<[ 1 , 2 , 3 ]> // 3
+     */
+    type $mol_type_foot<Tuple extends readonly any[]> = Tuple['length'] extends 0 ? never : Tuple[$mol_type_tail<Tuple>['length']];
+}
+
+declare namespace $ {
+    function $mol_fail_catch(error: unknown): boolean;
+}
+
+declare namespace $ {
+    function $mol_try<Result>(handler: () => Result): Result | Error;
+}
+
+declare namespace $ {
+    function $mol_try_web<Result>(handler2: () => Result): Result | Error;
+}
+
+declare namespace $ {
+    function $mol_fail_log(error: unknown): boolean;
+}
+
+declare namespace $ {
+    /** Long-living fiber. */
+    class $mol_wire_atom<Host, Args extends readonly unknown[], Result> extends $mol_wire_fiber<Host, Args, Result> {
+        static solo<Host, Args extends readonly unknown[], Result>(host: Host, task: (this: Host, ...args: Args) => Result): $mol_wire_atom<Host, Args, Result>;
+        static plex<Host, Args extends readonly unknown[], Result>(host: Host, task: (this: Host, ...args: Args) => Result, key: Args[0]): $mol_wire_atom<Host, Args, Result>;
+        static watching: Set<$mol_wire_atom<any, any, any>>;
+        static watcher: $mol_after_frame | null;
+        static watch(): void;
+        watch(): void;
+        /**
+         * Update atom value through another temp fiber.
+         */
+        resync(args: Args): Error | Result | Promise<Error | Result>;
+        once(): Awaited<Result>;
+        channel(): ((next?: $mol_type_foot<Args>) => Awaited<Result>) & {
+            atom: $mol_wire_atom<Host, Args, Result>;
+        };
+        destructor(): void;
+        put(next: Result | Error | Promise<Result | Error>): Error | Result | Promise<Error | Result>;
+    }
+}
+
+declare namespace $ {
+    /** Decorates solo object channel to [mol_wire_atom](../atom/atom.ts). */
+    export function $mol_wire_solo<Args extends any[]>(host: object, field: string, descr?: TypedPropertyDescriptor<(...args: Args) => any>): TypedPropertyDescriptor<(...args: First_optional<Args>) => any>;
+    type First_optional<Args extends any[]> = Args extends [] ? [] : [Args[0] | undefined, ...$mol_type_tail<Args>];
+    export {};
+}
+
+declare namespace $ {
+    /** Reactive memoizing multiplexed property decorator. */
+    function $mol_wire_plex<Args extends [any, ...any[]]>(host: object, field: string, descr?: TypedPropertyDescriptor<(...args: Args) => any>): {
+        value: (this: typeof host, ...args: Args) => any;
+        enumerable?: boolean;
+        configurable?: boolean;
+        writable?: boolean;
+        get?: (() => (...args: Args) => any) | undefined;
+        set?: ((value: (...args: Args) => any) => void) | undefined;
+    };
+}
+
+declare namespace $ {
+    /**
+     * Reactive memoizing solo property decorator from [mol_wire](../wire/README.md)
+     * @example
+     * '@' $mol_mem
+     * name(next?: string) {
+     * 	return next ?? 'default'
+     * }
+     * @see https://mol.hyoo.ru/#!section=docs/=qxmh6t_sinbmb
+     */
+    let $mol_mem: typeof $mol_wire_solo;
+    /**
+     * Reactive memoizing multiplexed property decorator [mol_wire](../wire/README.md)
+     * @example
+     * '@' $mol_mem_key
+     * name(id: number, next?: string) {
+     *  return next ?? 'default'
+     * }
+     * @see https://mol.hyoo.ru/#!section=docs/=qxmh6t_sinbmb
+     */
+    let $mol_mem_key: typeof $mol_wire_plex;
+}
+
+declare namespace $ {
     class $mol_window extends $mol_object {
         static size(): {
             width: number;
@@ -2058,9 +1251,17 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    function $mol_guard_defined<T>(value: T): value is NonNullable<T>;
+}
+
+declare namespace $ {
     class $mol_view_selection extends $mol_object {
         static focused(next?: Element[], notify?: 'notify'): Element[];
     }
+}
+
+declare namespace $ {
+    function $mol_maybe<Value>(value: Value | null | undefined): Value[];
 }
 
 declare namespace $ {
@@ -2197,11 +1398,35 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    /** Run code without state changes */
+    function $mol_wire_probe<Value>(task: () => Value, def?: Value): Value | undefined;
+}
+
+declare namespace $ {
     /**
      * Real-time refresh current atom.
      * Don't use if possible. May reduce performance.
      */
     function $mol_wire_watch(): void;
+}
+
+declare namespace $ {
+    /**
+     * Returns closure that returns constant value.
+     * @example
+     * const rnd = $mol_const( Math.random() )
+     */
+    function $mol_const<Value>(value: Value): {
+        (): Value;
+        '()': Value;
+    };
+}
+
+declare namespace $ {
+    /**
+     * Disable reaping of current subscriber
+     */
+    function $mol_wire_solid(): void;
 }
 
 declare namespace $ {
@@ -2230,6 +1455,27 @@ declare namespace $ {
     function $mol_dom_render_fields(el: Element, fields: {
         [key: string]: any;
     }): void;
+}
+
+declare namespace $ {
+    /** Convert a pseudo-synchronous (Suspense API) API to an explicit asynchronous one (for integrating with external systems). */
+    export function $mol_wire_async<Host extends object>(obj: Host): ObjectOrFunctionResultPromisify<Host>;
+    type FunctionResultPromisify<Some> = Some extends (...args: infer Args) => infer Res ? Res extends PromiseLike<unknown> ? Some : (...args: Args) => Promise<Res> : Some;
+    type MethodsResultPromisify<Host extends Object> = {
+        [K in keyof Host]: FunctionResultPromisify<Host[K]>;
+    };
+    type ObjectOrFunctionResultPromisify<Some> = (Some extends (...args: any) => unknown ? FunctionResultPromisify<Some> : {}) & (Some extends Object ? MethodsResultPromisify<Some> : Some);
+    export {};
+}
+
+declare namespace $ {
+    class $mol_after_timeout extends $mol_object2 {
+        delay: number;
+        task: () => void;
+        id: any;
+        constructor(delay: number, task: () => void);
+        destructor(): void;
+    }
 }
 
 declare namespace $ {
@@ -2329,6 +1575,1028 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    class $mol_vector<Value, Length extends number> extends Array<Value> {
+        get length(): Length;
+        constructor(...values: Value[] & {
+            length: Length;
+        });
+        map<Res>(convert: (value: Value, index: number, array: this) => Res, self?: any): $mol_vector<Res, Length>;
+        merged<Patch>(patches: readonly Patch[] & {
+            length: Length;
+        }, combine: (value: Value, patch: Patch) => Value): this;
+        limited(this: $mol_vector<number, Length>, limits: readonly (readonly [number, number])[] & {
+            length: Length;
+        }): this;
+        added0(this: $mol_vector<number, Length>, diff: number): this;
+        added1(this: $mol_vector<number, Length>, diff: readonly number[] & {
+            length: Length;
+        }): this;
+        substracted1(this: $mol_vector<number, Length>, diff: readonly number[] & {
+            length: Length;
+        }): this;
+        multed0(this: $mol_vector<number, Length>, mult: number): this;
+        multed1(this: $mol_vector<number, Length>, mults: readonly number[] & {
+            length: Length;
+        }): this;
+        divided1(this: $mol_vector<number, Length>, mults: readonly number[] & {
+            length: Length;
+        }): this;
+        powered0(this: $mol_vector<number, Length>, mult: number): this;
+        expanded1(this: $mol_vector<$mol_vector_range<number>, Length>, point: readonly number[] & {
+            length: Length;
+        }): this;
+        expanded2(this: $mol_vector<$mol_vector_range<number>, Length>, point: readonly (readonly [number, number])[] & {
+            length: Length;
+        }): this;
+        center<Item extends $mol_vector<number, number>>(this: $mol_vector<Item, Length>): Item;
+        distance(this: $mol_vector<$mol_vector<number, number>, Length>): number;
+        transponed(this: $mol_vector<$mol_vector<number, number>, Length>): $mol_vector<$mol_vector<number, Length>, typeof this[0]['length']>;
+        get x(): Value;
+        set x(next: Value);
+        get y(): Value;
+        set y(next: Value);
+        get z(): Value;
+        set z(next: Value);
+    }
+    class $mol_vector_1d<Value> extends $mol_vector<Value, 1> {
+    }
+    class $mol_vector_2d<Value> extends $mol_vector<Value, 2> {
+    }
+    class $mol_vector_3d<Value> extends $mol_vector<Value, 3> {
+    }
+    class $mol_vector_range<Value> extends $mol_vector<Value, 2> {
+        0: Value;
+        1: Value;
+        constructor(min: Value, max?: Value);
+        get min(): Value;
+        set min(next: Value);
+        get max(): Value;
+        set max(next: Value);
+        get inversed(): $mol_vector_range<Value>;
+        expanded0(value: Value): $mol_vector_range<Value>;
+    }
+    let $mol_vector_range_full: $mol_vector_range<number>;
+    class $mol_vector_matrix<Width extends number, Height extends number> extends $mol_vector<readonly number[] & {
+        length: Width;
+    }, Height> {
+        added2(diff: readonly (readonly number[] & {
+            length: Width;
+        })[] & {
+            length: Height;
+        }): this;
+        multed2(diff: readonly (readonly number[] & {
+            length: Width;
+        })[] & {
+            length: Height;
+        }): this;
+    }
+}
+
+declare namespace $ {
+    /** State of time moment */
+    class $mol_state_time extends $mol_object {
+        static task(precision: number, reset?: null): $mol_after_timeout | $mol_after_frame;
+        static now(precision: number): number;
+    }
+}
+
+declare namespace $ {
+
+	export class $mol_svg extends $mol_view {
+		dom_name( ): string
+		dom_name_space( ): string
+		font_size( ): number
+		font_family( ): string
+		style_size( ): Record<string, any>
+	}
+	
+}
+
+//# sourceMappingURL=svg.view.tree.d.ts.map
+declare namespace $.$$ {
+    /** Base SVG component to display SVG images or icons. */
+    class $mol_svg extends $.$mol_svg {
+        computed_style(): Record<string, any>;
+        font_size(): number;
+        font_family(): any;
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
+
+	export class $mol_svg_root extends $mol_svg {
+		view_box( ): string
+		aspect( ): string
+		dom_name( ): string
+		attr( ): ({ 
+			'viewBox': ReturnType< $mol_svg_root['view_box'] >,
+			'preserveAspectRatio': ReturnType< $mol_svg_root['aspect'] >,
+		})  & ReturnType< $mol_svg['attr'] >
+	}
+	
+}
+
+//# sourceMappingURL=root.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_svg_group extends $mol_svg {
+		dom_name( ): string
+	}
+	
+}
+
+//# sourceMappingURL=group.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_svg_title extends $mol_svg {
+		dom_name( ): string
+		sub( ): readonly(any)[]
+	}
+	
+}
+
+//# sourceMappingURL=title.view.tree.d.ts.map
+declare namespace $ {
+    /**
+     * Fails if `Actual` type is not subtype of `Expected`.
+     */
+    type $mol_type_enforce<Actual extends Expected, Expected> = Actual;
+}
+
+declare namespace $ {
+
+	type $mol_vector_range__mol_plot_graph_1 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_graph_2 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_graph_3 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_graph_4 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_graph_5 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_graph_6 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_graph_7 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_graph_8 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_2d__mol_plot_graph_9 = $mol_type_enforce<
+		[ ReturnType< $mol_plot_graph['viewport_x'] >, ReturnType< $mol_plot_graph['viewport_y'] > ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
+	>
+	type $mol_vector_2d__mol_plot_graph_10 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	type $mol_vector_2d__mol_plot_graph_11 = $mol_type_enforce<
+		[ ReturnType< $mol_plot_graph['dimensions_pane_x'] >, ReturnType< $mol_plot_graph['dimensions_pane_y'] > ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
+	>
+	type $mol_vector_2d__mol_plot_graph_12 = $mol_type_enforce<
+		[ ReturnType< $mol_plot_graph['dimensions_x'] >, ReturnType< $mol_plot_graph['dimensions_y'] > ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
+	>
+	type $mol_vector_2d__mol_plot_graph_13 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	type $mol_vector_2d__mol_plot_graph_14 = $mol_type_enforce<
+		[ ReturnType< $mol_plot_graph['gap_x'] >, ReturnType< $mol_plot_graph['gap_y'] > ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
+	>
+	type $mol_svg_title__title_mol_plot_graph_15 = $mol_type_enforce<
+		ReturnType< $mol_plot_graph['hint'] >
+		,
+		ReturnType< $mol_svg_title['title'] >
+	>
+	export class $mol_plot_graph extends $mol_svg_group {
+		type( ): string
+		color( ): string
+		viewport_x( ): $mol_vector_range<number>
+		viewport_y( ): $mol_vector_range<number>
+		dimensions_pane_x( ): $mol_vector_range<number>
+		dimensions_pane_y( ): $mol_vector_range<number>
+		dimensions_x( ): $mol_vector_range<number>
+		dimensions_y( ): $mol_vector_range<number>
+		gap_x( ): $mol_vector_range<number>
+		gap_y( ): $mol_vector_range<number>
+		title( ): string
+		hint( ): ReturnType< $mol_plot_graph['title'] >
+		series_x( ): readonly(number)[]
+		series_y( ): readonly(number)[]
+		attr( ): ({ 
+			'mol_plot_graph_type': ReturnType< $mol_plot_graph['type'] >,
+		})  & ReturnType< $mol_svg_group['attr'] >
+		style( ): ({ 
+			'color': ReturnType< $mol_plot_graph['color'] >,
+		})  & ReturnType< $mol_svg_group['style'] >
+		viewport( ): $mol_vector_2d<$mol_vector_range<number>>
+		shift( ): readonly(number)[]
+		scale( ): readonly(number)[]
+		cursor_position( ): $mol_vector_2d<number>
+		dimensions_pane( ): $mol_vector_2d<$mol_vector_range<number>>
+		dimensions( ): $mol_vector_2d<$mol_vector_range<number>>
+		size_real( ): $mol_vector_2d<number>
+		gap( ): $mol_vector_2d<$mol_vector_range<number>>
+		repos_x( id: any): number
+		repos_y( id: any): number
+		indexes( ): readonly(number)[]
+		points( ): readonly(readonly(number)[])[]
+		front( ): readonly($mol_svg)[]
+		back( ): readonly($mol_svg)[]
+		Hint( ): $mol_svg_title
+		hue( next?: number ): number
+		Sample( ): any
+	}
+	
+	export class $mol_plot_graph_sample extends $mol_view {
+		type( ): string
+		color( ): string
+		attr( ): ({ 
+			'mol_plot_graph_type': ReturnType< $mol_plot_graph_sample['type'] >,
+		})  & ReturnType< $mol_view['attr'] >
+		style( ): ({ 
+			'color': ReturnType< $mol_plot_graph_sample['color'] >,
+		})  & ReturnType< $mol_view['style'] >
+	}
+	
+}
+
+//# sourceMappingURL=graph.view.tree.d.ts.map
+declare namespace $.$$ {
+    class $mol_plot_graph extends $.$mol_plot_graph {
+        viewport(): $mol_vector_2d<$mol_vector_range<number>>;
+        indexes(): readonly number[];
+        repos_x(val: number): number;
+        repos_y(val: number): number;
+        points(): readonly (readonly number[])[];
+        series_x(): readonly number[];
+        dimensions(): $mol_vector_2d<$mol_vector_range<number>>;
+        color(): string;
+        front(): readonly $.$mol_svg[];
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
+
+	export class $mol_svg_rect extends $mol_svg {
+		width( ): string
+		height( ): string
+		pos_x( ): string
+		pos_y( ): string
+		dom_name( ): string
+		pos( ): readonly(any)[]
+		attr( ): ({ 
+			'width': ReturnType< $mol_svg_rect['width'] >,
+			'height': ReturnType< $mol_svg_rect['height'] >,
+			'x': ReturnType< $mol_svg_rect['pos_x'] >,
+			'y': ReturnType< $mol_svg_rect['pos_y'] >,
+		})  & ReturnType< $mol_svg['attr'] >
+	}
+	
+}
+
+//# sourceMappingURL=rect.view.tree.d.ts.map
+declare namespace $.$$ {
+    class $mol_svg_rect extends $.$mol_svg_rect {
+        pos_x(): any;
+        pos_y(): any;
+    }
+}
+
+declare namespace $ {
+
+	export class $mol_svg_path extends $mol_svg {
+		geometry( ): string
+		dom_name( ): string
+		attr( ): ({ 
+			'd': ReturnType< $mol_svg_path['geometry'] >,
+		})  & ReturnType< $mol_svg['attr'] >
+	}
+	
+}
+
+//# sourceMappingURL=path.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_svg_text extends $mol_svg {
+		pos_x( ): string
+		pos_y( ): string
+		align( ): string
+		align_hor( ): ReturnType< $mol_svg_text['align'] >
+		align_vert( ): string
+		text( ): string
+		dom_name( ): string
+		pos( ): readonly(any)[]
+		attr( ): ({ 
+			'x': ReturnType< $mol_svg_text['pos_x'] >,
+			'y': ReturnType< $mol_svg_text['pos_y'] >,
+			'text-anchor': ReturnType< $mol_svg_text['align_hor'] >,
+			'alignment-baseline': ReturnType< $mol_svg_text['align_vert'] >,
+		})  & ReturnType< $mol_svg['attr'] >
+		sub( ): readonly(any)[]
+	}
+	
+}
+
+//# sourceMappingURL=text.view.tree.d.ts.map
+declare namespace $.$$ {
+    class $mol_svg_text extends $.$mol_svg_text {
+        pos_x(): any;
+        pos_y(): any;
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
+    function $mol_math_round_expand(val: number, gap?: number): number;
+}
+
+declare namespace $ {
+
+	type $mol_svg_rect__pos_x_mol_plot_ruler_1 = $mol_type_enforce<
+		ReturnType< $mol_plot_ruler['background_x'] >
+		,
+		ReturnType< $mol_svg_rect['pos_x'] >
+	>
+	type $mol_svg_rect__pos_y_mol_plot_ruler_2 = $mol_type_enforce<
+		ReturnType< $mol_plot_ruler['background_y'] >
+		,
+		ReturnType< $mol_svg_rect['pos_y'] >
+	>
+	type $mol_svg_rect__width_mol_plot_ruler_3 = $mol_type_enforce<
+		ReturnType< $mol_plot_ruler['background_width'] >
+		,
+		ReturnType< $mol_svg_rect['width'] >
+	>
+	type $mol_svg_rect__height_mol_plot_ruler_4 = $mol_type_enforce<
+		ReturnType< $mol_plot_ruler['background_height'] >
+		,
+		ReturnType< $mol_svg_rect['height'] >
+	>
+	type $mol_svg_path__geometry_mol_plot_ruler_5 = $mol_type_enforce<
+		ReturnType< $mol_plot_ruler['curve'] >
+		,
+		ReturnType< $mol_svg_path['geometry'] >
+	>
+	type $mol_svg_text__pos_x_mol_plot_ruler_6 = $mol_type_enforce<
+		ReturnType< $mol_plot_ruler['title_pos_x'] >
+		,
+		ReturnType< $mol_svg_text['pos_x'] >
+	>
+	type $mol_svg_text__pos_y_mol_plot_ruler_7 = $mol_type_enforce<
+		ReturnType< $mol_plot_ruler['title_pos_y'] >
+		,
+		ReturnType< $mol_svg_text['pos_y'] >
+	>
+	type $mol_svg_text__align_mol_plot_ruler_8 = $mol_type_enforce<
+		ReturnType< $mol_plot_ruler['title_align'] >
+		,
+		ReturnType< $mol_svg_text['align'] >
+	>
+	type $mol_svg_text__text_mol_plot_ruler_9 = $mol_type_enforce<
+		ReturnType< $mol_plot_ruler['title'] >
+		,
+		ReturnType< $mol_svg_text['text'] >
+	>
+	type $mol_vector_range__mol_plot_ruler_10 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_ruler_11 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_svg_text__pos_mol_plot_ruler_12 = $mol_type_enforce<
+		ReturnType< $mol_plot_ruler['label_pos'] >
+		,
+		ReturnType< $mol_svg_text['pos'] >
+	>
+	type $mol_svg_text__text_mol_plot_ruler_13 = $mol_type_enforce<
+		ReturnType< $mol_plot_ruler['label_text'] >
+		,
+		ReturnType< $mol_svg_text['text'] >
+	>
+	type $mol_svg_text__align_mol_plot_ruler_14 = $mol_type_enforce<
+		ReturnType< $mol_plot_ruler['label_align'] >
+		,
+		ReturnType< $mol_svg_text['align'] >
+	>
+	export class $mol_plot_ruler extends $mol_plot_graph {
+		background_x( ): string
+		background_y( ): string
+		background_width( ): string
+		background_height( ): string
+		Background( ): $mol_svg_rect
+		curve( ): string
+		Curve( ): $mol_svg_path
+		labels_formatted( ): readonly(any)[]
+		title_pos_x( ): string
+		title_pos_y( ): string
+		title_align( ): string
+		Title( ): $mol_svg_text
+		label_pos_x( id: any): string
+		label_pos_y( id: any): string
+		label_pos( id: any): readonly(any)[]
+		label_text( id: any): string
+		label_align( ): string
+		step( ): number
+		scale_axis( ): number
+		scale_step( ): number
+		shift_axis( ): number
+		dimensions_axis( ): $mol_vector_range<number>
+		viewport_axis( ): $mol_vector_range<number>
+		axis_points( ): readonly(number)[]
+		normalize( next?: number ): number
+		precision( ): number
+		sub( ): readonly(any)[]
+		Label( id: any): $mol_svg_text
+	}
+	
+}
+
+//# sourceMappingURL=ruler.view.tree.d.ts.map
+declare namespace $.$$ {
+    class $mol_plot_ruler extends $.$mol_plot_ruler {
+        labels_formatted(): $.$mol_svg_text[];
+        step(): number;
+        snap_to_grid(coord: number): number;
+        axis_points(): number[];
+        precision(): number;
+        label_text(index: number): string;
+        font_size(): number;
+        back(): $mol_svg_path[];
+        front(): readonly $.$mol_svg[];
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
+
+	export class $mol_plot_ruler_hor extends $mol_plot_ruler {
+		title_align( ): string
+		label_align( ): string
+		title_pos_x( ): string
+		title_pos_y( ): string
+		label_pos_y( id: any): ReturnType< $mol_plot_ruler_hor['title_pos_y'] >
+		background_width( ): string
+	}
+	
+}
+
+//# sourceMappingURL=hor.view.tree.d.ts.map
+declare namespace $.$$ {
+    class $mol_plot_ruler_hor extends $.$mol_plot_ruler_hor {
+        dimensions_axis(): $mol_vector_range<number>;
+        viewport_axis(): $mol_vector_range<number>;
+        scale_axis(): number;
+        scale_step(): number;
+        shift_axis(): number;
+        curve(): string;
+        label_pos_x(index: number): string;
+        background_y(): string;
+        title_pos_y(): string;
+        background_height(): string;
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
+
+	export class $mol_plot_ruler_vert extends $mol_plot_ruler {
+		title_align( ): string
+		label_align( ): string
+		title_pos_y( ): string
+		label_pos_x( id: any): ReturnType< $mol_plot_ruler_vert['title_pos_x'] >
+		background_height( ): string
+		background_width( ): ReturnType< $mol_plot_ruler_vert['title_pos_x'] >
+	}
+	
+}
+
+//# sourceMappingURL=vert.view.tree.d.ts.map
+declare namespace $.$$ {
+    class $mol_plot_ruler_vert extends $.$mol_plot_ruler_vert {
+        dimensions_axis(): $mol_vector_range<number>;
+        viewport_axis(): $mol_vector_range<number>;
+        scale_axis(): number;
+        scale_step(): number;
+        shift_axis(): number;
+        curve(): string;
+        title_pos_x(): string;
+        label_pos_y(index: number): string;
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
+    /** Plugin is component without its own DOM element, but instead uses the owner DOM element */
+    class $mol_plugin extends $mol_view {
+        dom_node_external(next?: Element): Element;
+        render(): void;
+    }
+}
+
+declare namespace $ {
+
+	type $mol_vector_2d__mol_touch_1 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	type $mol_vector_2d__mol_touch_2 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	type $mol_vector_2d__mol_touch_3 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	export class $mol_touch extends $mol_plugin {
+		event_start( next?: any ): any
+		event_move( next?: any ): any
+		event_end( next?: any ): any
+		event_leave( next?: any ): any
+		event_wheel( next?: any ): any
+		start_zoom( next?: number ): number
+		start_distance( next?: number ): number
+		zoom( next?: number ): number
+		allow_draw( ): boolean
+		allow_pan( ): boolean
+		allow_zoom( ): boolean
+		action_type( next?: string ): string
+		action_point( next?: $mol_vector_2d<number> ): $mol_vector_2d<number>
+		start_pan( next?: readonly(any)[] ): readonly(any)[]
+		pan( next?: $mol_vector_2d<number> ): $mol_vector_2d<number>
+		pointer_center( ): $mol_vector_2d<number>
+		start_pos( next?: any ): any
+		swipe_precision( ): number
+		swipe_right( next?: any ): any
+		swipe_bottom( next?: any ): any
+		swipe_left( next?: any ): any
+		swipe_top( next?: any ): any
+		swipe_from_right( next?: any ): any
+		swipe_from_bottom( next?: any ): any
+		swipe_from_left( next?: any ): any
+		swipe_from_top( next?: any ): any
+		swipe_to_right( next?: any ): any
+		swipe_to_bottom( next?: any ): any
+		swipe_to_left( next?: any ): any
+		swipe_to_top( next?: any ): any
+		draw_start( next?: any ): any
+		draw( next?: any ): any
+		draw_end( next?: any ): any
+		style( ): ({ 
+			'touch-action': string,
+			'overscroll-behavior': string,
+		})  & ReturnType< $mol_plugin['style'] >
+		event( ): ({ 
+			pointerdown( next?: ReturnType< $mol_touch['event_start'] > ): ReturnType< $mol_touch['event_start'] >,
+			pointermove( next?: ReturnType< $mol_touch['event_move'] > ): ReturnType< $mol_touch['event_move'] >,
+			pointerup( next?: ReturnType< $mol_touch['event_end'] > ): ReturnType< $mol_touch['event_end'] >,
+			pointerleave( next?: ReturnType< $mol_touch['event_leave'] > ): ReturnType< $mol_touch['event_leave'] >,
+			wheel( next?: ReturnType< $mol_touch['event_wheel'] > ): ReturnType< $mol_touch['event_wheel'] >,
+		})  & ReturnType< $mol_plugin['event'] >
+	}
+	
+}
+
+//# sourceMappingURL=touch.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * Plugin for touch gestures.
+     * @see [mol_plugin](../plugin/readme.md)
+     */
+    class $mol_touch extends $.$mol_touch {
+        auto(): void;
+        pointer_events(next?: readonly PointerEvent[]): readonly PointerEvent[];
+        pointer_coords(): $mol_vector<$mol_vector_2d<number>, number>;
+        pointer_center(): $mol_vector_2d<number>;
+        event_coords(event: PointerEvent | WheelEvent): $mol_vector_2d<number>;
+        action_point(): $mol_vector_2d<number>;
+        event_eat(event: PointerEvent | WheelEvent): string;
+        event_start(event: PointerEvent): void;
+        event_move(event: PointerEvent): void;
+        event_end(event: PointerEvent): void;
+        event_leave(event: PointerEvent): void;
+        swipe_left(event: PointerEvent): void;
+        swipe_right(event: PointerEvent): void;
+        swipe_top(event: PointerEvent): void;
+        swipe_bottom(event: PointerEvent): void;
+        event_wheel(event: WheelEvent): void;
+    }
+}
+
+declare namespace $ {
+    let $mol_mem_cached: typeof $mol_wire_probe;
+}
+
+declare namespace $ {
+
+	type $mol_vector_range__mol_plot_pane_1 = $mol_type_enforce<
+		[ ReturnType< $mol_plot_pane['gap_left'] >, ReturnType< $mol_plot_pane['gap_right'] > ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_pane_2 = $mol_type_enforce<
+		[ ReturnType< $mol_plot_pane['gap_bottom'] >, ReturnType< $mol_plot_pane['gap_top'] > ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_pane_3 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_pane_4 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_pane_5 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_pane_6 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_pane_7 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_pane_8 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_pane_9 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_vector_range__mol_plot_pane_10 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_range<number> >
+	>
+	type $mol_touch__zoom_mol_plot_pane_11 = $mol_type_enforce<
+		ReturnType< $mol_plot_pane['zoom'] >
+		,
+		ReturnType< $mol_touch['zoom'] >
+	>
+	type $mol_touch__pan_mol_plot_pane_12 = $mol_type_enforce<
+		ReturnType< $mol_plot_pane['shift'] >
+		,
+		ReturnType< $mol_touch['pan'] >
+	>
+	type $mol_touch__allow_draw_mol_plot_pane_13 = $mol_type_enforce<
+		ReturnType< $mol_plot_pane['allow_draw'] >
+		,
+		ReturnType< $mol_touch['allow_draw'] >
+	>
+	type $mol_touch__allow_pan_mol_plot_pane_14 = $mol_type_enforce<
+		ReturnType< $mol_plot_pane['allow_pan'] >
+		,
+		ReturnType< $mol_touch['allow_pan'] >
+	>
+	type $mol_touch__allow_zoom_mol_plot_pane_15 = $mol_type_enforce<
+		ReturnType< $mol_plot_pane['allow_zoom'] >
+		,
+		ReturnType< $mol_touch['allow_zoom'] >
+	>
+	type $mol_touch__draw_start_mol_plot_pane_16 = $mol_type_enforce<
+		ReturnType< $mol_plot_pane['draw_start'] >
+		,
+		ReturnType< $mol_touch['draw_start'] >
+	>
+	type $mol_touch__draw_mol_plot_pane_17 = $mol_type_enforce<
+		ReturnType< $mol_plot_pane['draw'] >
+		,
+		ReturnType< $mol_touch['draw'] >
+	>
+	type $mol_touch__draw_end_mol_plot_pane_18 = $mol_type_enforce<
+		ReturnType< $mol_plot_pane['draw_end'] >
+		,
+		ReturnType< $mol_touch['draw_end'] >
+	>
+	type $mol_vector_2d__mol_plot_pane_19 = $mol_type_enforce<
+		[ ReturnType< $mol_plot_pane['gap_x'] >, ReturnType< $mol_plot_pane['gap_y'] > ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
+	>
+	type $mol_vector_2d__mol_plot_pane_20 = $mol_type_enforce<
+		[ ReturnType< $mol_plot_pane['shift_limit_x'] >, ReturnType< $mol_plot_pane['shift_limit_y'] > ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
+	>
+	type $mol_vector_2d__mol_plot_pane_21 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	type $mol_vector_2d__mol_plot_pane_22 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	type $mol_vector_2d__mol_plot_pane_23 = $mol_type_enforce<
+		[ ReturnType< $mol_plot_pane['scale_limit_x'] >, ReturnType< $mol_plot_pane['scale_limit_y'] > ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
+	>
+	type $mol_vector_2d__mol_plot_pane_24 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	type $mol_vector_2d__mol_plot_pane_25 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	type $mol_vector_2d__mol_plot_pane_26 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	type $mol_vector_2d__mol_plot_pane_27 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	type $mol_vector_2d__mol_plot_pane_28 = $mol_type_enforce<
+		[ ReturnType< $mol_plot_pane['dimensions_x'] >, ReturnType< $mol_plot_pane['dimensions_y'] > ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
+	>
+	type $mol_vector_2d__mol_plot_pane_29 = $mol_type_enforce<
+		[ ReturnType< $mol_plot_pane['dimensions_viewport_x'] >, ReturnType< $mol_plot_pane['dimensions_viewport_y'] > ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
+	>
+	export class $mol_plot_pane extends $mol_svg_root {
+		gap_x( ): $mol_vector_range<number>
+		gap_y( ): $mol_vector_range<number>
+		shift_limit_x( ): $mol_vector_range<number>
+		shift_limit_y( ): $mol_vector_range<number>
+		scale_limit_x( ): $mol_vector_range<number>
+		scale_limit_y( ): $mol_vector_range<number>
+		dimensions_x( ): $mol_vector_range<number>
+		dimensions_y( ): $mol_vector_range<number>
+		dimensions_viewport_x( ): $mol_vector_range<number>
+		dimensions_viewport_y( ): $mol_vector_range<number>
+		graphs_sorted( ): readonly($mol_svg)[]
+		graphs( ): readonly($mol_plot_graph)[]
+		graphs_positioned( ): ReturnType< $mol_plot_pane['graphs'] >
+		graphs_visible( ): ReturnType< $mol_plot_pane['graphs_positioned'] >
+		zoom( next?: number ): number
+		cursor_position( ): ReturnType< ReturnType< $mol_plot_pane['Touch'] >['pointer_center'] >
+		allow_draw( ): boolean
+		allow_pan( ): boolean
+		allow_zoom( ): boolean
+		action_type( ): ReturnType< ReturnType< $mol_plot_pane['Touch'] >['action_type'] >
+		action_point( ): ReturnType< ReturnType< $mol_plot_pane['Touch'] >['action_point'] >
+		draw_start( next?: any ): any
+		draw( next?: any ): any
+		draw_end( next?: any ): any
+		Touch( ): $mol_touch
+		aspect( ): string
+		hue_base( next?: number ): number
+		hue_shift( next?: number ): number
+		gap_hor( ): number
+		gap_vert( ): number
+		gap_left( ): ReturnType< $mol_plot_pane['gap_hor'] >
+		gap_right( ): ReturnType< $mol_plot_pane['gap_hor'] >
+		gap_top( ): ReturnType< $mol_plot_pane['gap_vert'] >
+		gap_bottom( ): ReturnType< $mol_plot_pane['gap_vert'] >
+		gap( ): $mol_vector_2d<$mol_vector_range<number>>
+		shift_limit( ): $mol_vector_2d<$mol_vector_range<number>>
+		shift_default( ): $mol_vector_2d<number>
+		shift( next?: $mol_vector_2d<number> ): $mol_vector_2d<number>
+		scale_limit( ): $mol_vector_2d<$mol_vector_range<number>>
+		scale_default( ): $mol_vector_2d<number>
+		scale( next?: $mol_vector_2d<number> ): $mol_vector_2d<number>
+		scale_x( next?: number ): number
+		scale_y( next?: number ): number
+		size( ): $mol_vector_2d<number>
+		size_real( ): $mol_vector_2d<number>
+		dimensions( ): $mol_vector_2d<$mol_vector_range<number>>
+		dimensions_viewport( ): $mol_vector_2d<$mol_vector_range<number>>
+		sub( ): ReturnType< $mol_plot_pane['graphs_sorted'] >
+		graphs_colored( ): ReturnType< $mol_plot_pane['graphs_visible'] >
+		plugins( ): readonly(any)[]
+	}
+	
+}
+
+//# sourceMappingURL=pane.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * Fastest plot lib for vector graphics.
+     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_plot_demo
+     */
+    class $mol_plot_pane extends $.$mol_plot_pane {
+        dimensions(): $mol_vector_2d<$mol_vector_range<number>>;
+        size(): $mol_vector_2d<number>;
+        graph_hue(index: number): number;
+        graphs_colored(): $.$mol_plot_graph[];
+        size_real(): $mol_vector_2d<number>;
+        view_box(): string;
+        scale_limit(): $mol_vector_2d<$mol_vector_range<number>>;
+        scale_default(): $mol_vector_2d<number>;
+        scale(next?: $mol_vector_2d<number>): $mol_vector_2d<number>;
+        scale_x(next?: number): number;
+        scale_y(next?: number): number;
+        shift_limit(): $mol_vector_2d<$mol_vector_range<number>>;
+        shift_default(): $mol_vector_2d<number>;
+        graph_touched: boolean;
+        shift(next?: $mol_vector_2d<number>): $mol_vector_2d<number>;
+        reset(event?: Event): void;
+        graphs_visible(): $.$mol_plot_graph[];
+        graphs_positioned(): readonly $.$mol_plot_graph[];
+        dimensions_viewport(): $mol_vector<$mol_vector_range<number>, 2>;
+        viewport(): $mol_vector_2d<$mol_vector_range<number>>;
+        graphs_sorted(): $.$mol_svg[];
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
+
+	type $mol_vector_2d__bog_vmap_scene_grid_1 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	type $mol_vector_2d__bog_vmap_scene_grid_2 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	type $bog_vmap_scene_grid_hor__title_bog_vmap_scene_grid_3 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $bog_vmap_scene_grid_hor['title'] >
+	>
+	type $bog_vmap_scene_grid_vert__title_bog_vmap_scene_grid_4 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $bog_vmap_scene_grid_vert['title'] >
+	>
+	export class $bog_vmap_scene_grid extends $mol_svg_root {
+		rulers( ): readonly($mol_svg)[]
+		aspect( ): string
+		shift( ): $mol_vector_2d<number>
+		scale( ): $mol_vector_2d<number>
+		sub( ): ReturnType< $bog_vmap_scene_grid['rulers'] >
+		Ruler_hor( ): $bog_vmap_scene_grid_hor
+		Ruler_vert( ): $bog_vmap_scene_grid_vert
+	}
+	
+	export class $bog_vmap_scene_grid_hor extends $mol_plot_ruler_hor {
+		title( ): string
+	}
+	
+	export class $bog_vmap_scene_grid_vert extends $mol_plot_ruler_vert {
+		title( ): string
+	}
+	
+}
+
+//# sourceMappingURL=grid.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * Infinite background grid. Feeds two $mol_plot_ruler instances the same way
+     * $mol_plot_pane feeds its graphs, and renders only their curves.
+     * @see ../../ARCHITECTURE.md section 8
+     */
+    class $bog_vmap_scene_grid extends $.$bog_vmap_scene_grid {
+        size_real(): $mol_vector_2d<number>;
+        view_box(): string;
+        viewport(): $mol_vector_2d<$mol_vector_range<number>>;
+        gap(): $mol_vector_2d<$mol_vector_range<number>>;
+        /** Viewport in world coordinates, by the formula from $mol_plot_pane. */
+        dimensions_viewport(): $mol_vector<$mol_vector_range<number>, 2>;
+        rulers(): $mol_svg_path[];
+    }
+    /** Base clamps its lines to 1000px tall. The canvas is whatever the window is. */
+    class $bog_vmap_scene_grid_hor extends $.$bog_vmap_scene_grid_hor {
+        curve(): string;
+    }
+    /** Same story, base clamps its lines to 2000px wide. */
+    class $bog_vmap_scene_grid_vert extends $.$bog_vmap_scene_grid_vert {
+        curve(): string;
+    }
+}
+
+declare namespace $ {
+    /** A rectangle in world units. Same shape the bridge reports geometry in. */
+    type $bog_vmap_scene_cull_box = {
+        readonly x: number;
+        readonly y: number;
+        readonly width: number;
+        readonly height: number;
+    };
+    /**
+     * Which free parts the scene has to draw for a given viewport.
+     *
+     * Pure arithmetic, deliberately kept out of the view: this is the whole of the
+     * culling decision, and a decision worth testing is worth being able to test
+     * without a DOM, a camera or a compiled document.
+     *
+     * **Culling decides what is DRAWN and never what is STORED.** Nothing here
+     * touches the document, and nothing it returns is written back anywhere: the
+     * source of a document must not depend on where the camera happens to point,
+     * not by a byte. That is the first invariant of the feature and the reason this
+     * function takes geometry and returns names, rather than taking a document.
+     *
+     * @param spots where the host placed each part, world coordinates
+     * @param sizes last measured box of each part, by the same names
+     * @param view world rectangle currently on screen
+     * @param slack world units added to every side of the viewport
+     */
+    function $bog_vmap_scene_cull(spots: {
+        readonly [name: string]: {
+            readonly x: number;
+            readonly y: number;
+        };
+    }, sizes: {
+        readonly [name: string]: $bog_vmap_scene_cull_box;
+    }, view: $bog_vmap_scene_cull_box, slack: number, names: readonly string[]): Set<string>;
+    /**
+     * The world rectangle a viewport covers under a camera.
+     *
+     * The camera is the world point at the top left plus an isotropic zoom, so the
+     * world is `screen / zoom` wide. A zoom of zero would make that infinite, and
+     * the host clamps it well away from there, but a division that can produce
+     * `Infinity` on a message from outside is not worth leaving open.
+     */
+    function $bog_vmap_scene_cull_viewport(camera: {
+        readonly x: number;
+        readonly y: number;
+        readonly zoom: number;
+    }, screen: {
+        readonly width: number;
+        readonly height: number;
+    }): $bog_vmap_scene_cull_box;
+}
+
+declare namespace $ {
     function $mol_support_css_overflow_anchor(this: $): boolean;
 }
 
@@ -2353,13 +2621,6 @@ declare namespace $ {
         static after(): $mol_dom_listener;
         static active(next?: boolean): boolean;
     }
-}
-
-declare namespace $ {
-    /**
-     * Fails if `Actual` type is not subtype of `Expected`.
-     */
-    type $mol_type_enforce<Actual extends Expected, Expected> = Actual;
 }
 
 declare namespace $ {
@@ -2420,6 +2681,1044 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
+}
+
+declare namespace $ {
+    /**
+     * Wire protocol between the vmap host and its sandboxed scene.
+     *
+     * The scene lives in an opaque origin, so `postMessage` is the only channel.
+     * Everything here is plain data: it must survive a structured clone.
+     *
+     * Direction is part of the type on purpose. The host owns the document text,
+     * the camera and the geometry; the scene only compiles, renders and measures.
+     * @see ../ARCHITECTURE.md section 4
+     */
+    const $bog_vmap_bridge_ns = "bog_vmap";
+    type $bog_vmap_bridge_camera = {
+        /** World coordinate under the left edge of the viewport. */
+        readonly x: number;
+        /** World coordinate under the top edge of the viewport. */
+        readonly y: number;
+        /** Isotropic zoom, as in Figma. Never per-axis. */
+        readonly zoom: number;
+    };
+    type $bog_vmap_bridge_rect = {
+        readonly x: number;
+        readonly y: number;
+        readonly width: number;
+        readonly height: number;
+    };
+    /**
+     * One component of a land library: the three sources a class is built from.
+     * Texts and nothing else, the scene has no way to reach the land itself.
+     */
+    type $bog_vmap_bridge_part = {
+        readonly tree: string;
+        readonly js: string;
+        readonly css: string;
+    };
+    /** Modifier keys of a relayed click. Named as `MouseEventInit` names them, so they spread straight into one. */
+    type $bog_vmap_bridge_mods = {
+        readonly altKey: boolean;
+        readonly ctrlKey: boolean;
+        readonly metaKey: boolean;
+        readonly shiftKey: boolean;
+    };
+    /**
+     * Host to scene.
+     *
+     * `doc_set` carries the whole document, not a patch: the scene holds no
+     * source of truth of its own and must never have to merge.
+     */
+    type $bog_vmap_bridge_down = {
+        readonly kind: 'doc_set';
+        /**
+         * Full document source in view.tree.
+         *
+         * Declaration order is NOT guaranteed: sorting is the scene's job,
+         * because only the scene knows the whole set of classes going into
+         * one `new Function` — the document's own plus everything its
+         * libraries contribute.
+         */
+        readonly src: string;
+        /**
+         * Bodies of the document classes, as JS source.
+         *
+         * A component is built from three sources, and this is the second.
+         * Without it every property stays undecorated, and an undecorated
+         * property is invisible to the hot swap of stage 4.
+         * Keyed by class name; a class with no handwritten body is absent.
+         */
+        readonly js: {
+            readonly [klass: string]: string;
+        };
+        /** Name of the root class to instantiate. */
+        readonly root: string;
+    } | {
+        readonly kind: 'css_set';
+        /** Styles travel apart from the source so that a CSS edit keeps live state. */
+        readonly css: string;
+    } | {
+        readonly kind: 'camera_set';
+        readonly camera: $bog_vmap_bridge_camera;
+    } | {
+        /**
+         * Where free details sit on the canvas, in world coordinates.
+         *
+         * A channel of its own, apart from `css_set`, and that is the whole
+         * point: the scene hangs these as its own style element, so the
+         * document's styles never carry them and the export cannot see them
+         * even by accident. Placement is editor state, not site content.
+         *
+         * Scaffolding until artboards (stage 6): inside an artboard layout is
+         * a plain $mol flex tree, and only free details lie by coordinates.
+         * The "everything absolute" model was considered and rejected.
+         */
+        readonly kind: 'spots_set';
+        readonly spots: {
+            readonly [node: string]: {
+                readonly x: number;
+                readonly y: number;
+            };
+        };
+    } | {
+        /**
+         * A click that landed on the host overlay and is meant for the document.
+         *
+         * There are no editor modes: the overlay takes every gesture, so a plain
+         * click — press and release without movement — is relayed here, and the
+         * scene replays it on the element under the point as synthetic pointer
+         * and click events, with focus. One click therefore both picks a part
+         * on the host and presses the live component in the sandbox.
+         *
+         * World coordinates, not screen ones: the host resolves its camera the
+         * same way it does for the hit test, and the scene resolves its own,
+         * so neither side has to know the other's pixel geometry.
+         *
+         * Answered like every other push, with `sizes`: a click is the most
+         * likely thing to start a loop in document code, so a scene that takes
+         * one and says nothing back is exactly what the watchdog has to notice.
+         */
+        readonly kind: 'click_at';
+        readonly x: number;
+        readonly y: number;
+        readonly mods: $bog_vmap_bridge_mods;
+    } | {
+        /**
+         * Are you alive.
+         *
+         * Штатный трафик уже несёт пульс: всякий толчок хоста сцена обязана
+         * подтвердить `sizes`. Слепая зона одна — код документа завис, когда его
+         * никто не толкал: живой компонент нажат настоящим событием сквозь дыру
+         * в оверлее, хосту толкать нечего, документ не менялся.
+         *
+         * Поэтому пульс идёт всегда, начиная с первого `sizes`.
+         */
+        readonly kind: 'ping';
+        readonly nonce: number;
+    } | {
+        readonly kind: 'asset_put';
+        readonly id: string;
+        readonly mime: string;
+        /** Bytes, not a blob: URL. A host blob: URL is dead in an opaque origin. */
+        readonly bytes: ArrayBuffer;
+    } | {
+        /**
+         * Sources of the land libraries attached to the document.
+         *
+         * A land arrives as text and is compiled into the same sandbox as the
+         * document, so a change of the list is a recompile — unlike `pack_set`,
+         * which travels the same wire but is answered by a fresh frame, because a
+         * realm cannot unload a bundle. The whole list every time, in the order
+         * the classes should be declared — the scene sorts by inheritance anyway
+         * and merges nothing.
+         *
+         * The host reads the lands, because only the host may touch the
+         * database; the scene sees strings.
+         * @see ../ARCHITECTURE.md sections 4 and 5
+         */
+        readonly kind: 'libs_set';
+        readonly parts: readonly $bog_vmap_bridge_part[];
+    } | {
+        /**
+         * Donor pack the scene is to load into its realm, as an absolute URL of
+         * the `web.js` of a deployed module. Empty means no pack, which the scene
+         * answers by compiling nothing at all.
+         *
+         * On the bridge and not in the address of the frame, because the frame
+         * has no address: it is raised from markup handed to it, so there is no
+         * query string to carry anything. The rule of section 5 — one pack per
+         * realm, a second one poisons the palette silently — is held by the host
+         * instead: the address of the pack is part of the key of the frame, so a
+         * different pack is a different frame element and a fresh realm.
+         *
+         * Sent first of everything after the handshake. A document compiled
+         * before the pack lands inherits the scene's own `$mol_view` and no later
+         * load can move it, so the scene waits for this message before it
+         * compiles anything.
+         * @see ../ARCHITECTURE.md sections 4 and 5
+         */
+        readonly kind: 'pack_set';
+        readonly uri: string;
+    } | {
+        /**
+         * Which wires the host wants values for: the root properties of the
+         * wires drawn on screen right now, and only those. The whole list every
+         * time; an empty list stops the flow. The host knows what is visible,
+         * the scene knows the values, so the question goes down and the answer
+         * comes up as `values`.
+         */
+        readonly kind: 'values_want';
+        readonly names: readonly string[];
+    };
+    /** Scene to host. */
+    type $bog_vmap_bridge_up = {
+        readonly kind: 'ready';
+    } | {
+        /** Ответ на `ping` тем же `nonce`. Живой поток, а не живой кадр. */
+        readonly kind: 'pong';
+        readonly nonce: number;
+    } | {
+        /**
+         * Геометрия узлов, ОТРИСОВАННЫХ в этот раз, а не всех существующих.
+         *
+         * С появлением culling молчание про узел значит «не рисовался», а НЕ
+         * «узла нет». Поэтому хост обязан **мержить**, а не заменять: иначе
+         * коробки всего только что скрытого стираются, и рамка выделения,
+         * которая рисуется ровно из них, мигает на краю холста.
+         *
+         * Раз молчание больше не означает отсутствия, про отсутствие должен
+         * сказать кто-то явно — это делает удаление узла из документа.
+         */
+        readonly kind: 'sizes';
+        readonly sizes: {
+            readonly [node: string]: $bog_vmap_bridge_rect;
+        };
+    } | {
+        /**
+         * Current values of the wires the host asked for in `values_want`,
+         * keyed by the root property of the wire, as short text. A read that
+         * throws comes back as the text of the error, so a broken wire is
+         * labelled rather than the scene taken down. Throttled by the scene.
+         */
+        readonly kind: 'values';
+        readonly values: {
+            readonly [wire: string]: string;
+        };
+    } | {
+        readonly kind: 'asset_want';
+        readonly id: string;
+    } | {
+        /**
+         * A key pressed while the focus was inside the frame, relayed for the
+         * editor to act on: with the pointer let inside a part the keydown lands
+         * in the document of the frame and the host's listener never sees it.
+         * Only keys the editor reacts to travel — `Escape` — never what is being
+         * typed into the document.
+         */
+        readonly kind: 'key';
+        readonly key: 'Escape';
+    } | {
+        readonly kind: 'error';
+        /** Channel. The two clear independently. */
+        readonly at: 'compile' | 'runtime';
+        /**
+         * `null` means the channel is clear again.
+         *
+         * Errors are edge-triggered: the scene posts only on change, so a
+         * repeated identical failure stays silent. Without an explicit
+         * "clear" the host cannot tell a fixed document from a still
+         * broken one, because silence means both.
+         *
+         * Null rather than an empty string on purpose: an empty error text
+         * is a plausible bug, and it must not read as good news.
+         */
+        readonly message: string | null;
+        /** Node the failure belongs to, when the scene can attribute it. */
+        readonly node?: string;
+    };
+    type $bog_vmap_bridge_message = $bog_vmap_bridge_down | $bog_vmap_bridge_up;
+    /** Puts a message on the wire. Target is the peer window. */
+    function $bog_vmap_bridge_send<Message extends $bog_vmap_bridge_message>(target: {
+        postMessage(data: unknown, origin: string): void;
+    }, message: Message): void;
+    /**
+     * Takes a message off the wire, or null when it is not ours.
+     *
+     * The channel has no origin to check against, because the scene runs in an
+     * opaque origin, so anything able to reach this window can post here.
+     * Unknown shapes are dropped rather than trusted.
+     *
+     * Always pass `peer` on the host side. Without it any window that posts a
+     * `ready` can take the channel over, and the host will happily talk to it:
+     * seen for real on stage 1, where a stray debug frame stole the bridge and
+     * the host spent an hour posting into a dead window. Identity of the peer
+     * comes from `Scene().dom_node().contentWindow`, never from `event.source`.
+     *
+     * Passing the argument at all turns the check on, so a peer that is not
+     * known yet rejects every message instead of letting everything through.
+     * Omitting it entirely is the only way to opt out, and only the scene may:
+     * it has exactly one correspondent and answers into the same window.
+     */
+    function $bog_vmap_bridge_read<Message extends $bog_vmap_bridge_message>(event: {
+        data?: unknown;
+        source?: unknown;
+    }, peer?: unknown): Message | null;
+}
+
+declare namespace $ {
+    /**
+     * Convert asynchronous (promise-based) API to synchronous by wrapping function and method calls in a fiber.
+     * @see https://mol.hyoo.ru/#!section=docs/=1fcpsq_1wh0h2
+     */
+    export function $mol_wire_sync<Host extends object>(obj: Host): ObjectOrFunctionResultAwaited<Host>;
+    type FunctionResultAwaited<Some> = Some extends (...args: infer Args) => infer Res ? (...args: Args) => Awaited<Res> : Some;
+    type ConstructorResultAwaited<Some> = Some extends new (...args: infer Args) => infer Res ? new (...args: Args) => Res : {};
+    type MethodsResultAwaited<Host extends Object> = {
+        [K in keyof Host]: FunctionResultAwaited<Host[K]>;
+    };
+    type ObjectOrFunctionResultAwaited<Some> = (Some extends (...args: any) => unknown ? FunctionResultAwaited<Some> : {}) & (Some extends Object ? MethodsResultAwaited<Some> & ConstructorResultAwaited<Some> : Some);
+    export {};
+}
+
+declare namespace $ {
+    /** Dynamic sources import. */
+    class $mol_import extends $mol_object2 {
+        static module(uri: string): any;
+        static module_async(uri: string): Promise<any>;
+        static script(uri: string): any;
+        static script_async(uri: string): Promise<any>;
+        static style(uri: string): any;
+        static style_async(uri: string): any;
+    }
+}
+
+declare namespace $ {
+    /** Position in any resource. */
+    class $mol_span extends $mol_object2 {
+        readonly uri: string;
+        readonly source: string;
+        readonly row: number;
+        readonly col: number;
+        readonly length: number;
+        constructor(uri: string, source: string, row: number, col: number, length: number);
+        /** Span for begin of unknown resource */
+        static unknown: $mol_span;
+        /** Makes new span for begin of resource. */
+        static begin(uri: string, source?: string): $mol_span;
+        /** Makes new span for end of resource. */
+        static end(uri: string, source: string): $mol_span;
+        /** Makes new span for entire resource. */
+        static entire(uri: string, source: string): $mol_span;
+        toString(): string;
+        toJSON(): {
+            uri: string;
+            row: number;
+            col: number;
+            length: number;
+        };
+        /** Makes new error for this span. */
+        error(message: string, Class?: ErrorConstructor): Error;
+        /** Makes new span for same uri. */
+        span(row: number, col: number, length: number): $mol_span;
+        /** Makes new span after end of this. */
+        after(length?: number): $mol_span;
+        /** Makes new span between begin and end. */
+        slice(begin: number, end?: number): $mol_span;
+    }
+}
+
+declare namespace $ {
+    /** Syntax error with cordinates and source line snippet. */
+    class $mol_error_syntax extends SyntaxError {
+        reason: string;
+        line: string;
+        span: $mol_span;
+        constructor(reason: string, line: string, span: $mol_span);
+    }
+}
+
+declare namespace $ {
+    /** Parses tree format from string. */
+    function $mol_tree2_from_string(this: $, str: string, uri?: string): $mol_tree2;
+}
+
+declare namespace $ {
+    /** Serializes tree to string in tree format. */
+    function $mol_tree2_to_string(this: $, tree: $mol_tree2): string;
+}
+
+declare namespace $ {
+    /** Path by types in tree. */
+    type $mol_tree2_path = Array<string | number | null>;
+    /** Hask tool for processing node. */
+    type $mol_tree2_hack<Context> = (input: $mol_tree2, belt: $mol_tree2_belt<Context>, context: Context) => readonly $mol_tree2[];
+    /** Collection of hask tools for processing tree. */
+    type $mol_tree2_belt<Context> = Record<string, $mol_tree2_hack<Context>>;
+    /**
+     * Abstract Syntax Tree with human readable serialization.
+     * Avoid direct instantiation. Use static factories instead.
+     * @see https://github.com/nin-jin/tree.d
+     */
+    class $mol_tree2 extends Object {
+        /** Type of structural node, `value` should be empty */
+        readonly type: string;
+        /** Content of data node, `type` should be empty */
+        readonly value: string;
+        /** Child nodes */
+        readonly kids: readonly $mol_tree2[];
+        /** Position in most far source resource */
+        readonly span: $mol_span;
+        constructor(
+        /** Type of structural node, `value` should be empty */
+        type: string, 
+        /** Content of data node, `type` should be empty */
+        value: string, 
+        /** Child nodes */
+        kids: readonly $mol_tree2[], 
+        /** Position in most far source resource */
+        span: $mol_span);
+        /** Makes collection node. */
+        static list(kids: readonly $mol_tree2[], span?: $mol_span): $mol_tree2;
+        /** Makes new derived collection node. */
+        list(kids: readonly $mol_tree2[]): $mol_tree2;
+        /** Makes data node for any string. */
+        static data(value: string, kids?: readonly $mol_tree2[], span?: $mol_span): $mol_tree2;
+        /** Makes new derived data node. */
+        data(value: string, kids?: readonly $mol_tree2[]): $mol_tree2;
+        /** Makes struct node. */
+        static struct(type: string, kids?: readonly $mol_tree2[], span?: $mol_span): $mol_tree2;
+        /** Makes new derived structural node. */
+        struct(type: string, kids?: readonly $mol_tree2[]): $mol_tree2;
+        /** Makes new derived node with different kids id defined. */
+        clone(kids: readonly $mol_tree2[], span?: $mol_span): $mol_tree2;
+        /** Returns multiline text content. */
+        text(): string;
+        /** Parses tree format. */
+        /** @deprecated Use $mol_tree2_from_string */
+        static fromString(str: string, uri?: string): $mol_tree2;
+        /** Serializes to tree format. */
+        toString(): string;
+        /** Makes new tree with node overrided by path. */
+        insert(value: $mol_tree2 | null, ...path: $mol_tree2_path): $mol_tree2;
+        /** Makes new tree with node overrided by path. */
+        update(value: readonly $mol_tree2[], ...path: $mol_tree2_path): readonly $mol_tree2[];
+        /** Query nodes by path. */
+        select(...path: $mol_tree2_path): $mol_tree2;
+        /** Filter kids by path or value. */
+        filter(path: string[], value?: string): $mol_tree2;
+        hack_self<Context extends {
+            span?: $mol_span;
+            [key: string]: unknown;
+        } = {}>(belt: $mol_tree2_belt<Context>, context?: Context): readonly $mol_tree2[];
+        /** Transform tree through context with transformers */
+        hack<Context extends {
+            span?: $mol_span;
+            [key: string]: unknown;
+        } = {}>(belt: $mol_tree2_belt<Context>, context?: Context): $mol_tree2[];
+        /** Makes Error with node coordinates. */
+        error(message: string, Class?: ErrorConstructor): Error;
+    }
+    class $mol_tree2_empty extends $mol_tree2 {
+        constructor();
+    }
+}
+
+declare namespace $ {
+    class $mol_view_tree2_error extends Error {
+        readonly spans: readonly $mol_span[];
+        constructor(message: string, spans: readonly $mol_span[]);
+        toJSON(): {
+            message: string;
+            spans: readonly $mol_span[];
+        };
+    }
+    class $mol_view_tree2_error_suggestions {
+        readonly suggestions: readonly string[];
+        constructor(suggestions: readonly string[]);
+        toString(): string;
+        toJSON(): readonly string[];
+    }
+    function $mol_view_tree2_error_str(strings: readonly string[], ...parts: readonly ($mol_span | readonly $mol_span[] | string | number | $mol_view_tree2_error_suggestions)[]): $mol_view_tree2_error;
+}
+
+declare namespace $ {
+    function $mol_view_tree2_child(this: $, tree: $mol_tree2): $mol_tree2;
+}
+
+declare namespace $ {
+    function $mol_view_tree2_classes(defs: $mol_tree2): $mol_tree2;
+}
+
+declare namespace $ {
+    function $mol_view_tree2_normalize(this: $, defs: $mol_tree2): $mol_tree2;
+}
+
+declare namespace $ {
+    /**
+     * Return `unknown` when `A` and `B` are the same type. `never` otherwise.
+     *
+     * 	$mol_type_equals< unknown , any > & number // true
+     * 	$mol_type_equals< never , never > & number // false
+     */
+    type $mol_type_equals<A, B> = (<X>() => X extends A ? 1 : 2) extends (<X>() => X extends B ? 1 : 2) ? true : false;
+}
+
+declare namespace $ {
+    /**
+     * Reqursive converts intersection of records to record of intersections
+     *
+     * 	// { a : { x : 1 , y : 2 } }
+     * 	$mol_type_merge< { a : { x : 1 } }&{ a : { y : 2 } } >
+     */
+    type $mol_type_merge<Intersection> = Intersection extends (...a: any[]) => any ? Intersection : Intersection extends new (...a: any[]) => any ? Intersection : Intersection extends object ? $mol_type_merge_object<Intersection> extends Intersection ? true extends $mol_type_equals<{
+        [Key in keyof Intersection]: Intersection[Key];
+    }, Intersection> ? Intersection : {
+        [Key in keyof Intersection]: $mol_type_merge<Intersection[Key]>;
+    } : Intersection : Intersection;
+    /**
+     * Flat converts intersection of records to record of intersections
+     *
+     * 	// { a: 1, b: 2 }
+     * 	$mol_type_merge< { a: 1 } & { b: 2 } >
+     */
+    type $mol_type_merge_object<Intersection> = {
+        [Key in keyof Intersection]: Intersection[Key];
+    };
+}
+
+declare namespace $ {
+    /**
+     * Converts union of types to intersection of same types
+     *
+     * 	$mol_type_intersect< number | string > // number & string
+     */
+    type $mol_type_intersect<Union> = (Union extends any ? (_: Union) => void : never) extends ((_: infer Intersection) => void) ? Intersection : never;
+}
+
+declare namespace $ {
+    type $mol_unicode_category = [$mol_unicode_category_binary] | ['General_Category', $mol_char_category_general] | ['Script', $mol_unicode_category_script] | ['Script_Extensions', $mol_unicode_category_script];
+    type $mol_unicode_category_binary = 'ASCII' | 'ASCII_Hex_Digit' | 'Alphabetic' | 'Any' | 'Assigned' | 'Bidi_Control' | 'Bidi_Mirrored' | 'Case_Ignorable' | 'Cased' | 'Changes_When_Casefolded' | 'Changes_When_Casemapped' | 'Changes_When_Lowercased' | 'Changes_When_NFKC_Casefolded' | 'Changes_When_Titlecased' | 'Changes_When_Uppercased' | 'Dash' | 'Default_Ignorable_Code_Point' | 'Deprecated' | 'Diacritic' | 'Emoji' | 'Emoji_Component' | 'Emoji_Modifier' | 'Emoji_Modifier_Base' | 'Emoji_Presentation' | 'Extended_Pictographic' | 'Extender' | 'Grapheme_Base' | 'Grapheme_Extend' | 'Hex_Digit' | 'IDS_Binary_Operator' | 'IDS_Trinary_Operator' | 'ID_Continue' | 'ID_Start' | 'Ideographic' | 'Join_Control' | 'Logical_Order_Exception' | 'Lowercase' | 'Math' | 'Noncharacter_Code_Point' | 'Pattern_Syntax' | 'Pattern_White_Space' | 'Quotation_Mark' | 'Radical' | 'Regional_Indicator' | 'Sentence_Terminal' | 'Soft_Dotted' | 'Terminal_Punctuation' | 'Unified_Ideograph' | 'Uppercase' | 'Variation_Selector' | 'White_Space' | 'XID_Continue' | 'XID_Start';
+    type $mol_char_category_general = 'Cased_Letter' | 'Close_Punctuation' | 'Connector_Punctuation' | 'Control' | 'Currency_Symbol' | 'Dash_Punctuation' | 'Decimal_Number' | 'Enclosing_Mark' | 'Final_Punctuation' | 'Format' | 'Initial_Punctuation' | 'Letter' | 'Letter_Number' | 'Line_Separator' | 'Lowercase_Letter' | 'Mark' | 'Math_Symbol' | 'Modifier_Letter' | 'Modifier_Symbol' | 'Nonspacing_Mark' | 'Number' | 'Open_Punctuation' | 'Other' | 'Other_Letter' | 'Other_Number' | 'Other_Punctuation' | 'Other_Symbol' | 'Paragraph_Separator' | 'Private_Use' | 'Punctuation' | 'Separator' | 'Space_Separator' | 'Spacing_Mark' | 'Surrogate' | 'Symbol' | 'Titlecase_Letter' | 'Unassigned' | 'Uppercase_Letter';
+    type $mol_unicode_category_script = 'Adlam' | 'Ahom' | 'Anatolian_Hieroglyphs' | 'Arabic' | 'Armenian' | 'Avestan' | 'Balinese' | 'Bamum' | 'Bassa_Vah' | 'Batak' | 'Bengali' | 'Bhaiksuki' | 'Bopomofo' | 'Brahmi' | 'Braille' | 'Buginese' | 'Buhid' | 'Canadian_Aboriginal' | 'Carian' | 'Caucasian_Albanian' | 'Chakma' | 'Cham' | 'Chorasmian' | 'Cherokee' | 'Common' | 'Coptic' | 'Cuneiform' | 'Cypriot' | 'Cyrillic' | 'Deseret' | 'Devanagari' | 'Dives_Akuru' | 'Dogra' | 'Duployan' | 'Egyptian_Hieroglyphs' | 'Elbasan' | 'Elymaic' | 'Ethiopic' | 'Georgian' | 'Glagolitic' | 'Gothic' | 'Grantha' | 'Greek' | 'Gujarati' | 'Gunjala_Gondi' | 'Gurmukhi' | 'Han' | 'Hangul' | 'Hanifi_Rohingya' | 'Hanunoo' | 'Hatran' | 'Hebrew' | 'Hiragana' | 'Imperial_Aramaic' | 'Inherited' | 'Inscriptional_Pahlavi' | 'Inscriptional_Parthian' | 'Javanese' | 'Kaithi' | 'Kannada' | 'Katakana' | 'Kayah_Li' | 'Kharoshthi' | 'Khitan_Small_Script' | 'Khmer' | 'Khojki' | 'Khudawadi' | 'Lao' | 'Latin' | 'Lepcha' | 'Limbu' | 'Linear_A' | 'Linear_B' | 'Lisu' | 'Lycian' | 'Lydian' | 'Mahajani' | 'Makasar' | 'Malayalam' | 'Mandaic' | 'Manichaean' | 'Marchen' | 'Medefaidrin' | 'Masaram_Gondi' | 'Meetei_Mayek' | 'Mende_Kikakui' | 'Meroitic_Cursive' | 'Meroitic_Hieroglyphs' | 'Miao' | 'Modi' | 'Mongolian' | 'Mro' | 'Multani' | 'Myanmar' | 'Nabataean' | 'Nandinagari' | 'New_Tai_Lue' | 'Newa' | 'Nko' | 'Nushu' | 'Nyiakeng_Puachue_Hmong' | 'Ogham' | 'Ol_Chiki' | 'Old_Hungarian' | 'Old_Italic' | 'Old_North_Arabian' | 'Old_Permic' | 'Old_Persian' | 'Old_Sogdian' | 'Old_South_Arabian' | 'Old_Turkic' | 'Oriya' | 'Osage' | 'Osmanya' | 'Pahawh_Hmong' | 'Palmyrene' | 'Pau_Cin_Hau' | 'Phags_Pa' | 'Phoenician' | 'Psalter_Pahlavi' | 'Rejang' | 'Runic' | 'Samaritan' | 'Saurashtra' | 'Sharada' | 'Shavian' | 'Siddham' | 'SignWriting' | 'Sinhala' | 'Sogdian' | 'Sora_Sompeng' | 'Soyombo' | 'Sundanese' | 'Syloti_Nagri' | 'Syriac' | 'Tagalog' | 'Tagbanwa' | 'Tai_Le' | 'Tai_Tham' | 'Tai_Viet' | 'Takri' | 'Tamil' | 'Tangut' | 'Telugu' | 'Thaana' | 'Thai' | 'Tibetan' | 'Tifinagh' | 'Tirhuta' | 'Ugaritic' | 'Vai' | 'Wancho' | 'Warang_Citi' | 'Yezidi' | 'Yi' | 'Zanabazar_Square';
+}
+
+interface String {
+    match<RE extends RegExp>(regexp: RE): ReturnType<RE[typeof Symbol.match]>;
+    matchAll<RE extends RegExp>(regexp: RE): ReturnType<RE[typeof Symbol.matchAll]>;
+}
+declare namespace $ {
+    type Groups_to_params<T> = {
+        [P in keyof T]?: T[P] | boolean | undefined;
+    };
+    export type $mol_regexp_source = number | string | RegExp | {
+        [key in string]: $mol_regexp_source;
+    } | readonly [$mol_regexp_source, ...$mol_regexp_source[]];
+    export type $mol_regexp_groups<Source extends $mol_regexp_source> = Source extends number ? {} : Source extends string ? {} : Source extends $mol_regexp_source[] ? $mol_type_merge<$mol_type_intersect<{
+        [key in Extract<keyof Source, number>]: $mol_regexp_groups<Source[key]>;
+    }[Extract<keyof Source, number>]>> : Source extends RegExp ? Record<string, string> extends NonNullable<NonNullable<ReturnType<Source['exec']>>['groups']> ? {} : NonNullable<NonNullable<ReturnType<Source['exec']>>['groups']> : Source extends {
+        readonly [key in string]: $mol_regexp_source;
+    } ? $mol_type_merge<$mol_type_intersect<{
+        [key in keyof Source]: $mol_type_merge<$mol_type_override<{
+            readonly [k in Extract<keyof Source, string>]: string;
+        }, {
+            readonly [k in key]: Source[key] extends string ? Source[key] : string;
+        }> & $mol_regexp_groups<Source[key]>>;
+    }[keyof Source]>> : never;
+    /** Type safe reguar expression builder */
+    export class $mol_regexp<Groups extends Record<string, string>> extends RegExp {
+        readonly groups: (Extract<keyof Groups, string>)[];
+        /** Prefer to use $mol_regexp.from */
+        constructor(source: string, flags?: string, groups?: (Extract<keyof Groups, string>)[]);
+        [Symbol.matchAll](str: string): RegExpStringIterator<RegExpExecArray & $mol_type_override<RegExpExecArray, {
+            groups?: {
+                [key in keyof Groups]: string;
+            };
+        }>>;
+        /** Parses input and returns found capture groups or null */
+        [Symbol.match](str: string): null | RegExpMatchArray;
+        /** Splits string by regexp edges */
+        [Symbol.split](str: string): string[];
+        test(str: string): boolean;
+        exec(str: string): RegExpExecArray & $mol_type_override<RegExpExecArray, {
+            groups?: {
+                [key in keyof Groups]: string;
+            };
+        }> | null;
+        generate(params: Groups_to_params<Groups>): string | null;
+        get native(): RegExp;
+        /** Makes regexp that greedy repeats this pattern with delimiter */
+        static separated<Chunk extends $mol_regexp_source, Sep extends $mol_regexp_source>(chunk: Chunk, sep: Sep): $mol_regexp<[$mol_regexp<[[Chunk], Sep] extends infer T ? T extends [[Chunk], Sep] ? T extends $mol_regexp_source[] ? $mol_type_merge<$mol_type_intersect<{ [key in Extract<keyof T, number>]: $mol_regexp_groups<T[key]>; }[Extract<keyof T, number>]>> : T extends RegExp ? Record<string, string> extends NonNullable<NonNullable<ReturnType<T["exec"]>>["groups"]> ? {} : NonNullable<NonNullable<ReturnType<T["exec"]>>["groups"]> : T extends {
+            readonly [x: string]: $mol_regexp_source;
+        } ? $mol_type_merge<$mol_type_intersect<{ [key_1 in keyof T]: $mol_type_merge<Omit<{ readonly [k in Extract<keyof T, string>]: string; }, key_1> & { readonly [k_1 in key_1]: T[key_1] extends string ? T[key_1] : string; } & $mol_regexp_groups<T[key_1]>>; }[keyof T]>> : never : never : never>, Chunk] extends infer T_1 ? T_1 extends [$mol_regexp<[[Chunk], Sep] extends infer T_2 ? T_2 extends [[Chunk], Sep] ? T_2 extends $mol_regexp_source[] ? $mol_type_merge<$mol_type_intersect<{ [key_4 in Extract<keyof T_2, number>]: $mol_regexp_groups<T_2[key_4]>; }[Extract<keyof T_2, number>]>> : T_2 extends RegExp ? Record<string, string> extends NonNullable<NonNullable<ReturnType<T_2["exec"]>>["groups"]> ? {} : NonNullable<NonNullable<ReturnType<T_2["exec"]>>["groups"]> : T_2 extends {
+            readonly [x: string]: $mol_regexp_source;
+        } ? $mol_type_merge<$mol_type_intersect<{ [key_5 in keyof T_2]: $mol_type_merge<Omit<{ readonly [k in Extract<keyof T_2, string>]: string; }, key_5> & { readonly [k_1 in key_5]: T_2[key_5] extends string ? T_2[key_5] : string; } & $mol_regexp_groups<T_2[key_5]>>; }[keyof T_2]>> : never : never : never>, Chunk] ? T_1 extends $mol_regexp_source[] ? $mol_type_merge<$mol_type_intersect<{ [key_2 in Extract<keyof T_1, number>]: $mol_regexp_groups<T_1[key_2]>; }[Extract<keyof T_1, number>]>> : T_1 extends RegExp ? Record<string, string> extends NonNullable<NonNullable<ReturnType<T_1["exec"]>>["groups"]> ? {} : NonNullable<NonNullable<ReturnType<T_1["exec"]>>["groups"]> : T_1 extends {
+            readonly [x: string]: $mol_regexp_source;
+        } ? $mol_type_merge<$mol_type_intersect<{ [key_3 in keyof T_1]: $mol_type_merge<Omit<{ readonly [k in Extract<keyof T_1, string>]: string; }, key_3> & { readonly [k_1 in key_3]: T_1[key_3] extends string ? T_1[key_3] : string; } & $mol_regexp_groups<T_1[key_3]>>; }[keyof T_1]>> : never : never : never>;
+        /** Makes regexp that non-greedy repeats this pattern from min to max count */
+        static repeat<Source extends $mol_regexp_source>(source: Source, min?: number, max?: number): $mol_regexp<$mol_regexp_groups<Source>>;
+        /** Makes regexp that greedy repeats this pattern from min to max count */
+        static repeat_greedy<Source extends $mol_regexp_source>(source: Source, min?: number, max?: number): $mol_regexp<$mol_regexp_groups<Source>>;
+        /** Makes regexp that match any of options */
+        static vary<Sources extends readonly $mol_regexp_source[]>(sources: Sources, flags?: string): $mol_regexp<$mol_regexp_groups<Sources[number]>>;
+        /** Makes regexp that allow absent of this pattern */
+        static optional<Source extends $mol_regexp_source>(source: Source): $mol_regexp<$mol_regexp_groups<Source>>;
+        /** Makes regexp that look ahead for pattern */
+        static force_after(source: $mol_regexp_source): $mol_regexp<Record<string, string>>;
+        /** Makes regexp that look ahead for pattern */
+        static forbid_after(source: $mol_regexp_source): $mol_regexp<Record<string, string>>;
+        /** Converts some js values to regexp */
+        static from<Source extends $mol_regexp_source>(source: Source, { ignoreCase, multiline }?: Partial<Pick<RegExp, 'ignoreCase' | 'multiline'>>): $mol_regexp<$mol_regexp_groups<Source>>;
+        /** Makes regexp which includes only unicode category */
+        static unicode_only(...category: $mol_unicode_category): $mol_regexp<Record<string, string>>;
+        /** Makes regexp which excludes unicode category */
+        static unicode_except(...category: $mol_unicode_category): $mol_regexp<Record<string, string>>;
+        static char_range(from: number, to: number): $mol_regexp<{}>;
+        static char_only(...allowed: readonly [$mol_regexp_source, ...$mol_regexp_source[]]): $mol_regexp<{}>;
+        static char_except(...forbidden: readonly [$mol_regexp_source, ...$mol_regexp_source[]]): $mol_regexp<{}>;
+        static decimal_only: $mol_regexp<{}>;
+        static decimal_except: $mol_regexp<{}>;
+        static latin_only: $mol_regexp<{}>;
+        static latin_except: $mol_regexp<{}>;
+        static space_only: $mol_regexp<{}>;
+        static space_except: $mol_regexp<{}>;
+        static word_break_only: $mol_regexp<{}>;
+        static word_break_except: $mol_regexp<{}>;
+        static tab: $mol_regexp<{}>;
+        static slash_back: $mol_regexp<{}>;
+        static nul: $mol_regexp<{}>;
+        static char_any: $mol_regexp<{}>;
+        static begin: $mol_regexp<{}>;
+        static end: $mol_regexp<{}>;
+        static or: $mol_regexp<{}>;
+        static line_end: $mol_regexp<{
+            readonly win_end: string;
+            readonly mac_end: string;
+        }>;
+    }
+    export {};
+}
+
+declare namespace $ {
+    let $mol_view_tree2_prop_signature: $mol_regexp<{
+        readonly name: string;
+        readonly key: string;
+        readonly next: string;
+    }>;
+}
+
+declare namespace $ {
+    function $mol_view_tree2_prop_parts(this: $, prop: $mol_tree2): {
+        name: string;
+        key: string;
+        next: string;
+    };
+}
+
+declare namespace $ {
+    function $mol_view_tree2_prop_quote(name: $mol_tree2): $mol_tree2;
+}
+
+declare namespace $ {
+    function $mol_view_tree2_class_match(klass?: $mol_tree2): boolean;
+}
+
+declare namespace $ {
+    function $mol_view_tree2_class_super(this: $, klass: $mol_tree2): $mol_tree2;
+}
+
+declare namespace $ {
+    function $mol_view_tree2_class_props(this: $, klass: $mol_tree2): $mol_tree2[];
+}
+
+declare namespace $ {
+    class $mol_storage extends $mol_object2 {
+        /** Is storage a long term. */
+        static persisted(next?: boolean): boolean;
+        /** Total storage quota in bytes. */
+        static total(): number;
+        /** Total storage usage in bytes. */
+        static used(): number;
+        /** Minimum available free space in bytes. */
+        static free(): number;
+        /** Fulfillness of storage. */
+        static portion(): number;
+        /**
+         * Fulfillness logarithmic level.
+         * `0` - empty
+         * `1` - half free
+         * `2` - quart free
+         * `Infinity` - fulfilled
+         */
+        static level(): number;
+    }
+}
+
+declare namespace $ {
+    let $mol_mem_persist: typeof $mol_wire_solid;
+}
+
+declare namespace $ {
+    function $mol_wait_user_async(this: $): Promise<unknown>;
+    function $mol_wait_user(this: $): unknown;
+}
+
+declare namespace $ {
+    class $mol_storage_web extends $mol_storage {
+        static native(): StorageManager;
+        static persisted(next?: boolean, cache?: 'cache'): boolean;
+        static estimate(): StorageEstimate;
+        static total(): number;
+        static used(): number;
+        static free(): number;
+        static portion(): number;
+        static dir(): FileSystemDirectoryHandle;
+    }
+}
+
+declare namespace $ {
+    class $mol_state_local<Value> extends $mol_object {
+        static 'native()': Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+        static native(): Storage | {
+            getItem(key: string): any;
+            setItem(key: string, value: string): void;
+            removeItem(key: string): void;
+        };
+        static changes(next?: StorageEvent): StorageEvent | undefined;
+        static value<Value>(key: string, next?: Value | null): Value | null;
+        prefix(): string;
+        value(key: string, next?: Value): Value | null;
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
+    /**
+     * Decorates method to fiber to ensure it is executed only once inside other fiber from [mol_wire](../wire/README.md)
+     * @see https://mol.hyoo.ru/#!section=docs/=1fcpsq_1wh0h2
+     */
+    let $mol_action: typeof $mol_wire_method;
+}
+
+declare namespace $ {
+    class $mol_lock extends $mol_object {
+        protected promise: null | Promise<void>;
+        wait(): Promise<() => void>;
+        grab(): () => void;
+    }
+}
+
+declare namespace $ {
+    function $mol_compare_array<Value extends ArrayLike<unknown>>(a: Value, b: Value): boolean;
+}
+
+declare namespace $ {
+    type $mol_charset_encoding = 'utf8' | 'utf-16le' | 'utf-16be' | 'ibm866' | 'iso-8859-2' | 'iso-8859-3' | 'iso-8859-4' | 'iso-8859-5' | 'iso-8859-6' | 'iso-8859-7' | 'iso-8859-8' | 'iso-8859-8i' | 'iso-8859-10' | 'iso-8859-13' | 'iso-8859-14' | 'iso-8859-15' | 'iso-8859-16' | 'koi8-r' | 'koi8-u' | 'koi8-r' | 'macintosh' | 'windows-874' | 'windows-1250' | 'windows-1251' | 'windows-1252' | 'windows-1253' | 'windows-1254' | 'windows-1255' | 'windows-1256' | 'windows-1257' | 'windows-1258' | 'x-mac-cyrillic' | 'gbk' | 'gb18030' | 'hz-gb-2312' | 'big5' | 'euc-jp' | 'iso-2022-jp' | 'shift-jis' | 'euc-kr' | 'iso-2022-kr';
+}
+
+declare namespace $ {
+    function $mol_charset_decode(buffer: AllowSharedBufferSource, encoding?: $mol_charset_encoding): string;
+}
+
+declare namespace $ {
+    /** Temporary buffer. Recursive usage isn't supported. */
+    function $mol_charset_buffer(size: number): Uint8Array<ArrayBuffer>;
+}
+
+declare namespace $ {
+    function $mol_charset_encode(str: string): Uint8Array<ArrayBuffer>;
+    function $mol_charset_encode_to(str: string, buf: Uint8Array<ArrayBuffer>, from?: number): number;
+    function $mol_charset_encode_size(str: string): number;
+}
+
+declare namespace $ {
+    type $mol_file_transaction_mode = 'create' | 'exists_truncate' | 'exists_fail' | 'read_only' | 'write_only' | 'read_write' | 'append';
+    type $mol_file_transaction_buffer = ArrayBufferView;
+    class $mol_file_transaction extends $mol_object {
+        path(): string;
+        modes(): readonly $mol_file_transaction_mode[];
+        write(options: {
+            buffer: ArrayBufferView | string | readonly ArrayBufferView[];
+            offset?: number | null;
+            length?: number | null;
+            position?: number | null;
+        }): number;
+        read(): Uint8Array<ArrayBuffer>;
+        truncate(size: number): void;
+        flush(): void;
+        close(): void;
+        destructor(): void;
+    }
+}
+
+declare namespace $ {
+    class $mol_file_base extends $mol_object {
+        static absolute<This extends typeof $mol_file_base>(this: This, path: string): InstanceType<This>;
+        static relative<This extends typeof $mol_file_base>(this: This, path: string): InstanceType<This>;
+        static base: string;
+        path(): string;
+        parent(): this;
+        exists_cut(): boolean;
+        protected root(): boolean;
+        protected stat(next?: $mol_file_stat | null, virt?: 'virt'): $mol_file_stat | null;
+        protected static changed: Set<$mol_file_base>;
+        protected static frame: null | $mol_after_timeout;
+        protected static changed_add(type: 'change' | 'rename', path: string): void;
+        /**
+         * Должно быть больше, чем время между событиями от вотчера при записи внешним процессом.
+         * Иначе запуск ресетов паралельно с изменением может привести к неконсистентности.
+         */
+        static watch_debounce(): number;
+        static flush(): void;
+        protected static watching: boolean;
+        protected static lock: $mol_lock;
+        protected static watch_off(path: string): void;
+        static unwatched<Result>(side_effect: () => Result, affected_dir: string): Result;
+        reset(): void;
+        modified(): Date | null;
+        version(): string;
+        protected info(path: string): null | $mol_file_stat;
+        protected ensure(): void;
+        protected drop(): void;
+        protected copy(to: string): void;
+        protected read(): Uint8Array<ArrayBuffer>;
+        protected write(buffer: Uint8Array<ArrayBuffer>): void;
+        protected kids(): readonly this[];
+        readable(opts: {
+            start?: number;
+            end?: number;
+        }): ReadableStream<Uint8Array<ArrayBuffer>>;
+        writable(opts: {
+            start?: number;
+        }): WritableStream<Uint8Array<ArrayBuffer>>;
+        buffer(next?: Uint8Array<ArrayBuffer>): Uint8Array<ArrayBuffer>;
+        stat_make(size: number): {
+            readonly type: "file";
+            readonly size: number;
+            readonly atime: Date;
+            readonly mtime: Date;
+            readonly ctime: Date;
+        };
+        clone(to: string): this | null;
+        watcher(): {
+            destructor(): void;
+        };
+        exists(next?: boolean): boolean;
+        type(): "" | $mol_file_type;
+        name(): string;
+        ext(): string;
+        text(next?: string, virt?: 'virt'): string;
+        text_int(next?: string, virt?: 'virt'): string;
+        sub(reset?: null): this[];
+        resolve(path: string): this;
+        relate(base?: $mol_file_base): string;
+        find(include?: RegExp, exclude?: RegExp): this[];
+        size(): number;
+        toJSON(): string;
+        open(...modes: readonly $mol_file_transaction_mode[]): $mol_file_transaction;
+    }
+}
+
+declare namespace $ {
+    type $mol_file_type = 'file' | 'dir' | 'link';
+    interface $mol_file_stat {
+        type: $mol_file_type;
+        size: number;
+        atime: Date;
+        mtime: Date;
+        ctime: Date;
+    }
+    class $mol_file extends $mol_file_base {
+    }
+}
+
+declare namespace $ {
+    enum $mol_rest_code {
+        'Continue' = 100,
+        'Switching protocols' = 101,
+        'Processing' = 102,
+        'OK' = 200,
+        'Created' = 201,
+        'Accepted' = 202,
+        'Non-Authoritative Information' = 203,
+        'No Content' = 204,
+        'Reset Content' = 205,
+        'Partial Content' = 206,
+        'Multi Status' = 207,
+        'Already Reported' = 208,
+        'IM Used' = 226,
+        'Multiple Choices' = 300,
+        'Moved Permanently' = 301,
+        'Found' = 302,
+        'See Other' = 303,
+        'Not Modified' = 304,
+        'Use Proxy' = 305,
+        'Temporary Redirect' = 307,
+        'Bad Request' = 400,
+        'Unauthorized' = 401,
+        'Payment Required' = 402,
+        'Forbidden' = 403,
+        'Not Found' = 404,
+        'Method Not Allowed' = 405,
+        'Not Acceptable' = 406,
+        'Proxy Authentication Required' = 407,
+        'Request Timeout' = 408,
+        'Conflict' = 409,
+        'Gone' = 410,
+        'Length Required' = 411,
+        'Precondition Failed' = 412,
+        'Request Entity Too Large' = 413,
+        'Request URI Too Long' = 414,
+        'Unsupported Media Type' = 415,
+        'Requested Range Not Satisfiable' = 416,
+        'Expectation Failed' = 417,
+        'Teapot' = 418,
+        'Unprocessable Entity' = 422,
+        'Locked' = 423,
+        'Failed Dependency' = 424,
+        'Upgrade Required' = 426,
+        'Precondition Required' = 428,
+        'Too Many Requests' = 429,
+        'Request Header Fields Too Large' = 431,
+        'Unavailable For Legal Reasons' = 451,
+        'Internal Server Error' = 500,
+        'Not Implemented' = 501,
+        'Bad Gateway' = 502,
+        'Service Unavailable' = 503,
+        'Gateway Timeout' = 504,
+        'HTTP Version Not Supported' = 505,
+        'Insufficient Storage' = 507,
+        'Loop Detected' = 508,
+        'Not Extended' = 510,
+        'Network Authentication Required' = 511,
+        'Network Read Timeout Error' = 598,
+        'Network Connect Timeout Error' = 599
+    }
+}
+
+declare namespace $ {
+    class $mol_error_mix<Cause extends {} = {}> extends AggregateError {
+        readonly cause: Cause;
+        name: string;
+        constructor(message: string, cause?: Cause, ...errors: readonly Error[]);
+        static [Symbol.toPrimitive](): string;
+        static toString(): string;
+        static make(...params: ConstructorParameters<typeof $mol_error_mix>): $mol_error_mix<{}>;
+    }
+}
+
+declare namespace $ {
+    function $mol_error_fence<Data>(task: () => Data, fallback: (parent: Error) => Error | Data | PromiseLike<Data>, loading?: (parent: PromiseLike<Data>) => Error | Data | PromiseLike<Data>): Data;
+}
+
+declare namespace $ {
+    function $mol_error_enriched<V>(cause: {}, cb: () => V): V;
+}
+
+declare namespace $ {
+    function $mol_dom_parse(text: string, type?: DOMParserSupportedType): Document;
+}
+
+declare namespace $ {
+    class $mol_fetch_response extends $mol_object {
+        readonly native: Response;
+        readonly request: $mol_fetch_request;
+        status(): "unknown" | "success" | "inform" | "redirect" | "wrong" | "failed";
+        code(): number;
+        ok(): boolean;
+        message(): string;
+        headers(): Headers;
+        mime(): string | null;
+        stream(): ReadableStream<Uint8Array<ArrayBuffer>> | null;
+        text(): string;
+        json(): unknown;
+        blob(): Blob;
+        buffer(): ArrayBuffer;
+        xml(): Document;
+        xhtml(): Document;
+        html(): Document;
+    }
+    class $mol_fetch_request extends $mol_object {
+        readonly native: Request;
+        response_async(): Promise<Response> & {
+            destructor: () => void;
+        };
+        response(): $mol_fetch_response;
+        success(): $mol_fetch_response;
+    }
+    class $mol_fetch extends $mol_object {
+        static request(input: RequestInfo, init?: RequestInit): $mol_fetch_request;
+        static response(input: RequestInfo, init?: RequestInit): $mol_fetch_response;
+        static success(input: RequestInfo, init?: RequestInit): $mol_fetch_response;
+        static stream(input: RequestInfo, init?: RequestInit): ReadableStream<Uint8Array<ArrayBuffer>> | null;
+        static text(input: RequestInfo, init?: RequestInit): string;
+        static json(input: RequestInfo, init?: RequestInit): unknown;
+        static blob(input: RequestInfo, init?: RequestInit): Blob;
+        static buffer(input: RequestInfo, init?: RequestInit): ArrayBuffer;
+        static xml(input: RequestInfo, init?: RequestInit): Document;
+        static xhtml(input: RequestInfo, init?: RequestInit): Document;
+        static html(input: RequestInfo, init?: RequestInit): Document;
+    }
+}
+
+declare namespace $ {
+    class $mol_file_webdav extends $mol_file_base {
+        static relative<This extends typeof $mol_file>(this: This, path: string): InstanceType<This>;
+        resolve(path: string): this;
+        static headers(): Record<string, string>;
+        headers(): Record<string, string>;
+        protected fetch(init: RequestInit): $mol_fetch_response;
+        protected read(): Uint8Array<ArrayBuffer>;
+        protected write(body: Uint8Array<ArrayBuffer>): void;
+        protected ensure(): void;
+        protected drop(): void;
+        protected copy(to: string): void;
+        protected kids(): this[];
+        readable(opts: {
+            start?: number;
+            end?: number;
+        }): ReadableStream<Uint8Array<ArrayBuffer>>;
+        protected info(): $mol_file_stat | null;
+    }
+}
+
+declare namespace $ {
+    class $mol_file_web extends $mol_file_webdav {
+        static base: string;
+        version(): string;
+        protected info(): $mol_file_stat | null;
+    }
+}
+
+declare namespace $ {
+    interface $mol_locale_dict {
+        [key: string]: string;
+    }
+    /**
+     * Localisation in $mol framework
+     * @see https://mol.hyoo.ru/#!section=docs/=s5aqnb_odub8l
+     */
+    class $mol_locale extends $mol_object {
+        static lang_default(): string;
+        static lang(next?: string): string;
+        static langs_rtl(): string[];
+        static direction(): "ltr" | "rtl";
+        static source(lang: string): any;
+        static texts(lang: string, next?: $mol_locale_dict): $mol_locale_dict;
+        static text(key: string): string;
+        static warn(key: string): null;
+    }
+}
+
+declare namespace $ {
+    function $mol_tree2_js_is_number(type: string): boolean | RegExpMatchArray;
+}
+
+declare namespace $ {
+    function $mol_view_tree2_to_js(this: $, descr: $mol_tree2): $mol_tree2;
 }
 
 declare namespace $ {
@@ -2863,59 +4162,6 @@ declare namespace $ {
     };
 }
 
-declare namespace $ {
-
-	export class $mol_svg extends $mol_view {
-		dom_name( ): string
-		dom_name_space( ): string
-		font_size( ): number
-		font_family( ): string
-		style_size( ): Record<string, any>
-	}
-	
-}
-
-//# sourceMappingURL=svg.view.tree.d.ts.map
-declare namespace $.$$ {
-    /** Base SVG component to display SVG images or icons. */
-    class $mol_svg extends $.$mol_svg {
-        computed_style(): Record<string, any>;
-        font_size(): number;
-        font_family(): any;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_svg_root extends $mol_svg {
-		view_box( ): string
-		aspect( ): string
-		dom_name( ): string
-		attr( ): ({ 
-			'viewBox': ReturnType< $mol_svg_root['view_box'] >,
-			'preserveAspectRatio': ReturnType< $mol_svg_root['aspect'] >,
-		})  & ReturnType< $mol_svg['attr'] >
-	}
-	
-}
-
-//# sourceMappingURL=root.view.tree.d.ts.map
-declare namespace $ {
-
-	export class $mol_svg_path extends $mol_svg {
-		geometry( ): string
-		dom_name( ): string
-		attr( ): ({ 
-			'd': ReturnType< $mol_svg_path['geometry'] >,
-		})  & ReturnType< $mol_svg['attr'] >
-	}
-	
-}
-
-//# sourceMappingURL=path.view.tree.d.ts.map
 declare namespace $ {
 }
 
@@ -4412,14 +5658,6 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /** Plugin is component without its own DOM element, but instead uses the owner DOM element */
-    class $mol_plugin extends $mol_view {
-        dom_node_external(next?: Element): Element;
-        render(): void;
-    }
-}
-
-declare namespace $ {
 }
 
 declare namespace $ {
@@ -5030,1179 +6268,72 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    class $mol_vector<Value, Length extends number> extends Array<Value> {
-        get length(): Length;
-        constructor(...values: Value[] & {
-            length: Length;
-        });
-        map<Res>(convert: (value: Value, index: number, array: this) => Res, self?: any): $mol_vector<Res, Length>;
-        merged<Patch>(patches: readonly Patch[] & {
-            length: Length;
-        }, combine: (value: Value, patch: Patch) => Value): this;
-        limited(this: $mol_vector<number, Length>, limits: readonly (readonly [number, number])[] & {
-            length: Length;
-        }): this;
-        added0(this: $mol_vector<number, Length>, diff: number): this;
-        added1(this: $mol_vector<number, Length>, diff: readonly number[] & {
-            length: Length;
-        }): this;
-        substracted1(this: $mol_vector<number, Length>, diff: readonly number[] & {
-            length: Length;
-        }): this;
-        multed0(this: $mol_vector<number, Length>, mult: number): this;
-        multed1(this: $mol_vector<number, Length>, mults: readonly number[] & {
-            length: Length;
-        }): this;
-        divided1(this: $mol_vector<number, Length>, mults: readonly number[] & {
-            length: Length;
-        }): this;
-        powered0(this: $mol_vector<number, Length>, mult: number): this;
-        expanded1(this: $mol_vector<$mol_vector_range<number>, Length>, point: readonly number[] & {
-            length: Length;
-        }): this;
-        expanded2(this: $mol_vector<$mol_vector_range<number>, Length>, point: readonly (readonly [number, number])[] & {
-            length: Length;
-        }): this;
-        center<Item extends $mol_vector<number, number>>(this: $mol_vector<Item, Length>): Item;
-        distance(this: $mol_vector<$mol_vector<number, number>, Length>): number;
-        transponed(this: $mol_vector<$mol_vector<number, number>, Length>): $mol_vector<$mol_vector<number, Length>, typeof this[0]['length']>;
-        get x(): Value;
-        set x(next: Value);
-        get y(): Value;
-        set y(next: Value);
-        get z(): Value;
-        set z(next: Value);
-    }
-    class $mol_vector_1d<Value> extends $mol_vector<Value, 1> {
-    }
-    class $mol_vector_2d<Value> extends $mol_vector<Value, 2> {
-    }
-    class $mol_vector_3d<Value> extends $mol_vector<Value, 3> {
-    }
-    class $mol_vector_range<Value> extends $mol_vector<Value, 2> {
-        0: Value;
-        1: Value;
-        constructor(min: Value, max?: Value);
-        get min(): Value;
-        set min(next: Value);
-        get max(): Value;
-        set max(next: Value);
-        get inversed(): $mol_vector_range<Value>;
-        expanded0(value: Value): $mol_vector_range<Value>;
-    }
-    let $mol_vector_range_full: $mol_vector_range<number>;
-    class $mol_vector_matrix<Width extends number, Height extends number> extends $mol_vector<readonly number[] & {
-        length: Width;
-    }, Height> {
-        added2(diff: readonly (readonly number[] & {
-            length: Width;
-        })[] & {
-            length: Height;
-        }): this;
-        multed2(diff: readonly (readonly number[] & {
-            length: Width;
-        })[] & {
-            length: Height;
-        }): this;
-    }
-}
-
-declare namespace $ {
-
-	export class $mol_svg_group extends $mol_svg {
-		dom_name( ): string
-	}
-	
-}
-
-//# sourceMappingURL=group.view.tree.d.ts.map
-declare namespace $ {
-
-	export class $mol_svg_title extends $mol_svg {
-		dom_name( ): string
-		sub( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=title.view.tree.d.ts.map
-declare namespace $ {
-
-	type $mol_vector_range__mol_plot_graph_1 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_graph_2 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_graph_3 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_graph_4 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_graph_5 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_graph_6 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_graph_7 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_graph_8 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_2d__mol_plot_graph_9 = $mol_type_enforce<
-		[ ReturnType< $mol_plot_graph['viewport_x'] >, ReturnType< $mol_plot_graph['viewport_y'] > ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
-	>
-	type $mol_vector_2d__mol_plot_graph_10 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
-	>
-	type $mol_vector_2d__mol_plot_graph_11 = $mol_type_enforce<
-		[ ReturnType< $mol_plot_graph['dimensions_pane_x'] >, ReturnType< $mol_plot_graph['dimensions_pane_y'] > ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
-	>
-	type $mol_vector_2d__mol_plot_graph_12 = $mol_type_enforce<
-		[ ReturnType< $mol_plot_graph['dimensions_x'] >, ReturnType< $mol_plot_graph['dimensions_y'] > ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
-	>
-	type $mol_vector_2d__mol_plot_graph_13 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
-	>
-	type $mol_vector_2d__mol_plot_graph_14 = $mol_type_enforce<
-		[ ReturnType< $mol_plot_graph['gap_x'] >, ReturnType< $mol_plot_graph['gap_y'] > ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
-	>
-	type $mol_svg_title__title_mol_plot_graph_15 = $mol_type_enforce<
-		ReturnType< $mol_plot_graph['hint'] >
-		,
-		ReturnType< $mol_svg_title['title'] >
-	>
-	export class $mol_plot_graph extends $mol_svg_group {
-		type( ): string
-		color( ): string
-		viewport_x( ): $mol_vector_range<number>
-		viewport_y( ): $mol_vector_range<number>
-		dimensions_pane_x( ): $mol_vector_range<number>
-		dimensions_pane_y( ): $mol_vector_range<number>
-		dimensions_x( ): $mol_vector_range<number>
-		dimensions_y( ): $mol_vector_range<number>
-		gap_x( ): $mol_vector_range<number>
-		gap_y( ): $mol_vector_range<number>
-		title( ): string
-		hint( ): ReturnType< $mol_plot_graph['title'] >
-		series_x( ): readonly(number)[]
-		series_y( ): readonly(number)[]
-		attr( ): ({ 
-			'mol_plot_graph_type': ReturnType< $mol_plot_graph['type'] >,
-		})  & ReturnType< $mol_svg_group['attr'] >
-		style( ): ({ 
-			'color': ReturnType< $mol_plot_graph['color'] >,
-		})  & ReturnType< $mol_svg_group['style'] >
-		viewport( ): $mol_vector_2d<$mol_vector_range<number>>
-		shift( ): readonly(number)[]
-		scale( ): readonly(number)[]
-		cursor_position( ): $mol_vector_2d<number>
-		dimensions_pane( ): $mol_vector_2d<$mol_vector_range<number>>
-		dimensions( ): $mol_vector_2d<$mol_vector_range<number>>
-		size_real( ): $mol_vector_2d<number>
-		gap( ): $mol_vector_2d<$mol_vector_range<number>>
-		repos_x( id: any): number
-		repos_y( id: any): number
-		indexes( ): readonly(number)[]
-		points( ): readonly(readonly(number)[])[]
-		front( ): readonly($mol_svg)[]
-		back( ): readonly($mol_svg)[]
-		Hint( ): $mol_svg_title
-		hue( next?: number ): number
-		Sample( ): any
-	}
-	
-	export class $mol_plot_graph_sample extends $mol_view {
-		type( ): string
-		color( ): string
-		attr( ): ({ 
-			'mol_plot_graph_type': ReturnType< $mol_plot_graph_sample['type'] >,
-		})  & ReturnType< $mol_view['attr'] >
-		style( ): ({ 
-			'color': ReturnType< $mol_plot_graph_sample['color'] >,
-		})  & ReturnType< $mol_view['style'] >
-	}
-	
-}
-
-//# sourceMappingURL=graph.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_plot_graph extends $.$mol_plot_graph {
-        viewport(): $mol_vector_2d<$mol_vector_range<number>>;
-        indexes(): readonly number[];
-        repos_x(val: number): number;
-        repos_y(val: number): number;
-        points(): readonly (readonly number[])[];
-        series_x(): readonly number[];
-        dimensions(): $mol_vector_2d<$mol_vector_range<number>>;
-        color(): string;
-        front(): readonly $.$mol_svg[];
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_svg_rect extends $mol_svg {
-		width( ): string
-		height( ): string
-		pos_x( ): string
-		pos_y( ): string
-		dom_name( ): string
-		pos( ): readonly(any)[]
-		attr( ): ({ 
-			'width': ReturnType< $mol_svg_rect['width'] >,
-			'height': ReturnType< $mol_svg_rect['height'] >,
-			'x': ReturnType< $mol_svg_rect['pos_x'] >,
-			'y': ReturnType< $mol_svg_rect['pos_y'] >,
-		})  & ReturnType< $mol_svg['attr'] >
-	}
-	
-}
-
-//# sourceMappingURL=rect.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_svg_rect extends $.$mol_svg_rect {
-        pos_x(): any;
-        pos_y(): any;
-    }
-}
-
-declare namespace $ {
-
-	export class $mol_svg_text extends $mol_svg {
-		pos_x( ): string
-		pos_y( ): string
-		align( ): string
-		align_hor( ): ReturnType< $mol_svg_text['align'] >
-		align_vert( ): string
-		text( ): string
-		dom_name( ): string
-		pos( ): readonly(any)[]
-		attr( ): ({ 
-			'x': ReturnType< $mol_svg_text['pos_x'] >,
-			'y': ReturnType< $mol_svg_text['pos_y'] >,
-			'text-anchor': ReturnType< $mol_svg_text['align_hor'] >,
-			'alignment-baseline': ReturnType< $mol_svg_text['align_vert'] >,
-		})  & ReturnType< $mol_svg['attr'] >
-		sub( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=text.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_svg_text extends $.$mol_svg_text {
-        pos_x(): any;
-        pos_y(): any;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-    function $mol_math_round_expand(val: number, gap?: number): number;
-}
-
-declare namespace $ {
-
-	type $mol_svg_rect__pos_x_mol_plot_ruler_1 = $mol_type_enforce<
-		ReturnType< $mol_plot_ruler['background_x'] >
-		,
-		ReturnType< $mol_svg_rect['pos_x'] >
-	>
-	type $mol_svg_rect__pos_y_mol_plot_ruler_2 = $mol_type_enforce<
-		ReturnType< $mol_plot_ruler['background_y'] >
-		,
-		ReturnType< $mol_svg_rect['pos_y'] >
-	>
-	type $mol_svg_rect__width_mol_plot_ruler_3 = $mol_type_enforce<
-		ReturnType< $mol_plot_ruler['background_width'] >
-		,
-		ReturnType< $mol_svg_rect['width'] >
-	>
-	type $mol_svg_rect__height_mol_plot_ruler_4 = $mol_type_enforce<
-		ReturnType< $mol_plot_ruler['background_height'] >
-		,
-		ReturnType< $mol_svg_rect['height'] >
-	>
-	type $mol_svg_path__geometry_mol_plot_ruler_5 = $mol_type_enforce<
-		ReturnType< $mol_plot_ruler['curve'] >
-		,
-		ReturnType< $mol_svg_path['geometry'] >
-	>
-	type $mol_svg_text__pos_x_mol_plot_ruler_6 = $mol_type_enforce<
-		ReturnType< $mol_plot_ruler['title_pos_x'] >
-		,
-		ReturnType< $mol_svg_text['pos_x'] >
-	>
-	type $mol_svg_text__pos_y_mol_plot_ruler_7 = $mol_type_enforce<
-		ReturnType< $mol_plot_ruler['title_pos_y'] >
-		,
-		ReturnType< $mol_svg_text['pos_y'] >
-	>
-	type $mol_svg_text__align_mol_plot_ruler_8 = $mol_type_enforce<
-		ReturnType< $mol_plot_ruler['title_align'] >
-		,
-		ReturnType< $mol_svg_text['align'] >
-	>
-	type $mol_svg_text__text_mol_plot_ruler_9 = $mol_type_enforce<
-		ReturnType< $mol_plot_ruler['title'] >
-		,
-		ReturnType< $mol_svg_text['text'] >
-	>
-	type $mol_vector_range__mol_plot_ruler_10 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_ruler_11 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_svg_text__pos_mol_plot_ruler_12 = $mol_type_enforce<
-		ReturnType< $mol_plot_ruler['label_pos'] >
-		,
-		ReturnType< $mol_svg_text['pos'] >
-	>
-	type $mol_svg_text__text_mol_plot_ruler_13 = $mol_type_enforce<
-		ReturnType< $mol_plot_ruler['label_text'] >
-		,
-		ReturnType< $mol_svg_text['text'] >
-	>
-	type $mol_svg_text__align_mol_plot_ruler_14 = $mol_type_enforce<
-		ReturnType< $mol_plot_ruler['label_align'] >
-		,
-		ReturnType< $mol_svg_text['align'] >
-	>
-	export class $mol_plot_ruler extends $mol_plot_graph {
-		background_x( ): string
-		background_y( ): string
-		background_width( ): string
-		background_height( ): string
-		Background( ): $mol_svg_rect
-		curve( ): string
-		Curve( ): $mol_svg_path
-		labels_formatted( ): readonly(any)[]
-		title_pos_x( ): string
-		title_pos_y( ): string
-		title_align( ): string
-		Title( ): $mol_svg_text
-		label_pos_x( id: any): string
-		label_pos_y( id: any): string
-		label_pos( id: any): readonly(any)[]
-		label_text( id: any): string
-		label_align( ): string
-		step( ): number
-		scale_axis( ): number
-		scale_step( ): number
-		shift_axis( ): number
-		dimensions_axis( ): $mol_vector_range<number>
-		viewport_axis( ): $mol_vector_range<number>
-		axis_points( ): readonly(number)[]
-		normalize( next?: number ): number
-		precision( ): number
-		sub( ): readonly(any)[]
-		Label( id: any): $mol_svg_text
-	}
-	
-}
-
-//# sourceMappingURL=ruler.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_plot_ruler extends $.$mol_plot_ruler {
-        labels_formatted(): $.$mol_svg_text[];
-        step(): number;
-        snap_to_grid(coord: number): number;
-        axis_points(): number[];
-        precision(): number;
-        label_text(index: number): string;
-        font_size(): number;
-        back(): $mol_svg_path[];
-        front(): readonly $.$mol_svg[];
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_plot_ruler_hor extends $mol_plot_ruler {
-		title_align( ): string
-		label_align( ): string
-		title_pos_x( ): string
-		title_pos_y( ): string
-		label_pos_y( id: any): ReturnType< $mol_plot_ruler_hor['title_pos_y'] >
-		background_width( ): string
-	}
-	
-}
-
-//# sourceMappingURL=hor.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_plot_ruler_hor extends $.$mol_plot_ruler_hor {
-        dimensions_axis(): $mol_vector_range<number>;
-        viewport_axis(): $mol_vector_range<number>;
-        scale_axis(): number;
-        scale_step(): number;
-        shift_axis(): number;
-        curve(): string;
-        label_pos_x(index: number): string;
-        background_y(): string;
-        title_pos_y(): string;
-        background_height(): string;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_plot_ruler_vert extends $mol_plot_ruler {
-		title_align( ): string
-		label_align( ): string
-		title_pos_y( ): string
-		label_pos_x( id: any): ReturnType< $mol_plot_ruler_vert['title_pos_x'] >
-		background_height( ): string
-		background_width( ): ReturnType< $mol_plot_ruler_vert['title_pos_x'] >
-	}
-	
-}
-
-//# sourceMappingURL=vert.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_plot_ruler_vert extends $.$mol_plot_ruler_vert {
-        dimensions_axis(): $mol_vector_range<number>;
-        viewport_axis(): $mol_vector_range<number>;
-        scale_axis(): number;
-        scale_step(): number;
-        shift_axis(): number;
-        curve(): string;
-        title_pos_x(): string;
-        label_pos_y(index: number): string;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	type $mol_vector_2d__mol_touch_1 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
-	>
-	type $mol_vector_2d__mol_touch_2 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
-	>
-	type $mol_vector_2d__mol_touch_3 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
-	>
-	export class $mol_touch extends $mol_plugin {
-		event_start( next?: any ): any
-		event_move( next?: any ): any
-		event_end( next?: any ): any
-		event_leave( next?: any ): any
-		event_wheel( next?: any ): any
-		start_zoom( next?: number ): number
-		start_distance( next?: number ): number
-		zoom( next?: number ): number
-		allow_draw( ): boolean
-		allow_pan( ): boolean
-		allow_zoom( ): boolean
-		action_type( next?: string ): string
-		action_point( next?: $mol_vector_2d<number> ): $mol_vector_2d<number>
-		start_pan( next?: readonly(any)[] ): readonly(any)[]
-		pan( next?: $mol_vector_2d<number> ): $mol_vector_2d<number>
-		pointer_center( ): $mol_vector_2d<number>
-		start_pos( next?: any ): any
-		swipe_precision( ): number
-		swipe_right( next?: any ): any
-		swipe_bottom( next?: any ): any
-		swipe_left( next?: any ): any
-		swipe_top( next?: any ): any
-		swipe_from_right( next?: any ): any
-		swipe_from_bottom( next?: any ): any
-		swipe_from_left( next?: any ): any
-		swipe_from_top( next?: any ): any
-		swipe_to_right( next?: any ): any
-		swipe_to_bottom( next?: any ): any
-		swipe_to_left( next?: any ): any
-		swipe_to_top( next?: any ): any
-		draw_start( next?: any ): any
-		draw( next?: any ): any
-		draw_end( next?: any ): any
-		style( ): ({ 
-			'touch-action': string,
-			'overscroll-behavior': string,
-		})  & ReturnType< $mol_plugin['style'] >
-		event( ): ({ 
-			pointerdown( next?: ReturnType< $mol_touch['event_start'] > ): ReturnType< $mol_touch['event_start'] >,
-			pointermove( next?: ReturnType< $mol_touch['event_move'] > ): ReturnType< $mol_touch['event_move'] >,
-			pointerup( next?: ReturnType< $mol_touch['event_end'] > ): ReturnType< $mol_touch['event_end'] >,
-			pointerleave( next?: ReturnType< $mol_touch['event_leave'] > ): ReturnType< $mol_touch['event_leave'] >,
-			wheel( next?: ReturnType< $mol_touch['event_wheel'] > ): ReturnType< $mol_touch['event_wheel'] >,
-		})  & ReturnType< $mol_plugin['event'] >
-	}
-	
-}
-
-//# sourceMappingURL=touch.view.tree.d.ts.map
-declare namespace $.$$ {
     /**
-     * Plugin for touch gestures.
-     * @see [mol_plugin](../plugin/readme.md)
-     */
-    class $mol_touch extends $.$mol_touch {
-        auto(): void;
-        pointer_events(next?: readonly PointerEvent[]): readonly PointerEvent[];
-        pointer_coords(): $mol_vector<$mol_vector_2d<number>, number>;
-        pointer_center(): $mol_vector_2d<number>;
-        event_coords(event: PointerEvent | WheelEvent): $mol_vector_2d<number>;
-        action_point(): $mol_vector_2d<number>;
-        event_eat(event: PointerEvent | WheelEvent): string;
-        event_start(event: PointerEvent): void;
-        event_move(event: PointerEvent): void;
-        event_end(event: PointerEvent): void;
-        event_leave(event: PointerEvent): void;
-        swipe_left(event: PointerEvent): void;
-        swipe_right(event: PointerEvent): void;
-        swipe_top(event: PointerEvent): void;
-        swipe_bottom(event: PointerEvent): void;
-        event_wheel(event: WheelEvent): void;
-    }
-}
-
-declare namespace $ {
-
-	type $mol_vector_range__mol_plot_pane_1 = $mol_type_enforce<
-		[ ReturnType< $mol_plot_pane['gap_left'] >, ReturnType< $mol_plot_pane['gap_right'] > ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_pane_2 = $mol_type_enforce<
-		[ ReturnType< $mol_plot_pane['gap_bottom'] >, ReturnType< $mol_plot_pane['gap_top'] > ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_pane_3 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_pane_4 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_pane_5 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_pane_6 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_pane_7 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_pane_8 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_pane_9 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_vector_range__mol_plot_pane_10 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_range<number> >
-	>
-	type $mol_touch__zoom_mol_plot_pane_11 = $mol_type_enforce<
-		ReturnType< $mol_plot_pane['zoom'] >
-		,
-		ReturnType< $mol_touch['zoom'] >
-	>
-	type $mol_touch__pan_mol_plot_pane_12 = $mol_type_enforce<
-		ReturnType< $mol_plot_pane['shift'] >
-		,
-		ReturnType< $mol_touch['pan'] >
-	>
-	type $mol_touch__allow_draw_mol_plot_pane_13 = $mol_type_enforce<
-		ReturnType< $mol_plot_pane['allow_draw'] >
-		,
-		ReturnType< $mol_touch['allow_draw'] >
-	>
-	type $mol_touch__allow_pan_mol_plot_pane_14 = $mol_type_enforce<
-		ReturnType< $mol_plot_pane['allow_pan'] >
-		,
-		ReturnType< $mol_touch['allow_pan'] >
-	>
-	type $mol_touch__allow_zoom_mol_plot_pane_15 = $mol_type_enforce<
-		ReturnType< $mol_plot_pane['allow_zoom'] >
-		,
-		ReturnType< $mol_touch['allow_zoom'] >
-	>
-	type $mol_touch__draw_start_mol_plot_pane_16 = $mol_type_enforce<
-		ReturnType< $mol_plot_pane['draw_start'] >
-		,
-		ReturnType< $mol_touch['draw_start'] >
-	>
-	type $mol_touch__draw_mol_plot_pane_17 = $mol_type_enforce<
-		ReturnType< $mol_plot_pane['draw'] >
-		,
-		ReturnType< $mol_touch['draw'] >
-	>
-	type $mol_touch__draw_end_mol_plot_pane_18 = $mol_type_enforce<
-		ReturnType< $mol_plot_pane['draw_end'] >
-		,
-		ReturnType< $mol_touch['draw_end'] >
-	>
-	type $mol_vector_2d__mol_plot_pane_19 = $mol_type_enforce<
-		[ ReturnType< $mol_plot_pane['gap_x'] >, ReturnType< $mol_plot_pane['gap_y'] > ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
-	>
-	type $mol_vector_2d__mol_plot_pane_20 = $mol_type_enforce<
-		[ ReturnType< $mol_plot_pane['shift_limit_x'] >, ReturnType< $mol_plot_pane['shift_limit_y'] > ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
-	>
-	type $mol_vector_2d__mol_plot_pane_21 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
-	>
-	type $mol_vector_2d__mol_plot_pane_22 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
-	>
-	type $mol_vector_2d__mol_plot_pane_23 = $mol_type_enforce<
-		[ ReturnType< $mol_plot_pane['scale_limit_x'] >, ReturnType< $mol_plot_pane['scale_limit_y'] > ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
-	>
-	type $mol_vector_2d__mol_plot_pane_24 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
-	>
-	type $mol_vector_2d__mol_plot_pane_25 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
-	>
-	type $mol_vector_2d__mol_plot_pane_26 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
-	>
-	type $mol_vector_2d__mol_plot_pane_27 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
-	>
-	type $mol_vector_2d__mol_plot_pane_28 = $mol_type_enforce<
-		[ ReturnType< $mol_plot_pane['dimensions_x'] >, ReturnType< $mol_plot_pane['dimensions_y'] > ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
-	>
-	type $mol_vector_2d__mol_plot_pane_29 = $mol_type_enforce<
-		[ ReturnType< $mol_plot_pane['dimensions_viewport_x'] >, ReturnType< $mol_plot_pane['dimensions_viewport_y'] > ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<$mol_vector_range<number>> >
-	>
-	export class $mol_plot_pane extends $mol_svg_root {
-		gap_x( ): $mol_vector_range<number>
-		gap_y( ): $mol_vector_range<number>
-		shift_limit_x( ): $mol_vector_range<number>
-		shift_limit_y( ): $mol_vector_range<number>
-		scale_limit_x( ): $mol_vector_range<number>
-		scale_limit_y( ): $mol_vector_range<number>
-		dimensions_x( ): $mol_vector_range<number>
-		dimensions_y( ): $mol_vector_range<number>
-		dimensions_viewport_x( ): $mol_vector_range<number>
-		dimensions_viewport_y( ): $mol_vector_range<number>
-		graphs_sorted( ): readonly($mol_svg)[]
-		graphs( ): readonly($mol_plot_graph)[]
-		graphs_positioned( ): ReturnType< $mol_plot_pane['graphs'] >
-		graphs_visible( ): ReturnType< $mol_plot_pane['graphs_positioned'] >
-		zoom( next?: number ): number
-		cursor_position( ): ReturnType< ReturnType< $mol_plot_pane['Touch'] >['pointer_center'] >
-		allow_draw( ): boolean
-		allow_pan( ): boolean
-		allow_zoom( ): boolean
-		action_type( ): ReturnType< ReturnType< $mol_plot_pane['Touch'] >['action_type'] >
-		action_point( ): ReturnType< ReturnType< $mol_plot_pane['Touch'] >['action_point'] >
-		draw_start( next?: any ): any
-		draw( next?: any ): any
-		draw_end( next?: any ): any
-		Touch( ): $mol_touch
-		aspect( ): string
-		hue_base( next?: number ): number
-		hue_shift( next?: number ): number
-		gap_hor( ): number
-		gap_vert( ): number
-		gap_left( ): ReturnType< $mol_plot_pane['gap_hor'] >
-		gap_right( ): ReturnType< $mol_plot_pane['gap_hor'] >
-		gap_top( ): ReturnType< $mol_plot_pane['gap_vert'] >
-		gap_bottom( ): ReturnType< $mol_plot_pane['gap_vert'] >
-		gap( ): $mol_vector_2d<$mol_vector_range<number>>
-		shift_limit( ): $mol_vector_2d<$mol_vector_range<number>>
-		shift_default( ): $mol_vector_2d<number>
-		shift( next?: $mol_vector_2d<number> ): $mol_vector_2d<number>
-		scale_limit( ): $mol_vector_2d<$mol_vector_range<number>>
-		scale_default( ): $mol_vector_2d<number>
-		scale( next?: $mol_vector_2d<number> ): $mol_vector_2d<number>
-		scale_x( next?: number ): number
-		scale_y( next?: number ): number
-		size( ): $mol_vector_2d<number>
-		size_real( ): $mol_vector_2d<number>
-		dimensions( ): $mol_vector_2d<$mol_vector_range<number>>
-		dimensions_viewport( ): $mol_vector_2d<$mol_vector_range<number>>
-		sub( ): ReturnType< $mol_plot_pane['graphs_sorted'] >
-		graphs_colored( ): ReturnType< $mol_plot_pane['graphs_visible'] >
-		plugins( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=pane.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Fastest plot lib for vector graphics.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_plot_demo
-     */
-    class $mol_plot_pane extends $.$mol_plot_pane {
-        dimensions(): $mol_vector_2d<$mol_vector_range<number>>;
-        size(): $mol_vector_2d<number>;
-        graph_hue(index: number): number;
-        graphs_colored(): $.$mol_plot_graph[];
-        size_real(): $mol_vector_2d<number>;
-        view_box(): string;
-        scale_limit(): $mol_vector_2d<$mol_vector_range<number>>;
-        scale_default(): $mol_vector_2d<number>;
-        scale(next?: $mol_vector_2d<number>): $mol_vector_2d<number>;
-        scale_x(next?: number): number;
-        scale_y(next?: number): number;
-        shift_limit(): $mol_vector_2d<$mol_vector_range<number>>;
-        shift_default(): $mol_vector_2d<number>;
-        graph_touched: boolean;
-        shift(next?: $mol_vector_2d<number>): $mol_vector_2d<number>;
-        reset(event?: Event): void;
-        graphs_visible(): $.$mol_plot_graph[];
-        graphs_positioned(): readonly $.$mol_plot_graph[];
-        dimensions_viewport(): $mol_vector<$mol_vector_range<number>, 2>;
-        viewport(): $mol_vector_2d<$mol_vector_range<number>>;
-        graphs_sorted(): $.$mol_svg[];
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	type $mol_vector_2d__bog_vmap_scene_grid_1 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
-	>
-	type $mol_vector_2d__bog_vmap_scene_grid_2 = $mol_type_enforce<
-		[ number, number ]
-		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
-	>
-	type $bog_vmap_scene_grid_hor__title_bog_vmap_scene_grid_3 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $bog_vmap_scene_grid_hor['title'] >
-	>
-	type $bog_vmap_scene_grid_vert__title_bog_vmap_scene_grid_4 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $bog_vmap_scene_grid_vert['title'] >
-	>
-	export class $bog_vmap_scene_grid extends $mol_svg_root {
-		rulers( ): readonly($mol_svg)[]
-		aspect( ): string
-		shift( ): $mol_vector_2d<number>
-		scale( ): $mol_vector_2d<number>
-		sub( ): ReturnType< $bog_vmap_scene_grid['rulers'] >
-		Ruler_hor( ): $bog_vmap_scene_grid_hor
-		Ruler_vert( ): $bog_vmap_scene_grid_vert
-	}
-	
-	export class $bog_vmap_scene_grid_hor extends $mol_plot_ruler_hor {
-		title( ): string
-	}
-	
-	export class $bog_vmap_scene_grid_vert extends $mol_plot_ruler_vert {
-		title( ): string
-	}
-	
-}
-
-//# sourceMappingURL=grid.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Infinite background grid. Feeds two $mol_plot_ruler instances the same way
-     * $mol_plot_pane feeds its graphs, and renders only their curves.
-     * @see ../../ARCHITECTURE.md section 8
-     */
-    class $bog_vmap_scene_grid extends $.$bog_vmap_scene_grid {
-        size_real(): $mol_vector_2d<number>;
-        view_box(): string;
-        viewport(): $mol_vector_2d<$mol_vector_range<number>>;
-        gap(): $mol_vector_2d<$mol_vector_range<number>>;
-        /** Viewport in world coordinates, by the formula from $mol_plot_pane. */
-        dimensions_viewport(): $mol_vector<$mol_vector_range<number>, 2>;
-        rulers(): $mol_svg_path[];
-    }
-    /** Base clamps its lines to 1000px tall. The canvas is whatever the window is. */
-    class $bog_vmap_scene_grid_hor extends $.$bog_vmap_scene_grid_hor {
-        curve(): string;
-    }
-    /** Same story, base clamps its lines to 2000px wide. */
-    class $bog_vmap_scene_grid_vert extends $.$bog_vmap_scene_grid_vert {
-        curve(): string;
-    }
-}
-
-declare namespace $ {
-    /**
-     * Wire protocol between the vmap host and its sandboxed scene.
+     * Order of the declarations going into one `new Function`: the libraries, then
+     * the document, every base before its heir, and one declaration per name.
      *
-     * The scene lives in an opaque origin, so `postMessage` is the only channel.
-     * Everything here is plain data: it must survive a structured clone.
+     * Libraries first because the document is written against them, and a stable
+     * sort keeps that unless a library class inherits a document class — legal,
+     * odd, and then the base still comes first. The sort itself is the canonical
+     * `$bog_vmap_lang_sorted`: ordering declarations is a property of the language,
+     * and the scene's own copy of it was the second one too many.
      *
-     * Direction is part of the type on purpose. The host owns the document text,
-     * the camera and the geometry; the scene only compiles, renders and measures.
-     * @see ../ARCHITECTURE.md section 4
+     * A name declared twice keeps the LAST declaration and drops the earlier one,
+     * which is the rule the class index of the library model already lives by and the rule the
+     * sandbox enforces on its own: two declarations of one class in one source
+     * would define the second over the first anyway, only with the first still
+     * having been extended by anyone declared in between. Dropping it up front makes
+     * «the document shadows the library» hold for heirs as well.
+     *
+     * No class name is spelled out in this comment on purpose: mam reads doc
+     * comments for dependencies, and a one segment name here failed the build of
+     * the scene with «Root package not found».
+     *
+     * Bases the list does not declare — the classes of the pack, already in the
+     * sandbox — are left alone, as the sort leaves them.
      */
-    const $bog_vmap_bridge_ns = "bog_vmap";
-    type $bog_vmap_bridge_camera = {
-        /** World coordinate under the left edge of the viewport. */
-        readonly x: number;
-        /** World coordinate under the top edge of the viewport. */
-        readonly y: number;
-        /** Isotropic zoom, as in Figma. Never per-axis. */
-        readonly zoom: number;
+    function $bog_vmap_scene_order(this: $, libs: readonly $mol_tree2[], doc: readonly $mol_tree2[]): readonly $mol_tree2[];
+}
+
+declare namespace $ {
+    /** Shape of one recompiled class: what it declares and what of that is keyed. */
+    type $bog_vmap_scene_swap_shape = {
+        readonly declared: ReadonlySet<string>;
+        readonly keyed: ReadonlySet<string>;
     };
-    type $bog_vmap_bridge_rect = {
-        readonly x: number;
-        readonly y: number;
-        readonly width: number;
-        readonly height: number;
+    /** Counters of one hot swap, for tests and for the log. */
+    type $bog_vmap_scene_swap_report = {
+        /** Instances whose prototype was moved onto the freshly compiled class. */
+        swapped: number;
+        /** Atoms whose implementation was redirected onto the new one. */
+        moved: number;
+        /** Atoms whose implementation actually changed, so subscribers were woken. */
+        stale: number;
+        /** Atoms dropped because the property changed shape or stopped being a cell. */
+        dropped: number;
+        /** Atoms holding a failure, woken whatever changed: they have nothing to keep. */
+        failed: number;
     };
     /**
-     * One component of a land library: the three sources a class is built from.
-     * Texts and nothing else, the scene has no way to reach the land itself.
+     * Moves a live component onto the freshly compiled classes, keeping its state.
+     *
+     * A cell lives as an OWN field of the instance, so replacing the prototype
+     * touches no value, no subscription and no DOM node — caret, focus and scroll
+     * position included. The one thing the prototype does not reach is the
+     * implementation a fiber captured in its constructor, and that is what is
+     * redirected here, taking the new one off the wrapper the decorator left it on.
+     *
+     * The walk goes over the atom caches and never over `sub()`: free parts are not
+     * in `sub` at all, `sub()` of a generated class is not memoized, so calling it
+     * would run user code and could create children that do not exist yet, and a
+     * child temporarily out of `sub` is still a live instance.
+     *
+     * Instances of classes the document does not declare — components of the donor
+     * pack — keep their prototype and are only walked through, because a document
+     * class may well sit inside one.
+     * @see ../../ARCHITECTURE.md section 3, ../../spike/S2.md
      */
-    type $bog_vmap_bridge_part = {
-        readonly tree: string;
-        readonly js: string;
-        readonly css: string;
-    };
-    /** Modifier keys of a relayed click. Named as `MouseEventInit` names them, so they spread straight into one. */
-    type $bog_vmap_bridge_mods = {
-        readonly altKey: boolean;
-        readonly ctrlKey: boolean;
-        readonly metaKey: boolean;
-        readonly shiftKey: boolean;
-    };
-    /**
-     * Host to scene.
-     *
-     * `doc_set` carries the whole document, not a patch: the scene holds no
-     * source of truth of its own and must never have to merge.
-     */
-    type $bog_vmap_bridge_down = {
-        readonly kind: 'doc_set';
-        /**
-         * Full document source in view.tree.
-         *
-         * Declaration order is NOT guaranteed: sorting is the scene's job,
-         * because only the scene knows the whole set of classes going into
-         * one `new Function` — the document's own plus everything its
-         * libraries contribute.
-         */
-        readonly src: string;
-        /**
-         * Bodies of the document classes, as JS source.
-         *
-         * A component is built from three sources, and this is the second.
-         * Without it every property stays undecorated, and an undecorated
-         * property is invisible to the hot swap of stage 4.
-         * Keyed by class name; a class with no handwritten body is absent.
-         */
-        readonly js: {
-            readonly [klass: string]: string;
-        };
-        /** Name of the root class to instantiate. */
-        readonly root: string;
-    } | {
-        readonly kind: 'css_set';
-        /** Styles travel apart from the source so that a CSS edit keeps live state. */
-        readonly css: string;
-    } | {
-        readonly kind: 'camera_set';
-        readonly camera: $bog_vmap_bridge_camera;
-    } | {
-        /**
-         * Where free details sit on the canvas, in world coordinates.
-         *
-         * A channel of its own, apart from `css_set`, and that is the whole
-         * point: the scene hangs these as its own style element, so the
-         * document's styles never carry them and the export cannot see them
-         * even by accident. Placement is editor state, not site content.
-         *
-         * Scaffolding until artboards (stage 6): inside an artboard layout is
-         * a plain $mol flex tree, and only free details lie by coordinates.
-         * The "everything absolute" model was considered and rejected.
-         */
-        readonly kind: 'spots_set';
-        readonly spots: {
-            readonly [node: string]: {
-                readonly x: number;
-                readonly y: number;
-            };
-        };
-    } | {
-        /**
-         * A click that landed on the host overlay and is meant for the document.
-         *
-         * There are no editor modes: the overlay takes every gesture, so a plain
-         * click — press and release without movement — is relayed here, and the
-         * scene replays it on the element under the point as synthetic pointer
-         * and click events, with focus. One click therefore both picks a part
-         * on the host and presses the live component in the sandbox.
-         *
-         * World coordinates, not screen ones: the host resolves its camera the
-         * same way it does for the hit test, and the scene resolves its own,
-         * so neither side has to know the other's pixel geometry.
-         *
-         * Answered like every other push, with `sizes`: a click is the most
-         * likely thing to start a loop in document code, so a scene that takes
-         * one and says nothing back is exactly what the watchdog has to notice.
-         */
-        readonly kind: 'click_at';
-        readonly x: number;
-        readonly y: number;
-        readonly mods: $bog_vmap_bridge_mods;
-    } | {
-        /**
-         * Are you alive.
-         *
-         * Штатный трафик уже несёт пульс: всякий толчок хоста сцена обязана
-         * подтвердить `sizes`. Слепая зона одна — код документа завис, когда его
-         * никто не толкал: живой компонент нажат настоящим событием сквозь дыру
-         * в оверлее, хосту толкать нечего, документ не менялся.
-         *
-         * Поэтому пульс идёт всегда, начиная с первого `sizes`.
-         */
-        readonly kind: 'ping';
-        readonly nonce: number;
-    } | {
-        readonly kind: 'asset_put';
-        readonly id: string;
-        readonly mime: string;
-        /** Bytes, not a blob: URL. A host blob: URL is dead in an opaque origin. */
-        readonly bytes: ArrayBuffer;
-    } | {
-        /**
-         * Sources of the land libraries attached to the document.
-         *
-         * A land arrives as text and is compiled into the same sandbox as the
-         * document, so a change of the list is a recompile — unlike `pack_set`,
-         * which travels the same wire but is answered by a fresh frame, because a
-         * realm cannot unload a bundle. The whole list every time, in the order
-         * the classes should be declared — the scene sorts by inheritance anyway
-         * and merges nothing.
-         *
-         * The host reads the lands, because only the host may touch the
-         * database; the scene sees strings.
-         * @see ../ARCHITECTURE.md sections 4 and 5
-         */
-        readonly kind: 'libs_set';
-        readonly parts: readonly $bog_vmap_bridge_part[];
-    } | {
-        /**
-         * Donor pack the scene is to load into its realm, as an absolute URL of
-         * the `web.js` of a deployed module. Empty means no pack, which the scene
-         * answers by compiling nothing at all.
-         *
-         * On the bridge and not in the address of the frame, because the frame
-         * has no address: it is raised from markup handed to it, so there is no
-         * query string to carry anything. The rule of section 5 — one pack per
-         * realm, a second one poisons the palette silently — is held by the host
-         * instead: the address of the pack is part of the key of the frame, so a
-         * different pack is a different frame element and a fresh realm.
-         *
-         * Sent first of everything after the handshake. A document compiled
-         * before the pack lands inherits the scene's own `$mol_view` and no later
-         * load can move it, so the scene waits for this message before it
-         * compiles anything.
-         * @see ../ARCHITECTURE.md sections 4 and 5
-         */
-        readonly kind: 'pack_set';
-        readonly uri: string;
-    } | {
-        /**
-         * Which wires the host wants values for: the root properties of the
-         * wires drawn on screen right now, and only those. The whole list every
-         * time; an empty list stops the flow. The host knows what is visible,
-         * the scene knows the values, so the question goes down and the answer
-         * comes up as `values`.
-         */
-        readonly kind: 'values_want';
-        readonly names: readonly string[];
-    };
-    /** Scene to host. */
-    type $bog_vmap_bridge_up = {
-        readonly kind: 'ready';
-    } | {
-        /** Ответ на `ping` тем же `nonce`. Живой поток, а не живой кадр. */
-        readonly kind: 'pong';
-        readonly nonce: number;
-    } | {
-        /**
-         * Геометрия узлов, ОТРИСОВАННЫХ в этот раз, а не всех существующих.
-         *
-         * С появлением culling молчание про узел значит «не рисовался», а НЕ
-         * «узла нет». Поэтому хост обязан **мержить**, а не заменять: иначе
-         * коробки всего только что скрытого стираются, и рамка выделения,
-         * которая рисуется ровно из них, мигает на краю холста.
-         *
-         * Раз молчание больше не означает отсутствия, про отсутствие должен
-         * сказать кто-то явно — это делает удаление узла из документа.
-         */
-        readonly kind: 'sizes';
-        readonly sizes: {
-            readonly [node: string]: $bog_vmap_bridge_rect;
-        };
-    } | {
-        /**
-         * Current values of the wires the host asked for in `values_want`,
-         * keyed by the root property of the wire, as short text. A read that
-         * throws comes back as the text of the error, so a broken wire is
-         * labelled rather than the scene taken down. Throttled by the scene.
-         */
-        readonly kind: 'values';
-        readonly values: {
-            readonly [wire: string]: string;
-        };
-    } | {
-        readonly kind: 'asset_want';
-        readonly id: string;
-    } | {
-        readonly kind: 'error';
-        /** Channel. The two clear independently. */
-        readonly at: 'compile' | 'runtime';
-        /**
-         * `null` means the channel is clear again.
-         *
-         * Errors are edge-triggered: the scene posts only on change, so a
-         * repeated identical failure stays silent. Without an explicit
-         * "clear" the host cannot tell a fixed document from a still
-         * broken one, because silence means both.
-         *
-         * Null rather than an empty string on purpose: an empty error text
-         * is a plausible bug, and it must not read as good news.
-         */
-        readonly message: string | null;
-        /** Node the failure belongs to, when the scene can attribute it. */
-        readonly node?: string;
-    };
-    type $bog_vmap_bridge_message = $bog_vmap_bridge_down | $bog_vmap_bridge_up;
-    /** Puts a message on the wire. Target is the peer window. */
-    function $bog_vmap_bridge_send<Message extends $bog_vmap_bridge_message>(target: {
-        postMessage(data: unknown, origin: string): void;
-    }, message: Message): void;
-    /**
-     * Takes a message off the wire, or null when it is not ours.
-     *
-     * The channel has no origin to check against, because the scene runs in an
-     * opaque origin, so anything able to reach this window can post here.
-     * Unknown shapes are dropped rather than trusted.
-     *
-     * Always pass `peer` on the host side. Without it any window that posts a
-     * `ready` can take the channel over, and the host will happily talk to it:
-     * seen for real on stage 1, where a stray debug frame stole the bridge and
-     * the host spent an hour posting into a dead window. Identity of the peer
-     * comes from `Scene().dom_node().contentWindow`, never from `event.source`.
-     *
-     * Passing the argument at all turns the check on, so a peer that is not
-     * known yet rejects every message instead of letting everything through.
-     * Omitting it entirely is the only way to opt out, and only the scene may:
-     * it has exactly one correspondent and answers into the same window.
-     */
-    function $bog_vmap_bridge_read<Message extends $bog_vmap_bridge_message>(event: {
-        data?: unknown;
-        source?: unknown;
-    }, peer?: unknown): Message | null;
-}
-
-declare namespace $ {
-    /** Dynamic sources import. */
-    class $mol_import extends $mol_object2 {
-        static module(uri: string): any;
-        static module_async(uri: string): Promise<any>;
-        static script(uri: string): any;
-        static script_async(uri: string): Promise<any>;
-        static style(uri: string): any;
-        static style_async(uri: string): any;
-    }
+    function $bog_vmap_scene_swap(this: $, root: object, klass_of: (name: string) => unknown, shape_of: (name: string) => $bog_vmap_scene_swap_shape | null): $bog_vmap_scene_swap_report;
 }
 
 declare namespace $ {
@@ -6391,154 +6522,6 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /** A rectangle in world units. Same shape the bridge reports geometry in. */
-    type $bog_vmap_scene_box = {
-        readonly x: number;
-        readonly y: number;
-        readonly width: number;
-        readonly height: number;
-    };
-    /**
-     * Which free parts the scene has to draw for a given viewport.
-     *
-     * Pure arithmetic, deliberately kept out of the view: this is the whole of the
-     * culling decision, and a decision worth testing is worth being able to test
-     * without a DOM, a camera or a compiled document.
-     *
-     * **Culling decides what is DRAWN and never what is STORED.** Nothing here
-     * touches the document, and nothing it returns is written back anywhere: the
-     * source of a document must not depend on where the camera happens to point,
-     * not by a byte. That is the first invariant of the feature and the reason this
-     * function takes geometry and returns names, rather than taking a document.
-     *
-     * @param spots where the host placed each part, world coordinates
-     * @param sizes last measured box of each part, by the same names
-     * @param view world rectangle currently on screen
-     * @param slack world units added to every side of the viewport
-     */
-    function $bog_vmap_scene_shown(spots: {
-        readonly [name: string]: {
-            readonly x: number;
-            readonly y: number;
-        };
-    }, sizes: {
-        readonly [name: string]: $bog_vmap_scene_box;
-    }, view: $bog_vmap_scene_box, slack: number, names: readonly string[]): Set<string>;
-    /**
-     * The world rectangle a viewport covers under a camera.
-     *
-     * The camera is the world point at the top left plus an isotropic zoom, so the
-     * world is `screen / zoom` wide. A zoom of zero would make that infinite, and
-     * the host clamps it well away from there, but a division that can produce
-     * `Infinity` on a message from outside is not worth leaving open.
-     */
-    function $bog_vmap_scene_viewport(camera: {
-        readonly x: number;
-        readonly y: number;
-        readonly zoom: number;
-    }, screen: {
-        readonly width: number;
-        readonly height: number;
-    }): $bog_vmap_scene_box;
-}
-
-declare namespace $ {
-    /** As much of a DOM node as measuring needs. */
-    type $bog_vmap_scene_rect_source = {
-        readonly isConnected: boolean;
-        getBoundingClientRect(): {
-            readonly left: number;
-            readonly top: number;
-            readonly width: number;
-            readonly height: number;
-        };
-    };
-    /** What the walk of one rendered document came out to. */
-    type $bog_vmap_scene_measured<Node> = {
-        readonly sizes: {
-            readonly [node: string]: $bog_vmap_scene_box;
-        };
-        readonly nodes: readonly Node[];
-    };
-    /**
-     * Geometry of a rendered document, in world units, and the nodes it was read
-     * off.
-     *
-     * Pure, and out of the view for the reason the culling decision is: this is the
-     * whole of what the host learns about the layout, and a walk worth testing is
-     * worth testing without a compiled document. Everything that knows about `$mol`
-     * — what counts as a view, what a view's children are, which property holds it —
-     * is handed in, so the function itself knows only rectangles and paths.
-     *
-     * The nodes come back beside the sizes because the two are one question asked
-     * twice: what the host is told about, and what has to be watched for changing
-     * behind the graph's back. Watching the root alone leaves every node inside an
-     * artboard of fixed width unwatched, and a reflow INSIDE a box that keeps its
-     * own size is exactly what an artboard is made of.
-     *
-     * @param key path of the root, which every deeper path is built onto
-     * @param zoom camera zoom the measured pixels are divided by, so the host, which
-     *        owns the camera, is told world units
-     */
-    function $bog_vmap_scene_measure<View extends {
-        dom_node(): $bog_vmap_scene_rect_source;
-    }>(root: View, how: {
-        readonly key: string;
-        readonly zoom: number;
-        /** The kid as a view, or `null` when it is not one. */
-        readonly view_of: (kid: unknown) => View | null;
-        /** Children of a view, or none when they cannot be read. */
-        readonly kids_of: (view: View) => readonly unknown[];
-        /** Property the view is held by, empty when it is held by nothing named. */
-        readonly prop_of: (view: View) => string;
-    }): $bog_vmap_scene_measured<ReturnType<View['dom_node']>>;
-    /**
-     * Brings the watched set to exactly `next`, and says what it now is.
-     *
-     * Only the difference is touched: a node already watched is left alone rather
-     * than re-observed, because `ResizeObserver` delivers a first box on every fresh
-     * `observe()`, and re-observing the whole tree after every report would answer
-     * its own delivery with another report, forever.
-     */
-    function $bog_vmap_scene_watch<Node>(watcher: {
-        observe(node: Node): void;
-        unobserve(node: Node): void;
-    }, prev: ReadonlySet<Node>, next: readonly Node[]): Set<Node>;
-}
-
-declare namespace $ {
-    /** A node of the document, by the path the host addresses it with. */
-    type $bog_vmap_scene_found<View> = {
-        readonly path: string;
-        readonly view: View;
-    };
-    /**
-     * First node of a rendered document the probe accepts, and its path.
-     *
-     * The path is built exactly as `$bog_vmap_scene_measure` builds it, and that is
-     * the whole reason this exists as a walk of its own rather than as a read of the
-     * DOM. A failing element does carry an attribute naming it, but that attribute
-     * is lowercased and joined by underscores, so `My_box` and `my/Box` arrive as the
-     * same string and neither matches the key the host was given in `sizes`. A label
-     * placed by a name that does not match is worse than no label.
-     *
-     * Pure, and out of the view for the reason the measurement is: everything that
-     * knows about the framework is handed in, so the walk itself knows only paths.
-     *
-     * @param key path of the root, which every deeper path is built onto
-     */
-    function $bog_vmap_scene_seek<View>(root: View, how: {
-        readonly key: string;
-        /** The kid as a view, or `null` when it is not one. */
-        readonly view_of: (kid: unknown) => View | null;
-        /** Children of a view, or none when they cannot be read. */
-        readonly kids_of: (view: View) => readonly unknown[];
-        /** Property the view is held by, empty when it is held by nothing named. */
-        readonly prop_of: (view: View) => string;
-    }, probe: (view: View) => boolean): $bog_vmap_scene_found<View> | null;
-}
-
-declare namespace $ {
     /** Modifier keys of the click, named as `MouseEventInit` names them. */
     type $bog_vmap_scene_click_mods = {
         readonly altKey: boolean;
@@ -6593,54 +6576,67 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /**
-     * Order of the declarations going into one `new Function`: the libraries, then
-     * the document, every base before its heir, and one declaration per name.
-     *
-     * Libraries first because the document is written against them, and a stable
-     * sort keeps that unless a library class inherits a document class — legal,
-     * odd, and then the base still comes first. The sort itself is the canonical
-     * `$bog_vmap_lang_sorted`: ordering declarations is a property of the language,
-     * and the scene's own copy of it was the second one too many.
-     *
-     * A name declared twice keeps the LAST declaration and drops the earlier one,
-     * which is the rule the class index of the library model already lives by and the rule the
-     * sandbox enforces on its own: two declarations of one class in one source
-     * would define the second over the first anyway, only with the first still
-     * having been extended by anyone declared in between. Dropping it up front makes
-     * «the document shadows the library» hold for heirs as well.
-     *
-     * No class name is spelled out in this comment on purpose: mam reads doc
-     * comments for dependencies, and a one segment name here failed the build of
-     * the scene with «Root package not found».
-     *
-     * Bases the list does not declare — the classes of the pack, already in the
-     * sandbox — are left alone, as the sort leaves them.
-     */
-    function $bog_vmap_scene_order(this: $, libs: readonly $mol_tree2[], doc: readonly $mol_tree2[]): readonly $mol_tree2[];
-}
-
-declare namespace $ {
-    /**
-     * A value of the document as a short label for a wire.
-     *
-     * Text and numbers as they are, arrays and plain objects as JSON, anything
-     * else — a view, a class — by its own `toString`, which for `$mol_object` is
-     * its id. Whitespace is folded and the tail is cut, a label sits on a line.
-     */
-    function $bog_vmap_scene_value_text(val: unknown, limit?: number): string;
-    /**
-     * Current values of the named wires, read off the root instance.
-     *
-     * A wire is a property of the root class, so its value is one call. A call that
-     * throws is reported as the text of the error under that name, and the others
-     * are still read: a broken wire is a label, not a dead scene. A suspension is
-     * the one exception and is rethrown, so the cell calling this waits for the
-     * value instead of labelling a loading wire as broken.
-     */
-    function $bog_vmap_scene_values(this: $, root: object, names: readonly string[], limit?: number): {
-        readonly [name: string]: string;
+    /** As much of a DOM node as measuring needs. */
+    type $bog_vmap_scene_measure_rect = {
+        readonly isConnected: boolean;
+        getBoundingClientRect(): {
+            readonly left: number;
+            readonly top: number;
+            readonly width: number;
+            readonly height: number;
+        };
     };
+    /** What the walk of one rendered document came out to. */
+    type $bog_vmap_scene_measure_result<Node> = {
+        readonly sizes: {
+            readonly [node: string]: $bog_vmap_scene_cull_box;
+        };
+        readonly nodes: readonly Node[];
+    };
+    /**
+     * Geometry of a rendered document, in world units, and the nodes it was read
+     * off.
+     *
+     * Pure, and out of the view for the reason the culling decision is: this is the
+     * whole of what the host learns about the layout, and a walk worth testing is
+     * worth testing without a compiled document. Everything that knows about `$mol`
+     * — what counts as a view, what a view's children are, which property holds it —
+     * is handed in, so the function itself knows only rectangles and paths.
+     *
+     * The nodes come back beside the sizes because the two are one question asked
+     * twice: what the host is told about, and what has to be watched for changing
+     * behind the graph's back. Watching the root alone leaves every node inside an
+     * artboard of fixed width unwatched, and a reflow INSIDE a box that keeps its
+     * own size is exactly what an artboard is made of.
+     *
+     * @param key path of the root, which every deeper path is built onto
+     * @param zoom camera zoom the measured pixels are divided by, so the host, which
+     *        owns the camera, is told world units
+     */
+    function $bog_vmap_scene_measure<View extends {
+        dom_node(): $bog_vmap_scene_measure_rect;
+    }>(root: View, how: {
+        readonly key: string;
+        readonly zoom: number;
+        /** The kid as a view, or `null` when it is not one. */
+        readonly view_of: (kid: unknown) => View | null;
+        /** Children of a view, or none when they cannot be read. */
+        readonly kids_of: (view: View) => readonly unknown[];
+        /** Property the view is held by, empty when it is held by nothing named. */
+        readonly prop_of: (view: View) => string;
+    }): $bog_vmap_scene_measure_result<ReturnType<View['dom_node']>>;
+    /**
+     * Brings the watched set to exactly `next`, and says what it now is.
+     *
+     * Only the difference is touched: a node already watched is left alone rather
+     * than re-observed, because `ResizeObserver` delivers a first box on every fresh
+     * `observe()`, and re-observing the whole tree after every report would answer
+     * its own delivery with another report, forever.
+     */
+    function $bog_vmap_scene_measure_watch<Node>(watcher: {
+        observe(node: Node): void;
+        unobserve(node: Node): void;
+    }, prev: ReadonlySet<Node>, next: readonly Node[]): Set<Node>;
 }
 
 declare namespace $ {
@@ -6763,9 +6759,9 @@ declare namespace $.$$ {
          * taking it for a size would flip the part between shown and hidden forever.
          */
         sizes_seen(next?: {
-            readonly [name: string]: $bog_vmap_scene_box;
+            readonly [name: string]: $bog_vmap_scene_cull_box;
         }): {
-            readonly [name: string]: $bog_vmap_scene_box;
+            readonly [name: string]: $bog_vmap_scene_cull_box;
         };
         /**
          * Viewport of the canvas: the frame's own box, which is the scene's, since
@@ -6926,7 +6922,7 @@ declare namespace $.$$ {
          * are not ours to judge and their shape does not change under us.
          */
         shapes(): {
-            readonly [klass: string]: $bog_vmap_scene_shape;
+            readonly [klass: string]: $bog_vmap_scene_swap_shape;
         };
         /**
          * The call that makes cells of the handwritten body, emitted right after the
@@ -7199,6 +7195,14 @@ declare namespace $.$$ {
         message_listener(): $mol_dom_listener;
         boot(): $mol_after_tick;
         /**
+         * Relays `Escape` to the host. With the pointer let inside a part the focus
+         * is in this frame, so the key never reaches the editor's own listener, and
+         * the only way out was a click past the box. Nothing else travels: what is
+         * typed into the document stays in the document.
+         */
+        key_listener(): $mol_dom_listener;
+        key_relay(event?: KeyboardEvent): void;
+        /**
          * Re-reports whenever the layout of the document actually changes.
          *
          * The wire graph does not see layout, and that is a whole class of
@@ -7333,7 +7337,7 @@ declare namespace $.$$ {
          * what a view is, what its children are and which property holds it are the
          * three things this class knows and hands over.
          */
-        sizes_of(root: $mol_view): $bog_vmap_scene_measured<Element>;
+        sizes_of(root: $mol_view): $bog_vmap_scene_measure_result<Element>;
         /**
          * Is this piece of content a view, told by shape rather than by class.
          *
@@ -7374,44 +7378,58 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
-    /** Shape of one recompiled class: what it declares and what of that is keyed. */
-    type $bog_vmap_scene_shape = {
-        readonly declared: ReadonlySet<string>;
-        readonly keyed: ReadonlySet<string>;
+    /**
+     * A value of the document as a short label for a wire.
+     *
+     * Text and numbers as they are, arrays and plain objects as JSON, anything
+     * else — a view, a class — by its own `toString`, which for `$mol_object` is
+     * its id. Whitespace is folded and the tail is cut, a label sits on a line.
+     */
+    function $bog_vmap_scene_value_text(val: unknown, limit?: number): string;
+    /**
+     * Current values of the named wires, read off the root instance.
+     *
+     * A wire is a property of the root class, so its value is one call. A call that
+     * throws is reported as the text of the error under that name, and the others
+     * are still read: a broken wire is a label, not a dead scene. A suspension is
+     * the one exception and is rethrown, so the cell calling this waits for the
+     * value instead of labelling a loading wire as broken.
+     */
+    function $bog_vmap_scene_values(this: $, root: object, names: readonly string[], limit?: number): {
+        readonly [name: string]: string;
     };
-    /** Counters of one hot swap, for tests and for the log. */
-    type $bog_vmap_scene_swap_report = {
-        /** Instances whose prototype was moved onto the freshly compiled class. */
-        swapped: number;
-        /** Atoms whose implementation was redirected onto the new one. */
-        moved: number;
-        /** Atoms whose implementation actually changed, so subscribers were woken. */
-        stale: number;
-        /** Atoms dropped because the property changed shape or stopped being a cell. */
-        dropped: number;
-        /** Atoms holding a failure, woken whatever changed: they have nothing to keep. */
-        failed: number;
+}
+
+declare namespace $ {
+    /** A node of the document, by the path the host addresses it with. */
+    type $bog_vmap_scene_found<View> = {
+        readonly path: string;
+        readonly view: View;
     };
     /**
-     * Moves a live component onto the freshly compiled classes, keeping its state.
+     * First node of a rendered document the probe accepts, and its path.
      *
-     * A cell lives as an OWN field of the instance, so replacing the prototype
-     * touches no value, no subscription and no DOM node — caret, focus and scroll
-     * position included. The one thing the prototype does not reach is the
-     * implementation a fiber captured in its constructor, and that is what is
-     * redirected here, taking the new one off the wrapper the decorator left it on.
+     * The path is built exactly as `$bog_vmap_scene_measure` builds it, and that is
+     * the whole reason this exists as a walk of its own rather than as a read of the
+     * DOM. A failing element does carry an attribute naming it, but that attribute
+     * is lowercased and joined by underscores, so `My_box` and `my/Box` arrive as the
+     * same string and neither matches the key the host was given in `sizes`. A label
+     * placed by a name that does not match is worse than no label.
      *
-     * The walk goes over the atom caches and never over `sub()`: free parts are not
-     * in `sub` at all, `sub()` of a generated class is not memoized, so calling it
-     * would run user code and could create children that do not exist yet, and a
-     * child temporarily out of `sub` is still a live instance.
+     * Pure, and out of the view for the reason the measurement is: everything that
+     * knows about the framework is handed in, so the walk itself knows only paths.
      *
-     * Instances of classes the document does not declare — components of the donor
-     * pack — keep their prototype and are only walked through, because a document
-     * class may well sit inside one.
-     * @see ../ARCHITECTURE.md section 3, spike/S2.md
+     * @param key path of the root, which every deeper path is built onto
      */
-    function $bog_vmap_scene_swap(this: $, root: object, klass_of: (name: string) => unknown, shape_of: (name: string) => $bog_vmap_scene_shape | null): $bog_vmap_scene_swap_report;
+    function $bog_vmap_scene_seek<View>(root: View, how: {
+        readonly key: string;
+        /** The kid as a view, or `null` when it is not one. */
+        readonly view_of: (kid: unknown) => View | null;
+        /** Children of a view, or none when they cannot be read. */
+        readonly kids_of: (view: View) => readonly unknown[];
+        /** Property the view is held by, empty when it is held by nothing named. */
+        readonly prop_of: (view: View) => string;
+    }, probe: (view: View) => boolean): $bog_vmap_scene_found<View> | null;
 }
 
 export = $;

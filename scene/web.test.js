@@ -885,606 +885,6 @@ var $;
 var $;
 (function ($_1) {
     $mol_test({
-        'span for same uri'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const child = span.span(4, 5, 8);
-            $mol_assert_equal(child.uri, 'test.ts');
-            $mol_assert_equal(child.row, 4);
-            $mol_assert_equal(child.col, 5);
-            $mol_assert_equal(child.length, 8);
-        },
-        'span after of given position'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const child = span.after(11);
-            $mol_assert_equal(child.uri, 'test.ts');
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 7);
-            $mol_assert_equal(child.length, 11);
-        },
-        'slice span - regular'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            const child = span.slice(1, 4);
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 4);
-            $mol_assert_equal(child.length, 3);
-            const child2 = span.slice(2, 2);
-            $mol_assert_equal(child2.col, 5);
-            $mol_assert_equal(child2.length, 0);
-        },
-        'slice span - negative'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            const child = span.slice(-3, -1);
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 5);
-            $mol_assert_equal(child.length, 2);
-        },
-        'slice span - out of range'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            $mol_assert_fail(() => span.slice(-1, 3), `End value '3' can't be less than begin value (test.ts#1:3/5)`);
-            $mol_assert_fail(() => span.slice(1, 6), `End value '6' out of range (test.ts#1:3/5)`);
-            $mol_assert_fail(() => span.slice(1, 10), `End value '10' out of range (test.ts#1:3/5)`);
-        },
-        'error handling'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const error = span.error('Some error');
-            $mol_assert_equal(error.message, 'Some error (test.ts#1:3/4)');
-        }
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'tree parsing'($) {
-            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids.length, 2);
-            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids[1].type, "bar");
-            $mol_assert_equal($.$mol_tree2_from_string("foo\n\n\n").kids.length, 1);
-            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids.length, 2);
-            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids[1].value, "bar");
-            $mol_assert_equal($.$mol_tree2_from_string("foo bar \\pol\n").kids[0].kids[0].kids[0].value, "pol");
-            $mol_assert_equal($.$mol_tree2_from_string("foo bar\n\t\\pol\n\t\\men\n").kids[0].kids[0].kids[1].value, "men");
-            $mol_assert_equal($.$mol_tree2_from_string('foo bar \\text\n').toString(), 'foo bar \\text\n');
-        },
-        'Too many tabs'($) {
-            const tree = `
-				foo
-						bar
-			`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Too many tabs\ntest#3:1/6\n!!!!!!\n\t\t\t\t\t\tbar');
-        },
-        'Too few tabs'($) {
-            const tree = `
-					foo
-				bar
-			`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Too few tabs\ntest#3:1/4\n!!!!\n\t\t\t\tbar');
-        },
-        'Wrong nodes separator at start'($) {
-            const tree = `foo\n \tbar\n`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Wrong nodes separator\ntest#2:1/2\n!!\n \tbar');
-        },
-        'Wrong nodes separator in the middle'($) {
-            const tree = `foo  bar\n`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar');
-        },
-        'Unexpected EOF, LF required'($) {
-            const tree = `	foo`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Unexpected EOF, LF required\ntest#1:5/1\n	   !\n	foo');
-        },
-        'Errors skip and collect'($) {
-            const tree = `foo  bar`;
-            const errors = [];
-            const $$ = $.$mol_ambient({
-                $mol_fail: (error) => {
-                    errors.push(error.message);
-                    return null;
-                }
-            });
-            const res = $$.$mol_tree2_from_string(tree, 'test');
-            $mol_assert_like(errors, [
-                'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar',
-                'Unexpected EOF, LF required\ntest#1:9/1\n        !\nfoo  bar',
-            ]);
-            $mol_assert_equal(res.toString(), 'foo bar\n');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'all cases of using maybe'() {
-            $mol_assert_equal($mol_maybe(0)[0], 0);
-            $mol_assert_equal($mol_maybe(false)[0], false);
-            $mol_assert_equal($mol_maybe(null)[0], void 0);
-            $mol_assert_equal($mol_maybe(void 0)[0], void 0);
-            $mol_assert_equal($mol_maybe(void 0).map(v => v.toString())[0], void 0);
-            $mol_assert_equal($mol_maybe(0).map(v => v.toString())[0], '0');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    function check(tree, ideal) {
-        $mol_assert_equal(tree.toString(), $$.$mol_tree2_from_string(ideal).toString());
-    }
-    $mol_test({
-        'inserting'($) {
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c'), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c', 'd'), `
-					a b c x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`)
-                .insert($mol_tree2.struct('x'), 0, 0, 0), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`)
-                .insert($mol_tree2.struct('x'), 0, 0, 0, 0), `
-					a b \\
-						x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`)
-                .insert($mol_tree2.struct('x'), null, null, null), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`)
-                .insert($mol_tree2.struct('x'), null, null, null, null), `
-					a b \\
-						x
-				`);
-        },
-        'updating'($) {
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([], 'a', 'b', 'c')[0], `
-					a b
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([$mol_tree2.struct('x')])[0], `
-					x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([$mol_tree2.struct('x'), $mol_tree2.struct('y')], 'a', 'b', 'c')[0], `
-					a b
-						x
-						y
-				`);
-        },
-        'deleting'($) {
-            const base = $.$mol_tree2_from_string(`
-				a b c d
-			`);
-            check(base.insert(null, 'a', 'b', 'c'), `
-					a b
-				`);
-            check(base.update(base.select('a', 'b', 'c', null).kids, 'a', 'b', 'c')[0], `
-					a b d
-				`);
-            check(base.insert(null, 0, 0, 0), `
-					a b
-				`);
-        },
-        'hack'($) {
-            const res = $.$mol_tree2_from_string(`
-				foo bar xxx
-			`)
-                .hack({
-                'bar': (input, belt) => [input.struct('777', input.hack(belt))],
-            });
-            $mol_assert_equal(res.map(String), ['foo 777 xxx\n']);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'escape'() {
-            const specials = $mol_regexp.from('.*+?^${}()|[]\\');
-            $mol_assert_equal(specials.source, '\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\');
-        },
-        'char code'() {
-            const space = $mol_regexp.from(32);
-            $mol_assert_like(' '.match(space), [' ']);
-        },
-        'repeat fixed'() {
-            const { repeat, decimal_only: digit } = $mol_regexp;
-            const year = repeat(digit, 4, 4);
-            $mol_assert_like('#2020#'.match(year), ['2020']);
-        },
-        'greedy repeat'() {
-            const { repeat, repeat_greedy, latin_only: letter } = $mol_regexp;
-            $mol_assert_like('abc'.match(repeat(letter, 1, 2)), ['a', 'b', 'c']);
-            $mol_assert_like('abc'.match(repeat_greedy(letter, 1, 2)), ['ab', 'c']);
-        },
-        'repeat range'() {
-            const { repeat_greedy, decimal_only: digit } = $mol_regexp;
-            const year = repeat_greedy(digit, 2, 4);
-            $mol_assert_like('#2#'.match(year), null);
-            $mol_assert_like('#20#'.match(year), ['20']);
-            $mol_assert_like('#2020#'.match(year), ['2020']);
-            $mol_assert_like('#20201#'.match(year), ['2020']);
-        },
-        'repeat from'() {
-            const { repeat_greedy, latin_only: letter } = $mol_regexp;
-            const name = repeat_greedy(letter, 2);
-            $mol_assert_like('##'.match(name), null);
-            $mol_assert_like('#a#'.match(name), null);
-            $mol_assert_like('#ab#'.match(name), ['ab']);
-            $mol_assert_like('#abc#'.match(name), ['abc']);
-        },
-        'from string'() {
-            const regexp = $mol_regexp.from('[\\d]');
-            $mol_assert_equal(regexp.source, '\\[\\\\d\\]');
-            $mol_assert_equal(regexp.flags, 'gsu');
-        },
-        'from regexp'() {
-            const regexp = $mol_regexp.from(/[\d]/i);
-            $mol_assert_equal(regexp.source, '[\\d]');
-            $mol_assert_equal(regexp.flags, 'i');
-        },
-        'split'() {
-            const regexp = $mol_regexp.from(';');
-            $mol_assert_like('aaa;bbb;ccc'.split(regexp), ['aaa', ';', 'bbb', ';', 'ccc']);
-            $mol_assert_like('aaa;;ccc'.split(regexp), ['aaa', ';', '', ';', 'ccc']);
-            $mol_assert_like('aaa'.split(regexp), ['aaa']);
-            $mol_assert_like(''.split(regexp), ['']);
-        },
-        'test for matching'() {
-            const regexp = $mol_regexp.from('foo');
-            $mol_assert_like(regexp.test(''), false);
-            $mol_assert_like(regexp.test('fo'), false);
-            $mol_assert_like(regexp.test('foo'), true);
-            $mol_assert_like(regexp.test('foobar'), true);
-            $mol_assert_like(regexp.test('barfoo'), true);
-        },
-        'case ignoring'() {
-            const xxx = $mol_regexp.from('x', { ignoreCase: true });
-            $mol_assert_like(xxx.flags, 'gisu');
-            $mol_assert_like(xxx.exec('xx')[0], 'x');
-            $mol_assert_like(xxx.exec('XX')[0], 'X');
-        },
-        'multiline mode'() {
-            const { end, from } = $mol_regexp;
-            const xxx = from(['x', end], { multiline: true });
-            $mol_assert_like(xxx.exec('x\ny')[0], 'x');
-            $mol_assert_like(xxx.flags, 'gmsu');
-        },
-        'flags override'() {
-            const triplet = $mol_regexp.from($mol_regexp.from(/.../, { ignoreCase: true }), { multiline: true });
-            $mol_assert_like(triplet.toString(), '/.../gmsu');
-        },
-        'sequence'() {
-            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
-            const year = repeat(digit, 4, 4);
-            const dash = '-';
-            const month = repeat(digit, 2, 2);
-            const day = repeat(digit, 2, 2);
-            const date = from([begin, year, dash, month, dash, day, end]);
-            $mol_assert_like(date.exec('2020-01-02')[0], '2020-01-02');
-        },
-        'optional'() {
-            const name = $mol_regexp.from(['A', ['4']]);
-            $mol_assert_equal('AB'.match(name)[0], 'A');
-            $mol_assert_equal('A4'.match(name)[0], 'A4');
-        },
-        'anon variants'() {
-            const name = $mol_regexp.from(['A', $mol_regexp.vary(['4', '5'])]);
-            $mol_assert_equal('AB'.match(name), null);
-            $mol_assert_equal('A4'.match(name)[0], 'A4');
-            $mol_assert_equal('A5'.match(name)[0], 'A5');
-        },
-        'only groups'() {
-            const regexp = $mol_regexp.from({ dog: '@' });
-            $mol_assert_like([...'#'.matchAll(regexp)][0].groups, undefined);
-            $mol_assert_like([...'@'.matchAll(regexp)][0].groups, { dog: '@' });
-        },
-        'catch skipped'() {
-            const regexp = $mol_regexp.from(/(@)(\d?)/g);
-            $mol_assert_like([...'[[@]]'.matchAll(regexp)].map(f => [...f]), [
-                ['[['],
-                ['@', '@', ''],
-                [']]'],
-            ]);
-        },
-        'enum variants'() {
-            let Sex;
-            (function (Sex) {
-                Sex["male"] = "male";
-                Sex["female"] = "female";
-            })(Sex || (Sex = {}));
-            const sexism = $mol_regexp.from(Sex);
-            $mol_assert_like([...''.matchAll(sexism)].length, 0);
-            $mol_assert_like([...'trans'.matchAll(sexism)][0].groups, undefined);
-            $mol_assert_like([...'male'.matchAll(sexism)][0].groups, { male: 'male', female: '' });
-            $mol_assert_like([...'female'.matchAll(sexism)][0].groups, { male: '', female: 'female' });
-        },
-        'recursive only groups'() {
-            let Sex;
-            (function (Sex) {
-                Sex["male"] = "male";
-                Sex["female"] = "female";
-            })(Sex || (Sex = {}));
-            const sexism = $mol_regexp.from({ Sex });
-            $mol_assert_like([...''.matchAll(sexism)].length, 0);
-            $mol_assert_like([...'male'.matchAll(sexism)][0].groups, { Sex: 'male', male: 'male', female: '' });
-            $mol_assert_like([...'female'.matchAll(sexism)][0].groups, { Sex: 'female', male: '', female: 'female' });
-        },
-        'sequence with groups'() {
-            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
-            const year = repeat(digit, 4, 4);
-            const dash = '-';
-            const month = repeat(digit, 2, 2);
-            const day = repeat(digit, 2, 2);
-            const regexp = from([begin, { year }, dash, { month }, dash, { day }, end]);
-            const found = [...'2020-01-02'.matchAll(regexp)];
-            $mol_assert_like(found[0].groups, {
-                year: '2020',
-                month: '01',
-                day: '02',
-            });
-        },
-        'sequence with groups of mixed type'() {
-            const prefix = '/';
-            const postfix = '/';
-            const regexp = $mol_regexp.from([{ prefix }, /(\w+)/, { postfix }, /([gumi]*)/]);
-            $mol_assert_like([...'/foo/mi'.matchAll(regexp)], [
-                Object.assign(["/foo/mi", "/", "foo", "/", "mi"], {
-                    groups: {
-                        prefix: '/',
-                        postfix: '/',
-                    },
-                    index: 0,
-                    input: "/",
-                }),
-            ]);
-        },
-        'recursive sequence with groups'() {
-            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
-            const year = repeat(digit, 4, 4);
-            const dash = '-';
-            const month = repeat(digit, 2, 2);
-            const day = repeat(digit, 2, 2);
-            const regexp = from([
-                begin, { date: [{ year }, dash, { month }] }, dash, { day }, end
-            ]);
-            const found = [...'2020-01-02'.matchAll(regexp)];
-            $mol_assert_like(found[0].groups, {
-                date: '2020-01',
-                year: '2020',
-                month: '01',
-                day: '02',
-            });
-        },
-        'parse multiple'() {
-            const { decimal_only: digit, from } = $mol_regexp;
-            const regexp = from({ digit });
-            $mol_assert_like([...'123'.matchAll(regexp)].map(f => f.groups), [
-                { digit: '1' },
-                { digit: '2' },
-                { digit: '3' },
-            ]);
-        },
-        'named variants'() {
-            const { begin, or, end, from } = $mol_regexp;
-            const sexism = from([
-                begin, 'sex = ', { sex: ['male', or, 'female'] }, end
-            ]);
-            $mol_assert_like([...'sex = male'.matchAll(sexism)][0].groups, { sex: 'male' });
-            $mol_assert_like([...'sex = female'.matchAll(sexism)][0].groups, { sex: 'female' });
-            $mol_assert_like([...'sex = malefemale'.matchAll(sexism)][0].groups, undefined);
-        },
-        'force after'() {
-            const { latin_only: letter, force_after, from } = $mol_regexp;
-            const regexp = from([letter, force_after('.')]);
-            $mol_assert_like('x.'.match(regexp), ['x']);
-            $mol_assert_like('x,'.match(regexp), null);
-        },
-        'forbid after'() {
-            const { latin_only: letter, forbid_after, from } = $mol_regexp;
-            const regexp = from([letter, forbid_after('.')]);
-            $mol_assert_like('x.'.match(regexp), null);
-            $mol_assert_like('x,'.match(regexp), ['x']);
-        },
-        'char except'() {
-            const { char_except, latin_only, tab } = $mol_regexp;
-            const name = char_except(latin_only, tab);
-            $mol_assert_like('a'.match(name), null);
-            $mol_assert_like('\t'.match(name), null);
-            $mol_assert_like('('.match(name), ['(']);
-        },
-        'unicode only'() {
-            const { unicode_only, from } = $mol_regexp;
-            const name = from([
-                unicode_only('Script', 'Cyrillic'),
-                unicode_only('Hex_Digit'),
-            ]);
-            $mol_assert_like('FF'.match(name), null);
-            $mol_assert_like('ФG'.match(name), null);
-            $mol_assert_like('ФF'.match(name), ['ФF']);
-        },
-        'generate by optional with inner group'() {
-            const { begin, end, from } = $mol_regexp;
-            const animals = from([begin, '#', ['^', { dog: '@' }], end]);
-            $mol_assert_equal(animals.generate({}), '#');
-            $mol_assert_equal(animals.generate({ dog: false }), '#');
-            $mol_assert_equal(animals.generate({ dog: true }), '#^@');
-            $mol_assert_fail(() => animals.generate({ dog: '$' }), 'Wrong param: dog=$');
-        },
-        'generate by optional with inner group with variants'() {
-            const { begin, end, from } = $mol_regexp;
-            const animals = from([begin, '#', ['^', { animal: { dog: '@', fox: '&' } }], end]);
-            $mol_assert_equal(animals.generate({}), '#');
-            $mol_assert_equal(animals.generate({ dog: true }), '#^@');
-            $mol_assert_equal(animals.generate({ fox: true }), '#^&');
-            $mol_assert_fail(() => animals.generate({ dog: '$' }), 'Wrong param: dog=$');
-        },
-        'complex example'() {
-            const { begin, end, char_only, char_range, latin_only, slash_back, repeat_greedy, from, } = $mol_regexp;
-            const atom_char = char_only(latin_only, "!#$%&'*+/=?^`{|}~-");
-            const atom = repeat_greedy(atom_char, 1);
-            const dot_atom = from([atom, repeat_greedy(['.', atom])]);
-            const name_letter = char_only(char_range(0x01, 0x08), 0x0b, 0x0c, char_range(0x0e, 0x1f), 0x21, char_range(0x23, 0x5b), char_range(0x5d, 0x7f));
-            const quoted_pair = from([
-                slash_back,
-                char_only(char_range(0x01, 0x09), 0x0b, 0x0c, char_range(0x0e, 0x7f))
-            ]);
-            const name = repeat_greedy({ name_letter, quoted_pair });
-            const quoted_name = from(['"', { name }, '"']);
-            const local_part = from({ dot_atom, quoted_name });
-            const domain = dot_atom;
-            const mail = from([begin, local_part, '@', { domain }, end]);
-            $mol_assert_equal('foo..bar@example.org'.match(mail), null);
-            $mol_assert_equal('foo..bar"@example.org'.match(mail), null);
-            $mol_assert_like([...'foo.bar@example.org'.matchAll(mail)][0].groups, {
-                dot_atom: "foo.bar",
-                quoted_name: "",
-                name: "",
-                name_letter: "",
-                quoted_pair: "",
-                domain: "example.org",
-            });
-            $mol_assert_like([...'"foo..bar"@example.org'.matchAll(mail)][0].groups, {
-                dot_atom: "",
-                quoted_name: '"foo..bar"',
-                name: "foo..bar",
-                name_letter: "r",
-                quoted_pair: "",
-                domain: "example.org",
-            });
-            $mol_assert_equal(mail.generate({ dot_atom: 'foo.bar', domain: 'example.org' }), 'foo.bar@example.org');
-            $mol_assert_equal(mail.generate({ name: 'foo..bar', domain: 'example.org' }), '"foo..bar"@example.org');
-            $mol_assert_fail(() => mail.generate({ dot_atom: 'foo..bar', domain: 'example.org' }), 'Wrong param: dot_atom=foo..bar');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    function get_parts(str) {
-        return $$.$mol_view_tree2_prop_parts($mol_tree2.struct(str));
-    }
-    $mol_test({
-        'wrong order'($) {
-            $mol_assert_fail(() => {
-                get_parts('some_bla?*');
-            }, 'Required prop like some*? at `?#1:1/0`');
-        },
-        'empty'($) {
-            $mol_assert_fail(() => {
-                get_parts('');
-            }, 'Required prop like some*? at `?#1:1/0`');
-        },
-        'prop in upper case'($) {
-            const parts = get_parts('Close_icon');
-            $mol_assert_equal(parts.name, 'Close_icon');
-            $mol_assert_equal(parts.key, '');
-            $mol_assert_equal(parts.next, '');
-        },
-        'prop with index'($) {
-            const parts = get_parts('some_bla*');
-            $mol_assert_equal(parts.name, 'some_bla');
-            $mol_assert_equal(parts.key, '*');
-            $mol_assert_equal(parts.next, '');
-        },
-        'prop with index and value'($) {
-            const parts = get_parts('some_bla*?');
-            $mol_assert_equal(parts.name, 'some_bla');
-            $mol_assert_equal(parts.key, '*');
-            $mol_assert_equal(parts.next, '?');
-        },
-        'legacy indexed'($) {
-            const parts = get_parts('Some*default');
-            $mol_assert_equal(parts.name, 'Some');
-            $mol_assert_equal(parts.key, '*default');
-            $mol_assert_equal(parts.next, '');
-        },
-        'legacy indexed value'($) {
-            const parts = get_parts('Some*k?v');
-            $mol_assert_equal(parts.name, 'Some');
-            $mol_assert_equal(parts.key, '*k');
-            $mol_assert_equal(parts.next, '?');
-        }
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'init with overload'() {
-            class X extends $mol_object {
-                foo() {
-                    return 1;
-                }
-            }
-            var x = X.make({
-                foo: () => 2,
-            });
-            $mol_assert_equal(x.foo(), 2);
-        },
-        'Context in instance inherits from class'($) {
-            const custom = $.$mol_ambient({});
-            class X extends $.$mol_object {
-                static $ = custom;
-            }
-            $mol_assert_equal(new X().$, custom);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
         'Collect deps'() {
             const pub1 = new $mol_wire_pub;
             const pub2 = new $mol_wire_pub;
@@ -2715,6 +2115,51 @@ var $;
 
 ;
 "use strict";
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'init with overload'() {
+            class X extends $mol_object {
+                foo() {
+                    return 1;
+                }
+            }
+            var x = X.make({
+                foo: () => 2,
+            });
+            $mol_assert_equal(x.foo(), 2);
+        },
+        'Context in instance inherits from class'($) {
+            const custom = $.$mol_ambient({});
+            class X extends $.$mol_object {
+                static $ = custom;
+            }
+            $mol_assert_equal(new X().$, custom);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'all cases of using maybe'() {
+            $mol_assert_equal($mol_maybe(0)[0], 0);
+            $mol_assert_equal($mol_maybe(false)[0], false);
+            $mol_assert_equal($mol_maybe(null)[0], void 0);
+            $mol_assert_equal($mol_maybe(void 0)[0], void 0);
+            $mol_assert_equal($mol_maybe(void 0).map(v => v.toString())[0], void 0);
+            $mol_assert_equal($mol_maybe(0).map(v => v.toString())[0], '0');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
 var $;
 (function ($) {
     $mol_test({
@@ -2977,6 +2422,651 @@ var $;
             node.click();
             $mol_assert_ok(clicked);
         },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * Tests of the wire protocol: what goes in through `send` comes out of `read`,
+     * and what is not ours does not. A fake `postMessage` stands in for the window.
+     */
+    $mol_test({
+        'libs_set survives the wire'($) {
+            const parts = [
+                { tree: 'my_card mol_view\n\tprice 0\n', js: 'price(){ return 1 }', css: '' },
+                { tree: 'my_badge my_card\n', js: '', css: '[my_badge] { color: red }' },
+            ];
+            const sent = [];
+            $bog_vmap_bridge_send({ postMessage: (data) => { sent.push(data); } }, { kind: 'libs_set', parts });
+            $mol_assert_equal(sent.length, 1);
+            const message = $bog_vmap_bridge_read({ data: sent[0] });
+            $mol_assert_equal(message?.kind, 'libs_set');
+            if (message?.kind !== 'libs_set')
+                return;
+            $mol_assert_like(message.parts, parts);
+        },
+        /** The question goes down as a list of names, the answer comes up keyed by them. */
+        'values_want and values survive the wire'($) {
+            const sent = [];
+            const target = { postMessage: (data) => { sent.push(data); } };
+            $bog_vmap_bridge_send(target, { kind: 'values_want', names: ['calc_result', 'calc_value'] });
+            $bog_vmap_bridge_send(target, { kind: 'values', values: { calc_result: '42', calc_value: 'Error: boom' } });
+            const want = $bog_vmap_bridge_read({ data: sent[0] });
+            $mol_assert_equal(want?.kind, 'values_want');
+            if (want?.kind !== 'values_want')
+                return;
+            $mol_assert_like(want.names, ['calc_result', 'calc_value']);
+            const got = $bog_vmap_bridge_read({ data: sent[1] });
+            $mol_assert_equal(got?.kind, 'values');
+            if (got?.kind !== 'values')
+                return;
+            $mol_assert_like(got.values, { calc_result: '42', calc_value: 'Error: boom' });
+        },
+        'a message from another namespace is not ours'($) {
+            $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: 'somebody_else', kind: 'libs_set', parts: [] } }), null);
+            $mol_assert_equal($bog_vmap_bridge_read({ data: 'text' }), null);
+            $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: $bog_vmap_bridge_ns } }), null);
+        },
+        /** Passing a peer at all turns the check on: an unknown source is refused. */
+        'a message from a window other than the peer is dropped'($) {
+            const peer = {};
+            const stranger = {};
+            const data = { ns: $bog_vmap_bridge_ns, kind: 'ready' };
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, peer), null);
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: peer }, peer)?.kind, 'ready');
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, null), null);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * `click_at` on the wire: the relayed click keeps its point and its modifiers,
+     * and comes in only from the peer, like every other message.
+     */
+    $mol_test({
+        'click_at survives the wire with its point and modifiers'($) {
+            const posted = [];
+            const target = { postMessage(data) { posted.push(data); } };
+            const mods = { altKey: false, ctrlKey: true, metaKey: false, shiftKey: false };
+            $bog_vmap_bridge_send(target, { kind: 'click_at', x: 12.5, y: -3, mods });
+            $mol_assert_equal(posted.length, 1);
+            const read = $bog_vmap_bridge_read({ data: posted[0], source: target }, target);
+            $mol_assert_equal(read?.kind, 'click_at');
+            if (read?.kind !== 'click_at')
+                return;
+            $mol_assert_equal(read.x, 12.5);
+            $mol_assert_equal(read.y, -3);
+            $mol_assert_like(read.mods, mods);
+        },
+        'a click_at from a stranger is dropped'($) {
+            const peer = {};
+            const stranger = {};
+            const data = { ns: $bog_vmap_bridge_ns, kind: 'click_at', x: 1, y: 2, mods: {} };
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, peer), null);
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: peer }, peer)?.kind, 'click_at');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'span for same uri'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const child = span.span(4, 5, 8);
+            $mol_assert_equal(child.uri, 'test.ts');
+            $mol_assert_equal(child.row, 4);
+            $mol_assert_equal(child.col, 5);
+            $mol_assert_equal(child.length, 8);
+        },
+        'span after of given position'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const child = span.after(11);
+            $mol_assert_equal(child.uri, 'test.ts');
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 7);
+            $mol_assert_equal(child.length, 11);
+        },
+        'slice span - regular'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            const child = span.slice(1, 4);
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 4);
+            $mol_assert_equal(child.length, 3);
+            const child2 = span.slice(2, 2);
+            $mol_assert_equal(child2.col, 5);
+            $mol_assert_equal(child2.length, 0);
+        },
+        'slice span - negative'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            const child = span.slice(-3, -1);
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 5);
+            $mol_assert_equal(child.length, 2);
+        },
+        'slice span - out of range'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            $mol_assert_fail(() => span.slice(-1, 3), `End value '3' can't be less than begin value (test.ts#1:3/5)`);
+            $mol_assert_fail(() => span.slice(1, 6), `End value '6' out of range (test.ts#1:3/5)`);
+            $mol_assert_fail(() => span.slice(1, 10), `End value '10' out of range (test.ts#1:3/5)`);
+        },
+        'error handling'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const error = span.error('Some error');
+            $mol_assert_equal(error.message, 'Some error (test.ts#1:3/4)');
+        }
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'tree parsing'($) {
+            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids.length, 2);
+            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids[1].type, "bar");
+            $mol_assert_equal($.$mol_tree2_from_string("foo\n\n\n").kids.length, 1);
+            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids.length, 2);
+            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids[1].value, "bar");
+            $mol_assert_equal($.$mol_tree2_from_string("foo bar \\pol\n").kids[0].kids[0].kids[0].value, "pol");
+            $mol_assert_equal($.$mol_tree2_from_string("foo bar\n\t\\pol\n\t\\men\n").kids[0].kids[0].kids[1].value, "men");
+            $mol_assert_equal($.$mol_tree2_from_string('foo bar \\text\n').toString(), 'foo bar \\text\n');
+        },
+        'Too many tabs'($) {
+            const tree = `
+				foo
+						bar
+			`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Too many tabs\ntest#3:1/6\n!!!!!!\n\t\t\t\t\t\tbar');
+        },
+        'Too few tabs'($) {
+            const tree = `
+					foo
+				bar
+			`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Too few tabs\ntest#3:1/4\n!!!!\n\t\t\t\tbar');
+        },
+        'Wrong nodes separator at start'($) {
+            const tree = `foo\n \tbar\n`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Wrong nodes separator\ntest#2:1/2\n!!\n \tbar');
+        },
+        'Wrong nodes separator in the middle'($) {
+            const tree = `foo  bar\n`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar');
+        },
+        'Unexpected EOF, LF required'($) {
+            const tree = `	foo`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Unexpected EOF, LF required\ntest#1:5/1\n	   !\n	foo');
+        },
+        'Errors skip and collect'($) {
+            const tree = `foo  bar`;
+            const errors = [];
+            const $$ = $.$mol_ambient({
+                $mol_fail: (error) => {
+                    errors.push(error.message);
+                    return null;
+                }
+            });
+            const res = $$.$mol_tree2_from_string(tree, 'test');
+            $mol_assert_like(errors, [
+                'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar',
+                'Unexpected EOF, LF required\ntest#1:9/1\n        !\nfoo  bar',
+            ]);
+            $mol_assert_equal(res.toString(), 'foo bar\n');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    function check(tree, ideal) {
+        $mol_assert_equal(tree.toString(), $$.$mol_tree2_from_string(ideal).toString());
+    }
+    $mol_test({
+        'inserting'($) {
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c'), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c', 'd'), `
+					a b c x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`)
+                .insert($mol_tree2.struct('x'), 0, 0, 0), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`)
+                .insert($mol_tree2.struct('x'), 0, 0, 0, 0), `
+					a b \\
+						x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`)
+                .insert($mol_tree2.struct('x'), null, null, null), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`)
+                .insert($mol_tree2.struct('x'), null, null, null, null), `
+					a b \\
+						x
+				`);
+        },
+        'updating'($) {
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([], 'a', 'b', 'c')[0], `
+					a b
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([$mol_tree2.struct('x')])[0], `
+					x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([$mol_tree2.struct('x'), $mol_tree2.struct('y')], 'a', 'b', 'c')[0], `
+					a b
+						x
+						y
+				`);
+        },
+        'deleting'($) {
+            const base = $.$mol_tree2_from_string(`
+				a b c d
+			`);
+            check(base.insert(null, 'a', 'b', 'c'), `
+					a b
+				`);
+            check(base.update(base.select('a', 'b', 'c', null).kids, 'a', 'b', 'c')[0], `
+					a b d
+				`);
+            check(base.insert(null, 0, 0, 0), `
+					a b
+				`);
+        },
+        'hack'($) {
+            const res = $.$mol_tree2_from_string(`
+				foo bar xxx
+			`)
+                .hack({
+                'bar': (input, belt) => [input.struct('777', input.hack(belt))],
+            });
+            $mol_assert_equal(res.map(String), ['foo 777 xxx\n']);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'escape'() {
+            const specials = $mol_regexp.from('.*+?^${}()|[]\\');
+            $mol_assert_equal(specials.source, '\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\');
+        },
+        'char code'() {
+            const space = $mol_regexp.from(32);
+            $mol_assert_like(' '.match(space), [' ']);
+        },
+        'repeat fixed'() {
+            const { repeat, decimal_only: digit } = $mol_regexp;
+            const year = repeat(digit, 4, 4);
+            $mol_assert_like('#2020#'.match(year), ['2020']);
+        },
+        'greedy repeat'() {
+            const { repeat, repeat_greedy, latin_only: letter } = $mol_regexp;
+            $mol_assert_like('abc'.match(repeat(letter, 1, 2)), ['a', 'b', 'c']);
+            $mol_assert_like('abc'.match(repeat_greedy(letter, 1, 2)), ['ab', 'c']);
+        },
+        'repeat range'() {
+            const { repeat_greedy, decimal_only: digit } = $mol_regexp;
+            const year = repeat_greedy(digit, 2, 4);
+            $mol_assert_like('#2#'.match(year), null);
+            $mol_assert_like('#20#'.match(year), ['20']);
+            $mol_assert_like('#2020#'.match(year), ['2020']);
+            $mol_assert_like('#20201#'.match(year), ['2020']);
+        },
+        'repeat from'() {
+            const { repeat_greedy, latin_only: letter } = $mol_regexp;
+            const name = repeat_greedy(letter, 2);
+            $mol_assert_like('##'.match(name), null);
+            $mol_assert_like('#a#'.match(name), null);
+            $mol_assert_like('#ab#'.match(name), ['ab']);
+            $mol_assert_like('#abc#'.match(name), ['abc']);
+        },
+        'from string'() {
+            const regexp = $mol_regexp.from('[\\d]');
+            $mol_assert_equal(regexp.source, '\\[\\\\d\\]');
+            $mol_assert_equal(regexp.flags, 'gsu');
+        },
+        'from regexp'() {
+            const regexp = $mol_regexp.from(/[\d]/i);
+            $mol_assert_equal(regexp.source, '[\\d]');
+            $mol_assert_equal(regexp.flags, 'i');
+        },
+        'split'() {
+            const regexp = $mol_regexp.from(';');
+            $mol_assert_like('aaa;bbb;ccc'.split(regexp), ['aaa', ';', 'bbb', ';', 'ccc']);
+            $mol_assert_like('aaa;;ccc'.split(regexp), ['aaa', ';', '', ';', 'ccc']);
+            $mol_assert_like('aaa'.split(regexp), ['aaa']);
+            $mol_assert_like(''.split(regexp), ['']);
+        },
+        'test for matching'() {
+            const regexp = $mol_regexp.from('foo');
+            $mol_assert_like(regexp.test(''), false);
+            $mol_assert_like(regexp.test('fo'), false);
+            $mol_assert_like(regexp.test('foo'), true);
+            $mol_assert_like(regexp.test('foobar'), true);
+            $mol_assert_like(regexp.test('barfoo'), true);
+        },
+        'case ignoring'() {
+            const xxx = $mol_regexp.from('x', { ignoreCase: true });
+            $mol_assert_like(xxx.flags, 'gisu');
+            $mol_assert_like(xxx.exec('xx')[0], 'x');
+            $mol_assert_like(xxx.exec('XX')[0], 'X');
+        },
+        'multiline mode'() {
+            const { end, from } = $mol_regexp;
+            const xxx = from(['x', end], { multiline: true });
+            $mol_assert_like(xxx.exec('x\ny')[0], 'x');
+            $mol_assert_like(xxx.flags, 'gmsu');
+        },
+        'flags override'() {
+            const triplet = $mol_regexp.from($mol_regexp.from(/.../, { ignoreCase: true }), { multiline: true });
+            $mol_assert_like(triplet.toString(), '/.../gmsu');
+        },
+        'sequence'() {
+            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
+            const year = repeat(digit, 4, 4);
+            const dash = '-';
+            const month = repeat(digit, 2, 2);
+            const day = repeat(digit, 2, 2);
+            const date = from([begin, year, dash, month, dash, day, end]);
+            $mol_assert_like(date.exec('2020-01-02')[0], '2020-01-02');
+        },
+        'optional'() {
+            const name = $mol_regexp.from(['A', ['4']]);
+            $mol_assert_equal('AB'.match(name)[0], 'A');
+            $mol_assert_equal('A4'.match(name)[0], 'A4');
+        },
+        'anon variants'() {
+            const name = $mol_regexp.from(['A', $mol_regexp.vary(['4', '5'])]);
+            $mol_assert_equal('AB'.match(name), null);
+            $mol_assert_equal('A4'.match(name)[0], 'A4');
+            $mol_assert_equal('A5'.match(name)[0], 'A5');
+        },
+        'only groups'() {
+            const regexp = $mol_regexp.from({ dog: '@' });
+            $mol_assert_like([...'#'.matchAll(regexp)][0].groups, undefined);
+            $mol_assert_like([...'@'.matchAll(regexp)][0].groups, { dog: '@' });
+        },
+        'catch skipped'() {
+            const regexp = $mol_regexp.from(/(@)(\d?)/g);
+            $mol_assert_like([...'[[@]]'.matchAll(regexp)].map(f => [...f]), [
+                ['[['],
+                ['@', '@', ''],
+                [']]'],
+            ]);
+        },
+        'enum variants'() {
+            let Sex;
+            (function (Sex) {
+                Sex["male"] = "male";
+                Sex["female"] = "female";
+            })(Sex || (Sex = {}));
+            const sexism = $mol_regexp.from(Sex);
+            $mol_assert_like([...''.matchAll(sexism)].length, 0);
+            $mol_assert_like([...'trans'.matchAll(sexism)][0].groups, undefined);
+            $mol_assert_like([...'male'.matchAll(sexism)][0].groups, { male: 'male', female: '' });
+            $mol_assert_like([...'female'.matchAll(sexism)][0].groups, { male: '', female: 'female' });
+        },
+        'recursive only groups'() {
+            let Sex;
+            (function (Sex) {
+                Sex["male"] = "male";
+                Sex["female"] = "female";
+            })(Sex || (Sex = {}));
+            const sexism = $mol_regexp.from({ Sex });
+            $mol_assert_like([...''.matchAll(sexism)].length, 0);
+            $mol_assert_like([...'male'.matchAll(sexism)][0].groups, { Sex: 'male', male: 'male', female: '' });
+            $mol_assert_like([...'female'.matchAll(sexism)][0].groups, { Sex: 'female', male: '', female: 'female' });
+        },
+        'sequence with groups'() {
+            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
+            const year = repeat(digit, 4, 4);
+            const dash = '-';
+            const month = repeat(digit, 2, 2);
+            const day = repeat(digit, 2, 2);
+            const regexp = from([begin, { year }, dash, { month }, dash, { day }, end]);
+            const found = [...'2020-01-02'.matchAll(regexp)];
+            $mol_assert_like(found[0].groups, {
+                year: '2020',
+                month: '01',
+                day: '02',
+            });
+        },
+        'sequence with groups of mixed type'() {
+            const prefix = '/';
+            const postfix = '/';
+            const regexp = $mol_regexp.from([{ prefix }, /(\w+)/, { postfix }, /([gumi]*)/]);
+            $mol_assert_like([...'/foo/mi'.matchAll(regexp)], [
+                Object.assign(["/foo/mi", "/", "foo", "/", "mi"], {
+                    groups: {
+                        prefix: '/',
+                        postfix: '/',
+                    },
+                    index: 0,
+                    input: "/",
+                }),
+            ]);
+        },
+        'recursive sequence with groups'() {
+            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
+            const year = repeat(digit, 4, 4);
+            const dash = '-';
+            const month = repeat(digit, 2, 2);
+            const day = repeat(digit, 2, 2);
+            const regexp = from([
+                begin, { date: [{ year }, dash, { month }] }, dash, { day }, end
+            ]);
+            const found = [...'2020-01-02'.matchAll(regexp)];
+            $mol_assert_like(found[0].groups, {
+                date: '2020-01',
+                year: '2020',
+                month: '01',
+                day: '02',
+            });
+        },
+        'parse multiple'() {
+            const { decimal_only: digit, from } = $mol_regexp;
+            const regexp = from({ digit });
+            $mol_assert_like([...'123'.matchAll(regexp)].map(f => f.groups), [
+                { digit: '1' },
+                { digit: '2' },
+                { digit: '3' },
+            ]);
+        },
+        'named variants'() {
+            const { begin, or, end, from } = $mol_regexp;
+            const sexism = from([
+                begin, 'sex = ', { sex: ['male', or, 'female'] }, end
+            ]);
+            $mol_assert_like([...'sex = male'.matchAll(sexism)][0].groups, { sex: 'male' });
+            $mol_assert_like([...'sex = female'.matchAll(sexism)][0].groups, { sex: 'female' });
+            $mol_assert_like([...'sex = malefemale'.matchAll(sexism)][0].groups, undefined);
+        },
+        'force after'() {
+            const { latin_only: letter, force_after, from } = $mol_regexp;
+            const regexp = from([letter, force_after('.')]);
+            $mol_assert_like('x.'.match(regexp), ['x']);
+            $mol_assert_like('x,'.match(regexp), null);
+        },
+        'forbid after'() {
+            const { latin_only: letter, forbid_after, from } = $mol_regexp;
+            const regexp = from([letter, forbid_after('.')]);
+            $mol_assert_like('x.'.match(regexp), null);
+            $mol_assert_like('x,'.match(regexp), ['x']);
+        },
+        'char except'() {
+            const { char_except, latin_only, tab } = $mol_regexp;
+            const name = char_except(latin_only, tab);
+            $mol_assert_like('a'.match(name), null);
+            $mol_assert_like('\t'.match(name), null);
+            $mol_assert_like('('.match(name), ['(']);
+        },
+        'unicode only'() {
+            const { unicode_only, from } = $mol_regexp;
+            const name = from([
+                unicode_only('Script', 'Cyrillic'),
+                unicode_only('Hex_Digit'),
+            ]);
+            $mol_assert_like('FF'.match(name), null);
+            $mol_assert_like('ФG'.match(name), null);
+            $mol_assert_like('ФF'.match(name), ['ФF']);
+        },
+        'generate by optional with inner group'() {
+            const { begin, end, from } = $mol_regexp;
+            const animals = from([begin, '#', ['^', { dog: '@' }], end]);
+            $mol_assert_equal(animals.generate({}), '#');
+            $mol_assert_equal(animals.generate({ dog: false }), '#');
+            $mol_assert_equal(animals.generate({ dog: true }), '#^@');
+            $mol_assert_fail(() => animals.generate({ dog: '$' }), 'Wrong param: dog=$');
+        },
+        'generate by optional with inner group with variants'() {
+            const { begin, end, from } = $mol_regexp;
+            const animals = from([begin, '#', ['^', { animal: { dog: '@', fox: '&' } }], end]);
+            $mol_assert_equal(animals.generate({}), '#');
+            $mol_assert_equal(animals.generate({ dog: true }), '#^@');
+            $mol_assert_equal(animals.generate({ fox: true }), '#^&');
+            $mol_assert_fail(() => animals.generate({ dog: '$' }), 'Wrong param: dog=$');
+        },
+        'complex example'() {
+            const { begin, end, char_only, char_range, latin_only, slash_back, repeat_greedy, from, } = $mol_regexp;
+            const atom_char = char_only(latin_only, "!#$%&'*+/=?^`{|}~-");
+            const atom = repeat_greedy(atom_char, 1);
+            const dot_atom = from([atom, repeat_greedy(['.', atom])]);
+            const name_letter = char_only(char_range(0x01, 0x08), 0x0b, 0x0c, char_range(0x0e, 0x1f), 0x21, char_range(0x23, 0x5b), char_range(0x5d, 0x7f));
+            const quoted_pair = from([
+                slash_back,
+                char_only(char_range(0x01, 0x09), 0x0b, 0x0c, char_range(0x0e, 0x7f))
+            ]);
+            const name = repeat_greedy({ name_letter, quoted_pair });
+            const quoted_name = from(['"', { name }, '"']);
+            const local_part = from({ dot_atom, quoted_name });
+            const domain = dot_atom;
+            const mail = from([begin, local_part, '@', { domain }, end]);
+            $mol_assert_equal('foo..bar@example.org'.match(mail), null);
+            $mol_assert_equal('foo..bar"@example.org'.match(mail), null);
+            $mol_assert_like([...'foo.bar@example.org'.matchAll(mail)][0].groups, {
+                dot_atom: "foo.bar",
+                quoted_name: "",
+                name: "",
+                name_letter: "",
+                quoted_pair: "",
+                domain: "example.org",
+            });
+            $mol_assert_like([...'"foo..bar"@example.org'.matchAll(mail)][0].groups, {
+                dot_atom: "",
+                quoted_name: '"foo..bar"',
+                name: "foo..bar",
+                name_letter: "r",
+                quoted_pair: "",
+                domain: "example.org",
+            });
+            $mol_assert_equal(mail.generate({ dot_atom: 'foo.bar', domain: 'example.org' }), 'foo.bar@example.org');
+            $mol_assert_equal(mail.generate({ name: 'foo..bar', domain: 'example.org' }), '"foo..bar"@example.org');
+            $mol_assert_fail(() => mail.generate({ dot_atom: 'foo..bar', domain: 'example.org' }), 'Wrong param: dot_atom=foo..bar');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    function get_parts(str) {
+        return $$.$mol_view_tree2_prop_parts($mol_tree2.struct(str));
+    }
+    $mol_test({
+        'wrong order'($) {
+            $mol_assert_fail(() => {
+                get_parts('some_bla?*');
+            }, 'Required prop like some*? at `?#1:1/0`');
+        },
+        'empty'($) {
+            $mol_assert_fail(() => {
+                get_parts('');
+            }, 'Required prop like some*? at `?#1:1/0`');
+        },
+        'prop in upper case'($) {
+            const parts = get_parts('Close_icon');
+            $mol_assert_equal(parts.name, 'Close_icon');
+            $mol_assert_equal(parts.key, '');
+            $mol_assert_equal(parts.next, '');
+        },
+        'prop with index'($) {
+            const parts = get_parts('some_bla*');
+            $mol_assert_equal(parts.name, 'some_bla');
+            $mol_assert_equal(parts.key, '*');
+            $mol_assert_equal(parts.next, '');
+        },
+        'prop with index and value'($) {
+            const parts = get_parts('some_bla*?');
+            $mol_assert_equal(parts.name, 'some_bla');
+            $mol_assert_equal(parts.key, '*');
+            $mol_assert_equal(parts.next, '?');
+        },
+        'legacy indexed'($) {
+            const parts = get_parts('Some*default');
+            $mol_assert_equal(parts.name, 'Some');
+            $mol_assert_equal(parts.key, '*default');
+            $mol_assert_equal(parts.next, '');
+        },
+        'legacy indexed value'($) {
+            const parts = get_parts('Some*k?v');
+            $mol_assert_equal(parts.name, 'Some');
+            $mol_assert_equal(parts.key, '*k');
+            $mol_assert_equal(parts.next, '?');
+        }
     });
 })($ || ($ = {}));
 
@@ -6791,87 +6881,47 @@ var $;
 var $;
 (function ($_1) {
     /**
-     * Tests of the wire protocol: what goes in through `send` comes out of `read`,
-     * and what is not ours does not. A fake `postMessage` stands in for the window.
+     * Tests of the compile order. Trees only, nothing is compiled: the rule that
+     * says which class is declared before which is a property of the declarations.
+     *
+     * `d` keeps `$` out of the literals so mam does not read a fixture as a
+     * dependency.
      */
+    const d = '$';
+    const defs = ($, src) => $.$mol_tree2_from_string(src).kids;
+    const names = (trees) => trees.map(tree => tree.type).join(' ');
     $mol_test({
-        'libs_set survives the wire'($) {
-            const parts = [
-                { tree: 'my_card mol_view\n\tprice 0\n', js: 'price(){ return 1 }', css: '' },
-                { tree: 'my_badge my_card\n', js: '', css: '[my_badge] { color: red }' },
-            ];
-            const sent = [];
-            $bog_vmap_bridge_send({ postMessage: (data) => { sent.push(data); } }, { kind: 'libs_set', parts });
-            $mol_assert_equal(sent.length, 1);
-            const message = $bog_vmap_bridge_read({ data: sent[0] });
-            $mol_assert_equal(message?.kind, 'libs_set');
-            if (message?.kind !== 'libs_set')
-                return;
-            $mol_assert_like(message.parts, parts);
+        'the document comes after the libraries'($) {
+            const libs = defs($, `${d}l_a ${d}mol_view\n${d}l_b ${d}l_a\n`);
+            const doc = defs($, `${d}doc ${d}l_b\n${d}doc_part ${d}mol_view\n`);
+            $mol_assert_equal(names($.$bog_vmap_scene_order(libs, doc)), `${d}l_a ${d}l_b ${d}doc ${d}doc_part`);
         },
-        /** The question goes down as a list of names, the answer comes up keyed by them. */
-        'values_want and values survive the wire'($) {
-            const sent = [];
-            const target = { postMessage: (data) => { sent.push(data); } };
-            $bog_vmap_bridge_send(target, { kind: 'values_want', names: ['calc_result', 'calc_value'] });
-            $bog_vmap_bridge_send(target, { kind: 'values', values: { calc_result: '42', calc_value: 'Error: boom' } });
-            const want = $bog_vmap_bridge_read({ data: sent[0] });
-            $mol_assert_equal(want?.kind, 'values_want');
-            if (want?.kind !== 'values_want')
-                return;
-            $mol_assert_like(want.names, ['calc_result', 'calc_value']);
-            const got = $bog_vmap_bridge_read({ data: sent[1] });
-            $mol_assert_equal(got?.kind, 'values');
-            if (got?.kind !== 'values')
-                return;
-            $mol_assert_like(got.values, { calc_result: '42', calc_value: 'Error: boom' });
+        'a heir written above its base moves below it'($) {
+            const libs = defs($, `${d}l_b ${d}l_a\n${d}l_a ${d}mol_view\n`);
+            $mol_assert_equal(names($.$bog_vmap_scene_order(libs, [])), `${d}l_a ${d}l_b`);
         },
-        'a message from another namespace is not ours'($) {
-            $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: 'somebody_else', kind: 'libs_set', parts: [] } }), null);
-            $mol_assert_equal($bog_vmap_bridge_read({ data: 'text' }), null);
-            $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: $bog_vmap_bridge_ns } }), null);
+        /**
+         * The bases nobody declares are the classes of the pack, already in the
+         * sandbox: they are not in the list and must not be asked for.
+         */
+        'a base the list does not declare is left to the sandbox'($) {
+            const doc = defs($, `${d}doc ${d}mol_button_minor\n`);
+            $mol_assert_equal(names($.$bog_vmap_scene_order([], doc)), `${d}doc`);
         },
-        /** Passing a peer at all turns the check on: an unknown source is refused. */
-        'a message from a window other than the peer is dropped'($) {
-            const peer = {};
-            const stranger = {};
-            const data = { ns: $bog_vmap_bridge_ns, kind: 'ready' };
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, peer), null);
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: peer }, peer)?.kind, 'ready');
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, null), null);
+        'a document class shadows a library class of the same name'($) {
+            const libs = defs($, `${d}x ${d}mol_view\n\tfrom_lib \\\n`);
+            const doc = defs($, `${d}x ${d}mol_view\n\tfrom_doc \\\n`);
+            const sorted = $.$bog_vmap_scene_order(libs, doc);
+            $mol_assert_equal(names(sorted), `${d}x`);
+            // the properties of a class hang under its super node
+            $mol_assert_equal(sorted[0].kids[0].kids[0].type, 'from_doc');
         },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
-     * `click_at` on the wire: the relayed click keeps its point and its modifiers,
-     * and comes in only from the peer, like every other message.
-     */
-    $mol_test({
-        'click_at survives the wire with its point and modifiers'($) {
-            const posted = [];
-            const target = { postMessage(data) { posted.push(data); } };
-            const mods = { altKey: false, ctrlKey: true, metaKey: false, shiftKey: false };
-            $bog_vmap_bridge_send(target, { kind: 'click_at', x: 12.5, y: -3, mods });
-            $mol_assert_equal(posted.length, 1);
-            const read = $bog_vmap_bridge_read({ data: posted[0], source: target }, target);
-            $mol_assert_equal(read?.kind, 'click_at');
-            if (read?.kind !== 'click_at')
-                return;
-            $mol_assert_equal(read.x, 12.5);
-            $mol_assert_equal(read.y, -3);
-            $mol_assert_like(read.mods, mods);
+        'a cycle is a readable failure'($) {
+            const libs = defs($, `${d}a ${d}b\n${d}b ${d}a\n`);
+            $mol_assert_fail(() => $.$bog_vmap_scene_order(libs, []), `Circular inheritance around ${d}a`);
         },
-        'a click_at from a stranger is dropped'($) {
-            const peer = {};
-            const stranger = {};
-            const data = { ns: $bog_vmap_bridge_ns, kind: 'click_at', x: 1, y: 2, mods: {} };
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, peer), null);
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: peer }, peer)?.kind, 'click_at');
+        'nothing in gives nothing out'($) {
+            $mol_assert_equal($.$bog_vmap_scene_order([], []).length, 0);
         },
     });
 })($ || ($ = {}));
@@ -6970,6 +7020,83 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
+    /**
+     * Tests of the culling decision.
+     *
+     * Nothing here needs a DOM, a camera or a compiled document, which is the whole
+     * reason the decision was pulled out of the view: the measurement of «a thousand
+     * nodes do not render» belongs in a browser, but the rule that says which ones
+     * do not is arithmetic and belongs here.
+     */
+    const view = { x: 0, y: 0, width: 1000, height: 800 };
+    const box = (x, y, width = 100, height = 40) => ({ x, y, width, height });
+    $mol_test({
+        'a part inside the viewport is shown'($) {
+            const shown = $bog_vmap_scene_cull({ A: { x: 100, y: 100 } }, { A: box(100, 100) }, view, 0, ['A']);
+            $mol_assert_equal(shown.has('A'), true);
+        },
+        'a part far outside is dropped'($) {
+            const shown = $bog_vmap_scene_cull({ A: { x: 5000, y: 5000 } }, { A: box(5000, 5000) }, view, 0, ['A']);
+            $mol_assert_equal(shown.has('A'), false);
+        },
+        /** Off screen by its corner, on screen by its body. Culling by the point alone would lose it. */
+        'a part that only overlaps by its size is shown'($) {
+            const shown = $bog_vmap_scene_cull({ A: { x: -50, y: 100 } }, { A: box(-50, 100) }, view, 0, ['A']);
+            $mol_assert_equal(shown.has('A'), true);
+        },
+        'slack widens the viewport on every side'($) {
+            const spots = { A: { x: -300, y: 100 }, B: { x: 1200, y: 100 } };
+            const sizes = { A: box(-300, 100), B: box(1200, 100) };
+            const tight = $bog_vmap_scene_cull(spots, sizes, view, 0, ['A', 'B']);
+            $mol_assert_equal(tight.size, 0);
+            const loose = $bog_vmap_scene_cull(spots, sizes, view, 400, ['A', 'B']);
+            $mol_assert_equal(loose.size, 2);
+        },
+        /**
+         * The deadlock this function must not be able to produce: a part hidden
+         * because nothing is known about it would never be drawn, never be measured,
+         * and so never stop being unknown.
+         */
+        'a part nothing is known about is shown'($) {
+            const shown = $bog_vmap_scene_cull({}, {}, view, 0, ['A']);
+            $mol_assert_equal(shown.has('A'), true);
+        },
+        /** A placed but unmeasured part counts as a point, so it is drawn once and measured. */
+        'a placed part with no measurement is judged by its spot'($) {
+            const near = $bog_vmap_scene_cull({ A: { x: 100, y: 100 } }, {}, view, 0, ['A']);
+            $mol_assert_equal(near.has('A'), true);
+            const far = $bog_vmap_scene_cull({ A: { x: 5000, y: 5000 } }, {}, view, 0, ['A']);
+            $mol_assert_equal(far.has('A'), false);
+        },
+        /**
+         * The spot wins over the measured origin, and it has to: after a drag the
+         * host has already moved the part, while the last measurement still describes
+         * where it used to be. Judging by the stale origin would blink the node out
+         * exactly while it is being dragged across the edge.
+         */
+        'placement wins over the last measured origin'($) {
+            const shown = $bog_vmap_scene_cull({ A: { x: 100, y: 100 } }, { A: box(9000, 9000) }, view, 0, ['A']);
+            $mol_assert_equal(shown.has('A'), true);
+        },
+        'only the names asked about come back'($) {
+            const shown = $bog_vmap_scene_cull({ A: { x: 10, y: 10 }, B: { x: 10, y: 10 } }, {}, view, 0, ['A']);
+            $mol_assert_like([...shown], ['A']);
+        },
+        'viewport of a camera is the screen divided by the zoom'($) {
+            $mol_assert_like($bog_vmap_scene_cull_viewport({ x: 10, y: 20, zoom: 2 }, { width: 1000, height: 800 }), { x: 10, y: 20, width: 500, height: 400 });
+            $mol_assert_like($bog_vmap_scene_cull_viewport({ x: 0, y: 0, zoom: .5 }, { width: 1000, height: 800 }), { x: 0, y: 0, width: 2000, height: 1600 });
+        },
+        /** A zoom of zero comes from outside, and a viewport of `Infinity` is not an answer. */
+        'a zoom of zero does not make the world infinite'($) {
+            $mol_assert_like($bog_vmap_scene_cull_viewport({ x: 0, y: 0, zoom: 0 }, { width: 1000, height: 800 }), { x: 0, y: 0, width: 1000, height: 800 });
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
     $mol_test({
         /**
          * The rule the hot swap depends on: a zero argument method is a cell whether
@@ -7005,179 +7132,6 @@ var $;
             $mol_assert_ok(Reflect.get(probe, 'row()') instanceof Map);
             $mol_assert_equal(probe.note('typed'), 'typed');
             $mol_assert_equal(probe.note(), 'typed');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
-     * Tests of the measurement walk and of what it hands the observer.
-     *
-     * No DOM and no compiled document: the walk is handed what a view is, what its
-     * children are and where its box is, so a fixture here is three plain objects
-     * and the arithmetic is visible.
-     */
-    /** A node with a box, standing in for an element. */
-    function node(left, top, width, height, isConnected = true) {
-        return {
-            isConnected,
-            getBoundingClientRect: () => ({ left, top, width, height }),
-        };
-    }
-    /** A view: a property name, a box and children. */
-    function view(prop, box, kids = []) {
-        return { prop, box, kids, dom_node: () => box };
-    }
-    function measure(root, zoom = 1) {
-        return $bog_vmap_scene_measure(root, {
-            key: 'doc',
-            zoom,
-            view_of: kid => kid?.dom_node ? kid : null,
-            kids_of: made => made.kids,
-            prop_of: made => made.prop,
-        });
-    }
-    /**
-     * An artboard: a page of fixed width with two rows inside it, and a free part
-     * beside it on the canvas.
-     */
-    function doc(width) {
-        return view('Doc', node(0, 0, 2000, 1000), [
-            view('Board', node(100, 100, width, 600), [
-                view('Head', node(100, 100, width, 40)),
-                view('Body', node(100, 140, width, 560)),
-            ]),
-            view('Loose', node(1500, 100, 80, 24)),
-        ]);
-    }
-    $mol_test({
-        /**
-         * The host addresses a node by the property that holds it, at any depth —
-         * section 1 — so the path is the chain of those names, and everything inside
-         * an artboard is reachable by one.
-         */
-        'every node of the document is measured, not only the free parts'($) {
-            const { sizes } = measure(doc(1280));
-            $mol_assert_like(Object.keys(sizes), [
-                'doc',
-                'doc/Board',
-                'doc/Board/Head',
-                'doc/Board/Body',
-                'doc/Loose',
-            ]);
-            $mol_assert_like(sizes['doc/Board/Head'], { x: 100, y: 100, width: 1280, height: 40 });
-        },
-        /**
-         * The point of the width switcher: the artboard changes size, and so does
-         * everything laid out inside it, while the free part beside it does not move.
-         */
-        'a narrower artboard reports narrower nodes inside it'($) {
-            const wide = measure(doc(1280)).sizes;
-            const narrow = measure(doc(390)).sizes;
-            $mol_assert_equal(wide['doc/Board'].width, 1280);
-            $mol_assert_equal(narrow['doc/Board'].width, 390);
-            $mol_assert_equal(narrow['doc/Board/Body'].width, 390);
-            $mol_assert_like(wide['doc/Loose'], narrow['doc/Loose']);
-        },
-        /** The host owns the camera and is told world units, whatever the zoom. */
-        'boxes are reported in world units, relative to the root'($) {
-            const { sizes } = measure(doc(1280), 2);
-            $mol_assert_like(sizes['doc/Board'], { x: 50, y: 50, width: 640, height: 300 });
-        },
-        'a node out of the document is not measured'($) {
-            const { sizes, nodes } = measure(view('Doc', node(0, 0, 100, 100), [
-                view('Gone', node(0, 0, 10, 10, false)),
-                view('Here', node(0, 0, 10, 10)),
-            ]));
-            $mol_assert_like(Object.keys(sizes), ['doc', 'doc/Here']);
-            $mol_assert_equal(nodes.length, 2);
-        },
-        /**
-         * Watching the root alone leaves everything inside an artboard unwatched,
-         * which is exactly where a late font or a decoded image reflows without the
-         * root changing size.
-         */
-        'the observer is handed every measured node'($) {
-            const { nodes } = measure(doc(1280));
-            $mol_assert_equal(nodes.length, 5);
-        },
-        'watching adds what is new, drops what is gone and leaves the rest alone'($) {
-            const log = [];
-            const watcher = {
-                observe: (node) => log.push('+' + node),
-                unobserve: (node) => log.push('-' + node),
-            };
-            const first = $bog_vmap_scene_watch(watcher, new Set(), ['a', 'b']);
-            $mol_assert_like(log, ['+a', '+b']);
-            // A node still there is NOT observed again: every fresh `observe` gets a
-            // box delivered, and a report that re-observes everything would answer
-            // its own delivery with another report.
-            const second = $bog_vmap_scene_watch(watcher, first, ['b', 'c']);
-            $mol_assert_like(log, ['+a', '+b', '-a', '+c']);
-            $mol_assert_like([...second], ['b', 'c']);
-            $bog_vmap_scene_watch(watcher, second, []);
-            $mol_assert_like(log, ['+a', '+b', '-a', '+c', '-b', '-c']);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    const how = (key) => ({
-        key,
-        view_of: (kid) => kid?.name === undefined ? null : kid,
-        kids_of: (view) => view.kids ?? [],
-        prop_of: (view) => view.name,
-    });
-    const bad = (view) => !!view.bad;
-    $mol_test({
-        'the path of a node is the root and every property down to it'($) {
-            const tree = { name: 'root', kids: [
-                    { name: 'Head' },
-                    { name: 'Tail', kids: [{ name: 'Deep', bad: true }] },
-                ] };
-            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad)?.path, 'doc/Tail/Deep');
-        },
-        /**
-         * A document whose own render throws is the common case, and it must not be
-         * answered with a child that merely inherited the failure.
-         */
-        'the root is asked before any child'($) {
-            const tree = { name: 'root', bad: true, kids: [{ name: 'Kid', bad: true }] };
-            const found = $bog_vmap_scene_seek(tree, how('doc'), bad);
-            $mol_assert_equal(found?.path, 'doc');
-            $mol_assert_equal(found?.view, tree);
-        },
-        'nothing to blame comes back as nothing, not as the root'($) {
-            const tree = { name: 'root', kids: [{ name: 'Kid' }] };
-            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad), null);
-        },
-        /**
-         * A child held by no named property is still on the path, by its position.
-         * Losing it would shift every sibling after it onto the wrong node.
-         */
-        'an unnamed child is addressed by its index'($) {
-            const tree = { name: 'root', kids: [{ name: '' }, { name: '', bad: true }] };
-            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad)?.path, 'doc/1');
-        },
-        /**
-         * Content that is not a view is skipped rather than counted: a string
-         * between two views would otherwise push the second one off its own index.
-         */
-        'text between views does not take an index'($) {
-            const tree = { name: 'root', kids: ['just text', { name: '', bad: true }] };
-            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad)?.path, 'doc/0');
-        },
-        /** A cycle in the tree must end the walk instead of the process. */
-        'a cycle is cut by the depth limit'($) {
-            const loop = { name: 'Loop' };
-            loop.kids = [loop];
-            $mol_assert_equal($bog_vmap_scene_seek(loop, how('doc'), bad), null);
         },
     });
 })($ || ($ = {}));
@@ -7339,221 +7293,112 @@ var $;
 var $;
 (function ($_1) {
     /**
-     * Tests of the compile order. Trees only, nothing is compiled: the rule that
-     * says which class is declared before which is a property of the declarations.
+     * Tests of the measurement walk and of what it hands the observer.
      *
-     * `d` keeps `$` out of the literals so mam does not read a fixture as a
-     * dependency.
+     * No DOM and no compiled document: the walk is handed what a view is, what its
+     * children are and where its box is, so a fixture here is three plain objects
+     * and the arithmetic is visible.
      */
-    const d = '$';
-    const defs = ($, src) => $.$mol_tree2_from_string(src).kids;
-    const names = (trees) => trees.map(tree => tree.type).join(' ');
-    $mol_test({
-        'the document comes after the libraries'($) {
-            const libs = defs($, `${d}l_a ${d}mol_view\n${d}l_b ${d}l_a\n`);
-            const doc = defs($, `${d}doc ${d}l_b\n${d}doc_part ${d}mol_view\n`);
-            $mol_assert_equal(names($.$bog_vmap_scene_order(libs, doc)), `${d}l_a ${d}l_b ${d}doc ${d}doc_part`);
-        },
-        'a heir written above its base moves below it'($) {
-            const libs = defs($, `${d}l_b ${d}l_a\n${d}l_a ${d}mol_view\n`);
-            $mol_assert_equal(names($.$bog_vmap_scene_order(libs, [])), `${d}l_a ${d}l_b`);
-        },
-        /**
-         * The bases nobody declares are the classes of the pack, already in the
-         * sandbox: they are not in the list and must not be asked for.
-         */
-        'a base the list does not declare is left to the sandbox'($) {
-            const doc = defs($, `${d}doc ${d}mol_button_minor\n`);
-            $mol_assert_equal(names($.$bog_vmap_scene_order([], doc)), `${d}doc`);
-        },
-        'a document class shadows a library class of the same name'($) {
-            const libs = defs($, `${d}x ${d}mol_view\n\tfrom_lib \\\n`);
-            const doc = defs($, `${d}x ${d}mol_view\n\tfrom_doc \\\n`);
-            const sorted = $.$bog_vmap_scene_order(libs, doc);
-            $mol_assert_equal(names(sorted), `${d}x`);
-            // the properties of a class hang under its super node
-            $mol_assert_equal(sorted[0].kids[0].kids[0].type, 'from_doc');
-        },
-        'a cycle is a readable failure'($) {
-            const libs = defs($, `${d}a ${d}b\n${d}b ${d}a\n`);
-            $mol_assert_fail(() => $.$bog_vmap_scene_order(libs, []), `Circular inheritance around ${d}a`);
-        },
-        'nothing in gives nothing out'($) {
-            $mol_assert_equal($.$bog_vmap_scene_order([], []).length, 0);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
+    /** A node with a box, standing in for an element. */
+    function node(left, top, width, height, isConnected = true) {
+        return {
+            isConnected,
+            getBoundingClientRect: () => ({ left, top, width, height }),
+        };
+    }
+    /** A view: a property name, a box and children. */
+    function view(prop, box, kids = []) {
+        return { prop, box, kids, dom_node: () => box };
+    }
+    function measure(root, zoom = 1) {
+        return $bog_vmap_scene_measure(root, {
+            key: 'doc',
+            zoom,
+            view_of: kid => kid?.dom_node ? kid : null,
+            kids_of: made => made.kids,
+            prop_of: made => made.prop,
+        });
+    }
     /**
-     * The wire labels, on a fake root instance: a plain object whose methods stand
-     * in for the compiled properties of the document class.
+     * An artboard: a page of fixed width with two rows inside it, and a free part
+     * beside it on the canvas.
      */
+    function doc(width) {
+        return view('Doc', node(0, 0, 2000, 1000), [
+            view('Board', node(100, 100, width, 600), [
+                view('Head', node(100, 100, width, 40)),
+                view('Body', node(100, 140, width, 560)),
+            ]),
+            view('Loose', node(1500, 100, 80, 24)),
+        ]);
+    }
     $mol_test({
-        'values are read by name and cut to a line'($) {
-            const root = {
-                calc_result() { return 42; },
-                calc_title() { return '  два\n слова  '; },
-                calc_list() { return [1, 'a']; },
-                calc_long() { return 'x'.repeat(100); },
-            };
-            const values = $.$bog_vmap_scene_values(root, ['calc_result', 'calc_title', 'calc_list', 'calc_long'], 10);
-            $mol_assert_like(values, {
-                calc_result: '42',
-                calc_title: 'два слова',
-                calc_list: '[1,"a"]',
-                calc_long: 'xxxxxxxxx…',
-            });
-        },
-        /** One broken wire labels itself and leaves the neighbours alone. */
-        'a read that throws becomes the text of the error'($) {
-            const root = {
-                good() { return 'ok'; },
-                bad() { throw new Error('boom'); },
-            };
-            const values = $.$bog_vmap_scene_values(root, ['good', 'bad', 'absent']);
-            $mol_assert_equal(values.good, 'ok');
-            $mol_assert_equal(values.bad, '⚠ boom');
-            $mol_assert_equal(/absent/.test(values.absent), true);
-        },
-        'a suspension is not an error and is rethrown'($) {
-            const wait = new Promise(() => { });
-            const root = { slow() { throw wait; } };
-            let caught = null;
-            try {
-                $.$bog_vmap_scene_values(root, ['slow']);
-            }
-            catch (error) {
-                caught = error;
-            }
-            $mol_assert_equal(caught, wait);
+        /**
+         * The host addresses a node by the property that holds it, at any depth —
+         * section 1 — so the path is the chain of those names, and everything inside
+         * an artboard is reachable by one.
+         */
+        'every node of the document is measured, not only the free parts'($) {
+            const { sizes } = measure(doc(1280));
+            $mol_assert_like(Object.keys(sizes), [
+                'doc',
+                'doc/Board',
+                'doc/Board/Head',
+                'doc/Board/Body',
+                'doc/Loose',
+            ]);
+            $mol_assert_like(sizes['doc/Board/Head'], { x: 100, y: 100, width: 1280, height: 40 });
         },
         /**
-         * The throttle on the scene: the first answer goes at once, a change right
-         * after it waits for what is left of the period, and an empty request stops
-         * the flow.
+         * The point of the width switcher: the artboard changes size, and so does
+         * everything laid out inside it, while the free part beside it does not move.
          */
-        'values go out at once, then no more often than the period'($) {
-            const made = [];
-            $.$mol_after_timeout = class extends $mol_after_timeout {
-                constructor(delay, task) {
-                    super(delay, task);
-                    clearTimeout(this.id);
-                    made.push(this);
-                }
-            };
-            const posted = [];
-            const clock = { now: 1000 };
-            const root = { calc_result() { return 7; } };
-            const scene = $$.$bog_vmap_scene.make({
-                $,
-                instance: () => root,
-                peer: () => ({ postMessage(data) { posted.push(data); } }),
-                now: () => clock.now,
-            });
-            $mol_assert_equal(scene.values_task(), null);
-            scene.values_wanted(['calc_result']);
-            const first = scene.values_task();
-            $mol_assert_equal(first.delay, 0);
-            first.task();
-            $mol_assert_like(posted.filter(m => m.kind === 'values').map(m => m.values), [{ calc_result: '7' }]);
-            clock.now += 100;
-            scene.values_wanted(['calc_result', 'nope']);
-            const second = scene.values_task();
-            $mol_assert_equal(second !== first, true);
-            $mol_assert_equal(second.delay, 150);
-            scene.values_wanted([]);
-            $mol_assert_equal(scene.values_task(), null);
+        'a narrower artboard reports narrower nodes inside it'($) {
+            const wide = measure(doc(1280)).sizes;
+            const narrow = measure(doc(390)).sizes;
+            $mol_assert_equal(wide['doc/Board'].width, 1280);
+            $mol_assert_equal(narrow['doc/Board'].width, 390);
+            $mol_assert_equal(narrow['doc/Board/Body'].width, 390);
+            $mol_assert_like(wide['doc/Loose'], narrow['doc/Loose']);
         },
-        'a view like value is its own id, not a JSON walk'($) {
-            const root = {
-                view() { return $mol_object.make({}); },
-                nil() { return null; },
-            };
-            const values = $.$bog_vmap_scene_values(root, ['view', 'nil']);
-            $mol_assert_equal(typeof values.view, 'string');
-            $mol_assert_equal(values.view.length > 0, true);
-            $mol_assert_equal(values.nil, 'null');
+        /** The host owns the camera and is told world units, whatever the zoom. */
+        'boxes are reported in world units, relative to the root'($) {
+            const { sizes } = measure(doc(1280), 2);
+            $mol_assert_like(sizes['doc/Board'], { x: 50, y: 50, width: 640, height: 300 });
         },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
-     * Tests of the culling decision.
-     *
-     * Nothing here needs a DOM, a camera or a compiled document, which is the whole
-     * reason the decision was pulled out of the view: the measurement of «a thousand
-     * nodes do not render» belongs in a browser, but the rule that says which ones
-     * do not is arithmetic and belongs here.
-     */
-    const view = { x: 0, y: 0, width: 1000, height: 800 };
-    const box = (x, y, width = 100, height = 40) => ({ x, y, width, height });
-    $mol_test({
-        'a part inside the viewport is shown'($) {
-            const shown = $bog_vmap_scene_shown({ A: { x: 100, y: 100 } }, { A: box(100, 100) }, view, 0, ['A']);
-            $mol_assert_equal(shown.has('A'), true);
-        },
-        'a part far outside is dropped'($) {
-            const shown = $bog_vmap_scene_shown({ A: { x: 5000, y: 5000 } }, { A: box(5000, 5000) }, view, 0, ['A']);
-            $mol_assert_equal(shown.has('A'), false);
-        },
-        /** Off screen by its corner, on screen by its body. Culling by the point alone would lose it. */
-        'a part that only overlaps by its size is shown'($) {
-            const shown = $bog_vmap_scene_shown({ A: { x: -50, y: 100 } }, { A: box(-50, 100) }, view, 0, ['A']);
-            $mol_assert_equal(shown.has('A'), true);
-        },
-        'slack widens the viewport on every side'($) {
-            const spots = { A: { x: -300, y: 100 }, B: { x: 1200, y: 100 } };
-            const sizes = { A: box(-300, 100), B: box(1200, 100) };
-            const tight = $bog_vmap_scene_shown(spots, sizes, view, 0, ['A', 'B']);
-            $mol_assert_equal(tight.size, 0);
-            const loose = $bog_vmap_scene_shown(spots, sizes, view, 400, ['A', 'B']);
-            $mol_assert_equal(loose.size, 2);
+        'a node out of the document is not measured'($) {
+            const { sizes, nodes } = measure(view('Doc', node(0, 0, 100, 100), [
+                view('Gone', node(0, 0, 10, 10, false)),
+                view('Here', node(0, 0, 10, 10)),
+            ]));
+            $mol_assert_like(Object.keys(sizes), ['doc', 'doc/Here']);
+            $mol_assert_equal(nodes.length, 2);
         },
         /**
-         * The deadlock this function must not be able to produce: a part hidden
-         * because nothing is known about it would never be drawn, never be measured,
-         * and so never stop being unknown.
+         * Watching the root alone leaves everything inside an artboard unwatched,
+         * which is exactly where a late font or a decoded image reflows without the
+         * root changing size.
          */
-        'a part nothing is known about is shown'($) {
-            const shown = $bog_vmap_scene_shown({}, {}, view, 0, ['A']);
-            $mol_assert_equal(shown.has('A'), true);
+        'the observer is handed every measured node'($) {
+            const { nodes } = measure(doc(1280));
+            $mol_assert_equal(nodes.length, 5);
         },
-        /** A placed but unmeasured part counts as a point, so it is drawn once and measured. */
-        'a placed part with no measurement is judged by its spot'($) {
-            const near = $bog_vmap_scene_shown({ A: { x: 100, y: 100 } }, {}, view, 0, ['A']);
-            $mol_assert_equal(near.has('A'), true);
-            const far = $bog_vmap_scene_shown({ A: { x: 5000, y: 5000 } }, {}, view, 0, ['A']);
-            $mol_assert_equal(far.has('A'), false);
-        },
-        /**
-         * The spot wins over the measured origin, and it has to: after a drag the
-         * host has already moved the part, while the last measurement still describes
-         * where it used to be. Judging by the stale origin would blink the node out
-         * exactly while it is being dragged across the edge.
-         */
-        'placement wins over the last measured origin'($) {
-            const shown = $bog_vmap_scene_shown({ A: { x: 100, y: 100 } }, { A: box(9000, 9000) }, view, 0, ['A']);
-            $mol_assert_equal(shown.has('A'), true);
-        },
-        'only the names asked about come back'($) {
-            const shown = $bog_vmap_scene_shown({ A: { x: 10, y: 10 }, B: { x: 10, y: 10 } }, {}, view, 0, ['A']);
-            $mol_assert_like([...shown], ['A']);
-        },
-        'viewport of a camera is the screen divided by the zoom'($) {
-            $mol_assert_like($bog_vmap_scene_viewport({ x: 10, y: 20, zoom: 2 }, { width: 1000, height: 800 }), { x: 10, y: 20, width: 500, height: 400 });
-            $mol_assert_like($bog_vmap_scene_viewport({ x: 0, y: 0, zoom: .5 }, { width: 1000, height: 800 }), { x: 0, y: 0, width: 2000, height: 1600 });
-        },
-        /** A zoom of zero comes from outside, and a viewport of `Infinity` is not an answer. */
-        'a zoom of zero does not make the world infinite'($) {
-            $mol_assert_like($bog_vmap_scene_viewport({ x: 0, y: 0, zoom: 0 }, { width: 1000, height: 800 }), { x: 0, y: 0, width: 1000, height: 800 });
+        'watching adds what is new, drops what is gone and leaves the rest alone'($) {
+            const log = [];
+            const watcher = {
+                observe: (node) => log.push('+' + node),
+                unobserve: (node) => log.push('-' + node),
+            };
+            const first = $bog_vmap_scene_measure_watch(watcher, new Set(), ['a', 'b']);
+            $mol_assert_like(log, ['+a', '+b']);
+            // A node still there is NOT observed again: every fresh `observe` gets a
+            // box delivered, and a report that re-observes everything would answer
+            // its own delivery with another report.
+            const second = $bog_vmap_scene_measure_watch(watcher, first, ['b', 'c']);
+            $mol_assert_like(log, ['+a', '+b', '-a', '+c']);
+            $mol_assert_like([...second], ['b', 'c']);
+            $bog_vmap_scene_measure_watch(watcher, second, []);
+            $mol_assert_like(log, ['+a', '+b', '-a', '+c', '-b', '-c']);
         },
     });
 })($ || ($ = {}));
@@ -7753,6 +7598,22 @@ var $;
             made.pack_uri(pack);
             await grown(made, root, `${root} ${d}mol_view\n\tsub /\n`);
             $mol_assert_like(loaded, ['first:' + pack]);
+        },
+        /**
+         * `Escape` pressed inside the frame reaches the host over the bridge, and
+         * nothing else does: with the pointer let inside a part the focus is in the
+         * sandbox, the editor's own listener never sees the key, and typing into the
+         * document is not the editor's business.
+         */
+        async 'escape pressed inside the frame is relayed, other keys are not'($) {
+            const { made } = scene($);
+            const sent = wired(made);
+            const dom = $.$mol_dom_context;
+            made.key_listener();
+            dom.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'a' }));
+            dom.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Escape' }));
+            await new Promise(next => setTimeout(next, 10));
+            $mol_assert_like(sent.filter(m => m.kind === 'key'), [{ kind: 'key', key: 'Escape' }]);
         },
         /**
          * Two copies of `$mol_try_web` on one page — the scene's and the pack's —
@@ -8319,6 +8180,161 @@ var $;
             made.doc_css('a { background: url(asset:css1) }');
             made.libs([{ tree: `${d}visible_lib ${d}mol_view\n\turi \\asset:lib1\n`, js: '', css: 'b { background: url(asset:lib2) }' }]);
             $mol_assert_like(made.assets_missing(), ['css1', 'lib1', 'lib2']);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * The wire labels, on a fake root instance: a plain object whose methods stand
+     * in for the compiled properties of the document class.
+     */
+    $mol_test({
+        'values are read by name and cut to a line'($) {
+            const root = {
+                calc_result() { return 42; },
+                calc_title() { return '  два\n слова  '; },
+                calc_list() { return [1, 'a']; },
+                calc_long() { return 'x'.repeat(100); },
+            };
+            const values = $.$bog_vmap_scene_values(root, ['calc_result', 'calc_title', 'calc_list', 'calc_long'], 10);
+            $mol_assert_like(values, {
+                calc_result: '42',
+                calc_title: 'два слова',
+                calc_list: '[1,"a"]',
+                calc_long: 'xxxxxxxxx…',
+            });
+        },
+        /** One broken wire labels itself and leaves the neighbours alone. */
+        'a read that throws becomes the text of the error'($) {
+            const root = {
+                good() { return 'ok'; },
+                bad() { throw new Error('boom'); },
+            };
+            const values = $.$bog_vmap_scene_values(root, ['good', 'bad', 'absent']);
+            $mol_assert_equal(values.good, 'ok');
+            $mol_assert_equal(values.bad, '⚠ boom');
+            $mol_assert_equal(/absent/.test(values.absent), true);
+        },
+        'a suspension is not an error and is rethrown'($) {
+            const wait = new Promise(() => { });
+            const root = { slow() { throw wait; } };
+            let caught = null;
+            try {
+                $.$bog_vmap_scene_values(root, ['slow']);
+            }
+            catch (error) {
+                caught = error;
+            }
+            $mol_assert_equal(caught, wait);
+        },
+        /**
+         * The throttle on the scene: the first answer goes at once, a change right
+         * after it waits for what is left of the period, and an empty request stops
+         * the flow.
+         */
+        'values go out at once, then no more often than the period'($) {
+            const made = [];
+            $.$mol_after_timeout = class extends $mol_after_timeout {
+                constructor(delay, task) {
+                    super(delay, task);
+                    clearTimeout(this.id);
+                    made.push(this);
+                }
+            };
+            const posted = [];
+            const clock = { now: 1000 };
+            const root = { calc_result() { return 7; } };
+            const scene = $$.$bog_vmap_scene.make({
+                $,
+                instance: () => root,
+                peer: () => ({ postMessage(data) { posted.push(data); } }),
+                now: () => clock.now,
+            });
+            $mol_assert_equal(scene.values_task(), null);
+            scene.values_wanted(['calc_result']);
+            const first = scene.values_task();
+            $mol_assert_equal(first.delay, 0);
+            first.task();
+            $mol_assert_like(posted.filter(m => m.kind === 'values').map(m => m.values), [{ calc_result: '7' }]);
+            clock.now += 100;
+            scene.values_wanted(['calc_result', 'nope']);
+            const second = scene.values_task();
+            $mol_assert_equal(second !== first, true);
+            $mol_assert_equal(second.delay, 150);
+            scene.values_wanted([]);
+            $mol_assert_equal(scene.values_task(), null);
+        },
+        'a view like value is its own id, not a JSON walk'($) {
+            const root = {
+                view() { return $mol_object.make({}); },
+                nil() { return null; },
+            };
+            const values = $.$bog_vmap_scene_values(root, ['view', 'nil']);
+            $mol_assert_equal(typeof values.view, 'string');
+            $mol_assert_equal(values.view.length > 0, true);
+            $mol_assert_equal(values.nil, 'null');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    const how = (key) => ({
+        key,
+        view_of: (kid) => kid?.name === undefined ? null : kid,
+        kids_of: (view) => view.kids ?? [],
+        prop_of: (view) => view.name,
+    });
+    const bad = (view) => !!view.bad;
+    $mol_test({
+        'the path of a node is the root and every property down to it'($) {
+            const tree = { name: 'root', kids: [
+                    { name: 'Head' },
+                    { name: 'Tail', kids: [{ name: 'Deep', bad: true }] },
+                ] };
+            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad)?.path, 'doc/Tail/Deep');
+        },
+        /**
+         * A document whose own render throws is the common case, and it must not be
+         * answered with a child that merely inherited the failure.
+         */
+        'the root is asked before any child'($) {
+            const tree = { name: 'root', bad: true, kids: [{ name: 'Kid', bad: true }] };
+            const found = $bog_vmap_scene_seek(tree, how('doc'), bad);
+            $mol_assert_equal(found?.path, 'doc');
+            $mol_assert_equal(found?.view, tree);
+        },
+        'nothing to blame comes back as nothing, not as the root'($) {
+            const tree = { name: 'root', kids: [{ name: 'Kid' }] };
+            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad), null);
+        },
+        /**
+         * A child held by no named property is still on the path, by its position.
+         * Losing it would shift every sibling after it onto the wrong node.
+         */
+        'an unnamed child is addressed by its index'($) {
+            const tree = { name: 'root', kids: [{ name: '' }, { name: '', bad: true }] };
+            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad)?.path, 'doc/1');
+        },
+        /**
+         * Content that is not a view is skipped rather than counted: a string
+         * between two views would otherwise push the second one off its own index.
+         */
+        'text between views does not take an index'($) {
+            const tree = { name: 'root', kids: ['just text', { name: '', bad: true }] };
+            $mol_assert_equal($bog_vmap_scene_seek(tree, how('doc'), bad)?.path, 'doc/0');
+        },
+        /** A cycle in the tree must end the walk instead of the process. */
+        'a cycle is cut by the depth limit'($) {
+            const loop = { name: 'Loop' };
+            loop.kids = [loop];
+            $mol_assert_equal($bog_vmap_scene_seek(loop, how('doc'), bad), null);
         },
     });
 })($ || ($ = {}));
