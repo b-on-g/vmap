@@ -435,6 +435,89 @@ namespace $ {
 
 		},
 
+		/**
+		 * The field of the inspector renames through the editor, so the pick and the
+		 * placement travel with it. Bound rather than left to the class model the
+		 * inspector holds: that one knows the text and nothing else.
+		 */
+		'the name field of the inspector renames the picked node'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+			app.selected( 'Button_minor' )
+
+			$mol_assert_equal( app.node_title(), 'Button_minor' )
+
+			app.node_title( 'Send' )
+
+			$mol_assert_equal( app.selected(), 'Send' )
+			$mol_assert_equal( app.node().prop_names().includes( 'Send' ), true )
+			$mol_assert_equal( app.node_title(), 'Send' )
+			$mol_assert_equal( app.node_title_note(), '' )
+
+		},
+
+		/**
+		 * The refusal has to reach the person in words: a throw out of a `$mol_string`
+		 * setter lands in `setCustomValidity`, which is not where anybody looks.
+		 */
+		'a name already taken is refused in words and moves nothing'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+			app.part_drop( `${d}mol_string`, 300, 400 )
+			app.selected( 'Button_minor' )
+
+			const before = app.doc_source()
+
+			app.node_title( 'String' )
+
+			$mol_assert_equal( app.doc_source(), before )
+			$mol_assert_equal( app.selected(), 'Button_minor' )
+			// The exact words, because words are the whole point of this path.
+			$mol_assert_equal( app.node_title_note(), 'Имя «String» в этом документе уже занято' )
+
+			// The message belongs to the node it is about, so another pick is clean.
+			app.selected( 'String' )
+			$mol_assert_equal( app.node_title_note(), '' )
+
+		},
+
+		/**
+		 * A wire spells the name of the node it reads, so a rename that misses it
+		 * leaves a wire pointing at a name nothing declares — and the canvas draws
+		 * it, because a wire is a line of the document like any other. The model is
+		 * proven to rewrite references; what is pinned here is that the field of the
+		 * inspector reaches that path and not some other one.
+		 */
+		'renaming through the name field carries the wire'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_string`, 100, 200 )
+			app.part_drop( `${d}mol_button_minor`, 300, 400 )
+
+			app.link_add({ from: 'String', from_prop: 'value', to: 'Button_minor', to_prop: 'title' })
+
+			$mol_assert_equal( app.doc_wires().length, 1 )
+			$mol_assert_equal( app.doc_wires()[ 0 ].from, 'String' )
+
+			app.selected( 'String' )
+			app.node_title( 'Field' )
+
+			$mol_assert_equal( app.selected(), 'Field' )
+
+			// One wire still, reading the node under its new name. Not dropped, and
+			// not doubled by a second one left behind under the old name.
+			$mol_assert_equal( app.doc_wires().length, 1 )
+			$mol_assert_equal( app.doc_wires()[ 0 ].from, 'Field' )
+			$mol_assert_equal( app.doc_wires()[ 0 ].to, 'Button_minor' )
+			$mol_assert_equal( app.node().prop_names().includes( 'String' ), false )
+
+		},
+
 	})
 
 }

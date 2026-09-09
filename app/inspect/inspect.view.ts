@@ -35,8 +35,56 @@ namespace $.$$ {
 			return [ own, ... this.peers().filter( tree => tree.type !== own.type ) ]
 		}
 
-		class_title() {
-			return this.Node().name()
+		/**
+		 * Name of the node, both ways.
+		 *
+		 * Reading is the class the declaration names. Writing renames it through the
+		 * local model, which is all the stand can do and all it needs. The editor
+		 * binds this to a rename of its own, which also carries the pick, the
+		 * placement and every reference in the document — a rename is not a fact
+		 * about one class, and the inspector is handed exactly one.
+		 */
+		class_title( next?: string ) {
+			return this.Node().name( next )
+		}
+
+		/**
+		 * What stands in the field, keyed by the name it started from.
+		 *
+		 * A draft, because the commit is on Enter and on blur: between them the
+		 * field holds a name the document does not have. Keyed by the current name
+		 * so that picking another node, or a rename that lands, starts a fresh draft
+		 * — there is no state to reset and none to go stale.
+		 */
+		@ $mol_mem_key
+		title_draft( name: string, next?: string ) {
+			return next ?? name
+		}
+
+		title_value( next?: string ) {
+			return this.title_draft( this.class_title(), next )
+		}
+
+		/** Commits the draft, and says nothing when there is nothing to commit. */
+		@ $mol_action
+		title_submit( event?: Event ) {
+
+			const draft = this.title_value()
+			if( !draft || draft === this.class_title() ) return
+
+			this.class_title( draft )
+		}
+
+		/**
+		 * The refusal goes under the head, and only when there is one: a strip that
+		 * is always there but usually empty is a strip nobody reads.
+		 */
+		override sub() {
+
+			const sub = super.sub() as readonly $mol_view[]
+			if( !this.title_note() ) return sub
+
+			return [ sub[ 0 ], this.Note(), ... sub.slice( 1 ) ]
 		}
 
 		base_title() {

@@ -146,6 +146,12 @@ $bog_vmap_app $mol_view
 		source? <=> node_source? \
 		peers <= node_peers /$mol_tree2
 		pack <= pack_link \
+		- The name field renames through the editor and not through the class the
+		- inspector holds: the name of a node is also the key of the pick, of the
+		- placement and of every reference in the document, and only the editor knows
+		- all four. The refusal comes back the same way, in words.
+		class_title? <=> node_title? \
+		title_note <= node_title_note \
 	-
 	- What stands in the panel while nothing is picked. A state, not a blank: the
 	- inspector handed an empty source would fail to find a class in it and show an

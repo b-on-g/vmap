@@ -20,8 +20,22 @@ namespace $.$$ {
 			border: { bottom: { width: '1px', style: 'solid', color: $mol_theme.line } },
 		},
 
+		/**
+		 * A field that reads as the heading it replaced until it is touched: the
+		 * name is the first thing the panel says, and a heavy input at the top of a
+		 * narrow panel would make it the loudest.
+		 */
 		Title: {
 			font: { family: 'monospace', weight: 'bold' },
+			background: { color: 'transparent' },
+			padding: 0,
+		},
+
+		/** The refusal, where the eye already is: right under the name it is about. */
+		Note: {
+			color: '#c0392b',
+			font: { size: '.75rem' },
+			whiteSpace: 'normal',
 		},
 
 		Base: {

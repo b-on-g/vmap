@@ -172,6 +172,76 @@ namespace $ {
 
 		},
 
+		/**
+		 * Typing is not renaming. A rename rewrites the declaration and everything
+		 * that points at it, so a write per keystroke would rename the node to every
+		 * prefix of what is being typed and drag the whole document along.
+		 */
+		'the name field renames on submit and not on a keystroke'( $ ) {
+
+			const inspect = inspect_of( $, [
+				`${ d }bog_vmap_app_inspect_test_name ${ d }mol_view`,
+				'	sub /',
+				'',
+			].join( '\n' ) )
+
+			$mol_assert_equal( inspect.title_value(), `${ d }bog_vmap_app_inspect_test_name` )
+
+			inspect.title_value( `${ d }bog_vmap_app_inspect_test_hero` )
+
+			// Typed, not committed: the field shows it, the document does not have it.
+			$mol_assert_equal( inspect.title_value(), `${ d }bog_vmap_app_inspect_test_hero` )
+			$mol_assert_equal( inspect.class_title(), `${ d }bog_vmap_app_inspect_test_name` )
+
+			inspect.title_submit()
+
+			$mol_assert_equal( inspect.class_title(), `${ d }bog_vmap_app_inspect_test_hero` )
+			$mol_assert_ok( inspect.Node().source().startsWith( `${ d }bog_vmap_app_inspect_test_hero ` ) )
+
+		},
+
+		/** A draft belongs to the name it started from, so a fresh name starts a fresh draft. */
+		'the field follows the name once the rename lands'( $ ) {
+
+			const inspect = inspect_of( $, [
+				`${ d }bog_vmap_app_inspect_test_name ${ d }mol_view`,
+				'	sub /',
+				'',
+			].join( '\n' ) )
+
+			inspect.title_value( `${ d }bog_vmap_app_inspect_test_hero` )
+			inspect.title_submit()
+
+			$mol_assert_equal( inspect.title_value(), `${ d }bog_vmap_app_inspect_test_hero` )
+
+			// Nothing to commit twice.
+			inspect.title_submit()
+			$mol_assert_equal( inspect.class_title(), `${ d }bog_vmap_app_inspect_test_hero` )
+
+		},
+
+		/** No refusal, no strip: an empty strip in a panel this narrow reads as a bug. */
+		'the refusal strip is there only while there is a refusal'( $ ) {
+
+			const inspect = inspect_of( $, [
+				`${ d }bog_vmap_app_inspect_test_name ${ d }mol_view`,
+				'	sub /',
+				'',
+			].join( '\n' ) )
+
+			$mol_assert_equal( inspect.sub().includes( inspect.Note() ), false )
+
+			const refused = $.$bog_vmap_app_inspect.make({
+				$,
+				source: ()=> `${ d }bog_vmap_app_inspect_test_name ${ d }mol_view\n\tsub /\n`,
+				title_note: ()=> 'Имя занято',
+			}) as $$.$bog_vmap_app_inspect
+
+			// Right under the head, where the eye already is.
+			$mol_assert_equal( refused.sub()[ 1 ], refused.Note() )
+
+		},
+
 	})
 
 	/** `d` keeps `$` out of the literals: mam reads them when building its graph. */

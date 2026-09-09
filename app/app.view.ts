@@ -1067,6 +1067,64 @@ namespace $.$$ {
 		}
 
 		/**
+		 * Name of the picked node as the inspector edits it, in both directions.
+		 *
+		 * Reading is the pick itself: the name of a node IS the property it occupies,
+		 * so there is nothing to derive. Writing renames, and the refusal comes back
+		 * as words rather than as an exception — a throw out of a `$mol_string`
+		 * setter ends up in `setCustomValidity`, which is not where a person looks.
+		 *
+		 * The taken name is caught here and not left to the model, because only the
+		 * message differs: the model refuses in English, at a caller that may not be
+		 * a person. The model still refuses on its own and is tested doing so; this
+		 * is the same rule spelled for the one who typed it.
+		 */
+		node_title( next?: string ) {
+
+			const name = this.selected()
+
+			if( next === undefined ) return name ?? ''
+			if( !name || !next || next === name ) return name ?? ''
+
+			// The one refusal a person can cause just by typing, so it is the one
+			// worded here. The model refuses it too and goes on doing so.
+			if( this.node().prop_names().includes( next ) ) {
+				this.node_title_note_at( name, `Имя «${ next }» в этом документе уже занято` )
+				return name
+			}
+
+			// Whatever else the model may refuse — a name no property signature
+			// matches, say — still has to reach the person, so it is shown in the
+			// model's own words rather than thrown into `setCustomValidity`.
+			try {
+				this.node_rename( name, next )
+			} catch( error ) {
+				if( this.$.$mol_promise_like( error ) ) return this.$.$mol_fail_hidden( error )
+				this.node_title_note_at( name, this.$.$mol_error_message( error ) )
+				return name
+			}
+
+			return next
+		}
+
+		/**
+		 * The refusal in words, keyed by the node it is about.
+		 *
+		 * Keyed, so it clears itself: a rename that lands moves the pick to the new
+		 * name and the message is read under a key nobody has written, and picking
+		 * another node does the same. A single cell would need clearing from every
+		 * path that can make it wrong, which is how a stale message survives.
+		 */
+		@ $mol_mem_key
+		node_title_note_at( name: string, next?: string ) {
+			return next ?? ''
+		}
+
+		node_title_note() {
+			return this.node_title_note_at( this.selected() ?? '' )
+		}
+
+		/**
 		 * Del anywhere in the editor, as long as the keystroke is not somebody's text.
 		 *
 		 * On the window and not on the canvas: the canvas is an iframe, and a focused
