@@ -869,6 +869,36 @@ namespace $ {
 		},
 
 		/**
+		 * Typing is not renaming. Every letter of a name is a prefix of it, and most
+		 * prefixes of a class name are legal class names, so a field that wrote per
+		 * keystroke would rename the class — and remake the node that holds it — once
+		 * per letter. The field holds a draft and the rename happens on Enter or on
+		 * leaving it, exactly as the name of a node does in the inspector.
+		 */
+		'the root name is committed on submit and not on a keystroke'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+			const before = app.doc_source()
+
+			app.root_draft( `${d}my` )
+			app.root_draft( `${d}my_site` )
+			app.root_draft( `${d}my_site_page` )
+
+			$mol_assert_equal( app.doc_source(), before )
+			$mol_assert_equal( app.doc_root(), `${d}bog_vmap_app_page` )
+
+			app.root_submit()
+
+			$mol_assert_equal( app.doc_root(), `${d}my_site_page` )
+			// The draft is keyed by the name it started from, so the field now shows
+			// the new name with nothing to clear.
+			$mol_assert_equal( app.root_draft(), `${d}my_site_page` )
+
+		},
+
+		/**
 		 * A name that cannot become a folder is refused where it was typed, in words,
 		 * and the document is left alone. Without the refusal the mistake would only
 		 * show up as `Root package not found` on a build machine.

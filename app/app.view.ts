@@ -1450,7 +1450,36 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Name of the root class as the toolbar field edits it, in both directions.
+		 * What stands in the field of the root name, keyed by the name it started
+		 * from.
+		 *
+		 * A draft, because the rename is committed on Enter and on blur: between the
+		 * two the field holds a name the document does not have. Keyed by the current
+		 * name so that a rename that lands starts a fresh draft — there is no state
+		 * to reset and none to go stale. The same shape as the name of a node in the
+		 * inspector, and for the same reason.
+		 */
+		@ $mol_mem_key
+		root_draft_at( name: string, next?: string ) {
+			return next ?? name
+		}
+
+		override root_draft( next?: string ) {
+			return this.root_draft_at( this.doc_root(), next )
+		}
+
+		/** Commits the draft, and says nothing when there is nothing to commit. */
+		@ $mol_action
+		override root_submit( event?: Event ) {
+
+			const draft = this.root_draft()
+			if( !draft || draft === this.doc_root() ) return
+
+			this.root_title( draft )
+		}
+
+		/**
+		 * Name of the root class as the toolbar field commits it, in both directions.
 		 *
 		 * This is the name the folder of an export is made of — section 10 — so the
 		 * field stands beside the download button that spells the folder out. A
@@ -1458,7 +1487,7 @@ namespace $.$$ {
 		 * node name field does it that way: a throw out of a `$mol_string` setter
 		 * ends up in `setCustomValidity`, where nobody looks.
 		 */
-		override root_title( next?: string ) {
+		root_title( next?: string ) {
 
 			const name = this.doc_root()
 
