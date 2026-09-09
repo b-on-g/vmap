@@ -72,28 +72,56 @@ namespace $.$$ {
 			minHeight: 0,
 		},
 
-		/** Panel of the palette. Fixed width, so the canvas takes the rest. */
+		/**
+		 * THE CANVAS COMES FIRST WHEN THE ROOM RUNS OUT, and the three panels give
+		 * way to it. Fixed widths did the opposite: 20, 22 and 28 rem never yielded,
+		 * so with all three open on a 1440 px screen the canvas — the thing the
+		 * editor is for — was left about 160 px. Measured on the deploy 09.09.2026.
+		 *
+		 * What gives the canvas its width is a floor on the canvas plus shrink on
+		 * the panels. The floor makes the row ASK for more than the window has, and
+		 * the overflow is then taken from whoever may shrink; each panel keeps a
+		 * minimum of its own, so «yields» never becomes «vanishes».
+		 *
+		 * Below about 1090 px with all three panels open the floors no longer fit
+		 * and the last panel is clipped. That is the honest end of the trade, and
+		 * the head bar folds any of the three away in one click.
+		 */
 		Side: {
-			flex: { direction: 'column', shrink: 0 },
-			width: '20rem',
+			flex: { direction: 'column', grow: 0, shrink: 1, basis: '20rem' },
+			minWidth: '12rem',
+			maxWidth: '20rem',
 			minHeight: 0,
 			border: { right: { width: '1px', style: 'solid', color: $mol_theme.line } },
 		},
 
 		/** Panel of the inspector. Mirror of `Side`, on the far edge. */
 		Aside: {
-			flex: { direction: 'column', shrink: 0 },
-			width: '22rem',
+			flex: { direction: 'column', grow: 0, shrink: 1, basis: '22rem' },
+			minWidth: '13rem',
+			maxWidth: '22rem',
 			minHeight: 0,
 			border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
 		},
 
 		/** Wider than the inspector: this one holds code, and code wraps badly. */
 		Code: {
-			flex: { direction: 'column', shrink: 0 },
-			width: '28rem',
+			flex: { direction: 'column', grow: 0, shrink: 1, basis: '28rem' },
+			minWidth: '15rem',
+			maxWidth: '28rem',
 			minHeight: 0,
 			border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
+		},
+
+		/**
+		 * The canvas: takes everything left, and asks for a floor of its own so that
+		 * there is something to take. Without the floor the row fits exactly, no
+		 * panel is asked to shrink, and the canvas gets the remainder — which is how
+		 * it came to 160 px.
+		 */
+		Pane: {
+			flex: { grow: 1, shrink: 1 },
+			minWidth: '28rem',
 		},
 
 		Idle: {
@@ -127,27 +155,34 @@ namespace $.$$ {
 			box: { shadow: [[ 0, '.25rem', '.75rem', 0, $mol_style_func.hsla( 0, 0, 0, .5 ) ]] },
 		},
 
+		/**
+		 * The attention colour of the theme, filled, with the page colour for text.
+		 * A red of our own stayed the same red in a light theme and in a dark one,
+		 * and said nothing to a reader who had moved the hue.
+		 */
 		Alarm: {
 			flex: { shrink: 0 },
 			padding: $mol_gap.text,
-			background: { color: '#c62828' },
-			color: 'white',
+			background: { color: $mol_theme.focus },
+			color: $mol_theme.back,
 			font: { family: 'monospace', size: '.8rem' },
 			whiteSpace: 'pre-wrap',
 		},
 
 		/**
-		 * Amber and not the red of `Alarm`, because it is not the same kind of news.
-		 * Red says the document is wrong; this says the preview stopped and offers
-		 * the one thing that helps.
+		 * The OTHER accent of the theme, not the one the error strip uses, because
+		 * this is not the same kind of news: the error says the document is wrong,
+		 * this says the preview stopped and offers the one thing that helps. Two
+		 * accents the theme already carries keep them apart without inventing a
+		 * colour that ignores it.
 		 */
 		Stall: {
 			flex: { direction: 'row', shrink: 0, wrap: 'wrap' },
 			align: { items: 'center' },
 			gap: $mol_gap.text,
 			padding: $mol_gap.text,
-			background: { color: '#8d6e00' },
-			color: 'white',
+			background: { color: $mol_theme.special },
+			color: $mol_theme.back,
 		},
 
 		Stall_note: {
@@ -158,24 +193,28 @@ namespace $.$$ {
 		},
 
 		/**
-		 * Amber like `Stall` and not red like `Alarm`, because it is the same kind of
-		 * news as the stall: the document itself works, and one thing about it does
-		 * not. Wraps, unlike the error strip: these are sentences, not a stack.
+		 * The accent of the stall and not of the error, because it is the same kind
+		 * of news: the document works, and one thing about it does not. Wraps,
+		 * unlike the error strip: these are sentences, not a stack.
 		 */
 		Export_note: {
 			flex: { direction: 'column', shrink: 0 },
 			gap: '.25rem',
 			padding: $mol_gap.text,
-			background: { color: '#8d6e00' },
-			color: 'white',
+			background: { color: $mol_theme.special },
+			color: $mol_theme.back,
 			font: { size: '.8rem' },
 			whiteSpace: 'normal',
 		},
 
+		/**
+		 * Only the text colour, so the button reads on the filled strip it stands on.
+		 * Its own surface is left to the theme: a button already lights up on hover
+		 * by itself, and a wash of our own painted over that.
+		 */
 		Stall_reload: {
 			flex: { shrink: 0 },
-			color: 'white',
-			background: { color: '#00000033' },
+			color: $mol_theme.back,
 		},
 
 	} )

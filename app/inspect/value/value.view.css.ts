@@ -1,8 +1,19 @@
 namespace $.$$ {
 
+	/**
+	 * Styles of the value editors of the inspector.
+	 *
+	 * Only what the theme and the components do NOT already do: the compact rhythm
+	 * of a two dozen row panel and the monospace face that says a value is code.
+	 * What a field of mol paints itself — its background, its minimum width, its
+	 * stretch in a row — is left to it.
+	 */
 	$mol_style_define( $bog_vmap_app_inspect_value, {
 		flex: { direction: 'column', grow: 1, shrink: 1 },
 		minWidth: 0,
+
+		/** Once for everything below: a field of mol takes its font by inheritance. */
+		font: { family: 'monospace', size: '.8rem' },
 
 		/**
 		 * The reason an edit was refused, under the field that refused it. Rendered
@@ -23,11 +34,9 @@ namespace $.$$ {
 	 */
 	$mol_style_define( $bog_vmap_app_inspect_value_area, {
 		flex: { grow: 1 },
-		minWidth: 0,
 		minHeight: '1.5rem',
 		padding: { top: '.2rem', bottom: '.2rem', left: '.4rem', right: '.4rem' },
 		background: { color: $mol_theme.field },
-		font: { family: 'monospace', size: '.8rem' },
 		resize: 'vertical',
 	} )
 
@@ -42,7 +51,6 @@ namespace $.$$ {
 			minHeight: '1.5rem',
 			minWidth: '1.5rem',
 			padding: { top: 0, bottom: 0, left: '.3rem', right: '.3rem' },
-			font: { family: 'monospace', size: '.8rem' },
 		},
 	} )
 
@@ -51,12 +59,8 @@ namespace $.$$ {
 		minWidth: 0,
 
 		Num: {
-			flex: { grow: 1 },
-			minWidth: 0,
 			minHeight: '1.5rem',
 			padding: { top: '.2rem', bottom: '.2rem', left: '.4rem', right: '.4rem' },
-			background: { color: $mol_theme.field },
-			font: { family: 'monospace', size: '.8rem' },
 		},
 	} )
 
@@ -66,7 +70,6 @@ namespace $.$$ {
 		Flag: {
 			minHeight: '1.5rem',
 			padding: { top: 0, bottom: 0, left: '.4rem', right: '.4rem' },
-			font: { family: 'monospace', size: '.8rem' },
 		},
 	} )
 
@@ -80,7 +83,6 @@ namespace $.$$ {
 		minHeight: '1.5rem',
 		padding: { top: '.2rem', bottom: '.2rem', left: '.4rem', right: '.4rem' },
 		color: $mol_theme.shade,
-		font: { family: 'monospace', size: '.8rem' },
 		whiteSpace: 'pre',
 		overflow: 'auto',
 	} )
@@ -92,14 +94,11 @@ namespace $.$$ {
 		minWidth: 0,
 
 		Class_name: {
-			flex: { grow: 1 },
 			alignSelf: 'stretch',
-			minWidth: 0,
 			minHeight: '1.5rem',
 			padding: { top: '.2rem', bottom: '.2rem', left: '.4rem', right: '.4rem' },
-			background: { color: $mol_theme.field },
 			color: $mol_theme.current,
-			font: { family: 'monospace', size: '.8rem', weight: 'bold' },
+			font: { weight: 'bold' },
 		},
 
 		Items: {
@@ -133,8 +132,6 @@ namespace $.$$ {
 			width: '7rem',
 			minHeight: '1.5rem',
 			padding: { top: '.2rem', bottom: '.2rem', left: '.4rem', right: '.4rem' },
-			background: { color: $mol_theme.field },
-			font: { family: 'monospace', size: '.8rem' },
 		},
 
 		Drop: {
@@ -159,16 +156,16 @@ namespace $.$$ {
 			minHeight: '1.5rem',
 			padding: { left: '.2rem', right: '.2rem' },
 			color: $mol_theme.shade,
-			font: { family: 'monospace', size: '.8rem', weight: 'bold' },
+			font: { weight: 'bold' },
 		},
 
+		/** A picker is a button and paints no field, so this one is ours to give. */
 		Target: {
 			flex: { grow: 1 },
 			minWidth: '4rem',
 			minHeight: '1.5rem',
 			background: { color: $mol_theme.field },
 			color: $mol_theme.current,
-			font: { family: 'monospace', size: '.8rem' },
 		},
 	} )
 
@@ -185,7 +182,8 @@ namespace $.$$ {
 
 		/**
 		 * Both pickers are sized like the fields they replaced, so that swapping a
-		 * text field for a list does not move the row it sits in.
+		 * text field for a list does not move the row it sits in. Their background is
+		 * ours for the same reason as `Target`.
 		 */
 		Origin: {
 			flex: { grow: 1 },
@@ -193,7 +191,7 @@ namespace $.$$ {
 			minHeight: '1.5rem',
 			background: { color: $mol_theme.field },
 			color: $mol_theme.current,
-			font: { family: 'monospace', size: '.8rem', weight: 'bold' },
+			font: { weight: 'bold' },
 		},
 
 		Port_pick: {
@@ -201,7 +199,6 @@ namespace $.$$ {
 			minWidth: '3rem',
 			minHeight: '1.5rem',
 			background: { color: $mol_theme.field },
-			font: { family: 'monospace', size: '.8rem' },
 		},
 
 		Note: {
@@ -214,13 +211,12 @@ namespace $.$$ {
 			flex: { shrink: 0 },
 			padding: { left: '.2rem', right: '.2rem' },
 			color: $mol_theme.shade,
-			font: { family: 'monospace', size: '.8rem', weight: 'bold' },
+			font: { weight: 'bold' },
 		},
 
 		Dot: {
 			flex: { shrink: 0 },
 			color: $mol_theme.shade,
-			font: { family: 'monospace', size: '.8rem' },
 		},
 
 		Port_free: {
@@ -228,8 +224,6 @@ namespace $.$$ {
 			minWidth: '3rem',
 			minHeight: '1.5rem',
 			padding: { top: '.2rem', bottom: '.2rem', left: '.4rem', right: '.4rem' },
-			background: { color: $mol_theme.field },
-			font: { family: 'monospace', size: '.8rem' },
 		},
 	} )
 

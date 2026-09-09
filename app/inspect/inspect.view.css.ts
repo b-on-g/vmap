@@ -31,9 +31,15 @@ namespace $.$$ {
 			padding: 0,
 		},
 
-		/** The refusal, where the eye already is: right under the name it is about. */
+		/**
+		 * The refusal, where the eye already is: right under the name it is about.
+		 *
+		 * The attention colour of the theme and not a red of our own: it is the one
+		 * the theme paints «look here» with, so it follows the hue and the light or
+		 * dark the reader chose instead of staying the same red in both.
+		 */
 		Note: {
-			color: '#c0392b',
+			color: $mol_theme.focus,
 			font: { size: '.75rem' },
 			whiteSpace: 'normal',
 		},
