@@ -46833,8 +46833,13 @@ declare namespace $ {
     };
     /** What the files gave, and what was refused with the reason in the user's words. */
     type $bog_vmap_app_shelf_intake = {
-        /** One source per class, in the order the files declared them. */
-        readonly classes: readonly string[];
+        /** One component per class, in the order the files declared them. */
+        readonly classes: readonly {
+            /** `view.tree` declaration, the truth of the component. */
+            readonly tree: string;
+            /** Plain CSS from a `.view.css` beside it, empty when there was none. */
+            readonly css: string;
+        }[];
         readonly refused: readonly {
             readonly name: string;
             readonly reason: string;
@@ -46855,11 +46860,17 @@ declare namespace $ {
         readonly empty: "ни одного класса: объявление начинается с имени на доллар";
     };
     /**
-     * Splits the files brought from the disk into one source per class.
+     * Splits the files brought from the disk into one component per class.
      *
      * Split and not merged, because a component of a library is one class and the
      * library resolves neighbours by name: a file with three classes in it gives
-     * three components that still find each other.
+     * three components that still find each other. A whole module folder can go in
+     * at once for the same reason — every declaration in it lands in ONE library,
+     * which is one namespace, so a component still inherits its neighbour.
+     *
+     * A plain `.view.css` beside a tree comes along, because it is CSS and not
+     * TypeScript: the library holds it as it is and the sandbox attaches it. A
+     * `.view.css.ts` is a program and gets the same refusal as any other.
      *
      * The text of each declaration goes out as its author wrote it, without
      * normalizing: what a person brought from their own module is theirs, and the

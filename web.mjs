@@ -34727,13 +34727,7 @@ var $;
                 id: 'map',
                 title: 'Карта',
                 hint: 'Карта с масштабом, центром и меткой. Каждый порт принимает провод',
-                source: head
-                    + `\n\tMap ${pack}_map`
-                    + '\n\t\tstyle *'
-                    + '\n\t\t\tminWidth \\320px'
-                    + '\n\t\t\tminHeight \\240px'
-                    + '\n\tsub /'
-                    + '\n\t\t<= Map\n',
+                source: `${head}\n\tMap ${pack}_map\n\tsub /\n\t\t<= Map\n`,
             },
             {
                 id: 'pair',
@@ -34744,9 +34738,6 @@ var $;
                     + `\n\tCalc ${pack}_calc`
                     + `\n\tMap ${pack}_map`
                     + '\n\t\tzoom <= zoom_of_calc'
-                    + '\n\t\tstyle *'
-                    + '\n\t\t\tminWidth \\320px'
-                    + '\n\t\t\tminHeight \\240px'
                     + '\n\tPair $mol_view'
                     + '\n\t\tstyle *'
                     + '\n\t\t\tflexDirection \\column'
@@ -34776,11 +34767,17 @@ var $;
         empty: 'ни одного класса: объявление начинается с имени на доллар',
     };
     /**
-     * Splits the files brought from the disk into one source per class.
+     * Splits the files brought from the disk into one component per class.
      *
      * Split and not merged, because a component of a library is one class and the
      * library resolves neighbours by name: a file with three classes in it gives
-     * three components that still find each other.
+     * three components that still find each other. A whole module folder can go in
+     * at once for the same reason — every declaration in it lands in ONE library,
+     * which is one namespace, so a component still inherits its neighbour.
+     *
+     * A plain `.view.css` beside a tree comes along, because it is CSS and not
+     * TypeScript: the library holds it as it is and the sandbox attaches it. A
+     * `.view.css.ts` is a program and gets the same refusal as any other.
      *
      * The text of each declaration goes out as its author wrote it, without
      * normalizing: what a person brought from their own module is theirs, and the
@@ -34789,7 +34786,17 @@ var $;
     function $bog_vmap_app_shelf_intake(files) {
         const classes = [];
         const refused = [];
+        // Styles first, keyed by the name of the module file they belong to, so a
+        // `.view.css` is found whatever order the files came in.
+        const styles = new Map();
         for (const file of files) {
+            const base = /^(.*)\.view\.css$/.exec(file.name)?.[1];
+            if (base)
+                styles.set(base, file.text);
+        }
+        for (const file of files) {
+            if (/\.view\.css$/.test(file.name))
+                continue;
             if (/(^|\/)web\.view\.tree$/.test(file.name)) {
                 refused.push({ name: file.name, reason: $.$bog_vmap_app_shelf_refuse.built });
                 continue;
@@ -34803,8 +34810,14 @@ var $;
                 refused.push({ name: file.name, reason: $.$bog_vmap_app_shelf_refuse.empty });
                 continue;
             }
-            for (const kid of kids)
-                classes.push(kid.toString());
+            // The styles of a file go to the FIRST class it declares: a `.view.css`
+            // belongs to a module, a module names itself by its main class, and
+            // splitting a stylesheet between classes would take guessing.
+            const css = styles.get(file.name.replace(/\.view\.tree$/, '')) ?? '';
+            kids.forEach((kid, i) => classes.push({
+                tree: kid.toString(),
+                css: i ? '' : css,
+            }));
         }
         return { classes, refused };
     }
@@ -34988,8 +35001,8 @@ var $;
                 if (!taken.classes.length)
                     return;
                 let link = '';
-                for (const source of taken.classes)
-                    link = this.Store().import_class(source);
+                for (const one of taken.classes)
+                    link = this.Store().import_class(one.tree, '', one.css);
                 this.link_attach(link);
             }
             /** Adds a land link to the field, unless the field already names it. */

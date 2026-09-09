@@ -25292,13 +25292,7 @@ var $;
                 id: 'map',
                 title: 'Карта',
                 hint: 'Карта с масштабом, центром и меткой. Каждый порт принимает провод',
-                source: head
-                    + `\n\tMap ${pack}_map`
-                    + '\n\t\tstyle *'
-                    + '\n\t\t\tminWidth \\320px'
-                    + '\n\t\t\tminHeight \\240px'
-                    + '\n\tsub /'
-                    + '\n\t\t<= Map\n',
+                source: `${head}\n\tMap ${pack}_map\n\tsub /\n\t\t<= Map\n`,
             },
             {
                 id: 'pair',
@@ -25309,9 +25303,6 @@ var $;
                     + `\n\tCalc ${pack}_calc`
                     + `\n\tMap ${pack}_map`
                     + '\n\t\tzoom <= zoom_of_calc'
-                    + '\n\t\tstyle *'
-                    + '\n\t\t\tminWidth \\320px'
-                    + '\n\t\t\tminHeight \\240px'
                     + '\n\tPair $mol_view'
                     + '\n\t\tstyle *'
                     + '\n\t\t\tflexDirection \\column'
@@ -25341,11 +25332,17 @@ var $;
         empty: 'ни одного класса: объявление начинается с имени на доллар',
     };
     /**
-     * Splits the files brought from the disk into one source per class.
+     * Splits the files brought from the disk into one component per class.
      *
      * Split and not merged, because a component of a library is one class and the
      * library resolves neighbours by name: a file with three classes in it gives
-     * three components that still find each other.
+     * three components that still find each other. A whole module folder can go in
+     * at once for the same reason — every declaration in it lands in ONE library,
+     * which is one namespace, so a component still inherits its neighbour.
+     *
+     * A plain `.view.css` beside a tree comes along, because it is CSS and not
+     * TypeScript: the library holds it as it is and the sandbox attaches it. A
+     * `.view.css.ts` is a program and gets the same refusal as any other.
      *
      * The text of each declaration goes out as its author wrote it, without
      * normalizing: what a person brought from their own module is theirs, and the
@@ -25354,7 +25351,17 @@ var $;
     function $bog_vmap_app_shelf_intake(files) {
         const classes = [];
         const refused = [];
+        // Styles first, keyed by the name of the module file they belong to, so a
+        // `.view.css` is found whatever order the files came in.
+        const styles = new Map();
         for (const file of files) {
+            const base = /^(.*)\.view\.css$/.exec(file.name)?.[1];
+            if (base)
+                styles.set(base, file.text);
+        }
+        for (const file of files) {
+            if (/\.view\.css$/.test(file.name))
+                continue;
             if (/(^|\/)web\.view\.tree$/.test(file.name)) {
                 refused.push({ name: file.name, reason: $.$bog_vmap_app_shelf_refuse.built });
                 continue;
@@ -25368,8 +25375,14 @@ var $;
                 refused.push({ name: file.name, reason: $.$bog_vmap_app_shelf_refuse.empty });
                 continue;
             }
-            for (const kid of kids)
-                classes.push(kid.toString());
+            // The styles of a file go to the FIRST class it declares: a `.view.css`
+            // belongs to a module, a module names itself by its main class, and
+            // splitting a stylesheet between classes would take guessing.
+            const css = styles.get(file.name.replace(/\.view\.tree$/, '')) ?? '';
+            kids.forEach((kid, i) => classes.push({
+                tree: kid.toString(),
+                css: i ? '' : css,
+            }));
         }
         return { classes, refused };
     }
@@ -25553,8 +25566,8 @@ var $;
                 if (!taken.classes.length)
                     return;
                 let link = '';
-                for (const source of taken.classes)
-                    link = this.Store().import_class(source);
+                for (const one of taken.classes)
+                    link = this.Store().import_class(one.tree, '', one.css);
                 this.link_attach(link);
             }
             /** Adds a land link to the field, unless the field already names it. */
@@ -50419,25 +50432,35 @@ var $;
                 `\tprice 42`,
                 ``,
             ].join('\n');
-            const taken = $.$bog_vmap_app_shelf_intake([{ name: 'card.view.tree', text }]);
+            const taken = $.$bog_vmap_app_shelf_intake([
+                { name: 'card.view.tree', text },
+                { name: 'card.view.css', text: '[my_card] { color: red }' },
+            ]);
             // Two components and not one text: a library resolves neighbours by
             // name, so a class that inherits the one beside it still finds it.
             $mol_assert_equal(taken.classes.length, 2);
-            $mol_assert_ok(taken.classes[0].startsWith(`${d}my_card ${d}mol_view`));
-            $mol_assert_ok(taken.classes[1].includes(`${d}my_price ${d}my_card`));
+            $mol_assert_ok(taken.classes[0].tree.startsWith(`${d}my_card ${d}mol_view`));
+            $mol_assert_ok(taken.classes[1].tree.includes(`${d}my_price ${d}my_card`));
             $mol_assert_like(taken.refused, []);
+            // Plain CSS beside the tree comes along, on the first class of the file:
+            // it is a stylesheet and not a program, and the library holds one.
+            $mol_assert_equal(taken.classes[0].css, '[my_card] { color: red }');
+            $mol_assert_equal(taken.classes[1].css, '');
         },
         'what cannot be taken is refused by name, with the reason on screen'($) {
             const taken = $.$bog_vmap_app_shelf_intake([
                 { name: 'card.view.ts', text: 'namespace $ {}' },
                 { name: 'web.view.tree', text: `${d}mol_view ${d}mol_object\n` },
                 { name: 'empty.view.tree', text: '- just a comment\n' },
+                // A stylesheet written as a program is a program.
+                { name: 'card.view.css.ts', text: 'namespace $ {}' },
             ]);
             $mol_assert_like(taken.classes, []);
             $mol_assert_like(taken.refused.map(item => item.reason), [
                 $bog_vmap_app_shelf_refuse.kind,
                 $bog_vmap_app_shelf_refuse.built,
                 $bog_vmap_app_shelf_refuse.empty,
+                $bog_vmap_app_shelf_refuse.kind,
             ]);
             // The note names the file, so a person knows which one to fix.
             $mol_assert_ok($bog_vmap_app_shelf_intake_note(taken).includes('card.view.ts'));
@@ -50474,6 +50497,7 @@ var $;
             const source = `${d}my_card ${d}mol_view\n\tprice 0\n`;
             await $mol_wire_async(shelf).intake([
                 { name: 'card.view.tree', text: async () => source },
+                { name: 'card.view.css', text: async () => '[my_card] { color: red }' },
                 { name: 'card.view.ts', text: async () => 'namespace $ {}' },
             ]);
             // What was taken is in the library, under its own name. In canonical
@@ -50483,6 +50507,7 @@ var $;
             const parts = shelf.Store().shelf().parts();
             $mol_assert_equal(parts.length, 1);
             $mol_assert_equal(parts[0].tree(), `${d}my_card ${d}mol_view price 0\n`);
+            $mol_assert_equal(parts[0].css(), '[my_card] { color: red }');
             // And the library is attached to the scene by the same field an address
             // goes into: from here on it is the library any other scene would get.
             $mol_assert_equal(shelf.links(), shelf.Store().link());
@@ -50519,10 +50544,10 @@ var $;
         },
         'overrides of a part come across'($) {
             const node = doc($);
-            $.$bog_vmap_app_shelf_apply(node, preset('map'), freer(node));
-            const style = node.over_tree('Map', 'style');
+            $.$bog_vmap_app_shelf_apply(node, preset('block'), freer(node));
+            const style = node.over_tree('Block', 'style');
             $mol_assert_equal(Boolean(style), true);
-            $mol_assert_equal(style.toString().includes('320px'), true);
+            $mol_assert_equal(style.toString().includes('160px'), true);
         },
         'the pair lands as one node holding both parts, wired'($) {
             const node = doc($);

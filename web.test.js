@@ -13454,25 +13454,35 @@ var $;
                 `\tprice 42`,
                 ``,
             ].join('\n');
-            const taken = $.$bog_vmap_app_shelf_intake([{ name: 'card.view.tree', text }]);
+            const taken = $.$bog_vmap_app_shelf_intake([
+                { name: 'card.view.tree', text },
+                { name: 'card.view.css', text: '[my_card] { color: red }' },
+            ]);
             // Two components and not one text: a library resolves neighbours by
             // name, so a class that inherits the one beside it still finds it.
             $mol_assert_equal(taken.classes.length, 2);
-            $mol_assert_ok(taken.classes[0].startsWith(`${d}my_card ${d}mol_view`));
-            $mol_assert_ok(taken.classes[1].includes(`${d}my_price ${d}my_card`));
+            $mol_assert_ok(taken.classes[0].tree.startsWith(`${d}my_card ${d}mol_view`));
+            $mol_assert_ok(taken.classes[1].tree.includes(`${d}my_price ${d}my_card`));
             $mol_assert_like(taken.refused, []);
+            // Plain CSS beside the tree comes along, on the first class of the file:
+            // it is a stylesheet and not a program, and the library holds one.
+            $mol_assert_equal(taken.classes[0].css, '[my_card] { color: red }');
+            $mol_assert_equal(taken.classes[1].css, '');
         },
         'what cannot be taken is refused by name, with the reason on screen'($) {
             const taken = $.$bog_vmap_app_shelf_intake([
                 { name: 'card.view.ts', text: 'namespace $ {}' },
                 { name: 'web.view.tree', text: `${d}mol_view ${d}mol_object\n` },
                 { name: 'empty.view.tree', text: '- just a comment\n' },
+                // A stylesheet written as a program is a program.
+                { name: 'card.view.css.ts', text: 'namespace $ {}' },
             ]);
             $mol_assert_like(taken.classes, []);
             $mol_assert_like(taken.refused.map(item => item.reason), [
                 $bog_vmap_app_shelf_refuse.kind,
                 $bog_vmap_app_shelf_refuse.built,
                 $bog_vmap_app_shelf_refuse.empty,
+                $bog_vmap_app_shelf_refuse.kind,
             ]);
             // The note names the file, so a person knows which one to fix.
             $mol_assert_ok($bog_vmap_app_shelf_intake_note(taken).includes('card.view.ts'));
@@ -13509,6 +13519,7 @@ var $;
             const source = `${d}my_card ${d}mol_view\n\tprice 0\n`;
             await $mol_wire_async(shelf).intake([
                 { name: 'card.view.tree', text: async () => source },
+                { name: 'card.view.css', text: async () => '[my_card] { color: red }' },
                 { name: 'card.view.ts', text: async () => 'namespace $ {}' },
             ]);
             // What was taken is in the library, under its own name. In canonical
@@ -13518,6 +13529,7 @@ var $;
             const parts = shelf.Store().shelf().parts();
             $mol_assert_equal(parts.length, 1);
             $mol_assert_equal(parts[0].tree(), `${d}my_card ${d}mol_view price 0\n`);
+            $mol_assert_equal(parts[0].css(), '[my_card] { color: red }');
             // And the library is attached to the scene by the same field an address
             // goes into: from here on it is the library any other scene would get.
             $mol_assert_equal(shelf.links(), shelf.Store().link());
@@ -13554,10 +13566,10 @@ var $;
         },
         'overrides of a part come across'($) {
             const node = doc($);
-            $.$bog_vmap_app_shelf_apply(node, preset('map'), freer(node));
-            const style = node.over_tree('Map', 'style');
+            $.$bog_vmap_app_shelf_apply(node, preset('block'), freer(node));
+            const style = node.over_tree('Block', 'style');
             $mol_assert_equal(Boolean(style), true);
-            $mol_assert_equal(style.toString().includes('320px'), true);
+            $mol_assert_equal(style.toString().includes('160px'), true);
         },
         'the pair lands as one node holding both parts, wired'($) {
             const node = doc($);
