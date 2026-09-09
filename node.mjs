@@ -25324,6 +25324,12 @@ var $;
                 source: `${head}\n\tCell ${pack}_cell\n\tsub /\n\t\t<= Cell\n`,
             },
             {
+                id: 'plot',
+                title: 'График',
+                hint: 'Приёмник: числа приходят проводом, линия рисуется по ним',
+                source: `${head}\n\tPlot ${pack}_plot\n\tsub /\n\t\t<= Plot\n`,
+            },
+            {
                 id: 'calc',
                 title: 'Калькулятор',
                 hint: 'Два числа, действие и результат. Результат отдаётся проводом',

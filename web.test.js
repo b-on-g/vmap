@@ -13566,7 +13566,7 @@ var $;
         'the shelf offers ready made things and every one of them is a class'($) {
             const items = $bog_vmap_app_shelf_presets();
             $mol_assert_like(items.map(item => item.id), [
-                'block', 'cell', 'calc', 'map', 'pair',
+                'block', 'cell', 'plot', 'calc', 'map', 'pair',
                 'input_string', 'input_number', 'input_select',
                 'input_switch', 'input_check_box', 'input_paragraph',
             ]);
@@ -14040,8 +14040,8 @@ var $;
             $mol_assert_ok(text.includes('Выберите узел на холсте'));
             // The panel opens on ready made things, not on a catalogue of classes.
             const shelf = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_items] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
-            $mol_assert_like(shelf.slice(0, 5), [
-                'Блок', 'Ячейка кода', 'Калькулятор', 'Карта', 'Калькулятор и карта',
+            $mol_assert_like(shelf.slice(0, 6), [
+                'Блок', 'Ячейка кода', 'График', 'Калькулятор', 'Карта', 'Калькулятор и карта',
             ]);
             // And the widgets of input under them, which is what drives the rest.
             $mol_assert_ok(shelf.includes('Поле'));
