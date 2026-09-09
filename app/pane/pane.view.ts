@@ -619,12 +619,41 @@ namespace $.$$ {
 		 * stays true: a pointer that wandered and came back is not a click. The world
 		 * point is the one relayed to the scene, so the click lands where the press
 		 * did, not where the release happened to be.
+		 *
+		 * `entering` says the press landed on the node that was ALREADY picked, so a
+		 * click out of it is the second one and lets the pointer inside. See `entered`.
 		 */
 		press: {
 			screen: readonly [ number, number ],
 			world: readonly [ number, number ],
 			moved: boolean,
+			entering: boolean,
 		} | null = null
+
+		/**
+		 * The node the pointer has been let inside of, or `null`.
+		 *
+		 * The hole in the overlay hangs on THIS and not on the pick, and that is the
+		 * whole of it: a picked node is carried by its body, an entered one lives its
+		 * own life. Cut open on the pick alone, the overlay handed the frame every
+		 * press on the node just dropped — so it could not be dragged at all except
+		 * by the eight pixel strip around it — and the focus the scene gives inside
+		 * the hole took the keyboard into the frame, where the Delete of the editor
+		 * never arrives.
+		 *
+		 * Compared against `selected()` rather than cleared by hand: a pick of
+		 * anything else closes the hole by itself, and nothing has to remember to.
+		 */
+		@ $mol_mem
+		entered( next?: string | null ) {
+			return next ?? null
+		}
+
+		/** Whether the pointer is inside the picked node, i.e. the overlay is cut open. */
+		inside() {
+			const name = this.selected()
+			return Boolean( name ) && this.entered() === name
+		}
 
 		/**
 		 * Where this pane sits in the viewport.
@@ -817,12 +846,19 @@ namespace $.$$ {
 			const point = this.world_point( event )
 			const name = this.node_at( point )
 
+			// A press on the node already picked is the second click of the pair that
+			// lets the pointer inside it. Any other press picks and stays outside, so
+			// the body of the node stays the handle it is carried by.
+			const entering = Boolean( name ) && name === this.selected()
+
 			this.selected( name )
+			if( !entering ) this.entered( null )
 
 			this.press = {
 				screen: [ event.clientX, event.clientY ],
 				world: point,
 				moved: false,
+				entering,
 			}
 
 			if( !name ) return
@@ -952,6 +988,13 @@ namespace $.$$ {
 			if( event.button !== 0 ) return
 			if( press.moved ) return
 
+			// Only the second click on one and the same node goes on to the live
+			// component. The first one is the editor's: it picks, and it leaves both
+			// the body of the node and the keyboard where the editor can use them.
+			if( !press.entering ) return
+
+			this.entered( this.selected() )
+
 			this.click_send( press.world, event )
 
 		}
@@ -1078,12 +1121,14 @@ namespace $.$$ {
 		 * ring and the handles are drawn around the hole and stay on the overlay,
 		 * which is what the part is carried by.
 		 *
-		 * Closed while `hole_allowed()` is off — see the tree: a drop from the
-		 * palette has no pointer capture and would fall into the frame.
+		 * Open under the node the pointer has been let INSIDE of, which is the second
+		 * click on it and not the pick — see `entered`. Closed as well while
+		 * `hole_allowed()` is off: a drop from the palette has no pointer capture and
+		 * would fall into the frame.
 		 */
 		@ $mol_mem
 		override overlay_style(): { readonly [ prop: string ]: string } {
-			const rect = this.hole_allowed() ? this.frame_box() : null
+			const rect = this.hole_allowed() && this.inside() ? this.frame_box() : null
 			return { clipPath: this.$.$bog_vmap_app_pane_hole( rect ) }
 		}
 

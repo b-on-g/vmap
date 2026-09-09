@@ -1297,6 +1297,15 @@ namespace $.$$ {
 		key_press( event?: KeyboardEvent ) {
 
 			if( !event ) return
+
+			// Escape steps back out: out of the node the pointer was let inside of,
+			// and out of the pick when it is outside already.
+			if( event.key === 'Escape' ) {
+				if( this.pane().inside() ) this.pane().entered( null )
+				else this.selected( null )
+				return
+			}
+
 			if( event.key !== 'Delete' && event.key !== 'Backspace' ) return
 			if( event.metaKey || event.ctrlKey || event.altKey ) return
 

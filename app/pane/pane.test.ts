@@ -90,10 +90,12 @@ namespace $ {
 	$mol_test({
 
 		/**
-		 * One click both picks and presses. The point goes out in world units, with
-		 * the camera undone the same way the hit test undoes it.
+		 * The first click picks and nothing else: the body of the node stays the
+		 * editor's, to carry it by. The second one on the same node lets the pointer
+		 * inside, and only then does the click go on to the live component, in world
+		 * units, with the camera undone the same way the hit test undoes it.
 		 */
-		'a press and a release without movement pick the part and relay one click'( $ ) {
+		'the first click picks, the second lets the pointer in and relays it'( $ ) {
 
 			const { pane, posted } = pane_make( $, { left: 10, top: 20 } )
 
@@ -107,6 +109,13 @@ namespace $ {
 			pane.node_release( pointer( 210, 190, { buttons: 0 } ) )
 
 			$mol_assert_equal( pane.selected(), 'A' )
+			$mol_assert_equal( pane.inside(), false )
+			$mol_assert_equal( clicks( posted ).length, 0 )
+
+			pane.node_press( pointer( 210, 190 ) )
+			pane.node_release( pointer( 210, 190, { buttons: 0 } ) )
+
+			$mol_assert_equal( pane.inside(), true )
 
 			const sent = clicks( posted )
 			$mol_assert_equal( sent.length, 1 )
@@ -115,12 +124,39 @@ namespace $ {
 
 		},
 
+		/** A pick of anything else closes the hole without anybody clearing it. */
+		'picking another node puts the pointer back outside'( $ ) {
+
+			const { pane } = pane_make( $ )
+
+			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ), [ `${root}/B` ]: box( 300, 0 ) }
+
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
+
+			$mol_assert_equal( pane.inside(), true )
+
+			pane.node_press( pointer( 350, 25 ) )
+			pane.node_release( pointer( 350, 25, { buttons: 0 } ) )
+
+			$mol_assert_equal( pane.selected(), 'B' )
+			$mol_assert_equal( pane.inside(), false )
+			$mol_assert_equal( pane.overlay_style().clipPath, 'none' )
+
+		},
+
 		'the modifiers travel with the click'( $ ) {
 
 			const { pane, posted } = pane_make( $ )
 
-			pane.node_press( pointer( 5, 5 ) )
-			pane.node_release( pointer( 5, 5, { buttons: 0, shiftKey: true, metaKey: true } ) )
+			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
+
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_release( pointer( 50, 25, { buttons: 0, shiftKey: true, metaKey: true } ) )
 
 			$mol_assert_like( clicks( posted )[0].mods, { altKey: false, ctrlKey: false, metaKey: true, shiftKey: true } )
 
@@ -161,6 +197,11 @@ namespace $ {
 
 			const { pane, posted } = pane_make( $ )
 
+			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
+
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
+
 			pane.node_press( pointer( 50, 25 ) )
 			pane.node_move( pointer( 52, 27 ) )
 			pane.node_release( pointer( 51, 26, { buttons: 0 } ) )
@@ -169,8 +210,12 @@ namespace $ {
 
 		},
 
-		/** The scene may well have something clickable on bare canvas, so the click goes out anyway. */
-		'a click on bare canvas drops the selection and is still relayed'( $ ) {
+		/**
+		 * Bare canvas drops the pick and relays nothing: there is no node there to be
+		 * let inside of, and a click sent anyway would give the focus to the frame —
+		 * which is where the Delete of the editor stops arriving.
+		 */
+		'a click on bare canvas drops the selection and relays nothing'( $ ) {
 
 			const { pane, posted } = pane_make( $ )
 
@@ -181,11 +226,7 @@ namespace $ {
 			pane.node_release( pointer( 500, 500, { buttons: 0 } ) )
 
 			$mol_assert_equal( pane.selected(), null )
-
-			const sent = clicks( posted )
-			$mol_assert_equal( sent.length, 1 )
-			$mol_assert_equal( sent[0].x, 500 )
-			$mol_assert_equal( sent[0].y, 500 )
+			$mol_assert_equal( clicks( posted ).length, 0 )
 
 		},
 
@@ -231,6 +272,12 @@ namespace $ {
 
 			pane.selected( 'A' )
 
+			// Picked and no more: the ring is drawn, the overlay is still whole.
+			$mol_assert_equal( pane.overlay_style().clipPath, 'none' )
+			$mol_assert_equal( pane.frame_showed(), true )
+
+			pane.entered( 'A' )
+
 			$mol_assert_like( pane.frame_box(), { left: 160, top: 130, width: 200, height: 100 } )
 			$mol_assert_equal(
 				pane.overlay_style().clipPath,
@@ -247,6 +294,7 @@ namespace $ {
 
 			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
 			pane.selected( 'A' )
+			pane.entered( 'A' )
 			pane.hole_allowed = ()=> false
 
 			$mol_assert_equal( pane.overlay_style().clipPath, 'none' )
@@ -443,6 +491,7 @@ namespace $ {
 			timers_fake( $ )
 			const { pane, clock, answer } = pane_make( $ )
 
+			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
 			pane.warmed( true )
 
 			// The first read pushes the document and the rest; answered, the watch rests.
@@ -451,8 +500,13 @@ namespace $ {
 			$mol_assert_equal( pane.watchdog(), null )
 
 			clock.now ++
-			pane.node_press( pointer( 5, 5 ) )
-			pane.node_release( pointer( 5, 5, { buttons: 0 } ) )
+
+			// Twice: the click that goes to the scene is the one that lets the
+			// pointer inside, and the watch is armed by what is sent, not by a pick.
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
 
 			$mol_assert_equal( pane.watchdog() !== null, true )
 
