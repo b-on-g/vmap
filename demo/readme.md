@@ -33,3 +33,15 @@ To regenerate, run the export over the same two sources and overwrite the folder
 Placement is not free — the module path comes from the longest common prefix of
 the class names, so `$bog_vmap_demo_page` and `$bog_vmap_demo_calc` are what put
 it at `bog/vmap/demo`.
+
+Regenerated 09.09.2026 **through the editor** rather than by calling the export
+on two strings: the two classes were opened as one document, a part was dropped
+on the canvas and deleted again, the root class was renamed from
+`$bog_vmap_app_page` — the name a fresh document gets — to `$bog_vmap_demo_page`,
+and only then was the module written out. Every file came back byte for byte
+what it had been.
+
+That is what the folder is worth as a fixture now. It says that an edit of one
+class does not eat the other, that a rename of the root moves the module folder
+and carries the styles of the renamed class with it, and that what comes out
+still builds — `npx mam bog/vmap/demo`, both audits green.
