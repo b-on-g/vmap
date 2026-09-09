@@ -572,9 +572,71 @@ namespace $.$$ {
 		 * A SECOND CLASS IS ADDED HERE, by writing one under the one on screen: the
 		 * document model replaces the slot with everything the text parses to, so two
 		 * declarations typed in place of one become two classes of the document.
+		 *
+		 * A NAME CHANGED IN THIS TEXT IS A RENAME, and is carried like one. Measured
+		 * before it was: the body and the styles of the class stayed under the old
+		 * name, so `doc_js` and `doc_css` came out empty and the behaviour the person
+		 * had written stopped reaching the scene — with nothing on the screen saying
+		 * so. The text is the truth of section 1, so the answer is to follow it, not
+		 * to forbid editing the name here.
+		 *
+		 * What counts as a rename is decided by names alone: one name gone, one name
+		 * arrived, every other class of the document where it was. Two gone or two
+		 * arrived is somebody rewriting the slot, and guessing which of them became
+		 * which would move a body into a class that never had one. Nothing is carried
+		 * then, and nothing is lost either — what is stored keeps answering to the
+		 * name it was stored under.
+		 *
+		 * The mentions of the old name in OTHER classes stay as they are, unlike a
+		 * rename through the field. An edit made in the text of one class must not
+		 * rewrite the text of another; that is the invariant this whole level exists
+		 * for, and the field is where a rename across the document is asked for.
 		 */
 		override code_source( next?: string ) {
-			return this.doc_model().class_source( this.code_klass(), next )
+
+			const doc = this.doc_model()
+			const klass = this.code_klass()
+
+			if( next === undefined ) return doc.class_source( klass )
+
+			// Read out of the text BEFORE it is written, because the write is what
+			// takes the old name out of the document.
+			const before = doc.names()
+			const after = this.class_names_after( klass, next )
+
+			const gone = before.filter( name => !after.includes( name ) )
+			const born = after.filter( name => !before.includes( name ) )
+
+			const renamed = gone.length === 1 && born.length === 1
+			const carried = renamed ? this.class_stored( gone[ 0 ] ) : null
+
+			doc.class_source( klass, next )
+
+			if( carried ) this.class_carry( gone[ 0 ], born[ 0 ], carried )
+
+			return next
+		}
+
+		/**
+		 * Names the document would declare with this text in the slot of that class.
+		 *
+		 * Parsed plainly and not normalized: what is asked of it is the first token
+		 * of every declaration, which normalization does not move, and a text broken
+		 * enough to fail here fails again in the write a line below, where the panel
+		 * already turns it into a refusal on the screen.
+		 */
+		class_names_after( klass: string, next: string ) {
+
+			const names = this.doc_model().names()
+			const parsed = this.$.$mol_tree2_from_string(
+				next.replace( /\n?$/, '\n' ), 'vmap.view.tree',
+			).kids.map( tree => tree.type )
+
+			const at = names.indexOf( klass )
+
+			return at < 0
+				? [ ... names, ... parsed ]
+				: [ ... names.slice( 0, at ), ... parsed, ... names.slice( at + 1 ) ]
 		}
 
 		/** Handwritten body of the class in scope, two way. */
@@ -1451,20 +1513,56 @@ namespace $.$$ {
 		@ $mol_action
 		class_rename( name: string, next: string ) {
 
-			const js = this.class_js( name )
-			const css = this.class_css( name )
+			const carried = this.class_stored( name )
 
 			this.doc_model().class_rename( name, next )
 
-			if( js ) this.class_js( next, js )
-			if( css ) this.class_css( next, css )
+			this.class_carry( name, next, carried )
+
+		}
+
+		/**
+		 * Everything the editor keeps about a class OUTSIDE its text, snapshotted.
+		 *
+		 * Read before a rename is written, because after it there is no name that
+		 * answers for any of it: the node of the document is found by the class its
+		 * text declares, so a class renamed in the text arrives as a node of its own
+		 * and the old one leaves the list carrying its `Js` and `Css` with it.
+		 */
+		class_stored( name: string ) {
+			return {
+				js: this.class_js( name ),
+				css: this.class_css( name ),
+				rooted: this.store().doc_current() ? this.store().doc_root( this.store().doc_current()! ) === name : false,
+			}
+		}
+
+		/**
+		 * Puts what was stored under one class name under another one.
+		 *
+		 * The counterpart of `class_stored`, and the second half of every rename
+		 * whatever caused it: the field in the toolbar, or a name changed by hand in
+		 * the text of the class. Only what is keyed by the class NAME travels — the
+		 * body, the styles and the recorded choice of which class the document opens
+		 * with. The text is not touched here: whoever renamed has already written it.
+		 *
+		 * The recorded root moves only when it WAS this class. A rename of any other
+		 * class must not make it the page.
+		 */
+		@ $mol_action
+		class_carry(
+			name: string,
+			next: string,
+			carried: { js: string, css: string, rooted: boolean },
+		) {
+
+			if( carried.js ) this.class_js( next, carried.js )
+			if( carried.css ) this.class_css( next, carried.css )
 
 			const store = this.store()
 			const doc = store.doc_current()
 
-			if( doc && doc.can_change() && store.doc_root( doc ) !== next ) {
-				store.doc_root( doc, next )
-			}
+			if( carried.rooted && doc && doc.can_change() ) store.doc_root( doc, next )
 
 		}
 

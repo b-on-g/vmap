@@ -909,6 +909,104 @@ namespace $ {
 		},
 
 		/**
+		 * A name changed in the TEXT of a class is a rename too, and the body and the
+		 * styles have to follow it there as well.
+		 *
+		 * Measured before they did: they stayed under the old name, so what the scene
+		 * is handed — `doc_js` and `doc_css` — came out empty, and the behaviour the
+		 * person had written stopped working in the document with nothing on the
+		 * screen saying so. The text is the truth of section 1, so the fix is to
+		 * follow it rather than to forbid editing the name here.
+		 */
+		'a class renamed in its own text carries its body and its styles'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+			app.root_js( 'greeting(){\n\treturn 1\n}\n' )
+			app.root_css( '[my] {\n\tcolor: red;\n}' )
+
+			app.code_whole( true )
+
+			app.code_source(
+				app.code_source().replace( `${d}my_site_page`, `${d}my_shop_page` )
+			)
+
+			$mol_assert_equal( app.doc_root(), `${d}my_shop_page` )
+			$mol_assert_equal( app.class_js( `${d}my_shop_page` ), 'greeting(){\n\treturn 1\n}\n' )
+			$mol_assert_equal( app.class_css( `${d}my_shop_page` ), '[my] {\n\tcolor: red;\n}' )
+
+			// What the scene is handed, which is where the loss actually showed.
+			$mol_assert_equal( app.doc_js()[ `${d}my_shop_page` ], 'greeting(){\n\treturn 1\n}\n' )
+			$mol_assert_ok( app.doc_css().includes( 'color: red' ) )
+
+		},
+
+		/**
+		 * One name gone and one arrived is a rename. Two of either is somebody
+		 * rewriting the slot, and there is no telling which became which — a guess
+		 * would move a body into a class that never had one. Nothing travels, and
+		 * nothing is lost: what was stored still answers to the name it was stored
+		 * under.
+		 */
+		'a slot rewritten into two classes carries nothing and loses nothing'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+			app.root_js( 'greeting(){\n\treturn 1\n}\n' )
+
+			app.code_whole( true )
+
+			app.code_source([
+				`${d}my_shop_page ${d}mol_view sub /`,
+				`${d}my_shop_card ${d}mol_view title \\Карточка`,
+				``,
+			].join( '\n' ) )
+
+			$mol_assert_like( app.doc_model().names(), [
+				`${d}my_shop_page`,
+				`${d}my_shop_card`,
+			] )
+
+			$mol_assert_equal( app.class_js( `${d}my_shop_page` ), '' )
+			$mol_assert_equal( app.class_js( `${d}my_shop_card` ), '' )
+
+			// Still under the name it was written under, and still readable there.
+			$mol_assert_equal( app.class_js( `${d}my_site_page` ), 'greeting(){\n\treturn 1\n}\n' )
+
+		},
+
+		/**
+		 * The other way a slot grows a class: the one on screen stays and a second is
+		 * typed under it. No name left the document, so nothing is a rename, and the
+		 * class that stayed keeps everything it had.
+		 */
+		'a second class typed under the first carries nothing away from it'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.part_drop( `${d}mol_button_minor`, 100, 200 )
+			app.root_js( 'greeting(){\n\treturn 1\n}\n' )
+
+			app.code_whole( true )
+
+			app.code_source(
+				app.code_source() + `${d}my_site_card ${d}mol_view title \\Карточка\n`
+			)
+
+			$mol_assert_like( app.doc_model().names(), [
+				`${d}my_site_page`,
+				`${d}my_site_card`,
+			] )
+
+			$mol_assert_equal( app.doc_root(), `${d}my_site_page` )
+			$mol_assert_equal( app.class_js( `${d}my_site_page` ), 'greeting(){\n\treturn 1\n}\n' )
+			$mol_assert_equal( app.class_js( `${d}my_site_card` ), '' )
+
+		},
+
+		/**
 		 * Typing is not renaming. Every letter of a name is a prefix of it, and most
 		 * prefixes of a class name are legal class names, so a field that wrote per
 		 * keystroke would rename the class — and remake the node that holds it — once
