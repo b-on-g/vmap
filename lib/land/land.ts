@@ -146,27 +146,13 @@ namespace $ {
 		}
 
 		/**
-		 * Components of the shelf, with their land asked to sync on the way.
-		 *
-		 * A land reached by a link alone does not sync itself — the `.sync()` in
-		 * `land.ts` is commented out — so a library published by somebody else would
-		 * read as empty forever. A `Promise` means the sync went off in the
-		 * background, which is what was wanted, so it is swallowed and only a real
-		 * error is rethrown.
+		 * Components of the shelf. Nothing asks the land to sync here: every read
+		 * of a pawn goes through `$giper_baza_land.sand_ordered()`, which syncs
+		 * first, so a library published by somebody else arrives by being read.
 		 */
 		@ $mol_mem
 		parts(): readonly $bog_vmap_lib_land_part[] {
-
-			const shelf = this.shelf()
-			if( !shelf ) return []
-
-			try {
-				shelf.land().sync()
-			} catch( error ) {
-				if( !( error instanceof Promise ) ) $mol_fail_hidden( error )
-			}
-
-			return shelf.parts()
+			return this.shelf()?.parts() ?? []
 		}
 
 		/**

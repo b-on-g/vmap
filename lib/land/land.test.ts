@@ -217,6 +217,28 @@ namespace $ {
 		},
 
 		/**
+		 * The premise the library rests on: a land syncs itself on every read of a
+		 * pawn, through `sand_ordered()`, so nobody has to ask. A `sync()` called by
+		 * hand used to sit in `parts()` on the belief that it did not.
+		 */
+		'reading the parts of a shelf syncs their land unasked'( $ ) {
+
+			const one = shelf( $ )
+			const land = one.land()
+
+			let synced = 0
+			land.sync = ()=> { synced ++; return land }
+
+			part( one, card_src )
+
+			const lib = $bog_vmap_lib_land.make({ $, shelf: ()=> one })
+
+			$mol_assert_equal( lib.parts().length, 1 )
+			$mol_assert_ok( synced > 0 )
+
+		},
+
+		/**
 		 * The palette field in one object: a pack with a land on top. A land class
 		 * inheriting a pack class, and another land class inheriting that one, both
 		 * resolve their chain down into the pack — one namespace, as section 5 says.

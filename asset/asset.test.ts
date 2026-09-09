@@ -160,6 +160,26 @@ namespace $ {
 
 		},
 
+		/**
+		 * The premise `file()` rests on: a pawn syncs its land on every read, through
+		 * `sand_ordered()`, so `file()` asks for nothing itself. A `sync()` called by
+		 * hand used to sit there on the belief that a land reached by link did not.
+		 */
+		'reading a file syncs its land unasked'( $ ) {
+
+			const one = land( $ )
+
+			let synced = 0
+			one.sync = ()=> { synced ++; return one }
+
+			const file = one.Data( $giper_baza_file )
+			file.name( 'logo.png' )
+
+			$mol_assert_equal( file.name(), 'logo.png' )
+			$mol_assert_ok( synced > 0 )
+
+		},
+
 	})
 
 }

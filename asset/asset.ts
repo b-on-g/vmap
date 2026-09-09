@@ -112,34 +112,20 @@ namespace $ {
 		/**
 		 * File of an asset by its id, or null when the id is not a link.
 		 *
-		 * The land is asked to sync on the way, because `$giper_baza_glob.Pawn` does
-		 * not: the `.sync()` in `land.ts` is commented out, so a land reached by link
-		 * alone stays whatever the local store had, which for an asset of somebody
-		 * else is nothing. A `Promise` from it means the sync went off in the
-		 * background, which is the point, so it is swallowed and only a real error
-		 * is rethrown.
-		 *
-		 * Auto-sync belongs on the data path and not in a view — section 6, and the
-		 * same rule as the `remote()` override it names. There is no `atom_link_to`
-		 * here to override, because there is no field: see `$bog_vmap_asset_ids`.
+		 * Nothing asks the land to sync here: every read of the pawn goes through
+		 * `$giper_baza_land.sand_ordered()`, which syncs first, so the bytes of
+		 * somebody else's asset arrive by being read. No field to override either,
+		 * because there is none: see `$bog_vmap_asset_ids`.
 		 */
 		file( id: string ) {
 
 			const checked = $giper_baza_link.check( id )
 			if( !checked ) return null
 
-			const file = this.$.$giper_baza_glob.Pawn(
+			return this.$.$giper_baza_glob.Pawn(
 				new $giper_baza_link( checked ),
 				$giper_baza_file,
 			)
-
-			try {
-				file.land().sync()
-			} catch( error ) {
-				if( !( error instanceof Promise ) ) $mol_fail_hidden( error )
-			}
-
-			return file
 		}
 
 		/** Bytes of an asset, for `asset_put` on the bridge. */
