@@ -20448,6 +20448,28 @@ var $;
     }
     $.$bog_vmap_lib_slashed = $bog_vmap_lib_slashed;
     /**
+     * Why a pack did not load, in words somebody can act on.
+     *
+     * `$mol_fetch` throws the status line of the response and nothing else, so a
+     * mistyped address reaches the screen as a bare «Not Found» — true and
+     * useless: it names neither what was looked for nor where to correct it. Seen
+     * on the deploy in the counter of the class list, 09.09.2026.
+     *
+     * The address is repeated back because the field it came from may be scrolled
+     * away or, in the case of the default, never typed at all. It is the ADDRESS
+     * THAT WAS FETCHED and not the one that was typed, and it is handed in rather
+     * than derived here: the rule that grows `web.view.tree` onto a pack lives in
+     * `tree_link` and must not be written a second time to word a complaint.
+     */
+    function $bog_vmap_lib_pack_note(link, error) {
+        const reason = String(error?.message || error);
+        if (!link)
+            return `Пак не отвечает: ${reason}`;
+        return `Пак не отвечает (${reason}). Ожидался ${link}`
+            + ' — дерево классов, которое сборка кладёт рядом с бандлом';
+    }
+    $.$bog_vmap_lib_pack_note = $bog_vmap_lib_pack_note;
+    /**
      * Base address of a sibling module of the pack, derived from the address of the
      * page asking. Always ends with a slash, so `new URL` keeps its last segment.
      *
@@ -21011,6 +21033,20 @@ var $;
                 failed = error.constructor.name;
             }
             $mol_assert_equal(failed, '$mol_error_mix');
+        },
+        /**
+         * The wording of a dead pack. A status line alone — «Not Found» — is true
+         * and useless: it names neither the file that was missing nor the field to
+         * correct, and that is exactly what reached the screen.
+         */
+        'a dead pack is worded with the address that was fetched'($) {
+            const note = $.$bog_vmap_lib_pack_note('https://dead.test/web.view.tree', new Error('Not Found'));
+            $mol_assert_ok(note.includes('Not Found'));
+            $mol_assert_ok(note.includes('https://dead.test/web.view.tree'));
+            // With no address to name — a library of lands alone — it says the one
+            // thing it knows rather than an empty «Ожидался ».
+            const bare = $.$bog_vmap_lib_pack_note('', new Error('Failed to fetch'));
+            $mol_assert_equal(bare, 'Пак не отвечает: Failed to fetch');
         },
     });
 })($ || ($ = {}));
