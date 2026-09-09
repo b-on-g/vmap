@@ -34,7 +34,7 @@ namespace $ {
 	 * preset sets. It has to be set: `[mol_view]` is `display: flex` with no
 	 * direction at all, which is a ROW.
 	 */
-	export function $bog_vmap_app_pane_axis(
+	export function $bog_vmap_app_pane_slot_axis(
 		boxes: readonly $bog_vmap_bridge_rect[],
 		declared = '',
 	) {
@@ -74,7 +74,7 @@ namespace $ {
 		declared = '',
 	): $bog_vmap_app_pane_slot {
 
-		const row = $bog_vmap_app_pane_axis( kids, declared ) === 'row'
+		const row = $bog_vmap_app_pane_slot_axis( kids, declared ) === 'row'
 
 		const start = ( kid: $bog_vmap_bridge_rect )=> row ? kid.x : kid.y
 		const end = ( kid: $bog_vmap_bridge_rect )=> row ? kid.x + kid.width : kid.y + kid.height

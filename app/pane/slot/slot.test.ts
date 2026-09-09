@@ -30,25 +30,25 @@ namespace $ {
 
 			// Declared, and the children say the opposite. The declaration is right:
 			// the boxes of a box that has just been re-declared are the old layout.
-			$mol_assert_equal( $bog_vmap_app_pane_axis( column, 'row' ), 'row' )
-			$mol_assert_equal( $bog_vmap_app_pane_axis( row, 'column' ), 'column' )
+			$mol_assert_equal( $bog_vmap_app_pane_slot_axis( column, 'row' ), 'row' )
+			$mol_assert_equal( $bog_vmap_app_pane_slot_axis( row, 'column' ), 'column' )
 
 			// Nothing declared: read off where the children came out.
-			$mol_assert_equal( $bog_vmap_app_pane_axis( column ), 'column' )
-			$mol_assert_equal( $bog_vmap_app_pane_axis( row ), 'row' )
-			$mol_assert_equal( $bog_vmap_app_pane_axis( column, '' ), 'column' )
+			$mol_assert_equal( $bog_vmap_app_pane_slot_axis( column ), 'column' )
+			$mol_assert_equal( $bog_vmap_app_pane_slot_axis( row ), 'row' )
+			$mol_assert_equal( $bog_vmap_app_pane_slot_axis( column, '' ), 'column' )
 
 			// Neither: a column. One child is exactly as silent as none, which is why
 			// the declaration has to come first at all.
-			$mol_assert_equal( $bog_vmap_app_pane_axis( [] ), 'column' )
-			$mol_assert_equal( $bog_vmap_app_pane_axis( [ column[0] ] ), 'column' )
-			$mol_assert_equal( $bog_vmap_app_pane_axis( [ column[0] ], 'row' ), 'row' )
+			$mol_assert_equal( $bog_vmap_app_pane_slot_axis( [] ), 'column' )
+			$mol_assert_equal( $bog_vmap_app_pane_slot_axis( [ column[0] ] ), 'column' )
+			$mol_assert_equal( $bog_vmap_app_pane_slot_axis( [ column[0] ], 'row' ), 'row' )
 
 			// A direction we do not act on is not taken at its word: a reversed box
 			// lays its children out backwards from the order `sub` lists them, so a
 			// position counted along the boxes would be the mirror of the one written.
-			$mol_assert_equal( $bog_vmap_app_pane_axis( row, 'row-reverse' ), 'row' )
-			$mol_assert_equal( $bog_vmap_app_pane_axis( column, 'row-reverse' ), 'column' )
+			$mol_assert_equal( $bog_vmap_app_pane_slot_axis( row, 'row-reverse' ), 'row' )
+			$mol_assert_equal( $bog_vmap_app_pane_slot_axis( column, 'row-reverse' ), 'column' )
 
 		},
 
