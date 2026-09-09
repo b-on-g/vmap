@@ -292,6 +292,38 @@ namespace $ {
 			return shelf.land().link().str
 		}
 
+		/**
+		 * Puts a class brought from OUTSIDE into the library under the name it
+		 * already carries, replacing the one that declared that name before.
+		 *
+		 * The difference from `publish` is the name and only the name. A part of a
+		 * document is a property, `Calc`, and has to be given a class name to
+		 * become a component at all; a file names its class itself, and its
+		 * neighbours in the same module refer to it by that name — renaming it
+		 * would cut every one of those references, silently, because a base nobody
+		 * declares compiles green and fails at run time.
+		 *
+		 * **From a fiber only**, for the reason spelled out at `publish`.
+		 */
+		import_class( source: string, js = '', css = '' ) {
+
+			const klass = this.$.$bog_vmap_lib_land_name( source )
+
+			if( klass[ 0 ] !== '$' ) this.$.$mol_fail( new Error(
+				`Объявление начинается с ${ JSON.stringify( klass ) }, а имя класса начинается с доллара`
+			) )
+
+			const shelf = this.shelf_ensure()
+			const one = this.part_of( shelf, klass ) ?? shelf.Parts( null )!.make( null )
+
+			one.tree( source )
+
+			if( js || one.js() ) one.js( js )
+			if( css || one.css() ) one.css( css )
+
+			return shelf.land().link().str
+		}
+
 	}
 
 }

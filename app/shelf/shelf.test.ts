@@ -94,6 +94,132 @@ namespace $ {
 
 		},
 
+		'files of a module give one source per class, as their author wrote them'( $ ) {
+
+			const text = [
+				`${d}my_card ${d}mol_view`,
+				`\tprice 0`,
+				`${d}my_price ${d}my_card`,
+				`\tprice 42`,
+				``,
+			].join( '\n' )
+
+			const taken = $.$bog_vmap_app_shelf_intake([ { name: 'card.view.tree', text } ])
+
+			// Two components and not one text: a library resolves neighbours by
+			// name, so a class that inherits the one beside it still finds it.
+			$mol_assert_equal( taken.classes.length, 2 )
+			$mol_assert_ok( taken.classes[ 0 ].startsWith( `${d}my_card ${d}mol_view` ) )
+			$mol_assert_ok( taken.classes[ 1 ].includes( `${d}my_price ${d}my_card` ) )
+			$mol_assert_like( taken.refused, [] )
+
+		},
+
+		'what cannot be taken is refused by name, with the reason on screen'( $ ) {
+
+			const taken = $.$bog_vmap_app_shelf_intake([
+				{ name: 'card.view.ts', text: 'namespace $ {}' },
+				{ name: 'web.view.tree', text: `${d}mol_view ${d}mol_object\n` },
+				{ name: 'empty.view.tree', text: '- just a comment\n' },
+			])
+
+			$mol_assert_like( taken.classes, [] )
+			$mol_assert_like(
+				taken.refused.map( item => item.reason ),
+				[
+					$bog_vmap_app_shelf_refuse.kind,
+					$bog_vmap_app_shelf_refuse.built,
+					$bog_vmap_app_shelf_refuse.empty,
+				],
+			)
+
+			// The note names the file, so a person knows which one to fix.
+			$mol_assert_ok( $bog_vmap_app_shelf_intake_note( taken ).includes( 'card.view.ts' ) )
+
+		},
+
+		async 'a class brought from a file keeps the name it came with'( $ ) {
+
+			const store = $bog_vmap_app_publish_store.make({
+				$,
+				shelf_land_config: ()=> $.$giper_baza_glob.home().land(),
+			})
+
+			const source = `${d}my_card ${d}mol_view\n\tprice 0\n`
+
+			// Through a fiber, as the panel does it: making the area encodes units.
+			const link = await $mol_wire_async( store ).import_class( source )
+
+			const shelf = store.shelf()!
+
+			$mol_assert_equal( link, shelf.land().link().str )
+			$mol_assert_equal( shelf.parts().length, 1 )
+
+			// Under its OWN name: renaming it would cut every reference a neighbour
+			// of the same module makes to it, and cut it silently.
+			$mol_assert_equal( shelf.parts()[ 0 ].tree(), source )
+
+			// A second import of the same class replaces it instead of doubling it:
+			// two declarations of one name and the library disagrees with itself
+			// about which is real.
+			await $mol_wire_async( store ).import_class( `${d}my_card ${d}mol_view\n\tprice 42\n` )
+
+			$mol_assert_equal( shelf.parts().length, 1 )
+			$mol_assert_ok( shelf.parts()[ 0 ].tree().includes( 'price 42' ) )
+
+		},
+
+		async 'files brought to the panel end up in the library, whose link joins the field'( $ ) {
+
+			const shelf = $bog_vmap_app_shelf.make({
+				$,
+				Store: ()=> $bog_vmap_app_publish_store.make({
+					$,
+					shelf_land_config: ()=> $.$giper_baza_glob.home().land(),
+				}),
+			}) as $$.$bog_vmap_app_shelf
+
+			const source = `${d}my_card ${d}mol_view\n\tprice 0\n`
+
+			await $mol_wire_async( shelf ).intake([
+				{ name: 'card.view.tree', text: async ()=> source },
+				{ name: 'card.view.ts', text: async ()=> 'namespace $ {}' },
+			])
+
+			// What was taken is in the library, under its own name. In canonical
+			// `tree2` formatting, which puts an only child on the line of its
+			// parent: the splitter serializes each declaration through `tree2`, and
+			// that form is what every other reader of the library expects.
+			const parts = shelf.Store().shelf()!.parts()
+			$mol_assert_equal( parts.length, 1 )
+			$mol_assert_equal( parts[ 0 ].tree(), `${d}my_card ${d}mol_view price 0\n` )
+
+			// And the library is attached to the scene by the same field an address
+			// goes into: from here on it is the library any other scene would get.
+			$mol_assert_equal( shelf.links(), shelf.Store().link() )
+
+			// What was not taken is said on screen, by file name.
+			$mol_assert_ok( shelf.import_note().includes( 'card.view.ts' ) )
+			$mol_assert_ok( shelf.source_content().includes( shelf.Import_note() ) )
+
+		},
+
+		'a declaration that names no class is refused before anything is written'( $ ) {
+
+			const store = $bog_vmap_app_publish_store.make({
+				$,
+				shelf_land_config: ()=> $.$giper_baza_glob.home().land(),
+			})
+
+			// No land is made and nothing is written: the check is the first line.
+			$mol_assert_fail(
+				()=> store.import_class( `card ${d}mol_view\n` ),
+				'Объявление начинается с "card", а имя класса начинается с доллара',
+			)
+			$mol_assert_equal( store.shelf(), null )
+
+		},
+
 		'the shelf offers ready made things and every one of them is a class'( $ ) {
 
 			const items = $bog_vmap_app_shelf_presets()

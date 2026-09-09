@@ -31,12 +31,78 @@ namespace $.$$ {
 			] as readonly $mol_view[]
 		}
 
-		/** The field, and under it whatever was refused. */
+		/** The field, the button, and under them whatever was refused. */
 		source_content() {
 			return [
 				this.Links(),
 				... this.rejected_note() ? [ this.Note() ] : [],
+				this.Import(),
+				... this.import_note() ? [ this.Import_note() ] : [],
 			] as readonly $mol_view[]
+		}
+
+		/**
+		 * Files picked in the dialog. Answers empty: what came of them is in the
+		 * library and in the note, and the panel keeps no list of files.
+		 *
+		 * The work goes to a fiber of its own, because all of it is asynchronous:
+		 * reading a file is a promise, and making the library land mines proof of
+		 * work.
+		 */
+		override files( next?: readonly File[] ) {
+
+			if( next?.length ) $mol_wire_async( this ).intake( next )
+
+			return [] as readonly File[]
+		}
+
+		/**
+		 * Reads the files and puts what they declare into the library of the user.
+		 *
+		 * **From a fiber only.** Every read goes through `$mol_wire_sync`, so the
+		 * fiber suspends on each file and picks up where it left off; a retry
+		 * replays the reads from its own cache and writes the same classes again,
+		 * which lands on the same components because a class already in the library
+		 * is replaced rather than added.
+		 *
+		 * The link of the library is appended to the field afterwards and not
+		 * before: the field is what the scene loads, and there is nothing to load
+		 * until something is written.
+		 *
+		 * Files are taken by their shape — a name and a text — rather than by the
+		 * type `File`, so a test hands in two strings instead of forging a browser
+		 * object with a cast.
+		 */
+		intake( files: readonly { readonly name: string, text(): Promise< string > }[] ) {
+
+			const brought = files.map( file => ({
+				name: file.name,
+				text: $mol_wire_sync( file ).text(),
+			}) )
+
+			const taken = this.$.$bog_vmap_app_shelf_intake( brought )
+
+			this.import_note( this.$.$bog_vmap_app_shelf_intake_note( taken ) )
+
+			if( !taken.classes.length ) return
+
+			let link = ''
+			for( const source of taken.classes ) link = this.Store().import_class( source )
+
+			this.link_attach( link )
+
+		}
+
+		/** Adds a land link to the field, unless the field already names it. */
+		link_attach( link: string ) {
+
+			if( !link ) return
+
+			const links = this.links()
+			if( links.split( /[,\s]+/ ).includes( link ) ) return
+
+			this.links( links ? `${ links }, ${ link }` : link )
+
 		}
 
 		/**

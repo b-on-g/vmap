@@ -145,6 +145,98 @@ namespace $ {
 		]
 	}
 
+	/** A file brought from the disk: its name and what is inside it. */
+	export type $bog_vmap_app_shelf_file = {
+		readonly name: string
+		readonly text: string
+	}
+
+	/** What the files gave, and what was refused with the reason in the user's words. */
+	export type $bog_vmap_app_shelf_intake = {
+
+		/** One source per class, in the order the files declared them. */
+		readonly classes: readonly string[]
+
+		readonly refused: readonly {
+			readonly name: string
+			readonly reason: string
+		}[]
+
+	}
+
+	/**
+	 * Wording of the refusals, in one place so the tests and the panel agree.
+	 *
+	 * A mol module is two kinds of text and only one of them can be taken. The
+	 * declarations compile in the sandbox as they are; the behaviour is
+	 * TypeScript, and what runs a component's body there is `new Function` over
+	 * JavaScript. There is no compiler in the page and pretending otherwise would
+	 * mean a component that arrives looking whole and does nothing.
+	 */
+	export const $bog_vmap_app_shelf_refuse = {
+
+		kind: 'принимаем только .view.tree. Поведение модуля — TypeScript, а песочница'
+			+ ' исполняет JavaScript: компонент с кодом приезжает адресом приложения',
+
+		built: 'это дерево классов собранного пака целиком. Подключите его адресом,'
+			+ ' тогда приедет и поведение',
+
+		empty: 'ни одного класса: объявление начинается с имени на доллар',
+
+	} as const
+
+	/**
+	 * Splits the files brought from the disk into one source per class.
+	 *
+	 * Split and not merged, because a component of a library is one class and the
+	 * library resolves neighbours by name: a file with three classes in it gives
+	 * three components that still find each other.
+	 *
+	 * The text of each declaration goes out as its author wrote it, without
+	 * normalizing: what a person brought from their own module is theirs, and the
+	 * editor normalizes a document only when the document is edited.
+	 */
+	export function $bog_vmap_app_shelf_intake(
+		this: $,
+		files: readonly $bog_vmap_app_shelf_file[],
+	): $bog_vmap_app_shelf_intake {
+
+		const classes = [] as string[]
+		const refused = [] as { name: string, reason: string }[]
+
+		for( const file of files ) {
+
+			if( /(^|\/)web\.view\.tree$/.test( file.name ) ) {
+				refused.push({ name: file.name, reason: $bog_vmap_app_shelf_refuse.built })
+				continue
+			}
+
+			if( !/\.view\.tree$/.test( file.name ) ) {
+				refused.push({ name: file.name, reason: $bog_vmap_app_shelf_refuse.kind })
+				continue
+			}
+
+			const kids = this.$mol_tree2_from_string(
+				file.text.replace( /\n?$/, '\n' ), file.name,
+			).kids.filter( kid => kid.type[ 0 ] === '$' )
+
+			if( !kids.length ) {
+				refused.push({ name: file.name, reason: $bog_vmap_app_shelf_refuse.empty })
+				continue
+			}
+
+			for( const kid of kids ) classes.push( kid.toString() )
+
+		}
+
+		return { classes, refused }
+	}
+
+	/** The refusals as one text, one per line, or empty when there is nothing to say. */
+	export function $bog_vmap_app_shelf_intake_note( taken: $bog_vmap_app_shelf_intake ) {
+		return taken.refused.map( item => `${ item.name }: ${ item.reason }` ).join( '\n' )
+	}
+
 	/**
 	 * Renames references to parts inside an override, wherever they sit.
 	 *

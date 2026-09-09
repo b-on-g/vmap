@@ -66,6 +66,24 @@ namespace $.$$ {
 			whiteSpace: 'pre-wrap',
 		},
 
+		Import: {
+			flex: { direction: 'row', shrink: 0 },
+			align: { items: 'center' },
+			gap: $mol_gap.text,
+		},
+
+		Import_title: {
+			color: $mol_theme.shade,
+			font: { size: '.8rem' },
+		},
+
+		/** Why a file was not taken. Same voice and same place as the refusals above. */
+		Import_note: {
+			color: $mol_theme.focus,
+			font: { size: '.75rem' },
+			whiteSpace: 'pre-wrap',
+		},
+
 		/** The objects of the application, sized by their own number. */
 		Apps: {
 			flex: { direction: 'column', shrink: 0 },
