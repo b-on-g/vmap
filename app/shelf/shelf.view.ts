@@ -23,11 +23,25 @@ namespace $.$$ {
 		override body() {
 			return [
 				this.Title(),
+				this.Stack(),
+				this.Level(),
+				... this.classes_showed() ? [ this.Palette() ] : [],
+			] as readonly $mol_view[]
+		}
+
+		/**
+		 * What scrolls: the shelf, the address and the objects of the application.
+		 *
+		 * The heading and the switch of the second level stay put, because they are
+		 * how a person gets back out of a long list; the second level scrolls inside
+		 * itself and must not be nested in this one, or its own list would render
+		 * all four hundred rows into an unbounded height.
+		 */
+		stack_content() {
+			return [
 				this.Items(),
 				this.Source(),
 				this.Apps(),
-				this.Level(),
-				... this.classes_showed() ? [ this.Palette() ] : [],
 			] as readonly $mol_view[]
 		}
 

@@ -41,6 +41,18 @@ $bog_vmap_app_shelf $mol_view
 		sub /
 			\Полка
 	-
+	- Everything above the second level scrolls as one: on a short window twelve
+	- items, the address field, the button and the objects of an application do not
+	- fit, and without a scroll of its own the panel pushed the whole page down and
+	- took the head bar off the screen with it.
+	-
+	- `$mol_scroll` lays every child into the same cell, so it holds exactly ONE
+	- node and the stack goes inside that one.
+	Stack $mol_scroll
+		sub /
+			<= Stack_body $mol_view
+				sub <= stack_content /$mol_view
+	-
 	Items $mol_list
 		rows <= item_rows /
 	-

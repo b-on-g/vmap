@@ -18,6 +18,21 @@ namespace $.$$ {
 			border: { bottom: { width: '1px', style: 'solid', color: $mol_theme.line } },
 		},
 
+		/**
+		 * The scrolling middle. Takes what the heading and the switch left, and
+		 * `minHeight: 0` is what lets it be shorter than its content — without it a
+		 * flex child refuses to shrink past what it holds, and the panel grows the
+		 * page instead of scrolling.
+		 */
+		Stack: {
+			flex: { grow: 1, shrink: 1 },
+			minHeight: 0,
+		},
+
+		Stack_body: {
+			flex: { direction: 'column' },
+		},
+
 		/** The shelf itself takes the room it needs and no more; the rest is below. */
 		Items: {
 			flex: { shrink: 0 },

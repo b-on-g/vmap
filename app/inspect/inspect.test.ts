@@ -255,16 +255,21 @@ namespace $ {
 			const one = inspect_of( $, '' )
 
 			$mol_assert_equal( one.class_ready(), false )
-			$mol_assert_like( one.sub(), [ one.Empty() ] )
 
-			// Nothing else is even asked, so nothing else can throw.
-			$mol_assert_ok( one.sub().length === 1 )
+			// By identity and not by likeness: two live views compared deeply walk
+			// into their own machinery, and what comes back says nothing about the
+			// panel. Nothing else is even asked here, so nothing else can throw.
+			$mol_assert_equal( one.sub().length, 1 )
+			$mol_assert_equal( one.sub()[ 0 ], one.Empty() )
 
-			// And a real class brings the panel back whole.
-			one.source( `${d}my_card ${d}mol_view\n\ttitle \\Hi\n` )
+			// And a panel over a real class is whole. A SECOND inspector and not a
+			// write into this one: the stand hands the source in as a plain closure,
+			// so a write through it invalidates no cell and the failed parse would
+			// stay cached — an artefact of the stand, not of the panel.
+			const two = inspect_of( $, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n` )
 
-			$mol_assert_equal( one.class_ready(), true )
-			$mol_assert_ok( one.sub().length > 1 )
+			$mol_assert_equal( two.class_ready(), true )
+			$mol_assert_ok( two.sub().length > 1 )
 
 		},
 	})

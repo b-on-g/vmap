@@ -4,6 +4,17 @@ namespace $.$$ {
 
 		flex: { direction: 'column' },
 		height: '100vh',
+
+		/**
+		 * The PAGE never scrolls; the panels scroll inside themselves.
+		 *
+		 * Without this a panel taller than the window pushed the document past
+		 * `100vh`, the wheel over it moved the whole page, and the head bar — every
+		 * button of the editor — went off the top of the screen. Seen on the deploy
+		 * 09.09.2026 with the shelf open on a short window.
+		 */
+		overflow: 'hidden',
+
 		background: { color: $mol_theme.back },
 		color: $mol_theme.text,
 

@@ -1231,10 +1231,10 @@ namespace $.$$ {
 		/**
 		 * World coordinates of a pointer event, or `null` if it is not over the canvas.
 		 *
-		 * The rectangle comes from the DOM and not from `view_rect()` on purpose:
-		 * `view_rect` is a watched cell, and a handler that subscribes to it would be
-		 * re-run by the very layout change its own drop causes — adding the part a
-		 * second time.
+		 * The rectangle is the canvas's own reading, which is `view_rect()` warmed in
+		 * its `auto()`. The reason written here before — that a handler subscribed to
+		 * the watched cell would be re-run by the layout its own drop causes — was
+		 * wrong: these handlers run as one shot tasks and subscribe to nothing.
 		 *
 		 * The camera is a screen-pixel shift plus an isotropic zoom, and the scene
 		 * puts the stage at `transform-origin: 0 0` inside a frame pinned to the top
@@ -1243,8 +1243,7 @@ namespace $.$$ {
 		 */
 		canvas_point( event: PointerEvent ) {
 
-			const node = this.Pane().dom_node()
-			const rect = node.getBoundingClientRect()
+			const rect = this.pane().pane_rect()
 
 			const x = event.clientX - rect.left
 			const y = event.clientY - rect.top
@@ -1298,9 +1297,57 @@ namespace $.$$ {
 		 */
 		@ $mol_action
 		preset_drop( source: string, x: number, y: number ) {
+			this.preset_apply( source, x, y, this.pane().insert_slot([ x, y ]) )
+		}
+
+		/**
+		 * The same piece, put where a CLICK can mean: free on the canvas, in the
+		 * middle of it.
+		 *
+		 * A click is «add this», a drag is «add it HERE». Whoever clicked aimed at
+		 * nothing, so the piece must not fall into whatever happens to cover the
+		 * middle of the view — it did, and a map asked for by a click landed between
+		 * the two halves of a wired pair. Measured on the deploy 09.09.2026.
+		 */
+		@ $mol_action
+		preset_place( source: string ) {
+			const spot = this.free_spot()
+			this.preset_apply( source, spot[0], spot[1], null )
+		}
+
+		/**
+		 * The middle of the canvas, moved clear of whatever container covers it.
+		 *
+		 * Beside and not inside: a free part left at the middle of a page would be
+		 * drawn over it and read as a part OF it, which is the very confusion the
+		 * click is being kept out of. Below the box, because pages grow downwards.
+		 */
+		free_spot() {
+
+			const [ x, y ] = this.canvas_center()
+
+			const owner = this.pane().container_at([ x, y ])
+			const box = owner ? this.pane().part_size( owner ) : null
+
+			if( !box ) return [ x, y ] as const
+
+			return [ box.x, box.y + box.height + 24 ] as const
+		}
+
+		/**
+		 * Writes the piece into the document and places what it left loose: into the
+		 * tree of a container when the gesture aimed at one, by a coordinate when it
+		 * did not.
+		 */
+		@ $mol_action
+		preset_apply(
+			source: string,
+			x: number,
+			y: number,
+			slot: $bog_vmap_app_pane_slot | null,
+		) {
 
 			const node = this.node()
-			const slot = this.pane().insert_slot([ x, y ])
 
 			const placed = this.$.$bog_vmap_app_shelf_apply(
 				node,
@@ -1308,9 +1355,9 @@ namespace $.$$ {
 				( name: string )=> this.name_free( name ),
 			)
 
-			// Into the tree of the artboard it was dropped into, or onto the canvas
-			// by a coordinate. One gesture, two ways of being laid out, told apart
-			// by where the release happened and nowhere else. A piece that leaves
+			// Into the tree of the container the gesture aimed at, or onto the canvas
+			// by a coordinate. Two ways of being laid out, told apart by the caller
+			// and nowhere else. A piece that leaves
 			// several loose names stacks them down and to the right, so that two
 			// parts of one item are both visible instead of exactly overlapping.
 			placed.forEach( ( name, i )=> {
@@ -1349,10 +1396,7 @@ namespace $.$$ {
 
 			const source = next && this.shelf().item( next )?.source
 
-			if( source ) {
-				const spot = this.canvas_center()
-				this.preset_drop( source, spot[0], spot[1] )
-			}
+			if( source ) this.preset_place( source )
 
 			return ''
 		}
@@ -1411,7 +1455,7 @@ namespace $.$$ {
 		 */
 		canvas_center() {
 
-			const rect = this.Pane().dom_node().getBoundingClientRect()
+			const rect = this.pane().pane_rect()
 			const shift = this.pane().camera_shift()
 			const zoom = this.pane().camera_zoom()
 

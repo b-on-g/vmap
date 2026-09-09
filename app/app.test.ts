@@ -1135,6 +1135,42 @@ namespace $ {
 
 		},
 
+		/**
+		 * A click is «add this», a drag is «add it HERE».
+		 *
+		 * Whoever clicked a shelf row aimed at nothing, so the piece must not fall
+		 * into whatever happens to cover the middle of the view. It did: a map asked
+		 * for by a click landed between the two halves of a wired pair, because the
+		 * pair was under the middle. Seen on the deploy 09.09.2026.
+		 */
+		'a click puts a free part beside what covers the middle, never inside it'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			// A page under the middle of the canvas, which is where a board lands.
+			stage.click( stage.button( 'Артборд' ) )
+
+			const page = stage.app.selected()!
+			$mol_assert_ok( page )
+
+			stage.click( stage.shelf_row( 'Блок' ) )
+
+			const node = stage.app.node()
+			const block = stage.app.selected()!
+
+			// Free on the canvas, and not a child of the page.
+			$mol_assert_ok( node.sub_names( '' )!.includes( block ) )
+			$mol_assert_equal( node.sub_names( page )?.includes( block ) ?? false, false )
+
+			// Beside it and not over it: a free part left in the middle of a page
+			// would be drawn on top and read as a part of it.
+			const box = stage.pane.part_size( page )!
+			const spot = stage.app.spots()[ block ]!
+
+			$mol_assert_ok( box )
+			$mol_assert_ok( spot.y >= box.y + box.height )
+
+		},
 	})
 
 }

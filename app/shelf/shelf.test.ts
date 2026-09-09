@@ -101,7 +101,7 @@ namespace $ {
 			// And the shelf itself stands: the failure belongs to one list, not to
 			// the panel around it.
 			$mol_assert_ok( shelf.items().length > 4 )
-			$mol_assert_ok( shelf.body().includes( shelf.Items() ) )
+			$mol_assert_ok( shelf.stack_content().includes( shelf.Items() ) )
 
 		},
 
