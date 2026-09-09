@@ -261,7 +261,6 @@ namespace $.$$ {
 				this.Overlay(),
 				this.Wire(),
 				... this.slot() ? [ this.Insert() ] : [],
-				... this.band() ? [ this.Band() ] : [],
 			] as readonly $mol_view[]
 		}
 
@@ -603,8 +602,7 @@ namespace $.$$ {
 		 */
 		drag: {
 			name: string,
-			/** Where every node being carried started, by name. A group moves as one. */
-			spots: { readonly [ name: string ]: { readonly x: number, readonly y: number } },
+			spot: { readonly x: number, readonly y: number },
 			grab: readonly [ number, number ],
 			version: number,
 			/** Drawn inside another node, so it is laid out by tree and has no coordinate. */
@@ -630,8 +628,6 @@ namespace $.$$ {
 			world: readonly [ number, number ],
 			moved: boolean,
 			entering: boolean,
-			/** The node under the press, `null` for bare canvas. */
-			name: string | null,
 		} | null = null
 
 		/**
@@ -645,7 +641,7 @@ namespace $.$$ {
 		 * the hole took the keyboard into the frame, where the Delete of the editor
 		 * never arrives.
 		 *
-		 * Compared against `primary()` rather than cleared by hand: a pick of
+		 * Compared against `selected()` rather than cleared by hand: a pick of
 		 * anything else closes the hole by itself, and nothing has to remember to.
 		 */
 		@ $mol_mem
@@ -653,21 +649,9 @@ namespace $.$$ {
 			return next ?? null
 		}
 
-		/**
-		 * The primary of the picked nodes: the last one taken.
-		 *
-		 * The hole, the wire dots and the inspector all speak about ONE node, and
-		 * this is which one. Derived from `picked()` and never stored beside it: two
-		 * cells for one fact need somebody to keep them in step.
-		 */
-		primary() {
-			const picked = this.picked()
-			return picked.length ? picked[ picked.length - 1 ] : null
-		}
-
 		/** Whether the pointer is inside the picked node, i.e. the overlay is cut open. */
 		inside() {
-			const name = this.primary()
+			const name = this.selected()
 			return Boolean( name ) && this.entered() === name
 		}
 
@@ -834,74 +818,6 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The band being swept over the canvas, in world units, or `null`.
-		 *
-		 * A cell and not a field for the reason the slot is one: the band is drawn
-		 * from it and has to follow the pointer. Kept as the two corners the gesture
-		 * has rather than as a normalised rectangle, because a sweep upwards or to
-		 * the left is an ordinary sweep and normalising is one line where it is used.
-		 */
-		@ $mol_mem
-		band( next?: { readonly from: readonly [ number, number ], readonly to: readonly [ number, number ] } | null ) {
-			return next ?? null
-		}
-
-		/**
-		 * Whether this press sweeps a band rather than picks.
-		 *
-		 * Control or command, which is what the user asked for and what leaves the
-		 * plain drag alone: over bare canvas that is still the pan, and over a node
-		 * it is still the carry. Shift is left free — it is the natural key for
-		 * adding one more node to a selection, and spending it on the band would
-		 * cost the gesture that is asked for next.
-		 */
-		band_wanted( event: PointerEvent ) {
-			return Boolean( event.ctrlKey || event.metaKey )
-		}
-
-		/** The band as a rectangle in world units, whichever way it was swept. */
-		band_box() {
-
-			const band = this.band()
-			if( !band ) return null
-
-			return {
-				x: Math.min( band.from[0], band.to[0] ),
-				y: Math.min( band.from[1], band.to[1] ),
-				width: Math.abs( band.to[0] - band.from[0] ),
-				height: Math.abs( band.to[1] - band.from[1] ),
-			}
-		}
-
-		/**
-		 * The nodes a rectangle in world units takes: everything it OVERLAPS, and of
-		 * a node and its container only the outer one.
-		 *
-		 * Overlap and not containment, because a band drawn across a wide page would
-		 * otherwise take nothing at all, and a part half off the band is plainly
-		 * being pointed at. The descendants of a taken node are dropped because they
-		 * move with it: taking both would carry a child twice, once by its own spot
-		 * and once inside its parent, and delete it twice over.
-		 */
-		nodes_covered( box: $bog_vmap_bridge_rect ) {
-
-			const hit = this.nodes_measured().filter( node => {
-				const own = node.box
-				if( own.x + own.width < box.x ) return false
-				if( own.y + own.height < box.y ) return false
-				if( own.x > box.x + box.width ) return false
-				if( own.y > box.y + box.height ) return false
-				return true
-			} )
-
-			const names = new Set( hit.map( node => node.name ) )
-
-			return hit
-				.filter( node => !node.path.slice( 0, -1 ).some( up => names.has( up ) ) )
-				.map( node => node.name )
-		}
-
-		/**
 		 * Press picks, and a press on a part also starts carrying it.
 		 *
 		 * The pick is taken from `pointerdown` and never from `click`, because the
@@ -928,30 +844,14 @@ namespace $.$$ {
 			if( dot ) return this.wire_press( dot, event )
 
 			const point = this.world_point( event )
-
-			// A modified pointer sweeps a band instead of picking: the modifier is
-			// what tells a sweep from a pan, and it is read here and nowhere else, so
-			// the rest of the gesture does not have to keep asking.
-			if( this.band_wanted( event ) ) {
-				event.preventDefault()
-				this.band({ from: point, to: point })
-				this.press = { screen: [ event.clientX, event.clientY ], world: point, moved: false, entering: false, name: null }
-				return
-			}
-
 			const name = this.node_at( point )
 
-			// A press on something already picked leaves the set alone, so that a group
-			// is carried by the body of any one of it, and the body of a single node
-			// stays the handle it is carried by. Reducing the set to the node pressed
-			// is the business of the release, and only when nothing moved.
-			//
-			// The second press on a node picked alone is the one that lets the pointer
-			// inside it; every other press keeps the pointer out.
-			const already = Boolean( name ) && this.picked().includes( name! )
-			const entering = already && this.picked().length === 1
+			// A press on the node already picked is the second click of the pair that
+			// lets the pointer inside it. Any other press picks and stays outside, so
+			// the body of the node stays the handle it is carried by.
+			const entering = Boolean( name ) && name === this.selected()
 
-			if( !already ) this.picked( name ? [ name ] : [] )
+			this.selected( name )
 			if( !entering ) this.entered( null )
 
 			this.press = {
@@ -959,24 +859,15 @@ namespace $.$$ {
 				world: point,
 				moved: false,
 				entering,
-				name,
 			}
 
 			if( !name ) return
 
 			event.preventDefault()
 
-			// Everything picked travels, and only what lies by a coordinate can: a node
-			// inside an artboard is laid out by tree and has no spot to move.
-			const spots = {} as { [ node: string ]: { readonly x: number, readonly y: number } }
-			for( const picked of this.picked() ) {
-				if( this.node_path( picked ).length ) continue
-				spots[ picked ] = this.spots()[ picked ] ?? { x: 0, y: 0 }
-			}
-
 			this.drag = {
 				name,
-				spots,
+				spot: this.spots()[ name ] ?? { x: 0, y: 0 },
 				grab: point,
 				version: this.sizes_version(),
 				nested: this.node_path( name ).length > 0,
@@ -1030,14 +921,6 @@ namespace $.$$ {
 				return
 			}
 
-			const band = this.band()
-			if( band ) {
-				if( !event.buttons ) return this.node_release( event )
-				event.preventDefault()
-				this.band({ from: band.from, to: this.world_point( event ) })
-				return
-			}
-
 			const drag = this.drag
 			if( !drag || !this.drag_live ) return
 
@@ -1053,16 +936,13 @@ namespace $.$$ {
 
 			if( slot || drag.nested ) return
 
-			const next = { ... this.spots() }
-
-			for( const name of Object.keys( drag.spots ) ) {
-				next[ name ] = {
-					x: drag.spots[ name ].x + point[0] - drag.grab[0],
-					y: drag.spots[ name ].y + point[1] - drag.grab[1],
-				}
-			}
-
-			this.spots( next )
+			this.spots({
+				... this.spots(),
+				[ drag.name ]: {
+					x: drag.spot.x + point[0] - drag.grab[0],
+					y: drag.spot.y + point[1] - drag.grab[1],
+				},
+			})
 
 		}
 
@@ -1084,16 +964,6 @@ namespace $.$$ {
 			this.press = null
 
 			if( this.wire_drag() ) return this.wire_release( event )
-
-			// A band that never grew is a modified click, and takes nothing: sweeping
-			// is a gesture with an area, and a stray click with a key held down
-			// should not silently clear what is picked.
-			const box = this.band_box()
-			if( box ) {
-				this.band( null )
-				if( press?.moved ) this.picked( this.nodes_covered( box ) )
-				return
-			}
 
 			if( this.drag_live ) {
 
@@ -1118,16 +988,12 @@ namespace $.$$ {
 			if( event.button !== 0 ) return
 			if( press.moved ) return
 
-			// A click on one node of a group means that one node: the group was kept
-			// through the press so that it could have been carried, and now it was not.
-			if( press.name && this.picked().length > 1 ) return this.picked([ press.name ])
-
 			// Only the second click on one and the same node goes on to the live
 			// component. The first one is the editor's: it picks, and it leaves both
 			// the body of the node and the keyboard where the editor can use them.
 			if( !press.entering ) return
 
-			this.entered( this.primary() )
+			this.entered( this.selected() )
 
 			this.click_send( press.world, event )
 
@@ -1166,14 +1032,9 @@ namespace $.$$ {
 
 		}
 
-		/** Names of the picked nodes a ring can be drawn for: the measured ones. */
-		override frames() {
-			return this.picked().filter( name => this.part_box( name ) )
-		}
-
-		/** Whether a ring is drawn at all, for the tests and for anything that only needs the flag. */
-		frame_showed() {
-			return this.frames().length > 0
+		/** The ring is drawn while something is picked and measured. */
+		override frame_showed() {
+			return Boolean( this.frame_box() )
 		}
 
 		/**
@@ -1185,7 +1046,7 @@ namespace $.$$ {
 		 * cut from the same numbers.
 		 */
 		frame_box(): $bog_vmap_app_pane_screen_box | null {
-			const name = this.primary()
+			const name = this.selected()
 			return name ? this.part_box( name ) : null
 		}
 
@@ -1202,14 +1063,12 @@ namespace $.$$ {
 
 			const drag = this.drag
 			const spot = this.spots()[ name ]
-			const start = drag?.spots[ name ]
 
 			// See `drag`: while the measured boxes are stale, and only then, the ring
-			// carries the offset the pointer has added since the grab. Every node of
-			// a group gets its own, which is why the starts are kept by name.
-			const live = start && spot && this.sizes_version() === drag!.version
-			const dx = live ? spot.x - start.x : 0
-			const dy = live ? spot.y - start.y : 0
+			// carries the offset the pointer has added since the grab.
+			const live = drag && drag.name === name && spot && this.sizes_version() === drag.version
+			const dx = live ? spot.x - drag.spot.x : 0
+			const dy = live ? spot.y - drag.spot.y : 0
 
 			return this.$.$bog_vmap_app_pane_screen(
 				{ x: box.x + dx, y: box.y + dy, width: box.width, height: box.height },
@@ -1239,31 +1098,10 @@ namespace $.$$ {
 			}
 		}
 
-		/** Where the band is on screen. Empty while none is being swept. */
 		@ $mol_mem
-		override band_style(): { readonly [ prop: string ]: string } {
+		override frame_style(): { readonly [ prop: string ]: string } {
 
-			const box = this.band_box()
-			if( !box ) return {}
-
-			const rect = this.$.$bog_vmap_app_pane_screen(
-				box,
-				this.camera_zoom(),
-				this.camera_shift(),
-			)
-
-			return {
-				left: rect.left + 'px',
-				top: rect.top + 'px',
-				width: rect.width + 'px',
-				height: rect.height + 'px',
-			}
-		}
-
-		@ $mol_mem_key
-		override frame_style( name: string ): { readonly [ prop: string ]: string } {
-
-			const rect = this.part_box( name )
+			const rect = this.frame_box()
 			if( !rect ) return {}
 
 			return {
@@ -1393,7 +1231,7 @@ namespace $.$$ {
 				return dots
 			}
 
-			const name = this.primary()
+			const name = this.selected()
 			if( name ) {
 				add( name, 'in', ()=> true )
 				add( name, 'out', ()=> true )
@@ -1783,13 +1621,13 @@ namespace $.$$ {
 	export class $bog_vmap_app_pane_overlay extends $.$bog_vmap_app_pane_overlay {
 
 		/**
-		 * A ring per picked node, and nothing at all when nothing is picked.
+		 * The ring, or nothing at all.
 		 *
 		 * A node kept in the tree and merely hidden would still be a view to build,
 		 * measure and keep alive, and an empty canvas is the common state.
 		 */
 		override sub() {
-			return this.frames().map( name => this.Frame( name ) )
+			return this.frame_showed() ? [ this.Frame() ] : []
 		}
 
 	}

@@ -89,61 +89,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The band: a modified sweep over the canvas takes everything it overlaps, and
-		 * from then on the whole set is one thing — it travels together and it goes
-		 * together.
-		 */
-		'a band takes several parts, and they move and delete as one'( $ ) {
-
-			const stage = $bog_vmap_app_flow_stage( $ )
-
-			stage.drop( calc, stage.client([ 100, 100 ]) )
-			stage.drop( map, stage.client([ 300, 100 ]) )
-
-			// Only the last dropped one is picked, as a drop leaves it.
-			$mol_assert_like( [ ... stage.app.picked() ], [ 'Map' ] )
-
-			// A sweep with the modifier down, from above and left of both to below
-			// and right of both.
-			const overlay = stage.overlay()
-			const mods = { ctrlKey: true }
-
-			stage.press( overlay, stage.client([ 50, 50 ]), mods )
-			stage.move( overlay, stage.client([ 450, 200 ]), mods )
-			$mol_assert_ok( stage.pane.band() !== null )
-
-			stage.release( overlay, stage.client([ 450, 200 ]), mods )
-			stage.redraw()
-			stage.scene.flush()
-
-			$mol_assert_like( [ ... stage.app.picked() ], [ 'Calc', 'Map' ] )
-			$mol_assert_equal( stage.pane.band(), null )
-
-			// Carried by the body of one of them, both travel by the same offset.
-			const from = stage.part_center( 'Calc' )
-
-			stage.press( overlay, from )
-			stage.move( overlay, [ from[0] + 40, from[1] + 30 ] )
-			stage.release( overlay, [ from[0] + 40, from[1] + 30 ] )
-			stage.redraw()
-
-			$mol_assert_like( stage.app.spots(), {
-				Calc: { x: 140, y: 130 },
-				Map: { x: 340, y: 130 },
-			} )
-
-			// And deleted together: out of the document, out of `sub`, out of the desk.
-			stage.click( stage.button( 'Удалить' ) )
-
-			const source = stage.app.doc_source()
-			$mol_assert_equal( source.includes( 'Calc' ), false )
-			$mol_assert_equal( source.includes( 'Map' ), false )
-			$mol_assert_like( Object.keys( stage.app.spots() ), [] )
-			$mol_assert_like( [ ... stage.app.picked() ], [] )
-
-		},
-
 		'a part inside a page is carried to another position in its tree'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )
