@@ -11425,6 +11425,21 @@ var $;
             $mol_assert_equal(one.title(), 'Вторая');
         },
         /**
+         * The premise the library rests on: a land syncs itself on every read of a
+         * pawn, through `sand_ordered()`, so nobody has to ask. A `sync()` called by
+         * hand used to sit in `parts()` on the belief that it did not.
+         */
+        'reading the parts of a shelf syncs their land unasked'($) {
+            const one = shelf($);
+            const land = one.land();
+            let synced = 0;
+            land.sync = () => { synced++; return land; };
+            part(one, card_src);
+            const lib = $bog_vmap_lib_land.make({ $, shelf: () => one });
+            $mol_assert_equal(lib.parts().length, 1);
+            $mol_assert_ok(synced > 0);
+        },
+        /**
          * The palette field in one object: a pack with a land on top. A land class
          * inheriting a pack class, and another land class inheriting that one, both
          * resolve their chain down into the pack — one namespace, as section 5 says.
@@ -14192,6 +14207,28 @@ var $;
             $mol_assert_equal(JSON.stringify(app.doc_wires()), wires);
             // The text differs in the class name and in nothing else.
             $mol_assert_equal(app.doc_source(), source.replace(`${d}bog_vmap_app_page`, `${d}my_site_page`));
+        },
+        /**
+         * Typing is not renaming. Every letter of a name is a prefix of it, and most
+         * prefixes of a class name are legal class names, so a field that wrote per
+         * keystroke would rename the class — and remake the node that holds it — once
+         * per letter. The field holds a draft and the rename happens on Enter or on
+         * leaving it, exactly as the name of a node does in the inspector.
+         */
+        'the root name is committed on submit and not on a keystroke'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            const before = app.doc_source();
+            app.root_draft(`${d}my`);
+            app.root_draft(`${d}my_site`);
+            app.root_draft(`${d}my_site_page`);
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(app.doc_root(), `${d}bog_vmap_app_page`);
+            app.root_submit();
+            $mol_assert_equal(app.doc_root(), `${d}my_site_page`);
+            // The draft is keyed by the name it started from, so the field now shows
+            // the new name with nothing to clear.
+            $mol_assert_equal(app.root_draft(), `${d}my_site_page`);
         },
         /**
          * A name that cannot become a folder is refused where it was typed, in words,

@@ -42373,13 +42373,9 @@ declare namespace $ {
          */
         shelf(): $bog_vmap_lib_land_shelf | null;
         /**
-         * Components of the shelf, with their land asked to sync on the way.
-         *
-         * A land reached by a link alone does not sync itself — the `.sync()` in
-         * `land.ts` is commented out — so a library published by somebody else would
-         * read as empty forever. A `Promise` means the sync went off in the
-         * background, which is what was wanted, so it is swallowed and only a real
-         * error is rethrown.
+         * Components of the shelf. Nothing asks the land to sync here: every read
+         * of a pawn goes through `$giper_baza_land.sand_ordered()`, which syncs
+         * first, so a library published by somebody else arrives by being read.
          */
         parts(): readonly $bog_vmap_lib_land_part[];
         /**
@@ -51574,99 +51570,101 @@ declare namespace $ {
 		ReturnType< $mol_string['hint'] >
 	>
 	type $mol_string__value_bog_vmap_app_32 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['root_title'] >
+		ReturnType< $bog_vmap_app['root_draft'] >
 		,
 		ReturnType< $mol_string['value'] >
 	>
-	type $mol_button_download__title_bog_vmap_app_33 = $mol_type_enforce<
+	type $mol_string__submit_bog_vmap_app_33 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['root_submit'] >
+		,
+		ReturnType< $mol_string['submit'] >
+	>
+	type $mol_string__event_bog_vmap_app_34 = $mol_type_enforce<
+		({ 
+			blur( next?: ReturnType< $bog_vmap_app['root_submit'] > ): ReturnType< $bog_vmap_app['root_submit'] >,
+		})  & ReturnType< $mol_string['event'] >
+		,
+		ReturnType< $mol_string['event'] >
+	>
+	type $mol_button_download__title_bog_vmap_app_35 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_title'] >
 		,
 		ReturnType< $mol_button_download['title'] >
 	>
-	type $mol_button_download__hint_bog_vmap_app_34 = $mol_type_enforce<
+	type $mol_button_download__hint_bog_vmap_app_36 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_hint'] >
 		,
 		ReturnType< $mol_button_download['hint'] >
 	>
-	type $mol_button_download__enabled_bog_vmap_app_35 = $mol_type_enforce<
+	type $mol_button_download__enabled_bog_vmap_app_37 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_ready'] >
 		,
 		ReturnType< $mol_button_download['enabled'] >
 	>
-	type $mol_button_download__blob_bog_vmap_app_36 = $mol_type_enforce<
+	type $mol_button_download__blob_bog_vmap_app_38 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_blob'] >
 		,
 		ReturnType< $mol_button_download['blob'] >
 	>
-	type $mol_button_download__file_name_bog_vmap_app_37 = $mol_type_enforce<
+	type $mol_button_download__file_name_bog_vmap_app_39 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_file'] >
 		,
 		ReturnType< $mol_button_download['file_name'] >
 	>
-	type $mol_view__sub_bog_vmap_app_38 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_40 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_39 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_41 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_40 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_42 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_41 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_43 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_42 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_44 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_restart'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $bog_vmap_app_scenes__store_bog_vmap_app_43 = $mol_type_enforce<
+	type $bog_vmap_app_scenes__store_bog_vmap_app_45 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['store'] >
 		,
 		ReturnType< $bog_vmap_app_scenes['store'] >
 	>
-	type $bog_vmap_app_shelf__links_bog_vmap_app_44 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__links_bog_vmap_app_46 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['links'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['links'] >
 	>
-	type $bog_vmap_app_shelf__pack_link_bog_vmap_app_45 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__pack_link_bog_vmap_app_47 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['pack_link'] >
 	>
-	type $bog_vmap_app_shelf__land_classes_bog_vmap_app_46 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__land_classes_bog_vmap_app_48 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lib_classes'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['land_classes'] >
 	>
-	type $bog_vmap_app_shelf__place_bog_vmap_app_47 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__place_bog_vmap_app_49 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['shelf_place'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['place'] >
 	>
-	type $mol_bar__sub_bog_vmap_app_48 = $mol_type_enforce<
+	type $mol_bar__sub_bog_vmap_app_50 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_bar['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_49 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_50 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['export_rows'] >
-		,
-		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_view__sub_bog_vmap_app_51 = $mol_type_enforce<
 		readonly(any)[]
@@ -51674,7 +51672,7 @@ declare namespace $ {
 		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_view__sub_bog_vmap_app_52 = $mol_type_enforce<
-		readonly(any)[]
+		ReturnType< $bog_vmap_app['export_rows'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
@@ -51684,7 +51682,7 @@ declare namespace $ {
 		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_view__sub_bog_vmap_app_54 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['body_main'] >
+		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
@@ -51694,96 +51692,106 @@ declare namespace $ {
 		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_view__sub_bog_vmap_app_56 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['aside_content'] >
+		ReturnType< $bog_vmap_app['body_main'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_app_inspect__source_bog_vmap_app_57 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_source'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['source'] >
-	>
-	type $bog_vmap_app_inspect__peers_bog_vmap_app_58 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_peers'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['peers'] >
-	>
-	type $bog_vmap_app_inspect__pack_bog_vmap_app_59 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['pack_link'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['pack'] >
-	>
-	type $bog_vmap_app_inspect__class_title_bog_vmap_app_60 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_title'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['class_title'] >
-	>
-	type $bog_vmap_app_inspect__title_note_bog_vmap_app_61 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_title_note'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['title_note'] >
-	>
-	type $mol_view__sub_bog_vmap_app_62 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_57 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_app_code__klass_bog_vmap_app_63 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_58 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['aside_content'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $bog_vmap_app_inspect__source_bog_vmap_app_59 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_source'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['source'] >
+	>
+	type $bog_vmap_app_inspect__peers_bog_vmap_app_60 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_peers'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['peers'] >
+	>
+	type $bog_vmap_app_inspect__pack_bog_vmap_app_61 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['pack_link'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['pack'] >
+	>
+	type $bog_vmap_app_inspect__class_title_bog_vmap_app_62 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_title'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['class_title'] >
+	>
+	type $bog_vmap_app_inspect__title_note_bog_vmap_app_63 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_title_note'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['title_note'] >
+	>
+	type $mol_view__sub_bog_vmap_app_64 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $bog_vmap_app_code__klass_bog_vmap_app_65 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_klass'] >
 		,
 		ReturnType< $bog_vmap_app_code['klass'] >
 	>
-	type $bog_vmap_app_code__prop_bog_vmap_app_64 = $mol_type_enforce<
+	type $bog_vmap_app_code__prop_bog_vmap_app_66 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_prop'] >
 		,
 		ReturnType< $bog_vmap_app_code['prop'] >
 	>
-	type $bog_vmap_app_code__hooks_bog_vmap_app_65 = $mol_type_enforce<
+	type $bog_vmap_app_code__hooks_bog_vmap_app_67 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_hooks'] >
 		,
 		ReturnType< $bog_vmap_app_code['hooks'] >
 	>
-	type $bog_vmap_app_code__whole_bog_vmap_app_66 = $mol_type_enforce<
+	type $bog_vmap_app_code__whole_bog_vmap_app_68 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_whole'] >
 		,
 		ReturnType< $bog_vmap_app_code['whole'] >
 	>
-	type $bog_vmap_app_code__source_bog_vmap_app_67 = $mol_type_enforce<
+	type $bog_vmap_app_code__source_bog_vmap_app_69 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['source'] >
 	>
-	type $bog_vmap_app_code__node_source_bog_vmap_app_68 = $mol_type_enforce<
+	type $bog_vmap_app_code__node_source_bog_vmap_app_70 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['node_source'] >
 	>
-	type $bog_vmap_app_code__js_bog_vmap_app_69 = $mol_type_enforce<
+	type $bog_vmap_app_code__js_bog_vmap_app_71 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_js'] >
 		,
 		ReturnType< $bog_vmap_app_code['js'] >
 	>
-	type $bog_vmap_app_code__css_bog_vmap_app_70 = $mol_type_enforce<
+	type $bog_vmap_app_code__css_bog_vmap_app_72 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_css'] >
 		,
 		ReturnType< $bog_vmap_app_code['css'] >
 	>
-	type $bog_vmap_app_code__error_bog_vmap_app_71 = $mol_type_enforce<
+	type $bog_vmap_app_code__error_bog_vmap_app_73 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_error'] >
 		,
 		ReturnType< $bog_vmap_app_code['error'] >
 	>
-	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_72 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_74 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['pack'] >
 	>
-	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_73 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_75 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lands'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['lands'] >
 	>
-	type $mol_view__style_bog_vmap_app_74 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_76 = $mol_type_enforce<
 		({ 
 			'left': ReturnType< $bog_vmap_app['ghost_left'] >,
 			'top': ReturnType< $bog_vmap_app['ghost_top'] >,
@@ -51791,92 +51799,92 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_75 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_77 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_app_pane__scene_bundle_bog_vmap_app_76 = $mol_type_enforce<
+	type $bog_vmap_app_pane__scene_bundle_bog_vmap_app_78 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_bundle'] >
 		,
 		ReturnType< $bog_vmap_app_pane['scene_bundle'] >
 	>
-	type $bog_vmap_app_pane__pack_uri_bog_vmap_app_77 = $mol_type_enforce<
+	type $bog_vmap_app_pane__pack_uri_bog_vmap_app_79 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_script'] >
 		,
 		ReturnType< $bog_vmap_app_pane['pack_uri'] >
 	>
-	type $bog_vmap_app_pane__doc_src_bog_vmap_app_78 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_src_bog_vmap_app_80 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_src'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_src'] >
 	>
-	type $bog_vmap_app_pane__doc_css_bog_vmap_app_79 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_css_bog_vmap_app_81 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_css'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_css'] >
 	>
-	type $bog_vmap_app_pane__spots_bog_vmap_app_80 = $mol_type_enforce<
+	type $bog_vmap_app_pane__spots_bog_vmap_app_82 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['spots'] >
 		,
 		ReturnType< $bog_vmap_app_pane['spots'] >
 	>
-	type $bog_vmap_app_pane__selected_bog_vmap_app_81 = $mol_type_enforce<
+	type $bog_vmap_app_pane__selected_bog_vmap_app_83 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['selected'] >
 		,
 		ReturnType< $bog_vmap_app_pane['selected'] >
 	>
-	type $bog_vmap_app_pane__doc_js_bog_vmap_app_82 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_js_bog_vmap_app_84 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_js'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_js'] >
 	>
-	type $bog_vmap_app_pane__doc_root_bog_vmap_app_83 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_root_bog_vmap_app_85 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_root'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_root'] >
 	>
-	type $bog_vmap_app_pane__libs_bog_vmap_app_84 = $mol_type_enforce<
+	type $bog_vmap_app_pane__libs_bog_vmap_app_86 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['libs'] >
 		,
 		ReturnType< $bog_vmap_app_pane['libs'] >
 	>
-	type $bog_vmap_app_pane__hole_allowed_bog_vmap_app_85 = $mol_type_enforce<
+	type $bog_vmap_app_pane__hole_allowed_bog_vmap_app_87 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['hole_allowed'] >
 		,
 		ReturnType< $bog_vmap_app_pane['hole_allowed'] >
 	>
-	type $bog_vmap_app_pane__wires_bog_vmap_app_86 = $mol_type_enforce<
+	type $bog_vmap_app_pane__wires_bog_vmap_app_88 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_wires'] >
 		,
 		ReturnType< $bog_vmap_app_pane['wires'] >
 	>
-	type $bog_vmap_app_pane__part_ports_bog_vmap_app_87 = $mol_type_enforce<
+	type $bog_vmap_app_pane__part_ports_bog_vmap_app_89 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['part_ports'] >
 		,
 		ReturnType< $bog_vmap_app_pane['part_ports'] >
 	>
-	type $bog_vmap_app_pane__link_add_bog_vmap_app_88 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_add_bog_vmap_app_90 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_add'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_add'] >
 	>
-	type $bog_vmap_app_pane__link_drop_bog_vmap_app_89 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_drop_bog_vmap_app_91 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_drop'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_drop'] >
 	>
-	type $bog_vmap_app_pane__containers_bog_vmap_app_90 = $mol_type_enforce<
+	type $bog_vmap_app_pane__containers_bog_vmap_app_92 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_containers'] >
 		,
 		ReturnType< $bog_vmap_app_pane['containers'] >
 	>
-	type $bog_vmap_app_pane__axis_bog_vmap_app_91 = $mol_type_enforce<
+	type $bog_vmap_app_pane__axis_bog_vmap_app_93 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_axis'] >
 		,
 		ReturnType< $bog_vmap_app_pane['axis'] >
 	>
-	type $bog_vmap_app_pane__tree_move_bog_vmap_app_92 = $mol_type_enforce<
+	type $bog_vmap_app_pane__tree_move_bog_vmap_app_94 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['tree_move'] >
 		,
 		ReturnType< $bog_vmap_app_pane['tree_move'] >
@@ -51906,7 +51914,8 @@ declare namespace $ {
 		node_js( ): string
 		node_css( ): string
 		Publish( ): $bog_vmap_app_publish
-		root_title( next?: string ): string
+		root_draft( next?: string ): string
+		root_submit( next?: any ): any
 		Root_name( ): $mol_string
 		export_title( ): string
 		export_hint( ): string
@@ -52673,7 +52682,21 @@ declare namespace $.$$ {
          */
         class_rename(name: string, next: string): void;
         /**
-         * Name of the root class as the toolbar field edits it, in both directions.
+         * What stands in the field of the root name, keyed by the name it started
+         * from.
+         *
+         * A draft, because the rename is committed on Enter and on blur: between the
+         * two the field holds a name the document does not have. Keyed by the current
+         * name so that a rename that lands starts a fresh draft — there is no state
+         * to reset and none to go stale. The same shape as the name of a node in the
+         * inspector, and for the same reason.
+         */
+        root_draft_at(name: string, next?: string): string;
+        root_draft(next?: string): string;
+        /** Commits the draft, and says nothing when there is nothing to commit. */
+        root_submit(event?: Event): void;
+        /**
+         * Name of the root class as the toolbar field commits it, in both directions.
          *
          * This is the name the folder of an export is made of — section 10 — so the
          * field stands beside the download button that spells the folder out. A

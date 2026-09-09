@@ -3391,9 +3391,18 @@ $bog_vmap_app $mol_view
 			- out the folder it chooses. The folder of an export follows from the
 			- class names — section 10 — so this field and that title are two halves
 			- of one decision and stand together.
+			-
+			- Committed on Enter and on leaving the field, NEVER on a keystroke, the
+			- same as the name of a node in the inspector: a rename rewrites the
+			- document and remakes the node that holds the class, so writing per
+			- letter would rename the class to every prefix of what is being typed.
 			<= Root_name $mol_string
 				hint \Имя корневого класса
-				value? <=> root_title? \
+				value? <=> root_draft? \
+				submit? <=> root_submit? null
+				event *
+					^
+					blur? <=> root_submit? null
 			- Sources of the document, as one archive of a real MAM module. The whole
 			- promise of the tool ends here, so the folder the module must go to is
 			- written in the title itself and not only in the hint: section 10 says

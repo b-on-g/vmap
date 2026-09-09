@@ -17577,26 +17577,12 @@ var $;
             return null;
         }
         /**
-         * Components of the shelf, with their land asked to sync on the way.
-         *
-         * A land reached by a link alone does not sync itself — the `.sync()` in
-         * `land.ts` is commented out — so a library published by somebody else would
-         * read as empty forever. A `Promise` means the sync went off in the
-         * background, which is what was wanted, so it is swallowed and only a real
-         * error is rethrown.
+         * Components of the shelf. Nothing asks the land to sync here: every read
+         * of a pawn goes through `$giper_baza_land.sand_ordered()`, which syncs
+         * first, so a library published by somebody else arrives by being read.
          */
         parts() {
-            const shelf = this.shelf();
-            if (!shelf)
-                return [];
-            try {
-                shelf.land().sync();
-            }
-            catch (error) {
-                if (!(error instanceof Promise))
-                    $mol_fail_hidden(error);
-            }
-            return shelf.parts();
+            return this.shelf()?.parts() ?? [];
         }
         /**
          * Declarations of every component, in one text.
@@ -34082,14 +34068,20 @@ var $;
 			(obj.classes) = () => ([(this.doc_root())]);
 			return obj;
 		}
-		root_title(next){
+		root_draft(next){
 			if(next !== undefined) return next;
 			return "";
+		}
+		root_submit(next){
+			if(next !== undefined) return next;
+			return null;
 		}
 		Root_name(){
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("Имя корневого класса");
-			(obj.value) = (next) => ((this.root_title(next)));
+			(obj.value) = (next) => ((this.root_draft(next)));
+			(obj.submit) = (next) => ((this.root_submit(next)));
+			(obj.event) = () => ({...(this.$.$mol_string.prototype.event.call(obj)), "blur": (next) => (this.root_submit(next))});
 			return obj;
 		}
 		export_title(){
@@ -34463,7 +34455,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Delete"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_source"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Publish"));
-	($mol_mem(($.$bog_vmap_app.prototype), "root_title"));
+	($mol_mem(($.$bog_vmap_app.prototype), "root_draft"));
+	($mol_mem(($.$bog_vmap_app.prototype), "root_submit"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Root_name"));
 	($mol_mem(($.$bog_vmap_app.prototype), "export_blob"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Download"));
@@ -35754,7 +35747,30 @@ var $;
                 }
             }
             /**
-             * Name of the root class as the toolbar field edits it, in both directions.
+             * What stands in the field of the root name, keyed by the name it started
+             * from.
+             *
+             * A draft, because the rename is committed on Enter and on blur: between the
+             * two the field holds a name the document does not have. Keyed by the current
+             * name so that a rename that lands starts a fresh draft — there is no state
+             * to reset and none to go stale. The same shape as the name of a node in the
+             * inspector, and for the same reason.
+             */
+            root_draft_at(name, next) {
+                return next ?? name;
+            }
+            root_draft(next) {
+                return this.root_draft_at(this.doc_root(), next);
+            }
+            /** Commits the draft, and says nothing when there is nothing to commit. */
+            root_submit(event) {
+                const draft = this.root_draft();
+                if (!draft || draft === this.doc_root())
+                    return;
+                this.root_title(draft);
+            }
+            /**
+             * Name of the root class as the toolbar field commits it, in both directions.
              *
              * This is the name the folder of an export is made of — section 10 — so the
              * field stands beside the download button that spells the folder out. A
@@ -35917,6 +35933,12 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "class_rename", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "root_draft_at", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "root_submit", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "root_title_note", null);
@@ -47647,6 +47669,21 @@ var $;
             $mol_assert_equal(one.title(), 'Вторая');
         },
         /**
+         * The premise the library rests on: a land syncs itself on every read of a
+         * pawn, through `sand_ordered()`, so nobody has to ask. A `sync()` called by
+         * hand used to sit in `parts()` on the belief that it did not.
+         */
+        'reading the parts of a shelf syncs their land unasked'($) {
+            const one = shelf($);
+            const land = one.land();
+            let synced = 0;
+            land.sync = () => { synced++; return land; };
+            part(one, card_src);
+            const lib = $bog_vmap_lib_land.make({ $, shelf: () => one });
+            $mol_assert_equal(lib.parts().length, 1);
+            $mol_assert_ok(synced > 0);
+        },
+        /**
          * The palette field in one object: a pack with a land on top. A land class
          * inheriting a pack class, and another land class inheriting that one, both
          * resolve their chain down into the pack — one namespace, as section 5 says.
@@ -50749,6 +50786,28 @@ var $;
             $mol_assert_equal(JSON.stringify(app.doc_wires()), wires);
             // The text differs in the class name and in nothing else.
             $mol_assert_equal(app.doc_source(), source.replace(`${d}bog_vmap_app_page`, `${d}my_site_page`));
+        },
+        /**
+         * Typing is not renaming. Every letter of a name is a prefix of it, and most
+         * prefixes of a class name are legal class names, so a field that wrote per
+         * keystroke would rename the class — and remake the node that holds it — once
+         * per letter. The field holds a draft and the rename happens on Enter or on
+         * leaving it, exactly as the name of a node does in the inspector.
+         */
+        'the root name is committed on submit and not on a keystroke'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            const before = app.doc_source();
+            app.root_draft(`${d}my`);
+            app.root_draft(`${d}my_site`);
+            app.root_draft(`${d}my_site_page`);
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(app.doc_root(), `${d}bog_vmap_app_page`);
+            app.root_submit();
+            $mol_assert_equal(app.doc_root(), `${d}my_site_page`);
+            // The draft is keyed by the name it started from, so the field now shows
+            // the new name with nothing to clear.
+            $mol_assert_equal(app.root_draft(), `${d}my_site_page`);
         },
         /**
          * A name that cannot become a folder is refused where it was typed, in words,
