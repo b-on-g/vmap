@@ -6643,6 +6643,69 @@ var $;
             ].join('\n'));
         },
         /**
+         * Renaming a class moves the name of the class and nothing else about the
+         * document: the properties keep their names, their order and their values,
+         * so the pick, the placement and the wires of the editor — all keyed by
+         * property name — have nothing to be orphaned by.
+         */
+        'renaming a class touches the class name alone'($) {
+            const d1 = pair_doc();
+            d1.class_rename(`${d}bog_vmap_lang_test_one`, `${d}my_site_page`);
+            $mol_assert_equal(d1.source(), [
+                `${d}my_site_page ${d}mol_view`,
+                `	label \\Первая`,
+                `	count 1`,
+                `${d}bog_vmap_lang_test_two ${d}mol_view`,
+                `	caption \\Вторая`,
+                `	count 2`,
+                ``,
+            ].join('\n'));
+        },
+        /**
+         * The half a rename of the declaration alone would leave broken: an heir
+         * spells its base, and a part spells the class it is declared with. Both
+         * mentions live in ANOTHER class of the document, so both are rewritten in
+         * the same write or the document stops compiling.
+         */
+        'a rename rewrites the mentions of the class in its neighbours'($) {
+            const d1 = $bog_vmap_lang_doc.make({});
+            d1.source([
+                `${d}bog_vmap_lang_test_base ${d}mol_view`,
+                `	label \\Первая`,
+                `${d}bog_vmap_lang_test_heir ${d}bog_vmap_lang_test_base`,
+                `	Card ${d}bog_vmap_lang_test_base`,
+                `	sub / <= Card`,
+                ``,
+            ].join('\n'));
+            d1.class_rename(`${d}bog_vmap_lang_test_base`, `${d}bog_vmap_lang_test_root`);
+            $mol_assert_equal(d1.source(), [
+                `${d}bog_vmap_lang_test_root ${d}mol_view label \\Первая`,
+                `${d}bog_vmap_lang_test_heir ${d}bog_vmap_lang_test_root`,
+                `	Card ${d}bog_vmap_lang_test_root`,
+                `	sub / <= Card`,
+                ``,
+            ].join('\n'));
+        },
+        /** A literal is a data node, so a class name written inside one is text. */
+        'a rename does not reach into a string'($) {
+            const d1 = $bog_vmap_lang_doc.make({});
+            d1.source(`${d}bog_vmap_lang_test_one ${d}mol_view\n\tlabel \\${d}bog_vmap_lang_test_one\n`);
+            d1.class_rename(`${d}bog_vmap_lang_test_one`, `${d}bog_vmap_lang_test_four`);
+            $mol_assert_equal(d1.source(), `${d}bog_vmap_lang_test_four ${d}mol_view label \\${d}bog_vmap_lang_test_one\n`);
+        },
+        'a rename onto a name the document already carries is refused'($) {
+            const d1 = pair_doc();
+            $mol_assert_fail(() => d1.class_rename(`${d}bog_vmap_lang_test_one`, `${d}bog_vmap_lang_test_two`), Error);
+            $mol_assert_like(d1.names(), [
+                `${d}bog_vmap_lang_test_one`,
+                `${d}bog_vmap_lang_test_two`,
+            ]);
+        },
+        'a rename of a class the document lacks is refused'($) {
+            const d1 = pair_doc();
+            $mol_assert_fail(() => d1.class_rename(`${d}bog_vmap_lang_test_absent`, `${d}bog_vmap_lang_test_four`), Error);
+        },
+        /**
          * The canvas gesture in model terms. Two parts, no wire; after a link there
          * are exactly two new lines: the wire on the root and the reference in the
          * target declaration.
@@ -7628,10 +7691,12 @@ var $;
     };
     $mol_test({
         /**
-         * One click both picks and presses. The point goes out in world units, with
-         * the camera undone the same way the hit test undoes it.
+         * The first click picks and nothing else: the body of the node stays the
+         * editor's, to carry it by. The second one on the same node lets the pointer
+         * inside, and only then does the click go on to the live component, in world
+         * units, with the camera undone the same way the hit test undoes it.
          */
-        'a press and a release without movement pick the part and relay one click'($) {
+        'the first click picks, the second lets the pointer in and relays it'($) {
             const { pane, posted } = pane_make($, { left: 10, top: 20 });
             pane.camera_shift(new $mol_vector_2d(100, 50));
             pane.camera_zoom(2);
@@ -7640,15 +7705,38 @@ var $;
             pane.node_press(pointer(210, 190));
             pane.node_release(pointer(210, 190, { buttons: 0 }));
             $mol_assert_equal(pane.selected(), 'A');
+            $mol_assert_equal(pane.inside(), false);
+            $mol_assert_equal(clicks(posted).length, 0);
+            pane.node_press(pointer(210, 190));
+            pane.node_release(pointer(210, 190, { buttons: 0 }));
+            $mol_assert_equal(pane.inside(), true);
             const sent = clicks(posted);
             $mol_assert_equal(sent.length, 1);
             $mol_assert_equal(sent[0].x, 50);
             $mol_assert_equal(sent[0].y, 60);
         },
+        /** A pick of anything else closes the hole without anybody clearing it. */
+        'picking another node puts the pointer back outside'($) {
+            const { pane } = pane_make($);
+            pane.sizes_last = { [`${root}/A`]: box(0, 0), [`${root}/B`]: box(300, 0) };
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
+            $mol_assert_equal(pane.inside(), true);
+            pane.node_press(pointer(350, 25));
+            pane.node_release(pointer(350, 25, { buttons: 0 }));
+            $mol_assert_equal(pane.selected(), 'B');
+            $mol_assert_equal(pane.inside(), false);
+            $mol_assert_equal(pane.overlay_style().clipPath, 'none');
+        },
         'the modifiers travel with the click'($) {
             const { pane, posted } = pane_make($);
-            pane.node_press(pointer(5, 5));
-            pane.node_release(pointer(5, 5, { buttons: 0, shiftKey: true, metaKey: true }));
+            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0, shiftKey: true, metaKey: true }));
             $mol_assert_like(clicks(posted)[0].mods, { altKey: false, ctrlKey: false, metaKey: true, shiftKey: true });
         },
         /** A gesture that went somewhere is a drag of the part, not a click. */
@@ -7673,23 +7761,27 @@ var $;
         },
         'a wobble within the threshold is still a click'($) {
             const { pane, posted } = pane_make($);
+            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
             pane.node_press(pointer(50, 25));
             pane.node_move(pointer(52, 27));
             pane.node_release(pointer(51, 26, { buttons: 0 }));
             $mol_assert_equal(clicks(posted).length, 1);
         },
-        /** The scene may well have something clickable on bare canvas, so the click goes out anyway. */
-        'a click on bare canvas drops the selection and is still relayed'($) {
+        /**
+         * Bare canvas drops the pick and relays nothing: there is no node there to be
+         * let inside of, and a click sent anyway would give the focus to the frame —
+         * which is where the Delete of the editor stops arriving.
+         */
+        'a click on bare canvas drops the selection and relays nothing'($) {
             const { pane, posted } = pane_make($);
             pane.sizes_last = { [`${root}/A`]: box(0, 0) };
             pane.selected('A');
             pane.node_press(pointer(500, 500));
             pane.node_release(pointer(500, 500, { buttons: 0 }));
             $mol_assert_equal(pane.selected(), null);
-            const sent = clicks(posted);
-            $mol_assert_equal(sent.length, 1);
-            $mol_assert_equal(sent[0].x, 500);
-            $mol_assert_equal(sent[0].y, 500);
+            $mol_assert_equal(clicks(posted).length, 0);
         },
         'nothing is relayed while the scene is not listening'($) {
             const { pane, posted } = pane_make($);
@@ -7717,6 +7809,10 @@ var $;
             pane.sizes_last = { [`${root}/A`]: box(30, 40, 100, 50) };
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
             pane.selected('A');
+            // Picked and no more: the ring is drawn, the overlay is still whole.
+            $mol_assert_equal(pane.overlay_style().clipPath, 'none');
+            $mol_assert_equal(pane.frame_showed(), true);
+            pane.entered('A');
             $mol_assert_like(pane.frame_box(), { left: 160, top: 130, width: 200, height: 100 });
             $mol_assert_equal(pane.overlay_style().clipPath, 'polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 160px 130px, 360px 130px, 360px 230px, 160px 230px, 160px 130px)');
             $mol_assert_like(pane.frame_style(), { left: '160px', top: '130px', width: '200px', height: '100px' });
@@ -7725,6 +7821,7 @@ var $;
             const { pane } = pane_make($);
             pane.sizes_last = { [`${root}/A`]: box(0, 0) };
             pane.selected('A');
+            pane.entered('A');
             pane.hole_allowed = () => false;
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
             // The ring itself stays: only the events stop going through.
@@ -7860,14 +7957,19 @@ var $;
         'a relayed click arms the watchdog and sizes disarm it'($) {
             timers_fake($);
             const { pane, clock, answer } = pane_make($);
+            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
             pane.warmed(true);
             // The first read pushes the document and the rest; answered, the watch rests.
             pane.watchdog();
             answer({ kind: 'sizes', sizes: {} });
             $mol_assert_equal(pane.watchdog(), null);
             clock.now++;
-            pane.node_press(pointer(5, 5));
-            pane.node_release(pointer(5, 5, { buttons: 0 }));
+            // Twice: the click that goes to the scene is the one that lets the
+            // pointer inside, and the watch is armed by what is sent, not by a pick.
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
             $mol_assert_equal(pane.watchdog() !== null, true);
             answer({ kind: 'sizes', sizes: {} });
             $mol_assert_equal(pane.watchdog(), null);
@@ -12596,81 +12698,6 @@ var $;
 var $;
 (function ($_1) {
     /**
-     * Tests of the switcher without a DOM: what it shows and what it writes, on a
-     * store whose documents live in the home land built in place. `add()` itself is
-     * not tested here — it hands the work to a fiber and answers at once; the store
-     * method it calls is tested in `app/store/`.
-     */
-    const d = '$';
-    /** Canonical `tree2` formatting, see the note in `app/store/store.test.ts`. */
-    const src_page = `${d}bog_vmap_app_scenes_test_page ${d}mol_view\n\tCalc ${d}mol_view\n\tsub / <= Calc\n`;
-    const src_hero = `${d}bog_vmap_app_scenes_test_hero ${d}mol_view\n\ttitle \\Hi\n\tsub / <= title\n`;
-    function scenes($) {
-        const store = $bog_vmap_app_store.make({
-            $,
-            doc_land_config: () => null,
-        });
-        const view = $bog_vmap_app_scenes.make({
-            $,
-            store: () => store,
-        });
-        return { store, view };
-    }
-    $mol_test({
-        'nothing to pick and nothing to name while there are no documents'($) {
-            const { view } = scenes($);
-            $mol_assert_like(view.scene_dict(), {});
-            $mol_assert_equal(view.current(), '');
-            $mol_assert_equal(view.current_exists(), false);
-            $mol_assert_equal(view.title(), '');
-            $mol_assert_equal(view.add_title(), 'Сцена 1');
-        },
-        'the picker lists every document by title, the last one open'($) {
-            const { store, view } = scenes($);
-            const first = store.doc_add('First', src_page);
-            const second = store.doc_add('Second', src_hero);
-            $mol_assert_like(view.scene_dict(), {
-                [first.link().str]: 'First',
-                [second.link().str]: 'Second',
-            });
-            $mol_assert_equal(view.current(), second.link().str);
-            $mol_assert_equal(view.current_exists(), true);
-            $mol_assert_equal(view.title(), 'Second');
-            $mol_assert_equal(view.add_title(), 'Сцена 3');
-        },
-        'picking a document changes what the store reads'($) {
-            const { store, view } = scenes($);
-            const first = store.doc_add('First', src_page);
-            store.doc_add('Second', src_hero);
-            view.current(first.link().str);
-            $mol_assert_equal(store.source(), src_page);
-            $mol_assert_equal(view.title(), 'First');
-            // Empty goes back to the default, the last one made.
-            view.current('');
-            $mol_assert_equal(store.source(), src_hero);
-            // So does something that is not a link. (`nonsense` would be one: eight
-            // letters is a valid link.)
-            view.current(first.link().str);
-            view.current('not a link');
-            $mol_assert_equal(store.source(), src_hero);
-        },
-        'renaming writes the title of the open document and shows in the picker'($) {
-            const { store, view } = scenes($);
-            const first = store.doc_add('First', src_page);
-            const second = store.doc_add('Second', src_hero);
-            view.title('Landing');
-            $mol_assert_equal(second.title(), 'Landing');
-            $mol_assert_equal(first.title(), 'First');
-            $mol_assert_equal(view.scene_dict()[second.link().str], 'Landing');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
      * Tests of publishing, on lands built in place.
      *
      * No master and no proof of work: `shelf_land_config` hands in the home land,
@@ -13102,6 +13129,192 @@ var $;
             palette.links('');
             $mol_assert_like(palette.Lib().class_list(), [`${d}mol_view`, `${d}my_card`]);
             $mol_assert_ok([...palette.Lib().props_map(`${d}my_card`).keys()].includes('sub'));
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * Tests of the list without a DOM: what it shows and what it writes, on a
+     * store whose documents live in the home land built in place. `add()` itself is
+     * not tested here — it hands the work to a fiber and answers at once; the store
+     * method it calls is tested in `app/store/`.
+     */
+    const d = '$';
+    /** Canonical `tree2` formatting, see the note in `app/store/store.test.ts`. */
+    const src_page = `${d}bog_vmap_app_scenes_test_page ${d}mol_view\n\tCalc ${d}mol_view\n\tsub / <= Calc\n`;
+    const src_hero = `${d}bog_vmap_app_scenes_test_hero ${d}mol_view\n\ttitle \\Hi\n\tsub / <= title\n`;
+    function scenes($) {
+        const store = $bog_vmap_app_store.make({
+            $,
+            doc_land_config: () => null,
+        });
+        const view = $bog_vmap_app_scenes.make({
+            $,
+            store: () => store,
+        });
+        return { store, view };
+    }
+    $mol_test({
+        'nothing to pick and nothing to name while there are no documents'($) {
+            const { view } = scenes($);
+            $mol_assert_like(view.scene_links(), []);
+            $mol_assert_equal(view.current(), '');
+            $mol_assert_equal(view.current_exists(), false);
+            $mol_assert_equal(view.title(), '');
+            $mol_assert_equal(view.add_title(), 'Сцена 1');
+        },
+        'the list carries every document by title, the last one open'($) {
+            const { store, view } = scenes($);
+            const first = store.doc_add('First', src_page);
+            const second = store.doc_add('Second', src_hero);
+            $mol_assert_like(view.scene_links(), [first.link().str, second.link().str]);
+            $mol_assert_like(view.scene_links().map(link => view.scene_title(link)), ['First', 'Second']);
+            // The open one is the current row and the only one.
+            $mol_assert_like(view.scene_links().map(link => view.scene_current(link)), [false, true]);
+            $mol_assert_equal(view.current(), second.link().str);
+            $mol_assert_equal(view.current_exists(), true);
+            $mol_assert_equal(view.title(), 'Second');
+            $mol_assert_equal(view.add_title(), 'Сцена 3');
+        },
+        'picking a document changes what the store reads'($) {
+            const { store, view } = scenes($);
+            const first = store.doc_add('First', src_page);
+            store.doc_add('Second', src_hero);
+            view.current(first.link().str);
+            $mol_assert_equal(store.source(), src_page);
+            $mol_assert_equal(view.title(), 'First');
+            // Empty goes back to the default, the last one made.
+            view.current('');
+            $mol_assert_equal(store.source(), src_hero);
+            // So does something that is not a link. (`nonsense` would be one: eight
+            // letters is a valid link.)
+            view.current(first.link().str);
+            view.current('not a link');
+            $mol_assert_equal(store.source(), src_hero);
+        },
+        'renaming writes the title of the open document and shows in the list'($) {
+            const { store, view } = scenes($);
+            const first = store.doc_add('First', src_page);
+            const second = store.doc_add('Second', src_hero);
+            view.title('Landing');
+            $mol_assert_equal(second.title(), 'Landing');
+            $mol_assert_equal(first.title(), 'First');
+            $mol_assert_equal(view.scene_title(second.link().str), 'Landing');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * Tests of the shelf model: what a ready made item leaves in the document.
+     *
+     * No DOM and no network here. The wire of the pair is checked through
+     * `links()` of the document itself rather than by reading the text, because a
+     * wire written the wrong way still reads plausibly — the five traps of section
+     * 1 all look like a wire and all build green.
+     *
+     * `d` keeps `$` out of the fixtures: mam builds its dependency graph by a
+     * regexp over sources, string literals included.
+     */
+    const d = '$';
+    const root_src = `${d}bog_vmap_app_shelf_test_page ${d}mol_view\n\tsub /\n`;
+    function doc($, src = root_src) {
+        const node = $bog_vmap_lang_node.make({ $ });
+        node.source(src);
+        return node;
+    }
+    /** The same free name rule the editor uses: the name, or the name with a number. */
+    function freer(node) {
+        return (head) => {
+            const taken = new Set(node.prop_names());
+            if (!taken.has(head))
+                return head;
+            for (let i = 2;; ++i) {
+                const name = `${head}_${i}`;
+                if (!taken.has(name))
+                    return name;
+            }
+        };
+    }
+    function preset(id) {
+        return $bog_vmap_app_shelf_presets().find(item => item.id === id).source;
+    }
+    $mol_test({
+        'the shelf offers ready made things and every one of them is a class'($) {
+            const items = $bog_vmap_app_shelf_presets();
+            $mol_assert_like(items.map(item => item.id), ['block', 'calc', 'map', 'pair']);
+            for (const item of items) {
+                $mol_assert_ok(item.title);
+                $mol_assert_ok(item.hint);
+                // Parses as a class, or the item could never be laid down.
+                $mol_assert_ok($bog_vmap_lang_node.make({ $, source: () => item.source }).tree());
+            }
+        },
+        'a one part item leaves a declaration and a name to place'($) {
+            const node = doc($);
+            const placed = $.$bog_vmap_app_shelf_apply(node, preset('calc'), freer(node));
+            $mol_assert_like(placed, ['Calc']);
+            $mol_assert_like(node.part_names(), ['Calc']);
+            // Placement is the canvas's business, so `sub` is untouched here.
+            $mol_assert_like(node.sub_names(''), []);
+        },
+        'overrides of a part come across'($) {
+            const node = doc($);
+            $.$bog_vmap_app_shelf_apply(node, preset('map'), freer(node));
+            const style = node.over_tree('Map', 'style');
+            $mol_assert_equal(Boolean(style), true);
+            $mol_assert_equal(style.toString().includes('320px'), true);
+        },
+        'the pair lands as one node holding both parts, wired'($) {
+            const node = doc($);
+            const placed = $.$bog_vmap_app_shelf_apply(node, preset('pair'), freer(node));
+            // One name to place: the wrapper. Both parts hang inside it by tree.
+            $mol_assert_like(placed, ['Pair']);
+            $mol_assert_like(node.sub_names('Pair'), ['Calc', 'Map']);
+            const links = node.links();
+            $mol_assert_equal(links.length, 1);
+            $mol_assert_equal(links[0].from, 'Calc');
+            $mol_assert_equal(links[0].from_prop, 'result');
+            $mol_assert_equal(links[0].to, 'Map');
+            $mol_assert_equal(links[0].to_prop, 'zoom');
+        },
+        'a second copy takes free names, and its wire and its tree follow them'($) {
+            const node = doc($);
+            $.$bog_vmap_app_shelf_apply(node, preset('pair'), freer(node));
+            const placed = $.$bog_vmap_app_shelf_apply(node, preset('pair'), freer(node));
+            $mol_assert_like(placed, ['Pair_2']);
+            // The wrapper of the second copy holds the parts of the second copy and
+            // not the first: a reference that did not follow the rename would be the
+            // silent kind of wrong, drawing one calculator inside two boxes.
+            $mol_assert_like(node.sub_names('Pair_2'), ['Calc_2', 'Map_2']);
+            const links = node.links();
+            $mol_assert_equal(links.length, 2);
+            $mol_assert_like(links.map(link => [link.from, link.to]), [['Calc', 'Map'], ['Calc_2', 'Map_2']]);
+        },
+        'a class of the library lays down under a name of its own'($) {
+            const node = doc($);
+            const source = $bog_vmap_app_shelf_single(`${d}mol_button_minor`);
+            const placed = $.$bog_vmap_app_shelf_apply(node, source, freer(node));
+            $mol_assert_like(placed, ['Button_minor']);
+            $mol_assert_equal(node.prop_decl('Button_minor')?.kids[0]?.type, `${d}mol_button_minor`);
+        },
+        'the wire is written once, by the model, and not copied as an override'($) {
+            const node = doc($);
+            $.$bog_vmap_app_shelf_apply(node, preset('pair'), freer(node));
+            // Exactly one property carries the `=` operator, and the far end of the
+            // wire reads it. Two wires for one link, or an override left behind by
+            // the copy, would show up as a second one here.
+            $mol_assert_equal(node.wires().length, 1);
+            const zoom = node.over_tree('Map', 'zoom');
+            $mol_assert_equal(zoom?.kids[0]?.type, '<=');
+            $mol_assert_equal(zoom?.kids[0]?.kids[0]?.type, node.wires()[0].name);
         },
     });
 })($ || ($ = {}));
@@ -13871,6 +14084,185 @@ var $;
             $mol_assert_equal(module.files[1].text.includes('export class'), false);
             $mol_assert_equal(module.files[2].text.includes('style_attach'), false);
         },
+        /**
+         * THE INVARIANT OF A DOCUMENT OF SEVERAL CLASSES: an edit of one class is an
+         * edit of one class.
+         *
+         * Measured before this was true: a drop off the palette left the text holding
+         * the root alone, because the editor edited through a model of ONE class laid
+         * over the WHOLE text — a write there serializes the class it touched as the
+         * entire document. No error, no warning, the neighbour simply gone.
+         */
+        'an edit of the root leaves the other classes byte for byte'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.doc_source([
+                `${d}bog_vmap_app_page ${d}mol_view sub /`,
+                `${d}bog_vmap_app_card ${d}mol_view title \\Карточка`,
+                ``,
+            ].join('\n'));
+            const before = app.doc_model().class_source(`${d}bog_vmap_app_card`);
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            app.node_rename('Button_minor', 'Btn');
+            app.node_delete();
+            $mol_assert_equal(app.doc_model().class_source(`${d}bog_vmap_app_card`), before);
+            $mol_assert_like(app.doc_model().names(), [
+                `${d}bog_vmap_app_page`,
+                `${d}bog_vmap_app_card`,
+            ]);
+        },
+        /**
+         * The root class is the first class of the text and follows it, so renaming
+         * it moves the folder the module is unpacked into — which is the whole reason
+         * the name is editable at all. Section 10: the folder is not free.
+         */
+        'renaming the root moves the module and the folder on the button'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            $mol_assert_equal(app.export_state().module.path, 'bog/vmap/app/page');
+            app.root_title(`${d}my_site_page`);
+            $mol_assert_equal(app.doc_root(), `${d}my_site_page`);
+            $mol_assert_equal(app.root_title(), `${d}my_site_page`);
+            const module = app.export_state().module;
+            $mol_assert_equal(module.path, 'my/site/page');
+            $mol_assert_equal(module.root, `${d}my_site_page`);
+            $mol_assert_equal(app.export_title(), 'Скачать my/site/page');
+            $mol_assert_ok(module.files[0].text.startsWith(`${d}my_site_page `));
+        },
+        /**
+         * What a rename must not cost. The pick, the placement and the wires are keyed
+         * by PROPERTY name, and a rename of the class touches no property — but the
+         * handwritten body and the styles are stored per CLASS name, so those two are
+         * carried by hand and would be lost silently without it.
+         */
+        'renaming the root carries the body and orphans nothing'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_string`, 100, 200);
+            app.part_drop(`${d}mol_button_minor`, 300, 400);
+            app.link_add({ from: 'String', from_prop: 'value', to: 'Button_minor', to_prop: 'title' });
+            app.selected('String');
+            app.root_js('greeting(){\n\treturn 1\n}\n');
+            app.root_css('[my] {\n\tcolor: red;\n}');
+            const source = app.doc_source();
+            const spots = JSON.stringify(app.spots());
+            const wires = JSON.stringify(app.doc_wires());
+            app.root_title(`${d}my_site_page`);
+            $mol_assert_equal(app.root_js(), 'greeting(){\n\treturn 1\n}\n');
+            $mol_assert_equal(app.root_css(), '[my] {\n\tcolor: red;\n}');
+            $mol_assert_equal(app.selected(), 'String');
+            $mol_assert_equal(JSON.stringify(app.spots()), spots);
+            $mol_assert_equal(JSON.stringify(app.doc_wires()), wires);
+            // The text differs in the class name and in nothing else.
+            $mol_assert_equal(app.doc_source(), source.replace(`${d}bog_vmap_app_page`, `${d}my_site_page`));
+        },
+        /**
+         * A name that cannot become a folder is refused where it was typed, in words,
+         * and the document is left alone. Without the refusal the mistake would only
+         * show up as `Root package not found` on a build machine.
+         */
+        'a root name that is not a module path is refused in words'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            const before = app.doc_source();
+            $mol_assert_equal(app.root_title('Страница'), `${d}bog_vmap_app_page`);
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_ok(app.root_title_note().includes('Страница'));
+            $mol_assert_ok(app.body().includes(app.Root_note()));
+            // A single segment is not a path either: mam resolves every underscore
+            // into a folder, and the export refuses a prefix shorter than two.
+            $mol_assert_equal(app.root_title(`${d}page`), `${d}bog_vmap_app_page`);
+            $mol_assert_equal(app.doc_source(), before);
+            // And a name another class of the document already carries.
+            app.doc_source(before + `${d}bog_vmap_app_card ${d}mol_view title \\Карточка\n`);
+            $mol_assert_equal(app.root_title(`${d}bog_vmap_app_card`), `${d}bog_vmap_app_page`);
+            $mol_assert_ok(app.root_title_note().includes('already declared'));
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    /**
+     * What a person does with a part right after putting it on the canvas: carry it,
+     * click into it, delete it. Every one of the three was reported broken, and none
+     * of them is broken in the model — the overlay used to be cut open under the
+     * picked part, so the frame took the presses and the focus.
+     *
+     * `d` keeps `$` out of the string literals — mam builds its dependency graph by
+     * a regexp over sources, literals included.
+     */
+    const d = '$';
+    const calc = `${d}flow_calc`;
+    const map = `${d}flow_map`;
+    $mol_test({
+        'a dropped part is carried by a drag across its body'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
+            // The overlay is whole: the body of the part just dropped is the handle.
+            $mol_assert_equal(stage.pane.overlay_style().clipPath, 'none');
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            stage.press(overlay, from);
+            stage.move(overlay, [from[0] + 60, from[1] + 40]);
+            stage.release(overlay, [from[0] + 60, from[1] + 40]);
+            stage.redraw();
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 260, y: 190 } });
+        },
+        'the second click lets the pointer inside the part, Escape takes it back out'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([400, 150]));
+            // The first click on another part only picks it, and no click reaches the scene.
+            const before = stage.scene.sent('click_at').length;
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            $mol_assert_equal(stage.pane.inside(), false);
+            $mol_assert_equal(stage.pane.overlay_style().clipPath, 'none');
+            $mol_assert_equal(stage.scene.sent('click_at').length, before);
+            // The second one lets the pointer inside, and the click goes on to the component.
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.pane.inside(), true);
+            $mol_assert_ok(stage.pane.overlay_style().clipPath.includes('200px 150px'));
+            $mol_assert_equal(stage.scene.sent('click_at').length, before + 1);
+            const dom = $.$mol_dom_context;
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            stage.redraw();
+            $mol_assert_equal(stage.pane.inside(), false);
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+        },
+        'the Delete key takes the picked part out of the document'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([300, 100]));
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            const dom = $.$mol_dom_context;
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+            stage.redraw();
+            $mol_assert_equal(stage.app.doc_source().includes('Calc'), false);
+            $mol_assert_equal(stage.app.selected(), null);
+        },
+        'a part inside a page is carried to another position in its tree'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.click(stage.button('Артборд'));
+            const page = stage.pane.part_box('Page');
+            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
+            stage.drop(map, stage.client([page.left + 200, page.top + 250]));
+            const node = stage.app.node();
+            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
+            // Carry the second one above the first: press on it, drag up, release.
+            const overlay = stage.overlay();
+            const from = stage.part_center('Map');
+            const to = stage.client([page.left + 200, page.top + 5]);
+            stage.press(overlay, from);
+            stage.move(overlay, to);
+            stage.release(overlay, to);
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like(node.sub_names('Page'), ['Map', 'Calc']);
+        },
     });
 })($ || ($ = {}));
 
@@ -13910,17 +14302,50 @@ var $;
             stage.button('Удалить');
             stage.button('В библиотеку');
             const text = stage.text();
-            $mol_assert_ok(text.includes('Палитра'));
+            $mol_assert_ok(text.includes('Полка'));
             $mol_assert_ok(text.includes('Свойства'));
             $mol_assert_ok(text.includes('100%'));
             $mol_assert_ok(text.includes('Выберите узел на холсте'));
-            // The palette offers the classes of the pack, the `$mol_view` stub included.
-            const rows = [...stage.root.querySelectorAll('[bog_vmap_app_palette_item]')]
+            // The panel opens on ready made things, not on a catalogue of classes.
+            const shelf = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_item_row]')]
+                .map(el => el.textContent);
+            $mol_assert_like(shelf, ['Блок', 'Калькулятор', 'Карта', 'Калькулятор и карта']);
+            // The classes of the pack are a level down, folded away until asked for,
+            // and then they are all there, the `$mol_view` stub included.
+            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_palette_class_row]'), null);
+            stage.classes_open();
+            const rows = [...stage.root.querySelectorAll('[bog_vmap_app_palette_class_row]')]
                 .map(el => el.textContent);
             $mol_assert_like(rows, [`${d}mol_view`, button, calc, map]);
             // Nothing failed to draw except the frame, which stays suspended for
             // ever: jsdom never loads the sandbox page, so its `onload` never fires.
             $mol_assert_like(stage.broken(), [stage.pane.Scene(stage.pane.scene_key()).dom_id()]);
+        },
+        /**
+         * The point of the shelf: a wired pair arrives whole, by one gesture.
+         *
+         * A wire is the thing nobody guesses on their own, so the shelf carries an
+         * example of one already drawn. What lands is checked in the DOCUMENT and
+         * not by eye: a wire written the wrong way still reads plausibly, and all
+         * five traps of section 1 build green.
+         */
+        'a ready made pair lands wired, by one click on the shelf'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.click(stage.shelf_row('Калькулятор и карта'));
+            const node = stage.app.node();
+            // Both parts and the box holding them, and the box is what lies on the
+            // canvas: one thing to move, not two.
+            $mol_assert_like(node.sub_names(''), ['Pair']);
+            $mol_assert_like(node.sub_names('Pair'), ['Calc', 'Map']);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Pair']);
+            // The wire, from the result of the calculator into the zoom of the map.
+            const links = node.links();
+            $mol_assert_equal(links.length, 1);
+            $mol_assert_like([links[0].from, links[0].from_prop, links[0].to, links[0].to_prop], ['Calc', 'result', 'Map', 'zoom']);
+            // The scene compiles what the document says, byte for byte.
+            $mol_assert_equal(stage.scene.last('doc_set').src, stage.app.doc_source());
+            // Picked by the drop itself, as a dragged part is.
+            $mol_assert_equal(stage.app.selected(), 'Pair');
         },
         /**
          * A component is carried out of the palette onto the canvas: it is declared,
@@ -14282,6 +14707,7 @@ var $;
             // The palette of the document is unknown, so the standard one stands in
             // and is on screen rather than suspended.
             $mol_assert_equal(stage.app.links(), '');
+            stage.classes_open();
             stage.class_row(calc);
         },
         /**
@@ -14649,8 +15075,28 @@ var $;
             class_row(klass) {
                 return found('[bog_vmap_app_palette_item]', `palette row ${klass}`, el => el.textContent === klass);
             },
-            /** A text field, addressed by the tail of the id $mol builds out of the path to it. */
+            /** Unfolds the class list of the panel, the second level under the shelf. */
+            classes_open() {
+                app.Shelf().classes_showed(true);
+                app.dom_tree();
+                scene.flush();
+            },
+            /** A row of the shelf, addressed by what it says. */
+            shelf_row(title) {
+                return found('[bog_vmap_app_shelf_item_row]', `shelf row ${title}`, el => el.textContent === title);
+            },
+            /**
+             * A text field, addressed by the tail of the id $mol builds out of the
+             * path to it.
+             *
+             * A field of the palette is on the second level of the panel, which is
+             * folded when the editor opens, so asking for one unfolds it first: a
+             * scenario says which field it types into and should not have to say
+             * which panel it lives on.
+             */
             field(tail) {
+                if (tail.startsWith('Palette()'))
+                    this.classes_open();
                 return found('input, textarea', `field ${tail}`, el => el.getAttribute('id')?.endsWith(tail) ?? false);
             },
             overlay() {
@@ -14685,8 +15131,13 @@ var $;
              * Carries a class from the palette onto the canvas: a press on the row,
              * a move across the window, a release over the overlay. The pointer
              * moves on the window because that is where the editor listens for it.
+             *
+             * The class list is the SECOND level of the panel and is folded away
+             * when the editor opens, so the gesture starts by opening it, exactly as
+             * a person reaching for a primitive does.
              */
             drop(klass, point) {
+                this.classes_open();
                 this.press(this.class_row(klass), [10, 300]);
                 dom.dispatchEvent(pointer('pointermove', point));
                 this.release(this.overlay(), point);
