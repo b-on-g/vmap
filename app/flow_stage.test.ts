@@ -343,9 +343,20 @@ namespace $ {
 		pane.view_rect = ()=> rect
 		pane.Touch().view_rect = ()=> rect
 
-		deliver({ kind: 'ready' })
-		app.dom_tree()
-		scene.flush()
+		// A muted stand is the frame that boots and then says nothing: the scene
+		// announces itself and stops, which is what document code looping on the
+		// first compile looks like from here. The editor never sees geometry, so it
+		// never warms, and that is the state the cold watch exists for.
+		if( over.mute ) {
+			deliver({ kind: 'ready' })
+			silent = true
+			queue.length = 0
+			app.dom_tree()
+		} else {
+			deliver({ kind: 'ready' })
+			app.dom_tree()
+			scene.flush()
+		}
 
 		const found = ( selector: string, note: string, match: ( el: Element )=> boolean )=> {
 
@@ -415,6 +426,11 @@ namespace $ {
 				app.Shelf().classes_showed( true )
 				app.dom_tree()
 				scene.flush()
+			},
+
+			/** A row of the scene list, addressed by the name of the document. */
+			scene_row( title: string ) {
+				return found( '[bog_vmap_app_scenes_scene_row]', `scene row ${ title }`, el => el.textContent === title )
 			},
 
 			/** A row of the shelf, addressed by what it says. */

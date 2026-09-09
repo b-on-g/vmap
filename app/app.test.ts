@@ -1216,6 +1216,49 @@ namespace $ {
 			$mol_assert_ok( stage.text().includes( 'Узел по-прежнему называется «Calc»' ) )
 
 		},
+		/**
+		 * «Новая сцена» makes a document, opens it, and puts it in the ADDRESS —
+		 * checked through a real click on the button and a real click on a row.
+		 *
+		 * The address was the untested half: scenarios switched documents by calling
+		 * the picker directly, so nothing ever proved that a gesture reaches
+		 * `$mol_state_arg` at all. A report from the deploy that the list does not
+		 * grow and the address does not follow had no test to answer it.
+		 *
+		 * WHAT THIS CANNOT SAY ANYTHING ABOUT is the timing in a browser: the node
+		 * build of `$mol_state_arg` writes the address into a cell at once, while
+		 * the web build defers it into `$mol_after_frame`, that is into
+		 * `requestAnimationFrame` — which does not tick in a hidden tab. This test
+		 * proves the wiring; a frame is a thing only a visible window has.
+		 */
+		async 'a click on «Новая сцена» makes a scene, and the address follows the pick'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			const first = stage.store.doc_current()!.link().str
+			$mol_assert_equal( stage.store.doc_links().length, 1 )
+
+			stage.click( stage.button( 'Новая сцена' ) )
+
+			// The store makes the document in a fiber of its own, as the click does.
+			await $bog_vmap_app_flow_settle( ()=> stage.store.doc_links().length > 1 )
+			stage.redraw()
+
+			const second = stage.store.doc_current()!.link().str
+
+			$mol_assert_equal( stage.store.doc_links().length, 2 )
+			$mol_assert_ok( second !== first )
+
+			// In the address, which is what a reload and a shared link read.
+			$mol_assert_equal( $.$mol_state_arg.value( 'doc' ), second )
+
+			// Both scenes are on screen, and a click on a row moves the address back.
+			stage.click( stage.scene_row( 'Сцена 1' ) )
+
+			$mol_assert_equal( stage.store.doc_current()!.link().str, first )
+			$mol_assert_equal( $.$mol_state_arg.value( 'doc' ), first )
+
+		},
 	})
 
 }
