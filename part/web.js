@@ -5131,15 +5131,18 @@ var $;
             flex: { direction: 'row', wrap: 'wrap' },
             align: { items: 'center' },
             /**
-             * A detail, not a band. Dropped into an artboard the calculator is handed
-             * the width of the page and took all of it: measured at 1280×64 inside a
-             * desktop board, and at a phone width of 390 it ran 434 px past the edge
-             * instead of wrapping. A ceiling of its own fixes both, and `minWidth: 0`
-             * is what lets it shrink at all — a `$mol_view` in a flex row will not go
-             * below the width of its content without it.
+             * A detail, not a band. Handed the width of a page it took all of it, and
+             * on a phone width it ran past the edge instead of wrapping; a ceiling of
+             * its own fixes both.
+             *
+             * The floor is the other half of the same decision. Zero is what lets a view
+             * in a flex row shrink below its content at all, but zero also lets it
+             * shrink to nothing, and a detail put down on its own has to stay visible.
+             * A real floor does both: it still gives way inside a narrow board, down to
+             * a width where the fields are still fields.
              */
             maxWidth: '22rem',
-            minWidth: 0,
+            minWidth: '12rem',
             gap: $mol_gap.space,
             padding: $mol_gap.block,
             background: { color: $mol_theme.card },
@@ -6210,7 +6213,19 @@ var $;
             // And never wider than what holds it: inside an artboard narrower than the
             // box the fixed width would run past the edge of the page.
             maxWidth: '100%',
-            minWidth: 0,
+            /**
+             * A FLOOR OF ITS OWN, and `0` here was the whole of the defect: dropped free
+             * on the canvas the map came out 0 wide and 224 tall — the height applied,
+             * the width collapsed. A free part is placed absolutely inside the root of
+             * the document, whose own width is nothing, so `max-width: 100%` resolves to
+             * zero; and a minimum of zero has nothing to stop it, while a real minimum
+             * wins over any maximum by the rules of CSS.
+             *
+             * A detail carries its own floor rather than borrowing one: inside a
+             * container it had `min-width: 320px` from the container and looked fine,
+             * which is exactly why nobody saw this until one was put down on its own.
+             */
+            minWidth: '12rem',
             border: { radius: $mol_gap.round },
             boxShadow: `0 0 0 1px ${$mol_theme.line}`,
             overflow: 'hidden',
@@ -9268,7 +9283,8 @@ var $;
             gap: $mol_gap.space,
             padding: $mol_gap.block,
             maxWidth: '28rem',
-            minWidth: 0,
+            /** A floor of its own, like every detail of the shelf: see the map. */
+            minWidth: '12rem',
             background: { color: $mol_theme.card },
             border: { radius: $mol_gap.round },
             boxShadow: `0 0 0 1px ${$mol_theme.line}`,
@@ -10996,7 +11012,14 @@ var $;
             width: '24rem',
             height: '14rem',
             maxWidth: '100%',
-            minWidth: 0,
+            /**
+             * The same floor the map carries, and for the same reason: `max-width: 100%`
+             * against the root of a document, which has no width of its own, resolves to
+             * zero, and a minimum of zero lets the box collapse to a strip. A minimum
+             * beats a maximum in CSS, so this is what keeps a chart put down on its own
+             * visible.
+             */
+            minWidth: '12rem',
             padding: $mol_gap.block,
             background: { color: $mol_theme.card },
             border: { radius: $mol_gap.round },
