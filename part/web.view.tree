@@ -1011,6 +1011,14 @@ $mol_text_list_item $mol_paragraph
 - The showcase page this used to be — a title, a demo wiring and seventeen
 - components with sample values in them — was scaffolding for a palette that no
 - longer opens first. What it proved is proved by the tests instead.
+-
+- BEFORE SHORTENING THE LIST, a measurement, 09.09.2026. The bundle carries 84
+- classes counting the stub, three of them ours, and 33 of the 84 exist to serve
+- exactly two names below: `$mol_text` and `$mol_select`. Without those two the
+- pack is 51 classes. They stay, because inside a block there is nothing else to
+- lay out text and a dropdown with, and because the whole of mol is one address
+- away for anyone who wants it. Cutting anything here empties the second level of
+- the panel, not the showcase — the showcase is already gone.
 $bog_vmap_part $mol_view
 	- The parts of this pack. Everything else below is mol itself, carried along
 	- so that a page can be laid out and not only assembled.

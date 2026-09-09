@@ -5855,6 +5855,16 @@ var $;
         $mol_style_define($bog_vmap_part_calc, {
             flex: { direction: 'row', wrap: 'wrap' },
             align: { items: 'center' },
+            /**
+             * A detail, not a band. Dropped into an artboard the calculator is handed
+             * the width of the page and took all of it: measured at 1280×64 inside a
+             * desktop board, and at a phone width of 390 it ran 434 px past the edge
+             * instead of wrapping. A ceiling of its own fixes both, and `minWidth: 0`
+             * is what lets it shrink at all — a `$mol_view` in a flex row will not go
+             * below the width of its content without it.
+             */
+            maxWidth: '22rem',
+            minWidth: 0,
             gap: $mol_gap.space,
             padding: $mol_gap.block,
             background: { color: $mol_theme.card },
@@ -6806,6 +6816,10 @@ var $;
             // A fixed box: a map without a size is a map nobody sees on the canvas
             width: '20rem',
             height: '14rem',
+            // And never wider than what holds it: inside an artboard narrower than the
+            // box the fixed width would run past the edge of the page.
+            maxWidth: '100%',
+            minWidth: 0,
             border: { radius: $mol_gap.round },
             boxShadow: `0 0 0 1px ${$mol_theme.line}`,
             overflow: 'hidden',
