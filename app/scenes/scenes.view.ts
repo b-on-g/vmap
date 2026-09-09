@@ -1,7 +1,7 @@
 namespace $.$$ {
 
 	/**
-	 * Switcher of documents for the head bar of the editor.
+	 * List of documents down the left edge of the editor.
 	 *
 	 * Every accessor that writes into the store is a plain method: the values
 	 * behind them are atoms, and a `@ $mol_mem` in front of an atom freezes at the
@@ -12,23 +12,38 @@ namespace $.$$ {
 	export class $bog_vmap_app_scenes extends $.$bog_vmap_app_scenes {
 
 		/**
-		 * Titles by link, for the picker.
+		 * Links of the documents, as strings, in the order the store keeps them.
 		 *
-		 * Read only, so memoization is safe and worth having: `$mol_select` derives
-		 * its option list from this dictionary, and deep comparison in the cell
-		 * spares it a rebuild on every unrelated change of the land.
+		 * Read only, so memoization is safe and worth having: the list is rebuilt
+		 * from the land on every unrelated change of it, and deep comparison in the
+		 * cell spares the rows a rebuild.
 		 */
 		@ $mol_mem
-		override scene_dict() {
+		scene_links(): readonly string[] {
+			return this.store().doc_links().map( link => link.str )
+		}
 
-			const store = this.store()
-			const dict = {} as { [ link: string ]: string }
+		scene_rows() {
+			return this.scene_links().map( link => this.Scene_row( link ) )
+		}
 
-			for( const link of store.doc_links() ) {
-				dict[ link.str ] = store.doc( link ).title()
-			}
+		/** The link object behind a string, or nothing when it is gone from the list. */
+		scene_link( link: string ) {
+			return this.store().doc_links().find( item => item.str === link ) ?? null
+		}
 
-			return dict
+		scene_title( link: string ) {
+			const found = this.scene_link( link )
+			return found ? this.store().doc( found ).title() : ''
+		}
+
+		scene_current( link: string ) {
+			return link === this.current()
+		}
+
+		@ $mol_action
+		scene_click( link: string, event?: Event | null ) {
+			this.current( link )
 		}
 
 		/**

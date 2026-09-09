@@ -954,25 +954,32 @@ namespace $.$$ {
 			return this.Pane() as $.$$.$bog_vmap_app_pane
 		}
 
-		/** Palette methods used here live in $.$$ as well. */
-		palette() {
-			return this.Palette() as $.$$.$bog_vmap_app_palette
+		/** Shelf methods used here live in $.$$ as well. */
+		shelf() {
+			return this.Shelf() as $.$$.$bog_vmap_app_shelf
 		}
 
+		/**
+		 * The piece the pointer is carrying, or nothing while it carries nothing.
+		 *
+		 * One value for both levels of the panel: a ready made item and a class of
+		 * the pack differ in how their source is made and in nothing else by the
+		 * time they reach the canvas.
+		 */
 		dragged() {
-			return this.Palette().dragged()
+			return this.shelf().drag_source()
 		}
 
 		ghost_title() {
-			return this.dragged()
+			return this.shelf().drag_title()
 		}
 
 		ghost_left() {
-			return this.Palette().drag_x() + 'px'
+			return this.Shelf().drag_x() + 'px'
 		}
 
 		ghost_top() {
-			return this.Palette().drag_y() + 'px'
+			return this.Shelf().drag_y() + 'px'
 		}
 
 		/**
@@ -1008,8 +1015,8 @@ namespace $.$$ {
 			if( !event ) return
 			if( !this.dragged() ) return
 
-			this.Palette().drag_x( event.clientX )
-			this.Palette().drag_y( event.clientY )
+			this.Shelf().drag_x( event.clientX )
+			this.Shelf().drag_y( event.clientY )
 
 		}
 
@@ -1021,15 +1028,15 @@ namespace $.$$ {
 
 			if( !event ) return
 
-			const klass = this.dragged()
-			if( !klass ) return
+			const source = this.dragged()
+			if( !source ) return
 
-			this.Palette().dragged( '' )
+			this.Shelf().dragged( '' )
 
 			const point = this.canvas_point( event )
 			if( !point ) return
 
-			this.part_drop( klass, point[0], point[1] )
+			this.preset_drop( source, point[0], point[1] )
 
 		}
 
@@ -1066,14 +1073,12 @@ namespace $.$$ {
 		 * A free name for a part of the given class: `$mol_button_minor` becomes
 		 * `Button_minor`, and a second one of the same class `Button_minor_2`.
 		 *
-		 * The namespace prefix goes because every class in a pack carries the same
-		 * one and it would only make the names longer, not more distinct.
+		 * The short form is the shelf's, because the shelf writes the same name into
+		 * the preset it makes out of a class, and two rules for one name would drift
+		 * apart at the first fix to either.
 		 */
 		part_name( klass: string ) {
-
-			const short = klass.replace( /^\$/, '' ).replace( /^\w+?_/, '' )
-
-			return this.name_free( short.slice( 0, 1 ).toUpperCase() + short.slice( 1 ) )
+			return this.name_free( this.$.$bog_vmap_app_shelf_short( klass ) )
 		}
 
 		/** The given name, or it with a number, whichever the document does not carry. */
@@ -1090,38 +1095,78 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Drops a component onto the canvas: one declaration and one reference.
+		 * Lays a piece of the shelf onto the canvas.
 		 *
-		 * `part_add` writes `Button_minor $mol_button_minor` at class level, which
-		 * the compiler turns into a lazy memoized property creating no DOM at all —
-		 * that is the free part of section 1. `sub_add` appends `<= Button_minor` to
-		 * `sub`, and only then does the node get rendered. Two calls because they are
-		 * two separate facts: what exists, and what is on the page.
+		 * The model writes what exists — the declarations, their overrides and their
+		 * wires — and answers with the names it left loose; where those names go is
+		 * this method's half of the work, because only the canvas knows whether the
+		 * release happened over an artboard or over open desk.
+		 *
+		 * A declaration at class level compiles into a lazy memoized property that
+		 * creates no DOM at all, which is the free part of section 1; a name gets
+		 * drawn only once something references it, and that is what the placement
+		 * below writes. Two halves because they are two separate facts: what exists,
+		 * and what is on the page.
 		 */
 		@ $mol_action
-		part_drop( klass: string, x: number, y: number ) {
+		preset_drop( source: string, x: number, y: number ) {
 
 			const node = this.node()
-			const name = this.part_name( klass )
 			const slot = this.pane().insert_slot([ x, y ])
 
-			node.part_add( name, klass )
+			const placed = this.$.$bog_vmap_app_shelf_apply(
+				node,
+				source,
+				( name: string )=> this.name_free( name ),
+			)
 
 			// Into the tree of the artboard it was dropped into, or onto the canvas
 			// by a coordinate. One gesture, two ways of being laid out, told apart
-			// by where the release happened and nowhere else.
-			if( slot ) {
-				node.sub_insert( name, slot.index, slot.owner )
-			} else {
+			// by where the release happened and nowhere else. A piece that leaves
+			// several loose names stacks them down and to the right, so that two
+			// parts of one item are both visible instead of exactly overlapping.
+			placed.forEach( ( name, i )=> {
+
+				if( slot ) return node.sub_insert( name, slot.index + i, slot.owner )
+
 				node.sub_add( name )
-				this.spots({ ... this.spots(), [ name ]: { x, y } })
-			}
+				this.spots({ ... this.spots(), [ name ]: { x: x + i * 24, y: y + i * 24 } })
+
+			} )
 
 			// Picked by the drop itself, as a fresh artboard is: a part is put on
 			// the canvas in order to be set up, and a click to reach the inspector
 			// is friction between the two halves of one intention.
-			this.selected( name )
+			if( placed[ 0 ] ) this.selected( placed[ 0 ] )
 
+		}
+
+		/**
+		 * Drops one class of the library onto the canvas.
+		 *
+		 * The degenerate piece of the shelf: one declaration, one reference and no
+		 * wire. Kept as a method of its own because a class is what the second level
+		 * of the panel carries and what the scenarios say.
+		 */
+		@ $mol_action
+		part_drop( klass: string, x: number, y: number ) {
+			this.preset_drop( this.$.$bog_vmap_app_shelf_single( klass ), x, y )
+		}
+
+		/**
+		 * An item of the shelf asked for by a click instead of a drag: it goes to
+		 * the middle of the canvas, which is the only place a click can mean.
+		 */
+		override shelf_place( next?: string ) {
+
+			const source = next && this.shelf().item( next )?.source
+
+			if( source ) {
+				const spot = this.canvas_center()
+				this.preset_drop( source, spot[0], spot[1] )
+			}
+
+			return ''
 		}
 
 		/** Layout of a fresh artboard: the page of a desktop, stacked downwards. */

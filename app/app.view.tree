@@ -48,10 +48,8 @@ $bog_vmap_app $mol_view
 			<= Brand $mol_view
 				sub /
 					\vmap
-			<= Scenes $bog_vmap_app_scenes
-				store <= store
 			<= Palette_check $mol_check
-				title \Палитра
+				title \Полка
 				checked? <=> palette_showed?
 			<= Inspect_check $mol_check
 				title \Свойства
@@ -156,20 +154,27 @@ $bog_vmap_app $mol_view
 				hint \Поднять кадр заново. Документ хранится в редакторе и не потеряется
 				click? <=> scene_restart? null
 	-
-	- Palette beside the canvas, canvas taking whatever is left.
+	- Panel beside the canvas, canvas taking whatever is left.
 	Body $mol_view
 		sub <= body_main /$mol_view
 	-
+	- The left edge of the editor: which document is open, and what can be put into
+	- it. The two belong together — both answer «what am I working on» — and both
+	- are lists, so the head bar is left to the tools that act on the open document.
 	Side $mol_view
 		sub /
-			<= Palette $bog_vmap_app_palette
-				compact true
+			<= Scenes $bog_vmap_app_scenes
+				store <= store
+			<= Shelf $bog_vmap_app_shelf
 				links? <=> links?
-				- The address the host derived, not the one the palette would derive
+				- The address the host derived, not the one the panel would derive
 				- from the field on its own: an empty field means the pack of this
 				- very deploy, and only the host knows where that is.
 				pack_link <= pack_link
 				land_classes <= lib_classes /$mol_tree2
+				- An item asked for by a click rather than by a drag. The shelf says
+				- which one; where it goes is the canvas's answer.
+				place? <=> shelf_place? \
 	-
 	- Properties of the picked node, on the far edge from the palette: one panel
 	- offers what can be added, the other what the added thing can do, and the canvas

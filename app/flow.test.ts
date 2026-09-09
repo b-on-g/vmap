@@ -38,13 +38,24 @@ namespace $ {
 			stage.button( 'В библиотеку' )
 
 			const text = stage.text()
-			$mol_assert_ok( text.includes( 'Палитра' ) )
+			$mol_assert_ok( text.includes( 'Полка' ) )
 			$mol_assert_ok( text.includes( 'Свойства' ) )
 			$mol_assert_ok( text.includes( '100%' ) )
 			$mol_assert_ok( text.includes( 'Выберите узел на холсте' ) )
 
-			// The palette offers the classes of the pack, the `$mol_view` stub included.
-			const rows = [ ... stage.root.querySelectorAll( '[bog_vmap_app_palette_item]' ) ]
+			// The panel opens on ready made things, not on a catalogue of classes.
+			const shelf = [ ... stage.root.querySelectorAll( '[bog_vmap_app_shelf_item_row]' ) ]
+				.map( el => el.textContent )
+
+			$mol_assert_like( shelf, [ 'Блок', 'Калькулятор', 'Карта', 'Калькулятор и карта' ] )
+
+			// The classes of the pack are a level down, folded away until asked for,
+			// and then they are all there, the `$mol_view` stub included.
+			$mol_assert_equal( stage.root.querySelector( '[bog_vmap_app_palette_class_row]' ), null )
+
+			stage.classes_open()
+
+			const rows = [ ... stage.root.querySelectorAll( '[bog_vmap_app_palette_class_row]' ) ]
 				.map( el => el.textContent )
 
 			$mol_assert_like( rows, [ `${d}mol_view`, button, calc, map ] )
@@ -52,6 +63,44 @@ namespace $ {
 			// Nothing failed to draw except the frame, which stays suspended for
 			// ever: jsdom never loads the sandbox page, so its `onload` never fires.
 			$mol_assert_like( stage.broken(), [ stage.pane.Scene( stage.pane.scene_key() ).dom_id() ] )
+
+		},
+
+		/**
+		 * The point of the shelf: a wired pair arrives whole, by one gesture.
+		 *
+		 * A wire is the thing nobody guesses on their own, so the shelf carries an
+		 * example of one already drawn. What lands is checked in the DOCUMENT and
+		 * not by eye: a wire written the wrong way still reads plausibly, and all
+		 * five traps of section 1 build green.
+		 */
+		'a ready made pair lands wired, by one click on the shelf'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.click( stage.shelf_row( 'Калькулятор и карта' ) )
+
+			const node = stage.app.node()
+
+			// Both parts and the box holding them, and the box is what lies on the
+			// canvas: one thing to move, not two.
+			$mol_assert_like( node.sub_names( '' ), [ 'Pair' ] )
+			$mol_assert_like( node.sub_names( 'Pair' ), [ 'Calc', 'Map' ] )
+			$mol_assert_like( Object.keys( stage.app.spots() ), [ 'Pair' ] )
+
+			// The wire, from the result of the calculator into the zoom of the map.
+			const links = node.links()
+			$mol_assert_equal( links.length, 1 )
+			$mol_assert_like(
+				[ links[ 0 ].from, links[ 0 ].from_prop, links[ 0 ].to, links[ 0 ].to_prop ],
+				[ 'Calc', 'result', 'Map', 'zoom' ],
+			)
+
+			// The scene compiles what the document says, byte for byte.
+			$mol_assert_equal( stage.scene.last( 'doc_set' )!.src, stage.app.doc_source() )
+
+			// Picked by the drop itself, as a dragged part is.
+			$mol_assert_equal( stage.app.selected(), 'Pair' )
 
 		},
 
@@ -544,6 +593,7 @@ namespace $ {
 			// The palette of the document is unknown, so the standard one stands in
 			// and is on screen rather than suspended.
 			$mol_assert_equal( stage.app.links(), '' )
+			stage.classes_open()
 			stage.class_row( calc )
 
 		},

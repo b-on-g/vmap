@@ -1,7 +1,7 @@
 namespace $ {
 
 	/**
-	 * Tests of the switcher without a DOM: what it shows and what it writes, on a
+	 * Tests of the list without a DOM: what it shows and what it writes, on a
 	 * store whose documents live in the home land built in place. `add()` itself is
 	 * not tested here — it hands the work to a fiber and answers at once; the store
 	 * method it calls is tested in `app/store/`.
@@ -33,7 +33,7 @@ namespace $ {
 
 			const { view } = scenes( $ )
 
-			$mol_assert_like( view.scene_dict(), {} )
+			$mol_assert_like( view.scene_links(), [] )
 			$mol_assert_equal( view.current(), '' )
 			$mol_assert_equal( view.current_exists(), false )
 			$mol_assert_equal( view.title(), '' )
@@ -41,17 +41,28 @@ namespace $ {
 
 		},
 
-		'the picker lists every document by title, the last one open'( $ ) {
+		'the list carries every document by title, the last one open'( $ ) {
 
 			const { store, view } = scenes( $ )
 
 			const first = store.doc_add( 'First', src_page )
 			const second = store.doc_add( 'Second', src_hero )
 
-			$mol_assert_like( view.scene_dict(), {
-				[ first.link().str ]: 'First',
-				[ second.link().str ]: 'Second',
-			} )
+			$mol_assert_like(
+				view.scene_links(),
+				[ first.link().str, second.link().str ],
+			)
+
+			$mol_assert_like(
+				view.scene_links().map( link => view.scene_title( link ) ),
+				[ 'First', 'Second' ],
+			)
+
+			// The open one is the current row and the only one.
+			$mol_assert_like(
+				view.scene_links().map( link => view.scene_current( link ) ),
+				[ false, true ],
+			)
 
 			$mol_assert_equal( view.current(), second.link().str )
 			$mol_assert_equal( view.current_exists(), true )
@@ -84,7 +95,7 @@ namespace $ {
 
 		},
 
-		'renaming writes the title of the open document and shows in the picker'( $ ) {
+		'renaming writes the title of the open document and shows in the list'( $ ) {
 
 			const { store, view } = scenes( $ )
 
@@ -95,7 +106,7 @@ namespace $ {
 
 			$mol_assert_equal( second.title(), 'Landing' )
 			$mol_assert_equal( first.title(), 'First' )
-			$mol_assert_equal( view.scene_dict()[ second.link().str ], 'Landing' )
+			$mol_assert_equal( view.scene_title( second.link().str ), 'Landing' )
 
 		},
 

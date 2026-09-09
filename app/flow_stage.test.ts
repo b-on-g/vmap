@@ -394,8 +394,31 @@ namespace $ {
 				return found( '[bog_vmap_app_palette_item]', `palette row ${ klass }`, el => el.textContent === klass )
 			},
 
-			/** A text field, addressed by the tail of the id $mol builds out of the path to it. */
+			/** Unfolds the class list of the panel, the second level under the shelf. */
+			classes_open() {
+				app.Shelf().classes_showed( true )
+				app.dom_tree()
+				scene.flush()
+			},
+
+			/** A row of the shelf, addressed by what it says. */
+			shelf_row( title: string ) {
+				return found( '[bog_vmap_app_shelf_item_row]', `shelf row ${ title }`, el => el.textContent === title )
+			},
+
+			/**
+			 * A text field, addressed by the tail of the id $mol builds out of the
+			 * path to it.
+			 *
+			 * A field of the palette is on the second level of the panel, which is
+			 * folded when the editor opens, so asking for one unfolds it first: a
+			 * scenario says which field it types into and should not have to say
+			 * which panel it lives on.
+			 */
 			field( tail: string ) {
+
+				if( tail.startsWith( 'Palette()' ) ) this.classes_open()
+
 				return found( 'input, textarea', `field ${ tail }`, el => el.getAttribute( 'id' )?.endsWith( tail ) ?? false ) as HTMLInputElement
 			},
 
@@ -438,9 +461,14 @@ namespace $ {
 			 * Carries a class from the palette onto the canvas: a press on the row,
 			 * a move across the window, a release over the overlay. The pointer
 			 * moves on the window because that is where the editor listens for it.
+			 *
+			 * The class list is the SECOND level of the panel and is folded away
+			 * when the editor opens, so the gesture starts by opening it, exactly as
+			 * a person reaching for a primitive does.
 			 */
 			drop( klass: string, point: readonly [ number, number ] ) {
 
+				this.classes_open()
 				this.press( this.class_row( klass ), [ 10, 300 ] )
 				dom.dispatchEvent( pointer( 'pointermove', point ) )
 				this.release( this.overlay(), point )
