@@ -105,11 +105,12 @@ namespace $.$$ {
 			const zoom_next = this.camera_zoom( zoom_prev * mult )
 			const real = zoom_next / zoom_prev
 
-			const rect = this.view_rect()
-			const center = new this.$.$mol_vector_2d(
-				( rect?.width ?? 0 ) / 2,
-				( rect?.height ?? 0 ) / 2,
-			)
+			// Through `pane_rect()`, which is the warmed reading. Straight off
+			// `view_rect()` this was `null` until something else had read it, so the
+			// FIRST zoom after a load pivoted on the corner of the canvas instead of
+			// its middle, and the whole document jumped sideways under the pointer.
+			const rect = this.pane_rect()
+			const center = new this.$.$mol_vector_2d( rect.width / 2, rect.height / 2 )
 
 			this.camera_shift(
 				this.camera_shift().multed0( real ).added1( center.multed0( 1 - real ) )
@@ -689,13 +690,18 @@ namespace $.$$ {
 		/**
 		 * Where this pane sits in the viewport.
 		 *
-		 * Read off the DOM rather than through `view_rect()`: that one is a watched
-		 * cell, and a handler subscribed to it gets re-run by the very layout change
-		 * its own drop or drag causes. A method of its own so that a test can hand in
-		 * a geometry the test DOM has no way to lay out.
+		 * `view_rect()` and not a `getBoundingClientRect()` of our own. The reason
+		 * written here before — that a handler reading the watched cell would be
+		 * re-run by the layout its own gesture causes — was wrong: the handlers run
+		 * as one shot tasks through `event_async()` and subscribe to nothing. What is
+		 * true of that cell is that its FIRST read answers `null` on purpose, to keep
+		 * a reflow out of the render; `$mol_touch` answers that by reading it in
+		 * `auto()`, and so does this pane. A method of its own so that a test can
+		 * hand in a geometry the test DOM has no way to lay out.
 		 */
 		pane_rect(): $bog_vmap_app_pane_screen_box {
-			const rect = this.dom_node().getBoundingClientRect()
+			const rect = this.view_rect()
+			if( !rect ) return { left: 0, top: 0, width: 0, height: 0 }
 			return { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
 		}
 
@@ -1788,6 +1794,12 @@ namespace $.$$ {
 		override auto() {
 			return [
 				... super.auto(),
+				// The first read of this cell answers `null` by design, so that a
+				// render does not force a reflow; every later read is the real box.
+				// Read here for the same reason `$mol_touch` reads its own in `auto()`:
+				// the gestures and the zoom need the box on their FIRST use, not their
+				// second.
+				this.view_rect(),
 				this.message_listener(),
 				// The pack goes before the document and the libraries: the scene
 				// compiles nothing until it has one, see `pack_push()`.
