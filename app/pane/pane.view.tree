@@ -17,8 +17,10 @@ $bog_vmap_app_pane $mol_view
 	- Never joined with `doc_css`: that one is the document, this one is the desk.
 	- Two way: dragging a node on the canvas writes here.
 	spots? *
-	- Property name of the picked node, `null` when nothing is picked.
-	selected? null
+	- Every picked node, in the order they were picked. The ONE pick the pane has:
+	- a single selection is a set of one, and `primary()` is the last of them. The
+	- band writes here, and so does an ordinary press, so there is one write path.
+	picked? /string
 	doc_js *
 	doc_root \
 	- Sources of the land libraries, compiled by the scene before the document.
@@ -78,8 +80,8 @@ $bog_vmap_app_pane $mol_view
 	sub /
 		<= Overlay $bog_vmap_app_pane_overlay
 			style <= overlay_style *
-			frame_showed <= frame_showed false
-			frame_style <= frame_style *
+			frames <= frames /string
+			frame_style* <= frame_style* *
 			press? <=> node_press? null
 			move? <=> node_move? null
 			release? <=> node_release? null
@@ -106,6 +108,10 @@ $bog_vmap_app_pane $mol_view
 	- `sub` only while a drop has somewhere to go, so an idle canvas costs no node.
 	Insert $mol_view
 		style <= insert_style *
+	- The band drawn while a modified pointer sweeps the canvas. Topmost and here
+	- rather than on the overlay for the same reason as the line above it.
+	Band $mol_view
+		style <= band_style *
 	plugins /
 		^
 		<= Touch $mol_touch
@@ -127,8 +133,8 @@ $bog_vmap_app_pane $mol_view
 - ring stays crisp because the camera scales the scene, not this layer.
 - @see ../../ARCHITECTURE.md section 4
 $bog_vmap_app_pane_overlay $mol_view
-	frame_showed false
-	frame_style *
+	frames /string
+	frame_style* *
 	press? null
 	move? null
 	release? null
@@ -137,12 +143,12 @@ $bog_vmap_app_pane_overlay $mol_view
 		pointerdown? <=> press? null
 		pointermove? <=> move? null
 		pointerup? <=> release? null
-	- Ring around the picked node. A free part of the class, put into `sub` only
-	- while something is picked, so an empty canvas costs no node at all.
+	- Ring around a picked node, one per node, keyed by its name. Put into `sub`
+	- only for the nodes actually picked, so an empty canvas costs no node at all.
 	- The handles sit outside the box, on the strip of overlay that still takes
 	- the pointer, and say where the part can be taken hold of.
-	Frame $mol_view
-		style <= frame_style *
+	Frame* $mol_view
+		style <= frame_style* *
 		sub /
 			<= Handle_nw $bog_vmap_app_pane_handle corner \nw
 			<= Handle_ne $bog_vmap_app_pane_handle corner \ne
