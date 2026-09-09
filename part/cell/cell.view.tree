@@ -1,0 +1,43 @@
+- A cell of code: a body of a function, a button that runs it, how long it took
+- and what it returned. The thing a person in hitolama builds everything out of.
+-
+- Two ports for the answer instead of one, and both typed: a wire carries a value
+- into a port of some other part, and the ports of other parts are typed. `text`
+- goes into a caption, `number` into a zoom, a width, a count. An untyped port
+- would only move the guessing to the far end of the wire.
+$bog_vmap_part_cell $mol_view
+	- Body of a function, run with the sandbox context as `$`. What it returns is
+	- the answer of the cell.
+	code? \
+	- Run on every edit instead of on the button. Off by default: half typed code
+	- runs on every keystroke, and a half typed loop runs for ever.
+	auto? false
+	- The answer, as text and as a number. `NaN` is «not a number», the same as in
+	- a number field, and an answer that is not a number at all reads as one.
+	result_text \
+	result_number +NaN
+	- What the run cost, in words, and what it complained about. Empty until it
+	- has run at all.
+	spent \
+	error \
+	run? null
+	sub /
+		<= Code $mol_textarea
+			hint \return 2 + 2
+			value? <=> code?
+		<= Bar $mol_view
+			sub /
+				<= Run $mol_button_minor
+					title \Выполнить
+					hint \Выполнить тело функции и отдать результат в порты
+					click? <=> run? null
+				<= Auto $mol_check
+					title \Реактивно
+					hint \Выполнять на каждую правку кода, а не по кнопке
+					checked? <=> auto?
+				<= Spent $mol_view
+					sub / <= spent
+		<= Result $mol_view
+			sub / <= result_text
+		<= Error $mol_view
+			sub / <= error

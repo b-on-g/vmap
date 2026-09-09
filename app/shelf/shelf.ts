@@ -67,16 +67,46 @@ namespace $ {
 	}
 
 	/**
-	 * The shelf as it comes out of the box.
+	 * Widgets of input, each with a port a wire can take: what a person puts on a
+	 * board to drive everything else on it.
 	 *
-	 * Four items and no more: a person opening the editor has to see things they
-	 * recognise, not a catalogue. Everything else arrives by address or by file and
-	 * lands in the same list.
+	 * Classes of mol and nothing of ours, so the pack grows by none. Their names
+	 * are split for the reason given above: whole, they would be read as imports
+	 * by the dependency graph and pull modules into the bundle of the editor that
+	 * it does not otherwise carry.
+	 */
+	function $bog_vmap_app_shelf_inputs(): readonly $bog_vmap_app_shelf_item[] {
+
+		const mol = '$mol' + '_'
+
+		return ( [
+			[ 'string', 'Поле', 'Строка. Порт `value` отдаёт набранное' ],
+			[ 'number', 'Число', 'Число. Порт `value` отдаёт его как число' ],
+			[ 'select', 'Выбор', 'Список вариантов, порт `value` отдаёт выбранный' ],
+			[ 'switch', 'Переключатель', 'Несколько вариантов в ряд, порт `value`' ],
+			[ 'check_box', 'Флажок', 'Да или нет, порт `checked`' ],
+			[ 'paragraph', 'Текст', 'Абзац текста, порт `title` принимает провод' ],
+		] as const ).map( ( [ name, title, hint ] )=> ({
+			id: 'input_' + name,
+			title,
+			hint,
+			source: $bog_vmap_app_shelf_single( mol + name ),
+		}) )
+
+	}
+
+	/**
+	 * The shelf as it comes out of the box: a handful of things a person
+	 * recognises, not a catalogue. Everything else arrives by address or by file
+	 * and lands in the same list.
 	 *
-	 * The pair is here because a wire is the point of the tool and is the one thing
-	 * nobody guesses on their own: it lies down as ONE node holding both parts, so
-	 * that a single gesture leaves a working pair on the canvas rather than two
-	 * pieces to arrange.
+	 * Order is what it is for a reason. The **code cell** comes first because it is
+	 * what a board is actually built out of — without it a shelf is a display case
+	 * and with it a tool. The **pair** is here because a wire is the point of the
+	 * whole editor and the one thing nobody guesses on their own: it lies down as
+	 * ONE node holding both parts, so a single gesture leaves a working pair on the
+	 * canvas rather than two pieces to arrange. The **inputs** come last because
+	 * they are what drives everything above them.
 	 */
 	export function $bog_vmap_app_shelf_presets(): readonly $bog_vmap_app_shelf_item[] {
 
@@ -98,6 +128,13 @@ namespace $ {
 					+ '\n\t\tsub /'
 					+ '\n\tsub /'
 					+ '\n\t\t<= Block\n',
+			},
+
+			{
+				id: 'cell',
+				title: 'Ячейка кода',
+				hint: 'Тело функции, кнопка «Выполнить» и время. Ответ уходит проводом',
+				source: `${ head }\n\tCell ${ pack }_cell\n\tsub /\n\t\t<= Cell\n`,
 			},
 
 			{
@@ -132,6 +169,8 @@ namespace $ {
 					+ '\n\tsub /'
 					+ '\n\t\t<= Pair\n',
 			},
+
+			... $bog_vmap_app_shelf_inputs(),
 
 		]
 	}

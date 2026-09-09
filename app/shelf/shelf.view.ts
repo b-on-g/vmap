@@ -161,14 +161,20 @@ namespace $.$$ {
 
 			if( !id ) return null
 
-			if( id[ 0 ] === '$' ) return {
+			// The shelf answers first: an item of its own says what it is in the
+			// words the shelf chose, even when its id happens to be a class name.
+			const own = this.items().find( item => item.id === id )
+			if( own ) return own
+
+			if( id[ 0 ] !== '$' ) return null
+
+			return {
 				id,
 				title: this.$.$bog_vmap_app_shelf_short( id ),
 				hint: id,
 				source: this.$.$bog_vmap_app_shelf_single( id ),
 			}
 
-			return this.items().find( item => item.id === id ) ?? null
 		}
 
 		item_rows() {

@@ -48,7 +48,13 @@ namespace $ {
 				'[bog_vmap_app_shelf_items] [bog_vmap_app_shelf_item_row]',
 			) ].map( el => el.textContent )
 
-			$mol_assert_like( shelf, [ 'Блок', 'Калькулятор', 'Карта', 'Калькулятор и карта' ] )
+			$mol_assert_like( shelf.slice( 0, 5 ), [
+				'Блок', 'Ячейка кода', 'Калькулятор', 'Карта', 'Калькулятор и карта',
+			] )
+
+			// And the widgets of input under them, which is what drives the rest.
+			$mol_assert_ok( shelf.includes( 'Поле' ) )
+			$mol_assert_ok( shelf.includes( 'Выбор' ) )
 
 			// Under them, the objects of the connected application: what its author
 			// declared, by their own names and without a line of mol among them.

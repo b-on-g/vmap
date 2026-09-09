@@ -90,7 +90,7 @@ namespace $ {
 			$mol_assert_equal( shelf.apps_title(), 'Приложение не подключено' )
 
 			// The shelf itself stands whatever the address does.
-			$mol_assert_equal( shelf.items().length, 4 )
+			$mol_assert_ok( shelf.items().length > 4 )
 
 		},
 
@@ -239,7 +239,11 @@ namespace $ {
 
 			$mol_assert_like(
 				items.map( item => item.id ),
-				[ 'block', 'calc', 'map', 'pair' ],
+				[
+					'block', 'cell', 'calc', 'map', 'pair',
+					'input_string', 'input_number', 'input_select',
+					'input_switch', 'input_check_box', 'input_paragraph',
+				],
 			)
 
 			for( const item of items ) {
