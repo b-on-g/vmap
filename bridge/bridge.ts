@@ -258,6 +258,18 @@ namespace $ {
 		}
 
 		| {
+			/**
+			 * A key pressed while the focus was inside the frame, relayed for the
+			 * editor to act on: with the pointer let inside a part the keydown lands
+			 * in the document of the frame and the host's listener never sees it.
+			 * Only keys the editor reacts to travel — `Escape` — never what is being
+			 * typed into the document.
+			 */
+			readonly kind: 'key'
+			readonly key: 'Escape'
+		}
+
+		| {
 			readonly kind: 'error'
 
 			/** Channel. The two clear independently. */

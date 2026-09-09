@@ -1200,6 +1200,26 @@ namespace $.$$ {
 		}
 
 		/**
+		 * Relays `Escape` to the host. With the pointer let inside a part the focus
+		 * is in this frame, so the key never reaches the editor's own listener, and
+		 * the only way out was a click past the box. Nothing else travels: what is
+		 * typed into the document stays in the document.
+		 */
+		@ $mol_mem
+		key_listener() {
+			return new this.$.$mol_dom_listener(
+				this.$.$mol_dom_context,
+				'keydown',
+				$mol_wire_async( this ).key_relay,
+			)
+		}
+
+		key_relay( event?: KeyboardEvent ) {
+			if( event?.key !== 'Escape' ) return
+			this.post({ kind: 'key', key: 'Escape' })
+		}
+
+		/**
 		 * Re-reports whenever the layout of the document actually changes.
 		 *
 		 * The wire graph does not see layout, and that is a whole class of
@@ -1530,6 +1550,7 @@ namespace $.$$ {
 			return [
 				... super.auto(),
 				this.message_listener(),
+				this.key_listener(),
 				this.resize_watch(),
 				this.boot(),
 				this.report_task(),

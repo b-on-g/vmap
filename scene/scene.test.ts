@@ -252,6 +252,28 @@ namespace $ {
 		},
 
 		/**
+		 * `Escape` pressed inside the frame reaches the host over the bridge, and
+		 * nothing else does: with the pointer let inside a part the focus is in the
+		 * sandbox, the editor's own listener never sees the key, and typing into the
+		 * document is not the editor's business.
+		 */
+		async 'escape pressed inside the frame is relayed, other keys are not'( $ ) {
+
+			const { made } = scene( $ )
+			const sent = wired( made )
+			const dom = $.$mol_dom_context
+
+			made.key_listener()
+
+			dom.dispatchEvent( new dom.KeyboardEvent( 'keydown', { key: 'a' } ) )
+			dom.dispatchEvent( new dom.KeyboardEvent( 'keydown', { key: 'Escape' } ) )
+			await new Promise( next => setTimeout( next, 10 ) )
+
+			$mol_assert_like( sent.filter( m => m.kind === 'key' ), [ { kind: 'key', key: 'Escape' } ] )
+
+		},
+
+		/**
 		 * Two copies of `$mol_try_web` on one page — the scene's and the pack's —
 		 * each listen on `self` and call a `handler` private to their own bundle, so
 		 * a dispatch from one throws `handler is not a function` in the other: a
