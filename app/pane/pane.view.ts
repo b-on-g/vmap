@@ -94,7 +94,7 @@ namespace $.$$ {
 			return res
 		}
 
-		node_error( name: string ) {
+		override node_error( name: string ) {
 			return this.errors()[ name ] ?? ''
 		}
 
@@ -155,7 +155,7 @@ namespace $.$$ {
 		}
 
 		@ $mol_action
-		scene_restart() {
+		override scene_restart() {
 			this.scene_generation( this.scene_generation() + 1 )
 			this.warmed( false )
 			this.stalled( false )
@@ -193,7 +193,7 @@ namespace $.$$ {
 		}
 
 		@ $mol_mem
-		warmed( next?: boolean ) {
+		override warmed( next?: boolean ) {
 			return next ?? false
 		}
 
@@ -333,7 +333,7 @@ namespace $.$$ {
 		}
 
 		@ $mol_mem
-		entered( next?: string | null ) {
+		override entered( next?: string | null ) {
 			return next ?? null
 		}
 
@@ -342,7 +342,7 @@ namespace $.$$ {
 			return picked.length ? picked[ picked.length - 1 ] : null
 		}
 
-		inside() {
+		override inside() {
 			const name = this.primary()
 			return Boolean( name ) && this.entered() === name
 		}

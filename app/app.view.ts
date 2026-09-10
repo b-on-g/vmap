@@ -14,7 +14,7 @@ namespace $.$$ {
 		}
 
 		override scene_restart() {
-			this.pane().scene_restart()
+			this.Pane().scene_restart()
 		}
 
 		stalled() {
@@ -22,7 +22,7 @@ namespace $.$$ {
 		}
 
 		override stall_note() {
-			if( !this.pane().warmed() ) {
+			if( !this.Pane().warmed() ) {
 				return 'Сцена не запустилась: её остановил код документа. Он исполнится снова'
 					+ ' в любом новом кадре и после перезагрузки страницы, поэтому сначала'
 					+ ' исправьте код в панели, а потом нажмите «Перезагрузить сцену».'
@@ -377,7 +377,7 @@ namespace $.$$ {
 
 		code_error() {
 			const name = this.selected()
-			return name ? this.pane().node_error( name ) : ''
+			return name ? this.Pane().node_error( name ) : ''
 		}
 
 		node_js() {
@@ -399,7 +399,7 @@ namespace $.$$ {
 		}
 
 		inside_note() {
-			const name = this.pane().entered()
+			const name = this.Pane().entered()
 			return name ? `Внутри ${ name }: клавиши уходят компоненту. Клик по холсту или Esc — выйти` : ''
 		}
 
@@ -656,8 +656,8 @@ namespace $.$$ {
 
 			if( x < 0 || y < 0 || x > rect.width || y > rect.height ) return null
 
-			const shift = this.pane().camera_shift()
-			const zoom = this.pane().camera_zoom()
+			const shift = this.Pane().camera_shift()
+			const zoom = this.Pane().camera_zoom()
 
 			return [ ( x - shift[0] ) / zoom, ( y - shift[1] ) / zoom ] as const
 		}
@@ -785,8 +785,8 @@ namespace $.$$ {
 
 		canvas_center() {
 			const rect = this.pane().pane_rect()
-			const shift = this.pane().camera_shift()
-			const zoom = this.pane().camera_zoom()
+			const shift = this.Pane().camera_shift()
+			const zoom = this.Pane().camera_zoom()
 
 			return [
 				( rect.width / 2 - shift[0] ) / zoom,
@@ -991,7 +991,7 @@ namespace $.$$ {
 			if( !event ) return
 
 			if( event.key === 'Escape' ) {
-				if( this.pane().inside() ) this.pane().entered( null )
+				if( this.Pane().inside() ) this.Pane().entered( null )
 				else this.selected( null )
 				return
 			}
