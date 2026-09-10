@@ -39,8 +39,8 @@ namespace $.$$ {
 		},
 
 		/**
-		 * `false` renders no attribute at all, `$mol_dom_render_attributes` drops
-		 * it, so an own port is the plain state and only the inherited one is
+		 * `false` renders no attribute at all — the attribute renderer drops it —
+		 * so an own port is the plain state and only the inherited one is
 		 * selectable. Written the other way round the rule would never match.
 		 */
 		'@': {

@@ -8,8 +8,9 @@ namespace $ {
 	 * would make the build depend on a third party host being up.
 	 *
 	 * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-	 * a regexp over sources, literals included, so a bare `$mol_button` in a
-	 * fixture would drag a whole module into the bundle.
+	 * a regexp over sources, literals included, so a bare class name in a fixture
+	 * would drag a whole module into the bundle. Naming one HERE would do it too,
+	 * which is why this sentence names none.
 	 */
 	const d = '$'
 

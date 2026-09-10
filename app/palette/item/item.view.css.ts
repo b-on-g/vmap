@@ -11,7 +11,7 @@ namespace $.$$ {
 
 		justify: { content: 'flex-start' },
 
-		// `$mol_button_typed` asks for a 40 px tap target; a palette row is a line
+		// The typed button asks for a 40 px tap target; a palette row is a line
 		// of text, and at 40 px a third of the list fits on screen
 		minHeight: '1.5rem',
 		minWidth: 0,

@@ -33,7 +33,7 @@ namespace $ {
 
 		/**
 		 * A dead address is answered in words, not by the status line of the
-		 * response. `$mol_fetch` throws «Not Found» and nothing else, and that
+		 * response. The fetch throws «Not Found» and nothing else, and that
 		 * reached the counter as the whole explanation.
 		 */
 		'a pack that does not answer says so, and says what was looked for'( $ ) {

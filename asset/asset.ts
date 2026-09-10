@@ -24,7 +24,7 @@ namespace $ {
 	 * validator cannot part ways. The shape itself is checked by
 	 * `$giper_baza_link`, whose grammar is the one the database lives by — a
 	 * grammar of our own would disagree with it at the first exception, the same
-	 * reason `$bog_vmap_lang_token` borrows the compiler's.
+	 * reason the token rule of the language module borrows the compiler's.
 	 */
 	const $bog_vmap_asset_chars = /[A-Za-zÆæ0-9_]+/
 
@@ -146,14 +146,14 @@ namespace $ {
 		/**
 		 * Puts bytes into a land of their own and answers with the id.
 		 *
-		 * **Call this through `$mol_wire_async( assets ).put( … )` and never from
-		 * plain async code.** `land_grab` mines proof of work, the task that does it
+		 * **Call this through the async wrapper of the framework and never from plain
+		 * async code.** `land_grab` mines proof of work, the task that does it
 		 * is cached per fiber, and outside a fiber every `Promise` thrown on the way
 		 * restarts the caller from the top — which starts a NEW proof of work, and
 		 * then another, forever, with the main thread pinned. The symptom is a log
 		 * repeating the same line with no progress, not an error.
 		 *
-		 * Plain method on purpose, not `@ $mol_action`: an action opens a fiber of
+		 * Plain method on purpose, not an action decorator: an action opens a fiber of
 		 * its own per call, so calling it from outside a fiber gives every retry a
 		 * fresh task and the caching that makes this terminate never happens. One
 		 * method, one fiber, every sub-task inside it.

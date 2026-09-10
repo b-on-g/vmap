@@ -5,8 +5,8 @@ namespace $ {
 	 *
 	 * A library is a deployed MAM module: the build drops `web.view.tree` next to
 	 * `web.js`, and that file is the whole class tree of the bundle with bases and
-	 * properties. Any deployed $mol app in the world is therefore a component
-	 * source, with no cooperation from us.
+	 * properties. Any deployed app of the framework in the world is therefore a
+	 * component source, with no cooperation from us.
 	 *
 	 * Port of `hyoo_studio_library` plus the `library()`, `united()`,
 	 * `props_map()`, `props_of()`, `class_list()` and `base_options()` methods of

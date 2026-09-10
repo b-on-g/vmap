@@ -52,12 +52,12 @@ namespace $.$$ {
 
 		/**
 		 * Classes matching the query, or all of them for an empty query —
-		 * `$mol_match_text` of nothing matches everything, so no branch is needed.
+		 * the text matcher of nothing matches everything, so no branch is needed.
 		 *
 		 * SUSPENSION PASSES THROUGH, a failure does not, and the difference is the
-		 * whole point. `$mol_view` turns a suspension into its waiting state, which
-		 * is right; it turns a failure into a strip carrying whatever `$mol_fetch`
-		 * threw, which is the status line and nothing else — a mistyped address
+		 * whole point. A view turns a suspension into its waiting state, which is
+		 * right; it turns a failure into a strip carrying whatever the fetch threw,
+		 * which is the status line and nothing else — a mistyped address
 		 * reached the counter as a bare «Not Found», naming neither the file that
 		 * was missing nor the field to fix. Seen on the deploy 09.09.2026.
 		 *

@@ -3,8 +3,8 @@ namespace $ {
 	/**
 	 * Anchor of the component library of a user, in the home land.
 	 *
-	 * A neighbour of `$bog_vmap_app_doc_home` on the same root pawn, not a field on
-	 * it: fields are keyed by name inside the pawn, so `Libs` sits beside `Docs`
+	 * A neighbour of the home anchor of documents on the same root pawn, not a field
+	 * on it: fields are keyed by name inside the pawn, so `Libs` sits beside `Docs`
 	 * without the document schema learning about libraries.
 	 *
 	 * A LIST and not one link, on purpose. A pointer made «when there is none» is
@@ -96,11 +96,11 @@ namespace $ {
 		/**
 		 * Name of the library class a part of the document is published as.
 		 *
-		 * A part is a property of the root class, `Button_minor $mol_button_minor`,
-		 * and a property name cannot start with `$`, while a class of a library must:
-		 * the scene compiles nothing else. So `Button_minor` becomes
-		 * `$bog_vmap_pub_button_minor`. Its own prefix, so that a part called `App`
-		 * or `Scene` cannot shadow a real module of this pack.
+		 * A part is a property of the root class, and a property name cannot start
+		 * with `$`, while a class of a library must: the scene compiles nothing else.
+		 * So `Button_minor` becomes the lowercased name under the prefix below. Its
+		 * own prefix, so that a part called `App` or `Scene` cannot shadow a real
+		 * module of this pack.
 		 */
 		class_name( part: string ) {
 			return '$bog_vmap_pub_' + part.toLowerCase()

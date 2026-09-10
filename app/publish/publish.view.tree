@@ -7,7 +7,8 @@ $bog_vmap_app_publish $mol_view
 	- Property name of the picked part on the root class, empty when nothing is
 	- picked. The button is off without one.
 	part \
-	- Declaration of the picked part, as the inspector reads it: `Name $base …`.
+	- Declaration of the picked part, as the inspector reads it: a name, its base
+	- class and the properties under them.
 	source \
 	- Method of the part, cut out of the body of the class it belongs to.
 	js \

@@ -75,7 +75,7 @@ namespace $ {
 
 		/**
 		 * The requirement of the task in one assertion: what a land library answers
-		 * is what a pack library answers, down to the `$mol_view` stub that a pack
+		 * is what a pack library answers, down to the base class stub that a pack
 		 * never carries in its own file.
 		 */
 		'a land library lists its classes exactly as a pack would'( $ ) {
@@ -127,7 +127,7 @@ namespace $ {
 		/**
 		 * Composing a land onto a pack, which section 5 says is the normal case.
 		 * The stub has to be absent from what is handed over, or it shadows the real
-		 * `$mol_view` of the pack: `index` keeps the LAST declaration of a name.
+		 * base class of the pack: the index keeps the LAST declaration of a name.
 		 */
 		'classes handed to another library carry no stub'( $ ) {
 

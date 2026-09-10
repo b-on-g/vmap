@@ -127,8 +127,8 @@ namespace $ {
 	 * Library backed by a land of sources.
 	 *
 	 * Only `tree()` differs from a pack, and it differs by where the text comes
-	 * from — not by what is done with it: the same `$bog_vmap_lib_parse`, the same
-	 * `$mol_view` stub, the same normalization. A tree built here and a tree fetched
+	 * from — not by what is done with it: the same parse, the same base class stub,
+	 * the same normalization. A tree built here and a tree fetched
 	 * from `web.view.tree` are indistinguishable downstream, which is the whole
 	 * requirement.
 	 */
@@ -173,13 +173,13 @@ namespace $ {
 		}
 
 		/**
-		 * Classes of the library WITHOUT the `$mol_view` stub, for composing this
+		 * Classes of the library WITHOUT the base class stub, for composing this
 		 * library into another one through its `classes()`.
 		 *
 		 * The stub has to go: it is a stand-in for a class the pack really carries,
-		 * and `$bog_vmap_lib_index` keeps the last declaration of a name, so handing
-		 * it over would let the stand-in shadow the real thing. `tree()` keeps it,
-		 * because standing alone this library has no other `$mol_view` at all.
+		 * and the class index keeps the last declaration of a name, so handing it
+		 * over would let the stand-in shadow the real thing. `tree()` keeps it,
+		 * because standing alone this library has no other base class at all.
 		 */
 		@ $mol_mem
 		class_trees(): readonly $mol_tree2[] {

@@ -56,7 +56,7 @@ $bog_vmap_app_palette $mol_view
 					<= Port_list $mol_list
 						rows <= port_rows /
 	-
-	- One button per class. `$mol_list` renders only what is on screen, so all
+	- One button per class. The virtual list renders only what is on screen, so all
 	- 449 of them cost nothing until scrolled to.
 	Class_row* $bog_vmap_app_palette_item
 		title <= class_title* \
