@@ -524,8 +524,6 @@ namespace $.$$ {
 			delete spots[ next.name ]
 			this.spots( spots )
 
-			this.pane().sizes_forget( next.name )
-
 			return next
 		}
 
@@ -822,8 +820,6 @@ namespace $.$$ {
 			for( const dead of doomed ) delete spots[ dead ]
 			this.spots( spots )
 
-			for( const dead of doomed ) this.pane().sizes_forget( dead )
-
 			this.selected( null )
 
 		}
@@ -841,8 +837,6 @@ namespace $.$$ {
 				delete spots[ name ]
 				this.spots({ ... spots, [ next ]: spot })
 			}
-
-			this.pane().sizes_forget( name )
 
 			if( this.selected() === name ) this.selected( next )
 

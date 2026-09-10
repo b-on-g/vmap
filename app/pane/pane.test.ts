@@ -724,25 +724,39 @@ namespace $ {
 		},
 
 		'REPRO a node that moved leaves no box behind at its old path'( $ ) {
-			const { pane } = pane_make( $, {}, { doc_names: ()=> [ 'Pair', 'Schet' ] } )
+			const { pane, answer } = pane_make( $, {}, { doc_names: ()=> [ 'Pair', 'Schet' ] } )
 
-			pane.sizes({
+			answer({ kind: 'sizes', sizes: {
 				[ `${root}/Schet` ]: box( 700, 600 ),
 				[ `${root}/Pair` ]: box( 0, 0, 400, 300 ),
-			})
+			} })
 
-			pane.sizes_forget( 'Schet' )
+			answer({ kind: 'sizes', sizes: { [ `${root}/Pair/Schet` ]: box( 10, 10 ) } })
 
-			$mol_assert_like( Object.keys( pane.sizes() ), [ `${root}/Pair` ] )
-
-			pane.sizes({ ... pane.sizes(), [ `${root}/Pair/Schet` ]: box( 10, 10 ) })
-
+			$mol_assert_like( Object.keys( pane.sizes() ), [ `${root}/Pair`, `${root}/Pair/Schet` ] )
 			$mol_assert_like( pane.part_size( 'Schet' ), box( 10, 10 ) )
 			$mol_assert_equal( pane.part_names().filter( name => name === 'Schet' ).length, 1 )
 
-			pane.sizes_forget( 'Schet' )
+			answer({ kind: 'sizes', sizes: { [ `${root}/Schet` ]: box( 700, 600 ) } })
 
-			$mol_assert_like( Object.keys( pane.sizes() ), [ `${root}/Pair` ] )
+			$mol_assert_like( Object.keys( pane.sizes() ), [ `${root}/Pair`, `${root}/Schet` ] )
+			$mol_assert_like( pane.part_size( 'Schet' ), box( 700, 600 ) )
+			$mol_assert_equal( pane.part_names().filter( name => name === 'Schet' ).length, 1 )
+
+		},
+
+		'a node the report leaves out keeps the box it had'( $ ) {
+			const { pane, answer } = pane_make( $, {}, { doc_names: ()=> [ 'Pair', 'Schet' ] } )
+
+			answer({ kind: 'sizes', sizes: {
+				[ `${root}/Schet` ]: box( 700, 600 ),
+				[ `${root}/Pair` ]: box( 0, 0, 400, 300 ),
+			} })
+
+			answer({ kind: 'sizes', sizes: { [ `${root}/Pair` ]: box( 0, 0, 400, 400 ) } })
+
+			$mol_assert_like( pane.part_size( 'Schet' ), box( 700, 600 ) )
+			$mol_assert_like( pane.part_size( 'Pair' ), box( 0, 0, 400, 400 ) )
 
 		},
 

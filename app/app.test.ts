@@ -1,6 +1,25 @@
 namespace $ {
 	const d = '$'
 
+	const measured = ( $: $mol_ambient_context )=> {
+
+		const peer = { origin: 'null', postMessage() {} }
+
+		const pane = $$.$bog_vmap_app_pane.make({
+			$,
+			doc_root: ()=> `${d}doc`,
+			scene_peer: ()=> peer,
+		})
+
+		pane.handshake( pane.scene_key(), 1 )
+
+		const report = ( sizes: { readonly [ node: string ]: $bog_vmap_bridge_rect } )=> pane.message_receive(
+			{ data: { ns: $bog_vmap_bridge_ns, kind: 'sizes', sizes }, source: peer } as unknown as MessageEvent
+		)
+
+		return { pane, report }
+	}
+
 	$mol_test_mocks.push( $=> {
 		class $mol_state_session_mock< Value > extends $.$mol_state_session< Value > {
 			static store = {} as Record< string, string >
@@ -52,46 +71,39 @@ namespace $ {
 		},
 
 		'measured boxes survive a report without them'( $ ) {
-			const pane = $bog_vmap_app_pane.make({
-				$,
-				doc_root: ()=> `${d}doc`,
-			}) as $$.$bog_vmap_app_pane
+			const { pane, report } = measured( $ )
 
-			pane.sizes({
+			report({
 				[ `${d}doc/A` ]: { x: 0, y: 0, width: 10, height: 10 },
 				[ `${d}doc/B` ]: { x: 20, y: 0, width: 10, height: 10 },
 			})
 
-			pane.sizes({ ... pane.sizes(), [ `${d}doc/A` ]: { x: 5, y: 5, width: 10, height: 10 } })
+			report({ [ `${d}doc/A` ]: { x: 5, y: 5, width: 10, height: 10 } })
 
 			$mol_assert_equal( pane.sizes()[ `${d}doc/A` ].x, 5 )
 			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/B` ] ), true )
 
-			pane.sizes_forget( 'B' )
-
-			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/B` ] ), false )
-			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/A` ] ), true )
-
 		},
 
-		'forgetting a part forgets what was measured inside it'( $ ) {
-			const pane = $bog_vmap_app_pane.make({
-				$,
-				doc_root: ()=> `${d}doc`,
-			}) as $$.$bog_vmap_app_pane
+		'a part measured at a new path takes its insides with it'( $ ) {
+			const { pane, report } = measured( $ )
 
-			pane.sizes({
+			report({
 				[ `${d}doc/Icon` ]: { x: 0, y: 0, width: 10, height: 10 },
 				[ `${d}doc/Icon/Path` ]: { x: 0, y: 0, width: 8, height: 8 },
 				[ `${d}doc/Icons` ]: { x: 0, y: 0, width: 10, height: 10 },
 			})
 
-			pane.sizes_forget( 'Icon' )
+			report({
+				[ `${d}doc/Board/Icon` ]: { x: 30, y: 0, width: 10, height: 10 },
+				[ `${d}doc/Board/Icon/Path` ]: { x: 30, y: 0, width: 8, height: 8 },
+			})
 
 			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/Icon` ] ), false )
 			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/Icon/Path` ] ), false )
 
 			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/Icons` ] ), true )
+			$mol_assert_equal( pane.sizes()[ `${d}doc/Board/Icon` ].x, 30 )
 
 		},
 

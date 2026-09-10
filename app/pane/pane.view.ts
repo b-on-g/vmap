@@ -253,19 +253,21 @@ namespace $.$$ {
 			return next ?? {}
 		}
 
-		sizes_forget( name: string ) {
+		sizes_merged( fresh: { readonly [ node: string ]: $bog_vmap_bridge_rect } ) {
 			const prefix = this.doc_root() + '/'
+			const leaf = ( key: string )=> key.slice( prefix.length ).split( '/' ).pop() ?? ''
+
+			const moved = new Set( Object.keys( fresh ).map( leaf ) )
 			const kept = {} as { [ node: string ]: $bog_vmap_bridge_rect }
 
 			const sizes = this.sizes()
 
 			for( const key of Object.keys( sizes ) ) {
-				const path = key.startsWith( prefix ) ? key.slice( prefix.length ).split( '/' ) : []
-				if( path.includes( name ) ) continue
+				if( !( key in fresh ) && moved.has( leaf( key ) ) ) continue
 				kept[ key ] = sizes[ key ]
 			}
 
-			this.sizes( kept )
+			return { ... kept, ... fresh }
 		}
 
 		@ $mol_mem
@@ -1092,7 +1094,7 @@ namespace $.$$ {
 			}
 
 			if( message.kind === 'sizes' ) {
-				this.sizes({ ... this.sizes(), ... message.sizes })
+				this.sizes( this.sizes_merged( message.sizes ) )
 				this.warmed( true )
 				return
 			}
