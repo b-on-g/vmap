@@ -1298,7 +1298,7 @@ declare namespace $ {
      * Gap in CSS
      * @see https://page.hyoo.ru/#!=msdb74_bm7nsq
      */
-    let $mol_gap: Record<"space" | "text" | "block" | "blur" | "page" | "round" | "emoji", $mol_style_func<"var", unknown>>;
+    let $mol_gap: Record<"space" | "text" | "blur" | "page" | "block" | "round" | "emoji", $mol_style_func<"var", unknown>>;
 }
 
 declare namespace $ {
@@ -3307,6 +3307,652 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    /**
+     * Decorates method to fiber to ensure it is executed only once inside other fiber from [mol_wire](../wire/README.md)
+     * @see https://mol.hyoo.ru/#!section=docs/=1fcpsq_1wh0h2
+     */
+    let $mol_action: typeof $mol_wire_method;
+}
+
+declare namespace $ {
+    /**
+     * Document model over a `view.tree` AST.
+     *
+     * A vmap document is one `view.tree` class, so the source text is the truth and
+     * the tree is derived from it. Every edit goes through the tree and is written
+     * straight back as text, which is what makes source export free.
+     *
+     * Port of the component and property models of studio, plus the wire emitter,
+     * which studio has no equivalent of. Deviations are marked at their place.
+     *
+     * Pure model: knows nothing about DOM, compiles nothing, executes nothing.
+     * @see ../ARCHITECTURE.md sections 1 and 2
+     */
+    /**
+     * Serializes to exactly `name = Node prop`, an `=` operator over exactly two
+     * tokens. The shape of this type is the whole safety story: there is no field
+     * for the operator, no field for a third token, and one flag for both ends, so
+     * none of the five traps of section 1 is even expressible.
+     */
+    type $bog_vmap_lang_wire = {
+        /** Property of the class the wire lands in, bare name. */
+        readonly name: string;
+        /** Property holding the source node, bare name. Must be declared. */
+        readonly node: string;
+        /** Property of that node, bare name. */
+        readonly prop: string;
+        /** Two-way. Puts `?` on BOTH ends, never on one. */
+        readonly bidi?: boolean;
+    };
+    /**
+     * A wire with its consumer: `from.from_prop` feeds `to.to_prop` through the
+     * root property `name`. Two lines of the class and nothing else.
+     */
+    type $bog_vmap_lang_link = {
+        readonly from: string;
+        readonly from_prop: string;
+        readonly to: string;
+        readonly to_prop: string;
+        readonly name: string;
+        readonly bidi: boolean;
+    };
+    /**
+     * Bare means: no `*`, no `?`, no `!`, no spaces, nothing but a name. Signs are
+     * never carried by a token, they are produced from `bidi`. That single rule
+     * kills three of the five traps at once, because every one of them is a token
+     * that smuggles something in:
+     *
+     * - `value?` as the right token gives `w = Field value?`, which compiles to
+     *   `value(next)` with no `next` in scope, so the wire throws `ReferenceError`
+     *   on ANY read;
+     * - `w?` as the left token gives `w? = Field hint`, which compiles to a setter
+     *   whose right end ignores it, so writes vanish with no error at all;
+     * - `B value` as a token gives `w = A B value`, which compiles to
+     *   `this.A().B().value()`, and `B` was hoisted onto the root by `upper`, so it
+     *   is not a method of `A` and never will be.
+     *
+     * The grammar is the stock signature regexp itself rather than one of our own,
+     * so a token this accepts is a token the compiler accepts.
+     */
+    function $bog_vmap_lang_token(this: $, token: string, role: string): string;
+    /**
+     * Stricter than the compiler on purpose. The stock class match takes anything
+     * starting with a dollar or a capital, generics and quotes included, because it
+     * also has to recognize the classes of somebody else's code; a class
+     * WE write has to survive one more step, and that step is mam resolving the
+     * name into a folder. Every underscore is a level of folders, so the name is a
+     * dollar and at least two lowercase segments, and nothing else fits in a path.
+     *
+     * A refusal here is a message to a person, so this answers yes or no and leaves
+     * the wording to the caller, who knows in what language to say it.
+     */
+    function $bog_vmap_lang_class_ok(name: string): boolean;
+    /**
+     * The operator is `=` and nothing else. `<= Node prop` looks like the same thing
+     * and is not: it goes through the `upper` hack, which takes the kids of the
+     * reference as default values, so it declares a property `Node` valued `prop`
+     * and silently drops the `.prop()` link from the generated call. Either the
+     * build dies with a message about default values, or the build is green and the
+     * bundle carries `Node(){ return prop }`, a bare identifier that throws at the
+     * one node the wire was drawn to, whenever somebody gets there.
+     *
+     * @see ../ARCHITECTURE.md section 1
+     */
+    function $bog_vmap_lang_wire_tree(this: $, wire: $bog_vmap_lang_wire): $mol_tree2;
+    /**
+     * A bare reference `<= name`, the form that goes into `sub`. Bare means
+     * childless: a reference with a child is the middle of the three forms of `<=`,
+     * the only dangerous one, and the guard against it is that this takes a token
+     * instead of a path.
+     */
+    function $bog_vmap_lang_ref_tree(this: $, name: string): $mol_tree2;
+    /**
+     * A free part is a name and a class at class level, with no operator between
+     * them: a plain property of the root class, so the compiler makes it a lazy
+     * memoized singleton and it creates no DOM, because it is not in `sub`. That is
+     * the whole mechanism behind a detail lying free on the canvas.
+     */
+    function $bog_vmap_lang_part_tree(this: $, name: string, klass: string): $mol_tree2;
+    /** Value of one key of a `*` dictionary, or `null` when the key is not there. */
+    function $bog_vmap_lang_dict_get(dict: $mol_tree2 | null, key: string): $mol_tree2 | null;
+    /**
+     * A key already there is replaced where it stands, so `^` keeps the head of the
+     * dictionary it has to keep: a redeclared dictionary REPLACES the one of the
+     * base instead of extending it, and `^` is the line that undoes that. Writing a
+     * key must never be able to move it, and appending is the only other option.
+     */
+    function $bog_vmap_lang_dict_set(this: $, dict: $mol_tree2, key: string, value: $mol_tree2 | null): $mol_tree2;
+    /**
+     * Class declarations reordered so that a base always precedes its heir. A
+     * generated class resolves its base at definition time, and the generator emits
+     * declarations in the order it received them. A heir written above its base
+     * therefore inherits the PREVIOUS version of it, or `undefined` on a first run,
+     * and says nothing about it.
+     *
+     * Bases the list does not declare — anything from a library — are left alone:
+     * they are already in the namespace before our code runs.
+     *
+     * The scene carries an equivalent of this for the same reason. The two should
+     * become one, and this is the side to keep: sorting declarations is a property
+     * of the language, not of whoever happens to compile them.
+     */
+    function $bog_vmap_lang_sorted(this: $, defs: readonly $mol_tree2[]): readonly $mol_tree2[];
+    /**
+     * A document: several `view.tree` classes in one text.
+     *
+     * The node model below models one CLASS, and rightly so — but a document is not
+     * one class, and using the node as if it were silently eats the others: its
+     * read takes the first kid and its write serializes that one tree over the
+     * whole source, so editing one property of the first class drops the second
+     * from the text. No error, no warning.
+     *
+     * This level owns the text, cuts it into classes for reading, and puts one back
+     * without reserializing its neighbours from anything but their own trees. It
+     * hands out nodes whose `source` is a slice of it, so everything already
+     * written against the node model keeps working unchanged — that is the point of
+     * adding a level instead of widening the one below.
+     *
+     * A class is addressed BY NAME, which is what the editor speaks and what
+     * survives reordering. Two things follow, both real:
+     *
+     * - renaming a class through its node writes under the OLD name, which is
+     *   correct — the slot is found and replaced — but the caller then holds a stale
+     *   key and has to re-read `names()`;
+     * - two classes of one name are one class here, the first. That is already
+     *   broken further down: the class index of the library model keeps the LAST of
+     *   a duplicate pair, so a document with two would disagree with itself about
+     *   which is real.
+     *
+     * @see ../ARCHITECTURE.md section 1
+     */
+    class $bog_vmap_lang_doc extends $mol_object {
+        /** The truth. */
+        source(next?: string): string;
+        /**
+         * Read only, and that is deliberate. A cell that both reads and writes
+         * `source` would be a cell frozen by its own write — a write to a memoized
+         * cell freezes its dependencies — and the document would stop following the
+         * text after the first edit made through it, which is the one failure that
+         * looks exactly like success.
+         */
+        trees(): readonly $mol_tree2[];
+        names(): string[];
+        /**
+         * Writing rebuilds the text from the trees of all the classes with this one
+         * replaced, so a neighbour comes back out of its own tree and nothing else.
+         * On an already normalized document that is byte for byte; the first write
+         * to a hand written one normalizes the whole text at once, which is the same
+         * lossy step the node model has always taken, now taken over the document
+         * rather than over one class.
+         *
+         * A name the document does not carry appends, so that handing a node a
+         * source is also how a class is added.
+         *
+         * NOT memoized, for the reason spelled out at `trees`: this is the write
+         * path, and a cell on a write path freezes at what was written. The read is
+         * two lookups over `trees()`, which is a cell already, so there is nothing
+         * to gain either.
+         */
+        class_source(name: string, next?: string): string;
+        /**
+         * A class name is spelled in more places than its own declaration: it is the
+         * base of an heir (`site_card site_page`, both with a leading dollar) and the
+         * value of a part declared with it (`Card site_card`, same). Retyping the
+         * declaration alone leaves those
+         * spelling a class nobody declares, which compiles into `Class extends value
+         * undefined` or into a part of a class that is not there — so the mentions
+         * are rewritten in the SAME write, over every class of the document.
+         *
+         * A mention is any tree node typed exactly with the old name. Only structural
+         * tokens carry a type in `tree2`; a literal is a data node, so a class name
+         * written inside a string is not touched and cannot be.
+         *
+         * A name already declared is refused, like the rename of a property: two
+         * classes of one name is a document that disagrees with itself about which is
+         * real, and the class index of a library keeps the last of such a pair.
+         *
+         * Whoever holds a `node( from )` has to ask for `node( to )` afterwards; the
+         * old handle addresses a class the document no longer carries, exactly as the
+         * property handle does after `prop_rename`.
+         */
+        class_rename(from: string, to: string): undefined;
+        /**
+         * `source` is replaced with a slice of the document on the instance itself.
+         * Everything else of the node model — the tree, the property list, the wire
+         * emitter — is derived from `source` and so needs no changes at all: the
+         * node cannot tell that its text is a part of a larger one.
+         */
+        node(name: string): $bog_vmap_lang_node;
+    }
+    /** One node of the document: a single `view.tree` class. */
+    class $bog_vmap_lang_node extends $mol_object {
+        /** The truth. Everything else is derived from it. */
+        source(next?: string): string;
+        /**
+         * Normalization is lossy: it runs the `upper` hack, so a named sub view
+         * nested in `sub` comes out as a flat property of the root plus a bare
+         * reference left in place. Hoisted properties land BEFORE the ones already
+         * at the top, because they are added during the traversal rather than in the
+         * final loop.
+         *
+         * That flat form is the canonical shape of a document, not a compromise: it
+         * is the model of section 1 spelled out in the text itself. Round trip is
+         * therefore byte for byte only on a normalized source, which is what the
+         * editor holds, because every write serializes the whole class.
+         *
+         * @see ../ARCHITECTURE.md section 1, «Канонический вид документа»
+         *
+         * Deviation from studio: an empty or classless source fails with a message
+         * instead of `Cannot read properties of undefined`. In an editor an empty
+         * buffer is a normal transient state and has to say so.
+         */
+        tree(next?: $mol_tree2): $mol_tree2;
+        name(next?: string): string;
+        base(next?: string): string;
+        prop_names(): string[];
+        props_tree(): $mol_tree2;
+        /**
+         * Full signature of a property by its bare name: `d` gives back `d*?`.
+         *
+         * Deviation from studio: the early exit is spelled as a test for any sign
+         * instead of `name.indexOf('*') + name.indexOf('?') + name.indexOf('!') > -3`,
+         * which is the same condition written as arithmetic on three `-1`s.
+         */
+        prop_fullname(name: string): string;
+        /** Writing `null` drops the property. */
+        prop_tree(name: string, next?: $mol_tree2 | null): $mol_tree2 | null;
+        prop_add(name: string): void;
+        prop_drop(name: string): void;
+        /**
+         * `next` is a whole signature, `d*?` and not `d`, because a rename and a
+         * change of sign arrive together from the inspector and two writes would
+         * leave the document renamed but unsigned in between.
+         *
+         * **A reference is rewritten, never dropped.** A node is named by the
+         * property it occupies, so a rename moves the name every `sub` list, every
+         * wire end and every binding spells. Dropping them instead — which is what
+         * `links_drop` does for a delete — would silently cut the wires of a node
+         * that is still there; the two operations are opposites and must not share
+         * a path. Anything of the shape `<= name`, `<=> name` or `= name prop` at
+         * any depth is such a reference.
+         *
+         * The declaration is retyped IN PLACE, among the kids of the base, and only
+         * there: an override of the same name under a part is a port of that part
+         * and none of our business. In place also keeps the property where it was —
+         * dropping it and inserting it back moved it to the end of the class, which
+         * reorders the canvas for a rename that should not move anything.
+         *
+         * A name already taken is refused rather than merged: two properties of one
+         * name is a document nothing can address afterwards.
+         */
+        prop_rename(name: string, next: string): undefined;
+        property(name: string): $bog_vmap_lang_prop;
+        /**
+         * Deviation from studio, which has no free parts: the write goes through the
+         * `null` step of the path instead of `base()`, so it lands in the class body
+         * whatever the base is currently called. Same reason `prop_add` does it.
+         */
+        part_add(name: string, klass: string): void;
+        /**
+         * The node end has to be declared already, as a free part or as a sub-view.
+         * `=` declares nothing, that is exactly why it has no collision with `upper`,
+         * so a wire to an undeclared node compiles green and throws `is not a
+         * function` at run time. Refusing here is the only place it can be caught.
+         *
+         * The far end, `wire.prop`, is NOT checked: whether the node's class has such
+         * a port is known only to the component library, and this module knows
+         * nothing of libraries, deliberately. The inspector draws wires from the port
+         * list, so the question does not arise there either.
+         */
+        wire_add(wire: $bog_vmap_lang_wire): void;
+        /**
+         * Wires declared by the class: every property whose value is the `=`
+         * operator. `bidi` is read off the left end alone, because the emitter never
+         * writes the two signs apart; a hand written wire with one sign is reported
+         * as it is and left for the compiler to complain about.
+         */
+        wires(): readonly $bog_vmap_lang_wire[];
+        /**
+         * Properties whose value is a class name, with the overrides written under
+         * it. That is where a consumer of a wire lives: a part declaration with a
+         * port bound to the name of the wire.
+         */
+        part_names(): string[];
+        /**
+         * Wires together with who reads them. A wire nobody reads is not a link,
+         * and a reference to a name that is not a wire is a plain binding of the
+         * part and none of this module's business.
+         */
+        links(): readonly $bog_vmap_lang_link[];
+        /** Whether `to` is already fed, directly or through others, by `from`. */
+        link_reaches(from: string, to: string): boolean;
+        /**
+         * An existing wire to the same end is reused, an unrelated property of the
+         * same name is stepped around with a suffix.
+         */
+        link_name(from: string, prop: string, bidi: boolean): string;
+        /**
+         * Two lines and no more. The wire `name = From prop` goes through `wire_add`
+         * with every guard it has, and the consumer is a bare reference in the
+         * declaration of the target part, `to_prop <= name`, or `to_prop? <=> name?`
+         * for a two way wire. The reference is built by the bare reference emitter,
+         * so it can carry nothing under the name and never turns into the middle
+         * form of `<=`.
+         *
+         * Refused, with nothing written: a part wired to itself, an undeclared end,
+         * and a target the source already depends on, because a loop of wires is a
+         * loop of fibers and the scene would hang on the first read.
+         */
+        link_add(link: {
+            readonly from: string;
+            readonly from_prop: string;
+            readonly to: string;
+            readonly to_prop: string;
+            readonly bidi?: boolean;
+        }): string;
+        /**
+         * One override of one part, which is what `over_set` is; a wire has no
+         * special way of writing its end and must not grow one, or the two would
+         * drift apart on the first fix to either.
+         */
+        link_target(to: string, to_prop: string, next: $mol_tree2 | null): void;
+        /**
+         * Unplugs a port: the reference goes from the target, and the wire goes from
+         * the class when nobody else reads it. Both lines, or the first alone when
+         * the second is still in use.
+         */
+        link_drop(to: string, to_prop: string): void;
+        /**
+         * Unplugs every wire with an end on a part: the ones it feeds and the ones
+         * it reads. What a delete of that part has to do before it takes the part
+         * out, or the document keeps a wire to a node that is no longer declared —
+         * which compiles into a call of a property nobody declares.
+         *
+         * Through `link_drop`, so a wire read by somebody else keeps its line
+         * exactly as it does when a port is unplugged by hand; a wire from this part
+         * that nobody reads has no consumer to unplug and goes in the second pass.
+         * Both ends of every OTHER wire are left alone.
+         */
+        links_drop(node: string): void;
+        /**
+         * Not through `prop_tree()`: that one is a keyed cell the writes below go
+         * through, and a read taken from a written cell freezes at what was written.
+         * `props_tree()` is a plain derivation of the source and stays live.
+         */
+        prop_decl(name: string): $mol_tree2 | null;
+        /**
+         * The empty owner is the class, a named one is a part. Both are one shape
+         * because `upper` has already flattened them: the class carries `sub` as a
+         * property, a part carries it as an override under its class name, and under
+         * either sits the same list of bare references.
+         */
+        sub_list(owner?: string): $mol_tree2 | null;
+        /**
+         * `null` when the node declares no `sub` and so is not a container.
+         *
+         * A node WITH a `sub` is an artboard: children of it are laid out by tree,
+         * by ordinary flex, while everything else lies free by coordinates. That is
+         * the whole difference between the two, and it is a difference in the text
+         * rather than a mark on the side, see section 8.
+         *
+         * Content that is not a bare reference — a literal string in `sub` — takes
+         * its place in the list as an empty name, so that an index here is an index
+         * there.
+         */
+        sub_names(owner?: string): readonly string[] | null;
+        /** Whose `sub` references this name: a part, `''` for the class, `null` for nobody. */
+        sub_holder(name: string): string | null;
+        /** Whether `name` is `owner` itself or lies somewhere under it. */
+        sub_within(owner: string, name: string): boolean;
+        /**
+         * An override already there is replaced where it stands, never dropped and
+         * appended: the order of the lines under a part is text the user reads, and
+         * a `sub` that jumped to the bottom on every insertion would rewrite the
+         * declaration around an edit that changed one child.
+         */
+        sub_write(owner: string, list: $mol_tree2): void;
+        /** Makes a node a container by giving it an empty `sub`, if it has none. */
+        sub_open(owner: string): void;
+        /**
+         * Only under a PART: a property whose value is a class name. Under anything
+         * else the children are not overrides at all — under `sub` they are bare
+         * `<=` references — and reading them as property signatures fails on the
+         * first one, which is how every property of the document gets asked whether
+         * it is an artboard.
+         */
+        over_tree(owner: string, prop: string): $mol_tree2 | null;
+        /**
+         * In place, because the order of the lines under a part is text the user
+         * reads: an override that jumped to the bottom every time its value changed
+         * would rewrite the declaration around an edit that changed one line.
+         */
+        over_set(owner: string, prop: string, next: $mol_tree2 | null): void;
+        /**
+         * A cycle in `sub` is not a badly drawn document, it is a class whose
+         * `dom_tree()` never returns: the scene would hang on the first render, and
+         * the document that hangs it is the one that got saved.
+         */
+        sub_check(name: string, owner: string): void;
+        /**
+         * The position is where the insertion line was drawn, so it is clamped
+         * rather than checked: a drop at the end of a list the document has since
+         * shortened is an ordinary race of a gesture against a document, and landing
+         * at the end is the answer to it.
+         */
+        sub_insert(name: string, index: number, owner?: string): void;
+        /**
+         * Taken out first and put back after, so reparenting and reordering are one
+         * operation with one shape. Within one parent the index is corrected for the
+         * hole the node itself leaves, because the position the user aimed at was
+         * read off a list that still had it.
+         *
+         * The refusal is checked BEFORE the node is taken out, not left to the
+         * insertion: a move that fails halfway is a document with the node gone from
+         * the page and nothing in its place, written and saved.
+         */
+        sub_move(name: string, index: number, owner?: string): void;
+        sub_add(name: string): void;
+        /**
+         * The empty list is kept rather than the whole property dropped: `sub /` with
+         * nothing under it is the shape an empty document starts from, so deleting
+         * the last node returns the source to exactly that, instead of to a class
+         * with no `sub` at all.
+         *
+         * Only the reference goes. Dropping the declaration as well is two facts, so
+         * it is two calls — the same split as `part_add` plus `sub_add` on the way
+         * in. A node taken out of `sub` but still declared is a free part that draws
+         * nothing and keeps its ports, which is a legitimate state, not a leftover.
+         *
+         * The reference is looked for wherever it is, the class and every part of it
+         * alike. A node inside an artboard is referenced by that artboard and not by
+         * the class, and deleting it has to reach there too — otherwise the document
+         * keeps drawing a node nothing declares any more.
+         */
+        sub_drop(name: string): void;
+    }
+    /**
+     * One property of a node, with its signature. `name`, `tree` and `node` are
+     * handed in by the owner through `make`.
+     */
+    class $bog_vmap_lang_prop extends $mol_object {
+        name(): string;
+        node(): $bog_vmap_lang_node;
+        tree(next?: $mol_tree2): $mol_tree2;
+        /** Re-binds the same property to another model class. */
+        as<Prop extends typeof $bog_vmap_lang_prop>(Prop: Prop): InstanceType<Prop>;
+        /**
+         * A rename goes to the node, because it is not a fact about this property
+         * alone: everything that spells the old name has to be rewritten in the same
+         * write. A change of sign is local and is written here.
+         *
+         * Deviation from studio: this handle is NOT patched to follow the rename.
+         * Studio overwrites the `name` method of the live property object, which
+         * leaves an object addressing one name and reading another past the graph;
+         * here the handle simply stops addressing anything, and the caller asks the
+         * node for the property under its new name — a keyed cell, so that is one
+         * read and no state.
+         *
+         * **Plain method, and so are the three below.** Every accessor here only
+         * delegates into `tree()`, which is a cell already, and an accessor of that
+         * shape under a memoizing decorator freezes at the value written THROUGH it:
+         * after a rename the handle goes on reporting the new name although it
+         * addresses a property no longer under it, which is the very
+         * object-past-the-graph the patching above was dropped for. There is a test.
+         */
+        meta(next?: {
+            readonly name?: string;
+            readonly key?: string;
+            readonly next?: string;
+        }): {
+            [key: string]: string;
+        } & {
+            readonly name: string;
+            readonly key: string;
+            readonly next: string;
+        };
+        title(next?: string): string;
+        key(next?: boolean): boolean;
+        next(next?: boolean): boolean;
+    }
+}
+
+declare namespace $ {
+    /**
+     * Order of the declarations going into one `new Function`: the libraries, then
+     * the document, every base before its heir, and one declaration per name.
+     *
+     * Libraries first because the document is written against them, and a stable
+     * sort keeps that unless a library class inherits a document class — legal,
+     * odd, and then the base still comes first. The sort itself is the canonical
+     * `$bog_vmap_lang_sorted`: ordering declarations is a property of the language,
+     * and the scene's own copy of it was the second one too many.
+     *
+     * A name declared twice keeps the LAST declaration and drops the earlier one,
+     * which is the rule the class index of the library model already lives by and the rule the
+     * sandbox enforces on its own: two declarations of one class in one source
+     * would define the second over the first anyway, only with the first still
+     * having been extended by anyone declared in between. Dropping it up front makes
+     * «the document shadows the library» hold for heirs as well.
+     *
+     * No class name is spelled out in this comment on purpose: mam reads doc
+     * comments for dependencies, and a one segment name here failed the build of
+     * the scene with «Root package not found».
+     *
+     * Bases the list does not declare — the classes of the pack, already in the
+     * sandbox — are left alone, as the sort leaves them.
+     */
+    function $bog_vmap_scene_order(this: $, libs: readonly $mol_tree2[], doc: readonly $mol_tree2[]): readonly $mol_tree2[];
+}
+
+declare namespace $ {
+    /** Shape of one recompiled class: what it declares and what of that is keyed. */
+    type $bog_vmap_scene_swap_shape = {
+        readonly declared: ReadonlySet<string>;
+        readonly keyed: ReadonlySet<string>;
+    };
+    /** Counters of one hot swap, for tests and for the log. */
+    type $bog_vmap_scene_swap_report = {
+        /** Instances whose prototype was moved onto the freshly compiled class. */
+        swapped: number;
+        /** Atoms whose implementation was redirected onto the new one. */
+        moved: number;
+        /** Atoms whose implementation actually changed, so subscribers were woken. */
+        stale: number;
+        /** Atoms dropped because the property changed shape or stopped being a cell. */
+        dropped: number;
+        /** Atoms holding a failure, woken whatever changed: they have nothing to keep. */
+        failed: number;
+    };
+    /**
+     * Moves a live component onto the freshly compiled classes, keeping its state.
+     *
+     * A cell lives as an OWN field of the instance, so replacing the prototype
+     * touches no value, no subscription and no DOM node — caret, focus and scroll
+     * position included. The one thing the prototype does not reach is the
+     * implementation a fiber captured in its constructor, and that is what is
+     * redirected here, taking the new one off the wrapper the decorator left it on.
+     *
+     * The walk goes over the atom caches and never over `sub()`: free parts are not
+     * in `sub` at all, `sub()` of a generated class is not memoized, so calling it
+     * would run user code and could create children that do not exist yet, and a
+     * child temporarily out of `sub` is still a live instance.
+     *
+     * Instances of classes the document does not declare — components of the donor
+     * pack — keep their prototype and are only walked through, because a document
+     * class may well sit inside one.
+     * @see ../../ARCHITECTURE.md section 3, ../../spike/S2.md
+     */
+    function $bog_vmap_scene_swap(this: $, root: object, klass_of: (name: string) => unknown, shape_of: (name: string) => $bog_vmap_scene_swap_shape | null): $bog_vmap_scene_swap_report;
+}
+
+declare namespace $ {
+    /**
+     * Makes a cell of every method a handwritten body defines: keyed and
+     * changeable ones as the tree says, the way studio's `source_js_decorators()`
+     * does, and every zero argument method besides, whatever the tree says. The
+     * generated code calls it right after the class, since a decorator cannot be
+     * written into a string for `new Function`, and it reads the class rather
+     * than the text, so a nested `if( x ) {` cannot pass for a method.
+     *
+     * Without an atom the hot swap has nothing to wake when the text of a method
+     * changes: its callers keep the old value and the DOM keeps the old text.
+     */
+    function $bog_vmap_scene_cells(Klass: {
+        readonly prototype: object;
+    }, keyed: readonly string[], changeable: readonly string[]): void;
+}
+
+declare namespace $ {
+    function $mol_tree2_text_to_string(this: $, text: $mol_tree2): string;
+}
+
+declare namespace $ {
+    function $mol_vlq_encode(val: number): string;
+}
+
+declare namespace $ {
+    type $mol_sourcemap_segment = [number] | [number, number, number, number] | [number, number, number, number, number];
+    type $mol_sourcemap_line = $mol_sourcemap_segment[];
+    type $mol_sourcemap_mappings = $mol_sourcemap_line[];
+    interface $mol_sourcemap_raw {
+        version: number;
+        sources: string[];
+        names?: string[];
+        sourceRoot?: string;
+        sourcesContent?: (string | null)[];
+        mappings: string | $mol_sourcemap_line[];
+        file?: string;
+    }
+}
+
+declare namespace $ {
+    function $mol_tree2_text_to_sourcemap(this: $, tree: $mol_tree2): $mol_sourcemap_raw;
+}
+
+declare namespace $ {
+    function $mol_sourcemap_url(this: $, uri: string, type?: "js" | "css"): string;
+}
+
+declare namespace $ {
+    function $mol_sourcemap_dataurl_decode(this: $, data: string): $mol_sourcemap_raw | undefined;
+    function $mol_sourcemap_dataurl_encode(this: $, map: $mol_sourcemap_raw, type?: "js" | "css"): string;
+}
+
+declare namespace $ {
+    function $mol_tree2_text_to_string_mapped(this: $, text: $mol_tree2, type: 'js' | 'css'): string;
+    function $mol_tree2_text_to_string_mapped_js(this: $, text: $mol_tree2): string;
+    function $mol_tree2_text_to_string_mapped_css(this: $, text: $mol_tree2): string;
+}
+
+declare namespace $ {
+    function $mol_tree2_js_is_number(type: string): boolean | RegExpMatchArray;
+}
+
+declare namespace $ {
+    function $mol_tree2_js_to_text(this: $, js: $mol_tree2): $mol_tree2;
+}
+
+declare namespace $ {
     class $mol_storage extends $mol_object2 {
         /** Is storage a long term. */
         static persisted(next?: boolean): boolean;
@@ -3353,14 +3999,6 @@ declare namespace $ {
         prefix(): string;
         value(key: string, next?: Value): Value | null;
     }
-}
-
-declare namespace $ {
-    /**
-     * Decorates method to fiber to ensure it is executed only once inside other fiber from [mol_wire](../wire/README.md)
-     * @see https://mol.hyoo.ru/#!section=docs/=1fcpsq_1wh0h2
-     */
-    let $mol_action: typeof $mol_wire_method;
 }
 
 declare namespace $ {
@@ -3565,334 +4203,7 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    function $mol_tree2_js_is_number(type: string): boolean | RegExpMatchArray;
-}
-
-declare namespace $ {
     function $mol_view_tree2_to_js(this: $, descr: $mol_tree2): $mol_tree2;
-}
-
-declare namespace $ {
-
-	export class $mol_paragraph extends $mol_view {
-		line_height( ): number
-		letter_width( ): number
-		width_limit( ): number
-		row_width( ): number
-		sub( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=paragraph.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_paragraph extends $.$mol_paragraph {
-        maximal_width(): number;
-        width_limit(): number;
-        minimal_width(): number;
-        row_width(): number;
-        minimal_height(): number;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_stack extends $mol_view {
-	}
-	
-}
-
-//# sourceMappingURL=stack.view.tree.d.ts.map
-declare namespace $ {
-
-	type $mol_paragraph__sub_mol_dimmer_1 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_paragraph['sub'] >
-	>
-	type $mol_paragraph__sub_mol_dimmer_2 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_paragraph['sub'] >
-	>
-	export class $mol_dimmer extends $mol_paragraph {
-		parts( ): readonly($mol_view_content)[]
-		string( id: any): string
-		haystack( ): string
-		needle( ): string
-		sub( ): ReturnType< $mol_dimmer['parts'] >
-		Low( id: any): $mol_paragraph
-		High( id: any): $mol_paragraph
-	}
-	
-}
-
-//# sourceMappingURL=dimmer.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Output text with dimmed mismatched substrings.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_dimmer_demo
-     */
-    class $mol_dimmer extends $.$mol_dimmer {
-        parts(): any[];
-        strings(): string[];
-        string(index: number): string;
-        view_find(check: (path: $mol_view, text?: string) => boolean, path?: $mol_view[]): Generator<$mol_view[]>;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-    type $mol_style_pseudo_class = ':active' | ':any' | ':any-link' | ':checked' | ':default' | ':defined' | ':dir(rtl)' | ':dir(ltr)' | ':disabled' | ':empty' | ':enabled' | ':first' | ':first-child' | ':first-of-type' | ':fullscreen' | ':focus' | ':focus-visible' | ':focus-within' | ':hover' | ':indeterminate' | ':in-range' | ':invalid' | ':last-child' | ':last-of-type' | ':left' | ':link' | `:not(${string})` | `:nth-child(${string})` | `:nth-last-child(${string})` | `:nth-of-type(${string})` | `:nth-last-of-type(${string})` | ':only-child' | ':only-of-type' | ':optional' | ':out-of-range' | ':placeholder-shown' | ':read-only' | ':read-write' | ':required' | ':right' | ':root' | ':scope' | ':target' | ':valid' | ':visited';
-}
-
-declare namespace $ {
-    type $mol_style_pseudo_element = '::after' | '::before' | '::cue' | '::first-letter' | '::first-line' | '::selection' | '::slotted' | '::backdrop' | '::placeholder' | '::marker' | '::spelling-error' | '::grammar-error' | '::-webkit-calendar-picker-indicator' | '::-webkit-color-swatch' | '::-webkit-color-swatch-wrapper' | '::-webkit-details-marker' | '::-webkit-file-upload-button' | '::-webkit-image-inner-element' | '::-webkit-inner-spin-button' | '::-webkit-input-placeholder' | '::-webkit-input-speech-button' | '::-webkit-keygen-select' | '::-webkit-media-controls-panel' | '::-webkit-media-controls-timeline-container' | '::-webkit-media-slider-container' | '::-webkit-meter-bar' | '::-webkit-meter-even-less-good-value' | '::-webkit-meter-optimum-value' | '::-webkit-meter-suboptimal-value' | '::-webkit-progress-bar' | '::-webkit-progress-value' | '::-webkit-resizer' | '::-webkit-resizer:window-inactive' | '::-webkit-scrollbar' | '::-webkit-scrollbar-button' | '::-webkit-scrollbar-button:disabled' | '::-webkit-scrollbar-button:double-button:horizontal:end:decrement' | '::-webkit-scrollbar-button:double-button:horizontal:end:increment' | '::-webkit-scrollbar-button:double-button:horizontal:end:increment:corner-present' | '::-webkit-scrollbar-button:double-button:horizontal:start:decrement' | '::-webkit-scrollbar-button:double-button:horizontal:start:increment' | '::-webkit-scrollbar-button:double-button:vertical:end:decrement' | '::-webkit-scrollbar-button:double-button:vertical:end:increment' | '::-webkit-scrollbar-button:double-button:vertical:end:increment:corner-present' | '::-webkit-scrollbar-button:double-button:vertical:start:decrement' | '::-webkit-scrollbar-button:double-button:vertical:start:increment' | '::-webkit-scrollbar-button:end' | '::-webkit-scrollbar-button:end:decrement' | '::-webkit-scrollbar-button:end:increment' | '::-webkit-scrollbar-button:horizontal' | '::-webkit-scrollbar-button:horizontal:decrement' | '::-webkit-scrollbar-button:horizontal:decrement:active' | '::-webkit-scrollbar-button:horizontal:decrement:hover' | '::-webkit-scrollbar-button:horizontal:decrement:window-inactive' | '::-webkit-scrollbar-button:horizontal:end' | '::-webkit-scrollbar-button:horizontal:end:decrement' | '::-webkit-scrollbar-button:horizontal:end:increment' | '::-webkit-scrollbar-button:horizontal:end:increment:corner-present' | '::-webkit-scrollbar-button:horizontal:increment' | '::-webkit-scrollbar-button:horizontal:increment:active' | '::-webkit-scrollbar-button:horizontal:increment:hover' | '::-webkit-scrollbar-button:horizontal:increment:window-inactive' | '::-webkit-scrollbar-button:horizontal:start' | '::-webkit-scrollbar-button:horizontal:start:decrement' | '::-webkit-scrollbar-button:horizontal:start:increment' | '::-webkit-scrollbar-button:start' | '::-webkit-scrollbar-button:start:decrement' | '::-webkit-scrollbar-button:start:increment' | '::-webkit-scrollbar-button:vertical' | '::-webkit-scrollbar-button:vertical:decrement' | '::-webkit-scrollbar-button:vertical:decrement:active' | '::-webkit-scrollbar-button:vertical:decrement:hover' | '::-webkit-scrollbar-button:vertical:decrement:window-inactive' | '::-webkit-scrollbar-button:vertical:end' | '::-webkit-scrollbar-button:vertical:end:decrement' | '::-webkit-scrollbar-button:vertical:end:increment' | '::-webkit-scrollbar-button:vertical:end:increment:corner-present' | '::-webkit-scrollbar-button:vertical:increment' | '::-webkit-scrollbar-button:vertical:increment:active' | '::-webkit-scrollbar-button:vertical:increment:hover' | '::-webkit-scrollbar-button:vertical:increment:window-inactive' | '::-webkit-scrollbar-button:vertical:start' | '::-webkit-scrollbar-button:vertical:start:decrement' | '::-webkit-scrollbar-button:vertical:start:increment' | '::-webkit-scrollbar-corner' | '::-webkit-scrollbar-corner:window-inactive' | '::-webkit-scrollbar-thumb' | '::-webkit-scrollbar-thumb:horizontal' | '::-webkit-scrollbar-thumb:horizontal:active' | '::-webkit-scrollbar-thumb:horizontal:hover' | '::-webkit-scrollbar-thumb:horizontal:window-inactive' | '::-webkit-scrollbar-thumb:vertical' | '::-webkit-scrollbar-thumb:vertical:active' | '::-webkit-scrollbar-thumb:vertical:hover' | '::-webkit-scrollbar-thumb:vertical:window-inactive' | '::-webkit-scrollbar-track' | '::-webkit-scrollbar-track-piece' | '::-webkit-scrollbar-track-piece:disabled' | '::-webkit-scrollbar-track-piece:end' | '::-webkit-scrollbar-track-piece:horizontal:decrement' | '::-webkit-scrollbar-track-piece:horizontal:decrement:active' | '::-webkit-scrollbar-track-piece:horizontal:decrement:hover' | '::-webkit-scrollbar-track-piece:horizontal:end' | '::-webkit-scrollbar-track-piece:horizontal:end:corner-present' | '::-webkit-scrollbar-track-piece:horizontal:end:double-button' | '::-webkit-scrollbar-track-piece:horizontal:end:no-button' | '::-webkit-scrollbar-track-piece:horizontal:end:no-button:corner-present' | '::-webkit-scrollbar-track-piece:horizontal:end:single-button' | '::-webkit-scrollbar-track-piece:horizontal:increment' | '::-webkit-scrollbar-track-piece:horizontal:increment:active' | '::-webkit-scrollbar-track-piece:horizontal:increment:hover' | '::-webkit-scrollbar-track-piece:horizontal:start' | '::-webkit-scrollbar-track-piece:horizontal:start:double-button' | '::-webkit-scrollbar-track-piece:horizontal:start:no-button' | '::-webkit-scrollbar-track-piece:horizontal:start:single-button' | '::-webkit-scrollbar-track-piece:start' | '::-webkit-scrollbar-track-piece:vertical:decrement' | '::-webkit-scrollbar-track-piece:vertical:decrement:active' | '::-webkit-scrollbar-track-piece:vertical:decrement:hover' | '::-webkit-scrollbar-track-piece:vertical:end' | '::-webkit-scrollbar-track-piece:vertical:end:corner-present' | '::-webkit-scrollbar-track-piece:vertical:end:double-button' | '::-webkit-scrollbar-track-piece:vertical:end:no-button' | '::-webkit-scrollbar-track-piece:vertical:end:no-button:corner-present' | '::-webkit-scrollbar-track-piece:vertical:end:single-button' | '::-webkit-scrollbar-track-piece:vertical:increment' | '::-webkit-scrollbar-track-piece:vertical:increment:active' | '::-webkit-scrollbar-track-piece:vertical:increment:hover' | '::-webkit-scrollbar-track-piece:vertical:start' | '::-webkit-scrollbar-track-piece:vertical:start:double-button' | '::-webkit-scrollbar-track-piece:vertical:start:no-button' | '::-webkit-scrollbar-track-piece:vertical:start:single-button' | '::-webkit-scrollbar-track:disabled' | '::-webkit-scrollbar-track:horizontal' | '::-webkit-scrollbar-track:horizontal:disabled' | '::-webkit-scrollbar-track:horizontal:disabled:corner-present' | '::-webkit-scrollbar-track:vertical:disabled' | '::-webkit-scrollbar-track:vertical:disabled:corner-present' | '::-webkit-scrollbar:horizontal' | '::-webkit-scrollbar:horizontal:corner-present' | '::-webkit-scrollbar:horizontal:window-inactive' | '::-webkit-scrollbar:vertical' | '::-webkit-scrollbar:vertical:corner-present' | '::-webkit-scrollbar:vertical:window-inactive' | '::-webkit-search-cancel-button' | '::-webkit-search-decoration' | '::-webkit-search-results-button' | '::-webkit-search-results-decoration' | '::-webkit-slider-container' | '::-webkit-slider-runnable-track' | '::-webkit-slider-thumb' | '::-webkit-slider-thumb:disabled' | '::-webkit-slider-thumb:hover' | '::-webkit-textfield-decoration-container' | '::-webkit-validation-bubble' | '::-webkit-validation-bubble-arrow' | '::-webkit-validation-bubble-arrow-clipper' | '::-webkit-validation-bubble-heading' | '::-webkit-validation-bubble-message' | '::-webkit-validation-bubble-text-block';
-}
-
-declare namespace $ {
-    /** Returns error type, that don't match to normal value. */
-    type $mol_type_error<Message, Info = {}> = Message & {
-        $mol_type_error: Info;
-    };
-}
-
-declare namespace $ {
-    type Attrs<View extends $mol_view, Config, Attrs = ReturnType<View['attr']>> = {
-        [name in keyof Attrs]?: {
-            [val in keyof Config[Extract<name, keyof Config>]]: $mol_style_guard<View, Config[Extract<name, keyof Config>][val]>;
-        };
-    };
-    type Medias<View extends $mol_view, Config> = {
-        [query in keyof Config]: $mol_style_guard<View, Config[query]>;
-    };
-    type Keys<View extends $mol_view> = '>' | '@' | keyof $mol_style_properties | $mol_style_pseudo_element | $mol_style_pseudo_class | $mol_type_keys_extract<View, () => $mol_view> | `$${string}`;
-    export type $mol_style_guard<View extends $mol_view, Config> = {
-        [key in Keys<View>]?: unknown;
-    } & $mol_style_properties & {
-        [key in keyof Config]: key extends keyof $mol_style_properties ? $mol_style_properties[key] : key extends '>' | $mol_style_pseudo_class | $mol_style_pseudo_element ? $mol_style_guard<View, Config[key]> : key extends '@' ? Attrs<View, Config[key]> : key extends ('@media' | '@container') ? Medias<View, Config[key]> : key extends '@starting-style' ? $mol_style_guard<View, Config[key]> : key extends `[${string}]` ? {
-            [val in keyof Config[key]]: $mol_style_guard<View, Config[key][val]>;
-        } : key extends `--${string}` ? any : key extends keyof $ ? $mol_style_guard<InstanceType<Extract<$[key], typeof $mol_view>>, Config[key]> : key extends keyof View ? View[key] extends (id?: any) => infer Sub ? Sub extends $mol_view ? $mol_style_guard<Sub, Config[key]> : $mol_type_error<'Property returns non $mol_view', {
-            Returns: Sub;
-        }> : $mol_type_error<'Field is not a Property'> : key extends `$${string}` ? $mol_type_error<'Unknown View Class'> : $mol_type_error<'Unknown CSS Property'>;
-    };
-    export {};
-}
-
-declare namespace $ {
-    function $mol_style_sheet<Component extends $mol_view, Config extends $mol_style_guard<Component, Config>>(Component: new () => Component, config0: Config): string;
-}
-
-declare namespace $ {
-    /**
-     * CSS in TS.
-     * Statically typed CSS style sheets. Following samples show which CSS code are generated from TS code.
-     * @see https://mol.hyoo.ru/#!section=docs/=xwq9q5_f966fg
-     */
-    function $mol_style_define<Component extends $mol_view, Config extends $mol_style_guard<Component, Config>>(Component: new () => Component, config: Config): HTMLStyleElement | null;
-}
-
-declare namespace $ {
-
-	export class $mol_text_code_token extends $mol_dimmer {
-		type( ): string
-		attr( ): ({ 
-			'mol_text_code_token_type': ReturnType< $mol_text_code_token['type'] >,
-		})  & ReturnType< $mol_dimmer['attr'] >
-	}
-	
-	export class $mol_text_code_token_link extends $mol_text_code_token {
-		uri( ): string
-		dom_name( ): string
-		type( ): string
-		attr( ): ({ 
-			'href': ReturnType< $mol_text_code_token_link['uri'] >,
-			'target': string,
-		})  & ReturnType< $mol_text_code_token['attr'] >
-	}
-	
-}
-
-//# sourceMappingURL=token.view.tree.d.ts.map
-declare namespace $.$$ {
-}
-
-declare namespace $ {
-    /** Creates lexer by dictionary of lexems. Lexem that started first wins. Then lexem that declared earlier wins. Use regexp capture to take parts of token. */
-    class $mol_syntax2<Lexems extends {
-        [name: string]: RegExp;
-    } = {}> {
-        lexems: Lexems;
-        constructor(lexems: Lexems);
-        rules: Array<{
-            regExp: RegExp;
-            name: string;
-            size: number;
-        }>;
-        regexp: RegExp;
-        tokenize(text: string, handle: (name: string, found: string, chunks: string[], offset: number) => void): void;
-        parse(text: string, handlers: {
-            [key in keyof Lexems | '']: (found: string, chunks: string[], offset: number) => void;
-        }): void;
-    }
-}
-
-declare namespace $ {
-    var $mol_syntax2_md_flow: $mol_syntax2<{
-        quote: RegExp;
-        spoiler: RegExp;
-        header: RegExp;
-        list: RegExp;
-        code: RegExp;
-        'code-indent': RegExp;
-        table: RegExp;
-        grid: RegExp;
-        cut: RegExp;
-        block: RegExp;
-    }>;
-    var $mol_syntax2_md_line: $mol_syntax2<{
-        strong: RegExp;
-        emphasis: RegExp;
-        code: RegExp;
-        insert: RegExp;
-        delete: RegExp;
-        embed: RegExp;
-        link: RegExp;
-        'image-link': RegExp;
-        'text-link': RegExp;
-        'text-link-http': RegExp;
-    }>;
-    const $mol_syntax2_md_code: $mol_syntax2<{
-        'code-indent': RegExp;
-        'code-docs': RegExp;
-        'code-comment-block': RegExp;
-        'code-link': RegExp;
-        'code-comment-inline': RegExp;
-        'code-string': RegExp;
-        'code-number': RegExp;
-        'code-call': RegExp;
-        'code-sexpr': RegExp;
-        'code-field': RegExp;
-        'code-keyword': RegExp;
-        'code-global': RegExp;
-        'code-word': RegExp;
-        'code-decorator': RegExp;
-        'code-tag': RegExp;
-        'code-punctuation': RegExp;
-    }>;
-}
-
-declare namespace $ {
-
-	type $mol_view__sub_mol_text_code_line_1 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_text_code_token__type_mol_text_code_line_2 = $mol_type_enforce<
-		ReturnType< $mol_text_code_line['token_type'] >
-		,
-		ReturnType< $mol_text_code_token['type'] >
-	>
-	type $mol_text_code_token__haystack_mol_text_code_line_3 = $mol_type_enforce<
-		ReturnType< $mol_text_code_line['token_text'] >
-		,
-		ReturnType< $mol_text_code_token['haystack'] >
-	>
-	type $mol_text_code_token__needle_mol_text_code_line_4 = $mol_type_enforce<
-		ReturnType< $mol_text_code_line['highlight'] >
-		,
-		ReturnType< $mol_text_code_token['needle'] >
-	>
-	type $mol_text_code_token_link__haystack_mol_text_code_line_5 = $mol_type_enforce<
-		ReturnType< $mol_text_code_line['token_text'] >
-		,
-		ReturnType< $mol_text_code_token_link['haystack'] >
-	>
-	type $mol_text_code_token_link__needle_mol_text_code_line_6 = $mol_type_enforce<
-		ReturnType< $mol_text_code_line['highlight'] >
-		,
-		ReturnType< $mol_text_code_token_link['needle'] >
-	>
-	type $mol_text_code_token_link__uri_mol_text_code_line_7 = $mol_type_enforce<
-		ReturnType< $mol_text_code_line['token_uri'] >
-		,
-		ReturnType< $mol_text_code_token_link['uri'] >
-	>
-	export class $mol_text_code_line extends $mol_paragraph {
-		numb( ): number
-		token_type( id: any): string
-		token_text( id: any): string
-		highlight( ): string
-		token_uri( id: any): string
-		text( ): string
-		minimal_height( ): number
-		numb_showed( ): boolean
-		syntax( ): any
-		uri_resolve( id: any): string
-		Numb( ): $mol_view
-		Token( id: any): $mol_text_code_token
-		Token_link( id: any): $mol_text_code_token_link
-		find_pos( id: any): any
-	}
-	
-}
-
-//# sourceMappingURL=line.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_text_code_line extends $.$mol_text_code_line {
-        maximal_width(): number;
-        syntax(): $mol_syntax2<{
-            'code-indent': RegExp;
-            'code-docs': RegExp;
-            'code-comment-block': RegExp;
-            'code-link': RegExp;
-            'code-comment-inline': RegExp;
-            'code-string': RegExp;
-            'code-number': RegExp;
-            'code-call': RegExp;
-            'code-sexpr': RegExp;
-            'code-field': RegExp;
-            'code-keyword': RegExp;
-            'code-global': RegExp;
-            'code-word': RegExp;
-            'code-decorator': RegExp;
-            'code-tag': RegExp;
-            'code-punctuation': RegExp;
-        }>;
-        tokens(path: number[]): Readonly<{
-            name: string;
-            found: string;
-            chunks: string[];
-        }[]>;
-        sub(): (string | $mol_view)[];
-        row_content(path: number[]): string[] | $mol_text_code_token[];
-        Token(path: number[]): $mol_text_code_token;
-        token_type(path: number[]): string;
-        token_content(path: number[]): (string | $mol_text_code_token)[];
-        token_text(path: number[]): string;
-        token_uri(path: number[]): string;
-        view_find(check: (path: $mol_view, text?: string) => boolean, path?: $mol_view[]): Generator<$mol_view[]>;
-        find_pos(offset: number): {
-            token: $mol_text_code_token;
-            offset: number;
-        } | null;
-        find_token_pos([offset, ...path]: number[]): {
-            token: $mol_text_code_token;
-            offset: number;
-        } | null;
-    }
-}
-
-declare namespace $.$$ {
 }
 
 declare namespace $ {
@@ -4113,14 +4424,6 @@ declare namespace $ {
 
 //# sourceMappingURL=minor.view.tree.d.ts.map
 declare namespace $ {
-    type $mol_blob = Blob;
-    let $mol_blob: {
-        prototype: Blob;
-        new (blobParts?: readonly BlobPart[], options?: BlobPropertyBag): Blob;
-    };
-}
-
-declare namespace $ {
 }
 
 declare namespace $ {
@@ -4142,2214 +4445,6 @@ declare namespace $ {
 }
 
 //# sourceMappingURL=icon.view.tree.d.ts.map
-declare namespace $ {
-
-	export class $mol_icon_clipboard extends $mol_icon {
-		path( ): string
-	}
-	
-}
-
-//# sourceMappingURL=clipboard.view.tree.d.ts.map
-declare namespace $ {
-
-	export class $mol_icon_clipboard_outline extends $mol_icon {
-		path( ): string
-	}
-	
-}
-
-//# sourceMappingURL=outline.view.tree.d.ts.map
-declare namespace $ {
-    function $mol_html_encode(text: string): string;
-}
-
-declare namespace $ {
-
-	type $mol_blob__mol_button_copy_1 = $mol_type_enforce<
-		[ readonly(BlobPart)[], ({ 
-			'type': string,
-		})  ]
-		,
-		ConstructorParameters< typeof $mol_blob >
-	>
-	type $mol_blob__mol_button_copy_2 = $mol_type_enforce<
-		[ readonly(BlobPart)[], ({ 
-			'type': string,
-		})  ]
-		,
-		ConstructorParameters< typeof $mol_blob >
-	>
-	export class $mol_button_copy extends $mol_button_minor {
-		text( ): ReturnType< $mol_button_copy['title'] >
-		text_blob( next?: $mol_blob ): $mol_blob
-		html( ): string
-		html_blob( next?: $mol_blob ): $mol_blob
-		Icon( ): $mol_icon_clipboard_outline
-		title( ): string
-		blobs( ): readonly($mol_blob)[]
-		data( ): Record<string, any>
-		sub( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=copy.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Button copy text() value to clipboard
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_button_demo
-     */
-    class $mol_button_copy extends $.$mol_button_copy {
-        data(): {
-            [k: string]: Blob;
-        };
-        html(): string;
-        attachments(): ClipboardItem[];
-        click(event?: Event): void;
-    }
-}
-
-declare namespace $ {
-
-	type $mol_text_code_line__numb_showed_mol_text_code_1 = $mol_type_enforce<
-		ReturnType< $mol_text_code['sidebar_showed'] >
-		,
-		ReturnType< $mol_text_code_line['numb_showed'] >
-	>
-	type $mol_text_code_line__numb_mol_text_code_2 = $mol_type_enforce<
-		ReturnType< $mol_text_code['row_numb'] >
-		,
-		ReturnType< $mol_text_code_line['numb'] >
-	>
-	type $mol_text_code_line__theme_mol_text_code_3 = $mol_type_enforce<
-		ReturnType< $mol_text_code['row_theme'] >
-		,
-		ReturnType< $mol_text_code_line['theme'] >
-	>
-	type $mol_text_code_line__text_mol_text_code_4 = $mol_type_enforce<
-		ReturnType< $mol_text_code['row_text'] >
-		,
-		ReturnType< $mol_text_code_line['text'] >
-	>
-	type $mol_text_code_line__syntax_mol_text_code_5 = $mol_type_enforce<
-		ReturnType< $mol_text_code['syntax'] >
-		,
-		ReturnType< $mol_text_code_line['syntax'] >
-	>
-	type $mol_text_code_line__uri_resolve_mol_text_code_6 = $mol_type_enforce<
-		ReturnType< $mol_text_code['uri_resolve'] >
-		,
-		ReturnType< $mol_text_code_line['uri_resolve'] >
-	>
-	type $mol_text_code_line__highlight_mol_text_code_7 = $mol_type_enforce<
-		ReturnType< $mol_text_code['highlight'] >
-		,
-		ReturnType< $mol_text_code_line['highlight'] >
-	>
-	type $mol_list__render_visible_only_mol_text_code_8 = $mol_type_enforce<
-		ReturnType< $mol_text_code['render_visible_only'] >
-		,
-		ReturnType< $mol_list['render_visible_only'] >
-	>
-	type $mol_list__rows_mol_text_code_9 = $mol_type_enforce<
-		ReturnType< $mol_text_code['rows'] >
-		,
-		ReturnType< $mol_list['rows'] >
-	>
-	type $mol_button_copy__hint_mol_text_code_10 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_button_copy['hint'] >
-	>
-	type $mol_button_copy__text_mol_text_code_11 = $mol_type_enforce<
-		ReturnType< $mol_text_code['text_export'] >
-		,
-		ReturnType< $mol_button_copy['text'] >
-	>
-	export class $mol_text_code extends $mol_stack {
-		sidebar_showed( ): boolean
-		render_visible_only( ): boolean
-		row_numb( id: any): number
-		row_theme( id: any): string
-		row_text( id: any): string
-		syntax( ): any
-		uri_resolve( id: any): string
-		highlight( ): string
-		Row( id: any): $mol_text_code_line
-		rows( ): readonly(any)[]
-		Rows( ): $mol_list
-		text_export( ): string
-		Copy( ): $mol_button_copy
-		attr( ): ({ 
-			'mol_text_code_sidebar_showed': ReturnType< $mol_text_code['sidebar_showed'] >,
-		})  & ReturnType< $mol_stack['attr'] >
-		text( ): string
-		text_lines( ): readonly(string)[]
-		find_pos( id: any): any
-		uri_base( ): string
-		row_themes( ): readonly(string)[]
-		sub( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=code.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Code visualizer.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_text_code_demo
-     */
-    class $mol_text_code extends $.$mol_text_code {
-        render_visible_only(): boolean;
-        text_lines(): readonly string[];
-        rows(): $.$mol_text_code_line[];
-        row_text(index: number): string;
-        row_numb(index: number): number;
-        find_pos(offset: number): any;
-        sub(): ($.$mol_list | $.$mol_button_copy)[];
-        syntax(): $mol_syntax2<{
-            'code-indent': RegExp;
-            'code-docs': RegExp;
-            'code-comment-block': RegExp;
-            'code-link': RegExp;
-            'code-comment-inline': RegExp;
-            'code-string': RegExp;
-            'code-number': RegExp;
-            'code-call': RegExp;
-            'code-sexpr': RegExp;
-            'code-field': RegExp;
-            'code-keyword': RegExp;
-            'code-global': RegExp;
-            'code-word': RegExp;
-            'code-decorator': RegExp;
-            'code-tag': RegExp;
-            'code-punctuation': RegExp;
-        }>;
-        uri_base(): string;
-        uri_resolve(uri: string): string;
-        text_export(): string;
-        row_theme(row: number): string;
-    }
-}
-
-declare namespace $.$$ {
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_float extends $mol_view {
-		style( ): ({ 
-			'minHeight': string,
-		})  & ReturnType< $mol_view['style'] >
-	}
-	
-}
-
-//# sourceMappingURL=float.view.tree.d.ts.map
-declare namespace $ {
-    class $mol_dom_event<EventType extends Event> extends $mol_object {
-        readonly native: EventType;
-        constructor(native: EventType);
-        prevented(next?: boolean): boolean;
-        static wrap<EventType extends Event>(event: EventType): $mol_dom_event<EventType>;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	type $mol_view__sub_mol_check_1 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	export class $mol_check extends $mol_button_minor {
-		checked( next?: boolean ): boolean
-		aria_checked( ): string
-		aria_role( ): string
-		Icon( ): any
-		title( ): string
-		Title( ): $mol_view
-		label( ): readonly(any)[]
-		attr( ): ({ 
-			'mol_check_checked': ReturnType< $mol_check['checked'] >,
-			'aria-checked': ReturnType< $mol_check['aria_checked'] >,
-			'role': ReturnType< $mol_check['aria_role'] >,
-		})  & ReturnType< $mol_button_minor['attr'] >
-		sub( ): readonly($mol_view_content)[]
-	}
-	
-}
-
-//# sourceMappingURL=check.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Checkbox UI component. See Variants for more concrete implementations.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_check_box_demo
-     */
-    class $mol_check extends $.$mol_check {
-        click(next?: Event): void;
-        sub(): readonly $mol_view_content[];
-        label(): readonly any[];
-        aria_checked(): string;
-    }
-}
-
-declare namespace $ {
-
-	export class $mol_icon_chevron extends $mol_icon {
-		path( ): string
-	}
-	
-}
-
-//# sourceMappingURL=chevron.view.tree.d.ts.map
-declare namespace $ {
-
-	export class $mol_check_expand extends $mol_check {
-		level_style( ): string
-		expanded( next?: boolean ): boolean
-		expandable( ): boolean
-		Icon( ): $mol_icon_chevron
-		level( ): number
-		style( ): ({ 
-			'paddingLeft': ReturnType< $mol_check_expand['level_style'] >,
-		})  & ReturnType< $mol_check['style'] >
-		checked( next?: ReturnType< $mol_check_expand['expanded'] > ): ReturnType< $mol_check_expand['expanded'] >
-		enabled( ): ReturnType< $mol_check_expand['expandable'] >
-	}
-	
-}
-
-//# sourceMappingURL=expand.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Expander for trees, lists, etc
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_check_expand_demo
-     */
-    class $mol_check_expand extends $.$mol_check_expand {
-        level_style(): string;
-        expandable(): boolean;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-    class $mol_state_session<Value> extends $mol_object {
-        static 'native()': Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
-        static native(): Storage | {
-            getItem(key: string): any;
-            setItem(key: string, value: string): void;
-            removeItem(key: string): void;
-        };
-        static value<Value>(key: string, next?: Value): Value;
-        prefix(): string;
-        value(key: string, next?: Value): Value;
-    }
-}
-
-declare namespace $ {
-
-	type $mol_grid_table__sub_mol_grid_1 = $mol_type_enforce<
-		ReturnType< $mol_grid['rows'] >
-		,
-		ReturnType< $mol_grid_table['sub'] >
-	>
-	type $mol_dimmer__needle_mol_grid_2 = $mol_type_enforce<
-		ReturnType< $mol_grid['needle'] >
-		,
-		ReturnType< $mol_dimmer['needle'] >
-	>
-	type $mol_dimmer__haystack_mol_grid_3 = $mol_type_enforce<
-		ReturnType< $mol_grid['cell_value'] >
-		,
-		ReturnType< $mol_dimmer['haystack'] >
-	>
-	type $mol_grid_row__cells_mol_grid_4 = $mol_type_enforce<
-		ReturnType< $mol_grid['head_cells'] >
-		,
-		ReturnType< $mol_grid_row['cells'] >
-	>
-	type $mol_grid_row__minimal_height_mol_grid_5 = $mol_type_enforce<
-		ReturnType< $mol_grid['row_height'] >
-		,
-		ReturnType< $mol_grid_row['minimal_height'] >
-	>
-	type $mol_grid_row__minimal_width_mol_grid_6 = $mol_type_enforce<
-		ReturnType< $mol_grid['minimal_width'] >
-		,
-		ReturnType< $mol_grid_row['minimal_width'] >
-	>
-	type $mol_grid_row__cells_mol_grid_7 = $mol_type_enforce<
-		ReturnType< $mol_grid['cells'] >
-		,
-		ReturnType< $mol_grid_row['cells'] >
-	>
-	type $mol_grid_cell__sub_mol_grid_8 = $mol_type_enforce<
-		ReturnType< $mol_grid['cell_content_text'] >
-		,
-		ReturnType< $mol_grid_cell['sub'] >
-	>
-	type $mol_grid_number__sub_mol_grid_9 = $mol_type_enforce<
-		ReturnType< $mol_grid['cell_content_number'] >
-		,
-		ReturnType< $mol_grid_number['sub'] >
-	>
-	type $mol_float__dom_name_mol_grid_10 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_float['dom_name'] >
-	>
-	type $mol_float__sub_mol_grid_11 = $mol_type_enforce<
-		ReturnType< $mol_grid['col_head_content'] >
-		,
-		ReturnType< $mol_float['sub'] >
-	>
-	type $mol_check_expand__level_mol_grid_12 = $mol_type_enforce<
-		ReturnType< $mol_grid['cell_level'] >
-		,
-		ReturnType< $mol_check_expand['level'] >
-	>
-	type $mol_check_expand__label_mol_grid_13 = $mol_type_enforce<
-		ReturnType< $mol_grid['cell_content'] >
-		,
-		ReturnType< $mol_check_expand['label'] >
-	>
-	type $mol_check_expand__expanded_mol_grid_14 = $mol_type_enforce<
-		ReturnType< $mol_grid['cell_expanded'] >
-		,
-		ReturnType< $mol_check_expand['expanded'] >
-	>
-	export class $mol_grid extends $mol_view {
-		rows( ): readonly($mol_view)[]
-		Table( ): $mol_grid_table
-		head_cells( ): readonly($mol_view)[]
-		cells( id: any): readonly($mol_view)[]
-		cell_content( id: any): readonly($mol_view_content)[]
-		cell_content_text( id: any): ReturnType< $mol_grid['cell_content'] >
-		cell_content_number( id: any): ReturnType< $mol_grid['cell_content'] >
-		col_head_content( id: any): readonly($mol_view_content)[]
-		cell_level( id: any): number
-		cell_expanded( id: any, next?: boolean ): boolean
-		needle( ): string
-		cell_value( id: any): string
-		Cell_dimmer( id: any): $mol_dimmer
-		row_height( ): number
-		row_ids( ): readonly(string[])[]
-		row_id( id: any): any
-		col_ids( ): readonly(any)[]
-		records( ): Record<string, any>
-		record( id: any): any
-		hierarchy( ): any
-		hierarchy_col( ): string
-		minimal_width( ): number
-		sub( ): readonly(any)[]
-		Head( ): $mol_grid_row
-		Row( id: any): $mol_grid_row
-		Cell( id: any): $mol_view
-		cell( id: any): any
-		Cell_text( id: any): $mol_grid_cell
-		Cell_number( id: any): $mol_grid_number
-		Col_head( id: any): $mol_float
-		Cell_branch( id: any): $mol_check_expand
-		Cell_content( id: any): readonly(any)[]
-	}
-	
-	export class $mol_grid_table extends $mol_list {
-	}
-	
-	export class $mol_grid_row extends $mol_view {
-		cells( ): readonly($mol_view)[]
-		sub( ): ReturnType< $mol_grid_row['cells'] >
-	}
-	
-	export class $mol_grid_cell extends $mol_view {
-		minimal_height( ): number
-	}
-	
-	export class $mol_grid_number extends $mol_grid_cell {
-	}
-	
-}
-
-//# sourceMappingURL=grid.view.tree.d.ts.map
-declare namespace $.$$ {
-    interface $mol_grid_node {
-        id: string;
-        parent: $mol_grid_node;
-        sub: $mol_grid_node[];
-    }
-    class $mol_grid extends $.$mol_grid {
-        head_cells(): readonly $mol_view[];
-        col_head_content(colId: string): readonly string[];
-        rows(): readonly $mol_view[];
-        cells(row_id: string[]): readonly $mol_view[];
-        col_type(col_id: string): "number" | "text" | "branch";
-        Cell(id: {
-            row: string[];
-            col: string;
-        }): $mol_view;
-        cell_content(id: {
-            row: string[];
-            col: string;
-        }): any[];
-        cell_content_text(id: {
-            row: string[];
-            col: string;
-        }): any[];
-        records(): any;
-        record(id: string): any;
-        record_ids(): string[];
-        row_id(index: number): string;
-        col_ids(): readonly string[];
-        hierarchy(): {
-            [id: string]: $mol_grid_node;
-        };
-        row_sub_ids(row: string[]): string[][];
-        row_root_id(): string[];
-        cell_level(id: {
-            row: string[];
-        }): number;
-        row_ids(): readonly string[][];
-        row_expanded(row_id: string[], next?: boolean): boolean | null;
-        row_expanded_default(row_id: string[]): boolean;
-        cell_expanded(id: {
-            row: string[];
-        }, next?: boolean): boolean;
-        sub(): readonly any[];
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-    /** State of arguments like `foo=bar xxx` */
-    class $mol_state_arg extends $mol_object {
-        prefix: string;
-        static prolog: string;
-        static separator: string;
-        static href(next?: string): string;
-        static href_normal(): string;
-        static dict(next?: {
-            [key: string]: string | null;
-        }): Readonly<{
-            [key: string]: string;
-        }>;
-        static value(key: string, next?: string | null): string | null;
-        static link(next: Record<string, string | null>): string;
-        static make_link(next: Record<string, string | null>): string;
-        static go(next: {
-            [key: string]: string | null;
-        }): void;
-        static commit(): void;
-        constructor(prefix?: string);
-        value(key: string, next?: string): string | null;
-        sub(postfix: string): $mol_state_arg;
-        link(next: Record<string, string | null>): string;
-    }
-}
-
-declare namespace $ {
-    function $mol_dom_safe_uri(uri: string): string;
-    function $mol_dom_safe_attr(val: string): string;
-    let $mol_dom_safe_rules: Record<string, Record<string, (val: string) => string>>;
-    function $mol_dom_safe(this: $, nodes: ChildNode[]): ChildNode[];
-}
-
-declare namespace $ {
-
-	export class $mol_link extends $mol_view {
-		uri_toggle( ): string
-		uri_unsafe( ): ReturnType< $mol_link['uri_toggle'] >
-		hint( ): string
-		hint_safe( ): ReturnType< $mol_link['hint'] >
-		target( ): string
-		file_name( ): string
-		current( ): boolean
-		relation( ): string
-		event_click( next?: any ): any
-		click( next?: ReturnType< $mol_link['event_click'] > ): ReturnType< $mol_link['event_click'] >
-		uri( ): string
-		dom_name( ): string
-		uri_off( ): string
-		uri_native( ): any
-		external( ): boolean
-		attr( ): ({ 
-			'href': ReturnType< $mol_link['uri_unsafe'] >,
-			'title': ReturnType< $mol_link['hint_safe'] >,
-			'target': ReturnType< $mol_link['target'] >,
-			'download': ReturnType< $mol_link['file_name'] >,
-			'mol_link_current': ReturnType< $mol_link['current'] >,
-			'rel': ReturnType< $mol_link['relation'] >,
-		})  & ReturnType< $mol_view['attr'] >
-		sub( ): readonly($mol_view_content)[]
-		arg( ): Record<string, any>
-		event( ): ({ 
-			click( next?: ReturnType< $mol_link['click'] > ): ReturnType< $mol_link['click'] >,
-		})  & ReturnType< $mol_view['event'] >
-	}
-	
-}
-
-//# sourceMappingURL=link.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Dynamic hyperlink. It can add, change or remove parameters. A link that leads to the current page has [mol_link_current] attribute set to true.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_link_demo
-     */
-    class $mol_link extends $.$mol_link {
-        uri_toggle(): string;
-        uri(): string;
-        uri_off(): string;
-        uri_native(): URL;
-        current(): boolean;
-        file_name(): string;
-        minimal_height(): number;
-        external(): boolean;
-        target(): '_self' | '_blank' | '_top' | '_parent' | string;
-        hint_safe(): string;
-        uri_unsafe(): string;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_image extends $mol_view {
-		uri( ): string
-		title( ): string
-		loading( ): string
-		decoding( ): string
-		cors( ): any
-		natural_width( ): number
-		natural_height( ): number
-		load( next?: any ): any
-		dom_name( ): string
-		attr( ): Record<string, any> & ReturnType< $mol_view['attr'] >
-		event( ): Record<string, any>
-		minimal_width( ): number
-		minimal_height( ): number
-	}
-	
-}
-
-//# sourceMappingURL=image.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_image extends $.$mol_image {
-        natural_width(next?: null): number;
-        natural_height(next?: null): number;
-        load(): void;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	type $mol_image__uri_mol_link_iconed_1 = $mol_type_enforce<
-		ReturnType< $mol_link_iconed['icon'] >
-		,
-		ReturnType< $mol_image['uri'] >
-	>
-	type $mol_image__title_mol_link_iconed_2 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_image['title'] >
-	>
-	export class $mol_link_iconed extends $mol_link {
-		icon( ): string
-		Icon( ): $mol_image
-		title( ): ReturnType< $mol_link_iconed['uri'] >
-		sub( ): readonly(any)[]
-		content( ): readonly(any)[]
-		host( ): string
-	}
-	
-}
-
-//# sourceMappingURL=iconed.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_link_iconed extends $.$mol_link_iconed {
-        icon(): string;
-        host(): string;
-        title(): string;
-        sub(): readonly any[];
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_scroll extends $mol_view {
-		tabindex( ): number
-		event_scroll( next?: any ): any
-		scroll_top( next?: number ): number
-		scroll_left( next?: number ): number
-		attr( ): ({ 
-			'tabindex': ReturnType< $mol_scroll['tabindex'] >,
-		})  & ReturnType< $mol_view['attr'] >
-		event( ): ({ 
-			scroll( next?: ReturnType< $mol_scroll['event_scroll'] > ): ReturnType< $mol_scroll['event_scroll'] >,
-		})  & ReturnType< $mol_view['event'] >
-	}
-	
-}
-
-//# sourceMappingURL=scroll.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Scrolling pane.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_scroll_demo
-     */
-    class $mol_scroll extends $.$mol_scroll {
-        scroll_top(next?: number, cache?: 'cache'): number;
-        scroll_left(next?: number, cache?: 'cache'): number;
-        event_scroll(next?: Event): void;
-        minimal_height(): number;
-        minimal_width(): number;
-    }
-}
-
-declare namespace $.$$ {
-}
-
-declare namespace $ {
-    function $mol_wait_timeout_async(this: $, timeout: number): Promise<void>;
-    function $mol_wait_timeout(this: $, timeout: number): void;
-}
-
-declare namespace $ {
-
-	type $mol_link__uri_mol_embed_native_1 = $mol_type_enforce<
-		ReturnType< $mol_embed_native['uri'] >
-		,
-		ReturnType< $mol_link['uri'] >
-	>
-	type $mol_link__sub_mol_embed_native_2 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_link['sub'] >
-	>
-	export class $mol_embed_native extends $mol_scroll {
-		uri( next?: string ): string
-		title( ): string
-		Fallback( ): $mol_link
-		uri_change( next?: any ): any
-		dom_name( ): string
-		window( ): any
-		attr( ): ({ 
-			'src': ReturnType< $mol_embed_native['uri'] >,
-		})  & ReturnType< $mol_scroll['attr'] >
-		sub( ): readonly(any)[]
-		message( ): ({ 
-			hashchange( next?: ReturnType< $mol_embed_native['uri_change'] > ): ReturnType< $mol_embed_native['uri_change'] >,
-		}) 
-	}
-	
-}
-
-//# sourceMappingURL=native.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_embed_native extends $.$mol_embed_native {
-        window(): Window;
-        load(frame: HTMLIFrameElement): Promise<Window>;
-        uri_resource(): string;
-        message_listener(): $mol_dom_listener;
-        sub_visible(): readonly $mol_view_content[];
-        message_receive(event?: MessageEvent<[string, string]>): void;
-        uri_change(event: MessageEvent<[string, string]>): void;
-        auto(): (Window | $mol_dom_listener)[];
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_icon_youtube extends $mol_icon {
-		path( ): string
-	}
-	
-}
-
-//# sourceMappingURL=youtube.view.tree.d.ts.map
-declare namespace $ {
-
-	export class $mol_frame extends $mol_embed_native {
-		allow( ): string
-		html( ): any
-		attr( ): ({ 
-			'tabindex': ReturnType< $mol_frame['tabindex'] >,
-			'allow': ReturnType< $mol_frame['allow'] >,
-			'src': ReturnType< $mol_frame['uri'] >,
-			'srcdoc': ReturnType< $mol_frame['html'] >,
-		}) 
-		fullscreen( ): boolean
-		accelerometer( ): boolean
-		autoplay( ): boolean
-		encription( ): boolean
-		gyroscope( ): boolean
-		pip( ): boolean
-		clipboard_read( ): boolean
-		clipboard_write( ): boolean
-	}
-	
-}
-
-//# sourceMappingURL=frame.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_frame_demo
-     */
-    class $mol_frame extends $.$mol_frame {
-        window(): any;
-        allow(): string;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	type $mol_image__title_mol_embed_service_1 = $mol_type_enforce<
-		ReturnType< $mol_embed_service['title'] >
-		,
-		ReturnType< $mol_image['title'] >
-	>
-	type $mol_image__uri_mol_embed_service_2 = $mol_type_enforce<
-		ReturnType< $mol_embed_service['video_preview'] >
-		,
-		ReturnType< $mol_image['uri'] >
-	>
-	type $mol_frame__title_mol_embed_service_3 = $mol_type_enforce<
-		ReturnType< $mol_embed_service['title'] >
-		,
-		ReturnType< $mol_frame['title'] >
-	>
-	type $mol_frame__uri_mol_embed_service_4 = $mol_type_enforce<
-		ReturnType< $mol_embed_service['video_embed'] >
-		,
-		ReturnType< $mol_frame['uri'] >
-	>
-	export class $mol_embed_service extends $mol_check {
-		active( next?: boolean ): boolean
-		title( ): string
-		video_preview( ): string
-		Image( ): $mol_image
-		Hint( ): $mol_icon_youtube
-		video_embed( ): string
-		Frame( ): $mol_frame
-		uri( ): string
-		video_id( ): string
-		checked( next?: ReturnType< $mol_embed_service['active'] > ): ReturnType< $mol_embed_service['active'] >
-		sub( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=service.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_embed_service extends $.$mol_embed_service {
-        sub(): $.$mol_frame[] | ($.$mol_image | $mol_icon_youtube)[];
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_embed_youtube extends $mol_embed_service {
-	}
-	
-}
-
-//# sourceMappingURL=youtube.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_embed_youtube extends $.$mol_embed_youtube {
-        video_embed(): string;
-        video_id(): string;
-        video_preview(): string;
-    }
-}
-
-declare namespace $ {
-
-	export class $mol_embed_rutube extends $mol_embed_service {
-	}
-	
-}
-
-//# sourceMappingURL=rutube.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_embed_rutube extends $.$mol_embed_rutube {
-        video_embed(): string;
-        video_id(): string;
-        video_preview(): string;
-    }
-}
-
-declare namespace $ {
-
-	export class $mol_embed_vklive extends $mol_embed_service {
-	}
-	
-}
-
-//# sourceMappingURL=vklive.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_embed_vklive extends $.$mol_embed_vklive {
-        video_embed(): string;
-        channel_id(): string;
-        video_id(): string;
-        video_preview(): string;
-    }
-}
-
-declare namespace $ {
-
-	type $mol_image__title_mol_embed_any_1 = $mol_type_enforce<
-		ReturnType< $mol_embed_any['title'] >
-		,
-		ReturnType< $mol_image['title'] >
-	>
-	type $mol_image__uri_mol_embed_any_2 = $mol_type_enforce<
-		ReturnType< $mol_embed_any['uri'] >
-		,
-		ReturnType< $mol_image['uri'] >
-	>
-	type $mol_embed_native__title_mol_embed_any_3 = $mol_type_enforce<
-		ReturnType< $mol_embed_any['title'] >
-		,
-		ReturnType< $mol_embed_native['title'] >
-	>
-	type $mol_embed_native__uri_mol_embed_any_4 = $mol_type_enforce<
-		ReturnType< $mol_embed_any['uri'] >
-		,
-		ReturnType< $mol_embed_native['uri'] >
-	>
-	type $mol_embed_youtube__title_mol_embed_any_5 = $mol_type_enforce<
-		ReturnType< $mol_embed_any['title'] >
-		,
-		ReturnType< $mol_embed_youtube['title'] >
-	>
-	type $mol_embed_youtube__uri_mol_embed_any_6 = $mol_type_enforce<
-		ReturnType< $mol_embed_any['uri'] >
-		,
-		ReturnType< $mol_embed_youtube['uri'] >
-	>
-	type $mol_embed_rutube__title_mol_embed_any_7 = $mol_type_enforce<
-		ReturnType< $mol_embed_any['title'] >
-		,
-		ReturnType< $mol_embed_rutube['title'] >
-	>
-	type $mol_embed_rutube__uri_mol_embed_any_8 = $mol_type_enforce<
-		ReturnType< $mol_embed_any['uri'] >
-		,
-		ReturnType< $mol_embed_rutube['uri'] >
-	>
-	type $mol_embed_vklive__title_mol_embed_any_9 = $mol_type_enforce<
-		ReturnType< $mol_embed_any['title'] >
-		,
-		ReturnType< $mol_embed_vklive['title'] >
-	>
-	type $mol_embed_vklive__uri_mol_embed_any_10 = $mol_type_enforce<
-		ReturnType< $mol_embed_any['uri'] >
-		,
-		ReturnType< $mol_embed_vklive['uri'] >
-	>
-	export class $mol_embed_any extends $mol_view {
-		title( ): string
-		uri( ): string
-		Image( ): $mol_image
-		Object( ): $mol_embed_native
-		Youtube( ): $mol_embed_youtube
-		Rutube( ): $mol_embed_rutube
-		Vklive( ): $mol_embed_vklive
-	}
-	
-}
-
-//# sourceMappingURL=any.view.tree.d.ts.map
-declare namespace $.$$ {
-    class $mol_embed_any extends $.$mol_embed_any {
-        type(): "object" | "image" | "youtube" | "rutube" | "vklive";
-        sub(): $.$mol_image[] | $.$mol_embed_youtube[] | $.$mol_embed_native[];
-    }
-}
-
-declare namespace $ {
-
-	type $mol_check_expand__checked_mol_expander_1 = $mol_type_enforce<
-		ReturnType< $mol_expander['expanded'] >
-		,
-		ReturnType< $mol_check_expand['checked'] >
-	>
-	type $mol_check_expand__expandable_mol_expander_2 = $mol_type_enforce<
-		ReturnType< $mol_expander['expandable'] >
-		,
-		ReturnType< $mol_check_expand['expandable'] >
-	>
-	type $mol_check_expand__label_mol_expander_3 = $mol_type_enforce<
-		ReturnType< $mol_expander['label'] >
-		,
-		ReturnType< $mol_check_expand['label'] >
-	>
-	type $mol_view__sub_mol_expander_4 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_list__rows_mol_expander_5 = $mol_type_enforce<
-		ReturnType< $mol_expander['content'] >
-		,
-		ReturnType< $mol_list['rows'] >
-	>
-	export class $mol_expander extends $mol_list {
-		expanded( next?: boolean ): boolean
-		expandable( ): boolean
-		label( ): readonly(any)[]
-		Trigger( ): $mol_check_expand
-		Tools( ): any
-		Label( ): $mol_view
-		content( ): readonly(any)[]
-		Content( ): $mol_list
-		rows( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=expander.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Component which expands any content on title click.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_expander_demo
-     */
-    class $mol_expander extends $.$mol_expander {
-        rows(): $mol_view[];
-        expandable(): boolean;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	type $mol_text__text_mol_text_1 = $mol_type_enforce<
-		ReturnType< $mol_text['spoiler_label'] >
-		,
-		ReturnType< $mol_text['text'] >
-	>
-	type $mol_text__text_mol_text_2 = $mol_type_enforce<
-		ReturnType< $mol_text['spoiler_content'] >
-		,
-		ReturnType< $mol_text['text'] >
-	>
-	type $mol_paragraph__sub_mol_text_3 = $mol_type_enforce<
-		ReturnType< $mol_text['block_content'] >
-		,
-		ReturnType< $mol_paragraph['sub'] >
-	>
-	type $mol_text__uri_resolve_mol_text_4 = $mol_type_enforce<
-		ReturnType< $mol_text['uri_resolve'] >
-		,
-		ReturnType< $mol_text['uri_resolve'] >
-	>
-	type $mol_text__text_mol_text_5 = $mol_type_enforce<
-		ReturnType< $mol_text['quote_text'] >
-		,
-		ReturnType< $mol_text['text'] >
-	>
-	type $mol_text__highlight_mol_text_6 = $mol_type_enforce<
-		ReturnType< $mol_text['highlight'] >
-		,
-		ReturnType< $mol_text['highlight'] >
-	>
-	type $mol_text__auto_scroll_mol_text_7 = $mol_type_enforce<
-		any
-		,
-		ReturnType< $mol_text['auto_scroll'] >
-	>
-	type $mol_text_list__uri_resolve_mol_text_8 = $mol_type_enforce<
-		ReturnType< $mol_text['uri_resolve'] >
-		,
-		ReturnType< $mol_text_list['uri_resolve'] >
-	>
-	type $mol_text_list__type_mol_text_9 = $mol_type_enforce<
-		ReturnType< $mol_text['list_type'] >
-		,
-		ReturnType< $mol_text_list['type'] >
-	>
-	type $mol_text_list__text_mol_text_10 = $mol_type_enforce<
-		ReturnType< $mol_text['list_text'] >
-		,
-		ReturnType< $mol_text_list['text'] >
-	>
-	type $mol_text_list__highlight_mol_text_11 = $mol_type_enforce<
-		ReturnType< $mol_text['highlight'] >
-		,
-		ReturnType< $mol_text_list['highlight'] >
-	>
-	type $mol_text_header__minimal_height_mol_text_12 = $mol_type_enforce<
-		number
-		,
-		ReturnType< $mol_text_header['minimal_height'] >
-	>
-	type $mol_text_header__level_mol_text_13 = $mol_type_enforce<
-		ReturnType< $mol_text['header_level'] >
-		,
-		ReturnType< $mol_text_header['level'] >
-	>
-	type $mol_text_header__content_mol_text_14 = $mol_type_enforce<
-		ReturnType< $mol_text['block_content'] >
-		,
-		ReturnType< $mol_text_header['content'] >
-	>
-	type $mol_text_header__arg_mol_text_15 = $mol_type_enforce<
-		ReturnType< $mol_text['header_arg'] >
-		,
-		ReturnType< $mol_text_header['arg'] >
-	>
-	type $mol_text_code__text_mol_text_16 = $mol_type_enforce<
-		ReturnType< $mol_text['pre_text'] >
-		,
-		ReturnType< $mol_text_code['text'] >
-	>
-	type $mol_text_code__row_themes_mol_text_17 = $mol_type_enforce<
-		ReturnType< $mol_text['pre_themes'] >
-		,
-		ReturnType< $mol_text_code['row_themes'] >
-	>
-	type $mol_text_code__highlight_mol_text_18 = $mol_type_enforce<
-		ReturnType< $mol_text['highlight'] >
-		,
-		ReturnType< $mol_text_code['highlight'] >
-	>
-	type $mol_text_code__uri_resolve_mol_text_19 = $mol_type_enforce<
-		ReturnType< $mol_text['uri_resolve'] >
-		,
-		ReturnType< $mol_text_code['uri_resolve'] >
-	>
-	type $mol_text_code__sidebar_showed_mol_text_20 = $mol_type_enforce<
-		ReturnType< $mol_text['pre_sidebar_showed'] >
-		,
-		ReturnType< $mol_text_code['sidebar_showed'] >
-	>
-	type $mol_view__dom_name_mol_text_21 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_view['dom_name'] >
-	>
-	type $mol_grid__head_cells_mol_text_22 = $mol_type_enforce<
-		ReturnType< $mol_text['table_head_cells'] >
-		,
-		ReturnType< $mol_grid['head_cells'] >
-	>
-	type $mol_grid__rows_mol_text_23 = $mol_type_enforce<
-		ReturnType< $mol_text['table_rows'] >
-		,
-		ReturnType< $mol_grid['rows'] >
-	>
-	type $mol_grid_row__cells_mol_text_24 = $mol_type_enforce<
-		ReturnType< $mol_text['table_cells'] >
-		,
-		ReturnType< $mol_grid_row['cells'] >
-	>
-	type $mol_text__auto_scroll_mol_text_25 = $mol_type_enforce<
-		any
-		,
-		ReturnType< $mol_text['auto_scroll'] >
-	>
-	type $mol_text__highlight_mol_text_26 = $mol_type_enforce<
-		ReturnType< $mol_text['highlight'] >
-		,
-		ReturnType< $mol_text['highlight'] >
-	>
-	type $mol_text__uri_resolve_mol_text_27 = $mol_type_enforce<
-		ReturnType< $mol_text['uri_resolve'] >
-		,
-		ReturnType< $mol_text['uri_resolve'] >
-	>
-	type $mol_text__text_mol_text_28 = $mol_type_enforce<
-		ReturnType< $mol_text['table_cell_text'] >
-		,
-		ReturnType< $mol_text['text'] >
-	>
-	type $mol_grid__rows_mol_text_29 = $mol_type_enforce<
-		ReturnType< $mol_text['grid_rows'] >
-		,
-		ReturnType< $mol_grid['rows'] >
-	>
-	type $mol_grid_row__cells_mol_text_30 = $mol_type_enforce<
-		ReturnType< $mol_text['grid_cells'] >
-		,
-		ReturnType< $mol_grid_row['cells'] >
-	>
-	type $mol_text__auto_scroll_mol_text_31 = $mol_type_enforce<
-		any
-		,
-		ReturnType< $mol_text['auto_scroll'] >
-	>
-	type $mol_text__highlight_mol_text_32 = $mol_type_enforce<
-		ReturnType< $mol_text['highlight'] >
-		,
-		ReturnType< $mol_text['highlight'] >
-	>
-	type $mol_text__uri_resolve_mol_text_33 = $mol_type_enforce<
-		ReturnType< $mol_text['uri_resolve'] >
-		,
-		ReturnType< $mol_text['uri_resolve'] >
-	>
-	type $mol_text__text_mol_text_34 = $mol_type_enforce<
-		ReturnType< $mol_text['grid_cell_text'] >
-		,
-		ReturnType< $mol_text['text'] >
-	>
-	type $mol_dimmer__dom_name_mol_text_35 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_dimmer['dom_name'] >
-	>
-	type $mol_dimmer__needle_mol_text_36 = $mol_type_enforce<
-		ReturnType< $mol_text['highlight'] >
-		,
-		ReturnType< $mol_dimmer['needle'] >
-	>
-	type $mol_dimmer__haystack_mol_text_37 = $mol_type_enforce<
-		ReturnType< $mol_text['line_text'] >
-		,
-		ReturnType< $mol_dimmer['haystack'] >
-	>
-	type $mol_text_span__dom_name_mol_text_38 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_text_span['dom_name'] >
-	>
-	type $mol_text_span__type_mol_text_39 = $mol_type_enforce<
-		ReturnType< $mol_text['line_type'] >
-		,
-		ReturnType< $mol_text_span['type'] >
-	>
-	type $mol_text_span__sub_mol_text_40 = $mol_type_enforce<
-		ReturnType< $mol_text['line_content'] >
-		,
-		ReturnType< $mol_text_span['sub'] >
-	>
-	type $mol_text_code_line__numb_showed_mol_text_41 = $mol_type_enforce<
-		boolean
-		,
-		ReturnType< $mol_text_code_line['numb_showed'] >
-	>
-	type $mol_text_code_line__highlight_mol_text_42 = $mol_type_enforce<
-		ReturnType< $mol_text['highlight'] >
-		,
-		ReturnType< $mol_text_code_line['highlight'] >
-	>
-	type $mol_text_code_line__text_mol_text_43 = $mol_type_enforce<
-		ReturnType< $mol_text['line_text'] >
-		,
-		ReturnType< $mol_text_code_line['text'] >
-	>
-	type $mol_text_code_line__uri_resolve_mol_text_44 = $mol_type_enforce<
-		ReturnType< $mol_text['uri_resolve'] >
-		,
-		ReturnType< $mol_text_code_line['uri_resolve'] >
-	>
-	type $mol_text_code_line__syntax_mol_text_45 = $mol_type_enforce<
-		ReturnType< $mol_text['code_syntax'] >
-		,
-		ReturnType< $mol_text_code_line['syntax'] >
-	>
-	type $mol_link_iconed__uri_mol_text_46 = $mol_type_enforce<
-		ReturnType< $mol_text['link_uri'] >
-		,
-		ReturnType< $mol_link_iconed['uri'] >
-	>
-	type $mol_link_iconed__content_mol_text_47 = $mol_type_enforce<
-		ReturnType< $mol_text['line_content'] >
-		,
-		ReturnType< $mol_link_iconed['content'] >
-	>
-	type $mol_link_iconed__uri_mol_text_48 = $mol_type_enforce<
-		ReturnType< $mol_text['link_uri'] >
-		,
-		ReturnType< $mol_link_iconed['uri'] >
-	>
-	type $mol_link_iconed__content_mol_text_49 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_link_iconed['content'] >
-	>
-	type $mol_embed_any__uri_mol_text_50 = $mol_type_enforce<
-		ReturnType< $mol_text['link_uri'] >
-		,
-		ReturnType< $mol_embed_any['uri'] >
-	>
-	type $mol_embed_any__title_mol_text_51 = $mol_type_enforce<
-		ReturnType< $mol_text['line_text'] >
-		,
-		ReturnType< $mol_embed_any['title'] >
-	>
-	type $mol_expander__label_mol_text_52 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_expander['label'] >
-	>
-	type $mol_expander__content_mol_text_53 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_expander['content'] >
-	>
-	export class $mol_text extends $mol_list {
-		auto_scroll( ): any
-		block_content( id: any): readonly(any)[]
-		uri_resolve( id: any): string
-		quote_text( id: any): string
-		highlight( ): string
-		list_type( id: any): string
-		list_text( id: any): string
-		header_level( id: any): number
-		header_arg( id: any): Record<string, any>
-		pre_text( id: any): string
-		pre_themes( id: any): readonly(string)[]
-		code_sidebar_showed( ): boolean
-		pre_sidebar_showed( ): ReturnType< $mol_text['code_sidebar_showed'] >
-		table_head_cells( id: any): readonly(any)[]
-		table_rows( id: any): readonly(any)[]
-		table_cells( id: any): readonly(any)[]
-		table_cell_text( id: any): string
-		grid_rows( id: any): readonly(any)[]
-		grid_cells( id: any): readonly(any)[]
-		grid_cell_text( id: any): string
-		line_text( id: any): string
-		line_type( id: any): string
-		line_content( id: any): readonly(any)[]
-		code_syntax( ): any
-		link_uri( id: any): string
-		link_host( id: any): string
-		spoiler_label( id: any): string
-		Spoiler_label( id: any): $mol_text
-		spoiler_content( id: any): string
-		Spoiler_content( id: any): $mol_text
-		uri_base( ): string
-		text( ): string
-		param( ): string
-		flow_tokens( ): readonly(any)[]
-		block_text( id: any): string
-		auto( ): readonly(any)[]
-		Paragraph( id: any): $mol_paragraph
-		Quote( id: any): $mol_text
-		List( id: any): $mol_text_list
-		item_index( id: any): number
-		Header( id: any): $mol_text_header
-		Pre( id: any): $mol_text_code
-		Cut( id: any): $mol_view
-		Table( id: any): $mol_grid
-		Table_row( id: any): $mol_grid_row
-		Table_cell( id: any): $mol_text
-		Grid( id: any): $mol_grid
-		Grid_row( id: any): $mol_grid_row
-		Grid_cell( id: any): $mol_text
-		String( id: any): $mol_dimmer
-		Span( id: any): $mol_text_span
-		Code_line( id: any): $mol_text_code_line
-		Link( id: any): $mol_link_iconed
-		Link_http( id: any): $mol_link_iconed
-		Embed( id: any): $mol_embed_any
-		Spoiler( id: any): $mol_expander
-	}
-	
-	type $mol_link__arg_mol_text_header_1 = $mol_type_enforce<
-		ReturnType< $mol_text_header['arg'] >
-		,
-		ReturnType< $mol_link['arg'] >
-	>
-	type $mol_link__hint_mol_text_header_2 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_link['hint'] >
-	>
-	type $mol_link__sub_mol_text_header_3 = $mol_type_enforce<
-		ReturnType< $mol_text_header['content'] >
-		,
-		ReturnType< $mol_link['sub'] >
-	>
-	export class $mol_text_header extends $mol_paragraph {
-		arg( ): Record<string, any>
-		content( ): readonly(any)[]
-		Link( ): $mol_link
-		level( ): number
-		sub( ): readonly(any)[]
-	}
-	
-	export class $mol_text_span extends $mol_paragraph {
-		type( ): string
-		dom_name( ): string
-		attr( ): ({ 
-			'mol_text_type': ReturnType< $mol_text_span['type'] >,
-		})  & ReturnType< $mol_paragraph['attr'] >
-	}
-	
-}
-
-//# sourceMappingURL=text.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Markdown visualizer.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_text_demo
-     */
-    class $mol_text extends $.$mol_text {
-        flow_tokens(): Readonly<{
-            name: string;
-            found: string;
-            chunks: string[];
-        }[]>;
-        block_type(index: number): string;
-        rows(): ($mol_view | $.$mol_paragraph | $.$mol_text_code | $.$mol_grid)[];
-        param(): string;
-        header_level(index: number): number;
-        header_arg(index: number): {
-            [x: string]: string;
-        };
-        list_type(index: number): string;
-        item_index(index: number): number;
-        pre_text(index: number): string;
-        pre_themes(index: number): string[];
-        quote_text(index: number): string;
-        list_text(index: number): string;
-        cell_content(indexBlock: number): string[][];
-        table_rows(blockId: number): $mol_grid_row[];
-        table_head_cells(blockId: number): $.$mol_text[];
-        table_cells(id: {
-            block: number;
-            row: number;
-        }): $.$mol_text[];
-        table_cell_text(id: {
-            block: number;
-            row: number;
-            cell: number;
-        }): string;
-        grid_content(indexBlock: number): string[][];
-        grid_rows(blockId: number): $mol_grid_row[];
-        grid_cells(id: {
-            block: number;
-            row: number;
-        }): $.$mol_text[];
-        grid_cell_text(id: {
-            block: number;
-            row: number;
-            cell: number;
-        }): string;
-        uri_base(): string;
-        uri_base_abs(): URL;
-        uri_resolve(uri: string): string;
-        code_syntax(): $mol_syntax2<{
-            'code-indent': RegExp;
-            'code-docs': RegExp;
-            'code-comment-block': RegExp;
-            'code-link': RegExp;
-            'code-comment-inline': RegExp;
-            'code-string': RegExp;
-            'code-number': RegExp;
-            'code-call': RegExp;
-            'code-sexpr': RegExp;
-            'code-field': RegExp;
-            'code-keyword': RegExp;
-            'code-global': RegExp;
-            'code-word': RegExp;
-            'code-decorator': RegExp;
-            'code-tag': RegExp;
-            'code-punctuation': RegExp;
-        }>;
-        block_text(index: number): string;
-        block_content(index: number): ($.$mol_dimmer | $.$mol_text_code_line | $.$mol_link_iconed | $.$mol_embed_any | $mol_text_span)[];
-        line_tokens(path: readonly number[]): Readonly<{
-            name: string;
-            found: string;
-            chunks: string[];
-        }[]>;
-        line_token(path: readonly number[]): {
-            name: string;
-            found: string;
-            chunks: string[];
-        };
-        line_type(path: readonly number[]): string;
-        line_text(path: readonly number[]): string;
-        line_content(path: readonly number[]): ($.$mol_dimmer | $.$mol_text_code_line | $.$mol_link_iconed | $.$mol_embed_any | $mol_text_span)[];
-        link_uri(path: readonly number[]): string;
-        link_host(path: readonly number[]): string;
-        auto_scroll(): void;
-        spoiler_rows(index: number): string[];
-        spoiler_label(index: number): string;
-        spoiler_content(index: number): string;
-    }
-    class $mol_text_header extends $.$mol_text_header {
-        dom_name(): string;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	type $mol_text_list_item__index_mol_text_list_1 = $mol_type_enforce<
-		ReturnType< $mol_text_list['item_index'] >
-		,
-		ReturnType< $mol_text_list_item['index'] >
-	>
-	type $mol_text_list_item__sub_mol_text_list_2 = $mol_type_enforce<
-		ReturnType< $mol_text_list['block_content'] >
-		,
-		ReturnType< $mol_text_list_item['sub'] >
-	>
-	export class $mol_text_list extends $mol_text {
-		type( ): string
-		auto_scroll( ): any
-		attr( ): ({ 
-			'mol_text_list_type': ReturnType< $mol_text_list['type'] >,
-		})  & ReturnType< $mol_text['attr'] >
-		Paragraph( id: any): $mol_text_list_item
-	}
-	
-	export class $mol_text_list_item extends $mol_paragraph {
-		index( ): number
-		attr( ): ({ 
-			'mol_text_list_item_index': ReturnType< $mol_text_list_item['index'] >,
-		})  & ReturnType< $mol_paragraph['attr'] >
-	}
-	
-}
-
-//# sourceMappingURL=list.view.tree.d.ts.map
-declare namespace $ {
-    /**
-     * Document model over a `view.tree` AST.
-     *
-     * A vmap document is one `view.tree` class, so the source text is the truth and
-     * the tree is derived from it. Every edit goes through the tree and is written
-     * straight back as text, which is what makes source export free.
-     *
-     * Port of `hyoo_studio_component` and `hyoo_studio_property`, plus the wire
-     * emitter, which studio has no equivalent of. Deviations are marked at their
-     * place.
-     *
-     * Pure model: knows nothing about DOM, compiles nothing, executes nothing.
-     * @see ../ARCHITECTURE.md sections 1 and 2
-     */
-    /**
-     * A wire between two nodes of the document.
-     *
-     * Serializes to exactly `name = Node prop`, an `=` operator over exactly two
-     * tokens. The shape of this type is the whole safety story: there is no field
-     * for the operator, no field for a third token, and one flag for both ends, so
-     * none of the five traps of section 1 is even expressible.
-     *
-     * @see $bog_vmap_lang_wire_tree
-     */
-    type $bog_vmap_lang_wire = {
-        /** Property of the class the wire lands in, bare name. */
-        readonly name: string;
-        /** Property holding the source node, bare name. Must be declared. */
-        readonly node: string;
-        /** Property of that node, bare name. */
-        readonly prop: string;
-        /** Two-way. Puts `?` on BOTH ends, never on one. */
-        readonly bidi?: boolean;
-    };
-    /**
-     * A wire with its consumer: `from.from_prop` feeds `to.to_prop` through the
-     * root property `name`. Two lines of the class and nothing else.
-     */
-    type $bog_vmap_lang_link = {
-        readonly from: string;
-        readonly from_prop: string;
-        readonly to: string;
-        readonly to_prop: string;
-        readonly name: string;
-        readonly bidi: boolean;
-    };
-    /**
-     * Checks that a token is a bare property name and returns it.
-     *
-     * Bare means: no `*`, no `?`, no `!`, no spaces, nothing but a name. Signs are
-     * never carried by a token, they are produced from `bidi`. That single rule
-     * kills three of the five traps at once, because every one of them is a token
-     * that smuggles something in:
-     *
-     * - `value?` as the right token gives `w = Field value?`, which compiles to
-     *   `value(next)` with no `next` in scope, so the wire throws `ReferenceError`
-     *   on ANY read;
-     * - `w?` as the left token gives `w? = Field hint`, which compiles to a setter
-     *   whose right end ignores it, so writes vanish with no error at all;
-     * - `B value` as a token gives `w = A B value`, which compiles to
-     *   `this.A().B().value()`, and `B` was hoisted onto the root by `upper`, so it
-     *   is not a method of `A` and never will be.
-     *
-     * The grammar is `$mol_view_tree2_prop_signature` itself rather than a regexp of
-     * our own, so a token this accepts is a token the compiler accepts.
-     */
-    function $bog_vmap_lang_token(this: $, token: string, role: string): string;
-    /**
-     * Whether a name can be the name of a class of a document.
-     *
-     * Stricter than the compiler on purpose. `$mol_view_tree2_class_match` takes
-     * anything starting with a dollar or a capital, generics and quotes included,
-     * because it also has to recognize the classes of somebody else's code; a class
-     * WE write has to survive one more step, and that step is mam resolving the
-     * name into a folder. Every underscore is a level of folders, so the name is a
-     * dollar and at least two lowercase segments, and nothing else fits in a path.
-     *
-     * A refusal here is a message to a person, so this answers yes or no and leaves
-     * the wording to the caller, who knows in what language to say it.
-     */
-    function $bog_vmap_lang_class_ok(name: string): boolean;
-    /**
-     * Builds the tree of a wire: `name = Node prop`.
-     *
-     * The operator is `=` and nothing else. `<= Node prop` looks like the same thing
-     * and is not: it goes through the `upper` hack, which takes the kids of the
-     * reference as default values, so it declares a property `Node` valued `prop`
-     * and silently drops the `.prop()` link from the generated call. Either the
-     * build dies with a message about default values, or the build is green and the
-     * bundle carries `Node(){ return prop }`, a bare identifier that throws at the
-     * one node the wire was drawn to, whenever somebody gets there.
-     *
-     * @see ../ARCHITECTURE.md section 1
-     */
-    function $bog_vmap_lang_wire_tree(this: $, wire: $bog_vmap_lang_wire): $mol_tree2;
-    /**
-     * Builds a bare reference `<= name`, the form that goes into `sub`.
-     *
-     * Bare means childless. A reference with a child is the middle of the three
-     * forms of `<=`, the only dangerous one, and the guard against it is that this
-     * takes a token instead of a path.
-     */
-    function $bog_vmap_lang_ref_tree(this: $, name: string): $mol_tree2;
-    /**
-     * Builds a free part: `Calc $bog_vmap_lang_calc` at class level, no operator.
-     *
-     * A part declared this way is a plain property of the root class, so the
-     * compiler makes it a lazy memoized singleton and it creates no DOM, because it
-     * is not in `sub`. That is the whole mechanism behind a detail lying free on the
-     * canvas.
-     */
-    function $bog_vmap_lang_part_tree(this: $, name: string, klass: string): $mol_tree2;
-    /** Value of one key of a `*` dictionary, or `null` when the key is not there. */
-    function $bog_vmap_lang_dict_get(dict: $mol_tree2 | null, key: string): $mol_tree2 | null;
-    /**
-     * Sets one key of a `*` dictionary, or drops it when the value is `null`.
-     *
-     * A key already there is replaced where it stands, so `^` keeps the head of the
-     * dictionary it has to keep: a redeclared dictionary REPLACES the one of the
-     * base instead of extending it, and `^` is the line that undoes that. Writing a
-     * key must never be able to move it, and appending is the only other option.
-     */
-    function $bog_vmap_lang_dict_set(this: $, dict: $mol_tree2, key: string, value: $mol_tree2 | null): $mol_tree2;
-    /**
-     * Class declarations reordered so that a base always precedes its heir.
-     *
-     * `class $A extends $[ '$B' ]` resolves its base at definition time, and
-     * `$mol_view_tree2_to_js` emits declarations in the order it received them. A
-     * heir written above its base therefore inherits the PREVIOUS version of it, or
-     * `undefined` on a first run, and says nothing about it.
-     *
-     * Bases the list does not declare — anything from a library — are left alone:
-     * they are already in the namespace before our code runs.
-     *
-     * The scene carries an equivalent of this for the same reason. The two should
-     * become one, and this is the side to keep: sorting declarations is a property
-     * of the language, not of whoever happens to compile them.
-     */
-    function $bog_vmap_lang_sorted(this: $, defs: readonly $mol_tree2[]): readonly $mol_tree2[];
-    /**
-     * A document: several `view.tree` classes in one text.
-     *
-     * `$bog_vmap_lang_node` models one CLASS, and rightly so — but a document is
-     * not one class, and using the node as if it were silently eats the others.
-     * Measured: two classes in the source, one property of the first edited, the
-     * second gone from the text entirely. `tree()` there reads `kids[ 0 ]` and
-     * `tree( next )` writes `source( next.toString() )`, so every write replaces
-     * the whole document with the single class it touched. No error, no warning.
-     *
-     * This level owns the text, cuts it into classes for reading, and puts one back
-     * without reserializing its neighbours from anything but their own trees. It
-     * hands out `$bog_vmap_lang_node`s whose `source` is a slice of it, so
-     * everything already written against the node model keeps working unchanged —
-     * that is the point of adding a level instead of widening the one below.
-     *
-     * A class is addressed BY NAME, which is what the editor speaks and what
-     * survives reordering. Two things follow, both real:
-     *
-     * - renaming a class through its node writes under the OLD name, which is
-     *   correct — the slot is found and replaced — but the caller then holds a stale
-     *   key and has to re-read `names()`;
-     * - two classes of one name are one class here, the first. That is already
-     *   broken further down: the class index of the library model keeps the LAST of
-     *   a duplicate pair, so a document with two would disagree with itself about
-     *   which is real. (The index is not named here: mam reads doc comments for
-     *   dependencies, and its name dragged the whole library module into the scene.)
-     *
-     * @see ../ARCHITECTURE.md section 1
-     */
-    class $bog_vmap_lang_doc extends $mol_object {
-        /** Text of the whole document. The truth. */
-        source(next?: string): string;
-        /**
-         * Classes of the document, in the order the text declares them.
-         *
-         * Read only, and that is deliberate. A cell that both reads and writes
-         * `source` would be a cell frozen by its own write — writing to a
-         * `@$mol_mem` freezes its dependencies — and the document would stop
-         * following the text after the first edit made through it, which is the
-         * one failure that looks exactly like success.
-         */
-        trees(): readonly $mol_tree2[];
-        /** Names of the classes, in the order of the text. */
-        names(): string[];
-        /**
-         * Source of one class, cut out of the document and written back into it.
-         *
-         * Writing rebuilds the text from the trees of all the classes with this one
-         * replaced, so a neighbour comes back out of its own tree and nothing else.
-         * On an already normalized document that is byte for byte; the first write
-         * to a hand written one normalizes the whole text at once, which is the same
-         * lossy step `$bog_vmap_lang_node` has always taken, now taken over the
-         * document rather than over one class.
-         *
-         * A name the document does not carry appends, so that handing a node a
-         * source is also how a class is added.
-         *
-         * NOT memoized, for the reason spelled out at `trees`: this is the write
-         * path, and a cell on a write path freezes at what was written. The read is
-         * two lookups over `trees()`, which is a cell already, so there is nothing
-         * to gain either.
-         */
-        class_source(name: string, next?: string): string;
-        /**
-         * Renames a class of the document together with every mention of it.
-         *
-         * A class name is spelled in more places than its own declaration: it is the
-         * base of an heir (`site_card site_page`, both with a leading dollar) and the
-         * value of a part declared with it (`Card site_card`, same). Retyping the
-         * declaration alone leaves those
-         * spelling a class nobody declares, which compiles into `Class extends value
-         * undefined` or into a part of a class that is not there — so the mentions
-         * are rewritten in the SAME write, over every class of the document.
-         *
-         * A mention is any tree node typed exactly with the old name. Only structural
-         * tokens carry a type in `tree2`; a literal is a data node, so a class name
-         * written inside a string is not touched and cannot be.
-         *
-         * A name already declared is refused, like the rename of a property: two
-         * classes of one name is a document that disagrees with itself about which is
-         * real, and the class index of a library keeps the last of such a pair.
-         *
-         * Whoever holds a `node( from )` has to ask for `node( to )` afterwards; the
-         * old handle addresses a class the document no longer carries, exactly as the
-         * property handle does after `prop_rename`.
-         */
-        class_rename(from: string, to: string): undefined;
-        /**
-         * One class of the document as a node model.
-         *
-         * `source` is replaced with a slice of the document on the instance itself.
-         * Everything else of `$bog_vmap_lang_node` — the tree, the property list,
-         * the wire emitter — is derived from `source` and so needs no changes at
-         * all: the node cannot tell that its text is a part of a larger one.
-         */
-        node(name: string): $bog_vmap_lang_node;
-    }
-    /**
-     * One node of the document: a single `view.tree` class.
-     *
-     * Port of `hyoo_studio_component`.
-     */
-    class $bog_vmap_lang_node extends $mol_object {
-        /** Source text. The truth. Everything else is derived from it. */
-        source(next?: string): string;
-        /**
-         * Class tree, derived from the source. Writing a tree serializes it back.
-         *
-         * `$mol_view_tree2_normalize` is lossy: it runs the `upper` hack, so
-         * `<= Hero $mol_view …` nested in `sub` comes out as a flat property `Hero`
-         * of the root plus a bare `<= Hero` left in place. Hoisted properties land
-         * BEFORE the ones already at the top, because `add_inner` fires for them
-         * during the traversal rather than in the final loop.
-         *
-         * That flat form is the canonical shape of a document, not a compromise: it
-         * is the model of section 1 spelled out in the text itself. Round trip is
-         * therefore byte for byte only on a normalized source, which is what the
-         * editor holds, because every write serializes the whole class.
-         *
-         * @see ../ARCHITECTURE.md section 1, «Канонический вид документа»
-         *
-         * Deviation from studio: an empty or classless source fails with a message
-         * instead of `Cannot read properties of undefined`. In an editor an empty
-         * buffer is a normal transient state and has to say so.
-         */
-        tree(next?: $mol_tree2): $mol_tree2;
-        name(next?: string): string;
-        base(next?: string): string;
-        prop_names(): string[];
-        /** Own properties of the class as a list node. */
-        props_tree(): $mol_tree2;
-        /**
-         * Full signature of a property by its bare name: `d` gives back `d*?`.
-         *
-         * Deviation from studio: the early exit is spelled as a test for any sign
-         * instead of `name.indexOf('*') + name.indexOf('?') + name.indexOf('!') > -3`,
-         * which is the same condition written as arithmetic on three `-1`s.
-         */
-        prop_fullname(name: string): string;
-        /** Tree of one property. Writing `null` drops it. */
-        prop_tree(name: string, next?: $mol_tree2 | null): $mol_tree2 | null;
-        prop_add(name: string): void;
-        prop_drop(name: string): void;
-        /**
-         * Renames a property together with every reference to it, in one write.
-         *
-         * `next` is a whole signature, `d*?` and not `d`, because a rename and a
-         * change of sign arrive together from the inspector and two writes would
-         * leave the document renamed but unsigned in between.
-         *
-         * **A reference is rewritten, never dropped.** A node is named by the
-         * property it occupies, so a rename moves the name every `sub` list, every
-         * wire end and every binding spells. Dropping them instead — which is what
-         * `links_drop` does for a delete — would silently cut the wires of a node
-         * that is still there; the two operations are opposites and must not share
-         * a path. Anything of the shape `<= name`, `<=> name` or `= name prop` at
-         * any depth is such a reference.
-         *
-         * The declaration is retyped IN PLACE, among the kids of the base, and only
-         * there: an override of the same name under a part is a port of that part
-         * and none of our business. In place also keeps the property where it was —
-         * dropping it and inserting it back moved it to the end of the class, which
-         * reorders the canvas for a rename that should not move anything.
-         *
-         * A name already taken is refused rather than merged: two properties of one
-         * name is a document nothing can address afterwards.
-         */
-        prop_rename(name: string, next: string): undefined;
-        property(name: string): $bog_vmap_lang_prop;
-        /**
-         * Declares a free part: `Calc $bog_vmap_lang_calc`.
-         *
-         * Deviation from studio, which has no such thing: the write goes through the
-         * `null` step of the path instead of `base()`, so it lands in the class body
-         * whatever the base is currently called. Same reason `prop_add` does it.
-         */
-        part_add(name: string, klass: string): void;
-        /**
-         * Draws a wire: `name = Node prop`.
-         *
-         * The node end has to be declared already, as a free part or as a sub-view.
-         * `=` declares nothing, that is exactly why it has no collision with `upper`,
-         * so a wire to an undeclared node compiles green and throws `is not a
-         * function` at run time. Refusing here is the only place it can be caught.
-         *
-         * The far end, `wire.prop`, is NOT checked: whether the node's class has such
-         * a port is known only to `bog_vmap_lib.props_map`, and this module knows
-         * nothing of libraries, deliberately: naming it even in a comment would drag
-         * the whole fetching module into our graph. Stage 3.1 draws wires from the
-         * port list, so the question does not arise there either.
-         */
-        wire_add(wire: $bog_vmap_lang_wire): void;
-        /**
-         * Wires declared by the class: every property whose value is the `=`
-         * operator. `bidi` is read off the left end alone, because the emitter never
-         * writes the two signs apart; a hand written wire with one sign is reported
-         * as it is and left for the compiler to complain about.
-         */
-        wires(): readonly $bog_vmap_lang_wire[];
-        /**
-         * Declarations of parts: properties whose value is a class name, with the
-         * overrides written under it. That is where a consumer of a wire lives:
-         * `Price $mol_text title <= calc_result`.
-         */
-        part_names(): string[];
-        /**
-         * Wires together with who reads them. A wire nobody reads is not a link,
-         * and a reference to a name that is not a wire is a plain binding of the
-         * part and none of this module's business.
-         */
-        links(): readonly $bog_vmap_lang_link[];
-        /** Whether `to` is already fed, directly or through others, by `from`. */
-        link_reaches(from: string, to: string): boolean;
-        /**
-         * Name of the root property a wire from `from.prop` goes by: `calc_result`.
-         * An existing wire to the same end is reused, an unrelated property of the
-         * same name is stepped around with a suffix.
-         */
-        link_name(from: string, prop: string, bidi: boolean): string;
-        /**
-         * Connects a port of one part to a port of another: two lines and no more.
-         *
-         * The wire `name = From prop` goes through `wire_add` with every guard it
-         * has, and the consumer is a bare reference in the declaration of the target
-         * part, `to_prop <= name`, or `to_prop? <=> name?` for a two way wire. The
-         * reference is built by `$bog_vmap_lang_ref_tree`, so it can carry nothing
-         * under the name and never turns into the middle form of `<=`.
-         *
-         * Refused, with nothing written: a part wired to itself, an undeclared end,
-         * and a target the source already depends on, because a loop of wires is a
-         * loop of fibers and the scene would hang on the first read.
-         */
-        link_add(link: {
-            readonly from: string;
-            readonly from_prop: string;
-            readonly to: string;
-            readonly to_prop: string;
-            readonly bidi?: boolean;
-        }): string;
-        /**
-         * Plugs a port of a part, or unplugs it when `next` is `null`.
-         *
-         * One override of one part, which is what `over_set` is; a wire has no
-         * special way of writing its end and must not grow one, or the two would
-         * drift apart on the first fix to either.
-         */
-        link_target(to: string, to_prop: string, next: $mol_tree2 | null): void;
-        /**
-         * Unplugs a port: the reference goes from the target, and the wire goes from
-         * the class when nobody else reads it. Both lines, or the first alone when
-         * the second is still in use.
-         */
-        link_drop(to: string, to_prop: string): void;
-        /**
-         * Unplugs every wire with an end on a part: the ones it feeds and the ones
-         * it reads. What a delete of that part has to do before it takes the part
-         * out, or the document keeps a wire to a node that is no longer declared —
-         * which compiles into a call of a property nobody declares.
-         *
-         * Through `link_drop`, so a wire read by somebody else keeps its line
-         * exactly as it does when a port is unplugged by hand; a wire from this part
-         * that nobody reads has no consumer to unplug and goes in the second pass.
-         * Both ends of every OTHER wire are left alone.
-         */
-        links_drop(node: string): void;
-        /**
-         * Declaration of a property, read off the derivation of the text.
-         *
-         * Not through `prop_tree()`: that one is a keyed cell the writes below go
-         * through, and a read taken from a written cell freezes at what was written.
-         * `props_tree()` is a plain derivation of the source and stays live.
-         */
-        prop_decl(name: string): $mol_tree2 | null;
-        /**
-         * The `/` list of a `sub`, of the class itself or of one part of it, or
-         * `null` when there is no `sub` there.
-         *
-         * The empty owner is the class, a named one is a part. Both are one shape
-         * because `upper` has already flattened them: the class carries `sub` as a
-         * property, a part carries it as an override under its class name, and under
-         * either sits the same list of bare references.
-         */
-        sub_list(owner?: string): $mol_tree2 | null;
-        /**
-         * Names the `sub` of a node references, in the order it draws them, or
-         * `null` when the node declares no `sub` and so is not a container.
-         *
-         * A node WITH a `sub` is an artboard: children of it are laid out by tree,
-         * by ordinary flex, while everything else lies free by coordinates. That is
-         * the whole difference between the two, and it is a difference in the text
-         * rather than a mark on the side, see section 8.
-         *
-         * Content that is not a bare reference — a literal string in `sub` — takes
-         * its place in the list as an empty name, so that an index here is an index
-         * there.
-         */
-        sub_names(owner?: string): readonly string[] | null;
-        /** Whose `sub` references this name: a part, `''` for the class, `null` for nobody. */
-        sub_holder(name: string): string | null;
-        /** Whether `name` is `owner` itself or lies somewhere under it. */
-        sub_within(owner: string, name: string): boolean;
-        /**
-         * Puts a list of references back into the `sub` of the class or of a part.
-         *
-         * An override already there is replaced where it stands, never dropped and
-         * appended: the order of the lines under a part is text the user reads, and
-         * a `sub` that jumped to the bottom on every insertion would rewrite the
-         * declaration around an edit that changed one child.
-         */
-        sub_write(owner: string, list: $mol_tree2): void;
-        /** Makes a node a container by giving it an empty `sub`, if it has none. */
-        sub_open(owner: string): void;
-        /**
-         * One override written under a part, `Board $mol_view style *`, or `null`.
-         *
-         * Only under a PART: a property whose value is a class name. Under anything
-         * else the children are not overrides at all — under `sub` they are bare
-         * `<=` references — and reading them as property signatures fails on the
-         * first one, which is how every property of the document gets asked whether
-         * it is an artboard.
-         */
-        over_tree(owner: string, prop: string): $mol_tree2 | null;
-        /**
-         * Replaces an override under a part where it stands, appends a new one, or
-         * drops it on `null`.
-         *
-         * In place, because the order of the lines under a part is text the user
-         * reads: an override that jumped to the bottom every time its value changed
-         * would rewrite the declaration around an edit that changed one line.
-         */
-        over_set(owner: string, prop: string, next: $mol_tree2 | null): void;
-        /**
-         * Refuses to put a node inside itself or inside anything it already holds.
-         *
-         * A cycle in `sub` is not a badly drawn document, it is a class whose
-         * `dom_tree()` never returns: the scene would hang on the first render, and
-         * the document that hangs it is the one that got saved.
-         */
-        sub_check(name: string, owner: string): void;
-        /**
-         * Puts a bare reference `<= name` into a `sub` at a position.
-         *
-         * The position is where the insertion line was drawn, so it is clamped
-         * rather than checked: a drop at the end of a list the document has since
-         * shortened is an ordinary race of a gesture against a document, and landing
-         * at the end is the answer to it.
-         */
-        sub_insert(name: string, index: number, owner?: string): void;
-        /**
-         * Moves a node to a position under another parent, or to another position
-         * under the same one.
-         *
-         * Taken out first and put back after, so reparenting and reordering are one
-         * operation with one shape. Within one parent the index is corrected for the
-         * hole the node itself leaves, because the position the user aimed at was
-         * read off a list that still had it.
-         *
-         * The refusal is checked BEFORE the node is taken out, not left to the
-         * insertion: a move that fails halfway is a document with the node gone from
-         * the page and nothing in its place, written and saved.
-         */
-        sub_move(name: string, index: number, owner?: string): void;
-        /** Appends a bare reference `<= name` to the own `sub` of the class. */
-        sub_add(name: string): void;
-        /**
-         * Removes the bare reference `<= name` from the own `sub` of the class.
-         *
-         * The empty list is kept rather than the whole property dropped: `sub /` with
-         * nothing under it is the shape an empty document starts from, so deleting
-         * the last node returns the source to exactly that, instead of to a class
-         * with no `sub` at all.
-         *
-         * Only the reference goes. Dropping the declaration as well is two facts, so
-         * it is two calls — the same split as `part_add` plus `sub_add` on the way
-         * in. A node taken out of `sub` but still declared is a free part that draws
-         * nothing and keeps its ports, which is a legitimate state, not a leftover.
-         *
-         * The reference is looked for wherever it is, the class and every part of it
-         * alike. A node inside an artboard is referenced by that artboard and not by
-         * the class, and deleting it has to reach there too — otherwise the document
-         * keeps drawing a node nothing declares any more.
-         */
-        sub_drop(name: string): void;
-    }
-    /**
-     * One property of a node, with its signature.
-     *
-     * Port of `hyoo_studio_property`. `name`, `tree` and `node` are handed in by the
-     * owner through `make`.
-     */
-    class $bog_vmap_lang_prop extends $mol_object {
-        name(): string;
-        node(): $bog_vmap_lang_node;
-        tree(next?: $mol_tree2): $mol_tree2;
-        /** Re-binds the same property to another model class. */
-        as<Prop extends typeof $bog_vmap_lang_prop>(Prop: Prop): InstanceType<Prop>;
-        /**
-         * Signature parts: bare `name`, `key` (`*`) and `next` (`?`).
-         *
-         * A rename goes to the node, because it is not a fact about this property
-         * alone: everything that spells the old name has to be rewritten in the same
-         * write. A change of sign is local and is written here.
-         *
-         * Deviation from studio: this handle is NOT patched to follow the rename.
-         * Studio overwrites the `name` method of the live property object, which
-         * leaves an object addressing one name and reading another past the graph;
-         * here the handle simply stops addressing anything, and the caller asks the
-         * node for the property under its new name — a keyed cell, so that is one
-         * read and no state.
-         *
-         * **Plain method, and so are the three below.** Every accessor here only
-         * delegates into `tree()`, which is a cell already, and an accessor of that
-         * shape under `@ $mol_mem` freezes at the value written THROUGH it: after a
-         * rename this handle went on reporting the new name although it addressed a
-         * property no longer under it, which is the very object-past-the-graph the
-         * patching above was dropped for. Measured; there is a test. The same rule
-         * and the same measurement as `bog_vmap_app_doc_node.source`.
-         */
-        meta(next?: {
-            readonly name?: string;
-            readonly key?: string;
-            readonly next?: string;
-        }): {
-            [key: string]: string;
-        } & {
-            readonly name: string;
-            readonly key: string;
-            readonly next: string;
-        };
-        title(next?: string): string;
-        key(next?: boolean): boolean;
-        next(next?: boolean): boolean;
-    }
-}
-
-declare namespace $ {
-    /**
-     * Order of the declarations going into one `new Function`: the libraries, then
-     * the document, every base before its heir, and one declaration per name.
-     *
-     * Libraries first because the document is written against them, and a stable
-     * sort keeps that unless a library class inherits a document class — legal,
-     * odd, and then the base still comes first. The sort itself is the canonical
-     * `$bog_vmap_lang_sorted`: ordering declarations is a property of the language,
-     * and the scene's own copy of it was the second one too many.
-     *
-     * A name declared twice keeps the LAST declaration and drops the earlier one,
-     * which is the rule the class index of the library model already lives by and the rule the
-     * sandbox enforces on its own: two declarations of one class in one source
-     * would define the second over the first anyway, only with the first still
-     * having been extended by anyone declared in between. Dropping it up front makes
-     * «the document shadows the library» hold for heirs as well.
-     *
-     * No class name is spelled out in this comment on purpose: mam reads doc
-     * comments for dependencies, and a one segment name here failed the build of
-     * the scene with «Root package not found».
-     *
-     * Bases the list does not declare — the classes of the pack, already in the
-     * sandbox — are left alone, as the sort leaves them.
-     */
-    function $bog_vmap_scene_order(this: $, libs: readonly $mol_tree2[], doc: readonly $mol_tree2[]): readonly $mol_tree2[];
-}
-
-declare namespace $ {
-    /** Shape of one recompiled class: what it declares and what of that is keyed. */
-    type $bog_vmap_scene_swap_shape = {
-        readonly declared: ReadonlySet<string>;
-        readonly keyed: ReadonlySet<string>;
-    };
-    /** Counters of one hot swap, for tests and for the log. */
-    type $bog_vmap_scene_swap_report = {
-        /** Instances whose prototype was moved onto the freshly compiled class. */
-        swapped: number;
-        /** Atoms whose implementation was redirected onto the new one. */
-        moved: number;
-        /** Atoms whose implementation actually changed, so subscribers were woken. */
-        stale: number;
-        /** Atoms dropped because the property changed shape or stopped being a cell. */
-        dropped: number;
-        /** Atoms holding a failure, woken whatever changed: they have nothing to keep. */
-        failed: number;
-    };
-    /**
-     * Moves a live component onto the freshly compiled classes, keeping its state.
-     *
-     * A cell lives as an OWN field of the instance, so replacing the prototype
-     * touches no value, no subscription and no DOM node — caret, focus and scroll
-     * position included. The one thing the prototype does not reach is the
-     * implementation a fiber captured in its constructor, and that is what is
-     * redirected here, taking the new one off the wrapper the decorator left it on.
-     *
-     * The walk goes over the atom caches and never over `sub()`: free parts are not
-     * in `sub` at all, `sub()` of a generated class is not memoized, so calling it
-     * would run user code and could create children that do not exist yet, and a
-     * child temporarily out of `sub` is still a live instance.
-     *
-     * Instances of classes the document does not declare — components of the donor
-     * pack — keep their prototype and are only walked through, because a document
-     * class may well sit inside one.
-     * @see ../../ARCHITECTURE.md section 3, ../../spike/S2.md
-     */
-    function $bog_vmap_scene_swap(this: $, root: object, klass_of: (name: string) => unknown, shape_of: (name: string) => $bog_vmap_scene_swap_shape | null): $bog_vmap_scene_swap_report;
-}
-
-declare namespace $ {
-    /**
-     * Makes a cell of every method a handwritten body defines: keyed and
-     * changeable ones as the tree says, the way studio's `source_js_decorators()`
-     * does, and every zero argument method besides, whatever the tree says. The
-     * generated code calls it right after the class, since a decorator cannot be
-     * written into a string for `new Function`, and it reads the class rather
-     * than the text, so a nested `if( x ) {` cannot pass for a method.
-     *
-     * Without an atom the hot swap has nothing to wake when the text of a method
-     * changes: its callers keep the old value and the DOM keeps the old text.
-     */
-    function $bog_vmap_scene_cells(Klass: {
-        readonly prototype: object;
-    }, keyed: readonly string[], changeable: readonly string[]): void;
-}
-
-declare namespace $ {
-    function $mol_tree2_text_to_string(this: $, text: $mol_tree2): string;
-}
-
-declare namespace $ {
-    function $mol_vlq_encode(val: number): string;
-}
-
-declare namespace $ {
-    type $mol_sourcemap_segment = [number] | [number, number, number, number] | [number, number, number, number, number];
-    type $mol_sourcemap_line = $mol_sourcemap_segment[];
-    type $mol_sourcemap_mappings = $mol_sourcemap_line[];
-    interface $mol_sourcemap_raw {
-        version: number;
-        sources: string[];
-        names?: string[];
-        sourceRoot?: string;
-        sourcesContent?: (string | null)[];
-        mappings: string | $mol_sourcemap_line[];
-        file?: string;
-    }
-}
-
-declare namespace $ {
-    function $mol_tree2_text_to_sourcemap(this: $, tree: $mol_tree2): $mol_sourcemap_raw;
-}
-
-declare namespace $ {
-    function $mol_sourcemap_url(this: $, uri: string, type?: "js" | "css"): string;
-}
-
-declare namespace $ {
-    function $mol_sourcemap_dataurl_decode(this: $, data: string): $mol_sourcemap_raw | undefined;
-    function $mol_sourcemap_dataurl_encode(this: $, map: $mol_sourcemap_raw, type?: "js" | "css"): string;
-}
-
-declare namespace $ {
-    function $mol_tree2_text_to_string_mapped(this: $, text: $mol_tree2, type: 'js' | 'css'): string;
-    function $mol_tree2_text_to_string_mapped_js(this: $, text: $mol_tree2): string;
-    function $mol_tree2_text_to_string_mapped_css(this: $, text: $mol_tree2): string;
-}
-
-declare namespace $ {
-    function $mol_tree2_js_to_text(this: $, js: $mol_tree2): $mol_tree2;
-}
-
 declare namespace $ {
 
 	export class $mol_icon_close extends $mol_icon {
@@ -6588,6 +4683,56 @@ declare namespace $ {
         observe(node: Node): void;
         unobserve(node: Node): void;
     }, prev: ReadonlySet<Node>, next: readonly Node[]): Set<Node>;
+}
+
+declare namespace $ {
+    type $mol_style_pseudo_class = ':active' | ':any' | ':any-link' | ':checked' | ':default' | ':defined' | ':dir(rtl)' | ':dir(ltr)' | ':disabled' | ':empty' | ':enabled' | ':first' | ':first-child' | ':first-of-type' | ':fullscreen' | ':focus' | ':focus-visible' | ':focus-within' | ':hover' | ':indeterminate' | ':in-range' | ':invalid' | ':last-child' | ':last-of-type' | ':left' | ':link' | `:not(${string})` | `:nth-child(${string})` | `:nth-last-child(${string})` | `:nth-of-type(${string})` | `:nth-last-of-type(${string})` | ':only-child' | ':only-of-type' | ':optional' | ':out-of-range' | ':placeholder-shown' | ':read-only' | ':read-write' | ':required' | ':right' | ':root' | ':scope' | ':target' | ':valid' | ':visited';
+}
+
+declare namespace $ {
+    type $mol_style_pseudo_element = '::after' | '::before' | '::cue' | '::first-letter' | '::first-line' | '::selection' | '::slotted' | '::backdrop' | '::placeholder' | '::marker' | '::spelling-error' | '::grammar-error' | '::-webkit-calendar-picker-indicator' | '::-webkit-color-swatch' | '::-webkit-color-swatch-wrapper' | '::-webkit-details-marker' | '::-webkit-file-upload-button' | '::-webkit-image-inner-element' | '::-webkit-inner-spin-button' | '::-webkit-input-placeholder' | '::-webkit-input-speech-button' | '::-webkit-keygen-select' | '::-webkit-media-controls-panel' | '::-webkit-media-controls-timeline-container' | '::-webkit-media-slider-container' | '::-webkit-meter-bar' | '::-webkit-meter-even-less-good-value' | '::-webkit-meter-optimum-value' | '::-webkit-meter-suboptimal-value' | '::-webkit-progress-bar' | '::-webkit-progress-value' | '::-webkit-resizer' | '::-webkit-resizer:window-inactive' | '::-webkit-scrollbar' | '::-webkit-scrollbar-button' | '::-webkit-scrollbar-button:disabled' | '::-webkit-scrollbar-button:double-button:horizontal:end:decrement' | '::-webkit-scrollbar-button:double-button:horizontal:end:increment' | '::-webkit-scrollbar-button:double-button:horizontal:end:increment:corner-present' | '::-webkit-scrollbar-button:double-button:horizontal:start:decrement' | '::-webkit-scrollbar-button:double-button:horizontal:start:increment' | '::-webkit-scrollbar-button:double-button:vertical:end:decrement' | '::-webkit-scrollbar-button:double-button:vertical:end:increment' | '::-webkit-scrollbar-button:double-button:vertical:end:increment:corner-present' | '::-webkit-scrollbar-button:double-button:vertical:start:decrement' | '::-webkit-scrollbar-button:double-button:vertical:start:increment' | '::-webkit-scrollbar-button:end' | '::-webkit-scrollbar-button:end:decrement' | '::-webkit-scrollbar-button:end:increment' | '::-webkit-scrollbar-button:horizontal' | '::-webkit-scrollbar-button:horizontal:decrement' | '::-webkit-scrollbar-button:horizontal:decrement:active' | '::-webkit-scrollbar-button:horizontal:decrement:hover' | '::-webkit-scrollbar-button:horizontal:decrement:window-inactive' | '::-webkit-scrollbar-button:horizontal:end' | '::-webkit-scrollbar-button:horizontal:end:decrement' | '::-webkit-scrollbar-button:horizontal:end:increment' | '::-webkit-scrollbar-button:horizontal:end:increment:corner-present' | '::-webkit-scrollbar-button:horizontal:increment' | '::-webkit-scrollbar-button:horizontal:increment:active' | '::-webkit-scrollbar-button:horizontal:increment:hover' | '::-webkit-scrollbar-button:horizontal:increment:window-inactive' | '::-webkit-scrollbar-button:horizontal:start' | '::-webkit-scrollbar-button:horizontal:start:decrement' | '::-webkit-scrollbar-button:horizontal:start:increment' | '::-webkit-scrollbar-button:start' | '::-webkit-scrollbar-button:start:decrement' | '::-webkit-scrollbar-button:start:increment' | '::-webkit-scrollbar-button:vertical' | '::-webkit-scrollbar-button:vertical:decrement' | '::-webkit-scrollbar-button:vertical:decrement:active' | '::-webkit-scrollbar-button:vertical:decrement:hover' | '::-webkit-scrollbar-button:vertical:decrement:window-inactive' | '::-webkit-scrollbar-button:vertical:end' | '::-webkit-scrollbar-button:vertical:end:decrement' | '::-webkit-scrollbar-button:vertical:end:increment' | '::-webkit-scrollbar-button:vertical:end:increment:corner-present' | '::-webkit-scrollbar-button:vertical:increment' | '::-webkit-scrollbar-button:vertical:increment:active' | '::-webkit-scrollbar-button:vertical:increment:hover' | '::-webkit-scrollbar-button:vertical:increment:window-inactive' | '::-webkit-scrollbar-button:vertical:start' | '::-webkit-scrollbar-button:vertical:start:decrement' | '::-webkit-scrollbar-button:vertical:start:increment' | '::-webkit-scrollbar-corner' | '::-webkit-scrollbar-corner:window-inactive' | '::-webkit-scrollbar-thumb' | '::-webkit-scrollbar-thumb:horizontal' | '::-webkit-scrollbar-thumb:horizontal:active' | '::-webkit-scrollbar-thumb:horizontal:hover' | '::-webkit-scrollbar-thumb:horizontal:window-inactive' | '::-webkit-scrollbar-thumb:vertical' | '::-webkit-scrollbar-thumb:vertical:active' | '::-webkit-scrollbar-thumb:vertical:hover' | '::-webkit-scrollbar-thumb:vertical:window-inactive' | '::-webkit-scrollbar-track' | '::-webkit-scrollbar-track-piece' | '::-webkit-scrollbar-track-piece:disabled' | '::-webkit-scrollbar-track-piece:end' | '::-webkit-scrollbar-track-piece:horizontal:decrement' | '::-webkit-scrollbar-track-piece:horizontal:decrement:active' | '::-webkit-scrollbar-track-piece:horizontal:decrement:hover' | '::-webkit-scrollbar-track-piece:horizontal:end' | '::-webkit-scrollbar-track-piece:horizontal:end:corner-present' | '::-webkit-scrollbar-track-piece:horizontal:end:double-button' | '::-webkit-scrollbar-track-piece:horizontal:end:no-button' | '::-webkit-scrollbar-track-piece:horizontal:end:no-button:corner-present' | '::-webkit-scrollbar-track-piece:horizontal:end:single-button' | '::-webkit-scrollbar-track-piece:horizontal:increment' | '::-webkit-scrollbar-track-piece:horizontal:increment:active' | '::-webkit-scrollbar-track-piece:horizontal:increment:hover' | '::-webkit-scrollbar-track-piece:horizontal:start' | '::-webkit-scrollbar-track-piece:horizontal:start:double-button' | '::-webkit-scrollbar-track-piece:horizontal:start:no-button' | '::-webkit-scrollbar-track-piece:horizontal:start:single-button' | '::-webkit-scrollbar-track-piece:start' | '::-webkit-scrollbar-track-piece:vertical:decrement' | '::-webkit-scrollbar-track-piece:vertical:decrement:active' | '::-webkit-scrollbar-track-piece:vertical:decrement:hover' | '::-webkit-scrollbar-track-piece:vertical:end' | '::-webkit-scrollbar-track-piece:vertical:end:corner-present' | '::-webkit-scrollbar-track-piece:vertical:end:double-button' | '::-webkit-scrollbar-track-piece:vertical:end:no-button' | '::-webkit-scrollbar-track-piece:vertical:end:no-button:corner-present' | '::-webkit-scrollbar-track-piece:vertical:end:single-button' | '::-webkit-scrollbar-track-piece:vertical:increment' | '::-webkit-scrollbar-track-piece:vertical:increment:active' | '::-webkit-scrollbar-track-piece:vertical:increment:hover' | '::-webkit-scrollbar-track-piece:vertical:start' | '::-webkit-scrollbar-track-piece:vertical:start:double-button' | '::-webkit-scrollbar-track-piece:vertical:start:no-button' | '::-webkit-scrollbar-track-piece:vertical:start:single-button' | '::-webkit-scrollbar-track:disabled' | '::-webkit-scrollbar-track:horizontal' | '::-webkit-scrollbar-track:horizontal:disabled' | '::-webkit-scrollbar-track:horizontal:disabled:corner-present' | '::-webkit-scrollbar-track:vertical:disabled' | '::-webkit-scrollbar-track:vertical:disabled:corner-present' | '::-webkit-scrollbar:horizontal' | '::-webkit-scrollbar:horizontal:corner-present' | '::-webkit-scrollbar:horizontal:window-inactive' | '::-webkit-scrollbar:vertical' | '::-webkit-scrollbar:vertical:corner-present' | '::-webkit-scrollbar:vertical:window-inactive' | '::-webkit-search-cancel-button' | '::-webkit-search-decoration' | '::-webkit-search-results-button' | '::-webkit-search-results-decoration' | '::-webkit-slider-container' | '::-webkit-slider-runnable-track' | '::-webkit-slider-thumb' | '::-webkit-slider-thumb:disabled' | '::-webkit-slider-thumb:hover' | '::-webkit-textfield-decoration-container' | '::-webkit-validation-bubble' | '::-webkit-validation-bubble-arrow' | '::-webkit-validation-bubble-arrow-clipper' | '::-webkit-validation-bubble-heading' | '::-webkit-validation-bubble-message' | '::-webkit-validation-bubble-text-block';
+}
+
+declare namespace $ {
+    /** Returns error type, that don't match to normal value. */
+    type $mol_type_error<Message, Info = {}> = Message & {
+        $mol_type_error: Info;
+    };
+}
+
+declare namespace $ {
+    type Attrs<View extends $mol_view, Config, Attrs = ReturnType<View['attr']>> = {
+        [name in keyof Attrs]?: {
+            [val in keyof Config[Extract<name, keyof Config>]]: $mol_style_guard<View, Config[Extract<name, keyof Config>][val]>;
+        };
+    };
+    type Medias<View extends $mol_view, Config> = {
+        [query in keyof Config]: $mol_style_guard<View, Config[query]>;
+    };
+    type Keys<View extends $mol_view> = '>' | '@' | keyof $mol_style_properties | $mol_style_pseudo_element | $mol_style_pseudo_class | $mol_type_keys_extract<View, () => $mol_view> | `$${string}`;
+    export type $mol_style_guard<View extends $mol_view, Config> = {
+        [key in Keys<View>]?: unknown;
+    } & $mol_style_properties & {
+        [key in keyof Config]: key extends keyof $mol_style_properties ? $mol_style_properties[key] : key extends '>' | $mol_style_pseudo_class | $mol_style_pseudo_element ? $mol_style_guard<View, Config[key]> : key extends '@' ? Attrs<View, Config[key]> : key extends ('@media' | '@container') ? Medias<View, Config[key]> : key extends '@starting-style' ? $mol_style_guard<View, Config[key]> : key extends `[${string}]` ? {
+            [val in keyof Config[key]]: $mol_style_guard<View, Config[key][val]>;
+        } : key extends `--${string}` ? any : key extends keyof $ ? $mol_style_guard<InstanceType<Extract<$[key], typeof $mol_view>>, Config[key]> : key extends keyof View ? View[key] extends (id?: any) => infer Sub ? Sub extends $mol_view ? $mol_style_guard<Sub, Config[key]> : $mol_type_error<'Property returns non $mol_view', {
+            Returns: Sub;
+        }> : $mol_type_error<'Field is not a Property'> : key extends `$${string}` ? $mol_type_error<'Unknown View Class'> : $mol_type_error<'Unknown CSS Property'>;
+    };
+    export {};
+}
+
+declare namespace $ {
+    function $mol_style_sheet<Component extends $mol_view, Config extends $mol_style_guard<Component, Config>>(Component: new () => Component, config0: Config): string;
+}
+
+declare namespace $ {
+    /**
+     * CSS in TS.
+     * Statically typed CSS style sheets. Following samples show which CSS code are generated from TS code.
+     * @see https://mol.hyoo.ru/#!section=docs/=xwq9q5_f966fg
+     */
+    function $mol_style_define<Component extends $mol_view, Config extends $mol_style_guard<Component, Config>>(Component: new () => Component, config: Config): HTMLStyleElement | null;
 }
 
 declare namespace $ {

@@ -7254,6 +7254,1694 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    /**
+     * Decorates method to fiber to ensure it is executed only once inside other fiber from [mol_wire](../wire/README.md)
+     * @see https://mol.hyoo.ru/#!section=docs/=1fcpsq_1wh0h2
+     */
+    $.$mol_action = $mol_wire_method;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Document model over a `view.tree` AST.
+     *
+     * A vmap document is one `view.tree` class, so the source text is the truth and
+     * the tree is derived from it. Every edit goes through the tree and is written
+     * straight back as text, which is what makes source export free.
+     *
+     * Port of the component and property models of studio, plus the wire emitter,
+     * which studio has no equivalent of. Deviations are marked at their place.
+     *
+     * Pure model: knows nothing about DOM, compiles nothing, executes nothing.
+     * @see ../ARCHITECTURE.md sections 1 and 2
+     */
+    /**
+     * Bare means: no `*`, no `?`, no `!`, no spaces, nothing but a name. Signs are
+     * never carried by a token, they are produced from `bidi`. That single rule
+     * kills three of the five traps at once, because every one of them is a token
+     * that smuggles something in:
+     *
+     * - `value?` as the right token gives `w = Field value?`, which compiles to
+     *   `value(next)` with no `next` in scope, so the wire throws `ReferenceError`
+     *   on ANY read;
+     * - `w?` as the left token gives `w? = Field hint`, which compiles to a setter
+     *   whose right end ignores it, so writes vanish with no error at all;
+     * - `B value` as a token gives `w = A B value`, which compiles to
+     *   `this.A().B().value()`, and `B` was hoisted onto the root by `upper`, so it
+     *   is not a method of `A` and never will be.
+     *
+     * The grammar is the stock signature regexp itself rather than one of our own,
+     * so a token this accepts is a token the compiler accepts.
+     */
+    function $bog_vmap_lang_token(token, role) {
+        const parts = [...token.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
+        if (!parts || parts.name !== token)
+            this.$mol_fail(new Error(`${role} must be a bare name, got ${JSON.stringify(token)}`));
+        return token;
+    }
+    $.$bog_vmap_lang_token = $bog_vmap_lang_token;
+    /**
+     * Stricter than the compiler on purpose. The stock class match takes anything
+     * starting with a dollar or a capital, generics and quotes included, because it
+     * also has to recognize the classes of somebody else's code; a class
+     * WE write has to survive one more step, and that step is mam resolving the
+     * name into a folder. Every underscore is a level of folders, so the name is a
+     * dollar and at least two lowercase segments, and nothing else fits in a path.
+     *
+     * A refusal here is a message to a person, so this answers yes or no and leaves
+     * the wording to the caller, who knows in what language to say it.
+     */
+    function $bog_vmap_lang_class_ok(name) {
+        return /^\$[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(name);
+    }
+    $.$bog_vmap_lang_class_ok = $bog_vmap_lang_class_ok;
+    /**
+     * The operator is `=` and nothing else. `<= Node prop` looks like the same thing
+     * and is not: it goes through the `upper` hack, which takes the kids of the
+     * reference as default values, so it declares a property `Node` valued `prop`
+     * and silently drops the `.prop()` link from the generated call. Either the
+     * build dies with a message about default values, or the build is green and the
+     * bundle carries `Node(){ return prop }`, a bare identifier that throws at the
+     * one node the wire was drawn to, whenever somebody gets there.
+     *
+     * @see ../ARCHITECTURE.md section 1
+     */
+    function $bog_vmap_lang_wire_tree(wire) {
+        const sign = wire.bidi ? '?' : '';
+        const name = this.$bog_vmap_lang_token(wire.name, 'Wire name') + sign;
+        const node = this.$bog_vmap_lang_token(wire.node, 'Wire node');
+        const prop = this.$bog_vmap_lang_token(wire.prop, 'Wire prop') + sign;
+        return $mol_tree2.struct(name, [
+            $mol_tree2.struct('=', [
+                $mol_tree2.struct(node, [
+                    $mol_tree2.struct(prop),
+                ]),
+            ]),
+        ]);
+    }
+    $.$bog_vmap_lang_wire_tree = $bog_vmap_lang_wire_tree;
+    /**
+     * A bare reference `<= name`, the form that goes into `sub`. Bare means
+     * childless: a reference with a child is the middle of the three forms of `<=`,
+     * the only dangerous one, and the guard against it is that this takes a token
+     * instead of a path.
+     */
+    function $bog_vmap_lang_ref_tree(name) {
+        return $mol_tree2.struct('<=', [
+            $mol_tree2.struct(this.$bog_vmap_lang_token(name, 'Reference')),
+        ]);
+    }
+    $.$bog_vmap_lang_ref_tree = $bog_vmap_lang_ref_tree;
+    /**
+     * A free part is a name and a class at class level, with no operator between
+     * them: a plain property of the root class, so the compiler makes it a lazy
+     * memoized singleton and it creates no DOM, because it is not in `sub`. That is
+     * the whole mechanism behind a detail lying free on the canvas.
+     */
+    function $bog_vmap_lang_part_tree(name, klass) {
+        const base = $mol_tree2.struct(klass);
+        if (!$mol_view_tree2_class_match(base))
+            this.$mol_fail(new Error(`Part class must be a class name, got ${JSON.stringify(klass)}`));
+        return $mol_tree2.struct(this.$bog_vmap_lang_token(name, 'Part name'), [base]);
+    }
+    $.$bog_vmap_lang_part_tree = $bog_vmap_lang_part_tree;
+    /** Value of one key of a `*` dictionary, or `null` when the key is not there. */
+    function $bog_vmap_lang_dict_get(dict, key) {
+        if (dict?.type !== '*')
+            return null;
+        const found = dict.kids.find(kid => kid.type === key);
+        return found?.kids[0] ?? null;
+    }
+    $.$bog_vmap_lang_dict_get = $bog_vmap_lang_dict_get;
+    /**
+     * A key already there is replaced where it stands, so `^` keeps the head of the
+     * dictionary it has to keep: a redeclared dictionary REPLACES the one of the
+     * base instead of extending it, and `^` is the line that undoes that. Writing a
+     * key must never be able to move it, and appending is the only other option.
+     */
+    function $bog_vmap_lang_dict_set(dict, key, value) {
+        const name = this.$bog_vmap_lang_token(key, 'Dictionary key');
+        if (!value)
+            return dict.clone(dict.kids.filter(kid => kid.type !== name));
+        const entry = dict.struct(name, [value]);
+        if (!dict.kids.some(kid => kid.type === name)) {
+            return dict.clone([...dict.kids, entry]);
+        }
+        return dict.clone(dict.kids.map(kid => kid.type === name ? entry : kid));
+    }
+    $.$bog_vmap_lang_dict_set = $bog_vmap_lang_dict_set;
+    /**
+     * Class declarations reordered so that a base always precedes its heir. A
+     * generated class resolves its base at definition time, and the generator emits
+     * declarations in the order it received them. A heir written above its base
+     * therefore inherits the PREVIOUS version of it, or `undefined` on a first run,
+     * and says nothing about it.
+     *
+     * Bases the list does not declare — anything from a library — are left alone:
+     * they are already in the namespace before our code runs.
+     *
+     * The scene carries an equivalent of this for the same reason. The two should
+     * become one, and this is the side to keep: sorting declarations is a property
+     * of the language, not of whoever happens to compile them.
+     */
+    function $bog_vmap_lang_sorted(defs) {
+        const by_name = new Map();
+        for (const def of defs)
+            by_name.set(def.type, def);
+        const sorted = [];
+        const done = new Set();
+        const path = new Set();
+        const walk = (def) => {
+            if (done.has(def.type))
+                return;
+            if (path.has(def.type))
+                this.$mol_fail(new Error(`Circular inheritance around ${def.type}`));
+            path.add(def.type);
+            const base = by_name.get(def.kids[0]?.type ?? '');
+            if (base && base !== def)
+                walk(base);
+            path.delete(def.type);
+            done.add(def.type);
+            sorted.push(def);
+        };
+        for (const def of defs)
+            walk(def);
+        return sorted;
+    }
+    $.$bog_vmap_lang_sorted = $bog_vmap_lang_sorted;
+    /**
+     * A document: several `view.tree` classes in one text.
+     *
+     * The node model below models one CLASS, and rightly so — but a document is not
+     * one class, and using the node as if it were silently eats the others: its
+     * read takes the first kid and its write serializes that one tree over the
+     * whole source, so editing one property of the first class drops the second
+     * from the text. No error, no warning.
+     *
+     * This level owns the text, cuts it into classes for reading, and puts one back
+     * without reserializing its neighbours from anything but their own trees. It
+     * hands out nodes whose `source` is a slice of it, so everything already
+     * written against the node model keeps working unchanged — that is the point of
+     * adding a level instead of widening the one below.
+     *
+     * A class is addressed BY NAME, which is what the editor speaks and what
+     * survives reordering. Two things follow, both real:
+     *
+     * - renaming a class through its node writes under the OLD name, which is
+     *   correct — the slot is found and replaced — but the caller then holds a stale
+     *   key and has to re-read `names()`;
+     * - two classes of one name are one class here, the first. That is already
+     *   broken further down: the class index of the library model keeps the LAST of
+     *   a duplicate pair, so a document with two would disagree with itself about
+     *   which is real.
+     *
+     * @see ../ARCHITECTURE.md section 1
+     */
+    class $bog_vmap_lang_doc extends $mol_object {
+        /** The truth. */
+        source(next) {
+            return next ?? '';
+        }
+        /**
+         * Read only, and that is deliberate. A cell that both reads and writes
+         * `source` would be a cell frozen by its own write — a write to a memoized
+         * cell freezes its dependencies — and the document would stop following the
+         * text after the first edit made through it, which is the one failure that
+         * looks exactly like success.
+         */
+        trees() {
+            return this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(this.source().replace(/\n?$/, '\n'))).kids;
+        }
+        names() {
+            return this.trees().map(tree => tree.type);
+        }
+        /**
+         * Writing rebuilds the text from the trees of all the classes with this one
+         * replaced, so a neighbour comes back out of its own tree and nothing else.
+         * On an already normalized document that is byte for byte; the first write
+         * to a hand written one normalizes the whole text at once, which is the same
+         * lossy step the node model has always taken, now taken over the document
+         * rather than over one class.
+         *
+         * A name the document does not carry appends, so that handing a node a
+         * source is also how a class is added.
+         *
+         * NOT memoized, for the reason spelled out at `trees`: this is the write
+         * path, and a cell on a write path freezes at what was written. The read is
+         * two lookups over `trees()`, which is a cell already, so there is nothing
+         * to gain either.
+         */
+        class_source(name, next) {
+            const trees = this.trees();
+            const index = trees.findIndex(tree => tree.type === name);
+            if (next === undefined)
+                return trees[index]?.toString() ?? '';
+            const parsed = this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(next.replace(/\n?$/, '\n'))).kids;
+            const kept = index < 0
+                ? [...trees, ...parsed]
+                : [...trees.slice(0, index), ...parsed, ...trees.slice(index + 1)];
+            this.source(this.$.$mol_tree2.list(kept).toString());
+            return next;
+        }
+        /**
+         * A class name is spelled in more places than its own declaration: it is the
+         * base of an heir (`site_card site_page`, both with a leading dollar) and the
+         * value of a part declared with it (`Card site_card`, same). Retyping the
+         * declaration alone leaves those
+         * spelling a class nobody declares, which compiles into `Class extends value
+         * undefined` or into a part of a class that is not there — so the mentions
+         * are rewritten in the SAME write, over every class of the document.
+         *
+         * A mention is any tree node typed exactly with the old name. Only structural
+         * tokens carry a type in `tree2`; a literal is a data node, so a class name
+         * written inside a string is not touched and cannot be.
+         *
+         * A name already declared is refused, like the rename of a property: two
+         * classes of one name is a document that disagrees with itself about which is
+         * real, and the class index of a library keeps the last of such a pair.
+         *
+         * Whoever holds a `node( from )` has to ask for `node( to )` afterwards; the
+         * old handle addresses a class the document no longer carries, exactly as the
+         * property handle does after `prop_rename`.
+         */
+        class_rename(from, to) {
+            if (from === to)
+                return;
+            const trees = this.trees();
+            if (!trees.some(tree => tree.type === from))
+                return this.$.$mol_fail(new Error(`Class ${JSON.stringify(from)} is not declared in the document`));
+            if (trees.some(tree => tree.type === to))
+                return this.$.$mol_fail(new Error(`Class ${JSON.stringify(to)} is already declared in the document`));
+            const renamed = (tree) => {
+                const kids = tree.kids.map(renamed);
+                return tree.type === from ? tree.struct(to, kids) : tree.clone(kids);
+            };
+            this.source(this.$.$mol_tree2.list(trees.map(renamed)).toString());
+        }
+        /**
+         * `source` is replaced with a slice of the document on the instance itself.
+         * Everything else of the node model — the tree, the property list, the wire
+         * emitter — is derived from `source` and so needs no changes at all: the
+         * node cannot tell that its text is a part of a larger one.
+         */
+        node(name) {
+            return $bog_vmap_lang_node.make({
+                source: (next) => this.class_source(name, next),
+            });
+        }
+    }
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_doc.prototype, "source", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_doc.prototype, "trees", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_doc.prototype, "names", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_doc.prototype, "class_rename", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lang_doc.prototype, "node", null);
+    $.$bog_vmap_lang_doc = $bog_vmap_lang_doc;
+    /** One node of the document: a single `view.tree` class. */
+    class $bog_vmap_lang_node extends $mol_object {
+        /** The truth. Everything else is derived from it. */
+        source(next) {
+            return next ?? '';
+        }
+        /**
+         * Normalization is lossy: it runs the `upper` hack, so a named sub view
+         * nested in `sub` comes out as a flat property of the root plus a bare
+         * reference left in place. Hoisted properties land BEFORE the ones already
+         * at the top, because they are added during the traversal rather than in the
+         * final loop.
+         *
+         * That flat form is the canonical shape of a document, not a compromise: it
+         * is the model of section 1 spelled out in the text itself. Round trip is
+         * therefore byte for byte only on a normalized source, which is what the
+         * editor holds, because every write serializes the whole class.
+         *
+         * @see ../ARCHITECTURE.md section 1, «Канонический вид документа»
+         *
+         * Deviation from studio: an empty or classless source fails with a message
+         * instead of `Cannot read properties of undefined`. In an editor an empty
+         * buffer is a normal transient state and has to say so.
+         */
+        tree(next) {
+            const source = this.source(next && next.toString()).replace(/\n?$/, '\n');
+            const tree = this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(source)).kids[0];
+            if (!tree)
+                return this.$.$mol_fail(new Error('No class declared in the source'));
+            return tree;
+        }
+        name(next) {
+            const tree = this.tree();
+            if (!next)
+                return tree.type;
+            this.tree(tree.struct(next, tree.kids));
+            return next;
+        }
+        base(next) {
+            const self = this.tree();
+            const base = this.$.$mol_view_tree2_class_super(self);
+            if (!next)
+                return base.type;
+            this.tree(self.clone([base.struct(next, base.kids)]));
+            return next;
+        }
+        prop_names() {
+            return this.$.$mol_view_tree2_class_props(this.tree())
+                .map(tree => this.$.$mol_view_tree2_prop_parts(tree).name);
+        }
+        props_tree() {
+            return this.tree().list(this.$.$mol_view_tree2_class_props(this.tree()));
+        }
+        /**
+         * Full signature of a property by its bare name: `d` gives back `d*?`.
+         *
+         * Deviation from studio: the early exit is spelled as a test for any sign
+         * instead of `name.indexOf('*') + name.indexOf('?') + name.indexOf('!') > -3`,
+         * which is the same condition written as arithmetic on three `-1`s.
+         */
+        prop_fullname(name) {
+            if (/[*?!]/.test(name))
+                return name;
+            for (const tree of this.props_tree().kids) {
+                const sign = tree?.type ?? '';
+                const meta = [...sign.matchAll($mol_view_tree2_prop_signature)][0]?.groups
+                    ?? { name: '', key: '', next: '' };
+                if (meta.name === name)
+                    return `${meta.name}${meta.key || ''}${meta.next || ''}`;
+            }
+            return '';
+        }
+        /** Writing `null` drops the property. */
+        prop_tree(name, next) {
+            const sign = this.prop_fullname(name);
+            if (next !== undefined) {
+                this.tree(this.tree().insert(next, this.base(), sign));
+                return next;
+            }
+            return this.props_tree().select(sign).kids[0] ?? null;
+        }
+        prop_add(name) {
+            const tree = this.tree();
+            this.tree(tree.insert(tree.struct(name, [tree.struct('null')]), null, name));
+        }
+        prop_drop(name) {
+            this.prop_tree(name, null);
+        }
+        /**
+         * `next` is a whole signature, `d*?` and not `d`, because a rename and a
+         * change of sign arrive together from the inspector and two writes would
+         * leave the document renamed but unsigned in between.
+         *
+         * **A reference is rewritten, never dropped.** A node is named by the
+         * property it occupies, so a rename moves the name every `sub` list, every
+         * wire end and every binding spells. Dropping them instead — which is what
+         * `links_drop` does for a delete — would silently cut the wires of a node
+         * that is still there; the two operations are opposites and must not share
+         * a path. Anything of the shape `<= name`, `<=> name` or `= name prop` at
+         * any depth is such a reference.
+         *
+         * The declaration is retyped IN PLACE, among the kids of the base, and only
+         * there: an override of the same name under a part is a port of that part
+         * and none of our business. In place also keeps the property where it was —
+         * dropping it and inserting it back moved it to the end of the class, which
+         * reorders the canvas for a rename that should not move anything.
+         *
+         * A name already taken is refused rather than merged: two properties of one
+         * name is a document nothing can address afterwards.
+         */
+        prop_rename(name, next) {
+            const to = [...next.matchAll($mol_view_tree2_prop_signature)][0]?.groups?.name;
+            if (!to)
+                return this.$.$mol_fail(new Error(`Bad property signature ${JSON.stringify(next)}`));
+            if (to !== name && this.prop_names().includes(to))
+                return this.$.$mol_fail(new Error(`Property ${JSON.stringify(to)} is already declared in ${this.name()}`));
+            const self = this.tree();
+            const base = self.kids[0];
+            if (!base)
+                return;
+            const refs = (tree) => {
+                const kids = tree.kids.map(refs);
+                const head = kids[0];
+                if (head?.type === name
+                    && (tree.type === '<=' || tree.type === '<=>' || tree.type === '='))
+                    return tree.clone([head.struct(to, head.kids), ...kids.slice(1)]);
+                return tree.clone(kids);
+            };
+            const props = base.kids.map(prop => {
+                const meta = [...prop.type.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
+                return meta?.name === name ? prop.struct(next, prop.kids) : prop;
+            });
+            this.tree(self.clone([base.clone(props.map(refs))]));
+        }
+        property(name) {
+            return $bog_vmap_lang_prop.make({
+                name: $mol_const(name),
+                tree: next => this.prop_tree(name, next),
+                node: $mol_const(this),
+            });
+        }
+        /**
+         * Deviation from studio, which has no free parts: the write goes through the
+         * `null` step of the path instead of `base()`, so it lands in the class body
+         * whatever the base is currently called. Same reason `prop_add` does it.
+         */
+        part_add(name, klass) {
+            const tree = this.tree();
+            this.tree(tree.insert(this.$.$bog_vmap_lang_part_tree(name, klass), null, name));
+        }
+        /**
+         * The node end has to be declared already, as a free part or as a sub-view.
+         * `=` declares nothing, that is exactly why it has no collision with `upper`,
+         * so a wire to an undeclared node compiles green and throws `is not a
+         * function` at run time. Refusing here is the only place it can be caught.
+         *
+         * The far end, `wire.prop`, is NOT checked: whether the node's class has such
+         * a port is known only to the component library, and this module knows
+         * nothing of libraries, deliberately. The inspector draws wires from the port
+         * list, so the question does not arise there either.
+         */
+        wire_add(wire) {
+            const next = this.$.$bog_vmap_lang_wire_tree(wire);
+            if (!this.prop_names().includes(wire.node))
+                this.$.$mol_fail(new Error(`Wire node ${JSON.stringify(wire.node)} is not declared in ${this.name()}`));
+            const prev = this.prop_fullname(wire.name);
+            if (prev && prev !== next.type)
+                this.prop_drop(wire.name);
+            this.tree(this.tree().insert(next, null, next.type));
+        }
+        /**
+         * Wires declared by the class: every property whose value is the `=`
+         * operator. `bidi` is read off the left end alone, because the emitter never
+         * writes the two signs apart; a hand written wire with one sign is reported
+         * as it is and left for the compiler to complain about.
+         */
+        wires() {
+            const wires = [];
+            for (const prop of this.props_tree().kids) {
+                const op = prop.kids[0];
+                if (op?.type !== '=')
+                    continue;
+                const node = op.kids[0];
+                const far = node?.kids[0];
+                if (!node || !far)
+                    continue;
+                const meta = this.$.$mol_view_tree2_prop_parts(prop);
+                wires.push({
+                    name: meta.name,
+                    node: node.type,
+                    prop: this.$.$mol_view_tree2_prop_parts(far).name,
+                    bidi: Boolean(meta.next),
+                });
+            }
+            return wires;
+        }
+        /**
+         * Properties whose value is a class name, with the overrides written under
+         * it. That is where a consumer of a wire lives: a part declaration with a
+         * port bound to the name of the wire.
+         */
+        part_names() {
+            return this.props_tree().kids
+                .filter(prop => {
+                const val = prop.kids[0];
+                return val && $mol_view_tree2_class_match(val);
+            })
+                .map(prop => this.$.$mol_view_tree2_prop_parts(prop).name);
+        }
+        /**
+         * Wires together with who reads them. A wire nobody reads is not a link,
+         * and a reference to a name that is not a wire is a plain binding of the
+         * part and none of this module's business.
+         */
+        links() {
+            const wires = new Map(this.wires().map(wire => [wire.name, wire]));
+            const links = [];
+            // Off `props_tree()` and not through `prop_tree()`: the latter is the
+            // write path of `link_target`, and a cell read through a written cell
+            // freezes at what was written.
+            for (const decl of this.props_tree().kids) {
+                const klass = decl.kids[0];
+                if (!klass || !$mol_view_tree2_class_match(klass))
+                    continue;
+                const to = this.$.$mol_view_tree2_prop_parts(decl).name;
+                for (const over of klass.kids) {
+                    const op = over.kids[0];
+                    if (op?.type !== '<=' && op?.type !== '<=>')
+                        continue;
+                    const ref = op.kids[0];
+                    if (!ref || ref.kids.length)
+                        continue;
+                    const wire = wires.get(this.$.$mol_view_tree2_prop_parts(ref).name);
+                    if (!wire)
+                        continue;
+                    links.push({
+                        from: wire.node,
+                        from_prop: wire.prop,
+                        to,
+                        to_prop: this.$.$mol_view_tree2_prop_parts(over).name,
+                        name: wire.name,
+                        bidi: Boolean(wire.bidi) && op.type === '<=>',
+                    });
+                }
+            }
+            return links;
+        }
+        /** Whether `to` is already fed, directly or through others, by `from`. */
+        link_reaches(from, to) {
+            const seen = new Set();
+            const queue = [from];
+            while (queue.length) {
+                const at = queue.shift();
+                if (at === to)
+                    return true;
+                if (seen.has(at))
+                    continue;
+                seen.add(at);
+                for (const link of this.links())
+                    if (link.from === at)
+                        queue.push(link.to);
+            }
+            return false;
+        }
+        /**
+         * An existing wire to the same end is reused, an unrelated property of the
+         * same name is stepped around with a suffix.
+         */
+        link_name(from, prop, bidi) {
+            const base = `${from.toLowerCase()}_${prop}`;
+            const taken = new Set(this.prop_names());
+            for (let i = 1;; ++i) {
+                const name = i === 1 ? base : `${base}_${i}`;
+                const wire = this.wires().find(wire => wire.name === name);
+                if (wire) {
+                    if (wire.node === from && wire.prop === prop && wire.bidi === bidi)
+                        return name;
+                    continue;
+                }
+                if (!taken.has(name))
+                    return name;
+            }
+        }
+        /**
+         * Two lines and no more. The wire `name = From prop` goes through `wire_add`
+         * with every guard it has, and the consumer is a bare reference in the
+         * declaration of the target part, `to_prop <= name`, or `to_prop? <=> name?`
+         * for a two way wire. The reference is built by the bare reference emitter,
+         * so it can carry nothing under the name and never turns into the middle
+         * form of `<=`.
+         *
+         * Refused, with nothing written: a part wired to itself, an undeclared end,
+         * and a target the source already depends on, because a loop of wires is a
+         * loop of fibers and the scene would hang on the first read.
+         */
+        link_add(link) {
+            const bidi = Boolean(link.bidi);
+            if (link.from === link.to)
+                this.$.$mol_fail(new Error(`Part ${JSON.stringify(link.to)} cannot be wired to itself`));
+            const parts = new Set(this.part_names());
+            for (const end of [link.from, link.to])
+                if (!parts.has(end))
+                    this.$.$mol_fail(new Error(`Part ${JSON.stringify(end)} is not declared in ${this.name()}`));
+            if (this.link_reaches(link.to, link.from))
+                this.$.$mol_fail(new Error(`Wire ${link.from} → ${link.to} closes a loop: ${link.to} already feeds ${link.from}`));
+            const to_prop = this.$.$bog_vmap_lang_token(link.to_prop, 'Target port');
+            const name = this.link_name(link.from, link.from_prop, bidi);
+            this.wire_add({ name, node: link.from, prop: link.from_prop, bidi });
+            const ref = bidi
+                ? $mol_tree2.struct('<=>', [$mol_tree2.struct(name + '?')])
+                : this.$.$bog_vmap_lang_ref_tree(name);
+            this.link_target(link.to, to_prop, $mol_tree2.struct(to_prop + (bidi ? '?' : ''), [ref]));
+            return name;
+        }
+        /**
+         * One override of one part, which is what `over_set` is; a wire has no
+         * special way of writing its end and must not grow one, or the two would
+         * drift apart on the first fix to either.
+         */
+        link_target(to, to_prop, next) {
+            this.over_set(to, to_prop, next);
+        }
+        /**
+         * Unplugs a port: the reference goes from the target, and the wire goes from
+         * the class when nobody else reads it. Both lines, or the first alone when
+         * the second is still in use.
+         */
+        link_drop(to, to_prop) {
+            const link = this.links().find(link => link.to === to && link.to_prop === to_prop);
+            if (!link)
+                return;
+            this.link_target(to, to_prop, null);
+            const used = this.links().some(other => other.name === link.name);
+            if (!used)
+                this.prop_drop(link.name);
+        }
+        /**
+         * Unplugs every wire with an end on a part: the ones it feeds and the ones
+         * it reads. What a delete of that part has to do before it takes the part
+         * out, or the document keeps a wire to a node that is no longer declared —
+         * which compiles into a call of a property nobody declares.
+         *
+         * Through `link_drop`, so a wire read by somebody else keeps its line
+         * exactly as it does when a port is unplugged by hand; a wire from this part
+         * that nobody reads has no consumer to unplug and goes in the second pass.
+         * Both ends of every OTHER wire are left alone.
+         */
+        links_drop(node) {
+            for (const link of [...this.links()]) {
+                if (link.from !== node && link.to !== node)
+                    continue;
+                this.link_drop(link.to, link.to_prop);
+            }
+            for (const wire of [...this.wires()]) {
+                if (wire.node !== node)
+                    continue;
+                this.prop_drop(wire.name);
+            }
+        }
+        /**
+         * Not through `prop_tree()`: that one is a keyed cell the writes below go
+         * through, and a read taken from a written cell freezes at what was written.
+         * `props_tree()` is a plain derivation of the source and stays live.
+         */
+        prop_decl(name) {
+            const sign = this.prop_fullname(name);
+            return sign ? this.props_tree().select(sign).kids[0] ?? null : null;
+        }
+        /**
+         * The empty owner is the class, a named one is a part. Both are one shape
+         * because `upper` has already flattened them: the class carries `sub` as a
+         * property, a part carries it as an override under its class name, and under
+         * either sits the same list of bare references.
+         */
+        sub_list(owner = '') {
+            const prop = owner ? this.over_tree(owner, 'sub') : this.prop_decl('sub');
+            const list = prop?.kids[0] ?? null;
+            return list?.type[0] === '/' ? list : null;
+        }
+        /**
+         * `null` when the node declares no `sub` and so is not a container.
+         *
+         * A node WITH a `sub` is an artboard: children of it are laid out by tree,
+         * by ordinary flex, while everything else lies free by coordinates. That is
+         * the whole difference between the two, and it is a difference in the text
+         * rather than a mark on the side, see section 8.
+         *
+         * Content that is not a bare reference — a literal string in `sub` — takes
+         * its place in the list as an empty name, so that an index here is an index
+         * there.
+         */
+        sub_names(owner = '') {
+            const list = this.sub_list(owner);
+            return list && list.kids.map(ref => ref.kids[0]?.type ?? '');
+        }
+        /** Whose `sub` references this name: a part, `''` for the class, `null` for nobody. */
+        sub_holder(name) {
+            for (const owner of ['', ...this.part_names()]) {
+                if (this.sub_names(owner)?.includes(name))
+                    return owner;
+            }
+            return null;
+        }
+        /** Whether `name` is `owner` itself or lies somewhere under it. */
+        sub_within(owner, name) {
+            const seen = new Set();
+            const queue = [owner];
+            while (queue.length) {
+                const at = queue.shift();
+                if (at === name)
+                    return true;
+                if (seen.has(at))
+                    continue;
+                seen.add(at);
+                for (const kid of this.sub_names(at) ?? [])
+                    if (kid)
+                        queue.push(kid);
+            }
+            return false;
+        }
+        /**
+         * An override already there is replaced where it stands, never dropped and
+         * appended: the order of the lines under a part is text the user reads, and
+         * a `sub` that jumped to the bottom on every insertion would rewrite the
+         * declaration around an edit that changed one child.
+         */
+        sub_write(owner, list) {
+            const sub = list.struct('sub', [list]);
+            if (owner)
+                return this.over_set(owner, 'sub', sub);
+            this.tree(this.tree().insert(sub, null, this.prop_fullname('sub') || 'sub'));
+        }
+        /** Makes a node a container by giving it an empty `sub`, if it has none. */
+        sub_open(owner) {
+            if (this.sub_list(owner))
+                return;
+            this.sub_write(owner, this.tree().struct('/'));
+        }
+        /**
+         * Only under a PART: a property whose value is a class name. Under anything
+         * else the children are not overrides at all — under `sub` they are bare
+         * `<=` references — and reading them as property signatures fails on the
+         * first one, which is how every property of the document gets asked whether
+         * it is an artboard.
+         */
+        over_tree(owner, prop) {
+            const klass = this.prop_decl(owner)?.kids[0];
+            if (!klass || !$mol_view_tree2_class_match(klass))
+                return null;
+            return klass.kids.find(over => this.$.$mol_view_tree2_prop_parts(over).name === prop) ?? null;
+        }
+        /**
+         * In place, because the order of the lines under a part is text the user
+         * reads: an override that jumped to the bottom every time its value changed
+         * would rewrite the declaration around an edit that changed one line.
+         */
+        over_set(owner, prop, next) {
+            const decl = this.prop_decl(owner);
+            const klass = decl?.kids[0];
+            if (!decl || !klass || !$mol_view_tree2_class_match(klass))
+                return;
+            const named = (over) => this.$.$mol_view_tree2_prop_parts(over).name === prop;
+            const kids = klass.kids.some(named)
+                ? klass.kids.flatMap(over => named(over) ? next ? [next] : [] : [over])
+                : next ? [...klass.kids, next] : klass.kids;
+            this.prop_tree(owner, decl.clone([klass.clone(kids)]));
+        }
+        /**
+         * A cycle in `sub` is not a badly drawn document, it is a class whose
+         * `dom_tree()` never returns: the scene would hang on the first render, and
+         * the document that hangs it is the one that got saved.
+         */
+        sub_check(name, owner) {
+            if (!owner)
+                return;
+            if (name === owner)
+                this.$.$mol_fail(new Error(`Node ${JSON.stringify(name)} cannot be put inside itself`));
+            if (this.sub_within(name, owner))
+                this.$.$mol_fail(new Error(`Node ${JSON.stringify(name)} cannot be put inside ${JSON.stringify(owner)}, which it already holds`));
+        }
+        /**
+         * The position is where the insertion line was drawn, so it is clamped
+         * rather than checked: a drop at the end of a list the document has since
+         * shortened is an ordinary race of a gesture against a document, and landing
+         * at the end is the answer to it.
+         */
+        sub_insert(name, index, owner = '') {
+            const ref = this.$.$bog_vmap_lang_ref_tree(name);
+            this.sub_check(name, owner);
+            const list = this.sub_list(owner) ?? ref.struct('/');
+            const kids = [...list.kids];
+            kids.splice(Math.max(0, Math.min(index, kids.length)), 0, ref);
+            this.sub_write(owner, list.clone(kids));
+        }
+        /**
+         * Taken out first and put back after, so reparenting and reordering are one
+         * operation with one shape. Within one parent the index is corrected for the
+         * hole the node itself leaves, because the position the user aimed at was
+         * read off a list that still had it.
+         *
+         * The refusal is checked BEFORE the node is taken out, not left to the
+         * insertion: a move that fails halfway is a document with the node gone from
+         * the page and nothing in its place, written and saved.
+         */
+        sub_move(name, index, owner = '') {
+            this.sub_check(name, owner);
+            const from = this.sub_holder(name);
+            if (from === owner) {
+                const at = this.sub_names(owner).indexOf(name);
+                if (at >= 0 && at < index)
+                    index -= 1;
+            }
+            if (from !== null)
+                this.sub_drop(name);
+            this.sub_insert(name, index, owner);
+        }
+        sub_add(name) {
+            this.sub_insert(name, Infinity);
+        }
+        /**
+         * The empty list is kept rather than the whole property dropped: `sub /` with
+         * nothing under it is the shape an empty document starts from, so deleting
+         * the last node returns the source to exactly that, instead of to a class
+         * with no `sub` at all.
+         *
+         * Only the reference goes. Dropping the declaration as well is two facts, so
+         * it is two calls — the same split as `part_add` plus `sub_add` on the way
+         * in. A node taken out of `sub` but still declared is a free part that draws
+         * nothing and keeps its ports, which is a legitimate state, not a leftover.
+         *
+         * The reference is looked for wherever it is, the class and every part of it
+         * alike. A node inside an artboard is referenced by that artboard and not by
+         * the class, and deleting it has to reach there too — otherwise the document
+         * keeps drawing a node nothing declares any more.
+         */
+        sub_drop(name) {
+            const owner = this.sub_holder(name);
+            if (owner === null)
+                return;
+            const list = this.sub_list(owner);
+            this.sub_write(owner, list.clone(list.kids.filter(ref => ref.kids[0]?.type !== name)));
+        }
+    }
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "source", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "tree", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "name", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "base", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "prop_names", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "props_tree", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lang_node.prototype, "prop_fullname", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lang_node.prototype, "prop_tree", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "prop_add", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "prop_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "prop_rename", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lang_node.prototype, "property", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "part_add", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "wire_add", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "wires", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "links", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "link_add", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "link_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "links_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "sub_open", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "sub_insert", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "sub_move", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "sub_add", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "sub_drop", null);
+    $.$bog_vmap_lang_node = $bog_vmap_lang_node;
+    /**
+     * One property of a node, with its signature. `name`, `tree` and `node` are
+     * handed in by the owner through `make`.
+     */
+    class $bog_vmap_lang_prop extends $mol_object {
+        name() {
+            return this.$.$mol_fail(new Error('Not defined'));
+        }
+        node() {
+            return this.$.$mol_fail(new Error('Not defined'));
+        }
+        tree(next) {
+            return this.$.$mol_fail(new Error('Not defined'));
+        }
+        /** Re-binds the same property to another model class. */
+        as(Prop) {
+            return Prop.make({
+                name: () => this.name(),
+                tree: next => this.tree(next),
+            });
+        }
+        /**
+         * A rename goes to the node, because it is not a fact about this property
+         * alone: everything that spells the old name has to be rewritten in the same
+         * write. A change of sign is local and is written here.
+         *
+         * Deviation from studio: this handle is NOT patched to follow the rename.
+         * Studio overwrites the `name` method of the live property object, which
+         * leaves an object addressing one name and reading another past the graph;
+         * here the handle simply stops addressing anything, and the caller asks the
+         * node for the property under its new name — a keyed cell, so that is one
+         * read and no state.
+         *
+         * **Plain method, and so are the three below.** Every accessor here only
+         * delegates into `tree()`, which is a cell already, and an accessor of that
+         * shape under a memoizing decorator freezes at the value written THROUGH it:
+         * after a rename the handle goes on reporting the new name although it
+         * addresses a property no longer under it, which is the very
+         * object-past-the-graph the patching above was dropped for. There is a test.
+         */
+        meta(next) {
+            const tree = this.tree();
+            const sign = tree?.type ?? '';
+            let meta = [...sign.matchAll($mol_view_tree2_prop_signature)][0]?.groups
+                ?? { name: '', key: '', next: '' };
+            if (next) {
+                const made = { ...meta, ...next };
+                const sign = `${made.name}${made.key || ''}${made.next || ''}`;
+                if (made.name === meta.name)
+                    this.tree(tree.struct(sign, tree.kids));
+                else
+                    this.node().prop_rename(meta.name, sign);
+                meta = made;
+            }
+            return meta;
+        }
+        title(next) {
+            return this.meta(next === undefined ? undefined : { name: next }).name;
+        }
+        key(next) {
+            return Boolean(this.meta(next === undefined ? undefined : { key: next ? '*' : '' }).key);
+        }
+        next(next) {
+            return Boolean(this.meta(next === undefined ? undefined : { next: next ? '?' : '' }).next);
+        }
+    }
+    $.$bog_vmap_lang_prop = $bog_vmap_lang_prop;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Order of the declarations going into one `new Function`: the libraries, then
+     * the document, every base before its heir, and one declaration per name.
+     *
+     * Libraries first because the document is written against them, and a stable
+     * sort keeps that unless a library class inherits a document class — legal,
+     * odd, and then the base still comes first. The sort itself is the canonical
+     * `$bog_vmap_lang_sorted`: ordering declarations is a property of the language,
+     * and the scene's own copy of it was the second one too many.
+     *
+     * A name declared twice keeps the LAST declaration and drops the earlier one,
+     * which is the rule the class index of the library model already lives by and the rule the
+     * sandbox enforces on its own: two declarations of one class in one source
+     * would define the second over the first anyway, only with the first still
+     * having been extended by anyone declared in between. Dropping it up front makes
+     * «the document shadows the library» hold for heirs as well.
+     *
+     * No class name is spelled out in this comment on purpose: mam reads doc
+     * comments for dependencies, and a one segment name here failed the build of
+     * the scene with «Root package not found».
+     *
+     * Bases the list does not declare — the classes of the pack, already in the
+     * sandbox — are left alone, as the sort leaves them.
+     */
+    function $bog_vmap_scene_order(libs, doc) {
+        const all = [...libs, ...doc];
+        const last = new Map();
+        all.forEach((def, index) => last.set(def.type, index));
+        const unique = all.filter((def, index) => last.get(def.type) === index);
+        return this.$bog_vmap_lang_sorted(unique);
+    }
+    $.$bog_vmap_scene_order = $bog_vmap_scene_order;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /** Atoms behind one own field: a solo one, or every value of a keyed dictionary. */
+    function atoms_of(holder) {
+        if (holder instanceof Map)
+            return [...holder.values()];
+        if (holder && typeof holder === 'object')
+            return [holder];
+        return [];
+    }
+    /** Told by shape, like everywhere else on this side of the boundary. */
+    function view_like(value) {
+        return typeof value?.dom_node === 'function';
+    }
+    /**
+     * Moves a live component onto the freshly compiled classes, keeping its state.
+     *
+     * A cell lives as an OWN field of the instance, so replacing the prototype
+     * touches no value, no subscription and no DOM node — caret, focus and scroll
+     * position included. The one thing the prototype does not reach is the
+     * implementation a fiber captured in its constructor, and that is what is
+     * redirected here, taking the new one off the wrapper the decorator left it on.
+     *
+     * The walk goes over the atom caches and never over `sub()`: free parts are not
+     * in `sub` at all, `sub()` of a generated class is not memoized, so calling it
+     * would run user code and could create children that do not exist yet, and a
+     * child temporarily out of `sub` is still a live instance.
+     *
+     * Instances of classes the document does not declare — components of the donor
+     * pack — keep their prototype and are only walked through, because a document
+     * class may well sit inside one.
+     * @see ../../ARCHITECTURE.md section 3, ../../spike/S2.md
+     */
+    function $bog_vmap_scene_swap(root, klass_of, shape_of) {
+        const report = { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0 };
+        const seen = new Set();
+        const queue = [root];
+        while (queue.length) {
+            const inst = queue.pop();
+            if (seen.has(inst))
+                continue;
+            seen.add(inst);
+            // The plain name, never the lookup helper of mol: the helper scans the
+            // whole ambient for a class it cannot find, and every class here is
+            // named by construction — an unnamed one is a defect on its own.
+            const name = inst.constructor?.name ?? '';
+            const shape = name ? shape_of(name) : null;
+            if (shape) {
+                const klass = klass_of(name);
+                if (typeof klass === 'function' && klass.prototype !== Object.getPrototypeOf(inst)) {
+                    Object.setPrototypeOf(inst, klass.prototype);
+                    report.swapped += 1;
+                }
+            }
+            for (const field of Object.getOwnPropertyNames(inst)) {
+                if (!field.endsWith('()'))
+                    continue;
+                const holder = Reflect.get(inst, field);
+                const atoms = atoms_of(holder);
+                if (!atoms.length)
+                    continue;
+                // The field is not simply `name()`: a property decorated both in the
+                // generated base and in the handwritten body carries a trailing space,
+                // because the decorator copies the name off the base wrapper.
+                const prop = field.slice(0, -2).trim();
+                for (const atom of atoms) {
+                    for (const kid of kids_of(atom))
+                        queue.push(kid);
+                    // A failed atom has nothing to keep and is woken whatever changed:
+                    // the method it was missing may have been written in another class,
+                    // where no text of its own would ever point back at it.
+                    if (!(atom.cache instanceof Error))
+                        continue;
+                    Reflect.set(atom, 'cursor', $mol_wire_cursor.stale);
+                    atom.emit();
+                    report.failed += 1;
+                }
+                if (!shape)
+                    continue;
+                retarget(inst, field, prop, atoms, shape, report);
+            }
+        }
+        return report;
+    }
+    $.$bog_vmap_scene_swap = $bog_vmap_scene_swap;
+    /** Views held by one atom, whether it holds one or a list of them. */
+    function kids_of(atom) {
+        const value = atom.result();
+        if (view_like(value))
+            return [value];
+        if (Array.isArray(value))
+            return value.filter(view_like);
+        return [];
+    }
+    /**
+     * Points the atoms of one property at the new implementation, or drops them.
+     *
+     * Only the atoms whose implementation actually changed are woken, and that is
+     * the whole economy of the strategy: a class is generated anew in full, so every
+     * function object is new, while the TEXT differs only for what was edited.
+     */
+    function retarget(inst, field, prop, atoms, shape, report) {
+        const wrapper = Reflect.get(inst, prop);
+        const next = typeof wrapper === 'function' ? Reflect.get(wrapper, 'orig') : null;
+        const decorated = typeof next === 'function';
+        const keyed_was = Reflect.get(inst, field) instanceof Map;
+        const keyed_now = shape.keyed.has(prop);
+        // A property the class no longer declares is judged by whether anything
+        // answers to its name at all; one it does declare must still be a cell of
+        // the same shape, or the atoms behind it mean nothing.
+        const broken = shape.declared.has(prop)
+            ? (!decorated || keyed_was !== keyed_now)
+            : (!decorated && !(prop in inst));
+        if (broken) {
+            // `destructor()` only unsubscribes, it does not mark anyone stale, so
+            // dependants would silently keep serving the value of a property that
+            // no longer exists.
+            for (const atom of atoms) {
+                atom.emit();
+                atom.destructor();
+            }
+            Reflect.deleteProperty(inst, field);
+            report.dropped += atoms.length;
+            return;
+        }
+        if (!decorated)
+            return;
+        for (const atom of atoms) {
+            const prev = atom.task;
+            if (prev === next)
+                continue;
+            Reflect.set(atom, 'task', next);
+            report.moved += 1;
+            if (String(prev) === String(next))
+                continue;
+            // Invalidation, not a recompute: waking the graph from inside the cell
+            // that owns the instance would run document code in the middle of our
+            // own computation. The value is read back a moment later by `stage()`,
+            // in the same pass.
+            Reflect.set(atom, 'cursor', $mol_wire_cursor.stale);
+            atom.emit();
+            report.stale += 1;
+        }
+    }
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Makes a cell of every method a handwritten body defines: keyed and
+     * changeable ones as the tree says, the way studio's `source_js_decorators()`
+     * does, and every zero argument method besides, whatever the tree says. The
+     * generated code calls it right after the class, since a decorator cannot be
+     * written into a string for `new Function`, and it reads the class rather
+     * than the text, so a nested `if( x ) {` cannot pass for a method.
+     *
+     * Without an atom the hot swap has nothing to wake when the text of a method
+     * changes: its callers keep the old value and the DOM keeps the old text.
+     */
+    function $bog_vmap_scene_cells(Klass, keyed, changeable) {
+        const proto = Klass.prototype;
+        for (const name of Object.getOwnPropertyNames(proto)) {
+            if (name === 'constructor' || name === 'destructor')
+                continue;
+            const descr = Object.getOwnPropertyDescriptor(proto, name);
+            const method = descr.value;
+            if (typeof method !== 'function')
+                continue;
+            if (keyed.includes(name)) {
+                $mol_mem_key(proto, name, descr);
+                continue;
+            }
+            if (changeable.includes(name)) {
+                $mol_mem(proto, name, descr);
+                continue;
+            }
+            // A method with arguments is no cell: the first one would be taken for a
+            // write. An async one answers a promise, which a cell would wait on.
+            if (method.length)
+                continue;
+            if (method.constructor !== Function)
+                continue;
+            $mol_mem(proto, name, descr);
+        }
+    }
+    $.$bog_vmap_scene_cells = $bog_vmap_scene_cells;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_tree2_text_to_string(text) {
+        let res = '';
+        function visit(text, prefix, inline) {
+            if (text.type === 'indent') {
+                if (inline)
+                    res += '\n';
+                for (let kid of text.kids) {
+                    visit(kid, prefix + '\t', false);
+                }
+                if (inline)
+                    res += prefix;
+            }
+            else if (text.type === 'line') {
+                if (!inline)
+                    res += prefix;
+                for (let kid of text.kids) {
+                    visit(kid, prefix, true);
+                }
+                if (!inline)
+                    res += '\n';
+            }
+            else {
+                if (!inline)
+                    res += prefix;
+                res += text.text();
+                if (!inline)
+                    res += '\n';
+            }
+        }
+        for (let kid of text.kids) {
+            visit(kid, '', false);
+        }
+        return res;
+    }
+    $.$mol_tree2_text_to_string = $mol_tree2_text_to_string;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    function $mol_vlq_encode(val) {
+        const sign = val < 0 ? 1 : 0;
+        if (sign)
+            val = -val;
+        let index = sign | ((val & 0b1111) << 1);
+        val >>>= 4;
+        let res = '';
+        while (val) {
+            index |= 1 << 5;
+            res += alphabet[index];
+            if (!val)
+                break;
+            index = val & 0b11111;
+            val >>>= 5;
+        }
+        res += alphabet[index];
+        return res;
+    }
+    $.$mol_vlq_encode = $mol_vlq_encode;
+})($ || ($ = {}));
+
+;
+"use strict";
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_tree2_text_to_sourcemap(tree) {
+        let col = 1;
+        let prev_span;
+        let prev_index = 0;
+        let prev_col = 1;
+        let mappings = '';
+        let line = [];
+        const file_indexes = new Map();
+        const file_sources = new Map();
+        function span2index(span) {
+            if (file_indexes.has(span.uri))
+                return file_indexes.get(span.uri);
+            const index = file_indexes.size;
+            file_indexes.set(span.uri, index);
+            file_sources.set(span.uri, span.source);
+            return index;
+        }
+        function next_line() {
+            if (!line.length)
+                return;
+            mappings += line.join(',') + ';';
+            line = [];
+            col = 1;
+            prev_col = 1;
+        }
+        function visit(text, prefix, inline) {
+            function indent() {
+                col += prefix;
+            }
+            if (inline && text.type === 'indent')
+                next_line();
+            if (prev_span !== text.span || col === 1) {
+                const index = span2index(text.span);
+                line.push($mol_vlq_encode(col - prev_col) +
+                    $mol_vlq_encode(index - prev_index) +
+                    $mol_vlq_encode(text.span.row - (prev_span?.row ?? 1)) +
+                    $mol_vlq_encode(text.span.col - (prev_span?.col ?? 1)));
+                prev_col = col;
+                prev_span = text.span;
+                prev_index = index;
+            }
+            if (text.type === 'indent') {
+                for (let kid of text.kids) {
+                    visit(kid, prefix + 1, false);
+                }
+                if (inline)
+                    next_line();
+            }
+            else if (text.type === 'line') {
+                if (!inline)
+                    indent();
+                for (let kid of text.kids) {
+                    visit(kid, prefix, true);
+                }
+                if (!inline)
+                    next_line();
+            }
+            else {
+                if (!inline)
+                    indent();
+                col += text.text().length;
+                if (!inline)
+                    next_line();
+            }
+        }
+        for (let kid of tree.kids) {
+            visit(kid, 0, false);
+        }
+        next_line();
+        const map = {
+            version: 3,
+            sources: [...file_sources.keys()],
+            sourcesContent: [...file_sources.values()],
+            mappings,
+        };
+        return map;
+    }
+    $.$mol_tree2_text_to_sourcemap = $mol_tree2_text_to_sourcemap;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_sourcemap_url(uri, type = 'js') {
+        if (type === 'css')
+            return `\n/*# sourceMappingURL=${uri}*/`;
+        return `\n//# sourceMappingURL=${uri}`;
+    }
+    $.$mol_sourcemap_url = $mol_sourcemap_url;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const prefix = '# sourceMappingURL=data:application/json,';
+    const end_comment = ' */';
+    function $mol_sourcemap_dataurl_decode(data) {
+        const index = data.lastIndexOf(prefix);
+        if (index === -1)
+            return undefined;
+        data = data.substring(index + prefix.length);
+        if (data.endsWith(end_comment))
+            data = data.substring(0, data.length - end_comment.length);
+        const decoded = this.decodeURIComponent(data);
+        try {
+            const map = JSON.parse(decoded);
+            if (!map)
+                return undefined;
+            if (typeof map.mappings === 'string' && map.mappings.startsWith(';;')) {
+                map.mappings = map.mappings.substring(2);
+            }
+            return map;
+        }
+        catch (e) {
+            if (e instanceof Error)
+                e.message += ', origin=' + decoded;
+            $mol_fail_hidden(e);
+        }
+    }
+    $.$mol_sourcemap_dataurl_decode = $mol_sourcemap_dataurl_decode;
+    function $mol_sourcemap_dataurl_encode(map, type = 'js') {
+        const str = JSON.stringify({ ...map, mappings: ';;' + map.mappings });
+        return this.$mol_sourcemap_url('data:application/json,' + this.encodeURIComponent(str), type);
+    }
+    $.$mol_sourcemap_dataurl_encode = $mol_sourcemap_dataurl_encode;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_tree2_text_to_string_mapped(text, type) {
+        const code = this.$mol_tree2_text_to_string(text);
+        const map = this.$mol_tree2_text_to_sourcemap(text);
+        const chunk = this.$mol_sourcemap_dataurl_encode(map, type);
+        return code + chunk;
+    }
+    $.$mol_tree2_text_to_string_mapped = $mol_tree2_text_to_string_mapped;
+    function $mol_tree2_text_to_string_mapped_js(text) {
+        return this.$mol_tree2_text_to_string_mapped(text, 'js');
+    }
+    $.$mol_tree2_text_to_string_mapped_js = $mol_tree2_text_to_string_mapped_js;
+    function $mol_tree2_text_to_string_mapped_css(text) {
+        return this.$mol_tree2_text_to_string_mapped(text, 'css');
+    }
+    $.$mol_tree2_text_to_string_mapped_css = $mol_tree2_text_to_string_mapped_css;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_tree2_js_is_number(type) {
+        return type.match(/[\+\-]*NaN/) || !Number.isNaN(Number(type));
+    }
+    $.$mol_tree2_js_is_number = $mol_tree2_js_is_number;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function is_identifier(tree) {
+        if (tree.type)
+            return false;
+        return /^[a-z_$][a-z_$0-9]*$/i.test(tree.text());
+    }
+    function $mol_tree2_js_to_text(js) {
+        function sequence(open, separator, close) {
+            return (input, belt) => [
+                input.struct('line', [
+                    ...open ? [input.data(open)] : [],
+                    input.struct(separator && input.kids.length > 2 ? 'indent' : 'line', [].concat(...input.kids.map((kid, index) => [
+                        kid.struct('line', [
+                            ...kid.list([kid]).hack(belt),
+                            ...(separator && index < input.kids.length - 1) ? [input.data(separator)] : [],
+                        ]),
+                    ]))),
+                    ...close ? [input.data(close)] : [],
+                ]),
+            ];
+        }
+        function block(open, separator, close) {
+            return (input, belt) => [
+                ...open ? [input.data(open)] : [],
+                ...input.kids.length === 0 ? [] : [input.struct('indent', input.kids.map((kid, index) => kid.struct('line', [
+                        ...kid.list([kid]).hack(belt),
+                        ...(separator) ? [input.data(separator)] : [],
+                    ])))],
+                ...close ? [input.data(close)] : [],
+            ];
+        }
+        function duplet(open, separator, close) {
+            return (input, belt) => [
+                input.struct('line', [
+                    ...open ? [input.data(open)] : [],
+                    ...input.list(input.kids.slice(0, 1)).hack(belt),
+                    ...(separator && input.kids.length > 1) ? [input.data(separator)] : [],
+                    ...input.list(input.kids.slice(1, 2)).hack(belt),
+                    ...close ? [input.data(close)] : [],
+                ]),
+            ];
+        }
+        function triplet(open, separator12, separator23, close) {
+            return (input, belt) => [
+                input.struct('line', [
+                    ...open ? [input.data(open)] : [],
+                    ...input.list(input.kids.slice(0, 1)).hack(belt),
+                    ...(separator12 && input.kids.length > 1) ? [input.data(separator12)] : [],
+                    ...input.list(input.kids.slice(1, 2)).hack(belt),
+                    ...(separator23 && input.kids.length > 2) ? [input.data(separator23)] : [],
+                    ...input.list(input.kids.slice(2, 3)).hack(belt),
+                    ...close ? [input.data(close)] : [],
+                ]),
+            ];
+        }
+        return js.list(js.hack({
+            '+': sequence('+'),
+            '-': sequence('-'),
+            '!': sequence('!'),
+            '~': sequence('~'),
+            'return': sequence('return '),
+            'break': sequence('break '),
+            'continue': sequence('continue '),
+            'yield': sequence('yield '),
+            'yield*': sequence('yield* '),
+            'await': sequence('await '),
+            'void': sequence('void '),
+            'delete': sequence('delete '),
+            'typeof': sequence('typeof '),
+            'new': sequence('new '),
+            '...': sequence('...'),
+            '@++': sequence('', '', '++'),
+            '@--': sequence('', '', '--'),
+            '(in)': sequence('(', ' in ', ')'),
+            '(instanceof)': sequence('(', ' instanceof ', ')'),
+            '(+)': sequence('(', ' + ', ')'),
+            '(-)': sequence('(', ' - ', ')'),
+            '(*)': sequence('(', ' * ', ')'),
+            '(/)': sequence('(', ' / ', ')'),
+            '(%)': sequence('(', ' % ', ')'),
+            '(**)': sequence('(', ' ** ', ')'),
+            '(<)': sequence('(', ' < ', ')'),
+            '(<=)': sequence('(', ' <= ', ')'),
+            '(>)': sequence('(', ' > ', ')'),
+            '(>=)': sequence('(', ' >= ', ')'),
+            '(==)': sequence('(', ' == ', ')'),
+            '(!=)': sequence('(', ' != ', ')'),
+            '(===)': sequence('(', ' === ', ')'),
+            '(!==)': sequence('(', ' !== ', ')'),
+            '(<<)': sequence('(', ' << ', ')'),
+            '(>>)': sequence('(', ' >> ', ')'),
+            '(>>>)': sequence('(', ' >>> ', ')'),
+            '(&)': sequence('(', ' & ', ')'),
+            '(|)': sequence('(', ' | ', ')'),
+            '(^)': sequence('(', ' ^ ', ')'),
+            '(&&)': sequence('(', ' && ', ')'),
+            '(||)': sequence('(', ' || ', ')'),
+            '(,)': sequence('(', ', ', ')'),
+            '{;}': block('{', ';', '}'),
+            ';': block('', ';', ''),
+            '[,]': sequence('[', ', ', ']'),
+            '{,}': sequence('{', ', ', '}'),
+            '()': sequence('(', '', ')'),
+            '{}': block('{', '', '}'),
+            '[]': (input, belt) => {
+                const first = input.kids[0];
+                if (!is_identifier(first))
+                    return sequence('[', '', ']')(input, belt);
+                else
+                    return [input.data('.' + first.text())];
+            },
+            '?.[]': (input, belt) => {
+                const first = input.kids[0];
+                if (!is_identifier(first))
+                    return sequence('?.[', '', ']')(input, belt);
+                else
+                    return [input.data('?.' + first.text())];
+            },
+            ':': (input, belt) => input.kids[0].type
+                ? duplet('[', ']: ')(input, belt)
+                : duplet('', ': ')(input, belt),
+            'let': duplet('let ', ' = '),
+            'const': duplet('const ', ' = '),
+            'var': duplet('var ', ' = '),
+            '=': duplet('', ' = '),
+            '+=': duplet('', ' += '),
+            '-=': duplet('', ' -= '),
+            '*=': duplet('', ' *= '),
+            '/=': duplet('', ' /= '),
+            '%=': duplet('', ' %= '),
+            '**=': duplet('', ' **= '),
+            '<<=': duplet('', ' <<= '),
+            '>>=': duplet('', ' >>= '),
+            '>>>=': duplet('', ' >>>= '),
+            '&=': duplet('', ' &= '),
+            '|=': duplet('', ' |= '),
+            '^=': duplet('', ' ^= '),
+            '&&=': duplet('', ' &&= '),
+            '||=': duplet('', ' ||= '),
+            '=>': duplet('', ' => '),
+            'async=>': duplet('async ', ' => '),
+            'function': triplet('function '),
+            'function*': triplet('function* '),
+            'async': triplet('async function '),
+            'async*': triplet('async function* '),
+            'class': triplet('class ', ' '),
+            'extends': sequence('extends ', '', ' '),
+            'if': triplet('if', ' ', 'else'),
+            '?:': triplet('', ' ? ', ' : '),
+            '.': (input, belt) => {
+                const first = input.kids[0];
+                if (!is_identifier(first))
+                    return triplet('[', ']')(input, belt);
+                else
+                    return [
+                        input.data(first.text()),
+                        ...input.list(input.kids.slice(1)).hack(belt),
+                    ];
+            },
+            'get': triplet('get [', ']'),
+            'set': triplet('set [', ']'),
+            'static': triplet('static [', ']'),
+            '/./': sequence(),
+            '.global': sequence('g'),
+            '.multiline': sequence('m'),
+            '.ignoreCase': sequence('i'),
+            '.source': (input, belt) => [
+                input.data('/'),
+                input.data(JSON.stringify(input.text()).slice(1, -1)),
+                input.data('/'),
+            ],
+            '``': (input, belt) => {
+                return [
+                    input.struct('line', [
+                        input.data('`'),
+                        ...[].concat(...input.kids.map(kid => {
+                            if (kid.type) {
+                                return [
+                                    kid.data('${'),
+                                    ...kid.list([kid]).hack(belt),
+                                    kid.data('}'),
+                                ];
+                            }
+                            else {
+                                return [
+                                    input.data(JSON.stringify(kid.text()).slice(1, -1)),
+                                ];
+                            }
+                        })),
+                        input.data('`'),
+                    ]),
+                ];
+            },
+            '': (input, belt) => {
+                // string
+                if (!input.type)
+                    return [
+                        input.data(JSON.stringify(input.text())),
+                    ];
+                // variable
+                if (/^[\w$#][\w0-9$]*$/i.test(input.type))
+                    return [
+                        input.data(input.type),
+                        // ... input.hack( context ),
+                    ];
+                // number
+                if ($mol_tree2_js_is_number(input.type))
+                    return [
+                        input.data(input.type)
+                    ];
+                $mol_fail(new SyntaxError(`Wrong node type`));
+            },
+        }));
+    }
+    $.$mol_tree2_js_to_text = $mol_tree2_js_to_text;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     class $mol_storage extends $mol_object2 {
         /** Is storage a long term. */
         static persisted(next) {
@@ -7388,17 +9076,6 @@ var $;
         $mol_mem_key
     ], $mol_state_local, "value", null);
     $.$mol_state_local = $mol_state_local;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * Decorates method to fiber to ensure it is executed only once inside other fiber from [mol_wire](../wire/README.md)
-     * @see https://mol.hyoo.ru/#!section=docs/=1fcpsq_1wh0h2
-     */
-    $.$mol_action = $mol_wire_method;
 })($ || ($ = {}));
 
 ;
@@ -8363,16 +10040,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    function $mol_tree2_js_is_number(type) {
-        return type.match(/[\+\-]*NaN/) || !Number.isNaN(Number(type));
-    }
-    $.$mol_tree2_js_is_number = $mol_tree2_js_is_number;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
     const err = $mol_view_tree2_error_str;
     function name_of(prop) {
         return this.$mol_view_tree2_prop_parts(prop).name;
@@ -8629,725 +10296,6 @@ var $;
         ]);
     }
     $.$mol_view_tree2_to_js = $mol_view_tree2_to_js;
-})($ || ($ = {}));
-
-;
-	($.$mol_paragraph) = class $mol_paragraph extends ($.$mol_view) {
-		line_height(){
-			return 24;
-		}
-		letter_width(){
-			return 7;
-		}
-		width_limit(){
-			return +Infinity;
-		}
-		row_width(){
-			return 0;
-		}
-		sub(){
-			return [(this.title())];
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        class $mol_paragraph extends $.$mol_paragraph {
-            maximal_width() {
-                let width = 0;
-                const letter = this.letter_width();
-                for (const kid of this.sub()) {
-                    if (!kid)
-                        continue;
-                    if (kid instanceof $mol_view) {
-                        width += kid.maximal_width();
-                    }
-                    else if (typeof kid !== 'object') {
-                        width += String(kid).length * letter;
-                    }
-                }
-                return width;
-            }
-            width_limit() {
-                return this.$.$mol_window.size().width;
-            }
-            minimal_width() {
-                return this.letter_width();
-            }
-            row_width() {
-                return Math.max(Math.min(this.width_limit(), this.maximal_width()), this.letter_width());
-            }
-            minimal_height() {
-                return Math.max(1, Math.ceil(this.maximal_width() / this.row_width())) * this.line_height();
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_paragraph.prototype, "maximal_width", null);
-        __decorate([
-            $mol_mem
-        ], $mol_paragraph.prototype, "row_width", null);
-        __decorate([
-            $mol_mem
-        ], $mol_paragraph.prototype, "minimal_height", null);
-        $$.$mol_paragraph = $mol_paragraph;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/paragraph/paragraph.view.css", ":where([mol_paragraph]) {\n\tmargin: 0;\n\tmax-width: 100%;\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_stack) = class $mol_stack extends ($.$mol_view) {};
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/stack/stack.view.css", "[mol_stack] {\n\tdisplay: grid;\n\t/* width: max-content; */\n\t/* height: max-content; */\n\talign-items: flex-start;\n\tjustify-items: flex-start;\n}\n\n[mol_stack] > * {\n\tgrid-area: 1/1;\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-	($.$mol_dimmer) = class $mol_dimmer extends ($.$mol_paragraph) {
-		parts(){
-			return [];
-		}
-		string(id){
-			return "";
-		}
-		haystack(){
-			return "";
-		}
-		needle(){
-			return "";
-		}
-		sub(){
-			return (this.parts());
-		}
-		Low(id){
-			const obj = new this.$.$mol_paragraph();
-			(obj.sub) = () => ([(this.string(id))]);
-			return obj;
-		}
-		High(id){
-			const obj = new this.$.$mol_paragraph();
-			(obj.sub) = () => ([(this.string(id))]);
-			return obj;
-		}
-	};
-	($mol_mem_key(($.$mol_dimmer.prototype), "Low"));
-	($mol_mem_key(($.$mol_dimmer.prototype), "High"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Output text with dimmed mismatched substrings.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_dimmer_demo
-         */
-        class $mol_dimmer extends $.$mol_dimmer {
-            parts() {
-                const needle = this.needle();
-                if (needle.length < 2)
-                    return [this.haystack()];
-                let chunks = [];
-                let strings = this.strings();
-                for (let index = 0; index < strings.length; index++) {
-                    if (strings[index] === '')
-                        continue;
-                    chunks.push((index % 2) ? this.High(index) : this.Low(index));
-                }
-                return chunks;
-            }
-            strings() {
-                const options = this.needle().split(/\s+/g).filter(Boolean);
-                if (!options.length)
-                    return [this.haystack()];
-                const variants = { ...options };
-                const regexp = $mol_regexp.from({ needle: variants }, { ignoreCase: true });
-                return this.haystack().split(regexp);
-            }
-            string(index) {
-                return this.strings()[index];
-            }
-            *view_find(check, path = []) {
-                if (check(this, this.haystack())) {
-                    yield [...path, this];
-                }
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_dimmer.prototype, "strings", null);
-        $$.$mol_dimmer = $mol_dimmer;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/dimmer/dimmer.view.css", "[mol_dimmer] {\n\tdisplay: block;\n\tmax-width: 100%;\n}\n\n[mol_dimmer_low] {\n\tdisplay: inline;\n\topacity: 0.8;\n}\n\n[mol_dimmer_high] {\n\tdisplay: inline;\n\tcolor: var(--mol_theme_focus);\n\ttext-shadow: 0 0;\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_text_code_token) = class $mol_text_code_token extends ($.$mol_dimmer) {
-		type(){
-			return "";
-		}
-		attr(){
-			return {...(super.attr()), "mol_text_code_token_type": (this.type())};
-		}
-	};
-	($.$mol_text_code_token_link) = class $mol_text_code_token_link extends ($.$mol_text_code_token) {
-		uri(){
-			return "";
-		}
-		dom_name(){
-			return "a";
-		}
-		type(){
-			return "code-link";
-		}
-		attr(){
-			return {
-				...(super.attr()), 
-				"href": (this.uri()), 
-				"target": "_blank"
-			};
-		}
-	};
-
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_style_sheet(Component, config0) {
-        let rules = [];
-        const block = $mol_dom_qname($mol_ambient({}).$mol_func_name(Component));
-        const kebab = (name) => name.replace(/[A-Z]/g, letter => '-' + letter.toLowerCase());
-        const make_class = (prefix, path, config) => {
-            const props = [];
-            const selector = (prefix, path) => {
-                if (path.length === 0)
-                    return prefix || `[${block}]`;
-                let res = `[${block}_${path.join('_')}]`;
-                if (prefix)
-                    res = prefix + ' :where(' + res + ')';
-                return res;
-            };
-            for (const key of Object.keys(config).reverse()) {
-                if (/^(--)?[a-z]/.test(key)) {
-                    const addProp = (keys, val) => {
-                        if (Array.isArray(val)) {
-                            if (val[0] && [Array, Object].includes(val[0].constructor)) {
-                                val = val.map(v => {
-                                    return Object.entries(v).map(([n, a]) => {
-                                        if (a === true)
-                                            return kebab(n);
-                                        if (a === false)
-                                            return null;
-                                        return String(a);
-                                    }).filter(Boolean).join(' ');
-                                }).join(',');
-                            }
-                            else {
-                                val = val.join(' ');
-                            }
-                            props.push(`\t${keys.join('-')}: ${val};\n`);
-                        }
-                        else if (val.constructor === Object) {
-                            for (let suffix of Object.keys(val).reverse()) {
-                                addProp([...keys, kebab(suffix)], val[suffix]);
-                            }
-                        }
-                        else {
-                            props.push(`\t${keys.join('-')}: ${val};\n`);
-                        }
-                    };
-                    addProp([kebab(key)], config[key]);
-                }
-                else if (/^[A-Z]/.test(key)) {
-                    make_class(prefix, [...path, key.toLowerCase()], config[key]);
-                }
-                else if (key[0] === '$') {
-                    make_class(selector(prefix, path) + ' :where([' + $mol_dom_qname(key) + '])', [], config[key]);
-                }
-                else if (key === '>') {
-                    const types = config[key];
-                    for (let type of Object.keys(types).reverse()) {
-                        make_class(selector(prefix, path) + ' > :where([' + $mol_dom_qname(type) + '])', [], types[type]);
-                    }
-                }
-                else if (key === '@') {
-                    const attrs = config[key];
-                    for (let name of Object.keys(attrs).reverse()) {
-                        for (let val in attrs[name]) {
-                            make_class(selector(prefix, path) + ':where([' + name + '=' + JSON.stringify(val) + '])', [], attrs[name][val]);
-                        }
-                    }
-                }
-                else if (key === '@media' || key === '@container') {
-                    const media = config[key];
-                    for (let query of Object.keys(media).reverse()) {
-                        rules.push('}\n');
-                        make_class(prefix, path, media[query]);
-                        rules.push(`${key} ${query} {\n`);
-                    }
-                }
-                else if (key === '@starting-style') {
-                    const styles = config[key];
-                    rules.push('}\n');
-                    make_class(prefix, path, styles);
-                    rules.push(`${key} {\n`);
-                }
-                else if (key[0] === '[' && key[key.length - 1] === ']') {
-                    const attr = key.slice(1, -1);
-                    const vals = config[key];
-                    for (let val of Object.keys(vals).reverse()) {
-                        make_class(selector(prefix, path) + ':where([' + attr + '=' + JSON.stringify(val) + '])', [], vals[val]);
-                    }
-                }
-                else {
-                    make_class(selector(prefix, path) + key, [], config[key]);
-                }
-            }
-            if (props.length) {
-                rules.push(`${selector(prefix, path)} {\n${props.reverse().join('')}}\n`);
-            }
-        };
-        make_class('', [], config0);
-        return rules.reverse().join('');
-    }
-    $.$mol_style_sheet = $mol_style_sheet;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * CSS in TS.
-     * Statically typed CSS style sheets. Following samples show which CSS code are generated from TS code.
-     * @see https://mol.hyoo.ru/#!section=docs/=xwq9q5_f966fg
-     */
-    function $mol_style_define(Component, config) {
-        return $mol_style_attach(Component.name, $mol_style_sheet(Component, config));
-    }
-    $.$mol_style_define = $mol_style_define;
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        const { hsla } = $mol_style_func;
-        $mol_style_define($mol_text_code_token, {
-            display: 'inline',
-            textDecoration: 'none',
-            '@': {
-                mol_text_code_token_type: {
-                    'code-keyword': {
-                        color: hsla(0, 70, 60, 1),
-                    },
-                    'code-field': {
-                        color: hsla(300, 70, 50, 1),
-                    },
-                    'code-tag': {
-                        color: hsla(330, 70, 50, 1),
-                    },
-                    'code-global': {
-                        color: hsla(30, 80, 50, 1),
-                    },
-                    'code-decorator': {
-                        color: hsla(180, 40, 50, 1),
-                    },
-                    'code-punctuation': {
-                        color: hsla(0, 0, 50, 1),
-                    },
-                    'code-string': {
-                        color: hsla(90, 40, 50, 1),
-                    },
-                    'code-number': {
-                        color: hsla(55, 65, 45, 1),
-                    },
-                    'code-call': {
-                        color: hsla(270, 60, 50, 1),
-                    },
-                    'code-link': {
-                        color: hsla(210, 60, 50, 1),
-                    },
-                    'code-comment-inline': {
-                        opacity: .5,
-                    },
-                    'code-comment-block': {
-                        opacity: .5,
-                    },
-                    'code-docs': {
-                        opacity: .75,
-                    },
-                },
-            }
-        });
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_text_code_line) = class $mol_text_code_line extends ($.$mol_paragraph) {
-		numb(){
-			return 0;
-		}
-		token_type(id){
-			return "";
-		}
-		token_text(id){
-			return "";
-		}
-		highlight(){
-			return "";
-		}
-		token_uri(id){
-			return "";
-		}
-		text(){
-			return "";
-		}
-		minimal_height(){
-			return 24;
-		}
-		numb_showed(){
-			return true;
-		}
-		syntax(){
-			return null;
-		}
-		uri_resolve(id){
-			return "";
-		}
-		Numb(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.numb())]);
-			return obj;
-		}
-		Token(id){
-			const obj = new this.$.$mol_text_code_token();
-			(obj.type) = () => ((this.token_type(id)));
-			(obj.haystack) = () => ((this.token_text(id)));
-			(obj.needle) = () => ((this.highlight()));
-			return obj;
-		}
-		Token_link(id){
-			const obj = new this.$.$mol_text_code_token_link();
-			(obj.haystack) = () => ((this.token_text(id)));
-			(obj.needle) = () => ((this.highlight()));
-			(obj.uri) = () => ((this.token_uri(id)));
-			return obj;
-		}
-		find_pos(id){
-			return null;
-		}
-	};
-	($mol_mem(($.$mol_text_code_line.prototype), "Numb"));
-	($mol_mem_key(($.$mol_text_code_line.prototype), "Token"));
-	($mol_mem_key(($.$mol_text_code_line.prototype), "Token_link"));
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    /** Creates lexer by dictionary of lexems. Lexem that started first wins. Then lexem that declared earlier wins. Use regexp capture to take parts of token. */
-    class $mol_syntax2 {
-        lexems;
-        constructor(lexems) {
-            this.lexems = lexems;
-            for (let name in lexems) {
-                this.rules.push({
-                    name: name,
-                    regExp: lexems[name],
-                    size: RegExp('^$|' + lexems[name].source).exec('').length - 1,
-                });
-            }
-            const parts = '(' + this.rules.map(rule => rule.regExp.source).join(')|(') + ')';
-            this.regexp = RegExp(`([\\s\\S]*?)(?:(${parts})|$(?![^]))`, 'gmu');
-        }
-        rules = [];
-        regexp;
-        tokenize(text, handle) {
-            let end = 0;
-            lexing: while (end < text.length) {
-                const start = end;
-                this.regexp.lastIndex = start;
-                var found = this.regexp.exec(text);
-                end = this.regexp.lastIndex;
-                if (start === end)
-                    throw new Error('Empty token');
-                var prefix = found[1];
-                if (prefix)
-                    handle('', prefix, [prefix], start);
-                var suffix = found[2];
-                if (!suffix)
-                    continue;
-                let offset = 4;
-                for (let rule of this.rules) {
-                    if (found[offset - 1]) {
-                        handle(rule.name, suffix, found.slice(offset, offset + rule.size), start + prefix.length);
-                        continue lexing;
-                    }
-                    offset += rule.size + 1;
-                }
-                $mol_fail(new Error('$mol_syntax2 is broken'));
-            }
-        }
-        parse(text, handlers) {
-            this.tokenize(text, (name, ...args) => handlers[name](...args));
-        }
-    }
-    $.$mol_syntax2 = $mol_syntax2;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $.$mol_syntax2_md_flow = new $mol_syntax2({
-        'quote': /^((?:(?:[>"] )(?:[^]*?)$(\r?\n?))+)([\n\r]*)/,
-        'spoiler': /^((?:(?:[\?] )(?:[^]*?)$(\r?\n?))+)([\n\r]*)/,
-        'header': /^([#=]+)(\s+)(.*?)$([\n\r]*)/,
-        'list': /^((?:(?: ?([*+-])|(?:\d+[\.\)])+) +(?:[^]*?)$(?:\r?\n?)(?:  (?:[^]*?)$(?:\r?\n?))*)+)((?:\r?\n)*)/,
-        'code': /^(```)([\w.-]*)[\r\n]+([^]*?)^(```)$([\n\r]*)/,
-        'code-indent': /^((?:(?: |\t)(?:[^]*?)$\r?\n?)+)([\n\r]*)/,
-        'table': /((?:^\|.+?$\r?\n?)+)([\n\r]*)/,
-        'grid': /((?:^ *! .*?$\r?\n?)+)([\n\r]*)/,
-        'cut': /^--+$((?:\r?\n)*)/,
-        'block': /^(.*?)$((?:\r?\n)*)/,
-    });
-    $.$mol_syntax2_md_line = new $mol_syntax2({
-        'strong': /\*\*(.+?)\*\*/,
-        'emphasis': /\*(?!\s)(.+?)\*|\/\/(?!\s)(.+?)\/\//,
-        'code': /```(.+?)```|;;(.+?);;|`(.+?)`/,
-        'insert': /\+\+(.+?)\+\+/,
-        'delete': /~~(.+?)~~|--(.+?)--/,
-        // 'remark' : /(\()(.+?)(\))/ ,
-        // 'quote' : /(")(.+?)(")/ ,
-        'embed': /""(?:(.*?)\\)?(.*?)""/,
-        'link': /\\\\(?:(.*?)\\)?(.*?)\\\\/,
-        'image-link': /!\[([^\[\]]*?)\]\((.*?)\)/,
-        'text-link': /\[(.*?(?:\[[^\[\]]*?\][^\[\]]*?)*)\]\((.*?)\)/,
-        'text-link-http': /\b(https?:\/\/[^\s,.;:!?")]+(?:[,.;:!?")][^\s,.;:!?")]+)+)/,
-    });
-    $.$mol_syntax2_md_code = new $mol_syntax2({
-        'code-indent': /\t+/,
-        'code-docs': /\/\/\/.*?$/,
-        'code-comment-block': /(?:\/\*[^]*?\*\/|\/\+[^]*?\+\/|<![^]*?>)/,
-        'code-link': /(?:\w+:\/\/|#)\S+?(?=\s|\\\\|""|$)/,
-        'code-comment-inline': /\/\/.*?(?:$|\/\/)|- \\(?!\\).*|(?<=^| )#!? .*/,
-        'code-string': /(?:".*?"|'.*?'|`.*?`| ?\\\\.+?\\\\|\/.+?\/[dygimsu]*(?!\p{Letter})|[ \t]*\\[^\n]*)/u,
-        'code-number': /[+-]?(?:\d*\.)?\d+(\uFE0F.|\w*)/,
-        'code-call': /\.?\w+(?=\()/,
-        'code-sexpr': /\((\w+ )/,
-        'code-field': /(?:(?<=\.|::|->)[a-z][\w-]*|(?<=[, \t] |\t)[\w-]+\??:(?!\/\/|:))/,
-        'code-keyword': /(?<=^|\t|[ )(}{=] )((throw|readonly|unknown|keyof|typeof|never|from|class|struct|interface|type|function|extends|implements|module|namespace|import|export|include|require|var|val|let|const|for|do|while|until|in|out|of|new|if|then|else|switch|case|return|async|await|yield|try|catch|break|continue|get|set|public|private|protected|void|int|float|ref)( |$|;))+/,
-        'code-global': /[$]+\w*|\b[A-Z][a-z0-9]+[A-Z]\w*/,
-        'code-word': /\w+/,
-        'code-decorator': /(?<=^|  |\t)@\s*\S+/,
-        'code-tag': /<\/?[\w-]+\/?>?|&\w+;/,
-        'code-punctuation': /[\-\[\]\{\}\(\)<=>~!\?@#%&\*_\+\\\/\|;:\.,\^]+?/,
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        class $mol_text_code_line extends $.$mol_text_code_line {
-            maximal_width() {
-                return this.text().length * this.letter_width();
-            }
-            syntax() {
-                return this.$.$mol_syntax2_md_code;
-            }
-            tokens(path) {
-                const tokens = [];
-                const text = (path.length > 0)
-                    // @FIXME: this logic compatible only with `string`
-                    ? this.tokens(path.slice(0, path.length - 1))[path[path.length - 1]].found.slice(1, -1)
-                    : this.text();
-                this.syntax().tokenize(text, (name, found, chunks) => {
-                    if (name === 'code-sexpr') {
-                        tokens.push({ name: 'code-punctuation', found: '(', chunks: [] });
-                        tokens.push({ name: 'code-call', found: chunks[0], chunks: [] });
-                    }
-                    else {
-                        tokens.push({ name, found, chunks });
-                    }
-                });
-                return tokens;
-            }
-            sub() {
-                return [
-                    ...this.numb_showed() ? [this.Numb()] : [],
-                    ...this.row_content([])
-                ];
-            }
-            row_content(path) {
-                const content = this.tokens(path).map((t, i) => this.Token([...path, i]));
-                return content.length ? content : ['\n'];
-            }
-            Token(path) {
-                return this.token_type(path) === 'code-link' ? this.Token_link(path) : super.Token(path);
-            }
-            token_type(path) {
-                return this.tokens([...path.slice(0, path.length - 1)])[path[path.length - 1]].name;
-            }
-            token_content(path) {
-                const tokens = this.tokens([...path.slice(0, path.length - 1)]);
-                const token = tokens[path[path.length - 1]];
-                switch (token.name) {
-                    case 'code-string': return [
-                        token.found[0],
-                        ...this.row_content(path),
-                        token.found[token.found.length - 1],
-                    ];
-                    default: return [token.found];
-                }
-            }
-            token_text(path) {
-                const tokens = this.tokens([...path.slice(0, path.length - 1)]);
-                const token = tokens[path[path.length - 1]];
-                return token.found;
-            }
-            token_uri(path) {
-                const uri = this.token_text(path);
-                return this.uri_resolve(uri);
-            }
-            *view_find(check, path = []) {
-                if (check(this, this.text())) {
-                    yield [...path, this];
-                }
-            }
-            find_pos(offset) {
-                return this.find_token_pos([offset]);
-            }
-            find_token_pos([offset, ...path]) {
-                for (const [index, token] of this.tokens(path).entries()) {
-                    if (token.found.length >= offset) {
-                        const token = this.Token([...path, index]);
-                        return { token, offset };
-                    }
-                    else {
-                        offset -= token.found.length;
-                    }
-                }
-                return null;
-            }
-        }
-        __decorate([
-            $mol_mem_key
-        ], $mol_text_code_line.prototype, "tokens", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text_code_line.prototype, "row_content", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text_code_line.prototype, "token_type", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text_code_line.prototype, "token_content", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text_code_line.prototype, "token_text", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text_code_line.prototype, "token_uri", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text_code_line.prototype, "find_pos", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text_code_line.prototype, "find_token_pos", null);
-        $$.$mol_text_code_line = $mol_text_code_line;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        const { rem } = $mol_style_unit;
-        $mol_style_define($mol_text_code_line, {
-            display: 'block',
-            position: 'relative',
-            font: {
-                family: 'monospace',
-            },
-            Numb: {
-                textAlign: 'end',
-                color: $mol_theme.shade,
-                width: rem(3),
-                margin: {
-                    inlineStart: '-4rem',
-                },
-                display: 'inline-block',
-                whiteSpace: 'nowrap',
-                userSelect: 'none',
-                position: 'absolute',
-            },
-        });
-    })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
 
 ;
@@ -9713,13 +10661,6 @@ var $;
 
 
 ;
-"use strict";
-var $;
-(function ($) {
-    $.$mol_blob = ($node.buffer?.Blob ?? $mol_dom_context.Blob);
-})($ || ($ = {}));
-
-;
 	($.$mol_icon) = class $mol_icon extends ($.$mol_svg_root) {
 		path(){
 			return "";
@@ -9755,4677 +10696,6 @@ var $;
 ;
 "use strict";
 
-
-;
-	($.$mol_icon_clipboard) = class $mol_icon_clipboard extends ($.$mol_icon) {
-		path(){
-			return "M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_icon_clipboard_outline) = class $mol_icon_clipboard_outline extends ($.$mol_icon) {
-		path(){
-			return "M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V5H19V19H5V5H7V7Z";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_button_copy) = class $mol_button_copy extends ($.$mol_button_minor) {
-		text(){
-			return (this.title());
-		}
-		text_blob(next){
-			if(next !== undefined) return next;
-			const obj = new this.$.$mol_blob([(this.text())], {"type": "text/plain"});
-			return obj;
-		}
-		html(){
-			return "";
-		}
-		html_blob(next){
-			if(next !== undefined) return next;
-			const obj = new this.$.$mol_blob([(this.html())], {"type": "text/html"});
-			return obj;
-		}
-		Icon(){
-			const obj = new this.$.$mol_icon_clipboard_outline();
-			return obj;
-		}
-		title(){
-			return "";
-		}
-		blobs(){
-			return [(this.text_blob()), (this.html_blob())];
-		}
-		data(){
-			return {};
-		}
-		sub(){
-			return [(this.Icon()), (this.title())];
-		}
-	};
-	($mol_mem(($.$mol_button_copy.prototype), "text_blob"));
-	($mol_mem(($.$mol_button_copy.prototype), "html_blob"));
-	($mol_mem(($.$mol_button_copy.prototype), "Icon"));
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    const mapping = {
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        '&': '&amp;',
-    };
-    function $mol_html_encode(text) {
-        return text.replace(/[&<">]/gi, str => mapping[str]);
-    }
-    $.$mol_html_encode = $mol_html_encode;
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Button copy text() value to clipboard
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_button_demo
-         */
-        class $mol_button_copy extends $.$mol_button_copy {
-            data() {
-                return Object.fromEntries(this.blobs().map(blob => [blob.type, blob]));
-            }
-            html() {
-                return $mol_html_encode(this.text());
-            }
-            attachments() {
-                return [new ClipboardItem(this.data())];
-            }
-            click(event) {
-                const cb = $mol_wire_sync(this.$.$mol_dom_context.navigator.clipboard);
-                cb.writeText?.(this.text());
-                cb.write?.(this.attachments());
-                if (cb.writeText === undefined && cb.write === undefined) {
-                    throw new Error("doesn't support copy to clipoard");
-                }
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_button_copy.prototype, "html", null);
-        __decorate([
-            $mol_mem
-        ], $mol_button_copy.prototype, "attachments", null);
-        $$.$mol_button_copy = $mol_button_copy;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_text_code) = class $mol_text_code extends ($.$mol_stack) {
-		sidebar_showed(){
-			return false;
-		}
-		render_visible_only(){
-			return false;
-		}
-		row_numb(id){
-			return 0;
-		}
-		row_theme(id){
-			return "";
-		}
-		row_text(id){
-			return "";
-		}
-		syntax(){
-			return null;
-		}
-		uri_resolve(id){
-			return "";
-		}
-		highlight(){
-			return "";
-		}
-		Row(id){
-			const obj = new this.$.$mol_text_code_line();
-			(obj.numb_showed) = () => ((this.sidebar_showed()));
-			(obj.numb) = () => ((this.row_numb(id)));
-			(obj.theme) = () => ((this.row_theme(id)));
-			(obj.text) = () => ((this.row_text(id)));
-			(obj.syntax) = () => ((this.syntax()));
-			(obj.uri_resolve) = (id) => ((this.uri_resolve(id)));
-			(obj.highlight) = () => ((this.highlight()));
-			return obj;
-		}
-		rows(){
-			return [(this.Row("0"))];
-		}
-		Rows(){
-			const obj = new this.$.$mol_list();
-			(obj.render_visible_only) = () => ((this.render_visible_only()));
-			(obj.rows) = () => ((this.rows()));
-			return obj;
-		}
-		text_export(){
-			return "";
-		}
-		Copy(){
-			const obj = new this.$.$mol_button_copy();
-			(obj.hint) = () => ((this.$.$mol_locale.text("$mol_text_code_Copy_hint")));
-			(obj.text) = () => ((this.text_export()));
-			return obj;
-		}
-		attr(){
-			return {...(super.attr()), "mol_text_code_sidebar_showed": (this.sidebar_showed())};
-		}
-		text(){
-			return "";
-		}
-		text_lines(){
-			return [];
-		}
-		find_pos(id){
-			return null;
-		}
-		uri_base(){
-			return "";
-		}
-		row_themes(){
-			return [];
-		}
-		sub(){
-			return [(this.Rows()), (this.Copy())];
-		}
-	};
-	($mol_mem_key(($.$mol_text_code.prototype), "Row"));
-	($mol_mem(($.$mol_text_code.prototype), "Rows"));
-	($mol_mem(($.$mol_text_code.prototype), "Copy"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Code visualizer.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_text_code_demo
-         */
-        class $mol_text_code extends $.$mol_text_code {
-            render_visible_only() {
-                return this.$.$mol_support_css_overflow_anchor();
-            }
-            text_lines() {
-                return (this.text() ?? '').split('\n');
-            }
-            rows() {
-                return this.text_lines().map((_, index) => this.Row(index + 1));
-            }
-            row_text(index) {
-                return this.text_lines()[index - 1];
-            }
-            row_numb(index) {
-                return index;
-            }
-            find_pos(offset) {
-                for (const [index, line] of this.text_lines().entries()) {
-                    if (line.length >= offset) {
-                        return this.Row(index + 1).find_pos(offset);
-                    }
-                    else {
-                        offset -= line.length + 1;
-                    }
-                }
-                return null;
-            }
-            sub() {
-                return [
-                    this.Rows(),
-                    ...this.sidebar_showed() ? [this.Copy()] : []
-                ];
-            }
-            syntax() {
-                return this.$.$mol_syntax2_md_code;
-            }
-            uri_base() {
-                return $mol_dom_context.document.location.href;
-            }
-            uri_resolve(uri) {
-                if (/^(\w+script+:)+/.test(uri))
-                    return null;
-                try {
-                    const url = new URL(uri, this.uri_base());
-                    return url.toString();
-                }
-                catch (error) {
-                    $mol_fail_log(error);
-                    return null;
-                }
-            }
-            text_export() {
-                return this.text() + '\n';
-            }
-            row_theme(row) {
-                return this.row_themes()[row - 1];
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_text_code.prototype, "text_lines", null);
-        __decorate([
-            $mol_mem
-        ], $mol_text_code.prototype, "rows", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text_code.prototype, "row_text", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text_code.prototype, "find_pos", null);
-        __decorate([
-            $mol_mem
-        ], $mol_text_code.prototype, "sub", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text_code.prototype, "uri_resolve", null);
-        $$.$mol_text_code = $mol_text_code;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        const { rem, px } = $mol_style_unit;
-        $mol_style_define($mol_text_code, {
-            whiteSpace: 'pre-wrap',
-            font: {
-                family: 'monospace',
-            },
-            Rows: {
-                padding: $mol_gap.text,
-                minWidth: 0,
-            },
-            Row: {
-                font: {
-                    family: 'inherit',
-                },
-            },
-            Copy: {
-                alignSelf: 'flex-start',
-                justifySelf: 'flex-start',
-            },
-            '@': {
-                'mol_text_code_sidebar_showed': {
-                    true: {
-                        $mol_text_code_line: {
-                            margin: {
-                                inlineStart: '1.75rem',
-                            },
-                        },
-                    },
-                },
-            },
-        });
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_float) = class $mol_float extends ($.$mol_view) {
-		style(){
-			return {...(super.style()), "minHeight": "auto"};
-		}
-	};
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/float/float.view.css", "[mol_float] {\n\tposition: sticky;\n\ttop: 0;\n\tleft: 0;\n\tz-index: var(--mol_layer_float);\n\topacity: 1;\n\ttransition: opacity .25s ease-in;\n\tdisplay: block;\n\tbackground: linear-gradient( var(--mol_theme_card), var(--mol_theme_card) ), var(--mol_theme_back);\n\tbox-shadow: 0 0 .5rem hsla(0,0%,0%,.25);\n}\n\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-	($.$mol_check) = class $mol_check extends ($.$mol_button_minor) {
-		checked(next){
-			if(next !== undefined) return next;
-			return false;
-		}
-		aria_checked(){
-			return "false";
-		}
-		aria_role(){
-			return "checkbox";
-		}
-		Icon(){
-			return null;
-		}
-		title(){
-			return "";
-		}
-		Title(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.title())]);
-			return obj;
-		}
-		label(){
-			return [(this.Title())];
-		}
-		attr(){
-			return {
-				...(super.attr()), 
-				"mol_check_checked": (this.checked()), 
-				"aria-checked": (this.aria_checked()), 
-				"role": (this.aria_role())
-			};
-		}
-		sub(){
-			return [(this.Icon()), (this.label())];
-		}
-	};
-	($mol_mem(($.$mol_check.prototype), "checked"));
-	($mol_mem(($.$mol_check.prototype), "Title"));
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    class $mol_dom_event extends $mol_object {
-        native;
-        constructor(native) {
-            super();
-            this.native = native;
-        }
-        prevented(next) {
-            if (next)
-                this.native.preventDefault();
-            return this.native.defaultPrevented;
-        }
-        static wrap(event) {
-            return new this.$.$mol_dom_event(event);
-        }
-    }
-    __decorate([
-        $mol_action
-    ], $mol_dom_event.prototype, "prevented", null);
-    __decorate([
-        $mol_action
-    ], $mol_dom_event, "wrap", null);
-    $.$mol_dom_event = $mol_dom_event;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/check/check.css", "[mol_check] {\n\tflex: 0 0 auto;\n\tjustify-content: flex-start;\n\talign-content: center;\n\t/* align-items: flex-start; */\n\tborder: none;\n\tfont-weight: inherit;\n\tbox-shadow: none;\n\ttext-align: start;\n\tdisplay: inline-flex;\n\tflex-wrap: nowrap;\n}\n\n[mol_check_title] {\n\tflex-shrink: 1;\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Checkbox UI component. See Variants for more concrete implementations.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_check_box_demo
-         */
-        class $mol_check extends $.$mol_check {
-            click(next) {
-                const event = next ? $mol_dom_event.wrap(next) : null;
-                if (event?.prevented())
-                    return;
-                event?.prevented(true);
-                this.checked(!this.checked());
-            }
-            sub() {
-                return [
-                    ...$mol_maybe(this.Icon()),
-                    ...this.label(),
-                ];
-            }
-            label() {
-                return this.title() ? super.label() : [];
-            }
-            aria_checked() {
-                return String(this.checked());
-            }
-        }
-        $$.$mol_check = $mol_check;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_icon_chevron) = class $mol_icon_chevron extends ($.$mol_icon) {
-		path(){
-			return "M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_check_expand) = class $mol_check_expand extends ($.$mol_check) {
-		level_style(){
-			return "0px";
-		}
-		expanded(next){
-			if(next !== undefined) return next;
-			return false;
-		}
-		expandable(){
-			return false;
-		}
-		Icon(){
-			const obj = new this.$.$mol_icon_chevron();
-			return obj;
-		}
-		level(){
-			return 0;
-		}
-		style(){
-			return {...(super.style()), "paddingLeft": (this.level_style())};
-		}
-		checked(next){
-			return (this.expanded(next));
-		}
-		enabled(){
-			return (this.expandable());
-		}
-	};
-	($mol_mem(($.$mol_check_expand.prototype), "expanded"));
-	($mol_mem(($.$mol_check_expand.prototype), "Icon"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Expander for trees, lists, etc
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_check_expand_demo
-         */
-        class $mol_check_expand extends $.$mol_check_expand {
-            level_style() {
-                return `${this.level() * 1 - 1}rem`;
-            }
-            expandable() {
-                return this.expanded() !== null;
-            }
-        }
-        $$.$mol_check_expand = $mol_check_expand;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/check/expand/expand.view.css", "[mol_check_expand] {\n\tmin-width: 20px;\n}\n\n:where([mol_check_expand][disabled]) [mol_check_expand_icon] {\n\tvisibility: hidden;\n}\n\n[mol_check_expand_icon] {\n\tbox-shadow: none;\n\tmargin-inline-start: -0.375rem;\n}\n[mol_check_expand_icon] {\n\ttransform: rotateZ(0deg);\n}\n\n:where([mol_check_checked]) [mol_check_expand_icon] {\n\ttransform: rotateZ(90deg);\n}\n\n[mol_check_expand_icon] {\n\tvertical-align: text-top;\n}\n\n[mol_check_expand_label] {\n\tmargin-inline-start: 0;\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_grid) = class $mol_grid extends ($.$mol_view) {
-		rows(){
-			return [];
-		}
-		Table(){
-			const obj = new this.$.$mol_grid_table();
-			(obj.sub) = () => ((this.rows()));
-			return obj;
-		}
-		head_cells(){
-			return [];
-		}
-		cells(id){
-			return [];
-		}
-		cell_content(id){
-			return [];
-		}
-		cell_content_text(id){
-			return (this.cell_content(id));
-		}
-		cell_content_number(id){
-			return (this.cell_content(id));
-		}
-		col_head_content(id){
-			return [];
-		}
-		cell_level(id){
-			return 0;
-		}
-		cell_expanded(id, next){
-			if(next !== undefined) return next;
-			return false;
-		}
-		needle(){
-			return "";
-		}
-		cell_value(id){
-			return "";
-		}
-		Cell_dimmer(id){
-			const obj = new this.$.$mol_dimmer();
-			(obj.needle) = () => ((this.needle()));
-			(obj.haystack) = () => ((this.cell_value(id)));
-			return obj;
-		}
-		row_height(){
-			return 32;
-		}
-		row_ids(){
-			return [];
-		}
-		row_id(id){
-			return null;
-		}
-		col_ids(){
-			return [];
-		}
-		records(){
-			return {};
-		}
-		record(id){
-			return null;
-		}
-		hierarchy(){
-			return null;
-		}
-		hierarchy_col(){
-			return "";
-		}
-		minimal_width(){
-			return 0;
-		}
-		sub(){
-			return [(this.Head()), (this.Table())];
-		}
-		Head(){
-			const obj = new this.$.$mol_grid_row();
-			(obj.cells) = () => ((this.head_cells()));
-			return obj;
-		}
-		Row(id){
-			const obj = new this.$.$mol_grid_row();
-			(obj.minimal_height) = () => ((this.row_height()));
-			(obj.minimal_width) = () => ((this.minimal_width()));
-			(obj.cells) = () => ((this.cells(id)));
-			return obj;
-		}
-		Cell(id){
-			const obj = new this.$.$mol_view();
-			return obj;
-		}
-		cell(id){
-			return null;
-		}
-		Cell_text(id){
-			const obj = new this.$.$mol_grid_cell();
-			(obj.sub) = () => ((this.cell_content_text(id)));
-			return obj;
-		}
-		Cell_number(id){
-			const obj = new this.$.$mol_grid_number();
-			(obj.sub) = () => ((this.cell_content_number(id)));
-			return obj;
-		}
-		Col_head(id){
-			const obj = new this.$.$mol_float();
-			(obj.dom_name) = () => ("th");
-			(obj.sub) = () => ((this.col_head_content(id)));
-			return obj;
-		}
-		Cell_branch(id){
-			const obj = new this.$.$mol_check_expand();
-			(obj.level) = () => ((this.cell_level(id)));
-			(obj.label) = () => ((this.cell_content(id)));
-			(obj.expanded) = (next) => ((this.cell_expanded(id, next)));
-			return obj;
-		}
-		Cell_content(id){
-			return [(this.Cell_dimmer(id))];
-		}
-	};
-	($mol_mem(($.$mol_grid.prototype), "Table"));
-	($mol_mem_key(($.$mol_grid.prototype), "cell_expanded"));
-	($mol_mem_key(($.$mol_grid.prototype), "Cell_dimmer"));
-	($mol_mem(($.$mol_grid.prototype), "Head"));
-	($mol_mem_key(($.$mol_grid.prototype), "Row"));
-	($mol_mem_key(($.$mol_grid.prototype), "Cell"));
-	($mol_mem_key(($.$mol_grid.prototype), "Cell_text"));
-	($mol_mem_key(($.$mol_grid.prototype), "Cell_number"));
-	($mol_mem_key(($.$mol_grid.prototype), "Col_head"));
-	($mol_mem_key(($.$mol_grid.prototype), "Cell_branch"));
-	($.$mol_grid_table) = class $mol_grid_table extends ($.$mol_list) {};
-	($.$mol_grid_row) = class $mol_grid_row extends ($.$mol_view) {
-		cells(){
-			return [];
-		}
-		sub(){
-			return (this.cells());
-		}
-	};
-	($.$mol_grid_cell) = class $mol_grid_cell extends ($.$mol_view) {
-		minimal_height(){
-			return 40;
-		}
-	};
-	($.$mol_grid_number) = class $mol_grid_number extends ($.$mol_grid_cell) {};
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    class $mol_state_session extends $mol_object {
-        static 'native()';
-        static native() {
-            if (this['native()'])
-                return this['native()'];
-            check: try {
-                const native = $mol_dom_context.sessionStorage;
-                if (!native)
-                    break check;
-                native.setItem('', '');
-                native.removeItem('');
-                return this['native()'] = native;
-            }
-            catch (error) {
-                console.warn(error);
-            }
-            return this['native()'] = {
-                getItem(key) {
-                    return this[':' + key];
-                },
-                setItem(key, value) {
-                    this[':' + key] = value;
-                },
-                removeItem(key) {
-                    this[':' + key] = void 0;
-                }
-            };
-        }
-        static value(key, next) {
-            if (next === void 0)
-                return JSON.parse(this.native().getItem(key) || 'null');
-            if (next === null)
-                this.native().removeItem(key);
-            else
-                this.native().setItem(key, JSON.stringify(next));
-            return next;
-        }
-        prefix() { return ''; }
-        value(key, next) {
-            return $mol_state_session.value(this.prefix() + '.' + key, next);
-        }
-    }
-    __decorate([
-        $mol_mem_key
-    ], $mol_state_session, "value", null);
-    $.$mol_state_session = $mol_state_session;
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        class $mol_grid extends $.$mol_grid {
-            head_cells() {
-                return this.col_ids().map(colId => this.Col_head(colId));
-            }
-            col_head_content(colId) {
-                return [colId];
-            }
-            rows() {
-                return this.row_ids().map(id => this.Row(id));
-            }
-            cells(row_id) {
-                return this.col_ids().map(col_id => this.Cell({ row: row_id, col: col_id }));
-            }
-            col_type(col_id) {
-                if (col_id === this.hierarchy_col())
-                    return 'branch';
-                const rowFirst = this.row_id(0);
-                const val = this.record(rowFirst[rowFirst.length - 1])[col_id];
-                if (typeof val === 'number')
-                    return 'number';
-                return 'text';
-            }
-            Cell(id) {
-                switch (this.col_type(id.col).valueOf()) {
-                    case 'branch': return this.Cell_branch(id);
-                    case 'number': return this.Cell_number(id);
-                }
-                return this.Cell_text(id);
-            }
-            cell_content(id) {
-                return [this.record(id.row[id.row.length - 1])[id.col]];
-            }
-            cell_content_text(id) {
-                return this.cell_content(id).map(val => typeof val === 'object' ? JSON.stringify(val) : val);
-            }
-            records() {
-                return [];
-            }
-            record(id) {
-                return this.records()[id];
-            }
-            record_ids() {
-                return Object.keys(this.records());
-            }
-            row_id(index) {
-                return this.row_ids().slice(index, index + 1).valueOf()[0];
-            }
-            col_ids() {
-                const rowFirst = this.row_id(0);
-                if (rowFirst === void 0)
-                    return [];
-                const record = this.record(rowFirst[rowFirst.length - 1]);
-                if (!record)
-                    return [];
-                return Object.keys(record);
-            }
-            hierarchy() {
-                const hierarchy = {};
-                const root = hierarchy[''] = {
-                    id: '',
-                    parent: null,
-                    sub: [],
-                };
-                this.record_ids().map(id => {
-                    root.sub.push(hierarchy[id] = {
-                        id,
-                        parent: root,
-                        sub: [],
-                    });
-                });
-                return hierarchy;
-            }
-            row_sub_ids(row) {
-                return this.hierarchy()[row[row.length - 1]].sub.map(child => row.concat(child.id));
-            }
-            row_root_id() {
-                return [''];
-            }
-            cell_level(id) {
-                return id.row.length - 1;
-            }
-            row_ids() {
-                const next = [];
-                const add = (row) => {
-                    next.push(row);
-                    if (this.row_expanded(row)) {
-                        this.row_sub_ids(row).forEach(child => add(child));
-                    }
-                };
-                this.row_sub_ids(this.row_root_id()).forEach(child => add(child));
-                return next;
-            }
-            row_expanded(row_id, next) {
-                if (!this.row_sub_ids(row_id).length)
-                    return null;
-                const key = `row_expanded(${JSON.stringify(row_id)})`;
-                const next2 = $mol_state_session.value(key, next);
-                return (next2 == null) ? this.row_expanded_default(row_id) : next2;
-            }
-            row_expanded_default(row_id) {
-                return true;
-            }
-            cell_expanded(id, next) {
-                return this.row_expanded(id.row, next);
-            }
-            sub() {
-                this.head_cells();
-                this.rows();
-                return super.sub();
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_grid.prototype, "head_cells", null);
-        __decorate([
-            $mol_mem
-        ], $mol_grid.prototype, "rows", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_grid.prototype, "col_type", null);
-        __decorate([
-            $mol_mem
-        ], $mol_grid.prototype, "record_ids", null);
-        __decorate([
-            $mol_mem
-        ], $mol_grid.prototype, "hierarchy", null);
-        __decorate([
-            $mol_mem
-        ], $mol_grid.prototype, "row_ids", null);
-        $$.$mol_grid = $mol_grid;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/grid/grid.view.css", "[mol_grid] {\n\tdisplay: block;\n\tflex: 0 1 auto;\n\tposition: relative;\n\toverflow-x: auto;\n}\n\n[mol_grid_gap] {\n\tposition: absolute;\n\tpadding: .1px;\n\ttop: 0;\n\ttransform: translateZ(0);\n}\n\n[mol_grid_table] {\n\tborder-spacing: 0;\n\tdisplay: table-row-group;\n\tposition: relative;\n}\n\n[mol_grid_table] > * {\n\tdisplay: table-row;\n\ttransition: none;\n}\n\n[mol_grid_head] > *,\n[mol_grid_table] > * > * {\n\tdisplay: table-cell;\n\tpadding: var(--mol_gap_text);\n\twhite-space: nowrap;\n\tvertical-align: middle;\n\tbox-shadow: inset 2px 2px 0 -1px var(--mol_theme_line);\n}\n\n[mol_grid_row]:where(:first-child) > * {\n\tbox-shadow: inset 2px 0 0 -1px var(--mol_theme_line);\n}\n\n[mol_grid_table] > * > *:where(:first-child) {\n\tbox-shadow: inset 0px 2px 0 -1px var(--mol_theme_line);\n}\n\n[mol_grid_head] > * {\n\tbox-shadow: inset 2px -2px 0 -1px var(--mol_theme_line);\n}\n\n[mol_grid_head] > *:where(:first-child) {\n\tbox-shadow: inset 0px -2px 0 -1px var(--mol_theme_line);\n}\n\n[mol_grid_table] > [mol_grid_row]:where(:first-child) > *:where(:first-child) {\n\tbox-shadow: none;\n}\t\n\n[mol_grid_head] {\n\tdisplay: table-row;\n\ttransform: none !important;\n}\n\n/* [mol_grid_cell_number] {\n\ttext-align: end;\n} */\n\n[mol_grid_col_head] {\n\tfont-weight: inherit;\n\ttext-align: inherit;\n\tdisplay: table-cell;\n\tcolor: var(--mol_theme_shade);\n}\n\n[mol_grid_cell_dimmer] {\n\tdisplay: inline-block;\n\tvertical-align: inherit;\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_link) = class $mol_link extends ($.$mol_view) {
-		uri_toggle(){
-			return "";
-		}
-		uri_unsafe(){
-			return (this.uri_toggle());
-		}
-		hint(){
-			return "";
-		}
-		hint_safe(){
-			return (this.hint());
-		}
-		target(){
-			return "_self";
-		}
-		file_name(){
-			return "";
-		}
-		current(){
-			return false;
-		}
-		relation(){
-			return "";
-		}
-		event_click(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		click(next){
-			return (this.event_click(next));
-		}
-		uri(){
-			return "";
-		}
-		dom_name(){
-			return "a";
-		}
-		uri_off(){
-			return "";
-		}
-		uri_native(){
-			return null;
-		}
-		external(){
-			return false;
-		}
-		attr(){
-			return {
-				...(super.attr()), 
-				"href": (this.uri_unsafe()), 
-				"title": (this.hint_safe()), 
-				"target": (this.target()), 
-				"download": (this.file_name()), 
-				"mol_link_current": (this.current()), 
-				"rel": (this.relation())
-			};
-		}
-		sub(){
-			return [(this.title())];
-		}
-		arg(){
-			return {};
-		}
-		event(){
-			return {...(super.event()), "click": (next) => (this.click(next))};
-		}
-	};
-	($mol_mem(($.$mol_link.prototype), "event_click"));
-
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($) {
-    /** State of arguments like `foo=bar xxx` */
-    class $mol_state_arg extends $mol_object {
-        prefix;
-        static prolog = '';
-        static separator = ' ';
-        static href(next) {
-            return next || process.argv.slice(2).join(' ');
-        }
-        static href_normal() {
-            return this.link({});
-        }
-        static dict(next) {
-            if (next !== void 0)
-                this.href(this.make_link(next));
-            var href = this.href();
-            var chunks = href.split(' ');
-            var params = {};
-            chunks.forEach(chunk => {
-                if (!chunk)
-                    return;
-                var vals = chunk.split('=').map(decodeURIComponent);
-                params[vals.shift()] = vals.join('=');
-            });
-            return params;
-        }
-        static value(key, next) {
-            if (next === void 0)
-                return this.dict()[key] ?? null;
-            this.href(this.link({ [key]: next }));
-            return next;
-        }
-        static link(next) {
-            const params = {};
-            var prev = this.dict();
-            for (var key in prev) {
-                params[key] = prev[key];
-            }
-            for (var key in next) {
-                params[key] = next[key];
-            }
-            return this.make_link(params);
-        }
-        static make_link(next) {
-            const chunks = [];
-            for (const key in next) {
-                if (next[key] !== null) {
-                    chunks.push([key, next[key]].map(encodeURIComponent).join('='));
-                }
-            }
-            return chunks.join(' ');
-        }
-        static go(next) {
-            this.href(this.link(next));
-        }
-        static commit() { }
-        constructor(prefix = '') {
-            super();
-            this.prefix = prefix;
-        }
-        value(key, next) {
-            return this.constructor.value(this.prefix + key, next);
-        }
-        sub(postfix) {
-            return new this.constructor(this.prefix + postfix + '.');
-        }
-        link(next) {
-            const prefix = this.prefix;
-            const dict = {};
-            for (var key in next) {
-                dict[prefix + key] = next[key];
-            }
-            return this.constructor.link(dict);
-        }
-    }
-    __decorate([
-        $mol_mem
-    ], $mol_state_arg, "href", null);
-    __decorate([
-        $mol_mem
-    ], $mol_state_arg, "href_normal", null);
-    __decorate([
-        $mol_mem
-    ], $mol_state_arg, "dict", null);
-    __decorate([
-        $mol_mem_key
-    ], $mol_state_arg, "value", null);
-    __decorate([
-        $mol_action
-    ], $mol_state_arg, "go", null);
-    $.$mol_state_arg = $mol_state_arg;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_dom_safe_uri(uri) {
-        return uri.replace(/^(?=\w+script+:)/, 'about:blank#');
-    }
-    $.$mol_dom_safe_uri = $mol_dom_safe_uri;
-    function $mol_dom_safe_attr(val) {
-        return val;
-    }
-    $.$mol_dom_safe_attr = $mol_dom_safe_attr;
-    $.$mol_dom_safe_rules = {
-        // defaults
-        '': { id: $mol_dom_safe_attr },
-        // special
-        a: { href: $mol_dom_safe_uri },
-        img: { src: $mol_dom_safe_uri },
-        object: { src: $mol_dom_safe_uri },
-        // blocks
-        div: {},
-        p: {},
-        h1: {},
-        h2: {},
-        h3: {},
-        h4: {},
-        h5: {},
-        h6: {},
-        blockquote: {},
-        pre: {},
-        ul: {},
-        ol: {},
-        li: {},
-        details: {},
-        summary: {},
-        hr: {},
-        table: {},
-        tr: {},
-        td: {},
-        // inlines
-        span: {},
-        strong: {},
-        em: {},
-        br: {},
-        ins: {},
-        del: {},
-        code: {},
-    };
-    function $mol_dom_safe(nodes) {
-        const res = [];
-        for (const node of nodes) {
-            if (node.nodeType === node.TEXT_NODE) {
-                res.push(node);
-                continue;
-            }
-            if (node.nodeType === node.ELEMENT_NODE) {
-                const kids = this.$mol_dom_safe([...node.childNodes]);
-                const allowed = this.$mol_dom_safe_rules[node.localName];
-                if (!allowed) {
-                    res.push(...kids);
-                    continue;
-                }
-                for (const attr of [...node.attributes]) {
-                    const proc = allowed[attr.localName] ?? this.$mol_dom_safe_rules[''][attr.localName];
-                    if (proc)
-                        attr.nodeValue = proc(attr.nodeValue);
-                    else
-                        node.removeAttribute(attr.nodeName);
-                }
-                $mol_dom_render_children(node, kids);
-                res.push(node);
-                continue;
-            }
-        }
-        return res;
-    }
-    $.$mol_dom_safe = $mol_dom_safe;
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Dynamic hyperlink. It can add, change or remove parameters. A link that leads to the current page has [mol_link_current] attribute set to true.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_link_demo
-         */
-        class $mol_link extends $.$mol_link {
-            uri_toggle() {
-                return this.current() ? this.uri_off() : this.uri();
-            }
-            uri() {
-                return new this.$.$mol_state_arg(this.state_key()).link(this.arg());
-            }
-            uri_off() {
-                const arg2 = {};
-                for (let i in this.arg())
-                    arg2[i] = null;
-                return new this.$.$mol_state_arg(this.state_key()).link(arg2);
-            }
-            uri_native() {
-                const base = this.$.$mol_state_arg.href();
-                return new URL(this.uri(), base);
-            }
-            current() {
-                const base = this.$.$mol_state_arg.href_normal();
-                const target = this.uri_native().toString();
-                if (base === target)
-                    return true;
-                const args = this.arg();
-                const keys = Object.keys(args).filter(key => args[key] != null);
-                if (keys.length === 0)
-                    return false;
-                for (const key of keys) {
-                    if (this.$.$mol_state_arg.value(key) != args[key])
-                        return false;
-                }
-                return true;
-            }
-            file_name() {
-                return null;
-            }
-            minimal_height() {
-                return Math.max(super.minimal_height(), 24);
-            }
-            external() {
-                return this.uri_native().origin !== $mol_dom_context.location.origin;
-            }
-            target() {
-                return this.external() ? '_blank' : '_self';
-            }
-            hint_safe() {
-                try {
-                    return this.hint();
-                }
-                catch (error) {
-                    $mol_fail_log(error);
-                    if (error instanceof Error)
-                        return '💥' + error.message;
-                    return '';
-                }
-            }
-            uri_unsafe() {
-                return $mol_dom_safe_uri(super.uri_unsafe());
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_link.prototype, "uri_toggle", null);
-        __decorate([
-            $mol_mem
-        ], $mol_link.prototype, "uri", null);
-        __decorate([
-            $mol_mem
-        ], $mol_link.prototype, "uri_off", null);
-        __decorate([
-            $mol_mem
-        ], $mol_link.prototype, "uri_native", null);
-        __decorate([
-            $mol_mem
-        ], $mol_link.prototype, "current", null);
-        $$.$mol_link = $mol_link;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const { rem } = $mol_style_unit;
-    $mol_style_define($mol_link, {
-        textDecoration: 'none',
-        color: $mol_theme.control,
-        stroke: 'currentcolor',
-        cursor: 'pointer',
-        padding: $mol_gap.text,
-        boxSizing: 'border-box',
-        position: 'relative',
-        minWidth: rem(2.5),
-        minHeight: rem(2.5),
-        gap: $mol_gap.space,
-        border: {
-            radius: $mol_gap.round,
-        },
-        ':hover': {
-            background: {
-                color: $mol_theme.hover,
-            },
-        },
-        ':focus': {
-            outline: 'none',
-        },
-        ':focus-visible': {
-            outline: 'none',
-            background: {
-                color: $mol_theme.hover,
-            }
-        },
-        ':active': {
-            color: $mol_theme.focus,
-        },
-        '@': {
-            mol_link_current: {
-                'true': {
-                    color: $mol_theme.current,
-                    textShadow: '0 0',
-                }
-            }
-        },
-    });
-})($ || ($ = {}));
-
-;
-	($.$mol_image) = class $mol_image extends ($.$mol_view) {
-		uri(){
-			return "";
-		}
-		title(){
-			return "";
-		}
-		loading(){
-			return "lazy";
-		}
-		decoding(){
-			return "async";
-		}
-		cors(){
-			return null;
-		}
-		natural_width(){
-			return 0;
-		}
-		natural_height(){
-			return 0;
-		}
-		load(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		dom_name(){
-			return "img";
-		}
-		attr(){
-			return {
-				...(super.attr()), 
-				"src": (this.uri()), 
-				"title": (this.hint()), 
-				"alt": (this.title()), 
-				"loading": (this.loading()), 
-				"decoding": (this.decoding()), 
-				"crossOrigin": (this.cors()), 
-				"width": (this.natural_width()), 
-				"height": (this.natural_height())
-			};
-		}
-		event(){
-			return {"load": (next) => (this.load(next))};
-		}
-		minimal_width(){
-			return 16;
-		}
-		minimal_height(){
-			return 16;
-		}
-	};
-	($mol_mem(($.$mol_image.prototype), "load"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        class $mol_image extends $.$mol_image {
-            natural_width(next) {
-                const dom = this.dom_node();
-                if (dom.naturalWidth)
-                    return dom.naturalWidth;
-                const found = this.uri().match(/\bwidth=(\d+)/);
-                return found ? Number(found[1]) : null;
-            }
-            natural_height(next) {
-                const dom = this.dom_node();
-                if (dom.naturalHeight)
-                    return dom.naturalHeight;
-                const found = this.uri().match(/\bheight=(\d+)/);
-                return found ? Number(found[1]) : null;
-            }
-            load() {
-                this.natural_width(null);
-                this.natural_height(null);
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_image.prototype, "natural_width", null);
-        __decorate([
-            $mol_mem
-        ], $mol_image.prototype, "natural_height", null);
-        $$.$mol_image = $mol_image;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/image/image.view.css", "[mol_image] {\n\tborder-radius: var(--mol_gap_round);\n\toverflow: hidden;\n\tflex: 0 1 auto;\n\tmax-width: 100%;\n\tobject-fit: cover;\n\theight: fit-content;\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_link_iconed) = class $mol_link_iconed extends ($.$mol_link) {
-		icon(){
-			return "";
-		}
-		Icon(){
-			const obj = new this.$.$mol_image();
-			(obj.uri) = () => ((this.icon()));
-			(obj.title) = () => ("");
-			return obj;
-		}
-		title(){
-			return (this.uri());
-		}
-		sub(){
-			return [(this.Icon())];
-		}
-		content(){
-			return [(this.title())];
-		}
-		host(){
-			return "";
-		}
-	};
-	($mol_mem(($.$mol_link_iconed.prototype), "Icon"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        class $mol_link_iconed extends $.$mol_link_iconed {
-            icon() {
-                return `https://favicon.yandex.net/favicon/${this.host()}?color=0,0,0,0&size=32&stub=1`;
-                // return `https://api.faviconkit.com/${ this.host() }/16`
-            }
-            host() {
-                const base = this.$.$mol_state_arg.href();
-                const url = new URL(this.uri(), base);
-                return url.hostname;
-            }
-            title() {
-                const uri = this.uri();
-                const host = this.host();
-                const suffix = (host ? uri.split(this.host(), 2)[1] : uri)?.replace(/^[\/\?#!]+/, '');
-                return decodeURIComponent(suffix || host).replace(/^\//, ' ');
-            }
-            sub() {
-                return [
-                    ...this.host() ? [this.Icon()] : [],
-                    ...this.content() ? [' ', ...this.content()] : [],
-                ];
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_link_iconed.prototype, "icon", null);
-        __decorate([
-            $mol_mem
-        ], $mol_link_iconed.prototype, "host", null);
-        __decorate([
-            $mol_mem
-        ], $mol_link_iconed.prototype, "title", null);
-        __decorate([
-            $mol_mem
-        ], $mol_link_iconed.prototype, "sub", null);
-        $$.$mol_link_iconed = $mol_link_iconed;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/link/iconed/iconed.view.css", "[mol_link_iconed] {\n\talign-items: baseline;\n\tdisplay: inline-flex;\n\tpadding: var(--mol_gap_text);\n}\n\n[mol_link_iconed_icon] {\n\tbox-shadow: none;\n\theight: 1.5em;\n\twidth: 1em;\n\tflex: 0 0 auto;\n\tdisplay: inline-block;\n\talign-self: normal;\n\tvertical-align: top;\n\tborder-radius: 0;\n\tobject-fit: scale-down;\n\topacity: .75;\n}\n\n[mol_theme=\"$mol_theme_dark\"] [mol_link_iconed_icon] {\n\tfilter: var(--mol_theme_image);\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_scroll) = class $mol_scroll extends ($.$mol_view) {
-		tabindex(){
-			return -1;
-		}
-		event_scroll(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		scroll_top(next){
-			if(next !== undefined) return next;
-			return 0;
-		}
-		scroll_left(next){
-			if(next !== undefined) return next;
-			return 0;
-		}
-		attr(){
-			return {...(super.attr()), "tabindex": (this.tabindex())};
-		}
-		event(){
-			return {...(super.event()), "scroll": (next) => (this.event_scroll(next))};
-		}
-	};
-	($mol_mem(($.$mol_scroll.prototype), "event_scroll"));
-	($mol_mem(($.$mol_scroll.prototype), "scroll_top"));
-	($mol_mem(($.$mol_scroll.prototype), "scroll_left"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Scrolling pane.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_scroll_demo
-         */
-        class $mol_scroll extends $.$mol_scroll {
-            scroll_top(next, cache) {
-                const el = this.dom_node();
-                if (next !== undefined && !cache)
-                    el.scrollTop = next;
-                return el.scrollTop;
-            }
-            scroll_left(next, cache) {
-                const el = this.dom_node();
-                if (next !== undefined && !cache)
-                    el.scrollLeft = next;
-                return el.scrollLeft;
-            }
-            event_scroll(next) {
-                const el = this.dom_node();
-                this.scroll_left(el.scrollLeft, 'cache');
-                this.scroll_top(el.scrollTop, 'cache');
-            }
-            minimal_height() {
-                return this.$.$mol_print.active() ? null : 0;
-            }
-            minimal_width() {
-                return this.$.$mol_print.active() ? null : 0;
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_scroll.prototype, "scroll_top", null);
-        __decorate([
-            $mol_mem
-        ], $mol_scroll.prototype, "scroll_left", null);
-        $$.$mol_scroll = $mol_scroll;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        const { per, rem, px } = $mol_style_unit;
-        $mol_style_define($mol_scroll, {
-            display: 'grid',
-            overflow: 'auto',
-            flex: {
-                direction: 'column',
-                grow: 1,
-                shrink: 1,
-                // basis: 0,
-            },
-            outline: 'none',
-            align: {
-                self: 'stretch',
-                items: 'flex-start',
-            },
-            boxSizing: 'border-box',
-            willChange: 'scroll-position',
-            scroll: {
-                padding: [rem(.75), 0],
-            },
-            maxHeight: per(100),
-            maxWidth: per(100),
-            webkitOverflowScrolling: 'touch',
-            contain: 'content',
-            '>': {
-                $mol_view: {
-                    // transform: 'translateZ(0)', // enforce gpu scroll in all agents
-                    gridArea: '1/1',
-                },
-            },
-            '::before': {
-                display: 'none',
-            },
-            '::after': {
-                display: 'none',
-            },
-            '::-webkit-scrollbar': {
-                width: rem(.25),
-                height: rem(.25),
-            },
-            '@media': {
-                'print': {
-                    overflow: 'hidden',
-                    contain: 'none',
-                    maxHeight: 'unset',
-                },
-            },
-        });
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_embed_native) = class $mol_embed_native extends ($.$mol_scroll) {
-		uri(next){
-			if(next !== undefined) return next;
-			return "about:config";
-		}
-		title(){
-			return "";
-		}
-		Fallback(){
-			const obj = new this.$.$mol_link();
-			(obj.uri) = () => ((this.uri()));
-			(obj.sub) = () => ([(this.title())]);
-			return obj;
-		}
-		uri_change(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		dom_name(){
-			return "iframe";
-		}
-		window(){
-			return null;
-		}
-		attr(){
-			return {...(super.attr()), "src": (this.uri())};
-		}
-		sub(){
-			return [(this.Fallback())];
-		}
-		message(){
-			return {"hashchange": (next) => (this.uri_change(next))};
-		}
-	};
-	($mol_mem(($.$mol_embed_native.prototype), "uri"));
-	($mol_mem(($.$mol_embed_native.prototype), "Fallback"));
-	($mol_mem(($.$mol_embed_native.prototype), "uri_change"));
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_wait_timeout_async(timeout) {
-        const promise = new $mol_promise();
-        const task = new this.$mol_after_timeout(timeout, () => promise.done());
-        return Object.assign(promise, {
-            destructor: () => task.destructor()
-        });
-    }
-    $.$mol_wait_timeout_async = $mol_wait_timeout_async;
-    function $mol_wait_timeout(timeout) {
-        return this.$mol_wire_sync(this).$mol_wait_timeout_async(timeout);
-    }
-    $.$mol_wait_timeout = $mol_wait_timeout;
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        class $mol_embed_native extends $.$mol_embed_native {
-            window() {
-                $mol_wire_solid();
-                this.uri_resource();
-                return $mol_wire_sync(this).load(this.dom_node_actual());
-            }
-            load(frame) {
-                return new Promise((done, fail) => {
-                    frame.onload = () => {
-                        try {
-                            if (frame.contentWindow.location.href === 'about:blank') {
-                                return;
-                            }
-                        }
-                        catch { }
-                        done(frame.contentWindow);
-                    };
-                    frame.onerror = (event) => {
-                        fail(typeof event === 'string' ? new Error(event) : event.error || event);
-                    };
-                });
-            }
-            uri_resource() {
-                return this.uri().replace(/#.*/, '');
-            }
-            message_listener() {
-                return new $mol_dom_listener($mol_dom_context, 'message', $mol_wire_async(this).message_receive);
-            }
-            sub_visible() {
-                this.window();
-                return super.sub_visible();
-            }
-            message_receive(event) {
-                if (!event)
-                    return;
-                if (event.source !== this.window())
-                    return;
-                if (!Array.isArray(event.data))
-                    return;
-                this.message()[event.data[0]]?.(event);
-            }
-            uri_change(event) {
-                this.$.$mol_wait_timeout(1000);
-                this.uri(event.data[1]);
-            }
-            auto() {
-                return [
-                    this.message_listener(),
-                    this.window(),
-                ];
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_embed_native.prototype, "window", null);
-        __decorate([
-            $mol_mem
-        ], $mol_embed_native.prototype, "uri_resource", null);
-        __decorate([
-            $mol_mem
-        ], $mol_embed_native.prototype, "message_listener", null);
-        $$.$mol_embed_native = $mol_embed_native;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/embed/native/native.view.css", "[mol_embed_native] {\n\tmin-width: 0;\n\tmin-height: 0;\n\tmax-width: 100%;\n\tmax-height: 100vh;\n\tobject-fit: cover;\n\tdisplay: flex;\n\tflex: 1 1 auto;\n\tobject-position: top left;\n\tborder-radius: var(--mol_gap_round);\n\taspect-ratio: 4/3;\n\tborder: none;\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_icon_youtube) = class $mol_icon_youtube extends ($.$mol_icon) {
-		path(){
-			return "M10,15L15.19,12L10,9V15M21.56,7.17C21.69,7.64 21.78,8.27 21.84,9.07C21.91,9.87 21.94,10.56 21.94,11.16L22,12C22,14.19 21.84,15.8 21.56,16.83C21.31,17.73 20.73,18.31 19.83,18.56C19.36,18.69 18.5,18.78 17.18,18.84C15.88,18.91 14.69,18.94 13.59,18.94L12,19C7.81,19 5.2,18.84 4.17,18.56C3.27,18.31 2.69,17.73 2.44,16.83C2.31,16.36 2.22,15.73 2.16,14.93C2.09,14.13 2.06,13.44 2.06,12.84L2,12C2,9.81 2.16,8.2 2.44,7.17C2.69,6.27 3.27,5.69 4.17,5.44C4.64,5.31 5.5,5.22 6.82,5.16C8.12,5.09 9.31,5.06 10.41,5.06L12,5C16.19,5 18.8,5.16 19.83,5.44C20.73,5.69 21.31,6.27 21.56,7.17Z";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_frame) = class $mol_frame extends ($.$mol_embed_native) {
-		allow(){
-			return "";
-		}
-		html(){
-			return null;
-		}
-		attr(){
-			return {
-				"tabindex": (this.tabindex()), 
-				"allow": (this.allow()), 
-				"src": (this.uri()), 
-				"srcdoc": (this.html())
-			};
-		}
-		fullscreen(){
-			return true;
-		}
-		accelerometer(){
-			return true;
-		}
-		autoplay(){
-			return true;
-		}
-		encription(){
-			return true;
-		}
-		gyroscope(){
-			return true;
-		}
-		pip(){
-			return true;
-		}
-		clipboard_read(){
-			return true;
-		}
-		clipboard_write(){
-			return true;
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_frame_demo
-         */
-        class $mol_frame extends $.$mol_frame {
-            window() {
-                // if( this.html() ) return ( this.dom_node() as HTMLIFrameElement ).contentWindow!
-                return super.window();
-            }
-            allow() {
-                return [
-                    ...this.fullscreen() ? ['fullscreen'] : [],
-                    ...this.accelerometer() ? ['accelerometer'] : [],
-                    ...this.autoplay() ? ['autoplay'] : [],
-                    ...this.encription() ? ['encrypted-media'] : [],
-                    ...this.gyroscope() ? ['gyroscope'] : [],
-                    ...this.pip() ? ['picture-in-picture'] : [],
-                    ...this.clipboard_read() ? [`clipboard-read ${this.uri()}`] : [],
-                    ...this.clipboard_write() ? [`clipboard-write ${this.uri()}`] : [],
-                ].join('; ');
-            }
-        }
-        $$.$mol_frame = $mol_frame;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_define($mol_frame, {
-        border: {
-            style: 'none',
-        },
-        maxHeight: $mol_style_unit.vh(100),
-    });
-})($ || ($ = {}));
-
-;
-	($.$mol_embed_service) = class $mol_embed_service extends ($.$mol_check) {
-		active(next){
-			if(next !== undefined) return next;
-			return false;
-		}
-		title(){
-			return "";
-		}
-		video_preview(){
-			return "";
-		}
-		Image(){
-			const obj = new this.$.$mol_image();
-			(obj.title) = () => ((this.title()));
-			(obj.uri) = () => ((this.video_preview()));
-			return obj;
-		}
-		Hint(){
-			const obj = new this.$.$mol_icon_youtube();
-			return obj;
-		}
-		video_embed(){
-			return "";
-		}
-		Frame(){
-			const obj = new this.$.$mol_frame();
-			(obj.title) = () => ((this.title()));
-			(obj.uri) = () => ((this.video_embed()));
-			return obj;
-		}
-		uri(){
-			return "";
-		}
-		video_id(){
-			return "";
-		}
-		checked(next){
-			return (this.active(next));
-		}
-		sub(){
-			return [
-				(this.Image()), 
-				(this.Hint()), 
-				(this.Frame())
-			];
-		}
-	};
-	($mol_mem(($.$mol_embed_service.prototype), "active"));
-	($mol_mem(($.$mol_embed_service.prototype), "Image"));
-	($mol_mem(($.$mol_embed_service.prototype), "Hint"));
-	($mol_mem(($.$mol_embed_service.prototype), "Frame"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        class $mol_embed_service extends $.$mol_embed_service {
-            sub() {
-                return this.active()
-                    ? [this.Frame()]
-                    : [this.Image(), this.Hint()];
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_embed_service.prototype, "sub", null);
-        $$.$mol_embed_service = $mol_embed_service;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/embed/service/service.view.css", "[mol_embed_service] {\n\tpadding: 0;\n\tmax-width: 100%;\n}\n\n[mol_embed_service_image] {\n\tflex: auto 1 1;\n\twidth: 100vw;\n}\n\n[mol_embed_service_frame] {\n\twidth: 100vw;\n}\n\n[mol_embed_service_hint] {\n\tposition: absolute;\n    left: 50%;\n    top: 50%;\n    width: 50%;\n    height: 50%;\n    opacity: 0.3;\n    transform: translate(-50%, -50%);\n}\n\n[mol_embed_service]:hover [mol_embed_service_hint] {\n\topacity: .6;\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_embed_youtube) = class $mol_embed_youtube extends ($.$mol_embed_service) {};
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        class $mol_embed_youtube extends $.$mol_embed_youtube {
-            video_embed() {
-                return `https://www.youtube.com/embed/${encodeURIComponent(this.video_id())}?autoplay=1&loop=1`;
-            }
-            video_id() {
-                return this.uri().match(/^https\:\/\/www\.youtube\.com\/(?:embed\/|shorts\/|watch\?v=)([^\/&?#]+)/)?.[1]
-                    ?? this.uri().match(/^https\:\/\/youtu\.be\/([^\/&?#]+)/)?.[1]
-                    ?? 'about:blank';
-            }
-            video_preview() {
-                return `https://i.ytimg.com/vi/${this.video_id()}/sddefault.jpg`;
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_embed_youtube.prototype, "video_embed", null);
-        __decorate([
-            $mol_mem
-        ], $mol_embed_youtube.prototype, "video_id", null);
-        __decorate([
-            $mol_mem
-        ], $mol_embed_youtube.prototype, "video_preview", null);
-        $$.$mol_embed_youtube = $mol_embed_youtube;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_embed_rutube) = class $mol_embed_rutube extends ($.$mol_embed_service) {};
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        class $mol_embed_rutube extends $.$mol_embed_rutube {
-            video_embed() {
-                return `https://rutube.ru/play/embed/${encodeURIComponent(this.video_id())}`;
-            }
-            video_id() {
-                return this.uri().match(/^https:\/\/rutube.ru\/video\/([^\/&?#]+)/)?.[1] ?? 'about:blank';
-            }
-            video_preview() {
-                return `https://rutube.ru/api/video/${this.video_id()}/thumbnail/?redirect=1`;
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_embed_rutube.prototype, "video_embed", null);
-        __decorate([
-            $mol_mem
-        ], $mol_embed_rutube.prototype, "video_id", null);
-        __decorate([
-            $mol_mem
-        ], $mol_embed_rutube.prototype, "video_preview", null);
-        $$.$mol_embed_rutube = $mol_embed_rutube;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_embed_vklive) = class $mol_embed_vklive extends ($.$mol_embed_service) {};
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        class $mol_embed_vklive extends $.$mol_embed_vklive {
-            video_embed() {
-                return `https://live.vkvideo.ru/app/embed/${this.channel_id()}/${this.video_id()}`;
-            }
-            channel_id() {
-                return this.uri().match(/^https:\/\/live\.vkvideo\.ru\/([^\/&?#]+)/)?.[1] ?? '';
-            }
-            video_id() {
-                return this.uri().match(/^https:\/\/live\.vkvideo\.ru\/[^\/&?#]+\/record\/([^\/&?#]+)/)?.[1] ?? '';
-            }
-            video_preview() {
-                return `https://images.live.vkvideo.ru/public_video_stream/record/${this.video_id()}/preview`;
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_embed_vklive.prototype, "video_embed", null);
-        __decorate([
-            $mol_mem
-        ], $mol_embed_vklive.prototype, "channel_id", null);
-        __decorate([
-            $mol_mem
-        ], $mol_embed_vklive.prototype, "video_id", null);
-        __decorate([
-            $mol_mem
-        ], $mol_embed_vklive.prototype, "video_preview", null);
-        $$.$mol_embed_vklive = $mol_embed_vklive;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_embed_any) = class $mol_embed_any extends ($.$mol_view) {
-		title(){
-			return "";
-		}
-		uri(){
-			return "";
-		}
-		Image(){
-			const obj = new this.$.$mol_image();
-			(obj.title) = () => ((this.title()));
-			(obj.uri) = () => ((this.uri()));
-			return obj;
-		}
-		Object(){
-			const obj = new this.$.$mol_embed_native();
-			(obj.title) = () => ((this.title()));
-			(obj.uri) = () => ((this.uri()));
-			return obj;
-		}
-		Youtube(){
-			const obj = new this.$.$mol_embed_youtube();
-			(obj.title) = () => ((this.title()));
-			(obj.uri) = () => ((this.uri()));
-			return obj;
-		}
-		Rutube(){
-			const obj = new this.$.$mol_embed_rutube();
-			(obj.title) = () => ((this.title()));
-			(obj.uri) = () => ((this.uri()));
-			return obj;
-		}
-		Vklive(){
-			const obj = new this.$.$mol_embed_vklive();
-			(obj.title) = () => ((this.title()));
-			(obj.uri) = () => ((this.uri()));
-			return obj;
-		}
-	};
-	($mol_mem(($.$mol_embed_any.prototype), "Image"));
-	($mol_mem(($.$mol_embed_any.prototype), "Object"));
-	($mol_mem(($.$mol_embed_any.prototype), "Youtube"));
-	($mol_mem(($.$mol_embed_any.prototype), "Rutube"));
-	($mol_mem(($.$mol_embed_any.prototype), "Vklive"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        class $mol_embed_any extends $.$mol_embed_any {
-            type() {
-                try {
-                    const uri = this.uri();
-                    if (/\b(png|gif|jpg|jpeg|jfif|webp|svg)\b/.test(uri))
-                        return 'image';
-                    if (/^https:\/\/www\.youtube\.com\//.test(uri))
-                        return 'youtube';
-                    if (/^https:\/\/youtu\.be\//.test(uri))
-                        return 'youtube';
-                    if (/^https:\/\/rutube\.ru\//.test(uri))
-                        return 'rutube';
-                    if (/^https:\/\/live\.vkvideo\.ru\//.test(uri))
-                        return 'vklive';
-                }
-                catch (error) {
-                    $mol_fail_log(error);
-                    return 'image';
-                }
-                return 'object';
-            }
-            sub() {
-                switch (this.type()) {
-                    case 'image': return [this.Image()];
-                    case 'youtube': return [this.Youtube()];
-                    case 'rutube': return [this.Rutube()];
-                    case 'vklive': return [this.Vklive()];
-                    default: return [this.Object()];
-                }
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_embed_any.prototype, "type", null);
-        __decorate([
-            $mol_mem
-        ], $mol_embed_any.prototype, "sub", null);
-        $$.$mol_embed_any = $mol_embed_any;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_expander) = class $mol_expander extends ($.$mol_list) {
-		expanded(next){
-			if(next !== undefined) return next;
-			return false;
-		}
-		expandable(){
-			return true;
-		}
-		label(){
-			return [(this.title())];
-		}
-		Trigger(){
-			const obj = new this.$.$mol_check_expand();
-			(obj.checked) = (next) => ((this.expanded(next)));
-			(obj.expandable) = () => ((this.expandable()));
-			(obj.label) = () => ((this.label()));
-			return obj;
-		}
-		Tools(){
-			return null;
-		}
-		Label(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.Trigger()), (this.Tools())]);
-			return obj;
-		}
-		content(){
-			return [];
-		}
-		Content(){
-			const obj = new this.$.$mol_list();
-			(obj.rows) = () => ((this.content()));
-			return obj;
-		}
-		rows(){
-			return [(this.Label()), (this.Content())];
-		}
-	};
-	($mol_mem(($.$mol_expander.prototype), "expanded"));
-	($mol_mem(($.$mol_expander.prototype), "Trigger"));
-	($mol_mem(($.$mol_expander.prototype), "Label"));
-	($mol_mem(($.$mol_expander.prototype), "Content"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Component which expands any content on title click.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_expander_demo
-         */
-        class $mol_expander extends $.$mol_expander {
-            rows() {
-                return [
-                    this.Label(),
-                    ...this.expanded() ? [this.Content()] : []
-                ];
-            }
-            expandable() {
-                return this.content().length > 0;
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_expander.prototype, "rows", null);
-        $$.$mol_expander = $mol_expander;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/expander/expander.view.css", "[mol_expander] {\n\tflex-direction: column;\n}\n\n[mol_expander_label] {\n\tdisplay: flex;\n\tflex-wrap: wrap;\n\tborder-radius: var(--mol_gap_round);\n}\n\n[mol_expander_trigger] {\n\tflex: auto;\n\tposition: relative;\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_text) = class $mol_text extends ($.$mol_list) {
-		auto_scroll(){
-			return null;
-		}
-		block_content(id){
-			return [];
-		}
-		uri_resolve(id){
-			return "";
-		}
-		quote_text(id){
-			return "";
-		}
-		highlight(){
-			return "";
-		}
-		list_type(id){
-			return "-";
-		}
-		list_text(id){
-			return "";
-		}
-		header_level(id){
-			return 1;
-		}
-		header_arg(id){
-			return {};
-		}
-		pre_text(id){
-			return "";
-		}
-		pre_themes(id){
-			return [];
-		}
-		code_sidebar_showed(){
-			return true;
-		}
-		pre_sidebar_showed(){
-			return (this.code_sidebar_showed());
-		}
-		table_head_cells(id){
-			return [];
-		}
-		table_rows(id){
-			return [];
-		}
-		table_cells(id){
-			return [];
-		}
-		table_cell_text(id){
-			return "";
-		}
-		grid_rows(id){
-			return [];
-		}
-		grid_cells(id){
-			return [];
-		}
-		grid_cell_text(id){
-			return "";
-		}
-		line_text(id){
-			return "";
-		}
-		line_type(id){
-			return "";
-		}
-		line_content(id){
-			return [];
-		}
-		code_syntax(){
-			return null;
-		}
-		link_uri(id){
-			return "";
-		}
-		link_host(id){
-			return "";
-		}
-		spoiler_label(id){
-			return "";
-		}
-		Spoiler_label(id){
-			const obj = new this.$.$mol_text();
-			(obj.text) = () => ((this.spoiler_label(id)));
-			return obj;
-		}
-		spoiler_content(id){
-			return "";
-		}
-		Spoiler_content(id){
-			const obj = new this.$.$mol_text();
-			(obj.text) = () => ((this.spoiler_content(id)));
-			return obj;
-		}
-		uri_base(){
-			return "";
-		}
-		text(){
-			return "";
-		}
-		param(){
-			return "";
-		}
-		flow_tokens(){
-			return [];
-		}
-		block_text(id){
-			return "";
-		}
-		auto(){
-			return [(this.auto_scroll())];
-		}
-		Paragraph(id){
-			const obj = new this.$.$mol_paragraph();
-			(obj.sub) = () => ((this.block_content(id)));
-			return obj;
-		}
-		Quote(id){
-			const obj = new this.$.$mol_text();
-			(obj.uri_resolve) = (id) => ((this.uri_resolve(id)));
-			(obj.text) = () => ((this.quote_text(id)));
-			(obj.highlight) = () => ((this.highlight()));
-			(obj.auto_scroll) = () => (null);
-			return obj;
-		}
-		List(id){
-			const obj = new this.$.$mol_text_list();
-			(obj.uri_resolve) = (id) => ((this.uri_resolve(id)));
-			(obj.type) = () => ((this.list_type(id)));
-			(obj.text) = () => ((this.list_text(id)));
-			(obj.highlight) = () => ((this.highlight()));
-			return obj;
-		}
-		item_index(id){
-			return 0;
-		}
-		Header(id){
-			const obj = new this.$.$mol_text_header();
-			(obj.minimal_height) = () => (40);
-			(obj.level) = () => ((this.header_level(id)));
-			(obj.content) = () => ((this.block_content(id)));
-			(obj.arg) = () => ((this.header_arg(id)));
-			return obj;
-		}
-		Pre(id){
-			const obj = new this.$.$mol_text_code();
-			(obj.text) = () => ((this.pre_text(id)));
-			(obj.row_themes) = () => ((this.pre_themes(id)));
-			(obj.highlight) = () => ((this.highlight()));
-			(obj.uri_resolve) = (id) => ((this.uri_resolve(id)));
-			(obj.sidebar_showed) = () => ((this.pre_sidebar_showed()));
-			return obj;
-		}
-		Cut(id){
-			const obj = new this.$.$mol_view();
-			(obj.dom_name) = () => ("hr");
-			return obj;
-		}
-		Table(id){
-			const obj = new this.$.$mol_grid();
-			(obj.head_cells) = () => ((this.table_head_cells(id)));
-			(obj.rows) = () => ((this.table_rows(id)));
-			return obj;
-		}
-		Table_row(id){
-			const obj = new this.$.$mol_grid_row();
-			(obj.cells) = () => ((this.table_cells(id)));
-			return obj;
-		}
-		Table_cell(id){
-			const obj = new this.$.$mol_text();
-			(obj.auto_scroll) = () => (null);
-			(obj.highlight) = () => ((this.highlight()));
-			(obj.uri_resolve) = (id) => ((this.uri_resolve(id)));
-			(obj.text) = () => ((this.table_cell_text(id)));
-			return obj;
-		}
-		Grid(id){
-			const obj = new this.$.$mol_grid();
-			(obj.rows) = () => ((this.grid_rows(id)));
-			return obj;
-		}
-		Grid_row(id){
-			const obj = new this.$.$mol_grid_row();
-			(obj.cells) = () => ((this.grid_cells(id)));
-			return obj;
-		}
-		Grid_cell(id){
-			const obj = new this.$.$mol_text();
-			(obj.auto_scroll) = () => (null);
-			(obj.highlight) = () => ((this.highlight()));
-			(obj.uri_resolve) = (id) => ((this.uri_resolve(id)));
-			(obj.text) = () => ((this.grid_cell_text(id)));
-			return obj;
-		}
-		String(id){
-			const obj = new this.$.$mol_dimmer();
-			(obj.dom_name) = () => ("span");
-			(obj.needle) = () => ((this.highlight()));
-			(obj.haystack) = () => ((this.line_text(id)));
-			return obj;
-		}
-		Span(id){
-			const obj = new this.$.$mol_text_span();
-			(obj.dom_name) = () => ("span");
-			(obj.type) = () => ((this.line_type(id)));
-			(obj.sub) = () => ((this.line_content(id)));
-			return obj;
-		}
-		Code_line(id){
-			const obj = new this.$.$mol_text_code_line();
-			(obj.numb_showed) = () => (false);
-			(obj.highlight) = () => ((this.highlight()));
-			(obj.text) = () => ((this.line_text(id)));
-			(obj.uri_resolve) = (id) => ((this.uri_resolve(id)));
-			(obj.syntax) = () => ((this.code_syntax()));
-			return obj;
-		}
-		Link(id){
-			const obj = new this.$.$mol_link_iconed();
-			(obj.uri) = () => ((this.link_uri(id)));
-			(obj.content) = () => ((this.line_content(id)));
-			return obj;
-		}
-		Link_http(id){
-			const obj = new this.$.$mol_link_iconed();
-			(obj.uri) = () => ((this.link_uri(id)));
-			(obj.content) = () => ([(this.link_host(id))]);
-			return obj;
-		}
-		Embed(id){
-			const obj = new this.$.$mol_embed_any();
-			(obj.uri) = () => ((this.link_uri(id)));
-			(obj.title) = () => ((this.line_text(id)));
-			return obj;
-		}
-		Spoiler(id){
-			const obj = new this.$.$mol_expander();
-			(obj.label) = () => ([(this.Spoiler_label(id))]);
-			(obj.content) = () => ([(this.Spoiler_content(id))]);
-			return obj;
-		}
-	};
-	($mol_mem_key(($.$mol_text.prototype), "Spoiler_label"));
-	($mol_mem_key(($.$mol_text.prototype), "Spoiler_content"));
-	($mol_mem_key(($.$mol_text.prototype), "Paragraph"));
-	($mol_mem_key(($.$mol_text.prototype), "Quote"));
-	($mol_mem_key(($.$mol_text.prototype), "List"));
-	($mol_mem_key(($.$mol_text.prototype), "Header"));
-	($mol_mem_key(($.$mol_text.prototype), "Pre"));
-	($mol_mem_key(($.$mol_text.prototype), "Cut"));
-	($mol_mem_key(($.$mol_text.prototype), "Table"));
-	($mol_mem_key(($.$mol_text.prototype), "Table_row"));
-	($mol_mem_key(($.$mol_text.prototype), "Table_cell"));
-	($mol_mem_key(($.$mol_text.prototype), "Grid"));
-	($mol_mem_key(($.$mol_text.prototype), "Grid_row"));
-	($mol_mem_key(($.$mol_text.prototype), "Grid_cell"));
-	($mol_mem_key(($.$mol_text.prototype), "String"));
-	($mol_mem_key(($.$mol_text.prototype), "Span"));
-	($mol_mem_key(($.$mol_text.prototype), "Code_line"));
-	($mol_mem_key(($.$mol_text.prototype), "Link"));
-	($mol_mem_key(($.$mol_text.prototype), "Link_http"));
-	($mol_mem_key(($.$mol_text.prototype), "Embed"));
-	($mol_mem_key(($.$mol_text.prototype), "Spoiler"));
-	($.$mol_text_header) = class $mol_text_header extends ($.$mol_paragraph) {
-		arg(){
-			return {};
-		}
-		content(){
-			return [];
-		}
-		Link(){
-			const obj = new this.$.$mol_link();
-			(obj.arg) = () => ((this.arg()));
-			(obj.hint) = () => ((this.$.$mol_locale.text("$mol_text_header_Link_hint")));
-			(obj.sub) = () => ((this.content()));
-			return obj;
-		}
-		level(){
-			return 1;
-		}
-		sub(){
-			return [(this.Link())];
-		}
-	};
-	($mol_mem(($.$mol_text_header.prototype), "Link"));
-	($.$mol_text_span) = class $mol_text_span extends ($.$mol_paragraph) {
-		type(){
-			return "";
-		}
-		dom_name(){
-			return "span";
-		}
-		attr(){
-			return {...(super.attr()), "mol_text_type": (this.type())};
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Markdown visualizer.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_text_demo
-         */
-        class $mol_text extends $.$mol_text {
-            flow_tokens() {
-                const tokens = [];
-                this.$.$mol_syntax2_md_flow.tokenize(this.text(), (name, found, chunks) => tokens.push({ name, found, chunks }));
-                return tokens;
-            }
-            block_type(index) {
-                return this.flow_tokens()[index].name;
-            }
-            rows() {
-                return this.flow_tokens().map(({ name }, index) => {
-                    switch (name) {
-                        case 'quote': return this.Quote(index);
-                        case 'spoiler': return this.Spoiler(index);
-                        case 'header': return this.Header(index);
-                        case 'list': return this.List(index);
-                        case 'code': return this.Pre(index);
-                        case 'code-indent': return this.Pre(index);
-                        case 'table': return this.Table(index);
-                        case 'grid': return this.Grid(index);
-                        case 'cut': return this.Cut(index);
-                        default: return this.Paragraph(index);
-                    }
-                });
-            }
-            param() {
-                return this.toString().replace(/^.*?[\)>]\./, '').replace(/[(<>)]/g, '');
-            }
-            header_level(index) {
-                return this.flow_tokens()[index].chunks[0].length;
-            }
-            header_arg(index) {
-                return {
-                    [this.param()]: this.block_text(index)
-                };
-            }
-            list_type(index) {
-                return this.flow_tokens()[index].chunks[1] ?? '';
-            }
-            item_index(index) {
-                return this.flow_tokens().slice(0, index).filter(token => token.name === 'block').length + 1;
-            }
-            pre_text(index) {
-                const token = this.flow_tokens()[index];
-                return (token.chunks[2] ?? token.chunks[0].replace(/^(\t| (?:\+\+|--|\*\*|  ) )/gm, '')).replace(/[\n\r]*$/, '');
-            }
-            pre_themes(index) {
-                const token = this.flow_tokens()[index];
-                const names = {
-                    ' ** ': '$mol_theme_accent',
-                    ' ++ ': '$mol_theme_current',
-                    ' -- ': '$mol_theme_special',
-                };
-                return token.chunks[0].split('\n')
-                    .map(line => names[line.match(/^ (?:\+\+|--|\*\*|  ) /gm)?.[0] ?? ''] ?? null);
-            }
-            quote_text(index) {
-                return this.flow_tokens()[index].chunks[0].replace(/^[>"] /mg, '');
-            }
-            list_text(index) {
-                return this.flow_tokens()[index].chunks[0].replace(/^([-*+]|(?:\d+[\.\)])+) ?/mg, '').replace(/^  ?/mg, '');
-            }
-            cell_content(indexBlock) {
-                return this.flow_tokens()[indexBlock].chunks[0]
-                    .split(/\r?\n/g)
-                    .filter(row => row && !/\|--/.test(row))
-                    .map((row, rowId) => {
-                    return row.split(/\|/g)
-                        .filter(cell => cell)
-                        .map((cell, cellId) => cell.trim());
-                });
-            }
-            table_rows(blockId) {
-                return this.cell_content(blockId)
-                    .slice(1)
-                    .map((row, rowId) => this.Table_row({ block: blockId, row: rowId + 1 }));
-            }
-            table_head_cells(blockId) {
-                return this.cell_content(blockId)[0]
-                    .map((cell, cellId) => this.Table_cell({ block: blockId, row: 0, cell: cellId }));
-            }
-            table_cells(id) {
-                return this.cell_content(id.block)[id.row]
-                    .map((cell, cellId) => this.Table_cell({ block: id.block, row: id.row, cell: cellId }));
-            }
-            table_cell_text(id) {
-                return this.cell_content(id.block)[id.row][id.cell];
-            }
-            grid_content(indexBlock) {
-                return [...this.flow_tokens()[indexBlock].chunks[0].match(/(?:^! .*?$\r?\n?)+(?:^ +! .*?$\r?\n?)*/gm)]
-                    .map((row, rowId) => {
-                    const cells = [];
-                    for (const line of row.trim().split(/\r?\n/)) {
-                        const [_, indent, content] = /^( *)! (.*)/.exec(line);
-                        const col = Math.ceil(indent.length / 2);
-                        cells[col] = (cells[col] ? cells[col] + '\n' : '') + content;
-                    }
-                    return cells;
-                });
-            }
-            grid_rows(blockId) {
-                return this.grid_content(blockId)
-                    .map((row, rowId) => this.Grid_row({ block: blockId, row: rowId }));
-            }
-            grid_cells(id) {
-                return this.grid_content(id.block)[id.row]
-                    .map((cell, cellId) => this.Grid_cell({ block: id.block, row: id.row, cell: cellId }));
-            }
-            grid_cell_text(id) {
-                return this.grid_content(id.block)[id.row][id.cell];
-            }
-            uri_base() {
-                return $mol_dom_context.document.location.href;
-            }
-            uri_base_abs() {
-                return new URL(this.uri_base(), $mol_dom_context.document.location.href);
-            }
-            uri_resolve(uri) {
-                if (/^(\w+script+:)+/.test(uri))
-                    return null;
-                if (/^#\!/.test(uri)) {
-                    const params = {};
-                    for (const chunk of uri.slice(2).split(this.$.$mol_state_arg.separator)) {
-                        if (!chunk)
-                            continue;
-                        const vals = chunk.split('=').map(decodeURIComponent);
-                        params[vals.shift()] = vals.join('=');
-                    }
-                    return this.$.$mol_state_arg.link(params);
-                }
-                try {
-                    const url = new URL(uri, this.uri_base_abs());
-                    return url.toString();
-                }
-                catch (error) {
-                    $mol_fail_log(error);
-                    return null;
-                }
-            }
-            code_syntax() {
-                return this.$.$mol_syntax2_md_code;
-            }
-            block_text(index) {
-                const token = this.flow_tokens()[index];
-                switch (token.name) {
-                    case 'header': return token.chunks[2];
-                    default: return token.chunks[0];
-                }
-            }
-            block_content(index) {
-                return this.line_content([index]);
-            }
-            line_tokens(path) {
-                const tokens = [];
-                this.$.$mol_syntax2_md_line.tokenize(this.line_text(path), (name, found, chunks) => tokens.push({ name, found, chunks }));
-                return tokens;
-            }
-            line_token(path) {
-                const tokens = this.line_tokens(path.slice(0, path.length - 1));
-                return tokens[path[path.length - 1]];
-            }
-            line_type(path) {
-                return this.line_token(path).name;
-            }
-            line_text(path) {
-                if (path.length === 1)
-                    return this.block_text(path[0]);
-                const { name, found, chunks } = this.line_token(path);
-                switch (name) {
-                    case 'link': return chunks[0] || chunks[1].replace(/^.*?\/\/|\/.*$/g, '');
-                    case 'text-link': return chunks[0] || chunks[1].replace(/^.*?\/\/|\/.*$/g, '');
-                    default: return (chunks[0] || chunks[1] || chunks[2]) ?? found;
-                }
-            }
-            line_content(path) {
-                return this.line_tokens(path).map(({ name, chunks }, index) => {
-                    const path2 = [...path, index];
-                    switch (name) {
-                        case 'embed': return this.Embed(path2);
-                        case 'link': return this.Link(path2);
-                        case 'text-link-http': return this.Link_http(path2);
-                        case 'text-link': return this.Link(path2);
-                        case 'image-link': return this.Embed(path2);
-                        case 'code': return this.Code_line(path2);
-                        case '': return this.String(path2);
-                        default: return this.Span(path2);
-                    }
-                });
-            }
-            link_uri(path) {
-                const token = this.line_token(path);
-                const uri = this.uri_resolve(token.chunks[1] ?? token.found);
-                if (!uri)
-                    throw new Error('Bad link');
-                return uri;
-            }
-            link_host(path) {
-                return this.link_uri(path).replace(/^.*?\/\/|\/.*$/g, '');
-            }
-            auto_scroll() {
-                for (const [index, token] of this.flow_tokens().entries()) {
-                    if (token.name !== 'header')
-                        continue;
-                    const header = this.Header(index);
-                    if (!header.Link().current())
-                        continue;
-                    new $mol_after_tick(() => this.ensure_visible(header));
-                }
-            }
-            spoiler_rows(index) {
-                return this.flow_tokens()[index].chunks[0].replace(/^[\?] /mg, '').split('\n');
-            }
-            spoiler_label(index) {
-                return this.spoiler_rows(index)[0];
-            }
-            spoiler_content(index) {
-                return this.spoiler_rows(index).slice(1).join('\n');
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_text.prototype, "flow_tokens", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "block_type", null);
-        __decorate([
-            $mol_mem
-        ], $mol_text.prototype, "rows", null);
-        __decorate([
-            $mol_mem
-        ], $mol_text.prototype, "param", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "header_level", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "header_arg", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "pre_text", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "pre_themes", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "quote_text", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "list_text", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "cell_content", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "table_rows", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "table_head_cells", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "table_cells", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "table_cell_text", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "grid_content", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "grid_rows", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "grid_cells", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "grid_cell_text", null);
-        __decorate([
-            $mol_mem
-        ], $mol_text.prototype, "uri_base_abs", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "uri_resolve", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "block_text", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "line_tokens", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "line_token", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "line_type", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "line_text", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "line_content", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "link_uri", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "link_host", null);
-        __decorate([
-            $mol_mem
-        ], $mol_text.prototype, "auto_scroll", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "spoiler_rows", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "spoiler_label", null);
-        __decorate([
-            $mol_mem_key
-        ], $mol_text.prototype, "spoiler_content", null);
-        $$.$mol_text = $mol_text;
-        class $mol_text_header extends $.$mol_text_header {
-            dom_name() {
-                return 'h' + this.level();
-            }
-        }
-        $$.$mol_text_header = $mol_text_header;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/text/text/text.view.css", "[mol_text] {\n\tline-height: 1.5em;\n\tbox-sizing: border-box;\n\tborder-radius: var(--mol_gap_round);\n\twhite-space: pre-line;\n\tdisplay: flex;\n\tflex-direction: column;\n\tflex: 0 0 auto;\n\ttab-size: 4;\n}\n\n[mol_text_paragraph] {\n\tpadding: var(--mol_gap_text);\n\toverflow: auto;\n\toverflow-x: overlay;\n\tmax-width: 100%;\n\tdisplay: block;\n\tmax-width: 60rem;\n\tbreak-inside: avoid;\n}\n\n[mol_text_spoiler_label_paragraph] {\n\tpadding: 0;\n}\n\n[mol_text_span] {\n\tdisplay: inline;\n}\n\n[mol_text_string] {\n\tdisplay: inline;\n\tflex: 0 1 auto;\n\twhite-space: normal;\n}\n\n[mol_text_quote] {\n\tmargin: var(--mol_gap_block);\n\tpadding: var(--mol_gap_block);\n\tbackground: var(--mol_theme_card);\n\tbox-shadow: 0 0 0 1px var(--mol_theme_back);\n\tbreak-inside: avoid;\n}\n\n[mol_text_header] {\n\tdisplay: block;\n\ttext-shadow: 0 0;\n\tfont-weight: normal;\n\tbreak-after: avoid;\n\tletter-spacing: 2px;\n}\n\n* + [mol_text_header] {\n\tmargin-top: 0.75rem;\n}\n\nh1[mol_text_header] {\n\tfont-size: 1.5rem;\n}\n\nh2[mol_text_header] {\n\tfont-size: 1.5rem;\n\tfont-style: italic;\n}\n\nh3[mol_text_header] {\n\tfont-size: 1.25rem;\n}\n\nh4[mol_text_header] {\n\tfont-size: 1.25em;\n\tfont-style: italic;\n}\n\nh5[mol_text_header] {\n\tfont-size: 1rem;\n}\n\nh6[mol_text_header] {\n\tfont-size: 1rem;\n\tfont-style: italic;\n}\n\n[mol_text_header_link] {\n\tcolor: inherit;\n}\n\n[mol_text_table] {\n\tbreak-inside: avoid;\n}\n\n[mol_text_table_cell] {\n\twidth: auto;\n\tdisplay: table-cell;\n\tvertical-align: baseline;\n\tpadding: 0;\n\tborder-radius: 0;\n}\n\n[mol_text_grid] {\n\tbreak-inside: avoid;\n}\n\n[mol_text_grid_cell] {\n\twidth: auto;\n\tdisplay: table-cell;\n\tvertical-align: top;\n\tpadding: 0;\n\tborder-radius: 0;\n}\n\n[mol_text_cut] {\n\tborder: none;\n\twidth: 100%;\n\tbox-shadow: 0 0 0 1px var(--mol_theme_line);\n}\n\n[mol_text_link_http],\n[mol_text_link] {\n\tpadding: 0;\n\tdisplay: inline;\n\twhite-space: nowrap;\n}\n\n[mol_text_link_icon] + [mol_text_embed] {\n\tmargin-inline-start: -1.5rem;\n}\n\n[mol_text_embed_youtube] {\n\tdisplay: inline;\n}\n\n[mol_text_embed_youtube_image],\n[mol_text_embed_youtube_frame],\n[mol_text_embed_object] {\n\tobject-fit: contain;\n\tobject-position: center;\n\twidth: 100vw;\n\tmax-height: calc( 100vh - 6rem );\n}\n[mol_text_embed_object_fallback] {\n\tpadding: 0;\n}\n[mol_text_embed_image] {\n\tobject-fit: contain;\n\tobject-position: center;\n\tdisplay: inline;\n\t/* max-height: calc( 100vh - 6rem ); */\n\tvertical-align: top;\n}\n\n[mol_text_pre] {\n\twhite-space: pre;\n\toverflow-x: auto;\n\toverflow-x: overlay;\n\ttab-size: 2;\n\tbreak-inside: avoid;\n}\n\n[mol_text_code_line] {\n\tdisplay: inline-block;\n}\n\n[mol_text_type=\"strong\"] {\n\ttext-shadow: 0 0;\n\tfilter: contrast(1.5);\n}\n\n[mol_text_type=\"emphasis\"] {\n\tfont-style: italic;\n}\n\n[mol_text_type=\"insert\"] {\n\tcolor: var(--mol_theme_special);\n}\n\n[mol_text_type=\"delete\"] {\n\tcolor: var(--mol_theme_shade);\n}\n\n[mol_text_type=\"remark\"] {\n\tcolor: var(--mol_theme_shade);\n}\n\n[mol_text_type=\"quote\"] {\n\tfont-style: italic;\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_text_list) = class $mol_text_list extends ($.$mol_text) {
-		type(){
-			return "";
-		}
-		auto_scroll(){
-			return null;
-		}
-		attr(){
-			return {...(super.attr()), "mol_text_list_type": (this.type())};
-		}
-		Paragraph(id){
-			const obj = new this.$.$mol_text_list_item();
-			(obj.index) = () => ((this.item_index(id)));
-			(obj.sub) = () => ((this.block_content(id)));
-			return obj;
-		}
-	};
-	($mol_mem_key(($.$mol_text_list.prototype), "Paragraph"));
-	($.$mol_text_list_item) = class $mol_text_list_item extends ($.$mol_paragraph) {
-		index(){
-			return 0;
-		}
-		attr(){
-			return {...(super.attr()), "mol_text_list_item_index": (this.index())};
-		}
-	};
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/text/list/list.view.css", "[mol_text_list] {\n\tpadding-inline-start: 1.75rem;\n}\n\n[mol_text_list_item] {\n\tcontain: none;\n\tdisplay: list-item;\n}\n\n[mol_text_list_item]::before {\n\tcontent: attr( mol_text_list_item_index ) \".\";\n\twidth: 1.25rem;\n\tdisplay: inline-block;\n\tposition: absolute;\n\tmargin-inline-start: -1.75rem;\n\ttext-align: end;\n}\n\n[mol_text_list_type=\"-\"] > [mol_text_list_item]::before,\n[mol_text_list_type=\"*\"] > [mol_text_list_item]::before {\n\tcontent: \"•\";\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * Document model over a `view.tree` AST.
-     *
-     * A vmap document is one `view.tree` class, so the source text is the truth and
-     * the tree is derived from it. Every edit goes through the tree and is written
-     * straight back as text, which is what makes source export free.
-     *
-     * Port of `hyoo_studio_component` and `hyoo_studio_property`, plus the wire
-     * emitter, which studio has no equivalent of. Deviations are marked at their
-     * place.
-     *
-     * Pure model: knows nothing about DOM, compiles nothing, executes nothing.
-     * @see ../ARCHITECTURE.md sections 1 and 2
-     */
-    /**
-     * Checks that a token is a bare property name and returns it.
-     *
-     * Bare means: no `*`, no `?`, no `!`, no spaces, nothing but a name. Signs are
-     * never carried by a token, they are produced from `bidi`. That single rule
-     * kills three of the five traps at once, because every one of them is a token
-     * that smuggles something in:
-     *
-     * - `value?` as the right token gives `w = Field value?`, which compiles to
-     *   `value(next)` with no `next` in scope, so the wire throws `ReferenceError`
-     *   on ANY read;
-     * - `w?` as the left token gives `w? = Field hint`, which compiles to a setter
-     *   whose right end ignores it, so writes vanish with no error at all;
-     * - `B value` as a token gives `w = A B value`, which compiles to
-     *   `this.A().B().value()`, and `B` was hoisted onto the root by `upper`, so it
-     *   is not a method of `A` and never will be.
-     *
-     * The grammar is `$mol_view_tree2_prop_signature` itself rather than a regexp of
-     * our own, so a token this accepts is a token the compiler accepts.
-     */
-    function $bog_vmap_lang_token(token, role) {
-        const parts = [...token.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
-        if (!parts || parts.name !== token)
-            this.$mol_fail(new Error(`${role} must be a bare name, got ${JSON.stringify(token)}`));
-        return token;
-    }
-    $.$bog_vmap_lang_token = $bog_vmap_lang_token;
-    /**
-     * Whether a name can be the name of a class of a document.
-     *
-     * Stricter than the compiler on purpose. `$mol_view_tree2_class_match` takes
-     * anything starting with a dollar or a capital, generics and quotes included,
-     * because it also has to recognize the classes of somebody else's code; a class
-     * WE write has to survive one more step, and that step is mam resolving the
-     * name into a folder. Every underscore is a level of folders, so the name is a
-     * dollar and at least two lowercase segments, and nothing else fits in a path.
-     *
-     * A refusal here is a message to a person, so this answers yes or no and leaves
-     * the wording to the caller, who knows in what language to say it.
-     */
-    function $bog_vmap_lang_class_ok(name) {
-        return /^\$[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(name);
-    }
-    $.$bog_vmap_lang_class_ok = $bog_vmap_lang_class_ok;
-    /**
-     * Builds the tree of a wire: `name = Node prop`.
-     *
-     * The operator is `=` and nothing else. `<= Node prop` looks like the same thing
-     * and is not: it goes through the `upper` hack, which takes the kids of the
-     * reference as default values, so it declares a property `Node` valued `prop`
-     * and silently drops the `.prop()` link from the generated call. Either the
-     * build dies with a message about default values, or the build is green and the
-     * bundle carries `Node(){ return prop }`, a bare identifier that throws at the
-     * one node the wire was drawn to, whenever somebody gets there.
-     *
-     * @see ../ARCHITECTURE.md section 1
-     */
-    function $bog_vmap_lang_wire_tree(wire) {
-        const sign = wire.bidi ? '?' : '';
-        const name = this.$bog_vmap_lang_token(wire.name, 'Wire name') + sign;
-        const node = this.$bog_vmap_lang_token(wire.node, 'Wire node');
-        const prop = this.$bog_vmap_lang_token(wire.prop, 'Wire prop') + sign;
-        return $mol_tree2.struct(name, [
-            $mol_tree2.struct('=', [
-                $mol_tree2.struct(node, [
-                    $mol_tree2.struct(prop),
-                ]),
-            ]),
-        ]);
-    }
-    $.$bog_vmap_lang_wire_tree = $bog_vmap_lang_wire_tree;
-    /**
-     * Builds a bare reference `<= name`, the form that goes into `sub`.
-     *
-     * Bare means childless. A reference with a child is the middle of the three
-     * forms of `<=`, the only dangerous one, and the guard against it is that this
-     * takes a token instead of a path.
-     */
-    function $bog_vmap_lang_ref_tree(name) {
-        return $mol_tree2.struct('<=', [
-            $mol_tree2.struct(this.$bog_vmap_lang_token(name, 'Reference')),
-        ]);
-    }
-    $.$bog_vmap_lang_ref_tree = $bog_vmap_lang_ref_tree;
-    /**
-     * Builds a free part: `Calc $bog_vmap_lang_calc` at class level, no operator.
-     *
-     * A part declared this way is a plain property of the root class, so the
-     * compiler makes it a lazy memoized singleton and it creates no DOM, because it
-     * is not in `sub`. That is the whole mechanism behind a detail lying free on the
-     * canvas.
-     */
-    function $bog_vmap_lang_part_tree(name, klass) {
-        const base = $mol_tree2.struct(klass);
-        if (!$mol_view_tree2_class_match(base))
-            this.$mol_fail(new Error(`Part class must be a class name, got ${JSON.stringify(klass)}`));
-        return $mol_tree2.struct(this.$bog_vmap_lang_token(name, 'Part name'), [base]);
-    }
-    $.$bog_vmap_lang_part_tree = $bog_vmap_lang_part_tree;
-    /** Value of one key of a `*` dictionary, or `null` when the key is not there. */
-    function $bog_vmap_lang_dict_get(dict, key) {
-        if (dict?.type !== '*')
-            return null;
-        const found = dict.kids.find(kid => kid.type === key);
-        return found?.kids[0] ?? null;
-    }
-    $.$bog_vmap_lang_dict_get = $bog_vmap_lang_dict_get;
-    /**
-     * Sets one key of a `*` dictionary, or drops it when the value is `null`.
-     *
-     * A key already there is replaced where it stands, so `^` keeps the head of the
-     * dictionary it has to keep: a redeclared dictionary REPLACES the one of the
-     * base instead of extending it, and `^` is the line that undoes that. Writing a
-     * key must never be able to move it, and appending is the only other option.
-     */
-    function $bog_vmap_lang_dict_set(dict, key, value) {
-        const name = this.$bog_vmap_lang_token(key, 'Dictionary key');
-        if (!value)
-            return dict.clone(dict.kids.filter(kid => kid.type !== name));
-        const entry = dict.struct(name, [value]);
-        if (!dict.kids.some(kid => kid.type === name)) {
-            return dict.clone([...dict.kids, entry]);
-        }
-        return dict.clone(dict.kids.map(kid => kid.type === name ? entry : kid));
-    }
-    $.$bog_vmap_lang_dict_set = $bog_vmap_lang_dict_set;
-    /**
-     * Class declarations reordered so that a base always precedes its heir.
-     *
-     * `class $A extends $[ '$B' ]` resolves its base at definition time, and
-     * `$mol_view_tree2_to_js` emits declarations in the order it received them. A
-     * heir written above its base therefore inherits the PREVIOUS version of it, or
-     * `undefined` on a first run, and says nothing about it.
-     *
-     * Bases the list does not declare — anything from a library — are left alone:
-     * they are already in the namespace before our code runs.
-     *
-     * The scene carries an equivalent of this for the same reason. The two should
-     * become one, and this is the side to keep: sorting declarations is a property
-     * of the language, not of whoever happens to compile them.
-     */
-    function $bog_vmap_lang_sorted(defs) {
-        const by_name = new Map();
-        for (const def of defs)
-            by_name.set(def.type, def);
-        const sorted = [];
-        const done = new Set();
-        const path = new Set();
-        const walk = (def) => {
-            if (done.has(def.type))
-                return;
-            if (path.has(def.type))
-                this.$mol_fail(new Error(`Circular inheritance around ${def.type}`));
-            path.add(def.type);
-            const base = by_name.get(def.kids[0]?.type ?? '');
-            if (base && base !== def)
-                walk(base);
-            path.delete(def.type);
-            done.add(def.type);
-            sorted.push(def);
-        };
-        for (const def of defs)
-            walk(def);
-        return sorted;
-    }
-    $.$bog_vmap_lang_sorted = $bog_vmap_lang_sorted;
-    /**
-     * A document: several `view.tree` classes in one text.
-     *
-     * `$bog_vmap_lang_node` models one CLASS, and rightly so — but a document is
-     * not one class, and using the node as if it were silently eats the others.
-     * Measured: two classes in the source, one property of the first edited, the
-     * second gone from the text entirely. `tree()` there reads `kids[ 0 ]` and
-     * `tree( next )` writes `source( next.toString() )`, so every write replaces
-     * the whole document with the single class it touched. No error, no warning.
-     *
-     * This level owns the text, cuts it into classes for reading, and puts one back
-     * without reserializing its neighbours from anything but their own trees. It
-     * hands out `$bog_vmap_lang_node`s whose `source` is a slice of it, so
-     * everything already written against the node model keeps working unchanged —
-     * that is the point of adding a level instead of widening the one below.
-     *
-     * A class is addressed BY NAME, which is what the editor speaks and what
-     * survives reordering. Two things follow, both real:
-     *
-     * - renaming a class through its node writes under the OLD name, which is
-     *   correct — the slot is found and replaced — but the caller then holds a stale
-     *   key and has to re-read `names()`;
-     * - two classes of one name are one class here, the first. That is already
-     *   broken further down: the class index of the library model keeps the LAST of
-     *   a duplicate pair, so a document with two would disagree with itself about
-     *   which is real. (The index is not named here: mam reads doc comments for
-     *   dependencies, and its name dragged the whole library module into the scene.)
-     *
-     * @see ../ARCHITECTURE.md section 1
-     */
-    class $bog_vmap_lang_doc extends $mol_object {
-        /** Text of the whole document. The truth. */
-        source(next) {
-            return next ?? '';
-        }
-        /**
-         * Classes of the document, in the order the text declares them.
-         *
-         * Read only, and that is deliberate. A cell that both reads and writes
-         * `source` would be a cell frozen by its own write — writing to a
-         * `@$mol_mem` freezes its dependencies — and the document would stop
-         * following the text after the first edit made through it, which is the
-         * one failure that looks exactly like success.
-         */
-        trees() {
-            return this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(this.source().replace(/\n?$/, '\n'))).kids;
-        }
-        /** Names of the classes, in the order of the text. */
-        names() {
-            return this.trees().map(tree => tree.type);
-        }
-        /**
-         * Source of one class, cut out of the document and written back into it.
-         *
-         * Writing rebuilds the text from the trees of all the classes with this one
-         * replaced, so a neighbour comes back out of its own tree and nothing else.
-         * On an already normalized document that is byte for byte; the first write
-         * to a hand written one normalizes the whole text at once, which is the same
-         * lossy step `$bog_vmap_lang_node` has always taken, now taken over the
-         * document rather than over one class.
-         *
-         * A name the document does not carry appends, so that handing a node a
-         * source is also how a class is added.
-         *
-         * NOT memoized, for the reason spelled out at `trees`: this is the write
-         * path, and a cell on a write path freezes at what was written. The read is
-         * two lookups over `trees()`, which is a cell already, so there is nothing
-         * to gain either.
-         */
-        class_source(name, next) {
-            const trees = this.trees();
-            const index = trees.findIndex(tree => tree.type === name);
-            if (next === undefined)
-                return trees[index]?.toString() ?? '';
-            const parsed = this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(next.replace(/\n?$/, '\n'))).kids;
-            const kept = index < 0
-                ? [...trees, ...parsed]
-                : [...trees.slice(0, index), ...parsed, ...trees.slice(index + 1)];
-            this.source(this.$.$mol_tree2.list(kept).toString());
-            return next;
-        }
-        /**
-         * Renames a class of the document together with every mention of it.
-         *
-         * A class name is spelled in more places than its own declaration: it is the
-         * base of an heir (`site_card site_page`, both with a leading dollar) and the
-         * value of a part declared with it (`Card site_card`, same). Retyping the
-         * declaration alone leaves those
-         * spelling a class nobody declares, which compiles into `Class extends value
-         * undefined` or into a part of a class that is not there — so the mentions
-         * are rewritten in the SAME write, over every class of the document.
-         *
-         * A mention is any tree node typed exactly with the old name. Only structural
-         * tokens carry a type in `tree2`; a literal is a data node, so a class name
-         * written inside a string is not touched and cannot be.
-         *
-         * A name already declared is refused, like the rename of a property: two
-         * classes of one name is a document that disagrees with itself about which is
-         * real, and the class index of a library keeps the last of such a pair.
-         *
-         * Whoever holds a `node( from )` has to ask for `node( to )` afterwards; the
-         * old handle addresses a class the document no longer carries, exactly as the
-         * property handle does after `prop_rename`.
-         */
-        class_rename(from, to) {
-            if (from === to)
-                return;
-            const trees = this.trees();
-            if (!trees.some(tree => tree.type === from))
-                return this.$.$mol_fail(new Error(`Class ${JSON.stringify(from)} is not declared in the document`));
-            if (trees.some(tree => tree.type === to))
-                return this.$.$mol_fail(new Error(`Class ${JSON.stringify(to)} is already declared in the document`));
-            const renamed = (tree) => {
-                const kids = tree.kids.map(renamed);
-                return tree.type === from ? tree.struct(to, kids) : tree.clone(kids);
-            };
-            this.source(this.$.$mol_tree2.list(trees.map(renamed)).toString());
-        }
-        /**
-         * One class of the document as a node model.
-         *
-         * `source` is replaced with a slice of the document on the instance itself.
-         * Everything else of `$bog_vmap_lang_node` — the tree, the property list,
-         * the wire emitter — is derived from `source` and so needs no changes at
-         * all: the node cannot tell that its text is a part of a larger one.
-         */
-        node(name) {
-            return $bog_vmap_lang_node.make({
-                source: (next) => this.class_source(name, next),
-            });
-        }
-    }
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_doc.prototype, "source", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_doc.prototype, "trees", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_doc.prototype, "names", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_doc.prototype, "class_rename", null);
-    __decorate([
-        $mol_mem_key
-    ], $bog_vmap_lang_doc.prototype, "node", null);
-    $.$bog_vmap_lang_doc = $bog_vmap_lang_doc;
-    /**
-     * One node of the document: a single `view.tree` class.
-     *
-     * Port of `hyoo_studio_component`.
-     */
-    class $bog_vmap_lang_node extends $mol_object {
-        /** Source text. The truth. Everything else is derived from it. */
-        source(next) {
-            return next ?? '';
-        }
-        /**
-         * Class tree, derived from the source. Writing a tree serializes it back.
-         *
-         * `$mol_view_tree2_normalize` is lossy: it runs the `upper` hack, so
-         * `<= Hero $mol_view …` nested in `sub` comes out as a flat property `Hero`
-         * of the root plus a bare `<= Hero` left in place. Hoisted properties land
-         * BEFORE the ones already at the top, because `add_inner` fires for them
-         * during the traversal rather than in the final loop.
-         *
-         * That flat form is the canonical shape of a document, not a compromise: it
-         * is the model of section 1 spelled out in the text itself. Round trip is
-         * therefore byte for byte only on a normalized source, which is what the
-         * editor holds, because every write serializes the whole class.
-         *
-         * @see ../ARCHITECTURE.md section 1, «Канонический вид документа»
-         *
-         * Deviation from studio: an empty or classless source fails with a message
-         * instead of `Cannot read properties of undefined`. In an editor an empty
-         * buffer is a normal transient state and has to say so.
-         */
-        tree(next) {
-            const source = this.source(next && next.toString()).replace(/\n?$/, '\n');
-            const tree = this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(source)).kids[0];
-            if (!tree)
-                return this.$.$mol_fail(new Error('No class declared in the source'));
-            return tree;
-        }
-        name(next) {
-            const tree = this.tree();
-            if (!next)
-                return tree.type;
-            this.tree(tree.struct(next, tree.kids));
-            return next;
-        }
-        base(next) {
-            const self = this.tree();
-            const base = this.$.$mol_view_tree2_class_super(self);
-            if (!next)
-                return base.type;
-            this.tree(self.clone([base.struct(next, base.kids)]));
-            return next;
-        }
-        prop_names() {
-            return this.$.$mol_view_tree2_class_props(this.tree())
-                .map(tree => this.$.$mol_view_tree2_prop_parts(tree).name);
-        }
-        /** Own properties of the class as a list node. */
-        props_tree() {
-            return this.tree().list(this.$.$mol_view_tree2_class_props(this.tree()));
-        }
-        /**
-         * Full signature of a property by its bare name: `d` gives back `d*?`.
-         *
-         * Deviation from studio: the early exit is spelled as a test for any sign
-         * instead of `name.indexOf('*') + name.indexOf('?') + name.indexOf('!') > -3`,
-         * which is the same condition written as arithmetic on three `-1`s.
-         */
-        prop_fullname(name) {
-            if (/[*?!]/.test(name))
-                return name;
-            for (const tree of this.props_tree().kids) {
-                const sign = tree?.type ?? '';
-                const meta = [...sign.matchAll($mol_view_tree2_prop_signature)][0]?.groups
-                    ?? { name: '', key: '', next: '' };
-                if (meta.name === name)
-                    return `${meta.name}${meta.key || ''}${meta.next || ''}`;
-            }
-            return '';
-        }
-        /** Tree of one property. Writing `null` drops it. */
-        prop_tree(name, next) {
-            const sign = this.prop_fullname(name);
-            if (next !== undefined) {
-                this.tree(this.tree().insert(next, this.base(), sign));
-                return next;
-            }
-            return this.props_tree().select(sign).kids[0] ?? null;
-        }
-        prop_add(name) {
-            const tree = this.tree();
-            this.tree(tree.insert(tree.struct(name, [tree.struct('null')]), null, name));
-        }
-        prop_drop(name) {
-            this.prop_tree(name, null);
-        }
-        /**
-         * Renames a property together with every reference to it, in one write.
-         *
-         * `next` is a whole signature, `d*?` and not `d`, because a rename and a
-         * change of sign arrive together from the inspector and two writes would
-         * leave the document renamed but unsigned in between.
-         *
-         * **A reference is rewritten, never dropped.** A node is named by the
-         * property it occupies, so a rename moves the name every `sub` list, every
-         * wire end and every binding spells. Dropping them instead — which is what
-         * `links_drop` does for a delete — would silently cut the wires of a node
-         * that is still there; the two operations are opposites and must not share
-         * a path. Anything of the shape `<= name`, `<=> name` or `= name prop` at
-         * any depth is such a reference.
-         *
-         * The declaration is retyped IN PLACE, among the kids of the base, and only
-         * there: an override of the same name under a part is a port of that part
-         * and none of our business. In place also keeps the property where it was —
-         * dropping it and inserting it back moved it to the end of the class, which
-         * reorders the canvas for a rename that should not move anything.
-         *
-         * A name already taken is refused rather than merged: two properties of one
-         * name is a document nothing can address afterwards.
-         */
-        prop_rename(name, next) {
-            const to = [...next.matchAll($mol_view_tree2_prop_signature)][0]?.groups?.name;
-            if (!to)
-                return this.$.$mol_fail(new Error(`Bad property signature ${JSON.stringify(next)}`));
-            if (to !== name && this.prop_names().includes(to))
-                return this.$.$mol_fail(new Error(`Property ${JSON.stringify(to)} is already declared in ${this.name()}`));
-            const self = this.tree();
-            const base = self.kids[0];
-            if (!base)
-                return;
-            const refs = (tree) => {
-                const kids = tree.kids.map(refs);
-                const head = kids[0];
-                if (head?.type === name
-                    && (tree.type === '<=' || tree.type === '<=>' || tree.type === '='))
-                    return tree.clone([head.struct(to, head.kids), ...kids.slice(1)]);
-                return tree.clone(kids);
-            };
-            const props = base.kids.map(prop => {
-                const meta = [...prop.type.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
-                return meta?.name === name ? prop.struct(next, prop.kids) : prop;
-            });
-            this.tree(self.clone([base.clone(props.map(refs))]));
-        }
-        property(name) {
-            return $bog_vmap_lang_prop.make({
-                name: $mol_const(name),
-                tree: next => this.prop_tree(name, next),
-                node: $mol_const(this),
-            });
-        }
-        /**
-         * Declares a free part: `Calc $bog_vmap_lang_calc`.
-         *
-         * Deviation from studio, which has no such thing: the write goes through the
-         * `null` step of the path instead of `base()`, so it lands in the class body
-         * whatever the base is currently called. Same reason `prop_add` does it.
-         */
-        part_add(name, klass) {
-            const tree = this.tree();
-            this.tree(tree.insert(this.$.$bog_vmap_lang_part_tree(name, klass), null, name));
-        }
-        /**
-         * Draws a wire: `name = Node prop`.
-         *
-         * The node end has to be declared already, as a free part or as a sub-view.
-         * `=` declares nothing, that is exactly why it has no collision with `upper`,
-         * so a wire to an undeclared node compiles green and throws `is not a
-         * function` at run time. Refusing here is the only place it can be caught.
-         *
-         * The far end, `wire.prop`, is NOT checked: whether the node's class has such
-         * a port is known only to `bog_vmap_lib.props_map`, and this module knows
-         * nothing of libraries, deliberately: naming it even in a comment would drag
-         * the whole fetching module into our graph. Stage 3.1 draws wires from the
-         * port list, so the question does not arise there either.
-         */
-        wire_add(wire) {
-            const next = this.$.$bog_vmap_lang_wire_tree(wire);
-            if (!this.prop_names().includes(wire.node))
-                this.$.$mol_fail(new Error(`Wire node ${JSON.stringify(wire.node)} is not declared in ${this.name()}`));
-            const prev = this.prop_fullname(wire.name);
-            if (prev && prev !== next.type)
-                this.prop_drop(wire.name);
-            this.tree(this.tree().insert(next, null, next.type));
-        }
-        /**
-         * Wires declared by the class: every property whose value is the `=`
-         * operator. `bidi` is read off the left end alone, because the emitter never
-         * writes the two signs apart; a hand written wire with one sign is reported
-         * as it is and left for the compiler to complain about.
-         */
-        wires() {
-            const wires = [];
-            for (const prop of this.props_tree().kids) {
-                const op = prop.kids[0];
-                if (op?.type !== '=')
-                    continue;
-                const node = op.kids[0];
-                const far = node?.kids[0];
-                if (!node || !far)
-                    continue;
-                const meta = this.$.$mol_view_tree2_prop_parts(prop);
-                wires.push({
-                    name: meta.name,
-                    node: node.type,
-                    prop: this.$.$mol_view_tree2_prop_parts(far).name,
-                    bidi: Boolean(meta.next),
-                });
-            }
-            return wires;
-        }
-        /**
-         * Declarations of parts: properties whose value is a class name, with the
-         * overrides written under it. That is where a consumer of a wire lives:
-         * `Price $mol_text title <= calc_result`.
-         */
-        part_names() {
-            return this.props_tree().kids
-                .filter(prop => {
-                const val = prop.kids[0];
-                return val && $mol_view_tree2_class_match(val);
-            })
-                .map(prop => this.$.$mol_view_tree2_prop_parts(prop).name);
-        }
-        /**
-         * Wires together with who reads them. A wire nobody reads is not a link,
-         * and a reference to a name that is not a wire is a plain binding of the
-         * part and none of this module's business.
-         */
-        links() {
-            const wires = new Map(this.wires().map(wire => [wire.name, wire]));
-            const links = [];
-            // Off `props_tree()` and not through `prop_tree()`: the latter is the
-            // write path of `link_target`, and a cell read through a written cell
-            // freezes at what was written.
-            for (const decl of this.props_tree().kids) {
-                const klass = decl.kids[0];
-                if (!klass || !$mol_view_tree2_class_match(klass))
-                    continue;
-                const to = this.$.$mol_view_tree2_prop_parts(decl).name;
-                for (const over of klass.kids) {
-                    const op = over.kids[0];
-                    if (op?.type !== '<=' && op?.type !== '<=>')
-                        continue;
-                    const ref = op.kids[0];
-                    if (!ref || ref.kids.length)
-                        continue;
-                    const wire = wires.get(this.$.$mol_view_tree2_prop_parts(ref).name);
-                    if (!wire)
-                        continue;
-                    links.push({
-                        from: wire.node,
-                        from_prop: wire.prop,
-                        to,
-                        to_prop: this.$.$mol_view_tree2_prop_parts(over).name,
-                        name: wire.name,
-                        bidi: Boolean(wire.bidi) && op.type === '<=>',
-                    });
-                }
-            }
-            return links;
-        }
-        /** Whether `to` is already fed, directly or through others, by `from`. */
-        link_reaches(from, to) {
-            const seen = new Set();
-            const queue = [from];
-            while (queue.length) {
-                const at = queue.shift();
-                if (at === to)
-                    return true;
-                if (seen.has(at))
-                    continue;
-                seen.add(at);
-                for (const link of this.links())
-                    if (link.from === at)
-                        queue.push(link.to);
-            }
-            return false;
-        }
-        /**
-         * Name of the root property a wire from `from.prop` goes by: `calc_result`.
-         * An existing wire to the same end is reused, an unrelated property of the
-         * same name is stepped around with a suffix.
-         */
-        link_name(from, prop, bidi) {
-            const base = `${from.toLowerCase()}_${prop}`;
-            const taken = new Set(this.prop_names());
-            for (let i = 1;; ++i) {
-                const name = i === 1 ? base : `${base}_${i}`;
-                const wire = this.wires().find(wire => wire.name === name);
-                if (wire) {
-                    if (wire.node === from && wire.prop === prop && wire.bidi === bidi)
-                        return name;
-                    continue;
-                }
-                if (!taken.has(name))
-                    return name;
-            }
-        }
-        /**
-         * Connects a port of one part to a port of another: two lines and no more.
-         *
-         * The wire `name = From prop` goes through `wire_add` with every guard it
-         * has, and the consumer is a bare reference in the declaration of the target
-         * part, `to_prop <= name`, or `to_prop? <=> name?` for a two way wire. The
-         * reference is built by `$bog_vmap_lang_ref_tree`, so it can carry nothing
-         * under the name and never turns into the middle form of `<=`.
-         *
-         * Refused, with nothing written: a part wired to itself, an undeclared end,
-         * and a target the source already depends on, because a loop of wires is a
-         * loop of fibers and the scene would hang on the first read.
-         */
-        link_add(link) {
-            const bidi = Boolean(link.bidi);
-            if (link.from === link.to)
-                this.$.$mol_fail(new Error(`Part ${JSON.stringify(link.to)} cannot be wired to itself`));
-            const parts = new Set(this.part_names());
-            for (const end of [link.from, link.to])
-                if (!parts.has(end))
-                    this.$.$mol_fail(new Error(`Part ${JSON.stringify(end)} is not declared in ${this.name()}`));
-            if (this.link_reaches(link.to, link.from))
-                this.$.$mol_fail(new Error(`Wire ${link.from} → ${link.to} closes a loop: ${link.to} already feeds ${link.from}`));
-            const to_prop = this.$.$bog_vmap_lang_token(link.to_prop, 'Target port');
-            const name = this.link_name(link.from, link.from_prop, bidi);
-            this.wire_add({ name, node: link.from, prop: link.from_prop, bidi });
-            const ref = bidi
-                ? $mol_tree2.struct('<=>', [$mol_tree2.struct(name + '?')])
-                : this.$.$bog_vmap_lang_ref_tree(name);
-            this.link_target(link.to, to_prop, $mol_tree2.struct(to_prop + (bidi ? '?' : ''), [ref]));
-            return name;
-        }
-        /**
-         * Plugs a port of a part, or unplugs it when `next` is `null`.
-         *
-         * One override of one part, which is what `over_set` is; a wire has no
-         * special way of writing its end and must not grow one, or the two would
-         * drift apart on the first fix to either.
-         */
-        link_target(to, to_prop, next) {
-            this.over_set(to, to_prop, next);
-        }
-        /**
-         * Unplugs a port: the reference goes from the target, and the wire goes from
-         * the class when nobody else reads it. Both lines, or the first alone when
-         * the second is still in use.
-         */
-        link_drop(to, to_prop) {
-            const link = this.links().find(link => link.to === to && link.to_prop === to_prop);
-            if (!link)
-                return;
-            this.link_target(to, to_prop, null);
-            const used = this.links().some(other => other.name === link.name);
-            if (!used)
-                this.prop_drop(link.name);
-        }
-        /**
-         * Unplugs every wire with an end on a part: the ones it feeds and the ones
-         * it reads. What a delete of that part has to do before it takes the part
-         * out, or the document keeps a wire to a node that is no longer declared —
-         * which compiles into a call of a property nobody declares.
-         *
-         * Through `link_drop`, so a wire read by somebody else keeps its line
-         * exactly as it does when a port is unplugged by hand; a wire from this part
-         * that nobody reads has no consumer to unplug and goes in the second pass.
-         * Both ends of every OTHER wire are left alone.
-         */
-        links_drop(node) {
-            for (const link of [...this.links()]) {
-                if (link.from !== node && link.to !== node)
-                    continue;
-                this.link_drop(link.to, link.to_prop);
-            }
-            for (const wire of [...this.wires()]) {
-                if (wire.node !== node)
-                    continue;
-                this.prop_drop(wire.name);
-            }
-        }
-        /**
-         * Declaration of a property, read off the derivation of the text.
-         *
-         * Not through `prop_tree()`: that one is a keyed cell the writes below go
-         * through, and a read taken from a written cell freezes at what was written.
-         * `props_tree()` is a plain derivation of the source and stays live.
-         */
-        prop_decl(name) {
-            const sign = this.prop_fullname(name);
-            return sign ? this.props_tree().select(sign).kids[0] ?? null : null;
-        }
-        /**
-         * The `/` list of a `sub`, of the class itself or of one part of it, or
-         * `null` when there is no `sub` there.
-         *
-         * The empty owner is the class, a named one is a part. Both are one shape
-         * because `upper` has already flattened them: the class carries `sub` as a
-         * property, a part carries it as an override under its class name, and under
-         * either sits the same list of bare references.
-         */
-        sub_list(owner = '') {
-            const prop = owner ? this.over_tree(owner, 'sub') : this.prop_decl('sub');
-            const list = prop?.kids[0] ?? null;
-            return list?.type[0] === '/' ? list : null;
-        }
-        /**
-         * Names the `sub` of a node references, in the order it draws them, or
-         * `null` when the node declares no `sub` and so is not a container.
-         *
-         * A node WITH a `sub` is an artboard: children of it are laid out by tree,
-         * by ordinary flex, while everything else lies free by coordinates. That is
-         * the whole difference between the two, and it is a difference in the text
-         * rather than a mark on the side, see section 8.
-         *
-         * Content that is not a bare reference — a literal string in `sub` — takes
-         * its place in the list as an empty name, so that an index here is an index
-         * there.
-         */
-        sub_names(owner = '') {
-            const list = this.sub_list(owner);
-            return list && list.kids.map(ref => ref.kids[0]?.type ?? '');
-        }
-        /** Whose `sub` references this name: a part, `''` for the class, `null` for nobody. */
-        sub_holder(name) {
-            for (const owner of ['', ...this.part_names()]) {
-                if (this.sub_names(owner)?.includes(name))
-                    return owner;
-            }
-            return null;
-        }
-        /** Whether `name` is `owner` itself or lies somewhere under it. */
-        sub_within(owner, name) {
-            const seen = new Set();
-            const queue = [owner];
-            while (queue.length) {
-                const at = queue.shift();
-                if (at === name)
-                    return true;
-                if (seen.has(at))
-                    continue;
-                seen.add(at);
-                for (const kid of this.sub_names(at) ?? [])
-                    if (kid)
-                        queue.push(kid);
-            }
-            return false;
-        }
-        /**
-         * Puts a list of references back into the `sub` of the class or of a part.
-         *
-         * An override already there is replaced where it stands, never dropped and
-         * appended: the order of the lines under a part is text the user reads, and
-         * a `sub` that jumped to the bottom on every insertion would rewrite the
-         * declaration around an edit that changed one child.
-         */
-        sub_write(owner, list) {
-            const sub = list.struct('sub', [list]);
-            if (owner)
-                return this.over_set(owner, 'sub', sub);
-            this.tree(this.tree().insert(sub, null, this.prop_fullname('sub') || 'sub'));
-        }
-        /** Makes a node a container by giving it an empty `sub`, if it has none. */
-        sub_open(owner) {
-            if (this.sub_list(owner))
-                return;
-            this.sub_write(owner, this.tree().struct('/'));
-        }
-        /**
-         * One override written under a part, `Board $mol_view style *`, or `null`.
-         *
-         * Only under a PART: a property whose value is a class name. Under anything
-         * else the children are not overrides at all — under `sub` they are bare
-         * `<=` references — and reading them as property signatures fails on the
-         * first one, which is how every property of the document gets asked whether
-         * it is an artboard.
-         */
-        over_tree(owner, prop) {
-            const klass = this.prop_decl(owner)?.kids[0];
-            if (!klass || !$mol_view_tree2_class_match(klass))
-                return null;
-            return klass.kids.find(over => this.$.$mol_view_tree2_prop_parts(over).name === prop) ?? null;
-        }
-        /**
-         * Replaces an override under a part where it stands, appends a new one, or
-         * drops it on `null`.
-         *
-         * In place, because the order of the lines under a part is text the user
-         * reads: an override that jumped to the bottom every time its value changed
-         * would rewrite the declaration around an edit that changed one line.
-         */
-        over_set(owner, prop, next) {
-            const decl = this.prop_decl(owner);
-            const klass = decl?.kids[0];
-            if (!decl || !klass || !$mol_view_tree2_class_match(klass))
-                return;
-            const named = (over) => this.$.$mol_view_tree2_prop_parts(over).name === prop;
-            const kids = klass.kids.some(named)
-                ? klass.kids.flatMap(over => named(over) ? next ? [next] : [] : [over])
-                : next ? [...klass.kids, next] : klass.kids;
-            this.prop_tree(owner, decl.clone([klass.clone(kids)]));
-        }
-        /**
-         * Refuses to put a node inside itself or inside anything it already holds.
-         *
-         * A cycle in `sub` is not a badly drawn document, it is a class whose
-         * `dom_tree()` never returns: the scene would hang on the first render, and
-         * the document that hangs it is the one that got saved.
-         */
-        sub_check(name, owner) {
-            if (!owner)
-                return;
-            if (name === owner)
-                this.$.$mol_fail(new Error(`Node ${JSON.stringify(name)} cannot be put inside itself`));
-            if (this.sub_within(name, owner))
-                this.$.$mol_fail(new Error(`Node ${JSON.stringify(name)} cannot be put inside ${JSON.stringify(owner)}, which it already holds`));
-        }
-        /**
-         * Puts a bare reference `<= name` into a `sub` at a position.
-         *
-         * The position is where the insertion line was drawn, so it is clamped
-         * rather than checked: a drop at the end of a list the document has since
-         * shortened is an ordinary race of a gesture against a document, and landing
-         * at the end is the answer to it.
-         */
-        sub_insert(name, index, owner = '') {
-            const ref = this.$.$bog_vmap_lang_ref_tree(name);
-            this.sub_check(name, owner);
-            const list = this.sub_list(owner) ?? ref.struct('/');
-            const kids = [...list.kids];
-            kids.splice(Math.max(0, Math.min(index, kids.length)), 0, ref);
-            this.sub_write(owner, list.clone(kids));
-        }
-        /**
-         * Moves a node to a position under another parent, or to another position
-         * under the same one.
-         *
-         * Taken out first and put back after, so reparenting and reordering are one
-         * operation with one shape. Within one parent the index is corrected for the
-         * hole the node itself leaves, because the position the user aimed at was
-         * read off a list that still had it.
-         *
-         * The refusal is checked BEFORE the node is taken out, not left to the
-         * insertion: a move that fails halfway is a document with the node gone from
-         * the page and nothing in its place, written and saved.
-         */
-        sub_move(name, index, owner = '') {
-            this.sub_check(name, owner);
-            const from = this.sub_holder(name);
-            if (from === owner) {
-                const at = this.sub_names(owner).indexOf(name);
-                if (at >= 0 && at < index)
-                    index -= 1;
-            }
-            if (from !== null)
-                this.sub_drop(name);
-            this.sub_insert(name, index, owner);
-        }
-        /** Appends a bare reference `<= name` to the own `sub` of the class. */
-        sub_add(name) {
-            this.sub_insert(name, Infinity);
-        }
-        /**
-         * Removes the bare reference `<= name` from the own `sub` of the class.
-         *
-         * The empty list is kept rather than the whole property dropped: `sub /` with
-         * nothing under it is the shape an empty document starts from, so deleting
-         * the last node returns the source to exactly that, instead of to a class
-         * with no `sub` at all.
-         *
-         * Only the reference goes. Dropping the declaration as well is two facts, so
-         * it is two calls — the same split as `part_add` plus `sub_add` on the way
-         * in. A node taken out of `sub` but still declared is a free part that draws
-         * nothing and keeps its ports, which is a legitimate state, not a leftover.
-         *
-         * The reference is looked for wherever it is, the class and every part of it
-         * alike. A node inside an artboard is referenced by that artboard and not by
-         * the class, and deleting it has to reach there too — otherwise the document
-         * keeps drawing a node nothing declares any more.
-         */
-        sub_drop(name) {
-            const owner = this.sub_holder(name);
-            if (owner === null)
-                return;
-            const list = this.sub_list(owner);
-            this.sub_write(owner, list.clone(list.kids.filter(ref => ref.kids[0]?.type !== name)));
-        }
-    }
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "source", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "tree", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "name", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "base", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "prop_names", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "props_tree", null);
-    __decorate([
-        $mol_mem_key
-    ], $bog_vmap_lang_node.prototype, "prop_fullname", null);
-    __decorate([
-        $mol_mem_key
-    ], $bog_vmap_lang_node.prototype, "prop_tree", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "prop_add", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "prop_drop", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "prop_rename", null);
-    __decorate([
-        $mol_mem_key
-    ], $bog_vmap_lang_node.prototype, "property", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "part_add", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "wire_add", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "wires", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "links", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "link_add", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "link_drop", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "links_drop", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "sub_open", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "sub_insert", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "sub_move", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "sub_add", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "sub_drop", null);
-    $.$bog_vmap_lang_node = $bog_vmap_lang_node;
-    /**
-     * One property of a node, with its signature.
-     *
-     * Port of `hyoo_studio_property`. `name`, `tree` and `node` are handed in by the
-     * owner through `make`.
-     */
-    class $bog_vmap_lang_prop extends $mol_object {
-        name() {
-            return this.$.$mol_fail(new Error('Not defined'));
-        }
-        node() {
-            return this.$.$mol_fail(new Error('Not defined'));
-        }
-        tree(next) {
-            return this.$.$mol_fail(new Error('Not defined'));
-        }
-        /** Re-binds the same property to another model class. */
-        as(Prop) {
-            return Prop.make({
-                name: () => this.name(),
-                tree: next => this.tree(next),
-            });
-        }
-        /**
-         * Signature parts: bare `name`, `key` (`*`) and `next` (`?`).
-         *
-         * A rename goes to the node, because it is not a fact about this property
-         * alone: everything that spells the old name has to be rewritten in the same
-         * write. A change of sign is local and is written here.
-         *
-         * Deviation from studio: this handle is NOT patched to follow the rename.
-         * Studio overwrites the `name` method of the live property object, which
-         * leaves an object addressing one name and reading another past the graph;
-         * here the handle simply stops addressing anything, and the caller asks the
-         * node for the property under its new name — a keyed cell, so that is one
-         * read and no state.
-         *
-         * **Plain method, and so are the three below.** Every accessor here only
-         * delegates into `tree()`, which is a cell already, and an accessor of that
-         * shape under `@ $mol_mem` freezes at the value written THROUGH it: after a
-         * rename this handle went on reporting the new name although it addressed a
-         * property no longer under it, which is the very object-past-the-graph the
-         * patching above was dropped for. Measured; there is a test. The same rule
-         * and the same measurement as `bog_vmap_app_doc_node.source`.
-         */
-        meta(next) {
-            const tree = this.tree();
-            const sign = tree?.type ?? '';
-            let meta = [...sign.matchAll($mol_view_tree2_prop_signature)][0]?.groups
-                ?? { name: '', key: '', next: '' };
-            if (next) {
-                const made = { ...meta, ...next };
-                const sign = `${made.name}${made.key || ''}${made.next || ''}`;
-                if (made.name === meta.name)
-                    this.tree(tree.struct(sign, tree.kids));
-                else
-                    this.node().prop_rename(meta.name, sign);
-                meta = made;
-            }
-            return meta;
-        }
-        title(next) {
-            return this.meta(next === undefined ? undefined : { name: next }).name;
-        }
-        key(next) {
-            return Boolean(this.meta(next === undefined ? undefined : { key: next ? '*' : '' }).key);
-        }
-        next(next) {
-            return Boolean(this.meta(next === undefined ? undefined : { next: next ? '?' : '' }).next);
-        }
-    }
-    $.$bog_vmap_lang_prop = $bog_vmap_lang_prop;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * Order of the declarations going into one `new Function`: the libraries, then
-     * the document, every base before its heir, and one declaration per name.
-     *
-     * Libraries first because the document is written against them, and a stable
-     * sort keeps that unless a library class inherits a document class — legal,
-     * odd, and then the base still comes first. The sort itself is the canonical
-     * `$bog_vmap_lang_sorted`: ordering declarations is a property of the language,
-     * and the scene's own copy of it was the second one too many.
-     *
-     * A name declared twice keeps the LAST declaration and drops the earlier one,
-     * which is the rule the class index of the library model already lives by and the rule the
-     * sandbox enforces on its own: two declarations of one class in one source
-     * would define the second over the first anyway, only with the first still
-     * having been extended by anyone declared in between. Dropping it up front makes
-     * «the document shadows the library» hold for heirs as well.
-     *
-     * No class name is spelled out in this comment on purpose: mam reads doc
-     * comments for dependencies, and a one segment name here failed the build of
-     * the scene with «Root package not found».
-     *
-     * Bases the list does not declare — the classes of the pack, already in the
-     * sandbox — are left alone, as the sort leaves them.
-     */
-    function $bog_vmap_scene_order(libs, doc) {
-        const all = [...libs, ...doc];
-        const last = new Map();
-        all.forEach((def, index) => last.set(def.type, index));
-        const unique = all.filter((def, index) => last.get(def.type) === index);
-        return this.$bog_vmap_lang_sorted(unique);
-    }
-    $.$bog_vmap_scene_order = $bog_vmap_scene_order;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /** Atoms behind one own field: a solo one, or every value of a keyed dictionary. */
-    function atoms_of(holder) {
-        if (holder instanceof Map)
-            return [...holder.values()];
-        if (holder && typeof holder === 'object')
-            return [holder];
-        return [];
-    }
-    /** Told by shape, like everywhere else on this side of the boundary. */
-    function view_like(value) {
-        return typeof value?.dom_node === 'function';
-    }
-    /**
-     * Moves a live component onto the freshly compiled classes, keeping its state.
-     *
-     * A cell lives as an OWN field of the instance, so replacing the prototype
-     * touches no value, no subscription and no DOM node — caret, focus and scroll
-     * position included. The one thing the prototype does not reach is the
-     * implementation a fiber captured in its constructor, and that is what is
-     * redirected here, taking the new one off the wrapper the decorator left it on.
-     *
-     * The walk goes over the atom caches and never over `sub()`: free parts are not
-     * in `sub` at all, `sub()` of a generated class is not memoized, so calling it
-     * would run user code and could create children that do not exist yet, and a
-     * child temporarily out of `sub` is still a live instance.
-     *
-     * Instances of classes the document does not declare — components of the donor
-     * pack — keep their prototype and are only walked through, because a document
-     * class may well sit inside one.
-     * @see ../../ARCHITECTURE.md section 3, ../../spike/S2.md
-     */
-    function $bog_vmap_scene_swap(root, klass_of, shape_of) {
-        const report = { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0 };
-        const seen = new Set();
-        const queue = [root];
-        while (queue.length) {
-            const inst = queue.pop();
-            if (seen.has(inst))
-                continue;
-            seen.add(inst);
-            // The plain name, never the lookup helper of mol: the helper scans the
-            // whole ambient for a class it cannot find, and every class here is
-            // named by construction — an unnamed one is a defect on its own.
-            const name = inst.constructor?.name ?? '';
-            const shape = name ? shape_of(name) : null;
-            if (shape) {
-                const klass = klass_of(name);
-                if (typeof klass === 'function' && klass.prototype !== Object.getPrototypeOf(inst)) {
-                    Object.setPrototypeOf(inst, klass.prototype);
-                    report.swapped += 1;
-                }
-            }
-            for (const field of Object.getOwnPropertyNames(inst)) {
-                if (!field.endsWith('()'))
-                    continue;
-                const holder = Reflect.get(inst, field);
-                const atoms = atoms_of(holder);
-                if (!atoms.length)
-                    continue;
-                // The field is not simply `name()`: a property decorated both in the
-                // generated base and in the handwritten body carries a trailing space,
-                // because the decorator copies the name off the base wrapper.
-                const prop = field.slice(0, -2).trim();
-                for (const atom of atoms) {
-                    for (const kid of kids_of(atom))
-                        queue.push(kid);
-                    // A failed atom has nothing to keep and is woken whatever changed:
-                    // the method it was missing may have been written in another class,
-                    // where no text of its own would ever point back at it.
-                    if (!(atom.cache instanceof Error))
-                        continue;
-                    Reflect.set(atom, 'cursor', $mol_wire_cursor.stale);
-                    atom.emit();
-                    report.failed += 1;
-                }
-                if (!shape)
-                    continue;
-                retarget(inst, field, prop, atoms, shape, report);
-            }
-        }
-        return report;
-    }
-    $.$bog_vmap_scene_swap = $bog_vmap_scene_swap;
-    /** Views held by one atom, whether it holds one or a list of them. */
-    function kids_of(atom) {
-        const value = atom.result();
-        if (view_like(value))
-            return [value];
-        if (Array.isArray(value))
-            return value.filter(view_like);
-        return [];
-    }
-    /**
-     * Points the atoms of one property at the new implementation, or drops them.
-     *
-     * Only the atoms whose implementation actually changed are woken, and that is
-     * the whole economy of the strategy: a class is generated anew in full, so every
-     * function object is new, while the TEXT differs only for what was edited.
-     */
-    function retarget(inst, field, prop, atoms, shape, report) {
-        const wrapper = Reflect.get(inst, prop);
-        const next = typeof wrapper === 'function' ? Reflect.get(wrapper, 'orig') : null;
-        const decorated = typeof next === 'function';
-        const keyed_was = Reflect.get(inst, field) instanceof Map;
-        const keyed_now = shape.keyed.has(prop);
-        // A property the class no longer declares is judged by whether anything
-        // answers to its name at all; one it does declare must still be a cell of
-        // the same shape, or the atoms behind it mean nothing.
-        const broken = shape.declared.has(prop)
-            ? (!decorated || keyed_was !== keyed_now)
-            : (!decorated && !(prop in inst));
-        if (broken) {
-            // `destructor()` only unsubscribes, it does not mark anyone stale, so
-            // dependants would silently keep serving the value of a property that
-            // no longer exists.
-            for (const atom of atoms) {
-                atom.emit();
-                atom.destructor();
-            }
-            Reflect.deleteProperty(inst, field);
-            report.dropped += atoms.length;
-            return;
-        }
-        if (!decorated)
-            return;
-        for (const atom of atoms) {
-            const prev = atom.task;
-            if (prev === next)
-                continue;
-            Reflect.set(atom, 'task', next);
-            report.moved += 1;
-            if (String(prev) === String(next))
-                continue;
-            // Invalidation, not a recompute: waking the graph from inside the cell
-            // that owns the instance would run document code in the middle of our
-            // own computation. The value is read back a moment later by `stage()`,
-            // in the same pass.
-            Reflect.set(atom, 'cursor', $mol_wire_cursor.stale);
-            atom.emit();
-            report.stale += 1;
-        }
-    }
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * Makes a cell of every method a handwritten body defines: keyed and
-     * changeable ones as the tree says, the way studio's `source_js_decorators()`
-     * does, and every zero argument method besides, whatever the tree says. The
-     * generated code calls it right after the class, since a decorator cannot be
-     * written into a string for `new Function`, and it reads the class rather
-     * than the text, so a nested `if( x ) {` cannot pass for a method.
-     *
-     * Without an atom the hot swap has nothing to wake when the text of a method
-     * changes: its callers keep the old value and the DOM keeps the old text.
-     */
-    function $bog_vmap_scene_cells(Klass, keyed, changeable) {
-        const proto = Klass.prototype;
-        for (const name of Object.getOwnPropertyNames(proto)) {
-            if (name === 'constructor' || name === 'destructor')
-                continue;
-            const descr = Object.getOwnPropertyDescriptor(proto, name);
-            const method = descr.value;
-            if (typeof method !== 'function')
-                continue;
-            if (keyed.includes(name)) {
-                $mol_mem_key(proto, name, descr);
-                continue;
-            }
-            if (changeable.includes(name)) {
-                $mol_mem(proto, name, descr);
-                continue;
-            }
-            // A method with arguments is no cell: the first one would be taken for a
-            // write. An async one answers a promise, which a cell would wait on.
-            if (method.length)
-                continue;
-            if (method.constructor !== Function)
-                continue;
-            $mol_mem(proto, name, descr);
-        }
-    }
-    $.$bog_vmap_scene_cells = $bog_vmap_scene_cells;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_tree2_text_to_string(text) {
-        let res = '';
-        function visit(text, prefix, inline) {
-            if (text.type === 'indent') {
-                if (inline)
-                    res += '\n';
-                for (let kid of text.kids) {
-                    visit(kid, prefix + '\t', false);
-                }
-                if (inline)
-                    res += prefix;
-            }
-            else if (text.type === 'line') {
-                if (!inline)
-                    res += prefix;
-                for (let kid of text.kids) {
-                    visit(kid, prefix, true);
-                }
-                if (!inline)
-                    res += '\n';
-            }
-            else {
-                if (!inline)
-                    res += prefix;
-                res += text.text();
-                if (!inline)
-                    res += '\n';
-            }
-        }
-        for (let kid of text.kids) {
-            visit(kid, '', false);
-        }
-        return res;
-    }
-    $.$mol_tree2_text_to_string = $mol_tree2_text_to_string;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    function $mol_vlq_encode(val) {
-        const sign = val < 0 ? 1 : 0;
-        if (sign)
-            val = -val;
-        let index = sign | ((val & 0b1111) << 1);
-        val >>>= 4;
-        let res = '';
-        while (val) {
-            index |= 1 << 5;
-            res += alphabet[index];
-            if (!val)
-                break;
-            index = val & 0b11111;
-            val >>>= 5;
-        }
-        res += alphabet[index];
-        return res;
-    }
-    $.$mol_vlq_encode = $mol_vlq_encode;
-})($ || ($ = {}));
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_tree2_text_to_sourcemap(tree) {
-        let col = 1;
-        let prev_span;
-        let prev_index = 0;
-        let prev_col = 1;
-        let mappings = '';
-        let line = [];
-        const file_indexes = new Map();
-        const file_sources = new Map();
-        function span2index(span) {
-            if (file_indexes.has(span.uri))
-                return file_indexes.get(span.uri);
-            const index = file_indexes.size;
-            file_indexes.set(span.uri, index);
-            file_sources.set(span.uri, span.source);
-            return index;
-        }
-        function next_line() {
-            if (!line.length)
-                return;
-            mappings += line.join(',') + ';';
-            line = [];
-            col = 1;
-            prev_col = 1;
-        }
-        function visit(text, prefix, inline) {
-            function indent() {
-                col += prefix;
-            }
-            if (inline && text.type === 'indent')
-                next_line();
-            if (prev_span !== text.span || col === 1) {
-                const index = span2index(text.span);
-                line.push($mol_vlq_encode(col - prev_col) +
-                    $mol_vlq_encode(index - prev_index) +
-                    $mol_vlq_encode(text.span.row - (prev_span?.row ?? 1)) +
-                    $mol_vlq_encode(text.span.col - (prev_span?.col ?? 1)));
-                prev_col = col;
-                prev_span = text.span;
-                prev_index = index;
-            }
-            if (text.type === 'indent') {
-                for (let kid of text.kids) {
-                    visit(kid, prefix + 1, false);
-                }
-                if (inline)
-                    next_line();
-            }
-            else if (text.type === 'line') {
-                if (!inline)
-                    indent();
-                for (let kid of text.kids) {
-                    visit(kid, prefix, true);
-                }
-                if (!inline)
-                    next_line();
-            }
-            else {
-                if (!inline)
-                    indent();
-                col += text.text().length;
-                if (!inline)
-                    next_line();
-            }
-        }
-        for (let kid of tree.kids) {
-            visit(kid, 0, false);
-        }
-        next_line();
-        const map = {
-            version: 3,
-            sources: [...file_sources.keys()],
-            sourcesContent: [...file_sources.values()],
-            mappings,
-        };
-        return map;
-    }
-    $.$mol_tree2_text_to_sourcemap = $mol_tree2_text_to_sourcemap;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_sourcemap_url(uri, type = 'js') {
-        if (type === 'css')
-            return `\n/*# sourceMappingURL=${uri}*/`;
-        return `\n//# sourceMappingURL=${uri}`;
-    }
-    $.$mol_sourcemap_url = $mol_sourcemap_url;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const prefix = '# sourceMappingURL=data:application/json,';
-    const end_comment = ' */';
-    function $mol_sourcemap_dataurl_decode(data) {
-        const index = data.lastIndexOf(prefix);
-        if (index === -1)
-            return undefined;
-        data = data.substring(index + prefix.length);
-        if (data.endsWith(end_comment))
-            data = data.substring(0, data.length - end_comment.length);
-        const decoded = this.decodeURIComponent(data);
-        try {
-            const map = JSON.parse(decoded);
-            if (!map)
-                return undefined;
-            if (typeof map.mappings === 'string' && map.mappings.startsWith(';;')) {
-                map.mappings = map.mappings.substring(2);
-            }
-            return map;
-        }
-        catch (e) {
-            if (e instanceof Error)
-                e.message += ', origin=' + decoded;
-            $mol_fail_hidden(e);
-        }
-    }
-    $.$mol_sourcemap_dataurl_decode = $mol_sourcemap_dataurl_decode;
-    function $mol_sourcemap_dataurl_encode(map, type = 'js') {
-        const str = JSON.stringify({ ...map, mappings: ';;' + map.mappings });
-        return this.$mol_sourcemap_url('data:application/json,' + this.encodeURIComponent(str), type);
-    }
-    $.$mol_sourcemap_dataurl_encode = $mol_sourcemap_dataurl_encode;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_tree2_text_to_string_mapped(text, type) {
-        const code = this.$mol_tree2_text_to_string(text);
-        const map = this.$mol_tree2_text_to_sourcemap(text);
-        const chunk = this.$mol_sourcemap_dataurl_encode(map, type);
-        return code + chunk;
-    }
-    $.$mol_tree2_text_to_string_mapped = $mol_tree2_text_to_string_mapped;
-    function $mol_tree2_text_to_string_mapped_js(text) {
-        return this.$mol_tree2_text_to_string_mapped(text, 'js');
-    }
-    $.$mol_tree2_text_to_string_mapped_js = $mol_tree2_text_to_string_mapped_js;
-    function $mol_tree2_text_to_string_mapped_css(text) {
-        return this.$mol_tree2_text_to_string_mapped(text, 'css');
-    }
-    $.$mol_tree2_text_to_string_mapped_css = $mol_tree2_text_to_string_mapped_css;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function is_identifier(tree) {
-        if (tree.type)
-            return false;
-        return /^[a-z_$][a-z_$0-9]*$/i.test(tree.text());
-    }
-    function $mol_tree2_js_to_text(js) {
-        function sequence(open, separator, close) {
-            return (input, belt) => [
-                input.struct('line', [
-                    ...open ? [input.data(open)] : [],
-                    input.struct(separator && input.kids.length > 2 ? 'indent' : 'line', [].concat(...input.kids.map((kid, index) => [
-                        kid.struct('line', [
-                            ...kid.list([kid]).hack(belt),
-                            ...(separator && index < input.kids.length - 1) ? [input.data(separator)] : [],
-                        ]),
-                    ]))),
-                    ...close ? [input.data(close)] : [],
-                ]),
-            ];
-        }
-        function block(open, separator, close) {
-            return (input, belt) => [
-                ...open ? [input.data(open)] : [],
-                ...input.kids.length === 0 ? [] : [input.struct('indent', input.kids.map((kid, index) => kid.struct('line', [
-                        ...kid.list([kid]).hack(belt),
-                        ...(separator) ? [input.data(separator)] : [],
-                    ])))],
-                ...close ? [input.data(close)] : [],
-            ];
-        }
-        function duplet(open, separator, close) {
-            return (input, belt) => [
-                input.struct('line', [
-                    ...open ? [input.data(open)] : [],
-                    ...input.list(input.kids.slice(0, 1)).hack(belt),
-                    ...(separator && input.kids.length > 1) ? [input.data(separator)] : [],
-                    ...input.list(input.kids.slice(1, 2)).hack(belt),
-                    ...close ? [input.data(close)] : [],
-                ]),
-            ];
-        }
-        function triplet(open, separator12, separator23, close) {
-            return (input, belt) => [
-                input.struct('line', [
-                    ...open ? [input.data(open)] : [],
-                    ...input.list(input.kids.slice(0, 1)).hack(belt),
-                    ...(separator12 && input.kids.length > 1) ? [input.data(separator12)] : [],
-                    ...input.list(input.kids.slice(1, 2)).hack(belt),
-                    ...(separator23 && input.kids.length > 2) ? [input.data(separator23)] : [],
-                    ...input.list(input.kids.slice(2, 3)).hack(belt),
-                    ...close ? [input.data(close)] : [],
-                ]),
-            ];
-        }
-        return js.list(js.hack({
-            '+': sequence('+'),
-            '-': sequence('-'),
-            '!': sequence('!'),
-            '~': sequence('~'),
-            'return': sequence('return '),
-            'break': sequence('break '),
-            'continue': sequence('continue '),
-            'yield': sequence('yield '),
-            'yield*': sequence('yield* '),
-            'await': sequence('await '),
-            'void': sequence('void '),
-            'delete': sequence('delete '),
-            'typeof': sequence('typeof '),
-            'new': sequence('new '),
-            '...': sequence('...'),
-            '@++': sequence('', '', '++'),
-            '@--': sequence('', '', '--'),
-            '(in)': sequence('(', ' in ', ')'),
-            '(instanceof)': sequence('(', ' instanceof ', ')'),
-            '(+)': sequence('(', ' + ', ')'),
-            '(-)': sequence('(', ' - ', ')'),
-            '(*)': sequence('(', ' * ', ')'),
-            '(/)': sequence('(', ' / ', ')'),
-            '(%)': sequence('(', ' % ', ')'),
-            '(**)': sequence('(', ' ** ', ')'),
-            '(<)': sequence('(', ' < ', ')'),
-            '(<=)': sequence('(', ' <= ', ')'),
-            '(>)': sequence('(', ' > ', ')'),
-            '(>=)': sequence('(', ' >= ', ')'),
-            '(==)': sequence('(', ' == ', ')'),
-            '(!=)': sequence('(', ' != ', ')'),
-            '(===)': sequence('(', ' === ', ')'),
-            '(!==)': sequence('(', ' !== ', ')'),
-            '(<<)': sequence('(', ' << ', ')'),
-            '(>>)': sequence('(', ' >> ', ')'),
-            '(>>>)': sequence('(', ' >>> ', ')'),
-            '(&)': sequence('(', ' & ', ')'),
-            '(|)': sequence('(', ' | ', ')'),
-            '(^)': sequence('(', ' ^ ', ')'),
-            '(&&)': sequence('(', ' && ', ')'),
-            '(||)': sequence('(', ' || ', ')'),
-            '(,)': sequence('(', ', ', ')'),
-            '{;}': block('{', ';', '}'),
-            ';': block('', ';', ''),
-            '[,]': sequence('[', ', ', ']'),
-            '{,}': sequence('{', ', ', '}'),
-            '()': sequence('(', '', ')'),
-            '{}': block('{', '', '}'),
-            '[]': (input, belt) => {
-                const first = input.kids[0];
-                if (!is_identifier(first))
-                    return sequence('[', '', ']')(input, belt);
-                else
-                    return [input.data('.' + first.text())];
-            },
-            '?.[]': (input, belt) => {
-                const first = input.kids[0];
-                if (!is_identifier(first))
-                    return sequence('?.[', '', ']')(input, belt);
-                else
-                    return [input.data('?.' + first.text())];
-            },
-            ':': (input, belt) => input.kids[0].type
-                ? duplet('[', ']: ')(input, belt)
-                : duplet('', ': ')(input, belt),
-            'let': duplet('let ', ' = '),
-            'const': duplet('const ', ' = '),
-            'var': duplet('var ', ' = '),
-            '=': duplet('', ' = '),
-            '+=': duplet('', ' += '),
-            '-=': duplet('', ' -= '),
-            '*=': duplet('', ' *= '),
-            '/=': duplet('', ' /= '),
-            '%=': duplet('', ' %= '),
-            '**=': duplet('', ' **= '),
-            '<<=': duplet('', ' <<= '),
-            '>>=': duplet('', ' >>= '),
-            '>>>=': duplet('', ' >>>= '),
-            '&=': duplet('', ' &= '),
-            '|=': duplet('', ' |= '),
-            '^=': duplet('', ' ^= '),
-            '&&=': duplet('', ' &&= '),
-            '||=': duplet('', ' ||= '),
-            '=>': duplet('', ' => '),
-            'async=>': duplet('async ', ' => '),
-            'function': triplet('function '),
-            'function*': triplet('function* '),
-            'async': triplet('async function '),
-            'async*': triplet('async function* '),
-            'class': triplet('class ', ' '),
-            'extends': sequence('extends ', '', ' '),
-            'if': triplet('if', ' ', 'else'),
-            '?:': triplet('', ' ? ', ' : '),
-            '.': (input, belt) => {
-                const first = input.kids[0];
-                if (!is_identifier(first))
-                    return triplet('[', ']')(input, belt);
-                else
-                    return [
-                        input.data(first.text()),
-                        ...input.list(input.kids.slice(1)).hack(belt),
-                    ];
-            },
-            'get': triplet('get [', ']'),
-            'set': triplet('set [', ']'),
-            'static': triplet('static [', ']'),
-            '/./': sequence(),
-            '.global': sequence('g'),
-            '.multiline': sequence('m'),
-            '.ignoreCase': sequence('i'),
-            '.source': (input, belt) => [
-                input.data('/'),
-                input.data(JSON.stringify(input.text()).slice(1, -1)),
-                input.data('/'),
-            ],
-            '``': (input, belt) => {
-                return [
-                    input.struct('line', [
-                        input.data('`'),
-                        ...[].concat(...input.kids.map(kid => {
-                            if (kid.type) {
-                                return [
-                                    kid.data('${'),
-                                    ...kid.list([kid]).hack(belt),
-                                    kid.data('}'),
-                                ];
-                            }
-                            else {
-                                return [
-                                    input.data(JSON.stringify(kid.text()).slice(1, -1)),
-                                ];
-                            }
-                        })),
-                        input.data('`'),
-                    ]),
-                ];
-            },
-            '': (input, belt) => {
-                // string
-                if (!input.type)
-                    return [
-                        input.data(JSON.stringify(input.text())),
-                    ];
-                // variable
-                if (/^[\w$#][\w0-9$]*$/i.test(input.type))
-                    return [
-                        input.data(input.type),
-                        // ... input.hack( context ),
-                    ];
-                // number
-                if ($mol_tree2_js_is_number(input.type))
-                    return [
-                        input.data(input.type)
-                    ];
-                $mol_fail(new SyntaxError(`Wrong node type`));
-            },
-        }));
-    }
-    $.$mol_tree2_js_to_text = $mol_tree2_js_to_text;
-})($ || ($ = {}));
 
 ;
 	($.$mol_icon_close) = class $mol_icon_close extends ($.$mol_icon) {
@@ -14891,6 +11161,137 @@ var $;
         return kept;
     }
     $.$bog_vmap_scene_measure_watch = $bog_vmap_scene_measure_watch;
+})($ || ($ = {}));
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_style_sheet(Component, config0) {
+        let rules = [];
+        const block = $mol_dom_qname($mol_ambient({}).$mol_func_name(Component));
+        const kebab = (name) => name.replace(/[A-Z]/g, letter => '-' + letter.toLowerCase());
+        const make_class = (prefix, path, config) => {
+            const props = [];
+            const selector = (prefix, path) => {
+                if (path.length === 0)
+                    return prefix || `[${block}]`;
+                let res = `[${block}_${path.join('_')}]`;
+                if (prefix)
+                    res = prefix + ' :where(' + res + ')';
+                return res;
+            };
+            for (const key of Object.keys(config).reverse()) {
+                if (/^(--)?[a-z]/.test(key)) {
+                    const addProp = (keys, val) => {
+                        if (Array.isArray(val)) {
+                            if (val[0] && [Array, Object].includes(val[0].constructor)) {
+                                val = val.map(v => {
+                                    return Object.entries(v).map(([n, a]) => {
+                                        if (a === true)
+                                            return kebab(n);
+                                        if (a === false)
+                                            return null;
+                                        return String(a);
+                                    }).filter(Boolean).join(' ');
+                                }).join(',');
+                            }
+                            else {
+                                val = val.join(' ');
+                            }
+                            props.push(`\t${keys.join('-')}: ${val};\n`);
+                        }
+                        else if (val.constructor === Object) {
+                            for (let suffix of Object.keys(val).reverse()) {
+                                addProp([...keys, kebab(suffix)], val[suffix]);
+                            }
+                        }
+                        else {
+                            props.push(`\t${keys.join('-')}: ${val};\n`);
+                        }
+                    };
+                    addProp([kebab(key)], config[key]);
+                }
+                else if (/^[A-Z]/.test(key)) {
+                    make_class(prefix, [...path, key.toLowerCase()], config[key]);
+                }
+                else if (key[0] === '$') {
+                    make_class(selector(prefix, path) + ' :where([' + $mol_dom_qname(key) + '])', [], config[key]);
+                }
+                else if (key === '>') {
+                    const types = config[key];
+                    for (let type of Object.keys(types).reverse()) {
+                        make_class(selector(prefix, path) + ' > :where([' + $mol_dom_qname(type) + '])', [], types[type]);
+                    }
+                }
+                else if (key === '@') {
+                    const attrs = config[key];
+                    for (let name of Object.keys(attrs).reverse()) {
+                        for (let val in attrs[name]) {
+                            make_class(selector(prefix, path) + ':where([' + name + '=' + JSON.stringify(val) + '])', [], attrs[name][val]);
+                        }
+                    }
+                }
+                else if (key === '@media' || key === '@container') {
+                    const media = config[key];
+                    for (let query of Object.keys(media).reverse()) {
+                        rules.push('}\n');
+                        make_class(prefix, path, media[query]);
+                        rules.push(`${key} ${query} {\n`);
+                    }
+                }
+                else if (key === '@starting-style') {
+                    const styles = config[key];
+                    rules.push('}\n');
+                    make_class(prefix, path, styles);
+                    rules.push(`${key} {\n`);
+                }
+                else if (key[0] === '[' && key[key.length - 1] === ']') {
+                    const attr = key.slice(1, -1);
+                    const vals = config[key];
+                    for (let val of Object.keys(vals).reverse()) {
+                        make_class(selector(prefix, path) + ':where([' + attr + '=' + JSON.stringify(val) + '])', [], vals[val]);
+                    }
+                }
+                else {
+                    make_class(selector(prefix, path) + key, [], config[key]);
+                }
+            }
+            if (props.length) {
+                rules.push(`${selector(prefix, path)} {\n${props.reverse().join('')}}\n`);
+            }
+        };
+        make_class('', [], config0);
+        return rules.reverse().join('');
+    }
+    $.$mol_style_sheet = $mol_style_sheet;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * CSS in TS.
+     * Statically typed CSS style sheets. Following samples show which CSS code are generated from TS code.
+     * @see https://mol.hyoo.ru/#!section=docs/=xwq9q5_f966fg
+     */
+    function $mol_style_define(Component, config) {
+        return $mol_style_attach(Component.name, $mol_style_sheet(Component, config));
+    }
+    $.$mol_style_define = $mol_style_define;
 })($ || ($ = {}));
 
 ;
