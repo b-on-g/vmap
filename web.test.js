@@ -11952,6 +11952,7 @@ var $;
         },
         'nothing derivable is stored'($) {
             $mol_assert_like(Object.keys($bog_vmap_app_doc_node.schema), ['Tree', 'Js', 'Css']);
+            $mol_assert_like(Object.keys($bog_vmap_app_doc_snap.schema), ['Time', 'Author', 'Tree', 'Js', 'Css', 'Places']);
             $mol_assert_like(Object.keys($bog_vmap_app_doc_spot.schema), ['X', 'Y']);
             $mol_assert_like(Object.keys($bog_vmap_app_doc.schema), ['Title', 'Nodes', 'Root', 'Spots', 'Pack', 'Snaps']);
             $mol_assert_like(Object.keys($bog_vmap_app_doc_home.schema), ['Docs']);
@@ -12475,6 +12476,7 @@ var $;
             s.source(src_page + src_calc);
             s.node_js(doc, `${d}bog_vmap_app_store_test_calc`, 'return 1');
             s.node_css(doc, `${d}bog_vmap_app_store_test_page`, ':host { color: red }');
+            s.spots({ Hero: { x: 10, y: 20 } });
             const state = s.doc_state(doc);
             const snap = s.snap_add(doc, state, 1757000000000);
             $mol_assert_equal(s.snaps(doc).length, 1);
@@ -12485,6 +12487,7 @@ var $;
                 source: src_page + src_calc,
                 js: { [`${d}bog_vmap_app_store_test_calc`]: 'return 1' },
                 css: { [`${d}bog_vmap_app_store_test_page`]: ':host { color: red }' },
+                spots: { Hero: { x: 10, y: 20 } },
             });
         },
         'the document goes back to the state of a snapshot'($) {
@@ -12492,13 +12495,16 @@ var $;
             const doc = s.doc_add('Landing');
             s.source(src_page);
             s.node_css(doc, `${d}bog_vmap_app_store_test_page`, ':host { color: red }');
+            s.spots({ Hero: { x: 10, y: 20 } });
             const snap = s.snap_add(doc, s.doc_state(doc), 1);
             s.source(src_page + src_calc);
             s.node_css(doc, `${d}bog_vmap_app_store_test_page`, '');
+            s.spots({ Hero: { x: 300, y: 400 } });
             s.doc_state(doc, s.snap_state(snap));
             $mol_assert_equal(s.source(), src_page);
             $mol_assert_equal(s.node_css(doc, `${d}bog_vmap_app_store_test_page`), ':host { color: red }');
             $mol_assert_equal(s.nodes(doc).length, 1);
+            $mol_assert_like(s.spots(), { Hero: { x: 10, y: 20 } });
         },
         'the oldest snapshots are evicted down to the limit'($) {
             class store_short extends $bog_vmap_app_store {
@@ -13343,18 +13349,22 @@ var $;
     });
     class $bog_vmap_app_history_test_doc extends $mol_object {
         state(next) {
-            return next ?? { source: '', js: {}, css: {} };
+            return next ?? { source: '', js: {}, css: {}, spots: {} };
         }
         source(next) {
             const state = this.state();
             if (next === undefined)
                 return state.source;
-            this.state({ source: next, js: state.js, css: state.css });
+            this.state({ ...state, source: next });
             return next;
         }
         css(klass, next) {
             const state = this.state();
-            this.state({ source: state.source, js: state.js, css: { ...state.css, [klass]: next } });
+            this.state({ ...state, css: { ...state.css, [klass]: next } });
+        }
+        spot(name, x, y) {
+            const state = this.state();
+            this.state({ ...state, spots: { ...state.spots, [name]: { x, y } } });
         }
     }
     __decorate([
@@ -13572,6 +13582,27 @@ var $;
             const preview = one.snap_preview(one.snap_links()[0]);
             $mol_assert_equal(preview.split('\n').length, one.preview_limit() + 1);
             $mol_assert_equal(preview.endsWith('…'), true);
+        },
+        async 'a place of a part is part of the step and comes back with it'($) {
+            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
+            doc.source('page');
+            doc.spot('Hero', 10, 20);
+            await commit();
+            doc.spot('Hero', 300, 400);
+            await commit();
+            $mol_assert_equal(one.ring('doc').length, 2);
+            one.undo();
+            $mol_assert_like(doc.state().spots, { Hero: { x: 10, y: 20 } });
+        },
+        'a snapshot carries the places of the parts'($) {
+            const { store, doc, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            store.spots({ Hero: { x: 10, y: 20 } });
+            one.snap_make(100);
+            store.spots({ Hero: { x: 300, y: 400 } });
+            one.snap_revert(store.snaps(doc)[0].link().str);
+            $mol_assert_like(store.spots(), { Hero: { x: 10, y: 20 } });
+            $mol_assert_like(store.snap_state(store.snaps(doc)[1]).spots, { Hero: { x: 300, y: 400 } });
         },
     });
 })($ || ($ = {}));

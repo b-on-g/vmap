@@ -43525,6 +43525,7 @@ declare namespace $ {
             readonly Tree: (auto?: any) => $giper_baza_atom_text | null;
             readonly Js: (auto?: any) => $giper_baza_atom_text | null;
             readonly Css: (auto?: any) => $giper_baza_atom_text | null;
+            readonly Places: (auto?: any) => $giper_baza_atom_text | null;
         }>;
         path: string;
     } & {
@@ -43536,6 +43537,7 @@ declare namespace $ {
             readonly Tree: typeof $giper_baza_atom_text;
             readonly Js: typeof $giper_baza_atom_text;
             readonly Css: typeof $giper_baza_atom_text;
+            readonly Places: typeof $giper_baza_atom_text;
         };
     };
     export class $bog_vmap_app_doc_snap extends $bog_vmap_app_doc_snap_base {
@@ -43544,6 +43546,7 @@ declare namespace $ {
         source(next?: string): string;
         js(next?: string): string;
         css(next?: string): string;
+        spots(next?: string): string;
     }
     const $bog_vmap_app_doc_spot_base: Omit<typeof $giper_baza_dict, "prototype"> & {
         new (...args: any[]): $mol_type_override<$giper_baza_dict, {
@@ -47516,6 +47519,7 @@ declare namespace $ {
         readonly source: string;
         readonly js: $bog_vmap_app_store_parts;
         readonly css: $bog_vmap_app_store_parts;
+        readonly spots: $bog_vmap_app_store_spots;
     };
     class $bog_vmap_app_store extends $mol_object {
         home(): $bog_vmap_app_doc_home;
@@ -47558,6 +47562,8 @@ declare namespace $ {
     }
     function $bog_vmap_app_store_parts_pack(parts: $bog_vmap_app_store_parts): string;
     function $bog_vmap_app_store_parts_unpack(packed: string): $bog_vmap_app_store_parts;
+    function $bog_vmap_app_store_spots_pack(spots: $bog_vmap_app_store_spots): string;
+    function $bog_vmap_app_store_spots_unpack(packed: string): $bog_vmap_app_store_spots;
     function $bog_vmap_app_store_class_name(source: string): string;
 }
 

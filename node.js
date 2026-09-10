@@ -20828,6 +20828,7 @@ var $;
         Tree: $giper_baza_atom_text,
         Js: $giper_baza_atom_text,
         Css: $giper_baza_atom_text,
+        Places: $giper_baza_atom_text,
     }) {
         time(next) {
             return this.Time(next)?.val(next) ?? 0;
@@ -20843,6 +20844,9 @@ var $;
         }
         css(next) {
             return this.Css(next)?.val(next) ?? '';
+        }
+        spots(next) {
+            return this.Places(next)?.val(next) ?? '';
         }
     }
     $.$bog_vmap_app_doc_snap = $bog_vmap_app_doc_snap;
@@ -21106,6 +21110,7 @@ var $;
                     node.js(next.js[name] ?? '');
                     node.css(next.css[name] ?? '');
                 }
+                this.doc_spots(doc, next.spots);
                 return next;
             }
             const js = {};
@@ -21119,7 +21124,7 @@ var $;
                 if (style)
                     css[name] = style;
             }
-            return { source: this.doc_source(doc), js, css };
+            return { source: this.doc_source(doc), js, css, spots: this.doc_spots(doc) };
         }
         snap_limit() {
             return 50;
@@ -21134,6 +21139,7 @@ var $;
                 source: snap.source(),
                 js: $bog_vmap_app_store_parts_unpack(snap.js()),
                 css: $bog_vmap_app_store_parts_unpack(snap.css()),
+                spots: $bog_vmap_app_store_spots_unpack(snap.spots()),
             };
         }
         snap_add(doc, state, time) {
@@ -21143,6 +21149,7 @@ var $;
             snap.source(state.source);
             snap.js($bog_vmap_app_store_parts_pack(state.js));
             snap.css($bog_vmap_app_store_parts_pack(state.css));
+            snap.spots($bog_vmap_app_store_spots_pack(state.spots));
             this.snap_evict(doc);
             return snap;
         }
@@ -21158,6 +21165,7 @@ var $;
                 snap.source('');
                 snap.js('');
                 snap.css('');
+                snap.spots('');
             }
             list.items(links.slice(extra));
         }
@@ -21185,6 +21193,16 @@ var $;
         return JSON.parse(packed);
     }
     $.$bog_vmap_app_store_parts_unpack = $bog_vmap_app_store_parts_unpack;
+    function $bog_vmap_app_store_spots_pack(spots) {
+        return Object.keys(spots).length ? JSON.stringify(spots) : '';
+    }
+    $.$bog_vmap_app_store_spots_pack = $bog_vmap_app_store_spots_pack;
+    function $bog_vmap_app_store_spots_unpack(packed) {
+        if (!packed)
+            return {};
+        return JSON.parse(packed);
+    }
+    $.$bog_vmap_app_store_spots_unpack = $bog_vmap_app_store_spots_unpack;
     function $bog_vmap_app_store_class_name(source) {
         return /^(\S+)/.exec(source.trimStart())?.[1] ?? '';
     }
@@ -26869,13 +26887,14 @@ var $;
                     source: raw.source ?? '',
                     js: raw.js ?? {},
                     css: raw.css ?? {},
+                    spots: raw.spots ?? {},
                 };
             }
             state_apply(state) {
                 this.state(state);
             }
             state_slug(state) {
-                return JSON.stringify([state.source, state.js, state.css]);
+                return JSON.stringify([state.source, state.js, state.css, state.spots]);
             }
             slug() {
                 return this.doc_key() + '\t' + this.state_slug(this.doc_state());
@@ -31594,6 +31613,7 @@ var $;
                         this.class_js(name, next.js[name] ?? '');
                         this.class_css(name, next.css[name] ?? '');
                     }
+                    this.spots(next.spots);
                     return next;
                 }
                 const js = {};
@@ -31606,7 +31626,7 @@ var $;
                     if (style)
                         css[name] = style;
                 }
-                return { source: this.doc_source(), js, css };
+                return { source: this.doc_source(), js, css, spots: this.spots() };
             }
             aside_content() {
                 return (this.selection_alive() ? [this.Inspect()] : [this.Idle()]);
