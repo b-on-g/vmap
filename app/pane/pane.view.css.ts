@@ -56,6 +56,7 @@ namespace $.$$ {
 			borderRadius: String( $mol_gap.round ),
 			background: { color: $mol_theme.card },
 			boxShadow: String( $mol_theme.shade ) + ' 0 0 .5rem',
+			userSelect: 'none'
 		},
 
 		Zoom_title: {
@@ -63,6 +64,7 @@ namespace $.$$ {
 			justify: { content: 'center' },
 			font: { size: '.75rem' },
 			color: $mol_theme.shade,
+			userSelect: 'none'
 		},
 
 		Mark: {
