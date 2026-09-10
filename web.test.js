@@ -3817,124 +3817,6 @@ var $;
 
 ;
 "use strict";
-var $;
-(function ($) {
-    $mol_test({
-        '$mol_syntax2_md_flow'() {
-            const check = (input, right) => {
-                const tokens = [];
-                $mol_syntax2_md_flow.tokenize(input, (...token) => tokens.push(token));
-                $mol_assert_equal(tokens, right);
-            };
-            check('Hello,\nWorld..\r\n\r\n\nof Love!', [
-                ['block', 'Hello,\n', ['Hello,', '\n'], 0],
-                ['block', 'World..\r\n\r\n\n', ['World..', '\r\n\r\n\n'], 7],
-                ['block', 'of Love!', ['of Love!', ''], 19],
-            ]);
-            check('# Header1\n\nHello!\n\n## Header2', [
-                ['header', '# Header1\n\n', ['#', ' ', 'Header1', '\n\n'], 0],
-                ['block', 'Hello!\n\n', ['Hello!', '\n\n'], 11],
-                ['header', '## Header2', ['##', ' ', 'Header2', ''], 19],
-            ]);
-            check('```\nstart()\n```\n\n```jam.js\nrestart()\n```\n\nHello!\n\n```\nstop()\n```', [
-                ['code', '```\nstart()\n```\n\n', ['```', '', 'start()\n', '```', '\n\n'], 0],
-                ['code', '```jam.js\nrestart()\n```\n\n', ['```', 'jam.js', 'restart()\n', '```', '\n\n'], 17],
-                ['block', 'Hello!\n\n', ['Hello!', '\n\n'], 42],
-                ['code', '```\nstop()\n```', ['```', '', 'stop()\n', '```', ''], 50],
-            ]);
-            check('| header1 | header2\n|----|----\n| Cell11 | Cell12\n| Cell21 | Cell22\n\n| Cell11 | Cell12\n| Cell21 | Cell22\n', [
-                ['table', '| header1 | header2\n|----|----\n| Cell11 | Cell12\n| Cell21 | Cell22\n\n', ['| header1 | header2\n|----|----\n| Cell11 | Cell12\n| Cell21 | Cell22\n', '\n'], 0],
-                ['table', '| Cell11 | Cell12\n| Cell21 | Cell22\n', ['| Cell11 | Cell12\n| Cell21 | Cell22\n', ''], 68],
-            ]);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test_mocks.push(context => {
-        class $mol_state_arg_mock extends $mol_state_arg {
-            static $ = context;
-            static href(next) { return next || ''; }
-            static go(next) {
-                this.href(this.link(next));
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_state_arg_mock, "href", null);
-        __decorate([
-            $mol_action
-        ], $mol_state_arg_mock, "go", null);
-        context.$mol_state_arg = $mol_state_arg_mock;
-    });
-    $mol_test({
-        'args as dictionary'($) {
-            $.$mol_state_arg.href('#!foo=bar/xxx');
-            $mol_assert_equal($.$mol_state_arg.dict(), { foo: 'bar', xxx: '' });
-            $.$mol_state_arg.dict({ foo: null, yyy: '', lol: '123' });
-            $mol_assert_equal($.$mol_state_arg.href().replace(/.*#/, '#'), '#!yyy/lol=123');
-        },
-        'one value from args'($) {
-            $.$mol_state_arg.href('#!foo=bar/xxx');
-            $mol_assert_equal($.$mol_state_arg.value('foo'), 'bar');
-            $mol_assert_equal($.$mol_state_arg.value('xxx'), '');
-            $.$mol_state_arg.value('foo', 'lol');
-            $mol_assert_equal($.$mol_state_arg.href().replace(/.*#/, '#'), '#!foo=lol/xxx');
-            $.$mol_state_arg.value('foo', '');
-            $mol_assert_equal($.$mol_state_arg.href().replace(/.*#/, '#'), '#!foo/xxx');
-            $.$mol_state_arg.value('foo', null);
-            $mol_assert_equal($.$mol_state_arg.href().replace(/.*#/, '#'), '#!xxx');
-        },
-        'nested args'($) {
-            const base = new $.$mol_state_arg('nested.');
-            class Nested extends $mol_state_arg {
-                constructor(prefix) {
-                    super(base.prefix + prefix);
-                }
-                static value = (key, next) => base.value(key, next);
-            }
-            $.$mol_state_arg.href('#!foo=bar/nested.xxx=123');
-            $mol_assert_equal(Nested.value('foo'), null);
-            $mol_assert_equal(Nested.value('xxx'), '123');
-            Nested.value('foo', 'lol');
-            $mol_assert_equal($.$mol_state_arg.href().replace(/.*#/, '#'), '#!foo=bar/nested.xxx=123/nested.foo=lol');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-/** @jsx $mol_jsx */
-/** @jsxFrag $mol_jsx_frag */
-var $;
-(function ($) {
-    $mol_test({
-        'safe tag'() {
-            $mol_assert_equal($mol_dom_serialize($$.$mol_dom_safe([$mol_jsx("div", null, "foo")])[0]), $mol_dom_serialize($mol_jsx("div", null, "foo")));
-        },
-        'bad tag'() {
-            $mol_assert_equal($mol_dom_serialize($$.$mol_dom_safe([$mol_jsx("script", null, "alert('ahtung!')")])[0]), $mol_dom_serialize($mol_jsx($mol_jsx_frag, null, "alert('ahtung!')")));
-        },
-        'common attr'() {
-            $mol_assert_equal($mol_dom_serialize($$.$mol_dom_safe([$mol_jsx("a", { id: "foo" }, "foo")])[0]), $mol_dom_serialize($mol_jsx("a", { id: "foo" }, "foo")));
-        },
-        'safe attr'() {
-            $mol_assert_equal($mol_dom_serialize($$.$mol_dom_safe([$mol_jsx("a", { href: "https://example.org/" }, "foo")])[0]), $mol_dom_serialize($mol_jsx("a", { href: "https://example.org/" }, "foo")));
-        },
-        'bad attr'() {
-            $mol_assert_equal($mol_dom_serialize($$.$mol_dom_safe([$mol_jsx("a", { onclick: "alert('ahtung!')" }, "foo")])[0]), $mol_dom_serialize($mol_jsx("a", null, "foo")));
-        },
-        'danger attr'() {
-            $mol_assert_equal($mol_dom_serialize($$.$mol_dom_safe([$mol_jsx("a", { href: "javascript:alert('ahtung!')" }, "foo")])[0]), $mol_dom_serialize($mol_jsx("a", { href: "about:blank#javascript:alert('ahtung!')" }, "foo")));
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
 
 ;
 "use strict";
@@ -4557,10 +4439,262 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    function $mol_view_tree2_to_text(tree) {
-        return this.$mol_tree2_js_to_text(this.$mol_view_tree2_to_js(tree));
+    const err = $mol_view_tree2_error_str;
+    function name_of(prop) {
+        return this.$mol_view_tree2_prop_parts(prop).name;
     }
-    $.$mol_view_tree2_to_text = $mol_view_tree2_to_text;
+    function params_of(prop, bidi = true) {
+        const { key, next } = this.$mol_view_tree2_prop_parts(prop);
+        return prop.struct('(,)', [
+            ...key
+                ? [prop.struct('id')]
+                : [],
+            ...(bidi && next) ? [prop.struct('next')] : [],
+        ]);
+    }
+    function args_of(prop, bidi = true) {
+        const { key, next } = this.$mol_view_tree2_prop_parts(prop);
+        return prop.struct('(,)', [
+            ...key
+                ? key.length > 1
+                    ? [prop.data(key.slice(1))]
+                    : [prop.struct('id')]
+                : [],
+            ...(bidi && next) ? [prop.struct('next')] : [],
+        ]);
+    }
+    function call_method_name(child, optional) {
+        return child.struct(optional ? '?.[]' : '[]', [
+            child.data(name_of.call(this, child))
+        ]);
+    }
+    function call_of(bind, bidi = true) {
+        if (bind.kids.length === 0) {
+            return this.$mol_fail(err `Required one child at ${bind.span}`);
+        }
+        const chain = [bind.struct('this')];
+        for (const child of bind.kids) {
+            chain.push(call_method_name.call(this, child, chain.length > 1), args_of.call(this, child, bidi));
+        }
+        return bind.struct('()', chain);
+    }
+    const localized_string = $$.$mol_tree2_from_string(`
+		()
+			this
+			[] \\$
+			[] \\$mol_locale
+			[] \\text
+			(,) #key
+	`, 'localized_string');
+    function klass_body(acc, prop) {
+        const { klass, members, addons } = acc;
+        const { name, key, next } = this.$mol_view_tree2_prop_parts(prop);
+        const decorate = () => {
+            return prop.struct('()', [
+                prop.struct(key ? '$mol_mem_key' : '$mol_mem'),
+                prop.struct('(,)', [
+                    prop.struct('()', [
+                        klass.struct('$'),
+                        prop.struct('[]', [
+                            klass.data(klass.type),
+                        ]),
+                        prop.struct('[]', [
+                            prop.data('prototype'),
+                        ]),
+                    ]),
+                    prop.data(name),
+                ]),
+            ]);
+        };
+        const op = prop.kids[0];
+        const is_delegate = op?.type === '<=>' || op?.type === '=';
+        if (!is_delegate && next)
+            addons.push(decorate());
+        const val = prop.hack({
+            '@': (locale, belt, context) => {
+                const chain = context.chain?.join('_');
+                return localized_string.hack({
+                    '#key': key => [locale.data(`${klass.type}_${name}${chain ? `_${chain}` : ''}`)],
+                });
+            },
+            '<=': bind => [call_of.call(this, bind, false)],
+            '<=>': bind => [call_of.call(this, bind, true)],
+            '=>': bind => [],
+            '^': (ref, belt, context) => [
+                ref.struct('...', [
+                    // prop ^ foo
+                    ref.kids[0]?.type
+                        ? ref.struct('()', [
+                            ref.struct('this'),
+                            ref.struct('[]', [ref.data(name_of.call(this, ref.kids[0]))]),
+                            args_of.call(this, ref.kids[0])
+                        ])
+                        // Having $having foo / ^
+                        : context.chain
+                            ? ref.struct('()', [
+                                ref.struct('this'),
+                                ref.struct('[]', [ref.data('$')]),
+                                ref.struct('[]', [ref.data(op.type)]),
+                                ref.struct('[]', [ref.data('prototype')]),
+                                ref.struct('[]', [ref.data(context.chain[0])]),
+                                ref.struct('[]', [ref.data('call')]),
+                                ref.struct('(,)', [ref.struct('obj')]),
+                                ...context.chain.slice(1).map(field => ref.struct('[]', [ref.data(field)]))
+                            ])
+                            // prop ^
+                            : ref.struct('()', [
+                                ref.struct('super'),
+                                ref.struct('[]', [ref.data(name)]),
+                                ref.struct('(,)')
+                            ]),
+                ]),
+            ],
+            '=': bind => [bind.struct('()', [
+                    bind.struct('this'),
+                    ...bind.hack({ '': (method, belt, ctx) => [
+                            call_method_name.call(this, method, (ctx.item_index++) > 0),
+                            args_of.call(this, method),
+                            ...method.hack(belt),
+                        ] }, { item_index: 0 }),
+                ])],
+            '': (input, belt, context) => {
+                if (input.type[0] === '*') {
+                    return [
+                        input.struct('{,}', input.kids.map(field => {
+                            if (field.type === '^')
+                                return field.list([field]).hack(belt, context)[0];
+                            const field_name = (field.type || field.value).replace(/\?\w*$/, '');
+                            return field.struct(':', [
+                                field.data(field_name),
+                                field.kids[0].type === '<=>'
+                                    ? field.struct('=>', [
+                                        params_of.call(this, field),
+                                        ...field.hack(belt),
+                                    ])
+                                    : field.hack(belt, { ...context, chain: [...context.chain ?? [], field_name] })[0],
+                            ]);
+                        }).filter(this.$mol_guard_defined))
+                    ];
+                }
+                if (input.type[0] === '/')
+                    return [
+                        input.struct('[,]', input.hack(belt, context)),
+                    ];
+                if (input.type && $mol_tree2_js_is_number(input.type))
+                    return [
+                        input
+                    ];
+                if ($mol_view_tree2_class_match(input)) {
+                    if (!next)
+                        addons.push(decorate());
+                    const overrides = [];
+                    for (const over of input.kids) {
+                        if (over.type[0] === '/')
+                            continue;
+                        const bind = over.kids[0];
+                        if (bind.type === '=>')
+                            continue;
+                        const over_name = name_of.call(this, over);
+                        const body = [
+                            args_of.call(this, over),
+                            over.struct('()', over.hack(belt, { chain: [over.type] })),
+                        ];
+                        overrides.push(over.struct('=', [
+                            over.struct('()', [
+                                over.struct('obj'),
+                                over.struct('[]', [
+                                    over.data(over_name),
+                                ]),
+                            ]),
+                            over.struct('=>', body),
+                        ]));
+                    }
+                    return [
+                        input.struct('const', [
+                            input.struct('obj'),
+                            input.struct('new', [
+                                input.struct('this'),
+                                input.struct('[]', [
+                                    input.data('$'),
+                                ]),
+                                input.struct('[]', [
+                                    input.data(input.type.replace(/<.+>/g, '')),
+                                ]),
+                                input.struct('(,)', input.select('/', null).hack(belt)),
+                            ]),
+                        ]),
+                        ...overrides,
+                        input.struct('obj'),
+                    ];
+                }
+                return [input];
+            },
+        });
+        members.push(prop.struct('.', [
+            prop.data(name),
+            params_of.call(this, prop),
+            prop.struct('{;}', [
+                ...next && !is_delegate ? [
+                    prop.struct('if', [
+                        prop.struct('(!==)', [
+                            prop.struct('next'),
+                            prop.struct('undefined'),
+                        ]),
+                        prop.struct('return', [
+                            prop.struct('next'),
+                        ]),
+                    ]),
+                ] : [],
+                ...val.slice(0, -1),
+                prop.struct('return', val.slice(-1)),
+            ]),
+        ]));
+        return acc;
+    }
+    function $mol_view_tree2_to_js(descr) {
+        descr = $mol_view_tree2_classes(descr);
+        const definitions = [];
+        for (const klass of descr.kids) {
+            const parent = klass.kids[0];
+            const props = this.$mol_view_tree2_class_props(klass);
+            const addons = [];
+            const members = [];
+            const acc = { klass, addons, members };
+            for (const prop of props) {
+                try {
+                    klass_body.call(this, acc, prop);
+                }
+                catch (e) {
+                    e.message += ` at ${prop.span}`;
+                    $mol_fail_hidden(e);
+                }
+            }
+            definitions.push(klass.struct('=', [
+                klass.struct('()', [
+                    klass.struct('$'),
+                    klass.struct('[]', [
+                        klass.data(klass.type),
+                    ]),
+                ]),
+                klass.struct('class', [
+                    klass.struct(klass.type),
+                    parent.struct('extends', [
+                        parent.struct('()', [
+                            parent.struct('$'),
+                            parent.struct('[]', [
+                                parent.data(parent.type),
+                            ]),
+                        ]),
+                    ]),
+                    klass.struct('{}', members),
+                ]),
+            ]), ...addons);
+        }
+        return descr.list([
+            descr.struct(';', definitions)
+        ]);
+    }
+    $.$mol_view_tree2_to_js = $mol_view_tree2_to_js;
 })($ || ($ = {}));
 
 ;
@@ -6235,6 +6369,16 @@ var $;
 ;
 "use strict";
 var $;
+(function ($) {
+    function $mol_view_tree2_to_text(tree) {
+        return this.$mol_tree2_js_to_text(this.$mol_view_tree2_to_js(tree));
+    }
+    $.$mol_view_tree2_to_text = $mol_view_tree2_to_text;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
 (function ($_1) {
     /**
      * Tests of `$bog_vmap_lang`: round trip, property editing and the wire emitter.
@@ -7689,6 +7833,89 @@ var $;
             const props = new Map(tree.kids.map(prop => [$.$mol_view_tree2_prop_parts(prop).name, prop]));
             const ports = $.$bog_vmap_app_wire_ports(props);
             $mol_assert_like(ports.map(port => `${port.name}${port.next ? '?' : ''}:${port.kind}`), ['title:string', 'count:number', 'enabled:bool', 'click?:null', 'items:list', 'label:locale', 'bound:get', 'both?:bind']);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test_mocks.push(context => {
+        class $mol_state_arg_mock extends $mol_state_arg {
+            static $ = context;
+            static href(next) { return next || ''; }
+            static go(next) {
+                this.href(this.link(next));
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_state_arg_mock, "href", null);
+        __decorate([
+            $mol_action
+        ], $mol_state_arg_mock, "go", null);
+        context.$mol_state_arg = $mol_state_arg_mock;
+    });
+    $mol_test({
+        'args as dictionary'($) {
+            $.$mol_state_arg.href('#!foo=bar/xxx');
+            $mol_assert_equal($.$mol_state_arg.dict(), { foo: 'bar', xxx: '' });
+            $.$mol_state_arg.dict({ foo: null, yyy: '', lol: '123' });
+            $mol_assert_equal($.$mol_state_arg.href().replace(/.*#/, '#'), '#!yyy/lol=123');
+        },
+        'one value from args'($) {
+            $.$mol_state_arg.href('#!foo=bar/xxx');
+            $mol_assert_equal($.$mol_state_arg.value('foo'), 'bar');
+            $mol_assert_equal($.$mol_state_arg.value('xxx'), '');
+            $.$mol_state_arg.value('foo', 'lol');
+            $mol_assert_equal($.$mol_state_arg.href().replace(/.*#/, '#'), '#!foo=lol/xxx');
+            $.$mol_state_arg.value('foo', '');
+            $mol_assert_equal($.$mol_state_arg.href().replace(/.*#/, '#'), '#!foo/xxx');
+            $.$mol_state_arg.value('foo', null);
+            $mol_assert_equal($.$mol_state_arg.href().replace(/.*#/, '#'), '#!xxx');
+        },
+        'nested args'($) {
+            const base = new $.$mol_state_arg('nested.');
+            class Nested extends $mol_state_arg {
+                constructor(prefix) {
+                    super(base.prefix + prefix);
+                }
+                static value = (key, next) => base.value(key, next);
+            }
+            $.$mol_state_arg.href('#!foo=bar/nested.xxx=123');
+            $mol_assert_equal(Nested.value('foo'), null);
+            $mol_assert_equal(Nested.value('xxx'), '123');
+            Nested.value('foo', 'lol');
+            $mol_assert_equal($.$mol_state_arg.href().replace(/.*#/, '#'), '#!foo=bar/nested.xxx=123/nested.foo=lol');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+/** @jsx $mol_jsx */
+/** @jsxFrag $mol_jsx_frag */
+var $;
+(function ($) {
+    $mol_test({
+        'safe tag'() {
+            $mol_assert_equal($mol_dom_serialize($$.$mol_dom_safe([$mol_jsx("div", null, "foo")])[0]), $mol_dom_serialize($mol_jsx("div", null, "foo")));
+        },
+        'bad tag'() {
+            $mol_assert_equal($mol_dom_serialize($$.$mol_dom_safe([$mol_jsx("script", null, "alert('ahtung!')")])[0]), $mol_dom_serialize($mol_jsx($mol_jsx_frag, null, "alert('ahtung!')")));
+        },
+        'common attr'() {
+            $mol_assert_equal($mol_dom_serialize($$.$mol_dom_safe([$mol_jsx("a", { id: "foo" }, "foo")])[0]), $mol_dom_serialize($mol_jsx("a", { id: "foo" }, "foo")));
+        },
+        'safe attr'() {
+            $mol_assert_equal($mol_dom_serialize($$.$mol_dom_safe([$mol_jsx("a", { href: "https://example.org/" }, "foo")])[0]), $mol_dom_serialize($mol_jsx("a", { href: "https://example.org/" }, "foo")));
+        },
+        'bad attr'() {
+            $mol_assert_equal($mol_dom_serialize($$.$mol_dom_safe([$mol_jsx("a", { onclick: "alert('ahtung!')" }, "foo")])[0]), $mol_dom_serialize($mol_jsx("a", null, "foo")));
+        },
+        'danger attr'() {
+            $mol_assert_equal($mol_dom_serialize($$.$mol_dom_safe([$mol_jsx("a", { href: "javascript:alert('ahtung!')" }, "foo")])[0]), $mol_dom_serialize($mol_jsx("a", { href: "about:blank#javascript:alert('ahtung!')" }, "foo")));
         },
     });
 })($ || ($ = {}));
@@ -13850,6 +14077,41 @@ var $;
             const zoom = node.over_tree('Map', 'zoom');
             $mol_assert_equal(zoom?.kids[0]?.type, '<=');
             $mol_assert_equal(zoom?.kids[0]?.kids[0]?.type, node.wires()[0].name);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        '$mol_syntax2_md_flow'() {
+            const check = (input, right) => {
+                const tokens = [];
+                $mol_syntax2_md_flow.tokenize(input, (...token) => tokens.push(token));
+                $mol_assert_equal(tokens, right);
+            };
+            check('Hello,\nWorld..\r\n\r\n\nof Love!', [
+                ['block', 'Hello,\n', ['Hello,', '\n'], 0],
+                ['block', 'World..\r\n\r\n\n', ['World..', '\r\n\r\n\n'], 7],
+                ['block', 'of Love!', ['of Love!', ''], 19],
+            ]);
+            check('# Header1\n\nHello!\n\n## Header2', [
+                ['header', '# Header1\n\n', ['#', ' ', 'Header1', '\n\n'], 0],
+                ['block', 'Hello!\n\n', ['Hello!', '\n\n'], 11],
+                ['header', '## Header2', ['##', ' ', 'Header2', ''], 19],
+            ]);
+            check('```\nstart()\n```\n\n```jam.js\nrestart()\n```\n\nHello!\n\n```\nstop()\n```', [
+                ['code', '```\nstart()\n```\n\n', ['```', '', 'start()\n', '```', '\n\n'], 0],
+                ['code', '```jam.js\nrestart()\n```\n\n', ['```', 'jam.js', 'restart()\n', '```', '\n\n'], 17],
+                ['block', 'Hello!\n\n', ['Hello!', '\n\n'], 42],
+                ['code', '```\nstop()\n```', ['```', '', 'stop()\n', '```', ''], 50],
+            ]);
+            check('| header1 | header2\n|----|----\n| Cell11 | Cell12\n| Cell21 | Cell22\n\n| Cell11 | Cell12\n| Cell21 | Cell22\n', [
+                ['table', '| header1 | header2\n|----|----\n| Cell11 | Cell12\n| Cell21 | Cell22\n\n', ['| header1 | header2\n|----|----\n| Cell11 | Cell12\n| Cell21 | Cell22\n', '\n'], 0],
+                ['table', '| Cell11 | Cell12\n| Cell21 | Cell22\n', ['| Cell11 | Cell12\n| Cell21 | Cell22\n', ''], 68],
+            ]);
         },
     });
 })($ || ($ = {}));

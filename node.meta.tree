@@ -212,5 +212,3 @@
 	deploy \/giper/baza/diagram/crus-jepsen.png
 	deploy \/giper/baza/docker/deploy.sh
 	deploy \/giper/baza/docker/autopull_and_restart.sh
-\/mol/view/tree2/to/js
-	include \/mol/view/tree2/to/js/test
