@@ -1,12 +1,5 @@
 namespace $ {
 
-	/**
-	 * Tests of the slicing by property.
-	 *
-	 * Text in, text out, no view anywhere: the round trip of stage 4.2 is a
-	 * property of the strings alone.
-	 */
-
 	const klass = 'bog_vmap_app_page'
 
 	const body = [
@@ -173,19 +166,8 @@ namespace $ {
 
 namespace $ {
 
-	/**
-	 * Tests of the code editor against the live document.
-	 *
-	 * The round trip is the whole point of stage 4.1: what the panel shows, written
-	 * back unchanged, has to leave the document byte for byte as it was, and what
-	 * the mouse does on the canvas has to show up in the text without anybody
-	 * pushing it there.
-	 *
-	 * `d` keeps `$` out of the string literals — mam reads them for dependencies.
-	 */
 	const d = '$'
 
-	/** An editor with one part on the canvas, picked, and its code panel. */
 	const editor = ( $: $mol_ambient_context, klass = `${d}mol_button_minor` )=> {
 
 		const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
@@ -197,12 +179,6 @@ namespace $ {
 		return { app, code, name: app.selected()! }
 	}
 
-	/**
-	 * The same, with the node bound to a name the class does not declare.
-	 *
-	 * That binding is the only thing that gives a node a method of its own to
-	 * write: `title <= greeting` asks for `greeting()`, and nothing generates it.
-	 */
 	const wired = ( $: $mol_ambient_context )=> {
 
 		const one = editor( $ )
@@ -252,10 +228,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The one failure that would look like success: a broken text swallowed, the
-		 * document left holding something the user never wrote.
-		 */
 		'a broken declaration is refused, and the document keeps the last good one'( $ ) {
 
 			const { app, code } = editor( $ )
@@ -267,7 +239,6 @@ namespace $ {
 			$mol_assert_equal( app.doc_source(), before )
 			$mol_assert_equal( code.note() !== '', true )
 
-			// And what was typed is still in the field, where it can be fixed.
 			$mol_assert_equal( code.tree_text(), 'Broken \\\n\t\t\tnonsense' )
 
 		},
@@ -284,10 +255,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The other half of 4.1: the canvas and the panel are one text, so a drop
-		 * shows up in the panel with no path of its own.
-		 */
 		'a part dropped with the mouse shows up in the text'( $ ) {
 
 			const { app, code } = editor( $ )
@@ -327,7 +294,6 @@ namespace $ {
 
 		},
 
-		/** The whole point of 4.2: one property and the whole text say the same thing. */
 		'the slice of a node and the whole body agree'( $ ) {
 
 			const { app, code } = wired( $ )
@@ -356,12 +322,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * THE TRAP THIS WHOLE SHAPE EXISTS TO AVOID. The name of a node is the name
-		 * of the factory of its sub-view in the generated class, so a handwritten
-		 * method of that name shadows the factory and the node leaves the canvas.
-		 * The panel must never put that name in front of a person as a suggestion.
-		 */
 		'a method named after the node is never offered'( $ ) {
 
 			const plain = editor( $ )
@@ -392,7 +352,6 @@ namespace $ {
 
 		},
 
-		/** The declaration is what decides, so a binding added later opens the field. */
 		'a binding added to the declaration brings the method with it'( $ ) {
 
 			const { code, name } = editor( $ )
@@ -406,7 +365,6 @@ namespace $ {
 
 		},
 
-		/** A method the class already generates is not something to write by hand. */
 		'a wire the class declares is not offered as a method'( $ ) {
 
 			const { app, code, name } = editor( $ )
@@ -443,10 +401,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A body that cannot be cut is a state of the panel, not a lost document:
-		 * the text stays whole, the panel says so, and the switch is the way out.
-		 */
 		'a body with unbalanced braces is reported, not swallowed'( $ ) {
 
 			const { app, code } = editor( $ )
@@ -462,7 +416,6 @@ namespace $ {
 
 		},
 
-		/** The scene compiles what the panel writes, so the two texts have to travel. */
 		'what the panel writes reaches the scene'( $ ) {
 
 			const { app, code, name } = wired( $ )
@@ -475,10 +428,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The divergence of section 10 shown where the mistake is made: the body runs
-		 * in the scene through `new Function` and would fail the export on `strict`.
-		 */
 		'an untyped parameter is complained about as it is written'( $ ) {
 
 			const { code } = wired( $ )
@@ -503,12 +452,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The complaint used to be filtered by the name of the node, which hid every
-		 * one a person could make: the method they must never write is the one named
-		 * after the node. It is checked on the text on screen now, so it shows in
-		 * both modes and its line number counts in the text the reader is looking at.
-		 */
 		'the complaint is visible in both modes'( $ ) {
 
 			const { app, code } = wired( $ )
@@ -527,11 +470,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A draft belongs to the text, not to the tab. Keyed by the tab alone, a
-		 * refused edit made on one node showed up under the name of the next node
-		 * picked — and correcting it there wrote it into that other node.
-		 */
 		'a refused edit does not follow the panel to another node'( $ ) {
 
 			const { app, code, name } = editor( $ )
@@ -547,13 +485,11 @@ namespace $ {
 			$mol_assert_equal( code.tree_text().includes( 'nonsense' ), false )
 			$mol_assert_equal( code.tree_text().includes( second ), true )
 
-			// And it is still there when the node it was typed on comes back.
 			app.selected( name )
 			$mol_assert_equal( code.tree_text(), 'Broken \\\n\t\t\tnonsense' )
 
 		},
 
-		/** A published component without its behaviour is a picture of a component. */
 		'a published node carries its method and its rule'( $ ) {
 
 			const { app, code, name } = wired( $ )
