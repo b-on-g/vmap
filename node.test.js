@@ -20954,6 +20954,72 @@ var $;
     }
     $.$bog_vmap_app_export_defines = $bog_vmap_app_export_defines;
     /**
+     * References of a class that only the hand written body answers.
+     *
+     * `title <= greeting` compiles to `this.greeting()` on the class, and section 1
+     * says writing `greeting()` by hand is the normal thing to do: it is exactly
+     * what the class does not generate. The scene is happy with that, because a body
+     * there goes through a run time compile with no types in sight.
+     *
+     * **The export is not**, and this is where the two forms parted. The generated
+     * declaration file states the type of every binding — `ReturnType< Klass['greeting'] >`
+     * — against the GENERATED class, which declares nothing of the kind, and the
+     * whole module stops on `TS2339: Property 'greeting' does not exist`. Measured
+     * 10.09.2026 on a document exported into a real folder: three files right, no
+     * bundle.
+     *
+     * So the declaration is written out for it, `greeting null`, and the answer is
+     * the reference AS WRITTEN, signs included, so that a two way or a keyed hook
+     * comes out with the signature it is used with. `null` and not a guessed value:
+     * it types as `any`, and the body in the subclass narrows it to whatever it
+     * really returns instead of being checked against a type nobody stated.
+     *
+     * Only what the BODY defines. A bare reference the body does not answer either
+     * is a property of the base class or a plain mistake, and declaring it here
+     * would shadow the first with `any` and hide the second behind a method that
+     * silently returns nothing.
+     */
+    function $bog_vmap_app_export_hooks(tree, js) {
+        if (!js.trim() || !tree.kids[0])
+            return [];
+        const declared = new Set(this.$mol_view_tree2_class_props(tree).map(prop => this.$mol_view_tree2_prop_parts(prop).name));
+        const found = [];
+        const walk = (node) => {
+            const ref = node.kids[0];
+            if (ref && !ref.kids.length && (node.type === '<=' || node.type === '<=>')) {
+                const name = ref.type.replace(/[*?!]+$/, '');
+                if (name && !declared.has(name)
+                    && $bog_vmap_app_export_defines(js, name)
+                    && !found.includes(ref.type))
+                    found.push(ref.type);
+            }
+            for (const kid of node.kids)
+                walk(kid);
+        };
+        walk(tree);
+        return found;
+    }
+    $.$bog_vmap_app_export_hooks = $bog_vmap_app_export_hooks;
+    /**
+     * The declaration of a class with those hooks written into it.
+     *
+     * The one place the exported text is not the text of the editor, and it is
+     * additive: nothing written is changed, a line is appended for a property the
+     * document uses and never declares. The alternative was refusing to export a
+     * document the editor itself invites people to write.
+     */
+    function $bog_vmap_app_export_hooked(tree, js) {
+        const hooks = $bog_vmap_app_export_hooks.call(this, tree, js);
+        if (!hooks.length)
+            return tree;
+        const base = tree.kids[0];
+        return tree.clone([base.clone([
+                ...base.kids,
+                ...hooks.map(type => base.struct(type, [base.struct('null', [])])),
+            ])]);
+    }
+    $.$bog_vmap_app_export_hooked = $bog_vmap_app_export_hooked;
+    /**
      * Parameters of methods that carry no type.
      *
      * The divergence of section 10: in the scene a body runs as plain JS, in the
@@ -21155,7 +21221,11 @@ var $;
         const parsed = nodes.map(node => {
             const model = this.$bog_vmap_lang_node.make({});
             model.source(node.source);
-            return { node, model, tree: model.tree(), name: model.name() };
+            // The hooks go in here and not at the writing of the file: everything
+            // downstream — the sorting, the decorators, the text — is then talking
+            // about the class the module will actually declare.
+            const tree = $bog_vmap_app_export_hooked.call(this, model.tree(), node.js ?? '');
+            return { node, model, tree, name: model.name() };
         });
         const names = parsed.map(item => item.name);
         /**
@@ -50564,6 +50634,65 @@ var $;
             $mol_assert_equal(inset.param, 'next');
             // The message is an instruction: what to write, spelled out.
             $mol_assert_equal(first('count( next ) {\n\treturn next\n}\n').text.includes('count( next?: number )'), true);
+        },
+        /**
+         * WHAT STOPPED THE EXPORTED MODULE FROM BUILDING, measured 10.09.2026 on a
+         * document dropped into a real folder of mam.
+         *
+         * A node bound to a name the class does not declare — `title <= greeting`,
+         * with `greeting()` written by hand — is the shape section 1 tells people to
+         * write, and the scene runs it because a body there is compiled without
+         * types. The exported module is compiled WITH them: the declaration file
+         * states the binding as `ReturnType< Klass['greeting'] >` against the
+         * generated class, which declares no such thing, and mam stops on
+         * `TS2339: Property 'greeting' does not exist`. Three correct files and no
+         * bundle.
+         *
+         * So the declaration is written out, typed `any` by `null`, and the hand
+         * written body in the subclass narrows it.
+         */
+        'a name only the hand written body answers is declared for it'($) {
+            const source = [
+                `${d}bog_site_page ${d}mol_view`,
+                `	Hero ${d}bog_site_hero title <= greeting`,
+                `	sub / <= Hero`,
+                ``,
+            ].join('\n');
+            const js = 'greeting(): string {\n\treturn \'Hi\'\n}';
+            const module = $.$bog_vmap_app_export_build([{ source, js }, { source: hero }], `${d}bog_site_page`);
+            const tree = file_of(module, '.view.tree');
+            $mol_assert_equal(tree.includes('\tgreeting null\n'), true);
+            // Appended and nothing else touched: what the person wrote is still there.
+            $mol_assert_equal(tree.includes(`\tHero ${d}bog_site_hero title <= greeting\n`), true);
+        },
+        /**
+         * The other half, and the one that would do damage. A bare reference the body
+         * does NOT answer is a property of the base class — or a plain mistake — and
+         * declaring it here would shadow the first with `any` and bury the second
+         * under a method that quietly returns nothing.
+         */
+        'a name the body does not answer is left alone'($) {
+            const source = [
+                `${d}bog_site_page ${d}mol_view`,
+                `	Hero ${d}bog_site_hero title <= greeting`,
+                `	Note ${d}mol_view sub / <= title`,
+                `	title \\Hi`,
+                `	sub / <= Hero`,
+                ``,
+            ].join('\n');
+            // The body answers `greeting` and nothing else.
+            const js = 'greeting(): string {\n\treturn \'Hi\'\n}';
+            const model = $bog_vmap_lang_node.make({ $ });
+            model.source(source);
+            $mol_assert_like($.$bog_vmap_app_export_hooks(model.tree(), js), ['greeting']);
+            // `title` is declared by the class, so nothing is written for it.
+            const module = $.$bog_vmap_app_export_build([{ source, js }, { source: hero }]);
+            $mol_assert_equal(file_of(module, '.view.tree').includes('title null'), false);
+        },
+        /** A document nobody wrote a body for gains nothing at all. */
+        'a document without hand written code is written out unchanged'($) {
+            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
+            $mol_assert_equal(file_of(module, '.view.tree').includes('null'), false);
         },
         'a cycle of bases is refused rather than hung'($) {
             $mol_assert_fail(() => $.$bog_vmap_app_export_build([

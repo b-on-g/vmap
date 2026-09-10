@@ -15023,6 +15023,65 @@ var $;
             // The message is an instruction: what to write, spelled out.
             $mol_assert_equal(first('count( next ) {\n\treturn next\n}\n').text.includes('count( next?: number )'), true);
         },
+        /**
+         * WHAT STOPPED THE EXPORTED MODULE FROM BUILDING, measured 10.09.2026 on a
+         * document dropped into a real folder of mam.
+         *
+         * A node bound to a name the class does not declare — `title <= greeting`,
+         * with `greeting()` written by hand — is the shape section 1 tells people to
+         * write, and the scene runs it because a body there is compiled without
+         * types. The exported module is compiled WITH them: the declaration file
+         * states the binding as `ReturnType< Klass['greeting'] >` against the
+         * generated class, which declares no such thing, and mam stops on
+         * `TS2339: Property 'greeting' does not exist`. Three correct files and no
+         * bundle.
+         *
+         * So the declaration is written out, typed `any` by `null`, and the hand
+         * written body in the subclass narrows it.
+         */
+        'a name only the hand written body answers is declared for it'($) {
+            const source = [
+                `${d}bog_site_page ${d}mol_view`,
+                `	Hero ${d}bog_site_hero title <= greeting`,
+                `	sub / <= Hero`,
+                ``,
+            ].join('\n');
+            const js = 'greeting(): string {\n\treturn \'Hi\'\n}';
+            const module = $.$bog_vmap_app_export_build([{ source, js }, { source: hero }], `${d}bog_site_page`);
+            const tree = file_of(module, '.view.tree');
+            $mol_assert_equal(tree.includes('\tgreeting null\n'), true);
+            // Appended and nothing else touched: what the person wrote is still there.
+            $mol_assert_equal(tree.includes(`\tHero ${d}bog_site_hero title <= greeting\n`), true);
+        },
+        /**
+         * The other half, and the one that would do damage. A bare reference the body
+         * does NOT answer is a property of the base class — or a plain mistake — and
+         * declaring it here would shadow the first with `any` and bury the second
+         * under a method that quietly returns nothing.
+         */
+        'a name the body does not answer is left alone'($) {
+            const source = [
+                `${d}bog_site_page ${d}mol_view`,
+                `	Hero ${d}bog_site_hero title <= greeting`,
+                `	Note ${d}mol_view sub / <= title`,
+                `	title \\Hi`,
+                `	sub / <= Hero`,
+                ``,
+            ].join('\n');
+            // The body answers `greeting` and nothing else.
+            const js = 'greeting(): string {\n\treturn \'Hi\'\n}';
+            const model = $bog_vmap_lang_node.make({ $ });
+            model.source(source);
+            $mol_assert_like($.$bog_vmap_app_export_hooks(model.tree(), js), ['greeting']);
+            // `title` is declared by the class, so nothing is written for it.
+            const module = $.$bog_vmap_app_export_build([{ source, js }, { source: hero }]);
+            $mol_assert_equal(file_of(module, '.view.tree').includes('title null'), false);
+        },
+        /** A document nobody wrote a body for gains nothing at all. */
+        'a document without hand written code is written out unchanged'($) {
+            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
+            $mol_assert_equal(file_of(module, '.view.tree').includes('null'), false);
+        },
         'a cycle of bases is refused rather than hung'($) {
             $mol_assert_fail(() => $.$bog_vmap_app_export_build([
                 { source: `${d}bog_site_a ${d}bog_site_b\n\tx \\1\n` },
