@@ -38276,22 +38276,19 @@ var $;
     }
     $.$bog_vmap_bridge_send = $bog_vmap_bridge_send;
     /**
-     * Takes a message off the wire, or null when it is not ours.
-     *
-     * The channel has no origin to check against, because the scene runs in an
-     * opaque origin, so anything able to reach this window can post here.
-     * Unknown shapes are dropped rather than trusted.
+     * Takes a message off the wire, or null when it is not ours. The channel has no
+     * origin to check against — the scene runs in an opaque one — so anything able
+     * to reach this window can post here, and unknown shapes are dropped.
      *
      * Always pass `peer` on the host side. Without it any window that posts a
-     * `ready` can take the channel over, and the host will happily talk to it:
-     * seen for real on stage 1, where a stray debug frame stole the bridge and
-     * the host spent an hour posting into a dead window. Identity of the peer
-     * comes from `Scene().dom_node().contentWindow`, never from `event.source`.
+     * `ready` takes the channel over: seen for real on stage 1, where a stray debug
+     * frame stole the bridge and the host spent an hour posting into a dead window.
+     * Identity comes from the frame element, never from `event.source`.
      *
-     * Passing the argument at all turns the check on, so a peer that is not
-     * known yet rejects every message instead of letting everything through.
-     * Omitting it entirely is the only way to opt out, and only the scene may:
-     * it has exactly one correspondent and answers into the same window.
+     * Passing the argument at all turns the check on, so a peer not known yet
+     * rejects everything instead of letting everything through. Omitting it is the
+     * only way to opt out, and only the scene may: it has one correspondent and
+     * answers into the same window.
      */
     function $bog_vmap_bridge_read(event, peer) {
         if (arguments.length > 1 && event.source !== peer)
