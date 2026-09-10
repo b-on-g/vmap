@@ -6377,7 +6377,7 @@ var $;
 var $;
 (function ($_1) {
     /**
-     * Tests of `$bog_vmap_lang`: round trip, property editing and the wire emitter.
+     * Tests of the language module: round trip, property editing, the wire emitter.
      *
      * Nothing here touches the network or the DOM. The wire tests run the emitted
      * tree through the real `$mol_view_tree2_to_text`, because the five traps of
@@ -6386,8 +6386,9 @@ var $;
      * so much time to find.
      *
      * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-     * a regexp over sources, literals included, so a bare `$mol_button` in a
-     * fixture would drag a whole module into the bundle.
+     * a regexp over sources, literals included, so a bare class name in a fixture
+     * would drag a whole module into the bundle. Naming one HERE would do it too,
+     * which is why this sentence names none.
      */
     const d = '$';
     /**
@@ -6733,7 +6734,7 @@ var $;
             $mol_assert_fail(() => $.$bog_vmap_lang_sorted([a, b]), Error);
         },
         /**
-         * The whole reason `$bog_vmap_lang_doc` exists. Before it, this edit left
+         * The whole reason the document model of this module exists. Before it, the edit left
          * the source holding one class: the node model writes the class it touched
          * as the entire text, so every neighbour was dropped without an error.
          */
@@ -7124,7 +7125,7 @@ var $;
         },
         /**
          * Layout properties are ordinary keys of the ordinary `style` dictionary, so
-         * an artboard exports as plain $mol and depends on nothing of ours.
+         * an artboard exports as a plain document and depends on nothing of ours.
          */
         'a dictionary key is set, replaced where it stands and dropped'($) {
             const node = doc(board_src);
@@ -7144,8 +7145,8 @@ var $;
         /**
          * An inherited dictionary starts with `^`, and `^` has to stay at the head:
          * a dictionary redeclared without it REPLACES the one of the base instead of
-         * extending it, so a document over `$mol_button` that grew one `style` key
-         * would lose the rest in silence.
+         * extending it, so a document over a base with its own `style` that grew one
+         * key would lose the rest in silence.
          */
         'a dictionary key never moves the inherited head'($) {
             const dict = $mol_tree2.struct('*', [$mol_tree2.struct('^')]);
@@ -7530,9 +7531,9 @@ var $;
         },
         /**
          * The classes the inspector hands to the library: the one being edited plus
-         * its siblings, and never a second copy of itself. `$bog_vmap_lib_index`
-         * keeps the LAST declaration of a name, so a stale twin among the peers
-         * would quietly shadow the class actually being edited.
+         * its siblings, and never a second copy of itself. The class index of the
+         * library keeps the LAST declaration of a name, so a stale twin among the
+         * peers would quietly shadow the class actually being edited.
          */
         'the inspected class is not duplicated by its own peers'($) {
             const stand = $.$bog_vmap_app_inspect_demo.make({ $ });
@@ -7541,8 +7542,8 @@ var $;
         },
         /**
          * The layout panel writes into the ordinary `style` dictionary of the node,
-         * so what an artboard is made of is what a hand written $mol document would
-         * carry, and an export has nothing to learn about artboards.
+         * so what an artboard is made of is what a hand written document of the
+         * framework would carry, and an export has nothing to learn about artboards.
          */
         'layout properties land in the style of the node and read back'($) {
             const inspect = inspect_of($, [
@@ -7587,7 +7588,7 @@ var $;
             $mol_assert_like(inspect.style_dict().kids.map(kid => kid.type), ['^', 'padding', 'alignItems']);
         },
         /**
-         * `$mol_dom_render_styles` appends `px` to a number, so `flexGrow 1` comes
+         * The style renderer appends `px` to a number, so `flexGrow 1` comes
          * out as `flex-grow: 1px` — not a length, not a growth factor, dropped, and
          * the node does not stretch. The document has to carry text.
          */
@@ -12328,7 +12329,7 @@ var $;
      * Deliberately absent: `remote_list()`, which resolves links through the static
      * `glob.Land`, waits for a master that the tests do not have, and suspends for
      * ever; and land grabbing, which costs proof of work. A hanging test is worse
-     * than a missing one here, because a failed `$mol_assert` and a hung run look
+     * than a missing one here, because a failed assertion and a hung run look
      * exactly alike — silence, no output — and the build hangs with it.
      *
      * `d` keeps `$` out of the string literals: mam builds its dependency graph by
@@ -12418,7 +12419,7 @@ var $;
          * rest of the session. Read-only cells track fine, so the fault hides until
          * two people edit the same document — precisely the case section 9 is about.
          *
-         * The same shape is inherited from `$giper_baza_entity.title()`, which is why
+         * The same shape is inherited from the entity of the database, which is why
          * `doc.title()` is overridden rather than reused.
          */
         async 'a locally edited node still sees a remote edit'($) {
@@ -12468,7 +12469,7 @@ var $;
         /**
          * The schema stays pure.
          *
-         * `static @$mol_action` on an entity takes the class itself as the fiber
+         * A static action decorator on an entity takes the class itself as the fiber
          * owner, so fibers stop deduplicating consistently and writes go missing
          * between devices with no error anywhere. It cost a rewrite once already.
          * Checked rather than reviewed, because the damage is silent and the

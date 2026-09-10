@@ -44756,7 +44756,7 @@ declare namespace $ {
     /**
      * Document of the editor in Giper Baza.
      *
-     * Pure schema. No `static @$mol_action` anywhere: on a static the wire method
+     * Pure schema. No static action decorator anywhere: on a static the wire method
      * takes the class itself as the fiber owner, fibers stop deduplicating
      * consistently, and writes go missing between devices without a single error.
      * All CRUD lives in the views. There is a test that keeps it that way.
@@ -44830,9 +44830,10 @@ declare namespace $ {
      * Place of one item on the canvas.
      *
      * Kept apart from the node, and keyed by property name rather than by node,
-     * because a free part takes its class from the library: `Calc $mol_number` has
-     * no sources of its own at all, and its whole identity is the name of the
-     * property it occupies on the root class. Coordinates therefore cannot hang off
+     * because a free part takes its class from the library: a property whose base is
+     * a library class has no sources of its own at all, and its whole identity is
+     * the name of the property it occupies on the root class. Coordinates therefore
+     * cannot hang off
      * `doc_node`, which exists only for classes the document itself authors.
      *
      * Coordinates are `atom_real`. `atom_bint` does not survive a write and a read:
@@ -44974,12 +44975,12 @@ declare namespace $ {
             /**
              * Human name of the document. Genuinely stored, nothing derives it.
              *
-             * Declared here rather than inherited from `$giper_baza_entity`, which
-             * carries the same field. The entity also carries a `@$mol_mem` `title()`,
-             * and that accessor freezes after a write, see the note at
-             * `doc_node.source`. Overriding it is refused by the type system, because
-             * `$mol_type_override` presents the base members as properties, so the field
-             * is declared here instead. Same key, same bytes on the wire, plain accessor.
+             * Declared here rather than inherited from the entity of the database, which
+             * carries the same field. The entity also carries a memoized `title()`, and
+             * that accessor freezes after a write, see the note at `doc_node.source`.
+             * Overriding it is refused by the type system, because the override helper
+             * presents the base members as properties, so the field is declared here
+             * instead. Same key, same bytes on the wire, plain accessor.
              */
             readonly Title: typeof $giper_baza_atom_text;
             /** Classes the document authors itself, root included. */

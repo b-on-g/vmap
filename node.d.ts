@@ -41956,206 +41956,6 @@ declare namespace $ {
 
 //# sourceMappingURL=download.view.tree.d.ts.map
 declare namespace $ {
-
-	export class $mol_icon_menu extends $mol_icon {
-		path( ): string
-	}
-	
-}
-
-//# sourceMappingURL=menu.view.tree.d.ts.map
-declare namespace $ {
-
-	export class $mol_icon_menu_down extends $mol_icon {
-		path( ): string
-	}
-	
-}
-
-//# sourceMappingURL=down.view.tree.d.ts.map
-declare namespace $ {
-
-	export class $mol_icon_menu_down_outline extends $mol_icon {
-		path( ): string
-	}
-	
-}
-
-//# sourceMappingURL=outline.view.tree.d.ts.map
-declare namespace $ {
-
-	export class $mol_icon_menu_up extends $mol_icon {
-		path( ): string
-	}
-	
-}
-
-//# sourceMappingURL=up.view.tree.d.ts.map
-declare namespace $ {
-
-	export class $mol_icon_menu_up_outline extends $mol_icon {
-		path( ): string
-	}
-	
-}
-
-//# sourceMappingURL=outline.view.tree.d.ts.map
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	type $mol_hotkey__key_mol_number_1 = $mol_type_enforce<
-		({ 
-			down( next?: ReturnType< $mol_number['event_dec'] > ): ReturnType< $mol_number['event_dec'] >,
-			up( next?: ReturnType< $mol_number['event_inc'] > ): ReturnType< $mol_number['event_inc'] >,
-			pageDown( next?: ReturnType< $mol_number['event_dec_boost'] > ): ReturnType< $mol_number['event_dec_boost'] >,
-			pageUp( next?: ReturnType< $mol_number['event_inc_boost'] > ): ReturnType< $mol_number['event_inc_boost'] >,
-		}) 
-		,
-		ReturnType< $mol_hotkey['key'] >
-	>
-	type $mol_string__type_mol_number_2 = $mol_type_enforce<
-		ReturnType< $mol_number['type'] >
-		,
-		ReturnType< $mol_string['type'] >
-	>
-	type $mol_string__keyboard_mol_number_3 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_string['keyboard'] >
-	>
-	type $mol_string__value_mol_number_4 = $mol_type_enforce<
-		ReturnType< $mol_number['value_string'] >
-		,
-		ReturnType< $mol_string['value'] >
-	>
-	type $mol_string__hint_mol_number_5 = $mol_type_enforce<
-		ReturnType< $mol_number['hint'] >
-		,
-		ReturnType< $mol_string['hint'] >
-	>
-	type $mol_string__enabled_mol_number_6 = $mol_type_enforce<
-		ReturnType< $mol_number['string_enabled'] >
-		,
-		ReturnType< $mol_string['enabled'] >
-	>
-	type $mol_string__submit_mol_number_7 = $mol_type_enforce<
-		ReturnType< $mol_number['submit'] >
-		,
-		ReturnType< $mol_string['submit'] >
-	>
-	type $mol_string__selection_mol_number_8 = $mol_type_enforce<
-		ReturnType< $mol_number['selection'] >
-		,
-		ReturnType< $mol_string['selection'] >
-	>
-	type $mol_button_minor__event_click_mol_number_9 = $mol_type_enforce<
-		ReturnType< $mol_number['event_dec'] >
-		,
-		ReturnType< $mol_button_minor['event_click'] >
-	>
-	type $mol_button_minor__enabled_mol_number_10 = $mol_type_enforce<
-		ReturnType< $mol_number['dec_enabled'] >
-		,
-		ReturnType< $mol_button_minor['enabled'] >
-	>
-	type $mol_button_minor__sub_mol_number_11 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_button_minor['sub'] >
-	>
-	type $mol_button_minor__event_click_mol_number_12 = $mol_type_enforce<
-		ReturnType< $mol_number['event_inc'] >
-		,
-		ReturnType< $mol_button_minor['event_click'] >
-	>
-	type $mol_button_minor__enabled_mol_number_13 = $mol_type_enforce<
-		ReturnType< $mol_number['inc_enabled'] >
-		,
-		ReturnType< $mol_button_minor['enabled'] >
-	>
-	type $mol_button_minor__sub_mol_number_14 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_button_minor['sub'] >
-	>
-	export class $mol_number extends $mol_view {
-		precision( ): number
-		event_dec( next?: any ): any
-		event_inc( next?: any ): any
-		event_dec_boost( next?: any ): any
-		event_inc_boost( next?: any ): any
-		Hotkey( ): $mol_hotkey
-		type( ): string
-		value_string( next?: string ): string
-		hint( ): string
-		string_enabled( ): ReturnType< $mol_number['enabled'] >
-		submit( next?: any ): any
-		selection( next?: readonly(number)[] ): readonly(number)[]
-		String( ): $mol_string
-		dec_enabled( ): ReturnType< $mol_number['enabled'] >
-		dec_icon( ): $mol_icon_menu_down_outline
-		Dec( ): $mol_button_minor
-		inc_enabled( ): ReturnType< $mol_number['enabled'] >
-		inc_icon( ): $mol_icon_menu_up_outline
-		Inc( ): $mol_button_minor
-		precision_view( ): ReturnType< $mol_number['precision'] >
-		precision_change( ): ReturnType< $mol_number['precision'] >
-		boost( ): number
-		value_min( ): number
-		value_max( ): number
-		value( next?: number ): number
-		enabled( ): boolean
-		plugins( ): readonly(any)[]
-		sub( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=number.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Component for entering, incrementing and decrementing numeric values.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_number_demo
-     */
-    class $mol_number extends $.$mol_number {
-        sub(): ($.$mol_string | $mol_button_minor)[];
-        value_limited(val?: number): number;
-        event_dec(next?: Event): void;
-        precision_change(): number;
-        event_inc(next?: Event): void;
-        event_dec_boost(next?: Event): void;
-        event_inc_boost(next?: Event): void;
-        round(val: number): string;
-        value_string(next?: string): string;
-        dec_enabled(): boolean;
-        inc_enabled(): boolean;
-    }
-}
-
-declare namespace $ {
-    const $giper_baza_entity_base: Omit<typeof $giper_baza_dict, "prototype"> & {
-        new (...args: any[]): $mol_type_override<$giper_baza_dict, {
-            readonly Title: (auto?: any) => $giper_baza_atom_text | null;
-        }>;
-        path: string;
-    } & {
-        schema: {
-            [x: string]: typeof $giper_baza_pawn;
-        } & {
-            /** Entity Title - default property for use */
-            readonly Title: typeof $giper_baza_atom_text;
-        };
-    };
-    /** Entity dictionary Model with Title property included by default */
-    export class $giper_baza_entity extends $giper_baza_entity_base {
-        title(next?: string): string;
-    }
-    export {};
-}
-
-declare namespace $ {
     const $bog_vmap_app_doc_node_base: Omit<typeof $giper_baza_dict, "prototype"> & {
         new (...args: any[]): $mol_type_override<$giper_baza_dict, {
             readonly Tree: (auto?: any) => $giper_baza_atom_text | null;
@@ -42178,7 +41978,7 @@ declare namespace $ {
     /**
      * Document of the editor in Giper Baza.
      *
-     * Pure schema. No `static @$mol_action` anywhere: on a static the wire method
+     * Pure schema. No static action decorator anywhere: on a static the wire method
      * takes the class itself as the fiber owner, fibers stop deduplicating
      * consistently, and writes go missing between devices without a single error.
      * All CRUD lives in the views. There is a test that keeps it that way.
@@ -42252,9 +42052,10 @@ declare namespace $ {
      * Place of one item on the canvas.
      *
      * Kept apart from the node, and keyed by property name rather than by node,
-     * because a free part takes its class from the library: `Calc $mol_number` has
-     * no sources of its own at all, and its whole identity is the name of the
-     * property it occupies on the root class. Coordinates therefore cannot hang off
+     * because a free part takes its class from the library: a property whose base is
+     * a library class has no sources of its own at all, and its whole identity is
+     * the name of the property it occupies on the root class. Coordinates therefore
+     * cannot hang off
      * `doc_node`, which exists only for classes the document itself authors.
      *
      * Coordinates are `atom_real`. `atom_bint` does not survive a write and a read:
@@ -42396,12 +42197,12 @@ declare namespace $ {
             /**
              * Human name of the document. Genuinely stored, nothing derives it.
              *
-             * Declared here rather than inherited from `$giper_baza_entity`, which
-             * carries the same field. The entity also carries a `@$mol_mem` `title()`,
-             * and that accessor freezes after a write, see the note at
-             * `doc_node.source`. Overriding it is refused by the type system, because
-             * `$mol_type_override` presents the base members as properties, so the field
-             * is declared here instead. Same key, same bytes on the wire, plain accessor.
+             * Declared here rather than inherited from the entity of the database, which
+             * carries the same field. The entity also carries a memoized `title()`, and
+             * that accessor freezes after a write, see the note at `doc_node.source`.
+             * Overriding it is refused by the type system, because the override helper
+             * presents the base members as properties, so the field is declared here
+             * instead. Same key, same bytes on the wire, plain accessor.
              */
             readonly Title: typeof $giper_baza_atom_text;
             /** Classes the document authors itself, root included. */
@@ -48359,6 +48160,185 @@ declare namespace $.$$ {
 }
 
 declare namespace $.$$ {
+}
+
+declare namespace $ {
+
+	export class $mol_icon_menu extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=menu.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_menu_down extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=down.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_menu_down_outline extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=outline.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_menu_up extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=up.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_menu_up_outline extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=outline.view.tree.d.ts.map
+declare namespace $ {
+}
+
+declare namespace $ {
+
+	type $mol_hotkey__key_mol_number_1 = $mol_type_enforce<
+		({ 
+			down( next?: ReturnType< $mol_number['event_dec'] > ): ReturnType< $mol_number['event_dec'] >,
+			up( next?: ReturnType< $mol_number['event_inc'] > ): ReturnType< $mol_number['event_inc'] >,
+			pageDown( next?: ReturnType< $mol_number['event_dec_boost'] > ): ReturnType< $mol_number['event_dec_boost'] >,
+			pageUp( next?: ReturnType< $mol_number['event_inc_boost'] > ): ReturnType< $mol_number['event_inc_boost'] >,
+		}) 
+		,
+		ReturnType< $mol_hotkey['key'] >
+	>
+	type $mol_string__type_mol_number_2 = $mol_type_enforce<
+		ReturnType< $mol_number['type'] >
+		,
+		ReturnType< $mol_string['type'] >
+	>
+	type $mol_string__keyboard_mol_number_3 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_string['keyboard'] >
+	>
+	type $mol_string__value_mol_number_4 = $mol_type_enforce<
+		ReturnType< $mol_number['value_string'] >
+		,
+		ReturnType< $mol_string['value'] >
+	>
+	type $mol_string__hint_mol_number_5 = $mol_type_enforce<
+		ReturnType< $mol_number['hint'] >
+		,
+		ReturnType< $mol_string['hint'] >
+	>
+	type $mol_string__enabled_mol_number_6 = $mol_type_enforce<
+		ReturnType< $mol_number['string_enabled'] >
+		,
+		ReturnType< $mol_string['enabled'] >
+	>
+	type $mol_string__submit_mol_number_7 = $mol_type_enforce<
+		ReturnType< $mol_number['submit'] >
+		,
+		ReturnType< $mol_string['submit'] >
+	>
+	type $mol_string__selection_mol_number_8 = $mol_type_enforce<
+		ReturnType< $mol_number['selection'] >
+		,
+		ReturnType< $mol_string['selection'] >
+	>
+	type $mol_button_minor__event_click_mol_number_9 = $mol_type_enforce<
+		ReturnType< $mol_number['event_dec'] >
+		,
+		ReturnType< $mol_button_minor['event_click'] >
+	>
+	type $mol_button_minor__enabled_mol_number_10 = $mol_type_enforce<
+		ReturnType< $mol_number['dec_enabled'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__sub_mol_number_11 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_button_minor['sub'] >
+	>
+	type $mol_button_minor__event_click_mol_number_12 = $mol_type_enforce<
+		ReturnType< $mol_number['event_inc'] >
+		,
+		ReturnType< $mol_button_minor['event_click'] >
+	>
+	type $mol_button_minor__enabled_mol_number_13 = $mol_type_enforce<
+		ReturnType< $mol_number['inc_enabled'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__sub_mol_number_14 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_button_minor['sub'] >
+	>
+	export class $mol_number extends $mol_view {
+		precision( ): number
+		event_dec( next?: any ): any
+		event_inc( next?: any ): any
+		event_dec_boost( next?: any ): any
+		event_inc_boost( next?: any ): any
+		Hotkey( ): $mol_hotkey
+		type( ): string
+		value_string( next?: string ): string
+		hint( ): string
+		string_enabled( ): ReturnType< $mol_number['enabled'] >
+		submit( next?: any ): any
+		selection( next?: readonly(number)[] ): readonly(number)[]
+		String( ): $mol_string
+		dec_enabled( ): ReturnType< $mol_number['enabled'] >
+		dec_icon( ): $mol_icon_menu_down_outline
+		Dec( ): $mol_button_minor
+		inc_enabled( ): ReturnType< $mol_number['enabled'] >
+		inc_icon( ): $mol_icon_menu_up_outline
+		Inc( ): $mol_button_minor
+		precision_view( ): ReturnType< $mol_number['precision'] >
+		precision_change( ): ReturnType< $mol_number['precision'] >
+		boost( ): number
+		value_min( ): number
+		value_max( ): number
+		value( next?: number ): number
+		enabled( ): boolean
+		plugins( ): readonly(any)[]
+		sub( ): readonly(any)[]
+	}
+	
+}
+
+//# sourceMappingURL=number.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * Component for entering, incrementing and decrementing numeric values.
+     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_number_demo
+     */
+    class $mol_number extends $.$mol_number {
+        sub(): ($.$mol_string | $mol_button_minor)[];
+        value_limited(val?: number): number;
+        event_dec(next?: Event): void;
+        precision_change(): number;
+        event_inc(next?: Event): void;
+        event_dec_boost(next?: Event): void;
+        event_inc_boost(next?: Event): void;
+        round(val: number): string;
+        value_string(next?: string): string;
+        dec_enabled(): boolean;
+        inc_enabled(): boolean;
+    }
 }
 
 declare namespace $ {
