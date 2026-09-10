@@ -20397,79 +20397,17 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Component library of a vmap document.
-     *
-     * A library is a deployed MAM module: the build drops `web.view.tree` next to
-     * `web.js`, and that file is the whole class tree of the bundle with bases and
-     * properties. Any deployed app of the framework in the world is therefore a
-     * component source, with no cooperation from us.
-     *
-     * Port of `hyoo_studio_library` plus the `library()`, `united()`,
-     * `props_map()`, `props_of()`, `class_list()` and `base_options()` methods of
-     * `hyoo_studio`. Deviations are marked at their place.
-     *
-     * Pure model: knows nothing about DOM and renders nothing.
-     * @see ../ARCHITECTURE.md section 5
-     */
-    /**
-     * Stub declaration of `$mol_view`, prepended to every fetched pack tree.
-     *
-     * Own properties of `$mol_view` (`sub`, `attr`, `style`, `event`, `field`,
-     * `dom_name`, `title`) never reach `web.view.tree`, because `$mol_view` is
-     * written in TS and the build only dumps what came from `.view.tree` sources.
-     * Without the stub every class in the palette silently loses its base ports,
-     * and nothing anywhere reports it.
-     *
-     * Copied verbatim from `hyoo_studio_library.tree()`.
-     */
     $.$bog_vmap_lib_predef = '$mol_view $mol_object\n\tdom_name \\\n\tstyle *\n\tevent *\n\tfield *\n\tattr *\n\tsub /\n\ttitle \\\n';
-    /**
-     * Parses a pack tree into a normalized class tree.
-     *
-     * Deviation from studio: the stub is parsed as its own source instead of being
-     * string-glued in front of the fetched text. Studio hands `predef + str` to the
-     * parser, so every span in a malformed pack points eight rows above its real
-     * place. We show those spans to the user in an error strip, so they have to be
-     * honest. The stub content itself is byte for byte the same.
-     */
     function $bog_vmap_lib_parse(src, uri = 'web.view.tree') {
         const predef = this.$mol_tree2_from_string($.$bog_vmap_lib_predef, '$bog_vmap_lib_predef');
         const tree = this.$mol_tree2_from_string(src, uri);
         return this.$mol_view_tree2_normalize(tree.clone([...predef.kids, ...tree.kids]));
     }
     $.$bog_vmap_lib_parse = $bog_vmap_lib_parse;
-    /**
-     * The address with a trailing slash, whatever it was typed with.
-     *
-     * `new URL( 'web.js', base )` drops the last segment of a base that does not end
-     * with one, so `https://b-on-g.github.io/gram` would resolve to
-     * `https://b-on-g.github.io/web.js`. The default `https://mol.hyoo.ru` survives
-     * that only by accident, being an origin root.
-     *
-     * A function and not a step inside the field, because the field is edited by
-     * hand: appending the slash on every keystroke would fight the typing. Typed is
-     * stored as is, derived is normalized — the rule for every field a person types.
-     * @see ../ARCHITECTURE.md section 5, «Адрес пака нормализовать до слэша»
-     */
     function $bog_vmap_lib_slashed(uri) {
         return uri.replace(/\/?$/, '/');
     }
     $.$bog_vmap_lib_slashed = $bog_vmap_lib_slashed;
-    /**
-     * Why a pack did not load, in words somebody can act on.
-     *
-     * `$mol_fetch` throws the status line of the response and nothing else, so a
-     * mistyped address reaches the screen as a bare «Not Found» — true and
-     * useless: it names neither what was looked for nor where to correct it. Seen
-     * on the deploy in the counter of the class list, 09.09.2026.
-     *
-     * The address is repeated back because the field it came from may be scrolled
-     * away or, in the case of the default, never typed at all. It is the ADDRESS
-     * THAT WAS FETCHED and not the one that was typed, and it is handed in rather
-     * than derived here: the rule that grows `web.view.tree` onto a pack lives in
-     * `tree_link` and must not be written a second time to word a complaint.
-     */
     function $bog_vmap_lib_pack_note(link, error) {
         const reason = String(error?.message || error);
         if (!link)
@@ -20478,40 +20416,11 @@ var $;
             + ' — дерево классов, которое сборка кладёт рядом с бандлом';
     }
     $.$bog_vmap_lib_pack_note = $bog_vmap_lib_pack_note;
-    /**
-     * Base address of a sibling module of the pack, derived from the address of the
-     * page asking. Always ends with a slash, so `new URL` keeps its last segment.
-     *
-     * The two layouts are told apart by a trailing `-`, and they are not two
-     * spellings of one rule but two different places, so the code says so.
-     *
-     * The dev server serves every module of a pack out of `<pack>/<module>/-/`, so
-     * the modules are siblings there in the plain sense: the segment naming ours is
-     * replaced by the one asked for, and the `-` goes back on.
-     *
-     * A deploy has only ONE page in the whole project — the editor, published at
-     * the root of the site — and the other modules are published as folders beneath
-     * it, `web.js` and `web.view.tree` without a page of their own. So there is
-     * nothing to replace: the module asked for is a folder inside the one the
-     * editor is served from.
-     *
-     * A last segment ending in `.html` is the page file — `index.html`, `test.html`
-     * are the only two a module has — and is dropped first. Anything else is a
-     * folder, which is how `https://b-on-g.github.io/vmap` reads the same as the
-     * same address with its slash.
-     *
-     * The test is the extension and not merely a dot in the name, because a folder
-     * may carry one: a deploy versioned as `/vmap/v1.2/` is ordinary, and on a dot
-     * the segment `v1.2` would be taken for a page and eaten.
-     *
-     * @see ../ARCHITECTURE.md sections 5 and 7
-     */
     function $bog_vmap_lib_sibling(page, module) {
         const url = new URL(page);
         const path = url.pathname.split('/').filter(Boolean);
         if (/\.html?$/i.test(path[path.length - 1] ?? ''))
             path.pop();
-        // on the dev server the modules stand side by side, each in its own `-`
         if (path[path.length - 1] === '-') {
             path.pop();
             path.pop();
@@ -20523,33 +20432,12 @@ var $;
         return `${url.origin}/${path.join('/')}/`;
     }
     $.$bog_vmap_lib_sibling = $bog_vmap_lib_sibling;
-    /**
-     * Glues the library tree with the classes of the document into one namespace.
-     *
-     * Both sides end up in the same `$` sandbox at run time, so resolution has to
-     * see them as one list — that is the whole point of `united()` in studio.
-     */
     function $bog_vmap_lib_united(lib, kids) {
         if (!kids.length)
             return lib;
         return lib.clone([...lib.kids, ...kids]);
     }
     $.$bog_vmap_lib_united = $bog_vmap_lib_united;
-    /**
-     * Class name to its super node. The kids of that node are the own properties
-     * of the class, which is how `$mol_view_tree2_normalize` shapes a class.
-     *
-     * Deviation from studio: studio walks the kids linearly on every lookup
-     * (`lib.select( cl, null ).kids[0]`), which is O(classes) per inheritance step
-     * against a tree of ~450 classes. Same answer, built once.
-     *
-     * Second deviation, and the one that matters: a later declaration wins, while
-     * `select` takes the first. Document classes are appended after the library, so
-     * studio's order would let a library class shadow a document class of the same
-     * name. The scene compiles document classes into the sandbox *after* the pack's
-     * `web.js` has filled it, so at run time the document wins. The palette has to
-     * agree with what actually runs.
-     */
     function $bog_vmap_lib_index(united) {
         const index = new Map();
         for (const cl of united.kids) {
@@ -20561,15 +20449,6 @@ var $;
         return index;
     }
     $.$bog_vmap_lib_index = $bog_vmap_lib_index;
-    /**
-     * Inheritance chain of a class, nearest first, ending at the first name that
-     * the namespace does not declare (`$mol_object` for anything from a pack).
-     *
-     * Deviation from studio: a visited set. Studio edits exactly one class, so a
-     * cycle cannot occur there. Here the united namespace carries user authored
-     * classes, and two of them declared as each other's base is one keystroke
-     * away — without the guard it hangs the editor with no error at all.
-     */
     function $bog_vmap_lib_chain(index, base) {
         const chain = [];
         const seen = new Set();
@@ -20582,16 +20461,6 @@ var $;
         return chain;
     }
     $.$bog_vmap_lib_chain = $bog_vmap_lib_chain;
-    /**
-     * All ports of a class, own and inherited, keyed by property name.
-     *
-     * Ancestors are collected first, so a redefined property keeps the position of
-     * its earliest declaration but carries the most derived node. Same order and
-     * same overriding as `props_map()` in studio, which recurses into the super
-     * before adding its own kids.
-     *
-     * This is what stage 3 grows wire ports out of.
-     */
     function $bog_vmap_lib_props_map(index, base) {
         const all = new Map();
         const chain = $bog_vmap_lib_chain(index, base);
@@ -20606,24 +20475,6 @@ var $;
         return all;
     }
     $.$bog_vmap_lib_props_map = $bog_vmap_lib_props_map;
-    /**
-     * Port name to the class that declared the winning version of it.
-     *
-     * Walks the chain exactly as `$bog_vmap_lib_props_map` does, farthest ancestor
-     * first, overwriting on every redeclaration. `Map.set` on a key that is already
-     * there keeps its position and replaces the value, so the last write wins the
-     * value — the nearest declaration, the one whose node `props_map` returned —
-     * while the key order stays identical to `props_map`. The two maps can then be
-     * read side by side by key.
-     *
-     * A port is inherited exactly when its owner is not the class being asked
-     * about. Walking nearest first and keeping the first answer would give the same
-     * owners in a different order, and a consumer that trusted the two orders to
-     * agree would silently mislabel every row.
-     *
-     * Not in studio: it shows one class at a time and has no notion of a port
-     * coming from somewhere else.
-     */
     function $bog_vmap_lib_props_owner(index, base) {
         const owner = new Map();
         const chain = $bog_vmap_lib_chain(index, base);
@@ -20638,38 +20489,10 @@ var $;
         return owner;
     }
     $.$bog_vmap_lib_props_owner = $bog_vmap_lib_props_owner;
-    /**
-     * A component library, whatever its classes came from.
-     *
-     * Everything below `tree()` is source agnostic and always was: `united`,
-     * `index`, `props_map` and the rest only ever see a normalized class tree. The
-     * split just makes that visible, so a second source — a land of sources, with
-     * no deploy behind it — is a subclass overriding one method rather than a
-     * parallel implementation of nine.
-     *
-     * The default is the empty library: the `$mol_view` stub and nothing else. A
-     * throw would have been the other option and it is worse, because an empty
-     * library is a real state — a land with no components published yet — and not
-     * an error.
-     *
-     * @see ../ARCHITECTURE.md section 5
-     */
     class $bog_vmap_lib_any extends $mol_object {
-        /** Class tree of the library. Where it comes from is the subclass's business. */
         tree() {
             return this.$.$bog_vmap_lib_parse('');
         }
-        /**
-         * Classes of the document, to be resolved alongside the library.
-         * Overridden by the owner; empty until a document is open.
-         *
-         * This is also where a land library rides when it is used ON TOP of a pack
-         * rather than instead of one, which section 5 says is the normal case: land
-         * libraries compile into the same sandbox and inherit from the pack's
-         * `$mol_view`. Composition therefore needs no machinery — the classes of a
-         * land go in beside the document's, and `index` already lets a later
-         * declaration win.
-         */
         classes() {
             return [];
         }
@@ -20679,19 +20502,12 @@ var $;
         index() {
             return this.$.$bog_vmap_lib_index(this.united());
         }
-        /** Every class name of the namespace, in declaration order, deduped. */
         class_list() {
             return [...this.index().keys()];
         }
-        /** Same list, most recently declared first, for a base class picker. */
         base_options() {
             return [...this.class_list()].reverse();
         }
-        /**
-         * Palette search by class name. Deliberately not memoized by key: a cell per
-         * typed query would accumulate one dead cell per keystroke, and the filter
-         * over a few hundred names is cheaper than the cell.
-         */
         class_search(query) {
             return this.class_list().filter(this.$.$mol_match_text(query, (name) => [name]));
         }
@@ -20701,11 +20517,9 @@ var $;
         props_map(base) {
             return this.$.$bog_vmap_lib_props_map(this.index(), base);
         }
-        /** Which class each port of `base` came from. */
         props_owner(base) {
             return this.$.$bog_vmap_lib_props_owner(this.index(), base);
         }
-        /** Same ports as a tree node, most derived first, as in studio. */
         props_of(base) {
             return this.united().list([...this.props_map(base).values()].reverse());
         }
@@ -20738,47 +20552,22 @@ var $;
         $mol_mem_key
     ], $bog_vmap_lib_any.prototype, "props_of", null);
     $.$bog_vmap_lib_any = $bog_vmap_lib_any;
-    /**
-     * Library from a deployed MAM module.
-     *
-     * The name and the interface are unchanged from before the split, because the
-     * palette and the inspector both declare it and neither should have to care
-     * that a second kind of library now exists.
-     */
     class $bog_vmap_lib extends $bog_vmap_lib_any {
-        /**
-         * Deployed MAM module the components come from.
-         *
-         * Empty means no pack at all, and that is a state rather than a failure: a
-         * palette fed by lands alone has nothing deployed behind it. Every address
-         * below is then empty too, and `tree()` is the stub on its own.
-         */
         pack(next) {
             return next ?? 'https://mol.hyoo.ru';
         }
-        /** Same address, guaranteed to end with a slash. See `$bog_vmap_lib_slashed`. */
         pack_base() {
             const pack = this.pack();
             return pack ? $bog_vmap_lib_slashed(pack) : '';
         }
-        /** Behaviour of the classes. Loaded by the scene, not by us. */
         script_link() {
             const base = this.pack_base();
             return base ? new URL('web.js', base).toString() : '';
         }
-        /** Declarations of the classes. */
         tree_link() {
             const base = this.pack_base();
             return base ? new URL('web.view.tree', base).toString() : '';
         }
-        /**
-         * Class tree of the pack.
-         *
-         * No try/catch on purpose: `$mol_fetch` throws on any non-2xx and the wire
-         * suspends through exceptions, so catching here would both swallow a dead
-         * pack into an empty palette and break suspension. An unreachable pack has
-         * to reach the view as an error.
-         */
         tree() {
             const uri = this.tree_link();
             if (!uri)
@@ -20808,18 +20597,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the pure half of `$bog_vmap_lib`: parsing, the `$mol_view` stub,
-     * the inheritance walk and the united namespace.
-     *
-     * Nothing here touches the network. CI runs `node.test.js` and a live fetch
-     * would make the build depend on a third party host being up.
-     *
-     * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-     * a regexp over sources, literals included, so a bare class name in a fixture
-     * would drag a whole module into the bundle. Naming one HERE would do it too,
-     * which is why this sentence names none.
-     */
     const d = '$';
     const lib_src = [
         `${d}bog_vmap_lib_test_a ${d}mol_view`,
@@ -20857,37 +20634,26 @@ var $;
         'props_map carries inherited ports and the most derived value'($) {
             const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
             const props = $.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_b`);
-            // seven from $mol_view, then title redeclared, then count and extra
             $mol_assert_equal([...props.keys()].join(' '), 'dom_name style event field attr sub title count extra');
-            // redeclared in the subclass, so the subclass node wins
             $mol_assert_equal(props.get('count').kids[0].type, '1');
-            // declared once in the middle of the chain
             $mol_assert_equal(props.get('title').kids[0].value, 'A');
         },
         'a malformed pack points at the row of the pack, not of the stub'($) {
-            // `$mol_error_syntax` itself does not fit the `typeof Error` parameter,
-            // its constructor takes three arguments
             const error = $mol_assert_fail(() => $.$bog_vmap_lib_parse(`${d}q ${d}w\n\t\t\toops \\\n`, 'pack.view.tree'), SyntaxError);
-            // gluing the stub in front of the source, the way studio does, reports
-            // this very row as `#10`, eight below where the user has to look
             $mol_assert_equal(String(error.span), 'pack.view.tree#2:1/3');
         },
         'a redeclared port keeps the position of its first declaration'($) {
             const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
             const keys = [...$.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_b`).keys()];
-            // `title` comes from $mol_view and is redeclared by _test_a
             $mol_assert_equal(keys.indexOf('title'), 6);
         },
         'every port names the class it came from'($) {
             const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
             const owner = $.$bog_vmap_lib_props_owner(index, `${d}bog_vmap_lib_test_b`);
-            // the same keys as props_map, so «inherited» is one comparison away
             $mol_assert_equal([...owner.keys()].join(' '), [...$.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_b`).keys()].join(' '));
             $mol_assert_equal(owner.get('sub'), `${d}mol_view`);
             $mol_assert_equal(owner.get('extra'), `${d}bog_vmap_lib_test_b`);
-            // `title` is declared twice, the nearer declaration owns it
             $mol_assert_equal(owner.get('title'), `${d}bog_vmap_lib_test_a`);
-            // `count` is declared in both classes, so the nearer one is the owner
             $mol_assert_equal(owner.get('count'), `${d}bog_vmap_lib_test_b`);
         },
         'a cycle in the namespace does not hang'($) {
@@ -20906,7 +20672,6 @@ var $;
         'united resolves document classes against the library'($) {
             const lib = $.$bog_vmap_lib_parse(lib_src);
             const doc = $.$bog_vmap_lib_parse(doc_src);
-            // the stub is part of every parse, drop it from the document side
             const doc_kids = doc.kids.filter(cl => cl.type !== `${d}mol_view`);
             const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_united(lib, doc_kids));
             const props = $.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_doc`);
@@ -20921,7 +20686,6 @@ var $;
             ].join('\n')).kids.filter(cl => cl.type !== `${d}mol_view`);
             const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_united(lib, own));
             const props = $.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_a`);
-            // the library declaration of _test_a is gone, only the document one is left
             $mol_assert_equal(props.has('mine'), true);
             $mol_assert_equal(props.has('count'), false);
         },
@@ -20940,7 +20704,6 @@ var $;
             $mol_assert_equal(lib.class_search('').length, 3);
             $mol_assert_equal(lib.inherit_chain(`${d}bog_vmap_lib_test_a`).length, 3);
             $mol_assert_equal(lib.props_map(`${d}bog_vmap_lib_test_a`).size, 8);
-            // props_of is the same set as a tree, most derived first
             $mol_assert_equal(lib.props_of(`${d}bog_vmap_lib_test_b`).kids[0].type, 'extra');
         },
         'the pack address drives both links'($) {
@@ -20951,77 +20714,40 @@ var $;
             $mol_assert_equal(lib.tree_link(), 'https://example.org/app/web.view.tree');
             $mol_assert_equal(lib.script_link(), 'https://example.org/app/web.js');
         },
-        /**
-         * A pack served from a sub path is the normal case: every app of ours sits
-         * at `<user>.github.io/<repo>/`. Without the trailing slash `new URL` would
-         * take `<repo>` for a file name and drop it.
-         */
         'a pack address without a trailing slash keeps its last segment'($) {
             const lib = $.$bog_vmap_lib.make({ $ });
             lib.pack('https://b-on-g.github.io/gram');
             $mol_assert_equal(lib.tree_link(), 'https://b-on-g.github.io/gram/web.view.tree');
             $mol_assert_equal(lib.script_link(), 'https://b-on-g.github.io/gram/web.js');
-            // the address the user typed is left alone, only the derived base grows
             $mol_assert_equal(lib.pack(), 'https://b-on-g.github.io/gram');
             $mol_assert_equal(lib.pack_base(), 'https://b-on-g.github.io/gram/');
             lib.pack('https://b-on-g.github.io/gram/');
             $mol_assert_equal(lib.tree_link(), 'https://b-on-g.github.io/gram/web.view.tree');
         },
-        /**
-         * The dev server keeps a module in `<pack>/<module>/-/`, so a sibling of the
-         * page keeps the `-` as well. Both entry pages of a module live there, and
-         * the editor is developed on `test.html`.
-         */
         'a sibling module on the dev server keeps the build folder'($) {
             const page = 'http://localhost:9080/bog/vmap/app/-/test.html';
             $mol_assert_equal($bog_vmap_lib_sibling(page, 'scene'), 'http://localhost:9080/bog/vmap/scene/-/');
             $mol_assert_equal($bog_vmap_lib_sibling(page, 'part'), 'http://localhost:9080/bog/vmap/part/-/');
             $mol_assert_equal($bog_vmap_lib_sibling('http://localhost:9080/bog/vmap/app/-/index.html', 'scene'), 'http://localhost:9080/bog/vmap/scene/-/');
         },
-        /**
-         * A deploy publishes the editor at the root of the site and every other
-         * module as a folder beneath it, so a sibling is a folder INSIDE the one the
-         * editor is served from. The address of the pack is then `<site>/part/`,
-         * which is where `web.view.tree` is, and the bundle of the sandbox is
-         * `<site>/scene/web.js` — neither of them a page.
-         */
         'a sibling module on a deploy is a folder under the editor'($) {
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/', 'part'), 'https://b-on-g.github.io/vmap/part/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/index.html', 'part'), 'https://b-on-g.github.io/vmap/part/');
         },
-        /**
-         * A folder address without its slash reads the same: a last segment with no
-         * dot in it is a folder, not a page file. GitHub Pages answers both.
-         */
         'a page address without a trailing slash reads as a folder'($) {
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap', 'part'), 'https://b-on-g.github.io/vmap/part/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap?x=1#y', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
         },
-        /**
-         * A dot in a FOLDER name does not make it a page. A versioned deploy is the
-         * ordinary way to get one, and taking `v1.2` for a page would eat the
-         * segment and point both addresses a level above where they live.
-         */
         'a dot in a folder name is not a page file'($) {
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/', 'part'), 'https://b-on-g.github.io/vmap/v1.2/part/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/index.html', 'scene'), 'https://b-on-g.github.io/vmap/v1.2/scene/');
         },
-        /**
-         * The editor on a domain of its own is served from the root itself, so the
-         * siblings are the first segment there. Nothing is eaten and no address
-         * climbs above the root, which is the one thing that must never happen here.
-         */
         'an editor served from the root of a site keeps its siblings under it'($) {
             $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/', 'part'), 'https://vmap.example/part/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/index.html', 'scene'), 'https://vmap.example/scene/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example', 'part'), 'https://vmap.example/part/');
         },
-        /**
-         * A `data:` address keeps the fetch offline while still going through the
-         * real `$mol_fetch`, so `tree()` is covered end to end and CI stays free of
-         * a third party host.
-         */
         async 'a pack is fetched and parsed'($) {
             const lib = $.$bog_vmap_lib.make({
                 $,
@@ -21029,10 +20755,6 @@ var $;
             });
             $mol_assert_equal((await $.$mol_wire_async(lib).class_list()).join(' '), `${d}mol_view ${d}bog_vmap_lib_test_a ${d}bog_vmap_lib_test_b`);
         },
-        /**
-         * The one behaviour a try/catch inside `tree()` would quietly destroy: a
-         * dead pack has to reach the view as an error, not as an empty palette.
-         */
         async 'an unreachable pack fails instead of emptying the palette'($) {
             const lib = $.$bog_vmap_lib.make({ $, tree_link: () => 'data:' });
             let failed = '';
@@ -21044,17 +20766,10 @@ var $;
             }
             $mol_assert_equal(failed, '$mol_error_mix');
         },
-        /**
-         * The wording of a dead pack. A status line alone — «Not Found» — is true
-         * and useless: it names neither the file that was missing nor the field to
-         * correct, and that is exactly what reached the screen.
-         */
         'a dead pack is worded with the address that was fetched'($) {
             const note = $.$bog_vmap_lib_pack_note('https://dead.test/web.view.tree', new Error('Not Found'));
             $mol_assert_ok(note.includes('Not Found'));
             $mol_assert_ok(note.includes('https://dead.test/web.view.tree'));
-            // With no address to name — a library of lands alone — it says the one
-            // thing it knows rather than an empty «Ожидался ».
             const bare = $.$bog_vmap_lib_pack_note('', new Error('Failed to fetch'));
             $mol_assert_equal(bare, 'Пак не отвечает: Failed to fetch');
         },
