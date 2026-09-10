@@ -1,37 +1,8 @@
 namespace $ {
-
-	/**
-	 * Tests of the editor shell that need no DOM.
-	 *
-	 * Nothing here renders. What is checked is the rule that the canvas must not be
-	 * able to break: where the camera points is not part of the document.
-	 *
-	 * `d` keeps `$` out of the string literals — mam builds its dependency graph by
-	 * a regexp over sources, literals included, so a bare class name in a fixture
-	 * would drag a whole module into the bundle.
-	 */
 	const d = '$'
 
-	/**
-	 * A session of its own per test, and the bare subclass is not enough for it.
-	 *
-	 * The memoized cells of the session store are found by OWN property, so a
-	 * subclass does get cells of its own. The bytes under them do not: the store
-	 * caches its backing storage in a plain field of the class, that field is read
-	 * through the prototype chain, and a subclass therefore reads and writes the
-	 * object the base cached — every test folding a panel away leaves it folded for
-	 * the next one. So what is overridden here is the backing storage itself, and
-	 * only it: the keys, the JSON round trip and the meaning of a `null` write stay
-	 * exactly as they are in production.
-	 */
 	$mol_test_mocks.push( $=> {
-
-		// Generic, because the base is: a plain `extends` drops the type parameter
-		// from the constructor and the assignment below is then refused.
 		class $mol_state_session_mock< Value > extends $.$mol_state_session< Value > {
-
-			// An own field of this class, and this class is made anew for every
-			// test, so nothing here outlives the test that wrote it.
 			static store = {} as Record< string, string >
 
 			static override native(): Pick< Storage, 'getItem' | 'setItem' | 'removeItem' > {
@@ -49,19 +20,7 @@ namespace $ {
 	} )
 
 	$mol_test({
-
-		/**
-		 * FIRST INVARIANT OF CULLING: what is drawn may depend on the camera, what is
-		 * stored may not — not by a byte.
-		 *
-		 * Cheap to check and worth checking, because the tempting way to implement
-		 * culling is to push a document with the off screen parts left out of `sub`.
-		 * That reads as harmless, costs a full recompile per frame of panning, and
-		 * quietly makes the saved document a function of where the user was looking.
-		 * This test fails the moment anybody tries it.
-		 */
 		'panning does not touch the document'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -79,9 +38,7 @@ namespace $ {
 
 		},
 
-		/** Placement is editor state and moves with the camera never, with a drag only. */
 		'panning does not touch the placement'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -94,12 +51,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * Boxes survive a report that does not mention them, because culling makes
-		 * silence mean «not drawn» rather than «has no size». Only a delete clears one.
-		 */
 		'measured boxes survive a report without them'( $ ) {
-
 			const pane = $bog_vmap_app_pane.make({
 				$,
 				doc_root: ()=> `${d}doc`,
@@ -110,7 +62,6 @@ namespace $ {
 				[ `${d}doc/B` ]: { x: 20, y: 0, width: 10, height: 10 },
 			})
 
-			// What a report looks like once `B` has been culled: it is simply absent.
 			pane.sizes({ ... pane.sizes(), [ `${d}doc/A` ]: { x: 5, y: 5, width: 10, height: 10 } })
 
 			$mol_assert_equal( pane.sizes()[ `${d}doc/A` ].x, 5 )
@@ -123,9 +74,7 @@ namespace $ {
 
 		},
 
-		/** A part's own sub views go with it, or they would outlive their owner. */
 		'forgetting a part forgets what was measured inside it'( $ ) {
-
 			const pane = $bog_vmap_app_pane.make({
 				$,
 				doc_root: ()=> `${d}doc`,
@@ -142,22 +91,11 @@ namespace $ {
 			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/Icon` ] ), false )
 			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/Icon/Path` ] ), false )
 
-			// A name this one is a prefix of is a different part and must stay.
 			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/Icons` ] ), true )
 
 		},
 
-		/**
-		 * The whole way of a land from the field to the wire, on a land built by hand:
-		 * what the scene is sent is the parts of the shelf, in order, three texts each,
-		 * and the palette and the inspector are handed the classes of the same parts.
-		 *
-		 * `land()` is overridden on the library so no link is ever looked up; the link
-		 * in the field is shaped like a real one and points nowhere. No proof of work,
-		 * no master, so the test is well inside its second.
-		 */
 		'the sources of the lands reach the scene as they lie in the shelf'( $ ) {
-
 			const land = $giper_baza_land.make({ $ })
 			const shelf = land.Data( $bog_vmap_lib_land_shelf )
 
@@ -184,7 +122,6 @@ namespace $ {
 				{ tree: badge_src, js: 'price(){ return 1 }', css: '' },
 			] )
 
-			// the same classes for the palette and, beside the root, for the inspector
 			$mol_assert_like(
 				app.lib_classes().map( tree => tree.type ),
 				[ `${d}my_card`, `${d}my_badge` ],
@@ -193,25 +130,12 @@ namespace $ {
 			const peers = app.node_peers().map( tree => tree.type )
 			$mol_assert_like( peers, [ `${d}my_card`, `${d}my_badge`, app.doc_root() ] )
 
-			// a field with no lands sends an empty list, not nothing
 			app.links( 'https://mol.hyoo.ru' )
 			$mol_assert_like( app.libs(), [] )
 
 		},
 
-		/**
-		 * Section 5 in one test: a pack cannot be unloaded from a realm, so a change
-		 * of pack is a change of the KEY of the frame and the element is replaced; a
-		 * land is compiled into the sandbox like the document, so a change of lands
-		 * leaves the key — and with it the frame, its camera and its live
-		 * instances — exactly where they were.
-		 *
-		 * The pack rides the bridge now rather than the address of the frame, so
-		 * what is read here is the key, which is what the guarantee actually rests
-		 * on. That a key really makes a new element is `flow.test.ts`.
-		 */
 		'a change of lands keeps the frame, a change of pack replaces it'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 			const pane = app.Pane() as $$.$bog_vmap_app_pane
 
@@ -223,39 +147,22 @@ namespace $ {
 			$mol_assert_equal( pane.scene_key(), before )
 			$mol_assert_like( app.lands(), [ 'AbCdEfGh_12345678_ZyXwVuTs' ] )
 
-			// the slash grows in the derived address, the field keeps what was typed
 			app.links( 'https://b-on-g.github.io/gram, AbCdEfGh_12345678_ZyXwVuTs' )
 			$mol_assert_ok( pane.scene_key() !== before )
 			$mol_assert_equal( pane.pack_uri(), 'https://b-on-g.github.io/gram/web.js' )
 			$mol_assert_equal( app.links(), 'https://b-on-g.github.io/gram, AbCdEfGh_12345678_ZyXwVuTs' )
 
-			// a second pack is refused: the frame keeps the first
 			app.links( 'https://b-on-g.github.io/gram, https://mol.hyoo.ru' )
 			$mol_assert_equal( pane.pack_uri(), 'https://b-on-g.github.io/gram/web.js' )
 			$mol_assert_equal( app.links_parsed().rejected.length, 1 )
 
-			// a field naming no pack falls back to the standard palette, see below
 			app.links( 'AbCdEfGh_12345678_ZyXwVuTs' )
 			$mol_assert_ok( !app.pack_link().startsWith( 'https://b-on-g.github.io/gram' ) )
 			$mol_assert_like( app.lands(), [ 'AbCdEfGh_12345678_ZyXwVuTs' ] )
 
 		},
 
-		/**
-		 * The two layouts of one pack, from the address of the editor page alone.
-		 *
-		 * The dev server keeps every module in `<pack>/<module>/-/`, while a deploy
-		 * publishes the editor at the root of the site and the other modules as
-		 * folders under it. Neither the sandbox nor the standard palette has a page
-		 * on either layout, so what is derived is a bundle and a folder, and nothing
-		 * is configured or typed. The derivation itself is covered in `lib`; here it
-		 * is that the editor asks for the right two siblings.
-		 */
 		'the sandbox and the standard palette are found on both layouts'( $ ) {
-
-			// the address of the page is put in by hand rather than through `make`:
-			// it is a method of the derived class, and `make` types its overrides
-			// against the class the tree declares
 			const dev = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 			dev.page_uri = ()=> 'http://localhost:9080/bog/vmap/app/-/test.html'
 
@@ -270,21 +177,13 @@ namespace $ {
 			$mol_assert_equal( prod.pack_link(), 'https://b-on-g.github.io/vmap/part/' )
 			$mol_assert_equal( prod.pack_script(), 'https://b-on-g.github.io/vmap/part/web.js' )
 
-			// what a person typed is used as typed and never replaced by the sibling
 			prod.links( 'https://mol.hyoo.ru' )
 			$mol_assert_equal( prod.pack_link(), 'https://mol.hyoo.ru/' )
 			$mol_assert_equal( prod.links(), 'https://mol.hyoo.ru' )
 
 		},
 
-		/**
-		 * An artboard is a node with a `sub` of its own and a width, written in
-		 * plain `view.tree`. No class of ours, so an exported document depends on
-		 * nothing of this pack, and no mark on the side, so the text is the whole
-		 * truth about what is a page.
-		 */
 		'an artboard is an ordinary node with a sub and a width'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.board_add()
@@ -293,7 +192,6 @@ namespace $ {
 
 			$mol_assert_ok( source.includes( `Page ${d}mol_view` ) )
 			$mol_assert_ok( source.includes( 'width \\1280px' ) )
-			// `[mol_view]` is `display: flex` with no direction, which is a ROW.
 			$mol_assert_ok( source.includes( 'flexDirection \\column' ) )
 
 			$mol_assert_like( app.node().sub_names(), [ 'Page' ] )
@@ -301,8 +199,6 @@ namespace $ {
 			$mol_assert_like( app.doc_containers(), [ 'Page' ] )
 			$mol_assert_equal( app.selected(), 'Page' )
 
-			// It lies on the canvas like any free part, so a second one goes beside
-			// the first rather than on top of it — that is what several pages are.
 			$mol_assert_ok( Boolean( app.spots()[ 'Page' ] ) )
 
 			app.board_add()
@@ -310,13 +206,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * Which way a container stacks is stated by the document, and the host reads
-		 * it out rather than guessing: the boxes of the children say nothing while
-		 * there are fewer than two of them, which is every page just made.
-		 */
 		'the direction a container is set to comes off the document'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.board_add()
@@ -325,7 +215,6 @@ namespace $ {
 			app.part_drop( `${d}mol_button_minor`, 2000, 100 )
 			$mol_assert_equal( app.doc_axis( 'Button_minor' ), '' )
 
-			// What the layout panel writes is what the canvas reads back.
 			app.node().over_set( 'Page', 'style', app.node().tree().struct( 'style', [
 				app.node().tree().struct( '*', [
 					app.node().tree().struct( 'flexDirection', [ app.node().tree().data( 'row' ) ] ),
@@ -336,13 +225,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * The same drop, two ways of being laid out, told apart by where the release
-		 * happened: inside a page it is a position in the tree, outside it is a
-		 * coordinate on the desk.
-		 */
 		'a drop inside an artboard goes into its tree and gets no coordinate'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 			const pane = app.Pane() as $$.$bog_vmap_app_pane
 
@@ -355,7 +238,6 @@ namespace $ {
 			$mol_assert_like( app.node().sub_names( 'Page' ), [ 'Button_minor' ] )
 			$mol_assert_equal( app.spots()[ 'Button_minor' ], undefined )
 
-			// Outside the page it is a free part with a coordinate, as before.
 			app.part_drop( `${d}mol_string`, 2000, 100 )
 
 			$mol_assert_like( app.node().sub_names(), [ 'Page', 'String' ] )
@@ -363,9 +245,7 @@ namespace $ {
 
 		},
 
-		/** Carried into a page, a part loses the coordinate that no longer moves it. */
 		'a part carried into an artboard leaves the placement'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.board_add()
@@ -381,13 +261,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * A page goes with everything on it. Left behind, its children would stay
-		 * declared and referenced by nothing: nothing draws them, so nothing can
-		 * select them, so nothing can ever take them out again.
-		 */
 		'deleting an artboard takes what is laid out inside it'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.board_add()
@@ -405,14 +279,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * The name of a node is the key of the pick, of the placement and of the
-		 * remembered box at once, so a rename that only touches the text orphans all
-		 * three: the node lives under the new name while the editor points at one
-		 * nothing declares.
-		 */
 		'renaming a node carries the pick and the placement with it'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -432,9 +299,7 @@ namespace $ {
 
 		},
 
-		/** A node drawn on a page keeps its place in that page under the new name. */
 		'renaming a node on a board keeps it drawn'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.board_add()
@@ -447,12 +312,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * The document refuses the rename, and the editor state must not move for a
-		 * rename that did not happen.
-		 */
 		'a rename onto a name already taken changes nothing'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -470,13 +330,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * The field of the inspector renames through the editor, so the pick and the
-		 * placement travel with it. Bound rather than left to the class model the
-		 * inspector holds: that one knows the text and nothing else.
-		 */
 		'the name field of the inspector renames the picked node'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -493,12 +347,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * The refusal has to reach the person in words: a throw out of a text field
-		 * setter lands in `setCustomValidity`, which is not where anybody looks.
-		 */
 		'a name already taken is refused in words and moves nothing'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -511,27 +360,17 @@ namespace $ {
 
 			$mol_assert_equal( app.doc_source(), before )
 			$mol_assert_equal( app.selected(), 'Button_minor' )
-			// The exact words, because words are the whole point of this path.
 			$mol_assert_equal(
 				app.node_title_note(),
 				'Имя «String» в этом документе уже занято. Узел по-прежнему называется «Button_minor»',
 			)
 
-			// The message belongs to the node it is about, so another pick is clean.
 			app.selected( 'String' )
 			$mol_assert_equal( app.node_title_note(), '' )
 
 		},
 
-		/**
-		 * The interface is Russian and the field asks for a name, so a Russian name
-		 * is the first thing anybody types into it — and a node name is a property
-		 * name, which `view.tree` allows latin letters, digits and `_` and nothing
-		 * else. Left to the model this came back as `Bad property signature`, which
-		 * is neither the language of the person nor an answer to what they did.
-		 */
 		'a name the language does not allow is refused in words and moves nothing'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -549,27 +388,17 @@ namespace $ {
 					+ ' Узел по-прежнему называется «Button_minor»',
 			)
 
-			// A space is the other everyday way to write a name nothing can address.
 			app.node_title( 'Send button' )
 			$mol_assert_equal( app.doc_source(), before )
 			$mol_assert_ok( app.node_title_note().startsWith( 'Имя «Send button» не годится' ) )
 
-			// And a name the language does allow still goes through.
 			app.node_title( 'Send' )
 			$mol_assert_equal( app.selected(), 'Send' )
 			$mol_assert_equal( app.node_title_note(), '' )
 
 		},
 
-		/**
-		 * A wire spells the name of the node it reads, so a rename that misses it
-		 * leaves a wire pointing at a name nothing declares — and the canvas draws
-		 * it, because a wire is a line of the document like any other. The model is
-		 * proven to rewrite references; what is pinned here is that the field of the
-		 * inspector reaches that path and not some other one.
-		 */
 		'renaming through the name field carries the wire'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_string`, 100, 200 )
@@ -585,8 +414,6 @@ namespace $ {
 
 			$mol_assert_equal( app.selected(), 'Field' )
 
-			// One wire still, reading the node under its new name. Not dropped, and
-			// not doubled by a second one left behind under the old name.
 			$mol_assert_equal( app.doc_wires().length, 1 )
 			$mol_assert_equal( app.doc_wires()[ 0 ].from, 'Field' )
 			$mol_assert_equal( app.doc_wires()[ 0 ].to, 'Button_minor' )
@@ -594,15 +421,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * The button hands over the module the export builds, folder included.
-		 *
-		 * Names spelled out rather than compared against a second call of the same
-		 * builder: a comparison of the export with itself would pass on any wiring at
-		 * all, including one where the button downloads the wrong document.
-		 */
 		'the download offers the module the export builds'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -612,33 +431,23 @@ namespace $ {
 			$mol_assert_equal( app.export_ready(), true )
 			$mol_assert_equal( module.path, 'my/site/page' )
 			$mol_assert_equal( module.name, 'page' )
-			// A dropped component writes no body and no styles, so the module carries
-			// neither file: what comes out is what a person would have written.
 			$mol_assert_equal(
 				module.files.map( file => file.name ).join( ' ' ),
 				'page.view.tree page.meta.tree index.html',
 			)
 
-			// The declaration downloaded is the document, not a rendering of it.
 			$mol_assert_equal(
 				module.files[ 0 ].text,
 				app.doc_source(),
 			)
 
-			// And the folder is on the button itself, where it is read without
-			// hovering: section 10, the folder is not free and the author chose it.
 			$mol_assert_equal( app.export_title(), 'Скачать my/site/page' )
 			$mol_assert_equal( app.export_file(), 'page.zip' )
 			$mol_assert_ok( app.export_hint().includes( 'npx mam my/site/page' ) )
 
 		},
 
-		/**
-		 * The archive carries the module folder inside, so unpacking at the root of a
-		 * checkout puts the files where mam resolves the class names to.
-		 */
 		'the archive is the module in its folder'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -649,14 +458,11 @@ namespace $ {
 			$mol_assert_ok( text.includes( 'my/site/page/page.view.tree' ) )
 			$mol_assert_ok( text.includes( 'my/site/page/index.html' ) )
 
-			// Stored, not compressed, so the sources travel as themselves.
 			$mol_assert_ok( text.includes( `${d}mol_button_minor` ) )
 
 		},
 
-		/** Two artboards make a site of two pages, and the download carries its router. */
 		'a document of two artboards downloads with a router'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.doc_source([
@@ -677,9 +483,6 @@ namespace $ {
 			const tree = module.files[ 0 ].text
 			$mol_assert_ok( tree.includes( `${d}bog_vmap_app_page_app ${d}mol_view` ) )
 
-			// The address key is the standard one, so a link between the pages is an
-			// ordinary link written in the document itself. Addressed by name and not
-			// by number: which files a module carries follows from what it has.
 			const file_of = ( suffix: string )=>
 				module.files.find( file => file.name.endsWith( suffix ) )?.text ?? ''
 
@@ -688,14 +491,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * A body that works in the preview and would not compile refuses the whole
-		 * download, and the reason stands on the screen in words instead of in a
-		 * console. Without this the person meets it as a build failure on a machine
-		 * the editor never sees.
-		 */
 		'an untyped body refuses the download and says why'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -712,15 +508,12 @@ namespace $ {
 			$mol_assert_ok( notes[ 1 ].includes( 'greeting' ) )
 			$mol_assert_ok( notes[ 1 ].includes( 'who' ) )
 
-			// The rows are on the screen, and they are the sentences themselves.
 			$mol_assert_equal( app.export_rows().length, 2 )
 			$mol_assert_equal( app.export_text( 1 ), notes[ 1 ] )
 			$mol_assert_ok( app.body().includes( app.Export_note() ) )
 
-			// And nothing can be taken out of the editor while it is refused.
 			$mol_assert_fail( ()=> app.export_blob(), Error )
 
-			// The strip goes as soon as the body is typed, and the button comes back.
 			app.root_js( 'greeting( who: string ) {\n\treturn who\n}\n' )
 
 			$mol_assert_equal( app.export_ready(), true )
@@ -729,17 +522,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * The button must not make the editor wait for the document.
-		 *
-		 * A document opened by a link lives in a land that suspends every read until
-		 * it syncs, and the toolbar is drawn from the same cell the button reads. A
-		 * suspension passed on from here suspends the whole editor, frame included,
-		 * and the sandbox never comes up — measured, the standing test of that
-		 * invariant went red the moment this was wired to the toolbar with a rethrow.
-		 */
 		'a document still on its way holds nothing up'( $ ) {
-
 			const waiting = new Promise( ()=> {} )
 
 			const app = $bog_vmap_app.make({
@@ -753,8 +536,6 @@ namespace $ {
 				}),
 			}) as $$.$bog_vmap_app
 
-			// Nothing to download yet, and nothing to complain about either: a wait is
-			// not a refusal, so no strip stands on the screen saying it is.
 			$mol_assert_equal( app.export_ready(), false )
 			$mol_assert_equal( app.export_notes().length, 0 )
 			$mol_assert_equal( app.body().includes( app.Export_note() ), false )
@@ -762,12 +543,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * An untouched editor downloads too, and downloads a module that builds: an
-		 * empty page is a legal document, not a state to be guarded against.
-		 */
 		'an untouched document downloads as the empty page'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			const module = app.export_state().module!
@@ -776,11 +552,8 @@ namespace $ {
 			$mol_assert_equal( module.root, `${d}my_site_page` )
 			$mol_assert_equal( module.files[ 0 ].text, `${d}my_site_page ${d}mol_view sub /\n` )
 
-			// Out of this pack, in a folder of the author's own: an untouched
-			// document used to be unpacked inside the editor itself.
 			$mol_assert_equal( module.path, 'my/site/page' )
 
-			// No body and no styles anywhere, so neither file is written at all.
 			$mol_assert_like(
 				module.files.map( file => file.name ),
 				[ 'page.view.tree', 'page.meta.tree', 'index.html' ],
@@ -788,17 +561,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * THE INVARIANT OF A DOCUMENT OF SEVERAL CLASSES: an edit of one class is an
-		 * edit of one class.
-		 *
-		 * Measured before this was true: a drop off the palette left the text holding
-		 * the root alone, because the editor edited through a model of ONE class laid
-		 * over the WHOLE text — a write there serializes the class it touched as the
-		 * entire document. No error, no warning, the neighbour simply gone.
-		 */
 		'an edit of the root leaves the other classes byte for byte'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.doc_source([
@@ -821,15 +584,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * A base always stands above its heir in the exported file, whatever order
-		 * the document keeps them in: `class $A extends $[ '$B' ]` takes its base at
-		 * the moment it is declared, and the generator walks the file downwards. The
-		 * document is free to hold them in any order, and does — a class is added
-		 * where the text was typed.
-		 */
 		'the exported file puts a base above its heir after an edit'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.doc_source([
@@ -840,7 +595,6 @@ namespace $ {
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
 
-			// The document keeps the order it was written in.
 			$mol_assert_like( app.doc_model().names(), [
 				`${d}bog_vmap_app_page`,
 				`${d}bog_vmap_app_base`,
@@ -855,13 +609,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * The root class is the first class of the text and follows it, so renaming
-		 * it moves the folder the module is unpacked into — which is the whole reason
-		 * the name is editable at all. Section 10: the folder is not free.
-		 */
 		'renaming the root moves the module and the folder on the button'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -881,14 +629,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * A rename and its undo, because the two halves fail apart: the text is
-		 * rewritten by the model and the body and the styles are carried by hand, so
-		 * a rename that lost them on the way back would be a rename that loses them,
-		 * full stop. Everything has to come back to the byte it started from.
-		 */
 		'a rename and the rename back leave the document as it was'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.doc_source([
@@ -912,19 +653,11 @@ namespace $ {
 			$mol_assert_equal( app.root_js(), 'greeting(){\n\treturn 1\n}\n' )
 			$mol_assert_equal( app.root_css(), '[my] {\n\tcolor: red;\n}' )
 
-			// The class that was never renamed kept its own body throughout.
 			$mol_assert_equal( app.class_js( `${d}my_site_card` ), 'note(){\n\treturn 2\n}\n' )
 
 		},
 
-		/**
-		 * What a rename must not cost. The pick, the placement and the wires are keyed
-		 * by PROPERTY name, and a rename of the class touches no property — but the
-		 * handwritten body and the styles are stored per CLASS name, so those two are
-		 * carried by hand and would be lost silently without it.
-		 */
 		'renaming the root carries the body and orphans nothing'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_string`, 100, 200 )
@@ -946,7 +679,6 @@ namespace $ {
 			$mol_assert_equal( JSON.stringify( app.spots() ), spots )
 			$mol_assert_equal( JSON.stringify( app.doc_wires() ), wires )
 
-			// The text differs in the class name and in nothing else.
 			$mol_assert_equal(
 				app.doc_source(),
 				source.replace( `${d}my_site_page`, `${d}my_shop_page` ),
@@ -954,18 +686,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * A name changed in the TEXT of a class is a rename too, and the body and the
-		 * styles have to follow it there as well.
-		 *
-		 * Measured before they did: they stayed under the old name, so what the scene
-		 * is handed — `doc_js` and `doc_css` — came out empty, and the behaviour the
-		 * person had written stopped working in the document with nothing on the
-		 * screen saying so. The text is the truth of section 1, so the fix is to
-		 * follow it rather than to forbid editing the name here.
-		 */
 		'a class renamed in its own text carries its body and its styles'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -982,21 +703,12 @@ namespace $ {
 			$mol_assert_equal( app.class_js( `${d}my_shop_page` ), 'greeting(){\n\treturn 1\n}\n' )
 			$mol_assert_equal( app.class_css( `${d}my_shop_page` ), '[my] {\n\tcolor: red;\n}' )
 
-			// What the scene is handed, which is where the loss actually showed.
 			$mol_assert_equal( app.doc_js()[ `${d}my_shop_page` ], 'greeting(){\n\treturn 1\n}\n' )
 			$mol_assert_ok( app.doc_css().includes( 'color: red' ) )
 
 		},
 
-		/**
-		 * One name gone and one arrived is a rename. Two of either is somebody
-		 * rewriting the slot, and there is no telling which became which — a guess
-		 * would move a body into a class that never had one. Nothing travels, and
-		 * nothing is lost: what was stored still answers to the name it was stored
-		 * under.
-		 */
 		'a slot rewritten into two classes carries nothing and loses nothing'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -1018,18 +730,11 @@ namespace $ {
 			$mol_assert_equal( app.class_js( `${d}my_shop_page` ), '' )
 			$mol_assert_equal( app.class_js( `${d}my_shop_card` ), '' )
 
-			// Still under the name it was written under, and still readable there.
 			$mol_assert_equal( app.class_js( `${d}my_site_page` ), 'greeting(){\n\treturn 1\n}\n' )
 
 		},
 
-		/**
-		 * The other way a slot grows a class: the one on screen stays and a second is
-		 * typed under it. No name left the document, so nothing is a rename, and the
-		 * class that stayed keeps everything it had.
-		 */
 		'a second class typed under the first carries nothing away from it'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -1052,15 +757,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * Typing is not renaming. Every letter of a name is a prefix of it, and most
-		 * prefixes of a class name are legal class names, so a field that wrote per
-		 * keystroke would rename the class — and remake the node that holds it — once
-		 * per letter. The field holds a draft and the rename happens on Enter or on
-		 * leaving it, exactly as the name of a node does in the inspector.
-		 */
 		'the root name is committed on submit and not on a keystroke'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -1076,19 +773,11 @@ namespace $ {
 			app.root_submit()
 
 			$mol_assert_equal( app.doc_root(), `${d}my_shop_page` )
-			// The draft is keyed by the name it started from, so the field now shows
-			// the new name with nothing to clear.
 			$mol_assert_equal( app.root_draft(), `${d}my_shop_page` )
 
 		},
 
-		/**
-		 * A name that cannot become a folder is refused where it was typed, in words,
-		 * and the document is left alone. Without the refusal the mistake would only
-		 * show up as `Root package not found` on a build machine.
-		 */
 		'a root name that is not a module path is refused in words'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
@@ -1099,37 +788,22 @@ namespace $ {
 			$mol_assert_ok( app.root_title_note().includes( 'Страница' ) )
 			$mol_assert_ok( app.body().includes( app.Root_note() ) )
 
-			// And the name the document still carries. The field keeps the refused
-			// one — there has to be something to correct — so without this the real
-			// name would be nowhere on the screen at all.
 			app.root_draft( 'Страница' )
 			app.root_submit()
 
 			$mol_assert_equal( app.root_draft(), 'Страница' )
 			$mol_assert_ok( app.root_title_note().includes( `${d}my_site_page` ) )
 
-			// A single segment is not a path either: mam resolves every underscore
-			// into a folder, and the export refuses a prefix shorter than two.
 			$mol_assert_equal( app.root_title( `${d}page` ), `${d}my_site_page` )
 			$mol_assert_equal( app.doc_source(), before )
 
-			// And a name another class of the document already carries.
 			app.doc_source( before + `${d}my_site_card ${d}mol_view title \\Карточка\n` )
 			$mol_assert_equal( app.root_title( `${d}my_site_card` ), `${d}my_site_page` )
 			$mol_assert_ok( app.root_title_note().includes( 'already declared' ) )
 
 		},
 
-		/**
-		 * A pick belongs to the document it was made in.
-		 *
-		 * One pick for the whole editor left a ring hanging over the empty canvas of
-		 * a brand new scene and opened the inspector on a node that scene never had;
-		 * the panel then answered with a red strip in every field, grew the page and
-		 * pushed the head bar off screen. Seen on the deploy, 09.09.2026.
-		 */
 		async 'a pick belongs to its scene, and a new scene opens with none'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.drop( `${d}flow_calc`, stage.client([ 200, 150 ]) )
@@ -1139,17 +813,13 @@ namespace $ {
 
 			stage.click( stage.button( 'Новая сцена' ) )
 
-			// The store makes the document in a fiber of its own, as the click does.
 			await $bog_vmap_app_flow_settle( ()=> stage.store.doc_links().length > 1 )
 			stage.redraw()
 
-			// Nothing picked, so no ring on the canvas and an invitation in the panel
-			// instead of an inspector opened on a node the document does not have.
 			$mol_assert_equal( stage.app.selected(), null )
 			$mol_assert_equal( stage.root.querySelector( '[bog_vmap_app_pane_handle]' ), null )
 			$mol_assert_ok( stage.text().includes( 'Выберите узел на холсте' ) )
 
-			// Back to the first scene, and the pick is where it was left.
 			const scenes = stage.app.Scenes() as $$.$bog_vmap_app_scenes
 			scenes.current( first )
 			stage.redraw()
@@ -1158,22 +828,12 @@ namespace $ {
 
 		},
 
-		/**
-		 * A pick that names nothing the document declares is no pick at all.
-		 *
-		 * The other half of the same defect, and the one that would come back
-		 * elsewhere: the panel asks the document rather than trusting the name, so a
-		 * document that does not parse gives an invitation and not twenty failures.
-		 */
 		'a pick naming nothing in the document leaves the panel inviting'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.drop( `${d}flow_calc`, stage.client([ 200, 150 ]) )
 			$mol_assert_equal( stage.app.selection_alive(), true )
 
-			// The node goes out of the text under the pick, as a rename or an edit
-			// in the code panel can do.
 			stage.app.doc_source( `${ stage.app.doc_root() } ${d}mol_view\n\tsub /\n` )
 			stage.redraw()
 
@@ -1183,19 +843,9 @@ namespace $ {
 
 		},
 
-		/**
-		 * A click is «add this», a drag is «add it HERE».
-		 *
-		 * Whoever clicked a shelf row aimed at nothing, so the piece must not fall
-		 * into whatever happens to cover the middle of the view. It did: a map asked
-		 * for by a click landed between the two halves of a wired pair, because the
-		 * pair was under the middle. Seen on the deploy 09.09.2026.
-		 */
 		'a click puts a free part beside what covers the middle, never inside it'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
-			// A page under the middle of the canvas, which is where a board lands.
 			stage.click( stage.button( 'Артборд' ) )
 
 			const page = stage.app.selected()!
@@ -1206,20 +856,15 @@ namespace $ {
 			const node = stage.app.node()
 			const block = stage.app.selected()!
 
-			// Free on the canvas, and not a child of the page.
 			$mol_assert_ok( node.sub_names( '' )!.includes( block ) )
 			$mol_assert_equal( node.sub_names( page )?.includes( block ) ?? false, false )
 
-			// Beside it and not over it: a free part left in the middle of a page
-			// would be drawn on top and read as a part of it.
 			const box = stage.pane.part_size( page )!
 			const spot = stage.app.spots()[ block ]!
 
 			$mol_assert_ok( box )
 			$mol_assert_ok( spot.y >= box.y + box.height )
 
-			// And a SECOND click clears the block it just put there, not only the
-			// page: two pieces at one point look like one thing on the canvas.
 			stage.click( stage.shelf_row( 'Блок' ) )
 
 			const next = stage.app.selected()!
@@ -1230,18 +875,7 @@ namespace $ {
 			$mol_assert_ok( below.y >= first.y + first.height )
 
 		},
-		/**
-		 * What is typed stays in the field after a refusal, and the name the node
-		 * still carries is on screen beside it.
-		 *
-		 * Two halves of one decision. Clearing the field would mean typing the whole
-		 * name again to fix one letter, which is the opposite of what a refusal is
-		 * for; keeping it means the panel shows a name the document does not have,
-		 * so the real one has to be visible or the person is left guessing which of
-		 * the two is true.
-		 */
 		'a refused name stays in the field, and the real one is in the refusal'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.drop( `${d}flow_calc`, stage.client([ 200, 150 ]) )
@@ -1250,35 +884,15 @@ namespace $ {
 			const field = stage.field( 'Inspect().Title()' )
 			stage.type( field, 'Кнопка' )
 
-			// The submit is a separate gesture: a rename per keystroke would rename
-			// the node to every prefix of what is being typed.
 			stage.blur( field )
 
-			// Nothing moved, what was typed is still there to be fixed.
 			$mol_assert_equal( stage.app.selected(), 'Calc' )
 			$mol_assert_equal( stage.field( 'Inspect().Title()' ).value, 'Кнопка' )
 
-			// And the panel says which name the node actually has.
 			$mol_assert_ok( stage.text().includes( 'Узел по-прежнему называется «Calc»' ) )
 
 		},
-		/**
-		 * «Новая сцена» makes a document, opens it, and puts it in the ADDRESS —
-		 * checked through a real click on the button and a real click on a row.
-		 *
-		 * The address was the untested half: scenarios switched documents by calling
-		 * the picker directly, so nothing ever proved that a gesture reaches
-		 * the address service at all. A report from the deploy that the list does not
-		 * grow and the address does not follow had no test to answer it.
-		 *
-		 * WHAT THIS CANNOT SAY ANYTHING ABOUT is the timing in a browser: the node
-		 * build of that service writes the address into a cell at once, while the
-		 * web build defers it into the frame scheduler, that is into
-		 * `requestAnimationFrame` — which does not tick in a hidden tab. This test
-		 * proves the wiring; a frame is a thing only a visible window has.
-		 */
 		async 'a click on «Новая сцена» makes a scene, and the address follows the pick'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			const first = stage.store.doc_current()!.link().str
@@ -1286,7 +900,6 @@ namespace $ {
 
 			stage.click( stage.button( 'Новая сцена' ) )
 
-			// The store makes the document in a fiber of its own, as the click does.
 			await $bog_vmap_app_flow_settle( ()=> stage.store.doc_links().length > 1 )
 			stage.redraw()
 
@@ -1295,19 +908,13 @@ namespace $ {
 			$mol_assert_equal( stage.store.doc_links().length, 2 )
 			$mol_assert_ok( second !== first )
 
-			// In the address, which is what a reload and a shared link read.
 			$mol_assert_equal( $.$mol_state_arg.value( 'doc' ), second )
 
-			// Both scenes are on screen, and a click on a row moves the address back.
 			stage.click( stage.scene_row( 'Сцена 1' ) )
 
 			$mol_assert_equal( stage.store.doc_current()!.link().str, first )
 			$mol_assert_equal( $.$mol_state_arg.value( 'doc' ), first )
 
-			// A THIRD and a FOURTH, because the report from the deploy was about the
-			// fourth: the address is written by a fiber that has already run twice,
-			// and a fiber replays its reads from its own cache — if the address were
-			// rebuilt from a stale copy of itself, it would show up here.
 			stage.click( stage.button( 'Новая сцена' ) )
 			await $bog_vmap_app_flow_settle( ()=> stage.store.doc_links().length > 2 )
 
@@ -1320,23 +927,13 @@ namespace $ {
 			$mol_assert_equal( stage.store.doc_links().length, 4 )
 			$mol_assert_equal( $.$mol_state_arg.value( 'doc' ), fourth )
 
-			// And back to the first from there, by a click on its row.
 			stage.click( stage.scene_row( 'Сцена 1' ) )
 			$mol_assert_equal( $.$mol_state_arg.value( 'doc' ), first )
 
 		},
-		/**
-		 * Folding a panel away survives a reload: the choice is in the session, so
-		 * a fresh editor in the same window opens as the last one was left.
-		 *
-		 * In the SESSION and not in the address: the address is a link somebody
-		 * shares, and a layout travelling with it would fold a stranger's panels.
-		 */
 		'which panels are open outlives the page'( $ ) {
-
 			const one = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
-			// The editor opens with the two panels and no code.
 			$mol_assert_equal( one.palette_showed(), true )
 			$mol_assert_equal( one.inspect_showed(), true )
 			$mol_assert_equal( one.code_showed(), false )
@@ -1344,14 +941,12 @@ namespace $ {
 			one.palette_showed( false )
 			one.code_showed( true )
 
-			// A NEW instance is what a reload makes, and it finds the same layout.
 			const two = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			$mol_assert_equal( two.palette_showed(), false )
 			$mol_assert_equal( two.inspect_showed(), true )
 			$mol_assert_equal( two.code_showed(), true )
 
-			// And the canvas is drawn without the panel that was folded away.
 			$mol_assert_equal( two.body_main().includes( two.Side() ), false )
 			$mol_assert_equal( two.body_main().includes( two.Code() ), true )
 

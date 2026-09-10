@@ -1,15 +1,7 @@
 namespace $.$$ {
-
-	/**
-	 * Draws what the pane computed: a path and a label per wire, a dot and a name
-	 * per port, one path for the wire in hand. Sub views are keyed by the stable
-	 * key of each thing, so a wire keeps its element while the camera moves.
-	 */
 	export class $bog_vmap_app_wire extends $.$bog_vmap_app_wire {
-
 		@ $mol_mem
 		override shapes() {
-
 			const shapes = [] as $mol_view[]
 
 			for( const line of this.lines() ) {
@@ -79,7 +71,6 @@ namespace $.$$ {
 			return this.dot_of( key )?.linked ?? false
 		}
 
-		/** The name stands off the dot, away from the box: left of an input, right of an output. */
 		override name_pos( key: string ) {
 			const dot = this.dot_of( key )
 			if( !dot ) return [ 0, 0 ]

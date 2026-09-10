@@ -1,6 +1,4 @@
 namespace $.$$ {
-
-	// Outside the literal the strings widen to `string`, which the guard rejects for lengths.
 	const label = {
 		fill: String( $mol_theme.text ),
 		font: { family: 'monospace', size: '10px' as const },
@@ -11,7 +9,6 @@ namespace $.$$ {
 	}
 
 	$mol_style_define( $bog_vmap_app_wire, {
-
 		position: 'absolute',
 		top: 0,
 		left: 0,
@@ -19,7 +16,6 @@ namespace $.$$ {
 		height: '100%',
 		overflow: 'visible',
 
-		/** A picture, never a target: the press a dot marks goes to the overlay and is resolved by geometry. */
 		pointerEvents: 'none',
 
 		Line: {
@@ -40,7 +36,6 @@ namespace $.$$ {
 		Name: label,
 
 		Dot: {
-
 			fill: String( $mol_theme.card ),
 			stroke: String( $mol_theme.focus ),
 			strokeWidth: '1.5px',

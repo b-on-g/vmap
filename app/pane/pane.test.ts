@@ -1,13 +1,4 @@
 namespace $ {
-
-	/**
-	 * The gate over the scene: what a press, a move and a release do, without a
-	 * browser. The pane is given a geometry and a fake peer window, and what is
-	 * checked is what it picks, what it sends and when the watchdog is armed.
-	 *
-	 * `d` keeps `$` out of the string literals — mam builds its dependency graph by
-	 * a regexp over sources, literals included.
-	 */
 	const d = '$'
 
 	const root = `${d}doc`
@@ -17,22 +8,11 @@ namespace $ {
 
 	type sent = { kind: string, [ key: string ]: unknown }
 
-	/**
-	 * A pane with a scene that has said `ready`, a known rectangle and a listening
-	 * peer.
-	 *
-	 * No clock is handed in, and there used to be one: the stamps a question and an
-	 * answer are ordered by were read off a wall clock, so two of them could land on
-	 * the same millisecond and the watch would disarm over a scene that had answered
-	 * nothing. They are serial numbers now, and a serial cannot repeat, so the stand
-	 * has nothing left to hold still.
-	 */
 	const pane_make = (
 		$: $mol_ambient_context,
 		rect: Partial< $bog_vmap_app_pane_screen_box > = {},
 		over: Partial< $$.$bog_vmap_app_pane > = {},
 	) => {
-
 		const posted = [] as sent[]
 
 		const peer = {
@@ -40,10 +20,6 @@ namespace $ {
 			postMessage( data: unknown ) { posted.push( data as sent ) },
 		}
 
-		// Every name the geometry mentions is a node of the document, unless the
-		// scenario says otherwise: these tests hand in the boxes themselves, and
-		// what they hand in is what they mean. A scenario about the boundary
-		// between the document and the insides of a pack class says so outright.
 		const declared = ()=> {
 			const names = new Set< string >()
 			for( const key of Object.keys( pane.sizes() ) ) {
@@ -88,9 +64,7 @@ namespace $ {
 
 	const clicks = ( posted: sent[] ) => posted.filter( m => m.kind === 'click_at' )
 
-	/** A timer that never fires by itself, so the test decides when time passes. */
 	const timers_fake = ( $: $mol_ambient_context ) => {
-
 		const made = [] as $mol_after_timeout[]
 
 		$.$mol_after_timeout = class extends $mol_after_timeout {
@@ -105,15 +79,12 @@ namespace $ {
 	}
 
 	$mol_test({
-
 		'a dropped part is carried by a drag across its body'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.drop( calc, stage.client([ 200, 150 ]) )
 			$mol_assert_like( stage.app.spots(), { Calc: { x: 200, y: 150 } } )
 
-			// The overlay is whole: the body of the part just dropped is the handle.
 			$mol_assert_equal( stage.pane.overlay_style().clipPath, 'none' )
 
 			const overlay = stage.overlay()
@@ -129,13 +100,11 @@ namespace $ {
 		},
 
 		'the second click lets the pointer inside the part, Escape takes it back out'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.drop( calc, stage.client([ 200, 150 ]) )
 			stage.drop( map, stage.client([ 400, 150 ]) )
 
-			// The first click on another part only picks it, and no click reaches the scene.
 			const before = stage.scene.sent( 'click_at' ).length
 			stage.tap( stage.part_center( 'Calc' ) )
 
@@ -144,7 +113,6 @@ namespace $ {
 			$mol_assert_equal( stage.pane.overlay_style().clipPath, 'none' )
 			$mol_assert_equal( stage.scene.sent( 'click_at' ).length, before )
 
-			// The second one lets the pointer inside, and the click goes on to the component.
 			stage.tap( stage.part_center( 'Calc' ) )
 
 			$mol_assert_equal( stage.pane.inside(), true )
@@ -161,7 +129,6 @@ namespace $ {
 		},
 
 		'the Delete key takes the picked part out of the document'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.drop( calc, stage.client([ 100, 100 ]) )
@@ -179,23 +146,14 @@ namespace $ {
 
 		},
 
-		/**
-		 * The band: a modified sweep over the canvas takes everything it overlaps, and
-		 * from then on the whole set is one thing — it travels together and it goes
-		 * together.
-		 */
 		'a band takes several parts, and they move and delete as one'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.drop( calc, stage.client([ 100, 100 ]) )
 			stage.drop( map, stage.client([ 300, 100 ]) )
 
-			// Only the last dropped one is picked, as a drop leaves it.
 			$mol_assert_like( [ ... stage.app.picked() ], [ 'Map' ] )
 
-			// A sweep with the modifier down, from above and left of both to below
-			// and right of both.
 			const overlay = stage.overlay()
 			const mods = { ctrlKey: true }
 
@@ -210,7 +168,6 @@ namespace $ {
 			$mol_assert_like( [ ... stage.app.picked() ], [ 'Calc', 'Map' ] )
 			$mol_assert_equal( stage.pane.band(), null )
 
-			// Carried by the body of one of them, both travel by the same offset.
 			const from = stage.part_center( 'Calc' )
 
 			stage.press( overlay, from )
@@ -223,7 +180,6 @@ namespace $ {
 				Map: { x: 340, y: 130 },
 			} )
 
-			// And deleted together: out of the document, out of `sub`, out of the desk.
 			stage.click( stage.button( 'Удалить' ) )
 
 			const source = stage.app.doc_source()
@@ -234,23 +190,12 @@ namespace $ {
 
 		},
 
-		/**
-		 * REPRO: a drop out of the palette while something is picked carried the
-		 * picked node to the point of the drop as well.
-		 */
-		/**
-		 * REPRO end to end: a frame that boots and stops before any geometry. The
-		 * canvas used to sit in «ожидание сцены…» with no strip and no button, since
-		 * the watch was off until the frame had warmed.
-		 */
 		'a scene that never came up says so, and says what to do about it'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $, { mute: true } )
 
 			$mol_assert_equal( stage.pane.warmed(), false )
 			$mol_assert_equal( stage.app.stalled(), false )
 
-			// The watch is armed on the cold limit; time passes and it fires.
 			const timer = stage.timers.at( -1 )!
 			$mol_assert_ok( stage.pane.watchdog() !== null )
 			$mol_assert_equal( stage.pane.watchdog()!.delay, stage.pane.cold_limit() )
@@ -269,31 +214,21 @@ namespace $ {
 
 		},
 
-		/**
-		 * REPRO: entering a part gave it the pointer but not the keyboard. The scene
-		 * focuses the element under the click, and that alone left the active element
-		 * of the frame at `body` — typing went nowhere at all.
-		 */
 		'entering a part hands the keyboard to the frame'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.drop( calc, stage.client([ 200, 150 ]) )
 
-			// A drop picks the part, so a click on it would already be the second of
-			// the pair. Bare canvas first, to start from nothing picked.
 			stage.tap( stage.client([ 500, 400 ]) )
 			$mol_assert_equal( stage.app.selected(), null )
 
 			let focused = 0
 			stage.frame().focus = ()=> { focused ++ }
 
-			// The first click only picks: the keyboard stays with the editor.
 			stage.tap( stage.part_center( 'Calc' ) )
 			$mol_assert_equal( stage.pane.inside(), false )
 			$mol_assert_equal( focused, 0 )
 
-			// The second lets the pointer in, and the keys go with it.
 			stage.tap( stage.part_center( 'Calc' ) )
 
 			$mol_assert_equal( stage.pane.inside(), true )
@@ -301,12 +236,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * Inside a part the keys belong to the part, and the strip says so with the
-		 * way out. Nothing else on screen would explain why Delete stopped deleting.
-		 */
 		'the strip says the pointer is inside a part, and how to get out'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.drop( calc, stage.client([ 200, 150 ]) )
@@ -328,16 +258,9 @@ namespace $ {
 
 		},
 
-		/**
-		 * REPRO: a wire drawn onto an input that already carries one used to be
-		 * written straight over, leaving the previous source line in the document
-		 * with nobody reading it.
-		 */
 		'REPRO rebinding an occupied input leaves no orphan behind'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
-			// Two sources of the same shape, names sharing a prefix on purpose.
 			stage.drop( calc, stage.client([ 100, 100 ]) )
 			stage.drop( calc, stage.client([ 100, 300 ]) )
 			stage.drop( map, stage.client([ 400, 100 ]) )
@@ -356,8 +279,6 @@ namespace $ {
 			$mol_assert_ok( stage.app.doc_source().includes( 'calc_result = Calc result' ) )
 			$mol_assert_like( stage.app.doc_wires().map( link => `${ link.to }.${ link.to_prop }` ), [ 'Map.zoom' ] )
 
-			// The same input, a different source: the first wire goes with its line,
-			// and the wire lands on the part it was dropped on, prefix name and all.
 			stage.tap( stage.part_center( 'Calc_2' ) )
 			wire( 'Calc_2', 'result' )
 
@@ -369,13 +290,11 @@ namespace $ {
 		},
 
 		'REPRO a drop from the palette leaves the picked part where it was'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.drop( calc, stage.client([ 100, 100 ]) )
 			$mol_assert_equal( stage.app.selected(), 'Calc' )
 
-			// Picked by a click, the way a person picks before reaching for the palette.
 			stage.tap( stage.part_center( 'Calc' ) )
 			$mol_assert_equal( stage.app.selected(), 'Calc' )
 
@@ -389,7 +308,6 @@ namespace $ {
 		},
 
 		'a part inside a page is carried to another position in its tree'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.click( stage.button( 'Артборд' ) )
@@ -402,7 +320,6 @@ namespace $ {
 			const node = stage.app.node()
 			$mol_assert_like( node.sub_names( 'Page' ), [ 'Calc', 'Map' ] )
 
-			// Carry the second one above the first: press on it, drag up, release.
 			const overlay = stage.overlay()
 			const from = stage.part_center( 'Map' )
 			const to = stage.client([ page.left + 200, page.top + 5 ])
@@ -417,16 +334,7 @@ namespace $ {
 
 		},
 
-
-
-		/**
-		 * The first click picks and nothing else: the body of the node stays the
-		 * editor's, to carry it by. The second one on the same node lets the pointer
-		 * inside, and only then does the click go on to the live component, in world
-		 * units, with the camera undone the same way the hit test undoes it.
-		 */
 		'the first click picks, the second lets the pointer in and relays it'( $ ) {
-
 			const { pane, posted } = pane_make( $, { left: 10, top: 20 } )
 
 			pane.camera_shift( new $mol_vector_2d( 100, 50 ) )
@@ -434,7 +342,6 @@ namespace $ {
 
 			pane.sizes({ [ `${root}/A` ]: box( 30, 40 ) })
 
-			// World (50, 60) is screen 50*2+100+10, 60*2+50+20.
 			pane.node_press( pointer( 210, 190 ) )
 			pane.node_release( pointer( 210, 190, { buttons: 0 } ) )
 
@@ -454,44 +361,18 @@ namespace $ {
 
 		},
 
-		/**
-		 * CARRYING A NODE IS NOT ENTERING IT. The second press on a node picked alone
-		 * is the one that would let the pointer in, and a drag begins with exactly
-		 * that press — so something has to tell the two apart, and whatever it is, it
-		 * is read on the release.
-		 *
-		 * THE RELEASE IS ITS OWN WITNESS, and that is what this pins down. A move
-		 * records the travel as it goes, so an ordinary drag is told from a click
-		 * long before the button comes up. What has no move at all is a gesture whose
-		 * moves went somewhere else — the pointer left the window and the capture was
-		 * lost — and there the only reading ever taken is the one the release takes
-		 * itself: the node the button came up on. Off the node it pressed on, and the
-		 * gesture is not a way in.
-		 *
-		 * NOT how far it went, which is what this used to say and what E18 was. Four
-		 * pixels is what a hand drifts between pressing and letting go, so measured
-		 * that way an ordinary second click was filed as a drag, and only a double
-		 * click — which a browser delivers at one single point — ever got inside.
-		 * Two hundred pixels off is the case that stays a drag, and it stays one
-		 * under either reading, which is why this scenario survived the change with
-		 * its assertions untouched.
-		 */
 		'a release far from its press is not a way into the node'( $ ) {
-
 			const { pane } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
 			pane.spots({ A: { x: 0, y: 0 } })
 
-			// First click: picked, and the pointer stays outside.
 			pane.node_press( pointer( 50, 25 ) )
 			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
 
 			$mol_assert_equal( pane.primary(), 'A' )
 			$mol_assert_equal( pane.inside(), false )
 
-			// The press that would have let the pointer in, and then nothing until a
-			// release two hundred pixels away, off the node and onto bare canvas.
 			pane.node_press( pointer( 50, 25 ) )
 			pane.node_release( pointer( 250, 225, { buttons: 0 } ) )
 
@@ -499,23 +380,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * E18. A HAND DRIFTS, AND A CLICK IS STILL A CLICK. Pressing and letting go
-		 * in one place moves the pointer by a few pixels under any hand; four of them
-		 * was the tolerance, and past it the release was filed as a drag and the
-		 * second click never let the pointer inside the part.
-		 *
-		 * What made it look like a rule rather than a wobble is that a DOUBLE click
-		 * always worked: a browser delivers both of its presses at one single point,
-		 * so it never drifts. Two separate clicks on the same part drifted, and the
-		 * calculator inside a pair could not be typed into at all.
-		 *
-		 * Measured on this stand before the fix: five pixels between press and
-		 * release, and `inside()` came back false with the part still picked — which
-		 * is exactly what was reported from the live browser, ring on and no hole.
-		 */
 		'a second click that drifts a few pixels still lets the pointer inside'( $ ) {
-
 			const { pane } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
@@ -527,7 +392,6 @@ namespace $ {
 			$mol_assert_equal( pane.primary(), 'A' )
 			$mol_assert_equal( pane.inside(), false )
 
-			// The second one, five pixels off where it started and still on the part.
 			pane.node_press( pointer( 50, 25 ) )
 			pane.node_release( pointer( 55, 25, { buttons: 0 } ) )
 
@@ -535,15 +399,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * The same thing through the whole editor, and with the pause the report
-		 * described: two separate clicks, a key pressed into nowhere between them,
-		 * and the second one gets in. The keystroke is there because it was in the
-		 * measurement — a person typing into a part they believe they are inside of —
-		 * and a key that means nothing to the editor must cost nothing.
-		 */
 		'two separate clicks with a keystroke between them let the pointer in'( $ ) {
-
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.drop( calc, stage.client([ 200, 150 ]) )
@@ -560,8 +416,6 @@ namespace $ {
 
 			$mol_assert_equal( stage.app.selected(), 'Calc' )
 
-			// Not the same point twice: the pointer of a person who let go and came
-			// back is never where it was, and that is the whole of E18.
 			const centre = stage.part_center( 'Calc' )
 			stage.press( stage.overlay(), centre )
 			stage.release( stage.overlay(), [ centre[0] + 3, centre[1] + 3 ] )
@@ -572,9 +426,7 @@ namespace $ {
 
 		},
 
-		/** A pick of anything else closes the hole without anybody clearing it. */
 		'picking another node puts the pointer back outside'( $ ) {
-
 			const { pane } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ), [ `${root}/B` ]: box( 300, 0 ) })
@@ -593,8 +445,6 @@ namespace $ {
 			$mol_assert_equal( pane.inside(), false )
 			$mol_assert_equal( pane.overlay_style().clipPath, 'none' )
 
-			// And coming back to the first one starts from outside again: it is a
-			// pick, not a return to where the pointer was left the time before.
 			pane.node_press( pointer( 50, 25 ) )
 			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
 
@@ -603,20 +453,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * ESCAPE PRESSED INSIDE THE PART GETS OUT OF IT. Once the pointer is let in,
-		 * the focus is the frame's and the keydown lands in the document of the
-		 * frame, where the listener of the host is not — so the host hears nothing
-		 * and the only way out used to be a click on bare canvas. The frame relays
-		 * the key up the bridge instead, and the pane answers it exactly the way it
-		 * answers the host's own Escape.
-		 *
-		 * Through a real message and not a call: what is being pinned down is that
-		 * the relayed key is understood on arrival, and a direct call would prove
-		 * only that the branch exists.
-		 */
 		'Escape relayed from the frame steps out of the node, then out of the pick'( $ ) {
-
 			const { pane, answer } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
@@ -628,13 +465,11 @@ namespace $ {
 
 			$mol_assert_equal( pane.inside(), true )
 
-			// One press, one step: out of the node, and the pick is still there.
 			answer({ kind: 'key', key: 'Escape' })
 
 			$mol_assert_equal( pane.inside(), false )
 			$mol_assert_equal( pane.primary(), 'A' )
 
-			// The next one drops the pick as well.
 			answer({ kind: 'key', key: 'Escape' })
 
 			$mol_assert_equal( pane.primary(), null )
@@ -643,7 +478,6 @@ namespace $ {
 		},
 
 		'the modifiers travel with the click'( $ ) {
-
 			const { pane, posted } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
@@ -657,9 +491,7 @@ namespace $ {
 
 		},
 
-		/** A gesture that went somewhere is a drag of the part, not a click. */
 		'movement past the threshold moves the part and relays nothing'( $ ) {
-
 			const { pane, posted } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
@@ -676,22 +508,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * THE RING FOLLOWS THE POINTER, AND COUNTS THE MOVE ONCE. Measured boxes are
-		 * debounced inside the scene and the timer restarts on every change, so
-		 * through a continuous drag no fresh report arrives at all: a ring drawn from
-		 * the report alone would stand at the grab until the pointer stopped. The
-		 * live offset is added for exactly that. But the moment a report DOES arrive
-		 * it already carries the move, and adding the offset on top of it would count
-		 * the same twenty pixels twice.
-		 *
-		 * The two cases are told apart by the identity of the report the grab was
-		 * taken against, and by nothing else — a fresh report is a new object. Written
-		 * because the guard had no test at all: it was a version counter before, and
-		 * the negative run on the identity that replaced it came back green.
-		 */
 		'the ring carries the live offset only until a fresh report arrives'( $ ) {
-
 			const { pane } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
@@ -700,21 +517,16 @@ namespace $ {
 			pane.node_press( pointer( 50, 25 ) )
 			pane.node_move( pointer( 70, 25 ) )
 
-			// Nothing has been measured since the grab: the box is still at the
-			// origin, and the ring stands twenty pixels to the right of it.
 			$mol_assert_equal( pane.sizes()[ `${root}/A` ].x, 0 )
 			$mol_assert_equal( pane.part_box( 'A' )!.left, 20 )
 
-			// Now the scene reports the node where the drag has already put it.
 			pane.sizes({ [ `${root}/A` ]: box( 20, 0 ) })
 
 			$mol_assert_equal( pane.part_box( 'A' )!.left, 20 )
 
 		},
 
-		/** The overlay may miss the moves — a pan captures the pointer away — so the release is measured too. */
 		'a release far from the press is not a click even without moves in between'( $ ) {
-
 			const { pane, posted } = pane_make( $ )
 
 			pane.node_press( pointer( 50, 25 ) )
@@ -725,7 +537,6 @@ namespace $ {
 		},
 
 		'a wobble within the threshold is still a click'( $ ) {
-
 			const { pane, posted } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
@@ -741,13 +552,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * Bare canvas drops the pick and relays nothing: there is no node there to be
-		 * let inside of, and a click sent anyway would give the focus to the frame —
-		 * which is where the Delete of the editor stops arriving.
-		 */
 		'a click on bare canvas drops the selection and relays nothing'( $ ) {
-
 			const { pane, posted } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
@@ -762,7 +567,6 @@ namespace $ {
 		},
 
 		'nothing is relayed while the scene is not listening'( $ ) {
-
 			const { pane, posted } = pane_make( $ )
 			pane.handshake( pane.scene_key(), 0 )
 
@@ -773,27 +577,17 @@ namespace $ {
 
 		},
 
-		/**
-		 * REPRO: the zoom pivots on the middle of the canvas, and the FIRST one after
-		 * a load did not — the box it reads answers `null` until something has read
-		 * it once, and an unread box put the pivot in the corner.
-		 */
 		'the first zoom after a load pivots on the middle of the canvas'( $ ) {
-
 			const { pane } = pane_make( $ )
 
-			// Nothing has read the geometry yet, exactly as after a fresh load.
 			pane.zoom_by( 1.25 )
 
-			// 1000 x 800, so the middle is 500, 400; the pivot keeps it still.
 			$mol_assert_equal( pane.camera_zoom(), 1.25 )
 			$mol_assert_like( [ ... pane.camera_shift() ], [ -125, -100 ] )
 
 		},
 
-		/** The grip is a strip of screen pixels, so it does not shrink away when zooming out. */
 		'the grip around a part is measured in screen pixels'( $ ) {
-
 			const { pane } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0, 100, 100 ) })
@@ -802,7 +596,6 @@ namespace $ {
 			$mol_assert_equal( pane.node_at( [ 106, 50 ] ), 'A' )
 			$mol_assert_equal( pane.node_at( [ 110, 50 ] ), null )
 
-			// At zoom 1/4 the same strip is four times wider in world units.
 			pane.camera_zoom( .25 )
 			$mol_assert_equal( pane.node_at( [ 130, 50 ] ), 'A' )
 			$mol_assert_equal( pane.node_at( [ 134, 50 ] ), null )
@@ -810,7 +603,6 @@ namespace $ {
 		},
 
 		'the hole follows the picked part through the camera'( $ ) {
-
 			const { pane } = pane_make( $ )
 
 			pane.camera_shift( new $mol_vector_2d( 100, 50 ) )
@@ -821,7 +613,6 @@ namespace $ {
 
 			pane.picked([ 'A' ])
 
-			// Picked and no more: the ring is drawn, the overlay is still whole.
 			$mol_assert_equal( pane.overlay_style().clipPath, 'none' )
 			$mol_assert_equal( pane.frame_showed(), true )
 
@@ -837,12 +628,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * The band takes what it OVERLAPS, and of a node and its container only the
-		 * outer one: a child carried inside its parent must not be carried twice.
-		 */
 		'a band takes what it overlaps, containers and not their children'( $ ) {
-
 			const { pane } = pane_make( $ )
 
 			pane.sizes({
@@ -851,7 +637,6 @@ namespace $ {
 				[ `${root}/Page/B` ]: box( 200, 0, 100, 50 ),
 			})
 
-			// A sweep across the lot: the page comes, its child does not.
 			pane.node_press( pointer( -10, -10, { ctrlKey: true } ) )
 			pane.node_move( pointer( 600, 300, { ctrlKey: true } ) )
 			pane.node_release( pointer( 600, 300, { ctrlKey: true, buttons: 0 } ) )
@@ -859,7 +644,6 @@ namespace $ {
 			$mol_assert_like( [ ... pane.picked() ], [ 'A', 'Page' ] )
 			$mol_assert_equal( pane.band(), null )
 
-			// A sweep that merely touches the corner of the first one still takes it.
 			pane.node_press( pointer( 90, 40, { ctrlKey: true } ) )
 			pane.node_move( pointer( 150, 100, { ctrlKey: true } ) )
 			pane.node_release( pointer( 150, 100, { ctrlKey: true, buttons: 0 } ) )
@@ -868,9 +652,7 @@ namespace $ {
 
 		},
 
-		/** A band puts the pointer back outside, wherever it ends. */
 		'a band takes the pointer out of the node it was let into'( $ ) {
-
 			const { pane } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
@@ -882,7 +664,6 @@ namespace $ {
 
 			$mol_assert_equal( pane.inside(), true )
 
-			// A sweep that ends up picking the very same node, and nothing else.
 			pane.node_press( pointer( -10, -10, { ctrlKey: true } ) )
 			pane.node_move( pointer( 150, 60, { ctrlKey: true } ) )
 			pane.node_release( pointer( 150, 60, { ctrlKey: true, buttons: 0 } ) )
@@ -893,15 +674,9 @@ namespace $ {
 
 		},
 
-		/**
-		 * REPRO: the hit test walks the insides of a pack class and picks a view the
-		 * document never declared. Everything below the part is the part's body.
-		 */
 		'REPRO the hit test stops at the nodes the document declares'( $ ) {
-
 			const { pane } = pane_make( $, {}, { doc_names: ()=> [ 'Calc' ] } )
 
-			// A part of the document, and two views of its class inside it.
 			pane.sizes({
 				[ `${root}/Calc` ]: box( 0, 0, 200, 100 ),
 				[ `${root}/Calc/Head` ]: box( 0, 0, 200, 30 ),
@@ -912,15 +687,12 @@ namespace $ {
 			$mol_assert_equal( pane.node_at([ 100, 50 ]), 'Calc' )
 			$mol_assert_like( pane.part_names(), [ 'Calc' ] )
 
-			// And the ring is the box of the part, not of the view inside it.
 			pane.picked([ 'Calc' ])
 			$mol_assert_like( pane.frame_style( 'Calc' ), { left: '0px', top: '0px', width: '200px', height: '100px' } )
 
 		},
 
-		/** A node of the document inside an artboard is still reached, at any depth. */
 		'REPRO the deepest node of the document wins, the pack inside it does not'( $ ) {
-
 			const { pane } = pane_make( $, {}, { doc_names: ()=> [ 'Page', 'Calc' ] } )
 
 			pane.sizes({
@@ -934,23 +706,14 @@ namespace $ {
 
 		},
 
-		/**
-		 * REPRO: a press whose release never came back left the carry live, and the
-		 * next drag across the canvas — the one out of the palette — carried the
-		 * picked node with it, grabbed where it had last been pressed.
-		 */
 		'REPRO a drag from the palette carries nothing of the canvas'( $ ) {
-
 			const { pane } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
 			pane.spots({ A: { x: 0, y: 0 } })
 
-			// Picked and grabbed in the middle; the release fell into the hole and
-			// never reached the overlay, so the gesture was never ended.
 			pane.node_press( pointer( 50, 25 ) )
 
-			// The owner now carries a class across the canvas, button down.
 			pane.carrying = ()=> true
 
 			pane.node_move( pointer( 400, 300 ) )
@@ -960,13 +723,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * REPRO: a node carried into a container is measured at a new path, and the
-		 * box under its old path kept answering to the same name. Two boxes for one
-		 * name is how a wire lands on the neighbour of the part it was dropped on.
-		 */
 		'REPRO a node that moved leaves no box behind at its old path'( $ ) {
-
 			const { pane } = pane_make( $, {}, { doc_names: ()=> [ 'Pair', 'Schet' ] } )
 
 			pane.sizes({
@@ -974,32 +731,22 @@ namespace $ {
 				[ `${root}/Pair` ]: box( 0, 0, 400, 300 ),
 			})
 
-			// Carried into the pair: the scene will measure it at the new path, and
-			// the owner tells the canvas to forget where it used to be.
 			pane.sizes_forget( 'Schet' )
 
 			$mol_assert_like( Object.keys( pane.sizes() ), [ `${root}/Pair` ] )
 
-			// And the new report puts it inside, with one box answering to the name.
 			pane.sizes({ ... pane.sizes(), [ `${root}/Pair/Schet` ]: box( 10, 10 ) })
 
 			$mol_assert_like( pane.part_size( 'Schet' ), box( 10, 10 ) )
 			$mol_assert_equal( pane.part_names().filter( name => name === 'Schet' ).length, 1 )
 
-			// Carried OUT of the pair, which is the case a rule written as a prefix of
-			// the root path cannot see: the stale key is a deep one.
 			pane.sizes_forget( 'Schet' )
 
 			$mol_assert_like( Object.keys( pane.sizes() ), [ `${root}/Pair` ] )
 
 		},
 
-		/**
-		 * REPRO: two parts of one container whose names share a prefix. The dot the
-		 * pointer is over belongs to the part it is drawn on, and to no other.
-		 */
 		'REPRO a port dot belongs to the part it is drawn on, prefix or not'( $ ) {
-
 			const ports = [
 				{ name: 'zoom', next: false, kind: 'number' as const },
 				{ name: 'marker', next: false, kind: 'string' as const },
@@ -1011,7 +758,6 @@ namespace $ {
 				wires: ()=> [],
 			} )
 
-			// Stacked inside the pair, sharing a left edge: Map_2 above Map.
 			pane.sizes({
 				[ `${root}/Pair` ]: box( 0, 0, 400, 500 ),
 				[ `${root}/Pair/Map_2` ]: box( 0, 0, 320, 220 ),
@@ -1023,18 +769,14 @@ namespace $ {
 			const dots = pane.wire_dots()
 			const at = ( x: number, y: number )=> $bog_vmap_app_wire_dot_at( dots, [ x, y ] )
 
-			// The zoom dot of the upper map, and of the lower one.
 			$mol_assert_equal( at( -12, 7 )?.node, 'Map_2' )
 			$mol_assert_equal( at( -12, 227 )?.node, 'Map' )
 
-			// One dot set per part, not two.
 			$mol_assert_equal( dots.filter( dot => dot.node === 'Map' ).length, 2 )
 
 		},
 
-		/** A modified click without a sweep takes nothing and clears nothing. */
 		'a modified click leaves the picked set alone'( $ ) {
-
 			const { pane } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
@@ -1048,9 +790,7 @@ namespace $ {
 
 		},
 
-		/** Everything picked travels by the same offset, each from its own start. */
 		'a carry moves the whole picked set'( $ ) {
-
 			const { pane } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ), [ `${root}/B` ]: box( 300, 0 ) })
@@ -1066,7 +806,6 @@ namespace $ {
 		},
 
 		'the hole is closed while a drop from the palette is on'( $ ) {
-
 			const { pane } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
@@ -1075,28 +814,18 @@ namespace $ {
 			pane.carrying = ()=> true
 
 			$mol_assert_equal( pane.overlay_style().clipPath, 'none' )
-			// The ring itself stays: only the events stop going through.
 			$mol_assert_equal( pane.frame_showed(), true )
 
 		},
 
-
-		/**
-		 * THE PULSE HAS NO MODE. It runs as soon as the scene has proved itself and
-		 * the bridge is up, asks once, and asks again only after an answer.
-		 */
 		'the heartbeat pings once warmed and re-arms on the pong'( $ ) {
-
 			const timers = timers_fake( $ )
 			const { pane, posted, answer } = pane_make( $ )
 
-			// Not warmed: no baseline, no pulse.
 			$mol_assert_equal( pane.heartbeat(), null )
 
 			pane.warmed( true )
 
-			// The first read of the watch pushes everything to the fresh scene; let
-			// the scene answer, so that what follows is about the pulse alone.
 			pane.watchdog()
 			answer({ kind: 'sizes', sizes: {} })
 			$mol_assert_equal( pane.watchdog(), null )
@@ -1109,25 +838,19 @@ namespace $ {
 			const pings = posted.filter( m => m.kind === 'ping' )
 			$mol_assert_equal( pings.length, 1 )
 
-			// The nonce is a serial off the same clock as the stamps, so what is
-			// promised about it is that it is a number and that the echo carries it
-			// back, not what its value happens to be.
 			const nonce = pings[0].nonce as number
 			$mol_assert_equal( nonce > 0, true )
 
-			// The ping is a question: the watchdog is armed by it.
 			$mol_assert_equal( pane.watchdog() !== null, true )
 
 			answer({ kind: 'pong', nonce })
 
-			// Answered: disarmed, and the next ping is scheduled.
 			$mol_assert_equal( pane.watchdog(), null )
 			$mol_assert_equal( pane.heartbeat() !== first, true )
 
 		},
 
 		'a silent scene is called stalled when the limit runs out'( $ ) {
-
 			const timers = timers_fake( $ )
 			const { pane } = pane_make( $ )
 
@@ -1144,12 +867,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * The button on the strip: a new frame element, the accusation withdrawn,
-		 * nothing sent until the new scene says `ready`, then everything re-sent.
-		 */
 		'scene_restart gives a fresh frame and clears stalled'( $ ) {
-
 			timers_fake( $ )
 			const { pane, posted, answer } = pane_make( $ )
 
@@ -1172,7 +890,6 @@ namespace $ {
 			$mol_assert_equal( pane.sub()[0], pane.Scene( pane.scene_key() ) )
 			$mol_assert_equal( pane.sub().length, 3 )
 
-			// a frame that has not spoken gets nothing and is accused of nothing
 			$mol_assert_equal( pane.watchdog(), null )
 			$mol_assert_equal( pane.heartbeat(), null )
 			$mol_assert_equal( posted.length, 0 )
@@ -1183,27 +900,14 @@ namespace $ {
 			$mol_assert_equal( pane.ready(), true )
 			$mol_assert_like(
 				posted.map( m => m.kind ),
-				// the pack first: the scene compiles nothing until it has one
 				[ 'pack_set', 'doc_set', 'css_set', 'libs_set', 'spots_set', 'camera_set' ],
 			)
 
 		},
 
-		/**
-		 * The frame is isolated and has no address, and the ORDER of the two says so.
-		 *
-		 * The attribute renderer writes the dictionary in key order, so a frame
-		 * that got its source before its sandbox is already loading unsandboxed —
-		 * with the attribute present in the DOM and the audit green. Reading the
-		 * dictionary is therefore the check, not reading the element.
-		 */
 		'the frame is sandboxed first, addressed never and raised from markup'( $ ) {
-
 			const { pane } = pane_make( $, {}, { scene_bundle: ()=> 'https://vmap.test/scene/web.js' } )
 
-			// read as entries and not by property name: dropping the attribute would
-			// then be a type error and the build would stop before this ever ran,
-			// leaving the last green bundle in place to be tested instead
 			const attr = pane.Scene( pane.scene_key() ).attr()
 			const entries = Object.entries( attr )
 			const keys = entries.map( ( [ name ] )=> name )
@@ -1211,7 +915,6 @@ namespace $ {
 			$mol_assert_equal( keys[0], 'sandbox' )
 			$mol_assert_equal( entries[0][1], 'allow-scripts' )
 
-			// `null` is removal. An empty `src` would load the page we stand on.
 			$mol_assert_equal( attr.src, null )
 			$mol_assert_ok( keys.indexOf( 'srcdoc' ) > 0 )
 
@@ -1221,18 +924,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * One pack per realm, held by the key of the frame now that no address holds
-		 * it: the pack is IN the key, so naming another one addresses another frame.
-		 * That the element really is replaced when a person types a pack is
-		 * `flow.test.ts`, where the whole chain from the field down is real.
-		 *
-		 * The pack also goes out first, before the document and the libraries: the
-		 * scene refuses to compile until it has one.
-		 * @see ../../ARCHITECTURE.md section 5
-		 */
 		'the pack keys the frame and goes down the wire first'( $ ) {
-
 			const one = pane_make( $, {}, { pack_uri: ()=> 'https://one.test/web.js' } )
 			const two = pane_make( $, {}, { pack_uri: ()=> 'https://two.test/web.js' } )
 
@@ -1244,29 +936,22 @@ namespace $ {
 			$mol_assert_ok( one.pane.scene_key() !== two.pane.scene_key() )
 			$mol_assert_ok( one.pane.scene_key().includes( 'https://one.test/web.js' ) )
 
-			// same generation, different pack, different frame
 			$mol_assert_equal( one.pane.scene_generation(), two.pane.scene_generation() )
 			$mol_assert_ok( one.pane.sub()[0] !== two.pane.sub()[0] )
 
 		},
 
-		/** A click is a push like any other: it arms the watch, and geometry back disarms it. */
 		'a relayed click arms the watchdog and sizes disarm it'( $ ) {
-
 			timers_fake( $ )
 			const { pane, answer } = pane_make( $ )
 
 			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
 			pane.warmed( true )
 
-			// The first read pushes the document and the rest; answered, the watch rests.
 			pane.watchdog()
 			answer({ kind: 'sizes', sizes: {} })
 			$mol_assert_equal( pane.watchdog(), null )
 
-
-			// Twice: the click that goes to the scene is the one that lets the
-			// pointer inside, and the watch is armed by what is sent, not by a pick.
 			pane.node_press( pointer( 50, 25 ) )
 			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
 			pane.node_press( pointer( 50, 25 ) )
@@ -1280,14 +965,7 @@ namespace $ {
 
 		},
 
-		/** Not warmed yet, the pulse is quiet and the watch is off, whatever was pushed. */
-		/**
-		 * The pulse waits for the scene to prove itself; the watch does not, since
-		 * E9 — see the scenario below. A ping into a frame that has not loaded would
-		 * be a question asked of nobody, and every answer to it a false all clear.
-		 */
 		'before the first sizes the pulse is quiet'( $ ) {
-
 			timers_fake( $ )
 			const { pane } = pane_make( $ )
 
@@ -1298,26 +976,17 @@ namespace $ {
 
 		},
 
-		/**
-		 * REPRO: document code that loops on the first compile stops the scene before
-		 * any geometry, so the frame never warms. The watch used to be off until it
-		 * warmed, which left this one case with no strip, no button and no way out.
-		 */
 		'a frame that never answered at all is called out, on a limit of its own'( $ ) {
-
 			const timers = timers_fake( $ )
 			const { pane, answer } = pane_make( $ )
 
-			// The frame boots and says `ready`, which proves nothing but the boot.
 			answer({ kind: 'ready' })
 
-			// The host asks its questions; the scene compiles the document and stops.
 			pane.watchdog()
 
 			$mol_assert_equal( pane.warmed(), false )
 			$mol_assert_ok( pane.watchdog() !== null )
 
-			// The limit is the generous one, not the warm one.
 			$mol_assert_equal( timers.at( -1 )!.delay, pane.cold_limit() )
 			$mol_assert_ok( pane.cold_limit() > pane.answer_limit() )
 
@@ -1327,25 +996,17 @@ namespace $ {
 
 		},
 
-		/**
-		 * THE WIRE GESTURE. Camera panned and zoomed, so screen and world differ:
-		 * a drag from the output dot of one part to the input dot of another puts
-		 * exactly two lines into the document, and the click channel stays quiet.
-		 */
 		'a drag from an output to a fitting input writes exactly two lines'( $ ) {
-
 			const { pane, node, posted } = wired_make( $ )
 
 			pane.camera_shift( new $mol_vector_2d( 100, 50 ) )
 			pane.camera_zoom( 2 )
 
-			// Calc at world (0,0) is screen (100,50) 200×100; Map at world (300,0) is screen (700,50).
 			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) })
 			pane.picked([ 'Calc' ])
 
 			const before = node.source()
 
-			// Output `result` is the first row: right of the box by the gap, half a row down.
 			pane.node_press( pointer( 312, 57 ) )
 
 			$mol_assert_like( pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' } )
@@ -1353,7 +1014,6 @@ namespace $ {
 
 			pane.node_move( pointer( 600, 100 ) )
 
-			// In hand: the inputs of the other part, the number one lit, the string one not.
 			$mol_assert_like(
 				pane.wire_dots().map( dot => [ dot.node, dot.port.name, dot.side, dot.x, dot.y, dot.lit ] ),
 				[ [ 'Map', 'zoom', 'in', 688, 57, true ], [ 'Map', 'marker', 'in', 688, 71, false ] ],
@@ -1364,8 +1024,6 @@ namespace $ {
 
 			$mol_assert_equal( pane.wire_drag(), null )
 
-			// Two facts in the text: the wire at class level and the reference in the
-			// target's declaration, the latter serialized on the declaration's own line.
 			$mol_assert_equal( node.source().split( '\n' ).length, before.split( '\n' ).length + 1 )
 			$mol_assert_equal( node.source().includes( '\tcalc_result = Calc result\n' ), true )
 			$mol_assert_equal( node.source().includes( 'zoom <= calc_result\n' ), true )
@@ -1374,7 +1032,6 @@ namespace $ {
 
 			$mol_assert_equal( clicks( posted ).length, 0 )
 
-			// Drawn from the same numbers the dots were.
 			$mol_assert_equal( pane.wire_lines().length, 1 )
 			$mol_assert_equal( pane.wire_lines()[0].geometry.startsWith( 'M 312 57 C' ), true )
 			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 688 57' ), true )
@@ -1386,7 +1043,6 @@ namespace $ {
 		},
 
 		'a drag let go over nothing, or over an input of the wrong shape, writes nothing'( $ ) {
-
 			const { pane, node } = wired_make( $ )
 
 			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) })
@@ -1401,7 +1057,6 @@ namespace $ {
 			$mol_assert_equal( node.source(), before )
 			$mol_assert_equal( pane.wire_drag(), null )
 
-			// `marker` is a string, the wire carries a number: the dot is there, unlit, and takes nothing.
 			pane.node_press( pointer( 112, 7 ) )
 			pane.node_release( pointer( 288, 21, { buttons: 0 } ) )
 
@@ -1409,16 +1064,13 @@ namespace $ {
 
 		},
 
-		/** A dot sits on the grip strip of its part, and the wire is the finer target: no part is carried. */
 		'a press on a dot is a wire even where the part would also be hit'( $ ) {
-
 			const { pane } = wired_make( $ )
 
 			pane.camera_zoom( .5 )
 			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ) })
 			pane.picked([ 'Calc' ])
 
-			// Box is 50 wide on screen, the dot at 62, the grip strip reaches 8 px past 50.
 			pane.node_press( pointer( 62, 7 ) )
 
 			$mol_assert_equal( pane.wire_drag() !== null, true )
@@ -1428,9 +1080,7 @@ namespace $ {
 
 		},
 
-		/** Pressing a wired input unplugs it at once and leaves the wire in hand from the same source. */
 		'a press on a wired input unplugs it and carries on from its source'( $ ) {
-
 			const { pane, node } = wired_make( $ )
 
 			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) })
@@ -1444,12 +1094,10 @@ namespace $ {
 			$mol_assert_equal( node.source(), before )
 			$mol_assert_like( pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' } )
 
-			// Let go over nothing: it stays unplugged.
 			pane.node_release( pointer( 500, 500, { buttons: 0 } ) )
 			$mol_assert_equal( node.source(), before )
 			$mol_assert_equal( node.links().length, 0 )
 
-			// The same again, put back where it was: the same two lines.
 			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' })
 			const wired = node.source()
 
@@ -1460,17 +1108,11 @@ namespace $ {
 
 		},
 
-		/**
-		 * SECOND INVARIANT OF CULLING, seen from the wires: a part that left the
-		 * viewport is missing from the next report, and its wire keeps its last end.
-		 */
 		'a wire is drawn from the last known box when one end is no longer reported'( $ ) {
-
 			const { pane, node, answer } = wired_make( $ )
 
 			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' })
 
-			// One end never measured: nothing to draw yet.
 			answer({ kind: 'sizes', sizes: { [ `${root}/Calc` ]: box( 0, 0 ) } })
 			$mol_assert_equal( pane.wire_lines().length, 0 )
 
@@ -1478,7 +1120,6 @@ namespace $ {
 			const drawn = pane.wire_lines()
 			$mol_assert_equal( drawn.length, 1 )
 
-			// Map culled, Calc moved: the wire follows the one and keeps the other.
 			answer({ kind: 'sizes', sizes: { [ `${root}/Calc` ]: box( 0, 100 ) } })
 			$mol_assert_equal( pane.wire_lines().length, 1 )
 			$mol_assert_equal( pane.wire_lines()[0].geometry.startsWith( 'M 112 107 C' ), true )
@@ -1486,9 +1127,7 @@ namespace $ {
 
 		},
 
-		/** The scene is asked for the wires on screen, and only for those, and asked again only when the set changes. */
 		'values_want names the visible wires only'( $ ) {
-
 			const { pane, node, posted } = wired_make( $, [
 				`Calc ${d}my_calc`, `Map ${d}my_map`, `Calc_2 ${d}my_calc`, `Map_2 ${d}my_map`,
 			] )
@@ -1508,25 +1147,18 @@ namespace $ {
 			pane.values_push()
 			$mol_assert_like( wants(), [ [ 'calc_result' ] ] )
 
-			// A pan that keeps the same wire on screen asks nothing new.
 			pane.camera_shift( new $mol_vector_2d( 10, 10 ) )
 			pane.values_push()
 			$mol_assert_equal( wants().length, 1 )
 
-			// Over to the far pair.
 			pane.camera_shift( new $mol_vector_2d( -5000, -5000 ) )
 			pane.values_push()
 			$mol_assert_like( wants(), [ [ 'calc_result' ], [ 'calc_2_result' ] ] )
 
-			// The answer lands on the wire as its label.
 			$mol_assert_equal( pane.wire_lines().find( line => line.key === 'Map_2.zoom' )?.label, '' )
 			pane.message_receive( { data: { ns: $bog_vmap_bridge_ns, kind: 'values', values: { calc_2_result: '42' } }, source: pane.scene_peer() } as unknown as MessageEvent )
 			$mol_assert_equal( pane.wire_lines().find( line => line.key === 'Map_2.zoom' )?.label, '42' )
 
-			// A question that owes no answer must not arm the watch. Asserted on the
-			// stamp and no longer on `watchdog()` being null: since the cold frame is
-			// watched too, the pushes of the boot arm it by themselves, and a null
-			// there would stop meaning «this question was free».
 			const stamped = pane.poke_at
 
 			pane.camera_shift( new $mol_vector_2d( -5000, -4000 ) )
@@ -1536,12 +1168,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * Inside an artboard the deepest node wins, or a page would swallow every
-		 * pick made on it: everything laid out inside it lies within its box.
-		 */
 		'the pick goes to the deepest node under the point'( $ ) {
-
 			const { pane } = pane_make( $ )
 
 			pane.sizes({
@@ -1555,20 +1182,13 @@ namespace $ {
 			$mol_assert_equal( pane.node_at( [ 650, 25 ] ), 'Loose' )
 			$mol_assert_equal( pane.node_at( [ 900, 400 ] ), null )
 
-			// The box of a node is found at whatever depth it is drawn.
 			$mol_assert_like( pane.part_size( 'Head' ), box( 0, 0, 400, 100 ) )
 			$mol_assert_like( pane.node_path( 'Head' ), [ 'Board' ] )
 			$mol_assert_like( pane.node_path( 'Loose' ), [] )
 
 		},
 
-		/**
-		 * The camera is undone once, by `world_point`, and everything downstream
-		 * works in world units — the hit test, the container and the position among
-		 * its children alike.
-		 */
 		'a pan and a zoom do not move the slot a drop lands in'( $ ) {
-
 			const { pane } = pane_make( $, {}, { containers: ()=> [ 'Board' ] } )
 
 			pane.sizes({
@@ -1583,8 +1203,6 @@ namespace $ {
 			$mol_assert_equal( flat.owner, 'Board' )
 			$mol_assert_equal( flat.index, 1 )
 
-			// The same world point through a moved and scaled camera: screen is
-			// `world * zoom + shift`, and the press is given in screen pixels.
 			pane.camera_shift( new $mol_vector_2d( 100, 50 ) )
 			pane.camera_zoom( 2 )
 
@@ -1594,13 +1212,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * The two ways of laying a node out, told apart by where the release
-		 * happened: inside an artboard the gesture means a position in the tree, on
-		 * bare canvas it means a coordinate.
-		 */
 		'a drop inside an artboard goes into the tree, and no coordinate is written'( $ ) {
-
 			const moves = [] as ( $$.$bog_vmap_app_pane_tree_move | null )[]
 
 			const { pane } = pane_make( $, {}, {
@@ -1622,8 +1234,6 @@ namespace $ {
 			pane.node_press( pointer( 650, 25 ) )
 			pane.node_move( pointer( 200, 120 ) )
 
-			// The line is drawn where the node would land, and the placement is
-			// untouched while the pointer is over the page.
 			$mol_assert_equal( pane.slot()?.owner, 'Board' )
 			$mol_assert_equal( pane.slot()?.index, 1 )
 			$mol_assert_like( pane.spots(), { Loose: { x: 600, y: 0 } } )
@@ -1637,7 +1247,6 @@ namespace $ {
 		},
 
 		'a drop on bare canvas still writes a coordinate and asks for no move'( $ ) {
-
 			const moves = [] as ( $$.$bog_vmap_app_pane_tree_move | null )[]
 
 			const { pane } = pane_make( $, {}, {
@@ -1665,13 +1274,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * A node drawn inside an artboard has no coordinate to change: `spots`
-		 * positions the direct children of the root and nothing else, so a number
-		 * written for it would move nothing and lie in the desk layout for good.
-		 */
 		'dragging a node that lives in a tree never writes a coordinate'( $ ) {
-
 			const moves = [] as ( $$.$bog_vmap_app_pane_tree_move | null )[]
 
 			const { pane } = pane_make( $, {}, {
@@ -1688,7 +1291,6 @@ namespace $ {
 				[ `${root}/Board/Foot` ]: box( 0, 100, 400, 100 ),
 			})
 
-			// Head taken by its own strip and carried below Foot.
 			pane.node_press( pointer( 200, 50 ) )
 			pane.node_move( pointer( 200, 180 ) )
 			pane.node_release( pointer( 200, 180, { buttons: 0 } ) )
@@ -1698,12 +1300,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * A row inside a column: the drop belongs to the innermost box it landed in,
-		 * and the position in it is counted along ITS direction, not its parent's.
-		 */
 		'a container inside a container takes the drop itself'( $ ) {
-
 			const { pane } = pane_make( $, {}, {
 				containers: ()=> [ 'Page', 'Bar' ],
 				axis: ( name: string )=> name === 'Bar' ? 'row' : 'column',
@@ -1718,31 +1315,21 @@ namespace $ {
 				[ `${root}/Page/Foot` ]: box( 0, 200, 400, 100 ),
 			})
 
-			// Inside the bar, which lies inside the page: the deeper one wins.
 			const inner = pane.insert_slot( [ 250, 150 ] )!
 			$mol_assert_equal( inner.owner, 'Bar' )
 			$mol_assert_equal( inner.index, 1 )
 
-			// Between the left and the right, across — the direction of the bar.
 			$mol_assert_like( inner.line, { x: 200, y: 100, width: 0, height: 100 } )
 
-			// The same page, below the bar: the page takes it, counted downwards.
 			const outer = pane.insert_slot( [ 250, 400 ] )!
 			$mol_assert_equal( outer.owner, 'Page' )
 			$mol_assert_equal( outer.index, 3 )
 
-			// The pick follows the same rule, so what is picked and what a drop goes
-			// into never disagree about which box the pointer is in.
 			$mol_assert_equal( pane.node_at( [ 250, 150 ] ), 'Right' )
 
 		},
 
-		/**
-		 * A container cannot become its own descendant, and a line drawn where the
-		 * drop would be refused is worse than no line at all.
-		 */
 		'an artboard carried over itself offers no slot'( $ ) {
-
 			const { pane } = pane_make( $, {}, { containers: ()=> [ 'Board', 'Inner' ] } )
 
 			pane.sizes({
@@ -1757,7 +1344,6 @@ namespace $ {
 
 	})
 
-	/** Wirable ports of the two fixture classes, as the owner would hand them to the pane. */
 	const ports: { readonly [ klass: string ]: readonly $bog_vmap_app_wire_port[] } = {
 		[ `${d}my_calc` ]: [
 			{ name: 'result', next: false, kind: 'number' },
@@ -1769,20 +1355,13 @@ namespace $ {
 		],
 	}
 
-	/**
-	 * A pane over a real document model: two parts, no wires yet. The pane reads
-	 * the wires and the ports through the same three properties the owner binds,
-	 * and writes through the same two events, so what is checked is the document.
-	 */
 	function wired_make(
 		$: $mol_ambient_context,
 		parts = [ `Calc ${d}my_calc`, `Map ${d}my_map` ],
 	) {
-
 		const node = $bog_vmap_lang_node.make({ $ })
 		node.source( [ `${root} ${d}mol_view`, ... parts.map( part => '\t' + part ), '\tsub /', '' ].join( '\n' ) )
 
-		// To the fixed point of normalization, so that a write and its undo give the same bytes.
 		node.tree( node.tree() )
 
 		const klass_of = ( name: string )=> node.props_tree().select( name ).kids[0]?.kids[0]?.type ?? ''
@@ -1806,30 +1385,16 @@ namespace $ {
 }
 
 namespace $ {
-
-	/**
-	 * Tests of a failure of the scene finding its way onto the node.
-	 *
-	 * The strip says something is wrong somewhere; the mark says which node. Stage
-	 * 4.4 is the second sentence, and this file is about the host half of it: what
-	 * the bridge carries in `node` has to come out on that node and nowhere else.
-	 *
-	 * `d` keeps `$` out of the string literals — mam reads them for dependencies.
-	 */
 	const d = '$'
 
 	const root = `${d}bog_vmap_app_page`
 
-	/** A pane with a peer that answers, and a way to speak to it as the scene. */
 	const pane_make = ( $: $mol_ambient_context )=> {
-
 		const peer = { origin: 'null', postMessage() {} }
 
 		const pane = $$.$bog_vmap_app_pane.make({
 			$,
 			doc_root: ()=> root,
-			// The one node these scenarios are about. The canvas only knows the nodes
-			// the document declares, and a mark stands on a node of the document.
 			doc_names: ()=> [ 'Calc' ],
 			pane_rect: ()=> ({ left: 0, top: 0, width: 1000, height: 800 }),
 			scene_peer: ()=> peer,
@@ -1845,9 +1410,7 @@ namespace $ {
 	}
 
 	$mol_test({
-
 		'a failure the scene attributes lands on that node'( $ ) {
-
 			const { pane, answer } = pane_make( $ )
 
 			answer({ kind: 'error', at: 'runtime', message: 'boom', node: 'Calc' })
@@ -1857,9 +1420,7 @@ namespace $ {
 
 		},
 
-		/** A guess would be worse than nothing: an unattributed failure stays on the strip. */
 		'a failure with no node stays off every node'( $ ) {
-
 			const { pane, answer } = pane_make( $ )
 
 			answer({ kind: 'error', at: 'compile', message: 'boom' })
@@ -1870,7 +1431,6 @@ namespace $ {
 		},
 
 		'the two channels of one node are both shown on it'( $ ) {
-
 			const { pane, answer } = pane_make( $ )
 
 			answer({ kind: 'error', at: 'compile', message: 'first', node: 'Calc' })
@@ -1883,9 +1443,7 @@ namespace $ {
 
 		},
 
-		/** The channel clears with `null`, and the node has to clear with it. */
 		'a cleared channel takes the mark off the node'( $ ) {
-
 			const { pane, answer } = pane_make( $ )
 
 			answer({ kind: 'error', at: 'runtime', message: 'boom', node: 'Calc' })
@@ -1896,7 +1454,6 @@ namespace $ {
 		},
 
 		'a fresh scene starts with no failure on any node'( $ ) {
-
 			const { pane, answer } = pane_make( $ )
 
 			answer({ kind: 'error', at: 'compile', message: 'boom', node: 'Calc' })
@@ -1906,9 +1463,7 @@ namespace $ {
 
 		},
 
-		/** A node nobody has measured has no corner to put a mark at. */
 		'a mark is drawn only where the node has been measured'( $ ) {
-
 			const { pane, answer } = pane_make( $ )
 
 			answer({ kind: 'error', at: 'runtime', message: 'boom', node: 'Calc' })
@@ -1925,14 +1480,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * The case the marks exist for: code is written, it breaks, and the node
-		 * stops being drawn. Nothing is measured any more, so the mark has to stand
-		 * on the last box the node was seen at — otherwise it disappears exactly
-		 * when it is needed.
-		 */
 		'a node that stops being drawn keeps its mark where it was'( $ ) {
-
 			const { pane, answer } = pane_make( $ )
 
 			answer({
@@ -1940,8 +1488,6 @@ namespace $ {
 				sizes: { [ `${ root }/Calc` ]: { x: 10, y: 20, width: 100, height: 50 } },
 			})
 
-			// It broke: the scene draws it no more, so it measures it no more, and
-			// the report simply stops mentioning it.
 			answer({ kind: 'sizes', sizes: {} })
 			answer({ kind: 'error', at: 'runtime', message: 'boom', node: 'Calc' })
 
@@ -1951,13 +1497,7 @@ namespace $ {
 
 		},
 
-		/**
-		 * A node that never drew has no corner to point at, and pointing at a made
-		 * up one would be the false mark. The text is not conditional on geometry,
-		 * so the panel of that node says it anyway.
-		 */
 		'a node never drawn gets no mark, and is still told about'( $ ) {
-
 			const { pane, answer } = pane_make( $ )
 
 			answer({ kind: 'error', at: 'compile', message: 'boom', node: 'Calc' })
@@ -1967,9 +1507,7 @@ namespace $ {
 
 		},
 
-		/** What the panel of the picked node shows is what the pane knows about it. */
 		'the code panel shows the failure of the node it is editing'( $ ) {
-
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )

@@ -1,6 +1,4 @@
 namespace $ {
-
-	/** A box in screen pixels of the pane. */
 	export type $bog_vmap_app_wire_box = {
 		readonly left: number
 		readonly top: number
@@ -8,17 +6,14 @@ namespace $ {
 		readonly height: number
 	}
 
-	/** A port of a part's class: name, `?` in the signature, shape of the default value. */
 	export type $bog_vmap_app_wire_port = {
 		readonly name: string
 		readonly next: boolean
 		readonly kind: $bog_vmap_app_inspect_value_kind
 	}
 
-	/** Inputs are drawn on the left edge of a part, outputs on the right. */
 	export type $bog_vmap_app_wire_side = 'in' | 'out'
 
-	/** A port dot on screen. `lit` — may take the wire in hand; `linked` — an input with a wire already. */
 	export type $bog_vmap_app_wire_dot = {
 		readonly node: string
 		readonly port: $bog_vmap_app_wire_port
@@ -29,7 +24,6 @@ namespace $ {
 		readonly linked: boolean
 	}
 
-	/** A drawn wire: its path and the label at its middle. */
 	export type $bog_vmap_app_wire_line = {
 		readonly key: string
 		readonly geometry: string
@@ -38,36 +32,25 @@ namespace $ {
 		readonly label_y: number
 	}
 
-	/** Height of one port row, in screen pixels whatever the zoom. */
 	export const $bog_vmap_app_wire_row = 14
 
-	/**
-	 * Distance from the edge of the box to the centre of a dot, in screen pixels.
-	 * Strictly outside the box: under the picked part the overlay is cut open along
-	 * the box, and a dot inside it would take no press. The radius stays under this.
-	 */
 	export const $bog_vmap_app_wire_gap = 12
 
 	export const $bog_vmap_app_wire_radius = 5
 
-	/** Radius within which a point counts as over a dot. Wider than the dot. */
 	export const $bog_vmap_app_wire_hit = 8
 
-	/** Shapes a port carries as a wire: values and references, never sub views or dictionaries. */
 	const wirable = new Set< $bog_vmap_app_inspect_value_kind >([
 		'string', 'number', 'bool', 'null', 'locale', 'list', 'get', 'bind',
 	])
 
-	/** Ports of a class fit for wiring, from its `props_map`, in its order: bases first. */
 	export function $bog_vmap_app_wire_ports(
 		this: $,
 		props: ReadonlyMap< string, $mol_tree2 >,
 	): readonly $bog_vmap_app_wire_port[] {
-
 		const ports = [] as $bog_vmap_app_wire_port[]
 
 		for( const [ name, prop ] of props ) {
-
 			const meta = this.$mol_view_tree2_prop_parts( prop )
 			if( meta.key ) continue
 
@@ -81,16 +64,10 @@ namespace $ {
 		return ports
 	}
 
-	/**
-	 * Whether a value of one shape may feed a port of another: equal shapes fit,
-	 * `null` and a reference say nothing about the shape and fit anything, a
-	 * localized string is a string.
-	 */
 	export function $bog_vmap_app_wire_fits(
 		out: $bog_vmap_app_inspect_value_kind,
 		into: $bog_vmap_app_inspect_value_kind,
 	) {
-
 		const loose = new Set< $bog_vmap_app_inspect_value_kind >([ 'null', 'get', 'bind' ])
 		if( loose.has( out ) || loose.has( into ) ) return true
 
@@ -99,13 +76,11 @@ namespace $ {
 		return norm( out ) === norm( into )
 	}
 
-	/** Centre of the dot of the `index`th port on a side of a box. Rows run down from the top. */
 	export function $bog_vmap_app_wire_port_point(
 		box: $bog_vmap_app_wire_box,
 		side: $bog_vmap_app_wire_side,
 		index: number,
 	): readonly [ number, number ] {
-
 		const x = side === 'in'
 			? box.left - $bog_vmap_app_wire_gap
 			: box.left + box.width + $bog_vmap_app_wire_gap
@@ -115,33 +90,14 @@ namespace $ {
 		return [ x, y ]
 	}
 
-	/** Reach of the tangents, so short wires still bend. */
 	function wire_reach( span: number ) {
 		return Math.max( 40, Math.abs( span ) / 2 )
 	}
 
-	/**
-	 * The two control points of the wire, chosen by which way it actually goes.
-	 *
-	 * Outputs sit on the right edge of a part and inputs on the left, so a wire
-	 * that runs forwards has its ends already pointing at each other and horizontal
-	 * tangents draw the plain S everybody expects.
-	 *
-	 * BACKWARDS IS THE COMMON CASE INSIDE A CONTAINER, not an exotic one: two
-	 * children stacked in one box sit at the same left edge, so the output of the
-	 * upper one is a dozen pixels to the RIGHT of the input of the lower one.
-	 * Horizontal tangents there send the curve out past the right edge of the box
-	 * and bring it back in from the left — a loop around the whole part, which
-	 * reads as a broken wire rather than a short one. Turning the tangents vertical
-	 * keeps every control point between the two ends, so the curve stays in the
-	 * band between them and reads as what it is: a step down from one child to the
-	 * next.
-	 */
 	function wire_control(
 		from: readonly [ number, number ],
 		to: readonly [ number, number ],
 	): readonly [ readonly [ number, number ], readonly [ number, number ] ] {
-
 		if( to[0] >= from[0] ) {
 			const reach = wire_reach( to[0] - from[0] )
 			return [ [ from[0] + reach, from[1] ], [ to[0] - reach, to[1] ] ]
@@ -153,23 +109,19 @@ namespace $ {
 		return [ [ from[0], from[1] + reach * down ], [ to[0], to[1] - reach * down ] ]
 	}
 
-	/** A cubic Bezier from an output to an input, as an SVG path. */
 	export function $bog_vmap_app_wire_curve(
 		from: readonly [ number, number ],
 		to: readonly [ number, number ],
 	) {
-
 		const [ one, two ] = wire_control( from, to )
 
 		return `M ${ from[0] } ${ from[1] } C ${ one[0] } ${ one[1] }, ${ two[0] } ${ two[1] }, ${ to[0] } ${ to[1] }`
 	}
 
-	/** The point of the curve at t = 1/2, where the label goes. */
 	export function $bog_vmap_app_wire_curve_mid(
 		from: readonly [ number, number ],
 		to: readonly [ number, number ],
 	): readonly [ number, number ] {
-
 		const [ one, two ] = wire_control( from, to )
 
 		return [
@@ -178,12 +130,10 @@ namespace $ {
 		]
 	}
 
-	/** The dot under a point, or `null`. The last one wins: what is drawn later is on top. */
 	export function $bog_vmap_app_wire_dot_at(
 		dots: readonly $bog_vmap_app_wire_dot[],
 		point: readonly [ number, number ],
 	) {
-
 		let found = null as $bog_vmap_app_wire_dot | null
 
 		for( const dot of dots ) {
