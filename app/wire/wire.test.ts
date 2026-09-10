@@ -3,7 +3,7 @@ namespace $ {
 		({ left, top, width, height })
 
 	const port = ( name: string, kind: $bog_vmap_app_inspect_value_kind, next = false ): $bog_vmap_app_wire_port =>
-		({ name, next, kind })
+		({ name, next, own: true, kind })
 
 	const dot = (
 		over: Partial< $bog_vmap_app_wire_dot > & { x: number, y: number },
@@ -121,11 +121,34 @@ namespace $ {
 			].join( '\n' ) )
 
 			const props = new Map( tree.kids.map( prop => [ $.$mol_view_tree2_prop_parts( prop ).name, prop ] as const ) )
-			const ports = $.$bog_vmap_app_wire_ports( props )
+			const owners = new Map( [ ... props.keys() ].map( name => [ name, `${d}my_part` ] as const ) )
+			const ports = $.$bog_vmap_app_wire_ports( props, owners, `${d}my_part` )
 
 			$mol_assert_like(
 				ports.map( port => `${ port.name }${ port.next ? '?' : '' }:${ port.kind }` ),
 				[ 'title:string', 'count:number', 'enabled:bool', 'click?:null', 'items:list', 'label:locale', 'bound:get', 'both?:bind' ],
+			)
+
+			$mol_assert_equal( ports.every( port => port.own ), true )
+
+		},
+
+		'a port inherited from the base class is not the part own'( $ ) {
+			const d = '$'
+			const tree = $.$mol_tree2_from_string( [ `title \\Hi`, `count 3`, `` ].join( '\n' ) )
+
+			const props = new Map( tree.kids.map( prop => [ $.$mol_view_tree2_prop_parts( prop ).name, prop ] as const ) )
+
+			const owners = new Map( [
+				[ 'title', `${d}mol_view` ],
+				[ 'count', `${d}my_part` ],
+			] as const )
+
+			const ports = $.$bog_vmap_app_wire_ports( props, owners, `${d}my_part` )
+
+			$mol_assert_like(
+				ports.map( port => `${ port.name }:${ port.own }` ),
+				[ 'title:false', 'count:true' ],
 			)
 
 		},

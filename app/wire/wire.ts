@@ -9,6 +9,7 @@ namespace $ {
 	export type $bog_vmap_app_wire_port = {
 		readonly name: string
 		readonly next: boolean
+		readonly own: boolean
 		readonly kind: $bog_vmap_app_inspect_value_kind
 	}
 
@@ -47,6 +48,8 @@ namespace $ {
 	export function $bog_vmap_app_wire_ports(
 		this: $,
 		props: ReadonlyMap< string, $mol_tree2 >,
+		owners: ReadonlyMap< string, string >,
+		base: string,
 	): readonly $bog_vmap_app_wire_port[] {
 		const ports = [] as $bog_vmap_app_wire_port[]
 
@@ -57,7 +60,7 @@ namespace $ {
 			const kind = this.$bog_vmap_app_inspect_value_kind_of( prop.kids[ 0 ] ?? null )
 			if( !wirable.has( kind ) ) continue
 
-			ports.push({ name, next: Boolean( meta.next ), kind })
+			ports.push({ name, next: Boolean( meta.next ), own: owners.get( name ) === base, kind })
 
 		}
 
