@@ -40,6 +40,7 @@ namespace $.$$ {
 		Body: {
 			flex: { grow: 1, shrink: 1 },
 			minHeight: 0,
+			overflow: { x: 'auto', y: 'hidden' },
 		},
 
 		Side: {
