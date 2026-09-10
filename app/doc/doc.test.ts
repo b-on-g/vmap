@@ -146,7 +146,7 @@ namespace $ {
 
 			$mol_assert_like(
 				Object.keys( $bog_vmap_app_doc.schema ),
-				[ 'Title', 'Nodes', 'Root', 'Spots', 'Pack' ],
+				[ 'Title', 'Nodes', 'Root', 'Spots', 'Pack', 'Snaps' ],
 			)
 
 			$mol_assert_like(

@@ -4,6 +4,16 @@ namespace $ {
 		readonly [ name: string ]: { readonly x: number, readonly y: number }
 	}
 
+	export type $bog_vmap_app_store_parts = {
+		readonly [ klass: string ]: string
+	}
+
+	export type $bog_vmap_app_store_state = {
+		readonly source: string
+		readonly js: $bog_vmap_app_store_parts
+		readonly css: $bog_vmap_app_store_parts
+	}
+
 	export class $bog_vmap_app_store extends $mol_object {
 
 		home() {
@@ -282,6 +292,106 @@ namespace $ {
 			return doc.pack( next )
 		}
 
+		doc_state( doc: $bog_vmap_app_doc, next?: $bog_vmap_app_store_state ): $bog_vmap_app_store_state {
+
+			if( next !== undefined ) {
+
+				this.doc_source( doc, next.source )
+
+				for( const node of this.nodes( doc ) ) {
+					const name = $bog_vmap_app_store_class_name( node.source() )
+					node.js( next.js[ name ] ?? '' )
+					node.css( next.css[ name ] ?? '' )
+				}
+
+				return next
+			}
+
+			const js = {} as { [ klass: string ]: string }
+			const css = {} as { [ klass: string ]: string }
+
+			for( const node of this.nodes( doc ) ) {
+
+				const name = $bog_vmap_app_store_class_name( node.source() )
+
+				const body = node.js()
+				if( body ) js[ name ] = body
+
+				const style = node.css()
+				if( style ) css[ name ] = style
+
+			}
+
+			return { source: this.doc_source( doc ), js, css }
+		}
+
+		snap_limit() {
+			return 50
+		}
+
+		snaps( doc: $bog_vmap_app_doc ): readonly $bog_vmap_app_doc_snap[] {
+
+			const links = doc.Snaps()?.items()?.filter( $mol_guard_defined ) ?? []
+			const land = doc.land()
+
+			return links.map(
+				link => land.Pawn( $bog_vmap_app_doc_snap ).Head( link.head() )
+			)
+		}
+
+		snap_state( snap: $bog_vmap_app_doc_snap ): $bog_vmap_app_store_state {
+			return {
+				source: snap.source(),
+				js: $bog_vmap_app_store_parts_unpack( snap.js() ),
+				css: $bog_vmap_app_store_parts_unpack( snap.css() ),
+			}
+		}
+
+		snap_add( doc: $bog_vmap_app_doc, state: $bog_vmap_app_store_state, time: number ) {
+
+			const snap = doc.Snaps( null )!.make( null )
+
+			snap.time( time )
+			snap.author( doc.land().auth().pass().lord().str )
+			snap.source( state.source )
+			snap.js( $bog_vmap_app_store_parts_pack( state.js ) )
+			snap.css( $bog_vmap_app_store_parts_pack( state.css ) )
+
+			this.snap_evict( doc )
+
+			return snap
+		}
+
+		snap_evict( doc: $bog_vmap_app_doc ) {
+
+			const list = doc.Snaps( null )!
+			const links = list.items().filter( $mol_guard_defined )
+			const extra = links.length - this.snap_limit()
+
+			if( extra <= 0 ) return
+
+			const land = doc.land()
+
+			for( const link of links.slice( 0, extra ) ) {
+				const snap = land.Pawn( $bog_vmap_app_doc_snap ).Head( link.head() )
+				snap.source( '' )
+				snap.js( '' )
+				snap.css( '' )
+			}
+
+			list.items( links.slice( extra ) )
+
+		}
+
+	}
+
+	export function $bog_vmap_app_store_parts_pack( parts: $bog_vmap_app_store_parts ) {
+		return Object.keys( parts ).length ? JSON.stringify( parts ) : ''
+	}
+
+	export function $bog_vmap_app_store_parts_unpack( packed: string ): $bog_vmap_app_store_parts {
+		if( !packed ) return {}
+		return JSON.parse( packed )
 	}
 
 	export function $bog_vmap_app_store_class_name( source: string ) {

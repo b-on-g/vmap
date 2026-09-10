@@ -743,6 +743,153 @@ namespace $ {
 
 		},
 
+		'a snapshot keeps the whole document and reads back'( $ ) {
+
+			const s = store( $ )
+			const doc = s.doc_add( 'Landing' )
+
+			s.source( src_page + src_calc )
+			s.node_js( doc, `${d}bog_vmap_app_store_test_calc`, 'return 1' )
+			s.node_css( doc, `${d}bog_vmap_app_store_test_page`, ':host { color: red }' )
+
+			const state = s.doc_state( doc )
+			const snap = s.snap_add( doc, state, 1757000000000 )
+
+			$mol_assert_equal( s.snaps( doc ).length, 1 )
+			$mol_assert_equal( snap.time(), 1757000000000 )
+			$mol_assert_equal( snap.author(), doc.land().auth().pass().lord().str )
+			$mol_assert_like( s.snap_state( snap ), state )
+
+			$mol_assert_like( s.snap_state( snap ), {
+				source: src_page + src_calc,
+				js: { [ `${d}bog_vmap_app_store_test_calc` ]: 'return 1' },
+				css: { [ `${d}bog_vmap_app_store_test_page` ]: ':host { color: red }' },
+			} )
+
+		},
+
+		'the document goes back to the state of a snapshot'( $ ) {
+
+			const s = store( $ )
+			const doc = s.doc_add( 'Landing' )
+
+			s.source( src_page )
+			s.node_css( doc, `${d}bog_vmap_app_store_test_page`, ':host { color: red }' )
+
+			const snap = s.snap_add( doc, s.doc_state( doc ), 1 )
+
+			s.source( src_page + src_calc )
+			s.node_css( doc, `${d}bog_vmap_app_store_test_page`, '' )
+
+			s.doc_state( doc, s.snap_state( snap ) )
+
+			$mol_assert_equal( s.source(), src_page )
+			$mol_assert_equal( s.node_css( doc, `${d}bog_vmap_app_store_test_page` ), ':host { color: red }' )
+			$mol_assert_equal( s.nodes( doc ).length, 1 )
+
+		},
+
+		'the oldest snapshots are evicted down to the limit'( $ ) {
+
+			class store_short extends $bog_vmap_app_store {
+				override snap_limit() {
+					return 3
+				}
+			}
+
+			const s = store_short.make({ $, doc_land_config: ()=> null })
+			const doc = s.doc_add( 'Landing' )
+
+			s.source( src_page )
+
+			for( let time = 1; time <= 5; ++ time ) s.snap_add( doc, s.doc_state( doc ), time )
+
+			const snaps = s.snaps( doc )
+
+			$mol_assert_equal( snaps.length, 3 )
+			$mol_assert_like( snaps.map( snap => snap.time() ), [ 3, 4, 5 ] )
+			$mol_assert_equal( snaps[ 0 ].source(), src_page )
+
+		},
+
+		async 'a snapshot written in one session comes back in the next'( $ ) {
+
+			const disk: $bog_vmap_app_store_test_disk = new Map
+
+			const mine = $bog_vmap_app_store_test_mine( disk )
+
+			const session = ()=> {
+
+				const ctx = Object.create( $ ) as typeof $
+
+				ctx.$giper_baza_land = class extends $$.$giper_baza_land {} as any
+				ctx.$giper_baza_mine = class extends mine {} as any
+
+				const glob = class extends $.$giper_baza_glob {
+					static override lands_touched = new $mol_wire_set< string >()
+				}
+				glob.$ = ctx
+				ctx.$giper_baza_glob = glob as any
+
+				ctx.$mol_state_arg = class extends $.$mol_state_arg {} as any
+
+				ctx.$mol_storage = class extends $.$mol_storage {
+					static override total() { return 1e9 }
+					static override used() { return 0 }
+				} as any
+
+				const store = $bog_vmap_app_store.make({
+					$: ctx,
+					doc_land_config: ()=> [[ null, $giper_baza_rank_read ]] as $giper_baza_rank_preset,
+				})
+
+				const eye = new $mol_wire_atom( 'eye', ()=> {
+					try {
+						return store.doc_links().length + ':' + store.source().length
+					} catch( error ) {
+						if( $mol_promise_like( error ) ) return $mol_fail_hidden( error )
+						return -1
+					}
+				} )
+
+				return { store, look: ()=> { try { eye.fresh() } catch( error ) {} } }
+			}
+
+			const read = < Name extends keyof $bog_vmap_app_store >(
+				store: $bog_vmap_app_store,
+				name: Name,
+				... args: any[]
+			)=> ( $mol_wire_async( store )[ name ] as any )( ... args )
+
+			const one = session()
+			one.look()
+
+			const made = await read( one.store, 'doc_add', 'Сцена 1', src_page ) as $bog_vmap_app_doc
+			const link = made.link().str
+			one.look()
+
+			const state = await read( one.store, 'doc_state', made ) as $bog_vmap_app_store_state
+			await read( one.store, 'snap_add', made, state, 1757 )
+			one.look()
+
+			await $mol_wire_async( one.store.home().land() ).units_saving()
+			await $mol_wire_async( made.land() ).units_saving()
+
+			const two = session()
+			await read( two.store, 'doc_arg', link )
+			two.look()
+
+			const doc = await read( two.store, 'doc_current' ) as $bog_vmap_app_doc
+			const snaps = await read( two.store, 'snaps', doc ) as readonly $bog_vmap_app_doc_snap[]
+
+			$mol_assert_equal( snaps.length, 1 )
+			$mol_assert_equal( await $mol_wire_async( snaps[ 0 ] ).time(), 1757 )
+
+			const back = await read( two.store, 'snap_state', snaps[ 0 ] ) as $bog_vmap_app_store_state
+			$mol_assert_equal( back.source, src_page )
+
+		},
+
 	})
 
 }
