@@ -1,41 +1,16 @@
 namespace $ {
 
-	/**
-	 * Tests of the store, on the home land built in place.
-	 *
-	 * No master, no network, no proof of work: `doc_land_config` answers `null`, so
-	 * a document is made in the home land itself instead of grabbing a land of its
-	 * own. Everything else is the real path — the glob, the list, the atoms.
-	 *
-	 * NOT covered, deliberately: grabbing a land per document. That is proof of
-	 * work, seconds against the one second a mol test is given, and a hanging test
-	 * is indistinguishable from a failed assertion — silence — and hangs every
-	 * build that runs the tests.
-	 *
-	 * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-	 * a regexp over sources, literals included.
-	 */
 	const d = '$'
 
-	/**
-	 * The address is a static cell and would leak a `doc=` from one test into the
-	 * next. A subclass per test gets a cache of its own, the way the glob mock does.
-	 */
 	$mol_test_mocks.push( $=> {
 		class $mol_state_arg_mock extends $.$mol_state_arg {}
 		$.$mol_state_arg = $mol_state_arg_mock
 	} )
 
-	/**
-	 * Fixtures in canonical `tree2` formatting, the fixed point of the serializer:
-	 * a node with one child is written on one line. The store promises a byte for
-	 * byte round trip on exactly this shape, which is the shape `lang` writes.
-	 */
 	const src_page = `${d}bog_vmap_app_store_test_page ${d}mol_view\n\tCalc ${d}bog_vmap_app_store_test_calc\n\tcalc_result = Calc result\n\tsub / <= Calc\n`
 	const src_calc = `${d}bog_vmap_app_store_test_calc ${d}mol_view\n\tresult 42\n\tstep 1\n`
 	const src_hero = `${d}bog_vmap_app_store_test_hero ${d}mol_view\n\ttitle \\Hi\n\tsub / <= title\n`
 
-	/** Documents in the home land: the same code path minus the proof of work. */
 	function store( $: $ ) {
 		return $bog_vmap_app_store.make({
 			$,
@@ -43,24 +18,13 @@ namespace $ {
 		})
 	}
 
-	/** One unit as a disk keeps it: the bytes, and the ball beside it if it has one. */
 	type $bog_vmap_app_store_test_kept = {
 		readonly bin: ArrayBuffer
 		readonly ball: Uint8Array< ArrayBuffer > | null
 	}
 
-	/** What a disk holds: units by path, per land. */
 	type $bog_vmap_app_store_test_disk = Map< string, Map< string, $bog_vmap_app_store_test_kept > >
 
-	/**
-	 * A mine in the shape of the real driver: units and balls, kept in a map that
-	 * outlives the session.
-	 *
-	 * The shape matters as much as the keeping. A mine that keeps units and forgets
-	 * BALLS gives back a list of documents with titles and no text at all — which is
-	 * the picture the deploy showed, so a stand that cannot produce it proves
-	 * nothing about the case it exists for.
-	 */
 	function $bog_vmap_app_store_test_mine( disk: $bog_vmap_app_store_test_disk ) {
 
 		return class extends $giper_baza_mine_temp {
@@ -126,7 +90,6 @@ namespace $ {
 
 		},
 
-		/** Byte for byte, on the canonical formatting `lang` writes. */
 		'one class survives the round trip'( $ ) {
 
 			const s = store( $ )
@@ -156,10 +119,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The payoff of per node storage: editing one class rewrites one atom. The
-		 * neighbour keeps its node — the same link — and its text is untouched.
-		 */
 		'editing one class leaves the other node alone'( $ ) {
 
 			const s = store( $ )
@@ -208,17 +167,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * WHY A RENAME HAS TO CARRY THE BODY AND THE STYLES BY HAND, measured at the
-		 * level where it happens.
-		 *
-		 * Classes are matched to nodes by NAME, so a class renamed in the text has no
-		 * match: a node is made for the new name with nothing in it, and the old one
-		 * leaves the list taking its `Js` and `Css` with it. Everything the editor
-		 * keeps about a class outside its text therefore has to be read BEFORE the
-		 * text is written and put back after — there is no name in between that
-		 * answers for it.
-		 */
 		'a class renamed in the text arrives as an empty node and the old one leaves'( $ ) {
 
 			const s = store( $ )
@@ -232,45 +180,12 @@ namespace $ {
 			$mol_assert_equal( s.nodes( doc ).length, 2 )
 			$mol_assert_equal( s.node( doc, `${d}bog_vmap_app_store_test_calc` ), null )
 
-			// The new name is a new node, and it is empty. This is the loss the editor
-			// closes above it, not a defect of the store: the text is the truth, and
-			// the text says there is no such class any more.
 			$mol_assert_equal( s.node_js( doc, `${d}bog_vmap_app_store_test_total` ), '' )
 
 		},
 
-		/**
-		 * THE PROMISE OF STAGE 1: a reload comes back to the same scene.
-		 *
-		 * Nothing else in the pack says a word about it, and nothing could: the
-		 * standing mocks switch persistence off on BOTH sides — `$giper_baza_land
-		 * .sync()`, the one method that loads and saves, is stubbed to a no-op, and
-		 * the mine is replaced by the empty base, whose `units_load` answers with
-		 * nothing. Both are put back here.
-		 *
-		 * The mine below keeps units in memory, in the shape the IndexedDB driver
-		 * uses in a browser: one record per unit, and the payload of a big one in a
-		 * store of its own. What is NOT covered is that driver itself, which needs a
-		 * browser; everything between the store and it is the product path exactly.
-		 *
-		 * A SESSION IS A SET OF CLASSES WITH FRESH CACHES and the same identity —
-		 * what a reloaded page has, its key restored out of local storage.
-		 *
-		 * **Each session keeps a live reader, and without one this test lies:** the
-		 * graph sweeps a cell nobody reads, the land object goes with it and comes
-		 * back empty, which looks exactly like the loss under test. Measured on the
-		 * stand this grew out of, where the first version reported a loss that was
-		 * its own doing.
-		 *
-		 * **Balls are half of what is being checked.** A text longer than a unit
-		 * holds inline lives in a ball beside it, and a mine that keeps units but
-		 * forgets balls gives back a document list with titles and documents with no
-		 * text at all — measured here by leaving `ball_load` out, and it is the same
-		 * picture the editor showed on a reloaded page of the deploy.
-		 */
 		async 'a document written in one session comes back in the next'( $ ) {
 
-			/** The disk, shared by the sessions and by nothing else. */
 			const disk: $bog_vmap_app_store_test_disk = new Map
 
 			const mine = $bog_vmap_app_store_test_mine( disk )
@@ -279,7 +194,6 @@ namespace $ {
 
 				const ctx = Object.create( $ ) as typeof $
 
-				// The real land, whose `sync()` loads and saves.
 				ctx.$giper_baza_land = class extends $$.$giper_baza_land {} as any
 				ctx.$giper_baza_mine = class extends mine {} as any
 
@@ -291,8 +205,6 @@ namespace $ {
 
 				ctx.$mol_state_arg = class extends $.$mol_state_arg {} as any
 
-				// A browser answers with a quota; the base class answers zero, and
-				// zero reads as «storage full» to the sharding rule of `persisted()`.
 				ctx.$mol_storage = class extends $.$mol_storage {
 					static override total() { return 1e9 }
 					static override used() { return 0 }
@@ -303,7 +215,6 @@ namespace $ {
 					doc_land_config: ()=> [[ null, $giper_baza_rank_read ]] as $giper_baza_rank_preset,
 				})
 
-				// What a view does: read, and stay subscribed.
 				const eye = new $mol_wire_atom( 'eye', ()=> {
 					try {
 						return store.doc_links().length + ':' + store.source().length
@@ -313,7 +224,6 @@ namespace $ {
 					}
 				} )
 
-				/** A frame drawn. Suspends while a land loads, like any first frame. */
 				const look = ()=> { try { eye.fresh() } catch( error ) {} }
 
 				return { store, look }
@@ -332,12 +242,9 @@ namespace $ {
 			const link = made.link().str
 			one.look()
 
-			// Saving is driven by the yard, which has no master here, so it is asked
-			// for directly: what this checks is the round trip, not the timer.
 			await $mol_wire_async( one.store.home().land() ).units_saving()
 			await $mol_wire_async( made.land() ).units_saving()
 
-			// A reload: same identity, same disk, every cache new.
 			const two = session()
 			two.look()
 
@@ -345,7 +252,6 @@ namespace $ {
 			$mol_assert_equal( await read( two.store, 'title' ), 'Сцена 1' )
 			$mol_assert_equal( await read( two.store, 'source' ), src_page )
 
-			// And by the address, which is how a shared link opens.
 			const three = session()
 			await read( three.store, 'doc_arg', link )
 			three.look()
@@ -356,36 +262,12 @@ namespace $ {
 
 		},
 
-		/**
-		 * P2: A DOCUMENT OPENED BY A LINK AND ONLY READ USED TO BE KEPT BY A COIN
-		 * TOSS, and under an unknown quota by no toss at all.
-		 *
-		 * Keeping a land on disk is not a flag but a sharding rule: the base compares
-		 * the tail of the reader's key with the tail of the land link, cropped by how
-		 * full the storage is, and a browser that cannot tell its quota reads as
-		 * completely full — nothing is kept. What hides this everywhere else is that
-		 * a WRITE sets the flag and freezes the rule, so only a land nobody wrote to
-		 * this session is exposed. Somebody else's document, opened by its link and
-		 * read, is exactly that land.
-		 *
-		 * The stand states the quota rather than taking the one of this machine: what
-		 * is under test is the rule, and a test whose answer depends on how full the
-		 * disk of the runner happens to be answers about the runner.
-		 *
-		 * Measured 10.09.2026 before the mitigation: under an unknown quota the
-		 * document left NOTHING on disk — nine units with a quota, zero without — and
-		 * the second session opened onto an empty editor.
-		 */
 		async 'a document opened by a link survives a restart with the quota unknown'( $ ) {
 
 			const disk: $bog_vmap_app_store_test_disk = new Map
 
 			const mine = $bog_vmap_app_store_test_mine( disk )
 
-			/**
-			 * The document belongs to somebody else and never touches our disk on the
-			 * way in: it is made under their key, in their own land.
-			 */
 			const owner = await $.$giper_baza_auth.grab()
 			const theirs = $giper_baza_land.make({ $, auth: ()=> owner })
 			const their_doc = theirs.Data( $bog_vmap_app_doc )
@@ -410,8 +292,6 @@ namespace $ {
 
 				ctx.$mol_state_arg = class extends $.$mol_state_arg {} as any
 
-				// A browser that cannot tell the quota: nothing to divide by, so the
-				// fullness is one and the level infinite — «no room», says the rule.
 				ctx.$mol_storage = class extends $.$mol_storage {
 					static override total() { return 0 }
 					static override used() { return 0 }
@@ -435,11 +315,6 @@ namespace $ {
 				return { store, look: ()=> { try { eye.fresh() } catch( error ) {} } }
 			}
 
-			/**
-			 * Every read of the store goes through a fiber. Outside one, the check of
-			 * a signature lets its promise out as if it were a failure, and the test
-			 * reports a loss that is its own doing.
-			 */
 			const read = < Name extends keyof $bog_vmap_app_store >(
 				store: $bog_vmap_app_store,
 				name: Name,
@@ -448,41 +323,21 @@ namespace $ {
 
 			const one = session()
 
-			// The address names it, and the editor boots on it — the whole of what a
-			// person does. A direct pick, because a write to the address through a
-			// fiber does not settle on this stand.
 			one.store.doc_pick( link )
 
-			/**
-			 * THE READER COMES FIRST, and the order is not cosmetic. A land object
-			 * made while nobody is looking belongs to whatever made it and goes away
-			 * with it, and the request to keep it goes away too: measured on this
-			 * stand, booting before the first read left nothing on disk even with the
-			 * mitigation in place, and the loss looked exactly like the defect. The
-			 * editor draws before it boots — `boot` is called out of `auto`, which
-			 * runs while the view renders — so this is the product order as well.
-			 */
 			one.look()
 
-			// Called plainly, the way `auto` calls it, and not through a fiber.
 			$mol_assert_equal( one.store.boot(), 'ready' )
 
-			// The land arrives the way the network delivers it, and NOTHING is
-			// written into it here: that is the case under test.
 			await $mol_wire_async( one.store.doc( link ).land() ).units_steal( theirs )
 			one.look()
 
 			$mol_assert_equal( await read( one.store, 'source' ), src_hero )
 
-			// Saving is driven by the yard, which has no master here, so it is asked
-			// for directly: what this checks is the rule, not the timer.
 			await $mol_wire_async( one.store.doc( link ).land() ).units_saving()
 
-			// On disk at all: the assertion that fails first, and before the reads
-			// below could wait for a master that is not there.
 			$mol_assert_equal( ( disk.get( link.land().str )?.size ?? 0 ) > 0, true )
 
-			// A reload: same disk, every cache new, and no network behind it.
 			const two = session()
 			two.store.doc_pick( link )
 			two.look()
@@ -492,11 +347,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The recorded choice can be moved, and that is what a rename of the root
-		 * needs: classes are matched to nodes by NAME, so a renamed class arrives as
-		 * a node of its own and nothing would move the pointer to it otherwise.
-		 */
 		'the root can be pointed at another class of the document'( $ ) {
 
 			const s = store( $ )
@@ -506,8 +356,6 @@ namespace $ {
 
 			$mol_assert_equal( s.doc_root( doc ), `${d}bog_vmap_app_store_test_calc` )
 
-			// A name the document does not carry is ignored: a pointer at a node
-			// outside the list is the state this exists to prevent.
 			s.doc_root( doc, `${d}bog_vmap_app_store_test_absent` )
 
 			$mol_assert_equal( s.doc_root( doc ), `${d}bog_vmap_app_store_test_calc` )
@@ -548,7 +396,6 @@ namespace $ {
 			$mol_assert_equal( s.source(), src_hero )
 			$mol_assert_equal( s.title(), 'Second' )
 
-			// No address means the last one made.
 			s.doc_pick( null )
 			$mol_assert_equal( s.doc_arg(), null )
 			$mol_assert_equal( s.source(), src_hero )
@@ -574,14 +421,12 @@ namespace $ {
 			s.title( 'Renamed' )
 			$mol_assert_equal( s.title(), 'Renamed' )
 
-			// Stored as typed. What the string means is the palette's business.
 			s.pack( 'https://mol.hyoo.ru, aaaaaaaa_bbbbbbbb' )
 			$mol_assert_equal( s.pack(), 'https://mol.hyoo.ru, aaaaaaaa_bbbbbbbb' )
 
 			s.spots({ Hero: { x: 0, y: 0 }, Calc: { x: 100, y: -20.5 } })
 			$mol_assert_like( s.spots(), { Calc: { x: 100, y: -20.5 }, Hero: { x: 0, y: 0 } } )
 
-			// A place gone from the dictionary is gone from the store too.
 			s.spots({ Calc: { x: 110, y: -20.5 } })
 			$mol_assert_like( s.spots(), { Calc: { x: 110, y: -20.5 } } )
 
@@ -600,7 +445,6 @@ namespace $ {
 			$mol_assert_equal( s.node_js( doc, `${d}bog_vmap_app_store_test_page` ), '' )
 			$mol_assert_equal( s.node_js( doc, `${d}bog_vmap_app_store_test_none` ), '' )
 
-			// The sources are not disturbed by it.
 			$mol_assert_equal( s.source(), src_page + src_calc )
 
 		},
@@ -624,7 +468,6 @@ namespace $ {
 				[ first.link().str, second.link().str ],
 			)
 
-			// Same list, read back as documents.
 			$mol_assert_like(
 				s.doc_links().map( link => s.doc( link ).title() ),
 				[ 'First', 'Second' ],
@@ -632,11 +475,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * Before there is a document the editor works on a draft, and the first
-		 * document is made out of it in one go: text, places and palette together,
-		 * so that nothing typed while the land was being grabbed is lost.
-		 */
 		'the draft becomes the first document whole'( $ ) {
 
 			const s = store( $ )
@@ -658,17 +496,11 @@ namespace $ {
 			$mol_assert_equal( s.title(), 'Сцена 1' )
 			$mol_assert_equal( s.doc_root( s.doc_current()! ), `${d}bog_vmap_app_store_test_page` )
 
-			// Made once. A second call with a document in place does nothing.
 			s.doc_first()
 			$mol_assert_equal( s.doc_links().length, 1 )
 
 		},
 
-		/**
-		 * `boot` answers at once and hands the making to one fiber; the answer
-		 * follows the document afterwards. Read again and it is the same fiber, so
-		 * a second document is never started.
-		 */
 		async 'boot makes the first document and then reports it'( $ ) {
 
 			const s = store( $ )
@@ -684,24 +516,17 @@ namespace $ {
 			$mol_assert_equal( s.boot(), 'ready' )
 			$mol_assert_equal( s.stage(), 'ready' )
 
-			// Still the one fiber, and still the one document.
 			$mol_assert_equal( s.doc_first_task().task === held.task, true )
 			$mol_assert_equal( s.doc_links().length, 1 )
 
 		},
 
-		/**
-		 * The answer of `boot` is read afresh every time and cannot go stale: under
-		 * `@ $mol_mem` this is the case that answered «making» for the rest of the
-		 * session, the document having landed while the cell was still computing.
-		 */
 		'boot reports the document it just made, in the same breath'( $ ) {
 
 			const s = store( $ )
 
 			$mol_assert_equal( s.boot(), 'making' )
 
-			// Nothing awaited: with no proof of work the document is already there.
 			$mol_assert_equal( s.doc_links().length, 1 )
 			$mol_assert_equal( s.boot(), 'ready' )
 			$mol_assert_equal( s.stage(), 'ready' )
@@ -716,12 +541,10 @@ namespace $ {
 			$mol_assert_equal( s.boot(), 'ready' )
 			$mol_assert_equal( s.doc_links().length, 1 )
 
-			// No fiber was ever asked for: the cell holding it is untouched.
 			$mol_assert_equal( $mol_wire_probe( ()=> s.doc_first_task() ), undefined )
 
 		},
 
-		/** The draft goes into the document `boot` makes, the same as into `doc_first`. */
 		async 'the draft goes whole into the document boot makes'( $ ) {
 
 			const s = store( $ )
@@ -741,19 +564,12 @@ namespace $ {
 
 		},
 
-		/**
-		 * A land still on its way suspends the fiber, which is what mining the
-		 * proof of work does in the editor. The reader is told «making» and is not
-		 * left on it: the moment the document lands, `boot` says `ready`. Repeated
-		 * reads while it waits get the same fiber and make no second document.
-		 */
 		async 'a suspended land does not leave the reader on making for ever'( $ ) {
 
 			let open = ()=> {}
 			const gate = new Promise< void >( done => { open = ()=> done() } )
 			let held = true
 
-			/** Suspends once on the way in, the way a land grab does. */
 			class store_slow extends $bog_vmap_app_store {
 				override doc_first() {
 					if( held ) return $mol_fail_hidden( gate )
@@ -782,20 +598,12 @@ namespace $ {
 
 		},
 
-		/**
-		 * The draft is poured AFTER the document is already in the list, so there is
-		 * a window in which `boot` answers `ready` while the fiber still has work to
-		 * do. Whoever is reading `boot` — the application, every render — must not
-		 * end that fiber by looking away: the loss would be silent and would be the
-		 * text the user had typed.
-		 */
 		async 'the draft survives a suspension after the document is already listed'( $ ) {
 
 			let open = ()=> {}
 			const gate = new Promise< void >( done => { open = ()=> done() } )
 			let held = true
 
-			/** Suspends once while pouring, the way signing a unit does. */
 			class store_late extends $bog_vmap_app_store {
 				override doc_source( doc: $bog_vmap_app_doc, next?: string ): string {
 					if( next !== undefined && held ) return $mol_fail_hidden( gate )
@@ -808,12 +616,9 @@ namespace $ {
 
 			$mol_assert_equal( s.boot(), 'making' )
 
-			// The document is listed, the draft is not in it yet.
 			$mol_assert_equal( s.doc_links().length, 1 )
 			$mol_assert_equal( s.doc_source( s.doc_current()! ), '' )
 
-			// The application reads `boot` again on that very change and is told
-			// `ready`, so it stops asking for the fiber.
 			$mol_assert_equal( s.boot(), 'ready' )
 
 			held = false
@@ -825,12 +630,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The same window, with a reader that subscribes and then looks away — the
-		 * application, whose `auto()` reads `boot` from a cell. A cell nobody reads
-		 * is collected together with what it owns, so the fiber must not hang on
-		 * being read: it is held while it has work, and the draft lands whole.
-		 */
 		async 'a reader that looks away does not take the fiber with it'( $ ) {
 
 			let open = ()=> {}
@@ -847,7 +646,6 @@ namespace $ {
 			const s = store_late.make({ $, doc_land_config: ()=> null })
 			s.source( src_page )
 
-			/** Stands for `auto()` of the application: a cell, and the only reader. */
 			const reader = $mol_wire_atom.solo( s, function boot_reader( this: typeof s ) {
 				return this.boot()
 			} )
@@ -855,11 +653,9 @@ namespace $ {
 			$mol_assert_equal( reader.sync(), 'making' )
 			$mol_assert_equal( s.doc_links().length, 1 )
 
-			// It runs again — a render, an edit, anything — and is told `ready`.
 			reader.refresh()
 			$mol_assert_equal( reader.sync(), 'ready' )
 
-			// The tick on which the graph collects whatever nobody reads any more.
 			await new Promise( done => new $mol_after_tick( ()=> done( null ) ) )
 
 			held = false
@@ -872,12 +668,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A link in the address opens somebody else's public document: it reads,
-		 * it says so, and a write into it changes nothing and throws nothing. The
-		 * owner is a second key; their land is copied into the reader's glob the way
-		 * the network would deliver it.
-		 */
 		async 'a document of somebody else reads, refuses writes and says why'( $ ) {
 
 			const owner = await $.$giper_baza_auth.grab()
@@ -912,17 +702,10 @@ namespace $ {
 			$mol_assert_like( s.spots(), { Hero: { x: 5, y: 6 } } )
 			$mol_assert_equal( s.pack(), '' )
 
-			// Our own list is untouched by looking at theirs.
 			$mol_assert_equal( s.doc_links().length, 0 )
 
 		},
 
-		/**
-		 * A write straight into the atom, past the store, is what a remote edit
-		 * looks like once it has landed. The store, having written this very node
-		 * itself, must hand out the new text: this is the regression an accessor
-		 * under `@ $mol_mem` fails, for the rest of the session.
-		 */
 		'a node edited through the store still sees a write past it'( $ ) {
 
 			const s = store( $ )
@@ -938,11 +721,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The same, with the edit arriving from another peer by merge, the way the
-		 * network delivers it. Two lands of the same link; the second writes later
-		 * and wins, per node last-write-wins being the choice of section 9.
-		 */
 		async 'a node edited through the store still sees a merged remote edit'( $ ) {
 
 			const s = store( $ )
@@ -953,8 +731,6 @@ namespace $ {
 			const head = s.nodes( doc )[ 0 ].head()
 			const home = s.home().land()
 
-			// The peer writes LATER. The home land ticked once per unit it holds by
-			// now, and a single tick of a fresh land is behind all of them.
 			const peer = $giper_baza_land.make({ $ })
 			const last = home.tick().time_tick
 			while( peer.tick().time_tick <= last );
