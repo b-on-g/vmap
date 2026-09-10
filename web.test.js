@@ -7205,18 +7205,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the inspector stand, and only of what does not need a network.
-     *
-     * The row list needs `$bog_vmap_lib`, which fetches a deployed pack, so it is
-     * not touched here: a test that reaches the network is a test that fails on a
-     * train. What IS tested is the thing that used to eat data — a document of
-     * several classes, edited one class at a time.
-     *
-     * The guarantee itself belongs to `$bog_vmap_lang_doc` and is proven there. The
-     * point here is narrower and still worth pinning: that the stand is wired to it
-     * at all, rather than to the class model it looks like it could be wired to.
-     */
     $mol_test({
         'the stand hands the inspector one class of a multi class document'($) {
             const stand = $.$bog_vmap_app_inspect_demo.make({ $ });
@@ -7238,22 +7226,11 @@ var $;
             $mol_assert_equal(stand.Doc().class_source(other), before);
             $mol_assert_ok(stand.class_source().includes('count 42'));
         },
-        /**
-         * The classes the inspector hands to the library: the one being edited plus
-         * its siblings, and never a second copy of itself. The class index of the
-         * library keeps the LAST declaration of a name, so a stale twin among the
-         * peers would quietly shadow the class actually being edited.
-         */
         'the inspected class is not duplicated by its own peers'($) {
             const stand = $.$bog_vmap_app_inspect_demo.make({ $ });
             const types = stand.Inspect().classes().map(tree => tree.type);
             $mol_assert_like(types, stand.names());
         },
-        /**
-         * The layout panel writes into the ordinary `style` dictionary of the node,
-         * so what an artboard is made of is what a hand written document of the
-         * framework would carry, and an export has nothing to learn about artboards.
-         */
         'layout properties land in the style of the node and read back'($) {
             const inspect = inspect_of($, [
                 `${d}bog_vmap_app_inspect_test_page ${d}mol_view`,
@@ -7274,17 +7251,11 @@ var $;
                 '		gap \\1rem',
                 '',
             ].join('\n'));
-            // Empty takes the key out again, and the dictionary keeps the rest.
             inspect.Flex().gap('');
             $mol_assert_equal(inspect.Flex().gap(), '');
             $mol_assert_equal(inspect.Node().source().includes('gap'), false);
             $mol_assert_equal(inspect.Flex().direction(), 'column');
         },
-        /**
-         * `^` first, always. A dictionary redeclared without it replaces the one of
-         * the base instead of extending it, so a node that grew one layout key would
-         * lose every style its class sets, without a word.
-         */
         'the inherited head of the style dictionary is kept'($) {
             const inspect = inspect_of($, [
                 `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
@@ -7296,11 +7267,6 @@ var $;
             inspect.Flex().across('center');
             $mol_assert_like(inspect.style_dict().kids.map(kid => kid.type), ['^', 'padding', 'alignItems']);
         },
-        /**
-         * The style renderer appends `px` to a number, so `flexGrow 1` comes
-         * out as `flex-grow: 1px` — not a length, not a growth factor, dropped, and
-         * the node does not stretch. The document has to carry text.
-         */
         'stretching is written as text, because a number would get px'($) {
             const inspect = inspect_of($, [
                 `${d}bog_vmap_app_inspect_test_cell ${d}mol_view`,
@@ -7314,7 +7280,6 @@ var $;
             $mol_assert_equal(inspect.Flex().grow(), false);
             $mol_assert_equal(inspect.Node().source().includes('flexGrow'), false);
         },
-        /** The width of the page is the same kind of fact, set through the same key. */
         'the width switch sets the width of the artboard'($) {
             const inspect = inspect_of($, [
                 `${d}bog_vmap_app_inspect_test_board ${d}mol_view`,
@@ -7327,11 +7292,6 @@ var $;
             $mol_assert_equal(inspect.Flex().width(), '390px');
             $mol_assert_ok(inspect.Node().source().includes('width \\390px'));
         },
-        /**
-         * Typing is not renaming. A rename rewrites the declaration and everything
-         * that points at it, so a write per keystroke would rename the node to every
-         * prefix of what is being typed and drag the whole document along.
-         */
         'the name field renames on submit and not on a keystroke'($) {
             const inspect = inspect_of($, [
                 `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
@@ -7340,14 +7300,12 @@ var $;
             ].join('\n'));
             $mol_assert_equal(inspect.title_value(), `${d}bog_vmap_app_inspect_test_name`);
             inspect.title_value(`${d}bog_vmap_app_inspect_test_hero`);
-            // Typed, not committed: the field shows it, the document does not have it.
             $mol_assert_equal(inspect.title_value(), `${d}bog_vmap_app_inspect_test_hero`);
             $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_name`);
             inspect.title_submit();
             $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_hero`);
             $mol_assert_ok(inspect.Node().source().startsWith(`${d}bog_vmap_app_inspect_test_hero `));
         },
-        /** A draft belongs to the name it started from, so a fresh name starts a fresh draft. */
         'the field follows the name once the rename lands'($) {
             const inspect = inspect_of($, [
                 `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
@@ -7357,11 +7315,9 @@ var $;
             inspect.title_value(`${d}bog_vmap_app_inspect_test_hero`);
             inspect.title_submit();
             $mol_assert_equal(inspect.title_value(), `${d}bog_vmap_app_inspect_test_hero`);
-            // Nothing to commit twice.
             inspect.title_submit();
             $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_hero`);
         },
-        /** No refusal, no strip: an empty strip in a panel this narrow reads as a bug. */
         'the refusal strip is there only while there is a refusal'($) {
             const inspect = inspect_of($, [
                 `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
@@ -7374,42 +7330,19 @@ var $;
                 source: () => `${d}bog_vmap_app_inspect_test_name ${d}mol_view\n\tsub /\n`,
                 title_note: () => 'Имя занято',
             });
-            // Right under the head, where the eye already is.
             $mol_assert_equal(refused.sub()[1], refused.Note());
         },
-        /**
-         * A source with no class in it is a state, not a failure.
-         *
-         * Every cell of this panel derives from one class, so with none they all
-         * fail at once and the panel answers with a wall of red strips. It happened
-         * on the deploy, where a pick outlived the document it was made in.
-         */
         'a source naming no class leaves an invitation, not twenty failures'($) {
             const one = inspect_of($, '');
             $mol_assert_equal(one.class_ready(), false);
-            // By identity and not by likeness: two live views compared deeply walk
-            // into their own machinery, and what comes back says nothing about the
-            // panel. Nothing else is even asked here, so nothing else can throw.
             $mol_assert_equal(one.sub().length, 1);
             $mol_assert_equal(one.sub()[0], one.Empty());
-            // And a panel over a real class is whole. A SECOND inspector and not a
-            // write into this one: the stand hands the source in as a plain closure,
-            // so a write through it invalidates no cell and the failed parse would
-            // stay cached — an artefact of the stand, not of the panel.
             const two = inspect_of($, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n`);
             $mol_assert_equal(two.class_ready(), true);
             $mol_assert_ok(two.sub().length > 1);
         },
     });
-    /** `d` keeps `$` out of the literals: mam reads them when building its graph. */
     const d = '$';
-    /**
-     * An inspector over one class held in a local variable.
-     *
-     * The library is never touched, so nothing here reaches the network: the layout
-     * panel asks the document what it says and writes back into it, and inherited
-     * ports are somebody else's question.
-     */
     function inspect_of($, source) {
         let text = source;
         return $.$bog_vmap_app_inspect.make({
@@ -8282,7 +8215,8 @@ var $;
             $mol_assert_equal(pane.warmed(), false);
             $mol_assert_equal(pane.sub()[0] !== frame_before, true);
             $mol_assert_equal(pane.sub()[0], pane.Scene(pane.scene_key()));
-            $mol_assert_equal(pane.sub().length, 3);
+            $mol_assert_equal(pane.sub().length, 4);
+            $mol_assert_equal(pane.sub()[3], pane.Camera());
             $mol_assert_equal(pane.watchdog(), null);
             $mol_assert_equal(pane.heartbeat(), null);
             $mol_assert_equal(posted.length, 0);
@@ -11739,26 +11673,11 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the document schema.
-     *
-     * Everything runs on bare lands made in place, with no master and no network.
-     * Deliberately absent: `remote_list()`, which resolves links through the static
-     * `glob.Land`, waits for a master that the tests do not have, and suspends for
-     * ever; and land grabbing, which costs proof of work. A hanging test is worse
-     * than a missing one here, because a failed assertion and a hung run look
-     * exactly alike — silence, no output — and the build hangs with it.
-     *
-     * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-     * a regexp over sources, literals included.
-     */
     const d = '$';
     const src_root = `${d}bog_vmap_app_doc_test_page ${d}mol_view\n\tCalc ${d}bog_vmap_app_doc_test_calc\n\tcalc_result = Calc result\n\tsub / <= Calc\n`;
     const src_hero = `${d}bog_vmap_app_doc_test_hero ${d}mol_view title \\Hi\n`;
-    /** Heads fixed by hand, so two peers address the same node without a list. */
     const head_root = new $giper_baza_link('11111111');
     const head_hero = new $giper_baza_link('22222222');
-    /** A wire method leaves its original on the wrapper. That is how we spot one. */
     function wired(value) {
         return typeof value === 'function' && 'orig' in value;
     }
@@ -11781,11 +11700,6 @@ var $;
             $mol_assert_equal(node.js(), 'result(){ return 42 }');
             $mol_assert_equal(node.css(), '[bog_vmap_app_doc_test_page]{ color: red }');
         },
-        /**
-         * Coordinates in `atom_real`. The point of the test is the round trip itself:
-         * `atom_bint` takes `3000n` and gives back `null`, which is why numbers here
-         * are floats and why this is pinned rather than assumed.
-         */
         'canvas coordinates survive a write and a read'($) {
             const land = $giper_baza_land.make({ $ });
             const doc = land.Pawn($bog_vmap_app_doc).Data();
@@ -11798,11 +11712,6 @@ var $;
             $mol_assert_equal(spot.y(), -12.5);
             $mol_assert_equal(doc.Spots().key('Calc').x(), 3000);
         },
-        /**
-         * The payoff of one atom per node: two people editing two different nodes
-         * both keep their text. One `sand_ordered` over the whole document would
-         * lose one of the two.
-         */
         async 'edits to different nodes merge without loss'($) {
             const land1 = $giper_baza_land.make({ $ });
             const land2 = $giper_baza_land.make({ $ });
@@ -11813,12 +11722,6 @@ var $;
             $mol_assert_equal(land1.Pawn($bog_vmap_app_doc_node).Head(head_root).source(), src_root);
             $mol_assert_equal(land1.Pawn($bog_vmap_app_doc_node).Head(head_hero).source(), src_hero);
         },
-        /**
-         * The other half of the same trade, stated honestly: inside ONE node the
-         * later write wins outright, there is no merge. Per node LWW is the choice
-         * of section 9, not a shortcoming of this schema, and it stands until the
-         * engine's own ordered text is fixed.
-         */
         async 'edits to one node are last write wins'($) {
             const land1 = $giper_baza_land.make({ $ });
             const land2 = $giper_baza_land.make({ $ });
@@ -11828,17 +11731,6 @@ var $;
             await $mol_wire_async(land1).units_steal(land2);
             $mol_assert_equal(land1.Pawn($bog_vmap_app_doc_node).Head(head_root).source(), src_hero);
         },
-        /**
-         * The regression that made every accessor here a plain method.
-         *
-         * With `@$mol_mem` on `source()` this fails: the node whose text you typed
-         * yourself freezes at your version and never shows the merged one, for the
-         * rest of the session. Read-only cells track fine, so the fault hides until
-         * two people edit the same document — precisely the case section 9 is about.
-         *
-         * The same shape is inherited from the entity of the database, which is why
-         * `doc.title()` is overridden rather than reused.
-         */
         async 'a locally edited node still sees a remote edit'($) {
             const land1 = $giper_baza_land.make({ $ });
             const land2 = $giper_baza_land.make({ $ });
@@ -11862,36 +11754,14 @@ var $;
             const root = land.Pawn($bog_vmap_app_doc_node).Head(head_root);
             root.source(src_root);
             doc.Root(null).remote(root);
-            /**
-             * Read back as a raw link, not through `remote()`. The typed getter
-             * resolves the target with the STATIC glob, which waits on a master the
-             * tests do not have. Storing the link is the schema's whole job here.
-             */
             $mol_assert_equal(doc.Root().val().str, root.link().str);
         },
-        /**
-         * The schema is exactly this and nothing else.
-         *
-         * Pinned key by key on purpose. Every field anybody is tempted to add here —
-         * the class name, the property list, the wires — is recomputable from `Tree`,
-         * and a stored copy of a derived thing is the first source of desync. Wires
-         * in particular are two lines of the source text, see the note in `doc.ts`.
-         */
         'nothing derivable is stored'($) {
             $mol_assert_like(Object.keys($bog_vmap_app_doc_node.schema), ['Tree', 'Js', 'Css']);
             $mol_assert_like(Object.keys($bog_vmap_app_doc_spot.schema), ['X', 'Y']);
             $mol_assert_like(Object.keys($bog_vmap_app_doc.schema), ['Title', 'Nodes', 'Root', 'Spots', 'Pack']);
             $mol_assert_like(Object.keys($bog_vmap_app_doc_home.schema), ['Docs']);
         },
-        /**
-         * The schema stays pure.
-         *
-         * A static action decorator on an entity takes the class itself as the fiber
-         * owner, so fibers stop deduplicating consistently and writes go missing
-         * between devices with no error anywhere. It cost a rewrite once already.
-         * Checked rather than reviewed, because the damage is silent and the
-         * temptation to put one CRUD helper on the class is permanent.
-         */
         'schema carries no static wire methods'($) {
             for (const Klass of $bog_vmap_app_doc_schema) {
                 const wired_names = statics_own(Klass)
@@ -11907,55 +11777,21 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the store, on the home land built in place.
-     *
-     * No master, no network, no proof of work: `doc_land_config` answers `null`, so
-     * a document is made in the home land itself instead of grabbing a land of its
-     * own. Everything else is the real path — the glob, the list, the atoms.
-     *
-     * NOT covered, deliberately: grabbing a land per document. That is proof of
-     * work, seconds against the one second a mol test is given, and a hanging test
-     * is indistinguishable from a failed assertion — silence — and hangs every
-     * build that runs the tests.
-     *
-     * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-     * a regexp over sources, literals included.
-     */
     const d = '$';
-    /**
-     * The address is a static cell and would leak a `doc=` from one test into the
-     * next. A subclass per test gets a cache of its own, the way the glob mock does.
-     */
     $mol_test_mocks.push($ => {
         class $mol_state_arg_mock extends $.$mol_state_arg {
         }
         $.$mol_state_arg = $mol_state_arg_mock;
     });
-    /**
-     * Fixtures in canonical `tree2` formatting, the fixed point of the serializer:
-     * a node with one child is written on one line. The store promises a byte for
-     * byte round trip on exactly this shape, which is the shape `lang` writes.
-     */
     const src_page = `${d}bog_vmap_app_store_test_page ${d}mol_view\n\tCalc ${d}bog_vmap_app_store_test_calc\n\tcalc_result = Calc result\n\tsub / <= Calc\n`;
     const src_calc = `${d}bog_vmap_app_store_test_calc ${d}mol_view\n\tresult 42\n\tstep 1\n`;
     const src_hero = `${d}bog_vmap_app_store_test_hero ${d}mol_view\n\ttitle \\Hi\n\tsub / <= title\n`;
-    /** Documents in the home land: the same code path minus the proof of work. */
     function store($) {
         return $bog_vmap_app_store.make({
             $,
             doc_land_config: () => null,
         });
     }
-    /**
-     * A mine in the shape of the real driver: units and balls, kept in a map that
-     * outlives the session.
-     *
-     * The shape matters as much as the keeping. A mine that keeps units and forgets
-     * BALLS gives back a list of documents with titles and no text at all — which is
-     * the picture the deploy showed, so a stand that cannot produce it proves
-     * nothing about the case it exists for.
-     */
     function $bog_vmap_app_store_test_mine(disk) {
         return class extends $giper_baza_mine_temp {
             units_save(diff) {
@@ -12001,7 +11837,6 @@ var $;
             $mol_assert_like(s.doc_links(), []);
             $mol_assert_equal(s.stage(), 'making');
         },
-        /** Byte for byte, on the canonical formatting `lang` writes. */
         'one class survives the round trip'($) {
             const s = store($);
             s.doc_add('Landing');
@@ -12020,10 +11855,6 @@ var $;
             $mol_assert_equal(nodes[0].source(), src_page);
             $mol_assert_equal(nodes[1].source(), src_calc);
         },
-        /**
-         * The payoff of per node storage: editing one class rewrites one atom. The
-         * neighbour keeps its node — the same link — and its text is untouched.
-         */
         'editing one class leaves the other node alone'($) {
             const s = store($);
             const doc = s.doc_add('Landing');
@@ -12054,17 +11885,6 @@ var $;
             $mol_assert_equal(s.doc_root(doc), `${d}bog_vmap_app_store_test_page`);
             $mol_assert_equal(s.source(), src_page + src_calc);
         },
-        /**
-         * WHY A RENAME HAS TO CARRY THE BODY AND THE STYLES BY HAND, measured at the
-         * level where it happens.
-         *
-         * Classes are matched to nodes by NAME, so a class renamed in the text has no
-         * match: a node is made for the new name with nothing in it, and the old one
-         * leaves the list taking its `Js` and `Css` with it. Everything the editor
-         * keeps about a class outside its text therefore has to be read BEFORE the
-         * text is written and put back after — there is no name in between that
-         * answers for it.
-         */
         'a class renamed in the text arrives as an empty node and the old one leaves'($) {
             const s = store($);
             const doc = s.doc_add('Landing', src_page + src_calc);
@@ -12073,47 +11893,13 @@ var $;
             s.source(src_page + renamed);
             $mol_assert_equal(s.nodes(doc).length, 2);
             $mol_assert_equal(s.node(doc, `${d}bog_vmap_app_store_test_calc`), null);
-            // The new name is a new node, and it is empty. This is the loss the editor
-            // closes above it, not a defect of the store: the text is the truth, and
-            // the text says there is no such class any more.
             $mol_assert_equal(s.node_js(doc, `${d}bog_vmap_app_store_test_total`), '');
         },
-        /**
-         * THE PROMISE OF STAGE 1: a reload comes back to the same scene.
-         *
-         * Nothing else in the pack says a word about it, and nothing could: the
-         * standing mocks switch persistence off on BOTH sides — `$giper_baza_land
-         * .sync()`, the one method that loads and saves, is stubbed to a no-op, and
-         * the mine is replaced by the empty base, whose `units_load` answers with
-         * nothing. Both are put back here.
-         *
-         * The mine below keeps units in memory, in the shape the IndexedDB driver
-         * uses in a browser: one record per unit, and the payload of a big one in a
-         * store of its own. What is NOT covered is that driver itself, which needs a
-         * browser; everything between the store and it is the product path exactly.
-         *
-         * A SESSION IS A SET OF CLASSES WITH FRESH CACHES and the same identity —
-         * what a reloaded page has, its key restored out of local storage.
-         *
-         * **Each session keeps a live reader, and without one this test lies:** the
-         * graph sweeps a cell nobody reads, the land object goes with it and comes
-         * back empty, which looks exactly like the loss under test. Measured on the
-         * stand this grew out of, where the first version reported a loss that was
-         * its own doing.
-         *
-         * **Balls are half of what is being checked.** A text longer than a unit
-         * holds inline lives in a ball beside it, and a mine that keeps units but
-         * forgets balls gives back a document list with titles and documents with no
-         * text at all — measured here by leaving `ball_load` out, and it is the same
-         * picture the editor showed on a reloaded page of the deploy.
-         */
         async 'a document written in one session comes back in the next'($) {
-            /** The disk, shared by the sessions and by nothing else. */
             const disk = new Map;
             const mine = $bog_vmap_app_store_test_mine(disk);
             const session = () => {
                 const ctx = Object.create($);
-                // The real land, whose `sync()` loads and saves.
                 ctx.$giper_baza_land = class extends $$.$giper_baza_land {
                 };
                 ctx.$giper_baza_mine = class extends mine {
@@ -12125,8 +11911,6 @@ var $;
                 ctx.$giper_baza_glob = glob;
                 ctx.$mol_state_arg = class extends $.$mol_state_arg {
                 };
-                // A browser answers with a quota; the base class answers zero, and
-                // zero reads as «storage full» to the sharding rule of `persisted()`.
                 ctx.$mol_storage = class extends $.$mol_storage {
                     static total() { return 1e9; }
                     static used() { return 0; }
@@ -12135,7 +11919,6 @@ var $;
                     $: ctx,
                     doc_land_config: () => [[null, $giper_baza_rank_read]],
                 });
-                // What a view does: read, and stay subscribed.
                 const eye = new $mol_wire_atom('eye', () => {
                     try {
                         return store.doc_links().length + ':' + store.source().length;
@@ -12146,7 +11929,6 @@ var $;
                         return -1;
                     }
                 });
-                /** A frame drawn. Suspends while a land loads, like any first frame. */
                 const look = () => { try {
                     eye.fresh();
                 }
@@ -12159,17 +11941,13 @@ var $;
             const made = await read(one.store, 'doc_add', 'Сцена 1', src_page);
             const link = made.link().str;
             one.look();
-            // Saving is driven by the yard, which has no master here, so it is asked
-            // for directly: what this checks is the round trip, not the timer.
             await $mol_wire_async(one.store.home().land()).units_saving();
             await $mol_wire_async(made.land()).units_saving();
-            // A reload: same identity, same disk, every cache new.
             const two = session();
             two.look();
             $mol_assert_equal((await read(two.store, 'doc_links')).length, 1);
             $mol_assert_equal(await read(two.store, 'title'), 'Сцена 1');
             $mol_assert_equal(await read(two.store, 'source'), src_page);
-            // And by the address, which is how a shared link opens.
             const three = session();
             await read(three.store, 'doc_arg', link);
             three.look();
@@ -12177,33 +11955,9 @@ var $;
             $mol_assert_equal(current.link().str, link);
             $mol_assert_equal(await read(three.store, 'source'), src_page);
         },
-        /**
-         * P2: A DOCUMENT OPENED BY A LINK AND ONLY READ USED TO BE KEPT BY A COIN
-         * TOSS, and under an unknown quota by no toss at all.
-         *
-         * Keeping a land on disk is not a flag but a sharding rule: the base compares
-         * the tail of the reader's key with the tail of the land link, cropped by how
-         * full the storage is, and a browser that cannot tell its quota reads as
-         * completely full — nothing is kept. What hides this everywhere else is that
-         * a WRITE sets the flag and freezes the rule, so only a land nobody wrote to
-         * this session is exposed. Somebody else's document, opened by its link and
-         * read, is exactly that land.
-         *
-         * The stand states the quota rather than taking the one of this machine: what
-         * is under test is the rule, and a test whose answer depends on how full the
-         * disk of the runner happens to be answers about the runner.
-         *
-         * Measured 10.09.2026 before the mitigation: under an unknown quota the
-         * document left NOTHING on disk — nine units with a quota, zero without — and
-         * the second session opened onto an empty editor.
-         */
         async 'a document opened by a link survives a restart with the quota unknown'($) {
             const disk = new Map;
             const mine = $bog_vmap_app_store_test_mine(disk);
-            /**
-             * The document belongs to somebody else and never touches our disk on the
-             * way in: it is made under their key, in their own land.
-             */
             const owner = await $.$giper_baza_auth.grab();
             const theirs = $giper_baza_land.make({ $, auth: () => owner });
             const their_doc = theirs.Data($bog_vmap_app_doc);
@@ -12223,8 +11977,6 @@ var $;
                 ctx.$giper_baza_glob = glob;
                 ctx.$mol_state_arg = class extends $.$mol_state_arg {
                 };
-                // A browser that cannot tell the quota: nothing to divide by, so the
-                // fullness is one and the level infinite — «no room», says the rule.
                 ctx.$mol_storage = class extends $.$mol_storage {
                     static total() { return 0; }
                     static used() { return 0; }
@@ -12249,59 +12001,27 @@ var $;
                     }
                     catch (error) { } } };
             };
-            /**
-             * Every read of the store goes through a fiber. Outside one, the check of
-             * a signature lets its promise out as if it were a failure, and the test
-             * reports a loss that is its own doing.
-             */
             const read = (store, name, ...args) => $mol_wire_async(store)[name](...args);
             const one = session();
-            // The address names it, and the editor boots on it — the whole of what a
-            // person does. A direct pick, because a write to the address through a
-            // fiber does not settle on this stand.
             one.store.doc_pick(link);
-            /**
-             * THE READER COMES FIRST, and the order is not cosmetic. A land object
-             * made while nobody is looking belongs to whatever made it and goes away
-             * with it, and the request to keep it goes away too: measured on this
-             * stand, booting before the first read left nothing on disk even with the
-             * mitigation in place, and the loss looked exactly like the defect. The
-             * editor draws before it boots — `boot` is called out of `auto`, which
-             * runs while the view renders — so this is the product order as well.
-             */
             one.look();
-            // Called plainly, the way `auto` calls it, and not through a fiber.
             $mol_assert_equal(one.store.boot(), 'ready');
-            // The land arrives the way the network delivers it, and NOTHING is
-            // written into it here: that is the case under test.
             await $mol_wire_async(one.store.doc(link).land()).units_steal(theirs);
             one.look();
             $mol_assert_equal(await read(one.store, 'source'), src_hero);
-            // Saving is driven by the yard, which has no master here, so it is asked
-            // for directly: what this checks is the rule, not the timer.
             await $mol_wire_async(one.store.doc(link).land()).units_saving();
-            // On disk at all: the assertion that fails first, and before the reads
-            // below could wait for a master that is not there.
             $mol_assert_equal((disk.get(link.land().str)?.size ?? 0) > 0, true);
-            // A reload: same disk, every cache new, and no network behind it.
             const two = session();
             two.store.doc_pick(link);
             two.look();
             $mol_assert_equal(await read(two.store, 'source'), src_hero);
             $mol_assert_equal(await read(two.store, 'title'), 'Theirs');
         },
-        /**
-         * The recorded choice can be moved, and that is what a rename of the root
-         * needs: classes are matched to nodes by NAME, so a renamed class arrives as
-         * a node of its own and nothing would move the pointer to it otherwise.
-         */
         'the root can be pointed at another class of the document'($) {
             const s = store($);
             const doc = s.doc_add('Landing', src_page + src_calc);
             s.doc_root(doc, `${d}bog_vmap_app_store_test_calc`);
             $mol_assert_equal(s.doc_root(doc), `${d}bog_vmap_app_store_test_calc`);
-            // A name the document does not carry is ignored: a pointer at a node
-            // outside the list is the state this exists to prevent.
             s.doc_root(doc, `${d}bog_vmap_app_store_test_absent`);
             $mol_assert_equal(s.doc_root(doc), `${d}bog_vmap_app_store_test_calc`);
         },
@@ -12326,7 +12046,6 @@ var $;
             s.doc_pick(second.link());
             $mol_assert_equal(s.source(), src_hero);
             $mol_assert_equal(s.title(), 'Second');
-            // No address means the last one made.
             s.doc_pick(null);
             $mol_assert_equal(s.doc_arg(), null);
             $mol_assert_equal(s.source(), src_hero);
@@ -12342,12 +12061,10 @@ var $;
             s.doc_add('Landing');
             s.title('Renamed');
             $mol_assert_equal(s.title(), 'Renamed');
-            // Stored as typed. What the string means is the palette's business.
             s.pack('https://mol.hyoo.ru, aaaaaaaa_bbbbbbbb');
             $mol_assert_equal(s.pack(), 'https://mol.hyoo.ru, aaaaaaaa_bbbbbbbb');
             s.spots({ Hero: { x: 0, y: 0 }, Calc: { x: 100, y: -20.5 } });
             $mol_assert_like(s.spots(), { Calc: { x: 100, y: -20.5 }, Hero: { x: 0, y: 0 } });
-            // A place gone from the dictionary is gone from the store too.
             s.spots({ Calc: { x: 110, y: -20.5 } });
             $mol_assert_like(s.spots(), { Calc: { x: 110, y: -20.5 } });
         },
@@ -12360,7 +12077,6 @@ var $;
             $mol_assert_equal(s.node_css(doc, `${d}bog_vmap_app_store_test_calc`), '[calc]{ color: red }');
             $mol_assert_equal(s.node_js(doc, `${d}bog_vmap_app_store_test_page`), '');
             $mol_assert_equal(s.node_js(doc, `${d}bog_vmap_app_store_test_none`), '');
-            // The sources are not disturbed by it.
             $mol_assert_equal(s.source(), src_page + src_calc);
         },
         'the list in the home land grows with every document'($) {
@@ -12373,14 +12089,8 @@ var $;
             $mol_assert_equal(s.doc_links().length, 2);
             $mol_assert_equal(s.title_next(), 'Сцена 3');
             $mol_assert_like(s.doc_links().map(link => link.str), [first.link().str, second.link().str]);
-            // Same list, read back as documents.
             $mol_assert_like(s.doc_links().map(link => s.doc(link).title()), ['First', 'Second']);
         },
-        /**
-         * Before there is a document the editor works on a draft, and the first
-         * document is made out of it in one go: text, places and palette together,
-         * so that nothing typed while the land was being grabbed is lost.
-         */
         'the draft becomes the first document whole'($) {
             const s = store($);
             s.source(src_page);
@@ -12396,15 +12106,9 @@ var $;
             $mol_assert_equal(s.pack(), 'https://mol.hyoo.ru');
             $mol_assert_equal(s.title(), 'Сцена 1');
             $mol_assert_equal(s.doc_root(s.doc_current()), `${d}bog_vmap_app_store_test_page`);
-            // Made once. A second call with a document in place does nothing.
             s.doc_first();
             $mol_assert_equal(s.doc_links().length, 1);
         },
-        /**
-         * `boot` answers at once and hands the making to one fiber; the answer
-         * follows the document afterwards. Read again and it is the same fiber, so
-         * a second document is never started.
-         */
         async 'boot makes the first document and then reports it'($) {
             const s = store($);
             $mol_assert_equal(s.boot(), 'making');
@@ -12414,19 +12118,12 @@ var $;
             $mol_assert_equal(s.doc_links().length, 1);
             $mol_assert_equal(s.boot(), 'ready');
             $mol_assert_equal(s.stage(), 'ready');
-            // Still the one fiber, and still the one document.
             $mol_assert_equal(s.doc_first_task().task === held.task, true);
             $mol_assert_equal(s.doc_links().length, 1);
         },
-        /**
-         * The answer of `boot` is read afresh every time and cannot go stale: under
-         * `@ $mol_mem` this is the case that answered «making» for the rest of the
-         * session, the document having landed while the cell was still computing.
-         */
         'boot reports the document it just made, in the same breath'($) {
             const s = store($);
             $mol_assert_equal(s.boot(), 'making');
-            // Nothing awaited: with no proof of work the document is already there.
             $mol_assert_equal(s.doc_links().length, 1);
             $mol_assert_equal(s.boot(), 'ready');
             $mol_assert_equal(s.stage(), 'ready');
@@ -12436,10 +12133,8 @@ var $;
             s.doc_add('First', src_page);
             $mol_assert_equal(s.boot(), 'ready');
             $mol_assert_equal(s.doc_links().length, 1);
-            // No fiber was ever asked for: the cell holding it is untouched.
             $mol_assert_equal($mol_wire_probe(() => s.doc_first_task()), undefined);
         },
-        /** The draft goes into the document `boot` makes, the same as into `doc_first`. */
         async 'the draft goes whole into the document boot makes'($) {
             const s = store($);
             s.source(src_page);
@@ -12453,17 +12148,10 @@ var $;
             $mol_assert_equal(s.pack(), 'https://mol.hyoo.ru');
             $mol_assert_equal(s.title(), 'Сцена 1');
         },
-        /**
-         * A land still on its way suspends the fiber, which is what mining the
-         * proof of work does in the editor. The reader is told «making» and is not
-         * left on it: the moment the document lands, `boot` says `ready`. Repeated
-         * reads while it waits get the same fiber and make no second document.
-         */
         async 'a suspended land does not leave the reader on making for ever'($) {
             let open = () => { };
             const gate = new Promise(done => { open = () => done(); });
             let held = true;
-            /** Suspends once on the way in, the way a land grab does. */
             class store_slow extends $bog_vmap_app_store {
                 doc_first() {
                     if (held)
@@ -12485,18 +12173,10 @@ var $;
             $mol_assert_equal(s.boot(), 'ready');
             $mol_assert_equal(s.stage(), 'ready');
         },
-        /**
-         * The draft is poured AFTER the document is already in the list, so there is
-         * a window in which `boot` answers `ready` while the fiber still has work to
-         * do. Whoever is reading `boot` — the application, every render — must not
-         * end that fiber by looking away: the loss would be silent and would be the
-         * text the user had typed.
-         */
         async 'the draft survives a suspension after the document is already listed'($) {
             let open = () => { };
             const gate = new Promise(done => { open = () => done(); });
             let held = true;
-            /** Suspends once while pouring, the way signing a unit does. */
             class store_late extends $bog_vmap_app_store {
                 doc_source(doc, next) {
                     if (next !== undefined && held)
@@ -12507,11 +12187,8 @@ var $;
             const s = store_late.make({ $, doc_land_config: () => null });
             s.source(src_page);
             $mol_assert_equal(s.boot(), 'making');
-            // The document is listed, the draft is not in it yet.
             $mol_assert_equal(s.doc_links().length, 1);
             $mol_assert_equal(s.doc_source(s.doc_current()), '');
-            // The application reads `boot` again on that very change and is told
-            // `ready`, so it stops asking for the fiber.
             $mol_assert_equal(s.boot(), 'ready');
             held = false;
             open();
@@ -12519,12 +12196,6 @@ var $;
             $mol_assert_equal(s.doc_links().length, 1);
             $mol_assert_equal(s.source(), src_page);
         },
-        /**
-         * The same window, with a reader that subscribes and then looks away — the
-         * application, whose `auto()` reads `boot` from a cell. A cell nobody reads
-         * is collected together with what it owns, so the fiber must not hang on
-         * being read: it is held while it has work, and the draft lands whole.
-         */
         async 'a reader that looks away does not take the fiber with it'($) {
             let open = () => { };
             const gate = new Promise(done => { open = () => done(); });
@@ -12538,16 +12209,13 @@ var $;
             }
             const s = store_late.make({ $, doc_land_config: () => null });
             s.source(src_page);
-            /** Stands for `auto()` of the application: a cell, and the only reader. */
             const reader = $mol_wire_atom.solo(s, function boot_reader() {
                 return this.boot();
             });
             $mol_assert_equal(reader.sync(), 'making');
             $mol_assert_equal(s.doc_links().length, 1);
-            // It runs again — a render, an edit, anything — and is told `ready`.
             reader.refresh();
             $mol_assert_equal(reader.sync(), 'ready');
-            // The tick on which the graph collects whatever nobody reads any more.
             await new Promise(done => new $mol_after_tick(() => done(null)));
             held = false;
             open();
@@ -12556,12 +12224,6 @@ var $;
             $mol_assert_equal(s.doc_links().length, 1);
             $mol_assert_equal(s.source(), src_page);
         },
-        /**
-         * A link in the address opens somebody else's public document: it reads,
-         * it says so, and a write into it changes nothing and throws nothing. The
-         * owner is a second key; their land is copied into the reader's glob the way
-         * the network would deliver it.
-         */
         async 'a document of somebody else reads, refuses writes and says why'($) {
             const owner = await $.$giper_baza_auth.grab();
             const theirs = $giper_baza_land.make({ $, auth: () => owner });
@@ -12587,15 +12249,8 @@ var $;
             $mol_assert_equal(s.title(), 'Theirs');
             $mol_assert_like(s.spots(), { Hero: { x: 5, y: 6 } });
             $mol_assert_equal(s.pack(), '');
-            // Our own list is untouched by looking at theirs.
             $mol_assert_equal(s.doc_links().length, 0);
         },
-        /**
-         * A write straight into the atom, past the store, is what a remote edit
-         * looks like once it has landed. The store, having written this very node
-         * itself, must hand out the new text: this is the regression an accessor
-         * under `@ $mol_mem` fails, for the rest of the session.
-         */
         'a node edited through the store still sees a write past it'($) {
             const s = store($);
             const doc = s.doc_add('Landing');
@@ -12605,19 +12260,12 @@ var $;
             $mol_assert_equal(s.source(), src_hero);
             $mol_assert_equal(s.nodes(doc).length, 1);
         },
-        /**
-         * The same, with the edit arriving from another peer by merge, the way the
-         * network delivers it. Two lands of the same link; the second writes later
-         * and wins, per node last-write-wins being the choice of section 9.
-         */
         async 'a node edited through the store still sees a merged remote edit'($) {
             const s = store($);
             const doc = s.doc_add('Landing');
             s.source(src_page);
             const head = s.nodes(doc)[0].head();
             const home = s.home().land();
-            // The peer writes LATER. The home land ticked once per unit it holds by
-            // now, and a single tick of a fresh land is behind all of them.
             const peer = $giper_baza_land.make({ $ });
             const last = home.tick().time_tick;
             while (peer.tick().time_tick <= last)
@@ -12634,14 +12282,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the palette: what the address and the land trees handed in become on
-     * the way to the library. Nothing renders and nothing is fetched — the library
-     * is never asked for its tree here.
-     *
-     * The FIELD is not here any more. It moved to the shelf, which is the level of
-     * the panel that is always on screen, and its tests moved with it.
-     */
     $mol_test({
         'the address handed in reaches the library, slash and all'($) {
             const palette = $bog_vmap_app_palette.make({
@@ -12656,11 +12296,6 @@ var $;
             $mol_assert_equal(palette.Lib().script_link(), '');
             $mol_assert_like(palette.Lib().class_list(), ['$' + 'mol_view']);
         },
-        /**
-         * A dead address is answered in words, not by the status line of the
-         * response. The fetch throws «Not Found» and nothing else, and that
-         * reached the counter as the whole explanation.
-         */
         'a pack that does not answer says so, and says what was looked for'($) {
             const palette = $bog_vmap_app_palette.make({
                 $,
@@ -12671,13 +12306,11 @@ var $;
                     tree: () => $mol_fail(new Error('Not Found')),
                 }),
             });
-            // No list, and the counter carries the reason instead of a number.
             $mol_assert_like(palette.class_list(), []);
             const note = palette.total();
             $mol_assert_ok(note.includes('Not Found'));
             $mol_assert_ok(note.includes('http://dead.test/web.view.tree'));
         },
-        /** Land classes handed in by the owner resolve against the pack stub like any class. */
         'classes of the lands join the list'($) {
             const d = '$';
             const palette = $bog_vmap_app_palette.make({
@@ -12694,14 +12327,7 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the list without a DOM: what it shows and what it writes, on a
-     * store whose documents live in the home land built in place. `add()` itself is
-     * not tested here — it hands the work to a fiber and answers at once; the store
-     * method it calls is tested in `app/store/`.
-     */
     const d = '$';
-    /** Canonical `tree2` formatting, see the note in `app/store/store.test.ts`. */
     const src_page = `${d}bog_vmap_app_scenes_test_page ${d}mol_view\n\tCalc ${d}mol_view\n\tsub / <= Calc\n`;
     const src_hero = `${d}bog_vmap_app_scenes_test_hero ${d}mol_view\n\ttitle \\Hi\n\tsub / <= title\n`;
     function scenes($) {
@@ -12730,7 +12356,6 @@ var $;
             const second = store.doc_add('Second', src_hero);
             $mol_assert_like(view.scene_links(), [first.link().str, second.link().str]);
             $mol_assert_like(view.scene_links().map(link => view.scene_title(link)), ['First', 'Second']);
-            // The open one is the current row and the only one.
             $mol_assert_like(view.scene_links().map(link => view.scene_current(link)), [false, true]);
             $mol_assert_equal(view.current(), second.link().str);
             $mol_assert_equal(view.current_exists(), true);
@@ -12744,11 +12369,8 @@ var $;
             view.current(first.link().str);
             $mol_assert_equal(store.source(), src_page);
             $mol_assert_equal(view.title(), 'First');
-            // Empty goes back to the default, the last one made.
             view.current('');
             $mol_assert_equal(store.source(), src_hero);
-            // So does something that is not a link. (`nonsense` would be one: eight
-            // letters is a valid link.)
             view.current(first.link().str);
             view.current('not a link');
             $mol_assert_equal(store.source(), src_hero);
@@ -12769,24 +12391,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of publishing, on lands built in place.
-     *
-     * No master and no proof of work: `shelf_land_config` hands in the home land,
-     * so the library becomes an AREA of it — a land of its own with the shelf at
-     * its root, exactly the shape a grabbed land has, minus the mining. That is what
-     * lets the link be looked up by the stack the way another scene would.
-     *
-     * Publishing is called through `$mol_wire_async`, as the click does: making the
-     * area encodes units, which is asynchronous, and outside a fiber that is a
-     * `Promise` thrown at the caller.
-     *
-     * NOT covered, deliberately: grabbing the library land, which is proof of work,
-     * seconds against the one second a test is given.
-     *
-     * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-     * a regexp over sources, literals included.
-     */
     const d = '$';
     const src_button = `Button_minor ${d}mol_view\n\ttitle \\Hi\n\tminimal true\n`;
     const src_calc = `Calc ${d}mol_view\n\tresult 42\n`;
@@ -12809,13 +12413,11 @@ var $;
             doc: () => doc,
         });
     }
-    /** A click as the browser sends one: on the node of the button, bubbling. */
     function click($, node) {
         const event = $.$mol_dom_context.document.createEvent('mouseevent');
         event.initEvent('click', true, true);
         node.dispatchEvent(event);
     }
-    /** A normalized document: every sub-view hoisted onto the root, two levels deep. */
     const doc_nested = [
         `${d}bog_vmap_app_page ${d}mol_view`,
         `\tPrice ${d}mol_text`,
@@ -12829,14 +12431,8 @@ var $;
     ].join('\n');
     const src_card = `Card ${d}mol_view\n\tsub / <= Hero\n`;
     const klass_card = `${d}bog_vmap_pub_card`;
-    /** The root class of the document, as the editor hands it in `classes`. */
     const root_class = `${d}my_site_page`;
-    /** The same document under that root: what a person actually edits. */
     const doc_card = doc_nested.replace(`${d}bog_vmap_app_page`, root_class);
-    /**
-     * The stylesheet of the document: one rule per node, all of them addressed by
-     * the root class, and one of them about a node the card does not carry.
-     */
     const css_doc = [
         '[my_site_page_card] {\n\tpadding: 1rem;\n}',
         '[my_site_page_hero] {\n\tcolor: red;\n}',
@@ -12852,36 +12448,11 @@ var $;
             $mol_assert_equal(s.link(), '');
             $mol_assert_like(s.shelf_links(), []);
         },
-        /**
-         * WHAT A COPY IS MADE OF, and the rule that made it come out a different
-         * shape than the original.
-         *
-         * A rule written in a document addresses the sub view by the attribute mol
-         * puts on it THERE — the root class plus the property. The copy is a class
-         * of its own and carries an attribute of its own, so the rule as written
-         * names an element that exists in no document but the one it came from, and
-         * the styles of a published part never applied at all. It travels
-         * re-addressed.
-         */
         async 'the rule of a part is re-addressed to the class it goes out as'($) {
             const s = store($);
             await $mol_wire_async(s).publish('Button_minor', src_button, '', css_button, [root_class]);
             $mol_assert_equal(s.shelf().parts()[0].css(), css_button_out);
         },
-        /**
-         * E25, AND THE HALF OF THE MOVE THAT WAS MISSING.
-         *
-         * A part carries its own sub-views out with it — `inlined` puts their
-         * declarations back into the tree — and in the document each of them is a
-         * flat property of the ROOT, addressed `[<root>_<sub>]` exactly like the part
-         * itself. In the copy they become properties of the copy instead, so mol
-         * writes `[<copy>_<sub>]` on them. Moving the rule of the part alone left
-         * every inner rule addressing the document it came from, and a detail with
-         * sub-views of its own went out unstyled inside.
-         *
-         * Three rules out, each moved to where the copy carries that node; the rule
-         * of the neighbour the card does not carry stays in the document.
-         */
         async 'a part carries the rules of its sub-views, each re-addressed'($) {
             const s = store($);
             const inlined = s.inlined(src_card, doc_card);
@@ -12892,74 +12463,32 @@ var $;
                 '[bog_vmap_pub_card_price] {\n\tfont-weight: bold;\n}',
             ].join('\n\n'));
         },
-        /**
-         * The names the move is made by, read off the tree that goes out: every
-         * declaration written under `<=` is hoisted by the compiler into a property
-         * of the class the tree is compiled as, and that is what mol names the node
-         * by. Bare references declare nothing and are not sub-views of the copy.
-         */
         'sub-views of the copy are the declarations the published tree carries'($) {
             const s = store($);
             $mol_assert_like(s.sub_names(s.inlined(src_card, doc_card).source), ['Hero', 'Price']);
-            // Nothing was put back: the reference stays bare and declares nothing.
             $mol_assert_like(s.sub_names(src_card), []);
         },
-        /**
-         * A part of the PACK declares no sub-views of its own, so none of its inner
-         * nodes is addressed by a rule of the document and none is moved. They are
-         * painted by the stylesheet of the pack in the copy exactly as in the
-         * original: mol writes an attribute for every class of the chain.
-         */
         'a part of the pack takes no rule of the document with it'($) {
             const s = store($);
             const source = `Calc ${d}bog_vmap_part_calc\n`;
             $mol_assert_like(s.sub_names(source), []);
             $mol_assert_equal(s.css_out(css_doc, 'Calc', source, root_class), '');
         },
-        /**
-         * The move matches the WHOLE attribute and not its beginning. A document
-         * addresses nodes by names that prefix one another — `Card` and `Card_note`
-         * are two nodes — and a move by the beginning renamed the neighbour along
-         * with the part. The cut by property hides this from `css_out`, so it is
-         * asked of the move itself, where the two answers differ.
-         */
         'the move matches the whole attribute, not the beginning of it'($) {
             const s = store($);
             const css = '[my_site_page_card] {\n\tcolor: red;\n}\n\n[my_site_page_card_note] {\n\tcolor: blue;\n}';
             $mol_assert_equal(s.css_moved(css, 'my_site_page_card', 'bog_vmap_pub_card'), '[bog_vmap_pub_card] {\n\tcolor: red;\n}\n\n[my_site_page_card_note] {\n\tcolor: blue;\n}');
-            // And through the cut only the rule of the part travels at all.
             $mol_assert_equal(s.css_out(css, 'Card', `Card ${d}mol_view\n`, root_class), '[bog_vmap_pub_card] {\n\tcolor: red;\n}');
         },
-        /**
-         * A rule written with the node name AS THE PERSON SEES IT.
-         *
-         * Mol lowercases the attribute it writes on the node, and an attribute
-         * selector in HTML is matched without regard to case, so `[my_site_page_Card]`
-         * paints the card in the document exactly as the lowered one does. The move
-         * compared letter for letter against the lowered name, found nothing, and the
-         * rule went to the library still addressing the document it came from — the
-         * same «styles never applied» as before, only for the capital. Measured on
-         * the deploy.
-         */
         'a rule written with a capital in the name is re-addressed too'($) {
             const s = store($);
             $mol_assert_equal(s.css_moved('[my_site_page_Card] {\n\tcolor: red;\n}', 'my_site_page_card', 'bog_vmap_pub_card'), '[bog_vmap_pub_card] {\n\tcolor: red;\n}');
-            // Through the cut as well: the slicing lowers the attribute to find the
-            // property, and the move has to reach the very text it found.
             $mol_assert_equal(s.css_out('[my_site_page_Card] {\n\tcolor: red;\n}\n\n[my_site_page_Hero] {\n\tcolor: blue;\n}', 'Card', s.inlined(src_card, doc_card).source, root_class), '[bog_vmap_pub_card] {\n\tcolor: red;\n}\n\n[bog_vmap_pub_card_hero] {\n\tcolor: blue;\n}');
         },
-        /**
-         * A part taken from the pack goes out as an HEIR of the pack class and
-         * carries no texts of its own — and that is right, not a loss: mol writes an
-         * attribute for every class of the chain, so the copy is addressed by the
-         * stylesheet of the pack exactly as the original is.
-         */
         'a part of the pack goes out as an heir, with nothing copied'($) {
             const s = store($);
             const source = `Calc ${d}bog_vmap_part_calc\n`;
             $mol_assert_equal(s.class_source('Calc', source), `${klass_calc} ${d}bog_vmap_part_calc\n`);
-            // Nothing of the document belongs to it: the editor hands over the body
-            // and the stylesheet of the DOCUMENT, and a pack detail has no rule in it.
             $mol_assert_equal(s.css_moved('', 'my_site_page_calc', 'bog_vmap_pub_calc'), '');
             $mol_assert_equal(s.css_out('', 'Calc', source, root_class), '');
         },
@@ -12974,7 +12503,6 @@ var $;
             $mol_assert_equal(parts[0].tree(), `${klass_button} ${d}mol_view\n\ttitle \\Hi\n\tminimal true\n`);
             $mol_assert_equal(parts[0].js(), 'title(){ return 1 }');
             $mol_assert_equal(parts[0].css(), css_button_out);
-            // The link is the land of the shelf, and the shelf sits at its root.
             $mol_assert_ok(link);
             $mol_assert_equal(link, s.link());
             $mol_assert_equal(link, shelf.land().link().str);
@@ -12991,7 +12519,6 @@ var $;
             $mol_assert_equal(parts[0].link().str, before.link().str);
             $mol_assert_equal(parts[0].tree(), `${klass_button} ${d}mol_view\n\ttitle \\Bye\n\tminimal true\n`);
             $mol_assert_equal(parts[0].js(), 'title(){ return 2 }');
-            // A body gone from the part is gone from the library too.
             await $mol_wire_async(s).publish('Button_minor', edited);
             $mol_assert_equal(s.shelf().parts()[0].js(), '');
             $mol_assert_equal(s.shelf().parts().length, 1);
@@ -13004,11 +12531,6 @@ var $;
             $mol_assert_equal(s.shelf_links().length, 1);
             $mol_assert_like(s.shelf().parts().map(part => $bog_vmap_lib_land_name(part.tree())), [klass_button, klass_calc]);
         },
-        /**
-         * The other side of the circle: the link is what another scene pastes into
-         * its palette field, and the stack of W3 looks the land up by it. The class
-         * comes back with its own ports and the ones of the pack class it extends.
-         */
         async 'the published library reads through the stack as a pack would'($) {
             const s = store($);
             const link = await $mol_wire_async(s).publish('Button_minor', src_button, 'title(){ return 1 }', css_button, [root_class]);
@@ -13023,7 +12545,6 @@ var $;
             $mol_assert_ok(ports.includes('title'));
             $mol_assert_ok(ports.includes('minimal'));
             $mol_assert_ok(ports.includes('pack_port'));
-            // What the scene is sent: the three texts.
             $mol_assert_like(stack.parts(), [{
                     tree: `${klass_button} ${d}mol_view\n\ttitle \\Hi\n\tminimal true\n`,
                     js: 'title(){ return 1 }',
@@ -13037,14 +12558,8 @@ var $;
             $mol_assert_equal(parsed.pack, null);
             $mol_assert_like(parsed.lands, [link]);
             $mol_assert_like(parsed.rejected, []);
-            // Beside a pack, as the field of the other scene will have it.
             $mol_assert_like($bog_vmap_lib_links_parse(`https://mol.hyoo.ru, ${link}`).lands, [link]);
         },
-        /**
-         * The pointer survives the session: a second store over the same home land,
-         * as the next page load has, finds the library and publishes into it rather
-         * than making another.
-         */
         async 'the library is found again through the home land'($) {
             const first = store($);
             const link = await $mol_wire_async(first).publish('Button_minor', src_button);
@@ -13059,14 +12574,8 @@ var $;
             const s = store($);
             $mol_assert_equal(s.class_name('Button_minor'), klass_button);
             $mol_assert_equal(s.class_name('Calc_2'), `${d}bog_vmap_pub_calc_2`);
-            // Only the first token changes.
             $mol_assert_equal(s.class_source('Button_minor', src_button), `${klass_button} ${d}mol_view\n\ttitle \\Hi\n\tminimal true\n`);
         },
-        /**
-         * A bare `<=`, a `<=>` or a `=` inside a part points at the document, and
-         * the library has no document: the part is refused with the names it hangs
-         * on, and nothing is made — no library, no land.
-         */
         'a part wired to the document is refused and names the wire'($) {
             const s = store($);
             const one_way = `Label ${d}mol_view\n\tsub / <= calc_result\n`;
@@ -13087,22 +12596,12 @@ var $;
             $mol_assert_fail(() => s.publish('Label', chain), 'деталь Label ссылается на Calc документа, отвяжите провод перед публикацией');
             $mol_assert_equal(s.shelf(), null);
         },
-        /**
-         * `<= title` inside a part reads `title` of the ROOT, whatever the part
-         * overrides under the same name: published, the same line would read the
-         * class itself and mean something else. Refused as a wire, by name.
-         */
         'a reference to a name the part only overrides is still a wire to the document'($) {
             const s = store($);
             const free = `Label ${d}mol_view\n\tsub / <= title\n\ttitle \\Hi\n`;
             $mol_assert_like(s.bound_names(free), ['title']);
             $mol_assert_ok(s.refusal('Label', free).includes('title'));
         },
-        /**
-         * A reference WITH kids declares its name where it stands, through `upper`:
-         * `<= Inner $mol_view …` travels with the class and resolves there. Not a
-         * wire, so the part goes out. A wire inside that sub-view is still a wire.
-         */
         async 'a part with a sub-view of its own is published, a wire inside the sub-view is not'($) {
             const s = store($);
             const nested = `Card ${d}mol_view\n\tsub /\n\t\t<= Inner ${d}mol_view\n\t\t\ttitle \\Hi\n\t\t<= Inner\n`;
@@ -13117,12 +12616,6 @@ var $;
             $mol_assert_equal(parts.length, 1);
             $mol_assert_equal($bog_vmap_lib_land_name(parts[0].tree()), `${d}bog_vmap_pub_card`);
         },
-        /**
-         * The reverse of `upper`: the editor keeps `Hero` and `Price` hoisted onto
-         * the root with bare `<= Hero` left in the card, and the published class
-         * gets both declarations back in their places, so the library resolves the
-         * whole tree and lists the sub-views as ports of the class.
-         */
         async 'hoisted sub-views are put back into the part two levels down and the class carries them'($) {
             const s = store($);
             const { source, shared } = s.inlined(src_card, doc_nested);
@@ -13133,9 +12626,7 @@ var $;
             const hero = tree.select(`${d}mol_view`, 'sub', '/', '<=', 'Hero', `${d}mol_view`);
             $mol_assert_equal(hero.kids.length, 1);
             $mol_assert_equal(hero.select(`${d}mol_view`, 'sub', '/', '<=', 'Price', `${d}mol_text`, 'title', null).kids[0].value, 'Hi');
-            // Bare in the part before, so it would have been refused.
             $mol_assert_like(s.bound_names(src_card), ['Hero']);
-            // Without a document nothing is put back.
             $mol_assert_equal(s.inlined(src_card, '').source, src_card);
             const link = await $mol_wire_async(s).publish('Card', source);
             const stack = $bog_vmap_lib_land_stack.make({
@@ -13149,16 +12640,11 @@ var $;
             $mol_assert_ok(ports.includes('Price'));
             $mol_assert_ok(ports.includes('sub'));
         },
-        /**
-         * The click with the document at hand: the part goes out whole, and the
-         * sub-view the root reads as well goes out as a copy, which the note says.
-         */
         async 'a sub-view the document reads too goes out as a copy and the note names it'($) {
             const s = store($);
             const doc = doc_nested.replace('sub / <= Card', 'sub /\n\t\t<= Card\n\t\t<= Hero');
             const { shared } = s.inlined(src_card, doc);
             $mol_assert_like(shared, ['Hero']);
-            // A wire to the sub-view counts as reading it too.
             const wired = doc_nested.replace('sub / <= Card', 'hero_sub = Hero sub\n\tsub / <= Card');
             $mol_assert_like(s.inlined(src_card, wired).shared, ['Hero']);
             const v = view($, s, 'Card', src_card, [], doc);
@@ -13167,16 +12653,10 @@ var $;
             $mol_assert_like(v.shared(), ['Hero']);
             $mol_assert_equal(v.note(), `опубликовано ${klass_card}, под-виды Hero ушли копией, документ читает их и сам:`);
             $mol_assert_equal(s.shelf().parts().length, 1);
-            // The part itself is read by the root and that is no copy.
             const plain = view($, s, 'Card', src_card, [], doc_nested);
             await $mol_wire_async(plain).publish();
             $mol_assert_equal(plain.note(), `опубликовано ${klass_card}:`);
         },
-        /**
-         * Values of the root stay wires after the sub-views are back: `title \Hi`
-         * on the root is not a node, and a loop of sub-views leaves the repeated
-         * name bare, so the refusal names it instead of the walk running forever.
-         */
         'a value of the root and a loop of sub-views are still refused after inlining'($) {
             const s = store($);
             const doc_values = [
@@ -13208,7 +12688,6 @@ var $;
             $mol_assert_like(s.bound_names(loop.source), ['A']);
             $mol_assert_equal(s.refusal('A', loop.source), 'деталь A ссылается на A документа, отвяжите провод перед публикацией');
         },
-        /** A base the document itself declares stays in the document. */
         'a part based on a class of the document is refused'($) {
             const s = store($);
             const classes = [`${d}bog_vmap_app_page`, `${d}bog_vmap_app_card`];
@@ -13219,11 +12698,6 @@ var $;
             $mol_assert_fail(() => s.publish('Promo', heir, '', '', classes), s.refusal('Promo', heir, classes));
             $mol_assert_equal(s.shelf(), null);
         },
-        /**
-         * The click on a wired part: the reason lands on the bar as the note, with
-         * the name of the wire in it, and the library is not even made. A throw out
-         * of the handler would go to the fiber and never reach the user.
-         */
         'the click on a wired part shows the refusal and publishes nothing'($) {
             const s = store($);
             const wired = `Label ${d}mol_view\n\tsub / <= calc_result\n`;
@@ -13242,12 +12716,6 @@ var $;
             $mol_assert_ok(heir.note().includes(`${d}bog_vmap_app_page`));
             $mol_assert_equal(s.shelf(), null);
         },
-        /**
-         * The whole way to the eye: a real click on the rendered button, and the
-         * refusal read back off the DOM, not off a cell. What the cell holds and
-         * what the screen shows are two different facts, and only the second one is
-         * what a person sees.
-         */
         async 'a click on the rendered button puts the refusal on the screen'($) {
             const s = store($);
             const v = view($, s, 'Label', `Label ${d}mol_view\n\tsub / <= calc_result\n`);
@@ -13257,16 +12725,9 @@ var $;
             v.dom_tree();
             $mol_assert_ok(root.textContent.includes('деталь Label ссылается на calc_result документа, отвяжите провод перед публикацией'));
             $mol_assert_equal(s.shelf(), null);
-            // A refusal is a state of the bar, not an error of the button.
             await Promise.resolve();
             $mol_assert_equal(v.Publish().error(), '');
         },
-        /**
-         * A node picked inside another part — the scene names what was clicked,
-         * and that may be a button of a calculator — is not a property of the
-         * document: its text is empty. Measured on the deploy: the click died in
-         * the store with words nobody saw. Now the words are on the bar.
-         */
         async 'a click on a part the document does not declare is refused in words'($) {
             const s = store($);
             const v = view($, s, 'Option(mul)', '');
@@ -13279,12 +12740,6 @@ var $;
             await Promise.resolve();
             $mol_assert_equal(v.Publish().error(), '');
         },
-        /**
-         * Whatever the reading of the texts throws is words on the bar as well: the
-         * handler is a fiber, and a throw out of it is a speck and a promise nobody
-         * awaits. A suspension is the one thing let through — it is how the fiber
-         * waits for the land — and it comes out untouched, the bar as it was.
-         */
         async 'an error while reading the part is words on the bar, a suspension passes through'($) {
             const s = store($);
             const v = view($, s, 'Label', '');
@@ -13308,7 +12763,6 @@ var $;
             $mol_assert_equal(caught, wait);
             $mol_assert_equal(v.note(), 'не удалось опубликовать Label: boom');
         },
-        /** After a refusal a clean part goes out, and the note follows. */
         async 'a refusal is cleared by the next successful click'($) {
             const s = store($);
             let source = `Label ${d}mol_view\n\tsub / <= calc_result\n`;
@@ -13332,10 +12786,6 @@ var $;
             $mol_assert_equal(v.publish(), null);
             $mol_assert_equal(s.shelf(), null);
         },
-        /**
-         * The click, as a fiber: publishes the picked part and shows the link with a
-         * note of what went out. The link stays on the bar after the note is stale.
-         */
         async 'the click publishes the pick and shows the link'($) {
             const s = store($);
             const v = view($, s, 'Button_minor', src_button);
@@ -13358,17 +12808,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the shelf model: what a ready made item leaves in the document.
-     *
-     * No DOM and no network here. The wire of the pair is checked through
-     * `links()` of the document itself rather than by reading the text, because a
-     * wire written the wrong way still reads plausibly — the five traps of section
-     * 1 all look like a wire and all build green.
-     *
-     * `d` keeps `$` out of the fixtures: mam builds its dependency graph by a
-     * regexp over sources, string literals included.
-     */
     const d = '$';
     const root_src = `${d}bog_vmap_app_shelf_test_page ${d}mol_view\n\tsub /\n`;
     function doc($, src = root_src) {
@@ -13376,7 +12815,6 @@ var $;
         node.source(src);
         return node;
     }
-    /** The same free name rule the editor uses: the name, or the name with a number. */
     function freer(node) {
         return (head) => {
             const taken = new Set(node.prop_names());
@@ -13396,11 +12834,7 @@ var $;
         'the field is stored as typed and what was refused is said under it'($) {
             const shelf = $bog_vmap_app_shelf.make({ $ });
             shelf.links('https://mol.hyoo.ru, https://b-on-g.github.io/gram/');
-            // Stored exactly as typed: growing a slash here would make an address
-            // impossible to finish typing.
             $mol_assert_equal(shelf.links(), 'https://mol.hyoo.ru, https://b-on-g.github.io/gram/');
-            // One pack per frame, so the second is refused rather than dropped in
-            // silence, and the refusal is on screen under the field.
             $mol_assert_equal(shelf.rejected_note(), 'https://b-on-g.github.io/gram/: ' + $bog_vmap_lib_links_reason.pack_second);
             $mol_assert_equal(shelf.source_content().includes(shelf.Note()), true);
             shelf.links('https://mol.hyoo.ru');
@@ -13412,11 +12846,8 @@ var $;
                 $,
                 class_list: () => [`${d}mol_view`, `${d}mol_button_minor`, `${d}bog_gram`, `${d}bog_gram_chat`],
             });
-            // What the author of the application wrote, and nothing of the framework
-            // their pack carries in its bundle.
             $mol_assert_like(shelf.app_list(), [`${d}bog_gram`, `${d}bog_gram_chat`]);
             $mol_assert_equal(shelf.apps_title(), 'Объекты приложения');
-            // Each of them is an item like any other, and lays down the same way.
             $mol_assert_equal(shelf.item_title(`${d}bog_gram_chat`), 'Gram_chat');
             $mol_assert_ok(shelf.item(`${d}bog_gram_chat`).source.includes(`${d}bog_gram_chat`));
         },
@@ -13426,15 +12857,12 @@ var $;
                 pack_link: () => 'http://dead.test/',
                 class_list: () => $mol_fail(new Error('Not Found')),
             });
-            // The list is empty and the section says what happened, in place of it.
             $mol_assert_like(shelf.app_list(), []);
             $mol_assert_equal(shelf.apps_title(), 'Приложение не отвечает');
             $mol_assert_ok(shelf.app_error().includes('Not Found'));
             $mol_assert_ok(shelf.app_error().includes('http://dead.test/web.view.tree'));
             $mol_assert_equal(shelf.apps_content().includes(shelf.Apps_note()), true);
             $mol_assert_equal(shelf.apps_content().includes(shelf.App_list()), false);
-            // And the shelf itself stands: the failure belongs to one list, not to
-            // the panel around it.
             $mol_assert_ok(shelf.items().length > 4);
             $mol_assert_ok(shelf.stack_content().includes(shelf.Items()));
         },
@@ -13442,7 +12870,6 @@ var $;
             const shelf = $bog_vmap_app_shelf.make({ $ });
             $mol_assert_like(shelf.app_list(), []);
             $mol_assert_equal(shelf.apps_title(), 'Приложение не подключено');
-            // The shelf itself stands whatever the address does.
             $mol_assert_ok(shelf.items().length > 4);
         },
         'files of a module give one source per class, as their author wrote them'($) {
@@ -13457,14 +12884,10 @@ var $;
                 { name: 'card.view.tree', text },
                 { name: 'card.view.css', text: '[my_card] { color: red }' },
             ]);
-            // Two components and not one text: a library resolves neighbours by
-            // name, so a class that inherits the one beside it still finds it.
             $mol_assert_equal(taken.classes.length, 2);
             $mol_assert_ok(taken.classes[0].tree.startsWith(`${d}my_card ${d}mol_view`));
             $mol_assert_ok(taken.classes[1].tree.includes(`${d}my_price ${d}my_card`));
             $mol_assert_like(taken.refused, []);
-            // Plain CSS beside the tree comes along, on the first class of the file:
-            // it is a stylesheet and not a program, and the library holds one.
             $mol_assert_equal(taken.classes[0].css, '[my_card] { color: red }');
             $mol_assert_equal(taken.classes[1].css, '');
         },
@@ -13473,7 +12896,6 @@ var $;
                 { name: 'card.view.ts', text: 'namespace $ {}' },
                 { name: 'web.view.tree', text: `${d}mol_view ${d}mol_object\n` },
                 { name: 'empty.view.tree', text: '- just a comment\n' },
-                // A stylesheet written as a program is a program.
                 { name: 'card.view.css.ts', text: 'namespace $ {}' },
             ]);
             $mol_assert_like(taken.classes, []);
@@ -13483,7 +12905,6 @@ var $;
                 $bog_vmap_app_shelf_refuse.empty,
                 $bog_vmap_app_shelf_refuse.kind,
             ]);
-            // The note names the file, so a person knows which one to fix.
             $mol_assert_ok($bog_vmap_app_shelf_intake_note(taken).includes('card.view.ts'));
         },
         async 'a class brought from a file keeps the name it came with'($) {
@@ -13492,17 +12913,11 @@ var $;
                 shelf_land_config: () => $.$giper_baza_glob.home().land(),
             });
             const source = `${d}my_card ${d}mol_view\n\tprice 0\n`;
-            // Through a fiber, as the panel does it: making the area encodes units.
             const link = await $mol_wire_async(store).import_class(source);
             const shelf = store.shelf();
             $mol_assert_equal(link, shelf.land().link().str);
             $mol_assert_equal(shelf.parts().length, 1);
-            // Under its OWN name: renaming it would cut every reference a neighbour
-            // of the same module makes to it, and cut it silently.
             $mol_assert_equal(shelf.parts()[0].tree(), source);
-            // A second import of the same class replaces it instead of doubling it:
-            // two declarations of one name and the library disagrees with itself
-            // about which is real.
             await $mol_wire_async(store).import_class(`${d}my_card ${d}mol_view\n\tprice 42\n`);
             $mol_assert_equal(shelf.parts().length, 1);
             $mol_assert_ok(shelf.parts()[0].tree().includes('price 42'));
@@ -13521,18 +12936,11 @@ var $;
                 { name: 'card.view.css', text: async () => '[my_card] { color: red }' },
                 { name: 'card.view.ts', text: async () => 'namespace $ {}' },
             ]);
-            // What was taken is in the library, under its own name. In canonical
-            // `tree2` formatting, which puts an only child on the line of its
-            // parent: the splitter serializes each declaration through `tree2`, and
-            // that form is what every other reader of the library expects.
             const parts = shelf.Store().shelf().parts();
             $mol_assert_equal(parts.length, 1);
             $mol_assert_equal(parts[0].tree(), `${d}my_card ${d}mol_view price 0\n`);
             $mol_assert_equal(parts[0].css(), '[my_card] { color: red }');
-            // And the library is attached to the scene by the same field an address
-            // goes into: from here on it is the library any other scene would get.
             $mol_assert_equal(shelf.links(), shelf.Store().link());
-            // What was not taken is said on screen, by file name.
             $mol_assert_ok(shelf.import_note().includes('card.view.ts'));
             $mol_assert_ok(shelf.source_content().includes(shelf.Import_note()));
         },
@@ -13541,7 +12949,6 @@ var $;
                 $,
                 shelf_land_config: () => $.$giper_baza_glob.home().land(),
             });
-            // No land is made and nothing is written: the check is the first line.
             $mol_assert_fail(() => store.import_class(`card ${d}mol_view\n`), 'Объявление начинается с "card", а имя класса начинается с доллара');
             $mol_assert_equal(store.shelf(), null);
         },
@@ -13555,7 +12962,6 @@ var $;
             for (const item of items) {
                 $mol_assert_ok(item.title);
                 $mol_assert_ok(item.hint);
-                // Parses as a class, or the item could never be laid down.
                 $mol_assert_ok($bog_vmap_lang_node.make({ $, source: () => item.source }).tree());
             }
         },
@@ -13564,7 +12970,6 @@ var $;
             const placed = $.$bog_vmap_app_shelf_apply(node, preset('calc'), freer(node));
             $mol_assert_like(placed, ['Calc']);
             $mol_assert_like(node.part_names(), ['Calc']);
-            // Placement is the canvas's business, so `sub` is untouched here.
             $mol_assert_like(node.sub_names(''), []);
         },
         'overrides of a part come across'($) {
@@ -13577,7 +12982,6 @@ var $;
         'the pair lands as one node holding both parts, wired'($) {
             const node = doc($);
             const placed = $.$bog_vmap_app_shelf_apply(node, preset('pair'), freer(node));
-            // One name to place: the wrapper. Both parts hang inside it by tree.
             $mol_assert_like(placed, ['Pair']);
             $mol_assert_like(node.sub_names('Pair'), ['Calc', 'Map']);
             const links = node.links();
@@ -13592,9 +12996,6 @@ var $;
             $.$bog_vmap_app_shelf_apply(node, preset('pair'), freer(node));
             const placed = $.$bog_vmap_app_shelf_apply(node, preset('pair'), freer(node));
             $mol_assert_like(placed, ['Pair_2']);
-            // The wrapper of the second copy holds the parts of the second copy and
-            // not the first: a reference that did not follow the rename would be the
-            // silent kind of wrong, drawing one calculator inside two boxes.
             $mol_assert_like(node.sub_names('Pair_2'), ['Calc_2', 'Map_2']);
             const links = node.links();
             $mol_assert_equal(links.length, 2);
@@ -13610,9 +13011,6 @@ var $;
         'the wire is written once, by the model, and not copied as an override'($) {
             const node = doc($);
             $.$bog_vmap_app_shelf_apply(node, preset('pair'), freer(node));
-            // Exactly one property carries the `=` operator, and the far end of the
-            // wire reads it. Two wires for one link, or an override left behind by
-            // the copy, would show up as a second one here.
             $mol_assert_equal(node.wires().length, 1);
             const zoom = node.over_tree('Map', 'zoom');
             $mol_assert_equal(zoom?.kids[0]?.type, '<=');
@@ -13660,12 +13058,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the slicing by property.
-     *
-     * Text in, text out, no view anywhere: the round trip of stage 4.2 is a
-     * property of the strings alone.
-     */
     const klass = 'bog_vmap_app_page';
     const body = [
         'title() {',
@@ -13753,30 +13145,13 @@ var $;
     });
 })($ || ($ = {}));
 (function ($_2) {
-    /**
-     * Tests of the code editor against the live document.
-     *
-     * The round trip is the whole point of stage 4.1: what the panel shows, written
-     * back unchanged, has to leave the document byte for byte as it was, and what
-     * the mouse does on the canvas has to show up in the text without anybody
-     * pushing it there.
-     *
-     * `d` keeps `$` out of the string literals — mam reads them for dependencies.
-     */
     const d = '$';
-    /** An editor with one part on the canvas, picked, and its code panel. */
     const editor = ($, klass = `${d}mol_button_minor`) => {
         const app = $bog_vmap_app.make({ $ });
         app.part_drop(klass, 100, 200);
         const code = app.Code();
         return { app, code, name: app.selected() };
     };
-    /**
-     * The same, with the node bound to a name the class does not declare.
-     *
-     * That binding is the only thing that gives a node a method of its own to
-     * write: `title <= greeting` asks for `greeting()`, and nothing generates it.
-     */
     const wired = ($) => {
         const one = editor($);
         one.code.tree_text(`${one.name} ${d}mol_button_minor\n\ttitle <= greeting\n`);
@@ -13803,17 +13178,12 @@ var $;
             $mol_assert_equal(app.doc_source().includes('hint \\typed'), true);
             $mol_assert_equal(app.doc_source().includes(`${d}mol_string`), true);
         },
-        /**
-         * The one failure that would look like success: a broken text swallowed, the
-         * document left holding something the user never wrote.
-         */
         'a broken declaration is refused, and the document keeps the last good one'($) {
             const { app, code } = editor($);
             const before = app.doc_source();
             code.tree_text('Broken \\\n\t\t\tnonsense');
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_equal(code.note() !== '', true);
-            // And what was typed is still in the field, where it can be fixed.
             $mol_assert_equal(code.tree_text(), 'Broken \\\n\t\t\tnonsense');
         },
         'a good text after a broken one clears the refusal and lands'($) {
@@ -13823,10 +13193,6 @@ var $;
             $mol_assert_equal(code.note(), '');
             $mol_assert_equal(app.doc_source().includes(`${name} ${d}mol_string`), true);
         },
-        /**
-         * The other half of 4.1: the canvas and the panel are one text, so a drop
-         * shows up in the panel with no path of its own.
-         */
         'a part dropped with the mouse shows up in the text'($) {
             const { app, code } = editor($);
             code.whole(true);
@@ -13848,7 +13214,6 @@ var $;
             code.js_text(`greeting() {\n\treturn 'hi'\n}`);
             $mol_assert_equal(app.root_js().includes(`greeting()`), true);
         },
-        /** The whole point of 4.2: one property and the whole text say the same thing. */
         'the slice of a node and the whole body agree'($) {
             const { app, code } = wired($);
             app.root_js(`greeting() {\n\treturn 'hi'\n}\n\nother() {\n\t\n}`);
@@ -13862,12 +13227,6 @@ var $;
             code.js_text(`greeting() {\n\treturn 2\n}`);
             $mol_assert_equal(app.root_js(), `greeting() {\n\treturn 2\n}\n\nother() {\n\treturn 1\n}`);
         },
-        /**
-         * THE TRAP THIS WHOLE SHAPE EXISTS TO AVOID. The name of a node is the name
-         * of the factory of its sub-view in the generated class, so a handwritten
-         * method of that name shadows the factory and the node leaves the canvas.
-         * The panel must never put that name in front of a person as a suggestion.
-         */
         'a method named after the node is never offered'($) {
             const plain = editor($);
             $mol_assert_equal(plain.code.js_text().includes(`${plain.name}(`), false);
@@ -13886,7 +13245,6 @@ var $;
             $mol_assert_equal(code.source_tabs()[1], code.Js());
             $mol_assert_equal(code.js_text(), 'greeting(  ) {\n\t\n}');
         },
-        /** The declaration is what decides, so a binding added later opens the field. */
         'a binding added to the declaration brings the method with it'($) {
             const { code, name } = editor($);
             $mol_assert_equal(code.js_writable(), false);
@@ -13894,7 +13252,6 @@ var $;
             $mol_assert_equal(code.js_writable(), true);
             $mol_assert_equal(code.js_text(), 'greeting(  ) {\n\t\n}');
         },
-        /** A method the class already generates is not something to write by hand. */
         'a wire the class declares is not offered as a method'($) {
             const { app, code, name } = editor($);
             app.node().part_add('Motor', `${d}mol_view`);
@@ -13913,10 +13270,6 @@ var $;
             const { app, code, name } = editor($);
             $mol_assert_equal(code.css_text(), `[${app.doc_root().slice(1)}_${name.toLowerCase()}] {\n\t\n}`);
         },
-        /**
-         * A body that cannot be cut is a state of the panel, not a lost document:
-         * the text stays whole, the panel says so, and the switch is the way out.
-         */
         'a body with unbalanced braces is reported, not swallowed'($) {
             const { app, code } = editor($);
             app.root_js('broken() {\n\treturn 1\n');
@@ -13925,7 +13278,6 @@ var $;
             code.whole(true);
             $mol_assert_equal(code.js_text(), 'broken() {\n\treturn 1\n');
         },
-        /** The scene compiles what the panel writes, so the two texts have to travel. */
         'what the panel writes reaches the scene'($) {
             const { app, code, name } = wired($);
             code.js_text(`greeting() {\n\treturn 1\n}`);
@@ -13933,10 +13285,6 @@ var $;
             $mol_assert_equal(app.doc_js()[app.doc_root()]?.includes(`greeting()`), true);
             $mol_assert_equal(app.doc_css().includes('color: red'), true);
         },
-        /**
-         * The divergence of section 10 shown where the mistake is made: the body runs
-         * in the scene through `new Function` and would fail the export on `strict`.
-         */
         'an untyped parameter is complained about as it is written'($) {
             const { code } = wired($);
             $mol_assert_equal(code.complaints().length, 0);
@@ -13950,12 +13298,6 @@ var $;
             code.js_text(`greeting( next?: string ) {\n\treturn next\n}`);
             $mol_assert_equal(code.complaints().length, 0);
         },
-        /**
-         * The complaint used to be filtered by the name of the node, which hid every
-         * one a person could make: the method they must never write is the one named
-         * after the node. It is checked on the text on screen now, so it shows in
-         * both modes and its line number counts in the text the reader is looking at.
-         */
         'the complaint is visible in both modes'($) {
             const { app, code } = wired($);
             app.root_js(`greeting( a ) {\n\t\n}\n\nother( b ) {\n\t\n}`);
@@ -13967,11 +13309,6 @@ var $;
             $mol_assert_equal(code.complaints()[1].param, 'b');
             $mol_assert_equal(code.complaints()[1].line, 5);
         },
-        /**
-         * A draft belongs to the text, not to the tab. Keyed by the tab alone, a
-         * refused edit made on one node showed up under the name of the next node
-         * picked — and correcting it there wrote it into that other node.
-         */
         'a refused edit does not follow the panel to another node'($) {
             const { app, code, name } = editor($);
             app.part_drop(`${d}mol_string`, 300, 400);
@@ -13982,11 +13319,9 @@ var $;
             app.selected(second);
             $mol_assert_equal(code.tree_text().includes('nonsense'), false);
             $mol_assert_equal(code.tree_text().includes(second), true);
-            // And it is still there when the node it was typed on comes back.
             app.selected(name);
             $mol_assert_equal(code.tree_text(), 'Broken \\\n\t\t\tnonsense');
         },
-        /** A published component without its behaviour is a picture of a component. */
         'a published node carries its method and its rule'($) {
             const { app, code, name } = wired($);
             code.js_text(`greeting() {\n\treturn 1\n}`);
@@ -14002,19 +13337,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the export.
-     *
-     * The real acceptance is elsewhere and cannot be a unit test: the output has to
-     * be dropped into `bog/` and built by mam. `bog/vmap/demo/` is that check,
-     * generated by this code and kept as a standing one. What is here are the
-     * decisions that would otherwise fail silently — placement, declaration order
-     * and decorators — plus the refusals.
-     *
-     * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-     * a regexp over sources, literals included, so a fixture class name spelled
-     * literally would be resolved as a module path.
-     */
     const d = '$';
     const page = [
         `${d}bog_site_page ${d}mol_view`,
@@ -14024,10 +13346,6 @@ var $;
         ``,
     ].join('\n');
     const hero = `${d}bog_site_hero ${d}mol_view\n\ttitle \\Hi\n\tcount? 0\n\tplain \\x\n`;
-    /**
-     * Two artboards and one free part beside them: `Home` and `About` carry a `sub`
-     * of their own and so are pages, `Loose` carries none and so is not.
-     */
     const pages = [
         `${d}bog_site_page ${d}mol_view`,
         `	Head ${d}mol_view`,
@@ -14040,16 +13358,10 @@ var $;
         `		<= Loose`,
         ``,
     ].join('\n');
-    /** Text of one file of the module, or empty when the module carries none. */
     function file_of(module, suffix) {
         return module.files.find(file => file.name.endsWith(suffix))?.text ?? '';
     }
     $mol_test({
-        /**
-         * Placement is not free. Mam turns a class name into a path by replacing every
-         * underscore with a slash, so a module put anywhere else fails to build while
-         * looking entirely correct — the one failure this whole task exists to rule out.
-         */
         'module path comes from the class names'($) {
             $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`, `${d}bog_site_hero`]), 'bog/site');
             $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`]), 'bog/site/page');
@@ -14060,12 +13372,6 @@ var $;
             $mol_assert_fail(() => $.$bog_vmap_app_export_path([`${d}bog_one`, `${d}bog_two`]), Error);
             $mol_assert_fail(() => $.$bog_vmap_app_export_path([]), Error);
         },
-        /**
-         * `class $A extends $[ '$B' ]` takes its base at definition time and the
-         * generator emits declarations in the order it got them, so an heir above its
-         * base inherits `undefined`. The document is written heir first here on
-         * purpose.
-         */
         'a base is declared before its heir'($) {
             const own = `${d}bog_site_hero_big ${d}bog_site_hero\n\ttitle \\Big\n`;
             const module = $.$bog_vmap_app_export_build([
@@ -14079,19 +13385,8 @@ var $;
         'the emitted declaration parses back into the same classes'($) {
             const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
             const back = $.$mol_view_tree2_normalize($.$mol_tree2_from_string(file_of(module, '.view.tree'), 'export'));
-            /**
-             * Input order, because neither is the base of the other. A sub-view
-             * reference does NOT constrain the order: the generator writes a
-             * `new this.$[ name ]()` resolved at call time, and only the `extends`
-             * clause is evaluated when the class is defined.
-             */
             $mol_assert_like(back.kids.map(cl => cl.type), [`${d}bog_site_page`, `${d}bog_site_hero`]);
         },
-        /**
-         * A property memoized in the preview has to be memoized in the export, or the
-         * two drift and nothing says so: an override without a decorator simply has no
-         * atom, so it returns a fresh value while the DOM keeps the old one.
-         */
         'a hand written body carries its decorators'($) {
             const module = $.$bog_vmap_app_export_build([
                 { source: page },
@@ -14099,21 +13394,11 @@ var $;
             ]);
             const ts = file_of(module, '.view.ts');
             $mol_assert_equal(ts.includes(`export class ${d}bog_site_hero extends $.${d}bog_site_hero {`), true);
-            // Over the method, the way a person writes it, and nowhere else: the
-            // expression form belongs to the scene, which cannot write a decorator
-            // into the string it hands to `new Function`.
             $mol_assert_equal(ts.includes(`\t\t@ ${d}mol_mem\n\t\tcount( next?: number ) {`), true);
             $mol_assert_equal(ts.includes('.prototype'), false);
-            /** `title` and `plain` carry no sign, so the generated base does not memoize them either. */
             $mol_assert_equal(ts.includes('"title"'), false);
             $mol_assert_equal(ts.includes('"plain"'), false);
         },
-        /**
-         * The file that goes out is still a file the editor can read back: the body
-         * with decorators in it slices into exactly the properties it was cut from.
-         * The export and the code panel cut with the same function, so this is a
-         * check that the decorator did not land somewhere that breaks the cut.
-         */
         'the decorated body slices back into the same properties'($) {
             const module = $.$bog_vmap_app_export_build([
                 { source: page },
@@ -14123,7 +13408,6 @@ var $;
             const body = ts.slice(ts.indexOf('{', ts.indexOf('export class')) + 1, ts.lastIndexOf('\t}'));
             $mol_assert_like([...$.$bog_vmap_app_code_props_js(body).keys()], ['count']);
         },
-        /** The decorator goes under the comment of the method, not above it. */
         'a documented method keeps its comment over the decorator'($) {
             const module = $.$bog_vmap_app_export_build([
                 { source: page },
@@ -14134,11 +13418,6 @@ var $;
             ]);
             $mol_assert_equal(file_of(module, '.view.ts').includes(`\t\t/** How many. */\n\t\t@ ${d}mol_mem\n\t\tcount( next?: number ) {`), true);
         },
-        /**
-         * A body the slicer cannot cut keeps the old form: braces are counted, not
-         * parsed, so a `}` inside a string defeats it. An ugly file is the right
-         * trade — a body that loses its decorators loses its atoms silently.
-         */
         'a body that cannot be sliced keeps the decorators after the class'($) {
             const module = $.$bog_vmap_app_export_build([
                 { source: page },
@@ -14149,17 +13428,9 @@ var $;
         },
         'a class without a body gets no file of its own at all'($) {
             const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
-            // Not an empty namespace: a module written by a person carries no file
-            // with nothing in it.
             $mol_assert_equal(module.files.some(file => file.name.endsWith('.view.ts')), false);
             $mol_assert_equal(module.files.some(file => file.name.endsWith('.view.css')), false);
         },
-        /**
-         * The stylesheet goes out as a stylesheet. mam compiles every `.css` of a
-         * module into the bundle, the way `mol/view/view/view.css` travels, so there
-         * is nothing to attach and nothing to escape: user text that would have torn
-         * a template literal apart is just text in a file.
-         */
         'a stylesheet is a stylesheet, verbatim'($) {
             const css = '[bog_site_hero]{ content: "` ' + '${x}' + '" }';
             const module = $.$bog_vmap_app_export_build([
@@ -14174,11 +13445,6 @@ var $;
             $mol_assert_equal(module.root, `${d}bog_site_page`);
             $mol_assert_equal(file_of(module, 'index.html').includes(`mol_view_root="${d}bog_site_page"`), true);
         },
-        /**
-         * The module carries what a person would have written and nothing else: the
-         * declaration, what mam needs to build it, and a page. A body and a
-         * stylesheet appear only when the document has them.
-         */
         'the module is the files a person would have written'($) {
             const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
             $mol_assert_equal(module.path, 'bog/site');
@@ -14206,16 +13472,6 @@ var $;
         'a class declared twice is refused'($) {
             $mol_assert_fail(() => $.$bog_vmap_app_export_build([{ source: hero }, { source: hero }]), Error);
         },
-        /**
-         * The acceptance of the artboards: what an export carries of a page is the
-         * tree it shows and the flex properties it was set with, and not one number
-         * of the canvas.
-         *
-         * The placement of free parts cannot leak here by construction — it never
-         * enters the document, it rides `spots` to the scene and is turned into
-         * rules there — and this is the test that keeps that true from the far end,
-         * where the leak would be shipped rather than merely visible.
-         */
         'an artboard exports as the tree it shows, with no coordinate in it'($) {
             const board = [
                 `${d}bog_site_page ${d}mol_view`,
@@ -14236,52 +13492,28 @@ var $;
             ].join('\n');
             const tree = file_of($.$bog_vmap_app_export_build([{ source: board }]), '.view.tree');
             $mol_assert_equal(tree, board);
-            // Nothing of the desk: no coordinates, and no absolute positioning to
-            // apply them with.
             const css = file_of($.$bog_vmap_app_export_build([{ source: board }]), '.view.css');
             $mol_assert_equal(/\bleft\b|\btop\b|position/.test(css), false);
         },
-        /**
-         * Two artboards are two pages, and pages need an address. The router is a
-         * class of its own rather than an edit of the document, because the document
-         * goes out byte for byte the way the editor holds it.
-         */
         'a document of two artboards exports with a router over them'($) {
             const module = $.$bog_vmap_app_export_build([{ source: pages }, { source: hero }]);
             const tree = file_of(module, '.view.tree');
             const ts = file_of(module, '.view.ts');
-            // The document itself is untouched, and the router is one class after it.
             $mol_assert_equal(tree, pages + hero + `${d}bog_site_app ${d}mol_view\n\tDoc ${d}bog_site_page\n`);
-            // The base of the router is declared above it, as every base has to be.
             $mol_assert_equal(tree.indexOf(`${d}bog_site_page `) < tree.indexOf(`${d}bog_site_app `), true);
-            // Both pages are addressable, and the first one is what a bare address opens.
             $mol_assert_equal(ts.includes(`switch( this.$.${d}mol_state_arg.value( 'page' ) ) {`), true);
             $mol_assert_equal(ts.includes(`case "About": return [ doc.About() ]`), true);
             $mol_assert_equal(ts.includes(`default: return [ doc.Home() ]`), true);
-            // A free part is not a page: it has no `sub` of its own, and the router
-            // never names it.
             $mol_assert_equal(ts.includes('Loose'), false);
-            // The page is reached through the document, which is declared and never
-            // drawn, so nothing but the chosen page builds any DOM.
             $mol_assert_equal(ts.includes('const doc = this.Doc()'), true);
             $mol_assert_equal(module.root, `${d}bog_site_app`);
             $mol_assert_equal(file_of(module, 'index.html').includes(`mol_view_root="${d}bog_site_app"`), true);
         },
-        /**
-         * The router carries no coordinate either. Two artboards lie side by side on
-         * the canvas by numbers that ride `spots`, and a page that came out placed
-         * absolutely would be that desk shipped to a reader.
-         */
         'a routed document ships no placement'($) {
             const module = $.$bog_vmap_app_export_build([{ source: pages }, { source: hero }]);
             $mol_assert_equal(/\bleft\b|\btop\b|position/.test(file_of(module, '.view.css')), false);
             $mol_assert_equal(/\bx\b|\by\b|spot/.test(file_of(module, '.view.ts')), false);
         },
-        /**
-         * A router over one page would be a class that always answers the same thing.
-         * One page stays one page: no router class, no file to put it in, and the
-         * document itself at the root.
-         */
         'a document of one artboard gets no router'($) {
             const one = [
                 `${d}bog_site_page ${d}mol_view`,
@@ -14293,22 +13525,13 @@ var $;
             const module = $.$bog_vmap_app_export_build([{ source: one }]);
             $mol_assert_equal(file_of(module, '.view.tree'), one);
             $mol_assert_equal(module.root, `${d}bog_site_page`);
-            // One class, so the path is `bog/site/page` and the module is named after
-            // its last segment.
             $mol_assert_like(module.files.map(file => file.name), ['page.view.tree', 'page.meta.tree', 'index.html']);
         },
-        /**
-         * Placement is not free for the router either: a name adding a segment to the
-         * longest common prefix would move the whole module into a folder that does
-         * not exist.
-         */
         'the router leaves the module where the document put it'($) {
             const module = $.$bog_vmap_app_export_build([{ source: pages }, { source: hero }]);
             $mol_assert_equal(module.path, 'bog/site');
             $mol_assert_equal(module.root, `${d}bog_site_app`);
             $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`, `${d}bog_site_hero`, module.root]), 'bog/site');
-            // A document of a single class sits one segment deeper, and the router
-            // follows it there instead of pulling it back up.
             const deep = $.$bog_vmap_app_export_build([{ source: pages }]);
             $mol_assert_equal(deep.path, 'bog/site/page');
             $mol_assert_equal(deep.root, `${d}bog_site_page_app`);
@@ -14322,11 +13545,6 @@ var $;
             $mol_assert_equal(module.root, `${d}bog_site_app2`);
             $mol_assert_equal(file_of(module, '.view.tree').includes(`${d}bog_site_app2 ${d}mol_view`), true);
         },
-        /**
-         * The divergence of section 10, caught where the author can still do
-         * something about it. A body without types runs in the preview through
-         * `new Function` and fails the export, which compiles it with `strict`.
-         */
         'a body that would not pass strict is named before the export'($) {
             const notes = $.$bog_vmap_app_export_untyped('count( next ) {\n\treturn next ?? 7\n}\n');
             $mol_assert_equal(notes.length, 1);
@@ -14337,18 +13555,11 @@ var $;
                 { source: page },
                 { source: hero, js: 'title() {\n\treturn "hi"\n}\n\ncount( next ) {\n\treturn next ?? 7\n}\n' },
             ]), Error);
-            // The refusal names the class, the line, the method and the parameter —
-            // everything needed to go and fix it.
             $mol_assert_equal(error.message.includes(`${d}bog_site_hero`), true);
             $mol_assert_equal(error.message.includes('строка 5'), true);
             $mol_assert_equal(error.message.includes('count'), true);
             $mol_assert_equal(error.message.includes('next'), true);
         },
-        /**
-         * What the check must NOT say, or the editor would cry over working code and
-         * be turned off. A default value is a type, an arrow is typed by context, and
-         * a statement is not a method.
-         */
         'a typed body passes untouched'($) {
             const js = [
                 `@ ${d}mol_mem`,
@@ -14371,96 +13582,39 @@ var $;
             const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero, js }]);
             $mol_assert_equal(file_of(module, '.view.ts').includes('count( next?: number )'), true);
         },
-        /**
-         * The forms a naive search for «a parameter without a type» gets wrong, one
-         * assertion each.
-         *
-         * The two mistakes do not cost the same. A complaint refuses the export, so a
-         * false one locks the author inside the editor with no way out, while a missed
-         * one costs a build failure that explains itself. Every line below is
-         * therefore an assertion of SILENCE, and the ones that are genuine errors
-         * passed over — the destructuring, the object literal method — are silence on
-         * purpose and named as misses in the docs.
-         */
         'the check keeps quiet on everything it is not sure of'($) {
             const quiet = (js) => $mol_assert_like($.$bog_vmap_app_export_untyped(js), []);
-            // A destructured parameter is an error of the same kind, and naming it
-            // sensibly is beyond a search over text. Missed on purpose.
             quiet('render( { head, foot } ) {\n\treturn [ head, foot ]\n}\n');
-            // An arrow written as a class property. Its parameter is untyped, and the
-            // line is not a method head at all, so it is left alone.
             quiet('handler = ( event )=> event.type\n');
-            // A `this` parameter is not a parameter of the caller.
             quiet('pick( this: $, id: string ) {\n\treturn id\n}\n');
-            // A generic method, typed through its own type parameter.
             quiet('first< Item >( list: Item[] ) {\n\treturn list[0]\n}\n');
-            // An overload signature carries no body, so it is not a head. Missed even
-            // with an untyped parameter, and that is the safe direction.
             quiet('plus( a ): number\nplus( a: number ) {\n\treturn a\n}\n');
-            // Optional and rest parameters, both typed.
             quiet('join( a?: string, ... rest: string[] ) {\n\treturn [ a, ... rest ]\n}\n');
-            // A signature quoted inside a template literal is not a signature. This is
-            // the one that would fire on text the author never meant as code.
             quiet('sample() {\n\treturn `\ncount( next ) {\n`\n}\n');
-            // The same inside comments, both kinds.
             quiet('sample() {\n\treturn 1\n}\n// count( next ) {\n');
             quiet('sample() {\n\treturn 1\n}\n/*\ncount( next ) {\n*/\n');
-            // A method of an object literal inside a body: indented, therefore a
-            // statement rather than a head. Missed on purpose.
             quiet('config() {\n\treturn {\n\t\topen( next ) { return next },\n\t}\n}\n');
-            // A call at the start of a line inside a method reads exactly like a head
-            // to a search that ignores indentation.
             quiet('run() {\n\tsuper( next )\n\tthis.compute( x )\n}\n');
         },
-        /**
-         * The other half of the same rule: what the check IS sure of, it says. A body
-         * that reaches the export in any of these shapes does not build.
-         */
         'the check does say the parameter it is sure about'($) {
             const first = (js) => $.$bog_vmap_app_export_untyped(js)[0];
-            // A `this` parameter beside an untyped one: only the second is named.
             const beside = $.$bog_vmap_app_export_untyped('pick( this: $, id ) {\n\treturn id\n}\n');
             $mol_assert_equal(beside.length, 1);
             $mol_assert_equal(beside[0].param, 'id');
-            // A generic whose value parameter carries no type of its own.
             $mol_assert_equal(first('first< Item >( list ) {\n\treturn list[0]\n}\n').param, 'list');
-            // A rest parameter, named without its dots and suggested with them.
             const rest = first('join( ... parts ) {\n\treturn parts\n}\n');
             $mol_assert_equal(rest.param, 'parts');
             $mol_assert_equal(rest.text.includes('... parts: number[]'), true);
-            // An optional parameter without a type is untyped all the same.
             $mol_assert_equal(first('load( id? ) {\n\treturn id\n}\n').param, 'id');
-            // A setter and an async method are heads like any other.
             $mol_assert_equal(first('set title( next ) {\n\treturn next\n}\n').method, 'title');
             $mol_assert_equal(first('async load( id ) {\n\treturn id\n}\n').method, 'load');
-            // A head split over several lines is still one head, reported at the line
-            // the author reads as its first.
             const split = first('sum(\n\ta: number,\n\tb,\n) {\n\treturn a + b\n}\n');
             $mol_assert_equal(split.param, 'b');
             $mol_assert_equal(split.line, 1);
-            // A body written with an indent of its own is checked at that indent, or
-            // the check would silently do nothing for a whole class of editors.
             const inset = first('\tcount( next ) {\n\t\treturn next\n\t}\n');
             $mol_assert_equal(inset.param, 'next');
-            // The message is an instruction: what to write, spelled out.
             $mol_assert_equal(first('count( next ) {\n\treturn next\n}\n').text.includes('count( next?: number )'), true);
         },
-        /**
-         * WHAT STOPPED THE EXPORTED MODULE FROM BUILDING, measured 10.09.2026 on a
-         * document dropped into a real folder of mam.
-         *
-         * A node bound to a name the class does not declare — `title <= greeting`,
-         * with `greeting()` written by hand — is the shape section 1 tells people to
-         * write, and the scene runs it because a body there is compiled without
-         * types. The exported module is compiled WITH them: the declaration file
-         * states the binding as `ReturnType< Klass['greeting'] >` against the
-         * generated class, which declares no such thing, and mam stops on
-         * `TS2339: Property 'greeting' does not exist`. Three correct files and no
-         * bundle.
-         *
-         * So the declaration is written out, typed `any` by `null`, and the hand
-         * written body in the subclass narrows it.
-         */
         'a name only the hand written body answers is declared for it'($) {
             const source = [
                 `${d}bog_site_page ${d}mol_view`,
@@ -14472,15 +13626,8 @@ var $;
             const module = $.$bog_vmap_app_export_build([{ source, js }, { source: hero }], `${d}bog_site_page`);
             const tree = file_of(module, '.view.tree');
             $mol_assert_equal(tree.includes('\tgreeting null\n'), true);
-            // Appended and nothing else touched: what the person wrote is still there.
             $mol_assert_equal(tree.includes(`\tHero ${d}bog_site_hero title <= greeting\n`), true);
         },
-        /**
-         * The other half, and the one that would do damage. A bare reference the body
-         * does NOT answer is a property of the base class — or a plain mistake — and
-         * declaring it here would shadow the first with `any` and bury the second
-         * under a method that quietly returns nothing.
-         */
         'a name the body does not answer is left alone'($) {
             const source = [
                 `${d}bog_site_page ${d}mol_view`,
@@ -14490,16 +13637,13 @@ var $;
                 `	sub / <= Hero`,
                 ``,
             ].join('\n');
-            // The body answers `greeting` and nothing else.
             const js = 'greeting(): string {\n\treturn \'Hi\'\n}';
             const model = $bog_vmap_lang_node.make({ $ });
             model.source(source);
             $mol_assert_like($.$bog_vmap_app_export_hooks(model.tree(), js), ['greeting']);
-            // `title` is declared by the class, so nothing is written for it.
             const module = $.$bog_vmap_app_export_build([{ source, js }, { source: hero }]);
             $mol_assert_equal(file_of(module, '.view.tree').includes('title null'), false);
         },
-        /** A document nobody wrote a body for gains nothing at all. */
         'a document without hand written code is written out unchanged'($) {
             const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
             $mol_assert_equal(file_of(module, '.view.tree').includes('null'), false);
@@ -15689,11 +14833,13 @@ var $;
         'the editor opens with its bar, its palette and its canvas'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             stage.button('Новая сцена');
-            stage.button('−');
-            stage.button('+');
-            stage.button('Сбросить вид');
             stage.button('Удалить');
             stage.button('В библиотеку');
+            const canvas = stage.pane.dom_node();
+            for (const title of ['−', '+', 'Сбросить вид']) {
+                $mol_assert_equal(canvas.contains(stage.button(title)), true);
+            }
+            $mol_assert_equal(canvas.contains(stage.button('Удалить')), false);
             const text = stage.text();
             $mol_assert_ok(text.includes('Полка'));
             $mol_assert_ok(text.includes('Свойства'));
@@ -16026,20 +15172,7 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the archive.
-     *
-     * A format nobody in the project reads back: the readers are the unpacker of
-     * the operating system and the archiver of the browser, and neither is here.
-     * So the bytes are checked against the specification directly — signatures,
-     * offsets, checksums — and the checksum against a value produced by zlib, which
-     * is a witness of its own rather than this code agreeing with itself.
-     *
-     * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-     * a regexp over sources, literals included.
-     */
     const d = '$';
-    /** Little endian integer at a position, the way every zip reader takes one. */
     function number_at(bytes, at, size) {
         let value = 0;
         for (let i = size - 1; i >= 0; --i)
@@ -16049,11 +15182,6 @@ var $;
     function text_at(bytes, at, size) {
         return new TextDecoder().decode(bytes.slice(at, at + size));
     }
-    /**
-     * Entries as the central directory declares them, which is where a reader
-     * looks. Walking the local headers instead would prove nothing about the
-     * directory, and the directory is what an unpacker trusts.
-     */
     function entries_of(bytes) {
         const count = number_at(bytes, bytes.length - 12, 2);
         let at = number_at(bytes, bytes.length - 6, 4);
@@ -16071,7 +15199,6 @@ var $;
         }
         return out;
     }
-    /** Content of one entry, read through its local header the way an unpacker does. */
     function body_of(bytes, offset) {
         const name_size = number_at(bytes, offset + 26, 2);
         const extra_size = number_at(bytes, offset + 28, 2);
@@ -16089,18 +15216,11 @@ var $;
         ],
     };
     $mol_test({
-        /**
-         * The checksum against zlib, not against a second implementation of the same
-         * table: a table wrong in the same way twice would pass any self comparison,
-         * and a wrong checksum is exactly what makes an archive refuse to open.
-         */
         'the checksum is the one every reader computes'($) {
             $mol_assert_equal($.$bog_vmap_app_export_zip_crc32(new TextEncoder().encode('hello')), 907060870);
             $mol_assert_equal($.$bog_vmap_app_export_zip_crc32(new TextEncoder().encode('привет')), 779501134);
-            // An empty entry is a normal one, and its checksum is not a special case.
             $mol_assert_equal($.$bog_vmap_app_export_zip_crc32(new Uint8Array(0)), 0);
         },
-        /** Signatures and counts, so that a reader finds the directory at all. */
         'the archive ends with a directory of every file'($) {
             const bytes = $.$bog_vmap_app_export_zip(module.files);
             $mol_assert_equal(number_at(bytes, 0, 4), 0x04034b50);
@@ -16111,11 +15231,6 @@ var $;
             $mol_assert_equal(entries[0].signature, 0x02014b50);
             $mol_assert_equal(entries[1].signature, 0x02014b50);
         },
-        /**
-         * THE POINT OF THE WHOLE FILE: what the directory promises is what lies at
-         * the offset it promises it at. An archive whose offsets are off by a header
-         * opens as empty, or as garbage, and nothing else in the editor would notice.
-         */
         'every entry lies where the directory says it does'($) {
             const bytes = $.$bog_vmap_app_export_zip(module.files);
             for (const entry of entries_of(bytes)) {
@@ -16125,11 +15240,6 @@ var $;
                 $mol_assert_equal(entry.crc, $.$bog_vmap_app_export_zip_crc32(new TextEncoder().encode(file.text)));
             }
         },
-        /**
-         * Text is stored in UTF-8, and the size in the header is the size in bytes.
-         * A size counted in characters cuts a russian comment in half, and the
-         * document of a russian speaking author is the ordinary case here.
-         */
         'non ascii text keeps its bytes'($) {
             const bytes = $.$bog_vmap_app_export_zip([
                 { name: 'note.txt', text: 'привет' },
@@ -16138,16 +15248,10 @@ var $;
             $mol_assert_equal(entry.size, 12);
             $mol_assert_equal(body_of(bytes, entry.offset), 'привет');
         },
-        /** Bit 11 of the flags, without which a non ascii NAME arrives mojibake. */
         'names are marked as utf-8'($) {
             const bytes = $.$bog_vmap_app_export_zip(module.files);
             $mol_assert_equal(number_at(bytes, 6, 2), 0x0800);
         },
-        /**
-         * A date, and a fixed one. Zero shows up as `00-00-1980` and makes unpackers
-         * complain; the wall clock would make one document produce different bytes on
-         * every export, which no test could then pin down.
-         */
         'entries carry a valid date and the same bytes every time'($) {
             const bytes = $.$bog_vmap_app_export_zip(module.files);
             $mol_assert_equal(number_at(bytes, 12, 2), 0x0021);
@@ -16155,18 +15259,11 @@ var $;
             $mol_assert_equal(bytes.length, again.length);
             $mol_assert_equal([...bytes].join(), [...again].join());
         },
-        /**
-         * The module folder travels INSIDE the archive, so unpacking at the root of a
-         * checkout puts the module where its class names oblige it to be. Section 10:
-         * a module in the wrong folder builds into `Root package not found` while
-         * looking entirely correct.
-         */
         'the archive carries the module folder'($) {
             const names = entries_of($.$bog_vmap_app_export_zip_archive(module))
                 .map(entry => entry.name);
             $mol_assert_equal(names.join(' '), 'bog/site/site.view.tree bog/site/index.html');
         },
-        /** An archive of nothing is still an archive: a directory of zero entries. */
         'an empty list makes an empty archive'($) {
             const bytes = $.$bog_vmap_app_export_zip([]);
             $mol_assert_equal(bytes.length, 22);

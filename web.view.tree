@@ -2021,36 +2021,16 @@ $mol_deck $mol_list
 			options <= switch_options *
 		<= Content $mol_view
 
-- Three sources of one node: its `view.tree` declaration, its method and its rule.
-- Port of the source panel of studio, down to the deck of three code editors.
--
-- A node is a flat property of the class after normalization, so the three texts of
-- a node are three slices of the three texts of the class: the declaration, the
-- method of that name in the body, and the rule addressed to the attribute the
-- framework writes on it. The whole class is one switch away, and that switch is
-- the whole difference between the two modes.
-- @see ../../ARCHITECTURE.md sections 1 and 2
 $bog_vmap_app_code $mol_view
-	- The root class of the document.
 	klass \
-	- Property name of the picked node, empty when nothing is picked. Without one
-	- there is nothing to slice and the panel edits the class whole.
 	prop \
-	- Methods this node needs written by hand: the names its declaration refers to
-	- that the class does not generate. The JS tab edits exactly these, because a
-	- method named after the node itself would shadow the factory of the sub-view
-	- and take the node off the canvas.
 	hooks /string
 	source? \
-	- The same value the inspector edits, so a change made with the mouse shows up
-	- in the text without a path of its own.
 	node_source? \
 	js? \
 	css? \
-	- What the scene said about this node last, empty when it said nothing.
 	error \
 	whole? false
-	- Why the last edit was not written into the document, empty when it was.
 	refusal? \
 	sub <= content /$mol_view
 	Head $mol_bar
@@ -2061,17 +2041,10 @@ $bog_vmap_app_code $mol_view
 		title \Весь класс
 		hint \Править класс целиком, а не выбранный узел. Какой это класс, сказано в шапке: у узла со своим классом — его, у остальных — тот, который узел объявляет
 		checked? <=> whole?
-	- Here and not only in the status strip: an error belongs where the code that
-	- caused it is being written.
 	Alarm $mol_view
 		sub / <= error
-	- The refused text stays in the field so it can be fixed; the document keeps the
-	- last one that parsed.
 	Refusal $mol_view
 		sub / <= note \
-	- Parameters without types in the body of this node. Shown while it is being
-	- written, because the failure they cause happens at the export, where neither
-	- the mistake nor its author is any more.
 	Typing $mol_view
 		sub <= typing_rows /$mol_view
 	Typing_row* $mol_view
@@ -2088,9 +2061,6 @@ $bog_vmap_app_code $mol_view
 		hint \
 		sidebar_showed true
 		value? <=> js_text? \
-	- What stands on the JS tab when this node has no method of its own to write.
-	- A state, not an empty field: an empty field here would invite writing a method
-	- named after the node, and that one shadows the factory of the sub-view.
 	Js_idle $mol_view
 		title \JS
 		sub / <= js_idle_note \
@@ -2100,33 +2070,14 @@ $bog_vmap_app_code $mol_view
 		sidebar_showed true
 		value? <=> css_text? \
 
-- Publishing the picked part of the document into the library of the user: one
-- button in the head bar, and the link of the library that comes out of it, ready
-- for the palette field of another scene.
-- @see ../../ARCHITECTURE.md section 5
 $bog_vmap_app_publish $mol_view
 	store $bog_vmap_app_publish_store
-	- Property name of the picked part on the root class, empty when nothing is
-	- picked. The button is off without one.
 	part \
-	- Declaration of the picked part, as the inspector reads it: a name, its base
-	- class and the properties under them.
 	source \
-	- Method of the part, cut out of the body of the class it belongs to.
 	js \
-	- Styles of the ROOT CLASS of the document, whole, and not the rule of the
-	- part alone: a sub view of the part is a flat property of the root too, so
-	- its rule is written beside the rule of the part and nothing in the text says
-	- whose it is. Which rules belong to the part follows from the tree the copy is
-	- made of, and that tree is built here, so the cut is made here as well.
 	css \
-	- The root class of the document, as text: the sub-views the editor hoisted
-	- out of the part are put back into it from here before it goes out.
 	doc \
-	- Names of the classes the document authors, root included: a part based on
-	- one of them is refused, its base would stay behind.
 	classes /string
-	- Link of the library land, empty before the first publication.
 	lib_link \
 	sub <= content /$mol_view
 	Publish $mol_button_minor
@@ -2134,7 +2085,6 @@ $bog_vmap_app_publish $mol_view
 		hint <= publish_hint \
 		enabled <= enabled false
 		click? <=> publish? null
-	- The link itself is the caption, so what is copied is what is seen.
 	Copy $mol_button_copy
 		hint \Скопировать ссылку библиотеки для поля палитры другой сцены
 		text <= lib_link
@@ -2144,13 +2094,7 @@ $bog_vmap_app_publish $mol_view
 
 $bog_vmap_app_palette_item $mol_button_minor
 	current false
-	- A palette row is a line of text, not a tap target: the 40 px the typed button
-	- asks for would show a dozen classes where three dozen fit. The virtual list
-	- sizes its window by this very number, so it has to be the truth, not just CSS.
 	minimal_height 24
-	- Pointer down, not HTML5 `dragstart`. The native protocol cannot be driven by
-	- synthetic events at all, which would leave dragging unverifiable here, and it
-	- would hand the drop to the browser instead of to the canvas.
 	drag_start? null
 	attr *
 		^
@@ -2173,34 +2117,18 @@ $bog_vmap_app_palette_port $mol_view
 		<= Owner $mol_view sub / <= owner
 
 $bog_vmap_app_palette $mol_view
-	- Address of the pack, with its slash, handed in by the owner. The FIELD it
-	- comes from lives on the shelf: a person adds an application to the editor
-	- whether or not they have the list of classes open, so the field cannot be
-	- inside a level that folds away.
 	pack_link \
 	query? \
 	selected? \
-	- Narrow layout for a side panel of the editor: header in a column, ports pane
-	- dropped. A port row is an 11rem signature plus a value plus an owner badge and
-	- does not fit a panel; the ports of a node picked on the canvas belong to the
-	- inspector of 2.6 anyway, which is a different question from «what can I add».
 	compact false
-	- Class the pointer is currently carrying, empty when nothing is being dragged,
-	- and where the pointer is right now in viewport coordinates. Started here on
-	- `pointerdown`, moved and cleared by whoever owns the canvas: the palette knows
-	- when a drag begins and nothing about where it ends.
 	dragged? \
 	drag_x? 0
 	drag_y? 0
-	- Classes of the attached lands, handed in by the owner. The palette knows no
-	- database: whoever does resolves the links of the field and passes the trees,
-	- and the library resolves them against the pack like any other class.
 	land_classes /$mol_tree2
 	attr *
 		^
 		bog_vmap_app_palette_compact <= compact
 	sub <= body /$mol_view
-	-
 	Head $mol_bar
 		sub /
 			<= Brand $mol_view sub / \Палитра
@@ -2208,17 +2136,12 @@ $bog_vmap_app_palette $mol_view
 				hint \Поиск по имени
 				value? <=> query?
 			<= Total $mol_view sub / <= total \
-	-
 	Body $mol_view
 		sub <= body_content /$mol_view
-	-
 	Classes $mol_scroll
 		sub /
 			<= Class_list $mol_list
 				rows <= class_rows /
-	-
-	- `$mol_scroll` is a grid that puts every child into cell 1/1, so it holds
-	- exactly one node. The heading has to live beside it, not in it.
 	Ports $mol_view
 		sub /
 			<= Ports_head $mol_view
@@ -2229,40 +2152,24 @@ $bog_vmap_app_palette $mol_view
 				sub /
 					<= Port_list $mol_list
 						rows <= port_rows /
-	-
-	- One button per class. The virtual list renders only what is on screen, so all
-	- 449 of them cost nothing until scrolled to.
 	Class_row* $bog_vmap_app_palette_item
 		title <= class_title* \
 		click? <=> class_click*? null
 		current <= class_current* false
 		drag_start? <=> class_drag*? null
-	-
 	Port_row* $bog_vmap_app_palette_port
 		sign <= port_sign* \
 		body <= port_body* \
 		owner <= port_owner* \
 		inherited <= port_inherited* false
-	-
-	- The model. An empty address is a state and not a failure: the library is then
-	- the lands alone, and with no lands it is the stub by itself.
 	Lib $bog_vmap_lib
 		pack <= pack_link
 		classes <= land_classes
 
-- Documents of the user, down the left edge of the editor. A list and not a picker,
-- because a scene is a place a person moves between while working and not a setting
-- they change now and then. Owns no data: the store is handed in by the app so that
-- the whole editor holds one, and every value shown here is read from it and
-- written back into it.
 $bog_vmap_app_scenes $mol_view
 	store $bog_vmap_app_store
-	- Link of the open document, empty when there is none yet. Two way: picking
-	- one writes the address, and the address is what the store reads.
 	current? \
 	title? \
-	- Whether there is a document to name at all. The field is off without one,
-	- so that a name typed into an empty editor does not grab a land per keystroke.
 	current_exists false
 	sub /
 		<= Head $mol_view
@@ -2278,78 +2185,38 @@ $bog_vmap_app_scenes $mol_view
 			title \Новая сцена
 			hint \Завести новый документ. Он станет текущим
 			click? <=> add? null
-	-
-	- One row per document. The row of the palette, because a scene row is the same
-	- thing: a line of text that is either the current one or not.
 	Scene_row* $bog_vmap_app_palette_item
 		title <= scene_title* \
 		hint <= scene_title* \
 		current <= scene_current* false
 		click? <=> scene_click*? null
 
-- The shelf: ready made things to put on the canvas, one gesture each.
-- A person opening the editor is offered objects they recognise and not the several
-- hundred classes a pack declares. Those are still here, one level down, because
-- laying out the inside of a page needs primitives and nothing else will do.
 $bog_vmap_app_shelf $mol_view
-	- Links separated by commas, stored exactly as typed. The first http(s) one is
-	- the application whose objects join the shelf, the rest are lands holding
-	- component sources. One value for the whole editor, so the panel offers what
-	- the scene has actually loaded; one pack per frame, so a second address is
-	- refused by construction.
 	links? \
 	pack_link \
 	land_classes /$mol_tree2
-	- Every class the library holds, handed in by the editor. Read inside `Apps` and
-	- nowhere else: reading it fetches, and a dead address has to take down that one
-	- list rather than the panel around it.
 	class_list /string
-	- What the pointer is carrying, BY ITS ID, and where the pointer is. One state
-	- for both levels of the panel: a class row writes its class name here, a shelf
-	- row the id of its item, and the two are told apart because a class name starts
-	- with a dollar and an id never does.
 	dragged? \
 	drag_x? 0
 	drag_y? 0
-	- An item asked for by a plain click, which the editor answers by putting it in
-	- the middle of the canvas. A press that turns into a drag never becomes a
-	- click, so the two gestures do not fight.
 	place? \
-	- Files picked in the dialog: an event carrying a payload, not a list the panel
-	- keeps, so it is answered empty.
 	files? /File
 	classes_showed? false
 	sub <= body /$mol_view
-	-
 	Title $mol_view
 		sub /
 			\Полка
-	-
-	- Everything above the second level scrolls as one, or a panel taller than the
-	- window pushes the page down and takes the head bar off the screen with it. The
-	- scroll lays every child into the same cell, so it holds exactly ONE node and
-	- the stack goes inside that one.
 	Stack $mol_scroll
 		sub /
 			<= Stack_body $mol_view
 				sub <= stack_content /$mol_view
-	-
 	Items $mol_list
 		rows <= item_rows /
-	-
-	- Where an application comes from. Outside `Apps` on purpose: a mistyped address
-	- must leave the field it was typed into reachable, and the list is exactly what
-	- a bad address takes down.
 	Source $mol_view
 		sub <= source_content /$mol_view
-	-
 	Links $mol_string
 		hint \Адрес приложения, ленды через запятую
 		value? <=> links?
-	-
-	- What the files carry goes into the component library of the user, whose link
-	- joins the field above, so from that moment on it is the library any other
-	- scene would be handed.
 	Import $mol_view
 		sub /
 			<= Import_open $mol_button_open
@@ -2360,48 +2227,24 @@ $bog_vmap_app_shelf $mol_view
 			<= Import_title $mol_view
 				sub /
 					\Файлы модуля
-	-
-	- Rendered only while there is something to say, like the refusals of the field.
 	Import_note $mol_view
 		sub / <= import_note? \
-	-
-	- CRUD over the library of the user, the same store the publish button holds:
-	- both write into the one library the home land points at.
 	Store $bog_vmap_app_publish_store
-	-
-	- What was typed and not taken. A second pack is refused by construction, and a
-	- person who typed one has to learn that from the screen rather than from a log.
 	Note $mol_view
 		sub / <= rejected_note \
-	-
-	- Objects of the connected application: every class it declares that is not part
-	- of the framework. A deployed application is a library of components already,
-	- so this needs nothing of its author.
 	Apps $mol_view
 		sub <= apps_content /$mol_view
-	-
 	Apps_head $mol_view
 		sub /
 			<= apps_title \
-	-
 	App_list $mol_list
 		rows <= app_rows /
-	-
-	- In place of the list and not beside it: there is nothing to list, and a dead
-	- address is the whole content of the section until it is fixed.
 	Apps_note $mol_view
 		sub / <= app_error \
-	-
-	- The second level, folded away by default. A check and not an expander: the
-	- palette has to GROW into whatever the shelf left, and an expander would size it
-	- by its content, leaving the class list no height to scroll in.
 	Level $mol_check
 		title \Все классы пака
 		hint \Классы донорского пака целиком: примитивы, из которых верстают внутри блока
 		checked? <=> classes_showed?
-	-
-	- The old palette, demoted. Rendered only while it is open, so a folded panel
-	- does not fetch a class tree it is not showing.
 	Palette $bog_vmap_app_palette
 		compact true
 		pack_link <= pack_link
@@ -2409,27 +2252,13 @@ $bog_vmap_app_shelf $mol_view
 		dragged? <=> dragged?
 		drag_x? <=> drag_x?
 		drag_y? <=> drag_y?
-	-
-	- One row per item. Pointer down and not the native drag protocol, which cannot
-	- be driven by synthetic events and would hand the drop to the browser.
 	Item_row* $bog_vmap_app_palette_item
 		title <= item_title* \
 		hint <= item_hint* \
 		click? <=> item_click*? null
 		drag_start? <=> item_drag*? null
 
-- Layout of one node, as the four decisions a flex box actually takes: which way
-- the children go, how they line up across and along it, how far apart they are,
-- and whether this node stretches inside its own parent. Plus the width of the
-- page, which is the same kind of fact and is what an artboard is set by.
--
-- Every one of them is a key of the ordinary `style` dictionary of the node, so
-- what this panel writes is what a hand written document would carry, and an export
-- needs to know nothing about artboards at all.
-- @see ../../../ARCHITECTURE.md section 8
 $bog_vmap_app_inspect_flex $mol_view
-	- Two way: this is the whole surface of the panel, and the document is the
-	- owner's to write.
 	value*? \
 	sub /
 		<= Width $bog_vmap_app_inspect_flex_row
@@ -2476,7 +2305,6 @@ $bog_vmap_app_inspect_flex $mol_view
 				title \занимать свободное место
 				checked? <=> grow? false
 
-- One line of the panel: what is being set, and the control setting it.
 $bog_vmap_app_inspect_flex_row $mol_view
 	title \
 	Field $mol_view
@@ -2484,43 +2312,13 @@ $bog_vmap_app_inspect_flex_row $mol_view
 		<= Title $mol_view sub / <= title
 		<= Field
 
-- Editor of one value of a `view.tree` property, dispatching on the shape of the
-- value and recursing into composite ones. Port of the value editor of studio and
-- its six sub editors, plus a seventh the studio has no equivalent of: the wire `=`
-- of section 1. Deviations are marked at their place.
--
-- Every class here derives from something OUTSIDE this file, and that is a rule,
-- not a coincidence. Declarations of a `view.tree` are emitted before the
-- handwritten bodies of the same module, so a class inheriting a neighbour from
-- this very file would extend the version without its `.view.ts` methods — half
-- the behaviour gone, nothing reported. Studio can chain its object editor onto its
-- dictionary editor because there the two live in separate modules. List,
-- dictionary and object are therefore one class with two flags rather than three
-- classes in a chain.
-- @see ../../../../ARCHITECTURE.md section 3
 $bog_vmap_app_inspect_value $mol_view
-	- Writing serializes the node back into the document.
 	tree? $mol_tree2_empty
-	- Offered as binding targets.
 	binds /string
-	- Nodes a wire may start from, by name, each carrying the class it is declared
-	- with and the ports that class has. Both ends of a wire are picked out of this
-	- one map, so neither end can be spelled by hand into something that does not
-	- exist.
 	nodes *
-	- A refusal has to be legible, and on its own it is not: the string field of mol
-	- catches what a setter throws and puts the message into `setCustomValidity`,
-	- which the browser shows on form submit and nowhere else. In a form that is
-	- never submitted the value silently stays out of the document and the field
-	- keeps the text nobody accepted — the document is safe and the person is lost.
 	alarm? \
 	sub <= editors /$mol_view
 	Alarm $mol_view sub / <= alarm
-	- Every editor is declared, one is rendered. Studio picks the same way and then
-	- copies the context onto the chosen instance field by field. Here the context
-	- arrives through ordinary bindings instead, so the wiring is visible in the
-	- declaration and type checked, and swapping the shape of a value cannot leave
-	- an editor holding a stale accessor.
 	String $bog_vmap_app_inspect_value_string
 		tree? <=> tree?
 	Number $bog_vmap_app_inspect_value_number
@@ -2547,22 +2345,13 @@ $bog_vmap_app_inspect_value $mol_view
 	Raw $bog_vmap_app_inspect_value_raw
 		tree? <=> tree?
 
-- Multi line text field. The text area of mol, which studio uses here, is a code
-- editor with a gutter and a highlighter; the plain string field is an `<input>`,
-- which cannot hold a newline, so a two line value would collapse to one line on
-- the first keystroke, silently. The `<textarea>` in between is neither, and is the
-- shape this needs.
 $bog_vmap_app_inspect_value_area $mol_string
 	dom_name \textarea
 	attr *
 		^
 		rows <= rows 1
-	- The string field binds Enter to `submit`. In an input that is the only
-	- sensible meaning of the key; in a text area it is the one key that has to
-	- reach the field itself.
 	plugins /
 
-- A text value: `\Текст`, or `@ \Текст` when it goes through the locale table.
 $bog_vmap_app_inspect_value_string $mol_view
 	tree? $mol_tree2_empty
 	sub /
@@ -2575,7 +2364,6 @@ $bog_vmap_app_inspect_value_string $mol_view
 			hint \Многоязычное: текст уедет в таблицу локалей
 			checked? <=> locale? false
 
-- A number literal, kept as the exact text of the source.
 $bog_vmap_app_inspect_value_number $mol_view
 	tree? $mol_tree2_empty
 	alarm? \
@@ -2584,7 +2372,6 @@ $bog_vmap_app_inspect_value_number $mol_view
 			hint \число
 			value? <=> num? \
 
-- `true` or `false`.
 $bog_vmap_app_inspect_value_bool $mol_view
 	tree? $mol_tree2_empty
 	sub /
@@ -2592,25 +2379,16 @@ $bog_vmap_app_inspect_value_bool $mol_view
 			title <= flag_title \
 			checked? <=> flag? false
 
-- A value with no editor of its own: `null`, `^`, or a shape this module has no
-- form for. Shown as its own source text and left alone, because failing here
-- would take out the whole property list over one node nobody was editing.
 $bog_vmap_app_inspect_value_raw $mol_view
 	tree? $mol_tree2_empty
 	sub / <= raw \
 
-- A list `/`, a dictionary `*` or an object `$Класс`: a column of value editors
-- with an add button. The three differ in two bits — whether an element carries a
-- key, and whether the node itself carries a class name — and in nothing else.
 $bog_vmap_app_inspect_value_seq $mol_view
 	tree? $mol_tree2_empty
 	binds /string
 	nodes *
 	alarm? \
-	- Elements are `ключ значение` pairs rather than bare values: a dictionary and
-	- an object, not a list.
 	keyed false
-	- The node type is the name of a class and is editable: an object.
 	klass false
 	sub <= seq_sub /$mol_view
 	Class_name $mol_string
@@ -2622,9 +2400,6 @@ $bog_vmap_app_inspect_value_seq $mol_view
 		title <= add_title \
 		hint \Добавить
 		click? <=> item_add? null
-	- A row of the sequence is a class of its own because it has to be: a named
-	- sub view declared inside a keyed one is hoisted by `upper` into a property of
-	- the root WITHOUT the key, so every row would share one editor.
 	Item* $bog_vmap_app_inspect_value_item
 		keyed <= keyed
 		marker <= item_marker* false
@@ -2634,14 +2409,11 @@ $bog_vmap_app_inspect_value_seq $mol_view
 		nodes <= nodes
 		drop? <=> item_drop*? null
 
-- One element of a list, or one entry of a dictionary when it carries a key.
 $bog_vmap_app_inspect_value_item $mol_view
 	value? $mol_tree2_empty
 	binds /string
 	nodes *
 	keyed false
-	- The entry is a bare marker — `^` — and not a pair. It has no key to edit and
-	- no value to assign, so it is shown whole and left alone.
 	marker false
 	drop? null
 	sub <= item_sub /$mol_view
@@ -2657,12 +2429,6 @@ $bog_vmap_app_inspect_value_item $mol_view
 		hint \Убрать
 		click? <=> drop?
 
-- A binding: `<= prop`, `<=> prop` or `=> prop`, optionally carrying a default.
--
-- The target is one bare token and there is nowhere to put a second one, which is
-- the guard against the middle form of `<=`: `<= Calc result` looks like a wire,
-- is not one, and either kills the build with a message about default values or
-- ships `Calc(){ return result }` into the bundle.
 $bog_vmap_app_inspect_value_bind $mol_view
 	tree? $mol_tree2_empty
 	binds /string
@@ -2670,9 +2436,6 @@ $bog_vmap_app_inspect_value_bind $mol_view
 	alarm? \
 	sub <= bind_sub /$mol_view
 	Op $mol_view sub / <= op \
-	- Picked, like both ends of a wire. One end of a link chosen from a list and the
-	- other typed by hand would read as an inconsistency of the editor rather than a
-	- difference between the two things.
 	Target $mol_select
 		hint \свойство
 		value? <=> target? \
@@ -2682,18 +2445,6 @@ $bog_vmap_app_inspect_value_bind $mol_view
 		binds <= binds
 		nodes <= nodes
 
-- A wire: `= Узел порт`, the two token form of section 1.
--
-- Both ends are PICKED, not typed: the node out of the nodes the document declares,
-- the port out of the ports that node's class has. A wire that cannot be spelled
-- wrong needs no message about being spelled wrong.
--
-- The checks stay underneath all the same, because the pickers are an interface and
-- the document is not: both ends still go through the token guard of the language
-- module, so a sign or a space cannot be smuggled inside one, and the node is still
-- checked against the declared list. The `?` of a two way wire lives on the property
-- signature and is moved by the row, through `wire_add`, so that both ends always
-- move together.
 $bog_vmap_app_inspect_value_wire $mol_view
 	tree? $mol_tree2_empty
 	nodes *
@@ -2701,8 +2452,6 @@ $bog_vmap_app_inspect_value_wire $mol_view
 	sub <= wire_sub /$mol_view
 	Row $mol_view
 		sub <= wire_row /$mol_view
-	- The operator, shown for the same reason the binding shows `<=`: a wire and a
-	- binding are two different things and the difference is one glyph.
 	Op $mol_view sub / \=
 	Origin $mol_select
 		hint \узел
@@ -2713,24 +2462,13 @@ $bog_vmap_app_inspect_value_wire $mol_view
 		hint \порт
 		value? <=> port? \
 		options <= ports /string
-	- Free text is the fallback and never the default: it is offered exactly when
-	- there is no list to pick from, that is when the pack does not carry the class
-	- of the node. Refusing to edit at all would be the wrong answer — a document
-	- may legitimately name a class the loaded pack has never heard of.
 	Port_free $mol_string
 		hint \порт
 		value? <=> port? \
-	- Rendered only when there is something to say.
 	Note $mol_view sub / <= note \
 
-- A row is a class of its own for the same reason a palette row is: a named sub
-- view declared inside a keyed one is hoisted by `upper` into a property of the
-- ROOT, without the key, so one editor would be shared by every row.
 $bog_vmap_app_inspect_row $mol_view
-	- Full signature as it is written in the source, `Menu_option*` and `click?`
-	- included: the suffixes are the difference between a port and a keyed port.
 	sign \
-	- Empty on an own property, so the badge itself marks what is inherited.
 	owner \
 	inherited false
 	value? $mol_tree2_empty
@@ -2749,9 +2487,6 @@ $bog_vmap_app_inspect_row $mol_view
 			tree? <=> value?
 			binds <= binds
 			nodes <= nodes
-	- Signature switches are offered on own properties only. An inherited port has
-	- no declaration in this document to put a `*` or a `?` on, and writing one
-	- would mean silently declaring an override the user never asked for.
 	Key $mol_check
 		title \*
 		hint \Много значений по ключу
@@ -2768,39 +2503,15 @@ $bog_vmap_app_inspect_row $mol_view
 		^
 		bog_vmap_app_inspect_row_inherited <= inherited
 
-- Inspector of one class of the document: every port it has, own and inherited,
-- with an editor for the value of each. Every edit lands in the AST and is written
-- straight back as source text.
--
-- The class is handed in as source. Which class that is — which node is picked on
-- the canvas — is somebody else's question.
-- @see ../../ARCHITECTURE.md sections 1 and 5
 $bog_vmap_app_inspect $mol_view
-	- The truth; everything below is derived from it.
 	source? \
-	- Other classes of the same document, so that a node typed with one of them
-	- resolves its ports like any other. Empty is the honest default: an inspector
-	- handed a lone class has no siblings, and inventing some would be worse than
-	- having none.
 	peers /$mol_tree2
-	- Deployed MAM module the inherited ports are read from.
 	pack? \https://mol.hyoo.ru
-	- Implemented over the local model here; the editor binds it to a rename of its
-	- own, which carries the pick and the placement too.
 	class_title? \
-	- Handed in from outside: the refusal belongs to whoever owns the document, and
-	- the inspector only has one class of it.
 	title_note \
-	- Conditional children belong in a list a method returns, not in a `sub`
-	- somebody splices afterwards.
 	sub <= body /$mol_view
-	-
 	Head $mol_view
 		sub /
-			- Committed on Enter and on leaving the field, NEVER on a keystroke: a
-			- rename rewrites the declaration and everything that points at it, so
-			- writing per letter would rename the node to every prefix of what is
-			- being typed.
 			<= Title $mol_string
 				hint \имя узла
 				minimal_height 28
@@ -2811,30 +2522,17 @@ $bog_vmap_app_inspect $mol_view
 					blur? <=> title_submit? null
 			<= Base $mol_view sub / <= base_title \
 			<= Total $mol_view sub / <= total \
-	- Layout of the node, above the ports: on a page these five decide what the
-	- thing looks like, and hunting them down among two dozen inherited ports is
-	- not what an inspector is for. They are keys of `style` all the same.
 	Flex $bog_vmap_app_inspect_flex
 		value*? <=> flex_value*? \
 	Body $mol_scroll
 		sub /
 			<= Rows $mol_view sub <= rows /
-	- The refusal, shown under the head and only while there is one: an empty strip
-	- in a panel this narrow reads as a bug.
 	Note $mol_view
 		sub / <= title_note \
-	- A state and not a blank: every cell below derives from one class, and with none
-	- they all fail at once, which without this fills the panel with red strips and
-	- grows the page.
 	Empty $mol_view
 		sub / <= empty_note \Нечего править: в исходнике нет объявления класса
-	- The document model. `source` is bound both ways, so a write through any
-	- property below serializes the whole class and comes back out here as text.
 	Node $bog_vmap_lang_node
 		source? <=> source?
-	- Where inherited ports come from. The class of the document is handed to the
-	- library as well, so that `props_map` resolves the chain through it and
-	- `props_owner` can tell an own port from an inherited one.
 	Lib $bog_vmap_lib
 		pack <= pack
 		classes <= classes /
@@ -2849,15 +2547,6 @@ $bog_vmap_app_inspect $mol_view
 		binds <= binds /string
 		nodes <= nodes *
 
-- Stand for the inspector: the source of the whole DOCUMENT on the left, the
-- inspector of one of its classes on the right, so that an edit and the line it
-- moves are on screen at once — and so that the lines it must NOT move are on
-- screen too. A document and not a class, because that is where the editing of one
-- class is dangerous: the class model writes what it touched as the whole text, and
-- a stand of one class could never show the neighbour it eats.
--
-- Which class is inspected is picked here by hand: until picking a node on the
-- canvas exists, a stand that pretends to have it would be testing nothing.
 $bog_vmap_app_inspect_demo $mol_view
 	source? \
 	sub /
@@ -2876,8 +2565,6 @@ $bog_vmap_app_inspect_demo $mol_view
 		<= Inspect $bog_vmap_app_inspect
 			source? <=> class_source? \
 			peers <= trees /$mol_tree2
-	- One text, several classes, and a write through one of them leaves the others
-	- alone.
 	Doc $bog_vmap_lang_doc
 		source? <=> source?
 
@@ -2967,6 +2654,22 @@ $bog_vmap_app_pane $mol_view
 			drag_geometry <= wire_drag_geometry \
 		<= Marks $mol_view
 			sub <= error_marks /$mol_view
+		<= Camera $mol_view
+			sub /
+				<= Zoom_out $mol_button_minor
+					title \−
+					hint \Отдалить
+					click? <=> zoom_out? null
+				<= Zoom_title $mol_view
+					sub /
+						<= zoom_title \
+				<= Zoom_in $mol_button_minor
+					title \+
+					hint \Приблизить
+					click? <=> zoom_in? null
+				<= Reset $mol_button_minor
+					title \Сбросить вид
+					click? <=> camera_reset? null
 	Mark* $mol_view
 		style <= mark_style* *
 		attr *
@@ -3054,20 +2757,6 @@ $bog_vmap_app $mol_view
 				title \Код
 				hint \Три текста выбранного узла: view.tree, JS и CSS
 				checked? <=> code_showed?
-			<= Zoom_out $mol_button_minor
-				title \−
-				hint \Отдалить
-				click? <=> zoom_out? null
-			<= Zoom_title $mol_view
-				sub /
-					<= zoom_title \
-			<= Zoom_in $mol_button_minor
-				title \+
-				hint \Приблизить
-				click? <=> zoom_in? null
-			<= Reset $mol_button_minor
-				title \Сбросить вид
-				click? <=> camera_reset? null
 			<= Board $mol_button_minor
 				title \Артборд
 				hint \Положить страницу: прямоугольник ширины макета, вёрстка внутри по дереву

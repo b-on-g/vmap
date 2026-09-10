@@ -39552,202 +39552,36 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /**
-     * Export of a document as a real MAM module.
-     *
-     * Not an abstract «project»: the output is a folder that builds untouched.
-     * That closes the circle of section 5 as well — a built module is a donor pack,
-     * so what is assembled here is a component library for the next document.
-     *
-     * Pure functions over text, with no storage and no DOM behind them: the caller
-     * hands over the sources of its classes and gets files back.
-     *
-     * @see ../../ARCHITECTURE.md section 10
-     */
-    /** One class of the document, as the three sources the editor keeps. */
     type $bog_vmap_app_export_node = {
-        /** `view.tree` declaration. Carries the class name in its first token. */
         readonly source: string;
-        /** Hand written class body: method definitions, no wrapping class. */
         readonly js?: string;
-        /** Raw CSS. */
         readonly css?: string;
     };
-    /**
-     * One file of the module. Text only.
-     *
-     * A flat list of named files precisely so that assets can be appended to it
-     * later instead of reworking the shape of the result.
-     */
     type $bog_vmap_app_export_file = {
         readonly name: string;
         readonly text: string;
     };
     type $bog_vmap_app_export_module = {
-        /** Folder the module must be placed at, relative to the MAM root. */
         readonly path: string;
-        /** Last segment of the path, and the base name of every source file. */
         readonly name: string;
-        /** Class instantiated by `index.html`. */
         readonly root: string;
         readonly files: readonly $bog_vmap_app_export_file[];
     };
-    /**
-     * Folder the classes of a document oblige it to live in.
-     *
-     * The folder is not free: mam turns a class name into a path by replacing every
-     * underscore with a slash, so a module placed anywhere else fails to build
-     * while looking perfectly correct. The document therefore names its own folder,
-     * by the longest common prefix of its class names.
-     *
-     * A prefix shorter than two segments means classes from different packs.
-     * Refused: renaming the author's classes to fit would break «byte for byte from
-     * the editor», and emitting them as they are would produce a folder that does
-     * not build.
-     *
-     * **What this cannot check is whether the root pack exists** — only the machine
-     * doing the build knows that, and this runs in a browser. A well shaped path
-     * into a pack nobody has still fails there. Hence the rule for the interface:
-     * the folder is written where the author reads it, so the first segment is a
-     * decision they see rather than one made for them.
-     */
     function $bog_vmap_app_export_path(this: $, names: readonly string[]): string;
-    /**
-     * Whether a hand written body defines a method of this name.
-     *
-     * Deliberately the same test the scene applies before decorating, so a property
-     * memoized in the preview is memoized in the export and the two cannot drift.
-     * An override of a memoized property left undecorated loses its atom outright,
-     * and nothing reports it: the method returns a fresh value while the DOM keeps
-     * the old one.
-     */
     function $bog_vmap_app_export_defines(js: string, name: string): boolean;
-    /**
-     * References of a class that only the hand written body answers.
-     *
-     * `title <= greeting` compiles to `this.greeting()` on the class, and section 1
-     * says writing `greeting()` by hand is the normal thing to do: it is exactly
-     * what the class does not generate. The scene is happy with that, because a body
-     * there goes through a run time compile with no types in sight.
-     *
-     * **The export is not**, and this is where the two forms parted. The generated
-     * declaration file states the type of every binding — `ReturnType< Klass['greeting'] >`
-     * — against the GENERATED class, which declares nothing of the kind, and the
-     * whole module stops on `TS2339: Property 'greeting' does not exist`. Measured
-     * 10.09.2026 on a document exported into a real folder: three files right, no
-     * bundle.
-     *
-     * So the declaration is written out for it, `greeting null`, and the answer is
-     * the reference AS WRITTEN, signs included, so that a two way or a keyed hook
-     * comes out with the signature it is used with. `null` and not a guessed value:
-     * it types as `any`, and the body in the subclass narrows it to whatever it
-     * really returns instead of being checked against a type nobody stated.
-     *
-     * Only what the BODY defines. A bare reference the body does not answer either
-     * is a property of the base class or a plain mistake, and declaring it here
-     * would shadow the first with `any` and hide the second behind a method that
-     * silently returns nothing.
-     */
     function $bog_vmap_app_export_hooks(this: $, tree: $mol_tree2, js: string): readonly string[];
-    /**
-     * The declaration of a class with those hooks written into it.
-     *
-     * The one place the exported text is not the text of the editor, and it is
-     * additive: nothing written is changed, a line is appended for a property the
-     * document uses and never declares. The alternative was refusing to export a
-     * document the editor itself invites people to write.
-     */
     function $bog_vmap_app_export_hooked(this: $, tree: $mol_tree2, js: string): $mol_tree2;
-    /** One reason a hand written body would not survive the export. */
     type $bog_vmap_app_export_complaint = {
-        /** 1-based, counted inside the body the editor shows. */
         readonly line: number;
         readonly method: string;
         readonly param: string;
-        /** Ready to show, in the language of the editor. */
         readonly text: string;
     };
-    /**
-     * Parameters of methods that carry no type.
-     *
-     * The divergence of section 10: in the scene a body runs as plain JS, in the
-     * export the same body is compiled with `strict` and `noImplicitAny`. An
-     * untyped parameter is that divergence in practice — it works in the preview
-     * and fails the build, where the author is not.
-     *
-     * Not a type checker: a real compiler in the browser costs megabytes for one
-     * class of error. What needs types to catch — an unknown member, a wrong
-     * type — stays a build failure.
-     *
-     * **The cost of the two mistakes is not the same, so the check is built to miss
-     * rather than to lie.** A complaint refuses the export, and a false one locks
-     * the author inside the editor with no way out; a missed one costs a build
-     * failure with a message of its own. Everything doubtful is therefore passed
-     * over in silence:
-     *
-     * - strings and comments are blanked before anything is read, so a signature
-     *   quoted inside a template literal is not a signature;
-     * - a head is only a head at the indent of the body itself and only when a `{`
-     *   follows, which is what separates a definition from a call and from an
-     *   overload signature;
-     * - only a plain identifier is reported. A destructured parameter is an error
-     *   of the same kind, but naming it sensibly is beyond this, and half a name in
-     *   a refusal is worse than no refusal;
-     * - a default value is a type, an arrow is typed by its context, and a
-     *   parameter list holding brackets of its own is left alone.
-     */
     function $bog_vmap_app_export_untyped(js: string): readonly $bog_vmap_app_export_complaint[];
-    /**
-     * The same text with every string and comment replaced by spaces.
-     *
-     * Length and line breaks are kept, so a position in the result is the same
-     * position in the source and the line of a complaint stays true. Without it a
-     * signature quoted inside a literal reads as a signature, and that is a refusal
-     * over text that is not code.
-     *
-     * A regular expression literal is not understood, deliberately: telling one
-     * from a division needs a parser, and the whole cost of getting it wrong is a
-     * complaint not raised.
-     */
     function $bog_vmap_app_export_blanked(js: string): string;
-    /** Indents a hand written body into a class declaration. */
     function $bog_vmap_app_export_indent(text: string, depth?: number): string;
-    /**
-     * Builds the module.
-     *
-     * @param nodes classes of the document, in any order
-     * @param root class `index.html` instantiates; defaults to the first node
-     */
     function $bog_vmap_app_export_build(this: $, nodes: readonly $bog_vmap_app_export_node[], root?: string): $bog_vmap_app_export_module;
-    /**
-     * Pages of a document: the artboards its root class draws.
-     *
-     * A node with a `sub` of its own is an artboard, and that is the only mark it
-     * has — the same reading the canvas takes, see section 8. A free part carries
-     * no `sub`, so the router never shows it, and the desk coordinates have nothing
-     * to leak into here.
-     */
     function $bog_vmap_app_export_pages(model: $bog_vmap_lang_node): string[];
-    /**
-     * A hand written body with the memoizing decorator written above the methods
-     * that need it.
-     *
-     * The decorator over the method is how a person writes it, and what comes out of
-     * here has to read like a module somebody wrote by hand. The expression after
-     * the class is what the SCENE has to do, because a decorator cannot be written
-     * into a string handed to a compiler at run time; a file has no such excuse.
-     *
-     * Where a method starts is not guessed: the body is cut by the same function the
-     * code panel cuts it with, so the two agree about the start of a property by
-     * construction rather than by two implementations happening to match. The
-     * decorator lands under whatever comment belongs to the method and over the
-     * method itself, where a reader looks for it.
-     *
-     * **A body the slicer cannot cut keeps the expression form.** Braces are counted
-     * rather than parsed, so a `}` inside a string is enough to defeat it — and a
-     * body that loses its decorators loses its atoms silently, which is the one
-     * outcome worth an ugly file.
-     */
     function $bog_vmap_app_export_decorated(this: $, js: string, klass: string, memos: ReadonlyMap<string, string>): {
         readonly body: string;
         readonly after: readonly string[];
@@ -39755,48 +39589,13 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /**
-     * Slicing of the handwritten sources by property. Port of the property cutters
-     * of studio, kept as plain functions with no view around them, because all of
-     * it is text in and text out.
-     *
-     * @see ../../ARCHITECTURE.md section 2
-     */
-    /** A property of a class body, and the code that declares it. */
     type $bog_vmap_app_code_props = Map<string, string>;
-    /**
-     * Counts braces rather than parsing: a body is arbitrary JS, and everything
-     * between the end of the previous property and the opening brace of this one
-     * is where the name lives. Studio does it this way and it holds on real
-     * bodies, comments and nested functions included.
-     */
     function $bog_vmap_app_code_props_js(this: $, body: string): $bog_vmap_app_code_props;
-    /**
-     * The selector of a sub-view is the attribute `[<class>_<prop>]` the framework
-     * writes on it, so the property name is the tail of the attribute once the name
-     * of the class is taken off. A rule about anything else is skipped.
-     */
     function $bog_vmap_app_code_props_css(this: $, css: string, klass: string): $bog_vmap_app_code_props;
     function $bog_vmap_app_code_joined(props: $bog_vmap_app_code_props): string;
-    /**
-     * A property the text does not carry yet is appended, and the unrecognized tail
-     * is moved behind it: a `Map` keeps insertion order, so without the move a new
-     * property would land after the leftovers and the two would swap places on
-     * every edit.
-     */
     function $bog_vmap_app_code_with(props: $bog_vmap_app_code_props, name: string, code: string): $bog_vmap_app_code_props;
-    /**
-     * The signature follows the property: `*` gives a key, `?` gives a next, and a
-     * plain property takes neither. Same rule studio uses, which reads them off the
-     * property model instead of a signature.
-     */
     function $bog_vmap_app_code_js_default(name: string, key?: boolean, next?: boolean): string;
-    /** Addressed by the attribute the framework writes on the node. */
     function $bog_vmap_app_code_css_default(name: string, klass: string): string;
-    /**
-     * The name without the leading sigil, lower case. The framework lowercases the
-     * whole attribute, so a selector that does not would simply never match.
-     */
     function $bog_vmap_app_code_attr(klass: string): string;
 }
 
@@ -39963,86 +39762,29 @@ declare namespace $ {
 
 //# sourceMappingURL=code.view.tree.d.ts.map
 declare namespace $.$$ {
-    /** Which of the three texts a draft belongs to. */
     type $bog_vmap_app_code_slot = 'tree' | 'js' | 'css';
-    /**
-     * Every text goes through one pair of plain methods, read and write on the same
-     * path: none of them is memoized, because a write to a cell freezes its
-     * dependencies and the field would stop following the document after the first
-     * edit made in it. What the cells here hold is only what nothing else can
-     * recompute — the text that failed to parse, and why.
-     *
-     * @see ../../ARCHITECTURE.md sections 1 and 2
-     */
     class $bog_vmap_app_code extends $.$bog_vmap_app_code {
         sliced(): boolean;
         scope_note(): string;
-        /**
-         * A refused text is kept so that a broken `view.tree` can be fixed where it
-         * was written instead of vanishing on the next redraw.
-         *
-         * Keyed by the tab AND by what is being edited in it. Keyed by the tab alone
-         * it would follow the panel rather than the text: a refused edit made on one
-         * node would show up under the name of the next node picked, and correcting
-         * it there would write it into that other node.
-         */
         draft(id: string, next?: string | null): string | null;
         draft_id(slot: $bog_vmap_app_code_slot): string;
         refusal(next?: string): string;
-        /**
-         * A throw out of a setter of a field of mol goes into `setCustomValidity`,
-         * which outside a form is nowhere at all, so the message is put on a channel
-         * of our own before anything is thrown. A suspended read passes through
-         * untouched — swallowing it would turn a wait into an error.
-         */
         written(slot: $bog_vmap_app_code_slot, next: string, write: (next: string) => void): string;
         tree_text(next?: string): string;
         props_js(): $bog_vmap_app_code_props;
         props_css(): $bog_vmap_app_code_props;
-        /**
-         * The methods the declaration of the node asks for, and NOT one method named
-         * after the node itself. That name belongs to the factory of the sub-view in
-         * the generated class, so a handwritten method of that name shadows the
-         * factory and the node leaves the canvas. What a person opens this tab to
-         * write is the other side of a binding: `title <= greeting` wants
-         * `greeting()`.
-         */
         js_text(next?: string): string;
         js_writable(): boolean;
         js_idle_note(): string;
-        /** The JS tab is the field when there is something to write, the reason when not. */
         source_tabs(): readonly $mol_view[];
         css_text(next?: string): string;
-        /**
-         * A text that does not slice is a state of the panel, not an exception: the
-         * class is still there, still compiles for all we know, and the way out is
-         * the switch to the whole class, which the message names.
-         */
         sliced_read(read: () => string | undefined, empty: () => string): string;
-        /**
-         * A pure derivation, so it is a cell: it reads the two texts and nothing
-         * else, and says out loud the same thing the read path silently works
-         * around.
-         */
         sliceable(): boolean;
-        /**
-         * The same check the export refuses on, called here so that the author reads
-         * the complaint where the mistake was made rather than at the outbound gate.
-         * A body in the scene goes through `new Function`, which takes any JS, so
-         * nothing else in the editor would ever say a word about this.
-         *
-         * Checked on the text the tab is SHOWING, not on the whole class. That is
-         * what makes the line number true in both modes, and it is why there is no
-         * filter by the name of the node: such a filter hides every complaint a
-         * person could actually make, because the one method they must never write
-         * is the one named after the node.
-         */
         complaints(): readonly $bog_vmap_app_export_complaint[];
         typing_rows(): $mol_view[];
         typing_text(index: number): string;
         head_content(): readonly $mol_view[];
         content(): readonly $mol_view[];
-        /** The refusal, or the standing reason the slicing is off. */
         note(): string;
     }
 }
@@ -40802,216 +40544,31 @@ declare namespace $ {
             };
         };
     };
-    /**
-     * Anchor of the component library of a user, in the home land.
-     *
-     * A neighbour of the home anchor of documents on the same root pawn, not a field
-     * on it: fields are keyed by name inside the pawn, so `Libs` sits beside `Docs`
-     * without the document schema learning about libraries.
-     *
-     * A LIST and not one link, on purpose. A pointer made «when there is none» is
-     * forked by a second device whose cache has not caught up yet, and with one atom
-     * the later write wins and the first library is orphaned with everything in it.
-     * A list merges instead, and the first item is the one everybody publishes to.
-     */
     export class $bog_vmap_app_publish_home extends $bog_vmap_app_publish_home_base {
     }
-    /**
-     * Publishing a component of the document into the library of the user.
-     *
-     * The CRUD over the shelf of `lib/land`: which land the library is grabbed
-     * into, how a part of the document becomes a class of the library, how a second
-     * publication of the same class finds the first. The schema stays pure.
-     *
-     * Every accessor delegating into an atom is a plain method, see section 9.
-     *
-     * @see ../../ARCHITECTURE.md sections 5 and 9
-     */
-    /** The name a reference carries, without the `?*!` signs. */
     export function $bog_vmap_app_publish_bare(node: $mol_tree2): string;
     export class $bog_vmap_app_publish_store extends $mol_object {
-        /** Plain method: a Giper Baza object under `@ $mol_mem` is destructed on a rebuild. */
         home(): $bog_vmap_app_publish_home;
-        /** Links of every library of the user, merged from every device. */
         shelf_links(): readonly $giper_baza_link[];
-        /**
-         * The library, or null before the first publication.
-         *
-         * The first of the list: after a merge every device sees the same first
-         * item, so a fork of the pointer costs at most one stray empty library.
-         */
         shelf(): $bog_vmap_lib_land_shelf | null;
-        /**
-         * Rights of the library land: readable by anybody holding the link, which is
-         * what a link into somebody else's palette needs. A preset with `null` in it
-         * is also an unencrypted land. Tests hand in a land to make an area of,
-         * which costs no proof of work; the editor never does.
-         */
         shelf_land_config(): $giper_baza_rank_preset | $giper_baza_land;
         shelf_title(): string;
-        /**
-         * The library, made on first use. **Reach this from a fiber only**: grabbing
-         * the land mines proof of work, and the task doing it is cached per fiber.
-         * Checked at the top, so a retry of the fiber does not make a second one.
-         */
         shelf_ensure(): $bog_vmap_lib_land_shelf;
-        /**
-         * Link of the library land, as the palette field of another scene takes it,
-         * or empty before the first publication.
-         */
         link(): string;
-        /**
-         * Name of the library class a part of the document is published as.
-         *
-         * A part is a property of the root class, and a property name cannot start
-         * with `$`, while a class of a library must: the scene compiles nothing else.
-         * So `Button_minor` becomes the lowercased name under the prefix below. Its
-         * own prefix, so that a part called `App` or `Scene` cannot shadow a real
-         * module of this pack.
-         */
         class_name(part: string): string;
-        /**
-         * Declaration of the part as a class of the library: the same tree under the
-         * library name. Only the first token changes, the body is byte for byte.
-         */
         class_source(part: string, source: string): string;
-        /** The declaration of a part parsed, or null for an empty source. */
         tree(source: string): $mol_tree2;
-        /**
-         * The body of a part with the sub-views of the document put back in.
-         *
-         * The editor keeps the document normalized: `upper` hoists every nested
-         * `<= Inner $mol_view …` onto the root and leaves a bare `<= Inner` in the
-         * part. Published alone, that bare name is a hole. This is the reverse: a
-         * bare reference to a root property declared as a NODE, `Inner Class …`,
-         * gets that declaration back in its place, and so on down, so the class
-         * carries the whole tree. `doc` is the root class; empty leaves the body as
-         * it is.
-         *
-         * A name met again on the way down is a loop of the document and stays
-         * bare, so the refusal names it. `shared` are the sub-views somebody else in
-         * the document reads too: they go out as a copy, and the note says so.
-         */
         inlined(source: string, doc: string): {
             source: string;
             shared: readonly string[];
         };
-        /**
-         * Properties of the DOCUMENT a part is wired to, by name.
-         *
-         * Every `<=` and `<=>` inside a part compiles to `this.name()` on the ROOT,
-         * see section 1. A reference with kids, `<= Inner $mol_view …`, declares
-         * `Inner` right there through `upper`, so the declaration travels with the
-         * published class and resolves. A bare one, and the node of a `=`, declares
-         * nothing: published alone, the class resolves them against itself, where
-         * nothing has them — a green compile and a hole at run time. Those are the
-         * names here, unless the part declares them itself. Runs on the body after
-         * `inlined`, so what is left bare is a value of the document or a wire.
-         */
         bound_names(source: string): string[];
-        /**
-         * The refusal in the user's words, or empty when the part may go. `classes`
-         * are the classes the document authors: a part based on one of them takes
-         * its base along nowhere.
-         */
         refusal(part: string, source: string, classes?: readonly string[]): string;
-        /**
-         * One rule re-addressed: the attribute it names swapped for another.
-         *
-         * A rule written in a document names the sub view by the attribute mol puts
-         * on it there — the root class plus the property, `[my_site_page_card]`. The
-         * copy is a class of its own and carries `[bog_vmap_pub_card]` instead, so
-         * the rule as written addresses an element that does not exist in any
-         * document but the one it came from: measured, the styles of a published
-         * part simply never applied.
-         *
-         * A replacement and not a parse, deliberately. What has to change is the
-         * name, the rest is the author's text, and a stylesheet that fails to parse
-         * would lose rules instead of moving them.
-         *
-         * The whole attribute is matched, closing bracket included, and not just its
-         * beginning: a document addresses its nodes by names that prefix one another
-         * — `[page_calc]` and `[page_calc_note]` are two nodes — and a move by prefix
-         * would rewrite the second one while carrying the first.
-         *
-         * And matched WITHOUT REGARD TO CASE, because the browser matches that way
-         * too. Mol lowercases the attribute it writes, an attribute selector in HTML
-         * is case insensitive, so a rule a person wrote with the node name as they
-         * see it — `[my_site_page_Calc_2]` — works in the document. Compared letter
-         * for letter against the lowered name it matches nothing, and the rule used
-         * to leave for the library still addressing the document it came from.
-         * Measured on the deploy.
-         */
         css_moved(css: string, from: string, to: string): string;
-        /**
-         * Names the copy declares as sub views of its own.
-         *
-         * Read off the tree that goes out, and off nothing else. The `upper` hack of
-         * the compiler hoists every declaration written under `<=` or `<=>` into a
-         * property of the class the tree is compiled as, and mol writes the attribute
-         * `[<class>_<property>]` on the node from that. So a sub view put back by
-         * `inlined` and one somebody wrote nested by hand answer the same way, and
-         * the answer follows from the bytes being published rather than from what
-         * anybody meant to publish.
-         *
-         * Sub views of the BASE class are not here and must not be: a part of the
-         * pack declares none of them, and mol writes an attribute for every class of
-         * the chain, so the stylesheet of the pack addresses them in the copy exactly
-         * as it does in the original.
-         */
         sub_names(source: string): readonly string[];
-        /**
-         * The stylesheet a part takes with it, cut out of the stylesheet of the
-         * document and re-addressed to the copy.
-         *
-         * The document styles ONE class, so every node of it is addressed by the
-         * root class plus the property: the part itself is `[<root>_<part>]`, and a
-         * sub view of the part is `[<root>_<sub>]` too — section 1, a sub view of a
-         * node is a flat property of the root and nothing in the rule says whose it
-         * is. Out here the part is a class, its own rule is addressed by that class
-         * alone, and its sub views become properties of THAT class instead. So each
-         * rule is cut out by the property it belongs to and moved to where the copy
-         * carries the same node.
-         *
-         * What the part does not carry stays in the document: a rule of a neighbour
-         * node has no business in the library, and a class of the pack styles its own
-         * sub views itself.
-         */
         css_out(css: string, part: string, source: string, root: string): string;
-        /** The part of the library declaring this class, or null. */
         part_of(shelf: $bog_vmap_lib_land_shelf, klass: string): $bog_vmap_lib_land_part | null;
-        /**
-         * Publishes a part of the document: its declaration, body and styles become
-         * one part of the library, or replace the one already declaring this class.
-         *
-         * **From a fiber only**, `$mol_wire_async( store ).publish( … )`, with the
-         * texts taken before the call: the first publication grabs the land, and a
-         * plain method inside one fiber is what lets the proof of work be cached
-         * across the retries. Answers the link of the library.
-         *
-         * A part wired to the document, or based on a class of it, is refused before
-         * anything is written, see `refusal`; the view asks it first and shows it.
-         *
-         * `css` is the stylesheet of the ROOT CLASS whole, not the rule of the part:
-         * which rules belong to the part is known here and only here, because it
-         * follows from the tree the copy is made of. Cut before the land is touched,
-         * so a stylesheet that fails to parse stops the publication with words
-         * instead of writing a part with its styles quietly dropped.
-         */
         publish(part: string, source: string, js?: string, css?: string, classes?: readonly string[]): string;
-        /**
-         * Puts a class brought from OUTSIDE into the library under the name it
-         * already carries, replacing the one that declared that name before.
-         *
-         * The difference from `publish` is the name and only the name. A part of a
-         * document is a property, `Calc`, and has to be given a class name to
-         * become a component at all; a file names its class itself, and its
-         * neighbours in the same module refer to it by that name — renaming it
-         * would cut every one of those references, silently, because a base nobody
-         * declares compiles green and fails at run time.
-         *
-         * **From a fiber only**, for the reason spelled out at `publish`.
-         */
         import_class(source: string, js?: string, css?: string): string;
     }
     export {};
@@ -41083,49 +40640,17 @@ declare namespace $ {
 
 //# sourceMappingURL=publish.view.tree.d.ts.map
 declare namespace $.$$ {
-    /**
-     * The publish button of the head bar and the link it produces.
-     *
-     * Every value read from the store is a plain method: the values behind them are
-     * atoms, and a `@ $mol_mem` in front of an atom freezes at what was written
-     * through it. The one memoized cell here is what was published this session.
-     *
-     * @see ../../ARCHITECTURE.md sections 5 and 9
-     */
     class $bog_vmap_app_publish extends $.$bog_vmap_app_publish {
         enabled(): boolean;
-        /** Library class the picked part would be published as, or empty. */
         class_name(): string;
         publish_hint(): string;
         lib_link(): string;
-        /** Class published this session, last. Empty until the first click. */
         published(next?: string): string;
-        /** Why the last click did nothing, in the user's words. Empty when it did. */
         refused(next?: string): string;
-        /** Sub-views that went out as a copy because the document reads them too. */
         shared(next?: readonly string[]): readonly string[];
         note(): string;
-        /**
-         * Publishes the picked part. The handler is a fiber already, and the store
-         * method runs inside it: the first publication grabs a land, and the proof
-         * of work is cached for the retries of this very fiber.
-         *
-         * Nothing leaves here but a suspension. A throw out of a click handler is a
-         * speck on the button and a promise nobody awaits, which on the screen is
-         * nothing: measured on the deploy, where a node picked inside another part
-         * has no text of its own and the click died with words nobody saw. So an
-         * error is words on the bar as well, and a suspension is let through — it
-         * is how the fiber waits for the land, and a retry starts over from here.
-         */
         publish(next?: Event | null): null;
-        /**
-         * One try at publishing the part, texts read before the write. Answers the
-         * refusal in the user's words, empty once the part went out. A part the
-         * document does not declare — a node picked inside another part — has no
-         * text, and is refused before the store could throw over it.
-         */
         attempt(part: string): string;
-        /** The button always; the link once there is one; the note once something went out. */
         content(): readonly $mol_view[];
     }
 }
@@ -41180,69 +40705,12 @@ declare namespace $ {
         schema: {
             [x: string]: typeof $giper_baza_pawn;
         } & {
-            /** `view.tree` declaration. The truth of this node. */
             readonly Tree: typeof $giper_baza_atom_text;
-            /** Hand written class body, applied on top of the generated one. */
             readonly Js: typeof $giper_baza_atom_text;
-            /** Styles, attached separately from the class so a CSS edit rebuilds nothing. */
             readonly Css: typeof $giper_baza_atom_text;
         };
     };
-    /**
-     * Document of the editor in Giper Baza.
-     *
-     * Pure schema. No static action decorator anywhere: on a static the wire method
-     * takes the class itself as the fiber owner, fibers stop deduplicating
-     * consistently, and writes go missing between devices without a single error.
-     * All CRUD lives in the views. There is a test that keeps it that way.
-     *
-     * What is stored here is exactly what nothing else can recompute. Everything
-     * derivable from the source text is deliberately absent, see the note on wires
-     * below.
-     *
-     * @see ../../ARCHITECTURE.md sections 1 and 9
-     */
-    /**
-     * One node of the document: a class with its three sources.
-     *
-     * The `view.tree` text is the truth, exactly as in `bog_vmap_lang_node`, and
-     * everything the editor shows is derived from it by parsing. So the tree, the
-     * property list, the class name (which is the first token of the text) and the
-     * compiled class are all absent from the schema on purpose.
-     *
-     * **Wires are absent too, and that is the one decision here worth arguing
-     * about.** A wire is two lines of source: `calc_result = Calc result` on the
-     * root and `<= calc_result` at the target property. Both live in `Tree`.
-     * A separate wire record would be a second source of truth for the very thing
-     * section 1 declares the only one, and the two would part company the first
-     * time somebody edits the text by hand in the code editor of stage 4.1.
-     * The curve on the canvas is drawn from its two ends and has no data of its own.
-     *
-     * One atom per source per node, never one `sand_ordered` over the document:
-     * that one loses text on simultaneous edits and is quadratic on write, 76 ms
-     * per edit at 500 edits. Co-editing is therefore per node, last write wins.
-     */
     export class $bog_vmap_app_doc_node extends $bog_vmap_app_doc_node_base {
-        /**
-         * `view.tree` text of the node.
-         *
-         * Named after `bog_vmap_lang_node.source()`, which holds the same string, and
-         * NOT after the `Tree` field: `tree()` over there returns the parsed AST, and
-         * two methods of the same name returning text in one model and a tree in the
-         * other would be a trap for the next reader.
-         *
-         * **No `@$mol_mem` here, and that is not an oversight.** Measured: an accessor
-         * of this shape that has been WRITTEN through once freezes at the written
-         * value for good. A remote edit lands in the atom, the atom reports the new
-         * text, and the cell keeps handing out the old one — permanently, a later
-         * local write does not thaw it either. Read-only cells of the same shape track
-         * fine, so the symptom only shows up on the node you edited yourself, which in
-         * a co-editing document is the worst possible place for it.
-         *
-         * Nothing is lost by dropping the decorator: `val()` is already a wire cell
-         * inside the pawn, so a view reading this stays reactive and a `<=>` binding
-         * writes straight through.
-         */
         source(next?: string): string;
         js(next?: string): string;
         css(next?: string): string;
@@ -41261,21 +40729,7 @@ declare namespace $ {
             readonly Y: typeof $giper_baza_atom_real;
         };
     };
-    /**
-     * Place of one item on the canvas.
-     *
-     * Kept apart from the node, and keyed by property name rather than by node,
-     * because a free part takes its class from the library: a property whose base is
-     * a library class has no sources of its own at all, and its whole identity is
-     * the name of the property it occupies on the root class. Coordinates therefore
-     * cannot hang off
-     * `doc_node`, which exists only for classes the document itself authors.
-     *
-     * Coordinates are `atom_real`. `atom_bint` does not survive a write and a read:
-     * you put `3000n` in and get `null` back.
-     */
     export class $bog_vmap_app_doc_spot extends $bog_vmap_app_doc_spot_base {
-        /** Plain methods, not `@$mol_mem`, for the reason spelled out at `doc_node.source`. */
         x(next?: number): number;
         y(next?: number): number;
     }
@@ -41407,18 +40861,7 @@ declare namespace $ {
         schema: {
             [x: string]: typeof $giper_baza_pawn;
         } & {
-            /**
-             * Human name of the document. Genuinely stored, nothing derives it.
-             *
-             * Declared here rather than inherited from the entity of the database, which
-             * carries the same field. The entity also carries a memoized `title()`, and
-             * that accessor freezes after a write, see the note at `doc_node.source`.
-             * Overriding it is refused by the type system, because the override helper
-             * presents the base members as properties, so the field is declared here
-             * instead. Same key, same bytes on the wire, plain accessor.
-             */
             readonly Title: typeof $giper_baza_atom_text;
-            /** Classes the document authors itself, root included. */
             readonly Nodes: {
                 new (): {
                     Value: () => typeof $bog_vmap_app_doc_node;
@@ -42118,7 +41561,6 @@ declare namespace $ {
                 [Symbol.toPrimitive](): any;
                 [$mol_key_handle](): any;
             };
-            /** Which of them is the page. A choice, not a derivation from the order. */
             readonly Root: {
                 new (): {
                     Value: () => typeof $bog_vmap_app_doc_node;
@@ -43434,7 +42876,6 @@ declare namespace $ {
                 [Symbol.toPrimitive](): any;
                 [$mol_key_handle](): any;
             };
-            /** Canvas places, keyed by the property name of the root class. */
             readonly Spots: {
                 new (): {
                     Value: typeof $bog_vmap_app_doc_spot;
@@ -43732,24 +43173,9 @@ declare namespace $ {
                 [Symbol.toPrimitive](): any;
                 [$mol_key_handle](): any;
             };
-            /** Deployed MAM module the components come from. Empty means the default. */
             readonly Pack: typeof $giper_baza_atom_text;
         };
     };
-    /**
-     * The document itself.
-     *
-     * `Nodes` are made in the SAME land as the document (`make( null )`), not each
-     * in its own. Section 9 asks for a separate atom per node, which is what gives
-     * per node last-write-wins, and says nothing about separate lands. A land per
-     * node would mean proof of work on every detail dropped onto the canvas, and
-     * per node access rights nobody asked for.
-     *
-     * `Assets` are missing on purpose: an asset is a separate blob land of its own,
-     * addressed by an `asset:` id, and the module that owns them is `bog_vmap_asset`
-     * at stage 5.1. Naming it here, even in a comment, would drag it into our graph
-     * before it exists.
-     */
     export class $bog_vmap_app_doc extends $bog_vmap_app_doc_base {
         pack(next?: string): string;
         title(next?: string): string;
@@ -44502,286 +43928,52 @@ declare namespace $ {
             };
         };
     };
-    /**
-     * Anchor of the documents in the home land of a user.
-     *
-     * Without it the types above are unreachable: something has to hold the list a
-     * session starts from. Deliberately nothing more than that list — which land a
-     * document is grabbed into, and with which rights, is a decision of the views,
-     * and masters are chosen by the node, never declared by a module.
-     */
     export class $bog_vmap_app_doc_home extends $bog_vmap_app_doc_home_base {
     }
-    /** Every schema class of the module, for the purity test. */
     export const $bog_vmap_app_doc_schema: readonly [typeof $bog_vmap_app_doc, typeof $bog_vmap_app_doc_node, typeof $bog_vmap_app_doc_spot, typeof $bog_vmap_app_doc_home];
     export {};
 }
 
 declare namespace $ {
-    /** Canvas places by the property name they occupy on the root class. */
     type $bog_vmap_app_store_spots = {
         readonly [name: string]: {
             readonly x: number;
             readonly y: number;
         };
     };
-    /**
-     * Persistence of the editor: the documents of a user in Giper Baza.
-     *
-     * The CRUD lives here so the schema can stay pure, and the views ask this
-     * object instead of touching pawns.
-     *
-     * **Every accessor delegating into an atom is a plain method**, never a cell:
-     * a cell of that shape freezes at the value written through it and stops
-     * seeing remote edits. Reactivity is not lost by it, the atom is a cell already.
-     *
-     * Masters are not named here: a module works against whatever node the
-     * application chose.
-     *
-     * @see ../../ARCHITECTURE.md section 9
-     */
     class $bog_vmap_app_store extends $mol_object {
-        /**
-         * Anchor of the documents in the home land of the user.
-         *
-         * The root pawn the profile lives on, read through our dictionary, so the
-         * list sits beside whatever else the home land carries. Plain method: a
-         * Giper Baza object held by a cell is destructed on a graph rebuild and
-         * drags the yard into a circular subscription.
-         */
         home(): $bog_vmap_app_doc_home;
-        /** Links of every document of the user, in the order they were made. */
         doc_links(): readonly $giper_baza_link[];
-        /**
-         * A document by its link.
-         *
-         * Through the glob and not through the home land, because a document is a
-         * land of its own — that is what lets a link to it be shared. Reading any
-         * field of it asks the land to sync on the way (`sand_ordered` does, see
-         * `land.ts`), so nothing has to be done here for a document made elsewhere.
-         */
         doc(link: $giper_baza_link): $bog_vmap_app_doc;
-        /**
-         * Link of the current document as written in the address, or null.
-         *
-         * In the fragment, never the query: the query of this page belongs to the
-         * pack address of the scene frame.
-         */
         doc_arg(next?: string | null): string | null;
-        /**
-         * The document the editor is on: the addressed one, else the last made,
-         * else none while `boot` makes the first.
-         *
-         * A malformed value in the address counts as no address rather than as an
-         * error: a hand edited URL is an ordinary state of a page.
-         */
         doc_current(): $bog_vmap_app_doc | null;
-        /** Makes the document with this link current, and null goes back to the default. */
         doc_pick(link: $giper_baza_link | null): void;
-        /**
-         * Whether the current document takes our writes.
-         *
-         * A link in the address opens anybody's public document, and a write into
-         * one made by somebody else fails deep inside the atom. Asked before every
-         * write, so the refusal is a state of the editor rather than an exception
-         * in whichever handler wrote first.
-         */
         doc_editable(): boolean;
-        /**
-         * What the editor is doing about its document: `ready` to edit, `making`
-         * one in the background, `readonly` on somebody else's document.
-         */
         stage(): 'ready' | 'making' | 'readonly';
-        /**
-         * Rights of a fresh document land: readable by anybody holding the link.
-         *
-         * Public read is the point and not a default left alone — the address of a
-         * document IS its land link, and a link opens for somebody else only if the
-         * land does. It also leaves the land unencrypted.
-         *
-         * Answering `null` instead means «in the home land, no land of its own»,
-         * which costs no proof of work: that is what the tests hand in, never the
-         * editor.
-         */
         doc_land_config(): null | $giper_baza_rank_preset;
-        /** Name for the next document: one more than there are. */
         title_next(): string;
-        /**
-         * Makes a new document, current from now on.
-         *
-         * **Reach this from a fiber only.** Grabbing the land mines proof of work,
-         * and the task doing it is cached per fiber; outside one, every promise
-         * thrown on the way restarts the caller with a fresh proof of work, for
-         * ever. Plain method and not an action for the same reason: an action opens
-         * a fiber per call, which is that fresh task per retry.
-         *
-         * The root is recorded rather than derived from the order, so that
-         * reordering the classes later does not move which one is the page.
-         */
         doc_add(title?: string, source?: string, spots?: $bog_vmap_app_store_spots, pack?: string): $bog_vmap_app_doc;
-        /**
-         * The first document of a user, made from whatever was drafted meanwhile.
-         *
-         * The check at the top is what makes the retries safe: a document that
-         * arrived from another device while the proof of work was being mined must
-         * not be pushed aside by ours.
-         *
-         * It guards against that device and not against our own half made document,
-         * and cannot confuse the two: a restarted fiber replays its reads from its
-         * own cache, so the list here reads as it read at the start — empty. That
-         * is what carries a pouring interrupted halfway through to the end.
-         */
         doc_first(): void;
-        /**
-         * The one fiber making the first document, held by a cell of its own.
-         *
-         * A cell that reads NOTHING and answers with the fiber it made. Reading
-         * nothing is the point: an invalidation arriving while a cell computes is
-         * dropped on the spot, and the document landing is exactly such an
-         * invalidation, so a cell with no dependencies has nothing to lose that way.
-         * Reading it again while the proof of work is still mining gives back the
-         * same object, which is what keeps one fiber one fiber.
-         *
-         * The fiber is wrapped rather than returned as it is: a cell answering with
-         * a promise is a cell that never finished, and every reader of it suspends
-         * for ever.
-         *
-         * **The wrapper has no destructor, so this cell holds the handle and not
-         * the life.** The draft is poured after the document is already in the list,
-         * so there is a window where a cell nobody reads gets collected; owning the
-         * fiber would end it inside that window and lose the typed text silently.
-         * Nothing leaks by it — a one-shot fiber destructs itself on completion.
-         */
         doc_first_task(): {
             task: Promise<void>;
         };
-        /**
-         * Makes sure there is a document, from the start of the session.
-         *
-         * Suspends while the home land loads, so «there are none» is decided on the
-         * loaded list and not on an empty cache, then answers at once so that
-         * nothing waits on the proof of work.
-         *
-         * A plain method and not a cell: a cell here answered `making` for good,
-         * because the document lands while it is still computing and the
-         * invalidation that causes is dropped rather than remembered.
-         */
         boot(): 'ready' | 'making';
-        /**
-         * Asks that the document on screen be kept on disk, whatever the quota says.
-         *
-         * **Keeping a land locally is not a flag but a SHARDING RULE.** The base
-         * answers `persisted()` by comparing the tail of the reader's key with the
-         * tail of the land link, cropped by how full the storage is: at level one
-         * through six a land is kept with a chance of one in two to the power of the
-         * level, and when the browser cannot tell the quota at all the level is
-         * infinite and nothing is kept. What hides this is that a WRITE sets the
-         * flag — the base does it on every broadcast, and a write freezes the
-         * dependencies of the cell, so the rule never runs again for that land. So
-         * the rule only ever bites a land nobody wrote to in this session, which is
-         * exactly a document opened by a link and read.
-         *
-         * Measured 10.09.2026 on the node stand of this module: somebody else's
-         * document, delivered the way the network delivers it and read without a
-         * single edit, left NOTHING on disk under an unknown quota — nine units with
-         * a quota, zero without — and the next session opened an empty editor.
-         *
-         * The request is the same one a write makes, and it is honest rather than a
-         * trick: the sharding rule exists so that lands nobody cares about do not
-         * fill the disk, and the document a person has open is the definition of one
-         * they care about. It covers the addressed document and the last one alike,
-         * because on a second device the user's own document arrives from the master
-         * the same way and is just as unwritten.
-         *
-         * Called from `boot`, which the editor runs out of `auto`: a request to
-         * another object is an effect and belongs where the other effects of the
-         * session start. `giper/baza` is not ours to change, so this is a mitigation
-         * in our own code and not a fix of the rule.
-         */
         doc_keep(doc: $bog_vmap_app_doc): void;
-        /**
-         * Text the editor works on before it has a document, and never after: the
-         * background fiber pours it into the first document in one go.
-         */
         draft_source(next?: string): string;
         draft_spots(next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
         draft_pack(next?: string): string;
-        /**
-         * Nodes of a document, resolved in the document's own land.
-         *
-         * Resolved by hand rather than through the remote list: that one goes out
-         * through the static glob and waits on a master. The nodes were made in
-         * this very land, so reading them here is correct and not merely cheaper.
-         */
         nodes(doc: $bog_vmap_app_doc): $bog_vmap_app_doc_node[];
-        /**
-         * Text of a document: its classes, one per node, as one source.
-         *
-         * Classes are matched to nodes BY NAME, which is what makes an edit of one
-         * class one atom on the wire — and what makes a rename arrive as a new node,
-         * so whatever is stored per class name has to be carried by whoever renames.
-         *
-         * Parsed plainly and not normalized: this is transport, and the model above
-         * is the one that decides what canonical looks like. Round trip is byte for
-         * byte on text already in that shape.
-         */
         doc_source(doc: $bog_vmap_app_doc, next?: string): string;
-        /** Node of a document by the name of the class it declares, or null. */
         node(doc: $bog_vmap_app_doc, name: string): $bog_vmap_app_doc_node | null;
-        /** Hand written class body of one node, by class name. */
         node_js(doc: $bog_vmap_app_doc, name: string, next?: string): string;
-        /** Styles of one node, by class name. */
         node_css(doc: $bog_vmap_app_doc, name: string, next?: string): string;
-        /**
-         * Name of the class the document opens with, or empty. Writing a class name
-         * makes that class the one it opens with.
-         *
-         * Read as a raw link, never through the typed getter: that one resolves
-         * through the static glob, and the node is in this very land anyway.
-         *
-         * The write is what a rename of the root needs, because a renamed class
-         * arrives as a node of its own. A name the document does not carry is
-         * ignored: a pointer at a node outside the list is the state this exists to
-         * prevent.
-         */
         doc_root(doc: $bog_vmap_app_doc, next?: string): string;
-        /**
-         * Canvas places of a document, as one dictionary in both directions.
-         *
-         * Written whole, so a place gone from the dictionary is cut from the stored
-         * one and a deleted part does not come back at its old coordinates. Read
-         * back in name order: the stored order is the order of the units, which
-         * nobody chose, and a reader comparing deep would see a change where the
-         * places are the same.
-         */
         doc_spots(doc: $bog_vmap_app_doc, next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
-        /**
-         * Text of the current document, or the draft while the first one is being
-         * made.
-         *
-         * On somebody else's document a write is refused quietly — the text stays
-         * what it was and the stage says why — because the atom would otherwise
-         * throw from inside whatever handler wrote first.
-         */
         source(next?: string): string;
-        /** Canvas places of the current document, the same way as `source`. */
         spots(next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
-        /** Human name of the current document. Nothing to name before there is one. */
         title(next?: string): string;
-        /**
-         * Library of the current document, stored as the string it is typed as.
-         *
-         * Not parsed here on purpose: what the string means is known to the panel
-         * that offers the components, not to the store that keeps it.
-         */
         pack(next?: string): string;
     }
-    /**
-     * Name of the class a source declares, or empty when it declares none.
-     *
-     * Asked of the text every time: a stored copy would be a second source of
-     * truth for a fact the text already carries.
-     */
     function $bog_vmap_app_store_class_name(source: string): string;
 }
 
@@ -45049,46 +44241,10 @@ declare namespace $ {
 
 //# sourceMappingURL=palette.view.tree.d.ts.map
 declare namespace $.$$ {
-    /**
-     * Palette of a component library: every class of a deployed pack, searchable,
-     * with the ports of whichever class is picked.
-     *
-     * Shows, searches and announces the start of a drag. Where the dragged class
-     * lands is a canvas question and is answered by whoever owns the canvas.
-     *
-     * @see ../../ARCHITECTURE.md section 5
-     */
     class $bog_vmap_app_palette extends $.$bog_vmap_app_palette {
-        /**
-         * Header first, then either both panes or just the list.
-         *
-         * The compact layout drops the ports pane instead of squeezing it: at panel
-         * width the signature column alone eats the row.
-         */
         body(): readonly $mol_view[];
         body_content(): readonly $mol_view[];
-        /**
-         * A press on a class row starts carrying it.
-         *
-         * Selection stays on `click`: a press that turns into a drag never becomes a
-         * click, so the two do not fight, and a press that ends where it began picks
-         * the class for the ports pane as before.
-         */
         class_drag(name: string, event?: PointerEvent | null): void;
-        /**
-         * Classes matching the query, or all of them for an empty query —
-         * the text matcher of nothing matches everything, so no branch is needed.
-         *
-         * SUSPENSION PASSES THROUGH, a failure does not, and the difference is the
-         * whole point. A view turns a suspension into its waiting state, which is
-         * right; it turns a failure into a strip carrying whatever the fetch threw,
-         * which is the status line and nothing else — a mistyped address
-         * reached the counter as a bare «Not Found», naming neither the file that
-         * was missing nor the field to fix. Seen on the deploy 09.09.2026.
-         *
-         * So the failure is caught and worded once, here, and read by the counter;
-         * the list is empty meanwhile, which is what a dead pack has to offer.
-         */
         class_state(): {
             readonly list: readonly string[];
             readonly error: string;
@@ -45098,29 +44254,13 @@ declare namespace $.$$ {
         class_title(name: string): string;
         class_current(name: string): boolean;
         class_click(name: string): void;
-        /** How many classes are on screen, or why there are none at all. */
         total(): string;
         selected_title(): string;
-        /** Where the ports come from, nearest base first. */
         chain_title(): string;
-        /**
-         * Ports of the selected class in the order `props_map` gives them, which is
-         * the order of first declaration up the chain: the base ports of
-         * `$mol_view` first, everything the class added itself last.
-         */
         port_list(): string[];
         port_rows(): $bog_vmap_app_palette_port[];
-        /** Declaration of a port, or `null` between a click and the next redraw. */
         port_node(name: string): $mol_tree2 | null;
-        /**
-         * Name of the port as it is written in the source, suffixes included, so
-         * `click?` is visibly a two-way port and `Menu_option*` visibly a keyed one.
-         */
         port_sign(name: string): string;
-        /**
-         * First line of the declaration. A port can carry a whole sub tree under it
-         * and the rest of that tree is of no use in a one line row.
-         */
         port_body(name: string): string;
         port_owner(name: string): string;
         port_inherited(name: string): boolean;
@@ -45214,42 +44354,17 @@ declare namespace $ {
 
 //# sourceMappingURL=scenes.view.tree.d.ts.map
 declare namespace $.$$ {
-    /**
-     * List of documents down the left edge of the editor.
-     *
-     * Every accessor that writes into the store is a plain method: the values
-     * behind them are atoms, and a memoizing decorator in front of an atom freezes
-     * at the value written through it. The one memoized cell here is read only.
-     *
-     * @see ../../ARCHITECTURE.md section 9
-     */
     class $bog_vmap_app_scenes extends $.$bog_vmap_app_scenes {
-        /**
-         * Read only, so memoization is safe and worth having: the list is rebuilt
-         * from the land on every unrelated change of it, and deep comparison in the
-         * cell spares the rows a rebuild.
-         */
         scene_links(): readonly string[];
         scene_rows(): $bog_vmap_app_palette_item[];
         scene_link(link: string): $giper_baza_link | null;
         scene_title(link: string): string;
         scene_current(link: string): boolean;
         scene_click(link: string, event?: Event | null): void;
-        /**
-         * An empty or malformed value goes back to the default, which is the last
-         * document made.
-         */
         current(next?: string): string;
         current_exists(): boolean;
         title(next?: string): string;
         add_title(): string;
-        /**
-         * The store method is handed to a fiber of its own, and the name is taken
-         * before it: grabbing a land mines proof of work, the fiber retries on every
-         * `Promise` thrown on the way with its sub-tasks cached, and an argument
-         * computed inside the retry would be recomputed — the list is longer once
-         * the document lands — and would start the work over.
-         */
         add(next?: Event | null): null;
     }
 }
@@ -45348,46 +44463,19 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /**
-     * A ready made piece of a document, as the text of a `view.tree` class.
-     *
-     * ONE kind of thing, so the canvas takes them all one way: a plain block, a
-     * wired pair and a class picked from the second level of the panel differ only
-     * in how many properties the text has.
-     *
-     * @see ../../ARCHITECTURE.md section 5
-     */
     type $bog_vmap_app_shelf_item = {
-        /** Stable key, for the row and for the drag. */
         readonly id: string;
         readonly title: string;
         readonly hint: string;
         readonly source: string;
     };
-    /**
-     * Name a part of this class would take: a button of mol gives `Button_minor`.
-     * The namespace prefix goes because every class of a pack carries the same one.
-     * Free or taken is not decided here: the document knows what it already carries.
-     */
     function $bog_vmap_app_shelf_short(klass: string): string;
-    /** A preset made of one class of the library, as the second level hands it over. */
     function $bog_vmap_app_shelf_single(klass: string): string;
-    /**
-     * A handful of things a person recognises, not a catalogue, and the order is a
-     * choice. The code cell first, because it is what a board is built out of and
-     * without it a shelf is a display case. The pair, because a wire is the point
-     * of the editor and the one thing nobody guesses on their own — it lies down as
-     * ONE node holding both parts, so a single gesture leaves a working pair rather
-     * than two pieces to arrange. The inputs last, because they drive everything
-     * above them.
-     */
     function $bog_vmap_app_shelf_presets(): readonly $bog_vmap_app_shelf_item[];
-    /** A file brought from the disk. */
     type $bog_vmap_app_shelf_file = {
         readonly name: string;
         readonly text: string;
     };
-    /** What the files gave, and what was refused with the reason in the user's words. */
     type $bog_vmap_app_shelf_intake = {
         readonly classes: readonly {
             readonly tree: string;
@@ -45398,57 +44486,14 @@ declare namespace $ {
             readonly reason: string;
         }[];
     };
-    /**
-     * In one place so the tests and the panel agree.
-     *
-     * A module is two kinds of text and only one of them can be taken: the
-     * declarations compile in the sandbox as they are, while the behaviour is
-     * TypeScript and what runs a component's body there is JavaScript. There is no
-     * compiler in the page, and pretending otherwise would mean a component that
-     * arrives looking whole and does nothing.
-     */
     const $bog_vmap_app_shelf_refuse: {
         readonly kind: string;
         readonly built: string;
         readonly empty: "ни одного класса: объявление начинается с имени на доллар";
     };
-    /**
-     * ONE component per class, and not one per file, because a component of a
-     * library is one class and the library resolves neighbours by name. A whole
-     * module folder goes in at once for the same reason: every declaration lands in
-     * one library, which is one namespace, so a component still inherits its
-     * neighbour.
-     *
-     * A plain `.view.css` beside a tree comes along, because it is a stylesheet and
-     * not a program; a `.view.css.ts` is refused like any other program.
-     *
-     * Declarations go out as their author wrote them: what a person brought from
-     * their own module is theirs, and the editor normalizes a document only when
-     * the document is edited.
-     */
     function $bog_vmap_app_shelf_intake(this: $, files: readonly $bog_vmap_app_shelf_file[]): $bog_vmap_app_shelf_intake;
     function $bog_vmap_app_shelf_intake_note(taken: $bog_vmap_app_shelf_intake): string;
-    /**
-     * A preset names its parts itself and the document may already carry those
-     * names, so every part is declared under a free one and every reference has to
-     * follow. Only the child of a binding operator is touched, which is what a
-     * reference is; data comes through untouched.
-     */
     function $bog_vmap_app_shelf_refs(tree: $mol_tree2, names: ReadonlyMap<string, string>): $mol_tree2;
-    /**
-     * Lays a shelf item into a document and answers with the names it left loose.
-     * Placement is NOT done here: whether those names go onto the canvas by a
-     * coordinate or into the tree of an artboard is a question about the canvas,
-     * and the canvas answers it. This function knows the document alone.
-     *
-     * Free names come from the caller one at a time, because every declaration
-     * changes what is taken.
-     *
-     * Wires go in through the model's own `link_add`, and the overrides that
-     * consume them are deliberately NOT copied: that method writes both ends
-     * itself, and copying one would leave two ways of writing a wire to drift
-     * apart at the first fix to either.
-     */
     function $bog_vmap_app_shelf_apply(this: $, node: $bog_vmap_lang_node, source: string, free: (name: string) => string): readonly string[];
 }
 
@@ -45665,84 +44710,22 @@ declare namespace $ {
 
 //# sourceMappingURL=shelf.view.tree.d.ts.map
 declare namespace $.$$ {
-    /**
-     * The shelf of ready made things, with the palette of classes under it.
-     *
-     * Holds the drag for both levels: an item and a class differ only in how their
-     * source is made, and by the time the pointer is carrying something the canvas
-     * has to see one kind of thing. Where the drag ends is a canvas question and is
-     * answered by whoever owns the canvas.
-     *
-     * @see ../../ARCHITECTURE.md section 5
-     */
     class $bog_vmap_app_shelf extends $.$bog_vmap_app_shelf {
-        /**
-         * A folded second level is not rendered at all, and that is the point of
-         * the branch: the palette fetches the class tree of the pack the moment it
-         * is drawn, and a panel nobody opened should not pay for it.
-         */
         body(): readonly $mol_view[];
-        /**
-         * The heading and the switch of the second level stay out of the scroll,
-         * because they are how a person gets back out of a long list. The second
-         * level scrolls inside itself and must not be nested in this one, or its
-         * own list would render all four hundred rows into an unbounded height.
-         */
         stack_content(): readonly $mol_view[];
         source_content(): readonly $mol_view[];
-        /**
-         * Answers empty: what came of the files is in the library and in the note,
-         * and the panel keeps no list of them. The work goes to a fiber of its own,
-         * because all of it is asynchronous — reading a file is a promise, and
-         * making the library land mines proof of work.
-         */
         files(next?: readonly File[]): readonly File[];
-        /**
-         * **From a fiber only.** Reading a file suspends, so the fiber picks up
-         * where it left off; a retry replays the reads from its own cache and
-         * writes the same classes again, which lands on the same components because
-         * a class already in the library is replaced rather than added.
-         *
-         * The link of the library is appended to the field afterwards and not
-         * before: the field is what the scene loads, and there is nothing to load
-         * until something is written.
-         *
-         * Files are taken by their shape — a name and a text — rather than by the
-         * type `File`, so a test hands in two strings instead of forging a browser
-         * object with a cast.
-         */
         intake(files: readonly {
             readonly name: string;
             text(): Promise<string>;
         }[]): void;
         link_attach(link: string): void;
-        /**
-         * The editor parses the same string for its own needs, and that is fine:
-         * the parse is pure and costs nothing next to a cell shared across two
-         * modules.
-         */
         links_parsed(): $bog_vmap_lib_links;
-        /** Empty hides the strip. */
         rejected_note(): string;
-        /**
-         * Everything the library holds except the framework itself: a pack carries
-         * the whole framework in its bundle, and the framework is what the second
-         * level is for. What is left is what the application's author wrote, plus
-         * the components of any land attached, which are somebody's own just the
-         * same.
-         *
-         * Suspends while the pack is loading and throws when the pack is dead. Both
-         * are meant to reach the view that reads it, and that is `Apps` alone.
-         */
         app_state(): {
             readonly list: readonly string[];
             readonly error: string;
         };
-        /**
-         * Asked of the palette's library rather than built here: the rule that
-         * grows `web.view.tree` onto a pack address lives there, and a second copy
-         * of it would word the complaint about a file we never asked for.
-         */
         pack_tree_link(): string;
         app_list(): readonly string[];
         app_rows(): $bog_vmap_app_palette_item[];
@@ -45750,24 +44733,13 @@ declare namespace $.$$ {
         apps_content(): readonly $mol_view[];
         apps_title(): "Приложение не отвечает" | "Объекты приложения" | "Приложение не подключено";
         items(): readonly $bog_vmap_app_shelf_item[];
-        /**
-         * A class dragged out of the second level has its class name for an id and
-         * becomes an item on the spot, so the canvas is handed the same thing
-         * whichever level the gesture started on.
-         */
         item(id: string): $bog_vmap_app_shelf_item | null;
         item_rows(): $bog_vmap_app_palette_item[];
         item_title(id: string): string;
         item_hint(id: string): string;
         drag_source(): string;
-        /** What the ghost at the pointer says. */
         drag_title(): string;
-        /**
-         * The position is taken here and moved by the owner of the canvas: the
-         * shelf knows when a drag begins and nothing about where it ends.
-         */
         item_drag(id: string, event?: PointerEvent | null): void;
-        /** A click without a drag asks for the item in the middle of the canvas. */
         item_click(id: string, event?: Event | null): void;
     }
 }
@@ -45953,28 +44925,12 @@ declare namespace $ {
 
 //# sourceMappingURL=flex.view.tree.d.ts.map
 declare namespace $.$$ {
-    /**
-     * Owns nothing. Every control is one key of the `style` dictionary of the node,
-     * read and written through `value()`, so what the panel shows is what the
-     * document says and what it writes is an ordinary line of `view.tree`. The
-     * inspector already has a dictionary editor for the same property; this is the
-     * same facts with the names of the decisions on them.
-     *
-     * @see ../../../ARCHITECTURE.md section 8
-     */
     class $bog_vmap_app_inspect_flex extends $.$bog_vmap_app_inspect_flex {
         width(next?: string): string;
         direction(next?: string): string;
         across(next?: string): string;
         along(next?: string): string;
         gap(next?: string): string;
-        /**
-         * Written as the STRING `1` and never as the number. Inline style rendering
-         * appends `px` to a number, so `flexGrow 1` in the document comes out as
-         * `flex-grow: 1px`, which is not a length and not a growth factor either:
-         * the property is simply dropped and the node does not stretch.
-         * Dimensionless numbers go in as text.
-         */
         grow(next?: boolean): boolean;
     }
 }
@@ -46566,46 +45522,8 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /**
-     * Shape of a `view.tree` value, as one word.
-     *
-     * Studio names the shapes through a stock helper that is used nowhere in mol
-     * itself — it is not the compiler's own grammar, it is a helper studio happens
-     * to lean on — and it throws on anything it does not name. Three shapes that
-     * really occur fall into that hole, and an inspector meets all three on the
-     * document of section 1:
-     *
-     * - `=`, the wire, which is the whole point of section 1;
-     * - `^`, which every `attr *` of a subclass starts with;
-     * - `+NaN` and `+Infinity`, which the number field itself is written with.
-     *
-     * Studio patches the first and the third in front of the call and still throws
-     * on `^`. Reproducing that patch would mean carrying its hole as well, so the
-     * mapping is spelled out here instead, against the grammar the compiler
-     * actually uses: the two guards below are the very functions the generator
-     * branches on, in the order it branches on them.
-     *
-     * @see ../../../../ARCHITECTURE.md section 1
-     */
     type $bog_vmap_app_inspect_value_kind = 'none' | 'null' | 'bool' | 'number' | 'string' | 'locale' | 'list' | 'dict' | 'object' | 'get' | 'bind' | 'put' | 'wire' | 'super' | 'raw';
-    /**
-     * `raw` is the honest answer, not a failure: a value the editor has no form for
-     * is shown as its own source text and left alone. Failing here instead would
-     * take out the whole property list over one node nobody was editing.
-     */
     function $bog_vmap_app_inspect_value_kind_of(val: $mol_tree2 | null): $bog_vmap_app_inspect_value_kind;
-    /**
-     * The grammar is the guard the generator itself branches on, borrowed for the
-     * same reason the token module borrows the stock signature regexp: a literal
-     * this accepts is a literal the compiler accepts, and a grammar of our own
-     * would part ways with it at the first exception. `+NaN` and `+Infinity` are
-     * exceptions of exactly that kind — `Number( '+NaN' ).toString()` is `NaN`, so
-     * the obvious round-trip test would reject two literals the number field is
-     * written with.
-     *
-     * Blank input is refused separately: `Number( '' )` is `0`, so the grammar
-     * accepts an empty type, while a tree node has no such thing.
-     */
     function $bog_vmap_app_inspect_value_literal(this: $, text: string): string;
 }
 
@@ -47094,14 +46012,6 @@ declare namespace $ {
 
 //# sourceMappingURL=value.view.tree.d.ts.map
 declare namespace $.$$ {
-    /**
-     * None of the accessors in this file is memoized, deliberately. Each is a two
-     * line derivation of `tree()`, which is a cell already, and a cell of its own
-     * here would be a cell that a write freezes: a write to a memoized cell freezes
-     * its dependencies, so the editor would keep showing the value the user typed
-     * after the document moved underneath it — the one failure mode of an editor
-     * that nobody reports as a bug, because it looks like it worked.
-     */
     export class $bog_vmap_app_inspect_value extends $.$bog_vmap_app_inspect_value {
         kind(): $bog_vmap_app_inspect_value_kind;
         seq_keyed(): boolean;
@@ -47112,7 +46022,6 @@ declare namespace $.$$ {
     export class $bog_vmap_app_inspect_value_string extends $.$bog_vmap_app_inspect_value_string {
         text(next?: string): string;
         locale(next?: boolean): boolean;
-        /** Grows with the value, up to a panel's worth of lines. */
         text_rows(): number;
     }
     export class $bog_vmap_app_inspect_value_number extends $.$bog_vmap_app_inspect_value_number {
@@ -47125,21 +46034,10 @@ declare namespace $.$$ {
     export class $bog_vmap_app_inspect_value_raw extends $.$bog_vmap_app_inspect_value_raw {
         raw(): string;
     }
-    /**
-     * `keyed` says whether an element is a bare value or a named node with the
-     * value under it, `klass` whether the node type is an editable class name.
-     * Those two bits are the entire difference between a list, a dictionary and an
-     * object.
-     */
     export class $bog_vmap_app_inspect_value_seq extends $.$bog_vmap_app_inspect_value_seq {
         items(): $.$bog_vmap_app_inspect_value_item[];
         add_title(): "+ свойство" | "+ ключ" | "+ элемент";
         class_name(next?: string): string;
-        /**
-         * The entry carries nothing under it, so it is `^` and not a pair. In a list
-         * every element is a bare node and none of them is a marker, which is why
-         * the answer is `false` there whatever the shape.
-         */
         item_marker(index: number): boolean;
         item_key(index: number, next?: string): string;
         item_value(index: number, next?: $mol_tree2): $mol_tree2;
@@ -47150,14 +46048,6 @@ declare namespace $.$$ {
     export class $bog_vmap_app_inspect_value_item extends $.$bog_vmap_app_inspect_value_item {
         item_sub(): readonly $mol_view[];
     }
-    /**
-     * The target is one bare name plus the sign it already carries. The sign is
-     * preserved rather than derived, because both spellings are legal and mean
-     * different things: `<=> value?` demands the `?` on both ends, while a one way
-     * binding onto a writable property, as the string field of mol writes its own
-     * change handler, carries the `?` on one side only. Only the name is editable,
-     * so neither can be broken by a rename.
-     */
     export class $bog_vmap_app_inspect_value_bind extends $.$bog_vmap_app_inspect_value_bind {
         op(): string;
         ref(): $mol_tree2;
@@ -47165,30 +46055,15 @@ declare namespace $.$$ {
         default_value(next?: $mol_tree2): $mol_tree2;
         bind_sub(): readonly $mol_view[];
     }
-    /** What the inspector knows about one node of the document. */
     type Node_meta = {
         klass: string;
         ports: readonly string[];
     };
-    /** A wire, `= Узел порт`. */
     export class $bog_vmap_app_inspect_value_wire extends $.$bog_vmap_app_inspect_value_wire {
         nodes(): Record<string, Node_meta>;
-        /** In declaration order. */
         node_names(): string[];
-        /**
-         * A wire may point at a node that has since been renamed or dropped, so the
-         * lookup misses on a perfectly ordinary document and answers with a blank
-         * rather than failing. The far end is then a text field holding the port
-         * that is already written, which is the only thing that lets the wire be
-         * repaired instead of retyped.
-         */
         meta(): Node_meta;
         ports(): readonly string[];
-        /**
-         * Said only when the port cannot be picked, and it names the reason rather
-         * than the symptom: which node, which class, and which of the two things
-         * went wrong.
-         */
         note(): string;
         wire_row(): readonly $mol_view[];
         wire_sub(): readonly $mol_view[];
@@ -47319,12 +46194,6 @@ declare namespace $ {
 //# sourceMappingURL=row.view.tree.d.ts.map
 declare namespace $.$$ {
     class $bog_vmap_app_inspect_row extends $.$bog_vmap_app_inspect_row {
-        /**
-         * Nothing on an inherited port. Hiding them with CSS instead would keep the
-         * checkboxes rendered, and rendering one means reading its state, which for
-         * an inherited port means asking the document about a property it does not
-         * declare.
-         */
         tools(): readonly $mol_view[];
     }
 }
@@ -47754,200 +46623,41 @@ declare namespace $ {
 
 //# sourceMappingURL=inspect.view.tree.d.ts.map
 declare namespace $.$$ {
-    /**
-     * The row list is the ports pane of the palette, over a class of the document
-     * instead of a class of the library, and editable. Both read the same two maps
-     * out of the component library, because both answer the same question: what can
-     * this class do, and which part of that is its own.
-     *
-     * @see ../../ARCHITECTURE.md sections 1 and 5
-     */
     class $bog_vmap_app_inspect extends $.$bog_vmap_app_inspect {
-        /**
-         * The class of the document goes to the library so that the inheritance
-         * chain resolves through it; without it the library would know nothing about
-         * the class being inspected and `props_map` would return nothing.
-         *
-         * Its siblings go in beside it, so that a node typed with another class of
-         * the same document resolves its ports out of the same index and needs no
-         * branch of its own. The inspected class is put first and filtered out of
-         * the peers: the index keeps the LAST declaration of a name, so a stale copy
-         * of this very class arriving among the peers would shadow the live one
-         * being edited.
-         */
         classes(): $mol_tree2[];
-        /**
-         * Writing renames through the local model, which is all the stand can do and
-         * all it needs. The editor binds this to a rename of its own, which also
-         * carries the pick, the placement and every reference in the document — a
-         * rename is not a fact about one class, and the inspector is handed exactly
-         * one.
-         */
         class_title(next?: string): string;
-        /**
-         * A draft, because the commit is on Enter and on blur: between them the
-         * field holds a name the document does not have. Keyed by the current name
-         * so that picking another node, or a rename that lands, starts a fresh draft
-         * — there is no state to reset and none to go stale.
-         */
         title_draft(name: string, next?: string): string;
         title_value(next?: string): string;
         title_submit(event?: Event): void;
-        /**
-         * A list, and never a splice into `super.sub()` by index: an index is a fact
-         * about the order somebody else wrote, so a child added to the tree moves
-         * the refusal to a place nobody chose, silently. The refusal goes under the
-         * head and only when there is one — a strip that is always there but usually
-         * empty is a strip nobody reads.
-         */
         body(): readonly $mol_view[];
-        /**
-         * EVERY cell of this panel derives from one class, so a source with none in
-         * it does not fail in one place — it fails in twenty at once, and the panel
-         * answers with a wall of red strips that grows the page. That happens when a
-         * pick outlives the document it was made in.
-         *
-         * Whoever owns the pick should not hand such a source over, and the editor
-         * no longer does; this is the panel refusing to fall apart when somebody
-         * else does. A failure to parse means «no class», which is what it means
-         * here; a suspension is re-thrown, or a document still arriving would be
-         * read as an empty one.
-         */
         class_ready(): boolean;
         base_title(): string;
         ports(): Map<string, $mol_tree2>;
-        /**
-         * Asked about the BASE chain rather than about the class being inspected,
-         * and that is the whole point: this map does not move when the document
-         * declares something. Ask `props_owner` about the document class instead and
-         * every first keystroke on an inherited port makes the port its own, changes
-         * its owner, moves its row up the list — and a row that moves while it is
-         * being typed into is re-inserted into the DOM, which in Chrome blurs the
-         * field, so exactly one character per attempt reaches the source.
-         *
-         * So a port keeps its place for the life of the document, and overriding one
-         * changes only how the row is drawn.
-         */
         owners(): Map<string, string>;
-        /**
-         * Ports the document invented go first. The palette shows base ports first,
-         * and is right to: it answers «what can I add». An inspector answers «what
-         * does this node set», and the two dozen ports of a bare view are not the
-         * answer to that.
-         *
-         * The split is by where a port COMES FROM, not by who sets it, so that it
-         * cannot move under a cursor — see `owners()`. A port of the base that the
-         * document overrides therefore stays down among the base ports, and says so
-         * with its badge; that it is set here is said by the tools it grows.
-         *
-         * Both halves come out of `ports()` and keep its order, which needs only to
-         * be cut in two, never sorted: `props_map` walks the chain farthest ancestor
-         * first, and a port the document redeclares keeps the position of its
-         * earliest declaration.
-         */
         port_list(): string[];
         rows(): $.$bog_vmap_app_inspect_row[];
         total(): string;
-        /**
-         * The document is asked when the library has nothing, which happens while
-         * the pack is still loading and on a property whose class the library does
-         * not carry. Without the fallback the row of a property the user is looking
-         * at would have no declaration to edit at exactly those two moments.
-         */
         port_node(name: string): $mol_tree2 | null;
         row_sign(name: string): string;
-        /** Empty on a port the document invented. */
         row_owner(name: string): string;
-        /**
-         * The document does not declare this port, so what the row shows is the
-         * inherited default and the first edit will declare an override.
-         *
-         * Not the same question as `row_owner`: a port can come from the base AND be
-         * set here, which is the ordinary case of overriding a default and the case
-         * both of them get wrong when they are one flag.
-         */
         row_inherited(name: string): boolean;
-        /** What a binding may point at. */
         binds(): string[];
-        /**
-         * Nodes a wire may start from. A node is a property declared with a class,
-         * free part and sub view alike, which is one list and not two because
-         * `upper` has already made both flat properties of the class.
-         *
-         * Resolving the far end of a wire is the same question the row list answers
-         * about the inspected class, asked about another class, so it is the same
-         * `props_map` over the same index — and the index already holds both the
-         * pack and the classes of the document, so a node typed with a library class
-         * and one typed with the document's own class need no branch.
-         *
-         * `ports` empty means the class is not in the index at all: a class known to
-         * the index always yields at least the ports of its chain. The wire says so
-         * and falls back to a free text field, because a document may legitimately
-         * name a class the loaded pack does not carry.
-         */
         nodes(): Record<string, {
             klass: string;
             ports: readonly string[];
         }>;
-        /**
-         * The one place an edit enters the document.
-         *
-         * An inherited port has no line of its own yet, so the first edit declares
-         * one. It is declared with the FULL signature of the inherited declaration,
-         * `prop_add( decl.type )` rather than `prop_add( name )`: adding it by bare
-         * name would drop the `*` and the `?`, turning a keyed two way port into a
-         * plain one at the moment somebody typed into it.
-         *
-         * Not memoized on purpose. A cell here would be a cell that this very write
-         * freezes — a write to a memoized cell freezes its dependencies — so the row
-         * would go on showing what was typed after the document moved underneath it.
-         * The derivation is a map lookup over `ports()`, which is a cell already.
-         */
         row_value(name: string, next?: $mol_tree2): $mol_tree2;
         row_keyed(name: string, next?: boolean): boolean;
-        /**
-         * On a wire the `?` is two signs: `?` on the left gives the setter its
-         * `next`, `?` on the right passes it on, and they are independent. Either
-         * one alone is a trap that builds green — `w = Field value?` throws
-         * `ReferenceError: next` on any read, `w? = Field hint` loses every write in
-         * silence. So a wire is rewritten whole, through `wire_add`, whose type has
-         * one flag for both ends and no way to spell either half.
-         *
-         * @see ../../ARCHITECTURE.md section 1, «Капканы с зелёной сборкой»
-         */
         row_changeable(name: string, next?: boolean): boolean;
         row_drop(name: string): void;
-        /**
-         * Off `prop_decl`, the derivation of the text, and not through `prop_tree`,
-         * which is the write path below: a read taken from a written cell freezes at
-         * what was written, and the panel would go on showing the value it set after
-         * the document moved underneath it.
-         */
         style_dict(): $mol_tree2 | null;
-        /**
-         * Empty means the key is not written, and writing empty takes it out again.
-         *
-         * A dictionary the document does not declare yet is started with `^` under
-         * it. A redeclared dictionary REPLACES the one of the base rather than
-         * extending it, so a node over a styled component that grew one `gap` would
-         * lose every style the base sets, in silence; `^` says the one true thing —
-         * everything of the base, plus what is written below.
-         *
-         * Not memoized, for the reason spelled out at `row_value`: this is a write
-         * path, and the read is a lookup over a tree that is a cell already.
-         */
         flex_value(key: string, next?: string): string;
     }
     class $bog_vmap_app_inspect_demo extends $.$bog_vmap_app_inspect_demo {
         source(next?: string): string;
         names(): string[];
         trees(): readonly $mol_tree2[];
-        /** Defaults to the first, which is the root by the convention of the fixture. */
         klass(next?: string): string;
-        /**
-         * The inspector writes one class, the document splices it back, and the
-         * classes around it are untouched.
-         */
         class_source(next?: string): string;
     }
 }
@@ -48683,64 +47393,114 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_touch__allow_draw_bog_vmap_app_pane_11 = $mol_type_enforce<
-		boolean
+	type $mol_button_minor__title_bog_vmap_app_pane_11 = $mol_type_enforce<
+		string
 		,
-		ReturnType< $mol_touch['allow_draw'] >
+		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_touch__allow_pan_bog_vmap_app_pane_12 = $mol_type_enforce<
-		boolean
+	type $mol_button_minor__hint_bog_vmap_app_pane_12 = $mol_type_enforce<
+		string
 		,
-		ReturnType< $mol_touch['allow_pan'] >
+		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_touch__allow_zoom_bog_vmap_app_pane_13 = $mol_type_enforce<
-		boolean
+	type $mol_button_minor__click_bog_vmap_app_pane_13 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['zoom_out'] >
 		,
-		ReturnType< $mol_touch['allow_zoom'] >
+		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_touch__pan_bog_vmap_app_pane_14 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_pane['camera_shift'] >
+	type $mol_view__sub_bog_vmap_app_pane_14 = $mol_type_enforce<
+		readonly(any)[]
 		,
-		ReturnType< $mol_touch['pan'] >
+		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_touch__zoom_bog_vmap_app_pane_15 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_pane['camera_zoom'] >
+	type $mol_button_minor__title_bog_vmap_app_pane_15 = $mol_type_enforce<
+		string
 		,
-		ReturnType< $mol_touch['zoom'] >
+		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_vector_2d__bog_vmap_app_pane_16 = $mol_type_enforce<
-		[ number, number ]
+	type $mol_button_minor__hint_bog_vmap_app_pane_16 = $mol_type_enforce<
+		string
 		,
-		ConstructorParameters< typeof $mol_vector_2d<number> >
+		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $bog_vmap_app_pane_frame__html_bog_vmap_app_pane_17 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_pane['scene_html'] >
+	type $mol_button_minor__click_bog_vmap_app_pane_17 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['zoom_in'] >
 		,
-		ReturnType< $bog_vmap_app_pane_frame['html'] >
+		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_18 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_pane['mark_style'] >
+	type $mol_button_minor__title_bog_vmap_app_pane_18 = $mol_type_enforce<
+		string
 		,
-		ReturnType< $mol_view['style'] >
+		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_view__attr_bog_vmap_app_pane_19 = $mol_type_enforce<
-		({ 
-			'title': ReturnType< $bog_vmap_app_pane['mark_hint'] >,
-		})  & ReturnType< $mol_view['attr'] >
+	type $mol_button_minor__click_bog_vmap_app_pane_19 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['camera_reset'] >
 		,
-		ReturnType< $mol_view['attr'] >
+		ReturnType< $mol_button_minor['click'] >
 	>
 	type $mol_view__sub_bog_vmap_app_pane_20 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_21 = $mol_type_enforce<
+	type $mol_touch__allow_draw_bog_vmap_app_pane_21 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_touch['allow_draw'] >
+	>
+	type $mol_touch__allow_pan_bog_vmap_app_pane_22 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_touch['allow_pan'] >
+	>
+	type $mol_touch__allow_zoom_bog_vmap_app_pane_23 = $mol_type_enforce<
+		boolean
+		,
+		ReturnType< $mol_touch['allow_zoom'] >
+	>
+	type $mol_touch__pan_bog_vmap_app_pane_24 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['camera_shift'] >
+		,
+		ReturnType< $mol_touch['pan'] >
+	>
+	type $mol_touch__zoom_bog_vmap_app_pane_25 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['camera_zoom'] >
+		,
+		ReturnType< $mol_touch['zoom'] >
+	>
+	type $mol_vector_2d__bog_vmap_app_pane_26 = $mol_type_enforce<
+		[ number, number ]
+		,
+		ConstructorParameters< typeof $mol_vector_2d<number> >
+	>
+	type $bog_vmap_app_pane_frame__html_bog_vmap_app_pane_27 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['scene_html'] >
+		,
+		ReturnType< $bog_vmap_app_pane_frame['html'] >
+	>
+	type $mol_view__style_bog_vmap_app_pane_28 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['mark_style'] >
+		,
+		ReturnType< $mol_view['style'] >
+	>
+	type $mol_view__attr_bog_vmap_app_pane_29 = $mol_type_enforce<
+		({ 
+			'title': ReturnType< $bog_vmap_app_pane['mark_hint'] >,
+		})  & ReturnType< $mol_view['attr'] >
+		,
+		ReturnType< $mol_view['attr'] >
+	>
+	type $mol_view__sub_bog_vmap_app_pane_30 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__style_bog_vmap_app_pane_31 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['insert_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_22 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_32 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['band_style'] >
 		,
 		ReturnType< $mol_view['style'] >
@@ -48759,6 +47519,15 @@ declare namespace $ {
 		Wire( ): $bog_vmap_app_wire
 		error_marks( ): readonly($mol_view)[]
 		Marks( ): $mol_view
+		zoom_out( next?: any ): any
+		Zoom_out( ): $mol_button_minor
+		zoom_title( ): string
+		Zoom_title( ): $mol_view
+		zoom_in( next?: any ): any
+		Zoom_in( ): $mol_button_minor
+		camera_reset( next?: any ): any
+		Reset( ): $mol_button_minor
+		Camera( ): $mol_view
 		mark_style( id: any): Record<string, any>
 		mark_hint( id: any): string
 		insert_style( ): Record<string, any>
@@ -48888,6 +47657,9 @@ declare namespace $.$$ {
         camera_zoom(next?: number): number;
         camera(): $bog_vmap_bridge_camera;
         camera_reset(): void;
+        zoom_title(): string;
+        zoom_in(): void;
+        zoom_out(): void;
         zoom_by(mult: number): void;
         error(): string;
         errors(): {
@@ -49066,25 +47838,8 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
-    /** Checksum zip keeps beside every entry, and the one every reader verifies. */
     function $bog_vmap_app_export_zip_crc32(bytes: Uint8Array): number;
-    /**
-     * Files as one zip archive, in the stored method.
-     *
-     * Byte for byte deterministic: same files in, same bytes out, so the whole
-     * format is checkable by a test instead of by opening it. Directories are not
-     * written as entries of their own — a name with slashes in it creates them, and
-     * every unpacker does that.
-     */
     function $bog_vmap_app_export_zip(this: $, files: readonly $bog_vmap_app_export_file[]): Uint8Array<ArrayBuffer>;
-    /**
-     * The built module as an archive, with its folder inside.
-     *
-     * Every entry carries the whole module path and not a bare file name, so that
-     * unpacking at the root of a mam checkout puts the module where its own class
-     * names oblige it to be — section 10, where a module in the wrong folder builds
-     * into `Root package not found` while looking entirely correct.
-     */
     function $bog_vmap_app_export_zip_archive(this: $, module: $bog_vmap_app_export_module): Uint8Array<ArrayBuffer>;
 }
 
@@ -49141,343 +47896,298 @@ declare namespace $ {
 		ReturnType< $mol_button_minor['hint'] >
 	>
 	type $mol_button_minor__click_bog_vmap_app_11 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['zoom_out'] >
-		,
-		ReturnType< $mol_button_minor['click'] >
-	>
-	type $mol_view__sub_bog_vmap_app_12 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_button_minor__title_bog_vmap_app_13 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_button_minor['title'] >
-	>
-	type $mol_button_minor__hint_bog_vmap_app_14 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_button_minor['hint'] >
-	>
-	type $mol_button_minor__click_bog_vmap_app_15 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['zoom_in'] >
-		,
-		ReturnType< $mol_button_minor['click'] >
-	>
-	type $mol_button_minor__title_bog_vmap_app_16 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_button_minor['title'] >
-	>
-	type $mol_button_minor__click_bog_vmap_app_17 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['camera_reset'] >
-		,
-		ReturnType< $mol_button_minor['click'] >
-	>
-	type $mol_button_minor__title_bog_vmap_app_18 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_button_minor['title'] >
-	>
-	type $mol_button_minor__hint_bog_vmap_app_19 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_button_minor['hint'] >
-	>
-	type $mol_button_minor__click_bog_vmap_app_20 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['board_add'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_21 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_12 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_22 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_13 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['delete_hint'] >
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__enabled_bog_vmap_app_23 = $mol_type_enforce<
+	type $mol_button_minor__enabled_bog_vmap_app_14 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['selection_showed'] >
 		,
 		ReturnType< $mol_button_minor['enabled'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_24 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_15 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_delete'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $bog_vmap_app_publish__part_bog_vmap_app_25 = $mol_type_enforce<
+	type $bog_vmap_app_publish__part_bog_vmap_app_16 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['publish_part'] >
 		,
 		ReturnType< $bog_vmap_app_publish['part'] >
 	>
-	type $bog_vmap_app_publish__source_bog_vmap_app_26 = $mol_type_enforce<
+	type $bog_vmap_app_publish__source_bog_vmap_app_17 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_source'] >
 		,
 		ReturnType< $bog_vmap_app_publish['source'] >
 	>
-	type $bog_vmap_app_publish__js_bog_vmap_app_27 = $mol_type_enforce<
+	type $bog_vmap_app_publish__js_bog_vmap_app_18 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_js'] >
 		,
 		ReturnType< $bog_vmap_app_publish['js'] >
 	>
-	type $bog_vmap_app_publish__css_bog_vmap_app_28 = $mol_type_enforce<
+	type $bog_vmap_app_publish__css_bog_vmap_app_19 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['root_css'] >
 		,
 		ReturnType< $bog_vmap_app_publish['css'] >
 	>
-	type $bog_vmap_app_publish__doc_bog_vmap_app_29 = $mol_type_enforce<
+	type $bog_vmap_app_publish__doc_bog_vmap_app_20 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_src'] >
 		,
 		ReturnType< $bog_vmap_app_publish['doc'] >
 	>
-	type $bog_vmap_app_publish__classes_bog_vmap_app_30 = $mol_type_enforce<
+	type $bog_vmap_app_publish__classes_bog_vmap_app_21 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $bog_vmap_app_publish['classes'] >
 	>
-	type $mol_string__hint_bog_vmap_app_31 = $mol_type_enforce<
+	type $mol_string__hint_bog_vmap_app_22 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_string['hint'] >
 	>
-	type $mol_string__value_bog_vmap_app_32 = $mol_type_enforce<
+	type $mol_string__value_bog_vmap_app_23 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['root_draft'] >
 		,
 		ReturnType< $mol_string['value'] >
 	>
-	type $mol_string__submit_bog_vmap_app_33 = $mol_type_enforce<
+	type $mol_string__submit_bog_vmap_app_24 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['root_submit'] >
 		,
 		ReturnType< $mol_string['submit'] >
 	>
-	type $mol_string__event_bog_vmap_app_34 = $mol_type_enforce<
+	type $mol_string__event_bog_vmap_app_25 = $mol_type_enforce<
 		({ 
 			blur( next?: ReturnType< $bog_vmap_app['root_submit'] > ): ReturnType< $bog_vmap_app['root_submit'] >,
 		})  & ReturnType< $mol_string['event'] >
 		,
 		ReturnType< $mol_string['event'] >
 	>
-	type $mol_button_download__title_bog_vmap_app_35 = $mol_type_enforce<
+	type $mol_button_download__title_bog_vmap_app_26 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_title'] >
 		,
 		ReturnType< $mol_button_download['title'] >
 	>
-	type $mol_button_download__hint_bog_vmap_app_36 = $mol_type_enforce<
+	type $mol_button_download__hint_bog_vmap_app_27 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_hint'] >
 		,
 		ReturnType< $mol_button_download['hint'] >
 	>
-	type $mol_button_download__enabled_bog_vmap_app_37 = $mol_type_enforce<
+	type $mol_button_download__enabled_bog_vmap_app_28 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_ready'] >
 		,
 		ReturnType< $mol_button_download['enabled'] >
 	>
-	type $mol_button_download__blob_bog_vmap_app_38 = $mol_type_enforce<
+	type $mol_button_download__blob_bog_vmap_app_29 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_blob'] >
 		,
 		ReturnType< $mol_button_download['blob'] >
 	>
-	type $mol_button_download__file_name_bog_vmap_app_39 = $mol_type_enforce<
+	type $mol_button_download__file_name_bog_vmap_app_30 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_file'] >
 		,
 		ReturnType< $mol_button_download['file_name'] >
 	>
-	type $mol_view__sub_bog_vmap_app_40 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_31 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_41 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_32 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_42 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_33 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_43 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_34 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_44 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_35 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_restart'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $bog_vmap_app_scenes__store_bog_vmap_app_45 = $mol_type_enforce<
+	type $bog_vmap_app_scenes__store_bog_vmap_app_36 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['store'] >
 		,
 		ReturnType< $bog_vmap_app_scenes['store'] >
 	>
-	type $bog_vmap_app_shelf__links_bog_vmap_app_46 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__links_bog_vmap_app_37 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['links'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['links'] >
 	>
-	type $bog_vmap_app_shelf__pack_link_bog_vmap_app_47 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__pack_link_bog_vmap_app_38 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['pack_link'] >
 	>
-	type $bog_vmap_app_shelf__land_classes_bog_vmap_app_48 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__land_classes_bog_vmap_app_39 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lib_classes'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['land_classes'] >
 	>
-	type $bog_vmap_app_shelf__class_list_bog_vmap_app_49 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__class_list_bog_vmap_app_40 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lib_class_list'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['class_list'] >
 	>
-	type $bog_vmap_app_shelf__place_bog_vmap_app_50 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__place_bog_vmap_app_41 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['shelf_place'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['place'] >
 	>
-	type $mol_bar__sub_bog_vmap_app_51 = $mol_type_enforce<
+	type $mol_bar__sub_bog_vmap_app_42 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_bar['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_52 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_43 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_53 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_44 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_rows'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_54 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_45 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_55 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_46 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_56 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_47 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_48 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_49 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['body_main'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_50 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_51 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['aside_content'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $bog_vmap_app_inspect__source_bog_vmap_app_52 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_source'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['source'] >
+	>
+	type $bog_vmap_app_inspect__peers_bog_vmap_app_53 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_peers'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['peers'] >
+	>
+	type $bog_vmap_app_inspect__pack_bog_vmap_app_54 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['pack_link'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['pack'] >
+	>
+	type $bog_vmap_app_inspect__class_title_bog_vmap_app_55 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_title'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['class_title'] >
+	>
+	type $bog_vmap_app_inspect__title_note_bog_vmap_app_56 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_title_note'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['title_note'] >
 	>
 	type $mol_view__sub_bog_vmap_app_57 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_58 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['body_main'] >
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_59 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_app_60 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['aside_content'] >
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $bog_vmap_app_inspect__source_bog_vmap_app_61 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_source'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['source'] >
-	>
-	type $bog_vmap_app_inspect__peers_bog_vmap_app_62 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_peers'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['peers'] >
-	>
-	type $bog_vmap_app_inspect__pack_bog_vmap_app_63 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['pack_link'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['pack'] >
-	>
-	type $bog_vmap_app_inspect__class_title_bog_vmap_app_64 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_title'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['class_title'] >
-	>
-	type $bog_vmap_app_inspect__title_note_bog_vmap_app_65 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_title_note'] >
-		,
-		ReturnType< $bog_vmap_app_inspect['title_note'] >
-	>
-	type $mol_view__sub_bog_vmap_app_66 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $bog_vmap_app_code__klass_bog_vmap_app_67 = $mol_type_enforce<
+	type $bog_vmap_app_code__klass_bog_vmap_app_58 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_klass'] >
 		,
 		ReturnType< $bog_vmap_app_code['klass'] >
 	>
-	type $bog_vmap_app_code__prop_bog_vmap_app_68 = $mol_type_enforce<
+	type $bog_vmap_app_code__prop_bog_vmap_app_59 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_prop'] >
 		,
 		ReturnType< $bog_vmap_app_code['prop'] >
 	>
-	type $bog_vmap_app_code__hooks_bog_vmap_app_69 = $mol_type_enforce<
+	type $bog_vmap_app_code__hooks_bog_vmap_app_60 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_hooks'] >
 		,
 		ReturnType< $bog_vmap_app_code['hooks'] >
 	>
-	type $bog_vmap_app_code__whole_bog_vmap_app_70 = $mol_type_enforce<
+	type $bog_vmap_app_code__whole_bog_vmap_app_61 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_whole'] >
 		,
 		ReturnType< $bog_vmap_app_code['whole'] >
 	>
-	type $bog_vmap_app_code__source_bog_vmap_app_71 = $mol_type_enforce<
+	type $bog_vmap_app_code__source_bog_vmap_app_62 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['source'] >
 	>
-	type $bog_vmap_app_code__node_source_bog_vmap_app_72 = $mol_type_enforce<
+	type $bog_vmap_app_code__node_source_bog_vmap_app_63 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['node_source'] >
 	>
-	type $bog_vmap_app_code__js_bog_vmap_app_73 = $mol_type_enforce<
+	type $bog_vmap_app_code__js_bog_vmap_app_64 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_js'] >
 		,
 		ReturnType< $bog_vmap_app_code['js'] >
 	>
-	type $bog_vmap_app_code__css_bog_vmap_app_74 = $mol_type_enforce<
+	type $bog_vmap_app_code__css_bog_vmap_app_65 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_css'] >
 		,
 		ReturnType< $bog_vmap_app_code['css'] >
 	>
-	type $bog_vmap_app_code__error_bog_vmap_app_75 = $mol_type_enforce<
+	type $bog_vmap_app_code__error_bog_vmap_app_66 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_error'] >
 		,
 		ReturnType< $bog_vmap_app_code['error'] >
 	>
-	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_76 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_67 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['pack'] >
 	>
-	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_77 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_68 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lands'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['lands'] >
 	>
-	type $mol_view__style_bog_vmap_app_78 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_69 = $mol_type_enforce<
 		({ 
 			'left': ReturnType< $bog_vmap_app['ghost_left'] >,
 			'top': ReturnType< $bog_vmap_app['ghost_top'] >,
@@ -49485,97 +48195,97 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_79 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_70 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_app_pane__scene_bundle_bog_vmap_app_80 = $mol_type_enforce<
+	type $bog_vmap_app_pane__scene_bundle_bog_vmap_app_71 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_bundle'] >
 		,
 		ReturnType< $bog_vmap_app_pane['scene_bundle'] >
 	>
-	type $bog_vmap_app_pane__pack_uri_bog_vmap_app_81 = $mol_type_enforce<
+	type $bog_vmap_app_pane__pack_uri_bog_vmap_app_72 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_script'] >
 		,
 		ReturnType< $bog_vmap_app_pane['pack_uri'] >
 	>
-	type $bog_vmap_app_pane__doc_src_bog_vmap_app_82 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_src_bog_vmap_app_73 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_src'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_src'] >
 	>
-	type $bog_vmap_app_pane__doc_css_bog_vmap_app_83 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_css_bog_vmap_app_74 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_css'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_css'] >
 	>
-	type $bog_vmap_app_pane__spots_bog_vmap_app_84 = $mol_type_enforce<
+	type $bog_vmap_app_pane__spots_bog_vmap_app_75 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['spots'] >
 		,
 		ReturnType< $bog_vmap_app_pane['spots'] >
 	>
-	type $bog_vmap_app_pane__picked_bog_vmap_app_85 = $mol_type_enforce<
+	type $bog_vmap_app_pane__picked_bog_vmap_app_76 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['picked'] >
 		,
 		ReturnType< $bog_vmap_app_pane['picked'] >
 	>
-	type $bog_vmap_app_pane__doc_js_bog_vmap_app_86 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_js_bog_vmap_app_77 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_js'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_js'] >
 	>
-	type $bog_vmap_app_pane__doc_root_bog_vmap_app_87 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_root_bog_vmap_app_78 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_root'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_root'] >
 	>
-	type $bog_vmap_app_pane__libs_bog_vmap_app_88 = $mol_type_enforce<
+	type $bog_vmap_app_pane__libs_bog_vmap_app_79 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['libs'] >
 		,
 		ReturnType< $bog_vmap_app_pane['libs'] >
 	>
-	type $bog_vmap_app_pane__carrying_bog_vmap_app_89 = $mol_type_enforce<
+	type $bog_vmap_app_pane__carrying_bog_vmap_app_80 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['carrying'] >
 		,
 		ReturnType< $bog_vmap_app_pane['carrying'] >
 	>
-	type $bog_vmap_app_pane__wires_bog_vmap_app_90 = $mol_type_enforce<
+	type $bog_vmap_app_pane__wires_bog_vmap_app_81 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_wires'] >
 		,
 		ReturnType< $bog_vmap_app_pane['wires'] >
 	>
-	type $bog_vmap_app_pane__part_ports_bog_vmap_app_91 = $mol_type_enforce<
+	type $bog_vmap_app_pane__part_ports_bog_vmap_app_82 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['part_ports'] >
 		,
 		ReturnType< $bog_vmap_app_pane['part_ports'] >
 	>
-	type $bog_vmap_app_pane__link_add_bog_vmap_app_92 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_add_bog_vmap_app_83 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_add'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_add'] >
 	>
-	type $bog_vmap_app_pane__link_drop_bog_vmap_app_93 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_drop_bog_vmap_app_84 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_drop'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_drop'] >
 	>
-	type $bog_vmap_app_pane__containers_bog_vmap_app_94 = $mol_type_enforce<
+	type $bog_vmap_app_pane__containers_bog_vmap_app_85 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_containers'] >
 		,
 		ReturnType< $bog_vmap_app_pane['containers'] >
 	>
-	type $bog_vmap_app_pane__doc_names_bog_vmap_app_95 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_names_bog_vmap_app_86 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_names'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_names'] >
 	>
-	type $bog_vmap_app_pane__axis_bog_vmap_app_96 = $mol_type_enforce<
+	type $bog_vmap_app_pane__axis_bog_vmap_app_87 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_axis'] >
 		,
 		ReturnType< $bog_vmap_app_pane['axis'] >
 	>
-	type $bog_vmap_app_pane__tree_move_bog_vmap_app_97 = $mol_type_enforce<
+	type $bog_vmap_app_pane__tree_move_bog_vmap_app_88 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['tree_move'] >
 		,
 		ReturnType< $bog_vmap_app_pane['tree_move'] >
@@ -49586,14 +48296,6 @@ declare namespace $ {
 		Palette_check( ): $mol_check
 		Inspect_check( ): $mol_check
 		Code_check( ): $mol_check
-		zoom_out( next?: any ): any
-		Zoom_out( ): $mol_button_minor
-		zoom_title( ): string
-		Zoom_title( ): $mol_view
-		zoom_in( next?: any ): any
-		Zoom_in( ): $mol_button_minor
-		camera_reset( next?: any ): any
-		Reset( ): $mol_button_minor
 		board_add( next?: any ): any
 		Board( ): $mol_button_minor
 		delete_hint( ): string
@@ -49789,10 +48491,6 @@ declare namespace $.$$ {
         libs(): readonly $bog_vmap_lib_land_text[];
         error(): string;
         status(): "заводим сцену…" | "чужая сцена: только просмотр, правки не сохраняются" | "сцена не отвечает" | "сцена на связи" | "ожидание сцены…";
-        zoom_title(): string;
-        zoom_in(): void;
-        zoom_out(): void;
-        camera_reset(): void;
         pane(): $.$$.$bog_vmap_app_pane;
         shelf(): $.$$.$bog_vmap_app_shelf;
         dragged(): string;
