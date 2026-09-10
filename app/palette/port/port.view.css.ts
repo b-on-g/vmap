@@ -24,11 +24,6 @@ namespace $.$$ {
 			textOverflow: 'ellipsis',
 		},
 
-		/**
-		 * Which class declared the port. Empty on an own port, so the badge itself
-		 * is the marker: the eye finds the few own ports of a class among two dozen
-		 * without reading a single name.
-		 */
 		Owner: {
 			flex: { shrink: 0 },
 			padding: { left: '.4rem', right: '.4rem' },
@@ -38,11 +33,6 @@ namespace $.$$ {
 			font: { size: '.7rem' },
 		},
 
-		/**
-		 * `false` renders no attribute at all — the attribute renderer drops it —
-		 * so an own port is the plain state and only the inherited one is
-		 * selectable. Written the other way round the rule would never match.
-		 */
 		'@': {
 			bog_vmap_app_palette_port_inherited: {
 				true: {
