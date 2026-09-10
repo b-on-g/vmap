@@ -1,30 +1,11 @@
-- Publishing the picked part of the document into the library of the user: one
-- button in the head bar, and the link of the library that comes out of it, ready
-- for the palette field of another scene.
-- @see ../../ARCHITECTURE.md section 5
 $bog_vmap_app_publish $mol_view
 	store $bog_vmap_app_publish_store
-	- Property name of the picked part on the root class, empty when nothing is
-	- picked. The button is off without one.
 	part \
-	- Declaration of the picked part, as the inspector reads it: a name, its base
-	- class and the properties under them.
 	source \
-	- Method of the part, cut out of the body of the class it belongs to.
 	js \
-	- Styles of the ROOT CLASS of the document, whole, and not the rule of the
-	- part alone: a sub view of the part is a flat property of the root too, so
-	- its rule is written beside the rule of the part and nothing in the text says
-	- whose it is. Which rules belong to the part follows from the tree the copy is
-	- made of, and that tree is built here, so the cut is made here as well.
 	css \
-	- The root class of the document, as text: the sub-views the editor hoisted
-	- out of the part are put back into it from here before it goes out.
 	doc \
-	- Names of the classes the document authors, root included: a part based on
-	- one of them is refused, its base would stay behind.
 	classes /string
-	- Link of the library land, empty before the first publication.
 	lib_link \
 	sub <= content /$mol_view
 	Publish $mol_button_minor
@@ -32,7 +13,6 @@ $bog_vmap_app_publish $mol_view
 		hint <= publish_hint \
 		enabled <= enabled false
 		click? <=> publish? null
-	- The link itself is the caption, so what is copied is what is seen.
 	Copy $mol_button_copy
 		hint \Скопировать ссылку библиотеки для поля палитры другой сцены
 		text <= lib_link

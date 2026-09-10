@@ -1,23 +1,5 @@
 namespace $ {
 
-	/**
-	 * Tests of publishing, on lands built in place.
-	 *
-	 * No master and no proof of work: `shelf_land_config` hands in the home land,
-	 * so the library becomes an AREA of it — a land of its own with the shelf at
-	 * its root, exactly the shape a grabbed land has, minus the mining. That is what
-	 * lets the link be looked up by the stack the way another scene would.
-	 *
-	 * Publishing is called through `$mol_wire_async`, as the click does: making the
-	 * area encodes units, which is asynchronous, and outside a fiber that is a
-	 * `Promise` thrown at the caller.
-	 *
-	 * NOT covered, deliberately: grabbing the library land, which is proof of work,
-	 * seconds against the one second a test is given.
-	 *
-	 * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-	 * a regexp over sources, literals included.
-	 */
 	const d = '$'
 
 	const src_button = `Button_minor ${d}mol_view\n\ttitle \\Hi\n\tminimal true\n`
@@ -45,14 +27,12 @@ namespace $ {
 		}) as $$.$bog_vmap_app_publish
 	}
 
-	/** A click as the browser sends one: on the node of the button, bubbling. */
 	function click( $: $, node: Element ) {
 		const event = $.$mol_dom_context.document.createEvent( 'mouseevent' )
 		event.initEvent( 'click', true, true )
 		node.dispatchEvent( event )
 	}
 
-	/** A normalized document: every sub-view hoisted onto the root, two levels deep. */
 	const doc_nested = [
 		`${d}bog_vmap_app_page ${d}mol_view`,
 		`\tPrice ${d}mol_text`,
@@ -68,16 +48,10 @@ namespace $ {
 	const src_card = `Card ${d}mol_view\n\tsub / <= Hero\n`
 	const klass_card = `${d}bog_vmap_pub_card`
 
-	/** The root class of the document, as the editor hands it in `classes`. */
 	const root_class = `${d}my_site_page`
 
-	/** The same document under that root: what a person actually edits. */
 	const doc_card = doc_nested.replace( `${d}bog_vmap_app_page`, root_class )
 
-	/**
-	 * The stylesheet of the document: one rule per node, all of them addressed by
-	 * the root class, and one of them about a node the card does not carry.
-	 */
 	const css_doc = [
 		'[my_site_page_card] {\n\tpadding: 1rem;\n}',
 		'[my_site_page_hero] {\n\tcolor: red;\n}',
@@ -100,17 +74,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * WHAT A COPY IS MADE OF, and the rule that made it come out a different
-		 * shape than the original.
-		 *
-		 * A rule written in a document addresses the sub view by the attribute mol
-		 * puts on it THERE — the root class plus the property. The copy is a class
-		 * of its own and carries an attribute of its own, so the rule as written
-		 * names an element that exists in no document but the one it came from, and
-		 * the styles of a published part never applied at all. It travels
-		 * re-addressed.
-		 */
 		async 'the rule of a part is re-addressed to the class it goes out as'( $ ) {
 
 			const s = store( $ )
@@ -121,20 +84,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * E25, AND THE HALF OF THE MOVE THAT WAS MISSING.
-		 *
-		 * A part carries its own sub-views out with it — `inlined` puts their
-		 * declarations back into the tree — and in the document each of them is a
-		 * flat property of the ROOT, addressed `[<root>_<sub>]` exactly like the part
-		 * itself. In the copy they become properties of the copy instead, so mol
-		 * writes `[<copy>_<sub>]` on them. Moving the rule of the part alone left
-		 * every inner rule addressing the document it came from, and a detail with
-		 * sub-views of its own went out unstyled inside.
-		 *
-		 * Three rules out, each moved to where the copy carries that node; the rule
-		 * of the neighbour the card does not carry stays in the document.
-		 */
 		async 'a part carries the rules of its sub-views, each re-addressed'( $ ) {
 
 			const s = store( $ )
@@ -153,29 +102,16 @@ namespace $ {
 
 		},
 
-		/**
-		 * The names the move is made by, read off the tree that goes out: every
-		 * declaration written under `<=` is hoisted by the compiler into a property
-		 * of the class the tree is compiled as, and that is what mol names the node
-		 * by. Bare references declare nothing and are not sub-views of the copy.
-		 */
 		'sub-views of the copy are the declarations the published tree carries'( $ ) {
 
 			const s = store( $ )
 
 			$mol_assert_like( s.sub_names( s.inlined( src_card, doc_card ).source ), [ 'Hero', 'Price' ] )
 
-			// Nothing was put back: the reference stays bare and declares nothing.
 			$mol_assert_like( s.sub_names( src_card ), [] )
 
 		},
 
-		/**
-		 * A part of the PACK declares no sub-views of its own, so none of its inner
-		 * nodes is addressed by a rule of the document and none is moved. They are
-		 * painted by the stylesheet of the pack in the copy exactly as in the
-		 * original: mol writes an attribute for every class of the chain.
-		 */
 		'a part of the pack takes no rule of the document with it'( $ ) {
 
 			const s = store( $ )
@@ -186,13 +122,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The move matches the WHOLE attribute and not its beginning. A document
-		 * addresses nodes by names that prefix one another — `Card` and `Card_note`
-		 * are two nodes — and a move by the beginning renamed the neighbour along
-		 * with the part. The cut by property hides this from `css_out`, so it is
-		 * asked of the move itself, where the two answers differ.
-		 */
 		'the move matches the whole attribute, not the beginning of it'( $ ) {
 
 			const s = store( $ )
@@ -203,7 +132,6 @@ namespace $ {
 				'[bog_vmap_pub_card] {\n\tcolor: red;\n}\n\n[my_site_page_card_note] {\n\tcolor: blue;\n}',
 			)
 
-			// And through the cut only the rule of the part travels at all.
 			$mol_assert_equal(
 				s.css_out( css, 'Card', `Card ${d}mol_view\n`, root_class ),
 				'[bog_vmap_pub_card] {\n\tcolor: red;\n}',
@@ -211,17 +139,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A rule written with the node name AS THE PERSON SEES IT.
-		 *
-		 * Mol lowercases the attribute it writes on the node, and an attribute
-		 * selector in HTML is matched without regard to case, so `[my_site_page_Card]`
-		 * paints the card in the document exactly as the lowered one does. The move
-		 * compared letter for letter against the lowered name, found nothing, and the
-		 * rule went to the library still addressing the document it came from — the
-		 * same «styles never applied» as before, only for the capital. Measured on
-		 * the deploy.
-		 */
 		'a rule written with a capital in the name is re-addressed too'( $ ) {
 
 			const s = store( $ )
@@ -231,8 +148,6 @@ namespace $ {
 				'[bog_vmap_pub_card] {\n\tcolor: red;\n}',
 			)
 
-			// Through the cut as well: the slicing lowers the attribute to find the
-			// property, and the move has to reach the very text it found.
 			$mol_assert_equal(
 				s.css_out(
 					'[my_site_page_Card] {\n\tcolor: red;\n}\n\n[my_site_page_Hero] {\n\tcolor: blue;\n}',
@@ -245,12 +160,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A part taken from the pack goes out as an HEIR of the pack class and
-		 * carries no texts of its own — and that is right, not a loss: mol writes an
-		 * attribute for every class of the chain, so the copy is addressed by the
-		 * stylesheet of the pack exactly as the original is.
-		 */
 		'a part of the pack goes out as an heir, with nothing copied'( $ ) {
 
 			const s = store( $ )
@@ -261,8 +170,6 @@ namespace $ {
 				`${ klass_calc } ${d}bog_vmap_part_calc\n`,
 			)
 
-			// Nothing of the document belongs to it: the editor hands over the body
-			// and the stylesheet of the DOCUMENT, and a pack detail has no rule in it.
 			$mol_assert_equal( s.css_moved( '', 'my_site_page_calc', 'bog_vmap_pub_calc' ), '' )
 			$mol_assert_equal( s.css_out( '', 'Calc', source, root_class ), '' )
 
@@ -286,7 +193,6 @@ namespace $ {
 			$mol_assert_equal( parts[ 0 ].js(), 'title(){ return 1 }' )
 			$mol_assert_equal( parts[ 0 ].css(), css_button_out )
 
-			// The link is the land of the shelf, and the shelf sits at its root.
 			$mol_assert_ok( link )
 			$mol_assert_equal( link, s.link() )
 			$mol_assert_equal( link, shelf.land().link().str )
@@ -310,7 +216,6 @@ namespace $ {
 			$mol_assert_equal( parts[ 0 ].tree(), `${ klass_button } ${d}mol_view\n\ttitle \\Bye\n\tminimal true\n` )
 			$mol_assert_equal( parts[ 0 ].js(), 'title(){ return 2 }' )
 
-			// A body gone from the part is gone from the library too.
 			await $mol_wire_async( s ).publish( 'Button_minor', edited )
 			$mol_assert_equal( s.shelf()!.parts()[ 0 ].js(), '' )
 			$mol_assert_equal( s.shelf()!.parts().length, 1 )
@@ -334,11 +239,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The other side of the circle: the link is what another scene pastes into
-		 * its palette field, and the stack of W3 looks the land up by it. The class
-		 * comes back with its own ports and the ones of the pack class it extends.
-		 */
 		async 'the published library reads through the stack as a pack would'( $ ) {
 
 			const s = store( $ )
@@ -363,7 +263,6 @@ namespace $ {
 			$mol_assert_ok( ports.includes( 'minimal' ) )
 			$mol_assert_ok( ports.includes( 'pack_port' ) )
 
-			// What the scene is sent: the three texts.
 			$mol_assert_like( stack.parts(), [{
 				tree: `${ klass_button } ${d}mol_view\n\ttitle \\Hi\n\tminimal true\n`,
 				js: 'title(){ return 1 }',
@@ -383,7 +282,6 @@ namespace $ {
 			$mol_assert_like( parsed.lands, [ link ] )
 			$mol_assert_like( parsed.rejected, [] )
 
-			// Beside a pack, as the field of the other scene will have it.
 			$mol_assert_like(
 				$bog_vmap_lib_links_parse( `https://mol.hyoo.ru, ${ link }` ).lands,
 				[ link ],
@@ -391,11 +289,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The pointer survives the session: a second store over the same home land,
-		 * as the next page load has, finds the library and publishes into it rather
-		 * than making another.
-		 */
 		async 'the library is found again through the home land'( $ ) {
 
 			const first = store( $ )
@@ -420,7 +313,6 @@ namespace $ {
 			$mol_assert_equal( s.class_name( 'Button_minor' ), klass_button )
 			$mol_assert_equal( s.class_name( 'Calc_2' ), `${d}bog_vmap_pub_calc_2` )
 
-			// Only the first token changes.
 			$mol_assert_equal(
 				s.class_source( 'Button_minor', src_button ),
 				`${ klass_button } ${d}mol_view\n\ttitle \\Hi\n\tminimal true\n`,
@@ -428,11 +320,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A bare `<=`, a `<=>` or a `=` inside a part points at the document, and
-		 * the library has no document: the part is refused with the names it hangs
-		 * on, and nothing is made — no library, no land.
-		 */
 		'a part wired to the document is refused and names the wire'( $ ) {
 
 			const s = store( $ )
@@ -472,11 +359,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * `<= title` inside a part reads `title` of the ROOT, whatever the part
-		 * overrides under the same name: published, the same line would read the
-		 * class itself and mean something else. Refused as a wire, by name.
-		 */
 		'a reference to a name the part only overrides is still a wire to the document'( $ ) {
 
 			const s = store( $ )
@@ -487,11 +369,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A reference WITH kids declares its name where it stands, through `upper`:
-		 * `<= Inner $mol_view …` travels with the class and resolves there. Not a
-		 * wire, so the part goes out. A wire inside that sub-view is still a wire.
-		 */
 		async 'a part with a sub-view of its own is published, a wire inside the sub-view is not'( $ ) {
 
 			const s = store( $ )
@@ -517,12 +394,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The reverse of `upper`: the editor keeps `Hero` and `Price` hoisted onto
-		 * the root with bare `<= Hero` left in the card, and the published class
-		 * gets both declarations back in their places, so the library resolves the
-		 * whole tree and lists the sub-views as ports of the class.
-		 */
 		async 'hoisted sub-views are put back into the part two levels down and the class carries them'( $ ) {
 
 			const s = store( $ )
@@ -540,10 +411,8 @@ namespace $ {
 				'Hi',
 			)
 
-			// Bare in the part before, so it would have been refused.
 			$mol_assert_like( s.bound_names( src_card ), [ 'Hero' ] )
 
-			// Without a document nothing is put back.
 			$mol_assert_equal( s.inlined( src_card, '' ).source, src_card )
 
 			const link = await $mol_wire_async( s ).publish( 'Card', source )
@@ -562,10 +431,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The click with the document at hand: the part goes out whole, and the
-		 * sub-view the root reads as well goes out as a copy, which the note says.
-		 */
 		async 'a sub-view the document reads too goes out as a copy and the note names it'( $ ) {
 
 			const s = store( $ )
@@ -574,7 +439,6 @@ namespace $ {
 			const { shared } = s.inlined( src_card, doc )
 			$mol_assert_like( shared, [ 'Hero' ] )
 
-			// A wire to the sub-view counts as reading it too.
 			const wired = doc_nested.replace( 'sub / <= Card', 'hero_sub = Hero sub\n\tsub / <= Card' )
 			$mol_assert_like( s.inlined( src_card, wired ).shared, [ 'Hero' ] )
 
@@ -586,18 +450,12 @@ namespace $ {
 			$mol_assert_equal( v.note(), `опубликовано ${ klass_card }, под-виды Hero ушли копией, документ читает их и сам:` )
 			$mol_assert_equal( s.shelf()!.parts().length, 1 )
 
-			// The part itself is read by the root and that is no copy.
 			const plain = view( $, s, 'Card', src_card, [], doc_nested )
 			await $mol_wire_async( plain ).publish()
 			$mol_assert_equal( plain.note(), `опубликовано ${ klass_card }:` )
 
 		},
 
-		/**
-		 * Values of the root stay wires after the sub-views are back: `title \Hi`
-		 * on the root is not a node, and a loop of sub-views leaves the repeated
-		 * name bare, so the refusal names it instead of the walk running forever.
-		 */
 		'a value of the root and a loop of sub-views are still refused after inlining'( $ ) {
 
 			const s = store( $ )
@@ -639,7 +497,6 @@ namespace $ {
 
 		},
 
-		/** A base the document itself declares stays in the document. */
 		'a part based on a class of the document is refused'( $ ) {
 
 			const s = store( $ )
@@ -658,11 +515,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The click on a wired part: the reason lands on the bar as the note, with
-		 * the name of the wire in it, and the library is not even made. A throw out
-		 * of the handler would go to the fiber and never reach the user.
-		 */
 		'the click on a wired part shows the refusal and publishes nothing'( $ ) {
 
 			const s = store( $ )
@@ -687,12 +539,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The whole way to the eye: a real click on the rendered button, and the
-		 * refusal read back off the DOM, not off a cell. What the cell holds and
-		 * what the screen shows are two different facts, and only the second one is
-		 * what a person sees.
-		 */
 		async 'a click on the rendered button puts the refusal on the screen'( $ ) {
 
 			const s = store( $ )
@@ -709,18 +555,11 @@ namespace $ {
 			) )
 			$mol_assert_equal( s.shelf(), null )
 
-			// A refusal is a state of the bar, not an error of the button.
 			await Promise.resolve()
 			$mol_assert_equal( v.Publish().error(), '' )
 
 		},
 
-		/**
-		 * A node picked inside another part — the scene names what was clicked,
-		 * and that may be a button of a calculator — is not a property of the
-		 * document: its text is empty. Measured on the deploy: the click died in
-		 * the store with words nobody saw. Now the words are on the bar.
-		 */
 		async 'a click on a part the document does not declare is refused in words'( $ ) {
 
 			const s = store( $ )
@@ -741,12 +580,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * Whatever the reading of the texts throws is words on the bar as well: the
-		 * handler is a fiber, and a throw out of it is a speck and a promise nobody
-		 * awaits. A suspension is the one thing let through — it is how the fiber
-		 * waits for the land — and it comes out untouched, the bar as it was.
-		 */
 		async 'an error while reading the part is words on the bar, a suspension passes through'( $ ) {
 
 			const s = store( $ )
@@ -774,7 +607,6 @@ namespace $ {
 
 		},
 
-		/** After a refusal a clean part goes out, and the note follows. */
 		async 'a refusal is cleared by the next successful click'( $ ) {
 
 			const s = store( $ )
@@ -810,10 +642,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The click, as a fiber: publishes the picked part and shows the link with a
-		 * note of what went out. The link stays on the bar after the note is stale.
-		 */
 		async 'the click publishes the pick and shows the link'( $ ) {
 
 			const s = store( $ )
