@@ -20239,13 +20239,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    $mol_style_attach("bog/vmap/app/code/code.view.css", "\n[bog_vmap_app_code_sources] [mol_textarea] {\n\twhite-space: pre;\n\tword-break: normal;\n\toverflow-x: auto;\n}\n\n[bog_vmap_app_code_sources] [mol_textarea_edit] {\n\tmin-width: 100%;\n\twidth: max-content;\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
     var $$;
     (function ($$) {
         $mol_style_define($bog_vmap_app_code, {
@@ -28074,6 +28067,13 @@ var $;
 			(obj.zoom) = (next) => ((this.camera_zoom(next)));
 			return obj;
 		}
+		attr(){
+			return {...(super.attr()), "tabindex": "-1"};
+		}
+		leave(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		scene_bundle(){
 			return "";
 		}
@@ -28259,6 +28259,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Reset"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Camera"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Touch"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "leave"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "spots"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "picked"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_add"));
@@ -28743,6 +28744,13 @@ var $;
                 const name = this.primary();
                 return Boolean(name) && this.entered() === name;
             }
+            leave() {
+                const was = this.inside();
+                this.entered(null);
+                if (was)
+                    this.focused(true);
+                return null;
+            }
             pane_rect() {
                 const rect = this.view_rect();
                 if (!rect)
@@ -28897,7 +28905,7 @@ var $;
                 if (!already)
                     this.picked(name ? [name] : []);
                 if (!entering)
-                    this.entered(null);
+                    this.leave();
                 this.press({
                     screen: [event.clientX, event.clientY],
                     world: point,
@@ -28996,7 +29004,7 @@ var $;
                     this.band(null);
                     if (!moved)
                         return;
-                    this.entered(null);
+                    this.leave();
                     this.picked(this.nodes_covered(box));
                     return;
                 }
@@ -29348,7 +29356,7 @@ var $;
                 }
                 if (message.kind === 'key') {
                     if (this.inside())
-                        this.entered(null);
+                        this.leave();
                     else
                         this.picked([]);
                     return;
@@ -29443,6 +29451,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "entered", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "leave", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "slot", null);
@@ -30995,7 +31006,7 @@ var $;
                     return;
                 if (event.key === 'Escape') {
                     if (this.Pane().inside())
-                        this.Pane().entered(null);
+                        this.Pane().leave();
                     else
                         this.selected(null);
                     return;

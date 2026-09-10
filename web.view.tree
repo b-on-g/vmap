@@ -2609,6 +2609,10 @@ $bog_vmap_app_wire $mol_svg_root
 		geometry <= drag_geometry
 
 $bog_vmap_app_pane $mol_view
+	attr *
+		^
+		tabindex \-1
+	leave? null
 	scene_bundle \
 	scene_html \
 	pack_uri \

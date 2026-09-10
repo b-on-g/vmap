@@ -1282,6 +1282,10 @@ $mol_frame $mol_embed_native
 	clipboard_write true
 
 $bog_vmap_app_pane $mol_view
+	attr *
+		^
+		tabindex \-1
+	leave? null
 	scene_bundle \
 	scene_html \
 	pack_uri \

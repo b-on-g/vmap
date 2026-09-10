@@ -39789,9 +39789,6 @@ declare namespace $.$$ {
     }
 }
 
-declare namespace $ {
-}
-
 declare namespace $.$$ {
 }
 
@@ -47537,6 +47534,10 @@ declare namespace $ {
 		insert_style( ): Record<string, any>
 		band_style( ): Record<string, any>
 		Touch( ): $mol_touch
+		attr( ): ({ 
+			'tabindex': string,
+		})  & ReturnType< $mol_view['attr'] >
+		leave( next?: any ): any
 		scene_bundle( ): string
 		scene_html( ): string
 		pack_uri( ): string
@@ -47776,6 +47777,7 @@ declare namespace $.$$ {
         entered(next?: string | null): string | null;
         primary(): string | null;
         inside(): boolean;
+        leave(): null;
         pane_rect(): $bog_vmap_app_pane_screen_box;
         screen_point(event: PointerEvent): readonly [number, number];
         world_point(event: PointerEvent): readonly [number, number];
