@@ -4509,203 +4509,6 @@ var $;
 
 ;
 "use strict";
-var $;
-(function ($) {
-    /** Plugin is component without its own DOM element, but instead uses the owner DOM element */
-    class $mol_plugin extends $mol_view {
-        dom_node_external(next) {
-            return next ?? $mol_owning_get(this).host.dom_node();
-        }
-        render() {
-            this.dom_node_actual();
-        }
-    }
-    $.$mol_plugin = $mol_plugin;
-})($ || ($ = {}));
-
-;
-	($.$mol_touch) = class $mol_touch extends ($.$mol_plugin) {
-		event_start(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		event_move(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		event_end(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		event_leave(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		event_wheel(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		start_zoom(next){
-			if(next !== undefined) return next;
-			return 0;
-		}
-		start_distance(next){
-			if(next !== undefined) return next;
-			return 0;
-		}
-		zoom(next){
-			if(next !== undefined) return next;
-			return 1;
-		}
-		allow_draw(){
-			return true;
-		}
-		allow_pan(){
-			return true;
-		}
-		allow_zoom(){
-			return true;
-		}
-		action_type(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		action_point(next){
-			if(next !== undefined) return next;
-			const obj = new this.$.$mol_vector_2d(NaN, NaN);
-			return obj;
-		}
-		start_pan(next){
-			if(next !== undefined) return next;
-			return [0, 0];
-		}
-		pan(next){
-			if(next !== undefined) return next;
-			const obj = new this.$.$mol_vector_2d(0, 0);
-			return obj;
-		}
-		pointer_center(){
-			const obj = new this.$.$mol_vector_2d(NaN, NaN);
-			return obj;
-		}
-		start_pos(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		swipe_precision(){
-			return 16;
-		}
-		swipe_right(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		swipe_bottom(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		swipe_left(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		swipe_top(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		swipe_from_right(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		swipe_from_bottom(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		swipe_from_left(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		swipe_from_top(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		swipe_to_right(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		swipe_to_bottom(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		swipe_to_left(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		swipe_to_top(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		draw_start(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		draw(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		draw_end(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		style(){
-			return {
-				...(super.style()), 
-				"touch-action": "none", 
-				"overscroll-behavior": "none"
-			};
-		}
-		event(){
-			return {
-				...(super.event()), 
-				"pointerdown": (next) => (this.event_start(next)), 
-				"pointermove": (next) => (this.event_move(next)), 
-				"pointerup": (next) => (this.event_end(next)), 
-				"pointerleave": (next) => (this.event_leave(next)), 
-				"wheel": (next) => (this.event_wheel(next))
-			};
-		}
-	};
-	($mol_mem(($.$mol_touch.prototype), "event_start"));
-	($mol_mem(($.$mol_touch.prototype), "event_move"));
-	($mol_mem(($.$mol_touch.prototype), "event_end"));
-	($mol_mem(($.$mol_touch.prototype), "event_leave"));
-	($mol_mem(($.$mol_touch.prototype), "event_wheel"));
-	($mol_mem(($.$mol_touch.prototype), "start_zoom"));
-	($mol_mem(($.$mol_touch.prototype), "start_distance"));
-	($mol_mem(($.$mol_touch.prototype), "zoom"));
-	($mol_mem(($.$mol_touch.prototype), "action_type"));
-	($mol_mem(($.$mol_touch.prototype), "action_point"));
-	($mol_mem(($.$mol_touch.prototype), "start_pan"));
-	($mol_mem(($.$mol_touch.prototype), "pan"));
-	($mol_mem(($.$mol_touch.prototype), "pointer_center"));
-	($mol_mem(($.$mol_touch.prototype), "start_pos"));
-	($mol_mem(($.$mol_touch.prototype), "swipe_right"));
-	($mol_mem(($.$mol_touch.prototype), "swipe_bottom"));
-	($mol_mem(($.$mol_touch.prototype), "swipe_left"));
-	($mol_mem(($.$mol_touch.prototype), "swipe_top"));
-	($mol_mem(($.$mol_touch.prototype), "swipe_from_right"));
-	($mol_mem(($.$mol_touch.prototype), "swipe_from_bottom"));
-	($mol_mem(($.$mol_touch.prototype), "swipe_from_left"));
-	($mol_mem(($.$mol_touch.prototype), "swipe_from_top"));
-	($mol_mem(($.$mol_touch.prototype), "swipe_to_right"));
-	($mol_mem(($.$mol_touch.prototype), "swipe_to_bottom"));
-	($mol_mem(($.$mol_touch.prototype), "swipe_to_left"));
-	($mol_mem(($.$mol_touch.prototype), "swipe_to_top"));
-	($mol_mem(($.$mol_touch.prototype), "draw_start"));
-	($mol_mem(($.$mol_touch.prototype), "draw"));
-	($mol_mem(($.$mol_touch.prototype), "draw_end"));
-
-
-;
-"use strict";
 
 
 ;
@@ -4714,714 +4517,6 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * Plugin for touch gestures.
-         * @see [mol_plugin](../plugin/readme.md)
-         */
-        class $mol_touch extends $.$mol_touch {
-            auto() {
-                this.pointer_events();
-                this.start_pan();
-                this.start_pos();
-                this.start_distance();
-                this.start_zoom();
-                this.action_type();
-                this.view_rect();
-            }
-            pointer_events(next = []) {
-                return next;
-            }
-            pointer_coords() {
-                const events = this.pointer_events();
-                const touches = events.filter(e => e.pointerType === 'touch');
-                const pens = events.filter(e => e.pointerType === 'pen');
-                const mouses = events.filter(e => !e.pointerType || e.pointerType === 'mouse');
-                const choosen = touches.length ? touches : pens.length ? pens : mouses;
-                return new $mol_vector(...choosen.map(event => this.event_coords(event)));
-            }
-            pointer_center() {
-                const coords = this.pointer_coords();
-                return coords.length ? coords.center() : new $mol_vector_2d(NaN, NaN);
-            }
-            event_coords(event) {
-                const { left, top } = this.view_rect();
-                return new $mol_vector_2d(Math.round(event.pageX - left), Math.round(event.pageY - top));
-            }
-            action_point() {
-                const coord = this.pointer_center();
-                if (!coord)
-                    return null;
-                const zoom = this.zoom();
-                const pan = this.pan();
-                return new $mol_vector_2d((coord.x - pan.x) / zoom, (coord.y - pan.y) / zoom);
-            }
-            event_eat(event) {
-                if (event instanceof PointerEvent) {
-                    const events = this.pointer_events()
-                        .filter(e => e instanceof PointerEvent)
-                        .filter(e => e.pointerId !== event.pointerId);
-                    if (event.type !== 'pointerup' && event.type !== 'pointerleave')
-                        events.push(event);
-                    this.pointer_events(events);
-                    const touch_count = events.filter(e => e.pointerType === 'touch').length;
-                    if (this.allow_zoom() && touch_count === 2) {
-                        return this.action_type('zoom');
-                    }
-                    if (this.action_type() === 'zoom' && touch_count === 1) {
-                        return this.action_type('zoom');
-                    }
-                    let button;
-                    (function (button) {
-                        button[button["left"] = 1] = "left";
-                        button[button["right"] = 2] = "right";
-                        button[button["middle"] = 4] = "middle";
-                    })(button || (button = {}));
-                    if (events.length > 0) {
-                        if (event.ctrlKey && this.allow_zoom())
-                            return this.action_type('zoom');
-                        if (event.buttons === button.left && this.allow_draw())
-                            return this.action_type('draw');
-                        if (event.buttons && this.allow_pan())
-                            return this.action_type('pan');
-                    }
-                    return this.action_type('');
-                }
-                if (event instanceof WheelEvent) {
-                    this.pointer_events([event]);
-                    if (event.shiftKey)
-                        return this.action_type('pan');
-                    return this.action_type('zoom');
-                }
-                return this.action_type('');
-            }
-            event_start(event) {
-                if (event.defaultPrevented)
-                    return;
-                this.start_pan(this.pan());
-                const action_type = this.event_eat(event);
-                if (!action_type)
-                    return;
-                const coords = this.pointer_coords();
-                this.start_pos(coords.center());
-                if (action_type === 'draw') {
-                    this.draw_start(event);
-                    return;
-                }
-                this.start_distance(coords.distance());
-                this.start_zoom(this.zoom());
-            }
-            event_move(event) {
-                if (event.defaultPrevented)
-                    return;
-                const rect = this.view_rect();
-                if (!rect)
-                    return;
-                const start_pan = this.start_pan();
-                const action_type = this.event_eat(event);
-                const start_pos = this.start_pos();
-                let pos = this.pointer_center();
-                if (!action_type)
-                    return;
-                if (!start_pos)
-                    return;
-                if (action_type === 'draw') {
-                    const distance = new $mol_vector(start_pos, pos).distance();
-                    if (distance >= 4) {
-                        this.draw(event);
-                    }
-                    return;
-                }
-                if (action_type === 'pan') {
-                    this.dom_node().setPointerCapture(event.pointerId);
-                    this.pan(new $mol_vector_2d(start_pan[0] + pos[0] - start_pos[0], start_pan[1] + pos[1] - start_pos[1]));
-                }
-                const precision = this.swipe_precision();
-                if ((this.swipe_right !== $mol_touch.prototype.swipe_right
-                    || this.swipe_from_left !== $mol_touch.prototype.swipe_from_left
-                    || this.swipe_to_right !== $mol_touch.prototype.swipe_to_right)
-                    && pos[0] - start_pos[0] > precision * 2
-                    && Math.abs(pos[1] - start_pos[1]) < precision) {
-                    this.swipe_right(event);
-                }
-                if ((this.swipe_left !== $mol_touch.prototype.swipe_left
-                    || this.swipe_from_right !== $mol_touch.prototype.swipe_from_right
-                    || this.swipe_to_left !== $mol_touch.prototype.swipe_to_left)
-                    && start_pos[0] - pos[0] > precision * 2
-                    && Math.abs(pos[1] - start_pos[1]) < precision) {
-                    this.swipe_left(event);
-                }
-                if ((this.swipe_bottom !== $mol_touch.prototype.swipe_bottom
-                    || this.swipe_from_top !== $mol_touch.prototype.swipe_from_top
-                    || this.swipe_to_bottom !== $mol_touch.prototype.swipe_to_bottom)
-                    && pos[1] - start_pos[1] > precision * 2
-                    && Math.abs(pos[0] - start_pos[0]) < precision) {
-                    this.swipe_bottom(event);
-                }
-                if ((this.swipe_top !== $mol_touch.prototype.swipe_top
-                    || this.swipe_from_bottom !== $mol_touch.prototype.swipe_from_bottom
-                    || this.swipe_to_top !== $mol_touch.prototype.swipe_to_top)
-                    && start_pos[1] - pos[1] > precision * 2
-                    && Math.abs(pos[0] - start_pos[0]) < precision) {
-                    this.swipe_top(event);
-                }
-                if (action_type === 'zoom') {
-                    const coords = this.pointer_coords();
-                    const distance = coords.distance();
-                    const start_distance = this.start_distance();
-                    const center = coords.center();
-                    const start_zoom = this.start_zoom();
-                    let mult = Math.abs(distance - start_distance) < 32 ? 1 : distance / start_distance;
-                    this.zoom(start_zoom * mult);
-                    const pan = new $mol_vector_2d((start_pan[0] - center[0] + pos[0] - start_pos[0]) * mult + center[0], (start_pan[1] - center[1] + pos[1] - start_pos[1]) * mult + center[1]);
-                    this.pan(pan);
-                }
-            }
-            event_end(event) {
-                const action = this.action_type();
-                if (action === 'draw') {
-                    this.draw_end(event);
-                }
-                this.event_leave(event);
-            }
-            event_leave(event) {
-                this.event_eat(event);
-                this.dom_node().releasePointerCapture(event.pointerId);
-                this.start_pos(null);
-            }
-            swipe_left(event) {
-                if (this.view_rect().right - this.start_pos()[0] < this.swipe_precision() * 2)
-                    this.swipe_from_right(event);
-                else
-                    this.swipe_to_left(event);
-                this.event_end(event);
-            }
-            swipe_right(event) {
-                if (this.start_pos()[0] - this.view_rect().left < this.swipe_precision() * 2)
-                    this.swipe_from_left(event);
-                else
-                    this.swipe_to_right(event);
-                this.event_end(event);
-            }
-            swipe_top(event) {
-                if (this.view_rect().bottom - this.start_pos()[1] < this.swipe_precision() * 2)
-                    this.swipe_from_bottom(event);
-                else
-                    this.swipe_to_top(event);
-                this.event_end(event);
-            }
-            swipe_bottom(event) {
-                if (this.start_pos()[1] - this.view_rect().top < this.swipe_precision() * 2)
-                    this.swipe_from_top(event);
-                else
-                    this.swipe_to_bottom(event);
-                this.event_end(event);
-            }
-            event_wheel(event) {
-                if (event.defaultPrevented)
-                    return;
-                if (this.pan === $mol_touch.prototype.pan && this.zoom === $mol_touch.prototype.zoom)
-                    return;
-                if (this.pan !== $mol_touch.prototype.pan) {
-                    event.preventDefault();
-                }
-                const action_type = this.event_eat(event);
-                if (action_type === 'zoom') {
-                    const zoom_prev = this.zoom() || 0.001;
-                    let zoom_next = zoom_prev * (1 - .001 * Math.min(event.deltaY, 100));
-                    zoom_next = this.zoom(zoom_next);
-                    const mult = zoom_next / zoom_prev;
-                    const pan_prev = this.pan();
-                    const center = this.pointer_center();
-                    const pan_next = pan_prev.multed0(mult).added1(center.multed0(1 - mult));
-                    this.pan(pan_next);
-                }
-                if (action_type === 'pan') {
-                    const pan_prev = this.pan();
-                    const pan_next = new $mol_vector_2d(pan_prev.x - event.deltaX, pan_prev.y - event.deltaY);
-                    this.pan(pan_next);
-                }
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_touch.prototype, "pointer_events", null);
-        __decorate([
-            $mol_mem
-        ], $mol_touch.prototype, "pointer_coords", null);
-        __decorate([
-            $mol_mem
-        ], $mol_touch.prototype, "pointer_center", null);
-        __decorate([
-            $mol_mem
-        ], $mol_touch.prototype, "action_point", null);
-        $$.$mol_touch = $mol_touch;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_plot_pane) = class $mol_plot_pane extends ($.$mol_svg_root) {
-		gap_x(){
-			const obj = new this.$.$mol_vector_range((this.gap_left()), (this.gap_right()));
-			return obj;
-		}
-		gap_y(){
-			const obj = new this.$.$mol_vector_range((this.gap_bottom()), (this.gap_top()));
-			return obj;
-		}
-		shift_limit_x(){
-			const obj = new this.$.$mol_vector_range(0, 0);
-			return obj;
-		}
-		shift_limit_y(){
-			const obj = new this.$.$mol_vector_range(0, 0);
-			return obj;
-		}
-		scale_limit_x(){
-			const obj = new this.$.$mol_vector_range(0, Infinity);
-			return obj;
-		}
-		scale_limit_y(){
-			const obj = new this.$.$mol_vector_range(0, -Infinity);
-			return obj;
-		}
-		dimensions_x(){
-			const obj = new this.$.$mol_vector_range(Infinity, -Infinity);
-			return obj;
-		}
-		dimensions_y(){
-			const obj = new this.$.$mol_vector_range(Infinity, -Infinity);
-			return obj;
-		}
-		dimensions_viewport_x(){
-			const obj = new this.$.$mol_vector_range(Infinity, -Infinity);
-			return obj;
-		}
-		dimensions_viewport_y(){
-			const obj = new this.$.$mol_vector_range(Infinity, -Infinity);
-			return obj;
-		}
-		graphs_sorted(){
-			return [];
-		}
-		graphs(){
-			return [];
-		}
-		graphs_positioned(){
-			return (this.graphs());
-		}
-		graphs_visible(){
-			return (this.graphs_positioned());
-		}
-		zoom(next){
-			if(next !== undefined) return next;
-			return 1;
-		}
-		cursor_position(){
-			return (this.Touch().pointer_center());
-		}
-		allow_draw(){
-			return true;
-		}
-		allow_pan(){
-			return true;
-		}
-		allow_zoom(){
-			return true;
-		}
-		action_type(){
-			return (this.Touch().action_type());
-		}
-		action_point(){
-			return (this.Touch().action_point());
-		}
-		draw_start(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		draw(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		draw_end(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		Touch(){
-			const obj = new this.$.$mol_touch();
-			(obj.zoom) = (next) => ((this.zoom(next)));
-			(obj.pan) = (next) => ((this.shift(next)));
-			(obj.allow_draw) = () => ((this.allow_draw()));
-			(obj.allow_pan) = () => ((this.allow_pan()));
-			(obj.allow_zoom) = () => ((this.allow_zoom()));
-			(obj.draw_start) = (next) => ((this.draw_start(next)));
-			(obj.draw) = (next) => ((this.draw(next)));
-			(obj.draw_end) = (next) => ((this.draw_end(next)));
-			return obj;
-		}
-		aspect(){
-			return "none";
-		}
-		hue_base(next){
-			if(next !== undefined) return next;
-			return +NaN;
-		}
-		hue_shift(next){
-			if(next !== undefined) return next;
-			return 111;
-		}
-		gap_hor(){
-			return 48;
-		}
-		gap_vert(){
-			return 24;
-		}
-		gap_left(){
-			return (this.gap_hor());
-		}
-		gap_right(){
-			return (this.gap_hor());
-		}
-		gap_top(){
-			return (this.gap_vert());
-		}
-		gap_bottom(){
-			return (this.gap_vert());
-		}
-		gap(){
-			const obj = new this.$.$mol_vector_2d((this.gap_x()), (this.gap_y()));
-			return obj;
-		}
-		shift_limit(){
-			const obj = new this.$.$mol_vector_2d((this.shift_limit_x()), (this.shift_limit_y()));
-			return obj;
-		}
-		shift_default(){
-			const obj = new this.$.$mol_vector_2d(0, 0);
-			return obj;
-		}
-		shift(next){
-			if(next !== undefined) return next;
-			const obj = new this.$.$mol_vector_2d(0, 0);
-			return obj;
-		}
-		scale_limit(){
-			const obj = new this.$.$mol_vector_2d((this.scale_limit_x()), (this.scale_limit_y()));
-			return obj;
-		}
-		scale_default(){
-			const obj = new this.$.$mol_vector_2d(0, 0);
-			return obj;
-		}
-		scale(next){
-			if(next !== undefined) return next;
-			const obj = new this.$.$mol_vector_2d(1, -1);
-			return obj;
-		}
-		scale_x(next){
-			if(next !== undefined) return next;
-			return 1;
-		}
-		scale_y(next){
-			if(next !== undefined) return next;
-			return -1;
-		}
-		size(){
-			const obj = new this.$.$mol_vector_2d(0, 0);
-			return obj;
-		}
-		size_real(){
-			const obj = new this.$.$mol_vector_2d(1, 1);
-			return obj;
-		}
-		dimensions(){
-			const obj = new this.$.$mol_vector_2d((this.dimensions_x()), (this.dimensions_y()));
-			return obj;
-		}
-		dimensions_viewport(){
-			const obj = new this.$.$mol_vector_2d((this.dimensions_viewport_x()), (this.dimensions_viewport_y()));
-			return obj;
-		}
-		sub(){
-			return (this.graphs_sorted());
-		}
-		graphs_colored(){
-			return (this.graphs_visible());
-		}
-		plugins(){
-			return [...(super.plugins()), (this.Touch())];
-		}
-	};
-	($mol_mem(($.$mol_plot_pane.prototype), "gap_x"));
-	($mol_mem(($.$mol_plot_pane.prototype), "gap_y"));
-	($mol_mem(($.$mol_plot_pane.prototype), "shift_limit_x"));
-	($mol_mem(($.$mol_plot_pane.prototype), "shift_limit_y"));
-	($mol_mem(($.$mol_plot_pane.prototype), "scale_limit_x"));
-	($mol_mem(($.$mol_plot_pane.prototype), "scale_limit_y"));
-	($mol_mem(($.$mol_plot_pane.prototype), "dimensions_x"));
-	($mol_mem(($.$mol_plot_pane.prototype), "dimensions_y"));
-	($mol_mem(($.$mol_plot_pane.prototype), "dimensions_viewport_x"));
-	($mol_mem(($.$mol_plot_pane.prototype), "dimensions_viewport_y"));
-	($mol_mem(($.$mol_plot_pane.prototype), "zoom"));
-	($mol_mem(($.$mol_plot_pane.prototype), "draw_start"));
-	($mol_mem(($.$mol_plot_pane.prototype), "draw"));
-	($mol_mem(($.$mol_plot_pane.prototype), "draw_end"));
-	($mol_mem(($.$mol_plot_pane.prototype), "Touch"));
-	($mol_mem(($.$mol_plot_pane.prototype), "hue_base"));
-	($mol_mem(($.$mol_plot_pane.prototype), "hue_shift"));
-	($mol_mem(($.$mol_plot_pane.prototype), "gap"));
-	($mol_mem(($.$mol_plot_pane.prototype), "shift_limit"));
-	($mol_mem(($.$mol_plot_pane.prototype), "shift_default"));
-	($mol_mem(($.$mol_plot_pane.prototype), "shift"));
-	($mol_mem(($.$mol_plot_pane.prototype), "scale_limit"));
-	($mol_mem(($.$mol_plot_pane.prototype), "scale_default"));
-	($mol_mem(($.$mol_plot_pane.prototype), "scale"));
-	($mol_mem(($.$mol_plot_pane.prototype), "scale_x"));
-	($mol_mem(($.$mol_plot_pane.prototype), "scale_y"));
-	($mol_mem(($.$mol_plot_pane.prototype), "size"));
-	($mol_mem(($.$mol_plot_pane.prototype), "size_real"));
-	($mol_mem(($.$mol_plot_pane.prototype), "dimensions"));
-	($mol_mem(($.$mol_plot_pane.prototype), "dimensions_viewport"));
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $.$mol_mem_cached = $mol_wire_probe;
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Fastest plot lib for vector graphics.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_plot_demo
-         */
-        class $mol_plot_pane extends $.$mol_plot_pane {
-            dimensions() {
-                const graphs = this.graphs();
-                let next = new this.$.$mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-                for (let graph of graphs) {
-                    next = next.expanded2(graph.dimensions());
-                }
-                return next;
-            }
-            size() {
-                const dims = this.dimensions();
-                return new this.$.$mol_vector_2d((dims.x.max - dims.x.min) || 1, (dims.y.max - dims.y.min) || 1);
-            }
-            graph_hue(index) {
-                return (360 + (this.hue_base() + this.hue_shift() * index) % 360) % 360;
-            }
-            graphs_colored() {
-                const graphs = this.graphs_visible();
-                for (let index = 0; index < graphs.length; index++) {
-                    graphs[index].hue(this.graph_hue(index));
-                }
-                return graphs;
-            }
-            size_real() {
-                const rect = this.view_rect();
-                if (!rect)
-                    return new this.$.$mol_vector_2d(1, 1);
-                return new this.$.$mol_vector_2d(rect.width, rect.height);
-            }
-            view_box() {
-                const size = this.size_real();
-                return `0 0 ${size.x} ${size.y}`;
-            }
-            scale_limit() {
-                const { x: { max: right }, y: { max: top } } = super.scale_limit();
-                const gap = this.gap();
-                const size = this.size();
-                const real = this.size_real();
-                const left = +(real.x - gap.x.min - gap.x.max) / size.x;
-                const bottom = -(real.y - gap.y.max - gap.y.min) / size.y;
-                return new this.$.$mol_vector_2d(new this.$.$mol_vector_range(left, right), new this.$.$mol_vector_range(top, bottom));
-            }
-            scale_default() {
-                const limits = this.scale_limit();
-                return new $mol_vector_2d(limits.x.min, limits.y.max);
-            }
-            scale(next) {
-                if (next === undefined) {
-                    if (!this.graph_touched)
-                        return this.scale_default();
-                    next = $mol_mem_cached(() => this.scale()) ?? this.scale_default();
-                }
-                this.graph_touched = true;
-                return next.limited(this.scale_limit());
-            }
-            scale_x(next) {
-                return this.scale(next === undefined
-                    ? undefined
-                    : new $mol_vector_2d(next, this.scale().y)).x;
-            }
-            scale_y(next) {
-                return this.scale(next === undefined
-                    ? undefined
-                    : new $mol_vector_2d(this.scale().x, next)).y;
-            }
-            shift_limit() {
-                const dims = this.dimensions();
-                const [scale_x, scale_y] = this.scale();
-                const size = this.size_real();
-                const gap = this.gap();
-                const left = gap.x.min - dims.x.min * scale_x;
-                const right = size.x - gap.x.max - dims.x.max * scale_x;
-                const top = gap.y.max - dims.y.max * scale_y;
-                const bottom = size.y - gap.y.min - dims.y.min * scale_y;
-                return new this.$.$mol_vector_2d(new this.$.$mol_vector_range(right, left), new this.$.$mol_vector_range(bottom, top));
-            }
-            shift_default() {
-                const limits = this.shift_limit();
-                return new $mol_vector_2d(limits.x.min, limits.y.min);
-            }
-            graph_touched = false;
-            shift(next) {
-                if (next === undefined) {
-                    if (!this.graph_touched)
-                        return this.shift_default();
-                    next = $mol_mem_cached(() => this.shift()) ?? this.shift_default();
-                }
-                this.graph_touched = true;
-                return next.limited(this.shift_limit());
-            }
-            reset(event) {
-                this.graph_touched = false;
-                this.scale(this.scale_default());
-                this.shift(this.shift_default());
-            }
-            graphs_visible() {
-                const viewport = this.dimensions_viewport();
-                const size_real = this.size_real();
-                const max_x = (viewport.x.max - viewport.x.min) / size_real.x;
-                const max_y = (viewport.y.max - viewport.y.min) / size_real.y;
-                return this.graphs_positioned().filter(graph => {
-                    const dims = graph.dimensions();
-                    if (dims.x.min > dims.x.max)
-                        return true;
-                    if (dims.y.min > dims.y.max)
-                        return true;
-                    const size_x = dims.x.max - dims.x.min;
-                    const size_y = dims.y.max - dims.y.min;
-                    if ((size_x || size_y) && size_x < max_x && size_y < max_y)
-                        return false;
-                    if (dims.x.min > viewport.x.max)
-                        return false;
-                    if (dims.x.max < viewport.x.min)
-                        return false;
-                    if (dims.y.min > viewport.y.max)
-                        return false;
-                    if (dims.y.max < viewport.y.min)
-                        return false;
-                    return true;
-                });
-            }
-            graphs_positioned() {
-                const graphs = this.graphs();
-                for (let graph of graphs) {
-                    graph.shift = () => this.shift();
-                    graph.scale = () => this.scale();
-                    graph.dimensions_pane = () => this.dimensions_viewport();
-                    graph.viewport = () => this.viewport();
-                    graph.size_real = () => this.size_real();
-                    graph.cursor_position = () => this.cursor_position();
-                    graph.gap = () => this.gap();
-                }
-                return graphs;
-            }
-            dimensions_viewport() {
-                const shift = this.shift().multed0(-1);
-                const scale = this.scale().powered0(-1);
-                return this.viewport().map((range, i) => range.added0(shift[i]).multed0(scale[i]).sort((a, b) => a - b));
-            }
-            viewport() {
-                const size = this.size_real();
-                return new this.$.$mol_vector_2d(new this.$.$mol_vector_range(0, size.x), new this.$.$mol_vector_range(0, size.y));
-            }
-            graphs_sorted() {
-                const graphs = this.graphs_colored();
-                const sorted = [];
-                for (let graph of graphs)
-                    sorted.push(...graph.back());
-                for (let graph of graphs)
-                    sorted.push(...graph.front());
-                return sorted;
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_plot_pane.prototype, "dimensions", null);
-        __decorate([
-            $mol_mem
-        ], $mol_plot_pane.prototype, "size", null);
-        __decorate([
-            $mol_mem
-        ], $mol_plot_pane.prototype, "graphs_colored", null);
-        __decorate([
-            $mol_mem
-        ], $mol_plot_pane.prototype, "scale_limit", null);
-        __decorate([
-            $mol_mem
-        ], $mol_plot_pane.prototype, "scale", null);
-        __decorate([
-            $mol_mem
-        ], $mol_plot_pane.prototype, "shift_limit", null);
-        __decorate([
-            $mol_mem
-        ], $mol_plot_pane.prototype, "shift_default", null);
-        __decorate([
-            $mol_mem
-        ], $mol_plot_pane.prototype, "shift", null);
-        __decorate([
-            $mol_mem
-        ], $mol_plot_pane.prototype, "graphs_visible", null);
-        __decorate([
-            $mol_mem
-        ], $mol_plot_pane.prototype, "graphs_positioned", null);
-        __decorate([
-            $mol_mem
-        ], $mol_plot_pane.prototype, "dimensions_viewport", null);
-        __decorate([
-            $mol_mem
-        ], $mol_plot_pane.prototype, "viewport", null);
-        __decorate([
-            $mol_mem
-        ], $mol_plot_pane.prototype, "graphs_sorted", null);
-        $$.$mol_plot_pane = $mol_plot_pane;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/plot/pane/pane.view.css", "[mol_plot_pane] {\n\tcolor: var(--mol_theme_control);\n\tflex: 1 1 auto;\n\talign-self: stretch;\n\tstroke-width: 2px;\n\tuser-select: none;\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Infinite background grid. Feeds two rulers of the plotting module the same way
-         * its pane feeds its graphs, and renders only their curves.
-         * @see ../../ARCHITECTURE.md section 8
-         */
         class $bog_vmap_scene_grid extends $.$bog_vmap_scene_grid {
             size_real() {
                 const rect = this.view_rect();
@@ -5440,7 +4535,6 @@ var $;
             gap() {
                 return new this.$.$mol_vector_2d(new this.$.$mol_vector_range(0, 0), new this.$.$mol_vector_range(0, 0));
             }
-            /** Viewport in world coordinates, by the formula from $mol_plot_pane. */
             dimensions_viewport() {
                 const shift = this.shift().multed0(-1);
                 const scale = this.scale().powered0(-1);
@@ -5469,7 +4563,6 @@ var $;
             $mol_mem
         ], $bog_vmap_scene_grid.prototype, "rulers", null);
         $$.$bog_vmap_scene_grid = $bog_vmap_scene_grid;
-        /** Base clamps its lines to 1000px tall. The canvas is whatever the window is. */
         class $bog_vmap_scene_grid_hor extends $.$bog_vmap_scene_grid_hor {
             curve() {
                 const [shift] = this.shift();
@@ -5482,7 +4575,6 @@ var $;
             }
         }
         $$.$bog_vmap_scene_grid_hor = $bog_vmap_scene_grid_hor;
-        /** Same story, base clamps its lines to 2000px wide. */
         class $bog_vmap_scene_grid_vert extends $.$bog_vmap_scene_grid_vert {
             curve() {
                 const [, shift] = this.shift();
@@ -5496,6 +4588,22 @@ var $;
         }
         $$.$bog_vmap_scene_grid_vert = $bog_vmap_scene_grid_vert;
     })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /** Plugin is component without its own DOM element, but instead uses the owner DOM element */
+    class $mol_plugin extends $mol_view {
+        dom_node_external(next) {
+            return next ?? $mol_owning_get(this).host.dom_node();
+        }
+        render() {
+            this.dom_node_actual();
+        }
+    }
+    $.$mol_plugin = $mol_plugin;
 })($ || ($ = {}));
 
 ;
@@ -5549,24 +4657,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Which free parts the scene has to draw for a given viewport.
-     *
-     * Pure arithmetic, deliberately kept out of the view: this is the whole of the
-     * culling decision, and a decision worth testing is worth being able to test
-     * without a DOM, a camera or a compiled document.
-     *
-     * **Culling decides what is DRAWN and never what is STORED.** Nothing here
-     * touches the document, and nothing it returns is written back anywhere: the
-     * source of a document must not depend on where the camera happens to point,
-     * not by a byte. That is the first invariant of the feature and the reason this
-     * function takes geometry and returns names, rather than taking a document.
-     *
-     * @param spots where the host placed each part, world coordinates
-     * @param sizes last measured box of each part, by the same names
-     * @param view world rectangle currently on screen
-     * @param slack world units added to every side of the viewport
-     */
     function $bog_vmap_scene_cull(spots, sizes, view, slack, names) {
         const left = view.x - slack;
         const top = view.y - slack;
@@ -5576,18 +4666,10 @@ var $;
         for (const name of names) {
             const size = sizes[name];
             const spot = spots[name];
-            // Nothing is known about it, so nothing may be concluded. A part hidden
-            // on a guess would never be drawn, never be measured, and so never stop
-            // being a guess — the one failure this function must not be able to
-            // produce. Unknown means shown.
             if (!size && !spot) {
                 shown.add(name);
                 continue;
             }
-            // A placed part that has never been measured counts as a point. It is
-            // drawn as soon as it comes near, gets measured there, and from the next
-            // round on is judged by its real box — which is why `slack` has to be
-            // wider than a node, not merely non-zero.
             const x = spot ? spot.x : size.x;
             const y = spot ? spot.y : size.y;
             const width = size ? size.width : 0;
@@ -5605,14 +4687,6 @@ var $;
         return shown;
     }
     $.$bog_vmap_scene_cull = $bog_vmap_scene_cull;
-    /**
-     * The world rectangle a viewport covers under a camera.
-     *
-     * The camera is the world point at the top left plus an isotropic zoom, so the
-     * world is `screen / zoom` wide. A zoom of zero would make that infinite, and
-     * the host clamps it well away from there, but a division that can produce
-     * `Infinity` on a message from outside is not worth leaving open.
-     */
     function $bog_vmap_scene_cull_viewport(camera, screen) {
         const zoom = camera.zoom > 0 ? camera.zoom : 1;
         return {
@@ -5629,37 +4703,12 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Wire protocol between the vmap host and its sandboxed scene.
-     *
-     * The scene lives in an opaque origin, so `postMessage` is the only channel.
-     * Everything here is plain data: it must survive a structured clone.
-     *
-     * Direction is part of the type on purpose. The host owns the document text,
-     * the camera and the geometry; the scene only compiles, renders and measures.
-     * @see ../ARCHITECTURE.md section 4
-     */
     $.$bog_vmap_bridge_ns = 'bog_vmap';
     /** Puts a message on the wire. Target is the peer window. */
     function $bog_vmap_bridge_send(target, message) {
         target.postMessage({ ns: $.$bog_vmap_bridge_ns, ...message }, '*');
     }
     $.$bog_vmap_bridge_send = $bog_vmap_bridge_send;
-    /**
-     * Takes a message off the wire, or null when it is not ours. The channel has no
-     * origin to check against — the scene runs in an opaque one — so anything able
-     * to reach this window can post here, and unknown shapes are dropped.
-     *
-     * Always pass `peer` on the host side. Without it any window that posts a
-     * `ready` takes the channel over: seen for real on stage 1, where a stray debug
-     * frame stole the bridge and the host spent an hour posting into a dead window.
-     * Identity comes from the frame element, never from `event.source`.
-     *
-     * Passing the argument at all turns the check on, so a peer not known yet
-     * rejects everything instead of letting everything through. Omitting it is the
-     * only way to opt out, and only the scene may: it has one correspondent and
-     * answers into the same window.
-     */
     function $bog_vmap_bridge_read(event, peer) {
         if (arguments.length > 1 && event.source !== peer)
             return null;
@@ -6819,37 +5868,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Document model over a `view.tree` AST.
-     *
-     * A vmap document is one `view.tree` class, so the source text is the truth and
-     * the tree is derived from it. Every edit goes through the tree and is written
-     * straight back as text, which is what makes source export free.
-     *
-     * Port of the component and property models of studio, plus the wire emitter,
-     * which studio has no equivalent of. Deviations are marked at their place.
-     *
-     * Pure model: knows nothing about DOM, compiles nothing, executes nothing.
-     * @see ../ARCHITECTURE.md sections 1 and 2
-     */
-    /**
-     * Bare means: no `*`, no `?`, no `!`, no spaces, nothing but a name. Signs are
-     * never carried by a token, they are produced from `bidi`. That single rule
-     * kills three of the five traps at once, because every one of them is a token
-     * that smuggles something in:
-     *
-     * - `value?` as the right token gives `w = Field value?`, which compiles to
-     *   `value(next)` with no `next` in scope, so the wire throws `ReferenceError`
-     *   on ANY read;
-     * - `w?` as the left token gives `w? = Field hint`, which compiles to a setter
-     *   whose right end ignores it, so writes vanish with no error at all;
-     * - `B value` as a token gives `w = A B value`, which compiles to
-     *   `this.A().B().value()`, and `B` was hoisted onto the root by `upper`, so it
-     *   is not a method of `A` and never will be.
-     *
-     * The grammar is the stock signature regexp itself rather than one of our own,
-     * so a token this accepts is a token the compiler accepts.
-     */
     function $bog_vmap_lang_token(token, role) {
         const parts = [...token.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
         if (!parts || parts.name !== token)
@@ -6857,32 +5875,10 @@ var $;
         return token;
     }
     $.$bog_vmap_lang_token = $bog_vmap_lang_token;
-    /**
-     * Stricter than the compiler on purpose. The stock class match takes anything
-     * starting with a dollar or a capital, generics and quotes included, because it
-     * also has to recognize the classes of somebody else's code; a class
-     * WE write has to survive one more step, and that step is mam resolving the
-     * name into a folder. Every underscore is a level of folders, so the name is a
-     * dollar and at least two lowercase segments, and nothing else fits in a path.
-     *
-     * A refusal here is a message to a person, so this answers yes or no and leaves
-     * the wording to the caller, who knows in what language to say it.
-     */
     function $bog_vmap_lang_class_ok(name) {
         return /^\$[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(name);
     }
     $.$bog_vmap_lang_class_ok = $bog_vmap_lang_class_ok;
-    /**
-     * The operator is `=` and nothing else. `<= Node prop` looks like the same thing
-     * and is not: it goes through the `upper` hack, which takes the kids of the
-     * reference as default values, so it declares a property `Node` valued `prop`
-     * and silently drops the `.prop()` link from the generated call. Either the
-     * build dies with a message about default values, or the build is green and the
-     * bundle carries `Node(){ return prop }`, a bare identifier that throws at the
-     * one node the wire was drawn to, whenever somebody gets there.
-     *
-     * @see ../ARCHITECTURE.md section 1
-     */
     function $bog_vmap_lang_wire_tree(wire) {
         const sign = wire.bidi ? '?' : '';
         const name = this.$bog_vmap_lang_token(wire.name, 'Wire name') + sign;
@@ -6897,24 +5893,12 @@ var $;
         ]);
     }
     $.$bog_vmap_lang_wire_tree = $bog_vmap_lang_wire_tree;
-    /**
-     * A bare reference `<= name`, the form that goes into `sub`. Bare means
-     * childless: a reference with a child is the middle of the three forms of `<=`,
-     * the only dangerous one, and the guard against it is that this takes a token
-     * instead of a path.
-     */
     function $bog_vmap_lang_ref_tree(name) {
         return $mol_tree2.struct('<=', [
             $mol_tree2.struct(this.$bog_vmap_lang_token(name, 'Reference')),
         ]);
     }
     $.$bog_vmap_lang_ref_tree = $bog_vmap_lang_ref_tree;
-    /**
-     * A free part is a name and a class at class level, with no operator between
-     * them: a plain property of the root class, so the compiler makes it a lazy
-     * memoized singleton and it creates no DOM, because it is not in `sub`. That is
-     * the whole mechanism behind a detail lying free on the canvas.
-     */
     function $bog_vmap_lang_part_tree(name, klass) {
         const base = $mol_tree2.struct(klass);
         if (!$mol_view_tree2_class_match(base))
@@ -6922,7 +5906,6 @@ var $;
         return $mol_tree2.struct(this.$bog_vmap_lang_token(name, 'Part name'), [base]);
     }
     $.$bog_vmap_lang_part_tree = $bog_vmap_lang_part_tree;
-    /** Value of one key of a `*` dictionary, or `null` when the key is not there. */
     function $bog_vmap_lang_dict_get(dict, key) {
         if (dict?.type !== '*')
             return null;
@@ -6930,12 +5913,6 @@ var $;
         return found?.kids[0] ?? null;
     }
     $.$bog_vmap_lang_dict_get = $bog_vmap_lang_dict_get;
-    /**
-     * A key already there is replaced where it stands, so `^` keeps the head of the
-     * dictionary it has to keep: a redeclared dictionary REPLACES the one of the
-     * base instead of extending it, and `^` is the line that undoes that. Writing a
-     * key must never be able to move it, and appending is the only other option.
-     */
     function $bog_vmap_lang_dict_set(dict, key, value) {
         const name = this.$bog_vmap_lang_token(key, 'Dictionary key');
         if (!value)
@@ -6947,20 +5924,6 @@ var $;
         return dict.clone(dict.kids.map(kid => kid.type === name ? entry : kid));
     }
     $.$bog_vmap_lang_dict_set = $bog_vmap_lang_dict_set;
-    /**
-     * Class declarations reordered so that a base always precedes its heir. A
-     * generated class resolves its base at definition time, and the generator emits
-     * declarations in the order it received them. A heir written above its base
-     * therefore inherits the PREVIOUS version of it, or `undefined` on a first run,
-     * and says nothing about it.
-     *
-     * Bases the list does not declare — anything from a library — are left alone:
-     * they are already in the namespace before our code runs.
-     *
-     * The scene carries an equivalent of this for the same reason. The two should
-     * become one, and this is the side to keep: sorting declarations is a property
-     * of the language, not of whoever happens to compile them.
-     */
     function $bog_vmap_lang_sorted(defs) {
         const by_name = new Map();
         for (const def of defs)
@@ -6986,68 +5949,16 @@ var $;
         return sorted;
     }
     $.$bog_vmap_lang_sorted = $bog_vmap_lang_sorted;
-    /**
-     * A document: several `view.tree` classes in one text.
-     *
-     * The node model below models one CLASS, and rightly so — but a document is not
-     * one class, and using the node as if it were silently eats the others: its
-     * read takes the first kid and its write serializes that one tree over the
-     * whole source, so editing one property of the first class drops the second
-     * from the text. No error, no warning.
-     *
-     * This level owns the text, cuts it into classes for reading, and puts one back
-     * without reserializing its neighbours from anything but their own trees. It
-     * hands out nodes whose `source` is a slice of it, so everything already
-     * written against the node model keeps working unchanged — that is the point of
-     * adding a level instead of widening the one below.
-     *
-     * A class is addressed BY NAME, which is what the editor speaks and what
-     * survives reordering. Two things follow, both real:
-     *
-     * - renaming a class through its node writes under the OLD name, which is
-     *   correct — the slot is found and replaced — but the caller then holds a stale
-     *   key and has to re-read `names()`;
-     * - two classes of one name are one class here, the first. That is already
-     *   broken further down: the class index of the library model keeps the LAST of
-     *   a duplicate pair, so a document with two would disagree with itself about
-     *   which is real.
-     *
-     * @see ../ARCHITECTURE.md section 1
-     */
     class $bog_vmap_lang_doc extends $mol_object {
-        /** The truth. */
         source(next) {
             return next ?? '';
         }
-        /**
-         * Read only, and that is deliberate. A cell that both reads and writes
-         * `source` would be a cell frozen by its own write — a write to a memoized
-         * cell freezes its dependencies — and the document would stop following the
-         * text after the first edit made through it, which is the one failure that
-         * looks exactly like success.
-         */
         trees() {
             return this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(this.source().replace(/\n?$/, '\n'))).kids;
         }
         names() {
             return this.trees().map(tree => tree.type);
         }
-        /**
-         * Writing rebuilds the text from the trees of all the classes with this one
-         * replaced, so a neighbour comes back out of its own tree and nothing else.
-         * On an already normalized document that is byte for byte; the first write
-         * to a hand written one normalizes the whole text at once, which is the same
-         * lossy step the node model has always taken, now taken over the document
-         * rather than over one class.
-         *
-         * A name the document does not carry appends, so that handing a node a
-         * source is also how a class is added.
-         *
-         * NOT memoized, for the reason spelled out at `trees`: this is the write
-         * path, and a cell on a write path freezes at what was written. The read is
-         * two lookups over `trees()`, which is a cell already, so there is nothing
-         * to gain either.
-         */
         class_source(name, next) {
             const trees = this.trees();
             const index = trees.findIndex(tree => tree.type === name);
@@ -7060,27 +5971,6 @@ var $;
             this.source(this.$.$mol_tree2.list(kept).toString());
             return next;
         }
-        /**
-         * A class name is spelled in more places than its own declaration: it is the
-         * base of an heir (`site_card site_page`, both with a leading dollar) and the
-         * value of a part declared with it (`Card site_card`, same). Retyping the
-         * declaration alone leaves those
-         * spelling a class nobody declares, which compiles into `Class extends value
-         * undefined` or into a part of a class that is not there — so the mentions
-         * are rewritten in the SAME write, over every class of the document.
-         *
-         * A mention is any tree node typed exactly with the old name. Only structural
-         * tokens carry a type in `tree2`; a literal is a data node, so a class name
-         * written inside a string is not touched and cannot be.
-         *
-         * A name already declared is refused, like the rename of a property: two
-         * classes of one name is a document that disagrees with itself about which is
-         * real, and the class index of a library keeps the last of such a pair.
-         *
-         * Whoever holds a `node( from )` has to ask for `node( to )` afterwards; the
-         * old handle addresses a class the document no longer carries, exactly as the
-         * property handle does after `prop_rename`.
-         */
         class_rename(from, to) {
             if (from === to)
                 return;
@@ -7095,12 +5985,6 @@ var $;
             };
             this.source(this.$.$mol_tree2.list(trees.map(renamed)).toString());
         }
-        /**
-         * `source` is replaced with a slice of the document on the instance itself.
-         * Everything else of the node model — the tree, the property list, the wire
-         * emitter — is derived from `source` and so needs no changes at all: the
-         * node cannot tell that its text is a part of a larger one.
-         */
         node(name) {
             return $bog_vmap_lang_node.make({
                 source: (next) => this.class_source(name, next),
@@ -7123,30 +6007,10 @@ var $;
         $mol_mem_key
     ], $bog_vmap_lang_doc.prototype, "node", null);
     $.$bog_vmap_lang_doc = $bog_vmap_lang_doc;
-    /** One node of the document: a single `view.tree` class. */
     class $bog_vmap_lang_node extends $mol_object {
-        /** The truth. Everything else is derived from it. */
         source(next) {
             return next ?? '';
         }
-        /**
-         * Normalization is lossy: it runs the `upper` hack, so a named sub view
-         * nested in `sub` comes out as a flat property of the root plus a bare
-         * reference left in place. Hoisted properties land BEFORE the ones already
-         * at the top, because they are added during the traversal rather than in the
-         * final loop.
-         *
-         * That flat form is the canonical shape of a document, not a compromise: it
-         * is the model of section 1 spelled out in the text itself. Round trip is
-         * therefore byte for byte only on a normalized source, which is what the
-         * editor holds, because every write serializes the whole class.
-         *
-         * @see ../ARCHITECTURE.md section 1, «Канонический вид документа»
-         *
-         * Deviation from studio: an empty or classless source fails with a message
-         * instead of `Cannot read properties of undefined`. In an editor an empty
-         * buffer is a normal transient state and has to say so.
-         */
         tree(next) {
             const source = this.source(next && next.toString()).replace(/\n?$/, '\n');
             const tree = this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(source)).kids[0];
@@ -7176,13 +6040,6 @@ var $;
         props_tree() {
             return this.tree().list(this.$.$mol_view_tree2_class_props(this.tree()));
         }
-        /**
-         * Full signature of a property by its bare name: `d` gives back `d*?`.
-         *
-         * Deviation from studio: the early exit is spelled as a test for any sign
-         * instead of `name.indexOf('*') + name.indexOf('?') + name.indexOf('!') > -3`,
-         * which is the same condition written as arithmetic on three `-1`s.
-         */
         prop_fullname(name) {
             if (/[*?!]/.test(name))
                 return name;
@@ -7195,7 +6052,6 @@ var $;
             }
             return '';
         }
-        /** Writing `null` drops the property. */
         prop_tree(name, next) {
             const sign = this.prop_fullname(name);
             if (next !== undefined) {
@@ -7211,28 +6067,6 @@ var $;
         prop_drop(name) {
             this.prop_tree(name, null);
         }
-        /**
-         * `next` is a whole signature, `d*?` and not `d`, because a rename and a
-         * change of sign arrive together from the inspector and two writes would
-         * leave the document renamed but unsigned in between.
-         *
-         * **A reference is rewritten, never dropped.** A node is named by the
-         * property it occupies, so a rename moves the name every `sub` list, every
-         * wire end and every binding spells. Dropping them instead — which is what
-         * `links_drop` does for a delete — would silently cut the wires of a node
-         * that is still there; the two operations are opposites and must not share
-         * a path. Anything of the shape `<= name`, `<=> name` or `= name prop` at
-         * any depth is such a reference.
-         *
-         * The declaration is retyped IN PLACE, among the kids of the base, and only
-         * there: an override of the same name under a part is a port of that part
-         * and none of our business. In place also keeps the property where it was —
-         * dropping it and inserting it back moved it to the end of the class, which
-         * reorders the canvas for a rename that should not move anything.
-         *
-         * A name already taken is refused rather than merged: two properties of one
-         * name is a document nothing can address afterwards.
-         */
         prop_rename(name, next) {
             const to = [...next.matchAll($mol_view_tree2_prop_signature)][0]?.groups?.name;
             if (!to)
@@ -7264,26 +6098,10 @@ var $;
                 node: $mol_const(this),
             });
         }
-        /**
-         * Deviation from studio, which has no free parts: the write goes through the
-         * `null` step of the path instead of `base()`, so it lands in the class body
-         * whatever the base is currently called. Same reason `prop_add` does it.
-         */
         part_add(name, klass) {
             const tree = this.tree();
             this.tree(tree.insert(this.$.$bog_vmap_lang_part_tree(name, klass), null, name));
         }
-        /**
-         * The node end has to be declared already, as a free part or as a sub-view.
-         * `=` declares nothing, that is exactly why it has no collision with `upper`,
-         * so a wire to an undeclared node compiles green and throws `is not a
-         * function` at run time. Refusing here is the only place it can be caught.
-         *
-         * The far end, `wire.prop`, is NOT checked: whether the node's class has such
-         * a port is known only to the component library, and this module knows
-         * nothing of libraries, deliberately. The inspector draws wires from the port
-         * list, so the question does not arise there either.
-         */
         wire_add(wire) {
             const next = this.$.$bog_vmap_lang_wire_tree(wire);
             if (!this.prop_names().includes(wire.node))
@@ -7293,12 +6111,6 @@ var $;
                 this.prop_drop(wire.name);
             this.tree(this.tree().insert(next, null, next.type));
         }
-        /**
-         * Wires declared by the class: every property whose value is the `=`
-         * operator. `bidi` is read off the left end alone, because the emitter never
-         * writes the two signs apart; a hand written wire with one sign is reported
-         * as it is and left for the compiler to complain about.
-         */
         wires() {
             const wires = [];
             for (const prop of this.props_tree().kids) {
@@ -7319,11 +6131,6 @@ var $;
             }
             return wires;
         }
-        /**
-         * Properties whose value is a class name, with the overrides written under
-         * it. That is where a consumer of a wire lives: a part declaration with a
-         * port bound to the name of the wire.
-         */
         part_names() {
             return this.props_tree().kids
                 .filter(prop => {
@@ -7332,17 +6139,9 @@ var $;
             })
                 .map(prop => this.$.$mol_view_tree2_prop_parts(prop).name);
         }
-        /**
-         * Wires together with who reads them. A wire nobody reads is not a link,
-         * and a reference to a name that is not a wire is a plain binding of the
-         * part and none of this module's business.
-         */
         links() {
             const wires = new Map(this.wires().map(wire => [wire.name, wire]));
             const links = [];
-            // Off `props_tree()` and not through `prop_tree()`: the latter is the
-            // write path of `link_target`, and a cell read through a written cell
-            // freezes at what was written.
             for (const decl of this.props_tree().kids) {
                 const klass = decl.kids[0];
                 if (!klass || !$mol_view_tree2_class_match(klass))
@@ -7370,7 +6169,6 @@ var $;
             }
             return links;
         }
-        /** Whether `to` is already fed, directly or through others, by `from`. */
         link_reaches(from, to) {
             const seen = new Set();
             const queue = [from];
@@ -7387,10 +6185,6 @@ var $;
             }
             return false;
         }
-        /**
-         * An existing wire to the same end is reused, an unrelated property of the
-         * same name is stepped around with a suffix.
-         */
         link_name(from, prop, bidi) {
             const base = `${from.toLowerCase()}_${prop}`;
             const taken = new Set(this.prop_names());
@@ -7406,18 +6200,6 @@ var $;
                     return name;
             }
         }
-        /**
-         * Two lines and no more. The wire `name = From prop` goes through `wire_add`
-         * with every guard it has, and the consumer is a bare reference in the
-         * declaration of the target part, `to_prop <= name`, or `to_prop? <=> name?`
-         * for a two way wire. The reference is built by the bare reference emitter,
-         * so it can carry nothing under the name and never turns into the middle
-         * form of `<=`.
-         *
-         * Refused, with nothing written: a part wired to itself, an undeclared end,
-         * and a target the source already depends on, because a loop of wires is a
-         * loop of fibers and the scene would hang on the first read.
-         */
         link_add(link) {
             const bidi = Boolean(link.bidi);
             if (link.from === link.to)
@@ -7437,19 +6219,9 @@ var $;
             this.link_target(link.to, to_prop, $mol_tree2.struct(to_prop + (bidi ? '?' : ''), [ref]));
             return name;
         }
-        /**
-         * One override of one part, which is what `over_set` is; a wire has no
-         * special way of writing its end and must not grow one, or the two would
-         * drift apart on the first fix to either.
-         */
         link_target(to, to_prop, next) {
             this.over_set(to, to_prop, next);
         }
-        /**
-         * Unplugs a port: the reference goes from the target, and the wire goes from
-         * the class when nobody else reads it. Both lines, or the first alone when
-         * the second is still in use.
-         */
         link_drop(to, to_prop) {
             const link = this.links().find(link => link.to === to && link.to_prop === to_prop);
             if (!link)
@@ -7459,17 +6231,6 @@ var $;
             if (!used)
                 this.prop_drop(link.name);
         }
-        /**
-         * Unplugs every wire with an end on a part: the ones it feeds and the ones
-         * it reads. What a delete of that part has to do before it takes the part
-         * out, or the document keeps a wire to a node that is no longer declared —
-         * which compiles into a call of a property nobody declares.
-         *
-         * Through `link_drop`, so a wire read by somebody else keeps its line
-         * exactly as it does when a port is unplugged by hand; a wire from this part
-         * that nobody reads has no consumer to unplug and goes in the second pass.
-         * Both ends of every OTHER wire are left alone.
-         */
         links_drop(node) {
             for (const link of [...this.links()]) {
                 if (link.from !== node && link.to !== node)
@@ -7482,43 +6243,19 @@ var $;
                 this.prop_drop(wire.name);
             }
         }
-        /**
-         * Not through `prop_tree()`: that one is a keyed cell the writes below go
-         * through, and a read taken from a written cell freezes at what was written.
-         * `props_tree()` is a plain derivation of the source and stays live.
-         */
         prop_decl(name) {
             const sign = this.prop_fullname(name);
             return sign ? this.props_tree().select(sign).kids[0] ?? null : null;
         }
-        /**
-         * The empty owner is the class, a named one is a part. Both are one shape
-         * because `upper` has already flattened them: the class carries `sub` as a
-         * property, a part carries it as an override under its class name, and under
-         * either sits the same list of bare references.
-         */
         sub_list(owner = '') {
             const prop = owner ? this.over_tree(owner, 'sub') : this.prop_decl('sub');
             const list = prop?.kids[0] ?? null;
             return list?.type[0] === '/' ? list : null;
         }
-        /**
-         * `null` when the node declares no `sub` and so is not a container.
-         *
-         * A node WITH a `sub` is an artboard: children of it are laid out by tree,
-         * by ordinary flex, while everything else lies free by coordinates. That is
-         * the whole difference between the two, and it is a difference in the text
-         * rather than a mark on the side, see section 8.
-         *
-         * Content that is not a bare reference — a literal string in `sub` — takes
-         * its place in the list as an empty name, so that an index here is an index
-         * there.
-         */
         sub_names(owner = '') {
             const list = this.sub_list(owner);
             return list && list.kids.map(ref => ref.kids[0]?.type ?? '');
         }
-        /** Whose `sub` references this name: a part, `''` for the class, `null` for nobody. */
         sub_holder(name) {
             for (const owner of ['', ...this.part_names()]) {
                 if (this.sub_names(owner)?.includes(name))
@@ -7526,7 +6263,6 @@ var $;
             }
             return null;
         }
-        /** Whether `name` is `owner` itself or lies somewhere under it. */
         sub_within(owner, name) {
             const seen = new Set();
             const queue = [owner];
@@ -7543,42 +6279,23 @@ var $;
             }
             return false;
         }
-        /**
-         * An override already there is replaced where it stands, never dropped and
-         * appended: the order of the lines under a part is text the user reads, and
-         * a `sub` that jumped to the bottom on every insertion would rewrite the
-         * declaration around an edit that changed one child.
-         */
         sub_write(owner, list) {
             const sub = list.struct('sub', [list]);
             if (owner)
                 return this.over_set(owner, 'sub', sub);
             this.tree(this.tree().insert(sub, null, this.prop_fullname('sub') || 'sub'));
         }
-        /** Makes a node a container by giving it an empty `sub`, if it has none. */
         sub_open(owner) {
             if (this.sub_list(owner))
                 return;
             this.sub_write(owner, this.tree().struct('/'));
         }
-        /**
-         * Only under a PART: a property whose value is a class name. Under anything
-         * else the children are not overrides at all — under `sub` they are bare
-         * `<=` references — and reading them as property signatures fails on the
-         * first one, which is how every property of the document gets asked whether
-         * it is an artboard.
-         */
         over_tree(owner, prop) {
             const klass = this.prop_decl(owner)?.kids[0];
             if (!klass || !$mol_view_tree2_class_match(klass))
                 return null;
             return klass.kids.find(over => this.$.$mol_view_tree2_prop_parts(over).name === prop) ?? null;
         }
-        /**
-         * In place, because the order of the lines under a part is text the user
-         * reads: an override that jumped to the bottom every time its value changed
-         * would rewrite the declaration around an edit that changed one line.
-         */
         over_set(owner, prop, next) {
             const decl = this.prop_decl(owner);
             const klass = decl?.kids[0];
@@ -7590,11 +6307,6 @@ var $;
                 : next ? [...klass.kids, next] : klass.kids;
             this.prop_tree(owner, decl.clone([klass.clone(kids)]));
         }
-        /**
-         * A cycle in `sub` is not a badly drawn document, it is a class whose
-         * `dom_tree()` never returns: the scene would hang on the first render, and
-         * the document that hangs it is the one that got saved.
-         */
         sub_check(name, owner) {
             if (!owner)
                 return;
@@ -7603,12 +6315,6 @@ var $;
             if (this.sub_within(name, owner))
                 this.$.$mol_fail(new Error(`Node ${JSON.stringify(name)} cannot be put inside ${JSON.stringify(owner)}, which it already holds`));
         }
-        /**
-         * The position is where the insertion line was drawn, so it is clamped
-         * rather than checked: a drop at the end of a list the document has since
-         * shortened is an ordinary race of a gesture against a document, and landing
-         * at the end is the answer to it.
-         */
         sub_insert(name, index, owner = '') {
             const ref = this.$.$bog_vmap_lang_ref_tree(name);
             this.sub_check(name, owner);
@@ -7617,16 +6323,6 @@ var $;
             kids.splice(Math.max(0, Math.min(index, kids.length)), 0, ref);
             this.sub_write(owner, list.clone(kids));
         }
-        /**
-         * Taken out first and put back after, so reparenting and reordering are one
-         * operation with one shape. Within one parent the index is corrected for the
-         * hole the node itself leaves, because the position the user aimed at was
-         * read off a list that still had it.
-         *
-         * The refusal is checked BEFORE the node is taken out, not left to the
-         * insertion: a move that fails halfway is a document with the node gone from
-         * the page and nothing in its place, written and saved.
-         */
         sub_move(name, index, owner = '') {
             this.sub_check(name, owner);
             const from = this.sub_holder(name);
@@ -7642,22 +6338,6 @@ var $;
         sub_add(name) {
             this.sub_insert(name, Infinity);
         }
-        /**
-         * The empty list is kept rather than the whole property dropped: `sub /` with
-         * nothing under it is the shape an empty document starts from, so deleting
-         * the last node returns the source to exactly that, instead of to a class
-         * with no `sub` at all.
-         *
-         * Only the reference goes. Dropping the declaration as well is two facts, so
-         * it is two calls — the same split as `part_add` plus `sub_add` on the way
-         * in. A node taken out of `sub` but still declared is a free part that draws
-         * nothing and keeps its ports, which is a legitimate state, not a leftover.
-         *
-         * The reference is looked for wherever it is, the class and every part of it
-         * alike. A node inside an artboard is referenced by that artboard and not by
-         * the class, and deleting it has to reach there too — otherwise the document
-         * keeps drawing a node nothing declares any more.
-         */
         sub_drop(name) {
             const owner = this.sub_holder(name);
             if (owner === null)
@@ -7739,10 +6419,6 @@ var $;
         $mol_action
     ], $bog_vmap_lang_node.prototype, "sub_drop", null);
     $.$bog_vmap_lang_node = $bog_vmap_lang_node;
-    /**
-     * One property of a node, with its signature. `name`, `tree` and `node` are
-     * handed in by the owner through `make`.
-     */
     class $bog_vmap_lang_prop extends $mol_object {
         name() {
             return this.$.$mol_fail(new Error('Not defined'));
@@ -7753,32 +6429,12 @@ var $;
         tree(next) {
             return this.$.$mol_fail(new Error('Not defined'));
         }
-        /** Re-binds the same property to another model class. */
         as(Prop) {
             return Prop.make({
                 name: () => this.name(),
                 tree: next => this.tree(next),
             });
         }
-        /**
-         * A rename goes to the node, because it is not a fact about this property
-         * alone: everything that spells the old name has to be rewritten in the same
-         * write. A change of sign is local and is written here.
-         *
-         * Deviation from studio: this handle is NOT patched to follow the rename.
-         * Studio overwrites the `name` method of the live property object, which
-         * leaves an object addressing one name and reading another past the graph;
-         * here the handle simply stops addressing anything, and the caller asks the
-         * node for the property under its new name — a keyed cell, so that is one
-         * read and no state.
-         *
-         * **Plain method, and so are the three below.** Every accessor here only
-         * delegates into `tree()`, which is a cell already, and an accessor of that
-         * shape under a memoizing decorator freezes at the value written THROUGH it:
-         * after a rename the handle goes on reporting the new name although it
-         * addresses a property no longer under it, which is the very
-         * object-past-the-graph the patching above was dropped for. There is a test.
-         */
         meta(next) {
             const tree = this.tree();
             const sign = tree?.type ?? '';
@@ -7812,30 +6468,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Order of the declarations going into one `new Function`: the libraries, then
-     * the document, every base before its heir, and one declaration per name.
-     *
-     * Libraries first because the document is written against them, and a stable
-     * sort keeps that unless a library class inherits a document class — legal,
-     * odd, and then the base still comes first. The sort itself is the canonical
-     * sort of the language module: ordering declarations is a property of the
-     * language, and the scene's own copy of it was the second one too many.
-     *
-     * A name declared twice keeps the LAST declaration and drops the earlier one,
-     * which is the rule the class index of the library model already lives by and the rule the
-     * sandbox enforces on its own: two declarations of one class in one source
-     * would define the second over the first anyway, only with the first still
-     * having been extended by anyone declared in between. Dropping it up front makes
-     * «the document shadows the library» hold for heirs as well.
-     *
-     * No class name is spelled out in this comment on purpose: mam reads doc
-     * comments for dependencies, and a one segment name here failed the build of
-     * the scene with «Root package not found».
-     *
-     * Bases the list does not declare — the classes of the pack, already in the
-     * sandbox — are left alone, as the sort leaves them.
-     */
     function $bog_vmap_scene_order(libs, doc) {
         const all = [...libs, ...doc];
         const last = new Map();
@@ -7850,7 +6482,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /** Atoms behind one own field: a solo one, or every value of a keyed dictionary. */
     function atoms_of(holder) {
         if (holder instanceof Map)
             return [...holder.values()];
@@ -7858,29 +6489,9 @@ var $;
             return [holder];
         return [];
     }
-    /** Told by shape, like everywhere else on this side of the boundary. */
     function view_like(value) {
         return typeof value?.dom_node === 'function';
     }
-    /**
-     * Moves a live component onto the freshly compiled classes, keeping its state.
-     *
-     * A cell lives as an OWN field of the instance, so replacing the prototype
-     * touches no value, no subscription and no DOM node — caret, focus and scroll
-     * position included. The one thing the prototype does not reach is the
-     * implementation a fiber captured in its constructor, and that is what is
-     * redirected here, taking the new one off the wrapper the decorator left it on.
-     *
-     * The walk goes over the atom caches and never over `sub()`: free parts are not
-     * in `sub` at all, `sub()` of a generated class is not memoized, so calling it
-     * would run user code and could create children that do not exist yet, and a
-     * child temporarily out of `sub` is still a live instance.
-     *
-     * Instances of classes the document does not declare — components of the donor
-     * pack — keep their prototype and are only walked through, because a document
-     * class may well sit inside one.
-     * @see ../../ARCHITECTURE.md section 3, ../../spike/S2.md
-     */
     function $bog_vmap_scene_swap(root, klass_of, shape_of) {
         const report = { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0 };
         const seen = new Set();
@@ -7890,9 +6501,6 @@ var $;
             if (seen.has(inst))
                 continue;
             seen.add(inst);
-            // The plain name, never the lookup helper of mol: the helper scans the
-            // whole ambient for a class it cannot find, and every class here is
-            // named by construction — an unnamed one is a defect on its own.
             const name = inst.constructor?.name ?? '';
             const shape = name ? shape_of(name) : null;
             if (shape) {
@@ -7909,16 +6517,10 @@ var $;
                 const atoms = atoms_of(holder);
                 if (!atoms.length)
                     continue;
-                // The field is not simply `name()`: a property decorated both in the
-                // generated base and in the handwritten body carries a trailing space,
-                // because the decorator copies the name off the base wrapper.
                 const prop = field.slice(0, -2).trim();
                 for (const atom of atoms) {
                     for (const kid of kids_of(atom))
                         queue.push(kid);
-                    // A failed atom has nothing to keep and is woken whatever changed:
-                    // the method it was missing may have been written in another class,
-                    // where no text of its own would ever point back at it.
                     if (!(atom.cache instanceof Error))
                         continue;
                     Reflect.set(atom, 'cursor', $mol_wire_cursor.stale);
@@ -7933,7 +6535,6 @@ var $;
         return report;
     }
     $.$bog_vmap_scene_swap = $bog_vmap_scene_swap;
-    /** Views held by one atom, whether it holds one or a list of them. */
     function kids_of(atom) {
         const value = atom.result();
         if (view_like(value))
@@ -7942,29 +6543,16 @@ var $;
             return value.filter(view_like);
         return [];
     }
-    /**
-     * Points the atoms of one property at the new implementation, or drops them.
-     *
-     * Only the atoms whose implementation actually changed are woken, and that is
-     * the whole economy of the strategy: a class is generated anew in full, so every
-     * function object is new, while the TEXT differs only for what was edited.
-     */
     function retarget(inst, field, prop, atoms, shape, report) {
         const wrapper = Reflect.get(inst, prop);
         const next = typeof wrapper === 'function' ? Reflect.get(wrapper, 'orig') : null;
         const decorated = typeof next === 'function';
         const keyed_was = Reflect.get(inst, field) instanceof Map;
         const keyed_now = shape.keyed.has(prop);
-        // A property the class no longer declares is judged by whether anything
-        // answers to its name at all; one it does declare must still be a cell of
-        // the same shape, or the atoms behind it mean nothing.
         const broken = shape.declared.has(prop)
             ? (!decorated || keyed_was !== keyed_now)
             : (!decorated && !(prop in inst));
         if (broken) {
-            // `destructor()` only unsubscribes, it does not mark anyone stale, so
-            // dependants would silently keep serving the value of a property that
-            // no longer exists.
             for (const atom of atoms) {
                 atom.emit();
                 atom.destructor();
@@ -7983,10 +6571,6 @@ var $;
             report.moved += 1;
             if (String(prev) === String(next))
                 continue;
-            // Invalidation, not a recompute: waking the graph from inside the cell
-            // that owns the instance would run document code in the middle of our
-            // own computation. The value is read back a moment later by `stage()`,
-            // in the same pass.
             Reflect.set(atom, 'cursor', $mol_wire_cursor.stale);
             atom.emit();
             report.stale += 1;
@@ -7998,17 +6582,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Makes a cell of every method a handwritten body defines: keyed and
-     * changeable ones as the tree says, the way studio's `source_js_decorators()`
-     * does, and every zero argument method besides, whatever the tree says. The
-     * generated code calls it right after the class, since a decorator cannot be
-     * written into a string for `new Function`, and it reads the class rather
-     * than the text, so a nested `if( x ) {` cannot pass for a method.
-     *
-     * Without an atom the hot swap has nothing to wake when the text of a method
-     * changes: its callers keep the old value and the DOM keeps the old text.
-     */
     function $bog_vmap_scene_cells(Klass, keyed, changeable) {
         const proto = Klass.prototype;
         for (const name of Object.getOwnPropertyNames(proto)) {
@@ -8026,8 +6599,6 @@ var $;
                 $mol_mem(proto, name, descr);
                 continue;
             }
-            // A method with arguments is no cell: the first one would be taken for a
-            // write. An async one answers a promise, which a cell would wait on.
             if (method.length)
                 continue;
             if (method.constructor !== Function)
@@ -8539,6 +7110,13 @@ var $;
 var $;
 (function ($) {
     $.$mol_mem_persist = $mol_wire_solid;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $.$mol_mem_cached = $mol_wire_probe;
 })($ || ($ = {}));
 
 ;
@@ -10106,37 +8684,10 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Replays a click the host overlay took on the element under the point.
-     *
-     * The overlay takes every gesture so that the editor's own state — selection,
-     * dragging, the camera — cannot be forged or hidden by document code. The price
-     * is that a real click never reaches the sandbox, and this is where it is paid
-     * back: the host relays the point, the scene finds the element and hands it
-     * `pointerdown`, `pointerup` and `click`, bubbling, so anything listening on the
-     * element or above it fires as it would for a real press.
-     *
-     * Focus is given by hand, because it is the default action of a real
-     * `mousedown` and synthetic events run no default actions. The focus goes to
-     * the nearest focusable ancestor of the target, which is how a real click
-     * focuses a button by its label: `tabIndex` is `-1` on anything not focusable
-     * and `0` or more on anything that is, natively or by attribute. Once the
-     * element is focused, the keyboard follows into the frame on its own.
-     *
-     * Between `pointerdown` and `pointerup`, as in the real sequence. Nothing is
-     * dispatched when the point hits nothing, and that is the only way out.
-     *
-     * @param x client coordinate in the realm's own viewport
-     * @param y client coordinate in the realm's own viewport
-     * @returns the element the events went to, or `null` when there was none
-     */
     function $bog_vmap_scene_click(realm, x, y, mods) {
         const target = realm.document.elementFromPoint(x, y);
         if (!target)
             return null;
-        // A realm with no `PointerEvent` — an old engine, a bare test DOM — still gets
-        // the events, as plain mouse events under the pointer names. Every listener
-        // that reads `clientX` or a modifier is served either way.
         const Pointer = realm.PointerEvent ?? realm.MouseEvent;
         const common = {
             bubbles: true,
@@ -10196,25 +8747,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Geometry of a rendered document, in world units, and the nodes it was read off.
-     *
-     * Pure, and out of the view for the reason the culling decision is: this is the
-     * whole of what the host learns about the layout, and a walk worth testing is
-     * worth testing without a compiled document. Everything that knows about the
-     * framework — what counts as a view, what a view's children are, which property
-     * holds it — is handed in, so the function itself knows only rectangles and paths.
-     *
-     * The nodes come back beside the sizes because the two are one question asked
-     * twice: what the host is told about, and what has to be watched for changing
-     * behind the graph's back. Watching the root alone leaves every node inside an
-     * artboard of fixed width unwatched, and a reflow INSIDE a box that keeps its
-     * own size is exactly what an artboard is made of.
-     *
-     * @param key path of the root, which every deeper path is built onto
-     * @param zoom camera zoom the measured pixels are divided by, so the host, which
-     *        owns the camera, is told world units
-     */
     function $bog_vmap_scene_measure(root, how) {
         const sizes = {};
         const nodes = [];
@@ -10252,14 +8784,6 @@ var $;
         return { sizes, nodes };
     }
     $.$bog_vmap_scene_measure = $bog_vmap_scene_measure;
-    /**
-     * Brings the watched set to exactly `next`, and says what it now is.
-     *
-     * Only the difference is touched: a node already watched is left alone rather
-     * than re-observed, because `ResizeObserver` delivers a first box on every fresh
-     * `observe()`, and re-observing the whole tree after every report would answer
-     * its own delivery with another report, forever.
-     */
     function $bog_vmap_scene_measure_watch(watcher, prev, next) {
         const kept = new Set(next);
         for (const node of prev)
@@ -10414,112 +8938,40 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /** `asset:7f3a…` in the document is swapped for a `blob:` URL of this realm. */
         const asset_ref = /asset:([\w.\-]+)/g;
-        /** Every style element the scene attaches is prefixed, so a sweep never
-         * touches an element some other part of the page put into `head`. */
         const style_scope = 'bog_vmap_scene:';
-        /**
-         * Placement lives under a prefix of its own, and that is load bearing.
-         *
-         * `styles_sweep()` drops everything under `style_scope` on each compile, so a
-         * placement element sharing that prefix would be swept away by the next
-         * keystroke in the document and come back only on the next `spots_set`.
-         * The id is constant besides: there is one document per scene, and the attach
-         * helper reuses the element it finds by id.
-         */
         const spots_id = 'bog_vmap_spots:stage';
-        /** Styles of the land libraries, one element, same reasoning as `spots_id`. */
         const libs_id = 'bog_vmap_libs:stage';
-        /** A part name goes into a CSS selector, so it may be nothing but a name. */
         const spot_name_ok = /^[a-zA-Z_]\w*$/;
-        /**
-         * Smallest margin around the viewport a culled part is kept alive within.
-         *
-         * A part that has never been drawn has never been measured either, so it is
-         * judged by its placement point alone. The margin has to be wider than a node
-         * for that to be safe, or a wide component whose left edge is just off screen
-         * would be dropped on its first approach and only appear once its POINT came in.
-         */
         const cull_slack_min = 400;
-        /** A class name is interpolated as a bare identifier into the generated
-         * source, so a malformed one must be rejected with a readable error rather
-         * than a syntax error a hundred lines down. */
         const class_name_ok = /^\$[a-zA-Z][\w$]*$/;
         const unmounted = { made: null, pack: '', root: '', supers: {}, error: '', klass: '' };
-        /**
-         * Sandbox application of the editor.
-         *
-         * Takes a document over the bridge, compiles it, renders it, answers with
-         * measured geometry and errors. It has no network, no Giper Baza and no
-         * access to the user's keys — that is the whole point of the boundary.
-         *
-         * @see ../ARCHITECTURE.md sections 3 and 4
-         */
         class $bog_vmap_scene extends $.$bog_vmap_scene {
-            /**
-             * Last failure sent per stage, `null` when the stage is clear. See `error_post()`.
-             *
-             * A cell and not a field: this is what went out on the wire last, which is a
-             * projection of state outward, and the pane keeps its six the same way. Kept
-             * outside the graph it was a value nobody could wake on and no test could
-             * read without reaching into the object.
-             */
             error_sent(at, next) {
                 return next === undefined ? null : next;
             }
-            /** Document source, view.tree text. Full document, never a patch. */
             doc_src(next) {
                 return next ?? '';
             }
-            /** Name of the class to instantiate. */
             doc_root(next) {
                 return next ?? '';
             }
-            /** Hand written class bodies, methods only, keyed by class name. */
             doc_js(next) {
                 return next ?? {};
             }
-            /** Styles. Travel apart from the source, see `css_attach()`. */
             doc_css(next) {
                 return next ?? '';
             }
-            /**
-             * Where free parts sit on the canvas, in world coordinates.
-             *
-             * Editor scaffolding, and a channel of its own for exactly that reason: the
-             * document's own styles never carry a coordinate, so an export cannot pick
-             * one up even by mistake. Not a property of the page being built.
-             * @see ../bridge/bridge.ts, `spots_set`
-             */
             spots(next) {
                 return next ?? {};
             }
-            /**
-             * Last measured box of every free part, remembered across culling.
-             *
-             * Merged by `sizes_remember()`, never replaced: a part just culled is not in
-             * the DOM, so its absence from a report is not «no size» but «not drawn», and
-             * taking it for a size would flip the part between shown and hidden forever.
-             */
             sizes_seen(next) {
                 return next ?? {};
             }
-            /**
-             * Viewport of the canvas: the frame's own box, which is the scene's, since
-             * the scene fills the frame. `null` until the first layout — `view_rect()`
-             * refuses to touch the DOM in the middle of a render, and polls after.
-             */
             screen() {
                 const rect = this.view_rect();
                 return rect && { width: rect.width, height: rect.height };
             }
-            /**
-             * Names of the placed parts the canvas has to draw right now. Parts nobody
-             * placed are drawn unconditionally, and so is everything while the viewport
-             * is unknown: culling by a coordinate or a box nobody has is a guess, and a
-             * part hidden on a guess would never be measured out of it.
-             */
             shown() {
                 const spots = this.spots();
                 const names = Object.keys(spots);
@@ -10532,13 +8984,6 @@ var $;
                 const slack = Math.max(cull_slack_min, Math.max(view.width, view.height) / 2);
                 return this.$.$bog_vmap_scene_cull(spots, this.sizes_seen(), view, slack, names);
             }
-            /**
-             * Children of the document root, minus the ones off screen.
-             *
-             * Culling changes what is drawn and never what is stored: nothing here
-             * reaches the document text. A child whose owning property cannot be read
-             * is kept, because a case this does not understand is one it must not hide.
-             */
             sub_shown(kids) {
                 const spots = this.spots();
                 const shown = this.shown();
@@ -10553,12 +8998,6 @@ var $;
                     return shown.has(prop);
                 });
             }
-            /**
-             * Puts the filter between the document root and the DOM, as `sub_visible()`:
-             * the hook the renderer draws by and the standard list narrows the same way,
-             * so `sub()` stays whole for every other reader — the walks, the seek, the
-             * values. An own property, which the prototype swap of a rebuild leaves be.
-             */
             cull_attach(made) {
                 Object.defineProperty(made, 'sub_visible', {
                     configurable: true,
@@ -10566,27 +9005,16 @@ var $;
                     value: () => this.sub_shown(made.sub() ?? []),
                 });
             }
-            /** Delivered assets: id to `blob:` URL of this realm. */
             assets(next) {
                 return next ?? {};
             }
             camera(next) {
                 return next ?? { x: 0, y: 0, zoom: 1 };
             }
-            /**
-             * Pan of the grid, in screen pixels.
-             *
-             * The same numbers `camera_transform()` puts in its `translate`, and they
-             * have to be, or the lines would drift away from the nodes they are behind.
-             * The camera is stated in world units because the host thinks in world units;
-             * a ruler draws in screen pixels, so the conversion happens here and nowhere
-             * else.
-             */
             grid_shift() {
                 const { x, y, zoom } = this.camera();
                 return new this.$.$mol_vector_2d(-x * zoom, -y * zoom);
             }
-            /** The rulers want a scale per axis, the camera is one isotropic number. */
             grid_scale() {
                 const zoom = this.camera().zoom;
                 return new this.$.$mol_vector_2d(zoom, zoom);
@@ -10595,45 +9023,18 @@ var $;
                 const { x, y, zoom } = this.camera();
                 return `translate(${-x * zoom}px,${-y * zoom}px) scale(${zoom})`;
             }
-            /**
-             * The frame has no address of its own — it is raised from markup — so the pack
-             * arrives by message. One pack per realm still holds by construction: a realm
-             * cannot unload a bundle, so the host makes the address part of the key of the
-             * frame, and a second pack arrives in a frame that never saw a first.
-             *
-             * Empty until the message lands, and that is an ORDINARY state rather than an
-             * impossible one, which is why `instance()` refuses to compile in it.
-             * @see ../ARCHITECTURE.md section 5
-             */
             pack_uri(next) {
                 return next ?? '';
             }
-            /**
-             * The importer of THIS bundle, resolved once. The pack rewrites the importer
-             * in the global `$` as it lands, and read late-bound after that the name
-             * gives the pack's copy, whose cache is empty — which loads the pack again,
-             * and again, six hundred script tags a second. Measured in headless Chrome.
-             * A record around the class, which a cell would otherwise stamp and own.
-             */
             importer() {
                 const importer = this.$.$mol_import;
                 return { script: (uri) => importer.script(uri) };
             }
-            /**
-             * Suspends until the pack bundle is in the realm, then stays resolved.
-             * Everything that compiles reads this first: a class picks its base once, at
-             * definition time, and a document compiled before the pack lands would keep
-             * the base class of the scene's own bundle for good. A cross-origin
-             * `<script src>` needs no permission of its own inside the boundary.
-             */
             pack_ready() {
                 const uri = this.pack_uri();
                 if (!uri)
                     return uri;
                 this.importer().script(uri);
-                // Two copies of the framework's error reporter now listen on `self`, each
-                // calling a handler private to its own bundle, so a dispatch from one copy
-                // throws «handler is not a function» in the other. Plain try/catch for both.
                 this.$.$mol_try = handler => {
                     try {
                         return handler();
@@ -10644,14 +9045,6 @@ var $;
                 };
                 return uri;
             }
-            /**
-             * Why the canvas is empty, or an empty string when it is not.
-             *
-             * The suspension is caught here rather than in `stage()` so that the wait
-             * has a face. Catching costs no reactivity: a suspending read promotes the
-             * dependency before it throws, so this cell is subscribed to
-             * `pack_ready()` either way and recomputes when the pack lands.
-             */
             pack_note() {
                 const uri = this.pack_uri();
                 if (!uri)
@@ -10666,40 +9059,15 @@ var $;
                     return String(error?.message ?? error);
                 }
             }
-            /**
-             * One sandbox per document, never recreated.
-             *
-             * Reads nothing reactive, so the cell is computed once and never goes
-             * stale. That is the requirement, not an accident: the base object of the
-             * framework caches its context on first read, so a fresh
-             * `Object.create( $ )` would silently cut already built instances off the
-             * classes compiled after it.
-             */
             sandbox() {
                 const host = this.$;
                 const sandbox = Object.create(host);
                 Object.defineProperty(sandbox, '$', { value: sandbox, writable: true, configurable: true });
                 return sandbox;
             }
-            /**
-             * Texts and nothing else: the scene has no database and no keys, so a land is
-             * read by the host and arrives as the three strings of each component. On the
-             * bridge and not in the frame address, unlike the pack — a land is compiled
-             * into the sandbox like the document and inherits the base class already
-             * there, so a change of the list is a recompile, not a reload.
-             * @see ../ARCHITECTURE.md section 5
-             */
             libs(next) {
                 return next ?? [];
             }
-            /**
-             * The name of a class is read off its own tree rather than carried beside it,
-             * the same rule the land model lives by: one source of truth for a derivable
-             * fact. A part with no class declares nothing and keys nothing.
-             *
-             * Read inside `code()`, so a malformed library fails on the compile channel
-             * with the name of the file it came from, like a malformed document does.
-             */
             libs_parsed() {
                 const defs = [];
                 const js = {};
@@ -10713,39 +9081,17 @@ var $;
                 }
                 return { defs: defs, js: js };
             }
-            /**
-             * Normalized declarations of the libraries and the document, in the order
-             * they can be defined in: libraries first, a base before its heir, one
-             * declaration per name. The ordering helper of this module does it, and the
-             * sort inside it is the canonical one from `lang` — the scene used to carry a
-             * copy, and two copies of a sort are one divergence away from `Class
-             * extends value undefined`.
-             */
             doc_tree() {
                 const src = this.assets_apply(this.doc_src()).replace(/\n?$/, '\n');
                 const defs = this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(src, 'vmap.view.tree'));
                 return defs.clone(this.$.$bog_vmap_scene_order(this.libs_parsed().defs, defs.kids));
             }
-            /**
-             * Base class of every declaration, by name.
-             *
-             * The declarations are already normalized, so the single kid of a class is
-             * its base and nothing else can be there.
-             */
             supers() {
                 const map = {};
                 for (const def of this.doc_tree().kids)
                     map[def.type] = def.kids[0]?.type ?? '';
                 return map;
             }
-            /**
-             * The hot swap reads this to tell a property that lost its cell from one that
-             * changed between solo and keyed, and both questions are asked of a live
-             * instance — whose atoms come from the whole chain, not from the last
-             * declaration alone. So a base declared by the document is folded into its
-             * heir, while a base from the pack is left out on purpose: its properties are
-             * not ours to judge and their shape does not change under us.
-             */
             shapes() {
                 const own = {};
                 for (const def of this.doc_tree().kids) {
@@ -10772,12 +9118,6 @@ var $;
                 }
                 return own;
             }
-            /**
-             * The call that makes cells of the handwritten body, emitted right after the
-             * class: a decorator cannot be written into the string handed to
-             * `new Function`. What the tree says is keyed or changeable goes along as
-             * data, the rest the cells helper reads off the class itself.
-             */
             cells_code(self) {
                 const keyed = [];
                 const changeable = [];
@@ -10790,17 +9130,6 @@ var $;
                 }
                 return `$.$bog_vmap_scene_cells( $[ ${JSON.stringify(self.type)} ], ${JSON.stringify(keyed)}, ${JSON.stringify(changeable)} );`;
             }
-            /**
-             * Emitted class by class in topological order, and the handwritten body of a
-             * class goes right after its own declaration, before the next class is
-             * declared at all. Generating every declaration first and wrapping them
-             * afterwards would look tidier and be wrong: the wrapper is a NEW class, so a
-             * subclass built earlier keeps the unwrapped base in its prototype chain and
-             * loses the handwritten methods of its parent.
-             *
-             * Class name and CSS go in as data through `JSON.stringify`: a user CSS with a
-             * backtick or a `${` would tear the string apart otherwise.
-             */
             code_parts() {
                 const root = this.doc_root();
                 if (!class_name_ok.test(root))
@@ -10808,9 +9137,6 @@ var $;
                 const tree = this.doc_tree();
                 if (!tree.kids.some(def => def.type === root))
                     this.$.$mol_fail(new Error(`Class ${root} is not declared by the document`));
-                // Library bodies first, document bodies over them: a document class of
-                // the same name shadows the library one in the declarations already,
-                // and its body has to shadow the library body the same way.
                 const bodies = { ...this.libs_parsed().js, ...this.doc_js() };
                 const parts = [];
                 for (const def of tree.kids) {
@@ -10821,61 +9147,27 @@ var $;
                         parts.push({ klass: name, js: this.class_code(tree, def, bodies[name]).join('\n') });
                     }
                     catch (error) {
-                        // The name of the class travels ON the failure, so that the host
-                        // can put the message where the text that caused it is being
-                        // edited. Attached here, where it is known for certain, rather
-                        // than guessed later out of the wording of a parser.
                         this.$.$mol_fail(this.fault_named(error, name));
                     }
                 }
                 return parts;
             }
-            /**
-             * Generated source of the whole document, one string.
-             *
-             * Kept apart from the pieces because the pieces are what names a failure:
-             * the whole document goes into ONE `new Function`, and a failure there says
-             * nothing about which class caused it.
-             */
             code() {
                 return this.code_parts().map(part => part.js).join('\n');
             }
-            /** Marks a failure with the class whose text caused it. */
             fault_named(error, klass) {
                 return Object.assign(error, { klass });
             }
-            /**
-             * Generated source of one class: its declaration, then its handwritten body.
-             *
-             * Apart from `code()` so that a failure can be caught around one class and
-             * named by it. The body wraps the declaration in a NEW class, which is why
-             * the two are emitted together and never in two passes over the document.
-             */
             class_code(tree, def, js) {
                 const name = def.type;
                 const chunks = [];
-                // Every chunk starts with a semicolon: the generated code opens
-                // with a parenthesis, and without one ASI glues it onto the
-                // previous line into `$( … )` with `$ is not a function`.
                 chunks.push(';' + this.$.$mol_tree2_text_to_string_mapped_js(this.$.$mol_tree2_js_to_text(this.$.$mol_view_tree2_to_js(tree.clone([def])))));
                 if (!js)
                     return chunks;
                 const cls = JSON.stringify(name);
-                // The class is named. An anonymous one drops `dom_name()` to
-                // `div` and gives every sub view a bare `_echo`, the same one in
-                // every document.
                 chunks.push(`;$[ ${cls} ] = class ${name} extends $[ ${cls} ] {`, js, '}', ';' + this.cells_code(def) + ';');
                 return chunks;
             }
-            /**
-             * Compiles the document into the sandbox, overwriting classes in place.
-             *
-             * Returns a plain record rather than the class itself. A class has a
-             * static `destructor`, so an atom would take ownership of it and stamp
-             * `Symbol.toStringTag` with the atom id — and `dom_name()` is derived from
-             * the string form of the constructor, which reads exactly that stamp. A
-             * plain object has no `destructor` and stays untouched.
-             */
             build() {
                 const code = this.code();
                 const sandbox = this.sandbox();
@@ -10891,16 +9183,6 @@ var $;
                     this.$.$mol_fail(new Error(`Class ${root} is not registered by the compiled code`));
                 return { Root: Root };
             }
-            /**
-             * The whole document goes into ONE `new Function`, so a failure there — a base
-             * nobody declared, a syntax error in a handwritten body — carries no name.
-             * Splitting the fast path into a call per class to keep that name would cost
-             * every keystroke for the sake of the rare round that fails, so the search
-             * runs only once something already went wrong.
-             *
-             * Into a scratch context and not into the sandbox: the retry must not add
-             * half a generation of classes to the one the living component is using.
-             */
             culprit() {
                 const scratch = Object.create(this.sandbox());
                 Object.defineProperty(scratch, '$', { value: scratch, writable: true, configurable: true });
@@ -10914,14 +9196,6 @@ var $;
                 }
                 return '';
             }
-            /**
-             * May the live instance be moved onto the freshly compiled classes. Three
-             * things it cannot survive: another pack (the context of a live instance is
-             * cached under a symbol private to a bundle), another root class (another
-             * document), a changed base of any class it has ever been compiled with (a
-             * DOM node takes `attr_static()` off its base once). A class it has never
-             * seen takes nothing away. @see ../ARCHITECTURE.md section 3
-             */
             identity_kept(live, pack, root, supers) {
                 if (!live.made)
                     return false;
@@ -10936,46 +9210,22 @@ var $;
                 }
                 return true;
             }
-            /**
-             * The live root instance, the identity it was built under and why the last
-             * compile failed, in one value: one computation, one cell. `instance()` and
-             * `compile_error()` split it so that each moves only its own readers. A plain
-             * record, which the owning catch of the framework refuses to stamp or destroy.
-             *
-             * An edit moves the living component onto the new classes instead of
-             * building another one: cells are own fields of an instance, so a prototype
-             * swap keeps every value, every subscription and the DOM node with its caret,
-             * focus and scroll, which no snapshot carries. 6.1 ms against 8.7 ms for a
-             * rebuild on the S2 bench, and flat in the size of the component.
-             *
-             * What it built last time is read off its own cache through a probe, the way
-             * `view_rect()` does. A failed rebuild answers with that instance, so
-             * `instance()` keeps its value and the living component stays whole.
-             */
             mount() {
                 const prev = $mol_wire_probe(() => this.mount()) ?? unmounted;
                 const src = this.doc_src();
                 const root = this.doc_root();
-                // No pack, no compile: a document built before the pack lands would
-                // inherit OUR base class, and a class picks its base once for good.
                 const pack = this.pack_uri();
                 if (!src.trim() || !root || !pack)
                     return unmounted;
                 try {
-                    // First read of the body, and it suspends — everything below defines
-                    // classes, and a class picks its base once.
                     this.pack_ready();
                     const Root = this.build().Root;
                     const supers = this.supers();
                     if (this.identity_kept(prev, pack, root, supers)) {
                         this.$.$bog_vmap_scene_swap(prev.made, name => Reflect.get(this.sandbox(), name), name => this.shapes()[name] ?? null);
-                        // Bases accumulate: a class deleted and declared again with another
-                        // base would otherwise slip past a round that never saw the name.
                         return { ...prev, supers: { ...prev.supers, ...supers }, error: '', klass: '' };
                     }
                     const made = Root.make({ $: this.sandbox() });
-                    // Before anything reads `dom_tree()`, so the first paint is already
-                    // culled and a thousand node document never builds a thousand nodes.
                     this.cull_attach(made);
                     return { made, pack, root, supers, error: '', klass: '' };
                 }
@@ -10989,40 +9239,15 @@ var $;
                     };
                 }
             }
-            /**
-             * The live root instance.
-             *
-             * A cell of its own over `mount()`, so that a failure appearing or clearing
-             * moves the error and nothing else: the value here stays the same object and
-             * no subscriber of the document is woken by a message on the error channel.
-             */
             instance() {
                 return this.mount().made;
             }
-            /**
-             * Why the last compile failed, or an empty string.
-             *
-             * In the graph rather than in a field, so that a reader wakes when it
-             * changes. It used to be a plain field written from inside the cell that
-             * builds the instance, which is the second forbidden case of section 13: not
-             * a projection outwards but a write past the cells, and the label on the node
-             * would light up a round late or not at all.
-             */
             compile_error() {
                 return this.mount().error;
             }
-            /** Class whose text failed to compile, when the failure names one. */
             compile_class() {
                 return this.mount().klass;
             }
-            /**
-             * What keeps a CSS edit cheap: `doc_css()` is read here and nowhere else, so
-             * restyling moves this cell alone while `sandbox()` and `instance()` stand
-             * still together with all the live state.
-             *
-             * Not named `style()`: that name is taken by the base view and must return a
-             * dictionary of CSS properties for the rendered node.
-             */
             css_attach() {
                 const root = this.doc_root();
                 const css = this.assets_apply(this.doc_css());
@@ -11032,64 +9257,19 @@ var $;
                     return null;
                 return this.$.$mol_style_attach(id, css);
             }
-            /**
-             * Placement of the free parts, hung as a style element of the scene's own.
-             *
-             * Apart from `css_attach()` on purpose, and not merely tidier: the document
-             * CSS is what an export writes out, so a world coordinate that ever lands in
-             * it ships the editor's desk layout into a deployed site. Here it cannot,
-             * because the host sends coordinates and the scene alone turns them into
-             * rules — the document text never sees them at all.
-             *
-             * Absolute positioning is TEMPORARY, scaffolding until artboards of stage 6:
-             * inside an artboard the layout is a plain flex tree and only free parts
-             * lie by coordinates.
-             */
             spots_attach() {
                 return this.$.$mol_style_attach(spots_id, this.spots_css());
             }
-            /**
-             * Under a constant id outside `style_scope`, like the placement: the sweep on
-             * every compile of the document must not take the library styles with it. Read
-             * off the raw parts and not off `libs_parsed()`, so a library that fails to
-             * parse fails on the compile channel and does not take the styles of its
-             * neighbours down with it.
-             */
             libs_css_attach() {
                 const css = this.libs().map(part => part.css).filter(Boolean).join('\n');
                 return this.$.$mol_style_attach(libs_id, this.assets_apply(css));
             }
-            /**
-             * World coordinates go into `left`/`top` unchanged: the stage sits under one
-             * `transform` with `transform-origin: 0 0`, so the root class is at world zero
-             * and its offset children are already in world units.
-             *
-             * **`!important` is not laziness here, it is the only thing that works.**
-             * Half the standard library positions itself, and a bare attribute selector
-             * declaring `position: relative` ties on specificity, so the cascade falls
-             * through to source order — and this element is attached before the pack
-             * script has even been fetched, which puts every pack rule after it. Measured:
-             * three components dropped at one x, two landed on it, the text field came out
-             * 122 px to the right, offset by exactly the width of its in-flow neighbour,
-             * because it stayed `relative` and read `left` as a shift from its static
-             * position. Two of three looked right by luck, and the pack is somebody else's
-             * CSS we do not get to renumber.
-             *
-             * Margins are left alone, and a component carrying its own lands offset by
-             * them — the standard badge has a negative one and comes out 8 px above the
-             * point it was aimed at. Overriding that would be the editor deciding how
-             * somebody else's component looks.
-             */
             spots_css() {
                 const attr = this.doc_root().replace(/^\$/, '');
                 if (!attr || !class_name_ok.test(this.doc_root()))
                     return '';
                 const rules = [`[${attr}] { position: relative !important; }`];
                 for (const [name, spot] of Object.entries(this.spots())) {
-                    // The name reaches a selector and the numbers reach a declaration, so
-                    // both are checked rather than trusted: one malformed rule would eat
-                    // the rules after it, and a silently shifted canvas is a long thing
-                    // to debug.
                     if (!spot_name_ok.test(name))
                         continue;
                     if (!Number.isFinite(spot?.x) || !Number.isFinite(spot?.y))
@@ -11102,15 +9282,6 @@ var $;
                 }
                 return rules.join('\n') + '\n';
             }
-            /**
-             * Drops style elements of the previous compilation.
-             *
-             * The attach helper never removes them, and a class renamed while the
-             * user types leaves one behind on every keystroke — hundreds per editing
-             * session. Only elements of this scene are swept, never someone else's,
-             * and never the placement element: it lives under `spots_id`, outside this
-             * prefix, precisely so a document edit cannot take the canvas apart.
-             */
             styles_sweep(keep) {
                 const doc = this.$.$mol_dom_context.document;
                 if (!doc)
@@ -11123,16 +9294,10 @@ var $;
                     el.remove();
                 }
             }
-            /**
-             * Swaps `asset:` for `blob:`. The bytes arrive over the bridge and the URL
-             * is made here: one minted by the host belongs to the host origin and does
-             * not open in an opaque one. An id with no bytes yet is left in place.
-             */
             assets_apply(text) {
                 const known = this.assets();
                 return text.replace(asset_ref, (whole, id) => known[id] ?? whole);
             }
-            /** Every text of the document an address can stand in. */
             texts() {
                 return [
                     this.doc_src(),
@@ -11140,7 +9305,6 @@ var $;
                     ...this.libs().flatMap(part => [part.tree, part.css]),
                 ];
             }
-            /** Ids the document mentions and the host has not delivered, in order of mention. */
             assets_missing() {
                 const known = this.assets();
                 const missing = new Set();
@@ -11152,31 +9316,17 @@ var $;
                 }
                 return [...missing];
             }
-            /**
-             * Asks the host for one asset. Once, for as long as the id stays missing:
-             * the cell is read by `assets_push()` while it is, swept when it is not, and
-             * made anew — asking again — should the id ever go missing again.
-             */
             asset_ask(id) {
                 this.post({ kind: 'asset_want', id });
                 return id;
             }
-            /** Projection of `assets_missing()` onto the wire, read from `auto()`. */
             assets_push() {
                 return this.assets_missing().map(id => this.asset_ask(id));
             }
             stage() {
                 this.css_attach();
-                // Read here for the same reason as the styles above: a cell nobody reads
-                // during render is swept together with its value, and placement would then
-                // stop following the canvas after the first attach. Before the early
-                // return, because a part may be dropped while the pack is still on its way.
                 this.spots_attach();
                 this.libs_css_attach();
-                // `instance()` is suspended while the pack travels, and a suspended
-                // `stage()` would render as nothing at all for 610 ms cold. The note
-                // is a state, not a spinner: it also survives as the wording of a
-                // pack that never arrived.
                 if (this.pack_note())
                     return [this.Wait()];
                 const made = this.instance();
@@ -11185,55 +9335,18 @@ var $;
             post(message) {
                 this.$.$bog_vmap_bridge_send(this.peer(), message);
             }
-            /** Wires the host wants labelled: root property names, the whole list each time. */
             values_wanted(next) {
                 return next ?? [];
             }
-            /**
-             * Wall clock of the last `values` sent, in the graph rather than beside it.
-             *
-             * It stays a CLOCK READING and not a serial number, and that is the one thing
-             * to keep straight about it. A serial number is what an ORDER wants — «did the
-             * answer come after the question», where two events inside one millisecond read
-             * as simultaneous and the pane's watchdog once disarmed over exactly that. This
-             * stamp answers a different question, «how long ago», and a counter cannot
-             * answer it at all: the throttle subtracts it from `now()` to get the wait that
-             * is left. Two sends in one millisecond give the full wait, which is the safe
-             * side of the rounding.
-             */
             values_at(next) {
                 return next ?? 0;
             }
-            /** Shortest gap between two `values` messages, in ms. */
             values_period() {
                 return 250;
             }
-            /** The clock. A method so that a test can move it by hand. */
             now() {
                 return Date.now();
             }
-            /**
-             * Labels of the wanted wires, sent to the host no more often than
-             * `values_period()`.
-             *
-             * The values are read here, inside the cell, so the document's own atoms wake
-             * it: the graph is shared with the document, see section 4. Every change
-             * restarts the timer with whatever is left of the period, so a wire that
-             * changes on every frame costs one message per period and a wire that
-             * changes once is reported at once.
-             *
-             * `values_at` is a cell, and it is read here through a probe — deliberately,
-             * so that this cell does NOT subscribe to it. Nothing else
-             * writes the stamp: it changes only as a consequence of this very cell's
-             * timer having fired, and at that moment the message has just gone out and
-             * there is nothing to recompute. Were the read a subscribing one, the write
-             * would invalidate this cell, the recomputed wait would be a full period,
-             * and a fresh timer would resend values already on the wire — one extra
-             * message per period, for ever. Same reason `mount()` probes its own past.
-             * Measured in `values.test.ts`, on a hand moved clock: first send at delay 0,
-             * a change 100 ms later waits the remaining 150, and the stamp is still there
-             * after a tick on which nobody looked at it.
-             */
             values_task() {
                 const names = this.values_wanted();
                 if (!names.length)
@@ -11249,23 +9362,12 @@ var $;
                     this.post({ kind: 'values', values });
                 });
             }
-            /**
-             * The one window the scene talks to.
-             *
-             * A plain field, never a cell: a cross-origin `Window` written into an atom
-             * is walked by the framework's deep comparison, which reads `location.href`
-             * and throws `SecurityError` — and the handler then dies silently. Identity
-             * comparison alone touches no property and is safe.
-             */
             peer() {
                 return this.$.$mol_dom_context.parent;
             }
             message_receive(event) {
                 if (!event)
                     return;
-                // The peer is checked even though the scene keeps no secrets: a
-                // stray window posting here would make the scene render something
-                // the host never sent, and that is a long thing to debug.
                 const message = this.$.$bog_vmap_bridge_read(event, this.peer());
                 if (!message)
                     return;
@@ -11273,24 +9375,16 @@ var $;
                     case 'doc_set': {
                         this.doc_root(message.root);
                         this.doc_src(message.src);
-                        // A host older than the `js` field of the contract just sends
-                        // documents with no handwritten bodies.
                         const bodies = message.js;
                         this.doc_js(bodies && typeof bodies === 'object' ? bodies : {});
                         return;
                     }
-                    // First message of every handshake, before the document and the
-                    // libraries. A host older than this contract never sends it, and the
-                    // scene then compiles nothing, which is the honest outcome: without a
-                    // pack every class of the document would inherit our own base class.
                     case 'pack_set':
                         this.pack_uri(String(message.uri ?? ''));
                         return;
                     case 'css_set':
                         this.doc_css(message.css);
                         return;
-                    // The whole list every time. A host older than this message simply
-                    // never sends it, and the document compiles against the pack alone.
                     case 'libs_set':
                         this.libs(Array.isArray(message.parts) ? message.parts : []);
                         return;
@@ -11305,19 +9399,9 @@ var $;
                         return;
                     case 'click_at': {
                         this.click_apply(message.x, message.y, message.mods);
-                        // A click is a push like any other and owes the host an answer:
-                        // geometry, which the click may just have changed. Sent at once
-                        // rather than left to the debounced report, because a click that
-                        // changes nothing would otherwise be answered by nothing, and the
-                        // watchdog would read that silence as a stuck scene.
                         this.report_send();
                         return;
                     }
-                    // Answered right here, off the raw message, and deliberately not
-                    // through any cell: what the host is asking is whether this THREAD is
-                    // running, and a fiber of document code looping is exactly what would
-                    // stop this line from being reached. Nothing is read, nothing is
-                    // computed, so a `pong` cannot be delayed by anything but a real stop.
                     case 'ping':
                         this.post({ kind: 'pong', nonce: message.nonce });
                         return;
@@ -11331,14 +9415,6 @@ var $;
                     }
                 }
             }
-            /**
-             * Replays a click the host overlay took, on whatever is under that point here.
-             *
-             * The host sends world coordinates and this side owns the same camera the
-             * stage is drawn with, so the point on this window is `(world - camera) *
-             * zoom` — the inverse of what `sizes_of` does to a measured box. The replay
-             * itself lives in the click helper of this module, where it is tested.
-             */
             click_apply(x, y, mods) {
                 const camera = this.camera();
                 const zoom = camera.zoom || 1;
@@ -11350,12 +9426,6 @@ var $;
             boot() {
                 return new this.$.$mol_after_tick(() => this.post({ kind: 'ready' }));
             }
-            /**
-             * Relays `Escape` to the host. With the pointer let inside a part the focus
-             * is in this frame, so the key never reaches the editor's own listener, and
-             * the only way out was a click past the box. Nothing else travels: what is
-             * typed into the document stays in the document.
-             */
             key_listener() {
                 return new this.$.$mol_dom_listener(this.$.$mol_dom_context, 'keydown', $mol_wire_async(this).key_relay);
             }
@@ -11364,68 +9434,24 @@ var $;
                     return;
                 this.post({ kind: 'key', key: 'Escape' });
             }
-            /**
-             * The wire graph does not see layout, and that is a whole class of silent
-             * staleness, not one occasion. A frame with no layout at all — a hidden tab, a
-             * collapsed panel — measures 0x0; a late font or a decoded image resizes the
-             * document with nothing in the graph moving. In every case the host would keep
-             * the stale numbers until the next edit. The observer covers all of them at
-             * once, because its first delivery happens exactly when the box first exists.
-             *
-             * The wrapper is here to give the observer a `destructor`: a bare
-             * `ResizeObserver` is not ownable, so the atom would leave the previous one
-             * connected on every rebuild.
-             *
-             * The set of watched nodes is not decided here — it is every node the last
-             * report measured, which `resize_sync()` hands over. The root alone is not
-             * enough and stops being enough the moment there is an artboard: a page of
-             * fixed width keeps its own box while everything inside it reflows, so the
-             * one observer that used to be here would never fire and the host would sit
-             * on the boxes of the previous layout.
-             */
             resize_watch() {
                 const observer = new ResizeObserver(() => this.report_send());
                 return { observer, destructor: () => observer.disconnect() };
             }
-            /**
-             * Nodes the observer is watching right now. A plain field on purpose: it is a
-             * mirror of what `ResizeObserver` already holds, read by nobody but the one
-             * method that keeps the two in step, so putting it in the graph would add a
-             * cell that can never wake anything.
-             */
             resize_seen = new Set();
-            /** Watches exactly the nodes of the last measurement, and nothing else. */
             resize_sync(nodes) {
                 this.resize_seen = this.$.$bog_vmap_scene_measure_watch(this.resize_watch().observer, this.resize_seen, nodes);
             }
-            /**
-             * Debounced answer to the host.
-             *
-             * A timeout and not an animation frame: the scene lives in an iframe, and a
-             * background tab stops firing animation frames.
-             *
-             * The cell depends on the rendered tree, not only on the sources. The
-             * report reads geometry and failures off the DOM, and a timer started
-             * from a source change alone can easily fire before the frame is
-             * committed — then the sizes are of the previous layout and a render
-             * error is not on the node yet.
-             */
             report_task() {
                 this.doc_src();
                 this.doc_root();
                 this.doc_js();
                 this.doc_css();
                 this.libs();
-                // Placement MOVES nodes without resizing any of them, and a
-                // `ResizeObserver` reports size and never position. So this subscription
-                // is not a stand-in for the narrow observer that used to watch the root
-                // alone — it stays needed however many nodes are watched.
                 this.spots();
                 this.assets();
                 this.camera();
                 const made = this.instance();
-                // A failure of the document is read off the DOM in `report_post()`,
-                // so here it is only a subscription, never something to rethrow.
                 if (made)
                     try {
                         made.dom_final();
@@ -11455,11 +9481,6 @@ var $;
                 const failed = made ? this.render_error(made) : { message: '', node: '' };
                 this.error_post('runtime', failed.message, failed.node);
             }
-            /**
-             * Keeps the boxes of the free parts for the next culling round, merged into
-             * `sizes_seen()`. Only the direct children of the root are kept, the same
-             * set `shown()` judges: one path segment is exactly one free part.
-             */
             sizes_remember(sizes) {
                 const prefix = this.doc_root() + '/';
                 const seen = { ...this.sizes_seen() };
@@ -11473,56 +9494,20 @@ var $;
                 }
                 this.sizes_seen(seen);
             }
-            /**
-             * The failure of the last render, and the node it belongs to.
-             *
-             * The walk goes over the views and not over the DOM, even though a failing
-             * element is a `querySelector` away. The host addresses a node by the path
-             * `sizes` was keyed with, and the attribute the element carries is a
-             * different vocabulary: lowercased and joined by underscores, so `My_box`
-             * and `my/Box` reach the host as one string and neither of them matches. A
-             * label put on the wrong node is worse than no label at all.
-             *
-             * A document whose own render throws is the common case, so the root is
-             * asked first — that is inside the walk, which starts there.
-             */
             render_error(made) {
                 const found = this.$.$bog_vmap_scene_seek(made, this.walk_of(made), view => this.view_broken(view) !== '');
                 if (!found)
                     return { message: '', node: '' };
                 return { message: this.view_broken(found.view), node: this.part_of(found.path) };
             }
-            /**
-             * The free part a path falls inside, which is how the host names a node.
-             *
-             * One segment and never the whole path: the host looks a node up by the name
-             * it was given in `sizes`, and there only the direct children of the root are
-             * kept — one path segment is exactly one free part. A deeper path is reported
-             * by the part that CONTAINS it rather than by its own last segment, and that
-             * is not a rounding but the honest answer: the failure really is inside that
-             * part, while a bare last segment would collide with a part of the same name
-             * elsewhere and put the mark on the wrong node, silently.
-             *
-             * The root itself is no node of the canvas, so it comes back empty and the
-             * failure stays in the status line, where a failure of the whole document
-             * belongs.
-             */
             part_of(path) {
                 const prefix = this.doc_root() + '/';
                 if (!path.startsWith(prefix))
                     return '';
                 return path.slice(prefix.length).split('/')[0] ?? '';
             }
-            /**
-             * The failure written on the node of one view, or an empty string.
-             *
-             * A suspension is not a failure: the framework writes the same attribute while
-             * a fiber waits, and reporting that would light the node up on every load.
-             */
             view_broken(view) {
                 let node;
-                // A view whose node cannot even be built is a view with nothing to read
-                // a failure off; the failure of its owner is reported instead.
                 try {
                     node = view.dom_node();
                 }
@@ -11532,43 +9517,21 @@ var $;
                 const broken = node.getAttribute('mol_view_error');
                 if (!broken || broken === 'Promise' || broken === '$mol_promise_blocker')
                     return '';
-                // The attribute holds only the error name; the message itself is put
-                // into the text of the node.
                 const text = (node.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 500);
                 return text ? `${broken}: ${text}` : broken;
             }
-            /**
-             * Node of the first live instance of a class, by the path the host uses.
-             *
-             * This is how a COMPILE failure gets a node. The failure names a class, and
-             * a class is not a node — but the tree still standing on the screen is the
-             * one built from the previous text, so the instance of the class just broken
-             * is exactly the node the user is looking at. When the class has no live
-             * instance, or is the root itself, there is nothing better to say than the
-             * root, and when it is not named at all the answer is empty.
-             */
             class_node(made, klass) {
                 if (!klass)
                     return '';
-                // The root class is the document, not a node of the canvas. Naming it
-                // would hand the host a class name where it expects a part name, and a
-                // name it cannot find is a mark that never appears, with nothing said.
                 if (klass === this.doc_root())
                     return '';
                 const found = this.$.$bog_vmap_scene_seek(made, this.walk_of(made), view => view.constructor?.name === klass);
                 return found ? this.part_of(found.path) : '';
             }
-            /**
-             * How to walk a rendered document: the three things the walks need to know
-             * about the framework, in one place because both of them need the same three
-             * and a second copy would be a second vocabulary.
-             */
             walk_of(made) {
                 return {
                     key: this.doc_root(),
                     view_of: (kid) => this.view_like(kid) ? kid : null,
-                    // A document whose `sub` throws is a document mid-failure, reported on
-                    // the error channel; here it simply has no children to walk.
                     kids_of: (view) => { try {
                         return view.sub() ?? [];
                     }
@@ -11578,77 +9541,22 @@ var $;
                     prop_of: (view) => this.view_prop(view),
                 };
             }
-            /**
-             * Reports a failure only when it changes, and `null` once it is gone.
-             *
-             * Without the explicit clear the host cannot tell a failure that is
-             * still there from one that has just been fixed: the scene would simply
-             * go quiet, and quiet is indistinguishable from broken. Edge triggering
-             * also stops the same message being resent on every report round.
-             *
-             * `null` rather than an empty string, because an empty error text is a
-             * plausible bug and must not read as good news. The two stages clear
-             * independently.
-             */
             error_post(at, message, node) {
                 const next = message || null;
-                // Probed, not read: `error_post()` runs from the report round and writes
-                // this cell on the very next line, and a subscribing read would make the
-                // round depend on what it is about to change.
-                // `?? null` because a cell never computed probes as `undefined`, and «never
-                // reported» has to read the same as «reported clear», or the first round
-                // of a healthy scene would announce a failure that has just gone away.
                 if (($mol_wire_probe(() => this.error_sent(at)) ?? null) === next)
                     return;
                 this.error_sent(at, next);
-                // The field always travels, empty when the failure belongs to nobody, so
-                // that the host never has to tell «no node» from «an older scene».
                 this.post({ kind: 'error', at, message: next, node });
             }
-            /**
-             * Geometry of the document, in world units, and the nodes it was read off.
-             *
-             * The walk itself knows nothing of the framework; what a view is, what its
-             * children are and which property holds it are the three things this class
-             * knows and hands over.
-             */
             sizes_of(root) {
                 return this.$.$bog_vmap_scene_measure(root, {
                     ...this.walk_of(root),
                     zoom: this.camera().zoom,
                 });
             }
-            /**
-             * Is this piece of content a view, told by shape rather than by class.
-             *
-             * Not a fix for a break: measured, an `instanceof` against the base class
-             * reports all seven nodes here, pack built ones included. It works by a
-             * coincidence of scope, and the coincidence is worth spelling out because the
-             * same operator does the opposite one file away.
-             *
-             * The base class named in THIS file compiles to a bare identifier, and no
-             * declaration of that name stands in the emitted closure around it, so the
-             * name goes up the scope chain to the global — which is where the donor pack
-             * puts its own classes, and which is therefore the very class the document
-             * extends. Late binding, check passes. The same text inside the framework's
-             * own file sits next to the declaration and binds early, which is exactly why
-             * `render()` refuses a pack built document and why it is mounted as a DOM node.
-             *
-             * So the operator holds only while this method stays in a file that does not
-             * declare that name, and while the pack is the last writer of the global.
-             * Neither is a property of what is being asked. Shape is.
-             * @see ../ARCHITECTURE.md section 4
-             */
             view_like(kid) {
                 return typeof kid?.dom_node === 'function';
             }
-            /**
-             * Property the view is held by, taken from the owning atom.
-             *
-             * That is the flat property name of the root class — see section 1 of
-             * the architecture — which is exactly the handle the host addresses a
-             * node with, at any depth of nesting.
-             */
             view_prop(view) {
                 const owner = this.$.$mol_owning_get(view);
                 const name = owner?.task?.name?.trim();
@@ -11777,25 +9685,6 @@ var $;
         ], $bog_vmap_scene.prototype, "assets_push", null);
         __decorate([
             $mol_mem
-            /**
-             * The document is mounted as a DOM node rather than as a sub view.
-             *
-             * The renderer (`view.tsx:307`) tells "a view" from "a string" by an
-             * `instanceof` against the base class local to its own file, that is the
-             * private copy of its own bundle. The document inherits from the base class of
-             * the donor pack, so the check is false and the branch falls through to
-             * `String( child )`: compilation stays green, no error reaches the bridge, and
-             * the document renders into its own node that never enters the DOM.
-             *
-             * An `Element` takes the `instanceof Node` branch instead, and about that one
-             * the second copy of the framework has no opinion. Reactivity of the document
-             * is untouched, it lives entirely inside its own subtree.
-             *
-             * `css_attach()` is read right here, next to the instance, on purpose: a cell
-             * nobody reads during render is swept by the graph, and the styles would then
-             * stop updating after the very first attach.
-             * @see ../ARCHITECTURE.md section 4, "Два бандла в одном документе"
-             */
         ], $bog_vmap_scene.prototype, "stage", null);
         __decorate([
             $mol_mem
@@ -11832,18 +9721,6 @@ var $;
     var $$;
     (function ($$) {
         $mol_style_define($bog_vmap_scene, {
-            /**
-             * The frame paints its own ground now.
-             *
-             * It used to be transparent so the host grid showed through, and that is
-             * what could not be kept: a frame with no `color-scheme` is transparent only
-             * until something inside it takes a compositing layer — the camera transform
-             * on `Stage` does — and from then on the browser fills it with a pale base of
-             * its own. Measured in a live window, not under automation. Declaring the
-             * scheme in `index.html` settles the base; painting the theme colour here
-             * makes the canvas the same tone as the editor around it instead of whatever
-             * the browser picked.
-             */
             position: 'relative',
             width: '100%',
             height: '100%',
@@ -11851,13 +9728,6 @@ var $;
             background: { color: $mol_theme.back },
             flex: { direction: 'column' },
             align: { items: 'flex-start' },
-            /**
-             * Under the document, and said with a number rather than left to chance:
-             * `Grid` is positioned and `Stage` is transformed, so both paint in the same
-             * layer and DOM order alone would decide. Figma keeps its grid beneath the
-             * content and so do we — the whole point of moving the grid in here was to
-             * keep that order, not to invert it.
-             */
             Grid: {
                 position: 'absolute',
                 top: 0,
@@ -11866,7 +9736,6 @@ var $;
                 width: '100%',
                 height: '100%',
                 fill: 'none',
-                // `stroke` comes from CSSStyleDeclaration and is plain `string` there.
                 stroke: String($mol_theme.line),
                 strokeWidth: '1px',
                 pointerEvents: 'none',
@@ -11877,13 +9746,8 @@ var $;
                 flex: { direction: 'column' },
                 align: { items: 'flex-start' },
                 transformOrigin: '0 0',
-                // `[mol_view]` animates `transform` over .2s, and a camera that
-                // lags a fifth of a second behind the pointer is not a camera.
                 transition: 'none',
             },
-            // The note lies over the canvas and its grid, so it needs a ground of its
-            // own and full contrast text: the shade token of the theme was measured on
-            // screen and came out unreadable over the canvas.
             Wait: {
                 padding: $mol_gap.block,
                 maxWidth: '22rem',
@@ -11902,14 +9766,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * A value of the document as a short label for a wire.
-     *
-     * Text and numbers as they are, arrays and plain objects as JSON, anything
-     * else — a view, a class — by its own `toString`, which for an object of the
-     * framework is its id. Whitespace is folded and the tail cut: a label sits on
-     * one line.
-     */
     function $bog_vmap_scene_value_text(val, limit = 40) {
         let text;
         if (val === undefined)
@@ -11932,15 +9788,6 @@ var $;
         return text.length > limit ? text.slice(0, limit - 1) + '…' : text;
     }
     $.$bog_vmap_scene_value_text = $bog_vmap_scene_value_text;
-    /**
-     * Current values of the named wires, read off the root instance.
-     *
-     * A wire is a property of the root class, so its value is one call. A call that
-     * throws is reported as the text of the error under that name, and the others
-     * are still read: a broken wire is a label, not a dead scene. A suspension is
-     * the one exception and is rethrown, so the cell calling this waits for the
-     * value instead of labelling a loading wire as broken.
-     */
     function $bog_vmap_scene_values(root, names, limit = 40) {
         const values = {};
         for (const name of names) {
@@ -11967,25 +9814,7 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * First node of a rendered document the probe accepts, and its path.
-     *
-     * The path is built exactly as the measuring walk builds it, and that is
-     * the whole reason this exists as a walk of its own rather than as a read of the
-     * DOM. A failing element does carry an attribute naming it, but that attribute
-     * is lowercased and joined by underscores, so `My_box` and `my/Box` arrive as the
-     * same string and neither matches the key the host was given in `sizes`. A label
-     * placed by a name that does not match is worse than no label.
-     *
-     * Pure, and out of the view for the reason the measurement is: everything that
-     * knows about the framework is handed in, so the walk itself knows only paths.
-     *
-     * @param key path of the root, which every deeper path is built onto
-     */
     function $bog_vmap_scene_seek(root, how, probe) {
-        // The root is asked first: a document whose own render throws is the common
-        // case, and a walk that started with the children would answer with a child
-        // that merely inherited the failure.
         if (probe(root))
             return { path: how.key, view: root };
         const walk = (view, path, depth) => {

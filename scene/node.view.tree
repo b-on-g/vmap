@@ -171,9 +171,6 @@ $mol_plot_ruler_vert $mol_plot_ruler
 	background_height \100%
 	background_width <= title_pos_x
 
-- Background grid in world coordinates. Line placement comes from the ruler of the
-- plotting module; its pane is not taken: it auto fits to data and renders svg-only
-- graphs.
 $bog_vmap_scene_grid $mol_svg_root
 	aspect \none
 	shift $mol_vector_2d<number> /
@@ -194,170 +191,9 @@ $bog_vmap_scene_grid_hor $mol_plot_ruler_hor
 $bog_vmap_scene_grid_vert $mol_plot_ruler_vert
 	title \
 
-$mol_touch $mol_plugin
-	start_zoom? 0
-	start_distance? 0
-	zoom? 1
-	allow_draw true
-	allow_pan true
-	allow_zoom true
-	action_type? \
-	action_point? $mol_vector_2d<number> /
-		NaN
-		NaN
-	-
-	start_pan? /
-		0
-		0
-	pan? $mol_vector_2d<number> /
-		0
-		0
-	pointer_center $mol_vector_2d<number> /
-		NaN
-		NaN
-	-
-	start_pos? null
-	swipe_precision 16
-	-
-	swipe_right? null
-	swipe_bottom? null
-	swipe_left? null
-	swipe_top? null
-	-
-	swipe_from_right? null
-	swipe_from_bottom? null
-	swipe_from_left? null
-	swipe_from_top? null
-	-
-	swipe_to_right? null
-	swipe_to_bottom? null
-	swipe_to_left? null
-	swipe_to_top? null
-	-
-	draw_start? null
-	draw? null
-	draw_end? null
-	-
-	style *
-		^
-		touch-action \none
-		overscroll-behavior \none
-	-
-	event *
-		^
-		pointerdown? <=> event_start? null
-		pointermove? <=> event_move? null
-		pointerup? <=> event_end? null
-		pointerleave? <=> event_leave? null
-		wheel? <=> event_wheel? null
-
-$mol_plot_pane $mol_svg_root
-	aspect \none
-	-
-	hue_base? +NaN
-	hue_shift? 111
-	-
-	gap_hor 48
-	gap_vert 24
-	gap_left <= gap_hor
-	gap_right <= gap_hor
-	gap_top <= gap_vert
-	gap_bottom <= gap_vert
-	gap $mol_vector_2d<$mol_vector_range<number>> /
-		<= gap_x $mol_vector_range<number> /
-			<= gap_left
-			<= gap_right
-		<= gap_y $mol_vector_range<number> /
-			<= gap_bottom
-			<= gap_top
-	-
-	shift_limit $mol_vector_2d<$mol_vector_range<number>> /
-		<= shift_limit_x $mol_vector_range<number> /
-			0
-			0
-		<= shift_limit_y $mol_vector_range<number> /
-			0
-			0
-	shift_default $mol_vector_2d<number> /
-		0
-		0
-	shift? $mol_vector_2d<number> /
-		0
-		0
-	scale_limit $mol_vector_2d<$mol_vector_range<number>> /
-		<= scale_limit_x $mol_vector_range<number> /
-			0
-			Infinity
-		<= scale_limit_y $mol_vector_range<number> /
-			0
-			-Infinity
-	scale_default $mol_vector_2d<number> /
-		0
-		0
-	scale? $mol_vector_2d<number> /
-		1
-		-1
-	scale_x? 1
-	scale_y? -1
-	size $mol_vector_2d<number> /
-		0
-		0
-	size_real $mol_vector_2d<number> /
-		1
-		1
-	dimensions $mol_vector_2d<$mol_vector_range<number>> /
-		<= dimensions_x $mol_vector_range<number> /
-			Infinity
-			-Infinity
-		<= dimensions_y $mol_vector_range<number> /
-			Infinity
-			-Infinity
-	dimensions_viewport $mol_vector_2d<$mol_vector_range<number>> /
-		<= dimensions_viewport_x $mol_vector_range<number> /
-			Infinity
-			-Infinity
-		<= dimensions_viewport_y $mol_vector_range<number> /
-			Infinity
-			-Infinity
-	-
-	sub <= graphs_sorted /$mol_svg
-	graphs_colored <= graphs_visible <= graphs_positioned <= graphs /$mol_plot_graph
-	-
-	plugins /
-		^
-		<= Touch $mol_touch
-			zoom? <=> zoom? 1
-			pan? <=> shift?
-			pointer_center => cursor_position
-			allow_draw <= allow_draw true
-			allow_pan <= allow_pan true
-			allow_zoom <= allow_zoom true
-			action_type => action_type
-			action_point => action_point
-			draw_start? <=> draw_start? null
-			draw? <=> draw? null
-			draw_end? <=> draw_end? null
-	- event *
-		^
-		dblclick? <=> reset? null
-
-- The sandbox application. Runs untrusted code, talks to the host only by
-- postMessage. Knows nothing about Giper Baza, the network or user keys.
-- @see ../ARCHITECTURE.md section 4
 
 $bog_vmap_scene $mol_view
 	sub /
-		- The canvas ground. Inside the frame since the frame stopped being see
-		- through: a `color-scheme` is what gives a frame its base colour, and
-		- without one Chrome keeps the frame transparent only until the transform
-		- on `Stage` promotes it to its own layer, then washes it pale. Declaring
-		- the scheme fixes the tone and makes the frame opaque, so anything that
-		- has to be under the document has to be in here with it.
-		-
-		- Still not transformed, and that is the point of section 8: the camera
-		- moves the lines by recomputing the `d` of the path, so a stroke stays one
-		- pixel at any zoom. Exactly one CSS transform in the system, and it is on
-		- `Stage`, not here.
 		<= Grid $bog_vmap_scene_grid
 			shift <= grid_shift $mol_vector_2d<number> /
 				0
@@ -369,9 +205,6 @@ $bog_vmap_scene $mol_view
 			style *
 				transform <= camera_transform \none
 			sub <= stage /$mol_view_content
-	-
-	- Stated wait instead of an empty canvas: a cold pack is 2.25 MB and 610 ms,
-	- and a blank frame for that long reads as a breakage.
 	Wait $mol_view
 		sub /
 			<= pack_note \
