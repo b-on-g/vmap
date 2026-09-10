@@ -34613,13 +34613,16 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
-		rows(){
+		body_content(){
 			return [];
 		}
-		Rows(){
+		Stack(){
 			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ((this.rows()));
+			(obj.sub) = () => ((this.body_content()));
 			return obj;
+		}
+		rows(){
+			return [];
 		}
 		title_note(){
 			return "";
@@ -34696,7 +34699,12 @@ var $;
 		}
 		Body(){
 			const obj = new this.$.$mol_scroll();
-			(obj.sub) = () => ([(this.Rows())]);
+			(obj.sub) = () => ([(this.Stack())]);
+			return obj;
+		}
+		Rows(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.rows()));
 			return obj;
 		}
 		Note(){
@@ -34740,7 +34748,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Base"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Total"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "flex_value"));
-	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Rows"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Stack"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "row_value"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "row_keyed"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "row_changeable"));
@@ -34751,6 +34759,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Head"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Flex"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Body"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Rows"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Note"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Empty"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Node"));
@@ -34870,8 +34879,13 @@ var $;
                 return [
                     this.Head(),
                     ...this.title_note() ? [this.Note()] : [],
-                    this.Flex(),
                     this.Body(),
+                ];
+            }
+            body_content() {
+                return [
+                    this.Flex(),
+                    this.Rows(),
                 ];
             }
             class_ready() {
@@ -35101,6 +35115,13 @@ var $;
             Total: {
                 color: $mol_theme.shade,
                 font: { size: '.75rem' },
+            },
+            Body: {
+                flex: { grow: 1, shrink: 1 },
+                minHeight: 0,
+            },
+            Stack: {
+                flex: { direction: 'column' },
             },
             Rows: {
                 flex: { direction: 'column' },

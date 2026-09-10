@@ -25556,13 +25556,16 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
-		rows(){
+		body_content(){
 			return [];
 		}
-		Rows(){
+		Stack(){
 			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ((this.rows()));
+			(obj.sub) = () => ((this.body_content()));
 			return obj;
+		}
+		rows(){
+			return [];
 		}
 		title_note(){
 			return "";
@@ -25639,7 +25642,12 @@ var $;
 		}
 		Body(){
 			const obj = new this.$.$mol_scroll();
-			(obj.sub) = () => ([(this.Rows())]);
+			(obj.sub) = () => ([(this.Stack())]);
+			return obj;
+		}
+		Rows(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.rows()));
 			return obj;
 		}
 		Note(){
@@ -25683,7 +25691,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Base"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Total"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "flex_value"));
-	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Rows"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Stack"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "row_value"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "row_keyed"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "row_changeable"));
@@ -25694,6 +25702,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Head"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Flex"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Body"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Rows"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Note"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Empty"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Node"));
@@ -26155,8 +26164,13 @@ var $;
                 return [
                     this.Head(),
                     ...this.title_note() ? [this.Note()] : [],
-                    this.Flex(),
                     this.Body(),
+                ];
+            }
+            body_content() {
+                return [
+                    this.Flex(),
+                    this.Rows(),
                 ];
             }
             class_ready() {
@@ -26386,6 +26400,13 @@ var $;
             Total: {
                 color: $mol_theme.shade,
                 font: { size: '.75rem' },
+            },
+            Body: {
+                flex: { grow: 1, shrink: 1 },
+                minHeight: 0,
+            },
+            Stack: {
+                flex: { direction: 'column' },
             },
             Rows: {
                 flex: { direction: 'column' },
@@ -39015,6 +39036,16 @@ var $;
             const two = inspect_of($, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n`);
             $mol_assert_equal(two.class_ready(), true);
             $mol_assert_ok(two.sub().length > 1);
+        },
+        'everything that can grow is inside the one scroll of the panel'($) {
+            const one = inspect_of($, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n`);
+            const body = one.body();
+            $mol_assert_equal(body.filter(view => view instanceof $mol_scroll).length, 1);
+            $mol_assert_equal(body.includes(one.Body()), true);
+            $mol_assert_equal(body.includes(one.Flex()), false);
+            $mol_assert_equal(body.includes(one.Rows()), false);
+            $mol_assert_equal(one.body_content().includes(one.Flex()), true);
+            $mol_assert_equal(one.body_content().includes(one.Rows()), true);
         },
     });
     const d = '$';

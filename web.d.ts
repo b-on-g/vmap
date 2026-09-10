@@ -48362,7 +48362,7 @@ declare namespace $ {
 		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_view__sub_bog_vmap_app_inspect_8 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_inspect['rows'] >
+		ReturnType< $bog_vmap_app_inspect['body_content'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
@@ -48382,7 +48382,7 @@ declare namespace $ {
 		ReturnType< $mol_scroll['sub'] >
 	>
 	type $mol_view__sub_bog_vmap_app_inspect_12 = $mol_type_enforce<
-		readonly(any)[]
+		ReturnType< $bog_vmap_app_inspect['rows'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
@@ -48391,62 +48391,67 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_lang_node__source_bog_vmap_app_inspect_14 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_inspect_14 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $bog_vmap_lang_node__source_bog_vmap_app_inspect_15 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['source'] >
 		,
 		ReturnType< $bog_vmap_lang_node['source'] >
 	>
-	type $bog_vmap_lib__pack_bog_vmap_app_inspect_15 = $mol_type_enforce<
+	type $bog_vmap_lib__pack_bog_vmap_app_inspect_16 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['pack'] >
 		,
 		ReturnType< $bog_vmap_lib['pack'] >
 	>
-	type $bog_vmap_lib__classes_bog_vmap_app_inspect_16 = $mol_type_enforce<
+	type $bog_vmap_lib__classes_bog_vmap_app_inspect_17 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['classes'] >
 		,
 		ReturnType< $bog_vmap_lib['classes'] >
 	>
-	type $bog_vmap_app_inspect_row__sign_bog_vmap_app_inspect_17 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__sign_bog_vmap_app_inspect_18 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_sign'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['sign'] >
 	>
-	type $bog_vmap_app_inspect_row__owner_bog_vmap_app_inspect_18 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__owner_bog_vmap_app_inspect_19 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_owner'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['owner'] >
 	>
-	type $bog_vmap_app_inspect_row__inherited_bog_vmap_app_inspect_19 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__inherited_bog_vmap_app_inspect_20 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_inherited'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['inherited'] >
 	>
-	type $bog_vmap_app_inspect_row__value_bog_vmap_app_inspect_20 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__value_bog_vmap_app_inspect_21 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_value'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['value'] >
 	>
-	type $bog_vmap_app_inspect_row__keyed_bog_vmap_app_inspect_21 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__keyed_bog_vmap_app_inspect_22 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_keyed'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['keyed'] >
 	>
-	type $bog_vmap_app_inspect_row__changeable_bog_vmap_app_inspect_22 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__changeable_bog_vmap_app_inspect_23 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_changeable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['changeable'] >
 	>
-	type $bog_vmap_app_inspect_row__drop_bog_vmap_app_inspect_23 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__drop_bog_vmap_app_inspect_24 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_drop'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['drop'] >
 	>
-	type $bog_vmap_app_inspect_row__binds_bog_vmap_app_inspect_24 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__binds_bog_vmap_app_inspect_25 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['binds'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['binds'] >
 	>
-	type $bog_vmap_app_inspect_row__nodes_bog_vmap_app_inspect_25 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__nodes_bog_vmap_app_inspect_26 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['nodes'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['nodes'] >
@@ -48461,8 +48466,9 @@ declare namespace $ {
 		total( ): string
 		Total( ): $mol_view
 		flex_value( id: any, next?: string ): string
+		body_content( ): readonly($mol_view)[]
+		Stack( ): $mol_view
 		rows( ): readonly(any)[]
-		Rows( ): $mol_view
 		title_note( ): string
 		empty_note( ): string
 		classes( ): readonly(any)[]
@@ -48483,6 +48489,7 @@ declare namespace $ {
 		Head( ): $mol_view
 		Flex( ): $bog_vmap_app_inspect_flex
 		Body( ): $mol_scroll
+		Rows( ): $mol_view
 		Note( ): $mol_view
 		Empty( ): $mol_view
 		Node( ): $bog_vmap_lang_node
@@ -48572,6 +48579,7 @@ declare namespace $.$$ {
         title_value(next?: string): string;
         title_submit(event?: Event): void;
         body(): readonly $mol_view[];
+        body_content(): readonly $mol_view[];
         class_ready(): boolean;
         base_title(): string;
         ports(): Map<string, $mol_tree2>;

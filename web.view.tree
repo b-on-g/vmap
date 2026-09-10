@@ -2538,7 +2538,9 @@ $bog_vmap_app_inspect $mol_view
 		value*? <=> flex_value*? \
 	Body $mol_scroll
 		sub /
-			<= Rows $mol_view sub <= rows /
+			<= Stack $mol_view
+				sub <= body_content /$mol_view
+	Rows $mol_view sub <= rows /
 	Note $mol_view
 		sub / <= title_note \
 	Empty $mol_view
