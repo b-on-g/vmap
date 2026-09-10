@@ -39837,39 +39837,12 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /**
-     * Document model over a `view.tree` AST.
-     *
-     * A vmap document is one `view.tree` class, so the source text is the truth and
-     * the tree is derived from it. Every edit goes through the tree and is written
-     * straight back as text, which is what makes source export free.
-     *
-     * Port of the component and property models of studio, plus the wire emitter,
-     * which studio has no equivalent of. Deviations are marked at their place.
-     *
-     * Pure model: knows nothing about DOM, compiles nothing, executes nothing.
-     * @see ../ARCHITECTURE.md sections 1 and 2
-     */
-    /**
-     * Serializes to exactly `name = Node prop`, an `=` operator over exactly two
-     * tokens. The shape of this type is the whole safety story: there is no field
-     * for the operator, no field for a third token, and one flag for both ends, so
-     * none of the five traps of section 1 is even expressible.
-     */
     type $bog_vmap_lang_wire = {
-        /** Property of the class the wire lands in, bare name. */
         readonly name: string;
-        /** Property holding the source node, bare name. Must be declared. */
         readonly node: string;
-        /** Property of that node, bare name. */
         readonly prop: string;
-        /** Two-way. Puts `?` on BOTH ends, never on one. */
         readonly bidi?: boolean;
     };
-    /**
-     * A wire with its consumer: `from.from_prop` feeds `to.to_prop` through the
-     * root property `name`. Two lines of the class and nothing else.
-     */
     type $bog_vmap_lang_link = {
         readonly from: string;
         readonly from_prop: string;
@@ -39878,293 +39851,42 @@ declare namespace $ {
         readonly name: string;
         readonly bidi: boolean;
     };
-    /**
-     * Bare means: no `*`, no `?`, no `!`, no spaces, nothing but a name. Signs are
-     * never carried by a token, they are produced from `bidi`. That single rule
-     * kills three of the five traps at once, because every one of them is a token
-     * that smuggles something in:
-     *
-     * - `value?` as the right token gives `w = Field value?`, which compiles to
-     *   `value(next)` with no `next` in scope, so the wire throws `ReferenceError`
-     *   on ANY read;
-     * - `w?` as the left token gives `w? = Field hint`, which compiles to a setter
-     *   whose right end ignores it, so writes vanish with no error at all;
-     * - `B value` as a token gives `w = A B value`, which compiles to
-     *   `this.A().B().value()`, and `B` was hoisted onto the root by `upper`, so it
-     *   is not a method of `A` and never will be.
-     *
-     * The grammar is the stock signature regexp itself rather than one of our own,
-     * so a token this accepts is a token the compiler accepts.
-     */
     function $bog_vmap_lang_token(this: $, token: string, role: string): string;
-    /**
-     * Stricter than the compiler on purpose. The stock class match takes anything
-     * starting with a dollar or a capital, generics and quotes included, because it
-     * also has to recognize the classes of somebody else's code; a class
-     * WE write has to survive one more step, and that step is mam resolving the
-     * name into a folder. Every underscore is a level of folders, so the name is a
-     * dollar and at least two lowercase segments, and nothing else fits in a path.
-     *
-     * A refusal here is a message to a person, so this answers yes or no and leaves
-     * the wording to the caller, who knows in what language to say it.
-     */
     function $bog_vmap_lang_class_ok(name: string): boolean;
-    /**
-     * The operator is `=` and nothing else. `<= Node prop` looks like the same thing
-     * and is not: it goes through the `upper` hack, which takes the kids of the
-     * reference as default values, so it declares a property `Node` valued `prop`
-     * and silently drops the `.prop()` link from the generated call. Either the
-     * build dies with a message about default values, or the build is green and the
-     * bundle carries `Node(){ return prop }`, a bare identifier that throws at the
-     * one node the wire was drawn to, whenever somebody gets there.
-     *
-     * @see ../ARCHITECTURE.md section 1
-     */
     function $bog_vmap_lang_wire_tree(this: $, wire: $bog_vmap_lang_wire): $mol_tree2;
-    /**
-     * A bare reference `<= name`, the form that goes into `sub`. Bare means
-     * childless: a reference with a child is the middle of the three forms of `<=`,
-     * the only dangerous one, and the guard against it is that this takes a token
-     * instead of a path.
-     */
     function $bog_vmap_lang_ref_tree(this: $, name: string): $mol_tree2;
-    /**
-     * A free part is a name and a class at class level, with no operator between
-     * them: a plain property of the root class, so the compiler makes it a lazy
-     * memoized singleton and it creates no DOM, because it is not in `sub`. That is
-     * the whole mechanism behind a detail lying free on the canvas.
-     */
     function $bog_vmap_lang_part_tree(this: $, name: string, klass: string): $mol_tree2;
-    /** Value of one key of a `*` dictionary, or `null` when the key is not there. */
     function $bog_vmap_lang_dict_get(dict: $mol_tree2 | null, key: string): $mol_tree2 | null;
-    /**
-     * A key already there is replaced where it stands, so `^` keeps the head of the
-     * dictionary it has to keep: a redeclared dictionary REPLACES the one of the
-     * base instead of extending it, and `^` is the line that undoes that. Writing a
-     * key must never be able to move it, and appending is the only other option.
-     */
     function $bog_vmap_lang_dict_set(this: $, dict: $mol_tree2, key: string, value: $mol_tree2 | null): $mol_tree2;
-    /**
-     * Class declarations reordered so that a base always precedes its heir. A
-     * generated class resolves its base at definition time, and the generator emits
-     * declarations in the order it received them. A heir written above its base
-     * therefore inherits the PREVIOUS version of it, or `undefined` on a first run,
-     * and says nothing about it.
-     *
-     * Bases the list does not declare — anything from a library — are left alone:
-     * they are already in the namespace before our code runs.
-     *
-     * The scene carries an equivalent of this for the same reason. The two should
-     * become one, and this is the side to keep: sorting declarations is a property
-     * of the language, not of whoever happens to compile them.
-     */
     function $bog_vmap_lang_sorted(this: $, defs: readonly $mol_tree2[]): readonly $mol_tree2[];
-    /**
-     * A document: several `view.tree` classes in one text.
-     *
-     * The node model below models one CLASS, and rightly so — but a document is not
-     * one class, and using the node as if it were silently eats the others: its
-     * read takes the first kid and its write serializes that one tree over the
-     * whole source, so editing one property of the first class drops the second
-     * from the text. No error, no warning.
-     *
-     * This level owns the text, cuts it into classes for reading, and puts one back
-     * without reserializing its neighbours from anything but their own trees. It
-     * hands out nodes whose `source` is a slice of it, so everything already
-     * written against the node model keeps working unchanged — that is the point of
-     * adding a level instead of widening the one below.
-     *
-     * A class is addressed BY NAME, which is what the editor speaks and what
-     * survives reordering. Two things follow, both real:
-     *
-     * - renaming a class through its node writes under the OLD name, which is
-     *   correct — the slot is found and replaced — but the caller then holds a stale
-     *   key and has to re-read `names()`;
-     * - two classes of one name are one class here, the first. That is already
-     *   broken further down: the class index of the library model keeps the LAST of
-     *   a duplicate pair, so a document with two would disagree with itself about
-     *   which is real.
-     *
-     * @see ../ARCHITECTURE.md section 1
-     */
     class $bog_vmap_lang_doc extends $mol_object {
-        /** The truth. */
         source(next?: string): string;
-        /**
-         * Read only, and that is deliberate. A cell that both reads and writes
-         * `source` would be a cell frozen by its own write — a write to a memoized
-         * cell freezes its dependencies — and the document would stop following the
-         * text after the first edit made through it, which is the one failure that
-         * looks exactly like success.
-         */
         trees(): readonly $mol_tree2[];
         names(): string[];
-        /**
-         * Writing rebuilds the text from the trees of all the classes with this one
-         * replaced, so a neighbour comes back out of its own tree and nothing else.
-         * On an already normalized document that is byte for byte; the first write
-         * to a hand written one normalizes the whole text at once, which is the same
-         * lossy step the node model has always taken, now taken over the document
-         * rather than over one class.
-         *
-         * A name the document does not carry appends, so that handing a node a
-         * source is also how a class is added.
-         *
-         * NOT memoized, for the reason spelled out at `trees`: this is the write
-         * path, and a cell on a write path freezes at what was written. The read is
-         * two lookups over `trees()`, which is a cell already, so there is nothing
-         * to gain either.
-         */
         class_source(name: string, next?: string): string;
-        /**
-         * A class name is spelled in more places than its own declaration: it is the
-         * base of an heir (`site_card site_page`, both with a leading dollar) and the
-         * value of a part declared with it (`Card site_card`, same). Retyping the
-         * declaration alone leaves those
-         * spelling a class nobody declares, which compiles into `Class extends value
-         * undefined` or into a part of a class that is not there — so the mentions
-         * are rewritten in the SAME write, over every class of the document.
-         *
-         * A mention is any tree node typed exactly with the old name. Only structural
-         * tokens carry a type in `tree2`; a literal is a data node, so a class name
-         * written inside a string is not touched and cannot be.
-         *
-         * A name already declared is refused, like the rename of a property: two
-         * classes of one name is a document that disagrees with itself about which is
-         * real, and the class index of a library keeps the last of such a pair.
-         *
-         * Whoever holds a `node( from )` has to ask for `node( to )` afterwards; the
-         * old handle addresses a class the document no longer carries, exactly as the
-         * property handle does after `prop_rename`.
-         */
         class_rename(from: string, to: string): undefined;
-        /**
-         * `source` is replaced with a slice of the document on the instance itself.
-         * Everything else of the node model — the tree, the property list, the wire
-         * emitter — is derived from `source` and so needs no changes at all: the
-         * node cannot tell that its text is a part of a larger one.
-         */
         node(name: string): $bog_vmap_lang_node;
     }
-    /** One node of the document: a single `view.tree` class. */
     class $bog_vmap_lang_node extends $mol_object {
-        /** The truth. Everything else is derived from it. */
         source(next?: string): string;
-        /**
-         * Normalization is lossy: it runs the `upper` hack, so a named sub view
-         * nested in `sub` comes out as a flat property of the root plus a bare
-         * reference left in place. Hoisted properties land BEFORE the ones already
-         * at the top, because they are added during the traversal rather than in the
-         * final loop.
-         *
-         * That flat form is the canonical shape of a document, not a compromise: it
-         * is the model of section 1 spelled out in the text itself. Round trip is
-         * therefore byte for byte only on a normalized source, which is what the
-         * editor holds, because every write serializes the whole class.
-         *
-         * @see ../ARCHITECTURE.md section 1, «Канонический вид документа»
-         *
-         * Deviation from studio: an empty or classless source fails with a message
-         * instead of `Cannot read properties of undefined`. In an editor an empty
-         * buffer is a normal transient state and has to say so.
-         */
         tree(next?: $mol_tree2): $mol_tree2;
         name(next?: string): string;
         base(next?: string): string;
         prop_names(): string[];
         props_tree(): $mol_tree2;
-        /**
-         * Full signature of a property by its bare name: `d` gives back `d*?`.
-         *
-         * Deviation from studio: the early exit is spelled as a test for any sign
-         * instead of `name.indexOf('*') + name.indexOf('?') + name.indexOf('!') > -3`,
-         * which is the same condition written as arithmetic on three `-1`s.
-         */
         prop_fullname(name: string): string;
-        /** Writing `null` drops the property. */
         prop_tree(name: string, next?: $mol_tree2 | null): $mol_tree2 | null;
         prop_add(name: string): void;
         prop_drop(name: string): void;
-        /**
-         * `next` is a whole signature, `d*?` and not `d`, because a rename and a
-         * change of sign arrive together from the inspector and two writes would
-         * leave the document renamed but unsigned in between.
-         *
-         * **A reference is rewritten, never dropped.** A node is named by the
-         * property it occupies, so a rename moves the name every `sub` list, every
-         * wire end and every binding spells. Dropping them instead — which is what
-         * `links_drop` does for a delete — would silently cut the wires of a node
-         * that is still there; the two operations are opposites and must not share
-         * a path. Anything of the shape `<= name`, `<=> name` or `= name prop` at
-         * any depth is such a reference.
-         *
-         * The declaration is retyped IN PLACE, among the kids of the base, and only
-         * there: an override of the same name under a part is a port of that part
-         * and none of our business. In place also keeps the property where it was —
-         * dropping it and inserting it back moved it to the end of the class, which
-         * reorders the canvas for a rename that should not move anything.
-         *
-         * A name already taken is refused rather than merged: two properties of one
-         * name is a document nothing can address afterwards.
-         */
         prop_rename(name: string, next: string): undefined;
         property(name: string): $bog_vmap_lang_prop;
-        /**
-         * Deviation from studio, which has no free parts: the write goes through the
-         * `null` step of the path instead of `base()`, so it lands in the class body
-         * whatever the base is currently called. Same reason `prop_add` does it.
-         */
         part_add(name: string, klass: string): void;
-        /**
-         * The node end has to be declared already, as a free part or as a sub-view.
-         * `=` declares nothing, that is exactly why it has no collision with `upper`,
-         * so a wire to an undeclared node compiles green and throws `is not a
-         * function` at run time. Refusing here is the only place it can be caught.
-         *
-         * The far end, `wire.prop`, is NOT checked: whether the node's class has such
-         * a port is known only to the component library, and this module knows
-         * nothing of libraries, deliberately. The inspector draws wires from the port
-         * list, so the question does not arise there either.
-         */
         wire_add(wire: $bog_vmap_lang_wire): void;
-        /**
-         * Wires declared by the class: every property whose value is the `=`
-         * operator. `bidi` is read off the left end alone, because the emitter never
-         * writes the two signs apart; a hand written wire with one sign is reported
-         * as it is and left for the compiler to complain about.
-         */
         wires(): readonly $bog_vmap_lang_wire[];
-        /**
-         * Properties whose value is a class name, with the overrides written under
-         * it. That is where a consumer of a wire lives: a part declaration with a
-         * port bound to the name of the wire.
-         */
         part_names(): string[];
-        /**
-         * Wires together with who reads them. A wire nobody reads is not a link,
-         * and a reference to a name that is not a wire is a plain binding of the
-         * part and none of this module's business.
-         */
         links(): readonly $bog_vmap_lang_link[];
-        /** Whether `to` is already fed, directly or through others, by `from`. */
         link_reaches(from: string, to: string): boolean;
-        /**
-         * An existing wire to the same end is reused, an unrelated property of the
-         * same name is stepped around with a suffix.
-         */
         link_name(from: string, prop: string, bidi: boolean): string;
-        /**
-         * Two lines and no more. The wire `name = From prop` goes through `wire_add`
-         * with every guard it has, and the consumer is a bare reference in the
-         * declaration of the target part, `to_prop <= name`, or `to_prop? <=> name?`
-         * for a two way wire. The reference is built by the bare reference emitter,
-         * so it can carry nothing under the name and never turns into the middle
-         * form of `<=`.
-         *
-         * Refused, with nothing written: a part wired to itself, an undeclared end,
-         * and a target the source already depends on, because a loop of wires is a
-         * loop of fibers and the scene would hang on the first read.
-         */
         link_add(link: {
             readonly from: string;
             readonly from_prop: string;
@@ -40172,155 +39894,29 @@ declare namespace $ {
             readonly to_prop: string;
             readonly bidi?: boolean;
         }): string;
-        /**
-         * One override of one part, which is what `over_set` is; a wire has no
-         * special way of writing its end and must not grow one, or the two would
-         * drift apart on the first fix to either.
-         */
         link_target(to: string, to_prop: string, next: $mol_tree2 | null): void;
-        /**
-         * Unplugs a port: the reference goes from the target, and the wire goes from
-         * the class when nobody else reads it. Both lines, or the first alone when
-         * the second is still in use.
-         */
         link_drop(to: string, to_prop: string): void;
-        /**
-         * Unplugs every wire with an end on a part: the ones it feeds and the ones
-         * it reads. What a delete of that part has to do before it takes the part
-         * out, or the document keeps a wire to a node that is no longer declared —
-         * which compiles into a call of a property nobody declares.
-         *
-         * Through `link_drop`, so a wire read by somebody else keeps its line
-         * exactly as it does when a port is unplugged by hand; a wire from this part
-         * that nobody reads has no consumer to unplug and goes in the second pass.
-         * Both ends of every OTHER wire are left alone.
-         */
         links_drop(node: string): void;
-        /**
-         * Not through `prop_tree()`: that one is a keyed cell the writes below go
-         * through, and a read taken from a written cell freezes at what was written.
-         * `props_tree()` is a plain derivation of the source and stays live.
-         */
         prop_decl(name: string): $mol_tree2 | null;
-        /**
-         * The empty owner is the class, a named one is a part. Both are one shape
-         * because `upper` has already flattened them: the class carries `sub` as a
-         * property, a part carries it as an override under its class name, and under
-         * either sits the same list of bare references.
-         */
         sub_list(owner?: string): $mol_tree2 | null;
-        /**
-         * `null` when the node declares no `sub` and so is not a container.
-         *
-         * A node WITH a `sub` is an artboard: children of it are laid out by tree,
-         * by ordinary flex, while everything else lies free by coordinates. That is
-         * the whole difference between the two, and it is a difference in the text
-         * rather than a mark on the side, see section 8.
-         *
-         * Content that is not a bare reference — a literal string in `sub` — takes
-         * its place in the list as an empty name, so that an index here is an index
-         * there.
-         */
         sub_names(owner?: string): readonly string[] | null;
-        /** Whose `sub` references this name: a part, `''` for the class, `null` for nobody. */
         sub_holder(name: string): string | null;
-        /** Whether `name` is `owner` itself or lies somewhere under it. */
         sub_within(owner: string, name: string): boolean;
-        /**
-         * An override already there is replaced where it stands, never dropped and
-         * appended: the order of the lines under a part is text the user reads, and
-         * a `sub` that jumped to the bottom on every insertion would rewrite the
-         * declaration around an edit that changed one child.
-         */
         sub_write(owner: string, list: $mol_tree2): void;
-        /** Makes a node a container by giving it an empty `sub`, if it has none. */
         sub_open(owner: string): void;
-        /**
-         * Only under a PART: a property whose value is a class name. Under anything
-         * else the children are not overrides at all — under `sub` they are bare
-         * `<=` references — and reading them as property signatures fails on the
-         * first one, which is how every property of the document gets asked whether
-         * it is an artboard.
-         */
         over_tree(owner: string, prop: string): $mol_tree2 | null;
-        /**
-         * In place, because the order of the lines under a part is text the user
-         * reads: an override that jumped to the bottom every time its value changed
-         * would rewrite the declaration around an edit that changed one line.
-         */
         over_set(owner: string, prop: string, next: $mol_tree2 | null): void;
-        /**
-         * A cycle in `sub` is not a badly drawn document, it is a class whose
-         * `dom_tree()` never returns: the scene would hang on the first render, and
-         * the document that hangs it is the one that got saved.
-         */
         sub_check(name: string, owner: string): void;
-        /**
-         * The position is where the insertion line was drawn, so it is clamped
-         * rather than checked: a drop at the end of a list the document has since
-         * shortened is an ordinary race of a gesture against a document, and landing
-         * at the end is the answer to it.
-         */
         sub_insert(name: string, index: number, owner?: string): void;
-        /**
-         * Taken out first and put back after, so reparenting and reordering are one
-         * operation with one shape. Within one parent the index is corrected for the
-         * hole the node itself leaves, because the position the user aimed at was
-         * read off a list that still had it.
-         *
-         * The refusal is checked BEFORE the node is taken out, not left to the
-         * insertion: a move that fails halfway is a document with the node gone from
-         * the page and nothing in its place, written and saved.
-         */
         sub_move(name: string, index: number, owner?: string): void;
         sub_add(name: string): void;
-        /**
-         * The empty list is kept rather than the whole property dropped: `sub /` with
-         * nothing under it is the shape an empty document starts from, so deleting
-         * the last node returns the source to exactly that, instead of to a class
-         * with no `sub` at all.
-         *
-         * Only the reference goes. Dropping the declaration as well is two facts, so
-         * it is two calls — the same split as `part_add` plus `sub_add` on the way
-         * in. A node taken out of `sub` but still declared is a free part that draws
-         * nothing and keeps its ports, which is a legitimate state, not a leftover.
-         *
-         * The reference is looked for wherever it is, the class and every part of it
-         * alike. A node inside an artboard is referenced by that artboard and not by
-         * the class, and deleting it has to reach there too — otherwise the document
-         * keeps drawing a node nothing declares any more.
-         */
         sub_drop(name: string): void;
     }
-    /**
-     * One property of a node, with its signature. `name`, `tree` and `node` are
-     * handed in by the owner through `make`.
-     */
     class $bog_vmap_lang_prop extends $mol_object {
         name(): string;
         node(): $bog_vmap_lang_node;
         tree(next?: $mol_tree2): $mol_tree2;
-        /** Re-binds the same property to another model class. */
         as<Prop extends typeof $bog_vmap_lang_prop>(Prop: Prop): InstanceType<Prop>;
-        /**
-         * A rename goes to the node, because it is not a fact about this property
-         * alone: everything that spells the old name has to be rewritten in the same
-         * write. A change of sign is local and is written here.
-         *
-         * Deviation from studio: this handle is NOT patched to follow the rename.
-         * Studio overwrites the `name` method of the live property object, which
-         * leaves an object addressing one name and reading another past the graph;
-         * here the handle simply stops addressing anything, and the caller asks the
-         * node for the property under its new name — a keyed cell, so that is one
-         * read and no state.
-         *
-         * **Plain method, and so are the three below.** Every accessor here only
-         * delegates into `tree()`, which is a cell already, and an accessor of that
-         * shape under a memoizing decorator freezes at the value written THROUGH it:
-         * after a rename the handle goes on reporting the new name although it
-         * addresses a property no longer under it, which is the very
-         * object-past-the-graph the patching above was dropped for. There is a test.
-         */
         meta(next?: {
             readonly name?: string;
             readonly key?: string;
@@ -49348,16 +48944,6 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /**
-     * Wire protocol between the vmap host and its sandboxed scene.
-     *
-     * The scene lives in an opaque origin, so `postMessage` is the only channel.
-     * Everything here is plain data: it must survive a structured clone.
-     *
-     * Direction is part of the type on purpose. The host owns the document text,
-     * the camera and the geometry; the scene only compiles, renders and measures.
-     * @see ../ARCHITECTURE.md section 4
-     */
     const $bog_vmap_bridge_ns = "bog_vmap";
     type $bog_vmap_bridge_camera = {
         /** World coordinate under the left edge of the viewport. */
@@ -49386,24 +48972,9 @@ declare namespace $ {
         readonly metaKey: boolean;
         readonly shiftKey: boolean;
     };
-    /**
-     * Host to scene. `doc_set` carries the whole document, not a patch: the scene
-     * holds no source of truth of its own and must never have to merge.
-     */
     type $bog_vmap_bridge_down = {
         readonly kind: 'doc_set';
-        /**
-         * Declaration order is NOT guaranteed: sorting is the scene's job,
-         * because only the scene knows the whole set of classes going into
-         * one compiled string — the document's own plus everything its
-         * libraries contribute.
-         */
         readonly src: string;
-        /**
-         * Hand written bodies, keyed by class name, absent for a class without
-         * one. Without them every property stays undecorated, and an undecorated
-         * property is invisible to the hot swap of stage 4.
-         */
         readonly js: {
             readonly [klass: string]: string;
         };
@@ -49417,17 +48988,6 @@ declare namespace $ {
         readonly kind: 'camera_set';
         readonly camera: $bog_vmap_bridge_camera;
     } | {
-        /**
-         * World coordinates, and a channel of its own apart from `css_set` —
-         * that is the whole point: the scene hangs these as its own style
-         * element, so the document's styles never carry them and the export
-         * cannot see them even by accident. Placement is editor state, not
-         * site content.
-         *
-         * Scaffolding until artboards (stage 6): inside an artboard layout is
-         * a plain flex tree, and only free details lie by coordinates. The
-         * "everything absolute" model was considered and rejected.
-         */
         readonly kind: 'spots_set';
         readonly spots: {
             readonly [node: string]: {
@@ -49436,31 +48996,11 @@ declare namespace $ {
             };
         };
     } | {
-        /**
-         * There are no editor modes: the overlay takes every gesture, so a plain
-         * click — press and release without movement — is relayed here and the
-         * scene replays it on the element under the point, with focus. One click
-         * therefore both picks a part on the host and presses the live component.
-         *
-         * World coordinates, not screen ones: each side resolves its own camera,
-         * so neither has to know the other's pixel geometry.
-         *
-         * Answered like every other push, with `sizes`: a click is the most
-         * likely thing to start a loop in document code, so a scene that takes
-         * one and says nothing back is exactly what the watchdog has to notice.
-         */
         readonly kind: 'click_at';
         readonly x: number;
         readonly y: number;
         readonly mods: $bog_vmap_bridge_mods;
     } | {
-        /**
-         * Ordinary traffic already carries a pulse: every push of the host is
-         * answered with `sizes`. One blind spot is left — document code hung
-         * while nobody was pushing it, because the live component was pressed by
-         * a real event through the hole in the overlay. So the pulse runs always,
-         * from the first `sizes` on.
-         */
         readonly kind: 'ping';
         readonly nonce: number;
     } | {
@@ -49470,51 +49010,12 @@ declare namespace $ {
         /** Bytes, not a blob: URL. A host blob: URL is dead in an opaque origin. */
         readonly bytes: ArrayBuffer;
     } | {
-        /**
-         * Sources of the land libraries attached to the document.
-         *
-         * A land arrives as text and is compiled into the same sandbox as the
-         * document, so a change of the list is a recompile — unlike `pack_set`,
-         * which travels the same wire but is answered by a fresh frame, because a
-         * realm cannot unload a bundle. The whole list every time, in the order
-         * the classes should be declared — the scene sorts by inheritance anyway
-         * and merges nothing.
-         *
-         * The host reads the lands, because only the host may touch the
-         * database; the scene sees strings.
-         * @see ../ARCHITECTURE.md sections 4 and 5
-         */
         readonly kind: 'libs_set';
         readonly parts: readonly $bog_vmap_bridge_part[];
     } | {
-        /**
-         * Donor pack the scene is to load into its realm, as an absolute URL of
-         * the `web.js` of a deployed module. Empty means no pack, which the scene
-         * answers by compiling nothing at all.
-         *
-         * On the bridge and not in the address of the frame, because the frame
-         * has no address: it is raised from markup handed to it, so there is no
-         * query string to carry anything. The rule of section 5 — one pack per
-         * realm, a second one poisons the palette silently — is held by the host
-         * instead: the address of the pack is part of the key of the frame, so a
-         * different pack is a different frame element and a fresh realm.
-         *
-         * Sent first of everything after the handshake. A document compiled
-         * before the pack lands inherits the base view class of the scene's own
-         * bundle and no later load can move it, so the scene waits for this
-         * message before it compiles anything.
-         * @see ../ARCHITECTURE.md sections 4 and 5
-         */
         readonly kind: 'pack_set';
         readonly uri: string;
     } | {
-        /**
-         * Which wires the host wants values for: the root properties of the
-         * wires drawn on screen right now, and only those. The whole list every
-         * time; an empty list stops the flow. The host knows what is visible,
-         * the scene knows the values, so the question goes down and the answer
-         * comes up as `values`.
-         */
         readonly kind: 'values_want';
         readonly names: readonly string[];
     };
@@ -49526,27 +49027,11 @@ declare namespace $ {
         readonly kind: 'pong';
         readonly nonce: number;
     } | {
-        /**
-         * Geometry of the nodes DRAWN this round, not of every node there is.
-         *
-         * With culling, silence about a node means «was not drawn» and not «is
-         * gone», so the host must MERGE rather than replace: otherwise the boxes
-         * of everything just hidden are wiped, and the selection ring, which is
-         * drawn out of exactly those, blinks at the edge of the canvas. Absence
-         * therefore has to be said by someone explicitly, and that someone is the
-         * removal of a node from the document.
-         */
         readonly kind: 'sizes';
         readonly sizes: {
             readonly [node: string]: $bog_vmap_bridge_rect;
         };
     } | {
-        /**
-         * Current values of the wires the host asked for in `values_want`,
-         * keyed by the root property of the wire, as short text. A read that
-         * throws comes back as the text of the error, so a broken wire is
-         * labelled rather than the scene taken down. Throttled by the scene.
-         */
         readonly kind: 'values';
         readonly values: {
             readonly [wire: string]: string;
@@ -49555,26 +49040,12 @@ declare namespace $ {
         readonly kind: 'asset_want';
         readonly id: string;
     } | {
-        /**
-         * A key pressed while the focus was inside the frame, relayed for the
-         * editor to act on: with the pointer let inside a part the keydown lands
-         * in the document of the frame and the host's listener never sees it.
-         * Only keys the editor reacts to travel — `Escape` — never what is being
-         * typed into the document.
-         */
         readonly kind: 'key';
         readonly key: 'Escape';
     } | {
         readonly kind: 'error';
         /** Channel. The two clear independently. */
         readonly at: 'compile' | 'runtime';
-        /**
-         * `null` means the channel is clear again. Errors are edge-triggered, so
-         * a repeated identical failure stays silent, and without an explicit
-         * clear the host could not tell a fixed document from a still broken one.
-         * Null rather than an empty string on purpose: an empty error text is a
-         * plausible bug and must not read as good news.
-         */
         readonly message: string | null;
         /** Node the failure belongs to, when the scene can attribute it. */
         readonly node?: string;
@@ -49584,21 +49055,6 @@ declare namespace $ {
     function $bog_vmap_bridge_send<Message extends $bog_vmap_bridge_message>(target: {
         postMessage(data: unknown, origin: string): void;
     }, message: Message): void;
-    /**
-     * Takes a message off the wire, or null when it is not ours. The channel has no
-     * origin to check against — the scene runs in an opaque one — so anything able
-     * to reach this window can post here, and unknown shapes are dropped.
-     *
-     * Always pass `peer` on the host side. Without it any window that posts a
-     * `ready` takes the channel over: seen for real on stage 1, where a stray debug
-     * frame stole the bridge and the host spent an hour posting into a dead window.
-     * Identity comes from the frame element, never from `event.source`.
-     *
-     * Passing the argument at all turns the check on, so a peer not known yet
-     * rejects everything instead of letting everything through. Omitting it is the
-     * only way to opt out, and only the scene may: it has one correspondent and
-     * answers into the same window.
-     */
     function $bog_vmap_bridge_read<Message extends $bog_vmap_bridge_message>(event: {
         data?: unknown;
         source?: unknown;
@@ -49932,368 +49388,74 @@ declare namespace $ {
 
 //# sourceMappingURL=pane.view.tree.d.ts.map
 declare namespace $.$$ {
-    /** A wire to make: both ends, as the pane asks the owner to write it. */
     type $bog_vmap_app_pane_link_new = Pick<$bog_vmap_lang_link, 'from' | 'from_prop' | 'to' | 'to_prop'>;
-    /** An input to unplug. */
     type $bog_vmap_app_pane_link_end = Pick<$bog_vmap_lang_link, 'to' | 'to_prop'>;
-    /** A node put into the tree of a container, as the pane asks the owner to write it. */
     type $bog_vmap_app_pane_tree_move = {
         readonly name: string;
         readonly owner: string;
         readonly index: number;
     };
-    /** The other end of the bridge, as much of a window as the pane needs. */
     type $bog_vmap_app_pane_peer = {
         postMessage(data: unknown, origin: string): void;
         readonly origin: string;
     };
-    /**
-     * Infinite canvas: background grid, sandboxed scene and the pointer gate over it.
-     *
-     * The camera is a screen-space pan vector plus an isotropic zoom, exactly what
-     * the touch plugin produces. The scene gets it as world coordinates over the bridge and
-     * applies the transform itself, because the host cannot reach into an opaque origin.
-     *
-     * There are no editor modes. The overlay takes every gesture, a click that does
-     * not move is relayed to the scene, and the picked part alone gets real events
-     * through a hole cut in the overlay. Hover on any other part does not work, and
-     * that is accepted: the alternative is the document deciding what the editor sees.
-     * @see ../../ARCHITECTURE.md sections 4 and 8
-     */
     class $bog_vmap_app_pane extends $.$bog_vmap_app_pane {
-        /** Handwritten class bodies. Empty until the code editor of stage 4. */
         doc_js(): {
             readonly [klass: string]: string;
         };
         zoom_min(): number;
         zoom_max(): number;
         camera_zoom(next?: number): number;
-        /** World point under the top left corner of the viewport, plus the zoom. */
         camera(): $bog_vmap_bridge_camera;
         camera_reset(): void;
-        /** Zooms around the middle of the viewport, keeping that point still. */
         zoom_by(mult: number): void;
-        /**
-         * Everything the user has to be told about the scene: a sandbox that is not
-         * there, and the two error channels. They clear independently, so a single
-         * slot would let a fixed compile erase a runtime failure that is still live.
-         */
         error(): string;
-        /**
-         * The two channels sorted onto the nodes they were attributed to.
-         *
-         * A failure the scene could not attribute stays on the strip alone: a mark
-         * on the wrong node would be worse than no mark, and there is nowhere else
-         * to put it. Both channels can name the same node, and then both texts go
-         * on it, and a channel cleared by the scene takes its mark off with it —
-         * the name of a node without a text of its own is not a failure.
-         */
         errors(): {
             readonly [node: string]: string;
         };
-        /** What the scene said about one node, empty when it said nothing. */
         node_error(name: string): string;
-        /** A mark per node the scene complained about, once it has been measured. */
         error_marks(): $mol_view[];
         mark_hint(name: string): string;
-        /** At the top left corner of the node, in screen pixels, like the ring. */
         mark_style(name: string): {
             readonly [prop: string]: string;
         };
-        /**
-         * Which frame is the live one: the generation, and the pack it was raised
-         * with. A new key is a new frame view, a new element and a new document.
-         *
-         * The pack belongs in the key because a realm cannot unload a bundle, and a
-         * second pack over the first poisons half the palette without a word — 277
-         * classes of 414 in the measurement of section 5. The frame no longer has an
-         * address for the pack to ride in, so what used to be held by the browser
-         * reloading on a changed `src` is held here instead, by the same means the
-         * restart button uses.
-         */
         scene_key(): string;
-        /**
-         * The document of the frame, handed to it as markup instead of fetched.
-         *
-         * There is no page for the sandbox anywhere in the project, and the boundary
-         * of section 4 does not depend on there being one: `allow-scripts` without
-         * `allow-same-origin` gives the frame an opaque origin whether it arrived by
-         * address or by markup. What an opaque origin does lose is a base to resolve
-         * against, so the bundle is named absolutely.
-         *
-         * `color-scheme` has to be declared, because without it a transparent frame
-         * stays transparent only until something inside takes a compositing layer —
-         * the camera transform does — and is then filled with a pale base of the
-         * browser's own. So the frame is opaque on purpose, and whatever has to be
-         * seen beneath the document lives inside it, the canvas grid included.
-         * Inline rather than by a rule, so that it holds during the first paint too.
-         */
         scene_html(): string;
-        /**
-         * Peer window, taken from the frame itself and never from `event.source`.
-         *
-         * The channel carries no origin, so any window able to post a `ready` would
-         * otherwise take it over — caught in testing, where a second scene opened
-         * for a probe stole the binding from the real frame.
-         */
         scene_peer(): $bog_vmap_app_pane_peer | null;
-        /**
-         * The live frame, the gate over it, the wires above both, and the insertion
-         * line while a drop has somewhere to go.
-         *
-         * The line is topmost and lives here rather than on the overlay: the overlay
-         * is cut open under the picked node, and a line crossing that hole would be
-         * cut in half exactly when the user is aiming at it.
-         */
         sub(): readonly $mol_view[];
-        /**
-         * Replaces the frame with a fresh one that has said nothing and proved nothing
-         * yet. Nothing is lost: the host owns the document, the placement and the
-         * camera, and every push cell re-sends on the new handshake.
-         *
-         * The handshake is not cleared here and must not be: it is kept per frame, so
-         * the new key already reads zero. What is cleared is the two claims the host
-         * makes about the OLD frame, so that the strip stops accusing it the moment
-         * the button is pressed.
-         */
         scene_restart(): void;
-        /**
-         * Handshakes seen from one frame. A counter, not a flag, so a scene reload
-         * re-pushes; keyed by the frame, so a REPLACED frame starts from zero.
-         *
-         * Keyed and not plain, because the frame is replaced by two different things
-         * — the restart button and a change of pack — and only one of them is an
-         * action that could clear a plain cell. A derived change of key would leave
-         * this reading «already shaken hands», the host would push into a window that
-         * has not booted, and those messages would be lost in silence.
-         *
-         * Only the CHANGE means anything, never the number: a scene may announce
-         * itself more than once per load, so an even count is not a bug to hunt.
-         */
         handshake(key: string, next?: number): number;
         ready(): boolean;
-        /** The window to push to, or null until the scene says it is listening. */
         target(): $bog_vmap_app_pane_peer | null;
-        /**
-         * Serial of the last push the scene owes an answer to.
-         *
-         * A plain field, written from inside the `*_push` cells. Writing a field there
-         * is fine and writing a CELL there would not be: a cell set from the body of
-         * another cell is an invalidation loop. Sending from `auto()` instead is not
-         * the way out it looks like — `auto()` is called from `dom_node()`, which is
-         * a cell as well — so a field here is the only lawful form, not a shortcut.
-         *
-         * Nothing reads this reactively: `watchdog()` reads it only alongside the
-         * cells that move it, and `poke_direct()` covers the two questions no cell
-         * projects.
-         */
         poke_at: number;
-        /**
-         * Serial of the last message the scene sent, of any kind.
-         *
-         * A CELL, unlike the stamp above it, and the difference is where each is
-         * written from: this one from the message handler, which is an effect and may
-         * write cells, that one from the body of a push cell, which may not. So this
-         * one both records the answer and wakes whoever waits for it.
-         */
         answer_at(next?: number): number;
-        /**
-         * Serial the two stamps are taken from, so a question and an answer can never
-         * share one.
-         *
-         * A wall clock cannot promise that. The host answers `ready` by pushing the
-         * document again, so the answer and the questions it causes land inside the
-         * same millisecond, stamp equally, read as «answered», and disarm the watch
-         * over a scene that replied to nothing. A clock is a time, not an order.
-         */
         stamp_last: number;
         stamp(): number;
-        /**
-         * Serial of the last question asked from OUTSIDE a push cell: the pulse and
-         * the relayed click.
-         *
-         * Everything else the host sends is projected by a `*_push` cell, and the
-         * watchdog hears about it by reading that cell. These two have no cell of
-         * their own — one leaves from a timer, the other from a pointer handler — so
-         * without a word here a question would be asked and nobody would start
-         * counting.
-         *
-         * The value is the stamp `post()` put on that question, so it says WHICH
-         * question and not merely how many there have been.
-         */
         poke_direct(next?: number): number;
-        /**
-         * The scene has reported geometry at least once.
-         *
-         * Until it has, the host has no baseline and CANNOT tell a busy start from a
-         * dead one, so it does not try. A cold pack is 610 ms and much worse on a slow
-         * line; worse, the scene is legitimately mute for all of it, because
-         * `report_task` reads `instance()`, `instance()` suspends on `pack_ready()`,
-         * and a suspended cell arms no timer and posts nothing. A watchdog running
-         * then would call a perfectly healthy scene dead and offer to reload the very
-         * thing that is loading.
-         *
-         * `sizes` and not `ready`: the scene announces `ready` a microtask after boot,
-         * long before the pack lands, so it proves the frame booted and nothing else.
-         * Geometry proves the whole path — pack in the realm, document compiled,
-         * layout measured, bridge answering.
-         */
         warmed(next?: boolean): boolean;
-        /**
-         * How long the scene may stay silent while it owes an answer.
-         *
-         * Generous on purpose. A compile is synchronous and takes milliseconds, so
-         * anything near this is not slowness but a stop; the margin is there for a
-         * document whose own code suspends on something of its own. If it does suspend
-         * longer than this the strip appears and then clears itself on the next
-         * message, which is the right way round: the state is a claim about silence,
-         * not a verdict, and nothing is destroyed by being wrong.
-         */
         answer_limit(): number;
-        /**
-         * How long a frame that has never reported geometry may stay silent.
-         *
-         * Much longer than the warm limit, because a cold frame is legitimately mute
-         * for a while: the pack is fetched into a fresh realm, the report suspends on
-         * it, and a suspended cell arms no timer and posts nothing.
-         *
-         * Watched all the same, because the case with no way out lives here. Document
-         * code that loops on the FIRST compile stops the scene before any geometry:
-         * the frame never warms, the strip never appears, and the canvas waits for a
-         * scene with no button to press. A generous limit buys the slow line its time
-         * and still ends in a sentence rather than in silence.
-         */
         cold_limit(): number;
         stalled(next?: boolean): boolean;
-        /**
-         * Gap between a `pong` and the next `ping`, in ms.
-         *
-         * Together with `answer_limit()` this sets how late the news can be: a scene
-         * that stops right after answering is noticed at worst one period plus one
-         * limit later. Cheap enough to keep short — a `ping` is a number over
-         * `postMessage` and the scene answers it without touching a single cell.
-         */
         ping_period(): number;
-        /**
-         * The pulse. Always on once the scene has proved itself, see `warmed()`.
-         *
-         * The ordinary traffic is a heartbeat as far as it goes: the host pushes and
-         * the scene owes `sizes`. What it cannot cover is user code running on an
-         * event the host never sent — a real press through the hole under the picked
-         * part, a timer inside the document — and a document that loops there would
-         * leave a dead canvas nobody asked a question of. The pulse is that question.
-         *
-         * Re-armed by `answer_at()`, which every answer moves, so the loop is ping,
-         * pong, wait, ping. A scene that stops answering therefore gets exactly one
-         * outstanding ping and no flood: the watchdog only needs one.
-         */
         heartbeat(): $mol_after_timeout | null;
-        /**
-         * Watchdog over the bridge.
-         *
-         * The document shares its reactive graph with the scene — the boundary runs
-         * between scene and host, not between document and scene — so a looping fiber
-         * of user code freezes the whole scene, bridge handling included. The editor
-         * survives, which is the point of the boundary, but the canvas goes dead
-         * without a word and the only way out the user has is F5 of the editor.
-         *
-         * Watching is expectation driven rather than periodic: it arms only while the
-         * scene owes an answer, so an idle editor is never accused of anything. Every
-         * push is a question — `report_task` in the scene subscribes to the document,
-         * the styles, the placement and the camera, and always answers `sizes`; a
-         * relayed click is answered the same way, and a ping with a pong.
-         * @see ../../ARCHITECTURE.md section 4
-         */
         watchdog(): $mol_after_timeout | null;
-        /**
-         * Latest measured node boxes, in world units, keyed by the path the scene
-         * walks: the root class name, then a property name per level.
-         *
-         * AN ORDINARY CELL, and the alternative worth naming is a field with a version
-         * counter beside it, which is cheaper per report and dearer per second: a
-         * counter says «something arrived» and therefore wakes every reader — the
-         * rings, the port dots, the hit test — twice a second even when the layout
-         * has not moved a pixel, which is the common case while nothing is dragged.
-         * A cell compares instead, and buys that silence for microseconds.
-         */
         sizes(next?: {
             readonly [node: string]: $bog_vmap_bridge_rect;
         }): {
             readonly [node: string]: $bog_vmap_bridge_rect;
         };
-        /**
-         * Drops every remembered box of a node: the node itself wherever it was
-         * drawn, and everything that was drawn inside it.
-         *
-         * The counterpart of the merge in `message_receive`. Since a missing name no
-         * longer means «has no size», something has to say when a name means nothing
-         * where it used to, and only the two writes that move or remove a node know
-         * that. A node removed by editing the text by hand is not covered and will
-         * leave a box behind — worth fixing when the code editor of stage 4 makes
-         * that path real.
-         *
-         * BY SEGMENT AND NOT BY PREFIX. A node carried into a container is measured at
-         * a NEW path, and a prefix match leaves the old key with its last box beside
-         * it: two boxes answer to one name, and everything that looks a node up by
-         * name — the ring, the hit test, the port dots — may get either.
-         */
         sizes_forget(name: string): void;
-        /**
-         * Every measured node of the document, with the path the scene walked to it
-         * and the name it is addressed by, in the order it was walked.
-         *
-         * The name is the LAST segment of the path and nothing else: section 1 makes
-         * every named node a flat property of the root class whatever its depth, so a
-         * node inside an artboard is addressed exactly like one lying free, and the
-         * path says only where it is drawn.
-         *
-         * The order is the order of the report, which is the order of the DOM, which
-         * is the order the children of an artboard are laid out in. Everything below
-         * relies on that and on nothing else.
-         */
         nodes_measured(): {
             name: string;
             path: readonly string[];
             box: $bog_vmap_bridge_rect;
         }[];
-        /**
-         * The box of a node, at whatever depth it is drawn, or `null` while the scene
-         * has not reported one.
-         *
-         * A name is looked up rather than a path, because a name is what the document,
-         * the selection and the placement are all keyed by. The last match wins, the
-         * same rule the hit test follows: a name drawn twice is a keyed sub view, and
-         * the later one is the one on top.
-         */
         part_size(name: string): $bog_vmap_bridge_rect | null;
-        /** Names of the nodes the scene has measured, at every depth. */
         part_names(): string[];
-        /** Names of the parts lying free on the canvas: the direct children of the root. */
         free_names(): string[];
-        /** Where a node is drawn: the names of the nodes it lies inside, outermost first. */
         node_path(name: string): readonly string[];
-        /**
-         * The carry in hand, or `null` when nothing is being carried.
-         *
-         * A CELL and not a field, because the ring is drawn from it, and a gesture kept
-         * half in fields has two clocks.
-         *
-         * `sizes` is the report the grab was taken against, and it is what makes the
-         * ring exact instead of merely quick. Measured boxes are debounced in the
-         * scene and the timer restarts on every change, so through a continuous drag
-         * NO fresh box arrives: a ring drawn from `sizes()` alone would sit at the
-         * grab until the pointer stopped. The live offset answers that, and would
-         * double count the move the moment a fresh box did arrive — hence the guard.
-         * A new report is a new object, so the comparison is an identity and nothing
-         * has to be cleared.
-         *
-         * No second flag beside it for «the button is still down»: two flags can
-         * disagree, and a release that never arrives leaves a carry standing for the
-         * next pointer to pick up. Cleared where it ends, its presence IS the flag.
-         */
         drag(next?: {
             name: string;
-            /** Where every node being carried started, by name. A group moves as one. */
             spots: {
                 readonly [name: string]: {
                     readonly x: number;
@@ -50301,15 +49463,12 @@ declare namespace $.$$ {
                 };
             };
             grab: readonly [number, number];
-            /** The report the grab was taken against, by identity. */
             sizes: {
                 readonly [node: string]: $bog_vmap_bridge_rect;
             };
-            /** Drawn inside another node, so it is laid out by tree and has no coordinate. */
             nested: boolean;
         } | null): {
             name: string;
-            /** Where every node being carried started, by name. A group moves as one. */
             spots: {
                 readonly [name: string]: {
                     readonly x: number;
@@ -50317,148 +49476,36 @@ declare namespace $.$$ {
                 };
             };
             grab: readonly [number, number];
-            /** The report the grab was taken against, by identity. */
             sizes: {
                 readonly [node: string]: $bog_vmap_bridge_rect;
             };
-            /** Drawn inside another node, so it is laid out by tree and has no coordinate. */
             nested: boolean;
         } | null;
-        /**
-         * The press in progress, kept until its release.
-         *
-         * `moved` is what the MOVES said, in screen pixels against `click_slack`, and
-         * once true it stays true: a pointer that wandered and came back is not a
-         * click. It is not the whole answer — a gesture whose moves went elsewhere
-         * arrives here with `moved` still false, and `node_release()` judges that one
-         * by the node the button came up on. The world point is the one relayed to the
-         * scene, so the click lands where the press did, not where the release was.
-         *
-         * `entering` says the press landed on the node that was ALREADY picked, so a
-         * click out of it is the second one and lets the pointer inside. See `entered`.
-         *
-         * A CELL and not a field, for the reason the whole gesture is one. Nothing
-         * draws from this one today, which is exactly why a field here would go
-         * unnoticed until the day something did.
-         *
-         * The value is replaced and never edited in place — see `press_track()`. A
-         * cell poked at through the reference it handed out keeps its old value as
-         * far as the graph is concerned.
-         */
         press(next?: {
             screen: readonly [number, number];
             world: readonly [number, number];
             moved: boolean;
             entering: boolean;
-            /** The node under the press, `null` for bare canvas. */
             name: string | null;
         } | null): {
             screen: readonly [number, number];
             world: readonly [number, number];
             moved: boolean;
             entering: boolean;
-            /** The node under the press, `null` for bare canvas. */
             name: string | null;
         } | null;
-        /**
-         * The node the pointer has been let inside of, or `null`.
-         *
-         * The hole in the overlay hangs on THIS and not on the pick, and that is the
-         * whole of it: a picked node is carried by its body, an entered one lives its
-         * own life. Cut open on the pick alone, the overlay handed the frame every
-         * press on the node just dropped — so it could not be dragged at all except
-         * by the eight pixel strip around it — and the focus the scene gives inside
-         * the hole took the keyboard into the frame, where the Delete of the editor
-         * never arrives.
-         *
-         * Compared against `primary()` rather than cleared by hand: a pick of
-         * anything else closes the hole by itself, and nothing has to remember to.
-         */
         entered(next?: string | null): string | null;
-        /**
-         * The primary of the picked nodes: the last one taken.
-         *
-         * The hole, the wire dots and the inspector all speak about ONE node, and
-         * this is which one. Derived from `picked()` and never stored beside it: two
-         * cells for one fact need somebody to keep them in step.
-         */
         primary(): string | null;
-        /** Whether the pointer is inside the picked node, i.e. the overlay is cut open. */
         inside(): boolean;
-        /**
-         * Where this pane sits in the viewport.
-         *
-         * `view_rect()` and not a `getBoundingClientRect()` of our own, so there is one
-         * reading of one rectangle. Its FIRST read answers `null` on purpose, to keep
-         * a reflow out of the render, which is why the pane warms it in `auto()` the
-         * way the touch plugin warms its own. A method rather than the cell itself so
-         * that a test can hand in a geometry the test DOM has no way to lay out.
-         */
         pane_rect(): $bog_vmap_app_pane_screen_box;
-        /** Point of a pointer event in screen pixels of this pane, the space the wires are drawn in. */
         screen_point(event: PointerEvent): readonly [number, number];
-        /**
-         * World point under a pointer event.
-         *
-         * The camera is a screen-pixel shift plus an isotropic zoom, and the scene
-         * puts its stage at `transform-origin: 0 0` inside a frame pinned to the top
-         * left of this pane. So a screen point is `world * zoom + shift`, and this is
-         * that solved for world.
-         */
         world_point(event: PointerEvent): readonly [number, number];
-        /**
-         * Which part is under a world point, or `null` for bare canvas.
-         *
-         * The DEEPEST match wins, and among equally deep ones the last, because the
-         * parts are absolutely positioned siblings and a later one paints over an
-         * earlier one. Picking the first, or the smallest, would hand back a node the
-         * user cannot see.
-         *
-         * Depth first is what makes a node inside an artboard reachable at all: it
-         * lies inside the box of the artboard, so a rule that stopped at the free
-         * parts would always hand back the page and never anything on it. The strip
-         * of slack around a box is added on every level, so a child still catches the
-         * pointer near its edge, and its parent catches it further out.
-         */
         node_at(point: readonly [number, number]): string | null;
-        /**
-         * Boxes of the children of a container, in the order they are laid out.
-         *
-         * Off the report and not off the document: the order the scene walked is the
-         * order of the DOM, and a child hidden by culling has no box and no place on
-         * screen to put an insertion line at.
-         */
         node_kids(owner: string): $bog_vmap_bridge_rect[];
-        /**
-         * The container a point falls into, or `null` for bare canvas.
-         *
-         * A container is a node whose declaration carries a `sub` — an artboard, see
-         * section 8 — and the deepest one wins, so a box nested inside an artboard
-         * takes the drop rather than the page around it.
-         *
-         * The node being carried is stepped over, and so is everything inside it: a
-         * node cannot become its own descendant, and offering that as a target would
-         * mean drawing a line where the drop is going to be refused.
-         */
         container_at(point: readonly [number, number], moving?: string): string | null;
-        /** Where a node dropped at this point would go, or `null` for bare canvas. */
         insert_slot(point: readonly [number, number], moving?: string): $bog_vmap_app_pane_slot | null;
-        /**
-         * The slot the gesture in hand is aiming at, drawn as a line between children.
-         *
-         * A cell rather than a field, because the line is drawn from it; the whole
-         * point of the feedback is that it follows the pointer.
-         */
         slot(next?: $bog_vmap_app_pane_slot | null): $bog_vmap_app_pane_slot | null;
         tree_move(next?: $bog_vmap_app_pane_tree_move | null): $bog_vmap_app_pane_tree_move | null;
-        /**
-         * The band being swept over the canvas, in world units, or `null`.
-         *
-         * A cell and not a field for the reason the slot is one: the band is drawn
-         * from it and has to follow the pointer. Kept as the two corners the gesture
-         * has rather than as a normalised rectangle, because a sweep upwards or to
-         * the left is an ordinary sweep and normalising is one line where it is used.
-         */
         band(next?: {
             readonly from: readonly [number, number];
             readonly to: readonly [number, number];
@@ -50466,145 +49513,37 @@ declare namespace $.$$ {
             readonly from: readonly [number, number];
             readonly to: readonly [number, number];
         } | null;
-        /**
-         * Whether this press sweeps a band rather than picks.
-         *
-         * Control or command, which is what the user asked for and what leaves the
-         * plain drag alone: over bare canvas that is still the pan, and over a node
-         * it is still the carry. Shift is left free — it is the natural key for
-         * adding one more node to a selection, and spending it on the band would
-         * cost the gesture that is asked for next.
-         */
         band_wanted(event: PointerEvent): boolean;
-        /** The band as a rectangle in world units, whichever way it was swept. */
         band_box(): {
             x: number;
             y: number;
             width: number;
             height: number;
         } | null;
-        /**
-         * The nodes a rectangle in world units takes: everything it OVERLAPS, and of
-         * a node and its container only the outer one.
-         *
-         * Overlap and not containment, because a band drawn across a wide page would
-         * otherwise take nothing at all, and a part half off the band is plainly
-         * being pointed at. The descendants of a taken node are dropped because they
-         * move with it: taking both would carry a child twice, once by its own spot
-         * and once inside its parent, and delete it twice over.
-         */
         nodes_covered(box: $bog_vmap_bridge_rect): string[];
-        /**
-         * Press picks, and a press on a part also starts carrying it.
-         *
-         * The pick is taken from `pointerdown` and never from `click`, because the
-         * capture below retargets the later `click` to whoever captured — so by the
-         * time a `click` arrived it would name the overlay, not the node.
-         *
-         * `preventDefault` on a hit is what keeps the camera still: the touch plugin
-         * checks `defaultPrevented` at the top of both `event_start` and `event_move`,
-         * so the same gesture pans over bare canvas and drags over a node, decided
-         * once, by the hit test. A press that hits nothing is left alone deliberately
-         * — that is the pan.
-         *
-         * Whether it will also be a click is not known yet: the release decides.
-         */
         node_press(event?: PointerEvent): void;
-        /**
-         * Notes whether a MOVING pointer has gone further than a click may.
-         *
-         * Called from the moves and from nowhere else. Four pixels is a fair question
-         * to ask of a pointer we are watching travel, and an unfair one to ask of a
-         * hand pressing and letting go in one place — see `node_release()`.
-         *
-         * A new value rather than a flag flipped on the old one: a cell edited through
-         * the object it handed out never hears about it.
-         */
         press_track(event: PointerEvent): void;
-        /**
-         * Carrying a node writes straight into `spots`, the same channel a drop from
-         * the palette writes: placement is one fact with one owner, whatever moved it.
-         *
-         * Over a container it writes nothing at all: there the layout is a tree, so the
-         * gesture means a position among children and the insertion line is the only
-         * feedback until the release. Placement addresses the direct children of the
-         * root and nothing else, so a coordinate written for a node drawn inside a
-         * container would move nothing and outlive the reason it was written.
-         */
         node_move(event?: PointerEvent): void | readonly string[];
-        /**
-         * Release ends whatever the press started, and a press that went nowhere is
-         * a click and goes to the scene.
-         *
-         * A pan never gets here: on its first move the touch plugin captures the pointer
-         * to the pane, and from then on the overlay sees neither the moves nor the
-         * release. The gesture is still judged here, so the outcome does not depend
-         * on that capture having happened.
-         */
         node_release(event?: PointerEvent): void | readonly string[];
-        /**
-         * Relays a click to the scene, in world coordinates.
-         *
-         * The pick itself has already happened on the press; this is the other half
-         * of «one click both selects and presses». The scene finds the element under
-         * the point and replays the events on it, so a button in the document fires
-         * the moment it is picked, and a text field takes the focus.
-         *
-         * Through `post()`, so the scene owes an answer and the watchdog is armed:
-         * of everything the host sends, a click is the likeliest to start a loop in
-         * document code.
-         */
         click_send(point: readonly [number, number], event: PointerEvent): void;
-        /** Names of the picked nodes a ring can be drawn for: the measured ones. */
         frames(): string[];
-        /** Whether a ring is drawn at all, for the tests and for anything that only needs the flag. */
         frame_showed(): boolean;
-        /**
-         * Where the picked part is on screen, in pixels of this pane, or `null`.
-         *
-         * World to screen is `world * zoom + shift`, the same transform the scene
-         * applies to itself. Done on the host so that the ring keeps its stroke width
-         * at any zoom, and done once so that the ring and the hole in the overlay are
-         * cut from the same numbers.
-         */
         frame_box(): $bog_vmap_app_pane_screen_box | null;
-        /**
-         * Where a part is on screen, in pixels of this pane, or `null` while the
-         * scene has not measured it. The last known box is kept across culling, so a
-         * wire to a part that left the viewport still has an end to go to.
-         */
         part_box(name: string): $bog_vmap_app_pane_screen_box | null;
-        /** Where the line goes on screen. Flat in world units, two pixels thick here. */
         insert_style(): {
             readonly [prop: string]: string;
         };
-        /** Where the band is on screen. Empty while none is being swept. */
         band_style(): {
             readonly [prop: string]: string;
         };
         frame_style(name: string): {
             readonly [prop: string]: string;
         };
-        /**
-         * The hole under the picked part.
-         *
-         * The overlay is cut open exactly where the picked part is, so that inside
-         * it the frame is the topmost thing on the page and the live component gets
-         * its events for real: hover, scroll, text selection, a drag of its own. The
-         * ring and the handles are drawn around the hole and stay on the overlay,
-         * which is what the part is carried by.
-         *
-         * Open under the node the pointer has been let INSIDE of, which is the second
-         * click on it and not the pick — see `entered`. Closed as well while the
-         * palette is carrying: that drag has no pointer capture and a release over
-         * the hole would fall into the frame.
-         */
         overlay_style(): {
             readonly [prop: string]: string;
         };
         link_add(next?: $bog_vmap_app_pane_link_new | null): $bog_vmap_app_pane_link_new | null;
         link_drop(next?: $bog_vmap_app_pane_link_end | null): $bog_vmap_app_pane_link_end | null;
-        /** The source end of the wire in hand, or `null`. */
         wire_drag(next?: {
             from: string;
             from_prop: string;
@@ -50614,124 +49553,31 @@ declare namespace $.$$ {
             from_prop: string;
             kind: $bog_vmap_app_inspect_value_kind;
         } | null;
-        /** Where the loose end of the wire in hand is, in screen pixels. */
         wire_point(next?: readonly [number, number]): readonly [number, number];
-        /** Row of a port among the wirable ports of the part's class; the first row when the class is unknown. */
         port_index(name: string, port: string): number;
-        /** Centre of a port dot on screen, or `null` while the part is not measured. */
         port_point(name: string, port: string, side: $bog_vmap_app_wire_side): readonly [number, number] | null;
-        /** Every wire whose both ends have a last known box. Labelled from `values()`. */
         wire_lines(): readonly $bog_vmap_app_wire_line[];
-        /**
-         * Dots to draw and to hit: both sides of the picked part, or, while a wire is
-         * in hand, the inputs of every other measured part, lit where the shape fits.
-         */
         wire_dots(): readonly $bog_vmap_app_wire_dot[];
         wire_drag_geometry(): string;
-        /**
-         * A press on a dot: an output starts a wire from it, a wired input unplugs
-         * its wire and carries on from the same source, a bare input takes the press
-         * and does nothing, so that it does not fall through to the canvas and drop
-         * the pick. `preventDefault` keeps the touch plugin from panning.
-         */
         wire_press(dot: $bog_vmap_app_wire_dot, event: PointerEvent): void;
-        /** The loose end lands on a lit input, and the document gets the wire; anywhere else, nothing. */
         wire_release(event: PointerEvent): void;
-        /**
-         * Names of the wires with an end on screen. Memoized on its content, so the
-         * push below fires when the set changes and not on every frame of a pan.
-         */
         wires_visible(): readonly string[];
-        /**
-         * Asks the scene for the values of the wires on screen. Not through `post()`:
-         * the scene answers an empty list with nothing, and the watchdog must not be
-         * armed by a question that owes no answer.
-         */
         values_push(): readonly string[];
-        /**
-         * Puts a message on the wire and notes that an answer is now owed.
-         *
-         * Every push goes through here rather than calling the bridge directly, so
-         * the watchdog cannot be defeated by a new kind of message somebody adds
-         * later and forgets to stamp.
-         *
-         * Returns the stamp it put on, for the two senders that are not push cells:
-         * they hand it to `poke_direct()` and that is how the watchdog hears them.
-         */
         post(target: {
             postMessage(data: unknown, origin: string): void;
         }, message: $bog_vmap_bridge_down): number;
-        /**
-         * The donor pack, named to the scene before anything else is.
-         *
-         * First of the pushes in `auto()` and first in the reads of `watchdog()`, and
-         * the order is load bearing rather than tidy: the scene refuses to compile
-         * until it has been told a pack, because a class picks its base once and a
-         * document built a moment early would inherit the sandbox's own base view
-         * for good. Sending the document first would not break anything — the scene
-         * would simply hold it — but it would make the ordinary path the one that
-         * compiles twice.
-         */
         pack_push(): string;
         doc_push(): string;
         css_push(): string;
-        /**
-         * Canvas placement of the free parts, on a wire of its own.
-         *
-         * Not folded into `css_push()`, and that separation is the whole point: the
-         * document CSS is what an export writes out, so coordinates travelling on it
-         * would be one careless join away from shipping the editor's desk layout into
-         * a deployed site. Here the host sends numbers and the scene alone turns them
-         * into rules, so the export cannot see placement by construction rather than
-         * by nobody having mixed the two up yet.
-         */
         spots_push(): Record<string, any>;
-        /**
-         * Sources of the land libraries, the whole list on every change.
-         *
-         * A wire of its own and not a field of `doc_set`: the document changes on
-         * every keystroke and the libraries change when a link is pasted, and a
-         * document push carrying every library source would resend them all on
-         * each keystroke. The scene merges nothing, it recompiles from the last list.
-         */
         libs_push(): readonly $bog_vmap_bridge_part[];
         camera_push(): $bog_vmap_bridge_camera;
-        /**
-         * What is WRONG with the isolation of the scene, and empty when nothing is.
-         *
-         * The `sandbox` attribute proves nothing, an unreachable origin does: the
-         * scene is served from our own origin, so a SecurityError on reading it is
-         * the sandbox doing its job — the frame got an opaque origin. That is the
-         * ordinary state and it says nothing to anybody, so it says nothing at all.
-         * It used to report itself, which put a sentence about origins where the
-         * user expected news and made the plain «сцена на связи» unreachable.
-         *
-         * An origin that DOES read back is the news: the sandbox is off and the code
-         * of the document runs beside the editor. That goes to the error strip, not
-         * to the status line, because it is not a state of the work but a fault.
-         */
         isolation(): string;
         message_receive(event?: MessageEvent): void;
         message_listener(): $mol_dom_listener;
         auto(): any[];
     }
-    /**
-     * Pointer gate over the scene, and the layer the editor draws selection on.
-     *
-     * Everything it knows comes down from the pane, which owns the camera and the
-     * measured geometry. Selection is drawn here rather than in the scene because
-     * the overlay belongs to the host: no code inside the document can forge a
-     * selection ring or hide one, and the stroke keeps its width at any zoom
-     * because this layer is not the one being scaled.
-     * @see ../../ARCHITECTURE.md section 4
-     */
     class $bog_vmap_app_pane_overlay extends $.$bog_vmap_app_pane_overlay {
-        /**
-         * A ring per picked node, and nothing at all when nothing is picked.
-         *
-         * A node kept in the tree and merely hidden would still be a view to build,
-         * measure and keep alive, and an empty canvas is the common state.
-         */
         sub(): $mol_view[];
     }
 }
@@ -51371,934 +50217,148 @@ declare namespace $ {
 
 //# sourceMappingURL=app.view.tree.d.ts.map
 declare namespace $.$$ {
-    /**
-     * Editor shell: toolbar, component palette, error strip and the infinite canvas.
-     *
-     * The document is a live `view.tree` class now, not a string constant: dropping
-     * a component off the palette declares a free part on it and references that
-     * part from `sub`. Both edits go through the node editor of the language module,
-     * so the text the scene compiles is the same text an export would write out.
-     *
-     * @see ../ARCHITECTURE.md sections 1 and 5
-     */
     class $bog_vmap_app extends $.$bog_vmap_app {
-        /**
-         * Address of the editor page itself, the origin of every derived address.
-         *
-         * A method rather than a read at each use, so a test can put the editor on
-         * either layout without touching the DOM context. Empty only where there is
-         * no location at all, and then nothing is derived.
-         */
         page_uri(): string;
-        /**
-         * Bundle of the sandbox, a sibling module, derived from our own address —
-         * this being the only page in the project.
-         *
-         * Absolute, because the markup of the frame is handed to an opaque origin,
-         * which has no base to resolve a relative path against. Derived rather than
-         * constant, because a constant is written in one layout and the dev server
-         * keeps a module where a deploy does not.
-         * @see ../ARCHITECTURE.md sections 4 and 7
-         */
         scene_bundle(): string;
-        /**
-         * The donor pack the scene is told to load, as the address of its bundle.
-         *
-         * Travels down the bridge as `pack_set` and keys the frame on the way: a
-         * realm cannot unload a bundle, so a different pack has to be a different
-         * frame, which is what the frame address used to do by being different.
-         * @see ../ARCHITECTURE.md section 5
-         */
         pack_script(): string;
-        /** A fresh frame in place of the stuck one; the pane owns the frame. */
         scene_restart(): void;
         stalled(): boolean;
-        /**
-         * What the strip says, and it says two different things.
-         *
-         * A frame that HAD been answering and went quiet is one story: something
-         * stopped it, and a fresh frame is likely to come up. A frame that never
-         * answered is another: the code that stopped it is in the document, so it
-         * stops the next frame too and a reload will not help. Telling the second
-         * story as the first sends a person round a loop of restarts, which is what
-         * the strip exists to prevent.
-         */
         stall_note(): string;
-        /**
-         * Name of the root class: the first class the document text declares.
-         *
-         * Matched over the text and NOT parsed, because a regexp cannot throw: this is
-         * read while pushing to the scene and while drawing the toolbar, and a throw
-         * on either path takes the editor down over text the scene already reports on.
-         *
-         * Derived rather than constant, because the folder an export goes to follows
-         * from the class names — section 10 — so a document whose root cannot be
-         * renamed can only ever be unpacked inside the pack of this editor.
-         */
         doc_root(): string;
-        /**
-         * Name the root class of a fresh document gets.
-         *
-         * The namespace the docs use for one's own code: it belongs to nobody, and its
-         * three segments make a module path that lands in a folder of the author's
-         * own rather than inside the pack of this editor.
-         *
-         * The dollar is glued on and not written into the literal: the dependency
-         * graph reads string literals and resolves a dollar name into a package, and
-         * there is no root package of that name — the module would stop building over
-         * a default value.
-         */
         doc_root_default(): string;
-        /** Source of an empty page. Everything else arrives from the palette. */
         doc_source_initial(): string;
-        /**
-         * Persistence, one for the editor. Made with our `$`, so the store sees the
-         * same context as the editor: the glob, the auth, the address a test hands in.
-         */
         store(): $bog_vmap_app_store;
-        /**
-         * The document text: the atoms of the current document, or the draft of the
-         * store before there is one. `node()` writes here through its delegate, so the
-         * tree and the string the bridge pushes are the same path. A plain method and
-         * not a memo cell: one in front of a Giper Baza atom freezes after a write.
-         * Empty text is the empty page, the scene needs a root class to compile.
-         */
         doc_source(next?: string): string;
-        /**
-         * The root class as a model over its AST: what the canvas edits.
-         *
-         * Taken from the DOCUMENT model and not made over the whole text. A node models
-         * ONE class — it reads the first declaration and a write serializes that class
-         * as the entire source — so a node built over a text of two classes drops the
-         * second on the first edit made anywhere, silently. Through the document the
-         * neighbours come back out of their own trees.
-         */
         node(): $bog_vmap_lang_node;
         doc_src(): string;
-        /**
-         * Where each part sits on the canvas, in world coordinates, keyed by the
-         * property name it occupies on the root class.
-         *
-         * SCAFFOLDING, NOT PART OF THE DOCUMENT. It leaves the host on a bridge message
-         * of its own and the scene hangs it as a style element of its own, so neither
-         * the document text nor the document CSS ever carries a coordinate and the
-         * export cannot see the desk layout by construction. Section 8: only free
-         * parts lie by coordinates, and inside an artboard the layout is a flex tree.
-         *
-         * Stored with the document, through the store. A plain method for the reason
-         * given at `doc_source`.
-         */
         spots(next?: {
             readonly [name: string]: {
                 readonly x: number;
                 readonly y: number;
             };
         }): $bog_vmap_app_store_spots;
-        /**
-         * The palette field, stored with the document as the string it is typed as.
-         *
-         * The store keeps it and knows nothing of what it means; the parsing below
-         * is untouched and reads this. Empty in the store is the default of the
-         * field, so a document that never had a palette opens on the standard one.
-         */
         links(next?: string): string;
-        /**
-         * The palette of the open document, or nothing while the document is still
-         * on its way.
-         *
-         * THE SANDBOX MUST NOT WAIT FOR THE DOCUMENT. A document opened by a link
-         * lives in a land of its own, and reading any field of it suspends until that
-         * land syncs — with no master reachable, for ever. This feeds the pack the
-         * frame is keyed by, so a suspension leaves the frame with NO KEY AT ALL: the
-         * scene never boots, never says `ready`, and the editor waits on it for ever.
-         *
-         * So a suspension is answered with the empty string, which the caller reads as
-         * «no palette of its own» and falls back to the standard one. Nothing is lost:
-         * the subscription is recorded before the throw, so this recomputes the moment
-         * the land arrives, and a document that does carry a palette then replaces the
-         * frame exactly as any change of pack does. Same shape as `store_boot`.
-         */
         store_links(): string;
-        /**
-         * The store in a word for the status line, or empty when there is nothing
-         * to say: the first document being made, or somebody else's document open
-         * by its link, where edits do not stick.
-         */
         store_note(): "" | "заводим сцену…" | "чужая сцена: только просмотр, правки не сохраняются";
-        /**
-         * Starts the store from `auto()`, so the first document is made in the
-         * background. A suspension is the home land still loading: swallowed here,
-         * because a suspension in `auto()` blanks the whole editor; the subscription
-         * is recorded before the throw, so this runs again once the land is in.
-         */
         store_boot(): "ready" | "making" | "loading";
-        /**
-         * The node picked on the canvas, by the property name it occupies on the root
-         * class, and `null` when nothing is picked.
-         *
-         * THE PUBLIC SHAPE OF SELECTION. Anything that wants to follow what is picked
-         * — the inspector first — reads this cell and nothing else, so a pick from the
-         * canvas and a pick from anywhere later are one fact with one owner.
-         *
-         * A property name and not a box, an index or a view: section 1 makes every
-         * named node a flat property of the root class whatever its depth, so this
-         * name is the handle the declaration, the placement and the measured geometry
-         * are all already keyed by. Here rather than in the pane, so that a reader
-         * need not reach through the canvas to learn what is picked.
-         *
-         * KEYED BY THE DOCUMENT, and a plain method for that reason. A pick belongs to
-         * the document it was made in, so switching scenes hands over that scene's
-         * pick and coming back finds it where it was left. One pick for the whole
-         * editor leaves a ring over an empty canvas and an inspector opened on a node
-         * the new document never had.
-         *
-         * A memo cell here would freeze on the first write: writing to a cell
-         * freezes its dependencies, and the dependency frozen would be the very
-         * document key this is meant to follow.
-         */
         picked(next?: readonly string[]): readonly string[];
-        /**
-         * Which document a pick belongs to: the link of the open one, empty while
-         * there is none. The link and not the text, so that editing a document does
-         * not drop what is picked in it.
-         */
         doc_key(): string;
-        /** What is picked in one document. The cell the pick actually lives in. */
         picked_at(key: string, next?: readonly string[]): readonly string[];
-        /**
-         * The primary of the picked, which is the last one taken.
-         *
-         * A projection of `picked()` and not a cell of its own: two cells holding
-         * one fact would have to be kept in step by somebody, and the reading path
-         * would stop being the writing path — which is how a memo cell in front of
-         * another one freezes. Writing a name here is picking exactly that one, which
-         * is what every caller outside the canvas means by it.
-         */
         selected(next?: string | null): string | null;
-        /** Whether anything is picked at all, for the views that only need the flag. */
         selection_showed(): boolean;
-        /** The pick as the publish button takes it: a name, empty for none. */
         publish_part(): string;
-        /**
-         * The document as a model over the classes it declares.
-         *
-         * The level everything editing goes through: `node()` is one class OF this,
-         * so a write lands in the class it was made on and the neighbours come back
-         * out of their own trees. Owning the text, it is also the only thing that can
-         * answer what classes there are and rename one.
-         */
         doc_model(): $bog_vmap_lang_doc;
-        /**
-         * Handwritten body of one class of the document, in the document or in the
-         * draft before there is one.
-         *
-         * A plain method, like everything in front of a Giper Baza atom: a cell
-         * there freezes at what was written through it.
-         */
         class_js(klass: string, next?: string): string;
-        /** Styles of one class, the same way. */
         class_css(klass: string, next?: string): string;
-        /** Body of a class while there is no document to keep it in. */
         draft_js(klass: string, next?: string): string;
-        /** Styles of a class while there is no document to keep them in. */
         draft_css(klass: string, next?: string): string;
         root_js(next?: string): string;
         root_css(next?: string): string;
-        /**
-         * Handwritten bodies of the document, by class name, as the scene takes them.
-         *
-         * A class with no body of its own is left out rather than sent empty: the
-         * scene wraps a class only when there is something to put in the wrapper.
-         */
         doc_js(): {
             [klass: string]: string;
         };
-        /**
-         * CSS of the document itself: the only styling an export may ever carry.
-         *
-         * The styles of every class, glued in the order the text declares them.
-         * Nothing about the canvas belongs here, and there is nowhere to put it:
-         * placement travels on `spots` and is turned into rules by the scene.
-         */
         doc_css(): string;
-        /**
-         * Classes of the document as the export takes them: declaration, body, rule.
-         *
-         * Read out of the document model rather than out of the scene, so what is
-         * downloaded is the text the editor holds and not what a preview made of it.
-         */
         export_nodes(): readonly $bog_vmap_app_export_node[];
-        /**
-         * The module the document builds into, or the reason it does not.
-         *
-         * One cell for both, because the export answers both at once and a second
-         * call would parse every class a second time to learn what this one already
-         * knows. A refusal is a value here and not a throw: it has to be readable on
-         * the toolbar, and a throw on the path of the toolbar takes the toolbar down.
-         *
-         * A SUSPENSION IS NOT PASSED ON EITHER, and that is the harder half. The
-         * toolbar is drawn from this, and a document opened by a link lives in a land
-         * that suspends every read until it syncs, so rethrowing suspends the whole
-         * editor, frame and all, and the sandbox never comes up. The subscription is
-         * recorded before the throw, so nothing is lost: this recomputes the moment
-         * the text arrives. Same shape as `store_links`.
-         */
         export_state(): {
             readonly module: $bog_vmap_app_export_module | null;
             readonly refusal: string;
         };
-        /** Whether the document can be downloaded at all. */
         export_ready(): boolean;
-        /**
-         * The folder the module goes to, in the title of the button itself.
-         *
-         * Section 10: the folder follows from the class names and is not free, and
-         * mam turns a wrong one into `Root package not found` at build time, far from
-         * the editor. Written where it is read without hovering, because it is a
-         * decision the author is making whether they see it or not.
-         */
         export_title(): string;
         export_file(): string;
         export_hint(): string;
-        /**
-         * The archive itself. A plain method: it is read once, by the click, and a
-         * cell in front of it would keep the whole file alive for nothing.
-         */
         export_blob(): Blob;
-        /**
-         * The refusal, line by line, as the export words it. Each line already names
-         * the class, the line, the method and the fix, so nothing is added here.
-         */
         export_notes(): readonly string[];
         export_rows(): $mol_view[];
         export_text(index: number): string;
-        /** The picked node as the code editor takes it: a name, empty for none. */
         code_prop(): string;
-        /**
-         * Whether the code panel edits a whole class instead of the picked node.
-         *
-         * Held by the editor and not by the panel, because it decides WHICH class the
-         * three texts of the panel are: only the owner of the document knows that a
-         * picked node is declared with a class the document itself authors.
-         */
         code_whole(next?: boolean): boolean;
-        /**
-         * The class the picked node is declared with, when the document declares that
-         * class itself; the root class otherwise.
-         *
-         * A node whose class is a class of this document is the only way a second
-         * class is reached at all: it is not on the canvas — the canvas draws nodes,
-         * and a class is not a node — so the pick of the node is the pick of it.
-         * A node declared with a library class has no text of its own, and the class
-         * in scope is then the one that declares the node, which is the root.
-         */
         code_class(): string;
-        /**
-         * The class the three texts of the panel belong to.
-         *
-         * Two answers, and the difference is not cosmetic. Editing the whole class,
-         * the class is the one above — that is how the body and the styles of a
-         * second class are reached, and until this existed they were reachable by
-         * nothing at all, although the scene compiled them.
-         *
-         * Editing ONE NODE, the class is the one that declares the node, always the
-         * root. The methods the node asks for are methods of its owner (`title <=
-         * greeting` wants `greeting()` on the class that spells it), and the rule the
-         * panel offers is addressed to the attribute the framework writes on the sub view of
-         * its owner. Scoping the node mode to the node's own class would write both
-         * into a class that never reads them.
-         */
         code_klass(): string;
-        /**
-         * `view.tree` of the class in scope, two way: what the panel shows on its
-         * first tab when it edits a whole class.
-         *
-         * The class and not the whole document, so that the three texts of the panel
-         * all speak about the one class named in the heading over them.
-         *
-         * A SECOND CLASS IS ADDED HERE, by writing one under the one on screen: the
-         * slot is replaced by everything the text parses to, so two declarations typed
-         * in place of one become two classes of the document.
-         *
-         * A NAME CHANGED IN THIS TEXT IS A RENAME, and is carried like one. Left
-         * uncarried, the body and the styles stay under the old name, the generated
-         * code and CSS come out empty, and the behaviour the person wrote stops
-         * reaching the scene with nothing on screen saying so. The text is the truth
-         * of section 1, so the answer is to follow it, not to forbid the edit.
-         *
-         * What counts as a rename is decided by names alone: one name gone, one name
-         * arrived, every other class of the document where it was. Two gone or two
-         * arrived is somebody rewriting the slot, and guessing which of them became
-         * which would move a body into a class that never had one. Nothing is carried
-         * then, and nothing is lost either — what is stored keeps answering to the
-         * name it was stored under.
-         *
-         * The mentions of the old name in OTHER classes stay as they are, unlike a
-         * rename through the field. An edit made in the text of one class must not
-         * rewrite the text of another; that is the invariant this whole level exists
-         * for, and the field is where a rename across the document is asked for.
-         */
         code_source(next?: string): string;
-        /**
-         * Names the document would declare with this text in the slot of that class.
-         *
-         * Parsed plainly and not normalized: what is asked of it is the first token
-         * of every declaration, which normalization does not move, and a text broken
-         * enough to fail here fails again in the write a line below, where the panel
-         * already turns it into a refusal on the screen.
-         */
         class_names_after(klass: string, next: string): string[];
-        /** Handwritten body of the class in scope, two way. */
         code_js(next?: string): string;
-        /** Styles of the class in scope, two way. */
         code_css(next?: string): string;
-        /**
-         * Methods of the class the picked node needs written by hand.
-         *
-         * Every name its declaration refers to with `<=` that the class does not
-         * declare itself. A generated property already has a body — the name of the
-         * node most of all, which compiles to the factory of the sub-view — and a
-         * handwritten method of that name would shadow it and take the node off the
-         * canvas. What has no generated body is exactly what a person opens the JS
-         * tab to write: `title <= greeting` wants `greeting()`.
-         */
         code_hooks(): readonly string[];
-        /** What the scene said about the picked node last, empty when it said nothing. */
         code_error(): string;
-        /** Method of the picked node, cut out of the body of its class. */
         node_js(): string;
-        /**
-         * Whether a class is being carried out of the palette right now.
-         *
-         * The canvas turns its own gestures off while it is, and leaves the overlay
-         * whole: that drag has no pointer capture, so a release over the hole would
-         * land in the frame and the drop would be lost.
-         */
         carrying(): boolean;
-        /**
-         * What is said while the pointer is inside a part, empty otherwise.
-         *
-         * The way out names the click first and the key second, and that order is
-         * the measurement, not a preference: inside the part the focus is in the
-         * sandbox, so a keydown goes to the document of the frame and the listener
-         * of the editor never sees it. The click on bare canvas always works,
-         * because the overlay is whole everywhere outside the box of the part; Esc
-         * works while the part has taken no focus of its own.
-         */
         inside_note(): string;
         body(): readonly $mol_view[];
         body_main(): readonly $mol_view[];
-        /**
-         * Which panels are open, kept in the session so a reload finds the editor as
-         * it was left.
-         *
-         * IN THE SESSION AND NOT IN THE ADDRESS. The address says WHAT is open —
-         * `doc` — and is a link a person shares; a layout in it would travel to
-         * somebody else's screen and fold their panels for them. The session is the
-         * other half: it belongs to this window and never leaves it.
-         *
-         * The key carries the name of the pack, because `sessionStorage` is per
-         * ORIGIN and our deploy shares one with every other application on
-         * `b-on-g.github.io`. A bare `palette` would be the same slot as somebody
-         * else's `palette`.
-         *
-         * Plain methods, not cells: the value already lives in a keyed cell of
-         * the session store, and a memo cell in front of it would be a second
-         * cell over one fact, frozen at what was written through it. That is the
-         * deviation from the donor, which wraps each of its three in a memo.
-         */
         palette_showed(next?: boolean): boolean;
         inspect_showed(next?: boolean): boolean;
         code_showed(next?: boolean): boolean;
-        /**
-         * The inspector, or the invitation to pick something.
-         *
-         * Swapped rather than emptied: the inspector derives everything
-         * from the source of one class, and an empty source has no class in it, so
-         * it would put a parse failure where a hint belongs.
-         */
         aside_content(): readonly $mol_view[];
-        /**
-         * Whether the pick still names something the document declares.
-         *
-         * A name alone is not enough. A document that does not parse, or one that
-         * never had this node, gave the inspector a source with no class in it, and
-         * it answered with a red strip in every one of its twenty fields — a wall of
-         * failures where an invitation belongs. The panel asks the document instead
-         * of trusting the name.
-         *
-         * A failure to parse counts as «not declared», because that is what it means
-         * to the panel; a suspension is re-thrown, or the wait for a document still
-         * arriving would be read as an answer.
-         */
         selection_alive(): boolean;
-        /**
-         * Declaration of the picked part, as text, in both directions.
-         *
-         * This is the whole join between canvas and inspector, and it needs no
-         * translation layer because there is nothing to translate: a property whose
-         * value is a class name IS a class declaration, so the inspector reads the
-         * same bytes the document carries and writes those bytes back.
-         *
-         * NOT memoized, and the read deliberately avoids the keyed cell the write
-         * below goes through: a write to a cell freezes its dependencies, so a read
-         * taken from the same cell would stop following the document after the first
-         * edit made here — stale in exactly the node being edited, silent, and
-         * looking like success.
-         */
         node_source(next?: string): string;
-        /**
-         * Classes beside the one being inspected: the lands of the field, then the
-         * root of the document.
-         *
-         * The land classes go in here and not through a second library, because the
-         * inspector already resolves a peer through the same index and the same
-         * `props_map` as a pack class — section 5 says the two are one namespace,
-         * and the inspector has held that since before there was a second source.
-         * The root earns its place too: a part whose base is another class of this
-         * document resolves its ports only if that class is in the index.
-         */
         node_peers(): readonly $mol_tree2[];
-        /** Wires of the document, for the pane to draw. */
         doc_wires(): readonly $bog_vmap_lang_link[];
-        /**
-         * Wirable ports of the class a part is declared with, through the same
-         * library index the inspector uses. Read off `props_tree()`, the derivation
-         * of the text, and not through `prop_tree()`, the write path.
-         */
         part_ports(name: string): readonly $bog_vmap_app_wire_port[];
-        /**
-         * Every property the document declares, which is every node the canvas may
-         * touch.
-         *
-         * The scene measures the whole rendered tree, insides of pack classes and
-         * all, so the boundary between «a node of the document» and «the insides of a
-         * part» has to come from the document, and the host is the one holding it.
-         * Section 1: every named node is a flat property of the root class whatever
-         * its depth, so one flat list of names answers at every level.
-         */
         doc_names(): string[];
-        /**
-         * Nodes that carry a `sub` of their own, which is what makes a node an
-         * artboard and its children a tree rather than a heap of coordinates.
-         *
-         * Read off the document and nowhere else: there is no mark, no registry and
-         * no side channel saying which node is a page. Section 8 says both artboards
-         * and free parts are properties of the same root class, and the only
-         * difference between them is in the text.
-         */
         doc_containers(): string[];
-        /**
-         * The `flexDirection` a node declares, empty when it declares none.
-         *
-         * The document states which way a container stacks, and the host owns the
-         * document, so this is a reading and not an inference. The pane falls back to
-         * the geometry of the children only where there is no declaration — and it
-         * has to have somewhere to fall back to, because a container with one child
-         * or none shows nothing at all about its direction.
-         */
         doc_axis(name: string): string;
-        /**
-         * A node dropped inside an artboard goes into the tree of its parent, and
-         * loses its coordinate on the way.
-         *
-         * The coordinate goes because it would stop meaning anything: the placement
-         * rules of the scene position the direct children of the root and nothing
-         * else, so a number left here would be a line of the desk layout that moves
-         * nothing and outlives every drag.
-         */
         tree_move(next?: $bog_vmap_app_pane_tree_move | null): $bog_vmap_app_pane_tree_move | null;
-        /**
-         * A wire drawn on the canvas goes into the document as two lines, see
-         * `link_add` of the model.
-         *
-         * An input that already carries a wire is UNPLUGGED first. Written straight
-         * over, the binding changed and the old source line stayed behind, read by
-         * nobody — an orphan in the document and one more name in every list built
-         * off the text. The drop is the operation that knows to take the source with
-         * it when the last reader goes.
-         */
         link_add(next?: $bog_vmap_app_pane_link_new | null): $bog_vmap_app_pane_link_new | null;
         link_drop(next?: $bog_vmap_app_pane_link_end | null): $bog_vmap_app_pane_link_end | null;
-        /**
-         * The palette field, parsed. The palette parses the same string for its own
-         * status line; the parse is pure and two calls cost less than a shared cell
-         * across two modules would.
-         */
         links_parsed(): $bog_vmap_lib_links;
-        /**
-         * The donor pack for the frame and for every library, with its slash.
-         *
-         * Derived and never written back into the field: the slash is grown here so
-         * that the address can still be typed character by character.
-         *
-         * A field that names no pack means the standard palette, which is the `part`
-         * module of this very pack — a sibling of the editor, so its address comes
-         * off our own. It used to mean no pack at all, and that state is gone on
-         * purpose: a land library inherits from the base view of the loaded pack,
-         * so a palette of lands alone was never the useful reading, while an empty
-         * field on a deploy left the user with no components and nothing to type.
-         */
         pack_link(): string;
-        /** Land links of the field, in the order typed. */
         lands(): readonly string[];
-        /** Classes of the lands, for the palette and the inspector. No stub in them. */
         lib_classes(): readonly $mol_tree2[];
-        /**
-         * Names of every class of the library: the pack and the lands on it.
-         *
-         * NOT read here — this is a binding the shelf pulls, and pulling it fetches
-         * the class tree of the pack. Reading it in the editor would put a dead
-         * address in the way of the whole screen instead of in the way of the one
-         * list that shows what the address brought.
-         */
         lib_class_list(): string[];
-        /**
-         * Sources of the lands, for the scene.
-         *
-         * Both this and the pack travel the same bridge now, and the split is still
-         * the rule of section 5, only held elsewhere: a second pack cannot be
-         * unloaded from a realm, so the pack is part of the key of the frame and a
-         * pack change replaces the element; a land is compiled into the sandbox like
-         * the document, so a land change recompiles and keeps the frame, its camera
-         * and its live instances.
-         */
         libs(): readonly $bog_vmap_lib_land_text[];
         error(): string;
-        /**
-         * The state of the work in a few words: what the store is doing with the
-         * document, and whether the scene is answering.
-         *
-         * Nothing technical belongs here. A confirmed sandbox is the normal state
-         * and the strip used to announce it, which read as a fault and, standing
-         * before the check below, made «сцена на связи» unreachable code. What can
-         * really be wrong with the frame goes to the error strip through
-         * `Pane().error()`.
-         */
         status(): "заводим сцену…" | "чужая сцена: только просмотр, правки не сохраняются" | "сцена не отвечает" | "сцена на связи" | "ожидание сцены…";
         zoom_title(): string;
         zoom_in(): void;
         zoom_out(): void;
         camera_reset(): void;
-        /** Camera controls live in $.$$, so the toolbar needs the derived type. */
         pane(): $.$$.$bog_vmap_app_pane;
-        /** Shelf methods used here live in $.$$ as well. */
         shelf(): $.$$.$bog_vmap_app_shelf;
-        /**
-         * The piece the pointer is carrying, or nothing while it carries nothing.
-         *
-         * One value for both levels of the panel: a ready made item and a class of
-         * the pack differ in how their source is made and in nothing else by the
-         * time they reach the canvas.
-         */
         dragged(): string;
         ghost_title(): string;
         ghost_left(): string;
         ghost_top(): string;
-        /**
-         * Pointer moves and releases anywhere in the window, for the whole life of
-         * the editor.
-         *
-         * On the window rather than on the palette row, and without
-         * `setPointerCapture`: capture retargets the later `click` to the captor,
-         * and a synthetic pointer does not register at all, which would make the
-         * whole gesture untestable here. The overlay of the pane eats pointer events
-         * in the host document, so a move across the canvas reaches this listener —
-         * and the hole under the picked part is closed for the whole drag, see
-         * `carrying()`, so a release over the canvas cannot fall into the frame.
-         */
         drag_listeners(): $mol_dom_listener[];
         drag_move(event?: PointerEvent): void;
-        /**
-         * Release ends the drag whatever it is over, and only a release over the
-         * canvas adds anything. Clearing first means a drop outside cancels cleanly.
-         */
         drag_end(event?: PointerEvent): void;
-        /**
-         * World coordinates of a pointer event, or `null` if it is not over the canvas.
-         *
-         * The rectangle is the canvas's own reading, which is `view_rect()` warmed in
-         * its `auto()`. The reason written here before — that a handler subscribed to
-         * the watched cell would be re-run by the layout its own drop causes — was
-         * wrong: these handlers run as one shot tasks and subscribe to nothing.
-         *
-         * The camera is a screen-pixel shift plus an isotropic zoom, and the scene
-         * puts the stage at `transform-origin: 0 0` inside a frame pinned to the top
-         * left of the pane. So the screen point is `world * zoom + shift`, and this
-         * is that solved for world.
-         */
         canvas_point(event: PointerEvent): readonly [number, number] | null;
-        /**
-         * A free name for a part of the given class: a minor button of the pack
-         * becomes `Button_minor`, and a second one of the same class `Button_minor_2`.
-         *
-         * The short form is the shelf's, because the shelf writes the same name into
-         * the preset it makes out of a class, and two rules for one name would drift
-         * apart at the first fix to either.
-         */
         part_name(klass: string): string;
-        /** The given name, or it with a number, whichever the document does not carry. */
         name_free(head: string): string;
-        /**
-         * Lays a piece of the shelf onto the canvas.
-         *
-         * The model writes what exists — the declarations, their overrides and their
-         * wires — and answers with the names it left loose; where those names go is
-         * this method's half of the work, because only the canvas knows whether the
-         * release happened over an artboard or over open desk.
-         *
-         * A declaration at class level compiles into a lazy memoized property that
-         * creates no DOM at all, which is the free part of section 1; a name gets
-         * drawn only once something references it, and that is what the placement
-         * below writes. Two halves because they are two separate facts: what exists,
-         * and what is on the page.
-         */
         preset_drop(source: string, x: number, y: number): void;
-        /**
-         * The same piece, put where a CLICK can mean: free on the canvas, in the
-         * middle of it.
-         *
-         * A click is «add this», a drag is «add it HERE». Whoever clicked aimed at
-         * nothing, so the piece must not fall into whatever happens to cover the
-         * middle of the view — it did, and a map asked for by a click landed between
-         * the two halves of a wired pair. Measured on the deploy 09.09.2026.
-         */
         preset_place(source: string): void;
-        /**
-         * The middle of the canvas, moved clear of whatever already covers it.
-         *
-         * ANYTHING drawn there counts, not only a container. A page is the obvious
-         * case — a free part left in the middle of one is drawn over it and reads as
-         * a part OF it — but a free part is just as much in the way: two clicks in a
-         * row put the second piece exactly on top of the first, and what looks like
-         * one thing on the canvas is two.
-         *
-         * The LOWEST box wins, so a third click clears the second and not the first.
-         * Below and not beside, because pages grow downwards and a column of pieces
-         * is what a person expects from clicking a list.
-         */
         free_spot(): readonly [number, number];
-        /**
-         * Writes the piece into the document and places what it left loose: into the
-         * tree of a container when the gesture aimed at one, by a coordinate when it
-         * did not.
-         */
         preset_apply(source: string, x: number, y: number, slot: $bog_vmap_app_pane_slot | null): void;
-        /**
-         * Drops one class of the library onto the canvas.
-         *
-         * The degenerate piece of the shelf: one declaration, one reference and no
-         * wire. Kept as a method of its own because a class is what the second level
-         * of the panel carries and what the scenarios say.
-         */
         part_drop(klass: string, x: number, y: number): void;
-        /**
-         * An item of the shelf asked for by a click instead of a drag: it goes to
-         * the middle of the canvas, which is the only place a click can mean.
-         */
         shelf_place(next?: string): string;
-        /**
-         * Layout of a fresh artboard: the page of a desktop, stacked downwards.
-         *
-         * A literal colour and NOT a token of the theme, which is the one place in
-         * the editor where that is right: these values are written into the
-         * document, travel into the export and end up on somebody's site. A theme
-         * token here would put the colours of this editor into a page that has
-         * nothing to do with it, and would resolve to nothing outside it.
-         */
         board_style(): {
             readonly [key: string]: string;
         };
-        /**
-         * Puts a page on the canvas: a node with a `sub` of its own.
-         *
-         * A plain base view and not a class of ours, so an exported document
-         * depends on nothing of this pack; what makes it a page is the width and the
-         * `sub`, both of them ordinary lines of the document. `flexDirection` is
-         * written out because `[mol_view]` is `display: flex` with no direction at
-         * all, that is to say a ROW: a page that did not say so would lay its first
-         * two blocks side by side.
-         */
         board_add(): void;
-        /**
-         * The world point the middle of the canvas is looking at.
-         *
-         * Read off the DOM like `canvas_point`, and for the same reason: `view_rect`
-         * is a watched cell, and a handler that subscribed to it would be re-run by
-         * the layout change its own drop causes.
-         */
         canvas_center(): readonly [number, number];
         delete_hint(): string;
-        /**
-         * Takes the picked node off the canvas: out of `sub`, out of the class, out
-         * of the placement.
-         *
-         * The mirror of `part_drop`, and split the same way, because they are the
-         * same two facts read backwards: `sub_drop` says it is no longer on the page,
-         * `prop_drop` says it no longer exists. Order matters — the reference goes
-         * first, so the document is never, not even between two writes, a class that
-         * points `<=` at a property it does not declare. That state compiles to a
-         * reference to nothing, and the scene would report it as a real failure.
-         *
-         * Both writes go through `lang`, never through the text: an AST edit
-         * serializes the whole class, so the source the scene compiles and the source
-         * an export would write stay the same string.
-         */
         node_delete(): void;
-        /**
-         * Renames a node: the declaration, everything that spells it, and the editor
-         * state keyed by its name.
-         *
-         * The name of a node is the property it occupies on the root class, so it is
-         * also the key of the placement, of the remembered boxes and of the pick.
-         * Renaming the text alone orphans all three: the node moves to a new name and
-         * `selected()` and `spots()` go on pointing at one nothing declares.
-         *
-         * The document goes first BECAUSE it is the write that can refuse — a name
-         * already declared is rejected there — so a refused rename leaves the editor
-         * state exactly as it was rather than pointing at a rename that never
-         * happened.
-         *
-         * Through the property handle and not through `prop_rename` directly: the
-         * handle composes the new signature out of the current one, so a keyed or a
-         * two way property keeps its signs. Wires are rewritten by the model, NOT
-         * dropped — the mirror of `node_delete`, where `links_drop` cuts them because
-         * the node itself is going.
-         */
         node_rename(name: string, next: string): void;
-        /**
-         * Name of the picked node as the inspector edits it, in both directions.
-         *
-         * Reading is the pick itself: the name of a node IS the property it occupies,
-         * so there is nothing to derive. Writing renames, and the refusal comes back
-         * as words rather than as an exception — a throw out of a text field
-         * setter ends up in `setCustomValidity`, which is not where a person looks.
-         *
-         * The taken name is caught here and not left to the model, because only the
-         * message differs: the model refuses in English, at a caller that may not be
-         * a person. The model still refuses on its own and is tested doing so; this
-         * is the same rule spelled for the one who typed it.
-         */
         node_title(next?: string): string;
-        /**
-         * The refusal in words, keyed by the node it is about.
-         *
-         * Keyed, so it clears itself: a rename that lands moves the pick to the new
-         * name and the message is read under a key nobody has written, and picking
-         * another node does the same. A single cell would need clearing from every
-         * path that can make it wrong, which is how a stale message survives.
-         */
         node_title_note_at(name: string, next?: string): string;
-        /**
-         * The refusal, and with it the name the node still carries.
-         *
-         * The field keeps what was typed — losing it would mean typing the whole
-         * name again to fix one letter — so after a refusal the panel shows a name
-         * the document does not have, and the real one is nowhere. It goes into the
-         * refusal itself rather than into a line of its own: the two are one thought
-         * («this did not work, you are still here»), and a strip that appears only
-         * with the refusal cannot go stale after it.
-         */
         node_title_note(): string;
-        /**
-         * Renames a class of the document with everything the editor keys by its
-         * name: the text, the handwritten body, the styles, and the recorded choice
-         * of which class the document opens with.
-         *
-         * The body and the styles are carried by hand, and that is not decoration.
-         * They are stored per class NAME — a node of the document in Giper Baza is
-         * found by the class its text declares, and a draft keeps them in cells keyed
-         * the same way — so a class that arrives under a new name arrives as a new
-         * node with nothing in it. Read before the write, written after: in between
-         * there is no name that answers for them.
-         *
-         * The text goes through the document model, which rewrites every mention of
-         * the class in its neighbours — the base of an heir, the class of a part —
-         * and refuses a name already taken. Property names are untouched by all of
-         * this, so the pick, the placement, the remembered boxes and the wires, which
-         * are keyed by property and not by class, have nothing to be orphaned by.
-         */
         class_rename(name: string, next: string): void;
-        /**
-         * Everything the editor keeps about a class OUTSIDE its text, snapshotted.
-         *
-         * Read before a rename is written, because after it there is no name that
-         * answers for any of it: the node of the document is found by the class its
-         * text declares, so a class renamed in the text arrives as a node of its own
-         * and the old one leaves the list carrying its `Js` and `Css` with it.
-         */
         class_stored(name: string): {
             js: string;
             css: string;
             rooted: boolean;
         };
-        /**
-         * Puts what was stored under one class name under another one.
-         *
-         * The counterpart of `class_stored`, and the second half of every rename
-         * whatever caused it: the field in the toolbar, or a name changed by hand in
-         * the text of the class. Only what is keyed by the class NAME travels — the
-         * body, the styles and the recorded choice of which class the document opens
-         * with. The text is not touched here: whoever renamed has already written it.
-         *
-         * The recorded root moves only when it WAS this class. A rename of any other
-         * class must not make it the page.
-         */
         class_carry(name: string, next: string, carried: {
             js: string;
             css: string;
             rooted: boolean;
         }): void;
-        /**
-         * What stands in the field of the root name, keyed by the name it started
-         * from.
-         *
-         * A draft, because the rename is committed on Enter and on blur: between the
-         * two the field holds a name the document does not have. Keyed by the current
-         * name so that a rename that lands starts a fresh draft — there is no state
-         * to reset and none to go stale. The same shape as the name of a node in the
-         * inspector, and for the same reason.
-         */
         root_draft_at(name: string, next?: string): string;
         root_draft(next?: string): string;
-        /** Commits the draft, and says nothing when there is nothing to commit. */
         root_submit(event?: Event): void;
-        /**
-         * Name of the root class as the toolbar field commits it, in both directions.
-         *
-         * This is the name the folder of an export is made of — section 10 — so the
-         * field stands beside the download button that spells the folder out. A
-         * refusal comes back as words on the strip below, for the same reason the
-         * node name field does it that way: a throw out of a text field setter
-         * ends up in `setCustomValidity`, where nobody looks.
-         */
         root_title(next?: string): string;
-        /** Why the root was not renamed. Empty when it was, or when nobody tried. */
         root_title_refusal(next?: string): string;
-        /**
-         * The refusal, and with it the name the root class still carries.
-         *
-         * The same fork as the name of a node, and the same answer: the field keeps
-         * what was typed, so after a refusal the toolbar shows a name the document
-         * does not have and the real one is nowhere. It goes into the refusal itself
-         * rather than into a line of its own — the two are one thought, and a strip
-         * that appears only with the refusal cannot go stale after it.
-         */
         root_title_note(): string;
-        /**
-         * Del anywhere in the editor, as long as the keystroke is not somebody's text.
-         *
-         * On the window and not on the canvas: the canvas is an iframe, and a focused
-         * iframe swallows every key, so a listener living on the pane would go quiet
-         * exactly when the user has just clicked a node. That the scene keeps its own
-         * keystrokes is the other half of the same fact and is what makes this safe:
-         * typing into a live component focused through the hole in the overlay cannot
-         * reach here at all, so there is no way for a Backspace meant for a text
-         * field to delete a node.
-         *
-         * Fields of the HOST are a real risk though — the palette search is one — so
-         * a keystroke aimed at an editable target is left alone.
-         */
         hotkeys(): $mol_dom_listener;
         key_press(event?: KeyboardEvent): void;
         auto(): any[];
