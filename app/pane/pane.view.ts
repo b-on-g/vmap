@@ -152,7 +152,7 @@ namespace $.$$ {
 
 		override sub() {
 			return [
-				this.Scene( this.scene_key() ),
+				... this.scene_shown() ? [ this.Scene( this.scene_key() ) ] : [],
 				this.Overlay(),
 				this.Wire(),
 				this.Marks(),
@@ -162,11 +162,23 @@ namespace $.$$ {
 			] as readonly $mol_view[]
 		}
 
+		@ $mol_mem
+		scene_shown( next?: boolean ) {
+			return next ?? true
+		}
+
+		remount_delay() {
+			return 500
+		}
+
 		@ $mol_action
 		override scene_restart() {
 			this.scene_generation( this.scene_generation() + 1 )
 			this.warmed( false )
 			this.stalled( false )
+			this.scene_shown( false )
+
+			new this.$.$mol_after_timeout( this.remount_delay(), ()=> this.scene_shown( true ) )
 		}
 
 		@ $mol_mem_key

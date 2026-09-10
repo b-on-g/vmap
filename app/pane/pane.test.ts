@@ -207,7 +207,9 @@ namespace $ {
 
 			const text = stage.text()
 			$mol_assert_ok( text.includes( 'Сцена не запустилась' ) )
-			$mol_assert_ok( text.includes( 'исправьте код в панели' ) )
+			$mol_assert_ok( text.includes( 'уже исправлен' ) )
+			$mol_assert_ok( text.includes( 'ещё раз' ) )
+			$mol_assert_ok( text.includes( 'сначала исправьте код' ) )
 			stage.button( 'Перезагрузить сцену' )
 
 			$mol_assert_ok( timer !== null )
@@ -881,8 +883,33 @@ namespace $ {
 
 		},
 
+		'a restart takes the old frame down before it puts a new one up'( $ ) {
+			const timers = timers_fake( $ )
+			const { pane } = pane_make( $ )
+
+			const frame_before = pane.Scene( pane.scene_key() )
+			$mol_assert_equal( pane.sub()[0], frame_before )
+
+			pane.scene_restart()
+
+			$mol_assert_equal( pane.scene_shown(), false )
+			$mol_assert_equal( pane.sub().includes( frame_before ), false )
+			$mol_assert_equal( pane.sub().some( kid => kid === pane.Scene( pane.scene_key() ) ), false )
+			$mol_assert_equal( pane.sub()[0], pane.Overlay() )
+
+			const remount = timers.at( -1 )!
+			$mol_assert_equal( remount.delay, pane.remount_delay() )
+
+			remount.task()
+
+			$mol_assert_equal( pane.scene_shown(), true )
+			$mol_assert_equal( pane.sub()[0], pane.Scene( pane.scene_key() ) )
+			$mol_assert_equal( pane.sub()[0] !== frame_before, true )
+
+		},
+
 		'scene_restart gives a fresh frame and clears stalled'( $ ) {
-			timers_fake( $ )
+			const timers = timers_fake( $ )
 			const { pane, posted, answer } = pane_make( $ )
 
 			pane.warmed( true )
@@ -896,6 +923,7 @@ namespace $ {
 			posted.length = 0
 
 			pane.scene_restart()
+			timers.at( -1 )!.task()
 
 			$mol_assert_equal( pane.stalled(), false )
 			$mol_assert_equal( pane.ready(), false )
