@@ -6,6 +6,9 @@ $bog_vmap_app_shelf $mol_view
 	dragged? \
 	drag_x? 0
 	drag_y? 0
+	drag_source \
+	drag_title \
+	item_source* \
 	place? \
 	files? /File
 	classes_showed? false

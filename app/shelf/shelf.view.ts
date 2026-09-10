@@ -157,11 +157,15 @@ namespace $.$$ {
 			return this.item( id )?.hint ?? ''
 		}
 
-		drag_source() {
-			return this.item( this.dragged() )?.source ?? ''
+		override item_source( id: string ) {
+			return this.item( id )?.source ?? ''
 		}
 
-		drag_title() {
+		override drag_source() {
+			return this.item_source( this.dragged() )
+		}
+
+		override drag_title() {
 			return this.item( this.dragged() )?.title ?? ''
 		}
 

@@ -18,6 +18,8 @@ $bog_vmap_app_pane $mol_view
 	doc_names /string
 	axis* \
 	tree_move? null
+	carry_at? null
+	carry_drop? null
 	values? *
 	handshake*? 0
 	ready false
@@ -25,6 +27,8 @@ $bog_vmap_app_pane $mol_view
 	warmed? false
 	entered? null
 	inside false
+	world_center /number
+	free_spot /number
 	node_error* \
 	scene_restart? null
 	error_at*? \

@@ -15,6 +15,13 @@ namespace $.$$ {
 		readonly index: number
 	}
 
+	export type $bog_vmap_app_pane_carry = {
+		readonly x: number
+		readonly y: number
+		readonly owner: string
+		readonly index: number
+	}
+
 	export type $bog_vmap_app_pane_peer = {
 		postMessage( data: unknown, origin: string ): void
 		readonly origin: string
@@ -305,6 +312,38 @@ namespace $.$$ {
 			return this.nodes_measured().filter( node => node.path.length === 1 ).map( node => node.name )
 		}
 
+		override world_center(): readonly number[] {
+			const rect = this.pane_rect()
+			const shift = this.camera_shift()
+			const zoom = this.camera_zoom()
+
+			return [
+				( rect.width / 2 - shift[0] ) / zoom,
+				( rect.height / 2 - shift[1] ) / zoom,
+			]
+		}
+
+		override free_spot(): readonly number[] {
+			const [ x, start ] = this.world_center()
+			const boxes = this.nodes_measured().map( node => node.box )
+
+			const covers = ( box: $bog_vmap_bridge_rect, y: number )=> {
+				return x >= box.x && x <= box.x + box.width
+					&& y >= box.y && y <= box.y + box.height
+			}
+
+			let y = start
+
+			for( let step = 0; step <= boxes.length; ++step ) {
+				const hit = boxes.find( box => covers( box, y ) )
+				if( !hit ) break
+
+				y = hit.y + hit.height + 24
+			}
+
+			return [ x, y ]
+		}
+
 		node_path( name: string ): readonly string[] {
 			for( const node of this.nodes_measured() ) {
 				if( node.name === name ) return node.path.slice( 0, -1 )
@@ -449,6 +488,26 @@ namespace $.$$ {
 
 		override tree_move( next?: $bog_vmap_app_pane_tree_move | null ) {
 			return next ?? null
+		}
+
+		override carry_drop( next?: $bog_vmap_app_pane_carry | null ) {
+			return next ?? null
+		}
+
+		@ $mol_action
+		override carry_at( next?: { readonly x: number, readonly y: number } | null ) {
+			if( !next ) return null
+
+			const slot = this.insert_slot([ next.x, next.y ])
+
+			this.carry_drop({
+				x: next.x,
+				y: next.y,
+				owner: slot?.owner ?? '',
+				index: slot?.index ?? -1,
+			})
+
+			return next
 		}
 
 		@ $mol_mem
@@ -607,7 +666,12 @@ namespace $.$$ {
 
 		node_release( event?: PointerEvent ) {
 			if( !event ) return
-			if( this.carrying() ) return
+
+			if( this.carrying() ) {
+				const point = this.world_point( event )
+				this.carry_at({ x: point[0], y: point[1] })
+				return
+			}
 
 			const press = this.press()
 			this.press( null )

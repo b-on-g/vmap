@@ -1547,7 +1547,7 @@ namespace $ {
 			app.part_drop( `${d}mol_button_minor`, 100, 200 )
 
 			const name = app.selected()!
-			const pane = app.pane()
+			const pane = app.Pane()
 
 			pane.error_at( 'runtime', 'исполнение: boom' )
 			pane.error_node( 'runtime', name )

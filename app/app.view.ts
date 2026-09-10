@@ -527,6 +527,24 @@ namespace $.$$ {
 			return next
 		}
 
+		override carry_drop( next?: $bog_vmap_app_pane_carry | null ) {
+			if( !next ) return null
+
+			const source = this.dragged()
+			if( !source ) return null
+
+			this.Shelf().dragged( '' )
+
+			this.preset_apply(
+				source,
+				next.x,
+				next.y,
+				next.owner ? { owner: next.owner, index: next.index } : null,
+			)
+
+			return next
+		}
+
 		override link_add( next?: $bog_vmap_app_pane_link_new | null ) {
 			if( next ) {
 				const taken = this.doc_wires().some( link => link.to === next.to && link.to_prop === next.to_prop )
@@ -582,20 +600,12 @@ namespace $.$$ {
 			return this.Pane().ready() ? 'сцена на связи' : 'ожидание сцены…'
 		}
 
-		pane() {
-			return this.Pane() as $.$$.$bog_vmap_app_pane
-		}
-
-		shelf() {
-			return this.Shelf() as $.$$.$bog_vmap_app_shelf
-		}
-
 		dragged() {
-			return this.shelf().drag_source()
+			return this.Shelf().drag_source()
 		}
 
 		ghost_title() {
-			return this.shelf().drag_title()
+			return this.Shelf().drag_title()
 		}
 
 		ghost_left() {
@@ -633,32 +643,11 @@ namespace $.$$ {
 
 		drag_end( event?: PointerEvent ) {
 			if( !event ) return
-
-			const source = this.dragged()
-			if( !source ) return
+			if( !this.dragged() ) return
 
 			this.Shelf().dragged( '' )
-
-			const point = this.canvas_point( event )
-			if( !point ) return
-
-			this.preset_drop( source, point[0], point[1] )
-
 		}
 
-		canvas_point( event: PointerEvent ) {
-			const rect = this.pane().pane_rect()
-
-			const x = event.clientX - rect.left
-			const y = event.clientY - rect.top
-
-			if( x < 0 || y < 0 || x > rect.width || y > rect.height ) return null
-
-			const shift = this.Pane().camera_shift()
-			const zoom = this.Pane().camera_zoom()
-
-			return [ ( x - shift[0] ) / zoom, ( y - shift[1] ) / zoom ] as const
-		}
 
 		part_name( klass: string ) {
 			return this.name_free( this.$.$bog_vmap_app_shelf_short( klass ) )
@@ -676,36 +665,9 @@ namespace $.$$ {
 		}
 
 		@ $mol_action
-		preset_drop( source: string, x: number, y: number ) {
-			this.preset_apply( source, x, y, this.pane().insert_slot([ x, y ]) )
-		}
-
-		@ $mol_action
 		preset_place( source: string ) {
-			const spot = this.free_spot()
+			const spot = this.Pane().free_spot()
 			this.preset_apply( source, spot[0], spot[1], null )
-		}
-
-		free_spot() {
-			const [ x, start ] = this.canvas_center()
-			const boxes = this.pane().nodes_measured().map( node => node.box )
-
-			const covers = ( box: $bog_vmap_bridge_rect, y: number )=> {
-				return x >= box.x && x <= box.x + box.width
-					&& y >= box.y && y <= box.y + box.height
-			}
-
-			let y = start
-
-			for( let step = 0; step <= boxes.length; ++step ) {
-				const hit = boxes.find( box => covers( box, y ) )
-				if( !hit ) break
-
-				y = hit.y + hit.height + 24
-
-			}
-
-			return [ x, y ] as const
 		}
 
 		@ $mol_action
@@ -713,7 +675,7 @@ namespace $.$$ {
 			source: string,
 			x: number,
 			y: number,
-			slot: $bog_vmap_app_pane_slot | null,
+			slot: { readonly owner: string, readonly index: number } | null,
 		) {
 			const node = this.node()
 
@@ -737,11 +699,12 @@ namespace $.$$ {
 
 		@ $mol_action
 		part_drop( klass: string, x: number, y: number ) {
-			this.preset_drop( this.$.$bog_vmap_app_shelf_single( klass ), x, y )
+			this.Shelf().dragged( klass )
+			this.Pane().carry_at({ x, y })
 		}
 
 		override shelf_place( next?: string ) {
-			const source = next && this.shelf().item( next )?.source
+			const source = next && this.Shelf().item_source( next )
 
 			if( source ) this.preset_place( source )
 
@@ -774,22 +737,11 @@ namespace $.$$ {
 			node.sub_open( name )
 			node.sub_add( name )
 
-			const spot = this.canvas_center()
+			const spot = this.Pane().world_center()
 			this.spots({ ... this.spots(), [ name ]: { x: spot[0], y: spot[1] } })
 
 			this.selected( name )
 
-		}
-
-		canvas_center() {
-			const rect = this.pane().pane_rect()
-			const shift = this.Pane().camera_shift()
-			const zoom = this.Pane().camera_zoom()
-
-			return [
-				( rect.width / 2 - shift[0] ) / zoom,
-				( rect.height / 2 - shift[1] ) / zoom,
-			] as const
 		}
 
 		override delete_hint() {
