@@ -220,18 +220,22 @@ namespace $ {
 		 * The premise the library rests on: a land syncs itself on every read of a
 		 * pawn, through `sand_ordered()`, so nobody has to ask. A `sync()` called by
 		 * hand used to sit in `parts()` on the belief that it did not.
+		 *
+		 * The counter goes on AFTER the part has been written and starts from zero,
+		 * so that a write cannot pay for the read. Counting from the start would
+		 * pass just as well with a land that only syncs when written to, and that is
+		 * a different statement — one that would not justify dropping the call.
 		 */
 		'reading the parts of a shelf syncs their land unasked'( $ ) {
 
 			const one = shelf( $ )
-			const land = one.land()
-
-			let synced = 0
-			land.sync = ()=> { synced ++; return land }
-
 			part( one, card_src )
 
 			const lib = $bog_vmap_lib_land.make({ $, shelf: ()=> one })
+
+			const land = one.land()
+			let synced = 0
+			land.sync = ()=> { synced ++; return land }
 
 			$mol_assert_equal( lib.parts().length, 1 )
 			$mol_assert_ok( synced > 0 )

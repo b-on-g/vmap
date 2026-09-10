@@ -164,16 +164,21 @@ namespace $ {
 		 * The premise `file()` rests on: a pawn syncs its land on every read, through
 		 * `sand_ordered()`, so `file()` asks for nothing itself. A `sync()` called by
 		 * hand used to sit there on the belief that a land reached by link did not.
+		 *
+		 * The counter goes on AFTER the name has been written and starts from zero,
+		 * so that the write cannot pay for the read. Counting from the start would
+		 * pass on a land that syncs only when written to, and that premise would not
+		 * justify dropping the call.
 		 */
 		'reading a file syncs its land unasked'( $ ) {
 
 			const one = land( $ )
 
-			let synced = 0
-			one.sync = ()=> { synced ++; return one }
-
 			const file = one.Data( $giper_baza_file )
 			file.name( 'logo.png' )
+
+			let synced = 0
+			one.sync = ()=> { synced ++; return one }
 
 			$mol_assert_equal( file.name(), 'logo.png' )
 			$mol_assert_ok( synced > 0 )
