@@ -28618,17 +28618,18 @@ var $;
             sizes(next) {
                 return next ?? {};
             }
-            sizes_forget(name) {
+            sizes_merged(fresh) {
                 const prefix = this.doc_root() + '/';
+                const leaf = (key) => key.slice(prefix.length).split('/').pop() ?? '';
+                const moved = new Set(Object.keys(fresh).map(leaf));
                 const kept = {};
                 const sizes = this.sizes();
                 for (const key of Object.keys(sizes)) {
-                    const path = key.startsWith(prefix) ? key.slice(prefix.length).split('/') : [];
-                    if (path.includes(name))
+                    if (!(key in fresh) && moved.has(leaf(key)))
                         continue;
                     kept[key] = sizes[key];
                 }
-                this.sizes(kept);
+                return { ...kept, ...fresh };
             }
             nodes_measured() {
                 const prefix = this.doc_root() + '/';
@@ -29278,7 +29279,7 @@ var $;
                     return;
                 }
                 if (message.kind === 'sizes') {
-                    this.sizes({ ...this.sizes(), ...message.sizes });
+                    this.sizes(this.sizes_merged(message.sizes));
                     this.warmed(true);
                     return;
                 }
@@ -30602,7 +30603,6 @@ var $;
                 const spots = { ...this.spots() };
                 delete spots[next.name];
                 this.spots(spots);
-                this.pane().sizes_forget(next.name);
                 return next;
             }
             link_add(next) {
@@ -30819,8 +30819,6 @@ var $;
                 for (const dead of doomed)
                     delete spots[dead];
                 this.spots(spots);
-                for (const dead of doomed)
-                    this.pane().sizes_forget(dead);
                 this.selected(null);
             }
             node_rename(name, next) {
@@ -30833,7 +30831,6 @@ var $;
                     delete spots[name];
                     this.spots({ ...spots, [next]: spot });
                 }
-                this.pane().sizes_forget(name);
                 if (this.selected() === name)
                     this.selected(next);
             }

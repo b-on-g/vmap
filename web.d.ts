@@ -49256,7 +49256,11 @@ declare namespace $.$$ {
         }): {
             readonly [node: string]: $bog_vmap_bridge_rect;
         };
-        sizes_forget(name: string): void;
+        sizes_merged(fresh: {
+            readonly [node: string]: $bog_vmap_bridge_rect;
+        }): {
+            [x: string]: $bog_vmap_bridge_rect;
+        };
         nodes_measured(): {
             name: string;
             path: readonly string[];
