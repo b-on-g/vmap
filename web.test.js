@@ -771,26 +771,6 @@ var $;
 
 ;
 "use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test_mocks.push($ => {
-        $.$mol_log3_come = () => { };
-        $.$mol_log3_done = () => { };
-        $.$mol_log3_fail = () => { };
-        $.$mol_log3_warn = () => { };
-        $.$mol_log3_rise = () => { };
-        $.$mol_log3_area = () => () => { };
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
 var $;
 (function ($_1) {
     $mol_test({
@@ -1085,6 +1065,26 @@ var $;
 
 ;
 "use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test_mocks.push($ => {
+        $.$mol_log3_come = () => { };
+        $.$mol_log3_done = () => { };
+        $.$mol_log3_fail = () => { };
+        $.$mol_log3_warn = () => { };
+        $.$mol_log3_rise = () => { };
+        $.$mol_log3_area = () => () => { };
+    });
+})($ || ($ = {}));
 
 ;
 "use strict";
@@ -8890,7 +8890,7 @@ var $;
         /**
          * The frame is isolated and has no address, and the ORDER of the two says so.
          *
-         * `$mol_dom_render_attributes` writes the dictionary in key order, so a frame
+         * The attribute renderer writes the dictionary in key order, so a frame
          * that got its source before its sandbox is already loading unsandboxed —
          * with the attribute present in the DOM and the audit green. Reading the
          * dictionary is therefore the check, not reading the element.
@@ -15647,7 +15647,7 @@ var $;
             const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
             $mol_assert_like(apps, ['Button', 'Calc', 'Map']);
             // The classes of the pack are a level down, folded away until asked for,
-            // and then they are all there, the `$mol_view` stub included.
+            // and then they are all there, the base view stub included.
             $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_palette_class_row]'), null);
             stage.classes_open();
             const rows = [...stage.root.querySelectorAll('[bog_vmap_app_palette_class_row]')]
@@ -15866,7 +15866,7 @@ var $;
          *
          * The scene compiles nothing until it has been told a pack, because a class
          * picks its base once and a document built a moment early would inherit the
-         * sandbox's own `$mol_view` for good. So the order of the first three
+         * sandbox's own base view for good. So the order of the first three
          * messages of a handshake is part of the contract, not an accident of how
          * the cells happen to be listed.
          */
@@ -16196,10 +16196,11 @@ var $;
     /**
      * Globals of a browser that node does not define and jsdom does not export.
      *
-     * `$mol_view_selection` names `ShadowRoot` and `$mol_touch` names `PointerEvent`
-     * bare, so a field or a gesture in a node test dies on a `ReferenceError` that
-     * says nothing about the editor. Pointer capture is missing from jsdom
-     * elements outright, and `$mol_touch` calls it without a guard.
+     * The selection plugin of the view pack names `ShadowRoot` and the touch plugin
+     * names `PointerEvent` bare, so a field or a gesture in a node test dies on a
+     * `ReferenceError` that says nothing about the editor. Pointer capture is
+     * missing from jsdom elements outright, and the touch plugin calls it without a
+     * guard.
      */
     function browser_gaps($) {
         const dom = $.$mol_dom_context;
@@ -16448,9 +16449,9 @@ var $;
                 return found('[role=button]', `button «${title}»`, el => el.textContent?.startsWith(title) ?? false);
             },
             /**
-             * A checkbox or one option of a switch, by its label. Not a button:
-             * `$mol_check` answers `role="checkbox"`, and the options of a switch are
-             * checks, so the head bar toggles and the layout panel are found here.
+             * A checkbox or one option of a switch, by its label. Not a button: the
+             * check primitive answers `role="checkbox"`, and the options of a switch
+             * are checks, so the head bar toggles and the layout panel are found here.
              */
             check(title) {
                 return found('[role=checkbox]', `check «${title}»`, el => el.textContent?.includes(title) ?? false);
@@ -16473,7 +16474,7 @@ var $;
             shelf_row(title) {
                 return found('[bog_vmap_app_shelf_item_row]', `shelf row ${title}`, el => el.textContent === title);
             },
-            /** A text field, addressed by the tail of the id $mol builds out of the path to it. */
+            /** A text field, addressed by the tail of the id built out of the path to it. */
             field(tail) {
                 return found('input, textarea', `field ${tail}`, el => el.getAttribute('id')?.endsWith(tail) ?? false);
             },
@@ -16584,7 +16585,7 @@ var $;
     /**
      * A session of its own per test.
      *
-     * `$mol_state_session` keeps its values on the CLASS — in `sessionStorage`
+     * The session store of the framework keeps its values on the CLASS — in `sessionStorage`
      * where there is one, in a field of the class where there is not — so without
      * this every test would inherit whatever the previous one folded away. A
      * subclass per test gets a store of its own, the same trick the address mock
@@ -16916,7 +16917,7 @@ var $;
             $mol_assert_equal(app.node_title_note(), '');
         },
         /**
-         * The refusal has to reach the person in words: a throw out of a `$mol_string`
+         * The refusal has to reach the person in words: a throw out of a text field
          * setter lands in `setCustomValidity`, which is not where anybody looks.
          */
         'a name already taken is refused in words and moves nothing'($) {
@@ -17475,12 +17476,12 @@ var $;
          *
          * The address was the untested half: scenarios switched documents by calling
          * the picker directly, so nothing ever proved that a gesture reaches
-         * `$mol_state_arg` at all. A report from the deploy that the list does not
+         * the address service at all. A report from the deploy that the list does not
          * grow and the address does not follow had no test to answer it.
          *
          * WHAT THIS CANNOT SAY ANYTHING ABOUT is the timing in a browser: the node
-         * build of `$mol_state_arg` writes the address into a cell at once, while
-         * the web build defers it into `$mol_after_frame`, that is into
+         * build of that service writes the address into a cell at once, while the
+         * web build defers it into the frame scheduler, that is into
          * `requestAnimationFrame` — which does not tick in a hidden tab. This test
          * proves the wiring; a frame is a thing only a visible window has.
          */

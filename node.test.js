@@ -30889,7 +30889,7 @@ var $;
      * have to know how big the pane is and does not go stale when it resizes.
      *
      * `none` and not an absent key when nothing is picked: inline styles are
-     * written by `$mol_dom_render_styles`, which sets the keys it is given and
+     * written by the style renderer of the framework, which sets the keys it is given and
      * removes nothing, so a key that disappears from the dictionary leaves its last
      * value on the element.
      */
@@ -30930,13 +30930,13 @@ var $;
          * It also keeps a zero sized part reachable, and that is not a rare shape: the
          * root of the document is a flex box with absolutely positioned children, so a
          * child that does not size itself measures 0 wide while its text is plainly on
-         * screen — `$mol_paragraph` does exactly this.
+         * screen — the paragraph primitive of the pack does exactly this.
          */
         const grab_slack = 8;
         /**
          * How far a pressed pointer may travel and still be a click, in screen pixels.
          *
-         * The same tolerance `$mol_touch` gives a draw before it counts as one. Below it
+         * The same tolerance the touch plugin gives a draw before it counts as one. Below it
          * the gesture is relayed to the scene as `click_at`; above it the gesture is a
          * drag of a part or a pan of the camera and nothing is relayed.
          */
@@ -30955,7 +30955,7 @@ var $;
          * Infinite canvas: background grid, sandboxed scene and the pointer gate over it.
          *
          * The camera is a screen-space pan vector plus an isotropic zoom, exactly what
-         * $mol_touch produces. The scene gets it as world coordinates over the bridge and
+         * the touch plugin produces. The scene gets it as world coordinates over the bridge and
          * applies the transform itself, because the host cannot reach into an opaque origin.
          *
          * There are no editor modes. The overlay takes every gesture, a click that does
@@ -31053,7 +31053,7 @@ var $;
             }
             /**
              * Which frame is the live one: the generation, and the pack it was raised
-             * with. A new key is a new `$mol_frame`, a new element and a new document.
+             * with. A new key is a new frame view, a new element and a new document.
              *
              * The pack belongs in the key because a realm cannot unload a bundle, and a
              * second pack over the first poisons half the palette without a word — 277
@@ -31239,7 +31239,7 @@ var $;
              * then would call a perfectly healthy scene dead and offer to reload the very
              * thing that is loading.
              *
-             * `sizes` and not `ready`: the scene announces `ready` on `$mol_after_tick`,
+             * `sizes` and not `ready`: the scene announces `ready` a microtask after boot,
              * long before the pack lands, so it proves the frame booted and nothing else.
              * Geometry proves the whole path — pack in the realm, document compiled,
              * layout measured, bridge answering.
@@ -31359,7 +31359,7 @@ var $;
              *
              * AN ORDINARY CELL, and it used to be a field with a version counter beside
              * it. The reason written here for that was the price of comparing the boxes —
-             * `$mol_compare_deep` over a hundred of them on every report round — and the
+             * a deep comparison over a hundred of them on every report round — and the
              * price was never measured. Measured now, on this bundle: 25 boxes 8 µs, 100
              * boxes 30 µs, 400 boxes 137 µs per compare, against two reports a second.
              * That is a quarter of a millisecond per second at four hundred nodes.
@@ -31479,7 +31479,7 @@ var $;
              *
              * A CELL and not a field, because the ring is drawn from it: as a field it
              * woke its readers only by riding the report counter, which is the pattern
-             * `$mol_touch` avoids by keeping its whole gesture in cells.
+             * the touch plugin avoids by keeping its whole gesture in cells.
              *
              * `sizes` is the report the grab was taken against, and it is what makes the
              * ring exact instead of merely quick. Measured boxes are debounced by 120 ms
@@ -31512,8 +31512,8 @@ var $;
              * `entering` says the press landed on the node that was ALREADY picked, so a
              * click out of it is the second one and lets the pointer inside. See `entered`.
              *
-             * A CELL and not a field, for the reason the whole gesture is one: `$mol_touch`
-             * keeps its press, its start and its travel in cells, and a gesture spread
+             * A CELL and not a field, for the reason the whole gesture is one: the touch
+             * plugin keeps its press, its start and its travel in cells, and a gesture spread
              * across fields and cells has two clocks. Nothing draws from this one today,
              * and that is precisely why it was the easiest of the three to leave behind.
              *
@@ -31566,7 +31566,7 @@ var $;
              * re-run by the layout its own gesture causes — was wrong: the handlers run
              * as one shot tasks through `event_async()` and subscribe to nothing. What is
              * true of that cell is that its FIRST read answers `null` on purpose, to keep
-             * a reflow out of the render; `$mol_touch` answers that by reading it in
+             * a reflow out of the render; the touch plugin answers that by reading it in
              * `auto()`, and so does this pane. A method of its own so that a test can
              * hand in a geometry the test DOM has no way to lay out.
              */
@@ -31769,7 +31769,7 @@ var $;
              * capture below retargets the later `click` to whoever captured — so by the
              * time a `click` arrived it would name the overlay, not the node.
              *
-             * `preventDefault` on a hit is what keeps the camera still: `$mol_touch`
+             * `preventDefault` on a hit is what keeps the camera still: the touch plugin
              * checks `defaultPrevented` at the top of both `event_start` and `event_move`,
              * so the same gesture pans over bare canvas and drags over a node, decided
              * once, by the hit test. A press that hits nothing is left alone deliberately
@@ -31932,7 +31932,7 @@ var $;
              * Release ends whatever the press started, and a press that went nowhere is
              * a click and goes to the scene.
              *
-             * A pan never gets here: on its first move `$mol_touch` captures the pointer
+             * A pan never gets here: on its first move the touch plugin captures the pointer
              * to the pane, and from then on the overlay sees neither the moves nor the
              * release. The gesture is still judged here, so the outcome does not depend
              * on that capture having happened.
@@ -32030,8 +32030,8 @@ var $;
              *
              * The pick itself has already happened on the press; this is the other half
              * of «one click both selects and presses». The scene finds the element under
-             * the point and replays the events on it, so a `$mol_button` in the document
-             * fires the moment it is picked, and a text field takes the focus.
+             * the point and replays the events on it, so a button in the document fires
+             * the moment it is picked, and a text field takes the focus.
              *
              * Through `post()`, so the scene owes an answer and the watchdog is armed:
              * of everything the host sends, a click is the likeliest to start a loop in
@@ -32240,7 +32240,7 @@ var $;
              * A press on a dot: an output starts a wire from it, a wired input unplugs
              * its wire and carries on from the same source, a bare input takes the press
              * and does nothing, so that it does not fall through to the canvas and drop
-             * the pick. `preventDefault` keeps `$mol_touch` from panning.
+             * the pick. `preventDefault` keeps the touch plugin from panning.
              */
             wire_press(dot, event) {
                 event.preventDefault();
@@ -32331,7 +32331,7 @@ var $;
              * First of the pushes in `auto()` and first in the reads of `watchdog()`, and
              * the order is load bearing rather than tidy: the scene refuses to compile
              * until it has been told a pack, because a class picks its base once and a
-             * document built a moment early would inherit the sandbox's own `$mol_view`
+             * document built a moment early would inherit the sandbox's own base view
              * for good. Sending the document first would not break anything — the scene
              * would simply hold it — but it would make the ordinary path the one that
              * compiles twice.
@@ -32526,7 +32526,7 @@ var $;
                     ...super.auto(),
                     // The first read of this cell answers `null` by design, so that a
                     // render does not force a reflow; every later read is the real box.
-                    // Read here for the same reason `$mol_touch` reads its own in `auto()`:
+                    // Read here for the same reason the touch plugin reads its own in `auto()`:
                     // the gestures and the zoom need the box on their FIRST use, not their
                     // second.
                     this.view_rect(),
@@ -32786,8 +32786,8 @@ var $;
                  * changes nothing about it.
                  *
                  * Written as one string because a camelCase shorthand takes nothing else,
-                 * and `String()` around the token because `$mol_theme.focus` is a
-                 * `$mol_style_func`, not text. Both are TS2322 otherwise — and the WEB
+                 * and `String()` around the token because the focus colour of the theme is
+                 * a style function object, not text. Both are TS2322 otherwise — and the WEB
                  * audit passes either way, only the node one catches it.
                  */
                 outline: '1px solid ' + String($mol_theme.focus),
@@ -33581,8 +33581,8 @@ var $;
          *
          * The document is a live `view.tree` class now, not a string constant: dropping
          * a component off the palette declares a free part on it and references that
-         * part from `sub`. Both edits go through `$bog_vmap_lang_node`, so the text the
-         * scene compiles is the same text an export would write out.
+         * part from `sub`. Both edits go through the node editor of the language module,
+         * so the text the scene compiles is the same text an export would write out.
          *
          * @see ../ARCHITECTURE.md sections 1 and 5
          */
@@ -33699,7 +33699,7 @@ var $;
              * The document text: the atoms of the current document, or the draft of the
              * store before there is one. `node()` writes here through its delegate, so the
              * tree and the string the bridge pushes are the same path. A plain method, not
-             * `@ $mol_mem`: a cell in front of a Giper Baza atom freezes after a write.
+             * Not a memo cell: one in front of a Giper Baza atom freezes after a write.
              * Empty text is the empty page, the scene needs a root class to compile.
              */
             doc_source(next) {
@@ -33732,7 +33732,7 @@ var $;
              * a bridge message of its own, and the scene hangs it as a style element of
              * its own. So the document text and the document CSS never carry a
              * coordinate, and the export cannot see the desk layout by construction.
-             * Section 8 says layout inside an artboard is a plain $mol flex tree and only
+             * Section 8 says layout inside an artboard is a plain flex tree of views, only
              * free parts lie by coordinates; artboards are stage 6, and until they exist
              * a dropped component has nowhere else to be.
              *
@@ -33839,7 +33839,7 @@ var $;
              * One pick for the whole editor left a ring hanging over an empty canvas and
              * an inspector opened on a node the new document never had.
              *
-             * A `@ $mol_mem` here would freeze on the first write: writing to a cell
+             * A memo cell here would freeze on the first write: writing to a cell
              * freezes its dependencies, and the dependency frozen would be the very
              * document key this is meant to follow.
              */
@@ -33863,7 +33863,7 @@ var $;
              *
              * A projection of `picked()` and not a cell of its own: two cells holding
              * one fact would have to be kept in step by somebody, and the reading path
-             * would stop being the writing path — which is how a `@ $mol_mem` in front of
+             * would stop being the writing path — which is how a memo cell in front of
              * another one freezes. Writing a name here is picking exactly that one, which
              * is what every caller outside the canvas means by it.
              */
@@ -34108,7 +34108,7 @@ var $;
              * Editing ONE NODE, the class is the one that declares the node, always the
              * root. The methods the node asks for are methods of its owner (`title <=
              * greeting` wants `greeting()` on the class that spells it), and the rule the
-             * panel offers is addressed to the attribute `$mol` writes on the sub view of
+             * panel offers is addressed to the attribute the framework writes on the sub view of
              * its owner. Scoping the node mode to the node's own class would write both
              * into a class that never reads them.
              */
@@ -34315,9 +34315,9 @@ var $;
              * else's `palette`.
              *
              * Plain methods, not cells: the value already lives in a keyed cell of
-             * `$mol_state_session`, and a `@ $mol_mem` in front of it would be a second
+             * the session store, and a memo cell in front of it would be a second
              * cell over one fact, frozen at what was written through it. That is the
-             * deviation from the donor, which wraps each of its three in `@ $mol_mem`.
+             * deviation from the donor, which wraps each of its three in a memo.
              */
             palette_showed(next) {
                 return this.$.$mol_state_session.value('vmap_palette', next) ?? true;
@@ -34331,7 +34331,7 @@ var $;
             /**
              * The inspector, or the invitation to pick something.
              *
-             * Swapped rather than emptied: `$bog_vmap_app_inspect` derives everything
+             * Swapped rather than emptied: the inspector derives everything
              * from the source of one class, and an empty source has no class in it, so
              * it would put a parse failure where a hint belongs.
              */
@@ -34371,8 +34371,8 @@ var $;
              * translation layer because there is nothing to translate: section 1 makes
              * every named node a flat property of the root class, and a property whose
              * value is a class name is, in `view.tree`, a class declaration —
-             * `Button_minor $mol_button_minor` parses to a class `Button_minor` based on
-             * `$mol_button_minor`. So the inspector reads the same bytes the document
+             * A line naming a part and a base parses to a class of that name based on
+             * that base. So the inspector reads the same bytes the document
              * carries, and what it writes goes back into the document as those bytes.
              *
              * NOT memoized, and the read deliberately does not go through
@@ -34537,7 +34537,7 @@ var $;
              * A field that names no pack means the standard palette, which is the `part`
              * module of this very pack — a sibling of the editor, so its address comes
              * off our own. It used to mean no pack at all, and that state is gone on
-             * purpose: a land library inherits from the `$mol_view` of the loaded pack,
+             * purpose: a land library inherits from the base view of the loaded pack,
              * so a palette of lands alone was never the useful reading, while an empty
              * field on a deploy left the user with no components and nothing to type.
              */
@@ -34706,8 +34706,8 @@ var $;
                 return [(x - shift[0]) / zoom, (y - shift[1]) / zoom];
             }
             /**
-             * A free name for a part of the given class: `$mol_button_minor` becomes
-             * `Button_minor`, and a second one of the same class `Button_minor_2`.
+             * A free name for a part of the given class: a minor button of the pack
+             * becomes `Button_minor`, and a second one of the same class `Button_minor_2`.
              *
              * The short form is the shelf's, because the shelf writes the same name into
              * the preset it makes out of a class, and two rules for one name would drift
@@ -34856,7 +34856,7 @@ var $;
             /**
              * Puts a page on the canvas: a node with a `sub` of its own.
              *
-             * A plain `$mol_view` and not a class of ours, so an exported document
+             * A plain base view and not a class of ours, so an exported document
              * depends on nothing of this pack; what makes it a page is the width and the
              * `sub`, both of them ordinary lines of the document. `flexDirection` is
              * written out because `[mol_view]` is `display: flex` with no direction at
@@ -34990,7 +34990,7 @@ var $;
              *
              * Reading is the pick itself: the name of a node IS the property it occupies,
              * so there is nothing to derive. Writing renames, and the refusal comes back
-             * as words rather than as an exception — a throw out of a `$mol_string`
+             * as words rather than as an exception — a throw out of a text field
              * setter ends up in `setCustomValidity`, which is not where a person looks.
              *
              * The taken name is caught here and not left to the model, because only the
@@ -35022,7 +35022,7 @@ var $;
                     return name;
                 }
                 // What is left is what the editor did not foresee, and it still must not
-                // vanish: a throw out of a `$mol_string` setter ends up in
+                // vanish: a throw out of a text field setter ends up in
                 // `setCustomValidity`. Shown in the model's own words rather than
                 // translated — a translation here would be a guess at a message nobody
                 // has read yet.
@@ -35152,7 +35152,7 @@ var $;
              * This is the name the folder of an export is made of — section 10 — so the
              * field stands beside the download button that spells the folder out. A
              * refusal comes back as words on the strip below, for the same reason the
-             * node name field does it that way: a throw out of a `$mol_string` setter
+             * node name field does it that way: a throw out of a text field setter
              * ends up in `setCustomValidity`, where nobody looks.
              */
             root_title(next) {
@@ -35664,6 +35664,18 @@ var $;
 
 ;
 "use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
 var $;
 (function ($_1) {
     $mol_test({
@@ -35675,15 +35687,6 @@ var $;
         },
     });
 })($ || ($ = {}));
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
 
 ;
 "use strict";
@@ -36356,20 +36359,6 @@ var $;
 ;
 "use strict";
 var $;
-(function ($_1) {
-    $mol_test_mocks.push($ => {
-        $.$mol_log3_come = () => { };
-        $.$mol_log3_done = () => { };
-        $.$mol_log3_fail = () => { };
-        $.$mol_log3_warn = () => { };
-        $.$mol_log3_rise = () => { };
-        $.$mol_log3_area = () => () => { };
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
 (function ($) {
     $mol_test({
         'return result without errors'() {
@@ -36389,340 +36378,6 @@ var $;
 var $;
 (function ($_1) {
     $mol_test_mocks.push($ => $.$mol_fail_log = () => false);
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'get'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
-            $mol_assert_equal(proxy.foo, 777);
-        },
-        'has'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
-            $mol_assert_equal('foo' in proxy, true);
-        },
-        'set'() {
-            const target = { foo: 777 };
-            const proxy = $mol_delegate({}, () => target);
-            proxy.foo = 123;
-            $mol_assert_equal(target.foo, 123);
-        },
-        'getOwnPropertyDescriptor'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
-            $mol_assert_like(Object.getOwnPropertyDescriptor(proxy, 'foo'), {
-                value: 777,
-                writable: true,
-                enumerable: true,
-                configurable: true,
-            });
-        },
-        'ownKeys'() {
-            const proxy = $mol_delegate({}, () => ({ foo: 777, [Symbol.toStringTag]: 'bar' }));
-            $mol_assert_like(Reflect.ownKeys(proxy), ['foo', Symbol.toStringTag]);
-        },
-        'getPrototypeOf'() {
-            class Foo {
-            }
-            const proxy = $mol_delegate({}, () => new Foo);
-            $mol_assert_equal(Object.getPrototypeOf(proxy), Foo.prototype);
-        },
-        'setPrototypeOf'() {
-            class Foo {
-            }
-            const target = {};
-            const proxy = $mol_delegate({}, () => target);
-            Object.setPrototypeOf(proxy, Foo.prototype);
-            $mol_assert_equal(Object.getPrototypeOf(target), Foo.prototype);
-        },
-        'instanceof'() {
-            class Foo {
-            }
-            const proxy = $mol_delegate({}, () => new Foo);
-            $mol_assert_ok(proxy instanceof Foo);
-            $mol_assert_ok(proxy instanceof $mol_delegate);
-        },
-        'autobind'() {
-            class Foo {
-            }
-            const proxy = $mol_delegate({}, () => new Foo);
-            $mol_assert_ok(proxy instanceof Foo);
-            $mol_assert_ok(proxy instanceof $mol_delegate);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'span for same uri'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const child = span.span(4, 5, 8);
-            $mol_assert_equal(child.uri, 'test.ts');
-            $mol_assert_equal(child.row, 4);
-            $mol_assert_equal(child.col, 5);
-            $mol_assert_equal(child.length, 8);
-        },
-        'span after of given position'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const child = span.after(11);
-            $mol_assert_equal(child.uri, 'test.ts');
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 7);
-            $mol_assert_equal(child.length, 11);
-        },
-        'slice span - regular'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            const child = span.slice(1, 4);
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 4);
-            $mol_assert_equal(child.length, 3);
-            const child2 = span.slice(2, 2);
-            $mol_assert_equal(child2.col, 5);
-            $mol_assert_equal(child2.length, 0);
-        },
-        'slice span - negative'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            const child = span.slice(-3, -1);
-            $mol_assert_equal(child.row, 1);
-            $mol_assert_equal(child.col, 5);
-            $mol_assert_equal(child.length, 2);
-        },
-        'slice span - out of range'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 5);
-            $mol_assert_fail(() => span.slice(-1, 3), `End value '3' can't be less than begin value (test.ts#1:3/5)`);
-            $mol_assert_fail(() => span.slice(1, 6), `End value '6' out of range (test.ts#1:3/5)`);
-            $mol_assert_fail(() => span.slice(1, 10), `End value '10' out of range (test.ts#1:3/5)`);
-        },
-        'error handling'($) {
-            const span = new $mol_span('test.ts', '', 1, 3, 4);
-            const error = span.error('Some error');
-            $mol_assert_equal(error.message, 'Some error (test.ts#1:3/4)');
-        }
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'all cases of using maybe'() {
-            $mol_assert_equal($mol_maybe(0)[0], 0);
-            $mol_assert_equal($mol_maybe(false)[0], false);
-            $mol_assert_equal($mol_maybe(null)[0], void 0);
-            $mol_assert_equal($mol_maybe(void 0)[0], void 0);
-            $mol_assert_equal($mol_maybe(void 0).map(v => v.toString())[0], void 0);
-            $mol_assert_equal($mol_maybe(0).map(v => v.toString())[0], '0');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    function check(tree, ideal) {
-        $mol_assert_equal(tree.toString(), $$.$mol_tree2_from_string(ideal).toString());
-    }
-    $mol_test({
-        'inserting'($) {
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c'), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c', 'd'), `
-					a b c x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`)
-                .insert($mol_tree2.struct('x'), 0, 0, 0), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`)
-                .insert($mol_tree2.struct('x'), 0, 0, 0, 0), `
-					a b \\
-						x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`)
-                .insert($mol_tree2.struct('x'), null, null, null), `
-					a b x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b
-				`)
-                .insert($mol_tree2.struct('x'), null, null, null, null), `
-					a b \\
-						x
-				`);
-        },
-        'updating'($) {
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([], 'a', 'b', 'c')[0], `
-					a b
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([$mol_tree2.struct('x')])[0], `
-					x
-				`);
-            check($.$mol_tree2_from_string(`
-					a b c d
-				`).update([$mol_tree2.struct('x'), $mol_tree2.struct('y')], 'a', 'b', 'c')[0], `
-					a b
-						x
-						y
-				`);
-        },
-        'deleting'($) {
-            const base = $.$mol_tree2_from_string(`
-				a b c d
-			`);
-            check(base.insert(null, 'a', 'b', 'c'), `
-					a b
-				`);
-            check(base.update(base.select('a', 'b', 'c', null).kids, 'a', 'b', 'c')[0], `
-					a b d
-				`);
-            check(base.insert(null, 0, 0, 0), `
-					a b
-				`);
-        },
-        'hack'($) {
-            const res = $.$mol_tree2_from_string(`
-				foo bar xxx
-			`)
-                .hack({
-                'bar': (input, belt) => [input.struct('777', input.hack(belt))],
-            });
-            $mol_assert_equal(res.map(String), ['foo 777 xxx\n']);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'empty array'() {
-            $mol_assert_equal($mol_array_chunks([], () => true), []);
-        },
-        'one chunk'() {
-            $mol_assert_equal($mol_array_chunks([1, 2, 3, 4, 5], () => false), [[1, 2, 3, 4, 5]]);
-        },
-        'fixed size chunk'() {
-            $mol_assert_equal($mol_array_chunks([1, 2, 3, 4, 5], 3), [[1, 2, 3], [4, 5]]);
-        },
-        'first empty chunk'() {
-            $mol_assert_equal($mol_array_chunks([1, 2, 3, 4, 5], (_, i) => i === 0), [[1, 2, 3, 4, 5]]);
-        },
-        'chunk for every item'() {
-            $mol_assert_equal($mol_array_chunks([1, 2, 3, 4, 5], () => true), [[1], [2], [3], [4], [5]]);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'tree parsing'($) {
-            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids.length, 2);
-            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids[1].type, "bar");
-            $mol_assert_equal($.$mol_tree2_from_string("foo\n\n\n").kids.length, 1);
-            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids.length, 2);
-            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids[1].value, "bar");
-            $mol_assert_equal($.$mol_tree2_from_string("foo bar \\pol\n").kids[0].kids[0].kids[0].value, "pol");
-            $mol_assert_equal($.$mol_tree2_from_string("foo bar\n\t\\pol\n\t\\men\n").kids[0].kids[0].kids[1].value, "men");
-            $mol_assert_equal($.$mol_tree2_from_string('foo bar \\text\n').toString(), 'foo bar \\text\n');
-        },
-        'Too many tabs'($) {
-            const tree = `
-				foo
-						bar
-			`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Too many tabs\ntest#3:1/6\n!!!!!!\n\t\t\t\t\t\tbar');
-        },
-        'Too few tabs'($) {
-            const tree = `
-					foo
-				bar
-			`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Too few tabs\ntest#3:1/4\n!!!!\n\t\t\t\tbar');
-        },
-        'Wrong nodes separator at start'($) {
-            const tree = `foo\n \tbar\n`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Wrong nodes separator\ntest#2:1/2\n!!\n \tbar');
-        },
-        'Wrong nodes separator in the middle'($) {
-            const tree = `foo  bar\n`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar');
-        },
-        'Unexpected EOF, LF required'($) {
-            const tree = `	foo`;
-            $mol_assert_fail(() => {
-                $.$mol_tree2_from_string(tree, 'test');
-            }, 'Unexpected EOF, LF required\ntest#1:5/1\n	   !\n	foo');
-        },
-        'Errors skip and collect'($) {
-            const tree = `foo  bar`;
-            const errors = [];
-            const $$ = $.$mol_ambient({
-                $mol_fail: (error) => {
-                    errors.push(error.message);
-                    return null;
-                }
-            });
-            const res = $$.$mol_tree2_from_string(tree, 'test');
-            $mol_assert_like(errors, [
-                'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar',
-                'Unexpected EOF, LF required\ntest#1:9/1\n        !\nfoo  bar',
-            ]);
-            $mol_assert_equal(res.toString(), 'foo bar\n');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'fromJSON'() {
-            $mol_assert_equal($mol_tree2_from_json([]).toString(), '/\n');
-            $mol_assert_equal($mol_tree2_from_json([false, true]).toString(), '/\n\tfalse\n\ttrue\n');
-            $mol_assert_equal($mol_tree2_from_json([0, 1, 2.3]).toString(), '/\n\t0\n\t1\n\t2.3\n');
-            $mol_assert_equal($mol_tree2_from_json(new Uint16Array([1, 10, 255, 256, 65535])).toString(), '\\01 00 0A 00 FF 00 00 01\n\\FF FF\n');
-            $mol_assert_equal($mol_tree2_from_json(['', 'foo', 'bar\nbaz']).toString(), '/\n\t\\\n\t\\foo\n\t\\\n\t\t\\bar\n\t\t\\baz\n');
-            $mol_assert_equal($mol_tree2_from_json({ 'foo': false, 'bar\nbaz': 'lol' }).toString(), '*\n\tfoo false\n\t\\\n\t\t\\bar\n\t\t\\baz\n\t\t\\lol\n');
-        },
-    });
 })($ || ($ = {}));
 
 ;
@@ -36941,6 +36596,20 @@ var $;
 
 ;
 "use strict";
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test_mocks.push($ => {
+        $.$mol_log3_come = () => { };
+        $.$mol_log3_done = () => { };
+        $.$mol_log3_fail = () => { };
+        $.$mol_log3_warn = () => { };
+        $.$mol_log3_rise = () => { };
+        $.$mol_log3_area = () => () => { };
+    });
+})($ || ($ = {}));
 
 ;
 "use strict";
@@ -38258,6 +37927,228 @@ var $;
 
 ;
 "use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'get'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
+            $mol_assert_equal(proxy.foo, 777);
+        },
+        'has'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
+            $mol_assert_equal('foo' in proxy, true);
+        },
+        'set'() {
+            const target = { foo: 777 };
+            const proxy = $mol_delegate({}, () => target);
+            proxy.foo = 123;
+            $mol_assert_equal(target.foo, 123);
+        },
+        'getOwnPropertyDescriptor'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777 }));
+            $mol_assert_like(Object.getOwnPropertyDescriptor(proxy, 'foo'), {
+                value: 777,
+                writable: true,
+                enumerable: true,
+                configurable: true,
+            });
+        },
+        'ownKeys'() {
+            const proxy = $mol_delegate({}, () => ({ foo: 777, [Symbol.toStringTag]: 'bar' }));
+            $mol_assert_like(Reflect.ownKeys(proxy), ['foo', Symbol.toStringTag]);
+        },
+        'getPrototypeOf'() {
+            class Foo {
+            }
+            const proxy = $mol_delegate({}, () => new Foo);
+            $mol_assert_equal(Object.getPrototypeOf(proxy), Foo.prototype);
+        },
+        'setPrototypeOf'() {
+            class Foo {
+            }
+            const target = {};
+            const proxy = $mol_delegate({}, () => target);
+            Object.setPrototypeOf(proxy, Foo.prototype);
+            $mol_assert_equal(Object.getPrototypeOf(target), Foo.prototype);
+        },
+        'instanceof'() {
+            class Foo {
+            }
+            const proxy = $mol_delegate({}, () => new Foo);
+            $mol_assert_ok(proxy instanceof Foo);
+            $mol_assert_ok(proxy instanceof $mol_delegate);
+        },
+        'autobind'() {
+            class Foo {
+            }
+            const proxy = $mol_delegate({}, () => new Foo);
+            $mol_assert_ok(proxy instanceof Foo);
+            $mol_assert_ok(proxy instanceof $mol_delegate);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'span for same uri'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const child = span.span(4, 5, 8);
+            $mol_assert_equal(child.uri, 'test.ts');
+            $mol_assert_equal(child.row, 4);
+            $mol_assert_equal(child.col, 5);
+            $mol_assert_equal(child.length, 8);
+        },
+        'span after of given position'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const child = span.after(11);
+            $mol_assert_equal(child.uri, 'test.ts');
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 7);
+            $mol_assert_equal(child.length, 11);
+        },
+        'slice span - regular'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            const child = span.slice(1, 4);
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 4);
+            $mol_assert_equal(child.length, 3);
+            const child2 = span.slice(2, 2);
+            $mol_assert_equal(child2.col, 5);
+            $mol_assert_equal(child2.length, 0);
+        },
+        'slice span - negative'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            const child = span.slice(-3, -1);
+            $mol_assert_equal(child.row, 1);
+            $mol_assert_equal(child.col, 5);
+            $mol_assert_equal(child.length, 2);
+        },
+        'slice span - out of range'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 5);
+            $mol_assert_fail(() => span.slice(-1, 3), `End value '3' can't be less than begin value (test.ts#1:3/5)`);
+            $mol_assert_fail(() => span.slice(1, 6), `End value '6' out of range (test.ts#1:3/5)`);
+            $mol_assert_fail(() => span.slice(1, 10), `End value '10' out of range (test.ts#1:3/5)`);
+        },
+        'error handling'($) {
+            const span = new $mol_span('test.ts', '', 1, 3, 4);
+            const error = span.error('Some error');
+            $mol_assert_equal(error.message, 'Some error (test.ts#1:3/4)');
+        }
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'all cases of using maybe'() {
+            $mol_assert_equal($mol_maybe(0)[0], 0);
+            $mol_assert_equal($mol_maybe(false)[0], false);
+            $mol_assert_equal($mol_maybe(null)[0], void 0);
+            $mol_assert_equal($mol_maybe(void 0)[0], void 0);
+            $mol_assert_equal($mol_maybe(void 0).map(v => v.toString())[0], void 0);
+            $mol_assert_equal($mol_maybe(0).map(v => v.toString())[0], '0');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    function check(tree, ideal) {
+        $mol_assert_equal(tree.toString(), $$.$mol_tree2_from_string(ideal).toString());
+    }
+    $mol_test({
+        'inserting'($) {
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c'), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`).insert($mol_tree2.struct('x'), 'a', 'b', 'c', 'd'), `
+					a b c x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`)
+                .insert($mol_tree2.struct('x'), 0, 0, 0), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`)
+                .insert($mol_tree2.struct('x'), 0, 0, 0, 0), `
+					a b \\
+						x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`)
+                .insert($mol_tree2.struct('x'), null, null, null), `
+					a b x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b
+				`)
+                .insert($mol_tree2.struct('x'), null, null, null, null), `
+					a b \\
+						x
+				`);
+        },
+        'updating'($) {
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([], 'a', 'b', 'c')[0], `
+					a b
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([$mol_tree2.struct('x')])[0], `
+					x
+				`);
+            check($.$mol_tree2_from_string(`
+					a b c d
+				`).update([$mol_tree2.struct('x'), $mol_tree2.struct('y')], 'a', 'b', 'c')[0], `
+					a b
+						x
+						y
+				`);
+        },
+        'deleting'($) {
+            const base = $.$mol_tree2_from_string(`
+				a b c d
+			`);
+            check(base.insert(null, 'a', 'b', 'c'), `
+					a b
+				`);
+            check(base.update(base.select('a', 'b', 'c', null).kids, 'a', 'b', 'c')[0], `
+					a b d
+				`);
+            check(base.insert(null, 0, 0, 0), `
+					a b
+				`);
+        },
+        'hack'($) {
+            const res = $.$mol_tree2_from_string(`
+				foo bar xxx
+			`)
+                .hack({
+                'bar': (input, belt) => [input.struct('777', input.hack(belt))],
+            });
+            $mol_assert_equal(res.map(String), ['foo 777 xxx\n']);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
 
 ;
 "use strict";
@@ -38598,6 +38489,76 @@ var $;
             $mol_assert_equal(parts.key, '*k');
             $mol_assert_equal(parts.next, '?');
         }
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'tree parsing'($) {
+            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids.length, 2);
+            $mol_assert_equal($.$mol_tree2_from_string("foo\nbar\n").kids[1].type, "bar");
+            $mol_assert_equal($.$mol_tree2_from_string("foo\n\n\n").kids.length, 1);
+            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids.length, 2);
+            $mol_assert_equal($.$mol_tree2_from_string("=foo\n\\bar\n").kids[1].value, "bar");
+            $mol_assert_equal($.$mol_tree2_from_string("foo bar \\pol\n").kids[0].kids[0].kids[0].value, "pol");
+            $mol_assert_equal($.$mol_tree2_from_string("foo bar\n\t\\pol\n\t\\men\n").kids[0].kids[0].kids[1].value, "men");
+            $mol_assert_equal($.$mol_tree2_from_string('foo bar \\text\n').toString(), 'foo bar \\text\n');
+        },
+        'Too many tabs'($) {
+            const tree = `
+				foo
+						bar
+			`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Too many tabs\ntest#3:1/6\n!!!!!!\n\t\t\t\t\t\tbar');
+        },
+        'Too few tabs'($) {
+            const tree = `
+					foo
+				bar
+			`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Too few tabs\ntest#3:1/4\n!!!!\n\t\t\t\tbar');
+        },
+        'Wrong nodes separator at start'($) {
+            const tree = `foo\n \tbar\n`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Wrong nodes separator\ntest#2:1/2\n!!\n \tbar');
+        },
+        'Wrong nodes separator in the middle'($) {
+            const tree = `foo  bar\n`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar');
+        },
+        'Unexpected EOF, LF required'($) {
+            const tree = `	foo`;
+            $mol_assert_fail(() => {
+                $.$mol_tree2_from_string(tree, 'test');
+            }, 'Unexpected EOF, LF required\ntest#1:5/1\n	   !\n	foo');
+        },
+        'Errors skip and collect'($) {
+            const tree = `foo  bar`;
+            const errors = [];
+            const $$ = $.$mol_ambient({
+                $mol_fail: (error) => {
+                    errors.push(error.message);
+                    return null;
+                }
+            });
+            const res = $$.$mol_tree2_from_string(tree, 'test');
+            $mol_assert_like(errors, [
+                'Wrong nodes separator\ntest#1:5/1\n    !\nfoo  bar',
+                'Unexpected EOF, LF required\ntest#1:9/1\n        !\nfoo  bar',
+            ]);
+            $mol_assert_equal(res.toString(), 'foo bar\n');
+        },
     });
 })($ || ($ = {}));
 
@@ -44781,7 +44742,7 @@ var $;
         /**
          * The frame is isolated and has no address, and the ORDER of the two says so.
          *
-         * `$mol_dom_render_attributes` writes the dictionary in key order, so a frame
+         * The attribute renderer writes the dictionary in key order, so a frame
          * that got its source before its sandbox is already loading unsandboxed —
          * with the attribute present in the DOM and the audit green. Reading the
          * dictionary is therefore the check, not reading the element.
@@ -47628,6 +47589,29 @@ var $;
             send() { }
         }
         $.$mol_bus = $mol_bus;
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'empty array'() {
+            $mol_assert_equal($mol_array_chunks([], () => true), []);
+        },
+        'one chunk'() {
+            $mol_assert_equal($mol_array_chunks([1, 2, 3, 4, 5], () => false), [[1, 2, 3, 4, 5]]);
+        },
+        'fixed size chunk'() {
+            $mol_assert_equal($mol_array_chunks([1, 2, 3, 4, 5], 3), [[1, 2, 3], [4, 5]]);
+        },
+        'first empty chunk'() {
+            $mol_assert_equal($mol_array_chunks([1, 2, 3, 4, 5], (_, i) => i === 0), [[1, 2, 3, 4, 5]]);
+        },
+        'chunk for every item'() {
+            $mol_assert_equal($mol_array_chunks([1, 2, 3, 4, 5], () => true), [[1], [2], [3], [4], [5]]);
+        },
     });
 })($ || ($ = {}));
 
@@ -51083,6 +51067,22 @@ var $;
 ;
 "use strict";
 var $;
+(function ($) {
+    $mol_test({
+        'fromJSON'() {
+            $mol_assert_equal($mol_tree2_from_json([]).toString(), '/\n');
+            $mol_assert_equal($mol_tree2_from_json([false, true]).toString(), '/\n\tfalse\n\ttrue\n');
+            $mol_assert_equal($mol_tree2_from_json([0, 1, 2.3]).toString(), '/\n\t0\n\t1\n\t2.3\n');
+            $mol_assert_equal($mol_tree2_from_json(new Uint16Array([1, 10, 255, 256, 65535])).toString(), '\\01 00 0A 00 FF 00 00 01\n\\FF FF\n');
+            $mol_assert_equal($mol_tree2_from_json(['', 'foo', 'bar\nbaz']).toString(), '/\n\t\\\n\t\\foo\n\t\\\n\t\t\\bar\n\t\t\\baz\n');
+            $mol_assert_equal($mol_tree2_from_json({ 'foo': false, 'bar\nbaz': 'lol' }).toString(), '*\n\tfoo false\n\t\\\n\t\t\\bar\n\t\t\\baz\n\t\t\\lol\n');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
 (function ($_1) {
     $mol_test_mocks.push($ => {
         class $giper_baza_yard_mock extends $.$giper_baza_yard {
@@ -51683,7 +51683,7 @@ var $;
             const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
             $mol_assert_like(apps, ['Button', 'Calc', 'Map']);
             // The classes of the pack are a level down, folded away until asked for,
-            // and then they are all there, the `$mol_view` stub included.
+            // and then they are all there, the base view stub included.
             $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_palette_class_row]'), null);
             stage.classes_open();
             const rows = [...stage.root.querySelectorAll('[bog_vmap_app_palette_class_row]')]
@@ -51902,7 +51902,7 @@ var $;
          *
          * The scene compiles nothing until it has been told a pack, because a class
          * picks its base once and a document built a moment early would inherit the
-         * sandbox's own `$mol_view` for good. So the order of the first three
+         * sandbox's own base view for good. So the order of the first three
          * messages of a handshake is part of the contract, not an accident of how
          * the cells happen to be listed.
          */
@@ -52232,10 +52232,11 @@ var $;
     /**
      * Globals of a browser that node does not define and jsdom does not export.
      *
-     * `$mol_view_selection` names `ShadowRoot` and `$mol_touch` names `PointerEvent`
-     * bare, so a field or a gesture in a node test dies on a `ReferenceError` that
-     * says nothing about the editor. Pointer capture is missing from jsdom
-     * elements outright, and `$mol_touch` calls it without a guard.
+     * The selection plugin of the view pack names `ShadowRoot` and the touch plugin
+     * names `PointerEvent` bare, so a field or a gesture in a node test dies on a
+     * `ReferenceError` that says nothing about the editor. Pointer capture is
+     * missing from jsdom elements outright, and the touch plugin calls it without a
+     * guard.
      */
     function browser_gaps($) {
         const dom = $.$mol_dom_context;
@@ -52484,9 +52485,9 @@ var $;
                 return found('[role=button]', `button «${title}»`, el => el.textContent?.startsWith(title) ?? false);
             },
             /**
-             * A checkbox or one option of a switch, by its label. Not a button:
-             * `$mol_check` answers `role="checkbox"`, and the options of a switch are
-             * checks, so the head bar toggles and the layout panel are found here.
+             * A checkbox or one option of a switch, by its label. Not a button: the
+             * check primitive answers `role="checkbox"`, and the options of a switch
+             * are checks, so the head bar toggles and the layout panel are found here.
              */
             check(title) {
                 return found('[role=checkbox]', `check «${title}»`, el => el.textContent?.includes(title) ?? false);
@@ -52509,7 +52510,7 @@ var $;
             shelf_row(title) {
                 return found('[bog_vmap_app_shelf_item_row]', `shelf row ${title}`, el => el.textContent === title);
             },
-            /** A text field, addressed by the tail of the id $mol builds out of the path to it. */
+            /** A text field, addressed by the tail of the id built out of the path to it. */
             field(tail) {
                 return found('input, textarea', `field ${tail}`, el => el.getAttribute('id')?.endsWith(tail) ?? false);
             },
@@ -52620,7 +52621,7 @@ var $;
     /**
      * A session of its own per test.
      *
-     * `$mol_state_session` keeps its values on the CLASS — in `sessionStorage`
+     * The session store of the framework keeps its values on the CLASS — in `sessionStorage`
      * where there is one, in a field of the class where there is not — so without
      * this every test would inherit whatever the previous one folded away. A
      * subclass per test gets a store of its own, the same trick the address mock
@@ -52952,7 +52953,7 @@ var $;
             $mol_assert_equal(app.node_title_note(), '');
         },
         /**
-         * The refusal has to reach the person in words: a throw out of a `$mol_string`
+         * The refusal has to reach the person in words: a throw out of a text field
          * setter lands in `setCustomValidity`, which is not where anybody looks.
          */
         'a name already taken is refused in words and moves nothing'($) {
@@ -53511,12 +53512,12 @@ var $;
          *
          * The address was the untested half: scenarios switched documents by calling
          * the picker directly, so nothing ever proved that a gesture reaches
-         * `$mol_state_arg` at all. A report from the deploy that the list does not
+         * the address service at all. A report from the deploy that the list does not
          * grow and the address does not follow had no test to answer it.
          *
          * WHAT THIS CANNOT SAY ANYTHING ABOUT is the timing in a browser: the node
-         * build of `$mol_state_arg` writes the address into a cell at once, while
-         * the web build defers it into `$mol_after_frame`, that is into
+         * build of that service writes the address into a cell at once, while the
+         * web build defers it into the frame scheduler, that is into
          * `requestAnimationFrame` — which does not tick in a hidden tab. This test
          * proves the wiring; a frame is a thing only a visible window has.
          */

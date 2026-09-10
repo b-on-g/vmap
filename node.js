@@ -30898,7 +30898,7 @@ var $;
      * have to know how big the pane is and does not go stale when it resizes.
      *
      * `none` and not an absent key when nothing is picked: inline styles are
-     * written by `$mol_dom_render_styles`, which sets the keys it is given and
+     * written by the style renderer of the framework, which sets the keys it is given and
      * removes nothing, so a key that disappears from the dictionary leaves its last
      * value on the element.
      */
@@ -30939,13 +30939,13 @@ var $;
          * It also keeps a zero sized part reachable, and that is not a rare shape: the
          * root of the document is a flex box with absolutely positioned children, so a
          * child that does not size itself measures 0 wide while its text is plainly on
-         * screen — `$mol_paragraph` does exactly this.
+         * screen — the paragraph primitive of the pack does exactly this.
          */
         const grab_slack = 8;
         /**
          * How far a pressed pointer may travel and still be a click, in screen pixels.
          *
-         * The same tolerance `$mol_touch` gives a draw before it counts as one. Below it
+         * The same tolerance the touch plugin gives a draw before it counts as one. Below it
          * the gesture is relayed to the scene as `click_at`; above it the gesture is a
          * drag of a part or a pan of the camera and nothing is relayed.
          */
@@ -30964,7 +30964,7 @@ var $;
          * Infinite canvas: background grid, sandboxed scene and the pointer gate over it.
          *
          * The camera is a screen-space pan vector plus an isotropic zoom, exactly what
-         * $mol_touch produces. The scene gets it as world coordinates over the bridge and
+         * the touch plugin produces. The scene gets it as world coordinates over the bridge and
          * applies the transform itself, because the host cannot reach into an opaque origin.
          *
          * There are no editor modes. The overlay takes every gesture, a click that does
@@ -31062,7 +31062,7 @@ var $;
             }
             /**
              * Which frame is the live one: the generation, and the pack it was raised
-             * with. A new key is a new `$mol_frame`, a new element and a new document.
+             * with. A new key is a new frame view, a new element and a new document.
              *
              * The pack belongs in the key because a realm cannot unload a bundle, and a
              * second pack over the first poisons half the palette without a word — 277
@@ -31248,7 +31248,7 @@ var $;
              * then would call a perfectly healthy scene dead and offer to reload the very
              * thing that is loading.
              *
-             * `sizes` and not `ready`: the scene announces `ready` on `$mol_after_tick`,
+             * `sizes` and not `ready`: the scene announces `ready` a microtask after boot,
              * long before the pack lands, so it proves the frame booted and nothing else.
              * Geometry proves the whole path — pack in the realm, document compiled,
              * layout measured, bridge answering.
@@ -31368,7 +31368,7 @@ var $;
              *
              * AN ORDINARY CELL, and it used to be a field with a version counter beside
              * it. The reason written here for that was the price of comparing the boxes —
-             * `$mol_compare_deep` over a hundred of them on every report round — and the
+             * a deep comparison over a hundred of them on every report round — and the
              * price was never measured. Measured now, on this bundle: 25 boxes 8 µs, 100
              * boxes 30 µs, 400 boxes 137 µs per compare, against two reports a second.
              * That is a quarter of a millisecond per second at four hundred nodes.
@@ -31488,7 +31488,7 @@ var $;
              *
              * A CELL and not a field, because the ring is drawn from it: as a field it
              * woke its readers only by riding the report counter, which is the pattern
-             * `$mol_touch` avoids by keeping its whole gesture in cells.
+             * the touch plugin avoids by keeping its whole gesture in cells.
              *
              * `sizes` is the report the grab was taken against, and it is what makes the
              * ring exact instead of merely quick. Measured boxes are debounced by 120 ms
@@ -31521,8 +31521,8 @@ var $;
              * `entering` says the press landed on the node that was ALREADY picked, so a
              * click out of it is the second one and lets the pointer inside. See `entered`.
              *
-             * A CELL and not a field, for the reason the whole gesture is one: `$mol_touch`
-             * keeps its press, its start and its travel in cells, and a gesture spread
+             * A CELL and not a field, for the reason the whole gesture is one: the touch
+             * plugin keeps its press, its start and its travel in cells, and a gesture spread
              * across fields and cells has two clocks. Nothing draws from this one today,
              * and that is precisely why it was the easiest of the three to leave behind.
              *
@@ -31575,7 +31575,7 @@ var $;
              * re-run by the layout its own gesture causes — was wrong: the handlers run
              * as one shot tasks through `event_async()` and subscribe to nothing. What is
              * true of that cell is that its FIRST read answers `null` on purpose, to keep
-             * a reflow out of the render; `$mol_touch` answers that by reading it in
+             * a reflow out of the render; the touch plugin answers that by reading it in
              * `auto()`, and so does this pane. A method of its own so that a test can
              * hand in a geometry the test DOM has no way to lay out.
              */
@@ -31778,7 +31778,7 @@ var $;
              * capture below retargets the later `click` to whoever captured — so by the
              * time a `click` arrived it would name the overlay, not the node.
              *
-             * `preventDefault` on a hit is what keeps the camera still: `$mol_touch`
+             * `preventDefault` on a hit is what keeps the camera still: the touch plugin
              * checks `defaultPrevented` at the top of both `event_start` and `event_move`,
              * so the same gesture pans over bare canvas and drags over a node, decided
              * once, by the hit test. A press that hits nothing is left alone deliberately
@@ -31941,7 +31941,7 @@ var $;
              * Release ends whatever the press started, and a press that went nowhere is
              * a click and goes to the scene.
              *
-             * A pan never gets here: on its first move `$mol_touch` captures the pointer
+             * A pan never gets here: on its first move the touch plugin captures the pointer
              * to the pane, and from then on the overlay sees neither the moves nor the
              * release. The gesture is still judged here, so the outcome does not depend
              * on that capture having happened.
@@ -32039,8 +32039,8 @@ var $;
              *
              * The pick itself has already happened on the press; this is the other half
              * of «one click both selects and presses». The scene finds the element under
-             * the point and replays the events on it, so a `$mol_button` in the document
-             * fires the moment it is picked, and a text field takes the focus.
+             * the point and replays the events on it, so a button in the document fires
+             * the moment it is picked, and a text field takes the focus.
              *
              * Through `post()`, so the scene owes an answer and the watchdog is armed:
              * of everything the host sends, a click is the likeliest to start a loop in
@@ -32249,7 +32249,7 @@ var $;
              * A press on a dot: an output starts a wire from it, a wired input unplugs
              * its wire and carries on from the same source, a bare input takes the press
              * and does nothing, so that it does not fall through to the canvas and drop
-             * the pick. `preventDefault` keeps `$mol_touch` from panning.
+             * the pick. `preventDefault` keeps the touch plugin from panning.
              */
             wire_press(dot, event) {
                 event.preventDefault();
@@ -32340,7 +32340,7 @@ var $;
              * First of the pushes in `auto()` and first in the reads of `watchdog()`, and
              * the order is load bearing rather than tidy: the scene refuses to compile
              * until it has been told a pack, because a class picks its base once and a
-             * document built a moment early would inherit the sandbox's own `$mol_view`
+             * document built a moment early would inherit the sandbox's own base view
              * for good. Sending the document first would not break anything — the scene
              * would simply hold it — but it would make the ordinary path the one that
              * compiles twice.
@@ -32535,7 +32535,7 @@ var $;
                     ...super.auto(),
                     // The first read of this cell answers `null` by design, so that a
                     // render does not force a reflow; every later read is the real box.
-                    // Read here for the same reason `$mol_touch` reads its own in `auto()`:
+                    // Read here for the same reason the touch plugin reads its own in `auto()`:
                     // the gestures and the zoom need the box on their FIRST use, not their
                     // second.
                     this.view_rect(),
@@ -32795,8 +32795,8 @@ var $;
                  * changes nothing about it.
                  *
                  * Written as one string because a camelCase shorthand takes nothing else,
-                 * and `String()` around the token because `$mol_theme.focus` is a
-                 * `$mol_style_func`, not text. Both are TS2322 otherwise — and the WEB
+                 * and `String()` around the token because the focus colour of the theme is
+                 * a style function object, not text. Both are TS2322 otherwise — and the WEB
                  * audit passes either way, only the node one catches it.
                  */
                 outline: '1px solid ' + String($mol_theme.focus),
@@ -33590,8 +33590,8 @@ var $;
          *
          * The document is a live `view.tree` class now, not a string constant: dropping
          * a component off the palette declares a free part on it and references that
-         * part from `sub`. Both edits go through `$bog_vmap_lang_node`, so the text the
-         * scene compiles is the same text an export would write out.
+         * part from `sub`. Both edits go through the node editor of the language module,
+         * so the text the scene compiles is the same text an export would write out.
          *
          * @see ../ARCHITECTURE.md sections 1 and 5
          */
@@ -33708,7 +33708,7 @@ var $;
              * The document text: the atoms of the current document, or the draft of the
              * store before there is one. `node()` writes here through its delegate, so the
              * tree and the string the bridge pushes are the same path. A plain method, not
-             * `@ $mol_mem`: a cell in front of a Giper Baza atom freezes after a write.
+             * Not a memo cell: one in front of a Giper Baza atom freezes after a write.
              * Empty text is the empty page, the scene needs a root class to compile.
              */
             doc_source(next) {
@@ -33741,7 +33741,7 @@ var $;
              * a bridge message of its own, and the scene hangs it as a style element of
              * its own. So the document text and the document CSS never carry a
              * coordinate, and the export cannot see the desk layout by construction.
-             * Section 8 says layout inside an artboard is a plain $mol flex tree and only
+             * Section 8 says layout inside an artboard is a plain flex tree of views, only
              * free parts lie by coordinates; artboards are stage 6, and until they exist
              * a dropped component has nowhere else to be.
              *
@@ -33848,7 +33848,7 @@ var $;
              * One pick for the whole editor left a ring hanging over an empty canvas and
              * an inspector opened on a node the new document never had.
              *
-             * A `@ $mol_mem` here would freeze on the first write: writing to a cell
+             * A memo cell here would freeze on the first write: writing to a cell
              * freezes its dependencies, and the dependency frozen would be the very
              * document key this is meant to follow.
              */
@@ -33872,7 +33872,7 @@ var $;
              *
              * A projection of `picked()` and not a cell of its own: two cells holding
              * one fact would have to be kept in step by somebody, and the reading path
-             * would stop being the writing path — which is how a `@ $mol_mem` in front of
+             * would stop being the writing path — which is how a memo cell in front of
              * another one freezes. Writing a name here is picking exactly that one, which
              * is what every caller outside the canvas means by it.
              */
@@ -34117,7 +34117,7 @@ var $;
              * Editing ONE NODE, the class is the one that declares the node, always the
              * root. The methods the node asks for are methods of its owner (`title <=
              * greeting` wants `greeting()` on the class that spells it), and the rule the
-             * panel offers is addressed to the attribute `$mol` writes on the sub view of
+             * panel offers is addressed to the attribute the framework writes on the sub view of
              * its owner. Scoping the node mode to the node's own class would write both
              * into a class that never reads them.
              */
@@ -34324,9 +34324,9 @@ var $;
              * else's `palette`.
              *
              * Plain methods, not cells: the value already lives in a keyed cell of
-             * `$mol_state_session`, and a `@ $mol_mem` in front of it would be a second
+             * the session store, and a memo cell in front of it would be a second
              * cell over one fact, frozen at what was written through it. That is the
-             * deviation from the donor, which wraps each of its three in `@ $mol_mem`.
+             * deviation from the donor, which wraps each of its three in a memo.
              */
             palette_showed(next) {
                 return this.$.$mol_state_session.value('vmap_palette', next) ?? true;
@@ -34340,7 +34340,7 @@ var $;
             /**
              * The inspector, or the invitation to pick something.
              *
-             * Swapped rather than emptied: `$bog_vmap_app_inspect` derives everything
+             * Swapped rather than emptied: the inspector derives everything
              * from the source of one class, and an empty source has no class in it, so
              * it would put a parse failure where a hint belongs.
              */
@@ -34380,8 +34380,8 @@ var $;
              * translation layer because there is nothing to translate: section 1 makes
              * every named node a flat property of the root class, and a property whose
              * value is a class name is, in `view.tree`, a class declaration —
-             * `Button_minor $mol_button_minor` parses to a class `Button_minor` based on
-             * `$mol_button_minor`. So the inspector reads the same bytes the document
+             * A line naming a part and a base parses to a class of that name based on
+             * that base. So the inspector reads the same bytes the document
              * carries, and what it writes goes back into the document as those bytes.
              *
              * NOT memoized, and the read deliberately does not go through
@@ -34546,7 +34546,7 @@ var $;
              * A field that names no pack means the standard palette, which is the `part`
              * module of this very pack — a sibling of the editor, so its address comes
              * off our own. It used to mean no pack at all, and that state is gone on
-             * purpose: a land library inherits from the `$mol_view` of the loaded pack,
+             * purpose: a land library inherits from the base view of the loaded pack,
              * so a palette of lands alone was never the useful reading, while an empty
              * field on a deploy left the user with no components and nothing to type.
              */
@@ -34715,8 +34715,8 @@ var $;
                 return [(x - shift[0]) / zoom, (y - shift[1]) / zoom];
             }
             /**
-             * A free name for a part of the given class: `$mol_button_minor` becomes
-             * `Button_minor`, and a second one of the same class `Button_minor_2`.
+             * A free name for a part of the given class: a minor button of the pack
+             * becomes `Button_minor`, and a second one of the same class `Button_minor_2`.
              *
              * The short form is the shelf's, because the shelf writes the same name into
              * the preset it makes out of a class, and two rules for one name would drift
@@ -34865,7 +34865,7 @@ var $;
             /**
              * Puts a page on the canvas: a node with a `sub` of its own.
              *
-             * A plain `$mol_view` and not a class of ours, so an exported document
+             * A plain base view and not a class of ours, so an exported document
              * depends on nothing of this pack; what makes it a page is the width and the
              * `sub`, both of them ordinary lines of the document. `flexDirection` is
              * written out because `[mol_view]` is `display: flex` with no direction at
@@ -34999,7 +34999,7 @@ var $;
              *
              * Reading is the pick itself: the name of a node IS the property it occupies,
              * so there is nothing to derive. Writing renames, and the refusal comes back
-             * as words rather than as an exception — a throw out of a `$mol_string`
+             * as words rather than as an exception — a throw out of a text field
              * setter ends up in `setCustomValidity`, which is not where a person looks.
              *
              * The taken name is caught here and not left to the model, because only the
@@ -35031,7 +35031,7 @@ var $;
                     return name;
                 }
                 // What is left is what the editor did not foresee, and it still must not
-                // vanish: a throw out of a `$mol_string` setter ends up in
+                // vanish: a throw out of a text field setter ends up in
                 // `setCustomValidity`. Shown in the model's own words rather than
                 // translated — a translation here would be a guess at a message nobody
                 // has read yet.
@@ -35161,7 +35161,7 @@ var $;
              * This is the name the folder of an export is made of — section 10 — so the
              * field stands beside the download button that spells the folder out. A
              * refusal comes back as words on the strip below, for the same reason the
-             * node name field does it that way: a throw out of a `$mol_string` setter
+             * node name field does it that way: a throw out of a text field setter
              * ends up in `setCustomValidity`, where nobody looks.
              */
             root_title(next) {
