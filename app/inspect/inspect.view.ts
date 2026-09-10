@@ -41,8 +41,14 @@ namespace $.$$ {
 			return [
 				this.Head(),
 				... this.title_note() ? [ this.Note() ] : [],
-				this.Flex(),
 				this.Body(),
+			] as readonly $mol_view[]
+		}
+
+		body_content() {
+			return [
+				this.Flex(),
+				this.Rows(),
 			] as readonly $mol_view[]
 		}
 

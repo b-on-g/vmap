@@ -38,6 +38,15 @@ namespace $.$$ {
 			font: { size: '.75rem' },
 		},
 
+		Body: {
+			flex: { grow: 1, shrink: 1 },
+			minHeight: 0,
+		},
+
+		Stack: {
+			flex: { direction: 'column' },
+		},
+
 		Rows: {
 			flex: { direction: 'column' },
 

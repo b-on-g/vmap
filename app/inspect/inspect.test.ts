@@ -212,6 +212,23 @@ namespace $ {
 			$mol_assert_ok( two.sub().length > 1 )
 
 		},
+
+		'everything that can grow is inside the one scroll of the panel'( $ ) {
+
+			const one = inspect_of( $, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n` )
+
+			const body = one.body()
+
+			$mol_assert_equal( body.filter( view => view instanceof $mol_scroll ).length, 1 )
+			$mol_assert_equal( body.includes( one.Body() ), true )
+
+			$mol_assert_equal( body.includes( one.Flex() ), false )
+			$mol_assert_equal( body.includes( one.Rows() ), false )
+
+			$mol_assert_equal( one.body_content().includes( one.Flex() ), true )
+			$mol_assert_equal( one.body_content().includes( one.Rows() ), true )
+
+		},
 	})
 
 	const d = '$'
