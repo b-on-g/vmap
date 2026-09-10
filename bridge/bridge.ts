@@ -98,6 +98,8 @@ namespace $ {
 
 		| {
 			readonly kind: 'values_want'
+
+			/** Either a property of the root class, or `Part.port` of a part of it. */
 			readonly names: readonly string[]
 		}
 
@@ -119,7 +121,9 @@ namespace $ {
 
 		| {
 			readonly kind: 'values'
-			readonly values: { readonly [ wire: string ]: string }
+
+			/** One line per value; a table comes as rows split by newline and cells by tab, the first row naming the columns. */
+			readonly values: { readonly [ name: string ]: string }
 		}
 
 		| {
