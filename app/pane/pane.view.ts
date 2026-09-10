@@ -3,17 +3,14 @@ namespace $.$$ {
 	/**
 	 * How far outside its box, in SCREEN pixels, a part still counts as hit.
 	 *
-	 * This strip is the grip of a part. Under the picked part the overlay is cut
-	 * open, so a press inside the box goes to the live component and never gets
-	 * here; the part is taken hold of by the ring around it, and the ring has to be
-	 * as wide as a finger at any zoom, which is why the number is in screen pixels
-	 * and divided by the zoom before it is compared with world units. The corner
-	 * handles are drawn exactly this wide, so what looks grabbable is grabbable.
+	 * This strip is the grip of a part. Under the picked one the overlay is cut open,
+	 * so a press inside the box reaches the live component and never gets here: the
+	 * part is taken hold of by the ring, and a ring has to stay as wide as a finger
+	 * at any zoom — hence screen pixels, divided by the zoom before comparison. The
+	 * corner handles are drawn exactly this wide, so what looks grabbable is.
 	 *
-	 * It also keeps a zero sized part reachable, and that is not a rare shape: the
-	 * root of the document is a flex box with absolutely positioned children, so a
-	 * child that does not size itself measures 0 wide while its text is plainly on
-	 * screen — the paragraph primitive of the pack does exactly this.
+	 * It also keeps a zero sized part reachable, which is not a rare shape: a child
+	 * that does not size itself measures 0 wide with its text plainly on screen.
 	 */
 	const grab_slack = 8
 
@@ -211,17 +208,12 @@ namespace $.$$ {
 		 * address or by markup. What an opaque origin does lose is a base to resolve
 		 * against, so the bundle is named absolutely.
 		 *
-		 * `color-scheme` is what gives a frame its base background, and it has to be
-		 * declared: without it Chrome keeps a transparent frame transparent only
-		 * until something inside takes a compositing layer — the camera transform on
-		 * `Stage` does — and from then on fills it with a pale base of its own.
-		 * Measured in a live window with `requestAnimationFrame` ticking, not under
-		 * automation.
-		 *
-		 * So the frame is opaque on purpose, and everything that has to be seen
-		 * beneath the document lives inside it: the canvas grid is drawn in there
-		 * with it. Inline rather than by a rule, so that it also holds during the
-		 * first paint, before the bundle has loaded.
+		 * `color-scheme` has to be declared, because without it a transparent frame
+		 * stays transparent only until something inside takes a compositing layer —
+		 * the camera transform does — and is then filled with a pale base of the
+		 * browser's own. So the frame is opaque on purpose, and whatever has to be
+		 * seen beneath the document lives inside it, the canvas grid included.
+		 * Inline rather than by a rule, so that it holds during the first paint too.
 		 */
 		override scene_html() {
 			return [
@@ -287,18 +279,14 @@ namespace $.$$ {
 		 * Handshakes seen from one frame. A counter, not a flag, so a scene reload
 		 * re-pushes; keyed by the frame, so a REPLACED frame starts from zero.
 		 *
-		 * Keyed and not plain, because the frame is now replaced by two different
-		 * things — the restart button and a change of pack — and only one of them is
-		 * an action that could clear a plain cell. A derived change of key would
-		 * otherwise leave this reading «already shaken hands», the host would push
-		 * into a window that has not booted, and every one of those messages would
-		 * be lost silently while the watchdog counted the new frame's pack fetch
-		 * against it.
+		 * Keyed and not plain, because the frame is replaced by two different things
+		 * — the restart button and a change of pack — and only one of them is an
+		 * action that could clear a plain cell. A derived change of key would leave
+		 * this reading «already shaken hands», the host would push into a window that
+		 * has not booted, and those messages would be lost in silence.
 		 *
-		 * One scene load does not mean exactly one step here: observed both +1
-		 * and +2 for a single reload, because the scene may announce itself more
-		 * than once. Only the change matters, never the number — do not go
-		 * hunting for a bug on the strength of an even count.
+		 * Only the CHANGE means anything, never the number: a scene may announce
+		 * itself more than once per load, so an even count is not a bug to hunt.
 		 */
 		@ $mol_mem_key
 		override handshake( key: string, next?: number ) {
@@ -335,9 +323,7 @@ namespace $.$$ {
 		 * A CELL, unlike the stamp above it, and the difference is where each is
 		 * written from: this one from the message handler, which is an effect and may
 		 * write cells, that one from the body of a push cell, which may not. So this
-		 * one both records the answer and wakes whoever is waiting for it, and the
-		 * counter that used to be kept beside it for the waking — bumped for every
-		 * message and carrying nothing else — is gone.
+		 * one both records the answer and wakes whoever waits for it.
 		 */
 		@ $mol_mem
 		answer_at( next?: number ) {
@@ -349,12 +335,9 @@ namespace $.$$ {
 		 * share one.
 		 *
 		 * A wall clock cannot promise that. The host answers `ready` by pushing the
-		 * document again, and both the answer and the questions it causes land inside
-		 * the same millisecond — `Date.now()` stamps them equally, `poke <= answer`
-		 * reads as «answered», and the watch disarms over a scene that was never
-		 * asked anything it managed to reply to. Caught by a test of the cold frame
-		 * that passed alone and failed in a full run, which is what a clock used as
-		 * an order does.
+		 * document again, so the answer and the questions it causes land inside the
+		 * same millisecond, stamp equally, read as «answered», and disarm the watch
+		 * over a scene that replied to nothing. A clock is a time, not an order.
 		 */
 		stamp_last = 0
 
@@ -370,8 +353,7 @@ namespace $.$$ {
 		 * watchdog hears about it by reading that cell. These two have no cell of
 		 * their own — one leaves from a timer, the other from a pointer handler — so
 		 * without a word here a question would be asked and nobody would start
-		 * counting. Both used to keep a counter apiece for exactly that, one of them
-		 * doubling as a nonce the scene echoes and nobody compares.
+		 * counting.
 		 *
 		 * The value is the stamp `post()` put on that question, so it says WHICH
 		 * question and not merely how many there have been.
@@ -419,15 +401,15 @@ namespace $.$$ {
 		/**
 		 * How long a frame that has never reported geometry may stay silent.
 		 *
-		 * Much longer than the warm limit, and on for the same reason the warm one
-		 * is. A cold frame is legitimately mute for a while: the pack is fetched into
-		 * a fresh realm, `report_task` suspends on `pack_ready()`, and a suspended
-		 * cell arms no timer and posts nothing. That is why this watch used to be off
-		 * altogether — and off, it left the one case with no way out at all. Document
-		 * code that loops on the first compile stops the scene BEFORE any geometry,
-		 * so the frame never warms, the strip never appears, and the canvas sits in
-		 * «ожидание сцены…» with no button to press. The generous limit buys the slow
-		 * line its time and still ends in a sentence instead of silence.
+		 * Much longer than the warm limit, because a cold frame is legitimately mute
+		 * for a while: the pack is fetched into a fresh realm, the report suspends on
+		 * it, and a suspended cell arms no timer and posts nothing.
+		 *
+		 * Watched all the same, because the case with no way out lives here. Document
+		 * code that loops on the FIRST compile stops the scene before any geometry:
+		 * the frame never warms, the strip never appears, and the canvas waits for a
+		 * scene with no button to press. A generous limit buys the slow line its time
+		 * and still ends in a sentence rather than in silence.
 		 */
 		cold_limit() {
 			return 30000
@@ -527,18 +509,12 @@ namespace $.$$ {
 		 * Latest measured node boxes, in world units, keyed by the path the scene
 		 * walks: the root class name, then a property name per level.
 		 *
-		 * AN ORDINARY CELL, and it used to be a field with a version counter beside
-		 * it. The reason written here for that was the price of comparing the boxes —
-		 * a deep comparison over a hundred of them on every report round — and the
-		 * price was never measured. Measured now, on this bundle: 25 boxes 8 µs, 100
-		 * boxes 30 µs, 400 boxes 137 µs per compare, against two reports a second.
-		 * That is a quarter of a millisecond per second at four hundred nodes.
-		 *
-		 * The counter was the more expensive of the two, and not by a little: it says
-		 * «something arrived» and therefore wakes every reader — the rings, the port
-		 * dots, the hit test — twice a second even when the layout has not moved a
-		 * pixel, which is the common case while nothing is being dragged. The compare
-		 * buys exactly that silence for the microseconds above.
+		 * AN ORDINARY CELL, and the alternative worth naming is a field with a version
+		 * counter beside it, which is cheaper per report and dearer per second: a
+		 * counter says «something arrived» and therefore wakes every reader — the
+		 * rings, the port dots, the hit test — twice a second even when the layout
+		 * has not moved a pixel, which is the common case while nothing is dragged.
+		 * A cell compares instead, and buys that silence for microseconds.
 		 */
 		@ $mol_mem
 		sizes( next?: { readonly [ node: string ]: $bog_vmap_bridge_rect } ) {
@@ -556,12 +532,10 @@ namespace $.$$ {
 		 * leave a box behind — worth fixing when the code editor of stage 4 makes
 		 * that path real.
 		 *
-		 * BY SEGMENT AND NOT BY PREFIX, which is the whole difference between this
-		 * and what it was. A node carried into a container is measured at a NEW path,
-		 * and the old key kept its last box beside it: two boxes answered to one
-		 * name, and everything that looks a node up by name — the ring, the hit test,
-		 * the port dots — could get either. Measured on the deploy: `…/Schet` with
-		 * its free coordinate living next to `…/Pair/Schet`.
+		 * BY SEGMENT AND NOT BY PREFIX. A node carried into a container is measured at
+		 * a NEW path, and a prefix match leaves the old key with its last box beside
+		 * it: two boxes answer to one name, and everything that looks a node up by
+		 * name — the ring, the hit test, the port dots — may get either.
 		 */
 		sizes_forget( name: string ) {
 
@@ -606,17 +580,16 @@ namespace $.$$ {
 				const path = key.slice( prefix.length ).split( '/' )
 
 				// EVERY segment has to be a node the document declares. The scene walks
-				// the whole rendered tree, so a part of two hundred pixels reports the
-				// button and the field inside it as well, and without this the hit test
-				// handed back a view the document never named: the ring came out the
-				// size of an inner control, the inspector had no declaration to show,
-				// and the part itself could not be picked, carried or deleted.
+				// the whole rendered tree, insides of pack classes included, so without
+				// this the hit test hands back a view the document never named: a ring
+				// the size of an inner control, no declaration for the inspector, and a
+				// part that cannot be picked, carried or deleted.
 				//
-				// Every segment and not only the last, because a name of the document
-				// may repeat inside a pack class, and the ancestry is what tells the two
-				// apart. The cost is a node put inside a pack property rather than into
-				// `sub` — which this editor cannot author, and a foreign document can:
-				// such a node draws, and stays out of reach of the pointer.
+				// Every segment and not merely the last, because a name of the document
+				// may repeat inside a pack class and only the ancestry tells them apart.
+				// The cost is a node put inside a pack property rather than into `sub`:
+				// this editor cannot author one, a foreign document can, and such a node
+				// draws while staying out of the pointer's reach.
 				if( path.some( step => !known.has( step ) ) ) continue
 
 				nodes.push({ name: path[ path.length - 1 ], path, box: this.sizes()[ key ] })
@@ -666,24 +639,21 @@ namespace $.$$ {
 		/**
 		 * The carry in hand, or `null` when nothing is being carried.
 		 *
-		 * A CELL and not a field, because the ring is drawn from it: as a field it
-		 * woke its readers only by riding the report counter, which is the pattern
-		 * the touch plugin avoids by keeping its whole gesture in cells.
+		 * A CELL and not a field, because the ring is drawn from it, and a gesture kept
+		 * half in fields has two clocks.
 		 *
 		 * `sizes` is the report the grab was taken against, and it is what makes the
-		 * ring exact instead of merely quick. Measured boxes are debounced by 120 ms
-		 * in the scene, and the timer restarts on every change, so during a continuous
-		 * drag NO fresh box ever arrives: a ring drawn from `sizes()` alone would sit
-		 * at the start of the gesture until the pointer stopped. Adding the live
-		 * offset fixes that, and would then double count the move the moment a fresh
-		 * box did arrive — hence the guard. A new report is a new object, so the
-		 * comparison is an identity, and nothing has to clear anything.
+		 * ring exact instead of merely quick. Measured boxes are debounced in the
+		 * scene and the timer restarts on every change, so through a continuous drag
+		 * NO fresh box arrives: a ring drawn from `sizes()` alone would sit at the
+		 * grab until the pointer stopped. The live offset answers that, and would
+		 * double count the move the moment a fresh box did arrive — hence the guard.
+		 * A new report is a new object, so the comparison is an identity and nothing
+		 * has to be cleared.
 		 *
-		 * There is no second flag beside it. There used to be one, for «the button is
-		 * still down», and the two could disagree: a release that never arrived left
-		 * the carry standing with the flag off, and the next pointer to cross the
-		 * canvas picked it up again. The carry is now cleared where it ends, so its
-		 * presence IS the flag.
+		 * No second flag beside it for «the button is still down»: two flags can
+		 * disagree, and a release that never arrives leaves a carry standing for the
+		 * next pointer to pick up. Cleared where it ends, its presence IS the flag.
 		 */
 		@ $mol_mem
 		drag( next?: {
@@ -712,15 +682,13 @@ namespace $.$$ {
 		 * `entering` says the press landed on the node that was ALREADY picked, so a
 		 * click out of it is the second one and lets the pointer inside. See `entered`.
 		 *
-		 * A CELL and not a field, for the reason the whole gesture is one: the touch
-		 * plugin keeps its press, its start and its travel in cells, and a gesture spread
-		 * across fields and cells has two clocks. Nothing draws from this one today,
-		 * and that is precisely why it was the easiest of the three to leave behind.
+		 * A CELL and not a field, for the reason the whole gesture is one. Nothing
+		 * draws from this one today, which is exactly why a field here would go
+		 * unnoticed until the day something did.
 		 *
 		 * The value is replaced and never edited in place — see `press_track()`. A
-		 * field could be poked at through the reference the reader is holding; a cell
-		 * that is poked at the same way keeps its old value as far as the graph is
-		 * concerned, and the difference only shows up the day somebody reads it.
+		 * cell poked at through the reference it handed out keeps its old value as
+		 * far as the graph is concerned.
 		 */
 		@ $mol_mem
 		press( next?: {
@@ -774,14 +742,11 @@ namespace $.$$ {
 		/**
 		 * Where this pane sits in the viewport.
 		 *
-		 * `view_rect()` and not a `getBoundingClientRect()` of our own. The reason
-		 * written here before — that a handler reading the watched cell would be
-		 * re-run by the layout its own gesture causes — was wrong: the handlers run
-		 * as one shot tasks through `event_async()` and subscribe to nothing. What is
-		 * true of that cell is that its FIRST read answers `null` on purpose, to keep
-		 * a reflow out of the render; the touch plugin answers that by reading it in
-		 * `auto()`, and so does this pane. A method of its own so that a test can
-		 * hand in a geometry the test DOM has no way to lay out.
+		 * `view_rect()` and not a `getBoundingClientRect()` of our own, so there is one
+		 * reading of one rectangle. Its FIRST read answers `null` on purpose, to keep
+		 * a reflow out of the render, which is why the pane warms it in `auto()` the
+		 * way the touch plugin warms its own. A method rather than the cell itself so
+		 * that a test can hand in a geometry the test DOM has no way to lay out.
 		 */
 		pane_rect(): $bog_vmap_app_pane_screen_box {
 			const rect = this.view_rect()
@@ -1019,19 +984,16 @@ namespace $.$$ {
 		 * once, by the hit test. A press that hits nothing is left alone deliberately
 		 * — that is the pan.
 		 *
-		 * Whether it will also be a click is not known yet: that is decided by the
-		 * release, from how far the pointer went.
+		 * Whether it will also be a click is not known yet: the release decides.
 		 */
 		node_press( event?: PointerEvent ) {
 
 			if( !event ) return
 			if( event.button !== 0 ) return
 
-			// The drag crossing this canvas is the owner's, not ours. Measured cost of
-			// not saying so: a press whose release fell into the hole leaves the carry
-			// live, and the next pointer to cross the overlay with a button down —
-			// which is exactly a drag out of the palette — moves the picked node to
-			// wherever it is let go, grabbed where it was last pressed.
+			// The drag crossing this canvas is the owner's, not ours. Taking it would
+			// start a carry the release never ends, and the next drag out of the
+			// palette would move the picked node to wherever it is let go.
 			if( this.carrying() ) return
 
 			// A dot before a part: dots lie on the grip strip of the part they belong
@@ -1107,14 +1069,12 @@ namespace $.$$ {
 		/**
 		 * Notes whether a MOVING pointer has gone further than a click may.
 		 *
-		 * Called from the moves and from nowhere else. A release used to come through
-		 * here too, and that is what made an ordinary click stop working: the four
-		 * pixels are a fair question to ask of a pointer we are watching travel, and
-		 * an unfair one to ask of a hand pressing and letting go in one place.
+		 * Called from the moves and from nowhere else. Four pixels is a fair question
+		 * to ask of a pointer we are watching travel, and an unfair one to ask of a
+		 * hand pressing and letting go in one place — see `node_release()`.
 		 *
-		 * A new value rather than a flag flipped on the old one: the press lives in a
-		 * cell now, and a cell edited through the object it handed out never hears
-		 * about it.
+		 * A new value rather than a flag flipped on the old one: a cell edited through
+		 * the object it handed out never hears about it.
 		 */
 		press_track( event: PointerEvent ) {
 
@@ -1131,13 +1091,11 @@ namespace $.$$ {
 		 * Carrying a node writes straight into `spots`, the same channel a drop from
 		 * the palette writes: placement is one fact with one owner, whatever moved it.
 		 *
-		 * Over a container it writes nothing at all. Inside an artboard the layout is
-		 * a tree and not a set of coordinates, so what the gesture means there is a
-		 * position among children, and the only feedback until the release is the
-		 * insertion line. A node that is drawn inside one never gets a coordinate
-		 * either way: `spots` positions the direct children of the root and nothing
-		 * else, so writing one would leave a number in the document's desk layout
-		 * that moves nothing.
+		 * Over a container it writes nothing at all: there the layout is a tree, so the
+		 * gesture means a position among children and the insertion line is the only
+		 * feedback until the release. Placement addresses the direct children of the
+		 * root and nothing else, so a coordinate written for a node drawn inside a
+		 * container would move nothing and outlive the reason it was written.
 		 */
 		node_move( event?: PointerEvent ) {
 
@@ -1212,13 +1170,12 @@ namespace $.$$ {
 			// the pointer left the window — and there the release is the only witness.
 			//
 			// What it witnesses is WHICH NODE the pointer came up on, and not how far
-			// it went. Measured by distance this used to swallow ordinary clicks: a
-			// deliberate press and release drifts a few pixels under any hand, four of
-			// them is well inside that, and a click over the slack was filed as a drag
-			// and never let the pointer inside the part. That is E18 — a double click
-			// went in, because a browser delivers one at a single point, and two
-			// separate clicks did not. The node is the same rule a browser fires
-			// `click` by, and no hand can drift onto a different node.
+			// it went. Distance swallows ordinary clicks: a deliberate press and
+			// release drifts a few pixels under any hand, well past the slack, and a
+			// click filed as a drag never lets the pointer inside the part — only a
+			// double click, which a browser delivers at one single point, gets in.
+			// The node is the rule a browser fires `click` by, and no hand can drift
+			// onto a different one.
 			//
 			// Nothing was carried in either case: the parts are moved by `node_move`
 			// and by nothing else, so a gesture we saw no moves of moved no part.
@@ -1282,13 +1239,12 @@ namespace $.$$ {
 
 			this.entered( this.primary() )
 
-			// The keyboard has to follow the pointer inside. `focus()` on the element
-			// INSIDE the frame is the scene's half and it is not enough by itself:
-			// measured in the browser, after a relayed click the active element of
-			// the frame document was still `body` and typing went nowhere. Focusing
-			// the frame element is the host's half, it is allowed across origins, and
-			// it is what puts the frame's document in the keyboard's way. Best effort
-			// for the same reason the pointer capture is: a test DOM may not have it.
+			// The keyboard has to follow the pointer inside, and it takes both halves.
+			// The scene focusing an element of its own is not enough — the active
+			// element of the frame document stays `body` and typing goes nowhere.
+			// Focusing the frame ELEMENT is the host's half, allowed across origins,
+			// and it is what puts that document in the keyboard's way. Best effort for
+			// the same reason the pointer capture is: a test DOM may not have it.
 			try {
 				( this.Scene( this.scene_key() ).dom_node() as HTMLElement ).focus()
 			} catch {}
@@ -1881,17 +1837,15 @@ namespace $.$$ {
 
 			if( message.kind === 'key' ) {
 
-				// The same step back the host's own `Escape` takes, and it has to be
-				// written twice because the two keystrokes never meet: once the
-				// pointer is let inside a part, the focus belongs to the frame and
-				// the keydown lands in ITS document, where the host's listener is not.
-				// The frame relays the key instead, and it arrives here — at the pane,
-				// which is what owns both the hole and the pick.
+				// The same step back the host's own `Escape` takes, written twice
+				// because the two keystrokes never meet: with the pointer inside a
+				// part the focus belongs to the frame and the keydown lands in ITS
+				// document, out of the host listener's reach. The frame relays it
+				// here instead, to the pane, which owns both the hole and the pick.
 				//
-				// Out of the node first and out of the pick second, one step per
-				// press, because those are two different things to have got into and
-				// leaving both at once would take the selection away from a user who
-				// only meant to stop typing.
+				// One step per press, because getting into a node and getting into a
+				// selection are two different things, and leaving both at once takes
+				// the selection from someone who only meant to stop typing.
 				if( this.inside() ) this.entered( null )
 				else this.picked([])
 
@@ -1905,15 +1859,12 @@ namespace $.$$ {
 
 			if( message.kind === 'sizes' ) {
 
-				// MERGED, never replaced. Culling means the scene stops drawing what
-				// is off screen, and what is not drawn cannot be measured, so a name
-				// missing from a report is a node that went out of view — not one
-				// that lost its size. Replacing would drop the box the moment the
-				// node left the viewport, and the selection ring, which is drawn from
-				// exactly these boxes, would blink out at the edge of the canvas.
-				//
-				// Stale entries are dropped by `sizes_forget()`, from the one place
-				// that knows a node is gone for good: the delete.
+				// MERGED, never replaced. What is culled is not drawn and what is not
+				// drawn cannot be measured, so a name missing from a report is a node
+				// out of view, not one that lost its size. Replacing would drop its
+				// box at the edge of the canvas and blink out the ring drawn from it.
+				// Stale entries go in `sizes_forget()`, from the one place that knows
+				// a node is gone for good: the delete.
 				this.sizes({ ... this.sizes(), ... message.sizes })
 				// Geometry is what starts the watch, see `warmed()`.
 				this.warmed( true )

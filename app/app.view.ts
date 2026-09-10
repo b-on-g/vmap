@@ -24,14 +24,13 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Bundle of the sandbox, a sibling module of this one, derived from our own
-		 * address. This is the only page in the project, so nothing else has one and
-		 * there is nothing else to derive.
+		 * Bundle of the sandbox, a sibling module, derived from our own address —
+		 * this being the only page in the project.
 		 *
 		 * Absolute, because the markup of the frame is handed to an opaque origin,
-		 * which has no base for a relative path to be resolved against. Derived and
-		 * not a constant, because a constant is written in one layout: the dev server
-		 * keeps a module in `-/` and a deploy does not.
+		 * which has no base to resolve a relative path against. Derived rather than
+		 * constant, because a constant is written in one layout and the dev server
+		 * keeps a module where a deploy does not.
 		 * @see ../ARCHITECTURE.md sections 4 and 7
 		 */
 		override scene_bundle() {
@@ -64,11 +63,11 @@ namespace $.$$ {
 		 * What the strip says, and it says two different things.
 		 *
 		 * A frame that HAD been answering and went quiet is one story: something
-		 * stopped it, a fresh frame is very likely to come up. A frame that never
-		 * answered at all is another: the code that stopped it is in the document, so
-		 * it will stop the next frame too, and reloading the page will not help
-		 * either. Telling the second story as the first sends the user round a loop
-		 * of restarts, which is exactly what the strip exists to prevent.
+		 * stopped it, and a fresh frame is likely to come up. A frame that never
+		 * answered is another: the code that stopped it is in the document, so it
+		 * stops the next frame too and a reload will not help. Telling the second
+		 * story as the first sends a person round a loop of restarts, which is what
+		 * the strip exists to prevent.
 		 */
 		override stall_note() {
 
@@ -85,16 +84,13 @@ namespace $.$$ {
 		/**
 		 * Name of the root class: the first class the document text declares.
 		 *
-		 * Read off the text with the same first-token rule the store matches classes
-		 * to nodes by, NOT by parsing. The rule is a regexp over a string and cannot
-		 * throw, which is the property that matters here: `doc_root` is read while
-		 * pushing to the scene and while drawing the toolbar, and a throw on either
-		 * path takes the editor down over text the scene already reports about.
+		 * Matched over the text and NOT parsed, because a regexp cannot throw: this is
+		 * read while pushing to the scene and while drawing the toolbar, and a throw
+		 * on either path takes the editor down over text the scene already reports on.
 		 *
-		 * Derived and no longer a constant, because the folder an export goes to
-		 * follows from the class names — section 10 — so a document whose root
-		 * cannot be renamed is a document that can only be unpacked inside the pack
-		 * of the editor itself.
+		 * Derived rather than constant, because the folder an export goes to follows
+		 * from the class names — section 10 — so a document whose root cannot be
+		 * renamed can only ever be unpacked inside the pack of this editor.
 		 */
 		override doc_root() {
 			return this.$.$bog_vmap_app_store_class_name( this.doc_source() )
@@ -104,16 +100,14 @@ namespace $.$$ {
 		/**
 		 * Name the root class of a fresh document gets.
 		 *
-		 * `my` is the namespace the docs of `mol` use for one's own code: it belongs
-		 * to nobody and collides with nothing, and the three segments make a module
-		 * path — `my/site/page` — that lands in a folder of the author's own instead
-		 * of inside the pack of this editor, which is where a document named after
-		 * this pack used to be unpacked.
+		 * The namespace the docs use for one's own code: it belongs to nobody, and its
+		 * three segments make a module path that lands in a folder of the author's
+		 * own rather than inside the pack of this editor.
 		 *
-		 * The dollar is glued on and not written into the literal: mam reads string
-		 * literals when it builds the dependency graph and resolves a dollar name
-		 * into a package, and there is no root package `my` — the whole module would
-		 * stop building over a default value.
+		 * The dollar is glued on and not written into the literal: the dependency
+		 * graph reads string literals and resolves a dollar name into a package, and
+		 * there is no root package of that name — the module would stop building over
+		 * a default value.
 		 */
 		doc_root_default() {
 			return '$' + 'my_site_page'
@@ -136,8 +130,8 @@ namespace $.$$ {
 		/**
 		 * The document text: the atoms of the current document, or the draft of the
 		 * store before there is one. `node()` writes here through its delegate, so the
-		 * tree and the string the bridge pushes are the same path. A plain method, not
-		 * Not a memo cell: one in front of a Giper Baza atom freezes after a write.
+		 * tree and the string the bridge pushes are the same path. A plain method and
+		 * not a memo cell: one in front of a Giper Baza atom freezes after a write.
 		 * Empty text is the empty page, the scene needs a root class to compile.
 		 */
 		doc_source( next?: string ) {
@@ -151,12 +145,11 @@ namespace $.$$ {
 		/**
 		 * The root class as a model over its AST: what the canvas edits.
 		 *
-		 * Taken from the DOCUMENT model and not made over the whole text. A node
-		 * models one class — `tree()` reads the first declaration and a write
-		 * serializes that one class as the entire source — so a node over a text
-		 * with two classes in it dropped the second on the first edit made anywhere.
-		 * Measured on the palette drop: two classes in, one class out, no error.
-		 * Through the document the neighbours come back out of their own trees.
+		 * Taken from the DOCUMENT model and not made over the whole text. A node models
+		 * ONE class — it reads the first declaration and a write serializes that class
+		 * as the entire source — so a node built over a text of two classes drops the
+		 * second on the first edit made anywhere, silently. Through the document the
+		 * neighbours come back out of their own trees.
 		 */
 		node() {
 			return this.doc_model().node( this.doc_root() )
@@ -170,16 +163,14 @@ namespace $.$$ {
 		 * Where each part sits on the canvas, in world coordinates, keyed by the
 		 * property name it occupies on the root class.
 		 *
-		 * SCAFFOLDING, NOT PART OF THE DOCUMENT. It leaves the host on `spots_set`,
-		 * a bridge message of its own, and the scene hangs it as a style element of
-		 * its own. So the document text and the document CSS never carry a
-		 * coordinate, and the export cannot see the desk layout by construction.
-		 * Section 8 says layout inside an artboard is a plain flex tree of views, only
-		 * free parts lie by coordinates; artboards are stage 6, and until they exist
-		 * a dropped component has nowhere else to be.
+		 * SCAFFOLDING, NOT PART OF THE DOCUMENT. It leaves the host on a bridge message
+		 * of its own and the scene hangs it as a style element of its own, so neither
+		 * the document text nor the document CSS ever carries a coordinate and the
+		 * export cannot see the desk layout by construction. Section 8: only free
+		 * parts lie by coordinates, and inside an artboard the layout is a flex tree.
 		 *
-		 * Stored with the document, in `Spots` of the schema, through the store.
-		 * A plain method for the reason given at `doc_source`.
+		 * Stored with the document, through the store. A plain method for the reason
+		 * given at `doc_source`.
 		 */
 		override spots( next?: { readonly [ name: string ]: { readonly x: number, readonly y: number } } ) {
 			return this.store().spots( next )
@@ -205,22 +196,16 @@ namespace $.$$ {
 		 * on its way.
 		 *
 		 * THE SANDBOX MUST NOT WAIT FOR THE DOCUMENT. A document opened by a link
-		 * lives in a land of its own, and reading any field of it suspends until
-		 * that land syncs — which, with no master reachable, is for ever. This value
-		 * feeds `pack_link`, `pack_link` feeds the pack the frame is keyed by: a
-		 * suspension here therefore left the frame with NO KEY AT ALL, so the scene
-		 * never booted, never said `ready`, and the editor sat on «ожидание сцены…»
-		 * for ever. Measured on a document link with no master while the pack still
-		 * rode the frame address: frame `src` absent, palette suspended, nothing on
-		 * the wire. The pack travels the bridge now, and the key is still derived
-		 * from it, so the shape of the failure is unchanged.
+		 * lives in a land of its own, and reading any field of it suspends until that
+		 * land syncs — with no master reachable, for ever. This feeds the pack the
+		 * frame is keyed by, so a suspension leaves the frame with NO KEY AT ALL: the
+		 * scene never boots, never says `ready`, and the editor waits on it for ever.
 		 *
-		 * So a suspension is answered with the empty string, which the caller reads
-		 * as «no palette of its own» and falls back to the standard one. Nothing is
-		 * lost: the subscription is recorded before the throw, so this recomputes
-		 * the moment the land arrives, and a document that does carry a palette of
-		 * its own then replaces the frame exactly as any change of pack does.
-		 * The same shape as `store_boot`, and for the same reason.
+		 * So a suspension is answered with the empty string, which the caller reads as
+		 * «no palette of its own» and falls back to the standard one. Nothing is lost:
+		 * the subscription is recorded before the throw, so this recomputes the moment
+		 * the land arrives, and a document that does carry a palette then replaces the
+		 * frame exactly as any change of pack does. Same shape as `store_boot`.
 		 */
 		store_links() {
 			try {
@@ -269,19 +254,15 @@ namespace $.$$ {
 		 *
 		 * A property name and not a box, an index or a view: section 1 makes every
 		 * named node a flat property of the root class whatever its depth, so this
-		 * name is the handle the AST, the placement and the measured geometry are all
-		 * already keyed by. `node().prop_tree( selected() )` is the declaration,
-		 * `spots()[ selected() ]` is where it sits.
+		 * name is the handle the declaration, the placement and the measured geometry
+		 * are all already keyed by. Here rather than in the pane, so that a reader
+		 * need not reach through the canvas to learn what is picked.
 		 *
-		 * The truth is here rather than in the pane so that a reader does not have to
-		 * reach through the canvas to learn what is picked; the pane writes it back
-		 * through a two way binding.
-		 *
-		 * KEYED BY THE DOCUMENT, and a plain method for that reason. A pick belongs
-		 * to the document it was made in: switching scenes hands over that scene's
-		 * pick — empty for a fresh one — and coming back finds it where it was left.
-		 * One pick for the whole editor left a ring hanging over an empty canvas and
-		 * an inspector opened on a node the new document never had.
+		 * KEYED BY THE DOCUMENT, and a plain method for that reason. A pick belongs to
+		 * the document it was made in, so switching scenes hands over that scene's
+		 * pick and coming back finds it where it was left. One pick for the whole
+		 * editor leaves a ring over an empty canvas and an inspector opened on a node
+		 * the new document never had.
 		 *
 		 * A memo cell here would freeze on the first write: writing to a cell
 		 * freezes its dependencies, and the dependency frozen would be the very
@@ -464,12 +445,10 @@ namespace $.$$ {
 		 *
 		 * A SUSPENSION IS NOT PASSED ON EITHER, and that is the harder half. The
 		 * toolbar is drawn from this, and a document opened by a link lives in a land
-		 * that suspends every read until it syncs — so rethrowing here suspended the
-		 * whole editor, frame and all, and the sandbox never came up. Measured: the
-		 * standing test of that invariant went red the moment this cell was wired to
-		 * the toolbar. The subscription is recorded before the throw, so nothing is
-		 * lost: this recomputes the moment the text arrives. The same shape as
-		 * `store_links`, and for the same reason.
+		 * that suspends every read until it syncs, so rethrowing suspends the whole
+		 * editor, frame and all, and the sandbox never comes up. The subscription is
+		 * recorded before the throw, so nothing is lost: this recomputes the moment
+		 * the text arrives. Same shape as `store_links`.
 		 */
 		@ $mol_mem
 		export_state(): {
@@ -625,21 +604,18 @@ namespace $.$$ {
 		 * `view.tree` of the class in scope, two way: what the panel shows on its
 		 * first tab when it edits a whole class.
 		 *
-		 * The class and not the whole document, which is what this used to be while
-		 * the panel called it «the whole class» in the very same breath. The three
-		 * texts of the panel now speak about one class, and that class is named in
-		 * the heading over them.
+		 * The class and not the whole document, so that the three texts of the panel
+		 * all speak about the one class named in the heading over them.
 		 *
 		 * A SECOND CLASS IS ADDED HERE, by writing one under the one on screen: the
-		 * document model replaces the slot with everything the text parses to, so two
-		 * declarations typed in place of one become two classes of the document.
+		 * slot is replaced by everything the text parses to, so two declarations typed
+		 * in place of one become two classes of the document.
 		 *
-		 * A NAME CHANGED IN THIS TEXT IS A RENAME, and is carried like one. Measured
-		 * before it was: the body and the styles of the class stayed under the old
-		 * name, so `doc_js` and `doc_css` came out empty and the behaviour the person
-		 * had written stopped reaching the scene — with nothing on the screen saying
-		 * so. The text is the truth of section 1, so the answer is to follow it, not
-		 * to forbid editing the name here.
+		 * A NAME CHANGED IN THIS TEXT IS A RENAME, and is carried like one. Left
+		 * uncarried, the body and the styles stay under the old name, the generated
+		 * code and CSS come out empty, and the behaviour the person wrote stops
+		 * reaching the scene with nothing on screen saying so. The text is the truth
+		 * of section 1, so the answer is to follow it, not to forbid the edit.
 		 *
 		 * What counts as a rename is decided by names alone: one name gone, one name
 		 * arrived, every other class of the document where it was. Two gone or two
@@ -833,10 +809,8 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Which panels are open, kept in the session so a reload finds the editor
-		 * as it was left. The wiki page of hyoo keeps its own panels the same way,
-		 * and is named here in words: a real class name in a doc comment is read by
-		 * the dependency graph and pulls that whole pack into the bundle.
+		 * Which panels are open, kept in the session so a reload finds the editor as
+		 * it was left.
 		 *
 		 * IN THE SESSION AND NOT IN THE ADDRESS. The address says WHAT is open —
 		 * `doc` — and is a link a person shares; a layout in it would travel to
@@ -907,19 +881,15 @@ namespace $.$$ {
 		 * Declaration of the picked part, as text, in both directions.
 		 *
 		 * This is the whole join between canvas and inspector, and it needs no
-		 * translation layer because there is nothing to translate: section 1 makes
-		 * every named node a flat property of the root class, and a property whose
-		 * value is a class name is, in `view.tree`, a class declaration —
-		 * A line naming a part and a base parses to a class of that name based on
-		 * that base. So the inspector reads the same bytes the document
-		 * carries, and what it writes goes back into the document as those bytes.
+		 * translation layer because there is nothing to translate: a property whose
+		 * value is a class name IS a class declaration, so the inspector reads the
+		 * same bytes the document carries and writes those bytes back.
 		 *
-		 * NOT memoized, and the read deliberately does not go through
-		 * `prop_tree()`. That one is a keyed cell, the write below goes through it,
-		 * and a write to a cell freezes its dependencies — a read taken from the
-		 * same cell would stop following the document after the first edit made
-		 * here. Stale in exactly the node being edited, silent, and looking like
-		 * success. `props_tree()` is a plain derivation of the text and stays live.
+		 * NOT memoized, and the read deliberately avoids the keyed cell the write
+		 * below goes through: a write to a cell freezes its dependencies, so a read
+		 * taken from the same cell would stop following the document after the first
+		 * edit made here — stale in exactly the node being edited, silent, and
+		 * looking like success.
 		 */
 		node_source( next?: string ): string {
 
@@ -986,6 +956,21 @@ namespace $.$$ {
 		}
 
 		/**
+		 * Every property the document declares, which is every node the canvas may
+		 * touch.
+		 *
+		 * The scene measures the whole rendered tree, insides of pack classes and
+		 * all, so the boundary between «a node of the document» and «the insides of a
+		 * part» has to come from the document, and the host is the one holding it.
+		 * Section 1: every named node is a flat property of the root class whatever
+		 * its depth, so one flat list of names answers at every level.
+		 */
+		@ $mol_mem
+		override doc_names() {
+			return this.node().prop_names()
+		}
+
+		/**
 		 * Nodes that carry a `sub` of their own, which is what makes a node an
 		 * artboard and its children a tree rather than a heap of coordinates.
 		 *
@@ -994,22 +979,6 @@ namespace $.$$ {
 		 * and free parts are properties of the same root class, and the only
 		 * difference between them is in the text.
 		 */
-		/**
-		 * Every property the document declares, which is every node the canvas may
-		 * touch.
-		 *
-		 * The scene measures the whole rendered tree — a pack class is drawn out of
-		 * its own views, and they are measured too — so the boundary between «a node
-		 * of the document» and «the insides of a part» has to come from the document,
-		 * and the host is the one holding it. Section 1: every named node is a flat
-		 * property of the root class whatever its depth, so one flat list of names
-		 * answers the question at every level.
-		 */
-		@ $mol_mem
-		override doc_names() {
-			return this.node().prop_names()
-		}
-
 		@ $mol_mem
 		override doc_containers() {
 			const node = this.node()
