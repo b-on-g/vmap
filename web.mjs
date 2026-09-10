@@ -31283,6 +31283,30 @@ var $;
         }
     }
     $.$bog_vmap_app_doc_node = $bog_vmap_app_doc_node;
+    class $bog_vmap_app_doc_snap extends $giper_baza_dict.with({
+        Time: $giper_baza_atom_real,
+        Author: $giper_baza_atom_text,
+        Tree: $giper_baza_atom_text,
+        Js: $giper_baza_atom_text,
+        Css: $giper_baza_atom_text,
+    }) {
+        time(next) {
+            return this.Time(next)?.val(next) ?? 0;
+        }
+        author(next) {
+            return this.Author(next)?.val(next) ?? '';
+        }
+        source(next) {
+            return this.Tree(next)?.val(next) ?? '';
+        }
+        js(next) {
+            return this.Js(next)?.val(next) ?? '';
+        }
+        css(next) {
+            return this.Css(next)?.val(next) ?? '';
+        }
+    }
+    $.$bog_vmap_app_doc_snap = $bog_vmap_app_doc_snap;
     class $bog_vmap_app_doc_spot extends $giper_baza_dict.with({
         X: $giper_baza_atom_real,
         Y: $giper_baza_atom_real,
@@ -31301,6 +31325,7 @@ var $;
         Root: $giper_baza_atom_link.to(() => $bog_vmap_app_doc_node),
         Spots: $giper_baza_dict_to($bog_vmap_app_doc_spot),
         Pack: $giper_baza_atom_text,
+        Snaps: $giper_baza_list_link.to(() => $bog_vmap_app_doc_snap),
     }) {
         pack(next) {
             return this.Pack(next)?.val(next) ?? '';
@@ -31318,6 +31343,7 @@ var $;
     $.$bog_vmap_app_doc_schema = [
         $bog_vmap_app_doc,
         $bog_vmap_app_doc_node,
+        $bog_vmap_app_doc_snap,
         $bog_vmap_app_doc_spot,
         $bog_vmap_app_doc_home,
     ];
@@ -31533,6 +31559,69 @@ var $;
                 return doc.pack();
             return doc.pack(next);
         }
+        doc_state(doc, next) {
+            if (next !== undefined) {
+                this.doc_source(doc, next.source);
+                for (const node of this.nodes(doc)) {
+                    const name = $bog_vmap_app_store_class_name(node.source());
+                    node.js(next.js[name] ?? '');
+                    node.css(next.css[name] ?? '');
+                }
+                return next;
+            }
+            const js = {};
+            const css = {};
+            for (const node of this.nodes(doc)) {
+                const name = $bog_vmap_app_store_class_name(node.source());
+                const body = node.js();
+                if (body)
+                    js[name] = body;
+                const style = node.css();
+                if (style)
+                    css[name] = style;
+            }
+            return { source: this.doc_source(doc), js, css };
+        }
+        snap_limit() {
+            return 50;
+        }
+        snaps(doc) {
+            const links = doc.Snaps()?.items()?.filter($mol_guard_defined) ?? [];
+            const land = doc.land();
+            return links.map(link => land.Pawn($bog_vmap_app_doc_snap).Head(link.head()));
+        }
+        snap_state(snap) {
+            return {
+                source: snap.source(),
+                js: $bog_vmap_app_store_parts_unpack(snap.js()),
+                css: $bog_vmap_app_store_parts_unpack(snap.css()),
+            };
+        }
+        snap_add(doc, state, time) {
+            const snap = doc.Snaps(null).make(null);
+            snap.time(time);
+            snap.author(doc.land().auth().pass().lord().str);
+            snap.source(state.source);
+            snap.js($bog_vmap_app_store_parts_pack(state.js));
+            snap.css($bog_vmap_app_store_parts_pack(state.css));
+            this.snap_evict(doc);
+            return snap;
+        }
+        snap_evict(doc) {
+            const list = doc.Snaps(null);
+            const links = list.items().filter($mol_guard_defined);
+            const extra = links.length - this.snap_limit();
+            if (extra <= 0)
+                return;
+            const land = doc.land();
+            for (const link of links.slice(0, extra)) {
+                const snap = land.Pawn($bog_vmap_app_doc_snap).Head(link.head());
+                snap.source('');
+                snap.js('');
+                snap.css('');
+            }
+            list.items(links.slice(extra));
+        }
     }
     __decorate([
         $mol_mem
@@ -31547,6 +31636,16 @@ var $;
         $mol_mem
     ], $bog_vmap_app_store.prototype, "draft_pack", null);
     $.$bog_vmap_app_store = $bog_vmap_app_store;
+    function $bog_vmap_app_store_parts_pack(parts) {
+        return Object.keys(parts).length ? JSON.stringify(parts) : '';
+    }
+    $.$bog_vmap_app_store_parts_pack = $bog_vmap_app_store_parts_pack;
+    function $bog_vmap_app_store_parts_unpack(packed) {
+        if (!packed)
+            return {};
+        return JSON.parse(packed);
+    }
+    $.$bog_vmap_app_store_parts_unpack = $bog_vmap_app_store_parts_unpack;
     function $bog_vmap_app_store_class_name(source) {
         return /^(\S+)/.exec(source.trimStart())?.[1] ?? '';
     }
@@ -35192,6 +35291,547 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$bog_vmap_app_history_snap) = class $bog_vmap_app_history_snap extends ($.$mol_view) {
+		Moment(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.moment())]);
+			return obj;
+		}
+		Back(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("Вернуть");
+			(obj.hint) = () => ("Вернуть документ к этому снимку. Текущее состояние ляжет снимком, поэтому возврат тоже отменяем");
+			(obj.enabled) = () => ((this.editable()));
+			(obj.click) = (next) => ((this.back(next)));
+			return obj;
+		}
+		Bar(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.Moment()), (this.Back())]);
+			return obj;
+		}
+		Author(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.author())]);
+			return obj;
+		}
+		Text(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.preview())]);
+			return obj;
+		}
+		moment(){
+			return "";
+		}
+		author(){
+			return "";
+		}
+		preview(){
+			return "";
+		}
+		editable(){
+			return false;
+		}
+		back(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		sub(){
+			return [
+				(this.Bar()), 
+				(this.Author()), 
+				(this.Text())
+			];
+		}
+	};
+	($mol_mem(($.$bog_vmap_app_history_snap.prototype), "Moment"));
+	($mol_mem(($.$bog_vmap_app_history_snap.prototype), "Back"));
+	($mol_mem(($.$bog_vmap_app_history_snap.prototype), "Bar"));
+	($mol_mem(($.$bog_vmap_app_history_snap.prototype), "Author"));
+	($mol_mem(($.$bog_vmap_app_history_snap.prototype), "Text"));
+	($mol_mem(($.$bog_vmap_app_history_snap.prototype), "back"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        $mol_style_define($bog_vmap_app_history_snap, {
+            flex: { direction: 'column', shrink: 0 },
+            padding: $mol_gap.text,
+            gap: $mol_gap.text,
+            border: { bottom: { width: '1px', style: 'solid', color: $mol_theme.line } },
+            Bar: {
+                flex: { direction: 'row', shrink: 0 },
+                align: { items: 'center' },
+                justify: { content: 'space-between' },
+                gap: $mol_gap.space,
+            },
+            Moment: {
+                font: { weight: 'bold', size: '.9rem' },
+            },
+            Author: {
+                font: { size: '.8rem' },
+                color: $mol_theme.shade,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+            },
+            Text: {
+                font: { family: 'monospace', size: '.8rem' },
+                whiteSpace: 'pre-wrap',
+                maxHeight: '8rem',
+                overflow: 'hidden',
+                color: $mol_theme.shade,
+            },
+        });
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$bog_vmap_app_history) = class $bog_vmap_app_history extends ($.$mol_view) {
+		Head(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => (["Версии"]);
+			return obj;
+		}
+		undoable(){
+			return false;
+		}
+		undo(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Undo(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("Отменить");
+			(obj.hint) = () => ("Шаг назад по правкам этой сессии. Cmd+Z или Ctrl+Z");
+			(obj.enabled) = () => ((this.undoable()));
+			(obj.click) = (next) => ((this.undo(next)));
+			return obj;
+		}
+		redoable(){
+			return false;
+		}
+		redo(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Redo(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("Повторить");
+			(obj.hint) = () => ("Вернуть отменённый шаг. Cmd+Shift+Z или Ctrl+Shift+Z");
+			(obj.enabled) = () => ((this.redoable()));
+			(obj.click) = (next) => ((this.redo(next)));
+			return obj;
+		}
+		snap_take(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Take(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("Снимок");
+			(obj.hint) = () => ("Записать текущее состояние документа снимком в его ленд");
+			(obj.enabled) = () => ((this.editable()));
+			(obj.click) = (next) => ((this.snap_take(next)));
+			return obj;
+		}
+		Steps(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([
+				(this.Undo()), 
+				(this.Redo()), 
+				(this.Take())
+			]);
+			return obj;
+		}
+		snap_rows(){
+			return [];
+		}
+		List(){
+			const obj = new this.$.$mol_list();
+			(obj.rows) = () => ((this.snap_rows()));
+			return obj;
+		}
+		snap_moment(id){
+			return "";
+		}
+		snap_author(id){
+			return "";
+		}
+		snap_preview(id){
+			return "";
+		}
+		snap_back(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		store(){
+			const obj = new this.$.$bog_vmap_app_store();
+			return obj;
+		}
+		state(next){
+			if(next !== undefined) return next;
+			return {};
+		}
+		live(){
+			return [];
+		}
+		press(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		editable(){
+			return false;
+		}
+		sub(){
+			return [
+				(this.Head()), 
+				(this.Steps()), 
+				(this.List())
+			];
+		}
+		Snap_row(id){
+			const obj = new this.$.$bog_vmap_app_history_snap();
+			(obj.moment) = () => ((this.snap_moment(id)));
+			(obj.author) = () => ((this.snap_author(id)));
+			(obj.preview) = () => ((this.snap_preview(id)));
+			(obj.editable) = () => ((this.editable()));
+			(obj.back) = (next) => ((this.snap_back(id, next)));
+			return obj;
+		}
+	};
+	($mol_mem(($.$bog_vmap_app_history.prototype), "Head"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "undo"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "Undo"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "redo"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "Redo"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "snap_take"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "Take"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "Steps"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "List"));
+	($mol_mem_key(($.$bog_vmap_app_history.prototype), "snap_back"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "store"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "state"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "press"));
+	($mol_mem_key(($.$bog_vmap_app_history.prototype), "Snap_row"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        class $bog_vmap_app_history extends $.$bog_vmap_app_history {
+            doc_key() {
+                try {
+                    return this.store().doc_current()?.link().str ?? '';
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return '';
+                    return $mol_fail_hidden(error);
+                }
+            }
+            step_limit() {
+                return 100;
+            }
+            step_delay() {
+                return 1000;
+            }
+            doc_state() {
+                const raw = this.state();
+                return {
+                    source: raw.source ?? '',
+                    js: raw.js ?? {},
+                    css: raw.css ?? {},
+                };
+            }
+            state_apply(state) {
+                this.state(state);
+            }
+            state_slug(state) {
+                return JSON.stringify([state.source, state.js, state.css]);
+            }
+            slug() {
+                return this.doc_key() + '\t' + this.state_slug(this.doc_state());
+            }
+            tape(key, next) {
+                return next ?? { states: [], pos: 0 };
+            }
+            ring(key) {
+                return this.tape(key).states;
+            }
+            pos(key) {
+                return this.tape(key).pos;
+            }
+            live() {
+                const slug = this.slug();
+                const tape = this.tape(this.doc_key());
+                return [this.step_task(slug), this.snap_task(slug), tape.states.length + ':' + tape.pos];
+            }
+            step_task(slug) {
+                if (!slug)
+                    return slug;
+                $mol_wire_async(this).step(slug);
+                return slug;
+            }
+            step(slug) {
+                const key = this.doc_key();
+                if (this.ring(key).length)
+                    this.$.$mol_wait_timeout(this.step_delay());
+                if ($mol_wire_probe(() => this.slug()) !== slug)
+                    return;
+                const state = $mol_wire_probe(() => this.doc_state());
+                if (!state)
+                    return;
+                this.step_push(key, state);
+            }
+            step_push(key, state) {
+                const tape = this.tape(key);
+                const slug = this.state_slug(state);
+                if (tape.states.length && this.state_slug(tape.states[tape.pos]) === slug)
+                    return;
+                const states = [...tape.states.slice(0, tape.pos + 1), state].slice(-this.step_limit());
+                this.tape(key, { states, pos: states.length - 1 });
+            }
+            step_move(shift) {
+                const key = this.doc_key();
+                const tape = this.tape(key);
+                const pos = tape.pos + shift;
+                if (pos < 0 || pos >= tape.states.length)
+                    return;
+                this.tape(key, { states: tape.states, pos });
+                this.state_apply(tape.states[pos]);
+            }
+            undoable() {
+                return this.pos(this.doc_key()) > 0;
+            }
+            redoable() {
+                const key = this.doc_key();
+                return this.pos(key) < this.ring(key).length - 1;
+            }
+            undo(next) {
+                this.step_move(-1);
+                return null;
+            }
+            redo(next) {
+                this.step_move(1);
+                return null;
+            }
+            now() {
+                return Date.now();
+            }
+            snap_delay() {
+                return 5000;
+            }
+            preview_limit() {
+                return 20;
+            }
+            editable() {
+                try {
+                    return this.store().doc_editable();
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return false;
+                    return $mol_fail_hidden(error);
+                }
+            }
+            snaps() {
+                const doc = this.store().doc_current();
+                return doc ? this.store().snaps(doc) : [];
+            }
+            snap_links() {
+                return this.snaps().map(snap => snap.link().str).reverse();
+            }
+            snap_rows() {
+                return this.snap_links().map(link => this.Snap_row(link));
+            }
+            snap_at(link) {
+                return this.snaps().find(snap => snap.link().str === link) ?? null;
+            }
+            snap_moment(link) {
+                const snap = this.snap_at(link);
+                if (!snap)
+                    return '';
+                return new this.$.$mol_time_moment(new Date(snap.time())).toString('YYYY-MM-DD hh:mm:ss');
+            }
+            snap_author(link) {
+                return this.snap_at(link)?.author() ?? '';
+            }
+            snap_preview(link) {
+                const snap = this.snap_at(link);
+                if (!snap)
+                    return '';
+                const lines = snap.source().split('\n');
+                const limit = this.preview_limit();
+                return lines.length > limit
+                    ? lines.slice(0, limit).join('\n') + '\n…'
+                    : lines.join('\n');
+            }
+            snap_newest() {
+                return this.snaps().at(-1) ?? null;
+            }
+            snap_make(time) {
+                const store = this.store();
+                const doc = store.doc_current();
+                if (!doc)
+                    return null;
+                if (!doc.can_change())
+                    return null;
+                const state = this.doc_state();
+                const newest = this.snap_newest();
+                if (newest && this.state_slug(store.snap_state(newest)) === this.state_slug(state))
+                    return null;
+                return store.snap_add(doc, state, time);
+            }
+            snap_task(slug) {
+                if (!slug)
+                    return slug;
+                $mol_wire_async(this).snap_step(slug);
+                return slug;
+            }
+            snap_step(slug) {
+                this.$.$mol_wait_timeout(this.snap_delay());
+                if ($mol_wire_probe(() => this.slug()) !== slug)
+                    return;
+                this.snap_make(this.now());
+            }
+            snap_take(next) {
+                $mol_wire_async(this).snap_make(this.now());
+                return null;
+            }
+            snap_revert(link) {
+                const snap = this.snap_at(link);
+                if (!snap)
+                    return;
+                const state = this.store().snap_state(snap);
+                this.snap_make(this.now());
+                this.state_apply(state);
+            }
+            snap_back(link, next) {
+                $mol_wire_async(this).snap_revert(link);
+                return null;
+            }
+            stroke_kind(stroke) {
+                if (stroke.code !== 'KeyZ')
+                    return null;
+                if (!stroke.command)
+                    return null;
+                if (stroke.alt)
+                    return null;
+                if (stroke.editable)
+                    return null;
+                if (/^(INPUT|TEXTAREA|SELECT|IFRAME)$/.test(stroke.tag))
+                    return null;
+                return stroke.shift ? 'redo' : 'undo';
+            }
+            hotkey_kind(event) {
+                const target = event.target;
+                return this.stroke_kind({
+                    code: event.code,
+                    command: event.metaKey || event.ctrlKey,
+                    shift: event.shiftKey,
+                    alt: event.altKey,
+                    tag: target?.tagName ?? '',
+                    editable: Boolean(target?.isContentEditable),
+                });
+            }
+            press(event) {
+                if (!event)
+                    return false;
+                const kind = this.hotkey_kind(event);
+                if (!kind)
+                    return false;
+                event.preventDefault();
+                if (kind === 'undo')
+                    this.undo();
+                else
+                    this.redo();
+                return true;
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_history.prototype, "slug", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_history.prototype, "tape", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_history.prototype, "step_task", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_history.prototype, "undo", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_history.prototype, "redo", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_history.prototype, "snap_links", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_history.prototype, "snap_moment", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_history.prototype, "snap_author", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_history.prototype, "snap_preview", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_history.prototype, "snap_task", null);
+        $$.$bog_vmap_app_history = $bog_vmap_app_history;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        $mol_style_define($bog_vmap_app_history, {
+            flex: { direction: 'column', grow: 0, shrink: 1, basis: '18rem' },
+            minWidth: '14rem',
+            maxWidth: '22rem',
+            minHeight: 0,
+            background: { color: $mol_theme.back },
+            color: $mol_theme.text,
+            border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
+            Head: {
+                padding: $mol_gap.text,
+                font: { weight: 'bold' },
+                border: { bottom: { width: '1px', style: 'solid', color: $mol_theme.line } },
+            },
+            Steps: {
+                flex: { direction: 'row', shrink: 0 },
+                gap: $mol_gap.space,
+                padding: $mol_gap.block,
+            },
+            List: {
+                flex: { grow: 1, shrink: 1 },
+                minHeight: 0,
+                overflow: { y: 'auto' },
+            },
+        });
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
 	($.$mol_svg_circle) = class $mol_svg_circle extends ($.$mol_svg) {
 		radius(){
 			return ".5%";
@@ -37495,6 +38135,13 @@ var $;
 			(obj.checked) = (next) => ((this.code_showed(next)));
 			return obj;
 		}
+		History_check(){
+			const obj = new this.$.$mol_check();
+			(obj.title) = () => ("Версии");
+			(obj.hint) = () => ("История документа: шаги этой сессии и снимки в ленде");
+			(obj.checked) = (next) => ((this.history_showed(next)));
+			return obj;
+		}
 		board_add(next){
 			if(next !== undefined) return next;
 			return null;
@@ -37780,6 +38427,14 @@ var $;
 			if(next !== undefined) return next;
 			return false;
 		}
+		history_showed(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		history_state(next){
+			if(next !== undefined) return next;
+			return {};
+		}
 		code_whole(next){
 			if(next !== undefined) return next;
 			return false;
@@ -37818,6 +38473,7 @@ var $;
 				(this.Palette_check()), 
 				(this.Inspect_check()), 
 				(this.Code_check()), 
+				(this.History_check()), 
 				(this.Board()), 
 				(this.Delete()), 
 				(this.Publish()), 
@@ -37899,6 +38555,12 @@ var $;
 			(obj.error) = () => ((this.code_error()));
 			return obj;
 		}
+		History(){
+			const obj = new this.$.$bog_vmap_app_history();
+			(obj.store) = () => ((this.store()));
+			(obj.state) = (next) => ((this.history_state(next)));
+			return obj;
+		}
 		Lib(){
 			const obj = new this.$.$bog_vmap_lib_land_stack();
 			(obj.pack) = () => ((this.pack_link()));
@@ -37939,6 +38601,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Palette_check"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Inspect_check"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Code_check"));
+	($mol_mem(($.$bog_vmap_app.prototype), "History_check"));
 	($mol_mem(($.$bog_vmap_app.prototype), "board_add"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Board"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_delete"));
@@ -37969,6 +38632,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "palette_showed"));
 	($mol_mem(($.$bog_vmap_app.prototype), "inspect_showed"));
 	($mol_mem(($.$bog_vmap_app.prototype), "code_showed"));
+	($mol_mem(($.$bog_vmap_app.prototype), "history_showed"));
+	($mol_mem(($.$bog_vmap_app.prototype), "history_state"));
 	($mol_mem(($.$bog_vmap_app.prototype), "code_whole"));
 	($mol_mem(($.$bog_vmap_app.prototype), "code_source"));
 	($mol_mem(($.$bog_vmap_app.prototype), "code_js"));
@@ -37989,6 +38654,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Inspect"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Idle"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Code"));
+	($mol_mem(($.$bog_vmap_app.prototype), "History"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Lib"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Ghost"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Pane"));
@@ -38456,6 +39122,7 @@ var $;
                     this.Pane(),
                     ...this.inspect_showed() ? [this.Aside()] : [],
                     ...this.code_showed() ? [this.Code()] : [],
+                    ...this.history_showed() ? [this.History()] : [],
                 ];
             }
             palette_showed(next) {
@@ -38466,6 +39133,39 @@ var $;
             }
             code_showed(next) {
                 return this.$.$mol_state_session.value('vmap_code', next) ?? false;
+            }
+            history_showed(next) {
+                return this.$.$mol_state_session.value('vmap_history', next) ?? false;
+            }
+            history_state(next) {
+                const store = this.store();
+                const doc = store.doc_current();
+                if (!doc)
+                    return this.draft_state(next);
+                if (next !== undefined && !doc.can_change())
+                    return store.doc_state(doc);
+                return store.doc_state(doc, next);
+            }
+            draft_state(next) {
+                if (next !== undefined) {
+                    this.doc_source(next.source);
+                    for (const name of this.doc_model().names()) {
+                        this.class_js(name, next.js[name] ?? '');
+                        this.class_css(name, next.css[name] ?? '');
+                    }
+                    return next;
+                }
+                const js = {};
+                const css = {};
+                for (const name of this.doc_model().names()) {
+                    const body = this.class_js(name);
+                    if (body)
+                        js[name] = body;
+                    const style = this.class_css(name);
+                    if (style)
+                        css[name] = style;
+                }
+                return { source: this.doc_source(), js, css };
             }
             aside_content() {
                 return (this.selection_alive() ? [this.Inspect()] : [this.Idle()]);
@@ -38832,6 +39532,8 @@ var $;
             key_press(event) {
                 if (!event)
                     return;
+                if (this.History().press(event))
+                    return;
                 if (event.key === 'Escape') {
                     if (this.Pane().inside())
                         this.Pane().leave();
@@ -38859,6 +39561,7 @@ var $;
                     this.drag_listeners(),
                     this.hotkeys(),
                     this.store_boot(),
+                    this.History().live(),
                 ];
             }
         }

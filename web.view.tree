@@ -2582,6 +2582,63 @@ $bog_vmap_app_inspect_demo $mol_view
 	Doc $bog_vmap_lang_doc
 		source? <=> source?
 
+$bog_vmap_app_history_snap $mol_view
+	moment \
+	author \
+	preview \
+	editable false
+	back? null
+	sub /
+		<= Bar $mol_view
+			sub /
+				<= Moment $mol_view
+					sub / <= moment
+				<= Back $mol_button_minor
+					title \Вернуть
+					hint \Вернуть документ к этому снимку. Текущее состояние ляжет снимком, поэтому возврат тоже отменяем
+					enabled <= editable
+					click? <=> back?
+		<= Author $mol_view
+			sub / <= author
+		<= Text $mol_view
+			sub / <= preview
+
+$bog_vmap_app_history $mol_view
+	store $bog_vmap_app_store
+	state? *
+	live /
+	press? null
+	editable false
+	sub /
+		<= Head $mol_view
+			sub /
+				\Версии
+		<= Steps $mol_view
+			sub /
+				<= Undo $mol_button_minor
+					title \Отменить
+					hint \Шаг назад по правкам этой сессии. Cmd+Z или Ctrl+Z
+					enabled <= undoable false
+					click? <=> undo? null
+				<= Redo $mol_button_minor
+					title \Повторить
+					hint \Вернуть отменённый шаг. Cmd+Shift+Z или Ctrl+Shift+Z
+					enabled <= redoable false
+					click? <=> redo? null
+				<= Take $mol_button_minor
+					title \Снимок
+					hint \Записать текущее состояние документа снимком в его ленд
+					enabled <= editable
+					click? <=> snap_take? null
+		<= List $mol_list
+			rows <= snap_rows /
+	Snap_row* $bog_vmap_app_history_snap
+		moment <= snap_moment* \
+		author <= snap_author* \
+		preview <= snap_preview* \
+		editable <= editable
+		back? <=> snap_back*? null
+
 $mol_svg_circle $mol_svg
 	dom_name \circle
 	pos /
@@ -2775,6 +2832,8 @@ $bog_vmap_app $mol_view
 	palette_showed? true
 	inspect_showed? true
 	code_showed? false
+	history_showed? false
+	history_state? *
 	code_whole? false
 	code_source? \
 	code_js? \
@@ -2798,6 +2857,10 @@ $bog_vmap_app $mol_view
 				title \Код
 				hint \Три текста выбранного узла: view.tree, JS и CSS
 				checked? <=> code_showed?
+			<= History_check $mol_check
+				title \Версии
+				hint \История документа: шаги этой сессии и снимки в ленде
+				checked? <=> history_showed?
 			<= Board $mol_button_minor
 				title \Артборд
 				hint \Положить страницу: прямоугольник ширины макета, вёрстка внутри по дереву
@@ -2881,6 +2944,9 @@ $bog_vmap_app $mol_view
 		js? <=> code_js?
 		css? <=> code_css?
 		error <= code_error \
+	History $bog_vmap_app_history
+		store <= store
+		state? <=> history_state?
 	Lib $bog_vmap_lib_land_stack
 		pack <= pack_link
 		lands <= lands /string
