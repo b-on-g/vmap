@@ -8563,14 +8563,20 @@ var $;
                 list() { return [1, 2]; },
                 empty() { return []; },
                 mixed() { return [{ a: 1 }, 2]; },
+                deep() { return { a: { b: 'раз\nдва' } }; },
+                bad() { throw new Error('сломалось\nи вот почему'); },
+                absent: 1,
             };
-            const values = $.$bog_vmap_scene_values(root, ['text', 'list', 'empty', 'mixed']);
+            const names = ['text', 'list', 'empty', 'mixed', 'deep', 'bad', 'absent', 'nope'];
+            const values = $.$bog_vmap_scene_values(root, names);
             $mol_assert_equal(values.text, 'два слова');
             $mol_assert_equal(values.list, '[1,2]');
             $mol_assert_equal(values.empty, '[]');
             $mol_assert_equal(values.mixed, '[{"a":1},2]');
-            for (const name of ['text', 'list', 'empty', 'mixed']) {
+            $mol_assert_equal(values.bad, '⚠ сломалось и вот почему');
+            for (const name of names) {
                 $mol_assert_equal(values[name].includes('\n'), false);
+                $mol_assert_equal(values[name].includes('\t'), false);
             }
         },
         'a function value is the name of its type, not its source'($) {

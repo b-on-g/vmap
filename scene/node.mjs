@@ -9717,7 +9717,7 @@ var $;
             catch (error) {
                 if (this.$mol_promise_like(error))
                     return this.$mol_fail_hidden(error);
-                values[name] = '⚠ ' + String(error?.message ?? error);
+                values[name] = '⚠ ' + $bog_vmap_scene_value_text(String(error?.message ?? error), limit);
             }
         }
         return values;
