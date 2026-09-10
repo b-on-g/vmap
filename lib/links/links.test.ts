@@ -1,12 +1,5 @@
 namespace $ {
 
-	/**
-	 * Tests of the link list parser. Pure string work, nothing here goes anywhere.
-	 *
-	 * The land links below are shaped like real ones — groups of eight — but were
-	 * typed by hand and point at nothing. `d` keeps `$` out of the literals so mam
-	 * does not read a fixture as a dependency.
-	 */
 	const d = '$'
 
 	const land_a = 'AbCdEfGh_12345678_ZyXwVuTs'
@@ -46,10 +39,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The rule of section 5 for every field a person types into: what was typed
-		 * is stored as is, only what is derived from it is normalized.
-		 */
 		'a pack without a slash is kept as typed and grows one in the derived address'( $ ) {
 
 			const links = $bog_vmap_lib_links_parse( 'https://b-on-g.github.io/gram' )
@@ -57,12 +46,10 @@ namespace $ {
 			$mol_assert_equal( links.pack, 'https://b-on-g.github.io/gram' )
 			$mol_assert_equal( $bog_vmap_lib_slashed( links.pack! ), 'https://b-on-g.github.io/gram/' )
 
-			// already slashed stays slashed, no doubling
 			$mol_assert_equal( $bog_vmap_lib_slashed( 'https://b-on-g.github.io/gram/' ), 'https://b-on-g.github.io/gram/' )
 
 		},
 
-		/** One pack per frame, and the person typing the second one is told why. */
 		'a second pack is refused with a reason'( $ ) {
 
 			const links = $bog_vmap_lib_links_parse( 'https://mol.hyoo.ru, https://b-on-g.github.io/gram/' )
@@ -126,10 +113,8 @@ namespace $ {
 
 		'a link to a pawn inside a land is a land link too'( $ ) {
 
-			// four groups: peer, lord, area, head
 			$mol_assert_equal( $bog_vmap_lib_links_is_land( land_a + '_HeAdHeAd' ), true )
 
-			// the original grammar admits bare underscores, this one does not
 			$mol_assert_equal( $bog_vmap_lib_links_is_land( '_' ), false )
 			$mol_assert_equal( $bog_vmap_lib_links_is_land( '' ), false )
 

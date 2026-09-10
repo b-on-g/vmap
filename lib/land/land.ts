@@ -1,65 +1,15 @@
 namespace $ {
 
-	/**
-	 * Component library published as a land of Giper Baza, sources and all.
-	 *
-	 * The second source of section 5, and the one that needs no deploy: publish a
-	 * component, hand out the link, and it is in somebody else's palette. The first
-	 * source, a deployed pack, arrives as a built `web.js` plus the `web.view.tree`
-	 * beside it; this one arrives as the three texts a component is made of, and is
-	 * compiled by the scene into the same sandbox.
-	 *
-	 * **From the outside it is the same library as a pack** — `class_list`,
-	 * `props_map`, `united`, all of it — because it derives from
-	 * `$bog_vmap_lib_any` and overrides one method. Nothing downstream of `tree()`
-	 * ever knew where the classes came from, and now nothing has to learn.
-	 *
-	 * A separate module from `lib/` on purpose: this one drags the whole of Giper
-	 * Baza into any bundle that touches it, and the palette and the inspector, which
-	 * need only the pack library, should not pay for a feature they do not use. The
-	 * dependency runs one way, `lib/land` onto `lib/`, which is also what the
-	 * namespace path already says.
-	 *
-	 * @see ../../ARCHITECTURE.md section 5
-	 */
-
-	/**
-	 * One component of a library: the three sources a class is built from.
-	 *
-	 * Same shape as a node of a document, deliberately not shared with it: `app/doc`
-	 * belongs to the application and this is a leaf model, so the dependency would
-	 * run the wrong way. The duplication is three field declarations; the coupling
-	 * would be permanent.
-	 *
-	 * The class name is NOT a field. It is the first token of `Tree` and storing it
-	 * beside would be a second source of truth for a derivable fact — the same
-	 * argument section 6 makes about wires, and it bites the same way: rename the
-	 * class in the text and the copy is stale.
-	 */
 	export class $bog_vmap_lib_land_part extends $giper_baza_dict.with({
 
-		/** `view.tree` declaration. The truth of this component. */
 		Tree: $giper_baza_atom_text,
 
-		/** Handwritten class body, applied on top of the generated one. */
 		Js: $giper_baza_atom_text,
 
-		/** Styles, attached apart from the class so a CSS edit rebuilds nothing. */
 		Css: $giper_baza_atom_text,
 
 	}) {
 
-		/**
-		 * **Plain methods, never `@ $mol_mem`.** An accessor of this shape that has
-		 * been written through once freezes at what was written: the atom takes a
-		 * remote edit, reports the new text, and the cell goes on handing out the
-		 * old one for the rest of the session. It shows up only on the component you
-		 * edited yourself, which in a shared library is the worst possible place.
-		 *
-		 * Nothing is lost: `val()` is a wire cell inside the pawn already, so a
-		 * reader stays reactive and a two way binding writes straight through. There
-		 * is a test named for this, and it is the reason it exists.
-		 */
 		tree( next?: string ) {
 			return this.Tree( next )?.val( next ) ?? ''
 		}
@@ -74,43 +24,18 @@ namespace $ {
 
 	}
 
-	/**
-	 * A published library: a name and its components.
-	 *
-	 * `Parts` live in the SAME land as the shelf, made with `make( null )`. A land
-	 * per component would mean proof of work for every class published and per
-	 * component access rights nobody asked for; a library is shared by one link, so
-	 * one land is also the unit somebody actually grants access to.
-	 */
 	export class $bog_vmap_lib_land_shelf extends $giper_baza_dict.with({
 
-		/** Human name of the library. */
 		Title: $giper_baza_atom_text,
 
-		/** Components, in the order they should be declared. */
 		Parts: $giper_baza_list_link.to( ()=> $bog_vmap_lib_land_part ),
 
 	}) {
 
-		/** Plain method, for the reason spelled out at `land_part.tree`. */
 		title( next?: string ) {
 			return this.Title( next )?.val( next ) ?? ''
 		}
 
-		/**
-		 * Components of the library.
-		 *
-		 * Resolved through the shelf's OWN land and not through `remote_list()`,
-		 * which would be the obvious call and is a trap: it resolves every link
-		 * through the static `$giper_baza_glob.Land`, a different land instance that
-		 * waits for a master to sync with. Under a test, where there is no master,
-		 * that wait never ends and the run dies in silence — no error, no output, and
-		 * every build that runs the tests hangs with it.
-		 *
-		 * Going through `land.Pawn( … ).Head( link.head() )` is correct here and not
-		 * merely convenient, because `make( null )` puts the parts in this very land.
-		 * The storage decision that suits the domain is the one that is testable.
-		 */
 		parts() {
 
 			const links = this.Parts()?.items()?.filter( $mol_guard_defined ) ?? []
@@ -123,45 +48,17 @@ namespace $ {
 
 	}
 
-	/**
-	 * Library backed by a land of sources.
-	 *
-	 * Only `tree()` differs from a pack, and it differs by where the text comes
-	 * from — not by what is done with it: the same parse, the same base class stub,
-	 * the same normalization. A tree built here and a tree fetched
-	 * from `web.view.tree` are indistinguishable downstream, which is the whole
-	 * requirement.
-	 */
 	export class $bog_vmap_lib_land extends $bog_vmap_lib_any {
 
-		/**
-		 * The published library. Supplied by the owner, absent until one is opened.
-		 *
-		 * Absent is a state and not a failure — the palette of a document with no
-		 * library attached is empty, not broken — so this answers null rather than
-		 * throwing, and `tree()` above degrades into the empty library.
-		 */
 		shelf(): $bog_vmap_lib_land_shelf | null {
 			return null
 		}
 
-		/**
-		 * Components of the shelf. Nothing asks the land to sync here: every read
-		 * of a pawn goes through `$giper_baza_land.sand_ordered()`, which syncs
-		 * first, so a library published by somebody else arrives by being read.
-		 */
 		@ $mol_mem
 		parts(): readonly $bog_vmap_lib_land_part[] {
 			return this.shelf()?.parts() ?? []
 		}
 
-		/**
-		 * Declarations of every component, in one text.
-		 *
-		 * Glued rather than parsed one by one because a library is one namespace:
-		 * a component inheriting another component of the same library has to
-		 * resolve, and it only can if both are in the same tree.
-		 */
 		@ $mol_mem
 		source() {
 			return this.parts().map( part => part.tree().replace( /\n?$/, '\n' ) ).join( '' )
@@ -172,15 +69,6 @@ namespace $ {
 			return this.$.$bog_vmap_lib_parse( this.source(), 'land' )
 		}
 
-		/**
-		 * Classes of the library WITHOUT the base class stub, for composing this
-		 * library into another one through its `classes()`.
-		 *
-		 * The stub has to go: it is a stand-in for a class the pack really carries,
-		 * and the class index keeps the last declaration of a name, so handing it
-		 * over would let the stand-in shadow the real thing. `tree()` keeps it,
-		 * because standing alone this library has no other base class at all.
-		 */
 		@ $mol_mem
 		class_trees(): readonly $mol_tree2[] {
 			return this.$.$mol_view_tree2_normalize(
@@ -188,14 +76,6 @@ namespace $ {
 			).kids
 		}
 
-		/**
-		 * Handwritten bodies by class name, the second of the three sources.
-		 *
-		 * Built here and handed to the scene by somebody else: compiling a library
-		 * inside the sandbox is a task of its own, and this is the shape it will
-		 * want — the same `{ [ klass ]: js }` the bridge already carries for a
-		 * document.
-		 */
 		@ $mol_mem
 		js(): { readonly [ klass: string ]: string } {
 
@@ -214,7 +94,6 @@ namespace $ {
 			return res
 		}
 
-		/** Styles of every component, in one text, as the scene attaches them. */
 		@ $mol_mem
 		css() {
 			return this.parts().map( part => part.css() ).filter( Boolean ).join( '\n' )
@@ -222,51 +101,18 @@ namespace $ {
 
 	}
 
-	/**
-	 * The three texts of one component, as the scene wants them: declaration, body,
-	 * styles. Plain data, so it survives the structured clone of the bridge.
-	 */
 	export type $bog_vmap_lib_land_text = {
 		readonly tree: string
 		readonly js: string
 		readonly css: string
 	}
 
-	/**
-	 * A pack with lands stacked on top of it: the library of the palette field.
-	 *
-	 * The pack is the base class, so from the outside this is a `$bog_vmap_lib` and
-	 * nothing downstream has to learn a new name. The lands ride in through
-	 * `classes()`, the hook `$bog_vmap_lib_any` left for exactly this, and the index
-	 * lets the last declaration win, so a land class shadows a pack class of the
-	 * same name the way it will at run time, where it is compiled into the sandbox
-	 * after the pack has filled it.
-	 *
-	 * Composition is by the LINK, not by the object: the palette field holds links,
-	 * a link is what the user pastes, and the land behind it is looked up here and
-	 * nowhere else. The host asks this object for two things — the class trees for
-	 * the palette and the inspector, and the source texts for the scene — and both
-	 * come from the same `land()` cells, so the two views cannot disagree about
-	 * which lands are attached.
-	 *
-	 * @see ../../ARCHITECTURE.md section 5
-	 */
 	export class $bog_vmap_lib_land_stack extends $bog_vmap_lib {
 
-		/** Land links as the user typed them, in order. Supplied by the owner. */
 		lands(): readonly string[] {
 			return []
 		}
 
-		/**
-		 * Library of one land, by its link.
-		 *
-		 * `.land()` on the link, because a link to a pawn INSIDE the land is a
-		 * legitimate thing to paste — a shared component, say — and the shelf lives
-		 * at the root of that land whichever pawn was pointed at. A malformed link
-		 * fails here with the database's own message; the field parser is meant to
-		 * have refused it before it ever reaches this method.
-		 */
 		@ $mol_mem_key
 		land( link: string ): $bog_vmap_lib_land {
 			return $bog_vmap_lib_land.make({
@@ -282,13 +128,6 @@ namespace $ {
 			return this.lands().map( link => this.land( link ) )
 		}
 
-		/**
-		 * Classes of every land, without the stub, in the order of the lands.
-		 *
-		 * This is what the palette and the inspector are handed: the trees alone,
-		 * because neither of them may depend on the database and neither has to —
-		 * resolving a class against the pack is a walk over a tree, whoever made it.
-		 */
 		@ $mol_mem
 		land_trees(): readonly $mol_tree2[] {
 			return this.libs().flatMap( lib => lib.class_trees() )
@@ -298,11 +137,6 @@ namespace $ {
 			return this.land_trees()
 		}
 
-		/**
-		 * Sources of every component of every land, in declaration order, for the
-		 * scene to compile. Read through the pawns of each shelf's own land and
-		 * never through `remote_list()`, see `$bog_vmap_lib_land_shelf.parts`.
-		 */
 		@ $mol_mem
 		parts(): readonly $bog_vmap_lib_land_text[] {
 			return this.libs().flatMap( lib => lib.parts().map( part => ({
@@ -314,14 +148,6 @@ namespace $ {
 
 	}
 
-	/**
-	 * Name of the class a `view.tree` source declares, or empty when it declares
-	 * none.
-	 *
-	 * The first token of the first line, and asked of the text every time rather
-	 * than stored beside it — see the note on `land_part`. Blank instead of a throw
-	 * because a half typed component is an ordinary state of an editor.
-	 */
 	export function $bog_vmap_lib_land_name( source: string ) {
 		return /^([^\s]+)/.exec( source.trimStart() )?.[ 1 ] ?? ''
 	}
