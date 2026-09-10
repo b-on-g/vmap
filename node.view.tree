@@ -542,6 +542,9 @@ $bog_vmap_app_shelf $mol_view
 	dragged? \
 	drag_x? 0
 	drag_y? 0
+	drag_source \
+	drag_title \
+	item_source* \
 	place? \
 	files? /File
 	classes_showed? false
@@ -1298,6 +1301,8 @@ $bog_vmap_app_pane $mol_view
 	doc_names /string
 	axis* \
 	tree_move? null
+	carry_at? null
+	carry_drop? null
 	values? *
 	handshake*? 0
 	ready false
@@ -1305,6 +1310,8 @@ $bog_vmap_app_pane $mol_view
 	warmed? false
 	entered? null
 	inside false
+	world_center /number
+	free_spot /number
 	node_error* \
 	scene_restart? null
 	error_at*? \
@@ -1546,3 +1553,4 @@ $bog_vmap_app $mol_view
 		doc_names <= doc_names /string
 		axis* <= doc_axis* \
 		tree_move? <=> tree_move? null
+		carry_drop? <=> carry_drop? null

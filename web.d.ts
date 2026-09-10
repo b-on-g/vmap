@@ -47355,6 +47355,9 @@ declare namespace $ {
 		dragged( next?: string ): string
 		drag_x( next?: number ): number
 		drag_y( next?: number ): number
+		drag_source( ): string
+		drag_title( ): string
+		item_source( id: any): string
 		place( next?: string ): string
 		files( next?: readonly(File)[] ): readonly(File)[]
 		classes_showed( next?: boolean ): boolean
@@ -47408,6 +47411,7 @@ declare namespace $.$$ {
         item_rows(): $bog_vmap_app_palette_item[];
         item_title(id: string): string;
         item_hint(id: string): string;
+        item_source(id: string): string;
         drag_source(): string;
         drag_title(): string;
         item_drag(id: string, event?: PointerEvent | null): void;
@@ -49107,6 +49111,8 @@ declare namespace $ {
 		doc_names( ): readonly(string)[]
 		axis( id: any): string
 		tree_move( next?: any ): any
+		carry_at( next?: any ): any
+		carry_drop( next?: any ): any
 		values( next?: Record<string, any> ): Record<string, any>
 		handshake( id: any, next?: number ): number
 		ready( ): boolean
@@ -49114,6 +49120,8 @@ declare namespace $ {
 		warmed( next?: boolean ): boolean
 		entered( next?: any ): any
 		inside( ): boolean
+		world_center( ): readonly(number)[]
+		free_spot( ): readonly(number)[]
 		node_error( id: any): string
 		scene_restart( next?: any ): any
 		error_at( id: any, next?: string ): string
@@ -49204,6 +49212,12 @@ declare namespace $.$$ {
         readonly owner: string;
         readonly index: number;
     };
+    type $bog_vmap_app_pane_carry = {
+        readonly x: number;
+        readonly y: number;
+        readonly owner: string;
+        readonly index: number;
+    };
     type $bog_vmap_app_pane_peer = {
         postMessage(data: unknown, origin: string): void;
         readonly origin: string;
@@ -49269,6 +49283,8 @@ declare namespace $.$$ {
         part_size(name: string): $bog_vmap_bridge_rect | null;
         part_names(): string[];
         free_names(): string[];
+        world_center(): readonly number[];
+        free_spot(): readonly number[];
         node_path(name: string): readonly string[];
         drag(next?: {
             name: string;
@@ -49322,6 +49338,14 @@ declare namespace $.$$ {
         insert_slot(point: readonly [number, number], moving?: string): $bog_vmap_app_pane_slot | null;
         slot(next?: $bog_vmap_app_pane_slot | null): $bog_vmap_app_pane_slot | null;
         tree_move(next?: $bog_vmap_app_pane_tree_move | null): $bog_vmap_app_pane_tree_move | null;
+        carry_drop(next?: $bog_vmap_app_pane_carry | null): $bog_vmap_app_pane_carry | null;
+        carry_at(next?: {
+            readonly x: number;
+            readonly y: number;
+        } | null): {
+            readonly x: number;
+            readonly y: number;
+        } | null;
         band(next?: {
             readonly from: readonly [number, number];
             readonly to: readonly [number, number];
@@ -49854,6 +49878,11 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_pane['tree_move'] >
 	>
+	type $bog_vmap_app_pane__carry_drop_bog_vmap_app_89 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['carry_drop'] >
+		,
+		ReturnType< $bog_vmap_app_pane['carry_drop'] >
+	>
 	export class $bog_vmap_app extends $mol_view {
 		body( ): readonly($mol_view)[]
 		Brand( ): $mol_view
@@ -49921,6 +49950,7 @@ declare namespace $ {
 		doc_names( ): readonly(string)[]
 		doc_axis( id: any): string
 		tree_move( next?: any ): any
+		carry_drop( next?: any ): any
 		doc_src( ): string
 		doc_css( ): string
 		spots( next?: Record<string, any> ): Record<string, any>
@@ -50045,6 +50075,7 @@ declare namespace $.$$ {
         doc_containers(): string[];
         doc_axis(name: string): string;
         tree_move(next?: $bog_vmap_app_pane_tree_move | null): $bog_vmap_app_pane_tree_move | null;
+        carry_drop(next?: $bog_vmap_app_pane_carry | null): $bog_vmap_app_pane_carry | null;
         link_add(next?: $bog_vmap_app_pane_link_new | null): $bog_vmap_app_pane_link_new | null;
         link_drop(next?: $bog_vmap_app_pane_link_end | null): $bog_vmap_app_pane_link_end | null;
         links_parsed(): $bog_vmap_lib_links;
@@ -50055,8 +50086,6 @@ declare namespace $.$$ {
         libs(): readonly $bog_vmap_lib_land_text[];
         error(): string;
         status(): "заводим сцену…" | "чужая сцена: только просмотр, правки не сохраняются" | "сцена не отвечает" | "сцена на связи" | "ожидание сцены…";
-        pane(): $.$$.$bog_vmap_app_pane;
-        shelf(): $.$$.$bog_vmap_app_shelf;
         dragged(): string;
         ghost_title(): string;
         ghost_left(): string;
@@ -50064,20 +50093,19 @@ declare namespace $.$$ {
         drag_listeners(): $mol_dom_listener[];
         drag_move(event?: PointerEvent): void;
         drag_end(event?: PointerEvent): void;
-        canvas_point(event: PointerEvent): readonly [number, number] | null;
         part_name(klass: string): string;
         name_free(head: string): string;
-        preset_drop(source: string, x: number, y: number): void;
         preset_place(source: string): void;
-        free_spot(): readonly [number, number];
-        preset_apply(source: string, x: number, y: number, slot: $bog_vmap_app_pane_slot | null): void;
+        preset_apply(source: string, x: number, y: number, slot: {
+            readonly owner: string;
+            readonly index: number;
+        } | null): void;
         part_drop(klass: string, x: number, y: number): void;
         shelf_place(next?: string): string;
         board_style(): {
             readonly [key: string]: string;
         };
         board_add(): void;
-        canvas_center(): readonly [number, number];
         delete_hint(): string;
         node_delete(): void;
         node_rename(name: string, next: string): void;

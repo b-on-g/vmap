@@ -32376,6 +32376,15 @@ var $;
 			if(next !== undefined) return next;
 			return 0;
 		}
+		drag_source(){
+			return "";
+		}
+		drag_title(){
+			return "";
+		}
+		item_source(id){
+			return "";
+		}
 		place(next){
 			if(next !== undefined) return next;
 			return "";
@@ -32893,8 +32902,11 @@ var $;
             item_hint(id) {
                 return this.item(id)?.hint ?? '';
             }
+            item_source(id) {
+                return this.item(id)?.source ?? '';
+            }
             drag_source() {
-                return this.item(this.dragged())?.source ?? '';
+                return this.item_source(this.dragged());
             }
             drag_title() {
                 return this.item(this.dragged())?.title ?? '';
@@ -35683,6 +35695,14 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		carry_at(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		carry_drop(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		values(next){
 			if(next !== undefined) return next;
 			return {};
@@ -35708,6 +35728,12 @@ var $;
 		}
 		inside(){
 			return false;
+		}
+		world_center(){
+			return [];
+		}
+		free_spot(){
+			return [];
 		}
 		node_error(id){
 			return "";
@@ -35797,6 +35823,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_add"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_drop"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "tree_move"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "carry_at"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "carry_drop"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "values"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "handshake"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "stalled"));
@@ -36217,6 +36245,31 @@ var $;
             free_names() {
                 return this.nodes_measured().filter(node => node.path.length === 1).map(node => node.name);
             }
+            world_center() {
+                const rect = this.pane_rect();
+                const shift = this.camera_shift();
+                const zoom = this.camera_zoom();
+                return [
+                    (rect.width / 2 - shift[0]) / zoom,
+                    (rect.height / 2 - shift[1]) / zoom,
+                ];
+            }
+            free_spot() {
+                const [x, start] = this.world_center();
+                const boxes = this.nodes_measured().map(node => node.box);
+                const covers = (box, y) => {
+                    return x >= box.x && x <= box.x + box.width
+                        && y >= box.y && y <= box.y + box.height;
+                };
+                let y = start;
+                for (let step = 0; step <= boxes.length; ++step) {
+                    const hit = boxes.find(box => covers(box, y));
+                    if (!hit)
+                        break;
+                    y = hit.y + hit.height + 24;
+                }
+                return [x, y];
+            }
             node_path(name) {
                 for (const node of this.nodes_measured()) {
                     if (node.name === name)
@@ -36321,6 +36374,21 @@ var $;
             }
             tree_move(next) {
                 return next ?? null;
+            }
+            carry_drop(next) {
+                return next ?? null;
+            }
+            carry_at(next) {
+                if (!next)
+                    return null;
+                const slot = this.insert_slot([next.x, next.y]);
+                this.carry_drop({
+                    x: next.x,
+                    y: next.y,
+                    owner: slot?.owner ?? '',
+                    index: slot?.index ?? -1,
+                });
+                return next;
             }
             band(next) {
                 return next ?? null;
@@ -36462,8 +36530,11 @@ var $;
             node_release(event) {
                 if (!event)
                     return;
-                if (this.carrying())
+                if (this.carrying()) {
+                    const point = this.world_point(event);
+                    this.carry_at({ x: point[0], y: point[1] });
                     return;
+                }
                 const press = this.press();
                 this.press(null);
                 const moved = press
@@ -36924,6 +36995,9 @@ var $;
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "slot", null);
         __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "carry_at", null);
+        __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "band", null);
         __decorate([
@@ -37368,6 +37442,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		carry_drop(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		doc_src(){
 			return "";
 		}
@@ -37562,6 +37640,7 @@ var $;
 			(obj.doc_names) = () => ((this.doc_names()));
 			(obj.axis) = (id) => ((this.doc_axis(id)));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
+			(obj.carry_drop) = (next) => ((this.carry_drop(next)));
 			return obj;
 		}
 	};
@@ -37591,6 +37670,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "link_add"));
 	($mol_mem(($.$bog_vmap_app.prototype), "link_drop"));
 	($mol_mem(($.$bog_vmap_app.prototype), "tree_move"));
+	($mol_mem(($.$bog_vmap_app.prototype), "carry_drop"));
 	($mol_mem(($.$bog_vmap_app.prototype), "spots"));
 	($mol_mem(($.$bog_vmap_app.prototype), "selected"));
 	($mol_mem(($.$bog_vmap_app.prototype), "picked"));
@@ -38164,6 +38244,16 @@ var $;
                 this.spots(spots);
                 return next;
             }
+            carry_drop(next) {
+                if (!next)
+                    return null;
+                const source = this.dragged();
+                if (!source)
+                    return null;
+                this.Shelf().dragged('');
+                this.preset_apply(source, next.x, next.y, next.owner ? { owner: next.owner, index: next.index } : null);
+                return next;
+            }
             link_add(next) {
                 if (next) {
                     const taken = this.doc_wires().some(link => link.to === next.to && link.to_prop === next.to_prop);
@@ -38211,17 +38301,11 @@ var $;
                     return 'сцена не отвечает';
                 return this.Pane().ready() ? 'сцена на связи' : 'ожидание сцены…';
             }
-            pane() {
-                return this.Pane();
-            }
-            shelf() {
-                return this.Shelf();
-            }
             dragged() {
-                return this.shelf().drag_source();
+                return this.Shelf().drag_source();
             }
             ghost_title() {
-                return this.shelf().drag_title();
+                return this.Shelf().drag_title();
             }
             ghost_left() {
                 return this.Shelf().drag_x() + 'px';
@@ -38246,24 +38330,9 @@ var $;
             drag_end(event) {
                 if (!event)
                     return;
-                const source = this.dragged();
-                if (!source)
+                if (!this.dragged())
                     return;
                 this.Shelf().dragged('');
-                const point = this.canvas_point(event);
-                if (!point)
-                    return;
-                this.preset_drop(source, point[0], point[1]);
-            }
-            canvas_point(event) {
-                const rect = this.pane().pane_rect();
-                const x = event.clientX - rect.left;
-                const y = event.clientY - rect.top;
-                if (x < 0 || y < 0 || x > rect.width || y > rect.height)
-                    return null;
-                const shift = this.Pane().camera_shift();
-                const zoom = this.Pane().camera_zoom();
-                return [(x - shift[0]) / zoom, (y - shift[1]) / zoom];
             }
             part_name(klass) {
                 return this.name_free(this.$.$bog_vmap_app_shelf_short(klass));
@@ -38278,28 +38347,9 @@ var $;
                         return name;
                 }
             }
-            preset_drop(source, x, y) {
-                this.preset_apply(source, x, y, this.pane().insert_slot([x, y]));
-            }
             preset_place(source) {
-                const spot = this.free_spot();
+                const spot = this.Pane().free_spot();
                 this.preset_apply(source, spot[0], spot[1], null);
-            }
-            free_spot() {
-                const [x, start] = this.canvas_center();
-                const boxes = this.pane().nodes_measured().map(node => node.box);
-                const covers = (box, y) => {
-                    return x >= box.x && x <= box.x + box.width
-                        && y >= box.y && y <= box.y + box.height;
-                };
-                let y = start;
-                for (let step = 0; step <= boxes.length; ++step) {
-                    const hit = boxes.find(box => covers(box, y));
-                    if (!hit)
-                        break;
-                    y = hit.y + hit.height + 24;
-                }
-                return [x, y];
             }
             preset_apply(source, x, y, slot) {
                 const node = this.node();
@@ -38314,10 +38364,11 @@ var $;
                     this.selected(placed[0]);
             }
             part_drop(klass, x, y) {
-                this.preset_drop(this.$.$bog_vmap_app_shelf_single(klass), x, y);
+                this.Shelf().dragged(klass);
+                this.Pane().carry_at({ x, y });
             }
             shelf_place(next) {
-                const source = next && this.shelf().item(next)?.source;
+                const source = next && this.Shelf().item_source(next);
                 if (source)
                     this.preset_place(source);
                 return '';
@@ -38340,18 +38391,9 @@ var $;
                 ]));
                 node.sub_open(name);
                 node.sub_add(name);
-                const spot = this.canvas_center();
+                const spot = this.Pane().world_center();
                 this.spots({ ...this.spots(), [name]: { x: spot[0], y: spot[1] } });
                 this.selected(name);
-            }
-            canvas_center() {
-                const rect = this.pane().pane_rect();
-                const shift = this.Pane().camera_shift();
-                const zoom = this.Pane().camera_zoom();
-                return [
-                    (rect.width / 2 - shift[0]) / zoom,
-                    (rect.height / 2 - shift[1]) / zoom,
-                ];
             }
             delete_hint() {
                 const name = this.selected();
@@ -38586,9 +38628,6 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "drag_listeners", null);
-        __decorate([
-            $mol_action
-        ], $bog_vmap_app.prototype, "preset_drop", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "preset_place", null);
