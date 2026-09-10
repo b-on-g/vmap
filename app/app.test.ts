@@ -13,18 +13,38 @@ namespace $ {
 	const d = '$'
 
 	/**
-	 * A session of its own per test.
+	 * A session of its own per test, and the bare subclass is not enough for it.
 	 *
-	 * The session store of the framework keeps its values on the CLASS — in `sessionStorage`
-	 * where there is one, in a field of the class where there is not — so without
-	 * this every test would inherit whatever the previous one folded away. A
-	 * subclass per test gets a store of its own, the same trick the address mock
-	 * uses in `app/store/store.test.ts`.
+	 * The memoized cells of the session store are found by OWN property, so a
+	 * subclass does get cells of its own. The bytes under them do not: the store
+	 * caches its backing storage in a plain field of the class, that field is read
+	 * through the prototype chain, and a subclass therefore reads and writes the
+	 * object the base cached — every test folding a panel away leaves it folded for
+	 * the next one. So what is overridden here is the backing storage itself, and
+	 * only it: the keys, the JSON round trip and the meaning of a `null` write stay
+	 * exactly as they are in production.
 	 */
 	$mol_test_mocks.push( $=> {
+
 		// Generic, because the base is: a plain `extends` drops the type parameter
 		// from the constructor and the assignment below is then refused.
-		class $mol_state_session_mock< Value > extends $.$mol_state_session< Value > {}
+		class $mol_state_session_mock< Value > extends $.$mol_state_session< Value > {
+
+			// An own field of this class, and this class is made anew for every
+			// test, so nothing here outlives the test that wrote it.
+			static store = {} as Record< string, string >
+
+			static override native(): Pick< Storage, 'getItem' | 'setItem' | 'removeItem' > {
+				const store = this.store
+				return {
+					getItem: ( key: string )=> store[ key ] ?? null,
+					setItem: ( key: string, value: string )=> { store[ key ] = value },
+					removeItem: ( key: string )=> { delete store[ key ] },
+				}
+			}
+
+		}
+
 		$.$mol_state_session = $mol_state_session_mock
 	} )
 
