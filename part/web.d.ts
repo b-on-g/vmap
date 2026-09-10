@@ -2367,7 +2367,6 @@ declare namespace $ {
 //# sourceMappingURL=calc.view.tree.d.ts.map
 declare namespace $.$$ {
     /**
-     * Calculator part of vmap: two numbers, an operation, one numeric result.
      * Division by zero gives NaN instead of Infinity, so that a wire downstream
      * sees «no number» and not a number that only looks valid.
      */
@@ -2909,9 +2908,9 @@ declare namespace $ {
 //# sourceMappingURL=map.view.tree.d.ts.map
 declare namespace $.$$ {
     /**
-     * Map part of vmap over the Yandex map of mol. Zoom is clamped into the
-     * range the map accepts, the center travels as two numbers, and a mark
-     * appears at the center as soon as it has a title.
+     * Zoom is clamped into the range the map accepts, the center travels as two
+     * numbers, and a mark appears at the center as soon as it has a title — all
+     * three so that an ordinary wire, which carries one number, lands on a port.
      */
     class $bog_vmap_part_map extends $.$bog_vmap_part_map {
         /** Zoom for the map: whole, inside the range, the default when not a number. */
@@ -4077,9 +4076,6 @@ declare namespace $.$$ {
         readonly error: string;
     };
     /**
-     * A cell of code: the body of a function, run on demand, answering through
-     * typed ports.
-     *
      * The code runs inside the sandbox and nowhere else — this class is compiled
      * into it like any other part of the pack — so it is exactly as trusted as the
      * document around it and no more.
@@ -4088,20 +4084,15 @@ declare namespace $.$$ {
      */
     class $bog_vmap_part_cell extends $.$bog_vmap_part_cell {
         /**
-         * The code as of the last run of the button, empty until it is pressed.
-         *
          * The manual mode is this cell and the reactive mode is `code()` itself, so
          * the difference between the two is which text the run depends on and
          * nothing else. No timer, no flag outside the graph, no re-entry.
          */
         code_ran(next?: string): string;
-        /** The button. Takes what is in the field now as what to run. */
         run(next?: Event | null): null;
         /**
-         * One run: what it returned, what it cost and what it complained about, as
-         * ONE value.
-         *
-         * One and not three cells, because a cell may not write into its
+         * What the run returned, what it cost and what it complained about, as ONE
+         * value. One and not three cells, because a cell may not write into its
          * neighbours: three cells would mean a computation writing twice on the
          * side, which is an invalidation loop dressed as bookkeeping. The three
          * readings below take this apart, and a reader of the time is not woken by
@@ -4904,16 +4895,12 @@ declare namespace $ {
 //# sourceMappingURL=plot.view.tree.d.ts.map
 declare namespace $.$$ {
     /**
-     * A chart with a port a wire can reach: a list of numbers.
-     *
      * The receiver of a board — a code cell counts something, the wire carries the
      * numbers here, the line moves. That is the shape the whole idea of wiring is
-     * for, and it is the one thing `$mol_chart` cannot be given directly.
+     * for, and it is the one thing the stock chart cannot be given directly.
      */
     class $bog_vmap_part_plot extends $.$bog_vmap_part_plot {
         /**
-         * Positions along the axis: one per value, evenly spaced.
-         *
          * Derived and not a port of its own. A chart fed from a wire has a series of
          * numbers and no second series to pair it with; asking for one would mean
          * two wires to draw one line, and the second would exist only to count from

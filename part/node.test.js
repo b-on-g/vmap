@@ -5804,7 +5804,6 @@ var $;
     var $$;
     (function ($$) {
         /**
-         * Calculator part of vmap: two numbers, an operation, one numeric result.
          * Division by zero gives NaN instead of Infinity, so that a wire downstream
          * sees «no number» and not a number that only looks valid.
          */
@@ -5847,9 +5846,9 @@ var $;
             flex: { direction: 'row', wrap: 'wrap' },
             align: { items: 'center' },
             /**
-             * A detail, not a band. Handed the width of a page it took all of it, and
-             * on a phone width it ran past the edge instead of wrapping; a ceiling of
-             * its own fixes both.
+             * A detail, not a band: handed the width of a page it would take all of it,
+             * and at phone width run past the edge instead of wrapping. A ceiling of its
+             * own fixes both.
              *
              * The floor is the other half of the same decision. Zero is what lets a view
              * in a flex row shrink below its content at all, but zero also lets it
@@ -6768,9 +6767,9 @@ var $;
     var $$;
     (function ($$) {
         /**
-         * Map part of vmap over the Yandex map of mol. Zoom is clamped into the
-         * range the map accepts, the center travels as two numbers, and a mark
-         * appears at the center as soon as it has a title.
+         * Zoom is clamped into the range the map accepts, the center travels as two
+         * numbers, and a mark appears at the center as soon as it has a title — all
+         * three so that an ordinary wire, which carries one number, lands on a port.
          */
         class $bog_vmap_part_map extends $.$bog_vmap_part_map {
             /** Zoom for the map: whole, inside the range, the default when not a number. */
@@ -6814,16 +6813,15 @@ var $;
             // box the fixed width would run past the edge of the page.
             maxWidth: '100%',
             /**
-             * A FLOOR OF ITS OWN, and `0` here was the whole of the defect: dropped free
-             * on the canvas the map came out 0 wide and 224 tall — the height applied,
-             * the width collapsed. A free part is placed absolutely inside the root of
-             * the document, whose own width is nothing, so `max-width: 100%` resolves to
-             * zero; and a minimum of zero has nothing to stop it, while a real minimum
-             * wins over any maximum by the rules of CSS.
+             * A FLOOR OF ITS OWN, and a floor of `0` is the whole of the defect: a free
+             * part is placed absolutely inside the root of the document, whose own width
+             * is nothing, so the ceiling above resolves to zero and the map comes out
+             * full height and no width at all. A minimum of zero has nothing to stop it,
+             * while a real minimum wins over any maximum by the rules of CSS.
              *
              * A detail carries its own floor rather than borrowing one: inside a
-             * container it had `min-width: 320px` from the container and looked fine,
-             * which is exactly why nobody saw this until one was put down on its own.
+             * container it takes the floor of the container and looks fine, which is why
+             * this shows up only on a part put down on its own.
              */
             minWidth: '12rem',
             border: { radius: $mol_gap.round },
@@ -9841,9 +9839,6 @@ var $;
     var $$;
     (function ($$) {
         /**
-         * A cell of code: the body of a function, run on demand, answering through
-         * typed ports.
-         *
          * The code runs inside the sandbox and nowhere else — this class is compiled
          * into it like any other part of the pack — so it is exactly as trusted as the
          * document around it and no more.
@@ -9852,8 +9847,6 @@ var $;
          */
         class $bog_vmap_part_cell extends $.$bog_vmap_part_cell {
             /**
-             * The code as of the last run of the button, empty until it is pressed.
-             *
              * The manual mode is this cell and the reactive mode is `code()` itself, so
              * the difference between the two is which text the run depends on and
              * nothing else. No timer, no flag outside the graph, no re-entry.
@@ -9861,16 +9854,13 @@ var $;
             code_ran(next) {
                 return next ?? '';
             }
-            /** The button. Takes what is in the field now as what to run. */
             run(next) {
                 this.code_ran(this.code());
                 return null;
             }
             /**
-             * One run: what it returned, what it cost and what it complained about, as
-             * ONE value.
-             *
-             * One and not three cells, because a cell may not write into its
+             * What the run returned, what it cost and what it complained about, as ONE
+             * value. One and not three cells, because a cell may not write into its
              * neighbours: three cells would mean a computation writing twice on the
              * side, which is an invalidation loop dressed as bookkeeping. The three
              * readings below take this apart, and a reader of the time is not woken by
@@ -11640,16 +11630,12 @@ var $;
     var $$;
     (function ($$) {
         /**
-         * A chart with a port a wire can reach: a list of numbers.
-         *
          * The receiver of a board — a code cell counts something, the wire carries the
          * numbers here, the line moves. That is the shape the whole idea of wiring is
-         * for, and it is the one thing `$mol_chart` cannot be given directly.
+         * for, and it is the one thing the stock chart cannot be given directly.
          */
         class $bog_vmap_part_plot extends $.$bog_vmap_part_plot {
             /**
-             * Positions along the axis: one per value, evenly spaced.
-             *
              * Derived and not a port of its own. A chart fed from a wire has a series of
              * numbers and no second series to pair it with; asking for one would mean
              * two wires to draw one line, and the second would exist only to count from
