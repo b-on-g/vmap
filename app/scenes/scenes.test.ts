@@ -1,14 +1,7 @@
 namespace $ {
 
-	/**
-	 * Tests of the list without a DOM: what it shows and what it writes, on a
-	 * store whose documents live in the home land built in place. `add()` itself is
-	 * not tested here — it hands the work to a fiber and answers at once; the store
-	 * method it calls is tested in `app/store/`.
-	 */
 	const d = '$'
 
-	/** Canonical `tree2` formatting, see the note in `app/store/store.test.ts`. */
 	const src_page = `${d}bog_vmap_app_scenes_test_page ${d}mol_view\n\tCalc ${d}mol_view\n\tsub / <= Calc\n`
 	const src_hero = `${d}bog_vmap_app_scenes_test_hero ${d}mol_view\n\ttitle \\Hi\n\tsub / <= title\n`
 
@@ -58,7 +51,6 @@ namespace $ {
 				[ 'First', 'Second' ],
 			)
 
-			// The open one is the current row and the only one.
 			$mol_assert_like(
 				view.scene_links().map( link => view.scene_current( link ) ),
 				[ false, true ],
@@ -83,12 +75,9 @@ namespace $ {
 			$mol_assert_equal( store.source(), src_page )
 			$mol_assert_equal( view.title(), 'First' )
 
-			// Empty goes back to the default, the last one made.
 			view.current( '' )
 			$mol_assert_equal( store.source(), src_hero )
 
-			// So does something that is not a link. (`nonsense` would be one: eight
-			// letters is a valid link.)
 			view.current( first.link().str )
 			view.current( 'not a link' )
 			$mol_assert_equal( store.source(), src_hero )

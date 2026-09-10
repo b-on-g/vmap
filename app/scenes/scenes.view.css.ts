@@ -15,16 +15,11 @@ namespace $.$$ {
 			border: { bottom: { width: '1px', style: 'solid', color: $mol_theme.line } },
 		},
 
-		/**
-		 * The list never eats the panel: past a handful of scenes it scrolls
-		 * instead of pushing the shelf below the fold.
-		 */
 		List: {
 			maxHeight: '12rem',
 			overflow: { y: 'auto' },
 		},
 
-		/** A name of a document is prose, not a class name of the palette. */
 		Scene_row: {
 			font: { family: 'inherit', size: '.9rem' },
 			minHeight: '1.75rem',

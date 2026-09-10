@@ -1,16 +1,7 @@
-- Documents of the user, down the left edge of the editor. A list and not a picker,
-- because a scene is a place a person moves between while working and not a setting
-- they change now and then. Owns no data: the store is handed in by the app so that
-- the whole editor holds one, and every value shown here is read from it and
-- written back into it.
 $bog_vmap_app_scenes $mol_view
 	store $bog_vmap_app_store
-	- Link of the open document, empty when there is none yet. Two way: picking
-	- one writes the address, and the address is what the store reads.
 	current? \
 	title? \
-	- Whether there is a document to name at all. The field is off without one,
-	- so that a name typed into an empty editor does not grab a land per keystroke.
 	current_exists false
 	sub /
 		<= Head $mol_view
@@ -26,9 +17,6 @@ $bog_vmap_app_scenes $mol_view
 			title \Новая сцена
 			hint \Завести новый документ. Он станет текущим
 			click? <=> add? null
-	-
-	- One row per document. The row of the palette, because a scene row is the same
-	- thing: a line of text that is either the current one or not.
 	Scene_row* $bog_vmap_app_palette_item
 		title <= scene_title* \
 		hint <= scene_title* \

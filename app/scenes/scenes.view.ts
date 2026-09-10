@@ -1,21 +1,7 @@
 namespace $.$$ {
 
-	/**
-	 * List of documents down the left edge of the editor.
-	 *
-	 * Every accessor that writes into the store is a plain method: the values
-	 * behind them are atoms, and a memoizing decorator in front of an atom freezes
-	 * at the value written through it. The one memoized cell here is read only.
-	 *
-	 * @see ../../ARCHITECTURE.md section 9
-	 */
 	export class $bog_vmap_app_scenes extends $.$bog_vmap_app_scenes {
 
-		/**
-		 * Read only, so memoization is safe and worth having: the list is rebuilt
-		 * from the land on every unrelated change of it, and deep comparison in the
-		 * cell spares the rows a rebuild.
-		 */
 		@ $mol_mem
 		scene_links(): readonly string[] {
 			return this.store().doc_links().map( link => link.str )
@@ -43,10 +29,6 @@ namespace $.$$ {
 			this.current( link )
 		}
 
-		/**
-		 * An empty or malformed value goes back to the default, which is the last
-		 * document made.
-		 */
 		override current( next?: string ) {
 
 			const store = this.store()
@@ -71,13 +53,6 @@ namespace $.$$ {
 			return this.store().title_next()
 		}
 
-		/**
-		 * The store method is handed to a fiber of its own, and the name is taken
-		 * before it: grabbing a land mines proof of work, the fiber retries on every
-		 * `Promise` thrown on the way with its sub-tasks cached, and an argument
-		 * computed inside the retry would be recomputed — the list is longer once
-		 * the document lands — and would start the work over.
-		 */
 		override add( next?: Event | null ) {
 
 			const title = this.add_title()
