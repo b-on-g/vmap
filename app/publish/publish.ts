@@ -270,10 +270,22 @@ namespace $ {
 		 * beginning: a document addresses its nodes by names that prefix one another
 		 * — `[page_calc]` and `[page_calc_note]` are two nodes — and a move by prefix
 		 * would rewrite the second one while carrying the first.
+		 *
+		 * And matched WITHOUT REGARD TO CASE, because the browser matches that way
+		 * too. Mol lowercases the attribute it writes, an attribute selector in HTML
+		 * is case insensitive, so a rule a person wrote with the node name as they
+		 * see it — `[my_site_page_Calc_2]` — works in the document. Compared letter
+		 * for letter against the lowered name it matches nothing, and the rule used
+		 * to leave for the library still addressing the document it came from.
+		 * Measured on the deploy.
 		 */
 		css_moved( css: string, from: string, to: string ) {
+
 			if( !css || !from || from === to ) return css
-			return css.split( '[' + from + ']' ).join( '[' + to + ']' )
+
+			const quoted = from.replace( /[^\w-]/g, char => '\\' + char )
+
+			return css.replace( new RegExp( '\\[' + quoted + '\\]', 'gi' ), ()=> '[' + to + ']' )
 		}
 
 		/**

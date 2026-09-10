@@ -212,6 +212,40 @@ namespace $ {
 		},
 
 		/**
+		 * A rule written with the node name AS THE PERSON SEES IT.
+		 *
+		 * Mol lowercases the attribute it writes on the node, and an attribute
+		 * selector in HTML is matched without regard to case, so `[my_site_page_Card]`
+		 * paints the card in the document exactly as the lowered one does. The move
+		 * compared letter for letter against the lowered name, found nothing, and the
+		 * rule went to the library still addressing the document it came from — the
+		 * same «styles never applied» as before, only for the capital. Measured on
+		 * the deploy.
+		 */
+		'a rule written with a capital in the name is re-addressed too'( $ ) {
+
+			const s = store( $ )
+
+			$mol_assert_equal(
+				s.css_moved( '[my_site_page_Card] {\n\tcolor: red;\n}', 'my_site_page_card', 'bog_vmap_pub_card' ),
+				'[bog_vmap_pub_card] {\n\tcolor: red;\n}',
+			)
+
+			// Through the cut as well: the slicing lowers the attribute to find the
+			// property, and the move has to reach the very text it found.
+			$mol_assert_equal(
+				s.css_out(
+					'[my_site_page_Card] {\n\tcolor: red;\n}\n\n[my_site_page_Hero] {\n\tcolor: blue;\n}',
+					'Card',
+					s.inlined( src_card, doc_card ).source,
+					root_class,
+				),
+				'[bog_vmap_pub_card] {\n\tcolor: red;\n}\n\n[bog_vmap_pub_card_hero] {\n\tcolor: blue;\n}',
+			)
+
+		},
+
+		/**
 		 * A part taken from the pack goes out as an HEIR of the pack class and
 		 * carries no texts of its own — and that is right, not a loss: mol writes an
 		 * attribute for every class of the chain, so the copy is addressed by the
