@@ -549,13 +549,17 @@ namespace $ {
 			$mol_assert_ok( source.includes( 'zoom <= calc_result' ) )
 
 			stage.scene.flush()
-			$mol_assert_like( stage.scene.last( 'values_want' )!.names, [ 'calc_result' ] )
+			$mol_assert_like(
+				stage.scene.last( 'values_want' )!.names,
+				[ 'calc_result', 'Calc.result', 'Calc.op', 'Map.marker' ],
+			)
 
-			stage.scene.values({ calc_result: '42' })
+			stage.scene.values({ calc_result: '42', 'Calc.result': '42', 'Calc.op': 'plus' })
 			$mol_assert_like(
 				stage.pane.wire_lines().map( line => [ line.key, line.label ] ),
 				[ [ 'Map.zoom', '42' ] ],
 			)
+			$mol_assert_like( stage.pane.label_lines( 'Calc' ), [ 'result: 42', 'op: plus' ] )
 
 			stage.tap( stage.part_center( 'Map' ) )
 			stage.press( overlay, stage.port_dot( 'Map', 'zoom', 'in' ) )

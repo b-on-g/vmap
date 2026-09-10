@@ -1048,10 +1048,90 @@ namespace $.$$ {
 			return [ ... names ]
 		}
 
+		@ $mol_mem_key
+		part_outs( name: string ): readonly $bog_vmap_app_wire_port[] {
+			const fed = new Set(
+				this.wires().filter( link => link.to === name ).map( link => link.to_prop )
+			)
+
+			return this.part_ports( name ).filter( port => port.own && !fed.has( port.name ) )
+		}
+
+		part_shown( name: string ) {
+			const box = this.part_box( name )
+			if( !box ) return false
+
+			const rect = this.pane_rect()
+
+			return box.left + box.width >= 0
+				&& box.top + box.height >= 0
+				&& box.left <= rect.width
+				&& box.top <= rect.height
+		}
+
+		@ $mol_mem
+		parts_visible(): readonly string[] {
+			return this.free_names().filter( name => this.part_shown( name ) )
+		}
+
+		@ $mol_mem
+		ports_visible(): readonly string[] {
+			const names = [] as string[]
+
+			for( const name of this.parts_visible() ) {
+				for( const port of this.part_outs( name ) ) names.push( name + '.' + port.name )
+			}
+
+			return names
+		}
+
+		@ $mol_mem_key
+		override label_lines( name: string ): readonly string[] {
+			const values = this.values()
+			const lines = [] as string[]
+
+			for( const port of this.part_outs( name ) ) {
+
+				const text = String( values[ name + '.' + port.name ] ?? '' )
+				if( !text ) continue
+
+				if( !text.includes( '\n' ) ) {
+					lines.push( port.name + ': ' + text )
+					continue
+				}
+
+				lines.push( port.name )
+				for( const line of text.split( '\n' ) ) lines.push( line )
+
+			}
+
+			return lines
+		}
+
+		@ $mol_mem_key
+		override label_style( name: string ): { readonly [ prop: string ]: string } {
+			const box = this.part_box( name )
+			if( !box ) return {}
+
+			return {
+				left: box.left + 'px',
+				top: ( box.top + box.height ) + 'px',
+			}
+		}
+
+		@ $mol_mem
+		override value_labels(): readonly $mol_view[] {
+			if( !this.warmed() ) return []
+
+			return this.parts_visible()
+				.filter( name => this.label_lines( name ).length )
+				.map( name => this.Label( name ) )
+		}
+
 		@ $mol_mem
 		values_push() {
 			const target = this.target()
-			const names = this.wires_visible()
+			const names = [ ... this.wires_visible(), ... this.ports_visible() ]
 			if( !target ) return names
 
 			this.$.$bog_vmap_bridge_send( target, { kind: 'values_want', names } )
@@ -1234,6 +1314,29 @@ namespace $.$$ {
 				this.heartbeat(),
 				this.watchdog(),
 			]
+		}
+
+	}
+
+	export class $bog_vmap_app_pane_label extends $.$bog_vmap_app_pane_label {
+
+		line( index: string ) {
+			return this.lines()[ Number( index ) ] ?? ''
+		}
+
+		@ $mol_mem
+		override rows() {
+			return this.lines().map( ( line, index )=> this.Row( String( index ) ) )
+		}
+
+		@ $mol_mem_key
+		override row_cells( index: string ) {
+			return this.line( index ).split( '\t' ).map( ( cell, at )=> this.Cell( index + '/' + at ) )
+		}
+
+		override cell_text( key: string ) {
+			const [ index, at ] = key.split( '/' )
+			return this.line( index ).split( '\t' )[ Number( at ) ] ?? ''
 		}
 
 	}

@@ -36,6 +36,15 @@ namespace $.$$ {
 			pointerEvents: 'none',
 		},
 
+		Values: {
+			position: 'absolute',
+			top: 0,
+			left: 0,
+			width: '100%',
+			height: '100%',
+			pointerEvents: 'none',
+		},
+
 		Marks: {
 			position: 'absolute',
 			top: 0,
@@ -80,6 +89,32 @@ namespace $.$$ {
 			color: $mol_theme.card,
 			font: { size: '.75rem', weight: 'bolder' },
 			pointerEvents: 'auto',
+		},
+
+	} )
+
+	$mol_style_define( $bog_vmap_app_pane_label, {
+		position: 'absolute',
+		maxWidth: '20rem',
+		margin: { top: '.25rem' },
+		padding: { top: '.125rem', right: '.25rem', bottom: '.125rem', left: '.25rem' },
+		borderRadius: String( $mol_gap.round ),
+		background: { color: $mol_theme.card },
+		color: $mol_theme.text,
+		font: { size: '.6875rem', family: 'monospace' },
+		pointerEvents: 'none',
+		overflow: 'hidden',
+
+		Row: {
+			flex: { direction: 'row' },
+			gap: '.5rem',
+			whiteSpace: 'nowrap',
+		},
+
+		Cell: {
+			overflow: 'hidden',
+			textOverflow: 'ellipsis',
+			color: $mol_theme.shade,
 		},
 
 	} )
