@@ -1,4 +1,4 @@
-- sandbox goes FIRST: $mol_dom_render_attributes writes the object in key order,
+- sandbox goes FIRST: the attribute renderer writes the object in key order,
 - and an iframe that got its src before its sandbox is already loading unsandboxed.
 $bog_vmap_spike_s3_frame $mol_frame
 	attr *

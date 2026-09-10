@@ -56,8 +56,9 @@ namespace $ {
 			$mol_assert_ok( list.length > 50 )
 
 			// And no application shell: a page in vmap is an artboard, an ordinary
-			// node with a `sub` of its own — section 8 — so `$mol_page` would offer
-			// a title bar and a scroll where a rectangle is meant.
+			// node with a `sub` of its own — section 8 — so the page component of
+			// the standard library would offer a title bar and a scroll where a
+			// rectangle is meant.
 			$mol_assert_equal( list.includes( `${d}mol_page` ), false )
 
 		},

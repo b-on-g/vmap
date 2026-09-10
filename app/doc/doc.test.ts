@@ -7,7 +7,7 @@ namespace $ {
 	 * Deliberately absent: `remote_list()`, which resolves links through the static
 	 * `glob.Land`, waits for a master that the tests do not have, and suspends for
 	 * ever; and land grabbing, which costs proof of work. A hanging test is worse
-	 * than a missing one here, because a failed `$mol_assert` and a hung run look
+	 * than a missing one here, because a failed assertion and a hung run look
 	 * exactly alike — silence, no output — and the build hangs with it.
 	 *
 	 * `d` keeps `$` out of the string literals: mam builds its dependency graph by
@@ -131,7 +131,7 @@ namespace $ {
 		 * rest of the session. Read-only cells track fine, so the fault hides until
 		 * two people edit the same document — precisely the case section 9 is about.
 		 *
-		 * The same shape is inherited from `$giper_baza_entity.title()`, which is why
+		 * The same shape is inherited from the entity of the database, which is why
 		 * `doc.title()` is overridden rather than reused.
 		 */
 		async 'a locally edited node still sees a remote edit'( $ ) {
@@ -214,7 +214,7 @@ namespace $ {
 		/**
 		 * The schema stays pure.
 		 *
-		 * `static @$mol_action` on an entity takes the class itself as the fiber
+		 * A static action decorator on an entity takes the class itself as the fiber
 		 * owner, so fibers stop deduplicating consistently and writes go missing
 		 * between devices with no error anywhere. It cost a rewrite once already.
 		 * Checked rather than reviewed, because the damage is silent and the

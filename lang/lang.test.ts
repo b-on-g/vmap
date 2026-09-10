@@ -1,7 +1,7 @@
 namespace $ {
 
 	/**
-	 * Tests of `$bog_vmap_lang`: round trip, property editing and the wire emitter.
+	 * Tests of the language module: round trip, property editing, the wire emitter.
 	 *
 	 * Nothing here touches the network or the DOM. The wire tests run the emitted
 	 * tree through the real `$mol_view_tree2_to_text`, because the five traps of
@@ -10,8 +10,9 @@ namespace $ {
 	 * so much time to find.
 	 *
 	 * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-	 * a regexp over sources, literals included, so a bare `$mol_button` in a
-	 * fixture would drag a whole module into the bundle.
+	 * a regexp over sources, literals included, so a bare class name in a fixture
+	 * would drag a whole module into the bundle. Naming one HERE would do it too,
+	 * which is why this sentence names none.
 	 */
 	const d = '$'
 
@@ -533,7 +534,7 @@ namespace $ {
 		},
 
 		/**
-		 * The whole reason `$bog_vmap_lang_doc` exists. Before it, this edit left
+		 * The whole reason the document model of this module exists. Before it, the edit left
 		 * the source holding one class: the node model writes the class it touched
 		 * as the entire text, so every neighbour was dropped without an error.
 		 */
@@ -1137,7 +1138,7 @@ namespace $ {
 
 		/**
 		 * Layout properties are ordinary keys of the ordinary `style` dictionary, so
-		 * an artboard exports as plain $mol and depends on nothing of ours.
+		 * an artboard exports as a plain document and depends on nothing of ours.
 		 */
 		'a dictionary key is set, replaced where it stands and dropped'( $ ) {
 
@@ -1165,8 +1166,8 @@ namespace $ {
 		/**
 		 * An inherited dictionary starts with `^`, and `^` has to stay at the head:
 		 * a dictionary redeclared without it REPLACES the one of the base instead of
-		 * extending it, so a document over `$mol_button` that grew one `style` key
-		 * would lose the rest in silence.
+		 * extending it, so a document over a base with its own `style` that grew one
+		 * key would lose the rest in silence.
 		 */
 		'a dictionary key never moves the inherited head'( $ ) {
 

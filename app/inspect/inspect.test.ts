@@ -50,9 +50,9 @@ namespace $ {
 
 		/**
 		 * The classes the inspector hands to the library: the one being edited plus
-		 * its siblings, and never a second copy of itself. `$bog_vmap_lib_index`
-		 * keeps the LAST declaration of a name, so a stale twin among the peers
-		 * would quietly shadow the class actually being edited.
+		 * its siblings, and never a second copy of itself. The class index of the
+		 * library keeps the LAST declaration of a name, so a stale twin among the
+		 * peers would quietly shadow the class actually being edited.
 		 */
 		'the inspected class is not duplicated by its own peers'( $ ) {
 
@@ -65,8 +65,8 @@ namespace $ {
 
 		/**
 		 * The layout panel writes into the ordinary `style` dictionary of the node,
-		 * so what an artboard is made of is what a hand written $mol document would
-		 * carry, and an export has nothing to learn about artboards.
+		 * so what an artboard is made of is what a hand written document of the
+		 * framework would carry, and an export has nothing to learn about artboards.
 		 */
 		'layout properties land in the style of the node and read back'( $ ) {
 
@@ -130,7 +130,7 @@ namespace $ {
 		},
 
 		/**
-		 * `$mol_dom_render_styles` appends `px` to a number, so `flexGrow 1` comes
+		 * The style renderer appends `px` to a number, so `flexGrow 1` comes
 		 * out as `flex-grow: 1px` — not a length, not a growth factor, dropped, and
 		 * the node does not stretch. The document has to carry text.
 		 */
