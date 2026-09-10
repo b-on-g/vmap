@@ -12320,193 +12320,6 @@ var $;
 
 ;
 "use strict";
-var $;
-(function ($) {
-    function pass(data) {
-        return data;
-    }
-    function $mol_error_fence(task, fallback, loading = pass) {
-        try {
-            return task();
-        }
-        catch (error) {
-            let normalized;
-            try {
-                normalized = $mol_promise_like(error) ? loading(error) : fallback(error);
-            }
-            catch (sub_error) {
-                normalized = $mol_promise_like(sub_error) ? sub_error : new $mol_error_mix(sub_error.message, { error }, sub_error);
-            }
-            if (normalized instanceof Error || $mol_promise_like(normalized)) {
-                $mol_fail_hidden(normalized);
-            }
-            return normalized;
-        }
-    }
-    $.$mol_error_fence = $mol_error_fence;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_error_enriched(cause, cb) {
-        return $mol_error_fence(cb, e => new $mol_error_mix(e.message, cause, e));
-    }
-    $.$mol_error_enriched = $mol_error_enriched;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    class $mol_fetch_response extends $mol_object {
-        native;
-        request;
-        status() {
-            const types = ['unknown', 'inform', 'success', 'redirect', 'wrong', 'failed'];
-            return types[Math.floor(this.native.status / 100)];
-        }
-        code() {
-            return this.native.status;
-        }
-        ok() {
-            return this.native.ok;
-        }
-        message() {
-            return $mol_rest_code[this.code()] || `HTTP Error ${this.code()}`;
-        }
-        headers() {
-            return this.native.headers;
-        }
-        mime() {
-            return this.headers().get('content-type');
-        }
-        stream() {
-            return this.native.body;
-        }
-        text() {
-            const buffer = this.buffer();
-            const mime = this.mime() || '';
-            const [, charset] = /charset=(.*)/.exec(mime) || [, 'utf-8'];
-            const decoder = new TextDecoder(charset);
-            return decoder.decode(buffer);
-        }
-        json() {
-            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).json());
-        }
-        blob() {
-            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).blob());
-        }
-        buffer() {
-            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).arrayBuffer());
-        }
-        xml() {
-            return $mol_dom_parse(this.text(), 'application/xml');
-        }
-        xhtml() {
-            return $mol_dom_parse(this.text(), 'application/xhtml+xml');
-        }
-        html() {
-            return $mol_dom_parse(this.text(), 'text/html');
-        }
-    }
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "stream", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "text", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "xml", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "xhtml", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "html", null);
-    $.$mol_fetch_response = $mol_fetch_response;
-    class $mol_fetch_request extends $mol_object {
-        native;
-        response_async() {
-            const controller = new AbortController();
-            let done = false;
-            const request = new Request(this.native, { signal: controller.signal });
-            const promise = fetch(request).finally(() => {
-                done = true;
-            });
-            return Object.assign(promise, {
-                destructor: () => {
-                    // Abort of done request breaks response parsing
-                    if (!done && !controller.signal.aborted)
-                        controller.abort();
-                },
-            });
-        }
-        response() {
-            const native = $mol_error_enriched(this, () => $mol_wire_sync(this).response_async());
-            return this.$.$mol_fetch_response.make({
-                native,
-                request: this
-            });
-        }
-        success() {
-            const response = this.response();
-            if (response.status() === 'success')
-                return response;
-            throw new Error(response.message(), { cause: response });
-        }
-    }
-    __decorate([
-        $mol_action
-    ], $mol_fetch_request.prototype, "response", null);
-    $.$mol_fetch_request = $mol_fetch_request;
-    class $mol_fetch extends $mol_object {
-        static request(input, init) {
-            return this.$.$mol_fetch_request.make({
-                native: new Request(input, init)
-            });
-        }
-        static response(input, init) {
-            return this.request(input, init).response();
-        }
-        static success(input, init) {
-            return this.request(input, init).success();
-        }
-        static stream(input, init) {
-            return this.success(input, init).stream();
-        }
-        static text(input, init) {
-            return this.success(input, init).text();
-        }
-        static json(input, init) {
-            return this.success(input, init).json();
-        }
-        static blob(input, init) {
-            return this.success(input, init).blob();
-        }
-        static buffer(input, init) {
-            return this.success(input, init).buffer();
-        }
-        static xml(input, init) {
-            return this.success(input, init).xml();
-        }
-        static xhtml(input, init) {
-            return this.success(input, init).xhtml();
-        }
-        static html(input, init) {
-            return this.success(input, init).html();
-        }
-    }
-    __decorate([
-        $mol_action
-    ], $mol_fetch, "request", null);
-    $.$mol_fetch = $mol_fetch;
-})($ || ($ = {}));
-
-;
-"use strict";
 
 ;
 "use strict";
@@ -12878,6 +12691,193 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    function pass(data) {
+        return data;
+    }
+    function $mol_error_fence(task, fallback, loading = pass) {
+        try {
+            return task();
+        }
+        catch (error) {
+            let normalized;
+            try {
+                normalized = $mol_promise_like(error) ? loading(error) : fallback(error);
+            }
+            catch (sub_error) {
+                normalized = $mol_promise_like(sub_error) ? sub_error : new $mol_error_mix(sub_error.message, { error }, sub_error);
+            }
+            if (normalized instanceof Error || $mol_promise_like(normalized)) {
+                $mol_fail_hidden(normalized);
+            }
+            return normalized;
+        }
+    }
+    $.$mol_error_fence = $mol_error_fence;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_error_enriched(cause, cb) {
+        return $mol_error_fence(cb, e => new $mol_error_mix(e.message, cause, e));
+    }
+    $.$mol_error_enriched = $mol_error_enriched;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    class $mol_fetch_response extends $mol_object {
+        native;
+        request;
+        status() {
+            const types = ['unknown', 'inform', 'success', 'redirect', 'wrong', 'failed'];
+            return types[Math.floor(this.native.status / 100)];
+        }
+        code() {
+            return this.native.status;
+        }
+        ok() {
+            return this.native.ok;
+        }
+        message() {
+            return $mol_rest_code[this.code()] || `HTTP Error ${this.code()}`;
+        }
+        headers() {
+            return this.native.headers;
+        }
+        mime() {
+            return this.headers().get('content-type');
+        }
+        stream() {
+            return this.native.body;
+        }
+        text() {
+            const buffer = this.buffer();
+            const mime = this.mime() || '';
+            const [, charset] = /charset=(.*)/.exec(mime) || [, 'utf-8'];
+            const decoder = new TextDecoder(charset);
+            return decoder.decode(buffer);
+        }
+        json() {
+            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).json());
+        }
+        blob() {
+            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).blob());
+        }
+        buffer() {
+            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).arrayBuffer());
+        }
+        xml() {
+            return $mol_dom_parse(this.text(), 'application/xml');
+        }
+        xhtml() {
+            return $mol_dom_parse(this.text(), 'application/xhtml+xml');
+        }
+        html() {
+            return $mol_dom_parse(this.text(), 'text/html');
+        }
+    }
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "stream", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "text", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "xml", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "xhtml", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "html", null);
+    $.$mol_fetch_response = $mol_fetch_response;
+    class $mol_fetch_request extends $mol_object {
+        native;
+        response_async() {
+            const controller = new AbortController();
+            let done = false;
+            const request = new Request(this.native, { signal: controller.signal });
+            const promise = fetch(request).finally(() => {
+                done = true;
+            });
+            return Object.assign(promise, {
+                destructor: () => {
+                    // Abort of done request breaks response parsing
+                    if (!done && !controller.signal.aborted)
+                        controller.abort();
+                },
+            });
+        }
+        response() {
+            const native = $mol_error_enriched(this, () => $mol_wire_sync(this).response_async());
+            return this.$.$mol_fetch_response.make({
+                native,
+                request: this
+            });
+        }
+        success() {
+            const response = this.response();
+            if (response.status() === 'success')
+                return response;
+            throw new Error(response.message(), { cause: response });
+        }
+    }
+    __decorate([
+        $mol_action
+    ], $mol_fetch_request.prototype, "response", null);
+    $.$mol_fetch_request = $mol_fetch_request;
+    class $mol_fetch extends $mol_object {
+        static request(input, init) {
+            return this.$.$mol_fetch_request.make({
+                native: new Request(input, init)
+            });
+        }
+        static response(input, init) {
+            return this.request(input, init).response();
+        }
+        static success(input, init) {
+            return this.request(input, init).success();
+        }
+        static stream(input, init) {
+            return this.success(input, init).stream();
+        }
+        static text(input, init) {
+            return this.success(input, init).text();
+        }
+        static json(input, init) {
+            return this.success(input, init).json();
+        }
+        static blob(input, init) {
+            return this.success(input, init).blob();
+        }
+        static buffer(input, init) {
+            return this.success(input, init).buffer();
+        }
+        static xml(input, init) {
+            return this.success(input, init).xml();
+        }
+        static xhtml(input, init) {
+            return this.success(input, init).xhtml();
+        }
+        static html(input, init) {
+            return this.success(input, init).html();
+        }
+    }
+    __decorate([
+        $mol_action
+    ], $mol_fetch, "request", null);
+    $.$mol_fetch = $mol_fetch;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     const class_regex = /^[$A-Z][$\w<>\[\]()"'?|,]+$/;
     function $mol_view_tree2_class_match(klass) {
         if (!klass?.type)
@@ -13005,79 +13005,17 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Component library of a vmap document.
-     *
-     * A library is a deployed MAM module: the build drops `web.view.tree` next to
-     * `web.js`, and that file is the whole class tree of the bundle with bases and
-     * properties. Any deployed app of the framework in the world is therefore a
-     * component source, with no cooperation from us.
-     *
-     * Port of `hyoo_studio_library` plus the `library()`, `united()`,
-     * `props_map()`, `props_of()`, `class_list()` and `base_options()` methods of
-     * `hyoo_studio`. Deviations are marked at their place.
-     *
-     * Pure model: knows nothing about DOM and renders nothing.
-     * @see ../ARCHITECTURE.md section 5
-     */
-    /**
-     * Stub declaration of `$mol_view`, prepended to every fetched pack tree.
-     *
-     * Own properties of `$mol_view` (`sub`, `attr`, `style`, `event`, `field`,
-     * `dom_name`, `title`) never reach `web.view.tree`, because `$mol_view` is
-     * written in TS and the build only dumps what came from `.view.tree` sources.
-     * Without the stub every class in the palette silently loses its base ports,
-     * and nothing anywhere reports it.
-     *
-     * Copied verbatim from `hyoo_studio_library.tree()`.
-     */
     $.$bog_vmap_lib_predef = '$mol_view $mol_object\n\tdom_name \\\n\tstyle *\n\tevent *\n\tfield *\n\tattr *\n\tsub /\n\ttitle \\\n';
-    /**
-     * Parses a pack tree into a normalized class tree.
-     *
-     * Deviation from studio: the stub is parsed as its own source instead of being
-     * string-glued in front of the fetched text. Studio hands `predef + str` to the
-     * parser, so every span in a malformed pack points eight rows above its real
-     * place. We show those spans to the user in an error strip, so they have to be
-     * honest. The stub content itself is byte for byte the same.
-     */
     function $bog_vmap_lib_parse(src, uri = 'web.view.tree') {
         const predef = this.$mol_tree2_from_string($.$bog_vmap_lib_predef, '$bog_vmap_lib_predef');
         const tree = this.$mol_tree2_from_string(src, uri);
         return this.$mol_view_tree2_normalize(tree.clone([...predef.kids, ...tree.kids]));
     }
     $.$bog_vmap_lib_parse = $bog_vmap_lib_parse;
-    /**
-     * The address with a trailing slash, whatever it was typed with.
-     *
-     * `new URL( 'web.js', base )` drops the last segment of a base that does not end
-     * with one, so `https://b-on-g.github.io/gram` would resolve to
-     * `https://b-on-g.github.io/web.js`. The default `https://mol.hyoo.ru` survives
-     * that only by accident, being an origin root.
-     *
-     * A function and not a step inside the field, because the field is edited by
-     * hand: appending the slash on every keystroke would fight the typing. Typed is
-     * stored as is, derived is normalized — the rule for every field a person types.
-     * @see ../ARCHITECTURE.md section 5, «Адрес пака нормализовать до слэша»
-     */
     function $bog_vmap_lib_slashed(uri) {
         return uri.replace(/\/?$/, '/');
     }
     $.$bog_vmap_lib_slashed = $bog_vmap_lib_slashed;
-    /**
-     * Why a pack did not load, in words somebody can act on.
-     *
-     * `$mol_fetch` throws the status line of the response and nothing else, so a
-     * mistyped address reaches the screen as a bare «Not Found» — true and
-     * useless: it names neither what was looked for nor where to correct it. Seen
-     * on the deploy in the counter of the class list, 09.09.2026.
-     *
-     * The address is repeated back because the field it came from may be scrolled
-     * away or, in the case of the default, never typed at all. It is the ADDRESS
-     * THAT WAS FETCHED and not the one that was typed, and it is handed in rather
-     * than derived here: the rule that grows `web.view.tree` onto a pack lives in
-     * `tree_link` and must not be written a second time to word a complaint.
-     */
     function $bog_vmap_lib_pack_note(link, error) {
         const reason = String(error?.message || error);
         if (!link)
@@ -13086,40 +13024,11 @@ var $;
             + ' — дерево классов, которое сборка кладёт рядом с бандлом';
     }
     $.$bog_vmap_lib_pack_note = $bog_vmap_lib_pack_note;
-    /**
-     * Base address of a sibling module of the pack, derived from the address of the
-     * page asking. Always ends with a slash, so `new URL` keeps its last segment.
-     *
-     * The two layouts are told apart by a trailing `-`, and they are not two
-     * spellings of one rule but two different places, so the code says so.
-     *
-     * The dev server serves every module of a pack out of `<pack>/<module>/-/`, so
-     * the modules are siblings there in the plain sense: the segment naming ours is
-     * replaced by the one asked for, and the `-` goes back on.
-     *
-     * A deploy has only ONE page in the whole project — the editor, published at
-     * the root of the site — and the other modules are published as folders beneath
-     * it, `web.js` and `web.view.tree` without a page of their own. So there is
-     * nothing to replace: the module asked for is a folder inside the one the
-     * editor is served from.
-     *
-     * A last segment ending in `.html` is the page file — `index.html`, `test.html`
-     * are the only two a module has — and is dropped first. Anything else is a
-     * folder, which is how `https://b-on-g.github.io/vmap` reads the same as the
-     * same address with its slash.
-     *
-     * The test is the extension and not merely a dot in the name, because a folder
-     * may carry one: a deploy versioned as `/vmap/v1.2/` is ordinary, and on a dot
-     * the segment `v1.2` would be taken for a page and eaten.
-     *
-     * @see ../ARCHITECTURE.md sections 5 and 7
-     */
     function $bog_vmap_lib_sibling(page, module) {
         const url = new URL(page);
         const path = url.pathname.split('/').filter(Boolean);
         if (/\.html?$/i.test(path[path.length - 1] ?? ''))
             path.pop();
-        // on the dev server the modules stand side by side, each in its own `-`
         if (path[path.length - 1] === '-') {
             path.pop();
             path.pop();
@@ -13131,33 +13040,12 @@ var $;
         return `${url.origin}/${path.join('/')}/`;
     }
     $.$bog_vmap_lib_sibling = $bog_vmap_lib_sibling;
-    /**
-     * Glues the library tree with the classes of the document into one namespace.
-     *
-     * Both sides end up in the same `$` sandbox at run time, so resolution has to
-     * see them as one list — that is the whole point of `united()` in studio.
-     */
     function $bog_vmap_lib_united(lib, kids) {
         if (!kids.length)
             return lib;
         return lib.clone([...lib.kids, ...kids]);
     }
     $.$bog_vmap_lib_united = $bog_vmap_lib_united;
-    /**
-     * Class name to its super node. The kids of that node are the own properties
-     * of the class, which is how `$mol_view_tree2_normalize` shapes a class.
-     *
-     * Deviation from studio: studio walks the kids linearly on every lookup
-     * (`lib.select( cl, null ).kids[0]`), which is O(classes) per inheritance step
-     * against a tree of ~450 classes. Same answer, built once.
-     *
-     * Second deviation, and the one that matters: a later declaration wins, while
-     * `select` takes the first. Document classes are appended after the library, so
-     * studio's order would let a library class shadow a document class of the same
-     * name. The scene compiles document classes into the sandbox *after* the pack's
-     * `web.js` has filled it, so at run time the document wins. The palette has to
-     * agree with what actually runs.
-     */
     function $bog_vmap_lib_index(united) {
         const index = new Map();
         for (const cl of united.kids) {
@@ -13169,15 +13057,6 @@ var $;
         return index;
     }
     $.$bog_vmap_lib_index = $bog_vmap_lib_index;
-    /**
-     * Inheritance chain of a class, nearest first, ending at the first name that
-     * the namespace does not declare (`$mol_object` for anything from a pack).
-     *
-     * Deviation from studio: a visited set. Studio edits exactly one class, so a
-     * cycle cannot occur there. Here the united namespace carries user authored
-     * classes, and two of them declared as each other's base is one keystroke
-     * away — without the guard it hangs the editor with no error at all.
-     */
     function $bog_vmap_lib_chain(index, base) {
         const chain = [];
         const seen = new Set();
@@ -13190,16 +13069,6 @@ var $;
         return chain;
     }
     $.$bog_vmap_lib_chain = $bog_vmap_lib_chain;
-    /**
-     * All ports of a class, own and inherited, keyed by property name.
-     *
-     * Ancestors are collected first, so a redefined property keeps the position of
-     * its earliest declaration but carries the most derived node. Same order and
-     * same overriding as `props_map()` in studio, which recurses into the super
-     * before adding its own kids.
-     *
-     * This is what stage 3 grows wire ports out of.
-     */
     function $bog_vmap_lib_props_map(index, base) {
         const all = new Map();
         const chain = $bog_vmap_lib_chain(index, base);
@@ -13214,24 +13083,6 @@ var $;
         return all;
     }
     $.$bog_vmap_lib_props_map = $bog_vmap_lib_props_map;
-    /**
-     * Port name to the class that declared the winning version of it.
-     *
-     * Walks the chain exactly as `$bog_vmap_lib_props_map` does, farthest ancestor
-     * first, overwriting on every redeclaration. `Map.set` on a key that is already
-     * there keeps its position and replaces the value, so the last write wins the
-     * value — the nearest declaration, the one whose node `props_map` returned —
-     * while the key order stays identical to `props_map`. The two maps can then be
-     * read side by side by key.
-     *
-     * A port is inherited exactly when its owner is not the class being asked
-     * about. Walking nearest first and keeping the first answer would give the same
-     * owners in a different order, and a consumer that trusted the two orders to
-     * agree would silently mislabel every row.
-     *
-     * Not in studio: it shows one class at a time and has no notion of a port
-     * coming from somewhere else.
-     */
     function $bog_vmap_lib_props_owner(index, base) {
         const owner = new Map();
         const chain = $bog_vmap_lib_chain(index, base);
@@ -13246,38 +13097,10 @@ var $;
         return owner;
     }
     $.$bog_vmap_lib_props_owner = $bog_vmap_lib_props_owner;
-    /**
-     * A component library, whatever its classes came from.
-     *
-     * Everything below `tree()` is source agnostic and always was: `united`,
-     * `index`, `props_map` and the rest only ever see a normalized class tree. The
-     * split just makes that visible, so a second source — a land of sources, with
-     * no deploy behind it — is a subclass overriding one method rather than a
-     * parallel implementation of nine.
-     *
-     * The default is the empty library: the `$mol_view` stub and nothing else. A
-     * throw would have been the other option and it is worse, because an empty
-     * library is a real state — a land with no components published yet — and not
-     * an error.
-     *
-     * @see ../ARCHITECTURE.md section 5
-     */
     class $bog_vmap_lib_any extends $mol_object {
-        /** Class tree of the library. Where it comes from is the subclass's business. */
         tree() {
             return this.$.$bog_vmap_lib_parse('');
         }
-        /**
-         * Classes of the document, to be resolved alongside the library.
-         * Overridden by the owner; empty until a document is open.
-         *
-         * This is also where a land library rides when it is used ON TOP of a pack
-         * rather than instead of one, which section 5 says is the normal case: land
-         * libraries compile into the same sandbox and inherit from the pack's
-         * `$mol_view`. Composition therefore needs no machinery — the classes of a
-         * land go in beside the document's, and `index` already lets a later
-         * declaration win.
-         */
         classes() {
             return [];
         }
@@ -13287,19 +13110,12 @@ var $;
         index() {
             return this.$.$bog_vmap_lib_index(this.united());
         }
-        /** Every class name of the namespace, in declaration order, deduped. */
         class_list() {
             return [...this.index().keys()];
         }
-        /** Same list, most recently declared first, for a base class picker. */
         base_options() {
             return [...this.class_list()].reverse();
         }
-        /**
-         * Palette search by class name. Deliberately not memoized by key: a cell per
-         * typed query would accumulate one dead cell per keystroke, and the filter
-         * over a few hundred names is cheaper than the cell.
-         */
         class_search(query) {
             return this.class_list().filter(this.$.$mol_match_text(query, (name) => [name]));
         }
@@ -13309,11 +13125,9 @@ var $;
         props_map(base) {
             return this.$.$bog_vmap_lib_props_map(this.index(), base);
         }
-        /** Which class each port of `base` came from. */
         props_owner(base) {
             return this.$.$bog_vmap_lib_props_owner(this.index(), base);
         }
-        /** Same ports as a tree node, most derived first, as in studio. */
         props_of(base) {
             return this.united().list([...this.props_map(base).values()].reverse());
         }
@@ -13346,47 +13160,22 @@ var $;
         $mol_mem_key
     ], $bog_vmap_lib_any.prototype, "props_of", null);
     $.$bog_vmap_lib_any = $bog_vmap_lib_any;
-    /**
-     * Library from a deployed MAM module.
-     *
-     * The name and the interface are unchanged from before the split, because the
-     * palette and the inspector both declare it and neither should have to care
-     * that a second kind of library now exists.
-     */
     class $bog_vmap_lib extends $bog_vmap_lib_any {
-        /**
-         * Deployed MAM module the components come from.
-         *
-         * Empty means no pack at all, and that is a state rather than a failure: a
-         * palette fed by lands alone has nothing deployed behind it. Every address
-         * below is then empty too, and `tree()` is the stub on its own.
-         */
         pack(next) {
             return next ?? 'https://mol.hyoo.ru';
         }
-        /** Same address, guaranteed to end with a slash. See `$bog_vmap_lib_slashed`. */
         pack_base() {
             const pack = this.pack();
             return pack ? $bog_vmap_lib_slashed(pack) : '';
         }
-        /** Behaviour of the classes. Loaded by the scene, not by us. */
         script_link() {
             const base = this.pack_base();
             return base ? new URL('web.js', base).toString() : '';
         }
-        /** Declarations of the classes. */
         tree_link() {
             const base = this.pack_base();
             return base ? new URL('web.view.tree', base).toString() : '';
         }
-        /**
-         * Class tree of the pack.
-         *
-         * No try/catch on purpose: `$mol_fetch` throws on any non-2xx and the wire
-         * suspends through exceptions, so catching here would both swallow a dead
-         * pack into an empty palette and break suspension. An unreachable pack has
-         * to reach the view as an error.
-         */
         tree() {
             const uri = this.tree_link();
             if (!uri)
@@ -29214,60 +29003,11 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Component library published as a land of Giper Baza, sources and all.
-     *
-     * The second source of section 5, and the one that needs no deploy: publish a
-     * component, hand out the link, and it is in somebody else's palette. The first
-     * source, a deployed pack, arrives as a built `web.js` plus the `web.view.tree`
-     * beside it; this one arrives as the three texts a component is made of, and is
-     * compiled by the scene into the same sandbox.
-     *
-     * **From the outside it is the same library as a pack** — `class_list`,
-     * `props_map`, `united`, all of it — because it derives from
-     * `$bog_vmap_lib_any` and overrides one method. Nothing downstream of `tree()`
-     * ever knew where the classes came from, and now nothing has to learn.
-     *
-     * A separate module from `lib/` on purpose: this one drags the whole of Giper
-     * Baza into any bundle that touches it, and the palette and the inspector, which
-     * need only the pack library, should not pay for a feature they do not use. The
-     * dependency runs one way, `lib/land` onto `lib/`, which is also what the
-     * namespace path already says.
-     *
-     * @see ../../ARCHITECTURE.md section 5
-     */
-    /**
-     * One component of a library: the three sources a class is built from.
-     *
-     * Same shape as a node of a document, deliberately not shared with it: `app/doc`
-     * belongs to the application and this is a leaf model, so the dependency would
-     * run the wrong way. The duplication is three field declarations; the coupling
-     * would be permanent.
-     *
-     * The class name is NOT a field. It is the first token of `Tree` and storing it
-     * beside would be a second source of truth for a derivable fact — the same
-     * argument section 6 makes about wires, and it bites the same way: rename the
-     * class in the text and the copy is stale.
-     */
     class $bog_vmap_lib_land_part extends $giper_baza_dict.with({
-        /** `view.tree` declaration. The truth of this component. */
         Tree: $giper_baza_atom_text,
-        /** Handwritten class body, applied on top of the generated one. */
         Js: $giper_baza_atom_text,
-        /** Styles, attached apart from the class so a CSS edit rebuilds nothing. */
         Css: $giper_baza_atom_text,
     }) {
-        /**
-         * **Plain methods, never `@ $mol_mem`.** An accessor of this shape that has
-         * been written through once freezes at what was written: the atom takes a
-         * remote edit, reports the new text, and the cell goes on handing out the
-         * old one for the rest of the session. It shows up only on the component you
-         * edited yourself, which in a shared library is the worst possible place.
-         *
-         * Nothing is lost: `val()` is a wire cell inside the pawn already, so a
-         * reader stays reactive and a two way binding writes straight through. There
-         * is a test named for this, and it is the reason it exists.
-         */
         tree(next) {
             return this.Tree(next)?.val(next) ?? '';
         }
@@ -29279,38 +29019,13 @@ var $;
         }
     }
     $.$bog_vmap_lib_land_part = $bog_vmap_lib_land_part;
-    /**
-     * A published library: a name and its components.
-     *
-     * `Parts` live in the SAME land as the shelf, made with `make( null )`. A land
-     * per component would mean proof of work for every class published and per
-     * component access rights nobody asked for; a library is shared by one link, so
-     * one land is also the unit somebody actually grants access to.
-     */
     class $bog_vmap_lib_land_shelf extends $giper_baza_dict.with({
-        /** Human name of the library. */
         Title: $giper_baza_atom_text,
-        /** Components, in the order they should be declared. */
         Parts: $giper_baza_list_link.to(() => $bog_vmap_lib_land_part),
     }) {
-        /** Plain method, for the reason spelled out at `land_part.tree`. */
         title(next) {
             return this.Title(next)?.val(next) ?? '';
         }
-        /**
-         * Components of the library.
-         *
-         * Resolved through the shelf's OWN land and not through `remote_list()`,
-         * which would be the obvious call and is a trap: it resolves every link
-         * through the static `$giper_baza_glob.Land`, a different land instance that
-         * waits for a master to sync with. Under a test, where there is no master,
-         * that wait never ends and the run dies in silence — no error, no output, and
-         * every build that runs the tests hangs with it.
-         *
-         * Going through `land.Pawn( … ).Head( link.head() )` is correct here and not
-         * merely convenient, because `make( null )` puts the parts in this very land.
-         * The storage decision that suits the domain is the one that is testable.
-         */
         parts() {
             const links = this.Parts()?.items()?.filter($mol_guard_defined) ?? [];
             const land = this.land();
@@ -29318,67 +29033,22 @@ var $;
         }
     }
     $.$bog_vmap_lib_land_shelf = $bog_vmap_lib_land_shelf;
-    /**
-     * Library backed by a land of sources.
-     *
-     * Only `tree()` differs from a pack, and it differs by where the text comes
-     * from — not by what is done with it: the same parse, the same base class stub,
-     * the same normalization. A tree built here and a tree fetched
-     * from `web.view.tree` are indistinguishable downstream, which is the whole
-     * requirement.
-     */
     class $bog_vmap_lib_land extends $bog_vmap_lib_any {
-        /**
-         * The published library. Supplied by the owner, absent until one is opened.
-         *
-         * Absent is a state and not a failure — the palette of a document with no
-         * library attached is empty, not broken — so this answers null rather than
-         * throwing, and `tree()` above degrades into the empty library.
-         */
         shelf() {
             return null;
         }
-        /**
-         * Components of the shelf. Nothing asks the land to sync here: every read
-         * of a pawn goes through `$giper_baza_land.sand_ordered()`, which syncs
-         * first, so a library published by somebody else arrives by being read.
-         */
         parts() {
             return this.shelf()?.parts() ?? [];
         }
-        /**
-         * Declarations of every component, in one text.
-         *
-         * Glued rather than parsed one by one because a library is one namespace:
-         * a component inheriting another component of the same library has to
-         * resolve, and it only can if both are in the same tree.
-         */
         source() {
             return this.parts().map(part => part.tree().replace(/\n?$/, '\n')).join('');
         }
         tree() {
             return this.$.$bog_vmap_lib_parse(this.source(), 'land');
         }
-        /**
-         * Classes of the library WITHOUT the base class stub, for composing this
-         * library into another one through its `classes()`.
-         *
-         * The stub has to go: it is a stand-in for a class the pack really carries,
-         * and the class index keeps the last declaration of a name, so handing it
-         * over would let the stand-in shadow the real thing. `tree()` keeps it,
-         * because standing alone this library has no other base class at all.
-         */
         class_trees() {
             return this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(this.source(), 'land')).kids;
         }
-        /**
-         * Handwritten bodies by class name, the second of the three sources.
-         *
-         * Built here and handed to the scene by somebody else: compiling a library
-         * inside the sandbox is a task of its own, and this is the shape it will
-         * want — the same `{ [ klass ]: js }` the bridge already carries for a
-         * document.
-         */
         js() {
             const res = {};
             for (const part of this.parts()) {
@@ -29391,7 +29061,6 @@ var $;
             }
             return res;
         }
-        /** Styles of every component, in one text, as the scene attaches them. */
         css() {
             return this.parts().map(part => part.css()).filter(Boolean).join('\n');
         }
@@ -29415,39 +29084,10 @@ var $;
         $mol_mem
     ], $bog_vmap_lib_land.prototype, "css", null);
     $.$bog_vmap_lib_land = $bog_vmap_lib_land;
-    /**
-     * A pack with lands stacked on top of it: the library of the palette field.
-     *
-     * The pack is the base class, so from the outside this is a `$bog_vmap_lib` and
-     * nothing downstream has to learn a new name. The lands ride in through
-     * `classes()`, the hook `$bog_vmap_lib_any` left for exactly this, and the index
-     * lets the last declaration win, so a land class shadows a pack class of the
-     * same name the way it will at run time, where it is compiled into the sandbox
-     * after the pack has filled it.
-     *
-     * Composition is by the LINK, not by the object: the palette field holds links,
-     * a link is what the user pastes, and the land behind it is looked up here and
-     * nowhere else. The host asks this object for two things — the class trees for
-     * the palette and the inspector, and the source texts for the scene — and both
-     * come from the same `land()` cells, so the two views cannot disagree about
-     * which lands are attached.
-     *
-     * @see ../../ARCHITECTURE.md section 5
-     */
     class $bog_vmap_lib_land_stack extends $bog_vmap_lib {
-        /** Land links as the user typed them, in order. Supplied by the owner. */
         lands() {
             return [];
         }
-        /**
-         * Library of one land, by its link.
-         *
-         * `.land()` on the link, because a link to a pawn INSIDE the land is a
-         * legitimate thing to paste — a shared component, say — and the shelf lives
-         * at the root of that land whichever pawn was pointed at. A malformed link
-         * fails here with the database's own message; the field parser is meant to
-         * have refused it before it ever reaches this method.
-         */
         land(link) {
             return $bog_vmap_lib_land.make({
                 $: this.$,
@@ -29459,24 +29099,12 @@ var $;
         libs() {
             return this.lands().map(link => this.land(link));
         }
-        /**
-         * Classes of every land, without the stub, in the order of the lands.
-         *
-         * This is what the palette and the inspector are handed: the trees alone,
-         * because neither of them may depend on the database and neither has to —
-         * resolving a class against the pack is a walk over a tree, whoever made it.
-         */
         land_trees() {
             return this.libs().flatMap(lib => lib.class_trees());
         }
         classes() {
             return this.land_trees();
         }
-        /**
-         * Sources of every component of every land, in declaration order, for the
-         * scene to compile. Read through the pawns of each shelf's own land and
-         * never through `remote_list()`, see `$bog_vmap_lib_land_shelf.parts`.
-         */
         parts() {
             return this.libs().flatMap(lib => lib.parts().map(part => ({
                 tree: part.tree(),
@@ -29498,14 +29126,6 @@ var $;
         $mol_mem
     ], $bog_vmap_lib_land_stack.prototype, "parts", null);
     $.$bog_vmap_lib_land_stack = $bog_vmap_lib_land_stack;
-    /**
-     * Name of the class a `view.tree` source declares, or empty when it declares
-     * none.
-     *
-     * The first token of the first line, and asked of the text every time rather
-     * than stored beside it — see the note on `land_part`. Blank instead of a throw
-     * because a half typed component is an ordinary state of an editor.
-     */
     function $bog_vmap_lib_land_name(source) {
         return /^([^\s]+)/.exec(source.trimStart())?.[1] ?? '';
     }
@@ -33947,44 +33567,13 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /** A deployed pack is addressed by http(s) and by nothing else. */
     const $bog_vmap_lib_links_pack = /^https?:\/\//i;
-    /**
-     * Grammar of a Giper Baza link: up to four groups of eight, joined by `_`.
-     *
-     * COPIED from the constructor of the link class of Giper Baza, and a copy is the
-     * lesser evil here. Naming that class — even in this comment, mam reads doc
-     * comments for dependencies, measured: 21 mentions of the database in this
-     * bundle from one name here — would pull the database into `lib/`, whose bundle
-     * has zero mentions of it by measurement, and the palette pays for that bundle.
-     * The copy is guarded by a test in `lib/land`, which lives on the database side
-     * and checks a sample of tokens against the original.
-     *
-     * The original also accepts the empty string and bare underscores; a token has
-     * to carry at least one group to be a link to anything, hence the second test.
-     */
     const $bog_vmap_lib_links_land = /^(([a-zæA-ZÆ0-9]{8})?_){0,3}([a-zæA-ZÆ0-9]{8})?$/;
     const $bog_vmap_lib_links_group = /[a-zæA-ZÆ0-9]{8}/;
-    /** Wording of the refusals, kept in one place so the tests and the field agree. */
     $.$bog_vmap_lib_links_reason = {
-        /** @see ../../ARCHITECTURE.md section 5, «Донорский пак ровно один на кадр» */
         pack_second: 'второй пак на кадр невозможен, подключайте компоненты ссылкой на ленд',
         unknown: 'не адрес пака (http…) и не ссылка на ленд Гипер Базы',
     };
-    /**
-     * Splits the field into the pack, the lands and the refused.
-     *
-     * Commas separate; whitespace, including line breaks, separates as well, so a
-     * list pasted one link per line reads the same as one typed with commas. Empty
-     * tokens, and with them trailing commas and doubled separators, are nothing and
-     * are not even reported.
-     *
-     * The FIRST http(s) link is the pack, wherever it stands in the list. The second
-     * one is refused, and refused with the reason a user can act on, rather than
-     * silently dropped: the second pack over the first poisons the palette without a
-     * signal, which is exactly why it must not reach the frame — and exactly why the
-     * person typing it has to be told.
-     */
     function $bog_vmap_lib_links_parse(text) {
         let pack = null;
         const lands = [];
@@ -34009,19 +33598,10 @@ var $;
         return { pack, lands, rejected };
     }
     $.$bog_vmap_lib_links_parse = $bog_vmap_lib_links_parse;
-    /**
-     * Is this token a land link by the grammar above. Exposed for the guard test on
-     * the database side; the palette needs only `parse`.
-     */
     function $bog_vmap_lib_links_is_land(token) {
         return $bog_vmap_lib_links_land.test(token) && $bog_vmap_lib_links_group.test(token);
     }
     $.$bog_vmap_lib_links_is_land = $bog_vmap_lib_links_is_land;
-    /**
-     * The refusals as one text for a status line, one refusal per line, or an empty
-     * string when there is nothing to say. An empty string and not a placeholder,
-     * so that a view can hide the line by testing the text.
-     */
     function $bog_vmap_lib_links_note(links) {
         return links.rejected.map(item => `${item.link}: ${item.reason}`).join('\n');
     }
@@ -37311,22 +36891,13 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /** Height of one port row, in screen pixels whatever the zoom. */
     $.$bog_vmap_app_wire_row = 14;
-    /**
-     * Distance from the edge of the box to the centre of a dot, in screen pixels.
-     * Strictly outside the box: under the picked part the overlay is cut open along
-     * the box, and a dot inside it would take no press. The radius stays under this.
-     */
     $.$bog_vmap_app_wire_gap = 12;
     $.$bog_vmap_app_wire_radius = 5;
-    /** Radius within which a point counts as over a dot. Wider than the dot. */
     $.$bog_vmap_app_wire_hit = 8;
-    /** Shapes a port carries as a wire: values and references, never sub views or dictionaries. */
     const wirable = new Set([
         'string', 'number', 'bool', 'null', 'locale', 'list', 'get', 'bind',
     ]);
-    /** Ports of a class fit for wiring, from its `props_map`, in its order: bases first. */
     function $bog_vmap_app_wire_ports(props) {
         const ports = [];
         for (const [name, prop] of props) {
@@ -37341,11 +36912,6 @@ var $;
         return ports;
     }
     $.$bog_vmap_app_wire_ports = $bog_vmap_app_wire_ports;
-    /**
-     * Whether a value of one shape may feed a port of another: equal shapes fit,
-     * `null` and a reference say nothing about the shape and fit anything, a
-     * localized string is a string.
-     */
     function $bog_vmap_app_wire_fits(out, into) {
         const loose = new Set(['null', 'get', 'bind']);
         if (loose.has(out) || loose.has(into))
@@ -37354,7 +36920,6 @@ var $;
         return norm(out) === norm(into);
     }
     $.$bog_vmap_app_wire_fits = $bog_vmap_app_wire_fits;
-    /** Centre of the dot of the `index`th port on a side of a box. Rows run down from the top. */
     function $bog_vmap_app_wire_port_point(box, side, index) {
         const x = side === 'in'
             ? box.left - $.$bog_vmap_app_wire_gap
@@ -37363,27 +36928,9 @@ var $;
         return [x, y];
     }
     $.$bog_vmap_app_wire_port_point = $bog_vmap_app_wire_port_point;
-    /** Reach of the tangents, so short wires still bend. */
     function wire_reach(span) {
         return Math.max(40, Math.abs(span) / 2);
     }
-    /**
-     * The two control points of the wire, chosen by which way it actually goes.
-     *
-     * Outputs sit on the right edge of a part and inputs on the left, so a wire
-     * that runs forwards has its ends already pointing at each other and horizontal
-     * tangents draw the plain S everybody expects.
-     *
-     * BACKWARDS IS THE COMMON CASE INSIDE A CONTAINER, not an exotic one: two
-     * children stacked in one box sit at the same left edge, so the output of the
-     * upper one is a dozen pixels to the RIGHT of the input of the lower one.
-     * Horizontal tangents there send the curve out past the right edge of the box
-     * and bring it back in from the left — a loop around the whole part, which
-     * reads as a broken wire rather than a short one. Turning the tangents vertical
-     * keeps every control point between the two ends, so the curve stays in the
-     * band between them and reads as what it is: a step down from one child to the
-     * next.
-     */
     function wire_control(from, to) {
         if (to[0] >= from[0]) {
             const reach = wire_reach(to[0] - from[0]);
@@ -37393,13 +36940,11 @@ var $;
         const down = to[1] >= from[1] ? 1 : -1;
         return [[from[0], from[1] + reach * down], [to[0], to[1] - reach * down]];
     }
-    /** A cubic Bezier from an output to an input, as an SVG path. */
     function $bog_vmap_app_wire_curve(from, to) {
         const [one, two] = wire_control(from, to);
         return `M ${from[0]} ${from[1]} C ${one[0]} ${one[1]}, ${two[0]} ${two[1]}, ${to[0]} ${to[1]}`;
     }
     $.$bog_vmap_app_wire_curve = $bog_vmap_app_wire_curve;
-    /** The point of the curve at t = 1/2, where the label goes. */
     function $bog_vmap_app_wire_curve_mid(from, to) {
         const [one, two] = wire_control(from, to);
         return [
@@ -37408,7 +36953,6 @@ var $;
         ];
     }
     $.$bog_vmap_app_wire_curve_mid = $bog_vmap_app_wire_curve_mid;
-    /** The dot under a point, or `null`. The last one wins: what is drawn later is on top. */
     function $bog_vmap_app_wire_dot_at(dots, point) {
         let found = null;
         for (const dot of dots) {
@@ -37431,11 +36975,6 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * Draws what the pane computed: a path and a label per wire, a dot and a name
-         * per port, one path for the wire in hand. Sub views are keyed by the stable
-         * key of each thing, so a wire keeps its element while the camera moves.
-         */
         class $bog_vmap_app_wire extends $.$bog_vmap_app_wire {
             shapes() {
                 const shapes = [];
@@ -37490,7 +37029,6 @@ var $;
             dot_linked(key) {
                 return this.dot_of(key)?.linked ?? false;
             }
-            /** The name stands off the dot, away from the box: left of an input, right of an output. */
             name_pos(key) {
                 const dot = this.dot_of(key);
                 if (!dot)
@@ -37525,7 +37063,6 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        // Outside the literal the strings widen to `string`, which the guard rejects for lengths.
         const label = {
             fill: String($mol_theme.text),
             font: { family: 'monospace', size: '10px' },
@@ -37541,7 +37078,6 @@ var $;
             width: '100%',
             height: '100%',
             overflow: 'visible',
-            /** A picture, never a target: the press a dot marks goes to the overlay and is resolved by geometry. */
             pointerEvents: 'none',
             Line: {
                 fill: 'none',
@@ -37930,13 +37466,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * A measured box in screen pixels of the pane.
-     *
-     * World to screen is `world * zoom + shift`, the same transform the scene puts
-     * on its stage; this is that transform done on the host, once, so that the
-     * selection ring and the hole in the overlay are cut from the same numbers.
-     */
     function $bog_vmap_app_pane_screen(box, zoom, shift) {
         return {
             left: box.x * zoom + shift[0],
@@ -37952,26 +37481,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Which way the children of a container are stacked: what the node DECLARES,
-     * else what its children came out as, else a column.
-     *
-     * The declaration comes first because it is not a guess about CSS — it is a
-     * line of the document, which the host owns and reads directly. Geometry is the
-     * fallback and not the source: it degenerates on nought or one child, where
-     * there is nothing to read a direction off at all.
-     *
-     * A direction the document states in some other way — `row-reverse` and its
-     * kind — falls through to the geometry rather than being taken at its word: the
-     * children of a reversed box come out in the opposite order from the one `sub`
-     * lists them in, and a position counted along the boxes would be the mirror of
-     * the position written into the tree. Guessing from where things are is then
-     * strictly better than trusting a word we do not act on.
-     *
-     * The last resort is a column, the way a page stacks and what the artboard
-     * preset sets. It has to be set: `[mol_view]` is `display: flex` with no
-     * direction at all, which is a ROW.
-     */
     function $bog_vmap_app_pane_slot_axis(boxes, declared = '') {
         if (declared === 'row')
             return 'row';
@@ -37985,20 +37494,6 @@ var $;
         return spread(mid_x) > spread(mid_y) ? 'row' : 'column';
     }
     $.$bog_vmap_app_pane_slot_axis = $bog_vmap_app_pane_slot_axis;
-    /**
-     * Position a point aims at among the children of a container, and the line to
-     * draw for it.
-     *
-     * The position is decided by the MIDDLE of each child, not by the gaps between
-     * them: children of a flex box usually touch, so a rule that only fired between
-     * boxes would have nowhere to fire, and pointing at the upper half of a child
-     * plainly means «above this one».
-     *
-     * The line is drawn on the boundary rather than on the child: at the middle of
-     * the gap when there is one, on the outer edge at either end. In world units,
-     * because the host draws it with the same transform it draws the selection ring
-     * with, and turning world into screen is done once, for both.
-     */
     function $bog_vmap_app_pane_slot(owner, box, kids, point, declared = '') {
         const row = $bog_vmap_app_pane_slot_axis(kids, declared) === 'row';
         const start = (kid) => row ? kid.x : kid.y;
@@ -38023,26 +37518,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * The overlay with a rectangle cut out of it, as a `clip-path` value.
-     *
-     * The editor takes every pointer event on its overlay, so a live component
-     * under it never gets a real one. For the picked part that is undone here: the
-     * overlay is clipped to everything BUT the part's box, and inside the box the
-     * frame is the topmost thing on the page, so hover, scroll, text selection and
-     * dragging inside the component all work for real. Outside the box the overlay
-     * is whole and keeps its gestures; the ring and its handles are drawn around
-     * the hole, not in it, which is what makes them grabbable.
-     *
-     * `evenodd` is what turns the inner rectangle into a hole rather than a second
-     * fill. The outer ring is stated in percentages so that the value does not
-     * have to know how big the pane is and does not go stale when it resizes.
-     *
-     * `none` and not an absent key when nothing is picked: inline styles are
-     * written by the style renderer of the framework, which sets the keys it is given and
-     * removes nothing, so a key that disappears from the dictionary leaves its last
-     * value on the element.
-     */
     function $bog_vmap_app_pane_hole(rect) {
         if (!rect)
             return 'none';
@@ -39071,28 +38546,17 @@ var $;
                 width: '100%',
                 height: '100%',
             },
-            /**
-             * The insertion line. Placed by the inline style in screen pixels, painted
-             * here, and never in the way: it is drawn over the frame and takes no pointer,
-             * because the gesture it belongs to is the overlay's.
-             */
             Insert: {
                 position: 'absolute',
                 background: { color: $mol_theme.focus },
                 pointerEvents: 'none',
             },
-            /**
-             * The band swept over the canvas. Placed by the inline style in screen
-             * pixels, painted here, and takes no pointer: the gesture drawing it is the
-             * overlay's, and a target here would swallow the release that ends it.
-             */
             Band: {
                 position: 'absolute',
                 outline: '1px solid ' + String($mol_theme.focus),
                 background: { color: $mol_theme.hover },
                 pointerEvents: 'none',
             },
-            /** The layer of the marks: a frame of reference, not a box of its own. */
             Marks: {
                 position: 'absolute',
                 top: 0,
@@ -39101,10 +38565,6 @@ var $;
                 height: '100%',
                 pointerEvents: 'none',
             },
-            /**
-             * A badge at the corner of a node the scene complained about. Takes the
-             * pointer, alone on this layer, so that the tooltip can be read at all.
-             */
             Mark: {
                 position: 'absolute',
                 transform: 'translate(-50%, -50%)',
@@ -39121,51 +38581,15 @@ var $;
             },
         });
         $mol_style_define($bog_vmap_app_pane_overlay, {
-            /**
-             * The overlay eats every pointer event; nothing reaches the scene by itself.
-             *
-             * Said explicitly although it is the default, because it used to be switched
-             * by an editor mode and is now a fixed fact of the layer: a click gets to the
-             * document by being relayed over the bridge, and the picked part alone gets
-             * real events through a hole cut by `clip-path` in the inline style.
-             */
             pointerEvents: 'auto',
             Frame: {
                 position: 'absolute',
-                /**
-                 * `outline` and not `border`: a border would take part in the box the
-                 * `width` and `height` above are setting, so the ring would sit a pixel
-                 * inside the node on every side. An outline is drawn outside the box and
-                 * changes nothing about it.
-                 *
-                 * Written as one string because a camelCase shorthand takes nothing else,
-                 * and `String()` around the token because the focus colour of the theme is
-                 * a style function object, not text. Both are TS2322 otherwise — and the WEB
-                 * audit passes either way, only the node one catches it.
-                 */
                 outline: '1px solid ' + String($mol_theme.focus),
                 outlineOffset: '1px',
-                /**
-                 * The ring is a picture, never a target. Left hittable it would take the
-                 * press meant for the node it is drawn around, and a node once picked
-                 * could not be picked again — or dragged.
-                 */
                 pointerEvents: 'none',
-                /**
-                 * `[mol_view]` animates `transform` for .2s, and the ring is positioned,
-                 * not transformed, so it would not lag by itself. Said out loud because
-                 * the camera above IS on a transform: whatever is added here later must
-                 * not start animating, or the ring will trail the node it belongs to.
-                 */
                 transition: 'none',
             },
         });
-        /**
-         * Corner grips of the ring. Fully outside the box, because inside it the overlay
-         * is cut away and a grip drawn there would be clipped to nothing; outside, on
-         * the strip the hit test still counts as the part, they mark where it can be
-         * taken hold of. Sized to that strip.
-         */
         $mol_style_define($bog_vmap_app_pane_handle, {
             position: 'absolute',
             width: '8px',
@@ -40835,14 +40259,6 @@ var $;
         $mol_style_define($bog_vmap_app, {
             flex: { direction: 'column' },
             height: '100vh',
-            /**
-             * The PAGE never scrolls; the panels scroll inside themselves.
-             *
-             * Without this a panel taller than the window pushed the document past
-             * `100vh`, the wheel over it moved the whole page, and the head bar — every
-             * button of the editor — went off the top of the screen. Seen on the deploy
-             * 09.09.2026 with the shelf open on a short window.
-             */
             overflow: 'hidden',
             background: { color: $mol_theme.back },
             color: $mol_theme.text,
@@ -40863,11 +40279,6 @@ var $;
                 justify: { content: 'center' },
                 color: $mol_theme.shade,
             },
-            /**
-             * A class name is long and is read as a whole: cut in the middle it says
-             * nothing about the folder it chooses. Wide enough for a name of three
-             * segments, and no growing — the toolbar wraps instead.
-             */
             Root_name: {
                 minWidth: '14rem',
                 flex: { grow: 0, shrink: 1 },
@@ -40881,37 +40292,10 @@ var $;
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
             },
-            /**
-             * Everything under the toolbar, and the only row allowed to grow.
-             *
-             * Both properties are load bearing. `[mol_view]` is `display: flex` with
-             * `flex-shrink: 0`, so an unstyled row sizes itself by its tallest child and
-             * refuses to give the height back: with the palette inside, the page measured
-             * 11110 px tall behind a viewport that looked perfectly correct, and the only
-             * visible symptom was a scrollbar nobody expected.
-             */
             Body: {
                 flex: { grow: 1, shrink: 1 },
                 minHeight: 0,
             },
-            /**
-             * THE CANVAS COMES FIRST WHEN THE ROOM RUNS OUT, and the three panels give
-             * way to it. Fixed widths did the opposite: 20, 22 and 28 rem never yielded,
-             * so with all three open on a 1440 px screen the canvas — the thing the
-             * editor is for — was left about 160 px. Measured on the deploy 09.09.2026.
-             *
-             * What gives the canvas its width is a floor on the canvas plus shrink on
-             * the panels. The floor makes the row ASK for more than the window has, and
-             * the overflow is then taken from whoever may shrink; each panel keeps a
-             * minimum of its own, so «yields» never becomes «vanishes».
-             *
-             * Below about 1200 px with all three panels open the floors no longer fit
-             * and the last panel is clipped: 12 plus 13 plus 22 rem of panels and 28 of
-             * canvas. That is the honest end of the trade, and the head bar folds any of
-             * the three away in one click. It was ~1090 until the code panel got a floor
-             * of 22 rem instead of 15 — code that does not wrap has to be readable
-             * without scrolling on a short line.
-             */
             Side: {
                 flex: { direction: 'column', grow: 0, shrink: 1, basis: '20rem' },
                 minWidth: '12rem',
@@ -40919,7 +40303,6 @@ var $;
                 minHeight: 0,
                 border: { right: { width: '1px', style: 'solid', color: $mol_theme.line } },
             },
-            /** Panel of the inspector. Mirror of `Side`, on the far edge. */
             Aside: {
                 flex: { direction: 'column', grow: 0, shrink: 1, basis: '22rem' },
                 minWidth: '13rem',
@@ -40927,12 +40310,6 @@ var $;
                 minHeight: 0,
                 border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
             },
-            /**
-             * Wider than the inspector, and with a floor of its own: this one holds
-             * code, and code does not wrap — it scrolls sideways. A panel narrow enough
-             * to need scrolling on an ordinary declaration is a panel nobody reads in,
-             * so 22 rem, which holds the short ones whole.
-             */
             Code: {
                 flex: { direction: 'column', grow: 0, shrink: 1, basis: '28rem' },
                 minWidth: '22rem',
@@ -40940,12 +40317,6 @@ var $;
                 minHeight: 0,
                 border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
             },
-            /**
-             * The canvas: takes everything left, and asks for a floor of its own so that
-             * there is something to take. Without the floor the row fits exactly, no
-             * panel is asked to shrink, and the canvas gets the remainder — which is how
-             * it came to 160 px.
-             */
             Pane: {
                 flex: { grow: 1, shrink: 1 },
                 minWidth: '28rem',
@@ -40956,16 +40327,6 @@ var $;
                 font: { size: '.8rem' },
                 whiteSpace: 'normal',
             },
-            /**
-             * The class the pointer is carrying, drawn at the pointer.
-             *
-             * `fixed`, because the coordinates it is given are the raw `clientX`/`clientY`
-             * of the event. `pointer-events: none`, because it sits exactly under the
-             * pointer and would otherwise become the target of the moves that drive it —
-             * and, worse, of the `pointerup` that ends the drag. Offset down and right by
-             * a constant `transform` rather than by an offset in the coordinates: the
-             * world point of the drop must stay the point the person aimed at.
-             */
             Ghost: {
                 position: 'fixed',
                 zIndex: 100,
@@ -40979,11 +40340,6 @@ var $;
                 whiteSpace: 'nowrap',
                 box: { shadow: [[0, '.25rem', '.75rem', 0, $mol_style_func.hsla(0, 0, 0, .5)]] },
             },
-            /**
-             * The attention colour of the theme, filled, with the page colour for text.
-             * A red of our own stayed the same red in a light theme and in a dark one,
-             * and said nothing to a reader who had moved the hue.
-             */
             Alarm: {
                 flex: { shrink: 0 },
                 padding: $mol_gap.text,
@@ -40992,13 +40348,6 @@ var $;
                 font: { family: 'monospace', size: '.8rem' },
                 whiteSpace: 'pre-wrap',
             },
-            /**
-             * The OTHER accent of the theme, not the one the error strip uses, because
-             * this is not the same kind of news: the error says the document is wrong,
-             * this says the preview stopped and offers the one thing that helps. Two
-             * accents the theme already carries keep them apart without inventing a
-             * colour that ignores it.
-             */
             Stall: {
                 flex: { direction: 'row', shrink: 0, wrap: 'wrap' },
                 align: { items: 'center' },
@@ -41013,11 +40362,6 @@ var $;
                 font: { size: '.8rem' },
                 whiteSpace: 'normal',
             },
-            /**
-             * The accent of the stall and not of the error, because it is the same kind
-             * of news: the document works, and one thing about it does not. Wraps,
-             * unlike the error strip: these are sentences, not a stack.
-             */
             Export_note: {
                 flex: { direction: 'column', shrink: 0 },
                 gap: '.25rem',
@@ -41027,11 +40371,6 @@ var $;
                 font: { size: '.8rem' },
                 whiteSpace: 'normal',
             },
-            /**
-             * Only the text colour, so the button reads on the filled strip it stands on.
-             * Its own surface is left to the theme: a button already lights up on hover
-             * by itself, and a wash of our own painted over that.
-             */
             Stall_reload: {
                 flex: { shrink: 0 },
                 color: $mol_theme.back,

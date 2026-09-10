@@ -13310,193 +13310,6 @@ var $;
 
 ;
 "use strict";
-var $;
-(function ($) {
-    function pass(data) {
-        return data;
-    }
-    function $mol_error_fence(task, fallback, loading = pass) {
-        try {
-            return task();
-        }
-        catch (error) {
-            let normalized;
-            try {
-                normalized = $mol_promise_like(error) ? loading(error) : fallback(error);
-            }
-            catch (sub_error) {
-                normalized = $mol_promise_like(sub_error) ? sub_error : new $mol_error_mix(sub_error.message, { error }, sub_error);
-            }
-            if (normalized instanceof Error || $mol_promise_like(normalized)) {
-                $mol_fail_hidden(normalized);
-            }
-            return normalized;
-        }
-    }
-    $.$mol_error_fence = $mol_error_fence;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_error_enriched(cause, cb) {
-        return $mol_error_fence(cb, e => new $mol_error_mix(e.message, cause, e));
-    }
-    $.$mol_error_enriched = $mol_error_enriched;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    class $mol_fetch_response extends $mol_object {
-        native;
-        request;
-        status() {
-            const types = ['unknown', 'inform', 'success', 'redirect', 'wrong', 'failed'];
-            return types[Math.floor(this.native.status / 100)];
-        }
-        code() {
-            return this.native.status;
-        }
-        ok() {
-            return this.native.ok;
-        }
-        message() {
-            return $mol_rest_code[this.code()] || `HTTP Error ${this.code()}`;
-        }
-        headers() {
-            return this.native.headers;
-        }
-        mime() {
-            return this.headers().get('content-type');
-        }
-        stream() {
-            return this.native.body;
-        }
-        text() {
-            const buffer = this.buffer();
-            const mime = this.mime() || '';
-            const [, charset] = /charset=(.*)/.exec(mime) || [, 'utf-8'];
-            const decoder = new TextDecoder(charset);
-            return decoder.decode(buffer);
-        }
-        json() {
-            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).json());
-        }
-        blob() {
-            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).blob());
-        }
-        buffer() {
-            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).arrayBuffer());
-        }
-        xml() {
-            return $mol_dom_parse(this.text(), 'application/xml');
-        }
-        xhtml() {
-            return $mol_dom_parse(this.text(), 'application/xhtml+xml');
-        }
-        html() {
-            return $mol_dom_parse(this.text(), 'text/html');
-        }
-    }
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "stream", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "text", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "xml", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "xhtml", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "html", null);
-    $.$mol_fetch_response = $mol_fetch_response;
-    class $mol_fetch_request extends $mol_object {
-        native;
-        response_async() {
-            const controller = new AbortController();
-            let done = false;
-            const request = new Request(this.native, { signal: controller.signal });
-            const promise = fetch(request).finally(() => {
-                done = true;
-            });
-            return Object.assign(promise, {
-                destructor: () => {
-                    // Abort of done request breaks response parsing
-                    if (!done && !controller.signal.aborted)
-                        controller.abort();
-                },
-            });
-        }
-        response() {
-            const native = $mol_error_enriched(this, () => $mol_wire_sync(this).response_async());
-            return this.$.$mol_fetch_response.make({
-                native,
-                request: this
-            });
-        }
-        success() {
-            const response = this.response();
-            if (response.status() === 'success')
-                return response;
-            throw new Error(response.message(), { cause: response });
-        }
-    }
-    __decorate([
-        $mol_action
-    ], $mol_fetch_request.prototype, "response", null);
-    $.$mol_fetch_request = $mol_fetch_request;
-    class $mol_fetch extends $mol_object {
-        static request(input, init) {
-            return this.$.$mol_fetch_request.make({
-                native: new Request(input, init)
-            });
-        }
-        static response(input, init) {
-            return this.request(input, init).response();
-        }
-        static success(input, init) {
-            return this.request(input, init).success();
-        }
-        static stream(input, init) {
-            return this.success(input, init).stream();
-        }
-        static text(input, init) {
-            return this.success(input, init).text();
-        }
-        static json(input, init) {
-            return this.success(input, init).json();
-        }
-        static blob(input, init) {
-            return this.success(input, init).blob();
-        }
-        static buffer(input, init) {
-            return this.success(input, init).buffer();
-        }
-        static xml(input, init) {
-            return this.success(input, init).xml();
-        }
-        static xhtml(input, init) {
-            return this.success(input, init).xhtml();
-        }
-        static html(input, init) {
-            return this.success(input, init).html();
-        }
-    }
-    __decorate([
-        $mol_action
-    ], $mol_fetch, "request", null);
-    $.$mol_fetch = $mol_fetch;
-})($ || ($ = {}));
-
-;
-"use strict";
 
 ;
 "use strict";
@@ -13868,6 +13681,193 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    function pass(data) {
+        return data;
+    }
+    function $mol_error_fence(task, fallback, loading = pass) {
+        try {
+            return task();
+        }
+        catch (error) {
+            let normalized;
+            try {
+                normalized = $mol_promise_like(error) ? loading(error) : fallback(error);
+            }
+            catch (sub_error) {
+                normalized = $mol_promise_like(sub_error) ? sub_error : new $mol_error_mix(sub_error.message, { error }, sub_error);
+            }
+            if (normalized instanceof Error || $mol_promise_like(normalized)) {
+                $mol_fail_hidden(normalized);
+            }
+            return normalized;
+        }
+    }
+    $.$mol_error_fence = $mol_error_fence;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_error_enriched(cause, cb) {
+        return $mol_error_fence(cb, e => new $mol_error_mix(e.message, cause, e));
+    }
+    $.$mol_error_enriched = $mol_error_enriched;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    class $mol_fetch_response extends $mol_object {
+        native;
+        request;
+        status() {
+            const types = ['unknown', 'inform', 'success', 'redirect', 'wrong', 'failed'];
+            return types[Math.floor(this.native.status / 100)];
+        }
+        code() {
+            return this.native.status;
+        }
+        ok() {
+            return this.native.ok;
+        }
+        message() {
+            return $mol_rest_code[this.code()] || `HTTP Error ${this.code()}`;
+        }
+        headers() {
+            return this.native.headers;
+        }
+        mime() {
+            return this.headers().get('content-type');
+        }
+        stream() {
+            return this.native.body;
+        }
+        text() {
+            const buffer = this.buffer();
+            const mime = this.mime() || '';
+            const [, charset] = /charset=(.*)/.exec(mime) || [, 'utf-8'];
+            const decoder = new TextDecoder(charset);
+            return decoder.decode(buffer);
+        }
+        json() {
+            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).json());
+        }
+        blob() {
+            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).blob());
+        }
+        buffer() {
+            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).arrayBuffer());
+        }
+        xml() {
+            return $mol_dom_parse(this.text(), 'application/xml');
+        }
+        xhtml() {
+            return $mol_dom_parse(this.text(), 'application/xhtml+xml');
+        }
+        html() {
+            return $mol_dom_parse(this.text(), 'text/html');
+        }
+    }
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "stream", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "text", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "xml", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "xhtml", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "html", null);
+    $.$mol_fetch_response = $mol_fetch_response;
+    class $mol_fetch_request extends $mol_object {
+        native;
+        response_async() {
+            const controller = new AbortController();
+            let done = false;
+            const request = new Request(this.native, { signal: controller.signal });
+            const promise = fetch(request).finally(() => {
+                done = true;
+            });
+            return Object.assign(promise, {
+                destructor: () => {
+                    // Abort of done request breaks response parsing
+                    if (!done && !controller.signal.aborted)
+                        controller.abort();
+                },
+            });
+        }
+        response() {
+            const native = $mol_error_enriched(this, () => $mol_wire_sync(this).response_async());
+            return this.$.$mol_fetch_response.make({
+                native,
+                request: this
+            });
+        }
+        success() {
+            const response = this.response();
+            if (response.status() === 'success')
+                return response;
+            throw new Error(response.message(), { cause: response });
+        }
+    }
+    __decorate([
+        $mol_action
+    ], $mol_fetch_request.prototype, "response", null);
+    $.$mol_fetch_request = $mol_fetch_request;
+    class $mol_fetch extends $mol_object {
+        static request(input, init) {
+            return this.$.$mol_fetch_request.make({
+                native: new Request(input, init)
+            });
+        }
+        static response(input, init) {
+            return this.request(input, init).response();
+        }
+        static success(input, init) {
+            return this.request(input, init).success();
+        }
+        static stream(input, init) {
+            return this.success(input, init).stream();
+        }
+        static text(input, init) {
+            return this.success(input, init).text();
+        }
+        static json(input, init) {
+            return this.success(input, init).json();
+        }
+        static blob(input, init) {
+            return this.success(input, init).blob();
+        }
+        static buffer(input, init) {
+            return this.success(input, init).buffer();
+        }
+        static xml(input, init) {
+            return this.success(input, init).xml();
+        }
+        static xhtml(input, init) {
+            return this.success(input, init).xhtml();
+        }
+        static html(input, init) {
+            return this.success(input, init).html();
+        }
+    }
+    __decorate([
+        $mol_action
+    ], $mol_fetch, "request", null);
+    $.$mol_fetch = $mol_fetch;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     const class_regex = /^[$A-Z][$\w<>\[\]()"'?|,]+$/;
     function $mol_view_tree2_class_match(klass) {
         if (!klass?.type)
@@ -13995,79 +13995,17 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Component library of a vmap document.
-     *
-     * A library is a deployed MAM module: the build drops `web.view.tree` next to
-     * `web.js`, and that file is the whole class tree of the bundle with bases and
-     * properties. Any deployed app of the framework in the world is therefore a
-     * component source, with no cooperation from us.
-     *
-     * Port of `hyoo_studio_library` plus the `library()`, `united()`,
-     * `props_map()`, `props_of()`, `class_list()` and `base_options()` methods of
-     * `hyoo_studio`. Deviations are marked at their place.
-     *
-     * Pure model: knows nothing about DOM and renders nothing.
-     * @see ../ARCHITECTURE.md section 5
-     */
-    /**
-     * Stub declaration of `$mol_view`, prepended to every fetched pack tree.
-     *
-     * Own properties of `$mol_view` (`sub`, `attr`, `style`, `event`, `field`,
-     * `dom_name`, `title`) never reach `web.view.tree`, because `$mol_view` is
-     * written in TS and the build only dumps what came from `.view.tree` sources.
-     * Without the stub every class in the palette silently loses its base ports,
-     * and nothing anywhere reports it.
-     *
-     * Copied verbatim from `hyoo_studio_library.tree()`.
-     */
     $.$bog_vmap_lib_predef = '$mol_view $mol_object\n\tdom_name \\\n\tstyle *\n\tevent *\n\tfield *\n\tattr *\n\tsub /\n\ttitle \\\n';
-    /**
-     * Parses a pack tree into a normalized class tree.
-     *
-     * Deviation from studio: the stub is parsed as its own source instead of being
-     * string-glued in front of the fetched text. Studio hands `predef + str` to the
-     * parser, so every span in a malformed pack points eight rows above its real
-     * place. We show those spans to the user in an error strip, so they have to be
-     * honest. The stub content itself is byte for byte the same.
-     */
     function $bog_vmap_lib_parse(src, uri = 'web.view.tree') {
         const predef = this.$mol_tree2_from_string($.$bog_vmap_lib_predef, '$bog_vmap_lib_predef');
         const tree = this.$mol_tree2_from_string(src, uri);
         return this.$mol_view_tree2_normalize(tree.clone([...predef.kids, ...tree.kids]));
     }
     $.$bog_vmap_lib_parse = $bog_vmap_lib_parse;
-    /**
-     * The address with a trailing slash, whatever it was typed with.
-     *
-     * `new URL( 'web.js', base )` drops the last segment of a base that does not end
-     * with one, so `https://b-on-g.github.io/gram` would resolve to
-     * `https://b-on-g.github.io/web.js`. The default `https://mol.hyoo.ru` survives
-     * that only by accident, being an origin root.
-     *
-     * A function and not a step inside the field, because the field is edited by
-     * hand: appending the slash on every keystroke would fight the typing. Typed is
-     * stored as is, derived is normalized — the rule for every field a person types.
-     * @see ../ARCHITECTURE.md section 5, «Адрес пака нормализовать до слэша»
-     */
     function $bog_vmap_lib_slashed(uri) {
         return uri.replace(/\/?$/, '/');
     }
     $.$bog_vmap_lib_slashed = $bog_vmap_lib_slashed;
-    /**
-     * Why a pack did not load, in words somebody can act on.
-     *
-     * `$mol_fetch` throws the status line of the response and nothing else, so a
-     * mistyped address reaches the screen as a bare «Not Found» — true and
-     * useless: it names neither what was looked for nor where to correct it. Seen
-     * on the deploy in the counter of the class list, 09.09.2026.
-     *
-     * The address is repeated back because the field it came from may be scrolled
-     * away or, in the case of the default, never typed at all. It is the ADDRESS
-     * THAT WAS FETCHED and not the one that was typed, and it is handed in rather
-     * than derived here: the rule that grows `web.view.tree` onto a pack lives in
-     * `tree_link` and must not be written a second time to word a complaint.
-     */
     function $bog_vmap_lib_pack_note(link, error) {
         const reason = String(error?.message || error);
         if (!link)
@@ -14076,40 +14014,11 @@ var $;
             + ' — дерево классов, которое сборка кладёт рядом с бандлом';
     }
     $.$bog_vmap_lib_pack_note = $bog_vmap_lib_pack_note;
-    /**
-     * Base address of a sibling module of the pack, derived from the address of the
-     * page asking. Always ends with a slash, so `new URL` keeps its last segment.
-     *
-     * The two layouts are told apart by a trailing `-`, and they are not two
-     * spellings of one rule but two different places, so the code says so.
-     *
-     * The dev server serves every module of a pack out of `<pack>/<module>/-/`, so
-     * the modules are siblings there in the plain sense: the segment naming ours is
-     * replaced by the one asked for, and the `-` goes back on.
-     *
-     * A deploy has only ONE page in the whole project — the editor, published at
-     * the root of the site — and the other modules are published as folders beneath
-     * it, `web.js` and `web.view.tree` without a page of their own. So there is
-     * nothing to replace: the module asked for is a folder inside the one the
-     * editor is served from.
-     *
-     * A last segment ending in `.html` is the page file — `index.html`, `test.html`
-     * are the only two a module has — and is dropped first. Anything else is a
-     * folder, which is how `https://b-on-g.github.io/vmap` reads the same as the
-     * same address with its slash.
-     *
-     * The test is the extension and not merely a dot in the name, because a folder
-     * may carry one: a deploy versioned as `/vmap/v1.2/` is ordinary, and on a dot
-     * the segment `v1.2` would be taken for a page and eaten.
-     *
-     * @see ../ARCHITECTURE.md sections 5 and 7
-     */
     function $bog_vmap_lib_sibling(page, module) {
         const url = new URL(page);
         const path = url.pathname.split('/').filter(Boolean);
         if (/\.html?$/i.test(path[path.length - 1] ?? ''))
             path.pop();
-        // on the dev server the modules stand side by side, each in its own `-`
         if (path[path.length - 1] === '-') {
             path.pop();
             path.pop();
@@ -14121,33 +14030,12 @@ var $;
         return `${url.origin}/${path.join('/')}/`;
     }
     $.$bog_vmap_lib_sibling = $bog_vmap_lib_sibling;
-    /**
-     * Glues the library tree with the classes of the document into one namespace.
-     *
-     * Both sides end up in the same `$` sandbox at run time, so resolution has to
-     * see them as one list — that is the whole point of `united()` in studio.
-     */
     function $bog_vmap_lib_united(lib, kids) {
         if (!kids.length)
             return lib;
         return lib.clone([...lib.kids, ...kids]);
     }
     $.$bog_vmap_lib_united = $bog_vmap_lib_united;
-    /**
-     * Class name to its super node. The kids of that node are the own properties
-     * of the class, which is how `$mol_view_tree2_normalize` shapes a class.
-     *
-     * Deviation from studio: studio walks the kids linearly on every lookup
-     * (`lib.select( cl, null ).kids[0]`), which is O(classes) per inheritance step
-     * against a tree of ~450 classes. Same answer, built once.
-     *
-     * Second deviation, and the one that matters: a later declaration wins, while
-     * `select` takes the first. Document classes are appended after the library, so
-     * studio's order would let a library class shadow a document class of the same
-     * name. The scene compiles document classes into the sandbox *after* the pack's
-     * `web.js` has filled it, so at run time the document wins. The palette has to
-     * agree with what actually runs.
-     */
     function $bog_vmap_lib_index(united) {
         const index = new Map();
         for (const cl of united.kids) {
@@ -14159,15 +14047,6 @@ var $;
         return index;
     }
     $.$bog_vmap_lib_index = $bog_vmap_lib_index;
-    /**
-     * Inheritance chain of a class, nearest first, ending at the first name that
-     * the namespace does not declare (`$mol_object` for anything from a pack).
-     *
-     * Deviation from studio: a visited set. Studio edits exactly one class, so a
-     * cycle cannot occur there. Here the united namespace carries user authored
-     * classes, and two of them declared as each other's base is one keystroke
-     * away — without the guard it hangs the editor with no error at all.
-     */
     function $bog_vmap_lib_chain(index, base) {
         const chain = [];
         const seen = new Set();
@@ -14180,16 +14059,6 @@ var $;
         return chain;
     }
     $.$bog_vmap_lib_chain = $bog_vmap_lib_chain;
-    /**
-     * All ports of a class, own and inherited, keyed by property name.
-     *
-     * Ancestors are collected first, so a redefined property keeps the position of
-     * its earliest declaration but carries the most derived node. Same order and
-     * same overriding as `props_map()` in studio, which recurses into the super
-     * before adding its own kids.
-     *
-     * This is what stage 3 grows wire ports out of.
-     */
     function $bog_vmap_lib_props_map(index, base) {
         const all = new Map();
         const chain = $bog_vmap_lib_chain(index, base);
@@ -14204,24 +14073,6 @@ var $;
         return all;
     }
     $.$bog_vmap_lib_props_map = $bog_vmap_lib_props_map;
-    /**
-     * Port name to the class that declared the winning version of it.
-     *
-     * Walks the chain exactly as `$bog_vmap_lib_props_map` does, farthest ancestor
-     * first, overwriting on every redeclaration. `Map.set` on a key that is already
-     * there keeps its position and replaces the value, so the last write wins the
-     * value — the nearest declaration, the one whose node `props_map` returned —
-     * while the key order stays identical to `props_map`. The two maps can then be
-     * read side by side by key.
-     *
-     * A port is inherited exactly when its owner is not the class being asked
-     * about. Walking nearest first and keeping the first answer would give the same
-     * owners in a different order, and a consumer that trusted the two orders to
-     * agree would silently mislabel every row.
-     *
-     * Not in studio: it shows one class at a time and has no notion of a port
-     * coming from somewhere else.
-     */
     function $bog_vmap_lib_props_owner(index, base) {
         const owner = new Map();
         const chain = $bog_vmap_lib_chain(index, base);
@@ -14236,38 +14087,10 @@ var $;
         return owner;
     }
     $.$bog_vmap_lib_props_owner = $bog_vmap_lib_props_owner;
-    /**
-     * A component library, whatever its classes came from.
-     *
-     * Everything below `tree()` is source agnostic and always was: `united`,
-     * `index`, `props_map` and the rest only ever see a normalized class tree. The
-     * split just makes that visible, so a second source — a land of sources, with
-     * no deploy behind it — is a subclass overriding one method rather than a
-     * parallel implementation of nine.
-     *
-     * The default is the empty library: the `$mol_view` stub and nothing else. A
-     * throw would have been the other option and it is worse, because an empty
-     * library is a real state — a land with no components published yet — and not
-     * an error.
-     *
-     * @see ../ARCHITECTURE.md section 5
-     */
     class $bog_vmap_lib_any extends $mol_object {
-        /** Class tree of the library. Where it comes from is the subclass's business. */
         tree() {
             return this.$.$bog_vmap_lib_parse('');
         }
-        /**
-         * Classes of the document, to be resolved alongside the library.
-         * Overridden by the owner; empty until a document is open.
-         *
-         * This is also where a land library rides when it is used ON TOP of a pack
-         * rather than instead of one, which section 5 says is the normal case: land
-         * libraries compile into the same sandbox and inherit from the pack's
-         * `$mol_view`. Composition therefore needs no machinery — the classes of a
-         * land go in beside the document's, and `index` already lets a later
-         * declaration win.
-         */
         classes() {
             return [];
         }
@@ -14277,19 +14100,12 @@ var $;
         index() {
             return this.$.$bog_vmap_lib_index(this.united());
         }
-        /** Every class name of the namespace, in declaration order, deduped. */
         class_list() {
             return [...this.index().keys()];
         }
-        /** Same list, most recently declared first, for a base class picker. */
         base_options() {
             return [...this.class_list()].reverse();
         }
-        /**
-         * Palette search by class name. Deliberately not memoized by key: a cell per
-         * typed query would accumulate one dead cell per keystroke, and the filter
-         * over a few hundred names is cheaper than the cell.
-         */
         class_search(query) {
             return this.class_list().filter(this.$.$mol_match_text(query, (name) => [name]));
         }
@@ -14299,11 +14115,9 @@ var $;
         props_map(base) {
             return this.$.$bog_vmap_lib_props_map(this.index(), base);
         }
-        /** Which class each port of `base` came from. */
         props_owner(base) {
             return this.$.$bog_vmap_lib_props_owner(this.index(), base);
         }
-        /** Same ports as a tree node, most derived first, as in studio. */
         props_of(base) {
             return this.united().list([...this.props_map(base).values()].reverse());
         }
@@ -14336,47 +14150,22 @@ var $;
         $mol_mem_key
     ], $bog_vmap_lib_any.prototype, "props_of", null);
     $.$bog_vmap_lib_any = $bog_vmap_lib_any;
-    /**
-     * Library from a deployed MAM module.
-     *
-     * The name and the interface are unchanged from before the split, because the
-     * palette and the inspector both declare it and neither should have to care
-     * that a second kind of library now exists.
-     */
     class $bog_vmap_lib extends $bog_vmap_lib_any {
-        /**
-         * Deployed MAM module the components come from.
-         *
-         * Empty means no pack at all, and that is a state rather than a failure: a
-         * palette fed by lands alone has nothing deployed behind it. Every address
-         * below is then empty too, and `tree()` is the stub on its own.
-         */
         pack(next) {
             return next ?? 'https://mol.hyoo.ru';
         }
-        /** Same address, guaranteed to end with a slash. See `$bog_vmap_lib_slashed`. */
         pack_base() {
             const pack = this.pack();
             return pack ? $bog_vmap_lib_slashed(pack) : '';
         }
-        /** Behaviour of the classes. Loaded by the scene, not by us. */
         script_link() {
             const base = this.pack_base();
             return base ? new URL('web.js', base).toString() : '';
         }
-        /** Declarations of the classes. */
         tree_link() {
             const base = this.pack_base();
             return base ? new URL('web.view.tree', base).toString() : '';
         }
-        /**
-         * Class tree of the pack.
-         *
-         * No try/catch on purpose: `$mol_fetch` throws on any non-2xx and the wire
-         * suspends through exceptions, so catching here would both swallow a dead
-         * pack into an empty palette and break suspension. An unreachable pack has
-         * to reach the view as an error.
-         */
         tree() {
             const uri = this.tree_link();
             if (!uri)
@@ -16452,60 +16241,11 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Component library published as a land of Giper Baza, sources and all.
-     *
-     * The second source of section 5, and the one that needs no deploy: publish a
-     * component, hand out the link, and it is in somebody else's palette. The first
-     * source, a deployed pack, arrives as a built `web.js` plus the `web.view.tree`
-     * beside it; this one arrives as the three texts a component is made of, and is
-     * compiled by the scene into the same sandbox.
-     *
-     * **From the outside it is the same library as a pack** — `class_list`,
-     * `props_map`, `united`, all of it — because it derives from
-     * `$bog_vmap_lib_any` and overrides one method. Nothing downstream of `tree()`
-     * ever knew where the classes came from, and now nothing has to learn.
-     *
-     * A separate module from `lib/` on purpose: this one drags the whole of Giper
-     * Baza into any bundle that touches it, and the palette and the inspector, which
-     * need only the pack library, should not pay for a feature they do not use. The
-     * dependency runs one way, `lib/land` onto `lib/`, which is also what the
-     * namespace path already says.
-     *
-     * @see ../../ARCHITECTURE.md section 5
-     */
-    /**
-     * One component of a library: the three sources a class is built from.
-     *
-     * Same shape as a node of a document, deliberately not shared with it: `app/doc`
-     * belongs to the application and this is a leaf model, so the dependency would
-     * run the wrong way. The duplication is three field declarations; the coupling
-     * would be permanent.
-     *
-     * The class name is NOT a field. It is the first token of `Tree` and storing it
-     * beside would be a second source of truth for a derivable fact — the same
-     * argument section 6 makes about wires, and it bites the same way: rename the
-     * class in the text and the copy is stale.
-     */
     class $bog_vmap_lib_land_part extends $giper_baza_dict.with({
-        /** `view.tree` declaration. The truth of this component. */
         Tree: $giper_baza_atom_text,
-        /** Handwritten class body, applied on top of the generated one. */
         Js: $giper_baza_atom_text,
-        /** Styles, attached apart from the class so a CSS edit rebuilds nothing. */
         Css: $giper_baza_atom_text,
     }) {
-        /**
-         * **Plain methods, never `@ $mol_mem`.** An accessor of this shape that has
-         * been written through once freezes at what was written: the atom takes a
-         * remote edit, reports the new text, and the cell goes on handing out the
-         * old one for the rest of the session. It shows up only on the component you
-         * edited yourself, which in a shared library is the worst possible place.
-         *
-         * Nothing is lost: `val()` is a wire cell inside the pawn already, so a
-         * reader stays reactive and a two way binding writes straight through. There
-         * is a test named for this, and it is the reason it exists.
-         */
         tree(next) {
             return this.Tree(next)?.val(next) ?? '';
         }
@@ -16517,38 +16257,13 @@ var $;
         }
     }
     $.$bog_vmap_lib_land_part = $bog_vmap_lib_land_part;
-    /**
-     * A published library: a name and its components.
-     *
-     * `Parts` live in the SAME land as the shelf, made with `make( null )`. A land
-     * per component would mean proof of work for every class published and per
-     * component access rights nobody asked for; a library is shared by one link, so
-     * one land is also the unit somebody actually grants access to.
-     */
     class $bog_vmap_lib_land_shelf extends $giper_baza_dict.with({
-        /** Human name of the library. */
         Title: $giper_baza_atom_text,
-        /** Components, in the order they should be declared. */
         Parts: $giper_baza_list_link.to(() => $bog_vmap_lib_land_part),
     }) {
-        /** Plain method, for the reason spelled out at `land_part.tree`. */
         title(next) {
             return this.Title(next)?.val(next) ?? '';
         }
-        /**
-         * Components of the library.
-         *
-         * Resolved through the shelf's OWN land and not through `remote_list()`,
-         * which would be the obvious call and is a trap: it resolves every link
-         * through the static `$giper_baza_glob.Land`, a different land instance that
-         * waits for a master to sync with. Under a test, where there is no master,
-         * that wait never ends and the run dies in silence — no error, no output, and
-         * every build that runs the tests hangs with it.
-         *
-         * Going through `land.Pawn( … ).Head( link.head() )` is correct here and not
-         * merely convenient, because `make( null )` puts the parts in this very land.
-         * The storage decision that suits the domain is the one that is testable.
-         */
         parts() {
             const links = this.Parts()?.items()?.filter($mol_guard_defined) ?? [];
             const land = this.land();
@@ -16556,67 +16271,22 @@ var $;
         }
     }
     $.$bog_vmap_lib_land_shelf = $bog_vmap_lib_land_shelf;
-    /**
-     * Library backed by a land of sources.
-     *
-     * Only `tree()` differs from a pack, and it differs by where the text comes
-     * from — not by what is done with it: the same parse, the same base class stub,
-     * the same normalization. A tree built here and a tree fetched
-     * from `web.view.tree` are indistinguishable downstream, which is the whole
-     * requirement.
-     */
     class $bog_vmap_lib_land extends $bog_vmap_lib_any {
-        /**
-         * The published library. Supplied by the owner, absent until one is opened.
-         *
-         * Absent is a state and not a failure — the palette of a document with no
-         * library attached is empty, not broken — so this answers null rather than
-         * throwing, and `tree()` above degrades into the empty library.
-         */
         shelf() {
             return null;
         }
-        /**
-         * Components of the shelf. Nothing asks the land to sync here: every read
-         * of a pawn goes through `$giper_baza_land.sand_ordered()`, which syncs
-         * first, so a library published by somebody else arrives by being read.
-         */
         parts() {
             return this.shelf()?.parts() ?? [];
         }
-        /**
-         * Declarations of every component, in one text.
-         *
-         * Glued rather than parsed one by one because a library is one namespace:
-         * a component inheriting another component of the same library has to
-         * resolve, and it only can if both are in the same tree.
-         */
         source() {
             return this.parts().map(part => part.tree().replace(/\n?$/, '\n')).join('');
         }
         tree() {
             return this.$.$bog_vmap_lib_parse(this.source(), 'land');
         }
-        /**
-         * Classes of the library WITHOUT the base class stub, for composing this
-         * library into another one through its `classes()`.
-         *
-         * The stub has to go: it is a stand-in for a class the pack really carries,
-         * and the class index keeps the last declaration of a name, so handing it
-         * over would let the stand-in shadow the real thing. `tree()` keeps it,
-         * because standing alone this library has no other base class at all.
-         */
         class_trees() {
             return this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(this.source(), 'land')).kids;
         }
-        /**
-         * Handwritten bodies by class name, the second of the three sources.
-         *
-         * Built here and handed to the scene by somebody else: compiling a library
-         * inside the sandbox is a task of its own, and this is the shape it will
-         * want — the same `{ [ klass ]: js }` the bridge already carries for a
-         * document.
-         */
         js() {
             const res = {};
             for (const part of this.parts()) {
@@ -16629,7 +16299,6 @@ var $;
             }
             return res;
         }
-        /** Styles of every component, in one text, as the scene attaches them. */
         css() {
             return this.parts().map(part => part.css()).filter(Boolean).join('\n');
         }
@@ -16653,39 +16322,10 @@ var $;
         $mol_mem
     ], $bog_vmap_lib_land.prototype, "css", null);
     $.$bog_vmap_lib_land = $bog_vmap_lib_land;
-    /**
-     * A pack with lands stacked on top of it: the library of the palette field.
-     *
-     * The pack is the base class, so from the outside this is a `$bog_vmap_lib` and
-     * nothing downstream has to learn a new name. The lands ride in through
-     * `classes()`, the hook `$bog_vmap_lib_any` left for exactly this, and the index
-     * lets the last declaration win, so a land class shadows a pack class of the
-     * same name the way it will at run time, where it is compiled into the sandbox
-     * after the pack has filled it.
-     *
-     * Composition is by the LINK, not by the object: the palette field holds links,
-     * a link is what the user pastes, and the land behind it is looked up here and
-     * nowhere else. The host asks this object for two things — the class trees for
-     * the palette and the inspector, and the source texts for the scene — and both
-     * come from the same `land()` cells, so the two views cannot disagree about
-     * which lands are attached.
-     *
-     * @see ../../ARCHITECTURE.md section 5
-     */
     class $bog_vmap_lib_land_stack extends $bog_vmap_lib {
-        /** Land links as the user typed them, in order. Supplied by the owner. */
         lands() {
             return [];
         }
-        /**
-         * Library of one land, by its link.
-         *
-         * `.land()` on the link, because a link to a pawn INSIDE the land is a
-         * legitimate thing to paste — a shared component, say — and the shelf lives
-         * at the root of that land whichever pawn was pointed at. A malformed link
-         * fails here with the database's own message; the field parser is meant to
-         * have refused it before it ever reaches this method.
-         */
         land(link) {
             return $bog_vmap_lib_land.make({
                 $: this.$,
@@ -16697,24 +16337,12 @@ var $;
         libs() {
             return this.lands().map(link => this.land(link));
         }
-        /**
-         * Classes of every land, without the stub, in the order of the lands.
-         *
-         * This is what the palette and the inspector are handed: the trees alone,
-         * because neither of them may depend on the database and neither has to —
-         * resolving a class against the pack is a walk over a tree, whoever made it.
-         */
         land_trees() {
             return this.libs().flatMap(lib => lib.class_trees());
         }
         classes() {
             return this.land_trees();
         }
-        /**
-         * Sources of every component of every land, in declaration order, for the
-         * scene to compile. Read through the pawns of each shelf's own land and
-         * never through `remote_list()`, see `$bog_vmap_lib_land_shelf.parts`.
-         */
         parts() {
             return this.libs().flatMap(lib => lib.parts().map(part => ({
                 tree: part.tree(),
@@ -16736,14 +16364,6 @@ var $;
         $mol_mem
     ], $bog_vmap_lib_land_stack.prototype, "parts", null);
     $.$bog_vmap_lib_land_stack = $bog_vmap_lib_land_stack;
-    /**
-     * Name of the class a `view.tree` source declares, or empty when it declares
-     * none.
-     *
-     * The first token of the first line, and asked of the text every time rather
-     * than stored beside it — see the note on `land_part`. Blank instead of a throw
-     * because a half typed component is an ordinary state of an editor.
-     */
     function $bog_vmap_lib_land_name(source) {
         return /^([^\s]+)/.exec(source.trimStart())?.[1] ?? '';
     }
@@ -23741,44 +23361,13 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /** A deployed pack is addressed by http(s) and by nothing else. */
     const $bog_vmap_lib_links_pack = /^https?:\/\//i;
-    /**
-     * Grammar of a Giper Baza link: up to four groups of eight, joined by `_`.
-     *
-     * COPIED from the constructor of the link class of Giper Baza, and a copy is the
-     * lesser evil here. Naming that class — even in this comment, mam reads doc
-     * comments for dependencies, measured: 21 mentions of the database in this
-     * bundle from one name here — would pull the database into `lib/`, whose bundle
-     * has zero mentions of it by measurement, and the palette pays for that bundle.
-     * The copy is guarded by a test in `lib/land`, which lives on the database side
-     * and checks a sample of tokens against the original.
-     *
-     * The original also accepts the empty string and bare underscores; a token has
-     * to carry at least one group to be a link to anything, hence the second test.
-     */
     const $bog_vmap_lib_links_land = /^(([a-zæA-ZÆ0-9]{8})?_){0,3}([a-zæA-ZÆ0-9]{8})?$/;
     const $bog_vmap_lib_links_group = /[a-zæA-ZÆ0-9]{8}/;
-    /** Wording of the refusals, kept in one place so the tests and the field agree. */
     $.$bog_vmap_lib_links_reason = {
-        /** @see ../../ARCHITECTURE.md section 5, «Донорский пак ровно один на кадр» */
         pack_second: 'второй пак на кадр невозможен, подключайте компоненты ссылкой на ленд',
         unknown: 'не адрес пака (http…) и не ссылка на ленд Гипер Базы',
     };
-    /**
-     * Splits the field into the pack, the lands and the refused.
-     *
-     * Commas separate; whitespace, including line breaks, separates as well, so a
-     * list pasted one link per line reads the same as one typed with commas. Empty
-     * tokens, and with them trailing commas and doubled separators, are nothing and
-     * are not even reported.
-     *
-     * The FIRST http(s) link is the pack, wherever it stands in the list. The second
-     * one is refused, and refused with the reason a user can act on, rather than
-     * silently dropped: the second pack over the first poisons the palette without a
-     * signal, which is exactly why it must not reach the frame — and exactly why the
-     * person typing it has to be told.
-     */
     function $bog_vmap_lib_links_parse(text) {
         let pack = null;
         const lands = [];
@@ -23803,19 +23392,10 @@ var $;
         return { pack, lands, rejected };
     }
     $.$bog_vmap_lib_links_parse = $bog_vmap_lib_links_parse;
-    /**
-     * Is this token a land link by the grammar above. Exposed for the guard test on
-     * the database side; the palette needs only `parse`.
-     */
     function $bog_vmap_lib_links_is_land(token) {
         return $bog_vmap_lib_links_land.test(token) && $bog_vmap_lib_links_group.test(token);
     }
     $.$bog_vmap_lib_links_is_land = $bog_vmap_lib_links_is_land;
-    /**
-     * The refusals as one text for a status line, one refusal per line, or an empty
-     * string when there is nothing to say. An empty string and not a placeholder,
-     * so that a view can hide the line by testing the text.
-     */
     function $bog_vmap_lib_links_note(links) {
         return links.rejected.map(item => `${item.link}: ${item.reason}`).join('\n');
     }
@@ -28666,22 +28246,13 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /** Height of one port row, in screen pixels whatever the zoom. */
     $.$bog_vmap_app_wire_row = 14;
-    /**
-     * Distance from the edge of the box to the centre of a dot, in screen pixels.
-     * Strictly outside the box: under the picked part the overlay is cut open along
-     * the box, and a dot inside it would take no press. The radius stays under this.
-     */
     $.$bog_vmap_app_wire_gap = 12;
     $.$bog_vmap_app_wire_radius = 5;
-    /** Radius within which a point counts as over a dot. Wider than the dot. */
     $.$bog_vmap_app_wire_hit = 8;
-    /** Shapes a port carries as a wire: values and references, never sub views or dictionaries. */
     const wirable = new Set([
         'string', 'number', 'bool', 'null', 'locale', 'list', 'get', 'bind',
     ]);
-    /** Ports of a class fit for wiring, from its `props_map`, in its order: bases first. */
     function $bog_vmap_app_wire_ports(props) {
         const ports = [];
         for (const [name, prop] of props) {
@@ -28696,11 +28267,6 @@ var $;
         return ports;
     }
     $.$bog_vmap_app_wire_ports = $bog_vmap_app_wire_ports;
-    /**
-     * Whether a value of one shape may feed a port of another: equal shapes fit,
-     * `null` and a reference say nothing about the shape and fit anything, a
-     * localized string is a string.
-     */
     function $bog_vmap_app_wire_fits(out, into) {
         const loose = new Set(['null', 'get', 'bind']);
         if (loose.has(out) || loose.has(into))
@@ -28709,7 +28275,6 @@ var $;
         return norm(out) === norm(into);
     }
     $.$bog_vmap_app_wire_fits = $bog_vmap_app_wire_fits;
-    /** Centre of the dot of the `index`th port on a side of a box. Rows run down from the top. */
     function $bog_vmap_app_wire_port_point(box, side, index) {
         const x = side === 'in'
             ? box.left - $.$bog_vmap_app_wire_gap
@@ -28718,27 +28283,9 @@ var $;
         return [x, y];
     }
     $.$bog_vmap_app_wire_port_point = $bog_vmap_app_wire_port_point;
-    /** Reach of the tangents, so short wires still bend. */
     function wire_reach(span) {
         return Math.max(40, Math.abs(span) / 2);
     }
-    /**
-     * The two control points of the wire, chosen by which way it actually goes.
-     *
-     * Outputs sit on the right edge of a part and inputs on the left, so a wire
-     * that runs forwards has its ends already pointing at each other and horizontal
-     * tangents draw the plain S everybody expects.
-     *
-     * BACKWARDS IS THE COMMON CASE INSIDE A CONTAINER, not an exotic one: two
-     * children stacked in one box sit at the same left edge, so the output of the
-     * upper one is a dozen pixels to the RIGHT of the input of the lower one.
-     * Horizontal tangents there send the curve out past the right edge of the box
-     * and bring it back in from the left — a loop around the whole part, which
-     * reads as a broken wire rather than a short one. Turning the tangents vertical
-     * keeps every control point between the two ends, so the curve stays in the
-     * band between them and reads as what it is: a step down from one child to the
-     * next.
-     */
     function wire_control(from, to) {
         if (to[0] >= from[0]) {
             const reach = wire_reach(to[0] - from[0]);
@@ -28748,13 +28295,11 @@ var $;
         const down = to[1] >= from[1] ? 1 : -1;
         return [[from[0], from[1] + reach * down], [to[0], to[1] - reach * down]];
     }
-    /** A cubic Bezier from an output to an input, as an SVG path. */
     function $bog_vmap_app_wire_curve(from, to) {
         const [one, two] = wire_control(from, to);
         return `M ${from[0]} ${from[1]} C ${one[0]} ${one[1]}, ${two[0]} ${two[1]}, ${to[0]} ${to[1]}`;
     }
     $.$bog_vmap_app_wire_curve = $bog_vmap_app_wire_curve;
-    /** The point of the curve at t = 1/2, where the label goes. */
     function $bog_vmap_app_wire_curve_mid(from, to) {
         const [one, two] = wire_control(from, to);
         return [
@@ -28763,7 +28308,6 @@ var $;
         ];
     }
     $.$bog_vmap_app_wire_curve_mid = $bog_vmap_app_wire_curve_mid;
-    /** The dot under a point, or `null`. The last one wins: what is drawn later is on top. */
     function $bog_vmap_app_wire_dot_at(dots, point) {
         let found = null;
         for (const dot of dots) {
@@ -28786,11 +28330,6 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * Draws what the pane computed: a path and a label per wire, a dot and a name
-         * per port, one path for the wire in hand. Sub views are keyed by the stable
-         * key of each thing, so a wire keeps its element while the camera moves.
-         */
         class $bog_vmap_app_wire extends $.$bog_vmap_app_wire {
             shapes() {
                 const shapes = [];
@@ -28845,7 +28384,6 @@ var $;
             dot_linked(key) {
                 return this.dot_of(key)?.linked ?? false;
             }
-            /** The name stands off the dot, away from the box: left of an input, right of an output. */
             name_pos(key) {
                 const dot = this.dot_of(key);
                 if (!dot)
@@ -28880,7 +28418,6 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        // Outside the literal the strings widen to `string`, which the guard rejects for lengths.
         const label = {
             fill: String($mol_theme.text),
             font: { family: 'monospace', size: '10px' },
@@ -28896,7 +28433,6 @@ var $;
             width: '100%',
             height: '100%',
             overflow: 'visible',
-            /** A picture, never a target: the press a dot marks goes to the overlay and is resolved by geometry. */
             pointerEvents: 'none',
             Line: {
                 fill: 'none',
@@ -30362,13 +29898,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * A measured box in screen pixels of the pane.
-     *
-     * World to screen is `world * zoom + shift`, the same transform the scene puts
-     * on its stage; this is that transform done on the host, once, so that the
-     * selection ring and the hole in the overlay are cut from the same numbers.
-     */
     function $bog_vmap_app_pane_screen(box, zoom, shift) {
         return {
             left: box.x * zoom + shift[0],
@@ -30384,26 +29913,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * Which way the children of a container are stacked: what the node DECLARES,
-     * else what its children came out as, else a column.
-     *
-     * The declaration comes first because it is not a guess about CSS — it is a
-     * line of the document, which the host owns and reads directly. Geometry is the
-     * fallback and not the source: it degenerates on nought or one child, where
-     * there is nothing to read a direction off at all.
-     *
-     * A direction the document states in some other way — `row-reverse` and its
-     * kind — falls through to the geometry rather than being taken at its word: the
-     * children of a reversed box come out in the opposite order from the one `sub`
-     * lists them in, and a position counted along the boxes would be the mirror of
-     * the position written into the tree. Guessing from where things are is then
-     * strictly better than trusting a word we do not act on.
-     *
-     * The last resort is a column, the way a page stacks and what the artboard
-     * preset sets. It has to be set: `[mol_view]` is `display: flex` with no
-     * direction at all, which is a ROW.
-     */
     function $bog_vmap_app_pane_slot_axis(boxes, declared = '') {
         if (declared === 'row')
             return 'row';
@@ -30417,20 +29926,6 @@ var $;
         return spread(mid_x) > spread(mid_y) ? 'row' : 'column';
     }
     $.$bog_vmap_app_pane_slot_axis = $bog_vmap_app_pane_slot_axis;
-    /**
-     * Position a point aims at among the children of a container, and the line to
-     * draw for it.
-     *
-     * The position is decided by the MIDDLE of each child, not by the gaps between
-     * them: children of a flex box usually touch, so a rule that only fired between
-     * boxes would have nowhere to fire, and pointing at the upper half of a child
-     * plainly means «above this one».
-     *
-     * The line is drawn on the boundary rather than on the child: at the middle of
-     * the gap when there is one, on the outer edge at either end. In world units,
-     * because the host draws it with the same transform it draws the selection ring
-     * with, and turning world into screen is done once, for both.
-     */
     function $bog_vmap_app_pane_slot(owner, box, kids, point, declared = '') {
         const row = $bog_vmap_app_pane_slot_axis(kids, declared) === 'row';
         const start = (kid) => row ? kid.x : kid.y;
@@ -30455,26 +29950,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    /**
-     * The overlay with a rectangle cut out of it, as a `clip-path` value.
-     *
-     * The editor takes every pointer event on its overlay, so a live component
-     * under it never gets a real one. For the picked part that is undone here: the
-     * overlay is clipped to everything BUT the part's box, and inside the box the
-     * frame is the topmost thing on the page, so hover, scroll, text selection and
-     * dragging inside the component all work for real. Outside the box the overlay
-     * is whole and keeps its gestures; the ring and its handles are drawn around
-     * the hole, not in it, which is what makes them grabbable.
-     *
-     * `evenodd` is what turns the inner rectangle into a hole rather than a second
-     * fill. The outer ring is stated in percentages so that the value does not
-     * have to know how big the pane is and does not go stale when it resizes.
-     *
-     * `none` and not an absent key when nothing is picked: inline styles are
-     * written by the style renderer of the framework, which sets the keys it is given and
-     * removes nothing, so a key that disappears from the dictionary leaves its last
-     * value on the element.
-     */
     function $bog_vmap_app_pane_hole(rect) {
         if (!rect)
             return 'none';
@@ -31503,28 +30978,17 @@ var $;
                 width: '100%',
                 height: '100%',
             },
-            /**
-             * The insertion line. Placed by the inline style in screen pixels, painted
-             * here, and never in the way: it is drawn over the frame and takes no pointer,
-             * because the gesture it belongs to is the overlay's.
-             */
             Insert: {
                 position: 'absolute',
                 background: { color: $mol_theme.focus },
                 pointerEvents: 'none',
             },
-            /**
-             * The band swept over the canvas. Placed by the inline style in screen
-             * pixels, painted here, and takes no pointer: the gesture drawing it is the
-             * overlay's, and a target here would swallow the release that ends it.
-             */
             Band: {
                 position: 'absolute',
                 outline: '1px solid ' + String($mol_theme.focus),
                 background: { color: $mol_theme.hover },
                 pointerEvents: 'none',
             },
-            /** The layer of the marks: a frame of reference, not a box of its own. */
             Marks: {
                 position: 'absolute',
                 top: 0,
@@ -31533,10 +30997,6 @@ var $;
                 height: '100%',
                 pointerEvents: 'none',
             },
-            /**
-             * A badge at the corner of a node the scene complained about. Takes the
-             * pointer, alone on this layer, so that the tooltip can be read at all.
-             */
             Mark: {
                 position: 'absolute',
                 transform: 'translate(-50%, -50%)',
@@ -31553,51 +31013,15 @@ var $;
             },
         });
         $mol_style_define($bog_vmap_app_pane_overlay, {
-            /**
-             * The overlay eats every pointer event; nothing reaches the scene by itself.
-             *
-             * Said explicitly although it is the default, because it used to be switched
-             * by an editor mode and is now a fixed fact of the layer: a click gets to the
-             * document by being relayed over the bridge, and the picked part alone gets
-             * real events through a hole cut by `clip-path` in the inline style.
-             */
             pointerEvents: 'auto',
             Frame: {
                 position: 'absolute',
-                /**
-                 * `outline` and not `border`: a border would take part in the box the
-                 * `width` and `height` above are setting, so the ring would sit a pixel
-                 * inside the node on every side. An outline is drawn outside the box and
-                 * changes nothing about it.
-                 *
-                 * Written as one string because a camelCase shorthand takes nothing else,
-                 * and `String()` around the token because the focus colour of the theme is
-                 * a style function object, not text. Both are TS2322 otherwise — and the WEB
-                 * audit passes either way, only the node one catches it.
-                 */
                 outline: '1px solid ' + String($mol_theme.focus),
                 outlineOffset: '1px',
-                /**
-                 * The ring is a picture, never a target. Left hittable it would take the
-                 * press meant for the node it is drawn around, and a node once picked
-                 * could not be picked again — or dragged.
-                 */
                 pointerEvents: 'none',
-                /**
-                 * `[mol_view]` animates `transform` for .2s, and the ring is positioned,
-                 * not transformed, so it would not lag by itself. Said out loud because
-                 * the camera above IS on a transform: whatever is added here later must
-                 * not start animating, or the ring will trail the node it belongs to.
-                 */
                 transition: 'none',
             },
         });
-        /**
-         * Corner grips of the ring. Fully outside the box, because inside it the overlay
-         * is cut away and a grip drawn there would be clipped to nothing; outside, on
-         * the strip the hit test still counts as the part, they mark where it can be
-         * taken hold of. Sized to that strip.
-         */
         $mol_style_define($bog_vmap_app_pane_handle, {
             position: 'absolute',
             width: '8px',
@@ -33267,14 +32691,6 @@ var $;
         $mol_style_define($bog_vmap_app, {
             flex: { direction: 'column' },
             height: '100vh',
-            /**
-             * The PAGE never scrolls; the panels scroll inside themselves.
-             *
-             * Without this a panel taller than the window pushed the document past
-             * `100vh`, the wheel over it moved the whole page, and the head bar — every
-             * button of the editor — went off the top of the screen. Seen on the deploy
-             * 09.09.2026 with the shelf open on a short window.
-             */
             overflow: 'hidden',
             background: { color: $mol_theme.back },
             color: $mol_theme.text,
@@ -33295,11 +32711,6 @@ var $;
                 justify: { content: 'center' },
                 color: $mol_theme.shade,
             },
-            /**
-             * A class name is long and is read as a whole: cut in the middle it says
-             * nothing about the folder it chooses. Wide enough for a name of three
-             * segments, and no growing — the toolbar wraps instead.
-             */
             Root_name: {
                 minWidth: '14rem',
                 flex: { grow: 0, shrink: 1 },
@@ -33313,37 +32724,10 @@ var $;
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
             },
-            /**
-             * Everything under the toolbar, and the only row allowed to grow.
-             *
-             * Both properties are load bearing. `[mol_view]` is `display: flex` with
-             * `flex-shrink: 0`, so an unstyled row sizes itself by its tallest child and
-             * refuses to give the height back: with the palette inside, the page measured
-             * 11110 px tall behind a viewport that looked perfectly correct, and the only
-             * visible symptom was a scrollbar nobody expected.
-             */
             Body: {
                 flex: { grow: 1, shrink: 1 },
                 minHeight: 0,
             },
-            /**
-             * THE CANVAS COMES FIRST WHEN THE ROOM RUNS OUT, and the three panels give
-             * way to it. Fixed widths did the opposite: 20, 22 and 28 rem never yielded,
-             * so with all three open on a 1440 px screen the canvas — the thing the
-             * editor is for — was left about 160 px. Measured on the deploy 09.09.2026.
-             *
-             * What gives the canvas its width is a floor on the canvas plus shrink on
-             * the panels. The floor makes the row ASK for more than the window has, and
-             * the overflow is then taken from whoever may shrink; each panel keeps a
-             * minimum of its own, so «yields» never becomes «vanishes».
-             *
-             * Below about 1200 px with all three panels open the floors no longer fit
-             * and the last panel is clipped: 12 plus 13 plus 22 rem of panels and 28 of
-             * canvas. That is the honest end of the trade, and the head bar folds any of
-             * the three away in one click. It was ~1090 until the code panel got a floor
-             * of 22 rem instead of 15 — code that does not wrap has to be readable
-             * without scrolling on a short line.
-             */
             Side: {
                 flex: { direction: 'column', grow: 0, shrink: 1, basis: '20rem' },
                 minWidth: '12rem',
@@ -33351,7 +32735,6 @@ var $;
                 minHeight: 0,
                 border: { right: { width: '1px', style: 'solid', color: $mol_theme.line } },
             },
-            /** Panel of the inspector. Mirror of `Side`, on the far edge. */
             Aside: {
                 flex: { direction: 'column', grow: 0, shrink: 1, basis: '22rem' },
                 minWidth: '13rem',
@@ -33359,12 +32742,6 @@ var $;
                 minHeight: 0,
                 border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
             },
-            /**
-             * Wider than the inspector, and with a floor of its own: this one holds
-             * code, and code does not wrap — it scrolls sideways. A panel narrow enough
-             * to need scrolling on an ordinary declaration is a panel nobody reads in,
-             * so 22 rem, which holds the short ones whole.
-             */
             Code: {
                 flex: { direction: 'column', grow: 0, shrink: 1, basis: '28rem' },
                 minWidth: '22rem',
@@ -33372,12 +32749,6 @@ var $;
                 minHeight: 0,
                 border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
             },
-            /**
-             * The canvas: takes everything left, and asks for a floor of its own so that
-             * there is something to take. Without the floor the row fits exactly, no
-             * panel is asked to shrink, and the canvas gets the remainder — which is how
-             * it came to 160 px.
-             */
             Pane: {
                 flex: { grow: 1, shrink: 1 },
                 minWidth: '28rem',
@@ -33388,16 +32759,6 @@ var $;
                 font: { size: '.8rem' },
                 whiteSpace: 'normal',
             },
-            /**
-             * The class the pointer is carrying, drawn at the pointer.
-             *
-             * `fixed`, because the coordinates it is given are the raw `clientX`/`clientY`
-             * of the event. `pointer-events: none`, because it sits exactly under the
-             * pointer and would otherwise become the target of the moves that drive it —
-             * and, worse, of the `pointerup` that ends the drag. Offset down and right by
-             * a constant `transform` rather than by an offset in the coordinates: the
-             * world point of the drop must stay the point the person aimed at.
-             */
             Ghost: {
                 position: 'fixed',
                 zIndex: 100,
@@ -33411,11 +32772,6 @@ var $;
                 whiteSpace: 'nowrap',
                 box: { shadow: [[0, '.25rem', '.75rem', 0, $mol_style_func.hsla(0, 0, 0, .5)]] },
             },
-            /**
-             * The attention colour of the theme, filled, with the page colour for text.
-             * A red of our own stayed the same red in a light theme and in a dark one,
-             * and said nothing to a reader who had moved the hue.
-             */
             Alarm: {
                 flex: { shrink: 0 },
                 padding: $mol_gap.text,
@@ -33424,13 +32780,6 @@ var $;
                 font: { family: 'monospace', size: '.8rem' },
                 whiteSpace: 'pre-wrap',
             },
-            /**
-             * The OTHER accent of the theme, not the one the error strip uses, because
-             * this is not the same kind of news: the error says the document is wrong,
-             * this says the preview stopped and offers the one thing that helps. Two
-             * accents the theme already carries keep them apart without inventing a
-             * colour that ignores it.
-             */
             Stall: {
                 flex: { direction: 'row', shrink: 0, wrap: 'wrap' },
                 align: { items: 'center' },
@@ -33445,11 +32794,6 @@ var $;
                 font: { size: '.8rem' },
                 whiteSpace: 'normal',
             },
-            /**
-             * The accent of the stall and not of the error, because it is the same kind
-             * of news: the document works, and one thing about it does not. Wraps,
-             * unlike the error strip: these are sentences, not a stack.
-             */
             Export_note: {
                 flex: { direction: 'column', shrink: 0 },
                 gap: '.25rem',
@@ -33459,11 +32803,6 @@ var $;
                 font: { size: '.8rem' },
                 whiteSpace: 'normal',
             },
-            /**
-             * Only the text colour, so the button reads on the filled strip it stands on.
-             * Its own surface is left to the theme: a button already lights up on hover
-             * by itself, and a wash of our own painted over that.
-             */
             Stall_reload: {
                 flex: { shrink: 0 },
                 color: $mol_theme.back,
@@ -35722,10 +35061,8 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /** A box in world units, as the scene reports one. */
     const box = (x, y, width, height) => ({ x, y, width, height });
     $mol_test({
-        /** World to screen: the same transform the scene puts on its stage, done here. */
         'a measured box in screen pixels of the pane'($) {
             $mol_assert_like($bog_vmap_app_pane_screen(box(10, 20, 30, 40), 2, [5, 7]), { left: 25, top: 47, width: 60, height: 80 });
         },
@@ -40816,18 +40153,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the pure half of `$bog_vmap_lib`: parsing, the `$mol_view` stub,
-     * the inheritance walk and the united namespace.
-     *
-     * Nothing here touches the network. CI runs `node.test.js` and a live fetch
-     * would make the build depend on a third party host being up.
-     *
-     * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-     * a regexp over sources, literals included, so a bare class name in a fixture
-     * would drag a whole module into the bundle. Naming one HERE would do it too,
-     * which is why this sentence names none.
-     */
     const d = '$';
     const lib_src = [
         `${d}bog_vmap_lib_test_a ${d}mol_view`,
@@ -40865,37 +40190,26 @@ var $;
         'props_map carries inherited ports and the most derived value'($) {
             const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
             const props = $.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_b`);
-            // seven from $mol_view, then title redeclared, then count and extra
             $mol_assert_equal([...props.keys()].join(' '), 'dom_name style event field attr sub title count extra');
-            // redeclared in the subclass, so the subclass node wins
             $mol_assert_equal(props.get('count').kids[0].type, '1');
-            // declared once in the middle of the chain
             $mol_assert_equal(props.get('title').kids[0].value, 'A');
         },
         'a malformed pack points at the row of the pack, not of the stub'($) {
-            // `$mol_error_syntax` itself does not fit the `typeof Error` parameter,
-            // its constructor takes three arguments
             const error = $mol_assert_fail(() => $.$bog_vmap_lib_parse(`${d}q ${d}w\n\t\t\toops \\\n`, 'pack.view.tree'), SyntaxError);
-            // gluing the stub in front of the source, the way studio does, reports
-            // this very row as `#10`, eight below where the user has to look
             $mol_assert_equal(String(error.span), 'pack.view.tree#2:1/3');
         },
         'a redeclared port keeps the position of its first declaration'($) {
             const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
             const keys = [...$.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_b`).keys()];
-            // `title` comes from $mol_view and is redeclared by _test_a
             $mol_assert_equal(keys.indexOf('title'), 6);
         },
         'every port names the class it came from'($) {
             const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
             const owner = $.$bog_vmap_lib_props_owner(index, `${d}bog_vmap_lib_test_b`);
-            // the same keys as props_map, so «inherited» is one comparison away
             $mol_assert_equal([...owner.keys()].join(' '), [...$.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_b`).keys()].join(' '));
             $mol_assert_equal(owner.get('sub'), `${d}mol_view`);
             $mol_assert_equal(owner.get('extra'), `${d}bog_vmap_lib_test_b`);
-            // `title` is declared twice, the nearer declaration owns it
             $mol_assert_equal(owner.get('title'), `${d}bog_vmap_lib_test_a`);
-            // `count` is declared in both classes, so the nearer one is the owner
             $mol_assert_equal(owner.get('count'), `${d}bog_vmap_lib_test_b`);
         },
         'a cycle in the namespace does not hang'($) {
@@ -40914,7 +40228,6 @@ var $;
         'united resolves document classes against the library'($) {
             const lib = $.$bog_vmap_lib_parse(lib_src);
             const doc = $.$bog_vmap_lib_parse(doc_src);
-            // the stub is part of every parse, drop it from the document side
             const doc_kids = doc.kids.filter(cl => cl.type !== `${d}mol_view`);
             const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_united(lib, doc_kids));
             const props = $.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_doc`);
@@ -40929,7 +40242,6 @@ var $;
             ].join('\n')).kids.filter(cl => cl.type !== `${d}mol_view`);
             const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_united(lib, own));
             const props = $.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_a`);
-            // the library declaration of _test_a is gone, only the document one is left
             $mol_assert_equal(props.has('mine'), true);
             $mol_assert_equal(props.has('count'), false);
         },
@@ -40948,7 +40260,6 @@ var $;
             $mol_assert_equal(lib.class_search('').length, 3);
             $mol_assert_equal(lib.inherit_chain(`${d}bog_vmap_lib_test_a`).length, 3);
             $mol_assert_equal(lib.props_map(`${d}bog_vmap_lib_test_a`).size, 8);
-            // props_of is the same set as a tree, most derived first
             $mol_assert_equal(lib.props_of(`${d}bog_vmap_lib_test_b`).kids[0].type, 'extra');
         },
         'the pack address drives both links'($) {
@@ -40959,77 +40270,40 @@ var $;
             $mol_assert_equal(lib.tree_link(), 'https://example.org/app/web.view.tree');
             $mol_assert_equal(lib.script_link(), 'https://example.org/app/web.js');
         },
-        /**
-         * A pack served from a sub path is the normal case: every app of ours sits
-         * at `<user>.github.io/<repo>/`. Without the trailing slash `new URL` would
-         * take `<repo>` for a file name and drop it.
-         */
         'a pack address without a trailing slash keeps its last segment'($) {
             const lib = $.$bog_vmap_lib.make({ $ });
             lib.pack('https://b-on-g.github.io/gram');
             $mol_assert_equal(lib.tree_link(), 'https://b-on-g.github.io/gram/web.view.tree');
             $mol_assert_equal(lib.script_link(), 'https://b-on-g.github.io/gram/web.js');
-            // the address the user typed is left alone, only the derived base grows
             $mol_assert_equal(lib.pack(), 'https://b-on-g.github.io/gram');
             $mol_assert_equal(lib.pack_base(), 'https://b-on-g.github.io/gram/');
             lib.pack('https://b-on-g.github.io/gram/');
             $mol_assert_equal(lib.tree_link(), 'https://b-on-g.github.io/gram/web.view.tree');
         },
-        /**
-         * The dev server keeps a module in `<pack>/<module>/-/`, so a sibling of the
-         * page keeps the `-` as well. Both entry pages of a module live there, and
-         * the editor is developed on `test.html`.
-         */
         'a sibling module on the dev server keeps the build folder'($) {
             const page = 'http://localhost:9080/bog/vmap/app/-/test.html';
             $mol_assert_equal($bog_vmap_lib_sibling(page, 'scene'), 'http://localhost:9080/bog/vmap/scene/-/');
             $mol_assert_equal($bog_vmap_lib_sibling(page, 'part'), 'http://localhost:9080/bog/vmap/part/-/');
             $mol_assert_equal($bog_vmap_lib_sibling('http://localhost:9080/bog/vmap/app/-/index.html', 'scene'), 'http://localhost:9080/bog/vmap/scene/-/');
         },
-        /**
-         * A deploy publishes the editor at the root of the site and every other
-         * module as a folder beneath it, so a sibling is a folder INSIDE the one the
-         * editor is served from. The address of the pack is then `<site>/part/`,
-         * which is where `web.view.tree` is, and the bundle of the sandbox is
-         * `<site>/scene/web.js` — neither of them a page.
-         */
         'a sibling module on a deploy is a folder under the editor'($) {
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/', 'part'), 'https://b-on-g.github.io/vmap/part/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/index.html', 'part'), 'https://b-on-g.github.io/vmap/part/');
         },
-        /**
-         * A folder address without its slash reads the same: a last segment with no
-         * dot in it is a folder, not a page file. GitHub Pages answers both.
-         */
         'a page address without a trailing slash reads as a folder'($) {
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap', 'part'), 'https://b-on-g.github.io/vmap/part/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap?x=1#y', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
         },
-        /**
-         * A dot in a FOLDER name does not make it a page. A versioned deploy is the
-         * ordinary way to get one, and taking `v1.2` for a page would eat the
-         * segment and point both addresses a level above where they live.
-         */
         'a dot in a folder name is not a page file'($) {
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/', 'part'), 'https://b-on-g.github.io/vmap/v1.2/part/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/index.html', 'scene'), 'https://b-on-g.github.io/vmap/v1.2/scene/');
         },
-        /**
-         * The editor on a domain of its own is served from the root itself, so the
-         * siblings are the first segment there. Nothing is eaten and no address
-         * climbs above the root, which is the one thing that must never happen here.
-         */
         'an editor served from the root of a site keeps its siblings under it'($) {
             $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/', 'part'), 'https://vmap.example/part/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/index.html', 'scene'), 'https://vmap.example/scene/');
             $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example', 'part'), 'https://vmap.example/part/');
         },
-        /**
-         * A `data:` address keeps the fetch offline while still going through the
-         * real `$mol_fetch`, so `tree()` is covered end to end and CI stays free of
-         * a third party host.
-         */
         async 'a pack is fetched and parsed'($) {
             const lib = $.$bog_vmap_lib.make({
                 $,
@@ -41037,10 +40311,6 @@ var $;
             });
             $mol_assert_equal((await $.$mol_wire_async(lib).class_list()).join(' '), `${d}mol_view ${d}bog_vmap_lib_test_a ${d}bog_vmap_lib_test_b`);
         },
-        /**
-         * The one behaviour a try/catch inside `tree()` would quietly destroy: a
-         * dead pack has to reach the view as an error, not as an empty palette.
-         */
         async 'an unreachable pack fails instead of emptying the palette'($) {
             const lib = $.$bog_vmap_lib.make({ $, tree_link: () => 'data:' });
             let failed = '';
@@ -41052,17 +40322,10 @@ var $;
             }
             $mol_assert_equal(failed, '$mol_error_mix');
         },
-        /**
-         * The wording of a dead pack. A status line alone — «Not Found» — is true
-         * and useless: it names neither the file that was missing nor the field to
-         * correct, and that is exactly what reached the screen.
-         */
         'a dead pack is worded with the address that was fetched'($) {
             const note = $.$bog_vmap_lib_pack_note('https://dead.test/web.view.tree', new Error('Not Found'));
             $mol_assert_ok(note.includes('Not Found'));
             $mol_assert_ok(note.includes('https://dead.test/web.view.tree'));
-            // With no address to name — a library of lands alone — it says the one
-            // thing it knows rather than an empty «Ожидался ».
             const bare = $.$bog_vmap_lib_pack_note('', new Error('Failed to fetch'));
             $mol_assert_equal(bare, 'Пак не отвечает: Failed to fetch');
         },
@@ -41291,10 +40554,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * The wire layer on numbers: where the dots go, how a wire bends, what hits,
-     * what fits. Nothing here touches the DOM.
-     */
     const box = (left, top, width = 100, height = 50) => ({ left, top, width, height });
     const port = (name, kind, next = false) => ({ name, next, kind });
     const dot = (over) => ({
@@ -41306,11 +40565,6 @@ var $;
         ...over,
     });
     $mol_test({
-        /**
-         * The overlay is cut open exactly along the box of the picked part. A dot
-         * inside the box would be clipped away and take no press, so every dot
-         * must lie strictly outside, with its whole radius.
-         */
         'ports sit outside the box on both sides, one row each'($) {
             const b = box(100, 200, 60, 30);
             for (let i = 0; i < 5; ++i) {
@@ -41322,9 +40576,7 @@ var $;
                 $mol_assert_equal(iy, b.top + $bog_vmap_app_wire_row / 2 + i * $bog_vmap_app_wire_row);
             }
         },
-        /** Rows are screen pixels: the same box twice as big on screen gives the same row height. */
         'port rows do not scale with the camera'($) {
-            // The same world box at zoom 1 and at zoom 4.
             const small = $bog_vmap_app_wire_port_point(box(0, 0, 10, 10), 'out', 1);
             const big = $bog_vmap_app_wire_port_point(box(0, 0, 40, 40), 'out', 1);
             $mol_assert_equal(small[1], big[1]);
@@ -41336,28 +40588,16 @@ var $;
             const mid = $bog_vmap_app_wire_curve_mid([0, 0], [200, 100]);
             $mol_assert_like(mid, [100, 50]);
         },
-        /**
-         * REPRO: two children of one container sit at the same left edge, so the
-         * output of the upper one is to the RIGHT of the input of the lower one.
-         * Horizontal tangents there loop the wire out past the box and back in from
-         * the far side, which reads as a wire that is broken rather than short.
-         */
         'a wire that runs backwards turns its tangents and stays between its ends'($) {
-            // Upper child: box left 100, so its output dot is at 100 + 200 + 12.
-            // Lower child: same left edge, so its input dot is at 100 - 12.
             const from = [312, 20];
             const to = [88, 120];
             const d = $bog_vmap_app_wire_curve(from, to);
-            // Every control point stays within the span of the ends: no loop outside.
             const xs = d.match(/-?\d+(\.\d+)?/g).map(Number).filter((_, i) => i % 2 === 0);
             $mol_assert_equal(Math.max(...xs), from[0]);
             $mol_assert_equal(Math.min(...xs), to[0]);
-            // The tangents are vertical: the curve steps down and comes in from above.
             $mol_assert_equal(d, 'M 312 20 C 312 70, 88 70, 88 120');
-            // The label rides the curve, not the straight line between the ends.
             $mol_assert_like($bog_vmap_app_wire_curve_mid(from, to), [200, 70]);
         },
-        /** A wire that runs forwards is unchanged: ends already point at each other. */
         'a short forward wire keeps a minimal reach'($) {
             $mol_assert_equal($bog_vmap_app_wire_curve([0, 0], [10, 0]), 'M 0 0 C 40 0, -30 0, 10 0');
         },
@@ -41378,15 +40618,10 @@ var $;
             $mol_assert_equal($bog_vmap_app_wire_fits('string', 'locale'), true);
             $mol_assert_equal($bog_vmap_app_wire_fits('number', 'string'), false);
             $mol_assert_equal($bog_vmap_app_wire_fits('list', 'bool'), false);
-            // Unknown shape on either end fits anything.
             $mol_assert_equal($bog_vmap_app_wire_fits('null', 'list'), true);
             $mol_assert_equal($bog_vmap_app_wire_fits('number', 'get'), true);
             $mol_assert_equal($bog_vmap_app_wire_fits('bind', 'number'), true);
         },
-        /**
-         * From a class of every shape, the ports one may wire: values and references,
-         * never sub views, dictionaries or keyed properties.
-         */
         'ports are the value shaped, unkeyed properties of the class'($) {
             const d = '$';
             const tree = $.$mol_tree2_from_string([
@@ -41466,64 +40701,33 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of where a drop into an artboard lands.
-     *
-     * Pure geometry, so a fixture is a container and a few boxes. What the document
-     * says about the layout never enters: the host does not compile it and has no
-     * layout of its own, and the boxes are all it is told.
-     */
     const box = (x, y, width, height) => ({ x, y, width, height });
-    /** A page of three rows, stacked down the artboard. */
     const column = [box(0, 0, 400, 100), box(0, 100, 400, 100), box(0, 200, 400, 100)];
-    /** The same three, laid side by side. */
     const row = [box(0, 0, 100, 300), box(100, 0, 100, 300), box(200, 0, 100, 300)];
     const board = box(0, 0, 400, 300);
     $mol_test({
-        /**
-         * Three sources, in this order and for this reason: what the node declares is
-         * a line of the document rather than a guess; the boxes of the children are
-         * the fallback and say nothing when there are fewer than two of them; a
-         * column is the last resort and what a page is set to.
-         */
         'the declared direction wins, then the geometry, then a column'($) {
-            // Declared, and the children say the opposite. The declaration is right:
-            // the boxes of a box that has just been re-declared are the old layout.
             $mol_assert_equal($bog_vmap_app_pane_slot_axis(column, 'row'), 'row');
             $mol_assert_equal($bog_vmap_app_pane_slot_axis(row, 'column'), 'column');
-            // Nothing declared: read off where the children came out.
             $mol_assert_equal($bog_vmap_app_pane_slot_axis(column), 'column');
             $mol_assert_equal($bog_vmap_app_pane_slot_axis(row), 'row');
             $mol_assert_equal($bog_vmap_app_pane_slot_axis(column, ''), 'column');
-            // Neither: a column. One child is exactly as silent as none, which is why
-            // the declaration has to come first at all.
             $mol_assert_equal($bog_vmap_app_pane_slot_axis([]), 'column');
             $mol_assert_equal($bog_vmap_app_pane_slot_axis([column[0]]), 'column');
             $mol_assert_equal($bog_vmap_app_pane_slot_axis([column[0]], 'row'), 'row');
-            // A direction we do not act on is not taken at its word: a reversed box
-            // lays its children out backwards from the order `sub` lists them, so a
-            // position counted along the boxes would be the mirror of the one written.
             $mol_assert_equal($bog_vmap_app_pane_slot_axis(row, 'row-reverse'), 'row');
             $mol_assert_equal($bog_vmap_app_pane_slot_axis(column, 'row-reverse'), 'column');
         },
-        /** One child and a declared row: the position is counted across, not down. */
         'a declared direction decides where a lone child is passed'($) {
             const one = [box(0, 0, 100, 300)];
             const before = $bog_vmap_app_pane_slot('Board', board, one, [20, 150], 'row');
             const after = $bog_vmap_app_pane_slot('Board', board, one, [80, 150], 'row');
             $mol_assert_equal(before.index, 0);
             $mol_assert_equal(after.index, 1);
-            // Undeclared, the same lone child is judged down the column instead, so
-            // the very same point lands on the other side of it.
             $mol_assert_equal($bog_vmap_app_pane_slot('Board', board, one, [20, 200]).index, 1);
             $mol_assert_equal($bog_vmap_app_pane_slot('Board', board, one, [80, 200], 'row').index, 1);
             $mol_assert_equal($bog_vmap_app_pane_slot('Board', board, one, [20, 200], 'row').index, 0);
         },
-        /**
-         * The middle of a child decides, not the gap between children: children of a
-         * flex box usually touch, and pointing at the upper half of one plainly means
-         * «above this one».
-         */
         'a point above the middle of a child goes before it'($) {
             const at = (y) => $bog_vmap_app_pane_slot('Board', board, column, [200, y]).index;
             $mol_assert_equal(at(10), 0);
@@ -41539,7 +40743,6 @@ var $;
             $mol_assert_equal(at(120), 1);
             $mol_assert_equal(at(290), 3);
         },
-        /** The line lies on the boundary and spans the container, flat across it. */
         'the line is drawn between the children, and at the edge at either end'($) {
             const head = $bog_vmap_app_pane_slot('Board', board, column, [200, 10]);
             $mol_assert_like(head.line, { x: 0, y: 0, width: 400, height: 0 });
@@ -41550,13 +40753,11 @@ var $;
             const across = $bog_vmap_app_pane_slot('Board', board, row, [120, 150]);
             $mol_assert_like(across.line, { x: 100, y: 0, width: 0, height: 300 });
         },
-        /** An empty artboard takes the drop at its own top edge, at position zero. */
         'an empty container offers the one position it has'($) {
             const slot = $bog_vmap_app_pane_slot('Board', box(40, 60, 400, 300), [], [200, 200]);
             $mol_assert_equal(slot.index, 0);
             $mol_assert_like(slot.line, { x: 40, y: 60, width: 400, height: 0 });
         },
-        /** A gap between children puts the line in the middle of it, not on a child. */
         'the line splits the gap when there is one'($) {
             const gapped = [box(0, 0, 400, 100), box(0, 140, 400, 100)];
             const slot = $bog_vmap_app_pane_slot('Board', board, gapped, [200, 120]);
@@ -41570,10 +40771,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * The overlay cut open, as arithmetic: no pane and no camera, just the
-     * `clip-path` value the inner rectangle turns into.
-     */
     $mol_test({
         'the hole is a polygon with the box cut out of it'($) {
             $mol_assert_equal($bog_vmap_app_pane_hole(null), 'none');
@@ -41586,38 +40783,16 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * The gate over the scene: what a press, a move and a release do, without a
-     * browser. The pane is given a geometry and a fake peer window, and what is
-     * checked is what it picks, what it sends and when the watchdog is armed.
-     *
-     * `d` keeps `$` out of the string literals — mam builds its dependency graph by
-     * a regexp over sources, literals included.
-     */
     const d = '$';
     const root = `${d}doc`;
     const calc = `${d}flow_calc`;
     const map = `${d}flow_map`;
-    /**
-     * A pane with a scene that has said `ready`, a known rectangle and a listening
-     * peer.
-     *
-     * No clock is handed in, and there used to be one: the stamps a question and an
-     * answer are ordered by were read off a wall clock, so two of them could land on
-     * the same millisecond and the watch would disarm over a scene that had answered
-     * nothing. They are serial numbers now, and a serial cannot repeat, so the stand
-     * has nothing left to hold still.
-     */
     const pane_make = ($, rect = {}, over = {}) => {
         const posted = [];
         const peer = {
             origin: 'null',
             postMessage(data) { posted.push(data); },
         };
-        // Every name the geometry mentions is a node of the document, unless the
-        // scenario says otherwise: these tests hand in the boxes themselves, and
-        // what they hand in is what they mean. A scenario about the boundary
-        // between the document and the insides of a pack class says so outright.
         const declared = () => {
             const names = new Set();
             for (const key of Object.keys(pane.sizes())) {
@@ -41655,7 +40830,6 @@ var $;
         ...over,
     });
     const clicks = (posted) => posted.filter(m => m.kind === 'click_at');
-    /** A timer that never fires by itself, so the test decides when time passes. */
     const timers_fake = ($) => {
         const made = [];
         $.$mol_after_timeout = class extends $mol_after_timeout {
@@ -41672,7 +40846,6 @@ var $;
             const stage = $bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([200, 150]));
             $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
-            // The overlay is whole: the body of the part just dropped is the handle.
             $mol_assert_equal(stage.pane.overlay_style().clipPath, 'none');
             const overlay = stage.overlay();
             const from = stage.part_center('Calc');
@@ -41686,14 +40859,12 @@ var $;
             const stage = $bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([200, 150]));
             stage.drop(map, stage.client([400, 150]));
-            // The first click on another part only picks it, and no click reaches the scene.
             const before = stage.scene.sent('click_at').length;
             stage.tap(stage.part_center('Calc'));
             $mol_assert_equal(stage.app.selected(), 'Calc');
             $mol_assert_equal(stage.pane.inside(), false);
             $mol_assert_equal(stage.pane.overlay_style().clipPath, 'none');
             $mol_assert_equal(stage.scene.sent('click_at').length, before);
-            // The second one lets the pointer inside, and the click goes on to the component.
             stage.tap(stage.part_center('Calc'));
             $mol_assert_equal(stage.pane.inside(), true);
             $mol_assert_ok(stage.pane.overlay_style().clipPath.includes('200px 150px'));
@@ -41716,19 +40887,11 @@ var $;
             $mol_assert_equal(stage.app.doc_source().includes('Calc'), false);
             $mol_assert_equal(stage.app.selected(), null);
         },
-        /**
-         * The band: a modified sweep over the canvas takes everything it overlaps, and
-         * from then on the whole set is one thing — it travels together and it goes
-         * together.
-         */
         'a band takes several parts, and they move and delete as one'($) {
             const stage = $bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([100, 100]));
             stage.drop(map, stage.client([300, 100]));
-            // Only the last dropped one is picked, as a drop leaves it.
             $mol_assert_like([...stage.app.picked()], ['Map']);
-            // A sweep with the modifier down, from above and left of both to below
-            // and right of both.
             const overlay = stage.overlay();
             const mods = { ctrlKey: true };
             stage.press(overlay, stage.client([50, 50]), mods);
@@ -41739,7 +40902,6 @@ var $;
             stage.scene.flush();
             $mol_assert_like([...stage.app.picked()], ['Calc', 'Map']);
             $mol_assert_equal(stage.pane.band(), null);
-            // Carried by the body of one of them, both travel by the same offset.
             const from = stage.part_center('Calc');
             stage.press(overlay, from);
             stage.move(overlay, [from[0] + 40, from[1] + 30]);
@@ -41749,7 +40911,6 @@ var $;
                 Calc: { x: 140, y: 130 },
                 Map: { x: 340, y: 130 },
             });
-            // And deleted together: out of the document, out of `sub`, out of the desk.
             stage.click(stage.button('Удалить'));
             const source = stage.app.doc_source();
             $mol_assert_equal(source.includes('Calc'), false);
@@ -41757,20 +40918,10 @@ var $;
             $mol_assert_like(Object.keys(stage.app.spots()), []);
             $mol_assert_like([...stage.app.picked()], []);
         },
-        /**
-         * REPRO: a drop out of the palette while something is picked carried the
-         * picked node to the point of the drop as well.
-         */
-        /**
-         * REPRO end to end: a frame that boots and stops before any geometry. The
-         * canvas used to sit in «ожидание сцены…» with no strip and no button, since
-         * the watch was off until the frame had warmed.
-         */
         'a scene that never came up says so, and says what to do about it'($) {
             const stage = $bog_vmap_app_flow_stage($, { mute: true });
             $mol_assert_equal(stage.pane.warmed(), false);
             $mol_assert_equal(stage.app.stalled(), false);
-            // The watch is armed on the cold limit; time passes and it fires.
             const timer = stage.timers.at(-1);
             $mol_assert_ok(stage.pane.watchdog() !== null);
             $mol_assert_equal(stage.pane.watchdog().delay, stage.pane.cold_limit());
@@ -41783,33 +40934,20 @@ var $;
             stage.button('Перезагрузить сцену');
             $mol_assert_ok(timer !== null);
         },
-        /**
-         * REPRO: entering a part gave it the pointer but not the keyboard. The scene
-         * focuses the element under the click, and that alone left the active element
-         * of the frame at `body` — typing went nowhere at all.
-         */
         'entering a part hands the keyboard to the frame'($) {
             const stage = $bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([200, 150]));
-            // A drop picks the part, so a click on it would already be the second of
-            // the pair. Bare canvas first, to start from nothing picked.
             stage.tap(stage.client([500, 400]));
             $mol_assert_equal(stage.app.selected(), null);
             let focused = 0;
             stage.frame().focus = () => { focused++; };
-            // The first click only picks: the keyboard stays with the editor.
             stage.tap(stage.part_center('Calc'));
             $mol_assert_equal(stage.pane.inside(), false);
             $mol_assert_equal(focused, 0);
-            // The second lets the pointer in, and the keys go with it.
             stage.tap(stage.part_center('Calc'));
             $mol_assert_equal(stage.pane.inside(), true);
             $mol_assert_equal(focused, 1);
         },
-        /**
-         * Inside a part the keys belong to the part, and the strip says so with the
-         * way out. Nothing else on screen would explain why Delete stopped deleting.
-         */
         'the strip says the pointer is inside a part, and how to get out'($) {
             const stage = $bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([200, 150]));
@@ -41825,14 +40963,8 @@ var $;
             $mol_assert_equal(stage.pane.inside(), false);
             $mol_assert_equal(stage.text().includes('Внутри'), false);
         },
-        /**
-         * REPRO: a wire drawn onto an input that already carries one used to be
-         * written straight over, leaving the previous source line in the document
-         * with nobody reading it.
-         */
         'REPRO rebinding an occupied input leaves no orphan behind'($) {
             const stage = $bog_vmap_app_flow_stage($);
-            // Two sources of the same shape, names sharing a prefix on purpose.
             stage.drop(calc, stage.client([100, 100]));
             stage.drop(calc, stage.client([100, 300]));
             stage.drop(map, stage.client([400, 100]));
@@ -41847,8 +40979,6 @@ var $;
             wire('Calc', 'result');
             $mol_assert_ok(stage.app.doc_source().includes('calc_result = Calc result'));
             $mol_assert_like(stage.app.doc_wires().map(link => `${link.to}.${link.to_prop}`), ['Map.zoom']);
-            // The same input, a different source: the first wire goes with its line,
-            // and the wire lands on the part it was dropped on, prefix name and all.
             stage.tap(stage.part_center('Calc_2'));
             wire('Calc_2', 'result');
             const source = stage.app.doc_source();
@@ -41860,7 +40990,6 @@ var $;
             const stage = $bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([100, 100]));
             $mol_assert_equal(stage.app.selected(), 'Calc');
-            // Picked by a click, the way a person picks before reaching for the palette.
             stage.tap(stage.part_center('Calc'));
             $mol_assert_equal(stage.app.selected(), 'Calc');
             stage.drop(map, stage.client([400, 300]));
@@ -41877,7 +41006,6 @@ var $;
             stage.drop(map, stage.client([page.left + 200, page.top + 250]));
             const node = stage.app.node();
             $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
-            // Carry the second one above the first: press on it, drag up, release.
             const overlay = stage.overlay();
             const from = stage.part_center('Map');
             const to = stage.client([page.left + 200, page.top + 5]);
@@ -41888,18 +41016,11 @@ var $;
             stage.scene.flush();
             $mol_assert_like(node.sub_names('Page'), ['Map', 'Calc']);
         },
-        /**
-         * The first click picks and nothing else: the body of the node stays the
-         * editor's, to carry it by. The second one on the same node lets the pointer
-         * inside, and only then does the click go on to the live component, in world
-         * units, with the camera undone the same way the hit test undoes it.
-         */
         'the first click picks, the second lets the pointer in and relays it'($) {
             const { pane, posted } = pane_make($, { left: 10, top: 20 });
             pane.camera_shift(new $mol_vector_2d(100, 50));
             pane.camera_zoom(2);
             pane.sizes({ [`${root}/A`]: box(30, 40) });
-            // World (50, 60) is screen 50*2+100+10, 60*2+50+20.
             pane.node_press(pointer(210, 190));
             pane.node_release(pointer(210, 190, { buttons: 0 }));
             $mol_assert_equal(pane.primary(), 'A');
@@ -41913,58 +41034,18 @@ var $;
             $mol_assert_equal(sent[0].x, 50);
             $mol_assert_equal(sent[0].y, 60);
         },
-        /**
-         * CARRYING A NODE IS NOT ENTERING IT. The second press on a node picked alone
-         * is the one that would let the pointer in, and a drag begins with exactly
-         * that press — so something has to tell the two apart, and whatever it is, it
-         * is read on the release.
-         *
-         * THE RELEASE IS ITS OWN WITNESS, and that is what this pins down. A move
-         * records the travel as it goes, so an ordinary drag is told from a click
-         * long before the button comes up. What has no move at all is a gesture whose
-         * moves went somewhere else — the pointer left the window and the capture was
-         * lost — and there the only reading ever taken is the one the release takes
-         * itself: the node the button came up on. Off the node it pressed on, and the
-         * gesture is not a way in.
-         *
-         * NOT how far it went, which is what this used to say and what E18 was. Four
-         * pixels is what a hand drifts between pressing and letting go, so measured
-         * that way an ordinary second click was filed as a drag, and only a double
-         * click — which a browser delivers at one single point — ever got inside.
-         * Two hundred pixels off is the case that stays a drag, and it stays one
-         * under either reading, which is why this scenario survived the change with
-         * its assertions untouched.
-         */
         'a release far from its press is not a way into the node'($) {
             const { pane } = pane_make($);
             pane.sizes({ [`${root}/A`]: box(0, 0) });
             pane.spots({ A: { x: 0, y: 0 } });
-            // First click: picked, and the pointer stays outside.
             pane.node_press(pointer(50, 25));
             pane.node_release(pointer(50, 25, { buttons: 0 }));
             $mol_assert_equal(pane.primary(), 'A');
             $mol_assert_equal(pane.inside(), false);
-            // The press that would have let the pointer in, and then nothing until a
-            // release two hundred pixels away, off the node and onto bare canvas.
             pane.node_press(pointer(50, 25));
             pane.node_release(pointer(250, 225, { buttons: 0 }));
             $mol_assert_equal(pane.inside(), false);
         },
-        /**
-         * E18. A HAND DRIFTS, AND A CLICK IS STILL A CLICK. Pressing and letting go
-         * in one place moves the pointer by a few pixels under any hand; four of them
-         * was the tolerance, and past it the release was filed as a drag and the
-         * second click never let the pointer inside the part.
-         *
-         * What made it look like a rule rather than a wobble is that a DOUBLE click
-         * always worked: a browser delivers both of its presses at one single point,
-         * so it never drifts. Two separate clicks on the same part drifted, and the
-         * calculator inside a pair could not be typed into at all.
-         *
-         * Measured on this stand before the fix: five pixels between press and
-         * release, and `inside()` came back false with the part still picked — which
-         * is exactly what was reported from the live browser, ring on and no hole.
-         */
         'a second click that drifts a few pixels still lets the pointer inside'($) {
             const { pane } = pane_make($);
             pane.sizes({ [`${root}/A`]: box(0, 0) });
@@ -41973,18 +41054,10 @@ var $;
             pane.node_release(pointer(50, 25, { buttons: 0 }));
             $mol_assert_equal(pane.primary(), 'A');
             $mol_assert_equal(pane.inside(), false);
-            // The second one, five pixels off where it started and still on the part.
             pane.node_press(pointer(50, 25));
             pane.node_release(pointer(55, 25, { buttons: 0 }));
             $mol_assert_equal(pane.inside(), true);
         },
-        /**
-         * The same thing through the whole editor, and with the pause the report
-         * described: two separate clicks, a key pressed into nowhere between them,
-         * and the second one gets in. The keystroke is there because it was in the
-         * measurement — a person typing into a part they believe they are inside of —
-         * and a key that means nothing to the editor must cost nothing.
-         */
         'two separate clicks with a keystroke between them let the pointer in'($) {
             const stage = $bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([200, 150]));
@@ -41996,8 +41069,6 @@ var $;
             dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: '9', bubbles: true }));
             stage.redraw();
             $mol_assert_equal(stage.app.selected(), 'Calc');
-            // Not the same point twice: the pointer of a person who let go and came
-            // back is never where it was, and that is the whole of E18.
             const centre = stage.part_center('Calc');
             stage.press(stage.overlay(), centre);
             stage.release(stage.overlay(), [centre[0] + 3, centre[1] + 3]);
@@ -42005,7 +41076,6 @@ var $;
             stage.scene.flush();
             $mol_assert_equal(stage.pane.inside(), true);
         },
-        /** A pick of anything else closes the hole without anybody clearing it. */
         'picking another node puts the pointer back outside'($) {
             const { pane } = pane_make($);
             pane.sizes({ [`${root}/A`]: box(0, 0), [`${root}/B`]: box(300, 0) });
@@ -42019,25 +41089,11 @@ var $;
             $mol_assert_equal(pane.primary(), 'B');
             $mol_assert_equal(pane.inside(), false);
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
-            // And coming back to the first one starts from outside again: it is a
-            // pick, not a return to where the pointer was left the time before.
             pane.node_press(pointer(50, 25));
             pane.node_release(pointer(50, 25, { buttons: 0 }));
             $mol_assert_equal(pane.primary(), 'A');
             $mol_assert_equal(pane.inside(), false);
         },
-        /**
-         * ESCAPE PRESSED INSIDE THE PART GETS OUT OF IT. Once the pointer is let in,
-         * the focus is the frame's and the keydown lands in the document of the
-         * frame, where the listener of the host is not — so the host hears nothing
-         * and the only way out used to be a click on bare canvas. The frame relays
-         * the key up the bridge instead, and the pane answers it exactly the way it
-         * answers the host's own Escape.
-         *
-         * Through a real message and not a call: what is being pinned down is that
-         * the relayed key is understood on arrival, and a direct call would prove
-         * only that the branch exists.
-         */
         'Escape relayed from the frame steps out of the node, then out of the pick'($) {
             const { pane, answer } = pane_make($);
             pane.sizes({ [`${root}/A`]: box(0, 0) });
@@ -42046,11 +41102,9 @@ var $;
             pane.node_press(pointer(50, 25));
             pane.node_release(pointer(50, 25, { buttons: 0 }));
             $mol_assert_equal(pane.inside(), true);
-            // One press, one step: out of the node, and the pick is still there.
             answer({ kind: 'key', key: 'Escape' });
             $mol_assert_equal(pane.inside(), false);
             $mol_assert_equal(pane.primary(), 'A');
-            // The next one drops the pick as well.
             answer({ kind: 'key', key: 'Escape' });
             $mol_assert_equal(pane.primary(), null);
             $mol_assert_like(pane.picked(), []);
@@ -42064,7 +41118,6 @@ var $;
             pane.node_release(pointer(50, 25, { buttons: 0, shiftKey: true, metaKey: true }));
             $mol_assert_like(clicks(posted)[0].mods, { altKey: false, ctrlKey: false, metaKey: true, shiftKey: true });
         },
-        /** A gesture that went somewhere is a drag of the part, not a click. */
         'movement past the threshold moves the part and relays nothing'($) {
             const { pane, posted } = pane_make($);
             pane.sizes({ [`${root}/A`]: box(0, 0) });
@@ -42077,35 +41130,17 @@ var $;
             $mol_assert_equal(pane.spots().A.y, 0);
             $mol_assert_equal(clicks(posted).length, 0);
         },
-        /**
-         * THE RING FOLLOWS THE POINTER, AND COUNTS THE MOVE ONCE. Measured boxes are
-         * debounced inside the scene and the timer restarts on every change, so
-         * through a continuous drag no fresh report arrives at all: a ring drawn from
-         * the report alone would stand at the grab until the pointer stopped. The
-         * live offset is added for exactly that. But the moment a report DOES arrive
-         * it already carries the move, and adding the offset on top of it would count
-         * the same twenty pixels twice.
-         *
-         * The two cases are told apart by the identity of the report the grab was
-         * taken against, and by nothing else — a fresh report is a new object. Written
-         * because the guard had no test at all: it was a version counter before, and
-         * the negative run on the identity that replaced it came back green.
-         */
         'the ring carries the live offset only until a fresh report arrives'($) {
             const { pane } = pane_make($);
             pane.sizes({ [`${root}/A`]: box(0, 0) });
             pane.spots({ A: { x: 0, y: 0 } });
             pane.node_press(pointer(50, 25));
             pane.node_move(pointer(70, 25));
-            // Nothing has been measured since the grab: the box is still at the
-            // origin, and the ring stands twenty pixels to the right of it.
             $mol_assert_equal(pane.sizes()[`${root}/A`].x, 0);
             $mol_assert_equal(pane.part_box('A').left, 20);
-            // Now the scene reports the node where the drag has already put it.
             pane.sizes({ [`${root}/A`]: box(20, 0) });
             $mol_assert_equal(pane.part_box('A').left, 20);
         },
-        /** The overlay may miss the moves — a pan captures the pointer away — so the release is measured too. */
         'a release far from the press is not a click even without moves in between'($) {
             const { pane, posted } = pane_make($);
             pane.node_press(pointer(50, 25));
@@ -42122,11 +41157,6 @@ var $;
             pane.node_release(pointer(51, 26, { buttons: 0 }));
             $mol_assert_equal(clicks(posted).length, 1);
         },
-        /**
-         * Bare canvas drops the pick and relays nothing: there is no node there to be
-         * let inside of, and a click sent anyway would give the focus to the frame —
-         * which is where the Delete of the editor stops arriving.
-         */
         'a click on bare canvas drops the selection and relays nothing'($) {
             const { pane, posted } = pane_make($);
             pane.sizes({ [`${root}/A`]: box(0, 0) });
@@ -42143,27 +41173,18 @@ var $;
             pane.node_release(pointer(5, 5, { buttons: 0 }));
             $mol_assert_equal(posted.length, 0);
         },
-        /**
-         * REPRO: the zoom pivots on the middle of the canvas, and the FIRST one after
-         * a load did not — the box it reads answers `null` until something has read
-         * it once, and an unread box put the pivot in the corner.
-         */
         'the first zoom after a load pivots on the middle of the canvas'($) {
             const { pane } = pane_make($);
-            // Nothing has read the geometry yet, exactly as after a fresh load.
             pane.zoom_by(1.25);
-            // 1000 x 800, so the middle is 500, 400; the pivot keeps it still.
             $mol_assert_equal(pane.camera_zoom(), 1.25);
             $mol_assert_like([...pane.camera_shift()], [-125, -100]);
         },
-        /** The grip is a strip of screen pixels, so it does not shrink away when zooming out. */
         'the grip around a part is measured in screen pixels'($) {
             const { pane } = pane_make($);
             pane.sizes({ [`${root}/A`]: box(0, 0, 100, 100) });
             pane.camera_zoom(1);
             $mol_assert_equal(pane.node_at([106, 50]), 'A');
             $mol_assert_equal(pane.node_at([110, 50]), null);
-            // At zoom 1/4 the same strip is four times wider in world units.
             pane.camera_zoom(.25);
             $mol_assert_equal(pane.node_at([130, 50]), 'A');
             $mol_assert_equal(pane.node_at([134, 50]), null);
@@ -42175,7 +41196,6 @@ var $;
             pane.sizes({ [`${root}/A`]: box(30, 40, 100, 50) });
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
             pane.picked(['A']);
-            // Picked and no more: the ring is drawn, the overlay is still whole.
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
             $mol_assert_equal(pane.frame_showed(), true);
             pane.entered('A');
@@ -42183,10 +41203,6 @@ var $;
             $mol_assert_equal(pane.overlay_style().clipPath, 'polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 160px 130px, 360px 130px, 360px 230px, 160px 230px, 160px 130px)');
             $mol_assert_like(pane.frame_style('A'), { left: '160px', top: '130px', width: '200px', height: '100px' });
         },
-        /**
-         * The band takes what it OVERLAPS, and of a node and its container only the
-         * outer one: a child carried inside its parent must not be carried twice.
-         */
         'a band takes what it overlaps, containers and not their children'($) {
             const { pane } = pane_make($);
             pane.sizes({
@@ -42194,19 +41210,16 @@ var $;
                 [`${root}/Page`]: box(200, 0, 300, 200),
                 [`${root}/Page/B`]: box(200, 0, 100, 50),
             });
-            // A sweep across the lot: the page comes, its child does not.
             pane.node_press(pointer(-10, -10, { ctrlKey: true }));
             pane.node_move(pointer(600, 300, { ctrlKey: true }));
             pane.node_release(pointer(600, 300, { ctrlKey: true, buttons: 0 }));
             $mol_assert_like([...pane.picked()], ['A', 'Page']);
             $mol_assert_equal(pane.band(), null);
-            // A sweep that merely touches the corner of the first one still takes it.
             pane.node_press(pointer(90, 40, { ctrlKey: true }));
             pane.node_move(pointer(150, 100, { ctrlKey: true }));
             pane.node_release(pointer(150, 100, { ctrlKey: true, buttons: 0 }));
             $mol_assert_like([...pane.picked()], ['A']);
         },
-        /** A band puts the pointer back outside, wherever it ends. */
         'a band takes the pointer out of the node it was let into'($) {
             const { pane } = pane_make($);
             pane.sizes({ [`${root}/A`]: box(0, 0) });
@@ -42215,7 +41228,6 @@ var $;
             pane.node_press(pointer(50, 25));
             pane.node_release(pointer(50, 25, { buttons: 0 }));
             $mol_assert_equal(pane.inside(), true);
-            // A sweep that ends up picking the very same node, and nothing else.
             pane.node_press(pointer(-10, -10, { ctrlKey: true }));
             pane.node_move(pointer(150, 60, { ctrlKey: true }));
             pane.node_release(pointer(150, 60, { ctrlKey: true, buttons: 0 }));
@@ -42223,13 +41235,8 @@ var $;
             $mol_assert_equal(pane.inside(), false);
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
         },
-        /**
-         * REPRO: the hit test walks the insides of a pack class and picks a view the
-         * document never declared. Everything below the part is the part's body.
-         */
         'REPRO the hit test stops at the nodes the document declares'($) {
             const { pane } = pane_make($, {}, { doc_names: () => ['Calc'] });
-            // A part of the document, and two views of its class inside it.
             pane.sizes({
                 [`${root}/Calc`]: box(0, 0, 200, 100),
                 [`${root}/Calc/Head`]: box(0, 0, 200, 30),
@@ -42238,11 +41245,9 @@ var $;
             $mol_assert_equal(pane.node_at([50, 15]), 'Calc');
             $mol_assert_equal(pane.node_at([100, 50]), 'Calc');
             $mol_assert_like(pane.part_names(), ['Calc']);
-            // And the ring is the box of the part, not of the view inside it.
             pane.picked(['Calc']);
             $mol_assert_like(pane.frame_style('Calc'), { left: '0px', top: '0px', width: '200px', height: '100px' });
         },
-        /** A node of the document inside an artboard is still reached, at any depth. */
         'REPRO the deepest node of the document wins, the pack inside it does not'($) {
             const { pane } = pane_make($, {}, { doc_names: () => ['Page', 'Calc'] });
             pane.sizes({
@@ -42253,52 +41258,30 @@ var $;
             $mol_assert_equal(pane.node_at([100, 15]), 'Calc');
             $mol_assert_equal(pane.node_at([300, 200]), 'Page');
         },
-        /**
-         * REPRO: a press whose release never came back left the carry live, and the
-         * next drag across the canvas — the one out of the palette — carried the
-         * picked node with it, grabbed where it had last been pressed.
-         */
         'REPRO a drag from the palette carries nothing of the canvas'($) {
             const { pane } = pane_make($);
             pane.sizes({ [`${root}/A`]: box(0, 0) });
             pane.spots({ A: { x: 0, y: 0 } });
-            // Picked and grabbed in the middle; the release fell into the hole and
-            // never reached the overlay, so the gesture was never ended.
             pane.node_press(pointer(50, 25));
-            // The owner now carries a class across the canvas, button down.
             pane.carrying = () => true;
             pane.node_move(pointer(400, 300));
             pane.node_release(pointer(400, 300, { buttons: 0 }));
             $mol_assert_like(pane.spots(), { A: { x: 0, y: 0 } });
         },
-        /**
-         * REPRO: a node carried into a container is measured at a new path, and the
-         * box under its old path kept answering to the same name. Two boxes for one
-         * name is how a wire lands on the neighbour of the part it was dropped on.
-         */
         'REPRO a node that moved leaves no box behind at its old path'($) {
             const { pane } = pane_make($, {}, { doc_names: () => ['Pair', 'Schet'] });
             pane.sizes({
                 [`${root}/Schet`]: box(700, 600),
                 [`${root}/Pair`]: box(0, 0, 400, 300),
             });
-            // Carried into the pair: the scene will measure it at the new path, and
-            // the owner tells the canvas to forget where it used to be.
             pane.sizes_forget('Schet');
             $mol_assert_like(Object.keys(pane.sizes()), [`${root}/Pair`]);
-            // And the new report puts it inside, with one box answering to the name.
             pane.sizes({ ...pane.sizes(), [`${root}/Pair/Schet`]: box(10, 10) });
             $mol_assert_like(pane.part_size('Schet'), box(10, 10));
             $mol_assert_equal(pane.part_names().filter(name => name === 'Schet').length, 1);
-            // Carried OUT of the pair, which is the case a rule written as a prefix of
-            // the root path cannot see: the stale key is a deep one.
             pane.sizes_forget('Schet');
             $mol_assert_like(Object.keys(pane.sizes()), [`${root}/Pair`]);
         },
-        /**
-         * REPRO: two parts of one container whose names share a prefix. The dot the
-         * pointer is over belongs to the part it is drawn on, and to no other.
-         */
         'REPRO a port dot belongs to the part it is drawn on, prefix or not'($) {
             const ports = [
                 { name: 'zoom', next: false, kind: 'number' },
@@ -42309,7 +41292,6 @@ var $;
                 part_ports: () => ports,
                 wires: () => [],
             });
-            // Stacked inside the pair, sharing a left edge: Map_2 above Map.
             pane.sizes({
                 [`${root}/Pair`]: box(0, 0, 400, 500),
                 [`${root}/Pair/Map_2`]: box(0, 0, 320, 220),
@@ -42318,13 +41300,10 @@ var $;
             pane.wire_drag({ from: 'Pair', from_prop: 'x', kind: 'number' });
             const dots = pane.wire_dots();
             const at = (x, y) => $bog_vmap_app_wire_dot_at(dots, [x, y]);
-            // The zoom dot of the upper map, and of the lower one.
             $mol_assert_equal(at(-12, 7)?.node, 'Map_2');
             $mol_assert_equal(at(-12, 227)?.node, 'Map');
-            // One dot set per part, not two.
             $mol_assert_equal(dots.filter(dot => dot.node === 'Map').length, 2);
         },
-        /** A modified click without a sweep takes nothing and clears nothing. */
         'a modified click leaves the picked set alone'($) {
             const { pane } = pane_make($);
             pane.sizes({ [`${root}/A`]: box(0, 0) });
@@ -42334,7 +41313,6 @@ var $;
             $mol_assert_like([...pane.picked()], ['A']);
             $mol_assert_equal(pane.band(), null);
         },
-        /** Everything picked travels by the same offset, each from its own start. */
         'a carry moves the whole picked set'($) {
             const { pane } = pane_make($);
             pane.sizes({ [`${root}/A`]: box(0, 0), [`${root}/B`]: box(300, 0) });
@@ -42352,21 +41330,13 @@ var $;
             pane.entered('A');
             pane.carrying = () => true;
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
-            // The ring itself stays: only the events stop going through.
             $mol_assert_equal(pane.frame_showed(), true);
         },
-        /**
-         * THE PULSE HAS NO MODE. It runs as soon as the scene has proved itself and
-         * the bridge is up, asks once, and asks again only after an answer.
-         */
         'the heartbeat pings once warmed and re-arms on the pong'($) {
             const timers = timers_fake($);
             const { pane, posted, answer } = pane_make($);
-            // Not warmed: no baseline, no pulse.
             $mol_assert_equal(pane.heartbeat(), null);
             pane.warmed(true);
-            // The first read of the watch pushes everything to the fresh scene; let
-            // the scene answer, so that what follows is about the pulse alone.
             pane.watchdog();
             answer({ kind: 'sizes', sizes: {} });
             $mol_assert_equal(pane.watchdog(), null);
@@ -42375,15 +41345,10 @@ var $;
             first.task();
             const pings = posted.filter(m => m.kind === 'ping');
             $mol_assert_equal(pings.length, 1);
-            // The nonce is a serial off the same clock as the stamps, so what is
-            // promised about it is that it is a number and that the echo carries it
-            // back, not what its value happens to be.
             const nonce = pings[0].nonce;
             $mol_assert_equal(nonce > 0, true);
-            // The ping is a question: the watchdog is armed by it.
             $mol_assert_equal(pane.watchdog() !== null, true);
             answer({ kind: 'pong', nonce });
-            // Answered: disarmed, and the next ping is scheduled.
             $mol_assert_equal(pane.watchdog(), null);
             $mol_assert_equal(pane.heartbeat() !== first, true);
         },
@@ -42399,10 +41364,6 @@ var $;
             watch.task();
             $mol_assert_equal(pane.stalled(), true);
         },
-        /**
-         * The button on the strip: a new frame element, the accusation withdrawn,
-         * nothing sent until the new scene says `ready`, then everything re-sent.
-         */
         'scene_restart gives a fresh frame and clears stalled'($) {
             timers_fake($);
             const { pane, posted, answer } = pane_make($);
@@ -42420,52 +41381,27 @@ var $;
             $mol_assert_equal(pane.sub()[0] !== frame_before, true);
             $mol_assert_equal(pane.sub()[0], pane.Scene(pane.scene_key()));
             $mol_assert_equal(pane.sub().length, 3);
-            // a frame that has not spoken gets nothing and is accused of nothing
             $mol_assert_equal(pane.watchdog(), null);
             $mol_assert_equal(pane.heartbeat(), null);
             $mol_assert_equal(posted.length, 0);
             answer({ kind: 'ready' });
             pane.watchdog();
             $mol_assert_equal(pane.ready(), true);
-            $mol_assert_like(posted.map(m => m.kind), 
-            // the pack first: the scene compiles nothing until it has one
-            ['pack_set', 'doc_set', 'css_set', 'libs_set', 'spots_set', 'camera_set']);
+            $mol_assert_like(posted.map(m => m.kind), ['pack_set', 'doc_set', 'css_set', 'libs_set', 'spots_set', 'camera_set']);
         },
-        /**
-         * The frame is isolated and has no address, and the ORDER of the two says so.
-         *
-         * The attribute renderer writes the dictionary in key order, so a frame
-         * that got its source before its sandbox is already loading unsandboxed —
-         * with the attribute present in the DOM and the audit green. Reading the
-         * dictionary is therefore the check, not reading the element.
-         */
         'the frame is sandboxed first, addressed never and raised from markup'($) {
             const { pane } = pane_make($, {}, { scene_bundle: () => 'https://vmap.test/scene/web.js' });
-            // read as entries and not by property name: dropping the attribute would
-            // then be a type error and the build would stop before this ever ran,
-            // leaving the last green bundle in place to be tested instead
             const attr = pane.Scene(pane.scene_key()).attr();
             const entries = Object.entries(attr);
             const keys = entries.map(([name]) => name);
             $mol_assert_equal(keys[0], 'sandbox');
             $mol_assert_equal(entries[0][1], 'allow-scripts');
-            // `null` is removal. An empty `src` would load the page we stand on.
             $mol_assert_equal(attr.src, null);
             $mol_assert_ok(keys.indexOf('srcdoc') > 0);
             const html = String(attr.srcdoc);
             $mol_assert_ok(html.includes('src="https://vmap.test/scene/web.js"'));
             $mol_assert_ok(html.includes('color-scheme:dark'));
         },
-        /**
-         * One pack per realm, held by the key of the frame now that no address holds
-         * it: the pack is IN the key, so naming another one addresses another frame.
-         * That the element really is replaced when a person types a pack is
-         * `flow.test.ts`, where the whole chain from the field down is real.
-         *
-         * The pack also goes out first, before the document and the libraries: the
-         * scene refuses to compile until it has one.
-         * @see ../../ARCHITECTURE.md section 5
-         */
         'the pack keys the frame and goes down the wire first'($) {
             const one = pane_make($, {}, { pack_uri: () => 'https://one.test/web.js' });
             const two = pane_make($, {}, { pack_uri: () => 'https://two.test/web.js' });
@@ -42474,22 +41410,17 @@ var $;
             $mol_assert_equal(one.posted[0]?.uri, 'https://one.test/web.js');
             $mol_assert_ok(one.pane.scene_key() !== two.pane.scene_key());
             $mol_assert_ok(one.pane.scene_key().includes('https://one.test/web.js'));
-            // same generation, different pack, different frame
             $mol_assert_equal(one.pane.scene_generation(), two.pane.scene_generation());
             $mol_assert_ok(one.pane.sub()[0] !== two.pane.sub()[0]);
         },
-        /** A click is a push like any other: it arms the watch, and geometry back disarms it. */
         'a relayed click arms the watchdog and sizes disarm it'($) {
             timers_fake($);
             const { pane, answer } = pane_make($);
             pane.sizes({ [`${root}/A`]: box(0, 0) });
             pane.warmed(true);
-            // The first read pushes the document and the rest; answered, the watch rests.
             pane.watchdog();
             answer({ kind: 'sizes', sizes: {} });
             $mol_assert_equal(pane.watchdog(), null);
-            // Twice: the click that goes to the scene is the one that lets the
-            // pointer inside, and the watch is armed by what is sent, not by a pick.
             pane.node_press(pointer(50, 25));
             pane.node_release(pointer(50, 25, { buttons: 0 }));
             pane.node_press(pointer(50, 25));
@@ -42498,12 +41429,6 @@ var $;
             answer({ kind: 'sizes', sizes: {} });
             $mol_assert_equal(pane.watchdog(), null);
         },
-        /** Not warmed yet, the pulse is quiet and the watch is off, whatever was pushed. */
-        /**
-         * The pulse waits for the scene to prove itself; the watch does not, since
-         * E9 — see the scenario below. A ping into a frame that has not loaded would
-         * be a question asked of nobody, and every answer to it a false all clear.
-         */
         'before the first sizes the pulse is quiet'($) {
             timers_fake($);
             const { pane } = pane_make($);
@@ -42511,58 +41436,39 @@ var $;
             pane.node_release(pointer(5, 5, { buttons: 0 }));
             $mol_assert_equal(pane.heartbeat(), null);
         },
-        /**
-         * REPRO: document code that loops on the first compile stops the scene before
-         * any geometry, so the frame never warms. The watch used to be off until it
-         * warmed, which left this one case with no strip, no button and no way out.
-         */
         'a frame that never answered at all is called out, on a limit of its own'($) {
             const timers = timers_fake($);
             const { pane, answer } = pane_make($);
-            // The frame boots and says `ready`, which proves nothing but the boot.
             answer({ kind: 'ready' });
-            // The host asks its questions; the scene compiles the document and stops.
             pane.watchdog();
             $mol_assert_equal(pane.warmed(), false);
             $mol_assert_ok(pane.watchdog() !== null);
-            // The limit is the generous one, not the warm one.
             $mol_assert_equal(timers.at(-1).delay, pane.cold_limit());
             $mol_assert_ok(pane.cold_limit() > pane.answer_limit());
             timers.at(-1).task();
             $mol_assert_equal(pane.stalled(), true);
         },
-        /**
-         * THE WIRE GESTURE. Camera panned and zoomed, so screen and world differ:
-         * a drag from the output dot of one part to the input dot of another puts
-         * exactly two lines into the document, and the click channel stays quiet.
-         */
         'a drag from an output to a fitting input writes exactly two lines'($) {
             const { pane, node, posted } = wired_make($);
             pane.camera_shift(new $mol_vector_2d(100, 50));
             pane.camera_zoom(2);
-            // Calc at world (0,0) is screen (100,50) 200×100; Map at world (300,0) is screen (700,50).
             pane.sizes({ [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) });
             pane.picked(['Calc']);
             const before = node.source();
-            // Output `result` is the first row: right of the box by the gap, half a row down.
             pane.node_press(pointer(312, 57));
             $mol_assert_like(pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' });
             $mol_assert_equal(pane.primary(), 'Calc');
             pane.node_move(pointer(600, 100));
-            // In hand: the inputs of the other part, the number one lit, the string one not.
             $mol_assert_like(pane.wire_dots().map(dot => [dot.node, dot.port.name, dot.side, dot.x, dot.y, dot.lit]), [['Map', 'zoom', 'in', 688, 57, true], ['Map', 'marker', 'in', 688, 71, false]]);
             $mol_assert_equal(pane.wire_drag_geometry().startsWith('M 312 57 C'), true);
             pane.node_release(pointer(688, 57, { buttons: 0 }));
             $mol_assert_equal(pane.wire_drag(), null);
-            // Two facts in the text: the wire at class level and the reference in the
-            // target's declaration, the latter serialized on the declaration's own line.
             $mol_assert_equal(node.source().split('\n').length, before.split('\n').length + 1);
             $mol_assert_equal(node.source().includes('\tcalc_result = Calc result\n'), true);
             $mol_assert_equal(node.source().includes('zoom <= calc_result\n'), true);
             $mol_assert_like(node.wires(), [{ name: 'calc_result', node: 'Calc', prop: 'result', bidi: false }]);
             $mol_assert_like(node.links().map(link => [link.from, link.from_prop, link.to, link.to_prop]), [['Calc', 'result', 'Map', 'zoom']]);
             $mol_assert_equal(clicks(posted).length, 0);
-            // Drawn from the same numbers the dots were.
             $mol_assert_equal(pane.wire_lines().length, 1);
             $mol_assert_equal(pane.wire_lines()[0].geometry.startsWith('M 312 57 C'), true);
             $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 688 57'), true);
@@ -42580,24 +41486,20 @@ var $;
             pane.node_release(pointer(200, 200, { buttons: 0 }));
             $mol_assert_equal(node.source(), before);
             $mol_assert_equal(pane.wire_drag(), null);
-            // `marker` is a string, the wire carries a number: the dot is there, unlit, and takes nothing.
             pane.node_press(pointer(112, 7));
             pane.node_release(pointer(288, 21, { buttons: 0 }));
             $mol_assert_equal(node.source(), before);
         },
-        /** A dot sits on the grip strip of its part, and the wire is the finer target: no part is carried. */
         'a press on a dot is a wire even where the part would also be hit'($) {
             const { pane } = wired_make($);
             pane.camera_zoom(.5);
             pane.sizes({ [`${root}/Calc`]: box(0, 0) });
             pane.picked(['Calc']);
-            // Box is 50 wide on screen, the dot at 62, the grip strip reaches 8 px past 50.
             pane.node_press(pointer(62, 7));
             $mol_assert_equal(pane.wire_drag() !== null, true);
             $mol_assert_equal(pane.drag(), null);
             pane.node_release(pointer(62, 7, { buttons: 0 }));
         },
-        /** Pressing a wired input unplugs it at once and leaves the wire in hand from the same source. */
         'a press on a wired input unplugs it and carries on from its source'($) {
             const { pane, node } = wired_make($);
             pane.sizes({ [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) });
@@ -42607,37 +41509,28 @@ var $;
             pane.node_press(pointer(288, 7));
             $mol_assert_equal(node.source(), before);
             $mol_assert_like(pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' });
-            // Let go over nothing: it stays unplugged.
             pane.node_release(pointer(500, 500, { buttons: 0 }));
             $mol_assert_equal(node.source(), before);
             $mol_assert_equal(node.links().length, 0);
-            // The same again, put back where it was: the same two lines.
             node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' });
             const wired = node.source();
             pane.node_press(pointer(288, 7));
             pane.node_release(pointer(288, 7, { buttons: 0 }));
             $mol_assert_equal(node.source(), wired);
         },
-        /**
-         * SECOND INVARIANT OF CULLING, seen from the wires: a part that left the
-         * viewport is missing from the next report, and its wire keeps its last end.
-         */
         'a wire is drawn from the last known box when one end is no longer reported'($) {
             const { pane, node, answer } = wired_make($);
             node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' });
-            // One end never measured: nothing to draw yet.
             answer({ kind: 'sizes', sizes: { [`${root}/Calc`]: box(0, 0) } });
             $mol_assert_equal(pane.wire_lines().length, 0);
             answer({ kind: 'sizes', sizes: { [`${root}/Map`]: box(300, 0) } });
             const drawn = pane.wire_lines();
             $mol_assert_equal(drawn.length, 1);
-            // Map culled, Calc moved: the wire follows the one and keeps the other.
             answer({ kind: 'sizes', sizes: { [`${root}/Calc`]: box(0, 100) } });
             $mol_assert_equal(pane.wire_lines().length, 1);
             $mol_assert_equal(pane.wire_lines()[0].geometry.startsWith('M 112 107 C'), true);
             $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 288 7'), true);
         },
-        /** The scene is asked for the wires on screen, and only for those, and asked again only when the set changes. */
         'values_want names the visible wires only'($) {
             const { pane, node, posted } = wired_make($, [
                 `Calc ${d}my_calc`, `Map ${d}my_map`, `Calc_2 ${d}my_calc`, `Map_2 ${d}my_map`,
@@ -42653,31 +41546,20 @@ var $;
             const wants = () => posted.filter(m => m.kind === 'values_want').map(m => m.names);
             pane.values_push();
             $mol_assert_like(wants(), [['calc_result']]);
-            // A pan that keeps the same wire on screen asks nothing new.
             pane.camera_shift(new $mol_vector_2d(10, 10));
             pane.values_push();
             $mol_assert_equal(wants().length, 1);
-            // Over to the far pair.
             pane.camera_shift(new $mol_vector_2d(-5000, -5000));
             pane.values_push();
             $mol_assert_like(wants(), [['calc_result'], ['calc_2_result']]);
-            // The answer lands on the wire as its label.
             $mol_assert_equal(pane.wire_lines().find(line => line.key === 'Map_2.zoom')?.label, '');
             pane.message_receive({ data: { ns: $bog_vmap_bridge_ns, kind: 'values', values: { calc_2_result: '42' } }, source: pane.scene_peer() });
             $mol_assert_equal(pane.wire_lines().find(line => line.key === 'Map_2.zoom')?.label, '42');
-            // A question that owes no answer must not arm the watch. Asserted on the
-            // stamp and no longer on `watchdog()` being null: since the cold frame is
-            // watched too, the pushes of the boot arm it by themselves, and a null
-            // there would stop meaning «this question was free».
             const stamped = pane.poke_at;
             pane.camera_shift(new $mol_vector_2d(-5000, -4000));
             pane.values_push();
             $mol_assert_equal(pane.poke_at, stamped);
         },
-        /**
-         * Inside an artboard the deepest node wins, or a page would swallow every
-         * pick made on it: everything laid out inside it lies within its box.
-         */
         'the pick goes to the deepest node under the point'($) {
             const { pane } = pane_make($);
             pane.sizes({
@@ -42689,16 +41571,10 @@ var $;
             $mol_assert_equal(pane.node_at([200, 200]), 'Board');
             $mol_assert_equal(pane.node_at([650, 25]), 'Loose');
             $mol_assert_equal(pane.node_at([900, 400]), null);
-            // The box of a node is found at whatever depth it is drawn.
             $mol_assert_like(pane.part_size('Head'), box(0, 0, 400, 100));
             $mol_assert_like(pane.node_path('Head'), ['Board']);
             $mol_assert_like(pane.node_path('Loose'), []);
         },
-        /**
-         * The camera is undone once, by `world_point`, and everything downstream
-         * works in world units — the hit test, the container and the position among
-         * its children alike.
-         */
         'a pan and a zoom do not move the slot a drop lands in'($) {
             const { pane } = pane_make($, {}, { containers: () => ['Board'] });
             pane.sizes({
@@ -42710,19 +41586,12 @@ var $;
             const flat = pane.insert_slot(world);
             $mol_assert_equal(flat.owner, 'Board');
             $mol_assert_equal(flat.index, 1);
-            // The same world point through a moved and scaled camera: screen is
-            // `world * zoom + shift`, and the press is given in screen pixels.
             pane.camera_shift(new $mol_vector_2d(100, 50));
             pane.camera_zoom(2);
             const point = pane.world_point(pointer(200 * 2 + 100, 120 * 2 + 50));
             $mol_assert_like([...point], [...world]);
             $mol_assert_like(pane.insert_slot(point), flat);
         },
-        /**
-         * The two ways of laying a node out, told apart by where the release
-         * happened: inside an artboard the gesture means a position in the tree, on
-         * bare canvas it means a coordinate.
-         */
         'a drop inside an artboard goes into the tree, and no coordinate is written'($) {
             const moves = [];
             const { pane } = pane_make($, {}, {
@@ -42741,8 +41610,6 @@ var $;
             pane.spots({ Loose: { x: 600, y: 0 } });
             pane.node_press(pointer(650, 25));
             pane.node_move(pointer(200, 120));
-            // The line is drawn where the node would land, and the placement is
-            // untouched while the pointer is over the page.
             $mol_assert_equal(pane.slot()?.owner, 'Board');
             $mol_assert_equal(pane.slot()?.index, 1);
             $mol_assert_like(pane.spots(), { Loose: { x: 600, y: 0 } });
@@ -42773,11 +41640,6 @@ var $;
             $mol_assert_like(moves, []);
             $mol_assert_equal(pane.slot(), null);
         },
-        /**
-         * A node drawn inside an artboard has no coordinate to change: `spots`
-         * positions the direct children of the root and nothing else, so a number
-         * written for it would move nothing and lie in the desk layout for good.
-         */
         'dragging a node that lives in a tree never writes a coordinate'($) {
             const moves = [];
             const { pane } = pane_make($, {}, {
@@ -42793,17 +41655,12 @@ var $;
                 [`${root}/Board/Head`]: box(0, 0, 400, 100),
                 [`${root}/Board/Foot`]: box(0, 100, 400, 100),
             });
-            // Head taken by its own strip and carried below Foot.
             pane.node_press(pointer(200, 50));
             pane.node_move(pointer(200, 180));
             pane.node_release(pointer(200, 180, { buttons: 0 }));
             $mol_assert_like(pane.spots(), {});
             $mol_assert_like(moves, [{ name: 'Head', owner: 'Board', index: 2 }]);
         },
-        /**
-         * A row inside a column: the drop belongs to the innermost box it landed in,
-         * and the position in it is counted along ITS direction, not its parent's.
-         */
         'a container inside a container takes the drop itself'($) {
             const { pane } = pane_make($, {}, {
                 containers: () => ['Page', 'Bar'],
@@ -42817,24 +41674,15 @@ var $;
                 [`${root}/Page/Bar/Right`]: box(200, 100, 200, 100),
                 [`${root}/Page/Foot`]: box(0, 200, 400, 100),
             });
-            // Inside the bar, which lies inside the page: the deeper one wins.
             const inner = pane.insert_slot([250, 150]);
             $mol_assert_equal(inner.owner, 'Bar');
             $mol_assert_equal(inner.index, 1);
-            // Between the left and the right, across — the direction of the bar.
             $mol_assert_like(inner.line, { x: 200, y: 100, width: 0, height: 100 });
-            // The same page, below the bar: the page takes it, counted downwards.
             const outer = pane.insert_slot([250, 400]);
             $mol_assert_equal(outer.owner, 'Page');
             $mol_assert_equal(outer.index, 3);
-            // The pick follows the same rule, so what is picked and what a drop goes
-            // into never disagree about which box the pointer is in.
             $mol_assert_equal(pane.node_at([250, 150]), 'Right');
         },
-        /**
-         * A container cannot become its own descendant, and a line drawn where the
-         * drop would be refused is worse than no line at all.
-         */
         'an artboard carried over itself offers no slot'($) {
             const { pane } = pane_make($, {}, { containers: () => ['Board', 'Inner'] });
             pane.sizes({
@@ -42845,7 +41693,6 @@ var $;
             $mol_assert_equal(pane.insert_slot([200, 50], 'Inner')?.owner, 'Board');
         },
     });
-    /** Wirable ports of the two fixture classes, as the owner would hand them to the pane. */
     const ports = {
         [`${d}my_calc`]: [
             { name: 'result', next: false, kind: 'number' },
@@ -42856,15 +41703,9 @@ var $;
             { name: 'marker', next: true, kind: 'string' },
         ],
     };
-    /**
-     * A pane over a real document model: two parts, no wires yet. The pane reads
-     * the wires and the ports through the same three properties the owner binds,
-     * and writes through the same two events, so what is checked is the document.
-     */
     function wired_make($, parts = [`Calc ${d}my_calc`, `Map ${d}my_map`]) {
         const node = $bog_vmap_lang_node.make({ $ });
         node.source([`${root} ${d}mol_view`, ...parts.map(part => '\t' + part), '\tsub /', ''].join('\n'));
-        // To the fixed point of normalization, so that a write and its undo give the same bytes.
         node.tree(node.tree());
         const klass_of = (name) => node.props_tree().select(name).kids[0]?.kids[0]?.type ?? '';
         const made = pane_make($, {}, {
@@ -42885,25 +41726,13 @@ var $;
     }
 })($ || ($ = {}));
 (function ($_2) {
-    /**
-     * Tests of a failure of the scene finding its way onto the node.
-     *
-     * The strip says something is wrong somewhere; the mark says which node. Stage
-     * 4.4 is the second sentence, and this file is about the host half of it: what
-     * the bridge carries in `node` has to come out on that node and nowhere else.
-     *
-     * `d` keeps `$` out of the string literals — mam reads them for dependencies.
-     */
     const d = '$';
     const root = `${d}bog_vmap_app_page`;
-    /** A pane with a peer that answers, and a way to speak to it as the scene. */
     const pane_make = ($) => {
         const peer = { origin: 'null', postMessage() { } };
         const pane = $$.$bog_vmap_app_pane.make({
             $,
             doc_root: () => root,
-            // The one node these scenarios are about. The canvas only knows the nodes
-            // the document declares, and a mark stands on a node of the document.
             doc_names: () => ['Calc'],
             pane_rect: () => ({ left: 0, top: 0, width: 1000, height: 800 }),
             scene_peer: () => peer,
@@ -42919,7 +41748,6 @@ var $;
             $mol_assert_equal(pane.node_error('Calc'), 'исполнение — Calc: boom');
             $mol_assert_equal(pane.node_error('Hero'), '');
         },
-        /** A guess would be worse than nothing: an unattributed failure stays on the strip. */
         'a failure with no node stays off every node'($) {
             const { pane, answer } = pane_make($);
             answer({ kind: 'error', at: 'compile', message: 'boom' });
@@ -42932,7 +41760,6 @@ var $;
             answer({ kind: 'error', at: 'runtime', message: 'second', node: 'Calc' });
             $mol_assert_equal(pane.node_error('Calc'), 'компиляция — Calc: first\nисполнение — Calc: second');
         },
-        /** The channel clears with `null`, and the node has to clear with it. */
         'a cleared channel takes the mark off the node'($) {
             const { pane, answer } = pane_make($);
             answer({ kind: 'error', at: 'runtime', message: 'boom', node: 'Calc' });
@@ -42945,7 +41772,6 @@ var $;
             answer({ kind: 'ready' });
             $mol_assert_equal(pane.node_error('Calc'), '');
         },
-        /** A node nobody has measured has no corner to put a mark at. */
         'a mark is drawn only where the node has been measured'($) {
             const { pane, answer } = pane_make($);
             answer({ kind: 'error', at: 'runtime', message: 'boom', node: 'Calc' });
@@ -42957,38 +41783,24 @@ var $;
             $mol_assert_equal(pane.error_marks().length, 1);
             $mol_assert_equal(pane.mark_hint('Calc'), 'исполнение — Calc: boom');
         },
-        /**
-         * The case the marks exist for: code is written, it breaks, and the node
-         * stops being drawn. Nothing is measured any more, so the mark has to stand
-         * on the last box the node was seen at — otherwise it disappears exactly
-         * when it is needed.
-         */
         'a node that stops being drawn keeps its mark where it was'($) {
             const { pane, answer } = pane_make($);
             answer({
                 kind: 'sizes',
                 sizes: { [`${root}/Calc`]: { x: 10, y: 20, width: 100, height: 50 } },
             });
-            // It broke: the scene draws it no more, so it measures it no more, and
-            // the report simply stops mentioning it.
             answer({ kind: 'sizes', sizes: {} });
             answer({ kind: 'error', at: 'runtime', message: 'boom', node: 'Calc' });
             $mol_assert_equal(pane.error_marks().length, 1);
             $mol_assert_equal(pane.mark_style('Calc').left, '10px');
             $mol_assert_equal(pane.mark_style('Calc').top, '20px');
         },
-        /**
-         * A node that never drew has no corner to point at, and pointing at a made
-         * up one would be the false mark. The text is not conditional on geometry,
-         * so the panel of that node says it anyway.
-         */
         'a node never drawn gets no mark, and is still told about'($) {
             const { pane, answer } = pane_make($);
             answer({ kind: 'error', at: 'compile', message: 'boom', node: 'Calc' });
             $mol_assert_equal(pane.error_marks().length, 0);
             $mol_assert_equal(pane.node_error('Calc'), 'компиляция — Calc: boom');
         },
-        /** What the panel of the picked node shows is what the pane knows about it. */
         'the code panel shows the failure of the node it is editing'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -45617,13 +44429,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the link list parser. Pure string work, nothing here goes anywhere.
-     *
-     * The land links below are shaped like real ones — groups of eight — but were
-     * typed by hand and point at nothing. `d` keeps `$` out of the literals so mam
-     * does not read a fixture as a dependency.
-     */
     const d = '$';
     const land_a = 'AbCdEfGh_12345678_ZyXwVuTs';
     const land_b = 'QwErTyUi_09876543_MnBvCxZl';
@@ -45638,18 +44443,12 @@ var $;
         'spaces and a trailing comma are tolerated'($) {
             $mol_assert_like($bog_vmap_lib_links_parse('  https://mol.hyoo.ru , '), { pack: 'https://mol.hyoo.ru', lands: [], rejected: [] });
         },
-        /**
-         * The rule of section 5 for every field a person types into: what was typed
-         * is stored as is, only what is derived from it is normalized.
-         */
         'a pack without a slash is kept as typed and grows one in the derived address'($) {
             const links = $bog_vmap_lib_links_parse('https://b-on-g.github.io/gram');
             $mol_assert_equal(links.pack, 'https://b-on-g.github.io/gram');
             $mol_assert_equal($bog_vmap_lib_slashed(links.pack), 'https://b-on-g.github.io/gram/');
-            // already slashed stays slashed, no doubling
             $mol_assert_equal($bog_vmap_lib_slashed('https://b-on-g.github.io/gram/'), 'https://b-on-g.github.io/gram/');
         },
-        /** One pack per frame, and the person typing the second one is told why. */
         'a second pack is refused with a reason'($) {
             const links = $bog_vmap_lib_links_parse('https://mol.hyoo.ru, https://b-on-g.github.io/gram/');
             $mol_assert_equal(links.pack, 'https://mol.hyoo.ru');
@@ -45678,9 +44477,7 @@ var $;
             }
         },
         'a link to a pawn inside a land is a land link too'($) {
-            // four groups: peer, lord, area, head
             $mol_assert_equal($bog_vmap_lib_links_is_land(land_a + '_HeAdHeAd'), true);
-            // the original grammar admits bare underscores, this one does not
             $mol_assert_equal($bog_vmap_lib_links_is_land('_'), false);
             $mol_assert_equal($bog_vmap_lib_links_is_land(''), false);
         },
@@ -45694,38 +44491,11 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the land library.
-     *
-     * A land is built locally, the way the database's own tests build one, so there
-     * is no proof of work anywhere here and no master to wait for. `make( null )`
-     * puts a part in the same land as its shelf, which is both the storage decision
-     * and the reason this is testable at all.
-     *
-     * **`remote_list()` is never called, and that is the point of `shelf.parts()`.**
-     * It resolves links through the static glob, which waits on a master that a test
-     * does not have; the wait never ends, the run prints nothing, and every build
-     * that runs the tests hangs. Reading through the shelf's own land is the same
-     * answer without the wait.
-     *
-     * **Publishing a library into a land of its own is NOT tested.** Grabbing a land
-     * mines proof of work — a fiber and seconds against a one second limit — and a
-     * test of it would hang or flake, which reads exactly like a failed assertion.
-     * What is testable is everything after: writing the sources and reading a class
-     * tree out of them, against a land made by hand.
-     */
-    /**
-     * Keeps `$` out of the fixtures. mam builds its dependency graph by a regexp
-     * over sources, string literals included, so a bare class name in a document
-     * fixture is read as a dependency of the module.
-     */
     const d = '$';
-    /** A land with no proof of work behind it, as the database's own tests make one. */
     function shelf($) {
         const land = $giper_baza_land.make({ $ });
         return land.Data($bog_vmap_lib_land_shelf);
     }
-    /** Adds a component to a shelf, in the shelf's own land. */
     function part(shelf, source) {
         const one = shelf.Parts(null).make(null);
         one.tree(source);
@@ -45738,7 +44508,6 @@ var $;
             const lib = $bog_vmap_lib_land.make({ $ });
             $mol_assert_like(lib.parts(), []);
             $mol_assert_equal(lib.source(), '');
-            // The stub, and nothing else. An empty land is a state, not a failure.
             $mol_assert_like(lib.class_list(), [`${d}mol_view`]);
         },
         'components of a shelf come back in the order they were added'($) {
@@ -45748,11 +44517,6 @@ var $;
             const lib = $bog_vmap_lib_land.make({ $, shelf: () => one });
             $mol_assert_like(lib.parts().map(p => p.tree()), [card_src, badge_src]);
         },
-        /**
-         * The requirement of the task in one assertion: what a land library answers
-         * is what a pack library answers, down to the base class stub that a pack
-         * never carries in its own file.
-         */
         'a land library lists its classes exactly as a pack would'($) {
             const one = shelf($);
             part(one, card_src);
@@ -45765,28 +44529,17 @@ var $;
             $mol_assert_like(land.class_list(), pack.class_list());
             $mol_assert_like([...land.props_map(`${d}my_badge`).keys()], [...pack.props_map(`${d}my_badge`).keys()]);
         },
-        /**
-         * A library is one namespace, so a component may inherit another component
-         * of the same library. That only resolves because the sources are glued into
-         * one tree before parsing, which is the reason `source()` exists at all.
-         */
         'a component inherits another component of the same library'($) {
             const one = shelf($);
             part(one, card_src);
             part(one, badge_src);
             const lib = $bog_vmap_lib_land.make({ $, shelf: () => one });
             $mol_assert_like(lib.inherit_chain(`${d}my_badge`), [`${d}my_badge`, `${d}my_card`, `${d}mol_view`, `${d}mol_object`]);
-            // Inherited and own ports together, exactly as for a pack class.
             const ports = [...lib.props_map(`${d}my_badge`).keys()];
             $mol_assert_ok(ports.includes('caption'));
             $mol_assert_ok(ports.includes('price'));
             $mol_assert_ok(ports.includes('sub'));
         },
-        /**
-         * Composing a land onto a pack, which section 5 says is the normal case.
-         * The stub has to be absent from what is handed over, or it shadows the real
-         * base class of the pack: the index keeps the LAST declaration of a name.
-         */
         'classes handed to another library carry no stub'($) {
             const one = shelf($);
             part(one, card_src);
@@ -45814,18 +44567,6 @@ var $;
             $mol_assert_equal($bog_vmap_lib_land_name(''), '');
             $mol_assert_equal($bog_vmap_lib_land_name('   \n'), '');
         },
-        /**
-         * The rule this project has now paid for three times: a read path must not
-         * share a cell with a write path.
-         *
-         * Written through once, an `@ $mol_mem` accessor over a database atom freezes
-         * at the written value forever — a later change to the atom is reported by
-         * the atom and ignored by the cell. It only shows on the component you edited
-         * yourself, so in a shared library it is invisible until two people are in it.
-         *
-         * The write below goes straight to the atom, which is what a remote edit
-         * amounts to once it has merged.
-         */
         'a part still hears its atom after being written through'($) {
             const one = shelf($);
             const card = part(one, card_src);
@@ -45840,16 +44581,6 @@ var $;
             one.Title().val('Вторая');
             $mol_assert_equal(one.title(), 'Вторая');
         },
-        /**
-         * The premise the library rests on: a land syncs itself on every read of a
-         * pawn, through `sand_ordered()`, so nobody has to ask. A `sync()` called by
-         * hand used to sit in `parts()` on the belief that it did not.
-         *
-         * The counter goes on AFTER the part has been written and starts from zero,
-         * so that a write cannot pay for the read. Counting from the start would
-         * pass just as well with a land that only syncs when written to, and that is
-         * a different statement — one that would not justify dropping the call.
-         */
         'reading the parts of a shelf syncs their land unasked'($) {
             const one = shelf($);
             part(one, card_src);
@@ -45860,14 +44591,6 @@ var $;
             $mol_assert_equal(lib.parts().length, 1);
             $mol_assert_ok(synced > 0);
         },
-        /**
-         * The palette field in one object: a pack with a land on top. A land class
-         * inheriting a pack class, and another land class inheriting that one, both
-         * resolve their chain down into the pack — one namespace, as section 5 says.
-         *
-         * `land` is handed a local library so the link is never looked up; the link
-         * itself is a placeholder shaped like a real one.
-         */
         'a pack with a land stacked on it is one library from the outside'($) {
             const pack_src = `${d}my_base ${d}mol_view\n\tpack_port \\\n`;
             const tile_src = `${d}my_tile ${d}my_base\n\tcaption \\Плитка\n`;
@@ -45883,18 +44606,14 @@ var $;
                 land: () => lib,
             });
             $mol_assert_like(stack.class_list(), [`${d}mol_view`, `${d}my_base`, `${d}my_tile`, `${d}my_hero`]);
-            // the chain runs from the land into the pack and down to the stub
             $mol_assert_like(stack.inherit_chain(`${d}my_hero`), [`${d}my_hero`, `${d}my_tile`, `${d}my_base`, `${d}mol_view`, `${d}mol_object`]);
             const ports = [...stack.props_map(`${d}my_hero`).keys()];
             $mol_assert_ok(ports.includes('pack_port'));
             $mol_assert_ok(ports.includes('caption'));
             $mol_assert_ok(ports.includes('sub'));
-            // the nearer declaration wins the value
             $mol_assert_equal(stack.props_map(`${d}my_hero`).get('caption').kids[0].value, 'Герой');
-            // what is handed to the palette and the inspector carries no stub
             $mol_assert_like(stack.land_trees().map(tree => tree.type), [`${d}my_tile`, `${d}my_hero`]);
         },
-        /** What the scene receives: the three texts per component, in shelf order. */
         'the sources of a stack are the parts of its lands in order'($) {
             const one = shelf($);
             part(one, card_src);
@@ -45912,12 +44631,6 @@ var $;
                 { tree: badge_src, js: 'price(){ return 1 }', css: '[my_badge] { color: red }' },
             ]);
         },
-        /**
-         * An author fixes a component and the consumer's scene has to follow: the
-         * sources depend on the texts of the parts, not merely on the list of links.
-         * The write goes straight to the atom, which is what a merged remote edit
-         * amounts to, and the array the scene is sent changes with it.
-         */
         'the sources of a stack follow an edit of a part'($) {
             const one = shelf($);
             const card = part(one, card_src);
@@ -45930,11 +44643,9 @@ var $;
             $mol_assert_like(stack.parts(), [{ tree: card_src, js: '', css: '' }]);
             $mol_assert_like(stack.land_trees().map(tree => tree.type), [`${d}my_card`]);
             card.Tree().val(badge_src);
-            // `null` makes the atom, the way `Parts( null )` makes the list above
             card.Css(null).val('[my_badge] { color: red }');
             $mol_assert_like(stack.parts(), [{ tree: badge_src, js: '', css: '[my_badge] { color: red }' }]);
             $mol_assert_like(stack.land_trees().map(tree => tree.type), [`${d}my_badge`]);
-            // a component added later joins the list too
             part(one, card_src);
             $mol_assert_equal(stack.parts().length, 2);
         },
@@ -45946,13 +44657,6 @@ var $;
             $mol_assert_like(stack.class_list(), [`${d}mol_view`, `${d}my_card`]);
             $mol_assert_like(stack.parts(), []);
         },
-        /**
-         * The link grammar in `lib/links` is a COPY of the one in `$giper_baza_link`,
-         * kept there so that `lib/` stays free of the database. This is the guard on
-         * the copy: on a sample of tokens the two must agree. The original admits the
-         * empty string and bare underscores, which the copy rules out on purpose, so
-         * the comparison adds that one rule to the original.
-         */
         'the link grammar copied into lib/links agrees with the database'($) {
             const samples = [
                 'AbCdEfGh',
@@ -49326,35 +48030,9 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the editor shell that need no DOM.
-     *
-     * Nothing here renders. What is checked is the rule that the canvas must not be
-     * able to break: where the camera points is not part of the document.
-     *
-     * `d` keeps `$` out of the string literals — mam builds its dependency graph by
-     * a regexp over sources, literals included, so a bare class name in a fixture
-     * would drag a whole module into the bundle.
-     */
     const d = '$';
-    /**
-     * A session of its own per test, and the bare subclass is not enough for it.
-     *
-     * The memoized cells of the session store are found by OWN property, so a
-     * subclass does get cells of its own. The bytes under them do not: the store
-     * caches its backing storage in a plain field of the class, that field is read
-     * through the prototype chain, and a subclass therefore reads and writes the
-     * object the base cached — every test folding a panel away leaves it folded for
-     * the next one. So what is overridden here is the backing storage itself, and
-     * only it: the keys, the JSON round trip and the meaning of a `null` write stay
-     * exactly as they are in production.
-     */
     $mol_test_mocks.push($ => {
-        // Generic, because the base is: a plain `extends` drops the type parameter
-        // from the constructor and the assignment below is then refused.
         class $mol_state_session_mock extends $.$mol_state_session {
-            // An own field of this class, and this class is made anew for every
-            // test, so nothing here outlives the test that wrote it.
             static store = {};
             static native() {
                 const store = this.store;
@@ -49368,16 +48046,6 @@ var $;
         $.$mol_state_session = $mol_state_session_mock;
     });
     $mol_test({
-        /**
-         * FIRST INVARIANT OF CULLING: what is drawn may depend on the camera, what is
-         * stored may not — not by a byte.
-         *
-         * Cheap to check and worth checking, because the tempting way to implement
-         * culling is to push a document with the off screen parts left out of `sub`.
-         * That reads as harmless, costs a full recompile per frame of panning, and
-         * quietly makes the saved document a function of where the user was looking.
-         * This test fails the moment anybody tries it.
-         */
         'panning does not touch the document'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -49390,7 +48058,6 @@ var $;
             pane.camera_zoom(1);
             $mol_assert_equal(app.doc_source(), before);
         },
-        /** Placement is editor state and moves with the camera never, with a drag only. */
         'panning does not touch the placement'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -49399,10 +48066,6 @@ var $;
             pane.camera_shift(new $mol_vector_2d(-500, -500));
             $mol_assert_equal(JSON.stringify(app.spots()), before);
         },
-        /**
-         * Boxes survive a report that does not mention them, because culling makes
-         * silence mean «not drawn» rather than «has no size». Only a delete clears one.
-         */
         'measured boxes survive a report without them'($) {
             const pane = $bog_vmap_app_pane.make({
                 $,
@@ -49412,7 +48075,6 @@ var $;
                 [`${d}doc/A`]: { x: 0, y: 0, width: 10, height: 10 },
                 [`${d}doc/B`]: { x: 20, y: 0, width: 10, height: 10 },
             });
-            // What a report looks like once `B` has been culled: it is simply absent.
             pane.sizes({ ...pane.sizes(), [`${d}doc/A`]: { x: 5, y: 5, width: 10, height: 10 } });
             $mol_assert_equal(pane.sizes()[`${d}doc/A`].x, 5);
             $mol_assert_equal(Boolean(pane.sizes()[`${d}doc/B`]), true);
@@ -49420,7 +48082,6 @@ var $;
             $mol_assert_equal(Boolean(pane.sizes()[`${d}doc/B`]), false);
             $mol_assert_equal(Boolean(pane.sizes()[`${d}doc/A`]), true);
         },
-        /** A part's own sub views go with it, or they would outlive their owner. */
         'forgetting a part forgets what was measured inside it'($) {
             const pane = $bog_vmap_app_pane.make({
                 $,
@@ -49434,18 +48095,8 @@ var $;
             pane.sizes_forget('Icon');
             $mol_assert_equal(Boolean(pane.sizes()[`${d}doc/Icon`]), false);
             $mol_assert_equal(Boolean(pane.sizes()[`${d}doc/Icon/Path`]), false);
-            // A name this one is a prefix of is a different part and must stay.
             $mol_assert_equal(Boolean(pane.sizes()[`${d}doc/Icons`]), true);
         },
-        /**
-         * The whole way of a land from the field to the wire, on a land built by hand:
-         * what the scene is sent is the parts of the shelf, in order, three texts each,
-         * and the palette and the inspector are handed the classes of the same parts.
-         *
-         * `land()` is overridden on the library so no link is ever looked up; the link
-         * in the field is shaped like a real one and points nowhere. No proof of work,
-         * no master, so the test is well inside its second.
-         */
         'the sources of the lands reach the scene as they lie in the shelf'($) {
             const land = $giper_baza_land.make({ $ });
             const shelf = land.Data($bog_vmap_lib_land_shelf);
@@ -49465,25 +48116,12 @@ var $;
                 { tree: card_src, js: '', css: '[my_card] { color: red }' },
                 { tree: badge_src, js: 'price(){ return 1 }', css: '' },
             ]);
-            // the same classes for the palette and, beside the root, for the inspector
             $mol_assert_like(app.lib_classes().map(tree => tree.type), [`${d}my_card`, `${d}my_badge`]);
             const peers = app.node_peers().map(tree => tree.type);
             $mol_assert_like(peers, [`${d}my_card`, `${d}my_badge`, app.doc_root()]);
-            // a field with no lands sends an empty list, not nothing
             app.links('https://mol.hyoo.ru');
             $mol_assert_like(app.libs(), []);
         },
-        /**
-         * Section 5 in one test: a pack cannot be unloaded from a realm, so a change
-         * of pack is a change of the KEY of the frame and the element is replaced; a
-         * land is compiled into the sandbox like the document, so a change of lands
-         * leaves the key — and with it the frame, its camera and its live
-         * instances — exactly where they were.
-         *
-         * The pack rides the bridge now rather than the address of the frame, so
-         * what is read here is the key, which is what the guarantee actually rests
-         * on. That a key really makes a new element is `flow.test.ts`.
-         */
         'a change of lands keeps the frame, a change of pack replaces it'($) {
             const app = $bog_vmap_app.make({ $ });
             const pane = app.Pane();
@@ -49493,34 +48131,18 @@ var $;
             app.links('https://mol.hyoo.ru, AbCdEfGh_12345678_ZyXwVuTs');
             $mol_assert_equal(pane.scene_key(), before);
             $mol_assert_like(app.lands(), ['AbCdEfGh_12345678_ZyXwVuTs']);
-            // the slash grows in the derived address, the field keeps what was typed
             app.links('https://b-on-g.github.io/gram, AbCdEfGh_12345678_ZyXwVuTs');
             $mol_assert_ok(pane.scene_key() !== before);
             $mol_assert_equal(pane.pack_uri(), 'https://b-on-g.github.io/gram/web.js');
             $mol_assert_equal(app.links(), 'https://b-on-g.github.io/gram, AbCdEfGh_12345678_ZyXwVuTs');
-            // a second pack is refused: the frame keeps the first
             app.links('https://b-on-g.github.io/gram, https://mol.hyoo.ru');
             $mol_assert_equal(pane.pack_uri(), 'https://b-on-g.github.io/gram/web.js');
             $mol_assert_equal(app.links_parsed().rejected.length, 1);
-            // a field naming no pack falls back to the standard palette, see below
             app.links('AbCdEfGh_12345678_ZyXwVuTs');
             $mol_assert_ok(!app.pack_link().startsWith('https://b-on-g.github.io/gram'));
             $mol_assert_like(app.lands(), ['AbCdEfGh_12345678_ZyXwVuTs']);
         },
-        /**
-         * The two layouts of one pack, from the address of the editor page alone.
-         *
-         * The dev server keeps every module in `<pack>/<module>/-/`, while a deploy
-         * publishes the editor at the root of the site and the other modules as
-         * folders under it. Neither the sandbox nor the standard palette has a page
-         * on either layout, so what is derived is a bundle and a folder, and nothing
-         * is configured or typed. The derivation itself is covered in `lib`; here it
-         * is that the editor asks for the right two siblings.
-         */
         'the sandbox and the standard palette are found on both layouts'($) {
-            // the address of the page is put in by hand rather than through `make`:
-            // it is a method of the derived class, and `make` types its overrides
-            // against the class the tree declares
             const dev = $bog_vmap_app.make({ $ });
             dev.page_uri = () => 'http://localhost:9080/bog/vmap/app/-/test.html';
             $mol_assert_equal(dev.scene_bundle(), 'http://localhost:9080/bog/vmap/scene/-/web.js');
@@ -49531,47 +48153,31 @@ var $;
             $mol_assert_equal(prod.scene_bundle(), 'https://b-on-g.github.io/vmap/scene/web.js');
             $mol_assert_equal(prod.pack_link(), 'https://b-on-g.github.io/vmap/part/');
             $mol_assert_equal(prod.pack_script(), 'https://b-on-g.github.io/vmap/part/web.js');
-            // what a person typed is used as typed and never replaced by the sibling
             prod.links('https://mol.hyoo.ru');
             $mol_assert_equal(prod.pack_link(), 'https://mol.hyoo.ru/');
             $mol_assert_equal(prod.links(), 'https://mol.hyoo.ru');
         },
-        /**
-         * An artboard is a node with a `sub` of its own and a width, written in
-         * plain `view.tree`. No class of ours, so an exported document depends on
-         * nothing of this pack, and no mark on the side, so the text is the whole
-         * truth about what is a page.
-         */
         'an artboard is an ordinary node with a sub and a width'($) {
             const app = $bog_vmap_app.make({ $ });
             app.board_add();
             const source = app.doc_source();
             $mol_assert_ok(source.includes(`Page ${d}mol_view`));
             $mol_assert_ok(source.includes('width \\1280px'));
-            // `[mol_view]` is `display: flex` with no direction, which is a ROW.
             $mol_assert_ok(source.includes('flexDirection \\column'));
             $mol_assert_like(app.node().sub_names(), ['Page']);
             $mol_assert_like(app.node().sub_names('Page'), []);
             $mol_assert_like(app.doc_containers(), ['Page']);
             $mol_assert_equal(app.selected(), 'Page');
-            // It lies on the canvas like any free part, so a second one goes beside
-            // the first rather than on top of it — that is what several pages are.
             $mol_assert_ok(Boolean(app.spots()['Page']));
             app.board_add();
             $mol_assert_like(app.doc_containers(), ['Page', 'Page_2']);
         },
-        /**
-         * Which way a container stacks is stated by the document, and the host reads
-         * it out rather than guessing: the boxes of the children say nothing while
-         * there are fewer than two of them, which is every page just made.
-         */
         'the direction a container is set to comes off the document'($) {
             const app = $bog_vmap_app.make({ $ });
             app.board_add();
             $mol_assert_equal(app.doc_axis('Page'), 'column');
             app.part_drop(`${d}mol_button_minor`, 2000, 100);
             $mol_assert_equal(app.doc_axis('Button_minor'), '');
-            // What the layout panel writes is what the canvas reads back.
             app.node().over_set('Page', 'style', app.node().tree().struct('style', [
                 app.node().tree().struct('*', [
                     app.node().tree().struct('flexDirection', [app.node().tree().data('row')]),
@@ -49579,11 +48185,6 @@ var $;
             ]));
             $mol_assert_equal(app.doc_axis('Page'), 'row');
         },
-        /**
-         * The same drop, two ways of being laid out, told apart by where the release
-         * happened: inside a page it is a position in the tree, outside it is a
-         * coordinate on the desk.
-         */
         'a drop inside an artboard goes into its tree and gets no coordinate'($) {
             const app = $bog_vmap_app.make({ $ });
             const pane = app.Pane();
@@ -49592,12 +48193,10 @@ var $;
             app.part_drop(`${d}mol_button_minor`, 100, 100);
             $mol_assert_like(app.node().sub_names('Page'), ['Button_minor']);
             $mol_assert_equal(app.spots()['Button_minor'], undefined);
-            // Outside the page it is a free part with a coordinate, as before.
             app.part_drop(`${d}mol_string`, 2000, 100);
             $mol_assert_like(app.node().sub_names(), ['Page', 'String']);
             $mol_assert_like(app.spots()['String'], { x: 2000, y: 100 });
         },
-        /** Carried into a page, a part loses the coordinate that no longer moves it. */
         'a part carried into an artboard leaves the placement'($) {
             const app = $bog_vmap_app.make({ $ });
             app.board_add();
@@ -49608,11 +48207,6 @@ var $;
             $mol_assert_like(app.node().sub_names(), ['Page']);
             $mol_assert_equal(app.spots()['Button_minor'], undefined);
         },
-        /**
-         * A page goes with everything on it. Left behind, its children would stay
-         * declared and referenced by nothing: nothing draws them, so nothing can
-         * select them, so nothing can ever take them out again.
-         */
         'deleting an artboard takes what is laid out inside it'($) {
             const app = $bog_vmap_app.make({ $ });
             app.board_add();
@@ -49625,12 +48219,6 @@ var $;
             $mol_assert_equal(names.includes('Button_minor'), false);
             $mol_assert_like(app.node().sub_names(), []);
         },
-        /**
-         * The name of a node is the key of the pick, of the placement and of the
-         * remembered box at once, so a rename that only touches the text orphans all
-         * three: the node lives under the new name while the editor points at one
-         * nothing declares.
-         */
         'renaming a node carries the pick and the placement with it'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -49644,7 +48232,6 @@ var $;
             $mol_assert_like(app.spots()['Send'], spot);
             $mol_assert_equal(app.spots()['Button_minor'], undefined);
         },
-        /** A node drawn on a page keeps its place in that page under the new name. */
         'renaming a node on a board keeps it drawn'($) {
             const app = $bog_vmap_app.make({ $ });
             app.board_add();
@@ -49653,10 +48240,6 @@ var $;
             app.node_rename('Button_minor', 'Send');
             $mol_assert_like(app.node().sub_names('Page'), ['Send']);
         },
-        /**
-         * The document refuses the rename, and the editor state must not move for a
-         * rename that did not happen.
-         */
         'a rename onto a name already taken changes nothing'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -49669,11 +48252,6 @@ var $;
             $mol_assert_equal(JSON.stringify(app.spots()), spots);
             $mol_assert_equal(app.selected(), 'Button_minor');
         },
-        /**
-         * The field of the inspector renames through the editor, so the pick and the
-         * placement travel with it. Bound rather than left to the class model the
-         * inspector holds: that one knows the text and nothing else.
-         */
         'the name field of the inspector renames the picked node'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -49685,10 +48263,6 @@ var $;
             $mol_assert_equal(app.node_title(), 'Send');
             $mol_assert_equal(app.node_title_note(), '');
         },
-        /**
-         * The refusal has to reach the person in words: a throw out of a text field
-         * setter lands in `setCustomValidity`, which is not where anybody looks.
-         */
         'a name already taken is refused in words and moves nothing'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -49698,19 +48272,10 @@ var $;
             app.node_title('String');
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_equal(app.selected(), 'Button_minor');
-            // The exact words, because words are the whole point of this path.
             $mol_assert_equal(app.node_title_note(), 'Имя «String» в этом документе уже занято. Узел по-прежнему называется «Button_minor»');
-            // The message belongs to the node it is about, so another pick is clean.
             app.selected('String');
             $mol_assert_equal(app.node_title_note(), '');
         },
-        /**
-         * The interface is Russian and the field asks for a name, so a Russian name
-         * is the first thing anybody types into it — and a node name is a property
-         * name, which `view.tree` allows latin letters, digits and `_` and nothing
-         * else. Left to the model this came back as `Bad property signature`, which
-         * is neither the language of the person nor an answer to what they did.
-         */
         'a name the language does not allow is refused in words and moves nothing'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -49721,22 +48286,13 @@ var $;
             $mol_assert_equal(app.selected(), 'Button_minor');
             $mol_assert_equal(app.node_title_note(), 'Имя «Кнопка» не годится: в имени узла только латинские буквы, цифры и подчёркивание.'
                 + ' Узел по-прежнему называется «Button_minor»');
-            // A space is the other everyday way to write a name nothing can address.
             app.node_title('Send button');
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_ok(app.node_title_note().startsWith('Имя «Send button» не годится'));
-            // And a name the language does allow still goes through.
             app.node_title('Send');
             $mol_assert_equal(app.selected(), 'Send');
             $mol_assert_equal(app.node_title_note(), '');
         },
-        /**
-         * A wire spells the name of the node it reads, so a rename that misses it
-         * leaves a wire pointing at a name nothing declares — and the canvas draws
-         * it, because a wire is a line of the document like any other. The model is
-         * proven to rewrite references; what is pinned here is that the field of the
-         * inspector reaches that path and not some other one.
-         */
         'renaming through the name field carries the wire'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_string`, 100, 200);
@@ -49747,20 +48303,11 @@ var $;
             app.selected('String');
             app.node_title('Field');
             $mol_assert_equal(app.selected(), 'Field');
-            // One wire still, reading the node under its new name. Not dropped, and
-            // not doubled by a second one left behind under the old name.
             $mol_assert_equal(app.doc_wires().length, 1);
             $mol_assert_equal(app.doc_wires()[0].from, 'Field');
             $mol_assert_equal(app.doc_wires()[0].to, 'Button_minor');
             $mol_assert_equal(app.node().prop_names().includes('String'), false);
         },
-        /**
-         * The button hands over the module the export builds, folder included.
-         *
-         * Names spelled out rather than compared against a second call of the same
-         * builder: a comparison of the export with itself would pass on any wiring at
-         * all, including one where the button downloads the wrong document.
-         */
         'the download offers the module the export builds'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -49768,21 +48315,12 @@ var $;
             $mol_assert_equal(app.export_ready(), true);
             $mol_assert_equal(module.path, 'my/site/page');
             $mol_assert_equal(module.name, 'page');
-            // A dropped component writes no body and no styles, so the module carries
-            // neither file: what comes out is what a person would have written.
             $mol_assert_equal(module.files.map(file => file.name).join(' '), 'page.view.tree page.meta.tree index.html');
-            // The declaration downloaded is the document, not a rendering of it.
             $mol_assert_equal(module.files[0].text, app.doc_source());
-            // And the folder is on the button itself, where it is read without
-            // hovering: section 10, the folder is not free and the author chose it.
             $mol_assert_equal(app.export_title(), 'Скачать my/site/page');
             $mol_assert_equal(app.export_file(), 'page.zip');
             $mol_assert_ok(app.export_hint().includes('npx mam my/site/page'));
         },
-        /**
-         * The archive carries the module folder inside, so unpacking at the root of a
-         * checkout puts the files where mam resolves the class names to.
-         */
         'the archive is the module in its folder'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -49790,10 +48328,8 @@ var $;
             const text = new TextDecoder().decode(bytes);
             $mol_assert_ok(text.includes('my/site/page/page.view.tree'));
             $mol_assert_ok(text.includes('my/site/page/index.html'));
-            // Stored, not compressed, so the sources travel as themselves.
             $mol_assert_ok(text.includes(`${d}mol_button_minor`));
         },
-        /** Two artboards make a site of two pages, and the download carries its router. */
         'a document of two artboards downloads with a router'($) {
             const app = $bog_vmap_app.make({ $ });
             app.doc_source([
@@ -49810,19 +48346,10 @@ var $;
             $mol_assert_equal(module.path, 'bog/vmap/app/page');
             const tree = module.files[0].text;
             $mol_assert_ok(tree.includes(`${d}bog_vmap_app_page_app ${d}mol_view`));
-            // The address key is the standard one, so a link between the pages is an
-            // ordinary link written in the document itself. Addressed by name and not
-            // by number: which files a module carries follows from what it has.
             const file_of = (suffix) => module.files.find(file => file.name.endsWith(suffix))?.text ?? '';
             $mol_assert_ok(file_of('.view.ts').includes(`${d}mol_state_arg`));
             $mol_assert_ok(file_of('index.html').includes(`${d}bog_vmap_app_page_app`));
         },
-        /**
-         * A body that works in the preview and would not compile refuses the whole
-         * download, and the reason stands on the screen in words instead of in a
-         * console. Without this the person meets it as a build failure on a machine
-         * the editor never sees.
-         */
         'an untyped body refuses the download and says why'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -49835,27 +48362,15 @@ var $;
             $mol_assert_ok(notes[1].includes('строка 1'));
             $mol_assert_ok(notes[1].includes('greeting'));
             $mol_assert_ok(notes[1].includes('who'));
-            // The rows are on the screen, and they are the sentences themselves.
             $mol_assert_equal(app.export_rows().length, 2);
             $mol_assert_equal(app.export_text(1), notes[1]);
             $mol_assert_ok(app.body().includes(app.Export_note()));
-            // And nothing can be taken out of the editor while it is refused.
             $mol_assert_fail(() => app.export_blob(), Error);
-            // The strip goes as soon as the body is typed, and the button comes back.
             app.root_js('greeting( who: string ) {\n\treturn who\n}\n');
             $mol_assert_equal(app.export_ready(), true);
             $mol_assert_equal(app.export_notes().length, 0);
             $mol_assert_equal(app.body().includes(app.Export_note()), false);
         },
-        /**
-         * The button must not make the editor wait for the document.
-         *
-         * A document opened by a link lives in a land that suspends every read until
-         * it syncs, and the toolbar is drawn from the same cell the button reads. A
-         * suspension passed on from here suspends the whole editor, frame included,
-         * and the sandbox never comes up — measured, the standing test of that
-         * invariant went red the moment this was wired to the toolbar with a rethrow.
-         */
         'a document still on its way holds nothing up'($) {
             const waiting = new Promise(() => { });
             const app = $bog_vmap_app.make({
@@ -49868,38 +48383,20 @@ var $;
                     pack: () => { throw waiting; },
                 }),
             });
-            // Nothing to download yet, and nothing to complain about either: a wait is
-            // not a refusal, so no strip stands on the screen saying it is.
             $mol_assert_equal(app.export_ready(), false);
             $mol_assert_equal(app.export_notes().length, 0);
             $mol_assert_equal(app.body().includes(app.Export_note()), false);
             $mol_assert_equal(app.export_hint(), 'Документ ещё загружается');
         },
-        /**
-         * An untouched editor downloads too, and downloads a module that builds: an
-         * empty page is a legal document, not a state to be guarded against.
-         */
         'an untouched document downloads as the empty page'($) {
             const app = $bog_vmap_app.make({ $ });
             const module = app.export_state().module;
             $mol_assert_equal(app.export_ready(), true);
             $mol_assert_equal(module.root, `${d}my_site_page`);
             $mol_assert_equal(module.files[0].text, `${d}my_site_page ${d}mol_view sub /\n`);
-            // Out of this pack, in a folder of the author's own: an untouched
-            // document used to be unpacked inside the editor itself.
             $mol_assert_equal(module.path, 'my/site/page');
-            // No body and no styles anywhere, so neither file is written at all.
             $mol_assert_like(module.files.map(file => file.name), ['page.view.tree', 'page.meta.tree', 'index.html']);
         },
-        /**
-         * THE INVARIANT OF A DOCUMENT OF SEVERAL CLASSES: an edit of one class is an
-         * edit of one class.
-         *
-         * Measured before this was true: a drop off the palette left the text holding
-         * the root alone, because the editor edited through a model of ONE class laid
-         * over the WHOLE text — a write there serializes the class it touched as the
-         * entire document. No error, no warning, the neighbour simply gone.
-         */
         'an edit of the root leaves the other classes byte for byte'($) {
             const app = $bog_vmap_app.make({ $ });
             app.doc_source([
@@ -49917,13 +48414,6 @@ var $;
                 `${d}bog_vmap_app_card`,
             ]);
         },
-        /**
-         * A base always stands above its heir in the exported file, whatever order
-         * the document keeps them in: `class $A extends $[ '$B' ]` takes its base at
-         * the moment it is declared, and the generator walks the file downwards. The
-         * document is free to hold them in any order, and does — a class is added
-         * where the text was typed.
-         */
         'the exported file puts a base above its heir after an edit'($) {
             const app = $bog_vmap_app.make({ $ });
             app.doc_source([
@@ -49932,7 +48422,6 @@ var $;
                 ``,
             ].join('\n'));
             app.part_drop(`${d}mol_button_minor`, 100, 200);
-            // The document keeps the order it was written in.
             $mol_assert_like(app.doc_model().names(), [
                 `${d}bog_vmap_app_page`,
                 `${d}bog_vmap_app_base`,
@@ -49941,11 +48430,6 @@ var $;
             $mol_assert_ok(tree.indexOf(`${d}bog_vmap_app_base ${d}mol_view`)
                 < tree.indexOf(`${d}bog_vmap_app_page ${d}bog_vmap_app_base`));
         },
-        /**
-         * The root class is the first class of the text and follows it, so renaming
-         * it moves the folder the module is unpacked into — which is the whole reason
-         * the name is editable at all. Section 10: the folder is not free.
-         */
         'renaming the root moves the module and the folder on the button'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -49959,12 +48443,6 @@ var $;
             $mol_assert_equal(app.export_title(), 'Скачать my/shop/page');
             $mol_assert_ok(module.files[0].text.startsWith(`${d}my_shop_page `));
         },
-        /**
-         * A rename and its undo, because the two halves fail apart: the text is
-         * rewritten by the model and the body and the styles are carried by hand, so
-         * a rename that lost them on the way back would be a rename that loses them,
-         * full stop. Everything has to come back to the byte it started from.
-         */
         'a rename and the rename back leave the document as it was'($) {
             const app = $bog_vmap_app.make({ $ });
             app.doc_source([
@@ -49983,15 +48461,8 @@ var $;
             $mol_assert_equal(app.doc_root(), `${d}my_site_page`);
             $mol_assert_equal(app.root_js(), 'greeting(){\n\treturn 1\n}\n');
             $mol_assert_equal(app.root_css(), '[my] {\n\tcolor: red;\n}');
-            // The class that was never renamed kept its own body throughout.
             $mol_assert_equal(app.class_js(`${d}my_site_card`), 'note(){\n\treturn 2\n}\n');
         },
-        /**
-         * What a rename must not cost. The pick, the placement and the wires are keyed
-         * by PROPERTY name, and a rename of the class touches no property — but the
-         * handwritten body and the styles are stored per CLASS name, so those two are
-         * carried by hand and would be lost silently without it.
-         */
         'renaming the root carries the body and orphans nothing'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_string`, 100, 200);
@@ -50009,19 +48480,8 @@ var $;
             $mol_assert_equal(app.selected(), 'String');
             $mol_assert_equal(JSON.stringify(app.spots()), spots);
             $mol_assert_equal(JSON.stringify(app.doc_wires()), wires);
-            // The text differs in the class name and in nothing else.
             $mol_assert_equal(app.doc_source(), source.replace(`${d}my_site_page`, `${d}my_shop_page`));
         },
-        /**
-         * A name changed in the TEXT of a class is a rename too, and the body and the
-         * styles have to follow it there as well.
-         *
-         * Measured before they did: they stayed under the old name, so what the scene
-         * is handed — `doc_js` and `doc_css` — came out empty, and the behaviour the
-         * person had written stopped working in the document with nothing on the
-         * screen saying so. The text is the truth of section 1, so the fix is to
-         * follow it rather than to forbid editing the name here.
-         */
         'a class renamed in its own text carries its body and its styles'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -50032,17 +48492,9 @@ var $;
             $mol_assert_equal(app.doc_root(), `${d}my_shop_page`);
             $mol_assert_equal(app.class_js(`${d}my_shop_page`), 'greeting(){\n\treturn 1\n}\n');
             $mol_assert_equal(app.class_css(`${d}my_shop_page`), '[my] {\n\tcolor: red;\n}');
-            // What the scene is handed, which is where the loss actually showed.
             $mol_assert_equal(app.doc_js()[`${d}my_shop_page`], 'greeting(){\n\treturn 1\n}\n');
             $mol_assert_ok(app.doc_css().includes('color: red'));
         },
-        /**
-         * One name gone and one arrived is a rename. Two of either is somebody
-         * rewriting the slot, and there is no telling which became which — a guess
-         * would move a body into a class that never had one. Nothing travels, and
-         * nothing is lost: what was stored still answers to the name it was stored
-         * under.
-         */
         'a slot rewritten into two classes carries nothing and loses nothing'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -50059,14 +48511,8 @@ var $;
             ]);
             $mol_assert_equal(app.class_js(`${d}my_shop_page`), '');
             $mol_assert_equal(app.class_js(`${d}my_shop_card`), '');
-            // Still under the name it was written under, and still readable there.
             $mol_assert_equal(app.class_js(`${d}my_site_page`), 'greeting(){\n\treturn 1\n}\n');
         },
-        /**
-         * The other way a slot grows a class: the one on screen stays and a second is
-         * typed under it. No name left the document, so nothing is a rename, and the
-         * class that stayed keeps everything it had.
-         */
         'a second class typed under the first carries nothing away from it'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -50081,13 +48527,6 @@ var $;
             $mol_assert_equal(app.class_js(`${d}my_site_page`), 'greeting(){\n\treturn 1\n}\n');
             $mol_assert_equal(app.class_js(`${d}my_site_card`), '');
         },
-        /**
-         * Typing is not renaming. Every letter of a name is a prefix of it, and most
-         * prefixes of a class name are legal class names, so a field that wrote per
-         * keystroke would rename the class — and remake the node that holds it — once
-         * per letter. The field holds a draft and the rename happens on Enter or on
-         * leaving it, exactly as the name of a node does in the inspector.
-         */
         'the root name is committed on submit and not on a keystroke'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -50099,15 +48538,8 @@ var $;
             $mol_assert_equal(app.doc_root(), `${d}my_site_page`);
             app.root_submit();
             $mol_assert_equal(app.doc_root(), `${d}my_shop_page`);
-            // The draft is keyed by the name it started from, so the field now shows
-            // the new name with nothing to clear.
             $mol_assert_equal(app.root_draft(), `${d}my_shop_page`);
         },
-        /**
-         * A name that cannot become a folder is refused where it was typed, in words,
-         * and the document is left alone. Without the refusal the mistake would only
-         * show up as `Root package not found` on a build machine.
-         */
         'a root name that is not a module path is refused in words'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -50116,97 +48548,56 @@ var $;
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_ok(app.root_title_note().includes('Страница'));
             $mol_assert_ok(app.body().includes(app.Root_note()));
-            // And the name the document still carries. The field keeps the refused
-            // one — there has to be something to correct — so without this the real
-            // name would be nowhere on the screen at all.
             app.root_draft('Страница');
             app.root_submit();
             $mol_assert_equal(app.root_draft(), 'Страница');
             $mol_assert_ok(app.root_title_note().includes(`${d}my_site_page`));
-            // A single segment is not a path either: mam resolves every underscore
-            // into a folder, and the export refuses a prefix shorter than two.
             $mol_assert_equal(app.root_title(`${d}page`), `${d}my_site_page`);
             $mol_assert_equal(app.doc_source(), before);
-            // And a name another class of the document already carries.
             app.doc_source(before + `${d}my_site_card ${d}mol_view title \\Карточка\n`);
             $mol_assert_equal(app.root_title(`${d}my_site_card`), `${d}my_site_page`);
             $mol_assert_ok(app.root_title_note().includes('already declared'));
         },
-        /**
-         * A pick belongs to the document it was made in.
-         *
-         * One pick for the whole editor left a ring hanging over the empty canvas of
-         * a brand new scene and opened the inspector on a node that scene never had;
-         * the panel then answered with a red strip in every field, grew the page and
-         * pushed the head bar off screen. Seen on the deploy, 09.09.2026.
-         */
         async 'a pick belongs to its scene, and a new scene opens with none'($) {
             const stage = $bog_vmap_app_flow_stage($);
             stage.drop(`${d}flow_calc`, stage.client([200, 150]));
             const first = stage.store.doc_current().link().str;
             $mol_assert_equal(stage.app.selected(), 'Calc');
             stage.click(stage.button('Новая сцена'));
-            // The store makes the document in a fiber of its own, as the click does.
             await $bog_vmap_app_flow_settle(() => stage.store.doc_links().length > 1);
             stage.redraw();
-            // Nothing picked, so no ring on the canvas and an invitation in the panel
-            // instead of an inspector opened on a node the document does not have.
             $mol_assert_equal(stage.app.selected(), null);
             $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_pane_handle]'), null);
             $mol_assert_ok(stage.text().includes('Выберите узел на холсте'));
-            // Back to the first scene, and the pick is where it was left.
             const scenes = stage.app.Scenes();
             scenes.current(first);
             stage.redraw();
             $mol_assert_equal(stage.app.selected(), 'Calc');
         },
-        /**
-         * A pick that names nothing the document declares is no pick at all.
-         *
-         * The other half of the same defect, and the one that would come back
-         * elsewhere: the panel asks the document rather than trusting the name, so a
-         * document that does not parse gives an invitation and not twenty failures.
-         */
         'a pick naming nothing in the document leaves the panel inviting'($) {
             const stage = $bog_vmap_app_flow_stage($);
             stage.drop(`${d}flow_calc`, stage.client([200, 150]));
             $mol_assert_equal(stage.app.selection_alive(), true);
-            // The node goes out of the text under the pick, as a rename or an edit
-            // in the code panel can do.
             stage.app.doc_source(`${stage.app.doc_root()} ${d}mol_view\n\tsub /\n`);
             stage.redraw();
             $mol_assert_equal(stage.app.selected(), 'Calc');
             $mol_assert_equal(stage.app.selection_alive(), false);
             $mol_assert_ok(stage.text().includes('Выберите узел на холсте'));
         },
-        /**
-         * A click is «add this», a drag is «add it HERE».
-         *
-         * Whoever clicked a shelf row aimed at nothing, so the piece must not fall
-         * into whatever happens to cover the middle of the view. It did: a map asked
-         * for by a click landed between the two halves of a wired pair, because the
-         * pair was under the middle. Seen on the deploy 09.09.2026.
-         */
         'a click puts a free part beside what covers the middle, never inside it'($) {
             const stage = $bog_vmap_app_flow_stage($);
-            // A page under the middle of the canvas, which is where a board lands.
             stage.click(stage.button('Артборд'));
             const page = stage.app.selected();
             $mol_assert_ok(page);
             stage.click(stage.shelf_row('Блок'));
             const node = stage.app.node();
             const block = stage.app.selected();
-            // Free on the canvas, and not a child of the page.
             $mol_assert_ok(node.sub_names('').includes(block));
             $mol_assert_equal(node.sub_names(page)?.includes(block) ?? false, false);
-            // Beside it and not over it: a free part left in the middle of a page
-            // would be drawn on top and read as a part of it.
             const box = stage.pane.part_size(page);
             const spot = stage.app.spots()[block];
             $mol_assert_ok(box);
             $mol_assert_ok(spot.y >= box.y + box.height);
-            // And a SECOND click clears the block it just put there, not only the
-            // page: two pieces at one point look like one thing on the canvas.
             stage.click(stage.shelf_row('Блок'));
             const next = stage.app.selected();
             const below = stage.app.spots()[next];
@@ -50214,67 +48605,31 @@ var $;
             $mol_assert_ok(next !== block);
             $mol_assert_ok(below.y >= first.y + first.height);
         },
-        /**
-         * What is typed stays in the field after a refusal, and the name the node
-         * still carries is on screen beside it.
-         *
-         * Two halves of one decision. Clearing the field would mean typing the whole
-         * name again to fix one letter, which is the opposite of what a refusal is
-         * for; keeping it means the panel shows a name the document does not have,
-         * so the real one has to be visible or the person is left guessing which of
-         * the two is true.
-         */
         'a refused name stays in the field, and the real one is in the refusal'($) {
             const stage = $bog_vmap_app_flow_stage($);
             stage.drop(`${d}flow_calc`, stage.client([200, 150]));
             stage.tap(stage.part_center('Calc'));
             const field = stage.field('Inspect().Title()');
             stage.type(field, 'Кнопка');
-            // The submit is a separate gesture: a rename per keystroke would rename
-            // the node to every prefix of what is being typed.
             stage.blur(field);
-            // Nothing moved, what was typed is still there to be fixed.
             $mol_assert_equal(stage.app.selected(), 'Calc');
             $mol_assert_equal(stage.field('Inspect().Title()').value, 'Кнопка');
-            // And the panel says which name the node actually has.
             $mol_assert_ok(stage.text().includes('Узел по-прежнему называется «Calc»'));
         },
-        /**
-         * «Новая сцена» makes a document, opens it, and puts it in the ADDRESS —
-         * checked through a real click on the button and a real click on a row.
-         *
-         * The address was the untested half: scenarios switched documents by calling
-         * the picker directly, so nothing ever proved that a gesture reaches
-         * the address service at all. A report from the deploy that the list does not
-         * grow and the address does not follow had no test to answer it.
-         *
-         * WHAT THIS CANNOT SAY ANYTHING ABOUT is the timing in a browser: the node
-         * build of that service writes the address into a cell at once, while the
-         * web build defers it into the frame scheduler, that is into
-         * `requestAnimationFrame` — which does not tick in a hidden tab. This test
-         * proves the wiring; a frame is a thing only a visible window has.
-         */
         async 'a click on «Новая сцена» makes a scene, and the address follows the pick'($) {
             const stage = $bog_vmap_app_flow_stage($);
             const first = stage.store.doc_current().link().str;
             $mol_assert_equal(stage.store.doc_links().length, 1);
             stage.click(stage.button('Новая сцена'));
-            // The store makes the document in a fiber of its own, as the click does.
             await $bog_vmap_app_flow_settle(() => stage.store.doc_links().length > 1);
             stage.redraw();
             const second = stage.store.doc_current().link().str;
             $mol_assert_equal(stage.store.doc_links().length, 2);
             $mol_assert_ok(second !== first);
-            // In the address, which is what a reload and a shared link read.
             $mol_assert_equal($.$mol_state_arg.value('doc'), second);
-            // Both scenes are on screen, and a click on a row moves the address back.
             stage.click(stage.scene_row('Сцена 1'));
             $mol_assert_equal(stage.store.doc_current().link().str, first);
             $mol_assert_equal($.$mol_state_arg.value('doc'), first);
-            // A THIRD and a FOURTH, because the report from the deploy was about the
-            // fourth: the address is written by a fiber that has already run twice,
-            // and a fiber replays its reads from its own cache — if the address were
-            // rebuilt from a stale copy of itself, it would show up here.
             stage.click(stage.button('Новая сцена'));
             await $bog_vmap_app_flow_settle(() => stage.store.doc_links().length > 2);
             stage.click(stage.button('Новая сцена'));
@@ -50283,31 +48638,20 @@ var $;
             const fourth = stage.store.doc_current().link().str;
             $mol_assert_equal(stage.store.doc_links().length, 4);
             $mol_assert_equal($.$mol_state_arg.value('doc'), fourth);
-            // And back to the first from there, by a click on its row.
             stage.click(stage.scene_row('Сцена 1'));
             $mol_assert_equal($.$mol_state_arg.value('doc'), first);
         },
-        /**
-         * Folding a panel away survives a reload: the choice is in the session, so
-         * a fresh editor in the same window opens as the last one was left.
-         *
-         * In the SESSION and not in the address: the address is a link somebody
-         * shares, and a layout travelling with it would fold a stranger's panels.
-         */
         'which panels are open outlives the page'($) {
             const one = $bog_vmap_app.make({ $ });
-            // The editor opens with the two panels and no code.
             $mol_assert_equal(one.palette_showed(), true);
             $mol_assert_equal(one.inspect_showed(), true);
             $mol_assert_equal(one.code_showed(), false);
             one.palette_showed(false);
             one.code_showed(true);
-            // A NEW instance is what a reload makes, and it finds the same layout.
             const two = $bog_vmap_app.make({ $ });
             $mol_assert_equal(two.palette_showed(), false);
             $mol_assert_equal(two.inspect_showed(), true);
             $mol_assert_equal(two.code_showed(), true);
-            // And the canvas is drawn without the panel that was folded away.
             $mol_assert_equal(two.body_main().includes(two.Side()), false);
             $mol_assert_equal(two.body_main().includes(two.Code()), true);
         },
@@ -50318,25 +48662,7 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Stand for the end to end scenarios of `flow.test.ts`: the whole editor in a
-     * real DOM, with the sandbox replaced by a fake bridge peer.
-     *
-     * A `.test.ts` and not a plain module: nothing here may reach the product
-     * bundle, and mam keeps test files out of it. Everything the stand fakes is
-     * named below; the rest of the editor is the editor.
-     *
-     * `d` keeps `$` out of the string literals — mam builds its dependency graph by
-     * a regexp over sources, literals included.
-     */
     const d = '$';
-    /**
-     * Class tree of the donor pack, served instead of the network.
-     *
-     * Shaped like the `web.view.tree` of a deployed module, because that is what
-     * the library parses: a class per block, properties under it. Two of them carry
-     * a number and a string, which is what makes a wire between them possible.
-     */
     $_1.$bog_vmap_app_flow_pack = [
         `${d}flow_button ${d}mol_view`,
         `\ttitle \\`,
@@ -50349,36 +48675,17 @@ var $;
         `\tmarker \\`,
         ``,
     ].join('\n');
-    /**
-     * A SECOND application, served at an address of its own.
-     *
-     * There to be added by hand: a person pastes the address of a deployed mol
-     * application and its own classes join the shelf. One class is enough for that,
-     * and a name of its own is what makes the difference visible.
-     */
     $_1.$bog_vmap_app_flow_other = 'http://other.pack/';
     $_1.$bog_vmap_app_flow_other_pack = [
         `${d}shop_basket ${d}mol_view`,
         `\ttitle \\`,
         ``,
     ].join('\n');
-    /** Where the pane sits in the viewport. jsdom lays nothing out, so it is told. */
     $_1.$bog_vmap_app_flow_rect = {
         left: 200, top: 50, width: 600, height: 500, right: 800, bottom: 550,
     };
-    /** Size the fake scene reports for a part with nothing inside it. */
     $_1.$bog_vmap_app_flow_size = { width: 100, height: 50 };
-    /** Size it reports for a container, big enough to aim a drop inside it. */
     $_1.$bog_vmap_app_flow_board = { width: 400, height: 300 };
-    /**
-     * Globals of a browser that node does not define and jsdom does not export.
-     *
-     * The selection plugin of the view pack names `ShadowRoot` and the touch plugin
-     * names `PointerEvent` bare, so a field or a gesture in a node test dies on a
-     * `ReferenceError` that says nothing about the editor. Pointer capture is
-     * missing from jsdom elements outright, and the touch plugin calls it without a
-     * guard.
-     */
     function browser_gaps($) {
         const dom = $.$mol_dom_context;
         Object.assign(globalThis, {
@@ -50393,13 +48700,7 @@ var $;
                 hasPointerCapture() { return false; },
             });
     }
-    /** The editor of the previous scenario, taken down before the next one starts. */
     let $bog_vmap_app_flow_last = null;
-    /**
-     * Waits for work a click handed to a fiber of its own: making a document,
-     * publishing a part. Both answer at once and land later, so a scenario that
-     * looked at the result on the next tick would sometimes be too early.
-     */
     async function $bog_vmap_app_flow_settle(done, limit = 300) {
         const till = Date.now() + limit;
         while (!done() && Date.now() < till) {
@@ -50411,8 +48712,6 @@ var $;
     function $bog_vmap_app_flow_stage($, over = {}) {
         browser_gaps($);
         const dom = $.$mol_dom_context;
-        // The editor of the previous scenario keeps window listeners alive, and its
-        // document node keeps taking events; both go before this one is built.
         $bog_vmap_app_flow_last?.destructor();
         dom.document.body.innerHTML = '';
         const timers = [];
@@ -50435,47 +48734,18 @@ var $;
             }
         }
         $.$mol_fetch = $mol_fetch_flow;
-        // A store of the scenario's own is how a document that is still loading, or
-        // somebody else's, is put on the stand; the default one is a fresh document
-        // in the home land, made here so that nothing waits on `boot`.
         const store = over.store ?? $bog_vmap_app_store.make({ $, doc_land_config: () => null });
         if (!over.store)
             store.doc_add('Сцена 1');
         const app = $bog_vmap_app.make({ $, store: () => store });
         $bog_vmap_app_flow_last = app;
-        // WHICH PANELS ARE OPEN IS SAID OUT LOUD, because otherwise it is inherited
-        // from whatever ran before. The three flags live in the session store, and
-        // that store is one for the whole process: its values sit on the base class,
-        // reachable by name, so a subclass per test — which is what the mock in
-        // `app/app.test.ts` makes, and what its comment claims isolates them — shares
-        // the same slots. Dropping the memoised store underneath does not help
-        // either; measured, the values come back.
-        //
-        // The cost of not saying it is a suite whose colour depends on the order of
-        // its tests: a scenario that folds the palette away leaves it folded, and the
-        // next stand opens without one. Found when this stand moved into a folder of
-        // its own and the flow scenarios landed after a scenario that folds it —
-        // sixteen of them went red at once, having been green in the other order.
-        app.palette_showed(true);
-        app.inspect_showed(true);
-        app.code_showed(false);
         const posted = [];
         const queue = [];
-        /** Which way a node stacks what is inside it, as its `style` says. */
         const direction = (name) => {
             const style = app.node().over_tree(name, 'style')?.kids[0] ?? null;
             return $bog_vmap_lang_dict_get(style, 'flexDirection')?.value
                 ?? 'row'; // what `[mol_view]` is with no direction written
         };
-        /**
-         * Geometry of the document as a scene would measure it: free parts at their
-         * spots, and whatever a container carries stacked inside it along the
-         * direction the node declares.
-         *
-         * A rough flex box and nothing more — boxes of one size, laid end to end —
-         * but enough for what the host does with the numbers: hit testing, the ring,
-         * the ends of a wire, and aiming a drop between two children of a page.
-         */
         const sizes = () => {
             const res = {};
             const node = app.node();
@@ -50501,21 +48771,9 @@ var $;
             }
             return res;
         };
-        /**
-         * The far end of the bridge: records what the host sends and lines up the
-         * answer a scene owes. Answered on `flush()` and not here, because a reply
-         * posted from inside `postMessage` would write cells while the cell that
-         * pushed is still computing.
-         */
         let silent = false;
         let exposed = false;
         const peer = {
-            /**
-             * A frame in a sandbox has an opaque origin, and reading it from outside
-             * throws — which is how the host tells a working sandbox from a missing
-             * one. So the peer throws by default, and answers only for the scenario
-             * that asks what happens when the sandbox is gone.
-             */
             get origin() {
                 if (exposed)
                     return 'http://localhost';
@@ -50532,7 +48790,6 @@ var $;
                     queue.push({ kind: 'sizes', sizes: sizes() });
             },
         };
-        /** Hands one message to the host the way the frame does: a window event from the peer. */
         const deliver = (data) => {
             const event = new dom.MessageEvent('message', { data: { ns: $bog_vmap_bridge_ns, ...data } });
             Object.defineProperty(event, 'source', { value: peer });
@@ -50540,37 +48797,30 @@ var $;
         };
         const scene = {
             posted,
-            /** Everything of one kind the host has sent, in order. */
             sent(kind) {
                 return posted.filter(message => message.kind === kind);
             },
-            /** The last message of a kind, or undefined. */
             last(kind) {
                 return this.sent(kind).at(-1);
             },
-            /** Answers everything owed, then lets the editor redraw on the answers. */
             flush() {
                 while (queue.length)
                     deliver(queue.shift());
                 app.dom_tree();
             },
-            /** Values of the wires, as the scene reports them. */
             values(values) {
                 deliver({ kind: 'values', values });
                 app.dom_tree();
             },
-            /** From now on the scene takes everything and says nothing back. */
             silence() {
                 silent = true;
                 queue.length = 0;
             },
-            /** The frame boots and announces itself, as a scene does on load. */
             hello() {
                 deliver({ kind: 'ready' });
                 app.dom_tree();
                 this.flush();
             },
-            /** The sandbox is gone: the origin of the frame reads back from the host. */
             expose() {
                 exposed = true;
                 app.dom_tree();
@@ -50580,16 +48830,10 @@ var $;
         pane.scene_peer = () => peer;
         const root = app.dom_tree();
         dom.document.body.appendChild(root);
-        // The pane and the camera plugin read their rectangle through a cell that
-        // only a browser ever refreshes, so both are told it outright.
         const rect = $_1.$bog_vmap_app_flow_rect;
         pane.dom_node().getBoundingClientRect = () => rect;
         pane.view_rect = () => rect;
         pane.Touch().view_rect = () => rect;
-        // A muted stand is the frame that boots and then says nothing: the scene
-        // announces itself and stops, which is what document code looping on the
-        // first compile looks like from here. The editor never sees geometry, so it
-        // never warms, and that is the state the cold watch exists for.
         if (over.mute) {
             deliver({ kind: 'ready' });
             silent = true;
@@ -50607,11 +48851,6 @@ var $;
                 $mol_fail(new Error(`nothing on screen: ${note}`));
             return el;
         };
-        /**
-         * A pointer event as a browser makes one: cancelable, so that
-         * `preventDefault` in a handler really stops the camera, and bubbling, so
-         * that a press on the overlay reaches the plugins of the pane.
-         */
         const pointer = (type, point, over = {}) => {
             return new dom.PointerEvent(type, {
                 bubbles: true,
@@ -50626,70 +48865,50 @@ var $;
         };
         return {
             app, pane, store, scene, root, timers,
-            /** Viewport point of a point in the screen space of the pane. */
             client(point) {
                 return [rect.left + point[0], rect.top + point[1]];
             },
-            /** The whole editor as text, for a coarse look at what is on screen. */
             text() {
                 return root.textContent ?? '';
             },
-            /** Views that failed to render, by their id. The frame is not one: see below. */
             broken() {
                 return [...root.querySelectorAll('[mol_view_error]')].map(el => el.getAttribute('id'));
             },
             button(title) {
                 return found('[role=button]', `button «${title}»`, el => el.textContent?.startsWith(title) ?? false);
             },
-            /**
-             * A checkbox or one option of a switch, by its label. Not a button: the
-             * check primitive answers `role="checkbox"`, and the options of a switch
-             * are checks, so the head bar toggles and the layout panel are found here.
-             */
             check(title) {
                 return found('[role=checkbox]', `check «${title}»`, el => el.textContent?.includes(title) ?? false);
             },
-            /** A row of the palette, by the class it offers. */
             class_row(klass) {
                 return found('[bog_vmap_app_palette_item]', `palette row ${klass}`, el => el.textContent === klass);
             },
-            /** Unfolds the class list of the panel, the second level under the shelf. */
             classes_open() {
                 app.Shelf().classes_showed(true);
                 app.dom_tree();
                 scene.flush();
             },
-            /** A row of the scene list, addressed by the name of the document. */
             scene_row(title) {
                 return found('[bog_vmap_app_scenes_scene_row]', `scene row ${title}`, el => el.textContent === title);
             },
-            /** A row of the shelf, addressed by what it says. */
             shelf_row(title) {
                 return found('[bog_vmap_app_shelf_item_row]', `shelf row ${title}`, el => el.textContent === title);
             },
-            /** A text field, addressed by the tail of the id built out of the path to it. */
             field(tail) {
                 return found('input, textarea', `field ${tail}`, el => el.getAttribute('id')?.endsWith(tail) ?? false);
             },
             overlay() {
                 return root.querySelector('[bog_vmap_app_pane_overlay]');
             },
-            /** The frame element itself, so that a restart can be seen to replace it. */
             frame() {
                 return root.querySelector('iframe');
             },
-            /** Types into a field the way a person does: the value, then the input event. */
             type(el, value) {
                 el.value = value;
                 el.dispatchEvent(new dom.Event('input', { bubbles: true }));
                 app.dom_tree();
                 scene.flush();
             },
-            /**
-             * Leaves a field, which is how a name is committed without pressing
-             * Enter: the rename is bound to `blur` as well, because a person who
-             * typed a name and clicked elsewhere meant it.
-             */
             blur(el) {
                 el.dispatchEvent(new dom.Event('blur', { bubbles: true }));
                 app.dom_tree();
@@ -50709,15 +48928,6 @@ var $;
             release(el, point, over = {}) {
                 el.dispatchEvent(pointer('pointerup', point, over));
             },
-            /**
-             * Carries a class from the palette onto the canvas: a press on the row,
-             * a move across the window, a release over the overlay. The pointer
-             * moves on the window because that is where the editor listens for it.
-             *
-             * The class list is the SECOND level of the panel and is folded away
-             * when the editor opens, so the gesture starts by opening it, exactly as
-             * a person reaching for a primitive does.
-             */
             drop(klass, point) {
                 this.classes_open();
                 this.press(this.class_row(klass), [10, 300]);
@@ -50726,25 +48936,18 @@ var $;
                 app.dom_tree();
                 scene.flush();
             },
-            /** A click on the canvas: press and release without moving. */
             tap(point, over = {}) {
                 this.press(this.overlay(), point, over);
                 this.release(this.overlay(), point, over);
                 app.dom_tree();
                 scene.flush();
             },
-            /** Centre of a part on screen, as the scene has measured it. */
             part_center(name) {
                 const box = pane.part_box(name);
                 if (!box)
                     $mol_fail(new Error(`part ${name} is not measured`));
                 return this.client([box.left + box.width / 2, box.top + box.height / 2]);
             },
-            /**
-             * Viewport point of the dot of a port, from the geometry the pane draws
-             * the dots with: the box of the part and the row of the port among the
-             * wirable ports of its class.
-             */
             port_dot(name, port, side) {
                 const box = pane.part_box(name);
                 const index = app.part_ports(name).findIndex(known => known.name === port);
@@ -50760,31 +48963,13 @@ var $;
     $_1.$bog_vmap_app_flow_stage = $bog_vmap_app_flow_stage;
 })($ || ($ = {}));
 (function ($_2) {
-    /**
-     * The editor from the user's side: real clicks on real elements of a rendered
-     * DOM, one scenario per test.
-     *
-     * These are not tests of methods. Every step is what a person does — press a
-     * palette row, drag onto the canvas, type into a field, click a button — and
-     * what is checked is where it leaves the document, the panels and the scene.
-     * The stand and everything it fakes are in `flow_stage.test.ts`.
-     *
-     * `d` keeps `$` out of the string literals — mam builds its dependency graph by
-     * a regexp over sources, literals included.
-     */
     const d = '$';
     const calc = `${d}flow_calc`;
     const map = `${d}flow_map`;
     const button = `${d}flow_button`;
     $mol_test({
-        /**
-         * The editor opens: the head bar, the palette of the pack, the canvas and
-         * the invitation in the properties panel. The pack is a fixture and the
-         * network is fenced off — a fetch of anything else throws by name.
-         */
         'the editor opens with its bar, its palette and its canvas'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
-            // The bar: everything the scenarios below press.
             stage.button('Новая сцена');
             stage.button('−');
             stage.button('+');
@@ -50796,107 +48981,61 @@ var $;
             $mol_assert_ok(text.includes('Свойства'));
             $mol_assert_ok(text.includes('100%'));
             $mol_assert_ok(text.includes('Выберите узел на холсте'));
-            // The panel opens on ready made things, not on a catalogue of classes.
             const shelf = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_items] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
             $mol_assert_like(shelf.slice(0, 6), [
                 'Блок', 'Ячейка кода', 'График', 'Калькулятор', 'Карта', 'Калькулятор и карта',
             ]);
-            // And the widgets of input under them, which is what drives the rest.
             $mol_assert_ok(shelf.includes('Поле'));
             $mol_assert_ok(shelf.includes('Выбор'));
-            // Under them, the objects of the connected application: what its author
-            // declared, by their own names and without a line of mol among them.
             const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
             $mol_assert_like(apps, ['Button', 'Calc', 'Map']);
-            // The classes of the pack are a level down, folded away until asked for,
-            // and then they are all there, the base view stub included.
             $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_palette_class_row]'), null);
             stage.classes_open();
             const rows = [...stage.root.querySelectorAll('[bog_vmap_app_palette_class_row]')]
                 .map(el => el.textContent);
             $mol_assert_like(rows, [`${d}mol_view`, button, calc, map]);
-            // Nothing failed to draw except the frame, which stays suspended for
-            // ever: jsdom never loads the sandbox page, so its `onload` never fires.
             $mol_assert_like(stage.broken(), [stage.pane.Scene(stage.pane.scene_key()).dom_id()]);
         },
-        /**
-         * The point of the shelf: a wired pair arrives whole, by one gesture.
-         *
-         * A wire is the thing nobody guesses on their own, so the shelf carries an
-         * example of one already drawn. What lands is checked in the DOCUMENT and
-         * not by eye: a wire written the wrong way still reads plausibly, and all
-         * five traps of section 1 build green.
-         */
         'a ready made pair lands wired, by one click on the shelf'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             stage.click(stage.shelf_row('Калькулятор и карта'));
             const node = stage.app.node();
-            // Both parts and the box holding them, and the box is what lies on the
-            // canvas: one thing to move, not two.
             $mol_assert_like(node.sub_names(''), ['Pair']);
             $mol_assert_like(node.sub_names('Pair'), ['Calc', 'Map']);
             $mol_assert_like(Object.keys(stage.app.spots()), ['Pair']);
-            // The wire, from the result of the calculator into the zoom of the map.
             const links = node.links();
             $mol_assert_equal(links.length, 1);
             $mol_assert_like([links[0].from, links[0].from_prop, links[0].to, links[0].to_prop], ['Calc', 'result', 'Map', 'zoom']);
-            // The scene compiles what the document says, byte for byte.
             $mol_assert_equal(stage.scene.last('doc_set').src, stage.app.doc_source());
-            // Picked by the drop itself, as a dragged part is.
             $mol_assert_equal(stage.app.selected(), 'Pair');
         },
-        /**
-         * An application is added by its address, and its own objects are on the
-         * shelf right after.
-         *
-         * Nothing is asked of whoever deployed it: a mol module carries the tree of
-         * its classes beside its bundle, so any deployed application is a library
-         * already. What the shelf shows is what its author wrote, without the
-         * framework the bundle carries along.
-         */
         'an application added by its address puts its objects on the shelf'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             stage.type(stage.field('Shelf().Links()'), $_2.$bog_vmap_app_flow_other);
-            // The frame is a new one — a realm cannot unload a bundle — and it boots.
             stage.scene.hello();
             const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
             $mol_assert_like(apps, ['Basket']);
-            // And an object of somebody else's application lies down like any other.
             stage.click(stage.shelf_row('Basket'));
             $mol_assert_ok(stage.app.doc_source().includes(`Basket ${d}shop_basket`));
             $mol_assert_equal(stage.app.selected(), 'Basket');
         },
-        /**
-         * A component is carried out of the palette onto the canvas: it is declared,
-         * placed, picked on the spot — the properties panel is open on it without a
-         * second gesture — and a click on it goes on to the live component as well.
-         */
         'a class carried from the palette becomes a part, picked and ready to press'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([200, 150]));
-            // One declaration and one reference, and the placement beside them.
             const source = stage.app.doc_source();
             $mol_assert_ok(source.includes(`Calc ${calc}`));
             $mol_assert_ok(source.includes('<= Calc'));
             $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
-            // The scene compiles what the document says, byte for byte.
             $mol_assert_equal(stage.scene.last('doc_set').src, source);
-            // Picked by the drop itself: the ring is on the canvas and the inspector
-            // is on the part, with the ports of its class in it.
             $mol_assert_equal(stage.app.selected(), 'Calc');
             $mol_assert_ok(stage.root.querySelector('[bog_vmap_app_pane_handle]') !== null);
             stage.field("Row('result').Value().Number().Num()");
-            // A click on the part keeps the pick and goes on to the live component.
             stage.tap(stage.part_center('Calc'));
             $mol_assert_equal(stage.app.selected(), 'Calc');
             const click = stage.scene.last('click_at');
             $mol_assert_equal(click.x, 250);
             $mol_assert_equal(click.y, 175);
         },
-        /**
-         * A property typed into the inspector lands in the document as the line of
-         * that property, and the scene is handed the document again.
-         */
         'a value typed into the inspector goes into the document and to the scene'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([200, 150]));
@@ -50905,16 +49044,10 @@ var $;
             stage.type(stage.field("Row('result').Value().Number().Num()"), '42');
             const source = stage.app.doc_source();
             $mol_assert_ok(source.includes(`Calc ${calc} result 42`));
-            // The neighbouring lines are untouched: one property moved, not the class.
             $mol_assert_ok(source.includes('<= Calc'));
             $mol_assert_ok(stage.scene.sent('doc_set').length > before);
             $mol_assert_equal(stage.scene.last('doc_set').src, source);
         },
-        /**
-         * A wire drawn by hand: from the output dot of one part to the input dot of
-         * another. Two lines go into the document, unplugging takes both away, and
-         * the value the scene reports is shown on the wire.
-         */
         'a wire drawn between two parts is written, labelled and unplugged'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([100, 100]));
@@ -50930,13 +49063,10 @@ var $;
             const source = stage.app.doc_source();
             $mol_assert_ok(source.includes('\tcalc_result = Calc result\n'));
             $mol_assert_ok(source.includes('zoom <= calc_result'));
-            // The host asks the scene for the value of the wire it now draws.
             stage.scene.flush();
             $mol_assert_like(stage.scene.last('values_want').names, ['calc_result']);
             stage.scene.values({ calc_result: '42' });
             $mol_assert_like(stage.pane.wire_lines().map(line => [line.key, line.label]), [['Map.zoom', '42']]);
-            // A press on the wired input pulls the wire out; let go over bare canvas
-            // and both lines are gone from the document.
             stage.tap(stage.part_center('Map'));
             stage.press(overlay, stage.port_dot('Map', 'zoom', 'in'));
             stage.release(overlay, stage.client([550, 450]));
@@ -50945,15 +49075,6 @@ var $;
             $mol_assert_equal(after.includes('calc_result'), false);
             $mol_assert_like(stage.app.doc_wires(), []);
         },
-        /**
-         * The whole point of publishing: a part goes out as a class of the library,
-         * its link goes into the palette field of a scene, and it is a component
-         * again — droppable like any other.
-         *
-         * The library land is the home land here, so no proof of work, as in
-         * `publish/publish.test.ts`. The link is resolved by the real stack through
-         * the real database.
-         */
         async 'a published part comes back through the palette field'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             const library = $bog_vmap_app_publish_store.make({
@@ -50964,8 +49085,6 @@ var $;
             stage.drop(button, stage.client([200, 150]));
             stage.tap(stage.part_center('Button'));
             stage.click(stage.button('В библиотеку'));
-            // Publishing encodes units, which is asynchronous even without the proof
-            // of work; the click hands it to a fiber and answers at once.
             const link = await $_2.$bog_vmap_app_flow_settle(() => library.link());
             stage.redraw();
             $mol_assert_ok(link);
@@ -50974,43 +49093,28 @@ var $;
             stage.type(stage.field('Shelf().Links()'), link);
             $mol_assert_like(stage.app.lands(), [link]);
             $mol_assert_like(stage.app.lib_classes().map(tree => tree.type), [`${d}bog_vmap_pub_button`]);
-            // In the palette beside the classes of the pack, and it drops like them.
             stage.drop(`${d}bog_vmap_pub_button`, stage.client([400, 300]));
             $mol_assert_ok(stage.app.doc_source().includes(` ${d}bog_vmap_pub_button\n`));
             $mol_assert_equal(Object.keys(stage.app.spots()).length, 2);
         },
-        /**
-         * A second scene is a document of its own: made from the bar, it opens
-         * empty, and going back brings the first one with everything on it.
-         */
         async 'a second scene is a document of its own and the first one comes back'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([200, 150]));
             const first = stage.store.doc_current().link().str;
             const source = stage.app.doc_source();
             stage.click(stage.button('Новая сцена'));
-            // The store makes the document in a fiber of its own, as the click does.
             await $_2.$bog_vmap_app_flow_settle(() => stage.store.doc_links().length > 1);
             stage.redraw();
             $mol_assert_equal(stage.store.doc_links().length, 2);
             $mol_assert_ok(stage.store.doc_current().link().str !== first);
             $mol_assert_equal(stage.app.doc_source(), `${stage.app.doc_root()} ${d}mol_view\n\tsub /\n`);
             $mol_assert_like(stage.app.spots(), {});
-            // Back to the first one, by the same value the picker of the bar writes.
             const scenes = stage.app.Scenes();
             scenes.current(first);
             stage.redraw();
             $mol_assert_equal(stage.app.doc_source(), source);
             $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
         },
-        /**
-         * The sandbox is raised from markup, not from an address: there is exactly
-         * one page in the project and the sandbox is not it.
-         *
-         * What the markup has to carry is checked here rather than argued: the
-         * isolation, the absence of any address, and an ABSOLUTE address of the
-         * bundle — an opaque origin has no base to resolve a relative one against.
-         */
         'the frame is raised from markup and carries no address'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             const frame = stage.frame();
@@ -51020,18 +49124,8 @@ var $;
             const bundle = stage.app.scene_bundle();
             $mol_assert_ok(bundle.endsWith('/scene/web.js'));
             $mol_assert_ok(html.includes(`src="${bundle}"`));
-            // the frame paints its own ground, see `scene_html()`
             $mol_assert_ok(html.includes('color-scheme:dark'));
         },
-        /**
-         * The pack travels the bridge, and it travels FIRST.
-         *
-         * The scene compiles nothing until it has been told a pack, because a class
-         * picks its base once and a document built a moment early would inherit the
-         * sandbox's own base view for good. So the order of the first three
-         * messages of a handshake is part of the contract, not an accident of how
-         * the cells happen to be listed.
-         */
         'the pack goes down the wire before the document and the libraries'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             const kinds = stage.scene.posted.map(message => message.kind);
@@ -51041,14 +49135,6 @@ var $;
             $mol_assert_ok(pack < kinds.indexOf('libs_set'));
             $mol_assert_equal(stage.scene.last('pack_set')?.uri, stage.app.pack_script());
         },
-        /**
-         * One pack per frame, held by construction now that no address holds it: the
-         * pack is part of the key of the frame, so naming another one gives a new
-         * element and a realm that has never seen the first bundle. A land is
-         * compiled into the sandbox instead, so a change of lands must not cost the
-         * frame, its camera or its live instances.
-         * @see ../ARCHITECTURE.md section 5
-         */
         'a new pack gives a new frame, a new land keeps the old one'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             const field = stage.field('Shelf().Links()');
@@ -51056,66 +49142,36 @@ var $;
             stage.type(field, 'http://pack.test/, AbCdEfGh');
             $mol_assert_ok(stage.frame() !== before);
             $mol_assert_like(stage.app.lands(), ['AbCdEfGh']);
-            // the fresh frame has proved nothing yet, so nothing is pushed at it
             $mol_assert_equal(stage.pane.ready(), false);
-            // it boots and gets the new pack first, exactly as the first one did
             const seen = stage.scene.posted.length;
             stage.scene.hello();
             $mol_assert_equal(stage.pane.ready(), true);
             $mol_assert_equal(stage.scene.posted[seen]?.kind, 'pack_set');
             $mol_assert_equal(stage.scene.last('pack_set')?.uri, 'http://pack.test/web.js');
-            // a land rides the bridge, so the frame stands
             const kept = stage.frame();
             stage.type(field, 'http://pack.test/, AbCdEfGh, ZyXwVuTs');
             $mol_assert_equal(stage.frame(), kept);
             $mol_assert_like(stage.app.lands(), ['AbCdEfGh', 'ZyXwVuTs']);
         },
-        /**
-         * A change of pack must not be mistaken for a scene that died.
-         *
-         * The frame is replaced, and the new one then spends the whole cold load of
-         * the pack saying nothing — 610 ms in the measurement of section 4, and much
-         * worse on a slow line, against a watchdog limit of eight seconds. Two things
-         * therefore have to hold across the swap, and they are checked apart because
-         * they fail apart.
-         *
-         * NOTHING IS PUSHED at a window that has not booted. A push into a frame
-         * still loading is lost silently, and the host would never learn that the
-         * document it thinks it sent was never received.
-         *
-         * THE WATCH DOES NOT ARM. `warmed` is still true from the frame that just
-         * went, so an armed watch here would accuse a perfectly healthy scene of
-         * being stuck and offer to reload the very thing that is loading. This is
-         * held by the handshake being kept per frame, not per pane.
-         */
         'a change of pack raises no false alarm about the scene'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             const watch = () => stage.timers.filter(timer => timer.delay === stage.pane.answer_limit()).length;
-            // real traffic first, so the scene has proved itself and the pulse is on
             stage.drop(calc, stage.client([200, 150]));
             $mol_assert_equal(stage.pane.warmed(), true);
             const sent = stage.scene.posted.length;
             const armed = watch();
             stage.type(stage.field('Shelf().Links()'), 'http://pack.test/');
-            // a frame that has said nothing, and nothing said to it
             $mol_assert_equal(stage.pane.ready(), false);
             $mol_assert_equal(stage.scene.posted.length, sent);
-            // and no claim made about its silence
             $mol_assert_equal(stage.pane.watchdog(), null);
             $mol_assert_equal(watch(), armed);
             $mol_assert_equal(stage.pane.stalled(), false);
             $mol_assert_equal(stage.text().includes('Сцена не отвечает'), false);
-            // it boots, and only then does anything go out — the pack first
             stage.scene.hello();
             $mol_assert_equal(stage.pane.ready(), true);
             $mol_assert_equal(stage.scene.posted[sent]?.kind, 'pack_set');
             $mol_assert_equal(stage.scene.posted[sent]?.uri, 'http://pack.test/web.js');
         },
-        /**
-         * The palette field takes a pack and lands together, and refuses a second
-         * pack out loud: the reason is under the field and the frame keeps the pack
-         * it already loaded.
-         */
         'the palette field takes a pack with lands and says why it refuses a second'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             const field = stage.field('Shelf().Links()');
@@ -51125,18 +49181,11 @@ var $;
             const key = stage.pane.scene_key();
             $mol_assert_equal(stage.pane.pack_uri(), 'http://pack.test/web.js');
             stage.type(field, 'http://pack.test/, AbCdEfGh, http://other.test/');
-            // The refusal is on screen, in the user's words, under the field.
             $mol_assert_ok(stage.text().includes($bog_vmap_lib_links_reason.pack_second));
             $mol_assert_ok(stage.text().includes('http://other.test/'));
-            // The frame is the one it already was: no reload.
             $mol_assert_equal(stage.pane.scene_key(), key);
             $mol_assert_equal(stage.field('Shelf().Links()').value, 'http://pack.test/, AbCdEfGh, http://other.test/');
         },
-        /**
-         * The delete button takes the picked part out of the document, and the
-         * camera cannot touch the document at all: panning and zooming leave the
-         * text byte for byte where it was.
-         */
         'delete takes the part out, and the camera leaves the document alone'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([100, 100]));
@@ -51148,14 +49197,12 @@ var $;
             $mol_assert_ok(source.includes(`Map ${map}`));
             $mol_assert_equal(stage.app.selected(), null);
             $mol_assert_like(Object.keys(stage.app.spots()), ['Map']);
-            // A drag over bare canvas is a pan…
             const overlay = stage.overlay();
             stage.press(overlay, stage.client([450, 400]));
             stage.move(overlay, stage.client([500, 430]));
             stage.release(overlay, stage.client([500, 430]));
             stage.redraw();
             $mol_assert_like([...stage.pane.camera_shift()], [50, 30]);
-            // …and the buttons of the bar are the zoom.
             stage.click(stage.button('+'));
             $mol_assert_ok(stage.text().includes('125%'));
             stage.click(stage.button('Сбросить вид'));
@@ -51163,32 +49210,21 @@ var $;
             $mol_assert_like([...stage.pane.camera_shift()], [0, 0]);
             $mol_assert_equal(stage.app.doc_source(), source);
         },
-        /**
-         * The artboard from the user's side: a page is put on the canvas, two parts
-         * are dropped INTO it and go into its tree instead of onto the desk, and the
-         * direction switch of the inspector decides how they stack — including where
-         * the next drop goes in.
-         */
         'a page takes the parts dropped into it and stacks them the way it is set'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             stage.click(stage.button('Артборд'));
-            // Nothing marks a page as one: it is a view with a `sub` of its own.
             $mol_assert_equal(stage.app.selected(), 'Page');
             const node = stage.app.node();
             $mol_assert_like(node.sub_names('Page'), []);
             const page = stage.pane.part_box('Page');
             $mol_assert_ok(page);
-            // Dropped inside the page, both go into its tree and neither takes a
-            // coordinate: on the desk only the page itself lies.
             stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
             stage.drop(map, stage.client([page.left + 200, page.top + 250]));
             $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
             $mol_assert_like(Object.keys(stage.app.spots()), ['Page']);
             $mol_assert_equal(stage.app.doc_source().includes('\t\tsub /\n\t\t\t<= Calc\n\t\t\t<= Map\n'), true);
-            // The page is picked again by a click on the empty part of it.
             stage.tap(stage.client([page.left + 200, page.top + 250]));
             $mol_assert_equal(stage.app.selected(), 'Page');
-            // The layout panel of the inspector turns the column into a row.
             stage.click(stage.check('рядом'));
             $mol_assert_ok(stage.app.doc_source().includes('flexDirection \\row'));
             $mol_assert_equal(stage.scene.last('doc_set').src, stage.app.doc_source());
@@ -51196,19 +49232,10 @@ var $;
             const second = stage.pane.part_box('Map');
             $mol_assert_equal(first.top, second.top);
             $mol_assert_ok(second.left > first.left);
-            // And the next drop is aimed by the same row: to the left of both is first.
             stage.drop(button, stage.client([page.left + 20, page.top + 20]));
             $mol_assert_like(node.sub_names('Page'), ['Button', 'Calc', 'Map']);
         },
-        /**
-         * A document opened by a link lives in a land of its own, and until that
-         * land arrives every read of it suspends. THE SANDBOX MUST COME UP ANYWAY:
-         * the markup of the frame is not the document's business, and an editor that
-         * waits for the text before it raises the frame waits for ever on a document
-         * whose master is not reachable — which is what «ожидание сцены…» was.
-         */
         'the sandbox comes up while the document of the address is still on its way'($) {
-            // Every read of the open document suspends, as an unsynced land does.
             const waiting = new Promise(() => { });
             const store = $bog_vmap_app_store.make({
                 $,
@@ -51218,31 +49245,19 @@ var $;
                 pack: () => { throw waiting; },
             });
             const stage = $_2.$bog_vmap_app_flow_stage($, { store });
-            // The frame has its markup, so the scene boots and answers.
             $mol_assert_ok(stage.frame().getAttribute('srcdoc'));
             $mol_assert_equal(stage.pane.ready(), true);
-            // The complaint itself: the head bar no longer says it is waiting.
             $mol_assert_equal(stage.text().includes('ожидание сцены'), false);
-            // The palette of the document is unknown, so the standard one stands in
-            // and is on screen rather than suspended.
             $mol_assert_equal(stage.app.links(), '');
             stage.classes_open();
             stage.class_row(calc);
         },
-        /**
-         * A scene that stopped answering is called out on a strip of its own, and
-         * the button on it replaces the frame rather than talking to the stuck one.
-         *
-         * Time is the test's own: the timers of the stand never fire by themselves,
-         * so the watchdog is asked to fire the moment its limit would have run out.
-         */
         'a silent scene raises the strip and the button gives a fresh frame'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([200, 150]));
             $mol_assert_equal(stage.pane.stalled(), false);
             const frame = stage.frame();
             stage.scene.silence();
-            // Something is pushed and never answered.
             stage.click(stage.button('+'));
             const watch = stage.timers.filter(timer => timer.delay === stage.pane.answer_limit()).at(-1);
             $mol_assert_ok(watch);
@@ -51254,14 +49269,8 @@ var $;
             $mol_assert_equal(stage.pane.stalled(), false);
             $mol_assert_equal(stage.pane.ready(), false);
             $mol_assert_equal(stage.text().includes('Сцена не отвечает'), false);
-            // A frame element of its own, so the stuck document is gone with it.
             $mol_assert_ok(stage.frame() !== frame);
         },
-        /**
-         * Deleting a wired part takes its wires with it, from either end. A wire
-         * left behind would name a node the document no longer declares, and the
-         * scene compiles that into a call of a property nobody has.
-         */
         'deleting a wired part leaves no wire to a node that is gone'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([100, 100]));
@@ -51273,15 +49282,11 @@ var $;
             stage.release(overlay, stage.port_dot('Map', 'zoom', 'in'));
             stage.redraw();
             $mol_assert_equal(stage.app.doc_wires().length, 1);
-            // The source of the wire goes.
             stage.tap(stage.part_center('Calc'));
             stage.click(stage.button('Удалить'));
             $mol_assert_equal(stage.app.doc_source().includes('calc_result'), false);
             $mol_assert_like(stage.app.doc_wires(), []);
             $mol_assert_ok(stage.app.doc_source().includes(`Map ${map}`));
-            // And the same from the other end: a wire drawn again and the consumer
-            // deleted leaves the source part standing and no wire behind. The name
-            // of the deleted part is free again, so the new one takes it.
             stage.drop(calc, stage.client([100, 300]));
             $mol_assert_equal(stage.app.selected(), 'Calc');
             stage.press(overlay, stage.port_dot('Calc', 'result', 'out'));

@@ -10580,56 +10580,6 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    function $mol_error_fence<Data>(task: () => Data, fallback: (parent: Error) => Error | Data | PromiseLike<Data>, loading?: (parent: PromiseLike<Data>) => Error | Data | PromiseLike<Data>): Data;
-}
-
-declare namespace $ {
-    function $mol_error_enriched<V>(cause: {}, cb: () => V): V;
-}
-
-declare namespace $ {
-    class $mol_fetch_response extends $mol_object {
-        readonly native: Response;
-        readonly request: $mol_fetch_request;
-        status(): "unknown" | "success" | "inform" | "redirect" | "wrong" | "failed";
-        code(): number;
-        ok(): boolean;
-        message(): string;
-        headers(): Headers;
-        mime(): string | null;
-        stream(): ReadableStream<Uint8Array<ArrayBuffer>> | null;
-        text(): string;
-        json(): unknown;
-        blob(): Blob;
-        buffer(): ArrayBuffer;
-        xml(): Document;
-        xhtml(): Document;
-        html(): Document;
-    }
-    class $mol_fetch_request extends $mol_object {
-        readonly native: Request;
-        response_async(): Promise<Response> & {
-            destructor: () => void;
-        };
-        response(): $mol_fetch_response;
-        success(): $mol_fetch_response;
-    }
-    class $mol_fetch extends $mol_object {
-        static request(input: RequestInfo, init?: RequestInit): $mol_fetch_request;
-        static response(input: RequestInfo, init?: RequestInit): $mol_fetch_response;
-        static success(input: RequestInfo, init?: RequestInit): $mol_fetch_response;
-        static stream(input: RequestInfo, init?: RequestInit): ReadableStream<Uint8Array<ArrayBuffer>> | null;
-        static text(input: RequestInfo, init?: RequestInit): string;
-        static json(input: RequestInfo, init?: RequestInit): unknown;
-        static blob(input: RequestInfo, init?: RequestInit): Blob;
-        static buffer(input: RequestInfo, init?: RequestInit): ArrayBuffer;
-        static xml(input: RequestInfo, init?: RequestInit): Document;
-        static xhtml(input: RequestInfo, init?: RequestInit): Document;
-        static html(input: RequestInfo, init?: RequestInit): Document;
-    }
-}
-
-declare namespace $ {
     /**
      * Return `unknown` when `A` and `B` are the same type. `never` otherwise.
      *
@@ -10799,6 +10749,56 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    function $mol_error_fence<Data>(task: () => Data, fallback: (parent: Error) => Error | Data | PromiseLike<Data>, loading?: (parent: PromiseLike<Data>) => Error | Data | PromiseLike<Data>): Data;
+}
+
+declare namespace $ {
+    function $mol_error_enriched<V>(cause: {}, cb: () => V): V;
+}
+
+declare namespace $ {
+    class $mol_fetch_response extends $mol_object {
+        readonly native: Response;
+        readonly request: $mol_fetch_request;
+        status(): "unknown" | "success" | "inform" | "redirect" | "wrong" | "failed";
+        code(): number;
+        ok(): boolean;
+        message(): string;
+        headers(): Headers;
+        mime(): string | null;
+        stream(): ReadableStream<Uint8Array<ArrayBuffer>> | null;
+        text(): string;
+        json(): unknown;
+        blob(): Blob;
+        buffer(): ArrayBuffer;
+        xml(): Document;
+        xhtml(): Document;
+        html(): Document;
+    }
+    class $mol_fetch_request extends $mol_object {
+        readonly native: Request;
+        response_async(): Promise<Response> & {
+            destructor: () => void;
+        };
+        response(): $mol_fetch_response;
+        success(): $mol_fetch_response;
+    }
+    class $mol_fetch extends $mol_object {
+        static request(input: RequestInfo, init?: RequestInit): $mol_fetch_request;
+        static response(input: RequestInfo, init?: RequestInit): $mol_fetch_response;
+        static success(input: RequestInfo, init?: RequestInit): $mol_fetch_response;
+        static stream(input: RequestInfo, init?: RequestInit): ReadableStream<Uint8Array<ArrayBuffer>> | null;
+        static text(input: RequestInfo, init?: RequestInit): string;
+        static json(input: RequestInfo, init?: RequestInit): unknown;
+        static blob(input: RequestInfo, init?: RequestInit): Blob;
+        static buffer(input: RequestInfo, init?: RequestInit): ArrayBuffer;
+        static xml(input: RequestInfo, init?: RequestInit): Document;
+        static xhtml(input: RequestInfo, init?: RequestInit): Document;
+        static html(input: RequestInfo, init?: RequestInit): Document;
+    }
+}
+
+declare namespace $ {
     function $mol_view_tree2_class_match(klass?: $mol_tree2): boolean;
 }
 
@@ -10811,244 +10811,34 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /**
-     * Component library of a vmap document.
-     *
-     * A library is a deployed MAM module: the build drops `web.view.tree` next to
-     * `web.js`, and that file is the whole class tree of the bundle with bases and
-     * properties. Any deployed app of the framework in the world is therefore a
-     * component source, with no cooperation from us.
-     *
-     * Port of `hyoo_studio_library` plus the `library()`, `united()`,
-     * `props_map()`, `props_of()`, `class_list()` and `base_options()` methods of
-     * `hyoo_studio`. Deviations are marked at their place.
-     *
-     * Pure model: knows nothing about DOM and renders nothing.
-     * @see ../ARCHITECTURE.md section 5
-     */
-    /**
-     * Stub declaration of `$mol_view`, prepended to every fetched pack tree.
-     *
-     * Own properties of `$mol_view` (`sub`, `attr`, `style`, `event`, `field`,
-     * `dom_name`, `title`) never reach `web.view.tree`, because `$mol_view` is
-     * written in TS and the build only dumps what came from `.view.tree` sources.
-     * Without the stub every class in the palette silently loses its base ports,
-     * and nothing anywhere reports it.
-     *
-     * Copied verbatim from `hyoo_studio_library.tree()`.
-     */
     const $bog_vmap_lib_predef = "$mol_view $mol_object\n\tdom_name \\\n\tstyle *\n\tevent *\n\tfield *\n\tattr *\n\tsub /\n\ttitle \\\n";
-    /**
-     * Parses a pack tree into a normalized class tree.
-     *
-     * Deviation from studio: the stub is parsed as its own source instead of being
-     * string-glued in front of the fetched text. Studio hands `predef + str` to the
-     * parser, so every span in a malformed pack points eight rows above its real
-     * place. We show those spans to the user in an error strip, so they have to be
-     * honest. The stub content itself is byte for byte the same.
-     */
     function $bog_vmap_lib_parse(this: $, src: string, uri?: string): $mol_tree2;
-    /**
-     * The address with a trailing slash, whatever it was typed with.
-     *
-     * `new URL( 'web.js', base )` drops the last segment of a base that does not end
-     * with one, so `https://b-on-g.github.io/gram` would resolve to
-     * `https://b-on-g.github.io/web.js`. The default `https://mol.hyoo.ru` survives
-     * that only by accident, being an origin root.
-     *
-     * A function and not a step inside the field, because the field is edited by
-     * hand: appending the slash on every keystroke would fight the typing. Typed is
-     * stored as is, derived is normalized — the rule for every field a person types.
-     * @see ../ARCHITECTURE.md section 5, «Адрес пака нормализовать до слэша»
-     */
     function $bog_vmap_lib_slashed(uri: string): string;
-    /**
-     * Why a pack did not load, in words somebody can act on.
-     *
-     * `$mol_fetch` throws the status line of the response and nothing else, so a
-     * mistyped address reaches the screen as a bare «Not Found» — true and
-     * useless: it names neither what was looked for nor where to correct it. Seen
-     * on the deploy in the counter of the class list, 09.09.2026.
-     *
-     * The address is repeated back because the field it came from may be scrolled
-     * away or, in the case of the default, never typed at all. It is the ADDRESS
-     * THAT WAS FETCHED and not the one that was typed, and it is handed in rather
-     * than derived here: the rule that grows `web.view.tree` onto a pack lives in
-     * `tree_link` and must not be written a second time to word a complaint.
-     */
     function $bog_vmap_lib_pack_note(link: string, error: unknown): string;
-    /**
-     * Base address of a sibling module of the pack, derived from the address of the
-     * page asking. Always ends with a slash, so `new URL` keeps its last segment.
-     *
-     * The two layouts are told apart by a trailing `-`, and they are not two
-     * spellings of one rule but two different places, so the code says so.
-     *
-     * The dev server serves every module of a pack out of `<pack>/<module>/-/`, so
-     * the modules are siblings there in the plain sense: the segment naming ours is
-     * replaced by the one asked for, and the `-` goes back on.
-     *
-     * A deploy has only ONE page in the whole project — the editor, published at
-     * the root of the site — and the other modules are published as folders beneath
-     * it, `web.js` and `web.view.tree` without a page of their own. So there is
-     * nothing to replace: the module asked for is a folder inside the one the
-     * editor is served from.
-     *
-     * A last segment ending in `.html` is the page file — `index.html`, `test.html`
-     * are the only two a module has — and is dropped first. Anything else is a
-     * folder, which is how `https://b-on-g.github.io/vmap` reads the same as the
-     * same address with its slash.
-     *
-     * The test is the extension and not merely a dot in the name, because a folder
-     * may carry one: a deploy versioned as `/vmap/v1.2/` is ordinary, and on a dot
-     * the segment `v1.2` would be taken for a page and eaten.
-     *
-     * @see ../ARCHITECTURE.md sections 5 and 7
-     */
     function $bog_vmap_lib_sibling(page: string, module: string): string;
-    /**
-     * Glues the library tree with the classes of the document into one namespace.
-     *
-     * Both sides end up in the same `$` sandbox at run time, so resolution has to
-     * see them as one list — that is the whole point of `united()` in studio.
-     */
     function $bog_vmap_lib_united(lib: $mol_tree2, kids: readonly $mol_tree2[]): $mol_tree2;
-    /**
-     * Class name to its super node. The kids of that node are the own properties
-     * of the class, which is how `$mol_view_tree2_normalize` shapes a class.
-     *
-     * Deviation from studio: studio walks the kids linearly on every lookup
-     * (`lib.select( cl, null ).kids[0]`), which is O(classes) per inheritance step
-     * against a tree of ~450 classes. Same answer, built once.
-     *
-     * Second deviation, and the one that matters: a later declaration wins, while
-     * `select` takes the first. Document classes are appended after the library, so
-     * studio's order would let a library class shadow a document class of the same
-     * name. The scene compiles document classes into the sandbox *after* the pack's
-     * `web.js` has filled it, so at run time the document wins. The palette has to
-     * agree with what actually runs.
-     */
     function $bog_vmap_lib_index(united: $mol_tree2): Map<string, $mol_tree2>;
-    /**
-     * Inheritance chain of a class, nearest first, ending at the first name that
-     * the namespace does not declare (`$mol_object` for anything from a pack).
-     *
-     * Deviation from studio: a visited set. Studio edits exactly one class, so a
-     * cycle cannot occur there. Here the united namespace carries user authored
-     * classes, and two of them declared as each other's base is one keystroke
-     * away — without the guard it hangs the editor with no error at all.
-     */
     function $bog_vmap_lib_chain(index: Map<string, $mol_tree2>, base: string): string[];
-    /**
-     * All ports of a class, own and inherited, keyed by property name.
-     *
-     * Ancestors are collected first, so a redefined property keeps the position of
-     * its earliest declaration but carries the most derived node. Same order and
-     * same overriding as `props_map()` in studio, which recurses into the super
-     * before adding its own kids.
-     *
-     * This is what stage 3 grows wire ports out of.
-     */
     function $bog_vmap_lib_props_map(this: $, index: Map<string, $mol_tree2>, base: string): Map<string, $mol_tree2>;
-    /**
-     * Port name to the class that declared the winning version of it.
-     *
-     * Walks the chain exactly as `$bog_vmap_lib_props_map` does, farthest ancestor
-     * first, overwriting on every redeclaration. `Map.set` on a key that is already
-     * there keeps its position and replaces the value, so the last write wins the
-     * value — the nearest declaration, the one whose node `props_map` returned —
-     * while the key order stays identical to `props_map`. The two maps can then be
-     * read side by side by key.
-     *
-     * A port is inherited exactly when its owner is not the class being asked
-     * about. Walking nearest first and keeping the first answer would give the same
-     * owners in a different order, and a consumer that trusted the two orders to
-     * agree would silently mislabel every row.
-     *
-     * Not in studio: it shows one class at a time and has no notion of a port
-     * coming from somewhere else.
-     */
     function $bog_vmap_lib_props_owner(this: $, index: Map<string, $mol_tree2>, base: string): Map<string, string>;
-    /**
-     * A component library, whatever its classes came from.
-     *
-     * Everything below `tree()` is source agnostic and always was: `united`,
-     * `index`, `props_map` and the rest only ever see a normalized class tree. The
-     * split just makes that visible, so a second source — a land of sources, with
-     * no deploy behind it — is a subclass overriding one method rather than a
-     * parallel implementation of nine.
-     *
-     * The default is the empty library: the `$mol_view` stub and nothing else. A
-     * throw would have been the other option and it is worse, because an empty
-     * library is a real state — a land with no components published yet — and not
-     * an error.
-     *
-     * @see ../ARCHITECTURE.md section 5
-     */
     class $bog_vmap_lib_any extends $mol_object {
-        /** Class tree of the library. Where it comes from is the subclass's business. */
         tree(): $mol_tree2;
-        /**
-         * Classes of the document, to be resolved alongside the library.
-         * Overridden by the owner; empty until a document is open.
-         *
-         * This is also where a land library rides when it is used ON TOP of a pack
-         * rather than instead of one, which section 5 says is the normal case: land
-         * libraries compile into the same sandbox and inherit from the pack's
-         * `$mol_view`. Composition therefore needs no machinery — the classes of a
-         * land go in beside the document's, and `index` already lets a later
-         * declaration win.
-         */
         classes(): readonly $mol_tree2[];
         united(): $mol_tree2;
         index(): Map<string, $mol_tree2>;
-        /** Every class name of the namespace, in declaration order, deduped. */
         class_list(): string[];
-        /** Same list, most recently declared first, for a base class picker. */
         base_options(): string[];
-        /**
-         * Palette search by class name. Deliberately not memoized by key: a cell per
-         * typed query would accumulate one dead cell per keystroke, and the filter
-         * over a few hundred names is cheaper than the cell.
-         */
         class_search(query: string): string[];
         inherit_chain(cl: string): string[];
         props_map(base: string): Map<string, $mol_tree2>;
-        /** Which class each port of `base` came from. */
         props_owner(base: string): Map<string, string>;
-        /** Same ports as a tree node, most derived first, as in studio. */
         props_of(base: string): $mol_tree2;
     }
-    /**
-     * Library from a deployed MAM module.
-     *
-     * The name and the interface are unchanged from before the split, because the
-     * palette and the inspector both declare it and neither should have to care
-     * that a second kind of library now exists.
-     */
     class $bog_vmap_lib extends $bog_vmap_lib_any {
-        /**
-         * Deployed MAM module the components come from.
-         *
-         * Empty means no pack at all, and that is a state rather than a failure: a
-         * palette fed by lands alone has nothing deployed behind it. Every address
-         * below is then empty too, and `tree()` is the stub on its own.
-         */
         pack(next?: string): string;
-        /** Same address, guaranteed to end with a slash. See `$bog_vmap_lib_slashed`. */
         pack_base(): string;
-        /** Behaviour of the classes. Loaded by the scene, not by us. */
         script_link(): string;
-        /** Declarations of the classes. */
         tree_link(): string;
-        /**
-         * Class tree of the pack.
-         *
-         * No try/catch on purpose: `$mol_fetch` throws on any non-2xx and the wire
-         * suspends through exceptions, so catching here would both swallow a dead
-         * pack into an empty palette and break suspension. An unreachable pack has
-         * to reach the view as an error.
-         */
         tree(): $mol_tree2;
     }
 }
@@ -37772,61 +37562,12 @@ declare namespace $ {
         schema: {
             [x: string]: typeof $giper_baza_pawn;
         } & {
-            /** `view.tree` declaration. The truth of this component. */
             readonly Tree: typeof $giper_baza_atom_text;
-            /** Handwritten class body, applied on top of the generated one. */
             readonly Js: typeof $giper_baza_atom_text;
-            /** Styles, attached apart from the class so a CSS edit rebuilds nothing. */
             readonly Css: typeof $giper_baza_atom_text;
         };
     };
-    /**
-     * Component library published as a land of Giper Baza, sources and all.
-     *
-     * The second source of section 5, and the one that needs no deploy: publish a
-     * component, hand out the link, and it is in somebody else's palette. The first
-     * source, a deployed pack, arrives as a built `web.js` plus the `web.view.tree`
-     * beside it; this one arrives as the three texts a component is made of, and is
-     * compiled by the scene into the same sandbox.
-     *
-     * **From the outside it is the same library as a pack** — `class_list`,
-     * `props_map`, `united`, all of it — because it derives from
-     * `$bog_vmap_lib_any` and overrides one method. Nothing downstream of `tree()`
-     * ever knew where the classes came from, and now nothing has to learn.
-     *
-     * A separate module from `lib/` on purpose: this one drags the whole of Giper
-     * Baza into any bundle that touches it, and the palette and the inspector, which
-     * need only the pack library, should not pay for a feature they do not use. The
-     * dependency runs one way, `lib/land` onto `lib/`, which is also what the
-     * namespace path already says.
-     *
-     * @see ../../ARCHITECTURE.md section 5
-     */
-    /**
-     * One component of a library: the three sources a class is built from.
-     *
-     * Same shape as a node of a document, deliberately not shared with it: `app/doc`
-     * belongs to the application and this is a leaf model, so the dependency would
-     * run the wrong way. The duplication is three field declarations; the coupling
-     * would be permanent.
-     *
-     * The class name is NOT a field. It is the first token of `Tree` and storing it
-     * beside would be a second source of truth for a derivable fact — the same
-     * argument section 6 makes about wires, and it bites the same way: rename the
-     * class in the text and the copy is stale.
-     */
     export class $bog_vmap_lib_land_part extends $bog_vmap_lib_land_part_base {
-        /**
-         * **Plain methods, never `@ $mol_mem`.** An accessor of this shape that has
-         * been written through once freezes at what was written: the atom takes a
-         * remote edit, reports the new text, and the cell goes on handing out the
-         * old one for the rest of the session. It shows up only on the component you
-         * edited yourself, which in a shared library is the worst possible place.
-         *
-         * Nothing is lost: `val()` is a wire cell inside the pawn already, so a
-         * reader stays reactive and a two way binding writes straight through. There
-         * is a test named for this, and it is the reason it exists.
-         */
         tree(next?: string): string;
         js(next?: string): string;
         css(next?: string): string;
@@ -37879,9 +37620,7 @@ declare namespace $ {
         schema: {
             [x: string]: typeof $giper_baza_pawn;
         } & {
-            /** Human name of the library. */
             readonly Title: typeof $giper_baza_atom_text;
-            /** Components, in the order they should be declared. */
             readonly Parts: {
                 new (): {
                     Value: () => typeof $bog_vmap_lib_land_part;
@@ -38583,156 +38322,34 @@ declare namespace $ {
             };
         };
     };
-    /**
-     * A published library: a name and its components.
-     *
-     * `Parts` live in the SAME land as the shelf, made with `make( null )`. A land
-     * per component would mean proof of work for every class published and per
-     * component access rights nobody asked for; a library is shared by one link, so
-     * one land is also the unit somebody actually grants access to.
-     */
     export class $bog_vmap_lib_land_shelf extends $bog_vmap_lib_land_shelf_base {
-        /** Plain method, for the reason spelled out at `land_part.tree`. */
         title(next?: string): string;
-        /**
-         * Components of the library.
-         *
-         * Resolved through the shelf's OWN land and not through `remote_list()`,
-         * which would be the obvious call and is a trap: it resolves every link
-         * through the static `$giper_baza_glob.Land`, a different land instance that
-         * waits for a master to sync with. Under a test, where there is no master,
-         * that wait never ends and the run dies in silence — no error, no output, and
-         * every build that runs the tests hangs with it.
-         *
-         * Going through `land.Pawn( … ).Head( link.head() )` is correct here and not
-         * merely convenient, because `make( null )` puts the parts in this very land.
-         * The storage decision that suits the domain is the one that is testable.
-         */
         parts(): $bog_vmap_lib_land_part[];
     }
-    /**
-     * Library backed by a land of sources.
-     *
-     * Only `tree()` differs from a pack, and it differs by where the text comes
-     * from — not by what is done with it: the same parse, the same base class stub,
-     * the same normalization. A tree built here and a tree fetched
-     * from `web.view.tree` are indistinguishable downstream, which is the whole
-     * requirement.
-     */
     export class $bog_vmap_lib_land extends $bog_vmap_lib_any {
-        /**
-         * The published library. Supplied by the owner, absent until one is opened.
-         *
-         * Absent is a state and not a failure — the palette of a document with no
-         * library attached is empty, not broken — so this answers null rather than
-         * throwing, and `tree()` above degrades into the empty library.
-         */
         shelf(): $bog_vmap_lib_land_shelf | null;
-        /**
-         * Components of the shelf. Nothing asks the land to sync here: every read
-         * of a pawn goes through `$giper_baza_land.sand_ordered()`, which syncs
-         * first, so a library published by somebody else arrives by being read.
-         */
         parts(): readonly $bog_vmap_lib_land_part[];
-        /**
-         * Declarations of every component, in one text.
-         *
-         * Glued rather than parsed one by one because a library is one namespace:
-         * a component inheriting another component of the same library has to
-         * resolve, and it only can if both are in the same tree.
-         */
         source(): string;
         tree(): $mol_tree2;
-        /**
-         * Classes of the library WITHOUT the base class stub, for composing this
-         * library into another one through its `classes()`.
-         *
-         * The stub has to go: it is a stand-in for a class the pack really carries,
-         * and the class index keeps the last declaration of a name, so handing it
-         * over would let the stand-in shadow the real thing. `tree()` keeps it,
-         * because standing alone this library has no other base class at all.
-         */
         class_trees(): readonly $mol_tree2[];
-        /**
-         * Handwritten bodies by class name, the second of the three sources.
-         *
-         * Built here and handed to the scene by somebody else: compiling a library
-         * inside the sandbox is a task of its own, and this is the shape it will
-         * want — the same `{ [ klass ]: js }` the bridge already carries for a
-         * document.
-         */
         js(): {
             readonly [klass: string]: string;
         };
-        /** Styles of every component, in one text, as the scene attaches them. */
         css(): string;
     }
-    /**
-     * The three texts of one component, as the scene wants them: declaration, body,
-     * styles. Plain data, so it survives the structured clone of the bridge.
-     */
     export type $bog_vmap_lib_land_text = {
         readonly tree: string;
         readonly js: string;
         readonly css: string;
     };
-    /**
-     * A pack with lands stacked on top of it: the library of the palette field.
-     *
-     * The pack is the base class, so from the outside this is a `$bog_vmap_lib` and
-     * nothing downstream has to learn a new name. The lands ride in through
-     * `classes()`, the hook `$bog_vmap_lib_any` left for exactly this, and the index
-     * lets the last declaration win, so a land class shadows a pack class of the
-     * same name the way it will at run time, where it is compiled into the sandbox
-     * after the pack has filled it.
-     *
-     * Composition is by the LINK, not by the object: the palette field holds links,
-     * a link is what the user pastes, and the land behind it is looked up here and
-     * nowhere else. The host asks this object for two things — the class trees for
-     * the palette and the inspector, and the source texts for the scene — and both
-     * come from the same `land()` cells, so the two views cannot disagree about
-     * which lands are attached.
-     *
-     * @see ../../ARCHITECTURE.md section 5
-     */
     export class $bog_vmap_lib_land_stack extends $bog_vmap_lib {
-        /** Land links as the user typed them, in order. Supplied by the owner. */
         lands(): readonly string[];
-        /**
-         * Library of one land, by its link.
-         *
-         * `.land()` on the link, because a link to a pawn INSIDE the land is a
-         * legitimate thing to paste — a shared component, say — and the shelf lives
-         * at the root of that land whichever pawn was pointed at. A malformed link
-         * fails here with the database's own message; the field parser is meant to
-         * have refused it before it ever reaches this method.
-         */
         land(link: string): $bog_vmap_lib_land;
         libs(): $bog_vmap_lib_land[];
-        /**
-         * Classes of every land, without the stub, in the order of the lands.
-         *
-         * This is what the palette and the inspector are handed: the trees alone,
-         * because neither of them may depend on the database and neither has to —
-         * resolving a class against the pack is a walk over a tree, whoever made it.
-         */
         land_trees(): readonly $mol_tree2[];
         classes(): readonly $mol_tree2[];
-        /**
-         * Sources of every component of every land, in declaration order, for the
-         * scene to compile. Read through the pawns of each shelf's own land and
-         * never through `remote_list()`, see `$bog_vmap_lib_land_shelf.parts`.
-         */
         parts(): readonly $bog_vmap_lib_land_text[];
     }
-    /**
-     * Name of the class a `view.tree` source declares, or empty when it declares
-     * none.
-     *
-     * The first token of the first line, and asked of the text every time rather
-     * than stored beside it — see the note on `land_part`. Blank instead of a throw
-     * because a half typed component is an ordinary state of an editor.
-     */
     export function $bog_vmap_lib_land_name(source: string): string;
     export {};
 }
@@ -45713,63 +45330,20 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /**
-     * The palette field, parsed: a list of links separated by commas into a donor
-     * pack, the lands of Giper Baza to compile on top of it, and what was refused.
-     *
-     * Pure. Knows no network, no database and no view, so it can sit in `lib/` and
-     * be shared by the palette and the host without either paying for the other.
-     *
-     * @see ../../ARCHITECTURE.md section 5
-     */
     type $bog_vmap_lib_links = {
-        /**
-         * The donor pack, EXACTLY as typed, or null when no http(s) link was given.
-         *
-         * Not normalized here on purpose: the field is edited by hand, and a slash
-         * appended while typing would make the address impossible to finish. The
-         * derived address grows the slash, see `$bog_vmap_lib_slashed`.
-         */
         readonly pack: string | null;
-        /** Land links, in the order typed, without repeats. */
         readonly lands: readonly string[];
-        /** Every token that was neither, with the reason in the user's words. */
         readonly rejected: readonly {
             readonly link: string;
             readonly reason: string;
         }[];
     };
-    /** Wording of the refusals, kept in one place so the tests and the field agree. */
     const $bog_vmap_lib_links_reason: {
-        /** @see ../../ARCHITECTURE.md section 5, «Донорский пак ровно один на кадр» */
         readonly pack_second: "второй пак на кадр невозможен, подключайте компоненты ссылкой на ленд";
         readonly unknown: "не адрес пака (http…) и не ссылка на ленд Гипер Базы";
     };
-    /**
-     * Splits the field into the pack, the lands and the refused.
-     *
-     * Commas separate; whitespace, including line breaks, separates as well, so a
-     * list pasted one link per line reads the same as one typed with commas. Empty
-     * tokens, and with them trailing commas and doubled separators, are nothing and
-     * are not even reported.
-     *
-     * The FIRST http(s) link is the pack, wherever it stands in the list. The second
-     * one is refused, and refused with the reason a user can act on, rather than
-     * silently dropped: the second pack over the first poisons the palette without a
-     * signal, which is exactly why it must not reach the frame — and exactly why the
-     * person typing it has to be told.
-     */
     function $bog_vmap_lib_links_parse(text: string): $bog_vmap_lib_links;
-    /**
-     * Is this token a land link by the grammar above. Exposed for the guard test on
-     * the database side; the palette needs only `parse`.
-     */
     function $bog_vmap_lib_links_is_land(token: string): boolean;
-    /**
-     * The refusals as one text for a status line, one refusal per line, or an empty
-     * string when there is nothing to say. An empty string and not a placeholder,
-     * so that a view can hide the line by testing the text.
-     */
     function $bog_vmap_lib_links_note(links: $bog_vmap_lib_links): string;
 }
 
@@ -48440,22 +48014,18 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
-    /** A box in screen pixels of the pane. */
     type $bog_vmap_app_wire_box = {
         readonly left: number;
         readonly top: number;
         readonly width: number;
         readonly height: number;
     };
-    /** A port of a part's class: name, `?` in the signature, shape of the default value. */
     type $bog_vmap_app_wire_port = {
         readonly name: string;
         readonly next: boolean;
         readonly kind: $bog_vmap_app_inspect_value_kind;
     };
-    /** Inputs are drawn on the left edge of a part, outputs on the right. */
     type $bog_vmap_app_wire_side = 'in' | 'out';
-    /** A port dot on screen. `lit` — may take the wire in hand; `linked` — an input with a wire already. */
     type $bog_vmap_app_wire_dot = {
         readonly node: string;
         readonly port: $bog_vmap_app_wire_port;
@@ -48465,7 +48035,6 @@ declare namespace $ {
         readonly lit: boolean;
         readonly linked: boolean;
     };
-    /** A drawn wire: its path and the label at its middle. */
     type $bog_vmap_app_wire_line = {
         readonly key: string;
         readonly geometry: string;
@@ -48473,32 +48042,15 @@ declare namespace $ {
         readonly label_x: number;
         readonly label_y: number;
     };
-    /** Height of one port row, in screen pixels whatever the zoom. */
     const $bog_vmap_app_wire_row = 14;
-    /**
-     * Distance from the edge of the box to the centre of a dot, in screen pixels.
-     * Strictly outside the box: under the picked part the overlay is cut open along
-     * the box, and a dot inside it would take no press. The radius stays under this.
-     */
     const $bog_vmap_app_wire_gap = 12;
     const $bog_vmap_app_wire_radius = 5;
-    /** Radius within which a point counts as over a dot. Wider than the dot. */
     const $bog_vmap_app_wire_hit = 8;
-    /** Ports of a class fit for wiring, from its `props_map`, in its order: bases first. */
     function $bog_vmap_app_wire_ports(this: $, props: ReadonlyMap<string, $mol_tree2>): readonly $bog_vmap_app_wire_port[];
-    /**
-     * Whether a value of one shape may feed a port of another: equal shapes fit,
-     * `null` and a reference say nothing about the shape and fit anything, a
-     * localized string is a string.
-     */
     function $bog_vmap_app_wire_fits(out: $bog_vmap_app_inspect_value_kind, into: $bog_vmap_app_inspect_value_kind): boolean;
-    /** Centre of the dot of the `index`th port on a side of a box. Rows run down from the top. */
     function $bog_vmap_app_wire_port_point(box: $bog_vmap_app_wire_box, side: $bog_vmap_app_wire_side, index: number): readonly [number, number];
-    /** A cubic Bezier from an output to an input, as an SVG path. */
     function $bog_vmap_app_wire_curve(from: readonly [number, number], to: readonly [number, number]): string;
-    /** The point of the curve at t = 1/2, where the label goes. */
     function $bog_vmap_app_wire_curve_mid(from: readonly [number, number], to: readonly [number, number]): readonly [number, number];
-    /** The dot under a point, or `null`. The last one wins: what is drawn later is on top. */
     function $bog_vmap_app_wire_dot_at(dots: readonly $bog_vmap_app_wire_dot[], point: readonly [number, number]): $bog_vmap_app_wire_dot | null;
 }
 
@@ -48589,11 +48141,6 @@ declare namespace $ {
 
 //# sourceMappingURL=wire.view.tree.d.ts.map
 declare namespace $.$$ {
-    /**
-     * Draws what the pane computed: a path and a label per wire, a dot and a name
-     * per port, one path for the wire in hand. Sub views are keyed by the stable
-     * key of each thing, so a wire keeps its element while the camera moves.
-     */
     class $bog_vmap_app_wire extends $.$bog_vmap_app_wire {
         shapes(): $mol_view[];
         lines_map(): Map<string, $bog_vmap_app_wire_line>;
@@ -48608,7 +48155,6 @@ declare namespace $.$$ {
         dot_side(key: string): "" | $bog_vmap_app_wire_side;
         dot_lit(key: string): boolean;
         dot_linked(key: string): boolean;
-        /** The name stands off the dot, away from the box: left of an input, right of an output. */
         name_pos(key: string): number[];
         name_align(key: string): "end" | "start";
         name_text(key: string): string;
@@ -49062,92 +48608,26 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /** A rectangle in screen pixels of the pane. */
     type $bog_vmap_app_pane_screen_box = {
         readonly left: number;
         readonly top: number;
         readonly width: number;
         readonly height: number;
     };
-    /**
-     * A measured box in screen pixels of the pane.
-     *
-     * World to screen is `world * zoom + shift`, the same transform the scene puts
-     * on its stage; this is that transform done on the host, once, so that the
-     * selection ring and the hole in the overlay are cut from the same numbers.
-     */
     function $bog_vmap_app_pane_screen(box: $bog_vmap_bridge_rect, zoom: number, shift: ArrayLike<number>): $bog_vmap_app_pane_screen_box;
 }
 
 declare namespace $ {
-    /** Where a dragged node would go: into whose `sub`, at what position. */
     type $bog_vmap_app_pane_slot = {
-        /** Property name of the container. */
         readonly owner: string;
-        /** Position among the children of that container. */
         readonly index: number;
-        /** The insertion line, in world units. Flat: one of the sides is zero. */
         readonly line: $bog_vmap_bridge_rect;
     };
-    /**
-     * Which way the children of a container are stacked: what the node DECLARES,
-     * else what its children came out as, else a column.
-     *
-     * The declaration comes first because it is not a guess about CSS — it is a
-     * line of the document, which the host owns and reads directly. Geometry is the
-     * fallback and not the source: it degenerates on nought or one child, where
-     * there is nothing to read a direction off at all.
-     *
-     * A direction the document states in some other way — `row-reverse` and its
-     * kind — falls through to the geometry rather than being taken at its word: the
-     * children of a reversed box come out in the opposite order from the one `sub`
-     * lists them in, and a position counted along the boxes would be the mirror of
-     * the position written into the tree. Guessing from where things are is then
-     * strictly better than trusting a word we do not act on.
-     *
-     * The last resort is a column, the way a page stacks and what the artboard
-     * preset sets. It has to be set: `[mol_view]` is `display: flex` with no
-     * direction at all, which is a ROW.
-     */
     function $bog_vmap_app_pane_slot_axis(boxes: readonly $bog_vmap_bridge_rect[], declared?: string): "row" | "column";
-    /**
-     * Position a point aims at among the children of a container, and the line to
-     * draw for it.
-     *
-     * The position is decided by the MIDDLE of each child, not by the gaps between
-     * them: children of a flex box usually touch, so a rule that only fired between
-     * boxes would have nowhere to fire, and pointing at the upper half of a child
-     * plainly means «above this one».
-     *
-     * The line is drawn on the boundary rather than on the child: at the middle of
-     * the gap when there is one, on the outer edge at either end. In world units,
-     * because the host draws it with the same transform it draws the selection ring
-     * with, and turning world into screen is done once, for both.
-     */
     function $bog_vmap_app_pane_slot(owner: string, box: $bog_vmap_bridge_rect, kids: readonly $bog_vmap_bridge_rect[], point: readonly [number, number], declared?: string): $bog_vmap_app_pane_slot;
 }
 
 declare namespace $ {
-    /**
-     * The overlay with a rectangle cut out of it, as a `clip-path` value.
-     *
-     * The editor takes every pointer event on its overlay, so a live component
-     * under it never gets a real one. For the picked part that is undone here: the
-     * overlay is clipped to everything BUT the part's box, and inside the box the
-     * frame is the topmost thing on the page, so hover, scroll, text selection and
-     * dragging inside the component all work for real. Outside the box the overlay
-     * is whole and keeps its gestures; the ring and its handles are drawn around
-     * the hole, not in it, which is what makes them grabbable.
-     *
-     * `evenodd` is what turns the inner rectangle into a hole rather than a second
-     * fill. The outer ring is stated in percentages so that the value does not
-     * have to know how big the pane is and does not go stale when it resizes.
-     *
-     * `none` and not an absent key when nothing is picked: inline styles are
-     * written by the style renderer of the framework, which sets the keys it is given and
-     * removes nothing, so a key that disappears from the dictionary leaves its last
-     * value on the element.
-     */
     function $bog_vmap_app_pane_hole(rect: $bog_vmap_app_pane_screen_box | null): string;
 }
 

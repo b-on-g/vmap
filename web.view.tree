@@ -2890,11 +2890,6 @@ $mol_svg_circle $mol_svg
 		cx <= pos_x \
 		cy <= pos_y \
 
-- The wire layer of the overlay: existing wires with their labels, the port dots
-- of the picked part, and the wire being dragged. The pane hands everything in as
-- screen geometry; this view only draws. On the host, so that document code can
-- neither forge a wire nor hide one.
-- @see ../../ARCHITECTURE.md section 4
 $bog_vmap_app_wire $mol_svg_root
 	attr *
 		^
@@ -2923,77 +2918,31 @@ $bog_vmap_app_wire $mol_svg_root
 	Drag $mol_svg_path
 		geometry <= drag_geometry
 
-- Camera lives here: `camera_shift` is a screen-pixel vector, `camera_zoom` an
-- isotropic scalar. The touch plugin drives both from pointer, wheel and pinch.
 $bog_vmap_app_pane $mol_view
-	- Absolute address of the `web.js` of the sandbox module. The frame has no
-	- address of its own, so the markup it is raised from names the bundle itself,
-	- and a relative path would have nothing to resolve against in an opaque origin.
 	scene_bundle \
-	- Whole document of the frame, built out of `scene_bundle` in `pane.view.ts`.
 	scene_html \
-	- Absolute address of the `web.js` of the donor pack, sent down as `pack_set`.
-	- Part of the key of the frame as well: a realm cannot unload a bundle, so a
-	- different pack has to be a different frame, see section 5.
 	pack_uri \
 	doc_src \
 	doc_css \
-	- Canvas placement of free parts, world coordinates keyed by property name.
-	- Never joined with `doc_css`: that one is the document, this one is the desk.
-	- Two way: dragging a node on the canvas writes here.
 	spots? *
-	- Every picked node, in the order they were picked. The ONE pick the pane has:
-	- a single selection is a set of one, and `primary()` is the last of them. The
-	- band writes here, and so does an ordinary press, so there is one write path.
 	picked? /string
 	doc_js *
 	doc_root \
-	- Sources of the land libraries, compiled by the scene before the document.
-	- On the bridge and not in `scene_uri`: a change of lands is a recompile, a
-	- change of pack is a reload, see section 5.
 	libs /$bog_vmap_bridge_part
-	- Whether something is being carried from the palette right now. That gesture
-	- belongs to the owner and crosses this canvas, so while it is on the canvas
-	- takes no gesture of its own and the overlay stays whole: it has no pointer
-	- capture, so a release over the hole would land in the frame and the host
-	- would never hear of the drop.
 	carrying false
-	- Wires of the document and the wirable ports of each part's class, from the
-	- owner. The pane draws them and writes back through the two events below; it
-	- never touches the document itself.
 	wires /$bog_vmap_lang_link
 	part_ports* /$bog_vmap_app_wire_port
 	link_add? null
 	link_drop? null
-	- Nodes that carry a `sub` of their own: an artboard, and anything laid out by
-	- tree inside one. A drop inside one of these goes into the tree at a position,
-	- see section 8; a drop anywhere else lands on the canvas by coordinates.
 	containers /string
-	- Every property the document declares. The boundary of the canvas: the scene
-	- measures the whole rendered tree, insides of pack classes included, and only
-	- these names are nodes the editor may pick, carry or delete.
 	doc_names /string
-	- `flexDirection` the node declares, empty when it declares none. From the
-	- document, which the host owns, and so a statement rather than a guess: the
-	- boxes of the children say nothing when there are fewer than two of them.
 	axis* \
-	- A node put into the tree of a container. The pane owns the geometry of the
-	- gesture and asks the owner to write the document, never writing it itself.
 	tree_move? null
-	- Labels of the wires on screen, by wire name, as the scene reports them.
 	values? *
-	- Handshakes seen from ONE frame, keyed by the key of that frame. A fresh frame
-	- has said nothing yet, and reads zero here without anybody having to remember
-	- to clear anything.
 	handshake*? 0
 	ready false
-	- The scene owes an answer to something we sent and has stopped answering.
-	- Set by the watchdog, cleared by the next message from the scene.
 	stalled? false
 	error_at*? \
-	- Node the failure of a channel belongs to, empty when the scene could not
-	- attribute it. Kept apart from the text so that the strip and the mark on the
-	- canvas read the same report without either parsing the other's sentence.
 	error_node*? \
 	error \
 	isolation \
@@ -3001,9 +2950,6 @@ $bog_vmap_app_pane $mol_view
 		0
 		0
 	camera_zoom? 1
-	- Which frame is live. Bumped by `scene_restart`: a new key is a new frame
-	- element, so a stuck scene is replaced rather than talked to. The address of
-	- the pack goes into the key beside it, see `scene_key`.
 	scene_generation? 0
 	Scene* $bog_vmap_app_pane_frame
 		html <= scene_html
@@ -3015,18 +2961,12 @@ $bog_vmap_app_pane $mol_view
 			press? <=> node_press? null
 			move? <=> node_move? null
 			release? <=> node_release? null
-		- Above the overlay and outside its hole, so a wire crossing the picked part
-		- is not cut. Takes no pointer: the press on a dot is the overlay's, by geometry.
 		<= Wire $bog_vmap_app_wire
 			lines <= wire_lines /$bog_vmap_app_wire_line
 			dots <= wire_dots /$bog_vmap_app_wire_dot
 			drag_geometry <= wire_drag_geometry \
-		- Failures of the scene, each on the node it belongs to. Above everything,
-		- because a node that threw is what the eye has to be sent to first.
 		<= Marks $mol_view
 			sub <= error_marks /$mol_view
-	- A failure sits at the corner of the node that caused it, and carries the text
-	- of the failure as its tooltip. Picture only: the overlay under it takes the press.
 	Mark* $mol_view
 		style <= mark_style* *
 		attr *
@@ -3034,12 +2974,8 @@ $bog_vmap_app_pane $mol_view
 			title <= mark_hint* \
 		sub /
 			\!
-	- Where the node in hand would land among the children of a container. Put into
-	- `sub` only while a drop has somewhere to go, so an idle canvas costs no node.
 	Insert $mol_view
 		style <= insert_style *
-	- The band drawn while a modified pointer sweeps the canvas. Topmost and here
-	- rather than on the overlay for the same reason as the line above it.
 	Band $mol_view
 		style <= band_style *
 	plugins /
@@ -3051,17 +2987,6 @@ $bog_vmap_app_pane $mol_view
 			pan? <=> camera_shift?
 			zoom? <=> camera_zoom?
 
-- Transparent gate over the frame. It swallows every pointer event and lets it
-- bubble up to the pane, where the touch plugin listens: there are no editor modes, one
-- layer takes every gesture. A click that does not move is relayed to the scene
-- as `click_at`, and under the picked part the layer is cut open, so that one
-- part at a time gets real events. Hover on any other part does not work, and
-- that is the accepted price of the overlay owning the input.
--
-- Selection is drawn HERE and not in the scene: the overlay belongs to the host,
-- so no code inside the document can fake a selection frame or hide one, and the
-- ring stays crisp because the camera scales the scene, not this layer.
-- @see ../../ARCHITECTURE.md section 4
 $bog_vmap_app_pane_overlay $mol_view
 	frames /string
 	frame_style* *
@@ -3073,10 +2998,6 @@ $bog_vmap_app_pane_overlay $mol_view
 		pointerdown? <=> press? null
 		pointermove? <=> move? null
 		pointerup? <=> release? null
-	- Ring around a picked node, one per node, keyed by its name. Put into `sub`
-	- only for the nodes actually picked, so an empty canvas costs no node at all.
-	- The handles sit outside the box, on the strip of overlay that still takes
-	- the pointer, and say where the part can be taken hold of.
 	Frame* $mol_view
 		style <= frame_style* *
 		sub /
@@ -3085,24 +3006,12 @@ $bog_vmap_app_pane_overlay $mol_view
 			<= Handle_sw $bog_vmap_app_pane_handle corner \sw
 			<= Handle_se $bog_vmap_app_pane_handle corner \se
 
-- A grip at one corner of the ring. Picture only, like the ring: the press it
-- marks is taken by the overlay under it.
 $bog_vmap_app_pane_handle $mol_view
 	corner \
 	attr *
 		^
 		bog_vmap_app_pane_handle_corner <= corner
 
-- `sandbox` goes FIRST: the attribute renderer writes the object in key order,
-- and an iframe that got its source before its sandbox is already loading
-- unsandboxed. `srcdoc` is the last key of the base dictionary, so the attribute
-- that raises the document is written after the one that isolates it.
--
-- `src` is dropped outright, and dropped rather than emptied: an iframe with an
-- empty `src` loads the page it stands on. `null` is how a dictionary of
-- attributes says «not this one» — the renderer removes the attribute instead of
-- writing it.
-- @see ../../ARCHITECTURE.md section 4
 $bog_vmap_app_pane_frame $mol_frame
 	attr *
 		sandbox \allow-scripts
@@ -3111,53 +3020,25 @@ $bog_vmap_app_pane_frame $mol_frame
 
 $bog_vmap_app $mol_view
 	doc_src \
-	- CSS of the document, and only of the document: this is what an export carries.
-	- Canvas placement of free parts rides `spots` instead and never joins this, so
-	- the export cannot pick up a world coordinate even by accident.
 	doc_css \
 	spots? *
-	- Property name of the node picked on the canvas, `null` when nothing is picked.
-	- The primary of `picked` below: the one the inspector is open on. Read this to
-	- follow a single selection, and `picked` where a whole set matters.
 	selected? null
-	- Every node picked on the canvas, in the order they were taken. A band swept
-	- over the canvas writes here, and a carry and a delete read it.
 	picked? /string
 	doc_js *
 	doc_root \
-	- The sandbox is a sibling module with no page of its own, so what is derived
-	- from the address of THIS page is the address of its bundle, which the markup
-	- of the frame names. The dev server and a deploy both work with nothing
-	- configured. There is exactly one page in the project and this is it.
 	scene_bundle \
-	- The palette field: links separated by commas, stored exactly as typed. The
-	- first http(s) one is the donor pack, the rest are lands of Giper Baza. One
-	- value for the whole editor: the palette offers what the scene has actually
-	- loaded, and the two must never drift apart. Derived from it: `pack_link` for
-	- the pack the frame is keyed by, `lands` for the library, `libs` for the scene.
-	- Empty is the standard palette: the `part` module of this very pack.
 	links? \
 	palette_showed? true
 	inspect_showed? true
 	code_showed? false
-	- The three texts of the class the code panel has in scope, two way, plus the
-	- switch that chooses the scope: one node of a class, or a whole class.
 	code_whole? false
 	code_source? \
 	code_js? \
 	code_css? \
-	- Handwritten body and styles of the ROOT class, two way. The code panel writes
-	- into the class it has in scope, which is this one whenever the picked node is
-	- not declared with a class of the document; `doc_js`/`doc_css` carry the bodies
-	- of every class to the scene beside the text.
 	root_js? \
 	root_css? \
-	- Persistence: the documents of the user in Giper Baza. One for the whole
-	- editor, handed to the switcher in the head bar; text and placement read
-	- through it and write back into it.
 	store $bog_vmap_app_store
 	sub <= body /$mol_view
-	-
 	Head $mol_bar
 		sub /
 			<= Brand $mol_view
@@ -3187,9 +3068,6 @@ $bog_vmap_app $mol_view
 			<= Reset $mol_button_minor
 				title \Сбросить вид
 				click? <=> camera_reset? null
-			- A page of the document: a node with a `sub` of its own, laid out by
-			- tree inside. Nothing marks it as an artboard — the `sub` is the whole
-			- difference, see section 8 of the architecture.
 			<= Board $mol_button_minor
 				title \Артборд
 				hint \Положить страницу: прямоугольник ширины макета, вёрстка внутри по дереву
@@ -3199,34 +3077,13 @@ $bog_vmap_app $mol_view
 				hint <= delete_hint \
 				enabled <= selection_showed false
 				click? <=> node_delete? null
-			- Publishing the picked part into the library of the user, link included.
-			- The declaration goes in as the inspector reads it, and the part name as
-			- the picked property; the store of libraries is the button's own.
 			<= Publish $bog_vmap_app_publish
 				part <= publish_part \
 				source <= node_source? \
-				- Method of the picked part, cut out of the body the code editor
-				- writes. Without it a published component would arrive at the next
-				- document with its behaviour left behind.
 				js <= node_js \
-				- Styles go over WHOLE, not cut down to the rule of the picked part.
-				- A part carries its own sub-views out with it, and in the document
-				- every one of them is a flat property of the root beside the part
-				- itself — one stylesheet, rules that name their nodes and nothing
-				- else. Only the publication knows which of those nodes end up inside
-				- the copy, because it is the side that builds the copy.
 				css <= root_css
 				doc <= doc_src
 				classes / <= doc_root
-			- Name of the root class, editable, right beside the button that spells
-			- out the folder it chooses. The folder of an export follows from the
-			- class names — section 10 — so this field and that title are two halves
-			- of one decision and stand together.
-			-
-			- Committed on Enter and on leaving the field, NEVER on a keystroke, the
-			- same as the name of a node in the inspector: a rename rewrites the
-			- document and remakes the node that holds the class, so writing per
-			- letter would rename the class to every prefix of what is being typed.
 			<= Root_name $mol_string
 				hint \Имя корневого класса
 				value? <=> root_draft? \
@@ -3234,11 +3091,6 @@ $bog_vmap_app $mol_view
 				event *
 					^
 					blur? <=> root_submit? null
-			- Sources of the document, as one archive of a real MAM module. The whole
-			- promise of the tool ends here, so the folder the module must go to is
-			- written in the title itself and not only in the hint: section 10 says
-			- the folder is not free, and the author has to see the one their class
-			- names chose.
 			<= Download $mol_button_download
 				title <= export_title \
 				hint <= export_hint \
@@ -3248,41 +3100,17 @@ $bog_vmap_app $mol_view
 			<= Status $mol_view
 				sub /
 					<= status \
-	-
 	Alarm $mol_view
 		sub /
 			<= error \
-	-
-	- Why the document does not export, in the very sentences the code panel says
-	- about the same mistake: both ask the export for its complaints, so there is
-	- one way of speaking about it and not two.
-	-
-	- On the strip and not in the panel alone, although the panel is where the code
-	- is written: the panel is folded by default and shows the picked node, while a
-	- refusal comes from the whole document and can name a class nobody has open.
-	- A person who pressed a dead button has to read the reason without hunting.
 	Export_note $mol_view
 		sub <= export_rows /$mol_view
 	Export_row* $mol_view
 		sub / <= export_text* \
-	-
-	- Why the root class was not renamed. On the strip beside the refusal of the
-	- export, because it is about the document as a whole; a text field that
-	- throws out of its setter puts the message into `setCustomValidity`, which on
-	- a page without a form is nowhere at all.
 	Root_note $mol_view
 		sub / <= root_title_note \
-	-
-	- The pointer has been let inside a part, so the keys belong to the part and no
-	- longer to the editor. Said outright, because nothing else on screen says it
-	- and the way out is not guessable: Delete stops deleting and typing goes into
-	- the component, with no sign of why.
 	Inside_note $mol_view
 		sub / <= inside_note \
-	-
-	- The scene has stopped answering. Its own strip and not the error one: an
-	- error means the scene spoke, this means it did not, and the only thing that
-	- helps is on this strip.
 	Stall $mol_view
 		sub /
 			<= Stall_note $mol_view sub / <= stall_note \
@@ -3290,77 +3118,29 @@ $bog_vmap_app $mol_view
 				title \Перезагрузить сцену
 				hint \Поднять кадр заново. Документ хранится в редакторе и не потеряется
 				click? <=> scene_restart? null
-	-
-	- Panel beside the canvas, canvas taking whatever is left.
 	Body $mol_view
 		sub <= body_main /$mol_view
-	-
-	- The left edge of the editor: which document is open, and what can be put into
-	- it. The two belong together — both answer «what am I working on» — and both
-	- are lists, so the head bar is left to the tools that act on the open document.
 	Side $mol_view
 		sub /
 			<= Scenes $bog_vmap_app_scenes
 				store <= store
 			<= Shelf $bog_vmap_app_shelf
 				links? <=> links?
-				- The address the host derived, not the one the panel would derive
-				- from the field on its own: an empty field means the pack of this
-				- very deploy, and only the host knows where that is.
 				pack_link <= pack_link
 				land_classes <= lib_classes /$mol_tree2
-				- Names of the classes the library holds, for the objects of the
-				- connected application. A binding and not a read of our own: the
-				- fetch behind it must happen inside the panel, where a dead address
-				- shows up on the one list it belongs to.
 				class_list <= lib_class_list /string
-				- An item asked for by a click rather than by a drag. The shelf says
-				- which one; where it goes is the canvas's answer.
 				place? <=> shelf_place? \
-	-
-	- Properties of the picked node, on the far edge from the palette: one panel
-	- offers what can be added, the other what the added thing can do, and the canvas
-	- keeps the middle. Either can be folded away when the canvas needs the room.
 	Aside $mol_view
 		sub <= aside_content /$mol_view
-	-
-	- The inspector reads ONE class, and a part declared on the canvas is exactly
-	- that: a line naming a part and a base is a class named after the part with
-	- that base under it, so its own lines are its own ports and the rest
-	- come down the chain. Nothing had to be added to the inspector to fit.
-	- The classes of the attached lands ride in through `peers` beside the root of
-	- the document: the inspector already resolves a peer's ports through the same
-	- index as the pack's, so a land class needs nothing added on its side.
 	Inspect $bog_vmap_app_inspect
 		source? <=> node_source? \
 		peers <= node_peers /$mol_tree2
 		pack <= pack_link \
-		- The name field renames through the editor and not through the class the
-		- inspector holds: the name of a node is also the key of the pick, of the
-		- placement and of every reference in the document, and only the editor knows
-		- all four. The refusal comes back the same way, in words.
 		class_title? <=> node_title? \
 		title_note <= node_title_note \
-	-
-	- What stands in the panel while nothing is picked. A state, not a blank: the
-	- inspector handed an empty source would fail to find a class in it and show an
-	- error where an invitation belongs.
 	Idle $mol_view
 		sub /
 			<= idle_note \Выберите узел на холсте, чтобы править его свойства
-	-
-	- Three sources of the picked node, next to the inspector: one panel says what
-	- the node can do, the other says how it does it. Folded away by its own check
-	- in the head bar, like the two panels beside it.
-	-
-	- `node_source` is the very binding the inspector edits, so a change made with
-	- the mouse shows up in the text with no path of its own; the three texts of the
-	- class are those of the class in scope, sliced by the panel.
-	-
-	- The scope is the editor's and not the panel's: which class the three texts
-	- belong to depends on whether the picked node is declared with a class the
-	- document itself authors, and only the owner of the document knows that. That
-	- is also how the body and the styles of a second class are reached at all.
 	Code $bog_vmap_app_code
 		klass <= code_klass \
 		prop <= code_prop \
@@ -3371,25 +3151,15 @@ $bog_vmap_app $mol_view
 		js? <=> code_js?
 		css? <=> code_css?
 		error <= code_error \
-	-
-	- Component library of the host: the pack, with the lands of the field stacked
-	- on it. `script_link()` is the bundle the scene is told to load; `land_trees()` feed the
-	- palette and the inspector; `parts()` go to the scene. The pack tree itself is
-	- fetched by the palette from the same address, and the two share one fetching
-	- cell. The only object in the editor that opens a land of the field.
 	Lib $bog_vmap_lib_land_stack
 		pack <= pack_link
 		lands <= lands /string
-	-
-	- What the pointer is carrying, drawn at the pointer. Rendered only while a drag
-	- is on, so it costs nothing the rest of the time.
 	Ghost $mol_view
 		style *
 			left <= ghost_left \0px
 			top <= ghost_top \0px
 		sub /
 			<= ghost_title \
-	-
 	Pane $bog_vmap_app_pane
 		scene_bundle <= scene_bundle
 		pack_uri <= pack_script \
@@ -3401,14 +3171,10 @@ $bog_vmap_app $mol_view
 		doc_root <= doc_root
 		libs <= libs /$bog_vmap_bridge_part
 		carrying <= carrying false
-		- Wires: the pane draws them from the document and its ports, and writes a
-		- new or a dropped one back through these two events, never into the text.
 		wires <= doc_wires /$bog_vmap_lang_link
 		part_ports* <= part_ports* /$bog_vmap_app_wire_port
 		link_add? <=> link_add? null
 		link_drop? <=> link_drop? null
-		- Nodes that carry a `sub` of their own, so the pane knows where a drop goes
-		- into the tree instead of onto the canvas, and where to draw the line.
 		containers <= doc_containers /string
 		doc_names <= doc_names /string
 		axis* <= doc_axis* \
