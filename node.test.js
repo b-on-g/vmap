@@ -32459,6 +32459,24 @@ var $;
                     this.error_node(at, message.node ?? '');
                     return;
                 }
+                if (message.kind === 'key') {
+                    // The same step back the host's own `Escape` takes, and it has to be
+                    // written twice because the two keystrokes never meet: once the
+                    // pointer is let inside a part, the focus belongs to the frame and
+                    // the keydown lands in ITS document, where the host's listener is not.
+                    // The frame relays the key instead, and it arrives here — at the pane,
+                    // which is what owns both the hole and the pick.
+                    //
+                    // Out of the node first and out of the pick second, one step per
+                    // press, because those are two different things to have got into and
+                    // leaving both at once would take the selection away from a user who
+                    // only meant to stop typing.
+                    if (this.inside())
+                        this.entered(null);
+                    else
+                        this.picked([]);
+                    return;
+                }
                 if (message.kind === 'values') {
                     this.values(message.values);
                     return;
@@ -44277,6 +44295,35 @@ var $;
             pane.node_release(pointer(50, 25, { buttons: 0 }));
             $mol_assert_equal(pane.primary(), 'A');
             $mol_assert_equal(pane.inside(), false);
+        },
+        /**
+         * ESCAPE PRESSED INSIDE THE PART GETS OUT OF IT. Once the pointer is let in,
+         * the focus is the frame's and the keydown lands in the document of the
+         * frame, where the listener of the host is not — so the host hears nothing
+         * and the only way out used to be a click on bare canvas. The frame relays
+         * the key up the bridge instead, and the pane answers it exactly the way it
+         * answers the host's own Escape.
+         *
+         * Through a real message and not a call: what is being pinned down is that
+         * the relayed key is understood on arrival, and a direct call would prove
+         * only that the branch exists.
+         */
+        'Escape relayed from the frame steps out of the node, then out of the pick'($) {
+            const { pane, answer } = pane_make($);
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
+            $mol_assert_equal(pane.inside(), true);
+            // One press, one step: out of the node, and the pick is still there.
+            answer({ kind: 'key', key: 'Escape' });
+            $mol_assert_equal(pane.inside(), false);
+            $mol_assert_equal(pane.primary(), 'A');
+            // The next one drops the pick as well.
+            answer({ kind: 'key', key: 'Escape' });
+            $mol_assert_equal(pane.primary(), null);
+            $mol_assert_like(pane.picked(), []);
         },
         'the modifiers travel with the click'($) {
             const { pane, posted } = pane_make($);

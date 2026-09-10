@@ -32468,6 +32468,24 @@ var $;
                     this.error_node(at, message.node ?? '');
                     return;
                 }
+                if (message.kind === 'key') {
+                    // The same step back the host's own `Escape` takes, and it has to be
+                    // written twice because the two keystrokes never meet: once the
+                    // pointer is let inside a part, the focus belongs to the frame and
+                    // the keydown lands in ITS document, where the host's listener is not.
+                    // The frame relays the key instead, and it arrives here — at the pane,
+                    // which is what owns both the hole and the pick.
+                    //
+                    // Out of the node first and out of the pick second, one step per
+                    // press, because those are two different things to have got into and
+                    // leaving both at once would take the selection away from a user who
+                    // only meant to stop typing.
+                    if (this.inside())
+                        this.entered(null);
+                    else
+                        this.picked([]);
+                    return;
+                }
                 if (message.kind === 'values') {
                     this.values(message.values);
                     return;
