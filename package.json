@@ -393,7 +393,6 @@
     "$bog_vmap_app_inspect_flex",
     "$bog_vmap_app_inspect_row",
     "$bog_vmap_app_inspect_value",
-    "$mol_view_tree2_value",
     "$mol_select",
     "$mol_pick",
     "$mol_pop",

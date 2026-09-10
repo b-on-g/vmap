@@ -47375,38 +47375,32 @@ declare namespace $.$$ {
      * List of documents down the left edge of the editor.
      *
      * Every accessor that writes into the store is a plain method: the values
-     * behind them are atoms, and a `@ $mol_mem` in front of an atom freezes at the
-     * value written through it. The one memoized cell here is read only.
+     * behind them are atoms, and a memoizing decorator in front of an atom freezes
+     * at the value written through it. The one memoized cell here is read only.
      *
      * @see ../../ARCHITECTURE.md section 9
      */
     class $bog_vmap_app_scenes extends $.$bog_vmap_app_scenes {
         /**
-         * Links of the documents, as strings, in the order the store keeps them.
-         *
          * Read only, so memoization is safe and worth having: the list is rebuilt
          * from the land on every unrelated change of it, and deep comparison in the
          * cell spares the rows a rebuild.
          */
         scene_links(): readonly string[];
         scene_rows(): $bog_vmap_app_palette_item[];
-        /** The link object behind a string, or nothing when it is gone from the list. */
         scene_link(link: string): $giper_baza_link | null;
         scene_title(link: string): string;
         scene_current(link: string): boolean;
         scene_click(link: string, event?: Event | null): void;
         /**
-         * The open document, by link. Writing picks; an empty or malformed value
-         * goes back to the default, which is the last document made.
+         * An empty or malformed value goes back to the default, which is the last
+         * document made.
          */
         current(next?: string): string;
         current_exists(): boolean;
         title(next?: string): string;
-        /** Name of the next document, the store's count. */
         add_title(): string;
         /**
-         * Makes a new document and opens it.
-         *
          * The store method is handed to a fiber of its own, and the name is taken
          * before it: grabbing a land mines proof of work, the fiber retries on every
          * `Promise` thrown on the way with its sub-tasks cached, and an argument
@@ -47555,63 +47549,48 @@ declare namespace $ {
 
 declare namespace $ {
     /**
-     * One thing on the shelf: a ready made piece of a document.
+     * A ready made piece of a document, as the text of a `view.tree` class.
      *
-     * `source` is a whole `view.tree` class whose properties are the parts, their
-     * overrides and their wires. A plain block is one property of it, a calculator
-     * wired to a map is four, and a class picked from the second level of the panel
-     * is a class built on the spot. So the shelf carries one kind of thing and the
-     * canvas takes it one way, whatever the item came from.
+     * ONE kind of thing, so the canvas takes them all one way: a plain block, a
+     * wired pair and a class picked from the second level of the panel differ only
+     * in how many properties the text has.
      *
      * @see ../../ARCHITECTURE.md section 5
      */
     type $bog_vmap_app_shelf_item = {
-        /** Stable key of the item, for the row and for the drag. */
+        /** Stable key, for the row and for the drag. */
         readonly id: string;
-        /** What the row says. */
         readonly title: string;
-        /** What the row says on hover, one sentence. */
         readonly hint: string;
-        /** The piece itself, a `view.tree` class. */
         readonly source: string;
     };
     /**
-     * Name a part of this class would take: `$mol_button_minor` gives
-     * `Button_minor`.
-     *
-     * The namespace prefix goes because every class of a pack carries the same one,
-     * so it makes the names longer without making them more distinct. Free or taken
-     * is not decided here: the document knows what it already carries.
+     * Name a part of this class would take: a button of mol gives `Button_minor`.
+     * The namespace prefix goes because every class of a pack carries the same one.
+     * Free or taken is not decided here: the document knows what it already carries.
      */
     function $bog_vmap_app_shelf_short(klass: string): string;
     /** A preset made of one class of the library, as the second level hands it over. */
     function $bog_vmap_app_shelf_single(klass: string): string;
     /**
-     * The shelf as it comes out of the box: a handful of things a person
-     * recognises, not a catalogue. Everything else arrives by address or by file
-     * and lands in the same list.
-     *
-     * Order is what it is for a reason. The **code cell** comes first because it is
-     * what a board is actually built out of — without it a shelf is a display case
-     * and with it a tool. The **pair** is here because a wire is the point of the
-     * whole editor and the one thing nobody guesses on their own: it lies down as
-     * ONE node holding both parts, so a single gesture leaves a working pair on the
-     * canvas rather than two pieces to arrange. The **inputs** come last because
-     * they are what drives everything above them.
+     * A handful of things a person recognises, not a catalogue, and the order is a
+     * choice. The code cell first, because it is what a board is built out of and
+     * without it a shelf is a display case. The pair, because a wire is the point
+     * of the editor and the one thing nobody guesses on their own — it lies down as
+     * ONE node holding both parts, so a single gesture leaves a working pair rather
+     * than two pieces to arrange. The inputs last, because they drive everything
+     * above them.
      */
     function $bog_vmap_app_shelf_presets(): readonly $bog_vmap_app_shelf_item[];
-    /** A file brought from the disk: its name and what is inside it. */
+    /** A file brought from the disk. */
     type $bog_vmap_app_shelf_file = {
         readonly name: string;
         readonly text: string;
     };
     /** What the files gave, and what was refused with the reason in the user's words. */
     type $bog_vmap_app_shelf_intake = {
-        /** One component per class, in the order the files declared them. */
         readonly classes: readonly {
-            /** `view.tree` declaration, the truth of the component. */
             readonly tree: string;
-            /** Plain CSS from a `.view.css` beside it, empty when there was none. */
             readonly css: string;
         }[];
         readonly refused: readonly {
@@ -47620,13 +47599,13 @@ declare namespace $ {
         }[];
     };
     /**
-     * Wording of the refusals, in one place so the tests and the panel agree.
+     * In one place so the tests and the panel agree.
      *
-     * A mol module is two kinds of text and only one of them can be taken. The
-     * declarations compile in the sandbox as they are; the behaviour is
-     * TypeScript, and what runs a component's body there is `new Function` over
-     * JavaScript. There is no compiler in the page and pretending otherwise would
-     * mean a component that arrives looking whole and does nothing.
+     * A module is two kinds of text and only one of them can be taken: the
+     * declarations compile in the sandbox as they are, while the behaviour is
+     * TypeScript and what runs a component's body there is JavaScript. There is no
+     * compiler in the page, and pretending otherwise would mean a component that
+     * arrives looking whole and does nothing.
      */
     const $bog_vmap_app_shelf_refuse: {
         readonly kind: string;
@@ -47634,48 +47613,41 @@ declare namespace $ {
         readonly empty: "ни одного класса: объявление начинается с имени на доллар";
     };
     /**
-     * Splits the files brought from the disk into one component per class.
+     * ONE component per class, and not one per file, because a component of a
+     * library is one class and the library resolves neighbours by name. A whole
+     * module folder goes in at once for the same reason: every declaration lands in
+     * one library, which is one namespace, so a component still inherits its
+     * neighbour.
      *
-     * Split and not merged, because a component of a library is one class and the
-     * library resolves neighbours by name: a file with three classes in it gives
-     * three components that still find each other. A whole module folder can go in
-     * at once for the same reason — every declaration in it lands in ONE library,
-     * which is one namespace, so a component still inherits its neighbour.
+     * A plain `.view.css` beside a tree comes along, because it is a stylesheet and
+     * not a program; a `.view.css.ts` is refused like any other program.
      *
-     * A plain `.view.css` beside a tree comes along, because it is CSS and not
-     * TypeScript: the library holds it as it is and the sandbox attaches it. A
-     * `.view.css.ts` is a program and gets the same refusal as any other.
-     *
-     * The text of each declaration goes out as its author wrote it, without
-     * normalizing: what a person brought from their own module is theirs, and the
-     * editor normalizes a document only when the document is edited.
+     * Declarations go out as their author wrote them: what a person brought from
+     * their own module is theirs, and the editor normalizes a document only when
+     * the document is edited.
      */
     function $bog_vmap_app_shelf_intake(this: $, files: readonly $bog_vmap_app_shelf_file[]): $bog_vmap_app_shelf_intake;
-    /** The refusals as one text, one per line, or empty when there is nothing to say. */
     function $bog_vmap_app_shelf_intake_note(taken: $bog_vmap_app_shelf_intake): string;
     /**
-     * Renames references to parts inside an override, wherever they sit.
-     *
-     * A preset names its parts `Calc` and `Map`; the document may already carry
-     * both, so every part is declared under a free name and every reference to it
-     * has to follow. Only the child of a `<=` or `<=>` is touched, which is what a
-     * reference is; data and everything else comes through untouched.
+     * A preset names its parts itself and the document may already carry those
+     * names, so every part is declared under a free one and every reference has to
+     * follow. Only the child of a binding operator is touched, which is what a
+     * reference is; data comes through untouched.
      */
     function $bog_vmap_app_shelf_refs(tree: $mol_tree2, names: ReadonlyMap<string, string>): $mol_tree2;
     /**
-     * Lays a shelf item into a document and answers with the names it left at the
-     * top level, in the order the preset listed them.
-     *
+     * Lays a shelf item into a document and answers with the names it left loose.
      * Placement is NOT done here: whether those names go onto the canvas by a
-     * coordinate or into the tree of an artboard is a question about the canvas, and
-     * the canvas answers it. This function knows the document alone.
+     * coordinate or into the tree of an artboard is a question about the canvas,
+     * and the canvas answers it. This function knows the document alone.
      *
-     * Free names come from the caller, one at a time and in order, because every
-     * declaration changes what is taken: the document is asked again after each.
+     * Free names come from the caller one at a time, because every declaration
+     * changes what is taken.
      *
-     * Wires go in through `link_add` and their consuming overrides are deliberately
-     * NOT copied — `link_add` writes both ends itself, and copying one of them would
-     * mean two ways of writing a wire, drifting apart at the first fix to either.
+     * Wires go in through the model's own `link_add`, and the overrides that
+     * consume them are deliberately NOT copied: that method writes both ends
+     * itself, and copying one would leave two ways of writing a wire to drift
+     * apart at the first fix to either.
      */
     function $bog_vmap_app_shelf_apply(this: $, node: $bog_vmap_lang_node, source: string, free: (name: string) => string): readonly string[];
 }
@@ -47905,42 +47877,31 @@ declare namespace $.$$ {
      */
     class $bog_vmap_app_shelf extends $.$bog_vmap_app_shelf {
         /**
-         * Shelf first, then the switch of the second level, then the level itself
-         * while it is open.
-         *
-         * Folded away it is not rendered at all, and that is the point of the
-         * branch: the palette fetches the class tree of the pack the moment it is
-         * drawn, and a panel nobody opened should not pay for it.
+         * A folded second level is not rendered at all, and that is the point of
+         * the branch: the palette fetches the class tree of the pack the moment it
+         * is drawn, and a panel nobody opened should not pay for it.
          */
         body(): readonly $mol_view[];
         /**
-         * What scrolls: the shelf, the address and the objects of the application.
-         *
-         * The heading and the switch of the second level stay put, because they are
-         * how a person gets back out of a long list; the second level scrolls inside
-         * itself and must not be nested in this one, or its own list would render
-         * all four hundred rows into an unbounded height.
+         * The heading and the switch of the second level stay out of the scroll,
+         * because they are how a person gets back out of a long list. The second
+         * level scrolls inside itself and must not be nested in this one, or its
+         * own list would render all four hundred rows into an unbounded height.
          */
         stack_content(): readonly $mol_view[];
-        /** The field, the button, and under them whatever was refused. */
         source_content(): readonly $mol_view[];
         /**
-         * Files picked in the dialog. Answers empty: what came of them is in the
-         * library and in the note, and the panel keeps no list of files.
-         *
-         * The work goes to a fiber of its own, because all of it is asynchronous:
-         * reading a file is a promise, and making the library land mines proof of
-         * work.
+         * Answers empty: what came of the files is in the library and in the note,
+         * and the panel keeps no list of them. The work goes to a fiber of its own,
+         * because all of it is asynchronous — reading a file is a promise, and
+         * making the library land mines proof of work.
          */
         files(next?: readonly File[]): readonly File[];
         /**
-         * Reads the files and puts what they declare into the library of the user.
-         *
-         * **From a fiber only.** Every read goes through `$mol_wire_sync`, so the
-         * fiber suspends on each file and picks up where it left off; a retry
-         * replays the reads from its own cache and writes the same classes again,
-         * which lands on the same components because a class already in the library
-         * is replaced rather than added.
+         * **From a fiber only.** Reading a file suspends, so the fiber picks up
+         * where it left off; a retry replays the reads from its own cache and
+         * writes the same classes again, which lands on the same components because
+         * a class already in the library is replaced rather than added.
          *
          * The link of the library is appended to the field afterwards and not
          * before: the field is what the scene loads, and there is nothing to load
@@ -47954,35 +47915,30 @@ declare namespace $.$$ {
             readonly name: string;
             text(): Promise<string>;
         }[]): void;
-        /** Adds a land link to the field, unless the field already names it. */
         link_attach(link: string): void;
         /**
-         * The field, parsed. The editor parses the same string for its own needs,
-         * and that is fine: the parse is pure and costs nothing next to a cell
-         * shared across two modules.
+         * The editor parses the same string for its own needs, and that is fine:
+         * the parse is pure and costs nothing next to a cell shared across two
+         * modules.
          */
         links_parsed(): $bog_vmap_lib_links;
-        /** Refused links with their reasons, one per line; empty hides the strip. */
+        /** Empty hides the strip. */
         rejected_note(): string;
         /**
-         * Classes of the connected application, as items.
-         *
-         * Everything the library holds except mol itself: a pack carries the whole
-         * framework in its bundle, and the framework is what the second level is
-         * for. What is left is what the application's author wrote, plus the
-         * components of any land attached, which are somebody's own just the same.
+         * Everything the library holds except the framework itself: a pack carries
+         * the whole framework in its bundle, and the framework is what the second
+         * level is for. What is left is what the application's author wrote, plus
+         * the components of any land attached, which are somebody's own just the
+         * same.
          *
          * Suspends while the pack is loading and throws when the pack is dead. Both
-         * are meant to reach the view that reads it, and the view that reads it is
-         * `Apps` alone.
+         * are meant to reach the view that reads it, and that is `Apps` alone.
          */
         app_state(): {
             readonly list: readonly string[];
             readonly error: string;
         };
         /**
-         * The address that was actually fetched, for the complaint to name.
-         *
          * Asked of the palette's library rather than built here: the rule that
          * grows `web.view.tree` onto a pack address lives there, and a second copy
          * of it would word the complaint about a file we never asked for.
@@ -47990,16 +47946,11 @@ declare namespace $.$$ {
         pack_tree_link(): string;
         app_list(): readonly string[];
         app_rows(): $bog_vmap_app_palette_item[];
-        /** Why there are no objects, when the reason is a dead address. */
         app_error(): string;
-        /** The caption, then either the objects or the reason there are none. */
         apps_content(): readonly $mol_view[];
         apps_title(): "Приложение не отвечает" | "Объекты приложения" | "Приложение не подключено";
-        /** Everything the shelf offers, in the order it offers it. */
         items(): readonly $bog_vmap_app_shelf_item[];
         /**
-         * An item by id, including one that is not on the shelf at all.
-         *
          * A class dragged out of the second level has its class name for an id and
          * becomes an item on the spot, so the canvas is handed the same thing
          * whichever level the gesture started on.
@@ -48008,15 +47959,12 @@ declare namespace $.$$ {
         item_rows(): $bog_vmap_app_palette_item[];
         item_title(id: string): string;
         item_hint(id: string): string;
-        /** The piece the pointer is carrying, or nothing while it carries nothing. */
         drag_source(): string;
         /** What the ghost at the pointer says. */
         drag_title(): string;
         /**
-         * A press on a row starts carrying it.
-         *
-         * The pointer position is taken here and moved by the owner of the canvas:
-         * the shelf knows when a drag begins and nothing about where it ends.
+         * The position is taken here and moved by the owner of the canvas: the
+         * shelf knows when a drag begins and nothing about where it ends.
          */
         item_drag(id: string, event?: PointerEvent | null): void;
         /** A click without a drag asks for the item in the middle of the canvas. */
@@ -48206,10 +48154,8 @@ declare namespace $ {
 //# sourceMappingURL=flex.view.tree.d.ts.map
 declare namespace $.$$ {
     /**
-     * Layout panel of one node: five style keys with names on them.
-     *
-     * It owns nothing. Every control is one key of the `style` dictionary of the
-     * node, read and written through `value()`, so what the panel shows is what the
+     * Owns nothing. Every control is one key of the `style` dictionary of the node,
+     * read and written through `value()`, so what the panel shows is what the
      * document says and what it writes is an ordinary line of `view.tree`. The
      * inspector already has a dictionary editor for the same property; this is the
      * same facts with the names of the decisions on them.
@@ -48223,26 +48169,17 @@ declare namespace $.$$ {
         along(next?: string): string;
         gap(next?: string): string;
         /**
-         * Stretching, written as the STRING `1` and never as the number.
-         *
-         * `$mol_dom_render_styles` appends `px` to a number, so `flexGrow 1` in the
-         * document comes out as `flex-grow: 1px`, which is not a length and not a
-         * growth factor either: the property is simply dropped and the node does not
-         * stretch. Dimensionless numbers go in as text.
+         * Written as the STRING `1` and never as the number. Inline style rendering
+         * appends `px` to a number, so `flexGrow 1` in the document comes out as
+         * `flex-grow: 1px`, which is not a length and not a growth factor either:
+         * the property is simply dropped and the node does not stretch.
+         * Dimensionless numbers go in as text.
          */
         grow(next?: boolean): boolean;
     }
 }
 
 declare namespace $.$$ {
-}
-
-declare namespace $ {
-    function $mol_view_tree2_value_type(this: $, val: $mol_tree2): "object" | "locale" | "null" | "bool" | "number" | "string" | "list" | "dict" | "get" | "bind" | "put";
-}
-
-declare namespace $ {
-    function $mol_view_tree2_value(this: $, value: $mol_tree2): $mol_tree2;
 }
 
 declare namespace $ {
@@ -48828,48 +48765,42 @@ declare namespace $ {
     /**
      * Shape of a `view.tree` value, as one word.
      *
-     * Studio has `hyoo_studio_type_value` for this, built on the stock
-     * `$mol_view_tree2_value_type`. That function is used nowhere in `mol` itself —
-     * it is not the compiler's own grammar, it is a helper studio happens to lean
-     * on — and it `$mol_fail`s on anything it does not name. Three shapes that
+     * Studio names the shapes through a stock helper that is used nowhere in mol
+     * itself — it is not the compiler's own grammar, it is a helper studio happens
+     * to lean on — and it throws on anything it does not name. Three shapes that
      * really occur fall into that hole, and an inspector meets all three on the
      * document of section 1:
      *
      * - `=`, the wire, which is the whole point of section 1;
      * - `^`, which every `attr *` of a subclass starts with;
-     * - `+NaN` and `+Infinity`, which `$mol_number` itself is written with.
+     * - `+NaN` and `+Infinity`, which the number field itself is written with.
      *
      * Studio patches the first and the third in front of the call and still throws
      * on `^`. Reproducing that patch would mean carrying its hole as well, so the
-     * mapping is spelled out here instead, and against the grammar the compiler
-     * actually uses: `$mol_tree2_js_is_number` and `$mol_view_tree2_class_match`
-     * are the very functions `$mol_view_tree2_to_js` branches on, in the order it
-     * branches on them.
+     * mapping is spelled out here instead, against the grammar the compiler
+     * actually uses: the two guards below are the very functions the generator
+     * branches on, in the order it branches on them.
      *
      * @see ../../../../ARCHITECTURE.md section 1
      */
     type $bog_vmap_app_inspect_value_kind = 'none' | 'null' | 'bool' | 'number' | 'string' | 'locale' | 'list' | 'dict' | 'object' | 'get' | 'bind' | 'put' | 'wire' | 'super' | 'raw';
     /**
-     * Shape of one value node.
-     *
-     * `raw` is the honest answer, not a failure: a value the editor has no form
-     * for is shown as its own source text and left alone. Failing here instead
-     * would take out the whole property list over one node nobody was editing.
+     * `raw` is the honest answer, not a failure: a value the editor has no form for
+     * is shown as its own source text and left alone. Failing here instead would
+     * take out the whole property list over one node nobody was editing.
      */
     function $bog_vmap_app_inspect_value_kind_of(val: $mol_tree2 | null): $bog_vmap_app_inspect_value_kind;
     /**
-     * Checks that a string is a number literal `view.tree` accepts, and returns it.
-     *
-     * The grammar is `$mol_tree2_js_is_number`, the function the generator itself
-     * branches on, for the same reason `$bog_vmap_lang_token` borrows
-     * `$mol_view_tree2_prop_signature`: a literal this accepts is a literal the
-     * compiler accepts, and a grammar of our own would part ways with it at the
-     * first exception. `+NaN` and `+Infinity` are exceptions of exactly that kind —
-     * `Number( '+NaN' ).toString()` is `NaN`, so the obvious round-trip test would
-     * reject two literals that `$mol_number` is written with.
+     * The grammar is the guard the generator itself branches on, borrowed for the
+     * same reason the token module borrows the stock signature regexp: a literal
+     * this accepts is a literal the compiler accepts, and a grammar of our own
+     * would part ways with it at the first exception. `+NaN` and `+Infinity` are
+     * exceptions of exactly that kind — `Number( '+NaN' ).toString()` is `NaN`, so
+     * the obvious round-trip test would reject two literals the number field is
+     * written with.
      *
      * Blank input is refused separately: `Number( '' )` is `0`, so the grammar
-     * accepts an empty type, while `$mol_tree2` has no such node.
+     * accepts an empty type, while a tree node has no such thing.
      */
     function $bog_vmap_app_inspect_value_literal(this: $, text: string): string;
 }
@@ -49360,11 +49291,9 @@ declare namespace $ {
 //# sourceMappingURL=value.view.tree.d.ts.map
 declare namespace $.$$ {
     /**
-     * Editor of one value, dispatching on its shape.
-     *
      * None of the accessors in this file is memoized, deliberately. Each is a two
      * line derivation of `tree()`, which is a cell already, and a cell of its own
-     * here would be a cell that a write freezes: writing to a `@$mol_mem` freezes
+     * here would be a cell that a write freezes: a write to a memoized cell freezes
      * its dependencies, so the editor would keep showing the value the user typed
      * after the document moved underneath it — the one failure mode of an editor
      * that nobody reports as a bug, because it looks like it worked.
@@ -49393,21 +49322,19 @@ declare namespace $.$$ {
         raw(): string;
     }
     /**
-     * A list, a dictionary or an object.
-     *
      * `keyed` says whether an element is a bare value or a named node with the
      * value under it, `klass` whether the node type is an editable class name.
-     * Those two bits are the entire difference between the three shapes.
+     * Those two bits are the entire difference between a list, a dictionary and an
+     * object.
      */
     export class $bog_vmap_app_inspect_value_seq extends $.$bog_vmap_app_inspect_value_seq {
         items(): $.$bog_vmap_app_inspect_value_item[];
         add_title(): "+ свойство" | "+ ключ" | "+ элемент";
         class_name(next?: string): string;
         /**
-         * The entry carries nothing under it, so it is `^` and not a pair.
-         *
-         * In a list every element is a bare node and none of them is a marker, which
-         * is why the answer is `false` there whatever the shape.
+         * The entry carries nothing under it, so it is `^` and not a pair. In a list
+         * every element is a bare node and none of them is a marker, which is why
+         * the answer is `false` there whatever the shape.
          */
         item_marker(index: number): boolean;
         item_key(index: number, next?: string): string;
@@ -49420,13 +49347,12 @@ declare namespace $.$$ {
         item_sub(): readonly $mol_view[];
     }
     /**
-     * A binding. The target is one bare name plus the sign it already carries.
-     *
-     * The sign is preserved rather than derived, because both spellings are legal
-     * and mean different things: `<=> value?` demands the `?` on both ends, while
-     * `field * value <= value_changed?` in `$mol_string` is a one way binding onto
-     * a writable property. Only the name is editable, so neither can be broken by
-     * a rename.
+     * The target is one bare name plus the sign it already carries. The sign is
+     * preserved rather than derived, because both spellings are legal and mean
+     * different things: `<=> value?` demands the `?` on both ends, while a one way
+     * binding onto a writable property, as the string field of mol writes its own
+     * change handler, carries the `?` on one side only. Only the name is editable,
+     * so neither can be broken by a rename.
      */
     export class $bog_vmap_app_inspect_value_bind extends $.$bog_vmap_app_inspect_value_bind {
         op(): string;
@@ -49443,11 +49369,9 @@ declare namespace $.$$ {
     /** A wire, `= Узел порт`. */
     export class $bog_vmap_app_inspect_value_wire extends $.$bog_vmap_app_inspect_value_wire {
         nodes(): Record<string, Node_meta>;
-        /** Nodes the document declares, in declaration order. */
+        /** In declaration order. */
         node_names(): string[];
         /**
-         * What is known about the node this wire starts from.
-         *
          * A wire may point at a node that has since been renamed or dropped, so the
          * lookup misses on a perfectly ordinary document and answers with a blank
          * rather than failing. The far end is then a text field holding the port
@@ -49455,7 +49379,6 @@ declare namespace $.$$ {
          * repaired instead of retyped.
          */
         meta(): Node_meta;
-        /** Ports of the class the origin is declared with. */
         ports(): readonly string[];
         /**
          * Said only when the port cannot be picked, and it names the reason rather
@@ -49849,42 +49772,36 @@ declare namespace $ {
 //# sourceMappingURL=inspect.view.tree.d.ts.map
 declare namespace $.$$ {
     /**
-     * Inspector of one class of the document.
-     *
      * The row list is the ports pane of the palette, over a class of the document
      * instead of a class of the library, and editable. Both read the same two maps
-     * from `$bog_vmap_lib`, because both answer the same question: what can this
-     * class do, and which part of that is its own.
+     * out of the component library, because both answer the same question: what can
+     * this class do, and which part of that is its own.
      *
      * @see ../../ARCHITECTURE.md sections 1 and 5
      */
     class $bog_vmap_app_inspect extends $.$bog_vmap_app_inspect {
         /**
-         * The class of the document, handed to the library so that the inheritance
-         * chain resolves through it. Without this the library would know nothing
-         * about the class being inspected and `props_map` would return nothing.
+         * The class of the document goes to the library so that the inheritance
+         * chain resolves through it; without it the library would know nothing about
+         * the class being inspected and `props_map` would return nothing.
          *
          * Its siblings go in beside it, so that a node typed with another class of
          * the same document resolves its ports out of the same index and needs no
-         * branch of its own. The inspected class is put first and filtered out of the
-         * peers: `$bog_vmap_lib_index` keeps the LAST declaration of a name, so a
-         * stale copy of this very class arriving among the peers would shadow the
-         * live one being edited.
+         * branch of its own. The inspected class is put first and filtered out of
+         * the peers: the index keeps the LAST declaration of a name, so a stale copy
+         * of this very class arriving among the peers would shadow the live one
+         * being edited.
          */
         classes(): $mol_tree2[];
         /**
-         * Name of the node, both ways.
-         *
-         * Reading is the class the declaration names. Writing renames it through the
-         * local model, which is all the stand can do and all it needs. The editor
-         * binds this to a rename of its own, which also carries the pick, the
-         * placement and every reference in the document — a rename is not a fact
-         * about one class, and the inspector is handed exactly one.
+         * Writing renames through the local model, which is all the stand can do and
+         * all it needs. The editor binds this to a rename of its own, which also
+         * carries the pick, the placement and every reference in the document — a
+         * rename is not a fact about one class, and the inspector is handed exactly
+         * one.
          */
         class_title(next?: string): string;
         /**
-         * What stands in the field, keyed by the name it started from.
-         *
          * A draft, because the commit is on Enter and on blur: between them the
          * field holds a name the document does not have. Keyed by the current name
          * so that picking another node, or a rename that lands, starts a fresh draft
@@ -49892,11 +49809,8 @@ declare namespace $.$$ {
          */
         title_draft(name: string, next?: string): string;
         title_value(next?: string): string;
-        /** Commits the draft, and says nothing when there is nothing to commit. */
         title_submit(event?: Event): void;
         /**
-         * What the panel is made of.
-         *
          * A list, and never a splice into `super.sub()` by index: an index is a fact
          * about the order somebody else wrote, so a child added to the tree moves
          * the refusal to a place nobody chose, silently. The refusal goes under the
@@ -49905,12 +49819,10 @@ declare namespace $.$$ {
          */
         body(): readonly $mol_view[];
         /**
-         * Whether there is a class here to inspect at all.
-         *
          * EVERY cell of this panel derives from one class, so a source with none in
          * it does not fail in one place — it fails in twenty at once, and the panel
-         * answers with a wall of red strips that grows the page. Measured on the
-         * deploy 09.09.2026, where the pick outlived the document it was made in.
+         * answers with a wall of red strips that grows the page. That happens when a
+         * pick outlives the document it was made in.
          *
          * Whoever owns the pick should not hand such a source over, and the editor
          * no longer does; this is the panel refusing to fall apart when somebody
@@ -49920,48 +49832,40 @@ declare namespace $.$$ {
          */
         class_ready(): boolean;
         base_title(): string;
-        /** Declaration of every port of the class, own and inherited, by name. */
         ports(): Map<string, $mol_tree2>;
         /**
-         * Which class of the BASE chain each port comes from, the document itself
-         * left out of the walk.
-         *
-         * Asked about the base rather than about the class being inspected, and that
-         * is the whole point: this map does not move when the document declares
-         * something. Ask `props_owner` about the document class instead and every
-         * first keystroke on an inherited port makes the port its own, changes its
-         * owner, moves its row up the list — and a row that moves while it is being
-         * typed into is re-inserted into the DOM, which in Chrome blurs the field.
-         * Measured: exactly one character per attempt reached the source.
+         * Asked about the BASE chain rather than about the class being inspected,
+         * and that is the whole point: this map does not move when the document
+         * declares something. Ask `props_owner` about the document class instead and
+         * every first keystroke on an inherited port makes the port its own, changes
+         * its owner, moves its row up the list — and a row that moves while it is
+         * being typed into is re-inserted into the DOM, which in Chrome blurs the
+         * field, so exactly one character per attempt reaches the source.
          *
          * So a port keeps its place for the life of the document, and overriding one
          * changes only how the row is drawn.
          */
         owners(): Map<string, string>;
         /**
-         * Ports the document invented first, in the order it writes them; ports it
-         * got from the base after, in the order the base declares them.
-         *
-         * The palette shows base ports first, and is right to: it answers «what can
-         * I add». An inspector answers «what does this node set», and the two dozen
-         * ports of `$mol_view` are not the answer to that.
+         * Ports the document invented go first. The palette shows base ports first,
+         * and is right to: it answers «what can I add». An inspector answers «what
+         * does this node set», and the two dozen ports of a bare view are not the
+         * answer to that.
          *
          * The split is by where a port COMES FROM, not by who sets it, so that it
          * cannot move under a cursor — see `owners()`. A port of the base that the
          * document overrides therefore stays down among the base ports, and says so
          * with its badge; that it is set here is said by the tools it grows.
          *
-         * Both halves come out of `ports()` and keep its order, which puts every
-         * ancestor before the document and so needs only to be cut in two, never
-         * sorted: `props_map` walks the chain farthest ancestor first, and a port
-         * the document redeclares keeps the position of its earliest declaration.
+         * Both halves come out of `ports()` and keep its order, which needs only to
+         * be cut in two, never sorted: `props_map` walks the chain farthest ancestor
+         * first, and a port the document redeclares keeps the position of its
+         * earliest declaration.
          */
         port_list(): string[];
         rows(): $.$bog_vmap_app_inspect_row[];
         total(): string;
         /**
-         * Winning declaration of a port: the own one when there is one.
-         *
          * The document is asked when the library has nothing, which happens while
          * the pack is still loading and on a property whose class the library does
          * not carry. Without the fallback the row of a property the user is looking
@@ -49969,33 +49873,29 @@ declare namespace $.$$ {
          */
         port_node(name: string): $mol_tree2 | null;
         row_sign(name: string): string;
-        /** Class the port comes from. Empty on one the document invented. */
+        /** Empty on a port the document invented. */
         row_owner(name: string): string;
         /**
          * The document does not declare this port, so what the row shows is the
          * inherited default and the first edit will declare an override.
          *
-         * Not the same question as `row_owner`, and it used to be: a port can come
-         * from the base AND be set here, which is the ordinary case of overriding a
-         * default and the case both of them get wrong when they are one flag.
+         * Not the same question as `row_owner`: a port can come from the base AND be
+         * set here, which is the ordinary case of overriding a default and the case
+         * both of them get wrong when they are one flag.
          */
         row_inherited(name: string): boolean;
-        /** Every property name of the class: what a binding may point at. */
+        /** What a binding may point at. */
         binds(): string[];
         /**
-         * Nodes a wire may start from, each with the class it is declared with and
-         * the ports that class has.
+         * Nodes a wire may start from. A node is a property declared with a class,
+         * free part and sub view alike, which is one list and not two because
+         * `upper` has already made both flat properties of the class.
          *
-         * A node is a property declared with a class, free part and sub view alike,
-         * which is one list and not two because `upper` has already made both flat
-         * properties of the class.
-         *
-         * The ports are the far end of a wire. Resolving them is the same question
-         * the row list answers about the inspected class, asked about another class,
-         * so it is the same `props_map` over the same index — and the index already
-         * holds both the pack and the classes of the document, so a node typed with
-         * a library class and one typed with the document's own class resolve
-         * through one call and need no branch.
+         * Resolving the far end of a wire is the same question the row list answers
+         * about the inspected class, asked about another class, so it is the same
+         * `props_map` over the same index — and the index already holds both the
+         * pack and the classes of the document, so a node typed with a library class
+         * and one typed with the document's own class need no branch.
          *
          * `ports` empty means the class is not in the index at all: a class known to
          * the index always yields at least the ports of its chain. The wire says so
@@ -50007,7 +49907,7 @@ declare namespace $.$$ {
             ports: readonly string[];
         }>;
         /**
-         * Value of a port, and the one place an edit enters the document.
+         * The one place an edit enters the document.
          *
          * An inherited port has no line of its own yet, so the first edit declares
          * one. It is declared with the FULL signature of the inherited declaration,
@@ -50016,16 +49916,14 @@ declare namespace $.$$ {
          * plain one at the moment somebody typed into it.
          *
          * Not memoized on purpose. A cell here would be a cell that this very write
-         * freezes — writing to a `@$mol_mem` freezes its dependencies — so the row
+         * freezes — a write to a memoized cell freezes its dependencies — so the row
          * would go on showing what was typed after the document moved underneath it.
          * The derivation is a map lookup over `ports()`, which is a cell already.
          */
         row_value(name: string, next?: $mol_tree2): $mol_tree2;
         row_keyed(name: string, next?: boolean): boolean;
         /**
-         * The `?` of a property, and of both ends of a wire at once.
-         *
-         * On a wire the sign is two signs: `?` on the left gives the setter its
+         * On a wire the `?` is two signs: `?` on the left gives the setter its
          * `next`, `?` on the right passes it on, and they are independent. Either
          * one alone is a trap that builds green — `w = Field value?` throws
          * `ReferenceError: next` on any read, `w? = Field hint` loses every write in
@@ -50037,8 +49935,6 @@ declare namespace $.$$ {
         row_changeable(name: string, next?: boolean): boolean;
         row_drop(name: string): void;
         /**
-         * The `style` dictionary of the class, or `null` while it declares none.
-         *
          * Off `prop_decl`, the derivation of the text, and not through `prop_tree`,
          * which is the write path below: a read taken from a written cell freezes at
          * what was written, and the panel would go on showing the value it set after
@@ -50046,13 +49942,12 @@ declare namespace $.$$ {
          */
         style_dict(): $mol_tree2 | null;
         /**
-         * One key of the `style` dictionary of the node, both ways. Empty means the
-         * key is not written, and writing empty takes it out again.
+         * Empty means the key is not written, and writing empty takes it out again.
          *
          * A dictionary the document does not declare yet is started with `^` under
          * it. A redeclared dictionary REPLACES the one of the base rather than
-         * extending it, so a node over `$mol_button` that grew one `gap` would lose
-         * every style the base sets, in silence; `^` says the one true thing —
+         * extending it, so a node over a styled component that grew one `gap` would
+         * lose every style the base sets, in silence; `^` says the one true thing —
          * everything of the base, plus what is written below.
          *
          * Not memoized, for the reason spelled out at `row_value`: this is a write
@@ -50064,14 +49959,11 @@ declare namespace $.$$ {
         source(next?: string): string;
         names(): string[];
         trees(): readonly $mol_tree2[];
-        /**
-         * Which class is inspected. Defaults to the first, which is the root by the
-         * convention of the fixture below.
-         */
+        /** Defaults to the first, which is the root by the convention of the fixture. */
         klass(next?: string): string;
         /**
-         * Source of the inspected class alone. The inspector writes here, the
-         * document splices it back, and the classes around it are untouched.
+         * The inspector writes one class, the document splices it back, and the
+         * classes around it are untouched.
          */
         class_source(next?: string): string;
     }

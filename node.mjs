@@ -26402,15 +26402,13 @@ var $;
          * List of documents down the left edge of the editor.
          *
          * Every accessor that writes into the store is a plain method: the values
-         * behind them are atoms, and a `@ $mol_mem` in front of an atom freezes at the
-         * value written through it. The one memoized cell here is read only.
+         * behind them are atoms, and a memoizing decorator in front of an atom freezes
+         * at the value written through it. The one memoized cell here is read only.
          *
          * @see ../../ARCHITECTURE.md section 9
          */
         class $bog_vmap_app_scenes extends $.$bog_vmap_app_scenes {
             /**
-             * Links of the documents, as strings, in the order the store keeps them.
-             *
              * Read only, so memoization is safe and worth having: the list is rebuilt
              * from the land on every unrelated change of it, and deep comparison in the
              * cell spares the rows a rebuild.
@@ -26421,7 +26419,6 @@ var $;
             scene_rows() {
                 return this.scene_links().map(link => this.Scene_row(link));
             }
-            /** The link object behind a string, or nothing when it is gone from the list. */
             scene_link(link) {
                 return this.store().doc_links().find(item => item.str === link) ?? null;
             }
@@ -26436,8 +26433,8 @@ var $;
                 this.current(link);
             }
             /**
-             * The open document, by link. Writing picks; an empty or malformed value
-             * goes back to the default, which is the last document made.
+             * An empty or malformed value goes back to the default, which is the last
+             * document made.
              */
             current(next) {
                 const store = this.store();
@@ -26453,13 +26450,10 @@ var $;
             title(next) {
                 return this.store().title(next);
             }
-            /** Name of the next document, the store's count. */
             add_title() {
                 return this.store().title_next();
             }
             /**
-             * Makes a new document and opens it.
-             *
              * The store method is handed to a fiber of its own, and the name is taken
              * before it: grabbing a land mines proof of work, the fiber retries on every
              * `Promise` thrown on the way with its sub-tasks cached, and an argument
@@ -26489,7 +26483,6 @@ var $;
     var $$;
     (function ($$) {
         $mol_style_define($bog_vmap_app_scenes, {
-            /** A column at the top of the left panel, sized by its own content. */
             flex: { direction: 'column', shrink: 0 },
             gap: $mol_gap.space,
             padding: { bottom: $mol_gap.space },
@@ -26972,30 +26965,21 @@ var $;
 var $;
 (function ($) {
     /**
-     * Class header a preset is written under.
-     *
-     * The model of a document parses a class, not a loose body, so a preset needs a
-     * header; nothing ever compiles or exports it. The name points at a folder that
-     * does not exist under this module, so the dependency graph of mam, which reads
-     * string literals, resolves it to this very module and pulls nothing new in.
+     * Class header a preset is written under: the document model parses a class,
+     * not a loose body. Nothing ever compiles or exports it.
      */
     const $bog_vmap_app_shelf_head = '$bog_vmap_app_shelf_draft $mol_view';
     /**
-     * Namespace of the pack of parts, spelled in two pieces on purpose.
-     *
-     * The pack is a DEPLOYED donor reached by address: its classes are fetched and
-     * compiled inside the sandbox, never linked here. Written whole, the name would
-     * be read by the dependency graph of mam as an import and would pull the whole
-     * pack into the bundle of the editor, which today mentions it zero times.
+     * Spelled in two pieces on purpose. The pack is a DEPLOYED donor reached by
+     * address and compiled inside the sandbox; written whole, the name would be
+     * read as an import by the dependency graph of mam, which parses string
+     * literals, and would pull the whole pack into the bundle of the editor.
      */
     const $bog_vmap_app_shelf_pack = '$bog_vmap' + '_part';
     /**
-     * Name a part of this class would take: `$mol_button_minor` gives
-     * `Button_minor`.
-     *
-     * The namespace prefix goes because every class of a pack carries the same one,
-     * so it makes the names longer without making them more distinct. Free or taken
-     * is not decided here: the document knows what it already carries.
+     * Name a part of this class would take: a button of mol gives `Button_minor`.
+     * The namespace prefix goes because every class of a pack carries the same one.
+     * Free or taken is not decided here: the document knows what it already carries.
      */
     function $bog_vmap_app_shelf_short(klass) {
         const short = klass.replace(/^\$/, '').replace(/^\w+?_/, '');
@@ -27009,13 +26993,9 @@ var $;
     }
     $.$bog_vmap_app_shelf_single = $bog_vmap_app_shelf_single;
     /**
-     * Widgets of input, each with a port a wire can take: what a person puts on a
-     * board to drive everything else on it.
-     *
-     * Classes of mol and nothing of ours, so the pack grows by none. Their names
-     * are split for the reason given above: whole, they would be read as imports
-     * by the dependency graph and pull modules into the bundle of the editor that
-     * it does not otherwise carry.
+     * Widgets of input, each with a port a wire can take. Classes of mol and
+     * nothing of ours, so the pack does not grow by them; names split for the
+     * reason given at the pack above.
      */
     function $bog_vmap_app_shelf_inputs() {
         const mol = '$mol' + '_';
@@ -27034,17 +27014,13 @@ var $;
         }));
     }
     /**
-     * The shelf as it comes out of the box: a handful of things a person
-     * recognises, not a catalogue. Everything else arrives by address or by file
-     * and lands in the same list.
-     *
-     * Order is what it is for a reason. The **code cell** comes first because it is
-     * what a board is actually built out of — without it a shelf is a display case
-     * and with it a tool. The **pair** is here because a wire is the point of the
-     * whole editor and the one thing nobody guesses on their own: it lies down as
-     * ONE node holding both parts, so a single gesture leaves a working pair on the
-     * canvas rather than two pieces to arrange. The **inputs** come last because
-     * they are what drives everything above them.
+     * A handful of things a person recognises, not a catalogue, and the order is a
+     * choice. The code cell first, because it is what a board is built out of and
+     * without it a shelf is a display case. The pair, because a wire is the point
+     * of the editor and the one thing nobody guesses on their own — it lies down as
+     * ONE node holding both parts, so a single gesture leaves a working pair rather
+     * than two pieces to arrange. The inputs last, because they drive everything
+     * above them.
      */
     function $bog_vmap_app_shelf_presets() {
         const pack = $bog_vmap_app_shelf_pack;
@@ -27111,13 +27087,13 @@ var $;
     }
     $.$bog_vmap_app_shelf_presets = $bog_vmap_app_shelf_presets;
     /**
-     * Wording of the refusals, in one place so the tests and the panel agree.
+     * In one place so the tests and the panel agree.
      *
-     * A mol module is two kinds of text and only one of them can be taken. The
-     * declarations compile in the sandbox as they are; the behaviour is
-     * TypeScript, and what runs a component's body there is `new Function` over
-     * JavaScript. There is no compiler in the page and pretending otherwise would
-     * mean a component that arrives looking whole and does nothing.
+     * A module is two kinds of text and only one of them can be taken: the
+     * declarations compile in the sandbox as they are, while the behaviour is
+     * TypeScript and what runs a component's body there is JavaScript. There is no
+     * compiler in the page, and pretending otherwise would mean a component that
+     * arrives looking whole and does nothing.
      */
     $.$bog_vmap_app_shelf_refuse = {
         kind: 'принимаем только .view.tree. Поведение модуля — TypeScript, а песочница'
@@ -27127,27 +27103,23 @@ var $;
         empty: 'ни одного класса: объявление начинается с имени на доллар',
     };
     /**
-     * Splits the files brought from the disk into one component per class.
+     * ONE component per class, and not one per file, because a component of a
+     * library is one class and the library resolves neighbours by name. A whole
+     * module folder goes in at once for the same reason: every declaration lands in
+     * one library, which is one namespace, so a component still inherits its
+     * neighbour.
      *
-     * Split and not merged, because a component of a library is one class and the
-     * library resolves neighbours by name: a file with three classes in it gives
-     * three components that still find each other. A whole module folder can go in
-     * at once for the same reason — every declaration in it lands in ONE library,
-     * which is one namespace, so a component still inherits its neighbour.
+     * A plain `.view.css` beside a tree comes along, because it is a stylesheet and
+     * not a program; a `.view.css.ts` is refused like any other program.
      *
-     * A plain `.view.css` beside a tree comes along, because it is CSS and not
-     * TypeScript: the library holds it as it is and the sandbox attaches it. A
-     * `.view.css.ts` is a program and gets the same refusal as any other.
-     *
-     * The text of each declaration goes out as its author wrote it, without
-     * normalizing: what a person brought from their own module is theirs, and the
-     * editor normalizes a document only when the document is edited.
+     * Declarations go out as their author wrote them: what a person brought from
+     * their own module is theirs, and the editor normalizes a document only when
+     * the document is edited.
      */
     function $bog_vmap_app_shelf_intake(files) {
         const classes = [];
         const refused = [];
-        // Styles first, keyed by the name of the module file they belong to, so a
-        // `.view.css` is found whatever order the files came in.
+        // Styles first, so one is found whatever order the files came in.
         const styles = new Map();
         for (const file of files) {
             const base = /^(.*)\.view\.css$/.exec(file.name)?.[1];
@@ -27170,9 +27142,9 @@ var $;
                 refused.push({ name: file.name, reason: $.$bog_vmap_app_shelf_refuse.empty });
                 continue;
             }
-            // The styles of a file go to the FIRST class it declares: a `.view.css`
-            // belongs to a module, a module names itself by its main class, and
-            // splitting a stylesheet between classes would take guessing.
+            // To the FIRST class of the file: a stylesheet belongs to a module, a
+            // module names itself by its main class, and splitting one between
+            // classes would take guessing.
             const css = styles.get(file.name.replace(/\.view\.tree$/, '')) ?? '';
             kids.forEach((kid, i) => classes.push({
                 tree: kid.toString(),
@@ -27182,18 +27154,15 @@ var $;
         return { classes, refused };
     }
     $.$bog_vmap_app_shelf_intake = $bog_vmap_app_shelf_intake;
-    /** The refusals as one text, one per line, or empty when there is nothing to say. */
     function $bog_vmap_app_shelf_intake_note(taken) {
         return taken.refused.map(item => `${item.name}: ${item.reason}`).join('\n');
     }
     $.$bog_vmap_app_shelf_intake_note = $bog_vmap_app_shelf_intake_note;
     /**
-     * Renames references to parts inside an override, wherever they sit.
-     *
-     * A preset names its parts `Calc` and `Map`; the document may already carry
-     * both, so every part is declared under a free name and every reference to it
-     * has to follow. Only the child of a `<=` or `<=>` is touched, which is what a
-     * reference is; data and everything else comes through untouched.
+     * A preset names its parts itself and the document may already carry those
+     * names, so every part is declared under a free one and every reference has to
+     * follow. Only the child of a binding operator is touched, which is what a
+     * reference is; data comes through untouched.
      */
     function $bog_vmap_app_shelf_refs(tree, names) {
         if (tree.type === '<=' || tree.type === '<=>') {
@@ -27206,19 +27175,18 @@ var $;
     }
     $.$bog_vmap_app_shelf_refs = $bog_vmap_app_shelf_refs;
     /**
-     * Lays a shelf item into a document and answers with the names it left at the
-     * top level, in the order the preset listed them.
-     *
+     * Lays a shelf item into a document and answers with the names it left loose.
      * Placement is NOT done here: whether those names go onto the canvas by a
-     * coordinate or into the tree of an artboard is a question about the canvas, and
-     * the canvas answers it. This function knows the document alone.
+     * coordinate or into the tree of an artboard is a question about the canvas,
+     * and the canvas answers it. This function knows the document alone.
      *
-     * Free names come from the caller, one at a time and in order, because every
-     * declaration changes what is taken: the document is asked again after each.
+     * Free names come from the caller one at a time, because every declaration
+     * changes what is taken.
      *
-     * Wires go in through `link_add` and their consuming overrides are deliberately
-     * NOT copied — `link_add` writes both ends itself, and copying one of them would
-     * mean two ways of writing a wire, drifting apart at the first fix to either.
+     * Wires go in through the model's own `link_add`, and the overrides that
+     * consume them are deliberately NOT copied: that method writes both ends
+     * itself, and copying one would leave two ways of writing a wire to drift
+     * apart at the first fix to either.
      */
     function $bog_vmap_app_shelf_apply(node, source, free) {
         const preset = $bog_vmap_lang_node.make({
@@ -27226,8 +27194,8 @@ var $;
             source: () => source,
         });
         const names = new Map();
-        // Declared first and all of them, so that a name taken by one part cannot be
-        // handed to the next, and so that a wire finds both of its ends in place.
+        // All of them first, so a name taken by one part cannot be handed to the
+        // next and a wire finds both of its ends in place.
         for (const part of preset.part_names()) {
             const klass = preset.prop_decl(part)?.kids[0];
             if (!klass)
@@ -27295,12 +27263,9 @@ var $;
          */
         class $bog_vmap_app_shelf extends $.$bog_vmap_app_shelf {
             /**
-             * Shelf first, then the switch of the second level, then the level itself
-             * while it is open.
-             *
-             * Folded away it is not rendered at all, and that is the point of the
-             * branch: the palette fetches the class tree of the pack the moment it is
-             * drawn, and a panel nobody opened should not pay for it.
+             * A folded second level is not rendered at all, and that is the point of
+             * the branch: the palette fetches the class tree of the pack the moment it
+             * is drawn, and a panel nobody opened should not pay for it.
              */
             body() {
                 return [
@@ -27311,12 +27276,10 @@ var $;
                 ];
             }
             /**
-             * What scrolls: the shelf, the address and the objects of the application.
-             *
-             * The heading and the switch of the second level stay put, because they are
-             * how a person gets back out of a long list; the second level scrolls inside
-             * itself and must not be nested in this one, or its own list would render
-             * all four hundred rows into an unbounded height.
+             * The heading and the switch of the second level stay out of the scroll,
+             * because they are how a person gets back out of a long list. The second
+             * level scrolls inside itself and must not be nested in this one, or its
+             * own list would render all four hundred rows into an unbounded height.
              */
             stack_content() {
                 return [
@@ -27325,7 +27288,6 @@ var $;
                     this.Apps(),
                 ];
             }
-            /** The field, the button, and under them whatever was refused. */
             source_content() {
                 return [
                     this.Links(),
@@ -27335,12 +27297,10 @@ var $;
                 ];
             }
             /**
-             * Files picked in the dialog. Answers empty: what came of them is in the
-             * library and in the note, and the panel keeps no list of files.
-             *
-             * The work goes to a fiber of its own, because all of it is asynchronous:
-             * reading a file is a promise, and making the library land mines proof of
-             * work.
+             * Answers empty: what came of the files is in the library and in the note,
+             * and the panel keeps no list of them. The work goes to a fiber of its own,
+             * because all of it is asynchronous — reading a file is a promise, and
+             * making the library land mines proof of work.
              */
             files(next) {
                 if (next?.length)
@@ -27348,13 +27308,10 @@ var $;
                 return [];
             }
             /**
-             * Reads the files and puts what they declare into the library of the user.
-             *
-             * **From a fiber only.** Every read goes through `$mol_wire_sync`, so the
-             * fiber suspends on each file and picks up where it left off; a retry
-             * replays the reads from its own cache and writes the same classes again,
-             * which lands on the same components because a class already in the library
-             * is replaced rather than added.
+             * **From a fiber only.** Reading a file suspends, so the fiber picks up
+             * where it left off; a retry replays the reads from its own cache and
+             * writes the same classes again, which lands on the same components because
+             * a class already in the library is replaced rather than added.
              *
              * The link of the library is appended to the field afterwards and not
              * before: the field is what the scene loads, and there is nothing to load
@@ -27378,7 +27335,6 @@ var $;
                     link = this.Store().import_class(one.tree, '', one.css);
                 this.link_attach(link);
             }
-            /** Adds a land link to the field, unless the field already names it. */
             link_attach(link) {
                 if (!link)
                     return;
@@ -27388,28 +27344,26 @@ var $;
                 this.links(links ? `${links}, ${link}` : link);
             }
             /**
-             * The field, parsed. The editor parses the same string for its own needs,
-             * and that is fine: the parse is pure and costs nothing next to a cell
-             * shared across two modules.
+             * The editor parses the same string for its own needs, and that is fine:
+             * the parse is pure and costs nothing next to a cell shared across two
+             * modules.
              */
             links_parsed() {
                 return this.$.$bog_vmap_lib_links_parse(this.links());
             }
-            /** Refused links with their reasons, one per line; empty hides the strip. */
+            /** Empty hides the strip. */
             rejected_note() {
                 return this.$.$bog_vmap_lib_links_note(this.links_parsed());
             }
             /**
-             * Classes of the connected application, as items.
-             *
-             * Everything the library holds except mol itself: a pack carries the whole
-             * framework in its bundle, and the framework is what the second level is
-             * for. What is left is what the application's author wrote, plus the
-             * components of any land attached, which are somebody's own just the same.
+             * Everything the library holds except the framework itself: a pack carries
+             * the whole framework in its bundle, and the framework is what the second
+             * level is for. What is left is what the application's author wrote, plus
+             * the components of any land attached, which are somebody's own just the
+             * same.
              *
              * Suspends while the pack is loading and throws when the pack is dead. Both
-             * are meant to reach the view that reads it, and the view that reads it is
-             * `Apps` alone.
+             * are meant to reach the view that reads it, and that is `Apps` alone.
              */
             app_state() {
                 try {
@@ -27430,8 +27384,6 @@ var $;
                 }
             }
             /**
-             * The address that was actually fetched, for the complaint to name.
-             *
              * Asked of the palette's library rather than built here: the rule that
              * grows `web.view.tree` onto a pack address lives there, and a second copy
              * of it would word the complaint about a file we never asked for.
@@ -27445,11 +27397,9 @@ var $;
             app_rows() {
                 return this.app_list().map(name => this.Item_row(name));
             }
-            /** Why there are no objects, when the reason is a dead address. */
             app_error() {
                 return this.app_state().error;
             }
-            /** The caption, then either the objects or the reason there are none. */
             apps_content() {
                 return [
                     this.Apps_head(),
@@ -27461,13 +27411,10 @@ var $;
                     return 'Приложение не отвечает';
                 return this.app_list().length ? 'Объекты приложения' : 'Приложение не подключено';
             }
-            /** Everything the shelf offers, in the order it offers it. */
             items() {
                 return this.$.$bog_vmap_app_shelf_presets();
             }
             /**
-             * An item by id, including one that is not on the shelf at all.
-             *
              * A class dragged out of the second level has its class name for an id and
              * becomes an item on the spot, so the canvas is handed the same thing
              * whichever level the gesture started on.
@@ -27475,8 +27422,8 @@ var $;
             item(id) {
                 if (!id)
                     return null;
-                // The shelf answers first: an item of its own says what it is in the
-                // words the shelf chose, even when its id happens to be a class name.
+                // The shelf answers first, so an item of its own keeps the words the
+                // shelf chose even when its id happens to be a class name.
                 const own = this.items().find(item => item.id === id);
                 if (own)
                     return own;
@@ -27498,7 +27445,6 @@ var $;
             item_hint(id) {
                 return this.item(id)?.hint ?? '';
             }
-            /** The piece the pointer is carrying, or nothing while it carries nothing. */
             drag_source() {
                 return this.item(this.dragged())?.source ?? '';
             }
@@ -27507,10 +27453,8 @@ var $;
                 return this.item(this.dragged())?.title ?? '';
             }
             /**
-             * A press on a row starts carrying it.
-             *
-             * The pointer position is taken here and moved by the owner of the canvas:
-             * the shelf knows when a drag begins and nothing about where it ends.
+             * The position is taken here and moved by the owner of the canvas: the
+             * shelf knows when a drag begins and nothing about where it ends.
              */
             item_drag(id, event) {
                 if (!event)
@@ -27562,20 +27506,14 @@ var $;
                 border: { bottom: { width: '1px', style: 'solid', color: $mol_theme.line } },
             },
             /**
-             * The scrolling middle. Takes what the heading and the switch left, and it
              * SHRINKS — a flex child refuses to go below its content without being told
              * it may, and the panel then grows the page instead of scrolling.
              *
-             * A FLOOR, and the second level below has one too. Before the
-             * scroll existed, the shelf, the field and the objects were all unshrinkable
-             * and ate the whole column: the class list was measured at `clientHeight` 0
-             * against `scrollHeight` 2520 — open, and not a row of it reachable. Now
-             * both halves shrink, so flex divides the squeeze between them by content
-             * instead of starving one; the floors make that independent of how much
-             * content either happens to hold.
-             *
-             * Together they are about twenty rems with the heading and the switch, which
-             * fits any window an editor is used in.
+             * And a FLOOR, which the second level below has too. Both halves shrink, so
+             * flex divides the squeeze between them by content instead of starving one;
+             * the floors make that independent of how much content either happens to
+             * hold. Together they are about twenty rems with the heading and the switch,
+             * which fits any window an editor is used in.
              */
             Stack: {
                 flex: { grow: 1, shrink: 1 },
@@ -27623,10 +27561,6 @@ var $;
                 background: { color: $mol_theme.field },
                 font: { family: 'monospace', size: '.8rem' },
             },
-            /**
-             * Refused links under the field. Rendered only while there is something to
-             * say, so it never takes room from the lists on a clean field.
-             */
             Note: {
                 color: $mol_theme.focus,
                 font: { family: 'monospace', size: '.75rem' },
@@ -27641,31 +27575,23 @@ var $;
                 color: $mol_theme.shade,
                 font: { size: '.8rem' },
             },
-            /** Why a file was not taken. Same voice and same place as the refusals above. */
             Import_note: {
                 color: $mol_theme.focus,
                 font: { size: '.75rem' },
                 whiteSpace: 'pre-wrap',
             },
-            /** The objects of the application, sized by their own number. */
             /**
-             * ONE SCROLL IN THE PANEL, and it is the stack above.
-             *
-             * This list had a scroll of its own inside that one, and two scrolls one
-             * inside the other trap what is between them: the last object sat under the
-             * switch of the second level, the inner scroll had 64 px of travel and could
-             * not reach it, and the outer one was not at the bottom yet. Twice a drag
-             * started on the switch instead of on the row. Measured on the deploy.
-             *
-             * So the list is as tall as it is and the stack scrolls it. Nothing is
-             * hidden under anything, because there is one thing that moves.
+             * ONE SCROLL IN THE PANEL, and it is the stack above. Two scrolls one inside
+             * the other trap what is between them: the inner one runs out of travel
+             * while the outer is not at the bottom yet, and the last rows stay under the
+             * switch of the second level unreachable. So this list is as tall as it is
+             * and the stack scrolls it, because there is one thing that moves.
              */
             Apps: {
                 flex: { direction: 'column', shrink: 0 },
                 padding: { top: $mol_gap.space, bottom: $mol_gap.space },
                 gap: $mol_gap.space,
             },
-            /** Why an address brought nothing. Same voice as the refusals of the field. */
             Apps_note: {
                 padding: { left: $mol_gap.text, right: $mol_gap.text },
                 color: $mol_theme.focus,
@@ -27679,16 +27605,14 @@ var $;
                 font: { size: '.8rem' },
             },
             /**
-             * The second level, when it is open. Its own scroll is inside it, and this
-             * is the height that scroll gets to work in: a `$mol_list` virtualizes by
-             * the height of the scroll around it, so a level squeezed to nothing renders
-             * nothing and scrolls nowhere.
+             * The height the scroll of the second level gets to work in: a list of mol
+             * virtualizes by the height of the scroll around it, so a level squeezed to
+             * nothing renders nothing and scrolls nowhere.
              */
             Palette: {
                 flex: { grow: 1, shrink: 1 },
                 minHeight: '10rem',
             },
-            /** The switch of the second level, on the line between the two. */
             Level: {
                 flex: { shrink: 0 },
                 padding: $mol_gap.text,
@@ -27879,10 +27803,8 @@ var $;
     var $$;
     (function ($$) {
         /**
-         * Layout panel of one node: five style keys with names on them.
-         *
-         * It owns nothing. Every control is one key of the `style` dictionary of the
-         * node, read and written through `value()`, so what the panel shows is what the
+         * Owns nothing. Every control is one key of the `style` dictionary of the node,
+         * read and written through `value()`, so what the panel shows is what the
          * document says and what it writes is an ordinary line of `view.tree`. The
          * inspector already has a dictionary editor for the same property; this is the
          * same facts with the names of the decisions on them.
@@ -27906,12 +27828,11 @@ var $;
                 return this.value('gap', next);
             }
             /**
-             * Stretching, written as the STRING `1` and never as the number.
-             *
-             * `$mol_dom_render_styles` appends `px` to a number, so `flexGrow 1` in the
-             * document comes out as `flex-grow: 1px`, which is not a length and not a
-             * growth factor either: the property is simply dropped and the node does not
-             * stretch. Dimensionless numbers go in as text.
+             * Written as the STRING `1` and never as the number. Inline style rendering
+             * appends `px` to a number, so `flexGrow 1` in the document comes out as
+             * `flex-grow: 1px`, which is not a length and not a growth factor either:
+             * the property is simply dropped and the node does not stretch.
+             * Dimensionless numbers go in as text.
              */
             grow(next) {
                 if (next === undefined)
@@ -27945,75 +27866,13 @@ var $;
             },
             Field: {
                 flex: { grow: 1 },
-                // A panel of controls sits in a narrow column, and a $mol component
-                // embedded in someone else's layout keeps its content width unless it is
-                // told it may shrink.
+                // A panel of controls sits in a narrow column, and a component embedded
+                // in someone else's layout keeps its content width unless it is told it
+                // may shrink.
                 minWidth: 0,
             },
         });
     })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const err = $mol_view_tree2_error_str;
-    function $mol_view_tree2_value_type(val) {
-        switch (val.type) {
-            case 'true': return 'bool';
-            case 'false': return 'bool';
-            case 'null': return 'null';
-            case '*': return 'dict';
-            case '@': return 'locale';
-            case '': return 'string';
-            case '<=': return 'get';
-            case '<=>': return 'bind';
-            case '=>': return 'put';
-        }
-        const first_char = val.type && val.type[0];
-        if (first_char === '/')
-            return 'list';
-        if (Number(val.type).toString() == val.type)
-            return 'number';
-        if (/^[$A-Z]/.test(first_char))
-            return 'object';
-        return this.$mol_fail(err `Unknown value type ${val.type} at ${val.span}`);
-    }
-    $.$mol_view_tree2_value_type = $mol_view_tree2_value_type;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const err = $mol_view_tree2_error_str;
-    function $mol_view_tree2_value(value) {
-        const type = value.type;
-        const kids = value.kids;
-        if (type === '') {
-            if (kids.length === 0)
-                return value.data(JSON.stringify(value.value));
-            return value.data(JSON.stringify(kids.map(node => node.value).join('\n')));
-        }
-        if (kids.length !== 0)
-            return this.$mol_fail(err `Kids are not allowed at ${value.span}, use ${example}`);
-        if (type === 'false' || type === 'true')
-            return value.data(type);
-        if (type === 'null')
-            return value.data(type);
-        if (Number(type).toString() === type.replace(/^\+/, ''))
-            return value.data(type);
-        return this.$mol_fail(err `Value ${value.toString()} not allowed at ${value.span}, use ${example}`);
-    }
-    $.$mol_view_tree2_value = $mol_view_tree2_value;
-    const example = new $mol_view_tree2_error_suggestions([
-        'false',
-        'true',
-        '123',
-        'null',
-        '\\some'
-    ]);
 })($ || ($ = {}));
 
 ;
@@ -29695,11 +29554,9 @@ var $;
 var $;
 (function ($) {
     /**
-     * Shape of one value node.
-     *
-     * `raw` is the honest answer, not a failure: a value the editor has no form
-     * for is shown as its own source text and left alone. Failing here instead
-     * would take out the whole property list over one node nobody was editing.
+     * `raw` is the honest answer, not a failure: a value the editor has no form for
+     * is shown as its own source text and left alone. Failing here instead would
+     * take out the whole property list over one node nobody was editing.
      */
     function $bog_vmap_app_inspect_value_kind_of(val) {
         if (!val)
@@ -29719,8 +29576,8 @@ var $;
         }
         if (val.type[0] === '/')
             return 'list';
-        // Order copied from `$mol_view_tree2_to_js`: a number wins over a class,
-        // which is why `NaN` and `Infinity` are excluded from `class_match` there.
+        // Order copied from the generator: a number wins over a class, which is why
+        // `NaN` and `Infinity` are excluded from the class match there.
         if ($mol_tree2_js_is_number(val.type))
             return 'number';
         if ($mol_view_tree2_class_match(val))
@@ -29729,18 +29586,16 @@ var $;
     }
     $.$bog_vmap_app_inspect_value_kind_of = $bog_vmap_app_inspect_value_kind_of;
     /**
-     * Checks that a string is a number literal `view.tree` accepts, and returns it.
-     *
-     * The grammar is `$mol_tree2_js_is_number`, the function the generator itself
-     * branches on, for the same reason `$bog_vmap_lang_token` borrows
-     * `$mol_view_tree2_prop_signature`: a literal this accepts is a literal the
-     * compiler accepts, and a grammar of our own would part ways with it at the
-     * first exception. `+NaN` and `+Infinity` are exceptions of exactly that kind —
-     * `Number( '+NaN' ).toString()` is `NaN`, so the obvious round-trip test would
-     * reject two literals that `$mol_number` is written with.
+     * The grammar is the guard the generator itself branches on, borrowed for the
+     * same reason the token module borrows the stock signature regexp: a literal
+     * this accepts is a literal the compiler accepts, and a grammar of our own
+     * would part ways with it at the first exception. `+NaN` and `+Infinity` are
+     * exceptions of exactly that kind — `Number( '+NaN' ).toString()` is `NaN`, so
+     * the obvious round-trip test would reject two literals the number field is
+     * written with.
      *
      * Blank input is refused separately: `Number( '' )` is `0`, so the grammar
-     * accepts an empty type, while `$mol_tree2` has no such node.
+     * accepts an empty type, while a tree node has no such thing.
      */
     function $bog_vmap_app_inspect_value_literal(text) {
         const num = text.trim();
@@ -29767,11 +29622,9 @@ var $;
                 ?? { name: token, key: '', next: '' };
         }
         /**
-         * Refuses an edit out loud.
-         *
          * The throw is what keeps the document clean, and it has to stay a throw: it is
          * the only thing that stops the write on its way to the source. But a throw
-         * alone is invisible, because `$mol_string` catches it and files the message
+         * alone is invisible, because the string field catches it and files the message
          * under `setCustomValidity`, which a form that is never submitted never shows.
          * So the message is put where the view can read it first, and only then thrown.
          *
@@ -29793,11 +29646,9 @@ var $;
             }
         }
         /**
-         * Editor of one value, dispatching on its shape.
-         *
          * None of the accessors in this file is memoized, deliberately. Each is a two
          * line derivation of `tree()`, which is a cell already, and a cell of its own
-         * here would be a cell that a write freezes: writing to a `@$mol_mem` freezes
+         * here would be a cell that a write freezes: a write to a memoized cell freezes
          * its dependencies, so the editor would keep showing the value the user typed
          * after the document moved underneath it — the one failure mode of an editor
          * that nobody reports as a bug, because it looks like it worked.
@@ -29891,11 +29742,10 @@ var $;
         }
         $$.$bog_vmap_app_inspect_value_raw = $bog_vmap_app_inspect_value_raw;
         /**
-         * A list, a dictionary or an object.
-         *
          * `keyed` says whether an element is a bare value or a named node with the
          * value under it, `klass` whether the node type is an editable class name.
-         * Those two bits are the entire difference between the three shapes.
+         * Those two bits are the entire difference between a list, a dictionary and an
+         * object.
          */
         class $bog_vmap_app_inspect_value_seq extends $.$bog_vmap_app_inspect_value_seq {
             items() {
@@ -29909,7 +29759,7 @@ var $;
                 if (next === undefined)
                     return val.type;
                 guard(this, () => {
-                    // `$mol_tree2.struct` refuses a type with a space, a newline or a
+                    // The tree constructor refuses a type with a space, a newline or a
                     // backslash before this line is even reached, so what is left to
                     // check is only that the name is a class name.
                     const named = val.struct(next.trim(), val.kids);
@@ -29920,10 +29770,9 @@ var $;
                 return next;
             }
             /**
-             * The entry carries nothing under it, so it is `^` and not a pair.
-             *
-             * In a list every element is a bare node and none of them is a marker, which
-             * is why the answer is `false` there whatever the shape.
+             * The entry carries nothing under it, so it is `^` and not a pair. In a list
+             * every element is a bare node and none of them is a marker, which is why
+             * the answer is `false` there whatever the shape.
              */
             item_marker(index) {
                 return this.keyed() && !this.tree().kids[index]?.kids.length;
@@ -29934,10 +29783,10 @@ var $;
                 if (next === undefined)
                     return this.keyed() ? kid?.type ?? '' : '';
                 guard(this, () => {
-                    // A key is NOT a property name, so `$bog_vmap_lang_token` would be
-                    // the wrong grammar here: `padding-top` in a `style *` is legal and
-                    // has a hyphen. The guard is `$mol_tree2.struct`, which is the rule
-                    // the serializer itself lives by.
+                    // A key is NOT a property name, so the token guard of the language
+                    // module would be the wrong grammar here: `padding-top` in a
+                    // `style *` is legal and has a hyphen. The guard is the tree
+                    // constructor, which is the rule the serializer itself lives by.
                     if (!next.trim())
                         this.$.$mol_fail(new Error('Ключ не может быть пустым'));
                     this.tree(tree.insert(kid.struct(next.trim(), kid.kids), index));
@@ -29994,13 +29843,12 @@ var $;
         }
         $$.$bog_vmap_app_inspect_value_item = $bog_vmap_app_inspect_value_item;
         /**
-         * A binding. The target is one bare name plus the sign it already carries.
-         *
-         * The sign is preserved rather than derived, because both spellings are legal
-         * and mean different things: `<=> value?` demands the `?` on both ends, while
-         * `field * value <= value_changed?` in `$mol_string` is a one way binding onto
-         * a writable property. Only the name is editable, so neither can be broken by
-         * a rename.
+         * The target is one bare name plus the sign it already carries. The sign is
+         * preserved rather than derived, because both spellings are legal and mean
+         * different things: `<=> value?` demands the `?` on both ends, while a one way
+         * binding onto a writable property, as the string field of mol writes its own
+         * change handler, carries the `?` on one side only. Only the name is editable,
+         * so neither can be broken by a rename.
          */
         class $bog_vmap_app_inspect_value_bind extends $.$bog_vmap_app_inspect_value_bind {
             op() {
@@ -30045,13 +29893,11 @@ var $;
             nodes() {
                 return super.nodes();
             }
-            /** Nodes the document declares, in declaration order. */
+            /** In declaration order. */
             node_names() {
                 return Object.keys(this.nodes());
             }
             /**
-             * What is known about the node this wire starts from.
-             *
              * A wire may point at a node that has since been renamed or dropped, so the
              * lookup misses on a perfectly ordinary document and answers with a blank
              * rather than failing. The far end is then a text field holding the port
@@ -30061,7 +29907,6 @@ var $;
             meta() {
                 return this.nodes()[this.origin()] ?? { klass: '', ports: [] };
             }
-            /** Ports of the class the origin is declared with. */
             ports() {
                 return this.meta().ports;
             }
@@ -30147,8 +29992,6 @@ var $;
     var $$;
     (function ($$) {
         /**
-         * Styles of the value editors of the inspector.
-         *
          * Only what the theme and the components do NOT already do: the compact rhythm
          * of a two dozen row panel and the monospace face that says a value is code.
          * What a field of mol paints itself — its background, its minimum width, its
@@ -30160,10 +30003,9 @@ var $;
             /** Once for everything below: a field of mol takes its font by inheritance. */
             font: { family: 'monospace', size: '.8rem' },
             /**
-             * The reason an edit was refused, under the field that refused it. Rendered
-             * only while there is one, so the row does not carry an empty strip: an
-             * inspector is two dozen rows tall and a reserved line in each of them
-             * doubles its height for nothing.
+             * Rendered only while there is a refusal, so the row does not carry an empty
+             * strip: an inspector is two dozen rows tall and a reserved line in each of
+             * them doubles its height for nothing.
              */
             Alarm: {
                 padding: { top: '.15rem', left: '.4rem', right: '.4rem' },
@@ -30551,9 +30393,9 @@ var $;
                 font: { size: '.7rem' },
             },
             /**
-             * `false` renders no attribute at all, `$mol_dom_render_attributes` drops
-             * it, so an own property is the plain state and only the inherited one is
-             * selectable. Written the other way round the rule would never match.
+             * `false` renders no attribute at all — attribute rendering drops it — so an
+             * own property is the plain state and only the inherited one is selectable.
+             * Written the other way round the rule would never match.
              */
             '@': {
                 bog_vmap_app_inspect_row_inherited: {
@@ -30844,47 +30686,41 @@ var $;
                 ?? { name: token, key: '', next: '' };
         }
         /**
-         * Inspector of one class of the document.
-         *
          * The row list is the ports pane of the palette, over a class of the document
          * instead of a class of the library, and editable. Both read the same two maps
-         * from `$bog_vmap_lib`, because both answer the same question: what can this
-         * class do, and which part of that is its own.
+         * out of the component library, because both answer the same question: what can
+         * this class do, and which part of that is its own.
          *
          * @see ../../ARCHITECTURE.md sections 1 and 5
          */
         class $bog_vmap_app_inspect extends $.$bog_vmap_app_inspect {
             /**
-             * The class of the document, handed to the library so that the inheritance
-             * chain resolves through it. Without this the library would know nothing
-             * about the class being inspected and `props_map` would return nothing.
+             * The class of the document goes to the library so that the inheritance
+             * chain resolves through it; without it the library would know nothing about
+             * the class being inspected and `props_map` would return nothing.
              *
              * Its siblings go in beside it, so that a node typed with another class of
              * the same document resolves its ports out of the same index and needs no
-             * branch of its own. The inspected class is put first and filtered out of the
-             * peers: `$bog_vmap_lib_index` keeps the LAST declaration of a name, so a
-             * stale copy of this very class arriving among the peers would shadow the
-             * live one being edited.
+             * branch of its own. The inspected class is put first and filtered out of
+             * the peers: the index keeps the LAST declaration of a name, so a stale copy
+             * of this very class arriving among the peers would shadow the live one
+             * being edited.
              */
             classes() {
                 const own = this.Node().tree();
                 return [own, ...this.peers().filter(tree => tree.type !== own.type)];
             }
             /**
-             * Name of the node, both ways.
-             *
-             * Reading is the class the declaration names. Writing renames it through the
-             * local model, which is all the stand can do and all it needs. The editor
-             * binds this to a rename of its own, which also carries the pick, the
-             * placement and every reference in the document — a rename is not a fact
-             * about one class, and the inspector is handed exactly one.
+             * Writing renames through the local model, which is all the stand can do and
+             * all it needs. The editor binds this to a rename of its own, which also
+             * carries the pick, the placement and every reference in the document — a
+             * rename is not a fact about one class, and the inspector is handed exactly
+             * one.
              */
             class_title(next) {
                 return this.Node().name(next);
             }
             /**
-             * What stands in the field, keyed by the name it started from.
-             *
              * A draft, because the commit is on Enter and on blur: between them the
              * field holds a name the document does not have. Keyed by the current name
              * so that picking another node, or a rename that lands, starts a fresh draft
@@ -30896,7 +30732,6 @@ var $;
             title_value(next) {
                 return this.title_draft(this.class_title(), next);
             }
-            /** Commits the draft, and says nothing when there is nothing to commit. */
             title_submit(event) {
                 const draft = this.title_value();
                 if (!draft || draft === this.class_title())
@@ -30904,8 +30739,6 @@ var $;
                 this.class_title(draft);
             }
             /**
-             * What the panel is made of.
-             *
              * A list, and never a splice into `super.sub()` by index: an index is a fact
              * about the order somebody else wrote, so a child added to the tree moves
              * the refusal to a place nobody chose, silently. The refusal goes under the
@@ -30923,12 +30756,10 @@ var $;
                 ];
             }
             /**
-             * Whether there is a class here to inspect at all.
-             *
              * EVERY cell of this panel derives from one class, so a source with none in
              * it does not fail in one place — it fails in twenty at once, and the panel
-             * answers with a wall of red strips that grows the page. Measured on the
-             * deploy 09.09.2026, where the pick outlived the document it was made in.
+             * answers with a wall of red strips that grows the page. That happens when a
+             * pick outlives the document it was made in.
              *
              * Whoever owns the pick should not hand such a source over, and the editor
              * no longer does; this is the panel refusing to fall apart when somebody
@@ -30949,21 +30780,17 @@ var $;
             base_title() {
                 return this.Node().base();
             }
-            /** Declaration of every port of the class, own and inherited, by name. */
             ports() {
                 return this.Lib().props_map(this.class_title());
             }
             /**
-             * Which class of the BASE chain each port comes from, the document itself
-             * left out of the walk.
-             *
-             * Asked about the base rather than about the class being inspected, and that
-             * is the whole point: this map does not move when the document declares
-             * something. Ask `props_owner` about the document class instead and every
-             * first keystroke on an inherited port makes the port its own, changes its
-             * owner, moves its row up the list — and a row that moves while it is being
-             * typed into is re-inserted into the DOM, which in Chrome blurs the field.
-             * Measured: exactly one character per attempt reached the source.
+             * Asked about the BASE chain rather than about the class being inspected,
+             * and that is the whole point: this map does not move when the document
+             * declares something. Ask `props_owner` about the document class instead and
+             * every first keystroke on an inherited port makes the port its own, changes
+             * its owner, moves its row up the list — and a row that moves while it is
+             * being typed into is re-inserted into the DOM, which in Chrome blurs the
+             * field, so exactly one character per attempt reaches the source.
              *
              * So a port keeps its place for the life of the document, and overriding one
              * changes only how the row is drawn.
@@ -30972,22 +30799,20 @@ var $;
                 return this.Lib().props_owner(this.base_title());
             }
             /**
-             * Ports the document invented first, in the order it writes them; ports it
-             * got from the base after, in the order the base declares them.
-             *
-             * The palette shows base ports first, and is right to: it answers «what can
-             * I add». An inspector answers «what does this node set», and the two dozen
-             * ports of `$mol_view` are not the answer to that.
+             * Ports the document invented go first. The palette shows base ports first,
+             * and is right to: it answers «what can I add». An inspector answers «what
+             * does this node set», and the two dozen ports of a bare view are not the
+             * answer to that.
              *
              * The split is by where a port COMES FROM, not by who sets it, so that it
              * cannot move under a cursor — see `owners()`. A port of the base that the
              * document overrides therefore stays down among the base ports, and says so
              * with its badge; that it is set here is said by the tools it grows.
              *
-             * Both halves come out of `ports()` and keep its order, which puts every
-             * ancestor before the document and so needs only to be cut in two, never
-             * sorted: `props_map` walks the chain farthest ancestor first, and a port
-             * the document redeclares keeps the position of its earliest declaration.
+             * Both halves come out of `ports()` and keep its order, which needs only to
+             * be cut in two, never sorted: `props_map` walks the chain farthest ancestor
+             * first, and a port the document redeclares keeps the position of its
+             * earliest declaration.
              */
             port_list() {
                 const base = this.owners();
@@ -31006,8 +30831,6 @@ var $;
                 return `${all} портов, своих ${own}`;
             }
             /**
-             * Winning declaration of a port: the own one when there is one.
-             *
              * The document is asked when the library has nothing, which happens while
              * the pack is still loading and on a property whose class the library does
              * not carry. Without the fallback the row of a property the user is looking
@@ -31019,7 +30842,7 @@ var $;
             row_sign(name) {
                 return this.port_node(name)?.type ?? name;
             }
-            /** Class the port comes from. Empty on one the document invented. */
+            /** Empty on a port the document invented. */
             row_owner(name) {
                 return this.owners().get(name) ?? '';
             }
@@ -31027,31 +30850,27 @@ var $;
              * The document does not declare this port, so what the row shows is the
              * inherited default and the first edit will declare an override.
              *
-             * Not the same question as `row_owner`, and it used to be: a port can come
-             * from the base AND be set here, which is the ordinary case of overriding a
-             * default and the case both of them get wrong when they are one flag.
+             * Not the same question as `row_owner`: a port can come from the base AND be
+             * set here, which is the ordinary case of overriding a default and the case
+             * both of them get wrong when they are one flag.
              */
             row_inherited(name) {
                 return !this.Node().prop_names().includes(name);
             }
-            /** Every property name of the class: what a binding may point at. */
+            /** What a binding may point at. */
             binds() {
                 return this.port_list();
             }
             /**
-             * Nodes a wire may start from, each with the class it is declared with and
-             * the ports that class has.
+             * Nodes a wire may start from. A node is a property declared with a class,
+             * free part and sub view alike, which is one list and not two because
+             * `upper` has already made both flat properties of the class.
              *
-             * A node is a property declared with a class, free part and sub view alike,
-             * which is one list and not two because `upper` has already made both flat
-             * properties of the class.
-             *
-             * The ports are the far end of a wire. Resolving them is the same question
-             * the row list answers about the inspected class, asked about another class,
-             * so it is the same `props_map` over the same index — and the index already
-             * holds both the pack and the classes of the document, so a node typed with
-             * a library class and one typed with the document's own class resolve
-             * through one call and need no branch.
+             * Resolving the far end of a wire is the same question the row list answers
+             * about the inspected class, asked about another class, so it is the same
+             * `props_map` over the same index — and the index already holds both the
+             * pack and the classes of the document, so a node typed with a library class
+             * and one typed with the document's own class need no branch.
              *
              * `ports` empty means the class is not in the index at all: a class known to
              * the index always yields at least the ports of its chain. The wire says so
@@ -31075,7 +30894,7 @@ var $;
                 return res;
             }
             /**
-             * Value of a port, and the one place an edit enters the document.
+             * The one place an edit enters the document.
              *
              * An inherited port has no line of its own yet, so the first edit declares
              * one. It is declared with the FULL signature of the inherited declaration,
@@ -31084,7 +30903,7 @@ var $;
              * plain one at the moment somebody typed into it.
              *
              * Not memoized on purpose. A cell here would be a cell that this very write
-             * freezes — writing to a `@$mol_mem` freezes its dependencies — so the row
+             * freezes — a write to a memoized cell freezes its dependencies — so the row
              * would go on showing what was typed after the document moved underneath it.
              * The derivation is a map lookup over `ports()`, which is a cell already.
              */
@@ -31097,11 +30916,11 @@ var $;
                     const val = decl.kids[0] ?? decl;
                     // An inherited DICTIONARY is offered as `* ^`, never as a copy of the
                     // entries it inherits. A dictionary redeclared without `^` does not
-                    // extend the base one, it replaces it, so a document over
-                    // `$mol_button` that grew one `attr` key would lose `disabled`,
-                    // `role`, `tabindex` and `title` at once, in silence. And a document
-                    // over `$mol_view` would lose them too: `$mol_view.attr()` is written
-                    // in TS and puts real attributes there, whatever the stub says.
+                    // extend the base one, it replaces it, so a document over a button
+                    // that grew one `attr` key would lose the disabled state, the role
+                    // and the tooltip at once, in silence. A document over a bare view
+                    // would lose them too: its attribute dictionary is written in TS and
+                    // puts real attributes there, whatever the stub says.
                     //
                     // The alternative, letting the editor copy the inherited entries and
                     // write them all out, keeps the behaviour and loses the inheritance:
@@ -31125,9 +30944,7 @@ var $;
                 return this.Node().property(name).key(next);
             }
             /**
-             * The `?` of a property, and of both ends of a wire at once.
-             *
-             * On a wire the sign is two signs: `?` on the left gives the setter its
+             * On a wire the `?` is two signs: `?` on the left gives the setter its
              * `next`, `?` on the right passes it on, and they are independent. Either
              * one alone is a trap that builds green — `w = Field value?` throws
              * `ReferenceError: next` on any read, `w? = Field hint` loses every write in
@@ -31157,8 +30974,6 @@ var $;
                 this.Node().prop_drop(name);
             }
             /**
-             * The `style` dictionary of the class, or `null` while it declares none.
-             *
              * Off `prop_decl`, the derivation of the text, and not through `prop_tree`,
              * which is the write path below: a read taken from a written cell freezes at
              * what was written, and the panel would go on showing the value it set after
@@ -31169,13 +30984,12 @@ var $;
                 return dict?.type === '*' ? dict : null;
             }
             /**
-             * One key of the `style` dictionary of the node, both ways. Empty means the
-             * key is not written, and writing empty takes it out again.
+             * Empty means the key is not written, and writing empty takes it out again.
              *
              * A dictionary the document does not declare yet is started with `^` under
              * it. A redeclared dictionary REPLACES the one of the base rather than
-             * extending it, so a node over `$mol_button` that grew one `gap` would lose
-             * every style the base sets, in silence; `^` says the one true thing —
+             * extending it, so a node over a styled component that grew one `gap` would
+             * lose every style the base sets, in silence; `^` says the one true thing —
              * everything of the base, plus what is written below.
              *
              * Not memoized, for the reason spelled out at `row_value`: this is a write
@@ -31216,8 +31030,6 @@ var $;
         ], $bog_vmap_app_inspect.prototype, "nodes", null);
         $$.$bog_vmap_app_inspect = $bog_vmap_app_inspect;
         /**
-         * A document to inspect on the stand.
-         *
          * Written already normalized — hoisted properties first, `sub` left holding
          * bare references — because that is the shape the editor holds a document in
          * and the only shape a round trip is byte for byte on. A nested source here
@@ -31264,16 +31076,13 @@ var $;
             trees() {
                 return this.Doc().trees();
             }
-            /**
-             * Which class is inspected. Defaults to the first, which is the root by the
-             * convention of the fixture below.
-             */
+            /** Defaults to the first, which is the root by the convention of the fixture. */
             klass(next) {
                 return next ?? this.names()[0] ?? '';
             }
             /**
-             * Source of the inspected class alone. The inspector writes here, the
-             * document splices it back, and the classes around it are untouched.
+             * The inspector writes one class, the document splices it back, and the
+             * classes around it are untouched.
              */
             class_source(next) {
                 return this.Doc().class_source(this.klass(), next);
@@ -31323,8 +31132,6 @@ var $;
                 padding: 0,
             },
             /**
-             * The refusal, where the eye already is: right under the name it is about.
-             *
              * The attention colour of the theme and not a red of our own: it is the one
              * the theme paints «look here» with, so it follows the hue and the light or
              * dark the reader chose instead of staying the same red in both.
@@ -31345,7 +31152,7 @@ var $;
             Rows: {
                 flex: { direction: 'column' },
                 /**
-                 * While the pack is loading `$mol_view` marks the node and paints its
+                 * While the pack is loading the base view marks the node and paints its
                  * waiting animation but leaves it empty, and an empty pulsing rectangle
                  * says nothing to a person waiting 600 ms. `::before`, not `::after`: a
                  * suspended view keeps the children of its last successful render, and
