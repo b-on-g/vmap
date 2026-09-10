@@ -504,6 +504,35 @@ namespace $ {
 
 		},
 
+		'a press on the strip left of the field puts the caret in the field'( $ ) {
+
+			const dom = $.$mol_dom_context
+
+			const panel = $bog_vmap_app_code.make({
+				$,
+				klass: ()=> `${d}bog_vmap_app_code_press_page`,
+				prop: ()=> '',
+				hooks: ()=> [],
+				whole: ()=> true,
+				source: ( next?: string )=> next ?? `${d}bog_vmap_app_code_press_page ${d}mol_view\n\tsub /\n`,
+				node_source: ( next?: string )=> next ?? '',
+				js: ( next?: string )=> next ?? '',
+				css: ( next?: string )=> next ?? '',
+				error: ()=> '',
+			}) as $$.$bog_vmap_app_code
+
+			dom.document.body.appendChild( panel.dom_tree() )
+
+			const field = panel.Tree().Edit().dom_node()
+
+			$mol_assert_equal( dom.document.activeElement === field, false )
+
+			panel.tree_press( new dom.Event( 'pointerdown' ) )
+
+			$mol_assert_equal( dom.document.activeElement === field, true )
+
+		},
+
 	})
 
 }

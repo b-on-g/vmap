@@ -202,6 +202,27 @@ namespace $.$$ {
 			] as readonly $mol_view[]
 		}
 
+		area_focus( area: $.$mol_textarea ) {
+			const node = area.Edit().dom_node() as HTMLElement
+			if( node !== this.$.$mol_dom_context.document.activeElement ) node.focus()
+			return null
+		}
+
+		@ $mol_action
+		tree_press( next?: Event | null ) {
+			return this.area_focus( this.Tree() )
+		}
+
+		@ $mol_action
+		js_press( next?: Event | null ) {
+			return this.area_focus( this.Js() )
+		}
+
+		@ $mol_action
+		css_press( next?: Event | null ) {
+			return this.area_focus( this.Css() )
+		}
+
 		override note() {
 
 			const refusal = this.refusal()
