@@ -1,59 +1,45 @@
 namespace $ {
 
 	/**
-	 * One thing on the shelf: a ready made piece of a document.
+	 * A ready made piece of a document, as the text of a `view.tree` class.
 	 *
-	 * `source` is a whole `view.tree` class whose properties are the parts, their
-	 * overrides and their wires. A plain block is one property of it, a calculator
-	 * wired to a map is four, and a class picked from the second level of the panel
-	 * is a class built on the spot. So the shelf carries one kind of thing and the
-	 * canvas takes it one way, whatever the item came from.
+	 * ONE kind of thing, so the canvas takes them all one way: a plain block, a
+	 * wired pair and a class picked from the second level of the panel differ only
+	 * in how many properties the text has.
 	 *
 	 * @see ../../ARCHITECTURE.md section 5
 	 */
 	export type $bog_vmap_app_shelf_item = {
 
-		/** Stable key of the item, for the row and for the drag. */
+		/** Stable key, for the row and for the drag. */
 		readonly id: string
 
-		/** What the row says. */
 		readonly title: string
 
-		/** What the row says on hover, one sentence. */
 		readonly hint: string
 
-		/** The piece itself, a `view.tree` class. */
 		readonly source: string
 
 	}
 
 	/**
-	 * Class header a preset is written under.
-	 *
-	 * The model of a document parses a class, not a loose body, so a preset needs a
-	 * header; nothing ever compiles or exports it. The name points at a folder that
-	 * does not exist under this module, so the dependency graph of mam, which reads
-	 * string literals, resolves it to this very module and pulls nothing new in.
+	 * Class header a preset is written under: the document model parses a class,
+	 * not a loose body. Nothing ever compiles or exports it.
 	 */
 	const $bog_vmap_app_shelf_head = '$bog_vmap_app_shelf_draft $mol_view'
 
 	/**
-	 * Namespace of the pack of parts, spelled in two pieces on purpose.
-	 *
-	 * The pack is a DEPLOYED donor reached by address: its classes are fetched and
-	 * compiled inside the sandbox, never linked here. Written whole, the name would
-	 * be read by the dependency graph of mam as an import and would pull the whole
-	 * pack into the bundle of the editor, which today mentions it zero times.
+	 * Spelled in two pieces on purpose. The pack is a DEPLOYED donor reached by
+	 * address and compiled inside the sandbox; written whole, the name would be
+	 * read as an import by the dependency graph of mam, which parses string
+	 * literals, and would pull the whole pack into the bundle of the editor.
 	 */
 	const $bog_vmap_app_shelf_pack = '$bog_vmap' + '_part'
 
 	/**
-	 * Name a part of this class would take: `$mol_button_minor` gives
-	 * `Button_minor`.
-	 *
-	 * The namespace prefix goes because every class of a pack carries the same one,
-	 * so it makes the names longer without making them more distinct. Free or taken
-	 * is not decided here: the document knows what it already carries.
+	 * Name a part of this class would take: a button of mol gives `Button_minor`.
+	 * The namespace prefix goes because every class of a pack carries the same one.
+	 * Free or taken is not decided here: the document knows what it already carries.
 	 */
 	export function $bog_vmap_app_shelf_short( klass: string ) {
 		const short = klass.replace( /^\$/, '' ).replace( /^\w+?_/, '' )
@@ -67,13 +53,9 @@ namespace $ {
 	}
 
 	/**
-	 * Widgets of input, each with a port a wire can take: what a person puts on a
-	 * board to drive everything else on it.
-	 *
-	 * Classes of mol and nothing of ours, so the pack grows by none. Their names
-	 * are split for the reason given above: whole, they would be read as imports
-	 * by the dependency graph and pull modules into the bundle of the editor that
-	 * it does not otherwise carry.
+	 * Widgets of input, each with a port a wire can take. Classes of mol and
+	 * nothing of ours, so the pack does not grow by them; names split for the
+	 * reason given at the pack above.
 	 */
 	function $bog_vmap_app_shelf_inputs(): readonly $bog_vmap_app_shelf_item[] {
 
@@ -96,17 +78,13 @@ namespace $ {
 	}
 
 	/**
-	 * The shelf as it comes out of the box: a handful of things a person
-	 * recognises, not a catalogue. Everything else arrives by address or by file
-	 * and lands in the same list.
-	 *
-	 * Order is what it is for a reason. The **code cell** comes first because it is
-	 * what a board is actually built out of — without it a shelf is a display case
-	 * and with it a tool. The **pair** is here because a wire is the point of the
-	 * whole editor and the one thing nobody guesses on their own: it lies down as
-	 * ONE node holding both parts, so a single gesture leaves a working pair on the
-	 * canvas rather than two pieces to arrange. The **inputs** come last because
-	 * they are what drives everything above them.
+	 * A handful of things a person recognises, not a catalogue, and the order is a
+	 * choice. The code cell first, because it is what a board is built out of and
+	 * without it a shelf is a display case. The pair, because a wire is the point
+	 * of the editor and the one thing nobody guesses on their own — it lies down as
+	 * ONE node holding both parts, so a single gesture leaves a working pair rather
+	 * than two pieces to arrange. The inputs last, because they drive everything
+	 * above them.
 	 */
 	export function $bog_vmap_app_shelf_presets(): readonly $bog_vmap_app_shelf_item[] {
 
@@ -182,7 +160,7 @@ namespace $ {
 		]
 	}
 
-	/** A file brought from the disk: its name and what is inside it. */
+	/** A file brought from the disk. */
 	export type $bog_vmap_app_shelf_file = {
 		readonly name: string
 		readonly text: string
@@ -191,15 +169,9 @@ namespace $ {
 	/** What the files gave, and what was refused with the reason in the user's words. */
 	export type $bog_vmap_app_shelf_intake = {
 
-		/** One component per class, in the order the files declared them. */
 		readonly classes: readonly {
-
-			/** `view.tree` declaration, the truth of the component. */
 			readonly tree: string
-
-			/** Plain CSS from a `.view.css` beside it, empty when there was none. */
 			readonly css: string
-
 		}[]
 
 		readonly refused: readonly {
@@ -210,13 +182,13 @@ namespace $ {
 	}
 
 	/**
-	 * Wording of the refusals, in one place so the tests and the panel agree.
+	 * In one place so the tests and the panel agree.
 	 *
-	 * A mol module is two kinds of text and only one of them can be taken. The
-	 * declarations compile in the sandbox as they are; the behaviour is
-	 * TypeScript, and what runs a component's body there is `new Function` over
-	 * JavaScript. There is no compiler in the page and pretending otherwise would
-	 * mean a component that arrives looking whole and does nothing.
+	 * A module is two kinds of text and only one of them can be taken: the
+	 * declarations compile in the sandbox as they are, while the behaviour is
+	 * TypeScript and what runs a component's body there is JavaScript. There is no
+	 * compiler in the page, and pretending otherwise would mean a component that
+	 * arrives looking whole and does nothing.
 	 */
 	export const $bog_vmap_app_shelf_refuse = {
 
@@ -231,21 +203,18 @@ namespace $ {
 	} as const
 
 	/**
-	 * Splits the files brought from the disk into one component per class.
+	 * ONE component per class, and not one per file, because a component of a
+	 * library is one class and the library resolves neighbours by name. A whole
+	 * module folder goes in at once for the same reason: every declaration lands in
+	 * one library, which is one namespace, so a component still inherits its
+	 * neighbour.
 	 *
-	 * Split and not merged, because a component of a library is one class and the
-	 * library resolves neighbours by name: a file with three classes in it gives
-	 * three components that still find each other. A whole module folder can go in
-	 * at once for the same reason — every declaration in it lands in ONE library,
-	 * which is one namespace, so a component still inherits its neighbour.
+	 * A plain `.view.css` beside a tree comes along, because it is a stylesheet and
+	 * not a program; a `.view.css.ts` is refused like any other program.
 	 *
-	 * A plain `.view.css` beside a tree comes along, because it is CSS and not
-	 * TypeScript: the library holds it as it is and the sandbox attaches it. A
-	 * `.view.css.ts` is a program and gets the same refusal as any other.
-	 *
-	 * The text of each declaration goes out as its author wrote it, without
-	 * normalizing: what a person brought from their own module is theirs, and the
-	 * editor normalizes a document only when the document is edited.
+	 * Declarations go out as their author wrote them: what a person brought from
+	 * their own module is theirs, and the editor normalizes a document only when
+	 * the document is edited.
 	 */
 	export function $bog_vmap_app_shelf_intake(
 		this: $,
@@ -255,8 +224,7 @@ namespace $ {
 		const classes = [] as { tree: string, css: string }[]
 		const refused = [] as { name: string, reason: string }[]
 
-		// Styles first, keyed by the name of the module file they belong to, so a
-		// `.view.css` is found whatever order the files came in.
+		// Styles first, so one is found whatever order the files came in.
 		const styles = new Map< string, string >()
 
 		for( const file of files ) {
@@ -287,9 +255,9 @@ namespace $ {
 				continue
 			}
 
-			// The styles of a file go to the FIRST class it declares: a `.view.css`
-			// belongs to a module, a module names itself by its main class, and
-			// splitting a stylesheet between classes would take guessing.
+			// To the FIRST class of the file: a stylesheet belongs to a module, a
+			// module names itself by its main class, and splitting one between
+			// classes would take guessing.
 			const css = styles.get( file.name.replace( /\.view\.tree$/, '' ) ) ?? ''
 
 			kids.forEach( ( kid, i )=> classes.push({
@@ -302,18 +270,15 @@ namespace $ {
 		return { classes, refused }
 	}
 
-	/** The refusals as one text, one per line, or empty when there is nothing to say. */
 	export function $bog_vmap_app_shelf_intake_note( taken: $bog_vmap_app_shelf_intake ) {
 		return taken.refused.map( item => `${ item.name }: ${ item.reason }` ).join( '\n' )
 	}
 
 	/**
-	 * Renames references to parts inside an override, wherever they sit.
-	 *
-	 * A preset names its parts `Calc` and `Map`; the document may already carry
-	 * both, so every part is declared under a free name and every reference to it
-	 * has to follow. Only the child of a `<=` or `<=>` is touched, which is what a
-	 * reference is; data and everything else comes through untouched.
+	 * A preset names its parts itself and the document may already carry those
+	 * names, so every part is declared under a free one and every reference has to
+	 * follow. Only the child of a binding operator is touched, which is what a
+	 * reference is; data comes through untouched.
 	 */
 	export function $bog_vmap_app_shelf_refs(
 		tree: $mol_tree2,
@@ -333,19 +298,18 @@ namespace $ {
 	}
 
 	/**
-	 * Lays a shelf item into a document and answers with the names it left at the
-	 * top level, in the order the preset listed them.
-	 *
+	 * Lays a shelf item into a document and answers with the names it left loose.
 	 * Placement is NOT done here: whether those names go onto the canvas by a
-	 * coordinate or into the tree of an artboard is a question about the canvas, and
-	 * the canvas answers it. This function knows the document alone.
+	 * coordinate or into the tree of an artboard is a question about the canvas,
+	 * and the canvas answers it. This function knows the document alone.
 	 *
-	 * Free names come from the caller, one at a time and in order, because every
-	 * declaration changes what is taken: the document is asked again after each.
+	 * Free names come from the caller one at a time, because every declaration
+	 * changes what is taken.
 	 *
-	 * Wires go in through `link_add` and their consuming overrides are deliberately
-	 * NOT copied — `link_add` writes both ends itself, and copying one of them would
-	 * mean two ways of writing a wire, drifting apart at the first fix to either.
+	 * Wires go in through the model's own `link_add`, and the overrides that
+	 * consume them are deliberately NOT copied: that method writes both ends
+	 * itself, and copying one would leave two ways of writing a wire to drift
+	 * apart at the first fix to either.
 	 */
 	export function $bog_vmap_app_shelf_apply(
 		this: $,
@@ -361,8 +325,8 @@ namespace $ {
 
 		const names = new Map< string, string >()
 
-		// Declared first and all of them, so that a name taken by one part cannot be
-		// handed to the next, and so that a wire finds both of its ends in place.
+		// All of them first, so a name taken by one part cannot be handed to the
+		// next and a wire finds both of its ends in place.
 		for( const part of preset.part_names() ) {
 
 			const klass = preset.prop_decl( part )?.kids[ 0 ]

@@ -19,20 +19,14 @@ namespace $.$$ {
 		},
 
 		/**
-		 * The scrolling middle. Takes what the heading and the switch left, and it
 		 * SHRINKS — a flex child refuses to go below its content without being told
 		 * it may, and the panel then grows the page instead of scrolling.
 		 *
-		 * A FLOOR, and the second level below has one too. Before the
-		 * scroll existed, the shelf, the field and the objects were all unshrinkable
-		 * and ate the whole column: the class list was measured at `clientHeight` 0
-		 * against `scrollHeight` 2520 — open, and not a row of it reachable. Now
-		 * both halves shrink, so flex divides the squeeze between them by content
-		 * instead of starving one; the floors make that independent of how much
-		 * content either happens to hold.
-		 *
-		 * Together they are about twenty rems with the heading and the switch, which
-		 * fits any window an editor is used in.
+		 * And a FLOOR, which the second level below has too. Both halves shrink, so
+		 * flex divides the squeeze between them by content instead of starving one;
+		 * the floors make that independent of how much content either happens to
+		 * hold. Together they are about twenty rems with the heading and the switch,
+		 * which fits any window an editor is used in.
 		 */
 		Stack: {
 			flex: { grow: 1, shrink: 1 },
@@ -86,10 +80,6 @@ namespace $.$$ {
 			font: { family: 'monospace', size: '.8rem' },
 		},
 
-		/**
-		 * Refused links under the field. Rendered only while there is something to
-		 * say, so it never takes room from the lists on a clean field.
-		 */
 		Note: {
 			color: $mol_theme.focus,
 			font: { family: 'monospace', size: '.75rem' },
@@ -107,25 +97,18 @@ namespace $.$$ {
 			font: { size: '.8rem' },
 		},
 
-		/** Why a file was not taken. Same voice and same place as the refusals above. */
 		Import_note: {
 			color: $mol_theme.focus,
 			font: { size: '.75rem' },
 			whiteSpace: 'pre-wrap',
 		},
 
-		/** The objects of the application, sized by their own number. */
 		/**
-		 * ONE SCROLL IN THE PANEL, and it is the stack above.
-		 *
-		 * This list had a scroll of its own inside that one, and two scrolls one
-		 * inside the other trap what is between them: the last object sat under the
-		 * switch of the second level, the inner scroll had 64 px of travel and could
-		 * not reach it, and the outer one was not at the bottom yet. Twice a drag
-		 * started on the switch instead of on the row. Measured on the deploy.
-		 *
-		 * So the list is as tall as it is and the stack scrolls it. Nothing is
-		 * hidden under anything, because there is one thing that moves.
+		 * ONE SCROLL IN THE PANEL, and it is the stack above. Two scrolls one inside
+		 * the other trap what is between them: the inner one runs out of travel
+		 * while the outer is not at the bottom yet, and the last rows stay under the
+		 * switch of the second level unreachable. So this list is as tall as it is
+		 * and the stack scrolls it, because there is one thing that moves.
 		 */
 		Apps: {
 			flex: { direction: 'column', shrink: 0 },
@@ -133,7 +116,6 @@ namespace $.$$ {
 			gap: $mol_gap.space,
 		},
 
-		/** Why an address brought nothing. Same voice as the refusals of the field. */
 		Apps_note: {
 			padding: { left: $mol_gap.text, right: $mol_gap.text },
 			color: $mol_theme.focus,
@@ -149,17 +131,15 @@ namespace $.$$ {
 		},
 
 		/**
-		 * The second level, when it is open. Its own scroll is inside it, and this
-		 * is the height that scroll gets to work in: a `$mol_list` virtualizes by
-		 * the height of the scroll around it, so a level squeezed to nothing renders
-		 * nothing and scrolls nowhere.
+		 * The height the scroll of the second level gets to work in: a list of mol
+		 * virtualizes by the height of the scroll around it, so a level squeezed to
+		 * nothing renders nothing and scrolls nowhere.
 		 */
 		Palette: {
 			flex: { grow: 1, shrink: 1 },
 			minHeight: '10rem',
 		},
 
-		/** The switch of the second level, on the line between the two. */
 		Level: {
 			flex: { shrink: 0 },
 			padding: $mol_gap.text,

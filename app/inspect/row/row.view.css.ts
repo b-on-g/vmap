@@ -70,9 +70,9 @@ namespace $.$$ {
 		},
 
 		/**
-		 * `false` renders no attribute at all, `$mol_dom_render_attributes` drops
-		 * it, so an own property is the plain state and only the inherited one is
-		 * selectable. Written the other way round the rule would never match.
+		 * `false` renders no attribute at all — attribute rendering drops it — so an
+		 * own property is the plain state and only the inherited one is selectable.
+		 * Written the other way round the rule would never match.
 		 */
 		'@': {
 			bog_vmap_app_inspect_row_inherited: {

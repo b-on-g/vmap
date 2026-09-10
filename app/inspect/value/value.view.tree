@@ -1,46 +1,40 @@
 - Editor of one value of a `view.tree` property, dispatching on the shape of the
-- value and recursing into composite ones.
--
-- Port of `hyoo_studio_value` and its six sub editors, plus a seventh the studio
-- has no equivalent of: the wire `=` of section 1. Deviations are marked at their
-- place.
+- value and recursing into composite ones. Port of the value editor of studio and
+- its six sub editors, plus a seventh the studio has no equivalent of: the wire `=`
+- of section 1. Deviations are marked at their place.
 -
 - Every class here derives from something OUTSIDE this file, and that is a rule,
 - not a coincidence. Declarations of a `view.tree` are emitted before the
 - handwritten bodies of the same module, so a class inheriting a neighbour from
 - this very file would extend the version without its `.view.ts` methods — half
-- the behaviour gone, nothing reported. Studio can afford `hyoo_studio_value_object
-- hyoo_studio_value_dict` because there the two live in separate modules.
-- List, dictionary and object are therefore one class with two flags rather than
-- three classes in a chain.
+- the behaviour gone, nothing reported. Studio can chain its object editor onto its
+- dictionary editor because there the two live in separate modules. List,
+- dictionary and object are therefore one class with two flags rather than three
+- classes in a chain.
 - @see ../../../../ARCHITECTURE.md section 3
 $bog_vmap_app_inspect_value $mol_view
-	- The value node. Writing serializes it back into the document.
+	- Writing serializes the node back into the document.
 	tree? $mol_tree2_empty
-	- Property names of the class this value belongs to, offered as binding targets.
+	- Offered as binding targets.
 	binds /string
 	- Nodes a wire may start from, by name, each carrying the class it is declared
 	- with and the ports that class has. Both ends of a wire are picked out of this
 	- one map, so neither end can be spelled by hand into something that does not
 	- exist.
 	nodes *
-	- Why the last edit was refused, empty while there is nothing to say.
-	-
-	- A refusal has to be legible, and on its own it is not. `$mol_string` catches
-	- what a setter throws and puts the message into `setCustomValidity`
-	- (`mol/string/string.view.ts:36`), which the browser shows on form submit and
-	- nowhere else. In a form that is never submitted the value silently stays out
-	- of the document and the field keeps the text nobody accepted — the document
-	- is safe and the person is lost.
+	- A refusal has to be legible, and on its own it is not: the string field of mol
+	- catches what a setter throws and puts the message into `setCustomValidity`,
+	- which the browser shows on form submit and nowhere else. In a form that is
+	- never submitted the value silently stays out of the document and the field
+	- keeps the text nobody accepted — the document is safe and the person is lost.
 	alarm? \
 	sub <= editors /$mol_view
 	Alarm $mol_view sub / <= alarm
 	- Every editor is declared, one is rendered. Studio picks the same way and then
-	- copies the context onto the chosen instance field by field
-	- (`obj.tree = …`, `obj.props_of = …`). Here the context arrives through
-	- ordinary bindings instead, so the wiring is visible in the declaration and
-	- type checked, and swapping the shape of a value cannot leave an editor
-	- holding a stale accessor.
+	- copies the context onto the chosen instance field by field. Here the context
+	- arrives through ordinary bindings instead, so the wiring is visible in the
+	- declaration and type checked, and swapping the shape of a value cannot leave
+	- an editor holding a stale accessor.
 	String $bog_vmap_app_inspect_value_string
 		tree? <=> tree?
 	Number $bog_vmap_app_inspect_value_number
@@ -67,20 +61,19 @@ $bog_vmap_app_inspect_value $mol_view
 	Raw $bog_vmap_app_inspect_value_raw
 		tree? <=> tree?
 
-- Multi line text field.
--
-- `$mol_textarea`, which studio uses here, is a code editor with a gutter and a
-- highlighter. A plain `$mol_string` is an `<input>`, which cannot hold a newline,
-- so a two line value would collapse to one line on the first keystroke, silently.
-- The `<textarea>` in between is neither, and is the shape this needs.
+- Multi line text field. The text area of mol, which studio uses here, is a code
+- editor with a gutter and a highlighter; the plain string field is an `<input>`,
+- which cannot hold a newline, so a two line value would collapse to one line on
+- the first keystroke, silently. The `<textarea>` in between is neither, and is the
+- shape this needs.
 $bog_vmap_app_inspect_value_area $mol_string
 	dom_name \textarea
 	attr *
 		^
 		rows <= rows 1
-	- `$mol_string` binds Enter to `submit`. In an input that is the only sensible
-	- meaning of the key; in a text area it is the one key that has to reach the
-	- field itself.
+	- The string field binds Enter to `submit`. In an input that is the only
+	- sensible meaning of the key; in a text area it is the one key that has to
+	- reach the field itself.
 	plugins /
 
 - A text value: `\Текст`, or `@ \Текст` when it goes through the locale table.
@@ -210,10 +203,11 @@ $bog_vmap_app_inspect_value_bind $mol_view
 - wrong needs no message about being spelled wrong.
 -
 - The checks stay underneath all the same, because the pickers are an interface and
-- the document is not: both ends still go through `$bog_vmap_lang_token`, so a sign
-- or a space cannot be smuggled inside one, and the node is still checked against
-- the declared list. The `?` of a two way wire lives on the property signature and
-- is moved by the row, through `wire_add`, so that both ends always move together.
+- the document is not: both ends still go through the token guard of the language
+- module, so a sign or a space cannot be smuggled inside one, and the node is still
+- checked against the declared list. The `?` of a two way wire lives on the property
+- signature and is moved by the row, through `wire_add`, so that both ends always
+- move together.
 $bog_vmap_app_inspect_value_wire $mol_view
 	tree? $mol_tree2_empty
 	nodes *
@@ -240,6 +234,5 @@ $bog_vmap_app_inspect_value_wire $mol_view
 	Port_free $mol_string
 		hint \порт
 		value? <=> port? \
-	- Why the port is a text field and not a list, said in words. Rendered only when
-	- there is something to say.
+	- Rendered only when there is something to say.
 	Note $mol_view sub / <= note \

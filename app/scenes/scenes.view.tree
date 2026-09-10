@@ -1,8 +1,8 @@
-- Documents of the user, listed down the left edge of the editor: which one is
-- open, its name, a new one. A list and not a picker, because a scene is a place
-- a person moves between while working and not a setting they change now and then.
-- Owns no data. The store is handed in by the app so that the whole editor holds
-- one, and every value shown here is read from it and written back into it.
+- Documents of the user, down the left edge of the editor. A list and not a picker,
+- because a scene is a place a person moves between while working and not a setting
+- they change now and then. Owns no data: the store is handed in by the app so that
+- the whole editor holds one, and every value shown here is read from it and
+- written back into it.
 $bog_vmap_app_scenes $mol_view
 	store $bog_vmap_app_store
 	- Link of the open document, empty when there is none yet. Two way: picking

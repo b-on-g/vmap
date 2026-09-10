@@ -32,8 +32,6 @@ namespace $.$$ {
 		},
 
 		/**
-		 * The refusal, where the eye already is: right under the name it is about.
-		 *
 		 * The attention colour of the theme and not a red of our own: it is the one
 		 * the theme paints «look here» with, so it follows the hue and the light or
 		 * dark the reader chose instead of staying the same red in both.
@@ -58,7 +56,7 @@ namespace $.$$ {
 			flex: { direction: 'column' },
 
 			/**
-			 * While the pack is loading `$mol_view` marks the node and paints its
+			 * While the pack is loading the base view marks the node and paints its
 			 * waiting animation but leaves it empty, and an empty pulsing rectangle
 			 * says nothing to a person waiting 600 ms. `::before`, not `::after`: a
 			 * suspended view keeps the children of its last successful render, and

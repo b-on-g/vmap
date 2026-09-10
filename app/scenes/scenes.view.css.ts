@@ -2,7 +2,6 @@ namespace $.$$ {
 
 	$mol_style_define( $bog_vmap_app_scenes, {
 
-		/** A column at the top of the left panel, sized by its own content. */
 		flex: { direction: 'column', shrink: 0 },
 		gap: $mol_gap.space,
 		padding: { bottom: $mol_gap.space },

@@ -7,11 +7,9 @@ namespace $.$$ {
 	}
 
 	/**
-	 * Refuses an edit out loud.
-	 *
 	 * The throw is what keeps the document clean, and it has to stay a throw: it is
 	 * the only thing that stops the write on its way to the source. But a throw
-	 * alone is invisible, because `$mol_string` catches it and files the message
+	 * alone is invisible, because the string field catches it and files the message
 	 * under `setCustomValidity`, which a form that is never submitted never shows.
 	 * So the message is put where the view can read it first, and only then thrown.
 	 *
@@ -37,11 +35,9 @@ namespace $.$$ {
 	}
 
 	/**
-	 * Editor of one value, dispatching on its shape.
-	 *
 	 * None of the accessors in this file is memoized, deliberately. Each is a two
 	 * line derivation of `tree()`, which is a cell already, and a cell of its own
-	 * here would be a cell that a write freezes: writing to a `@$mol_mem` freezes
+	 * here would be a cell that a write freezes: a write to a memoized cell freezes
 	 * its dependencies, so the editor would keep showing the value the user typed
 	 * after the document moved underneath it — the one failure mode of an editor
 	 * that nobody reports as a bug, because it looks like it worked.
@@ -166,11 +162,10 @@ namespace $.$$ {
 	}
 
 	/**
-	 * A list, a dictionary or an object.
-	 *
 	 * `keyed` says whether an element is a bare value or a named node with the
 	 * value under it, `klass` whether the node type is an editable class name.
-	 * Those two bits are the entire difference between the three shapes.
+	 * Those two bits are the entire difference between a list, a dictionary and an
+	 * object.
 	 */
 	export class $bog_vmap_app_inspect_value_seq extends $.$bog_vmap_app_inspect_value_seq {
 
@@ -189,7 +184,7 @@ namespace $.$$ {
 
 			guard( this, ()=> {
 
-				// `$mol_tree2.struct` refuses a type with a space, a newline or a
+				// The tree constructor refuses a type with a space, a newline or a
 				// backslash before this line is even reached, so what is left to
 				// check is only that the name is a class name.
 				const named = val.struct( next.trim(), val.kids )
@@ -206,10 +201,9 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The entry carries nothing under it, so it is `^` and not a pair.
-		 *
-		 * In a list every element is a bare node and none of them is a marker, which
-		 * is why the answer is `false` there whatever the shape.
+		 * The entry carries nothing under it, so it is `^` and not a pair. In a list
+		 * every element is a bare node and none of them is a marker, which is why
+		 * the answer is `false` there whatever the shape.
 		 */
 		override item_marker( index: number ) {
 			return this.keyed() && !this.tree().kids[ index ]?.kids.length
@@ -224,10 +218,10 @@ namespace $.$$ {
 
 			guard( this, ()=> {
 
-				// A key is NOT a property name, so `$bog_vmap_lang_token` would be
-				// the wrong grammar here: `padding-top` in a `style *` is legal and
-				// has a hyphen. The guard is `$mol_tree2.struct`, which is the rule
-				// the serializer itself lives by.
+				// A key is NOT a property name, so the token guard of the language
+				// module would be the wrong grammar here: `padding-top` in a
+				// `style *` is legal and has a hyphen. The guard is the tree
+				// constructor, which is the rule the serializer itself lives by.
 				if( !next.trim() ) this.$.$mol_fail( new Error( 'Ключ не может быть пустым' ) )
 
 				this.tree( tree.insert( kid.struct( next.trim(), kid.kids ), index ) )
@@ -302,13 +296,12 @@ namespace $.$$ {
 	}
 
 	/**
-	 * A binding. The target is one bare name plus the sign it already carries.
-	 *
-	 * The sign is preserved rather than derived, because both spellings are legal
-	 * and mean different things: `<=> value?` demands the `?` on both ends, while
-	 * `field * value <= value_changed?` in `$mol_string` is a one way binding onto
-	 * a writable property. Only the name is editable, so neither can be broken by
-	 * a rename.
+	 * The target is one bare name plus the sign it already carries. The sign is
+	 * preserved rather than derived, because both spellings are legal and mean
+	 * different things: `<=> value?` demands the `?` on both ends, while a one way
+	 * binding onto a writable property, as the string field of mol writes its own
+	 * change handler, carries the `?` on one side only. Only the name is editable,
+	 * so neither can be broken by a rename.
 	 */
 	export class $bog_vmap_app_inspect_value_bind extends $.$bog_vmap_app_inspect_value_bind {
 
@@ -373,14 +366,12 @@ namespace $.$$ {
 			return super.nodes()
 		}
 
-		/** Nodes the document declares, in declaration order. */
+		/** In declaration order. */
 		override node_names() {
 			return Object.keys( this.nodes() )
 		}
 
 		/**
-		 * What is known about the node this wire starts from.
-		 *
 		 * A wire may point at a node that has since been renamed or dropped, so the
 		 * lookup misses on a perfectly ordinary document and answers with a blank
 		 * rather than failing. The far end is then a text field holding the port
@@ -391,7 +382,6 @@ namespace $.$$ {
 			return this.nodes()[ this.origin() ] ?? { klass: '', ports: [] }
 		}
 
-		/** Ports of the class the origin is declared with. */
 		override ports() {
 			return this.meta().ports
 		}

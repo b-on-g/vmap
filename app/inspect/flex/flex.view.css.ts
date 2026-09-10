@@ -21,9 +21,9 @@ namespace $.$$ {
 
 		Field: {
 			flex: { grow: 1 },
-			// A panel of controls sits in a narrow column, and a $mol component
-			// embedded in someone else's layout keeps its content width unless it is
-			// told it may shrink.
+			// A panel of controls sits in a narrow column, and a component embedded
+			// in someone else's layout keeps its content width unless it is told it
+			// may shrink.
 			minWidth: 0,
 		},
 

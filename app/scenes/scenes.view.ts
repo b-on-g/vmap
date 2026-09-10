@@ -4,16 +4,14 @@ namespace $.$$ {
 	 * List of documents down the left edge of the editor.
 	 *
 	 * Every accessor that writes into the store is a plain method: the values
-	 * behind them are atoms, and a `@ $mol_mem` in front of an atom freezes at the
-	 * value written through it. The one memoized cell here is read only.
+	 * behind them are atoms, and a memoizing decorator in front of an atom freezes
+	 * at the value written through it. The one memoized cell here is read only.
 	 *
 	 * @see ../../ARCHITECTURE.md section 9
 	 */
 	export class $bog_vmap_app_scenes extends $.$bog_vmap_app_scenes {
 
 		/**
-		 * Links of the documents, as strings, in the order the store keeps them.
-		 *
 		 * Read only, so memoization is safe and worth having: the list is rebuilt
 		 * from the land on every unrelated change of it, and deep comparison in the
 		 * cell spares the rows a rebuild.
@@ -27,7 +25,6 @@ namespace $.$$ {
 			return this.scene_links().map( link => this.Scene_row( link ) )
 		}
 
-		/** The link object behind a string, or nothing when it is gone from the list. */
 		scene_link( link: string ) {
 			return this.store().doc_links().find( item => item.str === link ) ?? null
 		}
@@ -47,8 +44,8 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The open document, by link. Writing picks; an empty or malformed value
-		 * goes back to the default, which is the last document made.
+		 * An empty or malformed value goes back to the default, which is the last
+		 * document made.
 		 */
 		override current( next?: string ) {
 
@@ -70,14 +67,11 @@ namespace $.$$ {
 			return this.store().title( next )
 		}
 
-		/** Name of the next document, the store's count. */
 		add_title() {
 			return this.store().title_next()
 		}
 
 		/**
-		 * Makes a new document and opens it.
-		 *
 		 * The store method is handed to a fiber of its own, and the name is taken
 		 * before it: grabbing a land mines proof of work, the fiber retries on every
 		 * `Promise` thrown on the way with its sub-tasks cached, and an argument

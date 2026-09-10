@@ -1,6 +1,3 @@
-- One property of the inspected class: its signature, where it came from, and an
-- editor for its value.
--
 - A row is a class of its own for the same reason a palette row is: a named sub
 - view declared inside a keyed one is hoisted by `upper` into a property of the
 - ROOT, without the key, so one editor would be shared by every row.
@@ -8,8 +5,7 @@ $bog_vmap_app_inspect_row $mol_view
 	- Full signature as it is written in the source, `Menu_option*` and `click?`
 	- included: the suffixes are the difference between a port and a keyed port.
 	sign \
-	- Class the winning declaration came from. Empty on an own property, so the
-	- badge itself marks what is inherited.
+	- Empty on an own property, so the badge itself marks what is inherited.
 	owner \
 	inherited false
 	value? $mol_tree2_empty

@@ -1,38 +1,33 @@
 - The shelf: ready made things to put on the canvas, one gesture each.
-- A person opening the editor is offered objects they recognise — a calculator, a
-- map, the two of them already wired, a plain block — and not the several hundred
-- classes a pack declares. Those are still here, one level down, because laying
-- out the inside of a page needs the primitives of mol and nothing else will do.
+- A person opening the editor is offered objects they recognise and not the several
+- hundred classes a pack declares. Those are still here, one level down, because
+- laying out the inside of a page needs primitives and nothing else will do.
 $bog_vmap_app_shelf $mol_view
-	- The palette field, held by the editor and passed through: the shelf shows what
-	- the scene has actually loaded, so there is one value and not two.
 	- Links separated by commas, stored exactly as typed. The first http(s) one is
-	- the application whose objects join the shelf, the rest are lands of Giper Baza
-	- holding component sources; anything else is refused and said so under the
-	- field. One pack per frame, so a second address is refused by construction.
+	- the application whose objects join the shelf, the rest are lands holding
+	- component sources. One value for the whole editor, so the panel offers what
+	- the scene has actually loaded; one pack per frame, so a second address is
+	- refused by construction.
 	links? \
 	pack_link \
 	land_classes /$mol_tree2
-	- Names of every class the library holds — the pack and the lands on it —
-	- handed in by the editor, which owns the one library of the session. Read
-	- inside `Apps` and nowhere else: reading it fetches, and a dead address must
-	- take down that one list rather than the panel around it.
+	- Every class the library holds, handed in by the editor. Read inside `Apps` and
+	- nowhere else: reading it fetches, and a dead address has to take down that one
+	- list rather than the panel around it.
 	class_list /string
-	- What the pointer is carrying, BY ITS ID, empty when nothing is being dragged,
-	- and where the pointer is in viewport coordinates. The same protocol the
-	- palette has always spoken, and now spoken in one place: a class row of the
-	- second level writes its class name here through the binding below, a shelf row
-	- writes the id of its item, and the id tells the two apart because a class name
-	- starts with a dollar and an item id never does.
+	- What the pointer is carrying, BY ITS ID, and where the pointer is. One state
+	- for both levels of the panel: a class row writes its class name here, a shelf
+	- row the id of its item, and the two are told apart because a class name starts
+	- with a dollar and an id never does.
 	dragged? \
 	drag_x? 0
 	drag_y? 0
-	- Id of an item asked for by a plain click, which the editor answers by putting
-	- it in the middle of the canvas. A press that turns into a drag never becomes a
+	- An item asked for by a plain click, which the editor answers by putting it in
+	- the middle of the canvas. A press that turns into a drag never becomes a
 	- click, so the two gestures do not fight.
 	place? \
-	- Files picked in the dialog. Written by the button, answered empty: this is an
-	- event carrying a payload, not a list the panel keeps.
+	- Files picked in the dialog: an event carrying a payload, not a list the panel
+	- keeps, so it is answered empty.
 	files? /File
 	classes_showed? false
 	sub <= body /$mol_view
@@ -41,13 +36,10 @@ $bog_vmap_app_shelf $mol_view
 		sub /
 			\Полка
 	-
-	- Everything above the second level scrolls as one: on a short window twelve
-	- items, the address field, the button and the objects of an application do not
-	- fit, and without a scroll of its own the panel pushed the whole page down and
-	- took the head bar off the screen with it.
-	-
-	- `$mol_scroll` lays every child into the same cell, so it holds exactly ONE
-	- node and the stack goes inside that one.
+	- Everything above the second level scrolls as one, or a panel taller than the
+	- window pushes the page down and takes the head bar off the screen with it. The
+	- scroll lays every child into the same cell, so it holds exactly ONE node and
+	- the stack goes inside that one.
 	Stack $mol_scroll
 		sub /
 			<= Stack_body $mol_view
@@ -66,9 +58,9 @@ $bog_vmap_app_shelf $mol_view
 		hint \Адрес приложения, ленды через запятую
 		value? <=> links?
 	-
-	- Files of a mol module brought straight from the disk. What they carry goes
-	- into the component library of the user, whose link joins the field above, so
-	- from that moment on it is the same library another scene would be handed.
+	- What the files carry goes into the component library of the user, whose link
+	- joins the field above, so from that moment on it is the library any other
+	- scene would be handed.
 	Import $mol_view
 		sub /
 			<= Import_open $mol_button_open
@@ -80,25 +72,22 @@ $bog_vmap_app_shelf $mol_view
 				sub /
 					\Файлы модуля
 	-
-	- Which files were not taken, and why. Rendered only while there is something
-	- to say, like the refusals of the field above it.
+	- Rendered only while there is something to say, like the refusals of the field.
 	Import_note $mol_view
 		sub / <= import_note? \
 	-
-	- CRUD over the library of the user. The same store the publish button holds:
-	- both write into the one library the home land points at, and both find it
-	- through the same list of pointers.
+	- CRUD over the library of the user, the same store the publish button holds:
+	- both write into the one library the home land points at.
 	Store $bog_vmap_app_publish_store
 	-
-	- What was typed and not taken, and why, right under the field. Rendered only
-	- while there is something to say: a second pack is refused by construction and
-	- a person who typed one has to learn that from the screen, not from a log.
+	- What was typed and not taken. A second pack is refused by construction, and a
+	- person who typed one has to learn that from the screen rather than from a log.
 	Note $mol_view
 		sub / <= rejected_note \
 	-
-	- Objects of the connected application: every class it declares that is not
-	- part of mol itself. A deployed mol application is a library of components
-	- already, so this needs nothing of the application's author.
+	- Objects of the connected application: every class it declares that is not part
+	- of the framework. A deployed application is a library of components already,
+	- so this needs nothing of its author.
 	Apps $mol_view
 		sub <= apps_content /$mol_view
 	-
@@ -109,23 +98,21 @@ $bog_vmap_app_shelf $mol_view
 	App_list $mol_list
 		rows <= app_rows /
 	-
-	- Why an address brought nothing. In place of the list and not beside it: there
-	- is nothing to list, and a dead address is the whole content of the section
-	- until it is fixed.
+	- In place of the list and not beside it: there is nothing to list, and a dead
+	- address is the whole content of the section until it is fixed.
 	Apps_note $mol_view
 		sub / <= app_error \
 	-
 	- The second level, folded away by default. A check and not an expander: the
-	- palette has to GROW into whatever the shelf left, and inside an expander it
-	- would sit in a list that sizes itself by its content, so the class list would
-	- have no height to scroll in.
+	- palette has to GROW into whatever the shelf left, and an expander would size it
+	- by its content, leaving the class list no height to scroll in.
 	Level $mol_check
 		title \Все классы пака
 		hint \Классы донорского пака целиком: примитивы, из которых верстают внутри блока
 		checked? <=> classes_showed?
 	-
-	- The old palette, demoted to a second level. Rendered only while it is open,
-	- so a folded panel does not fetch a pack tree it is not showing.
+	- The old palette, demoted. Rendered only while it is open, so a folded panel
+	- does not fetch a class tree it is not showing.
 	Palette $bog_vmap_app_palette
 		compact true
 		pack_link <= pack_link
@@ -134,9 +121,8 @@ $bog_vmap_app_shelf $mol_view
 		drag_x? <=> drag_x?
 		drag_y? <=> drag_y?
 	-
-	- One row per item. The same row the palette uses: a line of text that starts
-	- carrying its item on `pointerdown`, because the native drag protocol cannot be
-	- driven by synthetic events and would hand the drop to the browser.
+	- One row per item. Pointer down and not the native drag protocol, which cannot
+	- be driven by synthetic events and would hand the drop to the browser.
 	Item_row* $bog_vmap_app_palette_item
 		title <= item_title* \
 		hint <= item_hint* \

@@ -1,8 +1,6 @@
 namespace $.$$ {
 
 	/**
-	 * Styles of the value editors of the inspector.
-	 *
 	 * Only what the theme and the components do NOT already do: the compact rhythm
 	 * of a two dozen row panel and the monospace face that says a value is code.
 	 * What a field of mol paints itself — its background, its minimum width, its
@@ -16,10 +14,9 @@ namespace $.$$ {
 		font: { family: 'monospace', size: '.8rem' },
 
 		/**
-		 * The reason an edit was refused, under the field that refused it. Rendered
-		 * only while there is one, so the row does not carry an empty strip: an
-		 * inspector is two dozen rows tall and a reserved line in each of them
-		 * doubles its height for nothing.
+		 * Rendered only while there is a refusal, so the row does not carry an empty
+		 * strip: an inspector is two dozen rows tall and a reserved line in each of
+		 * them doubles its height for nothing.
 		 */
 		Alarm: {
 			padding: { top: '.15rem', left: '.4rem', right: '.4rem' },

@@ -7,28 +7,26 @@ namespace $.$$ {
 	}
 
 	/**
-	 * Inspector of one class of the document.
-	 *
 	 * The row list is the ports pane of the palette, over a class of the document
 	 * instead of a class of the library, and editable. Both read the same two maps
-	 * from `$bog_vmap_lib`, because both answer the same question: what can this
-	 * class do, and which part of that is its own.
+	 * out of the component library, because both answer the same question: what can
+	 * this class do, and which part of that is its own.
 	 *
 	 * @see ../../ARCHITECTURE.md sections 1 and 5
 	 */
 	export class $bog_vmap_app_inspect extends $.$bog_vmap_app_inspect {
 
 		/**
-		 * The class of the document, handed to the library so that the inheritance
-		 * chain resolves through it. Without this the library would know nothing
-		 * about the class being inspected and `props_map` would return nothing.
+		 * The class of the document goes to the library so that the inheritance
+		 * chain resolves through it; without it the library would know nothing about
+		 * the class being inspected and `props_map` would return nothing.
 		 *
 		 * Its siblings go in beside it, so that a node typed with another class of
 		 * the same document resolves its ports out of the same index and needs no
-		 * branch of its own. The inspected class is put first and filtered out of the
-		 * peers: `$bog_vmap_lib_index` keeps the LAST declaration of a name, so a
-		 * stale copy of this very class arriving among the peers would shadow the
-		 * live one being edited.
+		 * branch of its own. The inspected class is put first and filtered out of
+		 * the peers: the index keeps the LAST declaration of a name, so a stale copy
+		 * of this very class arriving among the peers would shadow the live one
+		 * being edited.
 		 */
 		override classes() {
 			const own = this.Node().tree()
@@ -36,21 +34,17 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Name of the node, both ways.
-		 *
-		 * Reading is the class the declaration names. Writing renames it through the
-		 * local model, which is all the stand can do and all it needs. The editor
-		 * binds this to a rename of its own, which also carries the pick, the
-		 * placement and every reference in the document — a rename is not a fact
-		 * about one class, and the inspector is handed exactly one.
+		 * Writing renames through the local model, which is all the stand can do and
+		 * all it needs. The editor binds this to a rename of its own, which also
+		 * carries the pick, the placement and every reference in the document — a
+		 * rename is not a fact about one class, and the inspector is handed exactly
+		 * one.
 		 */
 		class_title( next?: string ) {
 			return this.Node().name( next )
 		}
 
 		/**
-		 * What stands in the field, keyed by the name it started from.
-		 *
 		 * A draft, because the commit is on Enter and on blur: between them the
 		 * field holds a name the document does not have. Keyed by the current name
 		 * so that picking another node, or a rename that lands, starts a fresh draft
@@ -65,7 +59,6 @@ namespace $.$$ {
 			return this.title_draft( this.class_title(), next )
 		}
 
-		/** Commits the draft, and says nothing when there is nothing to commit. */
 		@ $mol_action
 		title_submit( event?: Event ) {
 
@@ -76,8 +69,6 @@ namespace $.$$ {
 		}
 
 		/**
-		 * What the panel is made of.
-		 *
 		 * A list, and never a splice into `super.sub()` by index: an index is a fact
 		 * about the order somebody else wrote, so a child added to the tree moves
 		 * the refusal to a place nobody chose, silently. The refusal goes under the
@@ -97,12 +88,10 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Whether there is a class here to inspect at all.
-		 *
 		 * EVERY cell of this panel derives from one class, so a source with none in
 		 * it does not fail in one place — it fails in twenty at once, and the panel
-		 * answers with a wall of red strips that grows the page. Measured on the
-		 * deploy 09.09.2026, where the pick outlived the document it was made in.
+		 * answers with a wall of red strips that grows the page. That happens when a
+		 * pick outlives the document it was made in.
 		 *
 		 * Whoever owns the pick should not hand such a source over, and the editor
 		 * no longer does; this is the panel refusing to fall apart when somebody
@@ -123,23 +112,19 @@ namespace $.$$ {
 			return this.Node().base()
 		}
 
-		/** Declaration of every port of the class, own and inherited, by name. */
 		@ $mol_mem
 		ports() {
 			return this.Lib().props_map( this.class_title() )
 		}
 
 		/**
-		 * Which class of the BASE chain each port comes from, the document itself
-		 * left out of the walk.
-		 *
-		 * Asked about the base rather than about the class being inspected, and that
-		 * is the whole point: this map does not move when the document declares
-		 * something. Ask `props_owner` about the document class instead and every
-		 * first keystroke on an inherited port makes the port its own, changes its
-		 * owner, moves its row up the list — and a row that moves while it is being
-		 * typed into is re-inserted into the DOM, which in Chrome blurs the field.
-		 * Measured: exactly one character per attempt reached the source.
+		 * Asked about the BASE chain rather than about the class being inspected,
+		 * and that is the whole point: this map does not move when the document
+		 * declares something. Ask `props_owner` about the document class instead and
+		 * every first keystroke on an inherited port makes the port its own, changes
+		 * its owner, moves its row up the list — and a row that moves while it is
+		 * being typed into is re-inserted into the DOM, which in Chrome blurs the
+		 * field, so exactly one character per attempt reaches the source.
 		 *
 		 * So a port keeps its place for the life of the document, and overriding one
 		 * changes only how the row is drawn.
@@ -150,22 +135,20 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Ports the document invented first, in the order it writes them; ports it
-		 * got from the base after, in the order the base declares them.
-		 *
-		 * The palette shows base ports first, and is right to: it answers «what can
-		 * I add». An inspector answers «what does this node set», and the two dozen
-		 * ports of `$mol_view` are not the answer to that.
+		 * Ports the document invented go first. The palette shows base ports first,
+		 * and is right to: it answers «what can I add». An inspector answers «what
+		 * does this node set», and the two dozen ports of a bare view are not the
+		 * answer to that.
 		 *
 		 * The split is by where a port COMES FROM, not by who sets it, so that it
 		 * cannot move under a cursor — see `owners()`. A port of the base that the
 		 * document overrides therefore stays down among the base ports, and says so
 		 * with its badge; that it is set here is said by the tools it grows.
 		 *
-		 * Both halves come out of `ports()` and keep its order, which puts every
-		 * ancestor before the document and so needs only to be cut in two, never
-		 * sorted: `props_map` walks the chain farthest ancestor first, and a port
-		 * the document redeclares keeps the position of its earliest declaration.
+		 * Both halves come out of `ports()` and keep its order, which needs only to
+		 * be cut in two, never sorted: `props_map` walks the chain farthest ancestor
+		 * first, and a port the document redeclares keeps the position of its
+		 * earliest declaration.
 		 */
 		@ $mol_mem
 		port_list() {
@@ -190,8 +173,6 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Winning declaration of a port: the own one when there is one.
-		 *
 		 * The document is asked when the library has nothing, which happens while
 		 * the pack is still loading and on a property whose class the library does
 		 * not carry. Without the fallback the row of a property the user is looking
@@ -205,7 +186,7 @@ namespace $.$$ {
 			return this.port_node( name )?.type ?? name
 		}
 
-		/** Class the port comes from. Empty on one the document invented. */
+		/** Empty on a port the document invented. */
 		row_owner( name: string ) {
 			return this.owners().get( name ) ?? ''
 		}
@@ -214,33 +195,29 @@ namespace $.$$ {
 		 * The document does not declare this port, so what the row shows is the
 		 * inherited default and the first edit will declare an override.
 		 *
-		 * Not the same question as `row_owner`, and it used to be: a port can come
-		 * from the base AND be set here, which is the ordinary case of overriding a
-		 * default and the case both of them get wrong when they are one flag.
+		 * Not the same question as `row_owner`: a port can come from the base AND be
+		 * set here, which is the ordinary case of overriding a default and the case
+		 * both of them get wrong when they are one flag.
 		 */
 		row_inherited( name: string ) {
 			return !this.Node().prop_names().includes( name )
 		}
 
-		/** Every property name of the class: what a binding may point at. */
+		/** What a binding may point at. */
 		binds() {
 			return this.port_list()
 		}
 
 		/**
-		 * Nodes a wire may start from, each with the class it is declared with and
-		 * the ports that class has.
+		 * Nodes a wire may start from. A node is a property declared with a class,
+		 * free part and sub view alike, which is one list and not two because
+		 * `upper` has already made both flat properties of the class.
 		 *
-		 * A node is a property declared with a class, free part and sub view alike,
-		 * which is one list and not two because `upper` has already made both flat
-		 * properties of the class.
-		 *
-		 * The ports are the far end of a wire. Resolving them is the same question
-		 * the row list answers about the inspected class, asked about another class,
-		 * so it is the same `props_map` over the same index — and the index already
-		 * holds both the pack and the classes of the document, so a node typed with
-		 * a library class and one typed with the document's own class resolve
-		 * through one call and need no branch.
+		 * Resolving the far end of a wire is the same question the row list answers
+		 * about the inspected class, asked about another class, so it is the same
+		 * `props_map` over the same index — and the index already holds both the
+		 * pack and the classes of the document, so a node typed with a library class
+		 * and one typed with the document's own class need no branch.
 		 *
 		 * `ports` empty means the class is not in the index at all: a class known to
 		 * the index always yields at least the ports of its chain. The wire says so
@@ -273,7 +250,7 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Value of a port, and the one place an edit enters the document.
+		 * The one place an edit enters the document.
 		 *
 		 * An inherited port has no line of its own yet, so the first edit declares
 		 * one. It is declared with the FULL signature of the inherited declaration,
@@ -282,7 +259,7 @@ namespace $.$$ {
 		 * plain one at the moment somebody typed into it.
 		 *
 		 * Not memoized on purpose. A cell here would be a cell that this very write
-		 * freezes — writing to a `@$mol_mem` freezes its dependencies — so the row
+		 * freezes — a write to a memoized cell freezes its dependencies — so the row
 		 * would go on showing what was typed after the document moved underneath it.
 		 * The derivation is a map lookup over `ports()`, which is a cell already.
 		 */
@@ -299,11 +276,11 @@ namespace $.$$ {
 
 				// An inherited DICTIONARY is offered as `* ^`, never as a copy of the
 				// entries it inherits. A dictionary redeclared without `^` does not
-				// extend the base one, it replaces it, so a document over
-				// `$mol_button` that grew one `attr` key would lose `disabled`,
-				// `role`, `tabindex` and `title` at once, in silence. And a document
-				// over `$mol_view` would lose them too: `$mol_view.attr()` is written
-				// in TS and puts real attributes there, whatever the stub says.
+				// extend the base one, it replaces it, so a document over a button
+				// that grew one `attr` key would lose the disabled state, the role
+				// and the tooltip at once, in silence. A document over a bare view
+				// would lose them too: its attribute dictionary is written in TS and
+				// puts real attributes there, whatever the stub says.
 				//
 				// The alternative, letting the editor copy the inherited entries and
 				// write them all out, keeps the behaviour and loses the inheritance:
@@ -335,9 +312,7 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The `?` of a property, and of both ends of a wire at once.
-		 *
-		 * On a wire the sign is two signs: `?` on the left gives the setter its
+		 * On a wire the `?` is two signs: `?` on the left gives the setter its
 		 * `next`, `?` on the right passes it on, and they are independent. Either
 		 * one alone is a trap that builds green — `w = Field value?` throws
 		 * `ReferenceError: next` on any read, `w? = Field hint` loses every write in
@@ -376,8 +351,6 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The `style` dictionary of the class, or `null` while it declares none.
-		 *
 		 * Off `prop_decl`, the derivation of the text, and not through `prop_tree`,
 		 * which is the write path below: a read taken from a written cell freezes at
 		 * what was written, and the panel would go on showing the value it set after
@@ -391,13 +364,12 @@ namespace $.$$ {
 		}
 
 		/**
-		 * One key of the `style` dictionary of the node, both ways. Empty means the
-		 * key is not written, and writing empty takes it out again.
+		 * Empty means the key is not written, and writing empty takes it out again.
 		 *
 		 * A dictionary the document does not declare yet is started with `^` under
 		 * it. A redeclared dictionary REPLACES the one of the base rather than
-		 * extending it, so a node over `$mol_button` that grew one `gap` would lose
-		 * every style the base sets, in silence; `^` says the one true thing —
+		 * extending it, so a node over a styled component that grew one `gap` would
+		 * lose every style the base sets, in silence; `^` says the one true thing —
 		 * everything of the base, plus what is written below.
 		 *
 		 * Not memoized, for the reason spelled out at `row_value`: this is a write
@@ -431,8 +403,6 @@ namespace $.$$ {
 	}
 
 	/**
-	 * A document to inspect on the stand.
-	 *
 	 * Written already normalized — hoisted properties first, `sub` left holding
 	 * bare references — because that is the shape the editor holds a document in
 	 * and the only shape a round trip is byte for byte on. A nested source here
@@ -485,18 +455,15 @@ namespace $.$$ {
 			return this.Doc().trees()
 		}
 
-		/**
-		 * Which class is inspected. Defaults to the first, which is the root by the
-		 * convention of the fixture below.
-		 */
+		/** Defaults to the first, which is the root by the convention of the fixture. */
 		@ $mol_mem
 		override klass( next?: string ) {
 			return next ?? this.names()[ 0 ] ?? ''
 		}
 
 		/**
-		 * Source of the inspected class alone. The inspector writes here, the
-		 * document splices it back, and the classes around it are untouched.
+		 * The inspector writes one class, the document splices it back, and the
+		 * classes around it are untouched.
 		 */
 		override class_source( next?: string ) {
 			return this.Doc().class_source( this.klass(), next )

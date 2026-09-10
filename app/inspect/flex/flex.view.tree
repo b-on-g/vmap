@@ -4,12 +4,12 @@
 - page, which is the same kind of fact and is what an artboard is set by.
 -
 - Every one of them is a key of the ordinary `style` dictionary of the node, so
-- what this panel writes is what a hand written $mol document would carry, and an
-- export needs to know nothing about artboards at all.
+- what this panel writes is what a hand written document would carry, and an export
+- needs to know nothing about artboards at all.
 - @see ../../../ARCHITECTURE.md section 8
 $bog_vmap_app_inspect_flex $mol_view
-	- Value of one style key, by the name of the key. Two way: this is the whole
-	- surface of the panel, and the document is the owner's to write.
+	- Two way: this is the whole surface of the panel, and the document is the
+	- owner's to write.
 	value*? \
 	sub /
 		<= Width $bog_vmap_app_inspect_flex_row
