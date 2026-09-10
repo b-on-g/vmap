@@ -1352,6 +1352,8 @@ $bog_vmap_app_pane $mol_view
 			lines <= wire_lines /$bog_vmap_app_wire_line
 			dots <= wire_dots /$bog_vmap_app_wire_dot
 			drag_geometry <= wire_drag_geometry \
+		<= Values $mol_view
+			sub <= value_labels /$mol_view
 		<= Marks $mol_view
 			sub <= error_marks /$mol_view
 		<= Camera $mol_view
@@ -1370,6 +1372,9 @@ $bog_vmap_app_pane $mol_view
 				<= Reset $mol_button_minor
 					title \Сбросить вид
 					click? <=> camera_reset? null
+	Label* $bog_vmap_app_pane_label
+		style <= label_style* *
+		lines <= label_lines* /string
 	Mark* $mol_view
 		style <= mark_style* *
 		attr *
@@ -1408,6 +1413,15 @@ $bog_vmap_app_pane_overlay $mol_view
 			<= Handle_ne $bog_vmap_app_pane_handle corner \ne
 			<= Handle_sw $bog_vmap_app_pane_handle corner \sw
 			<= Handle_se $bog_vmap_app_pane_handle corner \se
+
+$bog_vmap_app_pane_label $mol_view
+	lines /string
+	sub <= rows /$mol_view
+	Row* $mol_view
+		sub <= row_cells* /$mol_view
+	Cell* $mol_view
+		sub /
+			<= cell_text* \
 
 $bog_vmap_app_pane_handle $mol_view
 	corner \

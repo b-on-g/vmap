@@ -46770,6 +46770,7 @@ declare namespace $ {
     type $bog_vmap_app_wire_port = {
         readonly name: string;
         readonly next: boolean;
+        readonly own: boolean;
         readonly kind: $bog_vmap_app_inspect_value_kind;
     };
     type $bog_vmap_app_wire_side = 'in' | 'out';
@@ -46793,7 +46794,7 @@ declare namespace $ {
     const $bog_vmap_app_wire_gap = 12;
     const $bog_vmap_app_wire_radius = 5;
     const $bog_vmap_app_wire_hit = 8;
-    function $bog_vmap_app_wire_ports(this: $, props: ReadonlyMap<string, $mol_tree2>): readonly $bog_vmap_app_wire_port[];
+    function $bog_vmap_app_wire_ports(this: $, props: ReadonlyMap<string, $mol_tree2>, owners: ReadonlyMap<string, string>, base: string): readonly $bog_vmap_app_wire_port[];
     function $bog_vmap_app_wire_fits(out: $bog_vmap_app_inspect_value_kind, into: $bog_vmap_app_inspect_value_kind): boolean;
     function $bog_vmap_app_wire_port_point(box: $bog_vmap_app_wire_box, side: $bog_vmap_app_wire_side, index: number): readonly [number, number];
     function $bog_vmap_app_wire_curve(from: readonly [number, number], to: readonly [number, number]): string;
@@ -47428,118 +47429,133 @@ declare namespace $ {
 		ReturnType< $bog_vmap_app_wire['drag_geometry'] >
 	>
 	type $mol_view__sub_bog_vmap_app_pane_10 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['value_labels'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_pane_11 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['error_marks'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_pane_11 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_pane_12 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_pane_12 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_pane_13 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_pane_13 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_pane_14 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['zoom_out'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_14 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_15 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_pane_15 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_pane_16 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_pane_16 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_pane_17 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_pane_17 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_pane_18 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['zoom_in'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_pane_18 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_pane_19 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_pane_19 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_pane_20 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['camera_reset'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_20 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_21 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_touch__allow_draw_bog_vmap_app_pane_21 = $mol_type_enforce<
+	type $mol_touch__allow_draw_bog_vmap_app_pane_22 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_touch['allow_draw'] >
 	>
-	type $mol_touch__allow_pan_bog_vmap_app_pane_22 = $mol_type_enforce<
+	type $mol_touch__allow_pan_bog_vmap_app_pane_23 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_touch['allow_pan'] >
 	>
-	type $mol_touch__allow_zoom_bog_vmap_app_pane_23 = $mol_type_enforce<
+	type $mol_touch__allow_zoom_bog_vmap_app_pane_24 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_touch['allow_zoom'] >
 	>
-	type $mol_touch__pan_bog_vmap_app_pane_24 = $mol_type_enforce<
+	type $mol_touch__pan_bog_vmap_app_pane_25 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['camera_shift'] >
 		,
 		ReturnType< $mol_touch['pan'] >
 	>
-	type $mol_touch__zoom_bog_vmap_app_pane_25 = $mol_type_enforce<
+	type $mol_touch__zoom_bog_vmap_app_pane_26 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['camera_zoom'] >
 		,
 		ReturnType< $mol_touch['zoom'] >
 	>
-	type $mol_vector_2d__bog_vmap_app_pane_26 = $mol_type_enforce<
+	type $mol_vector_2d__bog_vmap_app_pane_27 = $mol_type_enforce<
 		[ number, number ]
 		,
 		ConstructorParameters< typeof $mol_vector_2d<number> >
 	>
-	type $bog_vmap_app_pane_frame__html_bog_vmap_app_pane_27 = $mol_type_enforce<
+	type $bog_vmap_app_pane_frame__html_bog_vmap_app_pane_28 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['scene_html'] >
 		,
 		ReturnType< $bog_vmap_app_pane_frame['html'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_28 = $mol_type_enforce<
+	type $bog_vmap_app_pane_label__style_bog_vmap_app_pane_29 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['label_style'] >
+		,
+		ReturnType< $bog_vmap_app_pane_label['style'] >
+	>
+	type $bog_vmap_app_pane_label__lines_bog_vmap_app_pane_30 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['label_lines'] >
+		,
+		ReturnType< $bog_vmap_app_pane_label['lines'] >
+	>
+	type $mol_view__style_bog_vmap_app_pane_31 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['mark_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__attr_bog_vmap_app_pane_29 = $mol_type_enforce<
+	type $mol_view__attr_bog_vmap_app_pane_32 = $mol_type_enforce<
 		({ 
 			'title': ReturnType< $bog_vmap_app_pane['mark_hint'] >,
 		})  & ReturnType< $mol_view['attr'] >
 		,
 		ReturnType< $mol_view['attr'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_30 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_33 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_31 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_34 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['insert_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_32 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_35 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['band_style'] >
 		,
 		ReturnType< $mol_view['style'] >
@@ -47556,6 +47572,8 @@ declare namespace $ {
 		wire_dots( ): readonly($bog_vmap_app_wire_dot)[]
 		wire_drag_geometry( ): string
 		Wire( ): $bog_vmap_app_wire
+		value_labels( ): readonly($mol_view)[]
+		Values( ): $mol_view
 		error_marks( ): readonly($mol_view)[]
 		Marks( ): $mol_view
 		zoom_out( next?: any ): any
@@ -47567,6 +47585,8 @@ declare namespace $ {
 		camera_reset( next?: any ): any
 		Reset( ): $mol_button_minor
 		Camera( ): $mol_view
+		label_style( id: any): Record<string, any>
+		label_lines( id: any): readonly(string)[]
 		mark_style( id: any): Record<string, any>
 		mark_hint( id: any): string
 		insert_style( ): Record<string, any>
@@ -47617,6 +47637,7 @@ declare namespace $ {
 		scene_generation( next?: number ): number
 		Scene( id: any): $bog_vmap_app_pane_frame
 		sub( ): readonly(any)[]
+		Label( id: any): $bog_vmap_app_pane_label
 		Mark( id: any): $mol_view
 		Insert( ): $mol_view
 		Band( ): $mol_view
@@ -47669,6 +47690,26 @@ declare namespace $ {
 			pointerup( next?: ReturnType< $bog_vmap_app_pane_overlay['release'] > ): ReturnType< $bog_vmap_app_pane_overlay['release'] >,
 		})  & ReturnType< $mol_view['event'] >
 		Frame( id: any): $mol_view
+	}
+	
+	type $mol_view__sub_bog_vmap_app_pane_label_1 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane_label['row_cells'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_pane_label_2 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	export class $bog_vmap_app_pane_label extends $mol_view {
+		rows( ): readonly($mol_view)[]
+		row_cells( id: any): readonly($mol_view)[]
+		cell_text( id: any): string
+		lines( ): readonly(string)[]
+		sub( ): ReturnType< $bog_vmap_app_pane_label['rows'] >
+		Row( id: any): $mol_view
+		Cell( id: any): $mol_view
 	}
 	
 	export class $bog_vmap_app_pane_handle extends $mol_view {
@@ -47892,7 +47933,16 @@ declare namespace $.$$ {
         wire_press(dot: $bog_vmap_app_wire_dot, event: PointerEvent): void;
         wire_release(event: PointerEvent): void;
         wires_visible(): readonly string[];
-        values_push(): readonly string[];
+        part_outs(name: string): readonly $bog_vmap_app_wire_port[];
+        part_shown(name: string): boolean;
+        parts_visible(): readonly string[];
+        ports_visible(): readonly string[];
+        label_lines(name: string): readonly string[];
+        label_style(name: string): {
+            readonly [prop: string]: string;
+        };
+        value_labels(): readonly $mol_view[];
+        values_push(): string[];
         post(target: {
             postMessage(data: unknown, origin: string): void;
         }, message: $bog_vmap_bridge_down): number;
@@ -47906,6 +47956,12 @@ declare namespace $.$$ {
         message_receive(event?: MessageEvent): void;
         message_listener(): $mol_dom_listener;
         auto(): any[];
+    }
+    class $bog_vmap_app_pane_label extends $.$bog_vmap_app_pane_label {
+        line(index: string): string;
+        rows(): $mol_view[];
+        row_cells(index: string): $mol_view[];
+        cell_text(key: string): string;
     }
     class $bog_vmap_app_pane_overlay extends $.$bog_vmap_app_pane_overlay {
         sub(): $mol_view[];

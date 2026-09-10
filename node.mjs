@@ -26712,7 +26712,7 @@ var $;
     const wirable = new Set([
         'string', 'number', 'bool', 'null', 'locale', 'list', 'get', 'bind',
     ]);
-    function $bog_vmap_app_wire_ports(props) {
+    function $bog_vmap_app_wire_ports(props, owners, base) {
         const ports = [];
         for (const [name, prop] of props) {
             const meta = this.$mol_view_tree2_prop_parts(prop);
@@ -26721,7 +26721,7 @@ var $;
             const kind = this.$bog_vmap_app_inspect_value_kind_of(prop.kids[0] ?? null);
             if (!wirable.has(kind))
                 continue;
-            ports.push({ name, next: Boolean(meta.next), kind });
+            ports.push({ name, next: Boolean(meta.next), own: owners.get(name) === base, kind });
         }
         return ports;
     }
@@ -28051,6 +28051,14 @@ var $;
 			(obj.drag_geometry) = () => ((this.wire_drag_geometry()));
 			return obj;
 		}
+		value_labels(){
+			return [];
+		}
+		Values(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.value_labels()));
+			return obj;
+		}
 		error_marks(){
 			return [];
 		}
@@ -28108,6 +28116,12 @@ var $;
 				(this.Reset())
 			]);
 			return obj;
+		}
+		label_style(id){
+			return {};
+		}
+		label_lines(id){
+			return [];
 		}
 		mark_style(id){
 			return {};
@@ -28282,9 +28296,16 @@ var $;
 			return [
 				(this.Overlay()), 
 				(this.Wire()), 
+				(this.Values()), 
 				(this.Marks()), 
 				(this.Camera())
 			];
+		}
+		Label(id){
+			const obj = new this.$.$bog_vmap_app_pane_label();
+			(obj.style) = () => ((this.label_style(id)));
+			(obj.lines) = () => ((this.label_lines(id)));
+			return obj;
 		}
 		Mark(id){
 			const obj = new this.$.$mol_view();
@@ -28312,6 +28333,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_release"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Overlay"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Wire"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Values"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Marks"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "zoom_out"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Zoom_out"));
@@ -28342,6 +28364,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_zoom"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_generation"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Scene"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Label"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Mark"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Insert"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Band"));
@@ -28412,6 +28435,35 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_sw"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_se"));
 	($mol_mem_key(($.$bog_vmap_app_pane_overlay.prototype), "Frame"));
+	($.$bog_vmap_app_pane_label) = class $bog_vmap_app_pane_label extends ($.$mol_view) {
+		rows(){
+			return [];
+		}
+		row_cells(id){
+			return [];
+		}
+		cell_text(id){
+			return "";
+		}
+		lines(){
+			return [];
+		}
+		sub(){
+			return (this.rows());
+		}
+		Row(id){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.row_cells(id)));
+			return obj;
+		}
+		Cell(id){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.cell_text(id))]);
+			return obj;
+		}
+	};
+	($mol_mem_key(($.$bog_vmap_app_pane_label.prototype), "Row"));
+	($mol_mem_key(($.$bog_vmap_app_pane_label.prototype), "Cell"));
 	($.$bog_vmap_app_pane_handle) = class $bog_vmap_app_pane_handle extends ($.$mol_view) {
 		corner(){
 			return "";
@@ -29324,9 +29376,67 @@ var $;
                 }
                 return [...names];
             }
+            part_outs(name) {
+                const fed = new Set(this.wires().filter(link => link.to === name).map(link => link.to_prop));
+                return this.part_ports(name).filter(port => port.own && !fed.has(port.name));
+            }
+            part_shown(name) {
+                const box = this.part_box(name);
+                if (!box)
+                    return false;
+                const rect = this.pane_rect();
+                return box.left + box.width >= 0
+                    && box.top + box.height >= 0
+                    && box.left <= rect.width
+                    && box.top <= rect.height;
+            }
+            parts_visible() {
+                return this.free_names().filter(name => this.part_shown(name));
+            }
+            ports_visible() {
+                const names = [];
+                for (const name of this.parts_visible()) {
+                    for (const port of this.part_outs(name))
+                        names.push(name + '.' + port.name);
+                }
+                return names;
+            }
+            label_lines(name) {
+                const values = this.values();
+                const lines = [];
+                for (const port of this.part_outs(name)) {
+                    const text = String(values[name + '.' + port.name] ?? '');
+                    if (!text)
+                        continue;
+                    if (!text.includes('\n')) {
+                        lines.push(port.name + ': ' + text);
+                        continue;
+                    }
+                    lines.push(port.name);
+                    for (const line of text.split('\n'))
+                        lines.push(line);
+                }
+                return lines;
+            }
+            label_style(name) {
+                const box = this.part_box(name);
+                if (!box)
+                    return {};
+                return {
+                    left: box.left + 'px',
+                    top: (box.top + box.height) + 'px',
+                };
+            }
+            value_labels() {
+                if (!this.warmed())
+                    return [];
+                return this.parts_visible()
+                    .filter(name => this.label_lines(name).length)
+                    .map(name => this.Label(name));
+            }
             values_push() {
                 const target = this.target();
-                const names = this.wires_visible();
+                const names = [...this.wires_visible(), ...this.ports_visible()];
                 if (!target)
                     return names;
                 this.$.$bog_vmap_bridge_send(target, { kind: 'values_want', names });
@@ -29581,6 +29691,24 @@ var $;
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "wires_visible", null);
         __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "part_outs", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "parts_visible", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "ports_visible", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "label_lines", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "label_style", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "value_labels", null);
+        __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "values_push", null);
         __decorate([
@@ -29608,6 +29736,28 @@ var $;
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "message_listener", null);
         $$.$bog_vmap_app_pane = $bog_vmap_app_pane;
+        class $bog_vmap_app_pane_label extends $.$bog_vmap_app_pane_label {
+            line(index) {
+                return this.lines()[Number(index)] ?? '';
+            }
+            rows() {
+                return this.lines().map((line, index) => this.Row(String(index)));
+            }
+            row_cells(index) {
+                return this.line(index).split('\t').map((cell, at) => this.Cell(index + '/' + at));
+            }
+            cell_text(key) {
+                const [index, at] = key.split('/');
+                return this.line(index).split('\t')[Number(at)] ?? '';
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane_label.prototype, "rows", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane_label.prototype, "row_cells", null);
+        $$.$bog_vmap_app_pane_label = $bog_vmap_app_pane_label;
         class $bog_vmap_app_pane_overlay extends $.$bog_vmap_app_pane_overlay {
             sub() {
                 return this.frames().map(name => this.Frame(name));
@@ -29655,6 +29805,14 @@ var $;
                 background: { color: $mol_theme.hover },
                 pointerEvents: 'none',
             },
+            Values: {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+            },
             Marks: {
                 position: 'absolute',
                 top: 0,
@@ -29696,6 +29854,28 @@ var $;
                 color: $mol_theme.card,
                 font: { size: '.75rem', weight: 'bolder' },
                 pointerEvents: 'auto',
+            },
+        });
+        $mol_style_define($bog_vmap_app_pane_label, {
+            position: 'absolute',
+            maxWidth: '20rem',
+            margin: { top: '.25rem' },
+            padding: { top: '.125rem', right: '.25rem', bottom: '.125rem', left: '.25rem' },
+            borderRadius: String($mol_gap.round),
+            background: { color: $mol_theme.card },
+            color: $mol_theme.text,
+            font: { size: '.6875rem', family: 'monospace' },
+            pointerEvents: 'none',
+            overflow: 'hidden',
+            Row: {
+                flex: { direction: 'row' },
+                gap: '.5rem',
+                whiteSpace: 'nowrap',
+            },
+            Cell: {
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                color: $mol_theme.shade,
             },
         });
         $mol_style_define($bog_vmap_app_pane_overlay, {
@@ -30774,7 +30954,7 @@ var $;
                 const klass = node.props_tree().select(sign).kids[0]?.kids[0];
                 if (!klass || !$mol_view_tree2_class_match(klass))
                     return [];
-                return this.$.$bog_vmap_app_wire_ports(this.Lib().props_map(klass.type));
+                return this.$.$bog_vmap_app_wire_ports(this.Lib().props_map(klass.type), this.Lib().props_owner(klass.type), klass.type);
             }
             doc_names() {
                 return this.node().prop_names();

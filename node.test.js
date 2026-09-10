@@ -26703,7 +26703,7 @@ var $;
     const wirable = new Set([
         'string', 'number', 'bool', 'null', 'locale', 'list', 'get', 'bind',
     ]);
-    function $bog_vmap_app_wire_ports(props) {
+    function $bog_vmap_app_wire_ports(props, owners, base) {
         const ports = [];
         for (const [name, prop] of props) {
             const meta = this.$mol_view_tree2_prop_parts(prop);
@@ -26712,7 +26712,7 @@ var $;
             const kind = this.$bog_vmap_app_inspect_value_kind_of(prop.kids[0] ?? null);
             if (!wirable.has(kind))
                 continue;
-            ports.push({ name, next: Boolean(meta.next), kind });
+            ports.push({ name, next: Boolean(meta.next), own: owners.get(name) === base, kind });
         }
         return ports;
     }
@@ -28042,6 +28042,14 @@ var $;
 			(obj.drag_geometry) = () => ((this.wire_drag_geometry()));
 			return obj;
 		}
+		value_labels(){
+			return [];
+		}
+		Values(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.value_labels()));
+			return obj;
+		}
 		error_marks(){
 			return [];
 		}
@@ -28099,6 +28107,12 @@ var $;
 				(this.Reset())
 			]);
 			return obj;
+		}
+		label_style(id){
+			return {};
+		}
+		label_lines(id){
+			return [];
 		}
 		mark_style(id){
 			return {};
@@ -28273,9 +28287,16 @@ var $;
 			return [
 				(this.Overlay()), 
 				(this.Wire()), 
+				(this.Values()), 
 				(this.Marks()), 
 				(this.Camera())
 			];
+		}
+		Label(id){
+			const obj = new this.$.$bog_vmap_app_pane_label();
+			(obj.style) = () => ((this.label_style(id)));
+			(obj.lines) = () => ((this.label_lines(id)));
+			return obj;
 		}
 		Mark(id){
 			const obj = new this.$.$mol_view();
@@ -28303,6 +28324,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_release"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Overlay"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Wire"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Values"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Marks"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "zoom_out"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Zoom_out"));
@@ -28333,6 +28355,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_zoom"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_generation"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Scene"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Label"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Mark"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Insert"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Band"));
@@ -28403,6 +28426,35 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_sw"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_se"));
 	($mol_mem_key(($.$bog_vmap_app_pane_overlay.prototype), "Frame"));
+	($.$bog_vmap_app_pane_label) = class $bog_vmap_app_pane_label extends ($.$mol_view) {
+		rows(){
+			return [];
+		}
+		row_cells(id){
+			return [];
+		}
+		cell_text(id){
+			return "";
+		}
+		lines(){
+			return [];
+		}
+		sub(){
+			return (this.rows());
+		}
+		Row(id){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.row_cells(id)));
+			return obj;
+		}
+		Cell(id){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.cell_text(id))]);
+			return obj;
+		}
+	};
+	($mol_mem_key(($.$bog_vmap_app_pane_label.prototype), "Row"));
+	($mol_mem_key(($.$bog_vmap_app_pane_label.prototype), "Cell"));
 	($.$bog_vmap_app_pane_handle) = class $bog_vmap_app_pane_handle extends ($.$mol_view) {
 		corner(){
 			return "";
@@ -29315,9 +29367,67 @@ var $;
                 }
                 return [...names];
             }
+            part_outs(name) {
+                const fed = new Set(this.wires().filter(link => link.to === name).map(link => link.to_prop));
+                return this.part_ports(name).filter(port => port.own && !fed.has(port.name));
+            }
+            part_shown(name) {
+                const box = this.part_box(name);
+                if (!box)
+                    return false;
+                const rect = this.pane_rect();
+                return box.left + box.width >= 0
+                    && box.top + box.height >= 0
+                    && box.left <= rect.width
+                    && box.top <= rect.height;
+            }
+            parts_visible() {
+                return this.free_names().filter(name => this.part_shown(name));
+            }
+            ports_visible() {
+                const names = [];
+                for (const name of this.parts_visible()) {
+                    for (const port of this.part_outs(name))
+                        names.push(name + '.' + port.name);
+                }
+                return names;
+            }
+            label_lines(name) {
+                const values = this.values();
+                const lines = [];
+                for (const port of this.part_outs(name)) {
+                    const text = String(values[name + '.' + port.name] ?? '');
+                    if (!text)
+                        continue;
+                    if (!text.includes('\n')) {
+                        lines.push(port.name + ': ' + text);
+                        continue;
+                    }
+                    lines.push(port.name);
+                    for (const line of text.split('\n'))
+                        lines.push(line);
+                }
+                return lines;
+            }
+            label_style(name) {
+                const box = this.part_box(name);
+                if (!box)
+                    return {};
+                return {
+                    left: box.left + 'px',
+                    top: (box.top + box.height) + 'px',
+                };
+            }
+            value_labels() {
+                if (!this.warmed())
+                    return [];
+                return this.parts_visible()
+                    .filter(name => this.label_lines(name).length)
+                    .map(name => this.Label(name));
+            }
             values_push() {
                 const target = this.target();
-                const names = this.wires_visible();
+                const names = [...this.wires_visible(), ...this.ports_visible()];
                 if (!target)
                     return names;
                 this.$.$bog_vmap_bridge_send(target, { kind: 'values_want', names });
@@ -29572,6 +29682,24 @@ var $;
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "wires_visible", null);
         __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "part_outs", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "parts_visible", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "ports_visible", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "label_lines", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "label_style", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "value_labels", null);
+        __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "values_push", null);
         __decorate([
@@ -29599,6 +29727,28 @@ var $;
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "message_listener", null);
         $$.$bog_vmap_app_pane = $bog_vmap_app_pane;
+        class $bog_vmap_app_pane_label extends $.$bog_vmap_app_pane_label {
+            line(index) {
+                return this.lines()[Number(index)] ?? '';
+            }
+            rows() {
+                return this.lines().map((line, index) => this.Row(String(index)));
+            }
+            row_cells(index) {
+                return this.line(index).split('\t').map((cell, at) => this.Cell(index + '/' + at));
+            }
+            cell_text(key) {
+                const [index, at] = key.split('/');
+                return this.line(index).split('\t')[Number(at)] ?? '';
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane_label.prototype, "rows", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane_label.prototype, "row_cells", null);
+        $$.$bog_vmap_app_pane_label = $bog_vmap_app_pane_label;
         class $bog_vmap_app_pane_overlay extends $.$bog_vmap_app_pane_overlay {
             sub() {
                 return this.frames().map(name => this.Frame(name));
@@ -29646,6 +29796,14 @@ var $;
                 background: { color: $mol_theme.hover },
                 pointerEvents: 'none',
             },
+            Values: {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+            },
             Marks: {
                 position: 'absolute',
                 top: 0,
@@ -29687,6 +29845,28 @@ var $;
                 color: $mol_theme.card,
                 font: { size: '.75rem', weight: 'bolder' },
                 pointerEvents: 'auto',
+            },
+        });
+        $mol_style_define($bog_vmap_app_pane_label, {
+            position: 'absolute',
+            maxWidth: '20rem',
+            margin: { top: '.25rem' },
+            padding: { top: '.125rem', right: '.25rem', bottom: '.125rem', left: '.25rem' },
+            borderRadius: String($mol_gap.round),
+            background: { color: $mol_theme.card },
+            color: $mol_theme.text,
+            font: { size: '.6875rem', family: 'monospace' },
+            pointerEvents: 'none',
+            overflow: 'hidden',
+            Row: {
+                flex: { direction: 'row' },
+                gap: '.5rem',
+                whiteSpace: 'nowrap',
+            },
+            Cell: {
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                color: $mol_theme.shade,
             },
         });
         $mol_style_define($bog_vmap_app_pane_overlay, {
@@ -30765,7 +30945,7 @@ var $;
                 const klass = node.props_tree().select(sign).kids[0]?.kids[0];
                 if (!klass || !$mol_view_tree2_class_match(klass))
                     return [];
-                return this.$.$bog_vmap_app_wire_ports(this.Lib().props_map(klass.type));
+                return this.$.$bog_vmap_app_wire_ports(this.Lib().props_map(klass.type), this.Lib().props_owner(klass.type), klass.type);
             }
             doc_names() {
                 return this.node().prop_names();
@@ -39085,7 +39265,7 @@ var $;
 var $;
 (function ($_1) {
     const box = (left, top, width = 100, height = 50) => ({ left, top, width, height });
-    const port = (name, kind, next = false) => ({ name, next, kind });
+    const port = (name, kind, next = false) => ({ name, next, own: true, kind });
     const dot = (over) => ({
         node: 'A',
         port: port('value', 'string'),
@@ -39171,8 +39351,21 @@ var $;
                 ``,
             ].join('\n'));
             const props = new Map(tree.kids.map(prop => [$.$mol_view_tree2_prop_parts(prop).name, prop]));
-            const ports = $.$bog_vmap_app_wire_ports(props);
+            const owners = new Map([...props.keys()].map(name => [name, `${d}my_part`]));
+            const ports = $.$bog_vmap_app_wire_ports(props, owners, `${d}my_part`);
             $mol_assert_like(ports.map(port => `${port.name}${port.next ? '?' : ''}:${port.kind}`), ['title:string', 'count:number', 'enabled:bool', 'click?:null', 'items:list', 'label:locale', 'bound:get', 'both?:bind']);
+            $mol_assert_equal(ports.every(port => port.own), true);
+        },
+        'a port inherited from the base class is not the part own'($) {
+            const d = '$';
+            const tree = $.$mol_tree2_from_string([`title \\Hi`, `count 3`, ``].join('\n'));
+            const props = new Map(tree.kids.map(prop => [$.$mol_view_tree2_prop_parts(prop).name, prop]));
+            const owners = new Map([
+                ['title', `${d}mol_view`],
+                ['count', `${d}my_part`],
+            ]);
+            const ports = $.$bog_vmap_app_wire_ports(props, owners, `${d}my_part`);
+            $mol_assert_like(ports.map(port => `${port.name}:${port.own}`), ['title:false', 'count:true']);
         },
     });
 })($ || ($ = {}));
@@ -39850,8 +40043,8 @@ var $;
         },
         'REPRO a port dot belongs to the part it is drawn on, prefix or not'($) {
             const ports = [
-                { name: 'zoom', next: false, kind: 'number' },
-                { name: 'marker', next: false, kind: 'string' },
+                { name: 'zoom', next: false, own: true, kind: 'number' },
+                { name: 'marker', next: false, own: true, kind: 'string' },
             ];
             const { pane } = pane_make($, {}, {
                 doc_names: () => ['Pair', 'Map', 'Map_2'],
@@ -40136,7 +40329,7 @@ var $;
             $mol_assert_equal(pane.wire_lines()[0].geometry.startsWith('M 112 107 C'), true);
             $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 288 7'), true);
         },
-        'values_want names the visible wires only'($) {
+        'values_want names the visible wires and the output ports of the visible free parts'($) {
             const { pane, node, posted } = wired_make($, [
                 `Calc ${d}my_calc`, `Map ${d}my_map`, `Calc_2 ${d}my_calc`, `Map_2 ${d}my_map`,
             ]);
@@ -40150,13 +40343,16 @@ var $;
             });
             const wants = () => posted.filter(m => m.kind === 'values_want').map(m => m.names);
             pane.values_push();
-            $mol_assert_like(wants(), [['calc_result']]);
+            $mol_assert_like(wants(), [['calc_result', 'Calc.result', 'Calc.op', 'Map.marker']]);
             pane.camera_shift(new $mol_vector_2d(10, 10));
             pane.values_push();
             $mol_assert_equal(wants().length, 1);
             pane.camera_shift(new $mol_vector_2d(-5000, -5000));
             pane.values_push();
-            $mol_assert_like(wants(), [['calc_result'], ['calc_2_result']]);
+            $mol_assert_like(wants(), [
+                ['calc_result', 'Calc.result', 'Calc.op', 'Map.marker'],
+                ['calc_2_result', 'Calc_2.result', 'Calc_2.op', 'Map_2.marker'],
+            ]);
             $mol_assert_equal(pane.wire_lines().find(line => line.key === 'Map_2.zoom')?.label, '');
             pane.message_receive({ data: { ns: $bog_vmap_bridge_ns, kind: 'values', values: { calc_2_result: '42' } }, source: pane.scene_peer() });
             $mol_assert_equal(pane.wire_lines().find(line => line.key === 'Map_2.zoom')?.label, '42');
@@ -40164,6 +40360,67 @@ var $;
             pane.camera_shift(new $mol_vector_2d(-5000, -4000));
             pane.values_push();
             $mol_assert_equal(pane.poke_at, stamped);
+        },
+        'no value is drawn under a part until the scene answers with sizes'($) {
+            const { pane, answer } = wired_make($);
+            const sizes = { [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) };
+            pane.sizes(sizes);
+            pane.values({ 'Calc.result': '42' });
+            $mol_assert_equal(pane.warmed(), false);
+            $mol_assert_equal(pane.value_labels().length, 0);
+            answer({ kind: 'sizes', sizes });
+            $mol_assert_equal(pane.warmed(), true);
+            $mol_assert_equal(pane.value_labels().length, 1);
+            $mol_assert_equal(pane.value_labels()[0], pane.Label('Calc'));
+            $mol_assert_like(pane.Label('Calc').lines(), ['result: 42']);
+            $mol_assert_like(pane.label_style('Calc'), { left: '0px', top: '50px' });
+        },
+        'an output port is one the part declares itself and no wire feeds'($) {
+            const { pane, node, answer } = wired_make($);
+            const sizes = { [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) };
+            answer({ kind: 'sizes', sizes });
+            $mol_assert_like(pane.part_ports('Calc').map(port => port.name), ['result', 'op', 'title']);
+            $mol_assert_like(pane.part_outs('Calc').map(port => port.name), ['result', 'op']);
+            $mol_assert_like(pane.parts_visible(), ['Calc', 'Map']);
+            $mol_assert_like(pane.ports_visible(), ['Calc.result', 'Calc.op', 'Map.zoom', 'Map.marker']);
+            node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' });
+            $mol_assert_like(pane.part_outs('Map').map(port => port.name), ['marker']);
+            $mol_assert_like(pane.ports_visible(), ['Calc.result', 'Calc.op', 'Map.marker']);
+        },
+        'a port answered with an empty text gets no line, and a part with no line no label'($) {
+            const { pane, answer } = wired_make($);
+            answer({ kind: 'sizes', sizes: { [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) } });
+            $mol_assert_equal(pane.value_labels().length, 0);
+            pane.values({ 'Calc.result': '', 'Calc.title': 'наследство', 'Map.marker': 'дом' });
+            $mol_assert_like(pane.label_lines('Calc'), []);
+            $mol_assert_like(pane.label_lines('Map'), ['marker: дом']);
+            $mol_assert_equal(pane.value_labels().length, 1);
+            $mol_assert_equal(pane.value_labels()[0], pane.Label('Map'));
+        },
+        'a table value becomes a row of cells, a plain one a single line'($) {
+            const { pane, answer } = wired_make($);
+            answer({ kind: 'sizes', sizes: { [`${root}/Calc`]: box(0, 0) } });
+            pane.values({ 'Calc.result': 'city\tsum\nМосква\t7' });
+            const label = pane.Label('Calc');
+            $mol_assert_like(label.lines(), ['result', 'city\tsum', 'Москва\t7']);
+            $mol_assert_equal(label.rows().length, 3);
+            $mol_assert_equal(label.row_cells('0').length, 1);
+            $mol_assert_equal(label.row_cells('2').length, 2);
+            $mol_assert_equal(label.row_cells('2')[1], label.Cell('2/1'));
+            $mol_assert_equal(label.cell_text('0/0'), 'result');
+            $mol_assert_equal(label.cell_text('1/1'), 'sum');
+            $mol_assert_equal(label.cell_text('2/0'), 'Москва');
+            $mol_assert_equal(label.cell_text('2/1'), '7');
+        },
+        'a part carried off the screen stops being asked and stops being labelled'($) {
+            const { pane, answer } = wired_make($);
+            answer({ kind: 'sizes', sizes: { [`${root}/Calc`]: box(0, 0) } });
+            pane.values({ 'Calc.result': '42' });
+            $mol_assert_like(pane.ports_visible(), ['Calc.result', 'Calc.op']);
+            $mol_assert_equal(pane.value_labels().length, 1);
+            pane.camera_shift(new $mol_vector_2d(-2000, 0));
+            $mol_assert_like(pane.ports_visible(), []);
+            $mol_assert_equal(pane.value_labels().length, 0);
         },
         'the pick goes to the deepest node under the point'($) {
             const { pane } = pane_make($);
@@ -40300,12 +40557,13 @@ var $;
     });
     const ports = {
         [`${d}my_calc`]: [
-            { name: 'result', next: false, kind: 'number' },
-            { name: 'op', next: true, kind: 'string' },
+            { name: 'result', next: false, own: true, kind: 'number' },
+            { name: 'op', next: true, own: true, kind: 'string' },
+            { name: 'title', next: false, own: false, kind: 'string' },
         ],
         [`${d}my_map`]: [
-            { name: 'zoom', next: true, kind: 'number' },
-            { name: 'marker', next: true, kind: 'string' },
+            { name: 'zoom', next: true, own: true, kind: 'number' },
+            { name: 'marker', next: true, own: true, kind: 'string' },
         ],
     };
     function wired_make($, parts = [`Calc ${d}my_calc`, `Map ${d}my_map`]) {
@@ -46892,9 +47150,10 @@ var $;
             $mol_assert_ok(source.includes('\tcalc_result = Calc result\n'));
             $mol_assert_ok(source.includes('zoom <= calc_result'));
             stage.scene.flush();
-            $mol_assert_like(stage.scene.last('values_want').names, ['calc_result']);
-            stage.scene.values({ calc_result: '42' });
+            $mol_assert_like(stage.scene.last('values_want').names, ['calc_result', 'Calc.result', 'Calc.op', 'Map.marker']);
+            stage.scene.values({ calc_result: '42', 'Calc.result': '42', 'Calc.op': 'plus' });
             $mol_assert_like(stage.pane.wire_lines().map(line => [line.key, line.label]), [['Map.zoom', '42']]);
+            $mol_assert_like(stage.pane.label_lines('Calc'), ['result: 42', 'op: plus']);
             stage.tap(stage.part_center('Map'));
             stage.press(overlay, stage.port_dot('Map', 'zoom', 'in'));
             stage.release(overlay, stage.client([550, 450]));
