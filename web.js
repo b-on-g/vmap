@@ -38488,17 +38488,14 @@ var $;
         /**
          * How far outside its box, in SCREEN pixels, a part still counts as hit.
          *
-         * This strip is the grip of a part. Under the picked part the overlay is cut
-         * open, so a press inside the box goes to the live component and never gets
-         * here; the part is taken hold of by the ring around it, and the ring has to be
-         * as wide as a finger at any zoom, which is why the number is in screen pixels
-         * and divided by the zoom before it is compared with world units. The corner
-         * handles are drawn exactly this wide, so what looks grabbable is grabbable.
+         * This strip is the grip of a part. Under the picked one the overlay is cut open,
+         * so a press inside the box reaches the live component and never gets here: the
+         * part is taken hold of by the ring, and a ring has to stay as wide as a finger
+         * at any zoom — hence screen pixels, divided by the zoom before comparison. The
+         * corner handles are drawn exactly this wide, so what looks grabbable is.
          *
-         * It also keeps a zero sized part reachable, and that is not a rare shape: the
-         * root of the document is a flex box with absolutely positioned children, so a
-         * child that does not size itself measures 0 wide while its text is plainly on
-         * screen — the paragraph primitive of the pack does exactly this.
+         * It also keeps a zero sized part reachable, which is not a rare shape: a child
+         * that does not size itself measures 0 wide with its text plainly on screen.
          */
         const grab_slack = 8;
         /**
@@ -38642,17 +38639,12 @@ var $;
              * address or by markup. What an opaque origin does lose is a base to resolve
              * against, so the bundle is named absolutely.
              *
-             * `color-scheme` is what gives a frame its base background, and it has to be
-             * declared: without it Chrome keeps a transparent frame transparent only
-             * until something inside takes a compositing layer — the camera transform on
-             * `Stage` does — and from then on fills it with a pale base of its own.
-             * Measured in a live window with `requestAnimationFrame` ticking, not under
-             * automation.
-             *
-             * So the frame is opaque on purpose, and everything that has to be seen
-             * beneath the document lives inside it: the canvas grid is drawn in there
-             * with it. Inline rather than by a rule, so that it also holds during the
-             * first paint, before the bundle has loaded.
+             * `color-scheme` has to be declared, because without it a transparent frame
+             * stays transparent only until something inside takes a compositing layer —
+             * the camera transform does — and is then filled with a pale base of the
+             * browser's own. So the frame is opaque on purpose, and whatever has to be
+             * seen beneath the document lives inside it, the canvas grid included.
+             * Inline rather than by a rule, so that it holds during the first paint too.
              */
             scene_html() {
                 return [
@@ -38713,18 +38705,14 @@ var $;
              * Handshakes seen from one frame. A counter, not a flag, so a scene reload
              * re-pushes; keyed by the frame, so a REPLACED frame starts from zero.
              *
-             * Keyed and not plain, because the frame is now replaced by two different
-             * things — the restart button and a change of pack — and only one of them is
-             * an action that could clear a plain cell. A derived change of key would
-             * otherwise leave this reading «already shaken hands», the host would push
-             * into a window that has not booted, and every one of those messages would
-             * be lost silently while the watchdog counted the new frame's pack fetch
-             * against it.
+             * Keyed and not plain, because the frame is replaced by two different things
+             * — the restart button and a change of pack — and only one of them is an
+             * action that could clear a plain cell. A derived change of key would leave
+             * this reading «already shaken hands», the host would push into a window that
+             * has not booted, and those messages would be lost in silence.
              *
-             * One scene load does not mean exactly one step here: observed both +1
-             * and +2 for a single reload, because the scene may announce itself more
-             * than once. Only the change matters, never the number — do not go
-             * hunting for a bug on the strength of an even count.
+             * Only the CHANGE means anything, never the number: a scene may announce
+             * itself more than once per load, so an even count is not a bug to hunt.
              */
             handshake(key, next) {
                 return next ?? 0;
@@ -38756,9 +38744,7 @@ var $;
              * A CELL, unlike the stamp above it, and the difference is where each is
              * written from: this one from the message handler, which is an effect and may
              * write cells, that one from the body of a push cell, which may not. So this
-             * one both records the answer and wakes whoever is waiting for it, and the
-             * counter that used to be kept beside it for the waking — bumped for every
-             * message and carrying nothing else — is gone.
+             * one both records the answer and wakes whoever waits for it.
              */
             answer_at(next) {
                 return next ?? 0;
@@ -38768,12 +38754,9 @@ var $;
              * share one.
              *
              * A wall clock cannot promise that. The host answers `ready` by pushing the
-             * document again, and both the answer and the questions it causes land inside
-             * the same millisecond — `Date.now()` stamps them equally, `poke <= answer`
-             * reads as «answered», and the watch disarms over a scene that was never
-             * asked anything it managed to reply to. Caught by a test of the cold frame
-             * that passed alone and failed in a full run, which is what a clock used as
-             * an order does.
+             * document again, so the answer and the questions it causes land inside the
+             * same millisecond, stamp equally, read as «answered», and disarm the watch
+             * over a scene that replied to nothing. A clock is a time, not an order.
              */
             stamp_last = 0;
             stamp() {
@@ -38787,8 +38770,7 @@ var $;
              * watchdog hears about it by reading that cell. These two have no cell of
              * their own — one leaves from a timer, the other from a pointer handler — so
              * without a word here a question would be asked and nobody would start
-             * counting. Both used to keep a counter apiece for exactly that, one of them
-             * doubling as a nonce the scene echoes and nobody compares.
+             * counting.
              *
              * The value is the stamp `post()` put on that question, so it says WHICH
              * question and not merely how many there have been.
@@ -38831,15 +38813,15 @@ var $;
             /**
              * How long a frame that has never reported geometry may stay silent.
              *
-             * Much longer than the warm limit, and on for the same reason the warm one
-             * is. A cold frame is legitimately mute for a while: the pack is fetched into
-             * a fresh realm, `report_task` suspends on `pack_ready()`, and a suspended
-             * cell arms no timer and posts nothing. That is why this watch used to be off
-             * altogether — and off, it left the one case with no way out at all. Document
-             * code that loops on the first compile stops the scene BEFORE any geometry,
-             * so the frame never warms, the strip never appears, and the canvas sits in
-             * «ожидание сцены…» with no button to press. The generous limit buys the slow
-             * line its time and still ends in a sentence instead of silence.
+             * Much longer than the warm limit, because a cold frame is legitimately mute
+             * for a while: the pack is fetched into a fresh realm, the report suspends on
+             * it, and a suspended cell arms no timer and posts nothing.
+             *
+             * Watched all the same, because the case with no way out lives here. Document
+             * code that loops on the FIRST compile stops the scene before any geometry:
+             * the frame never warms, the strip never appears, and the canvas waits for a
+             * scene with no button to press. A generous limit buys the slow line its time
+             * and still ends in a sentence rather than in silence.
              */
             cold_limit() {
                 return 30000;
@@ -38925,18 +38907,12 @@ var $;
              * Latest measured node boxes, in world units, keyed by the path the scene
              * walks: the root class name, then a property name per level.
              *
-             * AN ORDINARY CELL, and it used to be a field with a version counter beside
-             * it. The reason written here for that was the price of comparing the boxes —
-             * a deep comparison over a hundred of them on every report round — and the
-             * price was never measured. Measured now, on this bundle: 25 boxes 8 µs, 100
-             * boxes 30 µs, 400 boxes 137 µs per compare, against two reports a second.
-             * That is a quarter of a millisecond per second at four hundred nodes.
-             *
-             * The counter was the more expensive of the two, and not by a little: it says
-             * «something arrived» and therefore wakes every reader — the rings, the port
-             * dots, the hit test — twice a second even when the layout has not moved a
-             * pixel, which is the common case while nothing is being dragged. The compare
-             * buys exactly that silence for the microseconds above.
+             * AN ORDINARY CELL, and the alternative worth naming is a field with a version
+             * counter beside it, which is cheaper per report and dearer per second: a
+             * counter says «something arrived» and therefore wakes every reader — the
+             * rings, the port dots, the hit test — twice a second even when the layout
+             * has not moved a pixel, which is the common case while nothing is dragged.
+             * A cell compares instead, and buys that silence for microseconds.
              */
             sizes(next) {
                 return next ?? {};
@@ -38952,12 +38928,10 @@ var $;
              * leave a box behind — worth fixing when the code editor of stage 4 makes
              * that path real.
              *
-             * BY SEGMENT AND NOT BY PREFIX, which is the whole difference between this
-             * and what it was. A node carried into a container is measured at a NEW path,
-             * and the old key kept its last box beside it: two boxes answered to one
-             * name, and everything that looks a node up by name — the ring, the hit test,
-             * the port dots — could get either. Measured on the deploy: `…/Schet` with
-             * its free coordinate living next to `…/Pair/Schet`.
+             * BY SEGMENT AND NOT BY PREFIX. A node carried into a container is measured at
+             * a NEW path, and a prefix match leaves the old key with its last box beside
+             * it: two boxes answer to one name, and everything that looks a node up by
+             * name — the ring, the hit test, the port dots — may get either.
              */
             sizes_forget(name) {
                 const prefix = this.doc_root() + '/';
@@ -38993,17 +38967,16 @@ var $;
                         continue;
                     const path = key.slice(prefix.length).split('/');
                     // EVERY segment has to be a node the document declares. The scene walks
-                    // the whole rendered tree, so a part of two hundred pixels reports the
-                    // button and the field inside it as well, and without this the hit test
-                    // handed back a view the document never named: the ring came out the
-                    // size of an inner control, the inspector had no declaration to show,
-                    // and the part itself could not be picked, carried or deleted.
+                    // the whole rendered tree, insides of pack classes included, so without
+                    // this the hit test hands back a view the document never named: a ring
+                    // the size of an inner control, no declaration for the inspector, and a
+                    // part that cannot be picked, carried or deleted.
                     //
-                    // Every segment and not only the last, because a name of the document
-                    // may repeat inside a pack class, and the ancestry is what tells the two
-                    // apart. The cost is a node put inside a pack property rather than into
-                    // `sub` — which this editor cannot author, and a foreign document can:
-                    // such a node draws, and stays out of reach of the pointer.
+                    // Every segment and not merely the last, because a name of the document
+                    // may repeat inside a pack class and only the ancestry tells them apart.
+                    // The cost is a node put inside a pack property rather than into `sub`:
+                    // this editor cannot author one, a foreign document can, and such a node
+                    // draws while staying out of the pointer's reach.
                     if (path.some(step => !known.has(step)))
                         continue;
                     nodes.push({ name: path[path.length - 1], path, box: this.sizes()[key] });
@@ -39045,24 +39018,21 @@ var $;
             /**
              * The carry in hand, or `null` when nothing is being carried.
              *
-             * A CELL and not a field, because the ring is drawn from it: as a field it
-             * woke its readers only by riding the report counter, which is the pattern
-             * the touch plugin avoids by keeping its whole gesture in cells.
+             * A CELL and not a field, because the ring is drawn from it, and a gesture kept
+             * half in fields has two clocks.
              *
              * `sizes` is the report the grab was taken against, and it is what makes the
-             * ring exact instead of merely quick. Measured boxes are debounced by 120 ms
-             * in the scene, and the timer restarts on every change, so during a continuous
-             * drag NO fresh box ever arrives: a ring drawn from `sizes()` alone would sit
-             * at the start of the gesture until the pointer stopped. Adding the live
-             * offset fixes that, and would then double count the move the moment a fresh
-             * box did arrive — hence the guard. A new report is a new object, so the
-             * comparison is an identity, and nothing has to clear anything.
+             * ring exact instead of merely quick. Measured boxes are debounced in the
+             * scene and the timer restarts on every change, so through a continuous drag
+             * NO fresh box arrives: a ring drawn from `sizes()` alone would sit at the
+             * grab until the pointer stopped. The live offset answers that, and would
+             * double count the move the moment a fresh box did arrive — hence the guard.
+             * A new report is a new object, so the comparison is an identity and nothing
+             * has to be cleared.
              *
-             * There is no second flag beside it. There used to be one, for «the button is
-             * still down», and the two could disagree: a release that never arrived left
-             * the carry standing with the flag off, and the next pointer to cross the
-             * canvas picked it up again. The carry is now cleared where it ends, so its
-             * presence IS the flag.
+             * No second flag beside it for «the button is still down»: two flags can
+             * disagree, and a release that never arrives leaves a carry standing for the
+             * next pointer to pick up. Cleared where it ends, its presence IS the flag.
              */
             drag(next) {
                 return next ?? null;
@@ -39080,15 +39050,13 @@ var $;
              * `entering` says the press landed on the node that was ALREADY picked, so a
              * click out of it is the second one and lets the pointer inside. See `entered`.
              *
-             * A CELL and not a field, for the reason the whole gesture is one: the touch
-             * plugin keeps its press, its start and its travel in cells, and a gesture spread
-             * across fields and cells has two clocks. Nothing draws from this one today,
-             * and that is precisely why it was the easiest of the three to leave behind.
+             * A CELL and not a field, for the reason the whole gesture is one. Nothing
+             * draws from this one today, which is exactly why a field here would go
+             * unnoticed until the day something did.
              *
              * The value is replaced and never edited in place — see `press_track()`. A
-             * field could be poked at through the reference the reader is holding; a cell
-             * that is poked at the same way keeps its old value as far as the graph is
-             * concerned, and the difference only shows up the day somebody reads it.
+             * cell poked at through the reference it handed out keeps its old value as
+             * far as the graph is concerned.
              */
             press(next) {
                 return next ?? null;
@@ -39129,14 +39097,11 @@ var $;
             /**
              * Where this pane sits in the viewport.
              *
-             * `view_rect()` and not a `getBoundingClientRect()` of our own. The reason
-             * written here before — that a handler reading the watched cell would be
-             * re-run by the layout its own gesture causes — was wrong: the handlers run
-             * as one shot tasks through `event_async()` and subscribe to nothing. What is
-             * true of that cell is that its FIRST read answers `null` on purpose, to keep
-             * a reflow out of the render; the touch plugin answers that by reading it in
-             * `auto()`, and so does this pane. A method of its own so that a test can
-             * hand in a geometry the test DOM has no way to lay out.
+             * `view_rect()` and not a `getBoundingClientRect()` of our own, so there is one
+             * reading of one rectangle. Its FIRST read answers `null` on purpose, to keep
+             * a reflow out of the render, which is why the pane warms it in `auto()` the
+             * way the touch plugin warms its own. A method rather than the cell itself so
+             * that a test can hand in a geometry the test DOM has no way to lay out.
              */
             pane_rect() {
                 const rect = this.view_rect();
@@ -39343,19 +39308,16 @@ var $;
              * once, by the hit test. A press that hits nothing is left alone deliberately
              * — that is the pan.
              *
-             * Whether it will also be a click is not known yet: that is decided by the
-             * release, from how far the pointer went.
+             * Whether it will also be a click is not known yet: the release decides.
              */
             node_press(event) {
                 if (!event)
                     return;
                 if (event.button !== 0)
                     return;
-                // The drag crossing this canvas is the owner's, not ours. Measured cost of
-                // not saying so: a press whose release fell into the hole leaves the carry
-                // live, and the next pointer to cross the overlay with a button down —
-                // which is exactly a drag out of the palette — moves the picked node to
-                // wherever it is let go, grabbed where it was last pressed.
+                // The drag crossing this canvas is the owner's, not ours. Taking it would
+                // start a carry the release never ends, and the next drag out of the
+                // palette would move the picked node to wherever it is let go.
                 if (this.carrying())
                     return;
                 // A dot before a part: dots lie on the grip strip of the part they belong
@@ -39424,14 +39386,12 @@ var $;
             /**
              * Notes whether a MOVING pointer has gone further than a click may.
              *
-             * Called from the moves and from nowhere else. A release used to come through
-             * here too, and that is what made an ordinary click stop working: the four
-             * pixels are a fair question to ask of a pointer we are watching travel, and
-             * an unfair one to ask of a hand pressing and letting go in one place.
+             * Called from the moves and from nowhere else. Four pixels is a fair question
+             * to ask of a pointer we are watching travel, and an unfair one to ask of a
+             * hand pressing and letting go in one place — see `node_release()`.
              *
-             * A new value rather than a flag flipped on the old one: the press lives in a
-             * cell now, and a cell edited through the object it handed out never hears
-             * about it.
+             * A new value rather than a flag flipped on the old one: a cell edited through
+             * the object it handed out never hears about it.
              */
             press_track(event) {
                 const press = this.press();
@@ -39446,13 +39406,11 @@ var $;
              * Carrying a node writes straight into `spots`, the same channel a drop from
              * the palette writes: placement is one fact with one owner, whatever moved it.
              *
-             * Over a container it writes nothing at all. Inside an artboard the layout is
-             * a tree and not a set of coordinates, so what the gesture means there is a
-             * position among children, and the only feedback until the release is the
-             * insertion line. A node that is drawn inside one never gets a coordinate
-             * either way: `spots` positions the direct children of the root and nothing
-             * else, so writing one would leave a number in the document's desk layout
-             * that moves nothing.
+             * Over a container it writes nothing at all: there the layout is a tree, so the
+             * gesture means a position among children and the insertion line is the only
+             * feedback until the release. Placement addresses the direct children of the
+             * root and nothing else, so a coordinate written for a node drawn inside a
+             * container would move nothing and outlive the reason it was written.
              */
             node_move(event) {
                 if (!event)
@@ -39518,13 +39476,12 @@ var $;
                 // the pointer left the window — and there the release is the only witness.
                 //
                 // What it witnesses is WHICH NODE the pointer came up on, and not how far
-                // it went. Measured by distance this used to swallow ordinary clicks: a
-                // deliberate press and release drifts a few pixels under any hand, four of
-                // them is well inside that, and a click over the slack was filed as a drag
-                // and never let the pointer inside the part. That is E18 — a double click
-                // went in, because a browser delivers one at a single point, and two
-                // separate clicks did not. The node is the same rule a browser fires
-                // `click` by, and no hand can drift onto a different node.
+                // it went. Distance swallows ordinary clicks: a deliberate press and
+                // release drifts a few pixels under any hand, well past the slack, and a
+                // click filed as a drag never lets the pointer inside the part — only a
+                // double click, which a browser delivers at one single point, gets in.
+                // The node is the rule a browser fires `click` by, and no hand can drift
+                // onto a different one.
                 //
                 // Nothing was carried in either case: the parts are moved by `node_move`
                 // and by nothing else, so a gesture we saw no moves of moved no part.
@@ -39580,13 +39537,12 @@ var $;
                 if (!press.entering)
                     return;
                 this.entered(this.primary());
-                // The keyboard has to follow the pointer inside. `focus()` on the element
-                // INSIDE the frame is the scene's half and it is not enough by itself:
-                // measured in the browser, after a relayed click the active element of
-                // the frame document was still `body` and typing went nowhere. Focusing
-                // the frame element is the host's half, it is allowed across origins, and
-                // it is what puts the frame's document in the keyboard's way. Best effort
-                // for the same reason the pointer capture is: a test DOM may not have it.
+                // The keyboard has to follow the pointer inside, and it takes both halves.
+                // The scene focusing an element of its own is not enough — the active
+                // element of the frame document stays `body` and typing goes nowhere.
+                // Focusing the frame ELEMENT is the host's half, allowed across origins,
+                // and it is what puts that document in the keyboard's way. Best effort for
+                // the same reason the pointer capture is: a test DOM may not have it.
                 try {
                     this.Scene(this.scene_key()).dom_node().focus();
                 }
@@ -40049,17 +40005,15 @@ var $;
                     return;
                 }
                 if (message.kind === 'key') {
-                    // The same step back the host's own `Escape` takes, and it has to be
-                    // written twice because the two keystrokes never meet: once the
-                    // pointer is let inside a part, the focus belongs to the frame and
-                    // the keydown lands in ITS document, where the host's listener is not.
-                    // The frame relays the key instead, and it arrives here — at the pane,
-                    // which is what owns both the hole and the pick.
+                    // The same step back the host's own `Escape` takes, written twice
+                    // because the two keystrokes never meet: with the pointer inside a
+                    // part the focus belongs to the frame and the keydown lands in ITS
+                    // document, out of the host listener's reach. The frame relays it
+                    // here instead, to the pane, which owns both the hole and the pick.
                     //
-                    // Out of the node first and out of the pick second, one step per
-                    // press, because those are two different things to have got into and
-                    // leaving both at once would take the selection away from a user who
-                    // only meant to stop typing.
+                    // One step per press, because getting into a node and getting into a
+                    // selection are two different things, and leaving both at once takes
+                    // the selection from someone who only meant to stop typing.
                     if (this.inside())
                         this.entered(null);
                     else
@@ -40071,15 +40025,12 @@ var $;
                     return;
                 }
                 if (message.kind === 'sizes') {
-                    // MERGED, never replaced. Culling means the scene stops drawing what
-                    // is off screen, and what is not drawn cannot be measured, so a name
-                    // missing from a report is a node that went out of view — not one
-                    // that lost its size. Replacing would drop the box the moment the
-                    // node left the viewport, and the selection ring, which is drawn from
-                    // exactly these boxes, would blink out at the edge of the canvas.
-                    //
-                    // Stale entries are dropped by `sizes_forget()`, from the one place
-                    // that knows a node is gone for good: the delete.
+                    // MERGED, never replaced. What is culled is not drawn and what is not
+                    // drawn cannot be measured, so a name missing from a report is a node
+                    // out of view, not one that lost its size. Replacing would drop its
+                    // box at the edge of the canvas and blink out the ring drawn from it.
+                    // Stale entries go in `sizes_forget()`, from the one place that knows
+                    // a node is gone for good: the delete.
                     this.sizes({ ...this.sizes(), ...message.sizes });
                     // Geometry is what starts the watch, see `warmed()`.
                     this.warmed(true);
@@ -41166,14 +41117,13 @@ var $;
                 return this.$.$mol_dom_context.location?.href ?? '';
             }
             /**
-             * Bundle of the sandbox, a sibling module of this one, derived from our own
-             * address. This is the only page in the project, so nothing else has one and
-             * there is nothing else to derive.
+             * Bundle of the sandbox, a sibling module, derived from our own address —
+             * this being the only page in the project.
              *
              * Absolute, because the markup of the frame is handed to an opaque origin,
-             * which has no base for a relative path to be resolved against. Derived and
-             * not a constant, because a constant is written in one layout: the dev server
-             * keeps a module in `-/` and a deploy does not.
+             * which has no base to resolve a relative path against. Derived rather than
+             * constant, because a constant is written in one layout and the dev server
+             * keeps a module where a deploy does not.
              * @see ../ARCHITECTURE.md sections 4 and 7
              */
             scene_bundle() {
@@ -41202,11 +41152,11 @@ var $;
              * What the strip says, and it says two different things.
              *
              * A frame that HAD been answering and went quiet is one story: something
-             * stopped it, a fresh frame is very likely to come up. A frame that never
-             * answered at all is another: the code that stopped it is in the document, so
-             * it will stop the next frame too, and reloading the page will not help
-             * either. Telling the second story as the first sends the user round a loop
-             * of restarts, which is exactly what the strip exists to prevent.
+             * stopped it, and a fresh frame is likely to come up. A frame that never
+             * answered is another: the code that stopped it is in the document, so it
+             * stops the next frame too and a reload will not help. Telling the second
+             * story as the first sends a person round a loop of restarts, which is what
+             * the strip exists to prevent.
              */
             stall_note() {
                 if (!this.pane().warmed()) {
@@ -41220,16 +41170,13 @@ var $;
             /**
              * Name of the root class: the first class the document text declares.
              *
-             * Read off the text with the same first-token rule the store matches classes
-             * to nodes by, NOT by parsing. The rule is a regexp over a string and cannot
-             * throw, which is the property that matters here: `doc_root` is read while
-             * pushing to the scene and while drawing the toolbar, and a throw on either
-             * path takes the editor down over text the scene already reports about.
+             * Matched over the text and NOT parsed, because a regexp cannot throw: this is
+             * read while pushing to the scene and while drawing the toolbar, and a throw
+             * on either path takes the editor down over text the scene already reports on.
              *
-             * Derived and no longer a constant, because the folder an export goes to
-             * follows from the class names — section 10 — so a document whose root
-             * cannot be renamed is a document that can only be unpacked inside the pack
-             * of the editor itself.
+             * Derived rather than constant, because the folder an export goes to follows
+             * from the class names — section 10 — so a document whose root cannot be
+             * renamed can only ever be unpacked inside the pack of this editor.
              */
             doc_root() {
                 return this.$.$bog_vmap_app_store_class_name(this.doc_source())
@@ -41238,16 +41185,14 @@ var $;
             /**
              * Name the root class of a fresh document gets.
              *
-             * `my` is the namespace the docs of `mol` use for one's own code: it belongs
-             * to nobody and collides with nothing, and the three segments make a module
-             * path — `my/site/page` — that lands in a folder of the author's own instead
-             * of inside the pack of this editor, which is where a document named after
-             * this pack used to be unpacked.
+             * The namespace the docs use for one's own code: it belongs to nobody, and its
+             * three segments make a module path that lands in a folder of the author's
+             * own rather than inside the pack of this editor.
              *
-             * The dollar is glued on and not written into the literal: mam reads string
-             * literals when it builds the dependency graph and resolves a dollar name
-             * into a package, and there is no root package `my` — the whole module would
-             * stop building over a default value.
+             * The dollar is glued on and not written into the literal: the dependency
+             * graph reads string literals and resolves a dollar name into a package, and
+             * there is no root package of that name — the module would stop building over
+             * a default value.
              */
             doc_root_default() {
                 return '$' + 'my_site_page';
@@ -41266,8 +41211,8 @@ var $;
             /**
              * The document text: the atoms of the current document, or the draft of the
              * store before there is one. `node()` writes here through its delegate, so the
-             * tree and the string the bridge pushes are the same path. A plain method, not
-             * Not a memo cell: one in front of a Giper Baza atom freezes after a write.
+             * tree and the string the bridge pushes are the same path. A plain method and
+             * not a memo cell: one in front of a Giper Baza atom freezes after a write.
              * Empty text is the empty page, the scene needs a root class to compile.
              */
             doc_source(next) {
@@ -41279,12 +41224,11 @@ var $;
             /**
              * The root class as a model over its AST: what the canvas edits.
              *
-             * Taken from the DOCUMENT model and not made over the whole text. A node
-             * models one class — `tree()` reads the first declaration and a write
-             * serializes that one class as the entire source — so a node over a text
-             * with two classes in it dropped the second on the first edit made anywhere.
-             * Measured on the palette drop: two classes in, one class out, no error.
-             * Through the document the neighbours come back out of their own trees.
+             * Taken from the DOCUMENT model and not made over the whole text. A node models
+             * ONE class — it reads the first declaration and a write serializes that class
+             * as the entire source — so a node built over a text of two classes drops the
+             * second on the first edit made anywhere, silently. Through the document the
+             * neighbours come back out of their own trees.
              */
             node() {
                 return this.doc_model().node(this.doc_root());
@@ -41296,16 +41240,14 @@ var $;
              * Where each part sits on the canvas, in world coordinates, keyed by the
              * property name it occupies on the root class.
              *
-             * SCAFFOLDING, NOT PART OF THE DOCUMENT. It leaves the host on `spots_set`,
-             * a bridge message of its own, and the scene hangs it as a style element of
-             * its own. So the document text and the document CSS never carry a
-             * coordinate, and the export cannot see the desk layout by construction.
-             * Section 8 says layout inside an artboard is a plain flex tree of views, only
-             * free parts lie by coordinates; artboards are stage 6, and until they exist
-             * a dropped component has nowhere else to be.
+             * SCAFFOLDING, NOT PART OF THE DOCUMENT. It leaves the host on a bridge message
+             * of its own and the scene hangs it as a style element of its own, so neither
+             * the document text nor the document CSS ever carries a coordinate and the
+             * export cannot see the desk layout by construction. Section 8: only free
+             * parts lie by coordinates, and inside an artboard the layout is a flex tree.
              *
-             * Stored with the document, in `Spots` of the schema, through the store.
-             * A plain method for the reason given at `doc_source`.
+             * Stored with the document, through the store. A plain method for the reason
+             * given at `doc_source`.
              */
             spots(next) {
                 return this.store().spots(next);
@@ -41328,22 +41270,16 @@ var $;
              * on its way.
              *
              * THE SANDBOX MUST NOT WAIT FOR THE DOCUMENT. A document opened by a link
-             * lives in a land of its own, and reading any field of it suspends until
-             * that land syncs — which, with no master reachable, is for ever. This value
-             * feeds `pack_link`, `pack_link` feeds the pack the frame is keyed by: a
-             * suspension here therefore left the frame with NO KEY AT ALL, so the scene
-             * never booted, never said `ready`, and the editor sat on «ожидание сцены…»
-             * for ever. Measured on a document link with no master while the pack still
-             * rode the frame address: frame `src` absent, palette suspended, nothing on
-             * the wire. The pack travels the bridge now, and the key is still derived
-             * from it, so the shape of the failure is unchanged.
+             * lives in a land of its own, and reading any field of it suspends until that
+             * land syncs — with no master reachable, for ever. This feeds the pack the
+             * frame is keyed by, so a suspension leaves the frame with NO KEY AT ALL: the
+             * scene never boots, never says `ready`, and the editor waits on it for ever.
              *
-             * So a suspension is answered with the empty string, which the caller reads
-             * as «no palette of its own» and falls back to the standard one. Nothing is
-             * lost: the subscription is recorded before the throw, so this recomputes
-             * the moment the land arrives, and a document that does carry a palette of
-             * its own then replaces the frame exactly as any change of pack does.
-             * The same shape as `store_boot`, and for the same reason.
+             * So a suspension is answered with the empty string, which the caller reads as
+             * «no palette of its own» and falls back to the standard one. Nothing is lost:
+             * the subscription is recorded before the throw, so this recomputes the moment
+             * the land arrives, and a document that does carry a palette then replaces the
+             * frame exactly as any change of pack does. Same shape as `store_boot`.
              */
             store_links() {
                 try {
@@ -41393,19 +41329,15 @@ var $;
              *
              * A property name and not a box, an index or a view: section 1 makes every
              * named node a flat property of the root class whatever its depth, so this
-             * name is the handle the AST, the placement and the measured geometry are all
-             * already keyed by. `node().prop_tree( selected() )` is the declaration,
-             * `spots()[ selected() ]` is where it sits.
+             * name is the handle the declaration, the placement and the measured geometry
+             * are all already keyed by. Here rather than in the pane, so that a reader
+             * need not reach through the canvas to learn what is picked.
              *
-             * The truth is here rather than in the pane so that a reader does not have to
-             * reach through the canvas to learn what is picked; the pane writes it back
-             * through a two way binding.
-             *
-             * KEYED BY THE DOCUMENT, and a plain method for that reason. A pick belongs
-             * to the document it was made in: switching scenes hands over that scene's
-             * pick — empty for a fresh one — and coming back finds it where it was left.
-             * One pick for the whole editor left a ring hanging over an empty canvas and
-             * an inspector opened on a node the new document never had.
+             * KEYED BY THE DOCUMENT, and a plain method for that reason. A pick belongs to
+             * the document it was made in, so switching scenes hands over that scene's
+             * pick and coming back finds it where it was left. One pick for the whole
+             * editor leaves a ring over an empty canvas and an inspector opened on a node
+             * the new document never had.
              *
              * A memo cell here would freeze on the first write: writing to a cell
              * freezes its dependencies, and the dependency frozen would be the very
@@ -41557,12 +41489,10 @@ var $;
              *
              * A SUSPENSION IS NOT PASSED ON EITHER, and that is the harder half. The
              * toolbar is drawn from this, and a document opened by a link lives in a land
-             * that suspends every read until it syncs — so rethrowing here suspended the
-             * whole editor, frame and all, and the sandbox never came up. Measured: the
-             * standing test of that invariant went red the moment this cell was wired to
-             * the toolbar. The subscription is recorded before the throw, so nothing is
-             * lost: this recomputes the moment the text arrives. The same shape as
-             * `store_links`, and for the same reason.
+             * that suspends every read until it syncs, so rethrowing suspends the whole
+             * editor, frame and all, and the sandbox never comes up. The subscription is
+             * recorded before the throw, so nothing is lost: this recomputes the moment
+             * the text arrives. Same shape as `store_links`.
              */
             export_state() {
                 try {
@@ -41687,21 +41617,18 @@ var $;
              * `view.tree` of the class in scope, two way: what the panel shows on its
              * first tab when it edits a whole class.
              *
-             * The class and not the whole document, which is what this used to be while
-             * the panel called it «the whole class» in the very same breath. The three
-             * texts of the panel now speak about one class, and that class is named in
-             * the heading over them.
+             * The class and not the whole document, so that the three texts of the panel
+             * all speak about the one class named in the heading over them.
              *
              * A SECOND CLASS IS ADDED HERE, by writing one under the one on screen: the
-             * document model replaces the slot with everything the text parses to, so two
-             * declarations typed in place of one become two classes of the document.
+             * slot is replaced by everything the text parses to, so two declarations typed
+             * in place of one become two classes of the document.
              *
-             * A NAME CHANGED IN THIS TEXT IS A RENAME, and is carried like one. Measured
-             * before it was: the body and the styles of the class stayed under the old
-             * name, so `doc_js` and `doc_css` came out empty and the behaviour the person
-             * had written stopped reaching the scene — with nothing on the screen saying
-             * so. The text is the truth of section 1, so the answer is to follow it, not
-             * to forbid editing the name here.
+             * A NAME CHANGED IN THIS TEXT IS A RENAME, and is carried like one. Left
+             * uncarried, the body and the styles stay under the old name, the generated
+             * code and CSS come out empty, and the behaviour the person wrote stops
+             * reaching the scene with nothing on screen saying so. The text is the truth
+             * of section 1, so the answer is to follow it, not to forbid the edit.
              *
              * What counts as a rename is decided by names alone: one name gone, one name
              * arrived, every other class of the document where it was. Two gone or two
@@ -41867,10 +41794,8 @@ var $;
                 ];
             }
             /**
-             * Which panels are open, kept in the session so a reload finds the editor
-             * as it was left. The wiki page of hyoo keeps its own panels the same way,
-             * and is named here in words: a real class name in a doc comment is read by
-             * the dependency graph and pulls that whole pack into the bundle.
+             * Which panels are open, kept in the session so a reload finds the editor as
+             * it was left.
              *
              * IN THE SESSION AND NOT IN THE ADDRESS. The address says WHAT is open —
              * `doc` — and is a link a person shares; a layout in it would travel to
@@ -41936,19 +41861,15 @@ var $;
              * Declaration of the picked part, as text, in both directions.
              *
              * This is the whole join between canvas and inspector, and it needs no
-             * translation layer because there is nothing to translate: section 1 makes
-             * every named node a flat property of the root class, and a property whose
-             * value is a class name is, in `view.tree`, a class declaration —
-             * A line naming a part and a base parses to a class of that name based on
-             * that base. So the inspector reads the same bytes the document
-             * carries, and what it writes goes back into the document as those bytes.
+             * translation layer because there is nothing to translate: a property whose
+             * value is a class name IS a class declaration, so the inspector reads the
+             * same bytes the document carries and writes those bytes back.
              *
-             * NOT memoized, and the read deliberately does not go through
-             * `prop_tree()`. That one is a keyed cell, the write below goes through it,
-             * and a write to a cell freezes its dependencies — a read taken from the
-             * same cell would stop following the document after the first edit made
-             * here. Stale in exactly the node being edited, silent, and looking like
-             * success. `props_tree()` is a plain derivation of the text and stays live.
+             * NOT memoized, and the read deliberately avoids the keyed cell the write
+             * below goes through: a write to a cell freezes its dependencies, so a read
+             * taken from the same cell would stop following the document after the first
+             * edit made here — stale in exactly the node being edited, silent, and
+             * looking like success.
              */
             node_source(next) {
                 const name = this.selected();
@@ -42003,6 +41924,19 @@ var $;
                 return this.$.$bog_vmap_app_wire_ports(this.Lib().props_map(klass.type));
             }
             /**
+             * Every property the document declares, which is every node the canvas may
+             * touch.
+             *
+             * The scene measures the whole rendered tree, insides of pack classes and
+             * all, so the boundary between «a node of the document» and «the insides of a
+             * part» has to come from the document, and the host is the one holding it.
+             * Section 1: every named node is a flat property of the root class whatever
+             * its depth, so one flat list of names answers at every level.
+             */
+            doc_names() {
+                return this.node().prop_names();
+            }
+            /**
              * Nodes that carry a `sub` of their own, which is what makes a node an
              * artboard and its children a tree rather than a heap of coordinates.
              *
@@ -42011,20 +41945,6 @@ var $;
              * and free parts are properties of the same root class, and the only
              * difference between them is in the text.
              */
-            /**
-             * Every property the document declares, which is every node the canvas may
-             * touch.
-             *
-             * The scene measures the whole rendered tree — a pack class is drawn out of
-             * its own views, and they are measured too — so the boundary between «a node
-             * of the document» and «the insides of a part» has to come from the document,
-             * and the host is the one holding it. Section 1: every named node is a flat
-             * property of the root class whatever its depth, so one flat list of names
-             * answers the question at every level.
-             */
-            doc_names() {
-                return this.node().prop_names();
-            }
             doc_containers() {
                 const node = this.node();
                 return node.prop_names().filter(name => node.sub_names(name));
