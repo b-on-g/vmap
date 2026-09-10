@@ -1,16 +1,5 @@
 namespace $ {
 
-	/**
-	 * Tests of the shelf model: what a ready made item leaves in the document.
-	 *
-	 * No DOM and no network here. The wire of the pair is checked through
-	 * `links()` of the document itself rather than by reading the text, because a
-	 * wire written the wrong way still reads plausibly — the five traps of section
-	 * 1 all look like a wire and all build green.
-	 *
-	 * `d` keeps `$` out of the fixtures: mam builds its dependency graph by a
-	 * regexp over sources, string literals included.
-	 */
 	const d = '$'
 
 	const root_src = `${d}bog_vmap_app_shelf_test_page ${d}mol_view\n\tsub /\n`
@@ -21,7 +10,6 @@ namespace $ {
 		return node
 	}
 
-	/** The same free name rule the editor uses: the name, or the name with a number. */
 	function freer( node: $bog_vmap_lang_node ) {
 		return ( head: string )=> {
 			const taken = new Set( node.prop_names() )
@@ -45,12 +33,8 @@ namespace $ {
 
 			shelf.links( 'https://mol.hyoo.ru, https://b-on-g.github.io/gram/' )
 
-			// Stored exactly as typed: growing a slash here would make an address
-			// impossible to finish typing.
 			$mol_assert_equal( shelf.links(), 'https://mol.hyoo.ru, https://b-on-g.github.io/gram/' )
 
-			// One pack per frame, so the second is refused rather than dropped in
-			// silence, and the refusal is on screen under the field.
 			$mol_assert_equal(
 				shelf.rejected_note(),
 				'https://b-on-g.github.io/gram/: ' + $bog_vmap_lib_links_reason.pack_second,
@@ -71,12 +55,9 @@ namespace $ {
 				class_list: ()=> [ `${d}mol_view`, `${d}mol_button_minor`, `${d}bog_gram`, `${d}bog_gram_chat` ],
 			}) as $$.$bog_vmap_app_shelf
 
-			// What the author of the application wrote, and nothing of the framework
-			// their pack carries in its bundle.
 			$mol_assert_like( shelf.app_list(), [ `${d}bog_gram`, `${d}bog_gram_chat` ] )
 			$mol_assert_equal( shelf.apps_title(), 'Объекты приложения' )
 
-			// Each of them is an item like any other, and lays down the same way.
 			$mol_assert_equal( shelf.item_title( `${d}bog_gram_chat` ), 'Gram_chat' )
 			$mol_assert_ok( shelf.item( `${d}bog_gram_chat` )!.source.includes( `${d}bog_gram_chat` ) )
 
@@ -90,7 +71,6 @@ namespace $ {
 				class_list: ()=> $mol_fail( new Error( 'Not Found' ) ),
 			}) as $$.$bog_vmap_app_shelf
 
-			// The list is empty and the section says what happened, in place of it.
 			$mol_assert_like( shelf.app_list(), [] )
 			$mol_assert_equal( shelf.apps_title(), 'Приложение не отвечает' )
 			$mol_assert_ok( shelf.app_error().includes( 'Not Found' ) )
@@ -98,8 +78,6 @@ namespace $ {
 			$mol_assert_equal( shelf.apps_content().includes( shelf.Apps_note() ), true )
 			$mol_assert_equal( shelf.apps_content().includes( shelf.App_list() ), false )
 
-			// And the shelf itself stands: the failure belongs to one list, not to
-			// the panel around it.
 			$mol_assert_ok( shelf.items().length > 4 )
 			$mol_assert_ok( shelf.stack_content().includes( shelf.Items() ) )
 
@@ -112,7 +90,6 @@ namespace $ {
 			$mol_assert_like( shelf.app_list(), [] )
 			$mol_assert_equal( shelf.apps_title(), 'Приложение не подключено' )
 
-			// The shelf itself stands whatever the address does.
 			$mol_assert_ok( shelf.items().length > 4 )
 
 		},
@@ -132,15 +109,11 @@ namespace $ {
 				{ name: 'card.view.css', text: '[my_card] { color: red }' },
 			])
 
-			// Two components and not one text: a library resolves neighbours by
-			// name, so a class that inherits the one beside it still finds it.
 			$mol_assert_equal( taken.classes.length, 2 )
 			$mol_assert_ok( taken.classes[ 0 ].tree.startsWith( `${d}my_card ${d}mol_view` ) )
 			$mol_assert_ok( taken.classes[ 1 ].tree.includes( `${d}my_price ${d}my_card` ) )
 			$mol_assert_like( taken.refused, [] )
 
-			// Plain CSS beside the tree comes along, on the first class of the file:
-			// it is a stylesheet and not a program, and the library holds one.
 			$mol_assert_equal( taken.classes[ 0 ].css, '[my_card] { color: red }' )
 			$mol_assert_equal( taken.classes[ 1 ].css, '' )
 
@@ -152,7 +125,6 @@ namespace $ {
 				{ name: 'card.view.ts', text: 'namespace $ {}' },
 				{ name: 'web.view.tree', text: `${d}mol_view ${d}mol_object\n` },
 				{ name: 'empty.view.tree', text: '- just a comment\n' },
-				// A stylesheet written as a program is a program.
 				{ name: 'card.view.css.ts', text: 'namespace $ {}' },
 			])
 
@@ -167,7 +139,6 @@ namespace $ {
 				],
 			)
 
-			// The note names the file, so a person knows which one to fix.
 			$mol_assert_ok( $bog_vmap_app_shelf_intake_note( taken ).includes( 'card.view.ts' ) )
 
 		},
@@ -181,7 +152,6 @@ namespace $ {
 
 			const source = `${d}my_card ${d}mol_view\n\tprice 0\n`
 
-			// Through a fiber, as the panel does it: making the area encodes units.
 			const link = await $mol_wire_async( store ).import_class( source )
 
 			const shelf = store.shelf()!
@@ -189,13 +159,8 @@ namespace $ {
 			$mol_assert_equal( link, shelf.land().link().str )
 			$mol_assert_equal( shelf.parts().length, 1 )
 
-			// Under its OWN name: renaming it would cut every reference a neighbour
-			// of the same module makes to it, and cut it silently.
 			$mol_assert_equal( shelf.parts()[ 0 ].tree(), source )
 
-			// A second import of the same class replaces it instead of doubling it:
-			// two declarations of one name and the library disagrees with itself
-			// about which is real.
 			await $mol_wire_async( store ).import_class( `${d}my_card ${d}mol_view\n\tprice 42\n` )
 
 			$mol_assert_equal( shelf.parts().length, 1 )
@@ -221,20 +186,13 @@ namespace $ {
 				{ name: 'card.view.ts', text: async ()=> 'namespace $ {}' },
 			])
 
-			// What was taken is in the library, under its own name. In canonical
-			// `tree2` formatting, which puts an only child on the line of its
-			// parent: the splitter serializes each declaration through `tree2`, and
-			// that form is what every other reader of the library expects.
 			const parts = shelf.Store().shelf()!.parts()
 			$mol_assert_equal( parts.length, 1 )
 			$mol_assert_equal( parts[ 0 ].tree(), `${d}my_card ${d}mol_view price 0\n` )
 			$mol_assert_equal( parts[ 0 ].css(), '[my_card] { color: red }' )
 
-			// And the library is attached to the scene by the same field an address
-			// goes into: from here on it is the library any other scene would get.
 			$mol_assert_equal( shelf.links(), shelf.Store().link() )
 
-			// What was not taken is said on screen, by file name.
 			$mol_assert_ok( shelf.import_note().includes( 'card.view.ts' ) )
 			$mol_assert_ok( shelf.source_content().includes( shelf.Import_note() ) )
 
@@ -247,7 +205,6 @@ namespace $ {
 				shelf_land_config: ()=> $.$giper_baza_glob.home().land(),
 			})
 
-			// No land is made and nothing is written: the check is the first line.
 			$mol_assert_fail(
 				()=> store.import_class( `card ${d}mol_view\n` ),
 				'Объявление начинается с "card", а имя класса начинается с доллара',
@@ -272,7 +229,6 @@ namespace $ {
 			for( const item of items ) {
 				$mol_assert_ok( item.title )
 				$mol_assert_ok( item.hint )
-				// Parses as a class, or the item could never be laid down.
 				$mol_assert_ok( $bog_vmap_lang_node.make({ $, source: ()=> item.source }).tree() )
 			}
 
@@ -286,7 +242,6 @@ namespace $ {
 			$mol_assert_like( placed, [ 'Calc' ] )
 			$mol_assert_like( node.part_names(), [ 'Calc' ] )
 
-			// Placement is the canvas's business, so `sub` is untouched here.
 			$mol_assert_like( node.sub_names( '' ), [] )
 
 		},
@@ -308,7 +263,6 @@ namespace $ {
 			const node = doc( $ )
 			const placed = $.$bog_vmap_app_shelf_apply( node, preset( 'pair' ), freer( node ) )
 
-			// One name to place: the wrapper. Both parts hang inside it by tree.
 			$mol_assert_like( placed, [ 'Pair' ] )
 			$mol_assert_like( node.sub_names( 'Pair' ), [ 'Calc', 'Map' ] )
 
@@ -331,9 +285,6 @@ namespace $ {
 
 			$mol_assert_like( placed, [ 'Pair_2' ] )
 
-			// The wrapper of the second copy holds the parts of the second copy and
-			// not the first: a reference that did not follow the rename would be the
-			// silent kind of wrong, drawing one calculator inside two boxes.
 			$mol_assert_like( node.sub_names( 'Pair_2' ), [ 'Calc_2', 'Map_2' ] )
 
 			const links = node.links()
@@ -366,9 +317,6 @@ namespace $ {
 			const node = doc( $ )
 			$.$bog_vmap_app_shelf_apply( node, preset( 'pair' ), freer( node ) )
 
-			// Exactly one property carries the `=` operator, and the far end of the
-			// wire reads it. Two wires for one link, or an override left behind by
-			// the copy, would show up as a second one here.
 			$mol_assert_equal( node.wires().length, 1 )
 
 			const zoom = node.over_tree( 'Map', 'zoom' )

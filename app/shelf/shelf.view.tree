@@ -1,66 +1,29 @@
-- The shelf: ready made things to put on the canvas, one gesture each.
-- A person opening the editor is offered objects they recognise and not the several
-- hundred classes a pack declares. Those are still here, one level down, because
-- laying out the inside of a page needs primitives and nothing else will do.
 $bog_vmap_app_shelf $mol_view
-	- Links separated by commas, stored exactly as typed. The first http(s) one is
-	- the application whose objects join the shelf, the rest are lands holding
-	- component sources. One value for the whole editor, so the panel offers what
-	- the scene has actually loaded; one pack per frame, so a second address is
-	- refused by construction.
 	links? \
 	pack_link \
 	land_classes /$mol_tree2
-	- Every class the library holds, handed in by the editor. Read inside `Apps` and
-	- nowhere else: reading it fetches, and a dead address has to take down that one
-	- list rather than the panel around it.
 	class_list /string
-	- What the pointer is carrying, BY ITS ID, and where the pointer is. One state
-	- for both levels of the panel: a class row writes its class name here, a shelf
-	- row the id of its item, and the two are told apart because a class name starts
-	- with a dollar and an id never does.
 	dragged? \
 	drag_x? 0
 	drag_y? 0
-	- An item asked for by a plain click, which the editor answers by putting it in
-	- the middle of the canvas. A press that turns into a drag never becomes a
-	- click, so the two gestures do not fight.
 	place? \
-	- Files picked in the dialog: an event carrying a payload, not a list the panel
-	- keeps, so it is answered empty.
 	files? /File
 	classes_showed? false
 	sub <= body /$mol_view
-	-
 	Title $mol_view
 		sub /
 			\Полка
-	-
-	- Everything above the second level scrolls as one, or a panel taller than the
-	- window pushes the page down and takes the head bar off the screen with it. The
-	- scroll lays every child into the same cell, so it holds exactly ONE node and
-	- the stack goes inside that one.
 	Stack $mol_scroll
 		sub /
 			<= Stack_body $mol_view
 				sub <= stack_content /$mol_view
-	-
 	Items $mol_list
 		rows <= item_rows /
-	-
-	- Where an application comes from. Outside `Apps` on purpose: a mistyped address
-	- must leave the field it was typed into reachable, and the list is exactly what
-	- a bad address takes down.
 	Source $mol_view
 		sub <= source_content /$mol_view
-	-
 	Links $mol_string
 		hint \Адрес приложения, ленды через запятую
 		value? <=> links?
-	-
-	- What the files carry goes into the component library of the user, whose link
-	- joins the field above, so from that moment on it is the library any other
-	- scene would be handed.
 	Import $mol_view
 		sub /
 			<= Import_open $mol_button_open
@@ -71,48 +34,24 @@ $bog_vmap_app_shelf $mol_view
 			<= Import_title $mol_view
 				sub /
 					\Файлы модуля
-	-
-	- Rendered only while there is something to say, like the refusals of the field.
 	Import_note $mol_view
 		sub / <= import_note? \
-	-
-	- CRUD over the library of the user, the same store the publish button holds:
-	- both write into the one library the home land points at.
 	Store $bog_vmap_app_publish_store
-	-
-	- What was typed and not taken. A second pack is refused by construction, and a
-	- person who typed one has to learn that from the screen rather than from a log.
 	Note $mol_view
 		sub / <= rejected_note \
-	-
-	- Objects of the connected application: every class it declares that is not part
-	- of the framework. A deployed application is a library of components already,
-	- so this needs nothing of its author.
 	Apps $mol_view
 		sub <= apps_content /$mol_view
-	-
 	Apps_head $mol_view
 		sub /
 			<= apps_title \
-	-
 	App_list $mol_list
 		rows <= app_rows /
-	-
-	- In place of the list and not beside it: there is nothing to list, and a dead
-	- address is the whole content of the section until it is fixed.
 	Apps_note $mol_view
 		sub / <= app_error \
-	-
-	- The second level, folded away by default. A check and not an expander: the
-	- palette has to GROW into whatever the shelf left, and an expander would size it
-	- by its content, leaving the class list no height to scroll in.
 	Level $mol_check
 		title \Все классы пака
 		hint \Классы донорского пака целиком: примитивы, из которых верстают внутри блока
 		checked? <=> classes_showed?
-	-
-	- The old palette, demoted. Rendered only while it is open, so a folded panel
-	- does not fetch a class tree it is not showing.
 	Palette $bog_vmap_app_palette
 		compact true
 		pack_link <= pack_link
@@ -120,9 +59,6 @@ $bog_vmap_app_shelf $mol_view
 		dragged? <=> dragged?
 		drag_x? <=> drag_x?
 		drag_y? <=> drag_y?
-	-
-	- One row per item. Pointer down and not the native drag protocol, which cannot
-	- be driven by synthetic events and would hand the drop to the browser.
 	Item_row* $bog_vmap_app_palette_item
 		title <= item_title* \
 		hint <= item_hint* \
