@@ -50353,10 +50353,12 @@ declare namespace $.$$ {
         /**
          * The press in progress, kept until its release.
          *
-         * `moved` is decided in screen pixels against `click_slack`, and once true it
-         * stays true: a pointer that wandered and came back is not a click. The world
-         * point is the one relayed to the scene, so the click lands where the press
-         * did, not where the release happened to be.
+         * `moved` is what the MOVES said, in screen pixels against `click_slack`, and
+         * once true it stays true: a pointer that wandered and came back is not a
+         * click. It is not the whole answer — a gesture whose moves went elsewhere
+         * arrives here with `moved` still false, and `node_release()` judges that one
+         * by the node the button came up on. The world point is the one relayed to the
+         * scene, so the click lands where the press did, not where the release was.
          *
          * `entering` says the press landed on the node that was ALREADY picked, so a
          * click out of it is the second one and lets the pointer inside. See `entered`.
@@ -50541,7 +50543,12 @@ declare namespace $.$$ {
          */
         node_press(event?: PointerEvent): void;
         /**
-         * Notes whether the pointer has gone further than a click may.
+         * Notes whether a MOVING pointer has gone further than a click may.
+         *
+         * Called from the moves and from nowhere else. A release used to come through
+         * here too, and that is what made an ordinary click stop working: the four
+         * pixels are a fair question to ask of a pointer we are watching travel, and
+         * an unfair one to ask of a hand pressing and letting go in one place.
          *
          * A new value rather than a flag flipped on the old one: the press lives in a
          * cell now, and a cell edited through the object it handed out never hears
@@ -50567,8 +50574,8 @@ declare namespace $.$$ {
          *
          * A pan never gets here: on its first move `$mol_touch` captures the pointer
          * to the pane, and from then on the overlay sees neither the moves nor the
-         * release. The distance is still measured, so the outcome does not depend on
-         * that capture having happened.
+         * release. The gesture is still judged here, so the outcome does not depend
+         * on that capture having happened.
          */
         node_release(event?: PointerEvent): void | readonly string[];
         /**

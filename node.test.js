@@ -31502,10 +31502,12 @@ var $;
             /**
              * The press in progress, kept until its release.
              *
-             * `moved` is decided in screen pixels against `click_slack`, and once true it
-             * stays true: a pointer that wandered and came back is not a click. The world
-             * point is the one relayed to the scene, so the click lands where the press
-             * did, not where the release happened to be.
+             * `moved` is what the MOVES said, in screen pixels against `click_slack`, and
+             * once true it stays true: a pointer that wandered and came back is not a
+             * click. It is not the whole answer — a gesture whose moves went elsewhere
+             * arrives here with `moved` still false, and `node_release()` judges that one
+             * by the node the button came up on. The world point is the one relayed to the
+             * scene, so the click lands where the press did, not where the release was.
              *
              * `entering` says the press landed on the node that was ALREADY picked, so a
              * click out of it is the second one and lets the pointer inside. See `entered`.
@@ -31852,7 +31854,12 @@ var $;
                 catch { }
             }
             /**
-             * Notes whether the pointer has gone further than a click may.
+             * Notes whether a MOVING pointer has gone further than a click may.
+             *
+             * Called from the moves and from nowhere else. A release used to come through
+             * here too, and that is what made an ordinary click stop working: the four
+             * pixels are a fair question to ask of a pointer we are watching travel, and
+             * an unfair one to ask of a hand pressing and letting go in one place.
              *
              * A new value rather than a flag flipped on the old one: the press lives in a
              * cell now, and a cell edited through the object it handed out never hears
@@ -31927,21 +31934,35 @@ var $;
              *
              * A pan never gets here: on its first move `$mol_touch` captures the pointer
              * to the pane, and from then on the overlay sees neither the moves nor the
-             * release. The distance is still measured, so the outcome does not depend on
-             * that capture having happened.
+             * release. The gesture is still judged here, so the outcome does not depend
+             * on that capture having happened.
              */
             node_release(event) {
                 if (!event)
                     return;
                 if (this.carrying())
                     return;
-                // Read back AFTER the tracking and not before it: the travel is recorded by
-                // replacing the value, so a reference taken first would be the press as it
-                // started and would call every drag a click.
-                if (this.press())
-                    this.press_track(event);
                 const press = this.press();
                 this.press(null);
+                // A travelled gesture is known for one long before the button comes up:
+                // every move records itself as it arrives. What arrives with NO moves at
+                // all is a gesture whose moves went elsewhere — the capture was lost, or
+                // the pointer left the window — and there the release is the only witness.
+                //
+                // What it witnesses is WHICH NODE the pointer came up on, and not how far
+                // it went. Measured by distance this used to swallow ordinary clicks: a
+                // deliberate press and release drifts a few pixels under any hand, four of
+                // them is well inside that, and a click over the slack was filed as a drag
+                // and never let the pointer inside the part. That is E18 — a double click
+                // went in, because a browser delivers one at a single point, and two
+                // separate clicks did not. The node is the same rule a browser fires
+                // `click` by, and no hand can drift onto a different node.
+                //
+                // Nothing was carried in either case: the parts are moved by `node_move`
+                // and by nothing else, so a gesture we saw no moves of moved no part.
+                const moved = press
+                    ? press.moved || press.name !== this.node_at(this.world_point(event))
+                    : false;
                 if (this.wire_drag())
                     return this.wire_release(event);
                 // A band that never grew is a modified click, and takes nothing: sweeping
@@ -31950,7 +31971,7 @@ var $;
                 const box = this.band_box();
                 if (box) {
                     this.band(null);
-                    if (!press?.moved)
+                    if (!moved)
                         return;
                     // The pointer goes back outside: a band that happened to end on the
                     // node it was left inside of would otherwise cut the overlay open
@@ -31979,7 +32000,7 @@ var $;
                     return;
                 if (event.button !== 0)
                     return;
-                if (press.moved)
+                if (moved)
                     return;
                 // A click on one node of a group means that one node: the group was kept
                 // through the press so that it could have been carried, and now it was not.
@@ -44242,23 +44263,24 @@ var $;
         /**
          * CARRYING A NODE IS NOT ENTERING IT. The second press on a node picked alone
          * is the one that would let the pointer in, and a drag begins with exactly
-         * that press — so the only thing telling the two apart is how far the pointer
-         * travelled, and it is read on the release.
+         * that press — so something has to tell the two apart, and whatever it is, it
+         * is read on the release.
          *
          * THE RELEASE IS ITS OWN WITNESS, and that is what this pins down. A move
          * records the travel as it goes, so an ordinary drag is told from a click
-         * long before the button comes up. What has no move at all is a release that
-         * arrives far from its press — the pointer went out of the window and the
-         * capture was lost, or the release is a synthetic one — and there the only
-         * measurement ever taken is the one the release takes itself.
+         * long before the button comes up. What has no move at all is a gesture whose
+         * moves went somewhere else — the pointer left the window and the capture was
+         * lost — and there the only reading ever taken is the one the release takes
+         * itself: the node the button came up on. Off the node it pressed on, and the
+         * gesture is not a way in.
          *
-         * The guarantee is thin enough to lose by accident: the press lives in a cell
-         * now, its travel is recorded by replacing the value, and a release that took
-         * its reference to the press BEFORE measuring would read the press as it
-         * started — never moved, therefore a click, therefore a way in. Written after
-         * a negative run: the first version of this scenario moved the pointer first
-         * and stayed green with the fault put back, because the move had already
-         * recorded everything.
+         * NOT how far it went, which is what this used to say and what E18 was. Four
+         * pixels is what a hand drifts between pressing and letting go, so measured
+         * that way an ordinary second click was filed as a drag, and only a double
+         * click — which a browser delivers at one single point — ever got inside.
+         * Two hundred pixels off is the case that stays a drag, and it stays one
+         * under either reading, which is why this scenario survived the change with
+         * its assertions untouched.
          */
         'a release far from its press is not a way into the node'($) {
             const { pane } = pane_make($);
@@ -44270,10 +44292,65 @@ var $;
             $mol_assert_equal(pane.primary(), 'A');
             $mol_assert_equal(pane.inside(), false);
             // The press that would have let the pointer in, and then nothing until a
-            // release two hundred pixels away.
+            // release two hundred pixels away, off the node and onto bare canvas.
             pane.node_press(pointer(50, 25));
             pane.node_release(pointer(250, 225, { buttons: 0 }));
             $mol_assert_equal(pane.inside(), false);
+        },
+        /**
+         * E18. A HAND DRIFTS, AND A CLICK IS STILL A CLICK. Pressing and letting go
+         * in one place moves the pointer by a few pixels under any hand; four of them
+         * was the tolerance, and past it the release was filed as a drag and the
+         * second click never let the pointer inside the part.
+         *
+         * What made it look like a rule rather than a wobble is that a DOUBLE click
+         * always worked: a browser delivers both of its presses at one single point,
+         * so it never drifts. Two separate clicks on the same part drifted, and the
+         * calculator inside a pair could not be typed into at all.
+         *
+         * Measured on this stand before the fix: five pixels between press and
+         * release, and `inside()` came back false with the part still picked — which
+         * is exactly what was reported from the live browser, ring on and no hole.
+         */
+        'a second click that drifts a few pixels still lets the pointer inside'($) {
+            const { pane } = pane_make($);
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
+            pane.spots({ A: { x: 0, y: 0 } });
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
+            $mol_assert_equal(pane.primary(), 'A');
+            $mol_assert_equal(pane.inside(), false);
+            // The second one, five pixels off where it started and still on the part.
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(55, 25, { buttons: 0 }));
+            $mol_assert_equal(pane.inside(), true);
+        },
+        /**
+         * The same thing through the whole editor, and with the pause the report
+         * described: two separate clicks, a key pressed into nowhere between them,
+         * and the second one gets in. The keystroke is there because it was in the
+         * measurement — a person typing into a part they believe they are inside of —
+         * and a key that means nothing to the editor must cost nothing.
+         */
+        'two separate clicks with a keystroke between them let the pointer in'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([400, 150]));
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            $mol_assert_equal(stage.pane.inside(), false);
+            const dom = $.$mol_dom_context;
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: '9', bubbles: true }));
+            stage.redraw();
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            // Not the same point twice: the pointer of a person who let go and came
+            // back is never where it was, and that is the whole of E18.
+            const centre = stage.part_center('Calc');
+            stage.press(stage.overlay(), centre);
+            stage.release(stage.overlay(), [centre[0] + 3, centre[1] + 3]);
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_equal(stage.pane.inside(), true);
         },
         /** A pick of anything else closes the hole without anybody clearing it. */
         'picking another node puts the pointer back outside'($) {

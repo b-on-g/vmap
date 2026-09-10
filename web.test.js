@@ -8372,23 +8372,24 @@ var $;
         /**
          * CARRYING A NODE IS NOT ENTERING IT. The second press on a node picked alone
          * is the one that would let the pointer in, and a drag begins with exactly
-         * that press — so the only thing telling the two apart is how far the pointer
-         * travelled, and it is read on the release.
+         * that press — so something has to tell the two apart, and whatever it is, it
+         * is read on the release.
          *
          * THE RELEASE IS ITS OWN WITNESS, and that is what this pins down. A move
          * records the travel as it goes, so an ordinary drag is told from a click
-         * long before the button comes up. What has no move at all is a release that
-         * arrives far from its press — the pointer went out of the window and the
-         * capture was lost, or the release is a synthetic one — and there the only
-         * measurement ever taken is the one the release takes itself.
+         * long before the button comes up. What has no move at all is a gesture whose
+         * moves went somewhere else — the pointer left the window and the capture was
+         * lost — and there the only reading ever taken is the one the release takes
+         * itself: the node the button came up on. Off the node it pressed on, and the
+         * gesture is not a way in.
          *
-         * The guarantee is thin enough to lose by accident: the press lives in a cell
-         * now, its travel is recorded by replacing the value, and a release that took
-         * its reference to the press BEFORE measuring would read the press as it
-         * started — never moved, therefore a click, therefore a way in. Written after
-         * a negative run: the first version of this scenario moved the pointer first
-         * and stayed green with the fault put back, because the move had already
-         * recorded everything.
+         * NOT how far it went, which is what this used to say and what E18 was. Four
+         * pixels is what a hand drifts between pressing and letting go, so measured
+         * that way an ordinary second click was filed as a drag, and only a double
+         * click — which a browser delivers at one single point — ever got inside.
+         * Two hundred pixels off is the case that stays a drag, and it stays one
+         * under either reading, which is why this scenario survived the change with
+         * its assertions untouched.
          */
         'a release far from its press is not a way into the node'($) {
             const { pane } = pane_make($);
@@ -8400,10 +8401,65 @@ var $;
             $mol_assert_equal(pane.primary(), 'A');
             $mol_assert_equal(pane.inside(), false);
             // The press that would have let the pointer in, and then nothing until a
-            // release two hundred pixels away.
+            // release two hundred pixels away, off the node and onto bare canvas.
             pane.node_press(pointer(50, 25));
             pane.node_release(pointer(250, 225, { buttons: 0 }));
             $mol_assert_equal(pane.inside(), false);
+        },
+        /**
+         * E18. A HAND DRIFTS, AND A CLICK IS STILL A CLICK. Pressing and letting go
+         * in one place moves the pointer by a few pixels under any hand; four of them
+         * was the tolerance, and past it the release was filed as a drag and the
+         * second click never let the pointer inside the part.
+         *
+         * What made it look like a rule rather than a wobble is that a DOUBLE click
+         * always worked: a browser delivers both of its presses at one single point,
+         * so it never drifts. Two separate clicks on the same part drifted, and the
+         * calculator inside a pair could not be typed into at all.
+         *
+         * Measured on this stand before the fix: five pixels between press and
+         * release, and `inside()` came back false with the part still picked — which
+         * is exactly what was reported from the live browser, ring on and no hole.
+         */
+        'a second click that drifts a few pixels still lets the pointer inside'($) {
+            const { pane } = pane_make($);
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
+            pane.spots({ A: { x: 0, y: 0 } });
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
+            $mol_assert_equal(pane.primary(), 'A');
+            $mol_assert_equal(pane.inside(), false);
+            // The second one, five pixels off where it started and still on the part.
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(55, 25, { buttons: 0 }));
+            $mol_assert_equal(pane.inside(), true);
+        },
+        /**
+         * The same thing through the whole editor, and with the pause the report
+         * described: two separate clicks, a key pressed into nowhere between them,
+         * and the second one gets in. The keystroke is there because it was in the
+         * measurement — a person typing into a part they believe they are inside of —
+         * and a key that means nothing to the editor must cost nothing.
+         */
+        'two separate clicks with a keystroke between them let the pointer in'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([400, 150]));
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            $mol_assert_equal(stage.pane.inside(), false);
+            const dom = $.$mol_dom_context;
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: '9', bubbles: true }));
+            stage.redraw();
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            // Not the same point twice: the pointer of a person who let go and came
+            // back is never where it was, and that is the whole of E18.
+            const centre = stage.part_center('Calc');
+            stage.press(stage.overlay(), centre);
+            stage.release(stage.overlay(), [centre[0] + 3, centre[1] + 3]);
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_equal(stage.pane.inside(), true);
         },
         /** A pick of anything else closes the hole without anybody clearing it. */
         'picking another node puts the pointer back outside'($) {
