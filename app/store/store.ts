@@ -218,11 +218,51 @@ namespace $ {
 		 */
 		boot(): 'ready' | 'making' {
 
-			if( this.doc_current() ) return 'ready'
+			const doc = this.doc_current()
+
+			if( doc ) {
+				this.doc_keep( doc )
+				return 'ready'
+			}
 
 			this.doc_first_task()
 
 			return 'making'
+		}
+
+		/**
+		 * Asks that the document on screen be kept on disk, whatever the quota says.
+		 *
+		 * **Keeping a land locally is not a flag but a SHARDING RULE.** The base
+		 * answers `persisted()` by comparing the tail of the reader's key with the
+		 * tail of the land link, cropped by how full the storage is: at level one
+		 * through six a land is kept with a chance of one in two to the power of the
+		 * level, and when the browser cannot tell the quota at all the level is
+		 * infinite and nothing is kept. What hides this is that a WRITE sets the
+		 * flag — the base does it on every broadcast, and a write freezes the
+		 * dependencies of the cell, so the rule never runs again for that land. So
+		 * the rule only ever bites a land nobody wrote to in this session, which is
+		 * exactly a document opened by a link and read.
+		 *
+		 * Measured 10.09.2026 on the node stand of this module: somebody else's
+		 * document, delivered the way the network delivers it and read without a
+		 * single edit, left NOTHING on disk under an unknown quota — nine units with
+		 * a quota, zero without — and the next session opened an empty editor.
+		 *
+		 * The request is the same one a write makes, and it is honest rather than a
+		 * trick: the sharding rule exists so that lands nobody cares about do not
+		 * fill the disk, and the document a person has open is the definition of one
+		 * they care about. It covers the addressed document and the last one alike,
+		 * because on a second device the user's own document arrives from the master
+		 * the same way and is just as unwritten.
+		 *
+		 * Called from `boot`, which the editor runs out of `auto`: a request to
+		 * another object is an effect and belongs where the other effects of the
+		 * session start. `giper/baza` is not ours to change, so this is a mitigation
+		 * in our own code and not a fix of the rule.
+		 */
+		doc_keep( doc: $bog_vmap_app_doc ) {
+			doc.land().persisted( true )
 		}
 
 		/**
