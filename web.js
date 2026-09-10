@@ -38757,6 +38757,7 @@ var $;
             Body: {
                 flex: { grow: 1, shrink: 1 },
                 minHeight: 0,
+                overflow: { x: 'auto', y: 'hidden' },
             },
             Side: {
                 flex: { direction: 'column', grow: 0, shrink: 1, basis: '20rem' },
