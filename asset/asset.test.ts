@@ -1,31 +1,7 @@
 namespace $ {
 
-	/**
-	 * Tests of `$bog_vmap_asset`.
-	 *
-	 * The address layer is covered whole: it is pure text work and every branch of
-	 * it is reachable without a database. The storage layer is covered as far as a
-	 * land built locally goes — writing a file and reading its bytes back is the
-	 * real path, `$giper_baza_file` and all.
-	 *
-	 * **`put()` itself is NOT tested, deliberately.** It calls `land_grab`, which
-	 * mines proof of work; that needs a fiber and takes seconds, and a mol test is
-	 * given one. A test of it would either hang or flake, and a hanging test looks
-	 * exactly like a failed assertion — a `node.test.js` that prints nothing — so it
-	 * would cost every module downstream more than it proves. What `put` does that
-	 * is testable, writing name, MIME and bytes into a file pawn, is tested below
-	 * against a land made by hand.
-	 */
-
-	/**
-	 * Keeps `$` out of the fixtures. mam builds its dependency graph by a regexp
-	 * over sources, string literals included, so a bare class name in a document
-	 * fixture is read as a dependency and the build fails looking for a package
-	 * that never existed.
-	 */
 	const d = '$'
 
-	/** A land with no proof of work behind it, the way baza tests make one. */
 	function land( $: $ ) {
 		return $giper_baza_land.make({ $ })
 	}
@@ -47,8 +23,6 @@ namespace $ {
 			$mol_assert_equal( $bog_vmap_asset_id( 'https://example.org/pic.png' ), null )
 			$mol_assert_equal( $bog_vmap_asset_id( link_a ), null )
 
-			// The prefix alone addresses nothing, and an id that is not a link is
-			// not an id: the grammar is `$giper_baza_link`, not «any word».
 			$mol_assert_equal( $bog_vmap_asset_id( 'asset:' ), null )
 			$mol_assert_equal( $bog_vmap_asset_id( 'asset:not a link' ), null )
 
@@ -88,11 +62,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The one branch worth a test of its own: a lazy delivery means an asset is
-		 * routinely not here yet, and blanking its address would turn a wait into a
-		 * broken reference that arrival no longer repairs.
-		 */
 		'an address the renderer has no answer for is left untouched'( $ ) {
 
 			const source = `uri \\asset:${ link_a } and \\asset:${ link_b }`
@@ -127,11 +96,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A file bigger than one chunk. `$giper_baza_file` splits at 32 KB, and a
-		 * fixture under that size would never once exercise the seam it glues back
-		 * together — which is the only part of the round trip that can go wrong.
-		 */
 		'a file larger than one chunk comes back whole'( $ ) {
 
 			const file = land( $ ).Data( $giper_baza_file )
@@ -160,16 +124,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The premise `file()` rests on: a pawn syncs its land on every read, through
-		 * `sand_ordered()`, so `file()` asks for nothing itself. A `sync()` called by
-		 * hand used to sit there on the belief that a land reached by link did not.
-		 *
-		 * The counter goes on AFTER the name has been written and starts from zero,
-		 * so that the write cannot pay for the read. Counting from the start would
-		 * pass on a land that syncs only when written to, and that premise would not
-		 * justify dropping the call.
-		 */
 		'reading a file syncs its land unasked'( $ ) {
 
 			const one = land( $ )
