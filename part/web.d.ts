@@ -2366,13 +2366,8 @@ declare namespace $ {
 
 //# sourceMappingURL=calc.view.tree.d.ts.map
 declare namespace $.$$ {
-    /**
-     * Division by zero gives NaN instead of Infinity, so that a wire downstream
-     * sees «no number» and not a number that only looks valid.
-     */
     class $bog_vmap_part_calc extends $.$bog_vmap_part_calc {
         result(): number;
-        /** Result for the eye: the number, or why there is none. */
         result_text(): string;
     }
 }
@@ -2907,15 +2902,8 @@ declare namespace $ {
 
 //# sourceMappingURL=map.view.tree.d.ts.map
 declare namespace $.$$ {
-    /**
-     * Zoom is clamped into the range the map accepts, the center travels as two
-     * numbers, and a mark appears at the center as soon as it has a title — all
-     * three so that an ordinary wire, which carries one number, lands on a port.
-     */
     class $bog_vmap_part_map extends $.$bog_vmap_part_map {
-        /** Zoom for the map: whole, inside the range, the default when not a number. */
         zoom_clamp(val: number): number;
-        /** Clamped on both ways, as `value_limited` of the number field does. */
         zoom_limited(next?: number): number;
         center(next?: $mol_vector_2d<number>): $mol_vector_2d<number>;
         objects(): $.$mol_map_yandex_mark[];
@@ -4067,44 +4055,17 @@ declare namespace $ {
 
 //# sourceMappingURL=cell.view.tree.d.ts.map
 declare namespace $.$$ {
-    /** What one run of the code left behind. */
     type $bog_vmap_part_cell_run = {
-        /** Whether there was a run at all: an empty cell has not run, and 0 ms has. */
         readonly ran: boolean;
         readonly value: unknown;
         readonly spent: number;
         readonly error: string;
     };
-    /**
-     * The code runs inside the sandbox and nowhere else — this class is compiled
-     * into it like any other part of the pack — so it is exactly as trusted as the
-     * document around it and no more.
-     *
-     * @see ../../ARCHITECTURE.md sections 3 and 4
-     */
     class $bog_vmap_part_cell extends $.$bog_vmap_part_cell {
-        /**
-         * The manual mode is this cell and the reactive mode is `code()` itself, so
-         * the difference between the two is which text the run depends on and
-         * nothing else. No timer, no flag outside the graph, no re-entry.
-         */
         code_ran(next?: string): string;
         run(next?: Event | null): null;
-        /**
-         * What the run returned, what it cost and what it complained about, as ONE
-         * value. One and not three cells, because a cell may not write into its
-         * neighbours: three cells would mean a computation writing twice on the
-         * side, which is an invalidation loop dressed as bookkeeping. The three
-         * readings below take this apart, and a reader of the time is not woken by
-         * a value that happens to be equal.
-         */
         run_result(): $bog_vmap_part_cell_run;
-        /**
-         * The answer as text. An object comes out as JSON, because a cell that
-         * answers `[object Object]` tells its author nothing about what it made.
-         */
         result_text(): string;
-        /** The answer as a number, `NaN` when it is not one. */
         result_number(): number;
         spent(): string;
         error(): string;
@@ -4894,18 +4855,7 @@ declare namespace $ {
 
 //# sourceMappingURL=plot.view.tree.d.ts.map
 declare namespace $.$$ {
-    /**
-     * The receiver of a board — a code cell counts something, the wire carries the
-     * numbers here, the line moves. That is the shape the whole idea of wiring is
-     * for, and it is the one thing the stock chart cannot be given directly.
-     */
     class $bog_vmap_part_plot extends $.$bog_vmap_part_plot {
-        /**
-         * Derived and not a port of its own. A chart fed from a wire has a series of
-         * numbers and no second series to pair it with; asking for one would mean
-         * two wires to draw one line, and the second would exist only to count from
-         * zero.
-         */
         series_x(): number[];
     }
 }
@@ -7010,11 +6960,6 @@ declare namespace $ {
 
 //# sourceMappingURL=part.view.tree.d.ts.map
 declare namespace $.$$ {
-    /**
-     * The pack of basic parts. Deployed, this module is a donor pack for the
-     * editor: its `web.view.tree` lists every class named here, and its `web.js`
-     * runs them inside the scene. It has no page and needs none.
-     */
     class $bog_vmap_part extends $.$bog_vmap_part {
     }
 }

@@ -5803,10 +5803,6 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * Division by zero gives NaN instead of Infinity, so that a wire downstream
-         * sees «no number» and not a number that only looks valid.
-         */
         class $bog_vmap_part_calc extends $.$bog_vmap_part_calc {
             result() {
                 const left = this.left();
@@ -5819,7 +5815,6 @@ var $;
                 }
                 return NaN;
             }
-            /** Result for the eye: the number, or why there is none. */
             result_text() {
                 const result = this.result();
                 if (!Number.isNaN(result))
@@ -5845,17 +5840,6 @@ var $;
         $mol_style_define($bog_vmap_part_calc, {
             flex: { direction: 'row', wrap: 'wrap' },
             align: { items: 'center' },
-            /**
-             * A detail, not a band: handed the width of a page it would take all of it,
-             * and at phone width run past the edge instead of wrapping. A ceiling of its
-             * own fixes both.
-             *
-             * The floor is the other half of the same decision. Zero is what lets a view
-             * in a flex row shrink below its content at all, but zero also lets it
-             * shrink to nothing, and a detail put down on its own has to stay visible.
-             * A real floor does both: it still gives way inside a narrow board, down to
-             * a width where the fields are still fields.
-             */
             maxWidth: '22rem',
             minWidth: '12rem',
             gap: $mol_gap.space,
@@ -6766,19 +6750,12 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * Zoom is clamped into the range the map accepts, the center travels as two
-         * numbers, and a mark appears at the center as soon as it has a title — all
-         * three so that an ordinary wire, which carries one number, lands on a port.
-         */
         class $bog_vmap_part_map extends $.$bog_vmap_part_map {
-            /** Zoom for the map: whole, inside the range, the default when not a number. */
             zoom_clamp(val) {
                 if (!Number.isFinite(val))
                     return super.zoom_limited();
                 return Math.min(this.zoom_max(), Math.max(this.zoom_min(), Math.round(val)));
             }
-            /** Clamped on both ways, as `value_limited` of the number field does. */
             zoom_limited(next) {
                 if (next !== undefined)
                     return this.zoom(this.zoom_clamp(next));
@@ -6806,23 +6783,9 @@ var $;
     var $$;
     (function ($$) {
         $mol_style_define($bog_vmap_part_map, {
-            // A fixed box: a map without a size is a map nobody sees on the canvas
             width: '20rem',
             height: '14rem',
-            // And never wider than what holds it: inside an artboard narrower than the
-            // box the fixed width would run past the edge of the page.
             maxWidth: '100%',
-            /**
-             * A FLOOR OF ITS OWN, and a floor of `0` is the whole of the defect: a free
-             * part is placed absolutely inside the root of the document, whose own width
-             * is nothing, so the ceiling above resolves to zero and the map comes out
-             * full height and no width at all. A minimum of zero has nothing to stop it,
-             * while a real minimum wins over any maximum by the rules of CSS.
-             *
-             * A detail carries its own floor rather than borrowing one: inside a
-             * container it takes the floor of the container and looks fine, which is why
-             * this shows up only on a part put down on its own.
-             */
             minWidth: '12rem',
             border: { radius: $mol_gap.round },
             boxShadow: `0 0 0 1px ${$mol_theme.line}`,
@@ -9838,19 +9801,7 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * The code runs inside the sandbox and nowhere else — this class is compiled
-         * into it like any other part of the pack — so it is exactly as trusted as the
-         * document around it and no more.
-         *
-         * @see ../../ARCHITECTURE.md sections 3 and 4
-         */
         class $bog_vmap_part_cell extends $.$bog_vmap_part_cell {
-            /**
-             * The manual mode is this cell and the reactive mode is `code()` itself, so
-             * the difference between the two is which text the run depends on and
-             * nothing else. No timer, no flag outside the graph, no re-entry.
-             */
             code_ran(next) {
                 return next ?? '';
             }
@@ -9858,14 +9809,6 @@ var $;
                 this.code_ran(this.code());
                 return null;
             }
-            /**
-             * What the run returned, what it cost and what it complained about, as ONE
-             * value. One and not three cells, because a cell may not write into its
-             * neighbours: three cells would mean a computation writing twice on the
-             * side, which is an invalidation loop dressed as bookkeeping. The three
-             * readings below take this apart, and a reader of the time is not woken by
-             * a value that happens to be equal.
-             */
             run_result() {
                 const code = this.auto() ? this.code() : this.code_ran();
                 if (!code.trim())
@@ -9886,10 +9829,6 @@ var $;
                     };
                 }
             }
-            /**
-             * The answer as text. An object comes out as JSON, because a cell that
-             * answers `[object Object]` tells its author nothing about what it made.
-             */
             result_text() {
                 const value = this.run_result().value;
                 if (value === null || value === undefined)
@@ -9898,7 +9837,6 @@ var $;
                     return JSON.stringify(value, null, '\t');
                 return String(value);
             }
-            /** The answer as a number, `NaN` when it is not one. */
             result_number() {
                 const value = this.run_result().value;
                 return typeof value === 'number' ? value : Number.NaN;
@@ -9935,7 +9873,6 @@ var $;
             gap: $mol_gap.space,
             padding: $mol_gap.block,
             maxWidth: '28rem',
-            /** A floor of its own, like every detail of the shelf: see the map. */
             minWidth: '12rem',
             background: { color: $mol_theme.card },
             border: { radius: $mol_gap.round },
@@ -9958,7 +9895,6 @@ var $;
                 font: { family: 'monospace' },
                 whiteSpace: 'pre-wrap',
             },
-            /** Only ever holds the complaint of a run; empty it takes no room. */
             Error: {
                 color: $mol_theme.focus,
                 font: { family: 'monospace', size: '.8rem' },
@@ -11629,18 +11565,7 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * The receiver of a board — a code cell counts something, the wire carries the
-         * numbers here, the line moves. That is the shape the whole idea of wiring is
-         * for, and it is the one thing the stock chart cannot be given directly.
-         */
         class $bog_vmap_part_plot extends $.$bog_vmap_part_plot {
-            /**
-             * Derived and not a port of its own. A chart fed from a wire has a series of
-             * numbers and no second series to pair it with; asking for one would mean
-             * two wires to draw one line, and the second would exist only to count from
-             * zero.
-             */
             series_x() {
                 return this.values().map((_, i) => i);
             }
@@ -11660,13 +11585,6 @@ var $;
             width: '24rem',
             height: '14rem',
             maxWidth: '100%',
-            /**
-             * The same floor the map carries, and for the same reason: `max-width: 100%`
-             * against the root of a document, which has no width of its own, resolves to
-             * zero, and a minimum of zero lets the box collapse to a strip. A minimum
-             * beats a maximum in CSS, so this is what keeps a chart put down on its own
-             * visible.
-             */
             minWidth: '12rem',
             padding: $mol_gap.block,
             background: { color: $mol_theme.card },
@@ -15739,11 +15657,6 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * The pack of basic parts. Deployed, this module is a donor pack for the
-         * editor: its `web.view.tree` lists every class named here, and its `web.js`
-         * runs them inside the scene. It has no page and needs none.
-         */
         class $bog_vmap_part extends $.$bog_vmap_part {
         }
         $$.$bog_vmap_part = $bog_vmap_part;
@@ -18897,7 +18810,6 @@ var $;
             calc.op('div');
             $mol_assert_ok(Number.isNaN(calc.result()));
             $mol_assert_equal(calc.result_text(), calc.zero_note());
-            // zero over zero is the same case, not a different one
             calc.left(0);
             $mol_assert_ok(Number.isNaN(calc.result()));
             $mol_assert_equal(calc.result_text(), calc.zero_note());
@@ -19266,7 +19178,6 @@ var $;
             map.lat(55.75);
             map.lng(37.62);
             $mol_assert_equal([...map.center()], [55.75, 37.62]);
-            // the map dragged by hand reports a new center through the same cell
             map.center(new $mol_vector_2d(48.86, 2.35));
             $mol_assert_equal(map.lat(), 48.86);
             $mol_assert_equal(map.lng(), 2.35);
@@ -19280,7 +19191,6 @@ var $;
             $mol_assert_equal(map.zoom_limited(), 19);
             map.zoom(-3);
             $mol_assert_equal(map.zoom_limited(), 0);
-            // a fraction from a calculator becomes the nearest whole level
             map.zoom(3.7);
             $mol_assert_equal(map.zoom_limited(), 4);
         },
@@ -19802,10 +19712,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the code cell: what it answers, when it runs and what it does with
-     * a mistake. Nothing renders.
-     */
     function cell($) {
         return $bog_vmap_part_cell.make({ $ });
     }
@@ -19813,7 +19719,6 @@ var $;
         'nothing runs until the button is pressed'($) {
             const one = cell($);
             one.code('return 2 + 2');
-            // Manual is the default, and half typed code must not run per keystroke.
             $mol_assert_equal(one.result_text(), '');
             $mol_assert_equal(one.spent(), '');
             one.run(null);
@@ -19832,16 +19737,12 @@ var $;
         'the answer comes out on both ports, each in its own type'($) {
             const one = cell($);
             one.auto(true);
-            // A number reads as a number and as text.
             one.code('return 7');
             $mol_assert_equal(one.result_number(), 7);
             $mol_assert_equal(one.result_text(), '7');
-            // Anything else is text, and `NaN` on the number port — «not a number»,
-            // the same word a number field uses for it.
             one.code('return "hi"');
             $mol_assert_equal(one.result_text(), 'hi');
             $mol_assert_equal(Number.isNaN(one.result_number()), true);
-            // An object as JSON: `[object Object]` tells its author nothing.
             one.code('return { a: 1 }');
             $mol_assert_ok(one.result_text().includes('"a": 1'));
         },
@@ -19849,7 +19750,6 @@ var $;
             const one = cell($);
             one.auto(true);
             one.code('return nope');
-            // The cell goes on answering, so the document around it keeps drawing.
             $mol_assert_equal(one.result_text(), '');
             $mol_assert_ok(one.error().includes('nope'));
             one.code('return 1');
@@ -19862,22 +19762,14 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the chart that takes a wire. Nothing renders: what is checked is
-     * the shape of what reaches `$mol_chart`, because that is the whole reason
-     * this class exists.
-     */
     $mol_test({
         'numbers on the port become one line, positioned by their order'($) {
             const plot = $bog_vmap_part_plot.make({
                 $,
                 values: () => [3, 1, 4, 1, 5],
             });
-            // One graph for the chart, and it carries the numbers as they came.
             $mol_assert_equal(plot.Chart().graphs().length, 1);
             $mol_assert_like(plot.Line().series_y(), [3, 1, 4, 1, 5]);
-            // The axis is derived and not asked for: a wire carries one series, and
-            // a second port would exist only to count from zero.
             $mol_assert_like(plot.series_x(), [0, 1, 2, 3, 4]);
         },
         'no numbers is an empty chart and not a failure'($) {
@@ -23479,11 +23371,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * The built pack as the editor reads it. Reads the `web.view.tree` this
-     * module's own build drops into `-/`, so a missing build fails the test
-     * instead of passing it: there is no network and no fixture to fall back on.
-     */
     const d = '$';
     function part_lib($) {
         const file = $.$mol_file.relative('bog/vmap/part/-/web.view.tree');
@@ -23506,7 +23393,6 @@ var $;
             $mol_assert_ok(map.has('lat'));
             $mol_assert_ok(map.has('lng'));
             $mol_assert_ok(map.has('marker'));
-            // inherited through the stub, as any pack class
             $mol_assert_ok(map.has('sub'));
         },
         'the pack carries the basics of mol beside the parts'($) {
@@ -23515,13 +23401,7 @@ var $;
             for (const name of ['mol_view', 'mol_button', 'mol_button_major', 'mol_string', 'mol_number', 'mol_check_box', 'mol_map_yandex', 'mol_text', 'mol_link', 'mol_image']) {
                 $mol_assert_ok(list.includes(d + name));
             }
-            // more than the handful named here: the second level of the panel has to
-            // be worth opening
             $mol_assert_ok(list.length > 50);
-            // And no application shell: a page in vmap is an artboard, an ordinary
-            // node with a `sub` of its own — section 8 — so the page component of
-            // the standard library would offer a title bar and a scroll where a
-            // rectangle is meant.
             $mol_assert_equal(list.includes(`${d}mol_page`), false);
         },
         'the pack resolves the chains of both parts down to the stub'($) {
@@ -23529,11 +23409,6 @@ var $;
             $mol_assert_equal(lib.inherit_chain(`${d}bog_vmap_part_calc`).join(' '), `${d}bog_vmap_part_calc ${d}mol_view ${d}mol_object`);
             $mol_assert_equal(lib.inherit_chain(`${d}bog_vmap_part_map`).join(' '), `${d}bog_vmap_part_map ${d}mol_view ${d}mol_object`);
         },
-        /**
-         * A document with both parts and a wire between them, resolved against the
-         * pack and compiled the way the scene does it. The wire has to survive as
-         * a call chain of two links, which is the whole mechanism of section 1.
-         */
         'a document wiring the calculator into the map compiles against the pack'($) {
             const lib = part_lib($);
             const doc = $.$mol_tree2_from_string([
@@ -23555,22 +23430,6 @@ var $;
             $mol_assert_ok(js.includes('this.Calc().result()'));
             $mol_assert_ok(js.includes('this.calc_result()'));
         },
-        /**
-         * A DETAIL CARRIES ITS OWN FLOOR, and the canvas is where that is not
-         * optional: a free part is placed absolutely inside the root of a document,
-         * which has no width of its own, so a `max-width` in per cent resolves to
-         * zero and a `min-width` of zero has nothing to stop it. A minimum beats a
-         * maximum in CSS, which is what keeps the box on screen.
-         *
-         * Read off the stylesheet the class attached, so what is checked is what the
-         * browser will be handed. Only the first rule is read: it belongs to the
-         * component itself, and the ones after it are its sub views, which may well
-         * have a floor of zero and should.
-         *
-         * The pixels themselves are not checked here and cannot be: a mol test has
-         * no layout. What this holds is the rule; a box measured on screen is the
-         * user's check.
-         */
         'every detail of the shelf declares a floor of its own'($) {
             const doc = $.$mol_dom_context.document;
             $mol_assert_ok(doc);
@@ -23579,7 +23438,6 @@ var $;
                 $mol_assert_ok(el);
                 const own = (el.textContent ?? '').split('}')[0];
                 const floor = /min-width:\s*([^;]+)/.exec(own)?.[1]?.trim() ?? '';
-                // Declared at all, and not the zero that lets a box vanish.
                 $mol_assert_ok(floor);
                 $mol_assert_equal(floor === '0' || floor === '0px', false);
             }
@@ -23589,7 +23447,6 @@ var $;
             lib.pack('http://localhost:9080/bog/vmap/part/-/');
             $mol_assert_equal(lib.tree_link(), 'http://localhost:9080/bog/vmap/part/-/web.view.tree');
             $mol_assert_equal(lib.script_link(), 'http://localhost:9080/bog/vmap/part/-/web.js');
-            // without the slash the last segment survives as well
             lib.pack('http://localhost:9080/bog/vmap/part/-');
             $mol_assert_equal(lib.tree_link(), 'http://localhost:9080/bog/vmap/part/-/web.view.tree');
         },

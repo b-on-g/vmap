@@ -2806,7 +2806,6 @@ var $;
             calc.op('div');
             $mol_assert_ok(Number.isNaN(calc.result()));
             $mol_assert_equal(calc.result_text(), calc.zero_note());
-            // zero over zero is the same case, not a different one
             calc.left(0);
             $mol_assert_ok(Number.isNaN(calc.result()));
             $mol_assert_equal(calc.result_text(), calc.zero_note());
@@ -3208,7 +3207,6 @@ var $;
             map.lat(55.75);
             map.lng(37.62);
             $mol_assert_equal([...map.center()], [55.75, 37.62]);
-            // the map dragged by hand reports a new center through the same cell
             map.center(new $mol_vector_2d(48.86, 2.35));
             $mol_assert_equal(map.lat(), 48.86);
             $mol_assert_equal(map.lng(), 2.35);
@@ -3222,7 +3220,6 @@ var $;
             $mol_assert_equal(map.zoom_limited(), 19);
             map.zoom(-3);
             $mol_assert_equal(map.zoom_limited(), 0);
-            // a fraction from a calculator becomes the nearest whole level
             map.zoom(3.7);
             $mol_assert_equal(map.zoom_limited(), 4);
         },
@@ -3744,10 +3741,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the code cell: what it answers, when it runs and what it does with
-     * a mistake. Nothing renders.
-     */
     function cell($) {
         return $bog_vmap_part_cell.make({ $ });
     }
@@ -3755,7 +3748,6 @@ var $;
         'nothing runs until the button is pressed'($) {
             const one = cell($);
             one.code('return 2 + 2');
-            // Manual is the default, and half typed code must not run per keystroke.
             $mol_assert_equal(one.result_text(), '');
             $mol_assert_equal(one.spent(), '');
             one.run(null);
@@ -3774,16 +3766,12 @@ var $;
         'the answer comes out on both ports, each in its own type'($) {
             const one = cell($);
             one.auto(true);
-            // A number reads as a number and as text.
             one.code('return 7');
             $mol_assert_equal(one.result_number(), 7);
             $mol_assert_equal(one.result_text(), '7');
-            // Anything else is text, and `NaN` on the number port — «not a number»,
-            // the same word a number field uses for it.
             one.code('return "hi"');
             $mol_assert_equal(one.result_text(), 'hi');
             $mol_assert_equal(Number.isNaN(one.result_number()), true);
-            // An object as JSON: `[object Object]` tells its author nothing.
             one.code('return { a: 1 }');
             $mol_assert_ok(one.result_text().includes('"a": 1'));
         },
@@ -3791,7 +3779,6 @@ var $;
             const one = cell($);
             one.auto(true);
             one.code('return nope');
-            // The cell goes on answering, so the document around it keeps drawing.
             $mol_assert_equal(one.result_text(), '');
             $mol_assert_ok(one.error().includes('nope'));
             one.code('return 1');
@@ -3804,22 +3791,14 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    /**
-     * Tests of the chart that takes a wire. Nothing renders: what is checked is
-     * the shape of what reaches `$mol_chart`, because that is the whole reason
-     * this class exists.
-     */
     $mol_test({
         'numbers on the port become one line, positioned by their order'($) {
             const plot = $bog_vmap_part_plot.make({
                 $,
                 values: () => [3, 1, 4, 1, 5],
             });
-            // One graph for the chart, and it carries the numbers as they came.
             $mol_assert_equal(plot.Chart().graphs().length, 1);
             $mol_assert_like(plot.Line().series_y(), [3, 1, 4, 1, 5]);
-            // The axis is derived and not asked for: a wire carries one series, and
-            // a second port would exist only to count from zero.
             $mol_assert_like(plot.series_x(), [0, 1, 2, 3, 4]);
         },
         'no numbers is an empty chart and not a failure'($) {

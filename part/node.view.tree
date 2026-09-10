@@ -177,8 +177,6 @@ $mol_switch $mol_check_list
 	value? \
 
 $bog_vmap_part_calc $mol_view
-	- Two operands, an operation and the result as a NUMBER: this is the port a
-	- wire takes to another part. NaN is «no number» here, as in the number field.
 	left? 0
 	right? 0
 	op? \add
@@ -229,8 +227,6 @@ $mol_map_yandex_mark $mol_object
 	object null
 
 $bog_vmap_part_map $mol_view
-	- Ports are plain numbers, one each, so that a wire carrying one number
-	- lands on any of them. The center is derived from `lat` and `lng`.
 	zoom? 10
 	lat? 59.94
 	lng? 30.31
@@ -244,9 +240,6 @@ $bog_vmap_part_map $mol_view
 				0
 				0
 			objects <= objects /$mol_map_yandex_mark
-	- The one mark, placed at the center and shown while `marker` has text.
-	- `pos` is bound here on purpose: the class of the mark would otherwise
-	- geocode its address over the network to find its position.
 	Mark $mol_map_yandex_mark
 		pos <= center
 		title <= marker
@@ -435,24 +428,11 @@ $mol_textarea_edit $mol_string
 		^
 		scrollTop 0
 
-- A cell of code: a body of a function, a button that runs it, how long it took
-- and what it returned. The thing a person in hitolama builds everything out of.
--
-- Two ports for the answer instead of one, and both typed: a wire carries a value
-- into a port of some other part, and the ports of other parts are typed. `text`
-- goes into a caption, `number` into a zoom, a width, a count. An untyped port
-- would only move the guessing to the far end of the wire.
 $bog_vmap_part_cell $mol_view
-	- Run with the sandbox context as `$`; what it returns is the answer of the cell.
 	code? \
-	- Run on every edit instead of on the button. Off by default: half typed code
-	- runs on every keystroke, and a half typed loop runs for ever.
 	auto? false
-	- The answer, as text and as a number. `NaN` is «not a number», the same as in
-	- a number field, and an answer that is not a number at all reads as one.
 	result_text \
 	result_number +NaN
-	- Empty until the cell has run at all.
 	spent \
 	error \
 	run? null
@@ -773,14 +753,7 @@ $mol_chart $mol_view
 			hue_base <= hue_base 210
 			hue_shift <= hue_shift 163
 
-- A chart that takes a wire: numbers in, a line out.
--
-- The chart of mol takes a list of GRAPH OBJECTS, which is the right interface for
-- a chart and the wrong end of a wire: a wire carries a value, and nobody is going
-- to build a graph object in a code cell to feed one. So the port here is a list of
-- numbers and the graph is made from it inside.
 $bog_vmap_part_plot $mol_view
-	- The port a wire lands on.
 	values /number
 	title \
 	color \
@@ -1350,27 +1323,11 @@ $mol_text_list_item $mol_paragraph
 		^
 		mol_text_list_item_index <= index 0
 
-- The pack of parts: a LIBRARY, not a page.
--
-- A class reaches `web.js` and `web.view.tree` by being named here, and that is
-- all the editor needs of this module: the shelf offers the two parts, the second
-- level of its panel offers the primitives, and both read the tree beside the
-- bundle. Nothing is drawn, so there is nothing to configure and nothing to keep
-- in step with the editor.
--
-- BEFORE SHORTENING THE LIST: a third of the pack is here to serve the rich text
-- and the dropdown alone, and they stay, because inside a block there is nothing
-- else to lay out prose and a choice with. Cutting anything here empties the second
-- level of the panel or the shelf itself, not a showcase — the showcase is gone,
-- and what it proved is proved by the tests instead.
 $bog_vmap_part $mol_view
-	- The parts of this pack. Everything else below is mol itself, carried along
-	- so that a page can be laid out and not only assembled.
 	Calc $bog_vmap_part_calc
 	Map $bog_vmap_part_map
 	Cell $bog_vmap_part_cell
 	Plot $bog_vmap_part_plot
-	-
 	Button_major $mol_button_major
 	Button_minor $mol_button_minor
 	String $mol_string

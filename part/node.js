@@ -5812,10 +5812,6 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * Division by zero gives NaN instead of Infinity, so that a wire downstream
-         * sees «no number» and not a number that only looks valid.
-         */
         class $bog_vmap_part_calc extends $.$bog_vmap_part_calc {
             result() {
                 const left = this.left();
@@ -5828,7 +5824,6 @@ var $;
                 }
                 return NaN;
             }
-            /** Result for the eye: the number, or why there is none. */
             result_text() {
                 const result = this.result();
                 if (!Number.isNaN(result))
@@ -5854,17 +5849,6 @@ var $;
         $mol_style_define($bog_vmap_part_calc, {
             flex: { direction: 'row', wrap: 'wrap' },
             align: { items: 'center' },
-            /**
-             * A detail, not a band: handed the width of a page it would take all of it,
-             * and at phone width run past the edge instead of wrapping. A ceiling of its
-             * own fixes both.
-             *
-             * The floor is the other half of the same decision. Zero is what lets a view
-             * in a flex row shrink below its content at all, but zero also lets it
-             * shrink to nothing, and a detail put down on its own has to stay visible.
-             * A real floor does both: it still gives way inside a narrow board, down to
-             * a width where the fields are still fields.
-             */
             maxWidth: '22rem',
             minWidth: '12rem',
             gap: $mol_gap.space,
@@ -6775,19 +6759,12 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * Zoom is clamped into the range the map accepts, the center travels as two
-         * numbers, and a mark appears at the center as soon as it has a title — all
-         * three so that an ordinary wire, which carries one number, lands on a port.
-         */
         class $bog_vmap_part_map extends $.$bog_vmap_part_map {
-            /** Zoom for the map: whole, inside the range, the default when not a number. */
             zoom_clamp(val) {
                 if (!Number.isFinite(val))
                     return super.zoom_limited();
                 return Math.min(this.zoom_max(), Math.max(this.zoom_min(), Math.round(val)));
             }
-            /** Clamped on both ways, as `value_limited` of the number field does. */
             zoom_limited(next) {
                 if (next !== undefined)
                     return this.zoom(this.zoom_clamp(next));
@@ -6815,23 +6792,9 @@ var $;
     var $$;
     (function ($$) {
         $mol_style_define($bog_vmap_part_map, {
-            // A fixed box: a map without a size is a map nobody sees on the canvas
             width: '20rem',
             height: '14rem',
-            // And never wider than what holds it: inside an artboard narrower than the
-            // box the fixed width would run past the edge of the page.
             maxWidth: '100%',
-            /**
-             * A FLOOR OF ITS OWN, and a floor of `0` is the whole of the defect: a free
-             * part is placed absolutely inside the root of the document, whose own width
-             * is nothing, so the ceiling above resolves to zero and the map comes out
-             * full height and no width at all. A minimum of zero has nothing to stop it,
-             * while a real minimum wins over any maximum by the rules of CSS.
-             *
-             * A detail carries its own floor rather than borrowing one: inside a
-             * container it takes the floor of the container and looks fine, which is why
-             * this shows up only on a part put down on its own.
-             */
             minWidth: '12rem',
             border: { radius: $mol_gap.round },
             boxShadow: `0 0 0 1px ${$mol_theme.line}`,
@@ -9847,19 +9810,7 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * The code runs inside the sandbox and nowhere else — this class is compiled
-         * into it like any other part of the pack — so it is exactly as trusted as the
-         * document around it and no more.
-         *
-         * @see ../../ARCHITECTURE.md sections 3 and 4
-         */
         class $bog_vmap_part_cell extends $.$bog_vmap_part_cell {
-            /**
-             * The manual mode is this cell and the reactive mode is `code()` itself, so
-             * the difference between the two is which text the run depends on and
-             * nothing else. No timer, no flag outside the graph, no re-entry.
-             */
             code_ran(next) {
                 return next ?? '';
             }
@@ -9867,14 +9818,6 @@ var $;
                 this.code_ran(this.code());
                 return null;
             }
-            /**
-             * What the run returned, what it cost and what it complained about, as ONE
-             * value. One and not three cells, because a cell may not write into its
-             * neighbours: three cells would mean a computation writing twice on the
-             * side, which is an invalidation loop dressed as bookkeeping. The three
-             * readings below take this apart, and a reader of the time is not woken by
-             * a value that happens to be equal.
-             */
             run_result() {
                 const code = this.auto() ? this.code() : this.code_ran();
                 if (!code.trim())
@@ -9895,10 +9838,6 @@ var $;
                     };
                 }
             }
-            /**
-             * The answer as text. An object comes out as JSON, because a cell that
-             * answers `[object Object]` tells its author nothing about what it made.
-             */
             result_text() {
                 const value = this.run_result().value;
                 if (value === null || value === undefined)
@@ -9907,7 +9846,6 @@ var $;
                     return JSON.stringify(value, null, '\t');
                 return String(value);
             }
-            /** The answer as a number, `NaN` when it is not one. */
             result_number() {
                 const value = this.run_result().value;
                 return typeof value === 'number' ? value : Number.NaN;
@@ -9944,7 +9882,6 @@ var $;
             gap: $mol_gap.space,
             padding: $mol_gap.block,
             maxWidth: '28rem',
-            /** A floor of its own, like every detail of the shelf: see the map. */
             minWidth: '12rem',
             background: { color: $mol_theme.card },
             border: { radius: $mol_gap.round },
@@ -9967,7 +9904,6 @@ var $;
                 font: { family: 'monospace' },
                 whiteSpace: 'pre-wrap',
             },
-            /** Only ever holds the complaint of a run; empty it takes no room. */
             Error: {
                 color: $mol_theme.focus,
                 font: { family: 'monospace', size: '.8rem' },
@@ -11638,18 +11574,7 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * The receiver of a board — a code cell counts something, the wire carries the
-         * numbers here, the line moves. That is the shape the whole idea of wiring is
-         * for, and it is the one thing the stock chart cannot be given directly.
-         */
         class $bog_vmap_part_plot extends $.$bog_vmap_part_plot {
-            /**
-             * Derived and not a port of its own. A chart fed from a wire has a series of
-             * numbers and no second series to pair it with; asking for one would mean
-             * two wires to draw one line, and the second would exist only to count from
-             * zero.
-             */
             series_x() {
                 return this.values().map((_, i) => i);
             }
@@ -11669,13 +11594,6 @@ var $;
             width: '24rem',
             height: '14rem',
             maxWidth: '100%',
-            /**
-             * The same floor the map carries, and for the same reason: `max-width: 100%`
-             * against the root of a document, which has no width of its own, resolves to
-             * zero, and a minimum of zero lets the box collapse to a strip. A minimum
-             * beats a maximum in CSS, so this is what keeps a chart put down on its own
-             * visible.
-             */
             minWidth: '12rem',
             padding: $mol_gap.block,
             background: { color: $mol_theme.card },
@@ -15748,11 +15666,6 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * The pack of basic parts. Deployed, this module is a donor pack for the
-         * editor: its `web.view.tree` lists every class named here, and its `web.js`
-         * runs them inside the scene. It has no page and needs none.
-         */
         class $bog_vmap_part extends $.$bog_vmap_part {
         }
         $$.$bog_vmap_part = $bog_vmap_part;
