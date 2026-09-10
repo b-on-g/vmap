@@ -1,28 +1,7 @@
 namespace $ {
 
-	/**
-	 * Tests of the language module: round trip, property editing, the wire emitter.
-	 *
-	 * Nothing here touches the network or the DOM. The wire tests run the emitted
-	 * tree through the real `$mol_view_tree2_to_text`, because the five traps of
-	 * section 1 all produce a green build and only differ in the generated JS.
-	 * Reading the wire by eye proves nothing, which is the whole reason they cost
-	 * so much time to find.
-	 *
-	 * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-	 * a regexp over sources, literals included, so a bare class name in a fixture
-	 * would drag a whole module into the bundle. Naming one HERE would do it too,
-	 * which is why this sentence names none.
-	 */
 	const d = '$'
 
-	/**
-	 * The document of section 1: a free part, a wire from it, and a label buried
-	 * two levels deep inside `sub` that reads the wire.
-	 *
-	 * Already normalized, which is what makes it a byte for byte round trip. See
-	 * the lossiness test at the bottom for the form it is normalized FROM.
-	 */
 	const demo_src = [
 		`${d}bog_vmap_lang_test_demo ${d}mol_view`,
 		`	Price ${d}mol_view title <= calc_result`,
@@ -34,7 +13,6 @@ namespace $ {
 		``,
 	].join( '\n' )
 
-	/** The same document as a person would write it, with nesting. */
 	const nested_src = [
 		`${d}bog_vmap_lang_test_demo ${d}mol_view`,
 		`	Calc ${d}bog_vmap_lang_test_calc`,
@@ -48,7 +26,6 @@ namespace $ {
 		``,
 	].join( '\n' )
 
-	/** Two parts on the canvas and no wire between them yet. Normalized. */
 	const pair_src = [
 		`${d}bog_vmap_lang_test_pair ${d}mol_view`,
 		`	Calc ${d}bog_vmap_lang_test_calc`,
@@ -59,7 +36,6 @@ namespace $ {
 		``,
 	].join( '\n' )
 
-	/** Two sources and two consumers, enough for a wire to have neighbours. */
 	const trio_src = [
 		`${d}bog_vmap_lang_test_pair ${d}mol_view`,
 		`	Calc ${d}bog_vmap_lang_test_calc`,
@@ -72,13 +48,6 @@ namespace $ {
 		``,
 	].join( '\n' )
 
-	/**
-	 * A document with an artboard: `Board` carries a `sub` of its own, so its
-	 * children are laid out by tree, while `Loose` lies free on the canvas.
-	 *
-	 * Nothing marks the artboard as one. Section 8 says both are properties of the
-	 * same root class, and the only difference in the text is the `sub`.
-	 */
 	const board_src = [
 		`${d}bog_vmap_lang_test_board ${d}mol_view`,
 		`	Head ${d}mol_view`,
@@ -97,7 +66,6 @@ namespace $ {
 		``,
 	].join( '\n' )
 
-	/** Indices of the lines two texts differ at, trailing tail included. */
 	function lines_diff( left: string, right: string ) {
 
 		const a = left.split( '\n' )
@@ -118,16 +86,6 @@ namespace $ {
 		return node
 	}
 
-	/**
-	 * A document of two classes, already normalized, so that a neighbour surviving
-	 * a write can be asserted byte for byte rather than «close enough».
-	 *
-	 * Two properties each, and not one, on purpose. `$mol_tree2` writes a chain of
-	 * single children inline, so a class of one property comes back as one line
-	 * carrying the class, the base, the property and its value. Same tree, parses
-	 * back identically, but a fixture standing on it would be testing the
-	 * serializer's shorthand instead of the document.
-	 */
 	function pair_doc() {
 		const one = $bog_vmap_lang_doc.make({})
 		one.source( [
@@ -142,7 +100,6 @@ namespace $ {
 		return one
 	}
 
-	/** The JS the compiler makes of a node, as a plain string. */
 	function js_of( $: $, node: $bog_vmap_lang_node ) {
 		const tree = node.tree()
 		return $.$mol_tree2_text_to_string( $.$mol_view_tree2_to_text( tree.list([ tree ]) ) )
@@ -150,10 +107,6 @@ namespace $ {
 
 	$mol_test({
 
-		/**
-		 * The main test of the module. Source is the truth, the tree is derived, an
-		 * edit lands back as text, and nothing else in the file moves.
-		 */
 		'round trip: editing one property moves exactly one line'( $ ) {
 
 			const node = doc( demo_src )
@@ -209,7 +162,6 @@ namespace $ {
 
 		},
 
-		/** A lone property folds back onto the class line, which is normal tree format. */
 		'property drop'( $ ) {
 
 			const node = doc( `${d}bog_vmap_lang_test_num ${d}mol_view\n\tvalue? NaN\n\titems null\n` )
@@ -273,12 +225,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * Taking a node off the page and undeclaring it are two facts, so the empty
-		 * `sub /` has to survive the first one — it is the shape an empty document
-		 * starts from, and a class left with no `sub` at all would be a third state
-		 * nobody asked for.
-		 */
 		'dropping the last reference keeps an empty sub'( $ ) {
 
 			const node = doc( demo_src )
@@ -292,8 +238,6 @@ namespace $ {
 
 			$mol_assert_equal( node.prop_tree( 'sub' )!.kids[ 0 ].kids.length, 0 )
 
-			// The declaration is untouched: a part out of `sub` still exists and
-			// still has its ports, it just draws nothing.
 			$mol_assert_equal( node.prop_names().includes( 'Hero' ), true )
 
 		},
@@ -321,11 +265,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The acceptance of the wire, run through the compiler rather than read.
-		 * `this.Calc().result()` is the whole point: the middle link is what the
-		 * `<=` form loses without a word.
-		 */
 		'wire compiles to a two link call'( $ ) {
 
 			const js = js_of( $, doc( demo_src ) )
@@ -362,14 +301,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * Trap one and two of section 1. Both are the middle form of `<=`: a
-		 * reference that carries a child. With the node declared the build dies
-		 * talking about default values, without it the build is green and the bundle
-		 * gets `Calc(){ return result }`.
-		 *
-		 * A reference takes a token, not a path, so neither is expressible.
-		 */
 		'trap: a reference with a child is not a wire'( $ ) {
 
 			$mol_assert_fail( ()=> $.$bog_vmap_lang_ref_tree( 'Calc result' ), Error )
@@ -387,11 +318,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * Trap two again, from the other side: `=` declares nothing, so a wire to a
-		 * node nobody declared compiles green and throws `is not a function` at run
-		 * time, at that node only, whenever somebody gets there.
-		 */
 		'trap: a wire to an undeclared node is refused'( $ ) {
 
 			const node = doc( demo_src )
@@ -401,7 +327,6 @@ namespace $ {
 
 		},
 
-		/** Trap three: `w = Field value?` throws `ReferenceError: next` on any read. */
 		'trap: `?` on the right end only'( $ ) {
 
 			$mol_assert_fail(
@@ -411,7 +336,6 @@ namespace $ {
 
 		},
 
-		/** Trap four: `w? = Field hint` never fails, writes just disappear. */
 		'trap: `?` on the left end only'( $ ) {
 
 			$mol_assert_fail(
@@ -421,10 +345,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * Trap five: `w = A B value` compiles to `this.A().B().value()`, but `upper`
-		 * hoisted `B` onto the root, so it is not a method of `A`.
-		 */
 		'trap: more than two tokens'( $ ) {
 
 			$mol_assert_fail(
@@ -468,14 +388,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * `$mol_view_tree2_normalize` runs the `upper` hack, so a nested declaration
-		 * comes out as a flat property of the root plus a bare reference in place.
-		 * That is why the round trip above is byte for byte only on an already
-		 * normalized source, and why the editor keeps documents in that form.
-		 *
-		 * Pinned here so nobody rediscovers it in stage 4.1 through a mangled file.
-		 */
 		'normalize hoists nested declarations onto the root'( $ ) {
 
 			$mol_assert_equal( doc( nested_src ).tree().toString(), demo_src )
@@ -489,14 +401,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A base has to be declared before its heir, because `extends` is evaluated
-		 * when the class is defined while the generator emits declarations in the
-		 * order it received them. Written heir first here on purpose.
-		 *
-		 * A sub-view reference is NOT a constraint: that one compiles to a call
-		 * resolved at call time, so `mid` may keep its place relative to `leaf`.
-		 */
 		'declarations are sorted base first'( $ ) {
 
 			const of = ( src: string )=> doc( src ).tree()
@@ -533,11 +437,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The whole reason the document model of this module exists. Before it, the edit left
-		 * the source holding one class: the node model writes the class it touched
-		 * as the entire text, so every neighbour was dropped without an error.
-		 */
 		'editing one class leaves its neighbours byte for byte'( $ ) {
 
 			const d1 = pair_doc()
@@ -572,12 +471,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The document keeps following its text after a write has been made through
-		 * it. A cell that both read and wrote `source` would freeze here, and the
-		 * document would go on showing the classes it had before — which is why
-		 * `class_source` is a plain method.
-		 */
 		'a write through a class does not deafen the document to its own text'( $ ) {
 
 			const d1 = pair_doc()
@@ -620,12 +513,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * What the whole text looks like after a write, pinned rather than assumed:
-		 * the classes follow one another with no blank line between them. That is
-		 * the canonical form, and the code editor of stage 4.1 will show it, so it
-		 * had better be written down somewhere that fails when it changes.
-		 */
 		'the document glues its classes back with no separator'( $ ) {
 
 			const d1 = pair_doc()
@@ -647,12 +534,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * Renaming a class moves the name of the class and nothing else about the
-		 * document: the properties keep their names, their order and their values,
-		 * so the pick, the placement and the wires of the editor — all keyed by
-		 * property name — have nothing to be orphaned by.
-		 */
 		'renaming a class touches the class name alone'( $ ) {
 
 			const d1 = pair_doc()
@@ -671,12 +552,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The half a rename of the declaration alone would leave broken: an heir
-		 * spells its base, and a part spells the class it is declared with. Both
-		 * mentions live in ANOTHER class of the document, so both are rewritten in
-		 * the same write or the document stops compiling.
-		 */
 		'a rename rewrites the mentions of the class in its neighbours'( $ ) {
 
 			const d1 = $bog_vmap_lang_doc.make({})
@@ -702,7 +577,6 @@ namespace $ {
 
 		},
 
-		/** A literal is a data node, so a class name written inside one is text. */
 		'a rename does not reach into a string'( $ ) {
 
 			const d1 = $bog_vmap_lang_doc.make({})
@@ -745,11 +619,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The canvas gesture in model terms. Two parts, no wire; after a link there
-		 * are exactly two new lines: the wire on the root and the reference in the
-		 * target declaration.
-		 */
 		'a link writes exactly two lines, in canonical form'( $ ) {
 
 			const node = doc( pair_src )
@@ -825,10 +694,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * What a delete of a part has to do first: a wire left with one end on a
-		 * part that is gone names a property nobody declares.
-		 */
 		'unwiring a part takes both ends of its own wires and no others'( $ ) {
 
 			const node = doc( trio_src )
@@ -846,16 +711,10 @@ namespace $ {
 			$mol_assert_like( node.wires().map( wire => wire.name ), [ 'calc_2_result' ] )
 			$mol_assert_equal( node.source().includes( 'calc_result' ), false )
 
-			// The parts are none of its business: taking them out is the caller's half.
 			$mol_assert_ok( node.prop_names().includes( 'Calc' ) )
 
 		},
 
-		/**
-		 * A wire nobody reads is still a wire and still names its node, so it goes
-		 * with the node too. Reachable from a hand written document and from an
-		 * import, where a wire may well stand without a consumer.
-		 */
 		'unwiring a part takes its wire even when nobody reads it'( $ ) {
 
 			const node = doc( trio_src )
@@ -871,7 +730,6 @@ namespace $ {
 
 		},
 
-		/** A part that only reads a wire goes off it alone; the wire lives while somebody else reads it. */
 		'unwiring a consumer keeps the wire while another consumer holds it'( $ ) {
 
 			const node = doc( trio_src )
@@ -885,7 +743,6 @@ namespace $ {
 			$mol_assert_ok( node.source().includes( '\tcalc_result = Calc result\n' ) )
 			$mol_assert_equal( node.source().includes( 'Price ' + `${d}mol_view title` ), false )
 
-			// The last reader gone, the wire goes with it, as unplugging by hand does.
 			node.links_drop( 'Note' )
 
 			$mol_assert_like( node.links(), [] )
@@ -952,11 +809,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The five traps, from the side of the link rather than of the wire: whatever
-		 * the ends are, the reference in the target carries a bare name and the wire
-		 * is two tokens under `=`.
-		 */
 		'trap: a link never emits a reference with a child or a sign on one end'( $ ) {
 
 			const node = doc( pair_src )
@@ -982,11 +834,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The artboard fixture is a fixed point of normalization. Everything below
-		 * asserts against it, so a fixture the model would reformat on the first
-		 * write would make every one of those assertions about the serializer.
-		 */
 		'a document with an artboard round trips byte for byte'( $ ) {
 
 			$mol_assert_equal( doc( board_src ).source(), board_src )
@@ -1000,13 +847,9 @@ namespace $ {
 			$mol_assert_like( node.sub_names(), [ 'Board', 'Loose' ] )
 			$mol_assert_like( node.sub_names( 'Board' ), [ 'Head', 'Foot' ] )
 
-			// Not «no children»: no `sub` at all, which is what a free part is.
 			$mol_assert_equal( node.sub_names( 'Loose' ), null )
 			$mol_assert_equal( node.sub_names( 'Nobody' ), null )
 
-			// Every property of the document gets asked this, including the ones
-			// whose children are not overrides at all: `sub` holds bare references,
-			// and reading one as a property signature fails outright.
 			$mol_assert_equal( node.sub_names( 'sub' ), null )
 			$mol_assert_equal( node.over_tree( 'sub', 'sub' ), null )
 
@@ -1030,19 +873,12 @@ namespace $ {
 			at_tail.sub_insert( 'Loose', 2, 'Board' )
 			$mol_assert_like( at_tail.sub_names( 'Board' ), [ 'Head', 'Foot', 'Loose' ] )
 
-			// The reference is bare, like every other one in `sub`: a reference with
-			// a child under it is the middle form of `<=` and declares a property.
 			const refs = between.sub_list( 'Board' )!.kids
 			$mol_assert_like( refs.map( ref => ref.type ), [ '<=', '<=', '<=' ] )
 			$mol_assert_like( refs.map( ref => ref.kids[ 0 ].kids.length ), [ 0, 0, 0 ] )
 
 		},
 
-		/**
-		 * Insertion writes into `sub` and NOWHERE else: the declaration of the
-		 * artboard keeps its style, its order and its line, and the node put inside
-		 * keeps the declaration it had.
-		 */
 		'insertion touches the sub and nothing around it'( $ ) {
 
 			const node = doc( board_src )
@@ -1072,16 +908,10 @@ namespace $ {
 			$mol_assert_like( node.sub_names(), [ 'Loose', 'Board' ] )
 			$mol_assert_like( node.sub_names( 'Board' ), [ 'Head', 'Foot' ] )
 
-			// The declaration never moved: what changed is where it is drawn.
 			$mol_assert_equal( node.prop_names().includes( 'Loose' ), true )
 
 		},
 
-		/**
-		 * The position the user aimed at was read off a list that still held the
-		 * node being moved, so moving it down by one has to mean what it looked
-		 * like — otherwise a drag one place to the right does nothing at all.
-		 */
 		'moving inside one parent counts positions on the list the user saw'( $ ) {
 
 			const node = doc( board_src )
@@ -1119,11 +949,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A free part becomes an artboard by growing a `sub`, which is the only
-		 * difference between the two, and an artboard that already has one is left
-		 * alone rather than emptied.
-		 */
 		'a node is opened into a container by an empty sub'( $ ) {
 
 			const node = doc( board_src )
@@ -1136,10 +961,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * Layout properties are ordinary keys of the ordinary `style` dictionary, so
-		 * an artboard exports as a plain document and depends on nothing of ours.
-		 */
 		'a dictionary key is set, replaced where it stands and dropped'( $ ) {
 
 			const node = doc( board_src )
@@ -1163,12 +984,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * An inherited dictionary starts with `^`, and `^` has to stay at the head:
-		 * a dictionary redeclared without it REPLACES the one of the base instead of
-		 * extending it, so a document over a base with its own `style` that grew one
-		 * key would lose the rest in silence.
-		 */
 		'a dictionary key never moves the inherited head'( $ ) {
 
 			const dict = $mol_tree2.struct( '*', [ $mol_tree2.struct( '^' ) ] )
@@ -1190,17 +1005,10 @@ namespace $ {
 				{ from: 'Calc', from_prop: 'result', to: 'Price', to_prop: 'title', name: 'calc_result', bidi: false },
 			] )
 
-			// A reference to something that is not a wire is not a link.
 			$mol_assert_like( doc( `${d}bog_vmap_lang_test_x ${d}mol_view\n\tlabel \\a\n\tP ${d}mol_view title <= label\n` ).links(), [] )
 
 		},
 
-		/**
-		 * A rename is a rewrite of the whole class, not of one line: the name of a
-		 * node is spelled by everything that points at it. The property also keeps
-		 * its place — dropping and re-inserting moved it to the end, which reorders
-		 * the canvas for an edit that moves nothing.
-		 */
 		'renaming a node rewrites the wire that reads it'( $ ) {
 
 			const node = doc( demo_src )
@@ -1210,7 +1018,6 @@ namespace $ {
 			$mol_assert_equal( node.source(), demo_src.replace( /Calc(?= |\n)/g, 'Motor' ) )
 			$mol_assert_like( node.prop_names(), [ 'Price', 'Hero', 'Motor', 'calc_result', 'label', 'sub' ] )
 
-			// The wire is alive and reads the node under its new name.
 			$mol_assert_like( node.links(), [
 				{ from: 'Motor', from_prop: 'result', to: 'Price', to_prop: 'title', name: 'calc_result', bidi: false },
 			] )
@@ -1227,12 +1034,10 @@ namespace $ {
 			$mol_assert_equal( node.sub_holder( 'Stage' ), '' )
 			$mol_assert_equal( node.sub_holder( 'Hero' ), null )
 
-			// The sub of the renamed node itself is untouched.
 			$mol_assert_like( node.sub_names( 'Stage' ), [ 'Price' ] )
 
 		},
 
-		/** The other end: renaming the wire moves the name in the part that reads it. */
 		'renaming a wire rewrites the binding that reads it'( $ ) {
 
 			const node = doc( demo_src )
@@ -1247,12 +1052,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The handle is not patched to follow the rename, and a reader of the name
-		 * recomputes off the text instead. Under the old shape the `name` method of
-		 * the live handle was overwritten, so the object addressed one property and
-		 * read another, past the graph.
-		 */
 		'a reader of the name recomputes on a rename'( $ ) {
 
 			const node = doc( demo_src )
@@ -1268,8 +1067,6 @@ namespace $ {
 			$mol_assert_equal( reader.sync().includes( 'Motor' ), true )
 			$mol_assert_equal( reader.sync().includes( 'Calc' ), false )
 
-			// The handle of the old name addresses nothing now, and says so instead
-			// of answering out of what was written through it.
 			$mol_assert_equal( node.property( 'Calc' ).title(), '' )
 			$mol_assert_equal( node.property( 'Motor' ).title(), 'Motor' )
 
@@ -1281,12 +1078,10 @@ namespace $ {
 
 			$mol_assert_fail( ()=> node.property( 'Calc' ).title( 'Price' ), Error )
 
-			// Nothing moved.
 			$mol_assert_equal( node.source(), demo_src )
 
 		},
 
-		/** A sign travels with the rename: one write, or the document is unsigned between two. */
 		'a rename carries the sign of the property'( $ ) {
 
 			const node = doc( `${d}bog_vmap_lang_test_sign ${d}mol_view value? null\n` )
