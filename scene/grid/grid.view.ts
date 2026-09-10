@@ -1,8 +1,8 @@
 namespace $.$$ {
 
 	/**
-	 * Infinite background grid. Feeds two $mol_plot_ruler instances the same way
-	 * $mol_plot_pane feeds its graphs, and renders only their curves.
+	 * Infinite background grid. Feeds two rulers of the plotting module the same way
+	 * its pane feeds its graphs, and renders only their curves.
 	 * @see ../../ARCHITECTURE.md section 8
 	 */
 	export class $bog_vmap_scene_grid extends $.$bog_vmap_scene_grid {

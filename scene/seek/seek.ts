@@ -9,7 +9,7 @@ namespace $ {
 	/**
 	 * First node of a rendered document the probe accepts, and its path.
 	 *
-	 * The path is built exactly as `$bog_vmap_scene_measure` builds it, and that is
+	 * The path is built exactly as the measuring walk builds it, and that is
 	 * the whole reason this exists as a walk of its own rather than as a read of the
 	 * DOM. A failing element does carry an attribute naming it, but that attribute
 	 * is lowercased and joined by underscores, so `My_box` and `my/Box` arrive as the

@@ -15,8 +15,8 @@ namespace $ {
 	const pack = 'https://pack.test/web.js'
 
 	/**
-	 * A scene whose pack never leaves the process: `$mol_import.script_async` is
-	 * the one thing that touches the network, and it is the only thing replaced.
+	 * A scene whose pack never leaves the process: the async script loader is the one
+	 * thing that touches the network, and it is the only thing replaced.
 	 * The pack is named up front unless a test wants the moments before that.
 	 */
 	function scene( $: $, uri = pack ) {
@@ -143,7 +143,7 @@ namespace $ {
 		 *
 		 * The class is checked for in the sandbox as well as the instance, because
 		 * those are two different failures and only one of them shows. A document
-		 * compiled here would inherit the `$mol_view` of the SCENE — a class computes
+		 * compiled here would inherit the base class of the SCENE — a class computes
 		 * its base once, and no later load of the pack can move it — so the damage is
 		 * done at definition time, before anything is instantiated, and it is done
 		 * for the life of the frame. Compilation is green, the bridge reports no
@@ -218,7 +218,7 @@ namespace $ {
 		},
 
 		/**
-		 * The pack is a whole `$mol` bundle and rewrites `$mol_import` in the global
+		 * The pack is a whole framework bundle and rewrites the importer in the global
 		 * `$` as it lands. Read late-bound after that, the name gives the pack's copy
 		 * with an empty cache, which loads the pack again — and that copy's `script`
 		 * loads it again, forever: measured at six hundred script tags a second, the
@@ -274,11 +274,11 @@ namespace $ {
 		},
 
 		/**
-		 * Two copies of `$mol_try_web` on one page — the scene's and the pack's —
-		 * each listen on `self` and call a `handler` private to their own bundle, so
-		 * a dispatch from one throws `handler is not a function` in the other: a
-		 * failure of the document was answered by a second failure of our own. Once
-		 * the pack has landed, `$mol_try` is plain try/catch and dispatches nothing.
+		 * Two copies of the framework's error reporter on one page — the scene's and
+		 * the pack's — each listen on `self` and call a handler private to their own
+		 * bundle, so a dispatch from one throws «handler is not a function» in the
+		 * other: a failure of the document was answered by a second failure of our
+		 * own. Once the pack has landed, ours is plain try/catch and dispatches nothing.
 		 */
 		async 'a failure of the document raises no second failure of the scene'( $ ) {
 
@@ -962,7 +962,7 @@ namespace $ {
 		},
 
 		/**
-		 * The viewport is the box of the scene, read the one way `$mol` reads a box.
+		 * The viewport is the box of the scene, read the one way the framework reads one.
 		 * Two sizes of the same frame judge the same part differently, which no
 		 * number taken off the window could do here.
 		 */

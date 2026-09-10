@@ -32,10 +32,7 @@ namespace $ {
 		readonly height: number
 	}
 
-	/**
-	 * One component of a land library: the three sources a class is built from.
-	 * Texts and nothing else, the scene has no way to reach the land itself.
-	 */
+	/** Texts and nothing else: the scene has no way to reach the land itself. */
 	export type $bog_vmap_bridge_part = {
 		readonly tree: string
 		readonly js: string
@@ -51,10 +48,8 @@ namespace $ {
 	}
 
 	/**
-	 * Host to scene.
-	 *
-	 * `doc_set` carries the whole document, not a patch: the scene holds no
-	 * source of truth of its own and must never have to merge.
+	 * Host to scene. `doc_set` carries the whole document, not a patch: the scene
+	 * holds no source of truth of its own and must never have to merge.
 	 */
 	export type $bog_vmap_bridge_down =
 
@@ -62,22 +57,17 @@ namespace $ {
 			readonly kind: 'doc_set'
 
 			/**
-			 * Full document source in view.tree.
-			 *
 			 * Declaration order is NOT guaranteed: sorting is the scene's job,
 			 * because only the scene knows the whole set of classes going into
-			 * one `new Function` — the document's own plus everything its
+			 * one compiled string — the document's own plus everything its
 			 * libraries contribute.
 			 */
 			readonly src: string
 
 			/**
-			 * Bodies of the document classes, as JS source.
-			 *
-			 * A component is built from three sources, and this is the second.
-			 * Without it every property stays undecorated, and an undecorated
+			 * Hand written bodies, keyed by class name, absent for a class without
+			 * one. Without them every property stays undecorated, and an undecorated
 			 * property is invisible to the hot swap of stage 4.
-			 * Keyed by class name; a class with no handwritten body is absent.
 			 */
 			readonly js: { readonly [ klass: string ]: string }
 
@@ -98,16 +88,15 @@ namespace $ {
 
 		| {
 			/**
-			 * Where free details sit on the canvas, in world coordinates.
-			 *
-			 * A channel of its own, apart from `css_set`, and that is the whole
-			 * point: the scene hangs these as its own style element, so the
-			 * document's styles never carry them and the export cannot see them
-			 * even by accident. Placement is editor state, not site content.
+			 * World coordinates, and a channel of its own apart from `css_set` —
+			 * that is the whole point: the scene hangs these as its own style
+			 * element, so the document's styles never carry them and the export
+			 * cannot see them even by accident. Placement is editor state, not
+			 * site content.
 			 *
 			 * Scaffolding until artboards (stage 6): inside an artboard layout is
-			 * a plain $mol flex tree, and only free details lie by coordinates.
-			 * The "everything absolute" model was considered and rejected.
+			 * a plain flex tree, and only free details lie by coordinates. The
+			 * "everything absolute" model was considered and rejected.
 			 */
 			readonly kind: 'spots_set'
 			readonly spots: { readonly [ node: string ]: { readonly x: number, readonly y: number } }
@@ -115,17 +104,13 @@ namespace $ {
 
 		| {
 			/**
-			 * A click that landed on the host overlay and is meant for the document.
-			 *
 			 * There are no editor modes: the overlay takes every gesture, so a plain
-			 * click — press and release without movement — is relayed here, and the
-			 * scene replays it on the element under the point as synthetic pointer
-			 * and click events, with focus. One click therefore both picks a part
-			 * on the host and presses the live component in the sandbox.
+			 * click — press and release without movement — is relayed here and the
+			 * scene replays it on the element under the point, with focus. One click
+			 * therefore both picks a part on the host and presses the live component.
 			 *
-			 * World coordinates, not screen ones: the host resolves its camera the
-			 * same way it does for the hit test, and the scene resolves its own,
-			 * so neither side has to know the other's pixel geometry.
+			 * World coordinates, not screen ones: each side resolves its own camera,
+			 * so neither has to know the other's pixel geometry.
 			 *
 			 * Answered like every other push, with `sizes`: a click is the most
 			 * likely thing to start a loop in document code, so a scene that takes
@@ -139,14 +124,11 @@ namespace $ {
 
 		| {
 			/**
-			 * Are you alive.
-			 *
-			 * Штатный трафик уже несёт пульс: всякий толчок хоста сцена обязана
-			 * подтвердить `sizes`. Слепая зона одна — код документа завис, когда его
-			 * никто не толкал: живой компонент нажат настоящим событием сквозь дыру
-			 * в оверлее, хосту толкать нечего, документ не менялся.
-			 *
-			 * Поэтому пульс идёт всегда, начиная с первого `sizes`.
+			 * Ordinary traffic already carries a pulse: every push of the host is
+			 * answered with `sizes`. One blind spot is left — document code hung
+			 * while nobody was pushing it, because the live component was pressed by
+			 * a real event through the hole in the overlay. So the pulse runs always,
+			 * from the first `sizes` on.
 			 */
 			readonly kind: 'ping'
 			readonly nonce: number
@@ -193,9 +175,9 @@ namespace $ {
 			 * different pack is a different frame element and a fresh realm.
 			 *
 			 * Sent first of everything after the handshake. A document compiled
-			 * before the pack lands inherits the scene's own `$mol_view` and no later
-			 * load can move it, so the scene waits for this message before it
-			 * compiles anything.
+			 * before the pack lands inherits the base view class of the scene's own
+			 * bundle and no later load can move it, so the scene waits for this
+			 * message before it compiles anything.
 			 * @see ../ARCHITECTURE.md sections 4 and 5
 			 */
 			readonly kind: 'pack_set'
@@ -220,22 +202,21 @@ namespace $ {
 		| { readonly kind: 'ready' }
 
 		| {
-			/** Ответ на `ping` тем же `nonce`. Живой поток, а не живой кадр. */
+			/** Answers `ping` with the same nonce: a live thread, not a live frame. */
 			readonly kind: 'pong'
 			readonly nonce: number
 		}
 
 		| {
 			/**
-			 * Геометрия узлов, ОТРИСОВАННЫХ в этот раз, а не всех существующих.
+			 * Geometry of the nodes DRAWN this round, not of every node there is.
 			 *
-			 * С появлением culling молчание про узел значит «не рисовался», а НЕ
-			 * «узла нет». Поэтому хост обязан **мержить**, а не заменять: иначе
-			 * коробки всего только что скрытого стираются, и рамка выделения,
-			 * которая рисуется ровно из них, мигает на краю холста.
-			 *
-			 * Раз молчание больше не означает отсутствия, про отсутствие должен
-			 * сказать кто-то явно — это делает удаление узла из документа.
+			 * With culling, silence about a node means «was not drawn» and not «is
+			 * gone», so the host must MERGE rather than replace: otherwise the boxes
+			 * of everything just hidden are wiped, and the selection ring, which is
+			 * drawn out of exactly those, blinks at the edge of the canvas. Absence
+			 * therefore has to be said by someone explicitly, and that someone is the
+			 * removal of a node from the document.
 			 */
 			readonly kind: 'sizes'
 			readonly sizes: { readonly [ node: string ]: $bog_vmap_bridge_rect }
@@ -276,15 +257,11 @@ namespace $ {
 			readonly at: 'compile' | 'runtime'
 
 			/**
-			 * `null` means the channel is clear again.
-			 *
-			 * Errors are edge-triggered: the scene posts only on change, so a
-			 * repeated identical failure stays silent. Without an explicit
-			 * "clear" the host cannot tell a fixed document from a still
-			 * broken one, because silence means both.
-			 *
-			 * Null rather than an empty string on purpose: an empty error text
-			 * is a plausible bug, and it must not read as good news.
+			 * `null` means the channel is clear again. Errors are edge-triggered, so
+			 * a repeated identical failure stays silent, and without an explicit
+			 * clear the host could not tell a fixed document from a still broken one.
+			 * Null rather than an empty string on purpose: an empty error text is a
+			 * plausible bug and must not read as good news.
 			 */
 			readonly message: string | null
 
@@ -303,22 +280,19 @@ namespace $ {
 	}
 
 	/**
-	 * Takes a message off the wire, or null when it is not ours.
-	 *
-	 * The channel has no origin to check against, because the scene runs in an
-	 * opaque origin, so anything able to reach this window can post here.
-	 * Unknown shapes are dropped rather than trusted.
+	 * Takes a message off the wire, or null when it is not ours. The channel has no
+	 * origin to check against — the scene runs in an opaque one — so anything able
+	 * to reach this window can post here, and unknown shapes are dropped.
 	 *
 	 * Always pass `peer` on the host side. Without it any window that posts a
-	 * `ready` can take the channel over, and the host will happily talk to it:
-	 * seen for real on stage 1, where a stray debug frame stole the bridge and
-	 * the host spent an hour posting into a dead window. Identity of the peer
-	 * comes from `Scene().dom_node().contentWindow`, never from `event.source`.
+	 * `ready` takes the channel over: seen for real on stage 1, where a stray debug
+	 * frame stole the bridge and the host spent an hour posting into a dead window.
+	 * Identity comes from the frame element, never from `event.source`.
 	 *
-	 * Passing the argument at all turns the check on, so a peer that is not
-	 * known yet rejects every message instead of letting everything through.
-	 * Omitting it entirely is the only way to opt out, and only the scene may:
-	 * it has exactly one correspondent and answers into the same window.
+	 * Passing the argument at all turns the check on, so a peer not known yet
+	 * rejects everything instead of letting everything through. Omitting it is the
+	 * only way to opt out, and only the scene may: it has one correspondent and
+	 * answers into the same window.
 	 */
 	export function $bog_vmap_bridge_read< Message extends $bog_vmap_bridge_message >(
 		event: { data?: unknown, source?: unknown },

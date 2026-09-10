@@ -4,8 +4,9 @@ namespace $ {
 	 * A value of the document as a short label for a wire.
 	 *
 	 * Text and numbers as they are, arrays and plain objects as JSON, anything
-	 * else — a view, a class — by its own `toString`, which for `$mol_object` is
-	 * its id. Whitespace is folded and the tail is cut, a label sits on a line.
+	 * else — a view, a class — by its own `toString`, which for an object of the
+	 * framework is its id. Whitespace is folded and the tail cut: a label sits on
+	 * one line.
 	 */
 	export function $bog_vmap_scene_value_text( val: unknown, limit = 40 ) {
 

@@ -3,9 +3,9 @@ namespace $ {
 	/**
 	 * The replay of a relayed click, on a fake realm.
 	 *
-	 * No real DOM is involved on purpose: what a real `$mol_button` inside the
-	 * sandbox does with these events is a browser question, this is the contract
-	 * the scene keeps towards it — which events, in which order, with what flags.
+	 * No real DOM is involved on purpose: what a real button inside the sandbox does
+	 * with these events is a browser question, this is the contract the scene keeps
+	 * towards it — which events, in which order, with what flags.
 	 */
 
 	type log = { type: string, init: PointerEventInit }

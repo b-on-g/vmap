@@ -18,14 +18,13 @@ namespace $ {
 	}
 
 	/**
-	 * Geometry of a rendered document, in world units, and the nodes it was read
-	 * off.
+	 * Geometry of a rendered document, in world units, and the nodes it was read off.
 	 *
 	 * Pure, and out of the view for the reason the culling decision is: this is the
 	 * whole of what the host learns about the layout, and a walk worth testing is
-	 * worth testing without a compiled document. Everything that knows about `$mol`
-	 * — what counts as a view, what a view's children are, which property holds it —
-	 * is handed in, so the function itself knows only rectangles and paths.
+	 * worth testing without a compiled document. Everything that knows about the
+	 * framework — what counts as a view, what a view's children are, which property
+	 * holds it — is handed in, so the function itself knows only rectangles and paths.
 	 *
 	 * The nodes come back beside the sizes because the two are one question asked
 	 * twice: what the host is told about, and what has to be watched for changing

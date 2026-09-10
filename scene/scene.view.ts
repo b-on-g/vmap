@@ -13,8 +13,8 @@ namespace $.$$ {
 	 * `styles_sweep()` drops everything under `style_scope` on each compile, so a
 	 * placement element sharing that prefix would be swept away by the next
 	 * keystroke in the document and come back only on the next `spots_set`.
-	 * The id is constant besides: there is one document per scene, and
-	 * `$mol_style_attach` reuses the element it finds by id.
+	 * The id is constant besides: there is one document per scene, and the attach
+	 * helper reuses the element it finds by id.
 	 */
 	const spots_id = 'bog_vmap_spots:stage'
 
@@ -52,7 +52,7 @@ namespace $.$$ {
 	const unmounted: mounted = { made: null, pack: '', root: '', supers: {}, error: '', klass: '' }
 
 	/**
-	 * Sandbox application of $bog_vmap.
+	 * Sandbox application of the editor.
 	 *
 	 * Takes a document over the bridge, compiles it, renders it, answers with
 	 * measured geometry and errors. It has no network, no Giper Baza and no
@@ -183,7 +183,7 @@ namespace $.$$ {
 
 		/**
 		 * Puts the filter between the document root and the DOM, as `sub_visible()`:
-		 * the hook `$mol_view.render()` draws by and `$mol_list` narrows the same way,
+		 * the hook the renderer draws by and the standard list narrows the same way,
 		 * so `sub()` stays whole for every other reader — the walks, the seek, the
 		 * values. An own property, which the prototype swap of a rebuild leaves be.
 		 */
@@ -236,16 +236,13 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Donor pack of this realm, as the host names it in `pack_set`.
+		 * The frame has no address of its own — it is raised from markup — so the pack
+		 * arrives by message. One pack per realm still holds by construction: a realm
+		 * cannot unload a bundle, so the host makes the address part of the key of the
+		 * frame, and a second pack arrives in a frame that never saw a first.
 		 *
-		 * This frame has no address of its own — it is raised from markup, so there
-		 * is no query to read a pack out of. The rule of section 5 still holds and
-		 * still holds by construction: a realm cannot unload a bundle, so the host
-		 * makes the address of the pack part of the key of the frame, and a second
-		 * pack arrives in a frame that has never seen a first one.
-		 *
-		 * Empty until the message lands, and that is an ORDINARY state now rather
-		 * than an impossible one, which is why `instance()` refuses to compile in it.
+		 * Empty until the message lands, and that is an ORDINARY state rather than an
+		 * impossible one, which is why `instance()` refuses to compile in it.
 		 * @see ../ARCHITECTURE.md section 5
 		 */
 		@ $mol_mem
@@ -254,7 +251,7 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The importer of THIS bundle, resolved once. The pack rewrites `$mol_import`
+		 * The importer of THIS bundle, resolved once. The pack rewrites the importer
 		 * in the global `$` as it lands, and read late-bound after that the name
 		 * gives the pack's copy, whose cache is empty — which loads the pack again,
 		 * and again, six hundred script tags a second. Measured in headless Chrome.
@@ -270,8 +267,8 @@ namespace $.$$ {
 		 * Suspends until the pack bundle is in the realm, then stays resolved.
 		 * Everything that compiles reads this first: a class picks its base once, at
 		 * definition time, and a document compiled before the pack lands would keep
-		 * the scene's own `$mol_view` for good. A cross-origin `<script src>` needs
-		 * no permission of its own inside the boundary.
+		 * the base class of the scene's own bundle for good. A cross-origin
+		 * `<script src>` needs no permission of its own inside the boundary.
 		 */
 		@ $mol_mem
 		pack_ready() {
@@ -281,9 +278,9 @@ namespace $.$$ {
 
 			this.importer().script( uri )
 
-			// Two copies of `$mol_try_web` now listen on `self`, each calling a
-			// `handler` private to its own bundle, so a dispatch from one copy throws
-			// `handler is not a function` in the other. Plain try/catch for both.
+			// Two copies of the framework's error reporter now listen on `self`, each
+			// calling a handler private to its own bundle, so a dispatch from one copy
+			// throws «handler is not a function» in the other. Plain try/catch for both.
 			this.$.$mol_try = handler => {
 				try { return handler() } catch( error ) { return error as Error }
 			}
@@ -295,8 +292,8 @@ namespace $.$$ {
 		 * Why the canvas is empty, or an empty string when it is not.
 		 *
 		 * The suspension is caught here rather than in `stage()` so that the wait
-		 * has a face. Catching costs no reactivity: `$mol_wire_fiber.sync()`
-		 * promotes the dependency before it throws, so this cell is subscribed to
+		 * has a face. Catching costs no reactivity: a suspending read promotes the
+		 * dependency before it throws, so this cell is subscribed to
 		 * `pack_ready()` either way and recomputes when the pack lands.
 		 */
 		@ $mol_mem
@@ -319,8 +316,8 @@ namespace $.$$ {
 		 * One sandbox per document, never recreated.
 		 *
 		 * Reads nothing reactive, so the cell is computed once and never goes
-		 * stale. That is the requirement, not an accident: `$mol_object2` caches
-		 * its context in `[$mol_ambient_ref]` at the first read, so a fresh
+		 * stale. That is the requirement, not an accident: the base object of the
+		 * framework caches its context on first read, so a fresh
 		 * `Object.create( $ )` would silently cut already built instances off the
 		 * classes compiled after it.
 		 */
@@ -335,13 +332,11 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Sources of the land libraries, from the host, compiled before the document.
-		 *
 		 * Texts and nothing else: the scene has no database and no keys, so a land is
-		 * read by the host and arrives here as the three strings of each component.
-		 * On the bridge and not in the frame address, unlike the pack — a land is
-		 * compiled into the sandbox like the document and inherits the current
-		 * `$['$mol_view']`, so a change of the list is a recompile, not a reload.
+		 * read by the host and arrives as the three strings of each component. On the
+		 * bridge and not in the frame address, unlike the pack — a land is compiled
+		 * into the sandbox like the document and inherits the base class already
+		 * there, so a change of the list is a recompile, not a reload.
 		 * @see ../ARCHITECTURE.md section 5
 		 */
 		@ $mol_mem
@@ -350,12 +345,9 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The libraries parsed: every declaration, and the handwritten bodies keyed
-		 * by the class each part declares.
-		 *
-		 * The name of a class is read off its own tree rather than carried beside
-		 * it, the same rule the land model lives by: one source of truth for a
-		 * derivable fact. A part with no class declares nothing and keys nothing.
+		 * The name of a class is read off its own tree rather than carried beside it,
+		 * the same rule the land model lives by: one source of truth for a derivable
+		 * fact. A part with no class declares nothing and keys nothing.
 		 *
 		 * Read inside `code()`, so a malformed library fails on the compile channel
 		 * with the name of the file it came from, like a malformed document does.
@@ -387,8 +379,8 @@ namespace $.$$ {
 		/**
 		 * Normalized declarations of the libraries and the document, in the order
 		 * they can be defined in: libraries first, a base before its heir, one
-		 * declaration per name. The order is `$bog_vmap_scene_order`, and the sort
-		 * inside it is the canonical one from `lang` — the scene used to carry a
+		 * declaration per name. The ordering helper of this module does it, and the
+		 * sort inside it is the canonical one from `lang` — the scene used to carry a
 		 * copy, and two copies of a sort are one divergence away from `Class
 		 * extends value undefined`.
 		 */
@@ -420,14 +412,12 @@ namespace $.$$ {
 		}
 
 		/**
-		 * What each class declares and which of it is keyed, bases folded in.
-		 *
-		 * The hot swap reads this to tell a property that lost its cell from one
-		 * that changed between solo and keyed, and both questions are asked of a
-		 * live instance — whose atoms come from the whole chain, not from the last
+		 * The hot swap reads this to tell a property that lost its cell from one that
+		 * changed between solo and keyed, and both questions are asked of a live
+		 * instance — whose atoms come from the whole chain, not from the last
 		 * declaration alone. So a base declared by the document is folded into its
-		 * heir, while a base from the pack is left out on purpose: its properties
-		 * are not ours to judge and their shape does not change under us.
+		 * heir, while a base from the pack is left out on purpose: its properties are
+		 * not ours to judge and their shape does not change under us.
 		 */
 		@ $mol_mem
 		shapes() {
@@ -470,7 +460,7 @@ namespace $.$$ {
 		 * The call that makes cells of the handwritten body, emitted right after the
 		 * class: a decorator cannot be written into the string handed to
 		 * `new Function`. What the tree says is keyed or changeable goes along as
-		 * data, the rest `$bog_vmap_scene_cells` reads off the class itself.
+		 * data, the rest the cells helper reads off the class itself.
 		 */
 		cells_code( self: $mol_tree2 ) {
 
@@ -487,18 +477,15 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Generated source of the whole document.
-		 *
-		 * Emitted class by class in topological order, and the handwritten body of
-		 * a class goes right after its own declaration, before the next class is
+		 * Emitted class by class in topological order, and the handwritten body of a
+		 * class goes right after its own declaration, before the next class is
 		 * declared at all. Generating every declaration first and wrapping them
-		 * afterwards would look tidier and be wrong: the wrapper is a NEW class,
-		 * so a subclass built earlier keeps the unwrapped base in its prototype
-		 * chain and simply loses the handwritten methods of its parent.
+		 * afterwards would look tidier and be wrong: the wrapper is a NEW class, so a
+		 * subclass built earlier keeps the unwrapped base in its prototype chain and
+		 * loses the handwritten methods of its parent.
 		 *
-		 * Class name and CSS go in as data through `JSON.stringify`: a user CSS
-		 * with a backtick or a `${` would tear the string apart otherwise, and a
-		 * name is not a global here at all.
+		 * Class name and CSS go in as data through `JSON.stringify`: a user CSS with a
+		 * backtick or a `${` would tear the string apart otherwise.
 		 */
 		@ $mol_mem
 		code_parts() {
@@ -601,10 +588,10 @@ namespace $.$$ {
 		 * Compiles the document into the sandbox, overwriting classes in place.
 		 *
 		 * Returns a plain record rather than the class itself. A class has a
-		 * static `destructor`, so `$mol_wire_atom.put` would take ownership of it
-		 * and stamp `Symbol.toStringTag` with the atom id — and `dom_name()` is
-		 * `$mol_dom_qname( this.constructor.toString() )`, which reads exactly
-		 * that stamp. A plain object has no `destructor` and stays untouched.
+		 * static `destructor`, so an atom would take ownership of it and stamp
+		 * `Symbol.toStringTag` with the atom id — and `dom_name()` is derived from
+		 * the string form of the constructor, which reads exactly that stamp. A
+		 * plain object has no `destructor` and stays untouched.
 		 */
 		@ $mol_mem
 		build(): { readonly Root: typeof $mol_view } {
@@ -628,14 +615,11 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Class whose generated code throws, found by running the document again
-		 * class by class.
-		 *
-		 * The whole document goes into ONE `new Function`, so a failure there — a
-		 * base nobody declared, a syntax error in a handwritten body — carries no
-		 * name. Splitting the fast path into a call per class to keep that name
-		 * would cost every keystroke for the sake of the rare round that fails, so
-		 * the search happens only once something already went wrong.
+		 * The whole document goes into ONE `new Function`, so a failure there — a base
+		 * nobody declared, a syntax error in a handwritten body — carries no name.
+		 * Splitting the fast path into a call per class to keep that name would cost
+		 * every keystroke for the sake of the rare round that fails, so the search
+		 * runs only once something already went wrong.
 		 *
 		 * Into a scratch context and not into the sandbox: the retry must not add
 		 * half a generation of classes to the one the living component is using.
@@ -682,7 +666,7 @@ namespace $.$$ {
 		 * The live root instance, the identity it was built under and why the last
 		 * compile failed, in one value: one computation, one cell. `instance()` and
 		 * `compile_error()` split it so that each moves only its own readers. A plain
-		 * record, which `$mol_owning_catch` refuses to stamp or destroy.
+		 * record, which the owning catch of the framework refuses to stamp or destroy.
 		 *
 		 * An edit moves the living component onto the new classes instead of
 		 * building another one: cells are own fields of an instance, so a prototype
@@ -690,8 +674,8 @@ namespace $.$$ {
 		 * focus and scroll, which no snapshot carries. 6.1 ms against 8.7 ms for a
 		 * rebuild on the S2 bench, and flat in the size of the component.
 		 *
-		 * What it built last time is read off its own cache through `$mol_wire_probe`,
-		 * the way `view_rect()` does. A failed rebuild answers with that instance, so
+		 * What it built last time is read off its own cache through a probe, the way
+		 * `view_rect()` does. A failed rebuild answers with that instance, so
 		 * `instance()` keeps its value and the living component stays whole.
 		 */
 		@ $mol_mem
@@ -703,7 +687,7 @@ namespace $.$$ {
 			const root = this.doc_root()
 
 			// No pack, no compile: a document built before the pack lands would
-			// inherit OUR `$mol_view`, and a class picks its base once for good.
+			// inherit OUR base class, and a class picks its base once for good.
 			const pack = this.pack_uri()
 
 			if( !src.trim() || !root || !pack ) return unmounted
@@ -785,14 +769,12 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Styles, attached apart from the class.
+		 * What keeps a CSS edit cheap: `doc_css()` is read here and nowhere else, so
+		 * restyling moves this cell alone while `sandbox()` and `instance()` stand
+		 * still together with all the live state.
 		 *
-		 * This is what keeps a CSS edit cheap: `doc_css()` is read here and
-		 * nowhere else, so restyling moves this cell alone while `sandbox()` and
-		 * `instance()` stand still together with all the live state.
-		 *
-		 * Not named `style()`: `$mol_view.style()` already exists and must return
-		 * a dictionary of CSS properties for the rendered node.
+		 * Not named `style()`: that name is taken by the base view and must return a
+		 * dictionary of CSS properties for the rendered node.
 		 */
 		@ $mol_mem
 		css_attach() {
@@ -818,7 +800,7 @@ namespace $.$$ {
 		 * rules — the document text never sees them at all.
 		 *
 		 * Absolute positioning is TEMPORARY, scaffolding until artboards of stage 6:
-		 * inside an artboard the layout is a plain $mol flex tree and only free parts
+		 * inside an artboard the layout is a plain flex tree and only free parts
 		 * lie by coordinates.
 		 */
 		@ $mol_mem
@@ -827,13 +809,10 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Styles of the land libraries, as one element of the scene's own.
-		 *
-		 * Under a constant id outside `style_scope`, like the placement: the sweep
-		 * on every compile of the document must not take the library styles with
-		 * it, and `$mol_style_attach` reuses the element it finds by id. Read off
-		 * the raw parts and not off `libs_parsed()`, so that a library that fails
-		 * to parse fails on the compile channel and does not take the styles of its
+		 * Under a constant id outside `style_scope`, like the placement: the sweep on
+		 * every compile of the document must not take the library styles with it. Read
+		 * off the raw parts and not off `libs_parsed()`, so a library that fails to
+		 * parse fails on the compile channel and does not take the styles of its
 		 * neighbours down with it.
 		 */
 		@ $mol_mem
@@ -843,32 +822,25 @@ namespace $.$$ {
 		}
 
 		/**
-		 * The placement rules.
-		 *
-		 * A sub view of a class carries `[<root without $>_<property lowercased>]`
-		 * (`view_names_owned`, `view.tsx:365`), which is how a part is addressed.
 		 * World coordinates go into `left`/`top` unchanged: the stage sits under one
-		 * `transform` with `transform-origin: 0 0`, so the root class is at world
-		 * zero and its offset children are already in world units.
+		 * `transform` with `transform-origin: 0 0`, so the root class is at world zero
+		 * and its offset children are already in world units.
 		 *
 		 * **`!important` is not laziness here, it is the only thing that works.**
-		 * Half the standard library positions itself: `[mol_string]` alone declares
-		 * `position: relative`, at the same specificity as a single attribute
-		 * selector, so the cascade falls through to source order — and this element
-		 * is attached before the pack script has even been fetched, which puts every
-		 * pack rule after it. Measured: three components dropped at one x,
-		 * `$mol_button_minor` and `$mol_icon_close` landed on it, `$mol_string` came
-		 * out 122 px to the right, offset by exactly the width of its in-flow
-		 * neighbour, because it stayed `relative` and read `left` as a shift from its
-		 * static position. Two of three looked right by luck. The pack is somebody
-		 * else's CSS and we do not get to renumber it, so placement wins by
-		 * declaration instead of by position.
+		 * Half the standard library positions itself, and a bare attribute selector
+		 * declaring `position: relative` ties on specificity, so the cascade falls
+		 * through to source order — and this element is attached before the pack
+		 * script has even been fetched, which puts every pack rule after it. Measured:
+		 * three components dropped at one x, two landed on it, the text field came out
+		 * 122 px to the right, offset by exactly the width of its in-flow neighbour,
+		 * because it stayed `relative` and read `left` as a shift from its static
+		 * position. Two of three looked right by luck, and the pack is somebody else's
+		 * CSS we do not get to renumber.
 		 *
 		 * Margins are left alone, and a component carrying its own lands offset by
-		 * them: `$mol_speck` has `margin: -.5rem -.2rem` and comes out 8 px above and
-		 * 4 px left of the point it was aimed at. That is the badge doing what a badge
-		 * does, and overriding it would be the editor deciding how somebody else's
-		 * component looks.
+		 * them — the standard badge has a negative one and comes out 8 px above the
+		 * point it was aimed at. Overriding that would be the editor deciding how
+		 * somebody else's component looks.
 		 */
 		spots_css() {
 
@@ -902,7 +874,7 @@ namespace $.$$ {
 		/**
 		 * Drops style elements of the previous compilation.
 		 *
-		 * `$mol_style_attach` never removes them, and a class renamed while the
+		 * The attach helper never removes them, and a class renamed while the
 		 * user types leaves one behind on every keystroke — hundreds per editing
 		 * session. Only elements of this scene are swept, never someone else's,
 		 * and never the placement element: it lives under `spots_id`, outside this
@@ -975,39 +947,34 @@ namespace $.$$ {
 			return this.assets_missing().map( id => this.asset_ask( id ) )
 		}
 
-		/**
-		 * Mounted content.
-		 *
-		 * `css_attach()` is read right here, next to the instance, on purpose: a
-		 * cell nobody reads during render is swept by `$mol_wire`, and then the
-		 * styles would stop updating after the very first attach.
-		 */
 		@ $mol_mem
 		/**
-		 * The document, mounted as a DOM node rather than as a sub view.
+		 * The document is mounted as a DOM node rather than as a sub view.
 		 *
-		 * `$mol_view.render()` (`view.tsx:307`) decides between "a view" and "a
-		 * string" by `child instanceof $mol_view`, and that `$mol_view` is the
-		 * class local to its own file, that is the private copy of its bundle.
-		 * The document inherits from the `$mol_view` of the donor pack, so the
-		 * check is false and the branch falls through to `String( child )`:
-		 * compilation stays green, no error reaches the bridge, and the document
-		 * is rendered into its own node that simply never enters the DOM.
+		 * The renderer (`view.tsx:307`) tells "a view" from "a string" by an
+		 * `instanceof` against the base class local to its own file, that is the
+		 * private copy of its own bundle. The document inherits from the base class of
+		 * the donor pack, so the check is false and the branch falls through to
+		 * `String( child )`: compilation stays green, no error reaches the bridge, and
+		 * the document renders into its own node that never enters the DOM.
 		 *
-		 * An `Element` takes the `instanceof Node` branch instead, and about that
-		 * one the second copy of the framework has no opinion. Reactivity of the
-		 * document is untouched, it lives entirely inside its own subtree.
+		 * An `Element` takes the `instanceof Node` branch instead, and about that one
+		 * the second copy of the framework has no opinion. Reactivity of the document
+		 * is untouched, it lives entirely inside its own subtree.
+		 *
+		 * `css_attach()` is read right here, next to the instance, on purpose: a cell
+		 * nobody reads during render is swept by the graph, and the styles would then
+		 * stop updating after the very first attach.
 		 * @see ../ARCHITECTURE.md section 4, "Два бандла в одном документе"
 		 */
 		override stage(): readonly $mol_view_content[] {
 
 			this.css_attach()
 
-			// Read here for the same reason as the styles above: a cell nobody
-			// reads during render is swept by `$mol_wire` together with its value,
-			// and placement would then stop following the canvas after the first
-			// attach. Before the early return, because a part may be dropped while
-			// the pack is still on its way.
+			// Read here for the same reason as the styles above: a cell nobody reads
+			// during render is swept together with its value, and placement would then
+			// stop following the canvas after the first attach. Before the early
+			// return, because a part may be dropped while the pack is still on its way.
 			this.spots_attach()
 			this.libs_css_attach()
 
@@ -1068,8 +1035,8 @@ namespace $.$$ {
 		 * changes on every frame costs one message per period and a wire that
 		 * changes once is reported at once.
 		 *
-		 * `values_at` is a cell, and it is read here through `$mol_wire_probe` —
-		 * deliberately, so that this cell does NOT subscribe to it. Nothing else
+		 * `values_at` is a cell, and it is read here through a probe — deliberately,
+		 * so that this cell does NOT subscribe to it. Nothing else
 		 * writes the stamp: it changes only as a consequence of this very cell's
 		 * timer having fired, and at that moment the message has just gone out and
 		 * there is nothing to recompute. Were the read a subscribing one, the write
@@ -1102,10 +1069,10 @@ namespace $.$$ {
 		/**
 		 * The one window the scene talks to.
 		 *
-		 * A plain field, never a cell: a cross-origin `Window` put through
-		 * `$mol_wire_atom.put` is walked by `$mol_compare_deep`, which reads
-		 * `location.href` and throws `SecurityError` — and the handler then dies
-		 * silently. Identity comparison alone touches no property and is safe.
+		 * A plain field, never a cell: a cross-origin `Window` written into an atom
+		 * is walked by the framework's deep comparison, which reads `location.href`
+		 * and throws `SecurityError` — and the handler then dies silently. Identity
+		 * comparison alone touches no property and is safe.
 		 */
 		peer() {
 			return this.$.$mol_dom_context.parent
@@ -1139,7 +1106,7 @@ namespace $.$$ {
 				// First message of every handshake, before the document and the
 				// libraries. A host older than this contract never sends it, and the
 				// scene then compiles nothing, which is the honest outcome: without a
-				// pack every class of the document would inherit our own `$mol_view`.
+				// pack every class of the document would inherit our own base class.
 				case 'pack_set': this.pack_uri( String( message.uri ?? '' ) ); return
 
 				case 'css_set': this.doc_css( message.css ); return
@@ -1197,7 +1164,7 @@ namespace $.$$ {
 		 * The host sends world coordinates and this side owns the same camera the
 		 * stage is drawn with, so the point on this window is `(world - camera) *
 		 * zoom` — the inverse of what `sizes_of` does to a measured box. The replay
-		 * itself lives in `$bog_vmap_scene_click`, which is where it is tested.
+		 * itself lives in the click helper of this module, where it is tested.
 		 */
 		click_apply( x: number, y: number, mods: $bog_vmap_bridge_mods ) {
 
@@ -1248,19 +1215,16 @@ namespace $.$$ {
 		}
 
 		/**
-		 * Re-reports whenever the layout of the document actually changes.
-		 *
-		 * The wire graph does not see layout, and that is a whole class of
-		 * silent staleness, not one occasion. A frame with no layout at all —
-		 * a hidden tab, a collapsed panel — measures 0x0; a late font or a
-		 * decoded image resizes the document with nothing in the graph moving.
-		 * In every case the host would keep the stale numbers until the next
-		 * edit. The observer covers all of them at once, because its very first
-		 * delivery happens exactly when the box first exists.
+		 * The wire graph does not see layout, and that is a whole class of silent
+		 * staleness, not one occasion. A frame with no layout at all — a hidden tab, a
+		 * collapsed panel — measures 0x0; a late font or a decoded image resizes the
+		 * document with nothing in the graph moving. In every case the host would keep
+		 * the stale numbers until the next edit. The observer covers all of them at
+		 * once, because its first delivery happens exactly when the box first exists.
 		 *
 		 * The wrapper is here to give the observer a `destructor`: a bare
-		 * `ResizeObserver` is not ownable, so the atom would leave the previous
-		 * one connected on every rebuild.
+		 * `ResizeObserver` is not ownable, so the atom would leave the previous one
+		 * connected on every rebuild.
 		 *
 		 * The set of watched nodes is not decided here — it is every node the last
 		 * report measured, which `resize_sync()` hands over. The root alone is not
@@ -1299,8 +1263,8 @@ namespace $.$$ {
 		/**
 		 * Debounced answer to the host.
 		 *
-		 * `$mol_after_timeout` and not `$mol_after_frame`: the scene lives in an
-		 * iframe, and a background tab stops firing animation frames.
+		 * A timeout and not an animation frame: the scene lives in an iframe, and a
+		 * background tab stops firing animation frames.
 		 *
 		 * The cell depends on the rendered tree, not only on the sources. The
 		 * report reads geometry and failures off the DOM, and a timer started
@@ -1432,8 +1396,8 @@ namespace $.$$ {
 		/**
 		 * The failure written on the node of one view, or an empty string.
 		 *
-		 * A suspension is not a failure: `$mol` writes the same attribute while a
-		 * fiber waits, and reporting that would light the node up on every load.
+		 * A suspension is not a failure: the framework writes the same attribute while
+		 * a fiber waits, and reporting that would light the node up on every load.
 		 */
 		view_broken( view: $mol_view ) {
 
@@ -1445,8 +1409,8 @@ namespace $.$$ {
 			const broken = node.getAttribute( 'mol_view_error' )
 			if( !broken || broken === 'Promise' || broken === '$mol_promise_blocker' ) return ''
 
-			// The attribute holds only the error name; $mol puts the message
-			// itself into the text of the node.
+			// The attribute holds only the error name; the message itself is put
+			// into the text of the node.
 			const text = ( node.textContent ?? '' ).replace( /\s+/g, ' ' ).trim().slice( 0, 500 )
 
 			return text ? `${ broken }: ${ text }` : broken
@@ -1482,8 +1446,8 @@ namespace $.$$ {
 
 		/**
 		 * How to walk a rendered document: the three things the walks need to know
-		 * about `$mol`, in one place because both of them need the same three and a
-		 * second copy would be a second vocabulary.
+		 * about the framework, in one place because both of them need the same three
+		 * and a second copy would be a second vocabulary.
 		 */
 		walk_of( made: $mol_view ) {
 			return {
@@ -1529,9 +1493,9 @@ namespace $.$$ {
 		/**
 		 * Geometry of the document, in world units, and the nodes it was read off.
 		 *
-		 * The walk itself is `$bog_vmap_scene_measure`, which knows nothing of `$mol`;
-		 * what a view is, what its children are and which property holds it are the
-		 * three things this class knows and hands over.
+		 * The walk itself knows nothing of the framework; what a view is, what its
+		 * children are and which property holds it are the three things this class
+		 * knows and hands over.
 		 */
 		sizes_of( root: $mol_view ) {
 
@@ -1544,23 +1508,22 @@ namespace $.$$ {
 		/**
 		 * Is this piece of content a view, told by shape rather than by class.
 		 *
-		 * Not a fix for a break: measured, `instanceof $mol_view` reports all
-		 * seven nodes here, pack built ones included. It works by a coincidence
-		 * of scope, and the coincidence is worth spelling out because the same
-		 * operator does the opposite one file away.
+		 * Not a fix for a break: measured, an `instanceof` against the base class
+		 * reports all seven nodes here, pack built ones included. It works by a
+		 * coincidence of scope, and the coincidence is worth spelling out because the
+		 * same operator does the opposite one file away.
 		 *
-		 * A bare `$mol_view` written in THIS file compiles to a bare identifier,
-		 * and no `class $mol_view` is declared in the emitted closure around it,
-		 * so the name goes up the scope chain to the global — which is where the
-		 * donor pack puts its own classes, and which is therefore the very class
-		 * the document extends. Late binding, check passes. The same text inside
-		 * `view.tsx` sits next to the declaration and binds to the file's own
-		 * copy early, which is exactly why `render()` refuses a pack built
-		 * document and why it is mounted here as a DOM node.
+		 * The base class named in THIS file compiles to a bare identifier, and no
+		 * declaration of that name stands in the emitted closure around it, so the
+		 * name goes up the scope chain to the global — which is where the donor pack
+		 * puts its own classes, and which is therefore the very class the document
+		 * extends. Late binding, check passes. The same text inside the framework's
+		 * own file sits next to the declaration and binds early, which is exactly why
+		 * `render()` refuses a pack built document and why it is mounted as a DOM node.
 		 *
-		 * So the operator holds only while this method stays in a file that does
-		 * not declare `$mol_view`, and while the pack is the last writer of the
-		 * global. Neither is a property of what is being asked. Shape is.
+		 * So the operator holds only while this method stays in a file that does not
+		 * declare that name, and while the pack is the last writer of the global.
+		 * Neither is a property of what is being asked. Shape is.
 		 * @see ../ARCHITECTURE.md section 4
 		 */
 		view_like( kid: unknown ): kid is $mol_view {

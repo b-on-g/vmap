@@ -7,8 +7,8 @@ namespace $ {
 	 * Libraries first because the document is written against them, and a stable
 	 * sort keeps that unless a library class inherits a document class — legal,
 	 * odd, and then the base still comes first. The sort itself is the canonical
-	 * `$bog_vmap_lang_sorted`: ordering declarations is a property of the language,
-	 * and the scene's own copy of it was the second one too many.
+	 * sort of the language module: ordering declarations is a property of the
+	 * language, and the scene's own copy of it was the second one too many.
 	 *
 	 * A name declared twice keeps the LAST declaration and drops the earlier one,
 	 * which is the rule the class index of the library model already lives by and the rule the

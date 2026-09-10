@@ -57,8 +57,8 @@ namespace $.$$ {
 		},
 
 		// The note lies over the canvas and its grid, so it needs a ground of its
-		// own and full contrast text: `$mol_theme.shade` was measured on screen and
-		// came out unreadable over the canvas.
+		// own and full contrast text: the shade token of the theme was measured on
+		// screen and came out unreadable over the canvas.
 		Wait: {
 			padding: $mol_gap.block,
 			maxWidth: '22rem',
