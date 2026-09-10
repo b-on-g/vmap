@@ -148,6 +148,7 @@ namespace $.$$ {
 				this.Scene( this.scene_key() ),
 				this.Overlay(),
 				this.Wire(),
+				this.Marks(),
 				... this.slot() ? [ this.Insert() ] : [],
 				... this.band() ? [ this.Band() ] : [],
 				this.Camera(),
