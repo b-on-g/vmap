@@ -8086,6 +8086,32 @@ var $;
             $mol_assert_equal(failed?.node, '');
         },
         /**
+         * What went out on the wire last is a cell, and a reader of it is woken.
+         *
+         * Edge triggering needs somewhere to remember the edge, and that somewhere used
+         * to be a plain object field: readable only by reaching into the instance, and
+         * waking nobody when it changed. As a cell it is a projection outward, the same
+         * shape as the six push cells of the pane. The two stages are separate keys,
+         * so clearing one says nothing about the other.
+         */
+        async 'the last failure sent is a cell, and it wakes its reader'($) {
+            const { made } = scene($);
+            wired(made);
+            const root = `${d}hot_edge_page`;
+            await grown(made, root, `${root} ${d}mol_view\n\ttag \\one\n`);
+            const seen = {};
+            const atom = $mol_wire_atom.solo(seen, function watcher() { return made.error_sent('runtime'); });
+            $mol_assert_equal(atom.sync(), null);
+            made.error_post('runtime', 'first', '');
+            // the subscriber is asked, not the scene: a field beside the graph would
+            // leave this atom cached on its old answer
+            $mol_assert_equal(atom.sync(), 'first');
+            // the neighbouring stage is a key of its own and stays clear
+            $mol_assert_equal(made.error_sent('compile'), null);
+            made.error_post('runtime', '', '');
+            $mol_assert_equal(atom.sync(), null);
+        },
+        /**
          * A COMPILE failure names a class, and a class is not a node. The tree still
          * on the screen was built from the previous text, so the live instance of
          * the class just broken is the node the user is looking at.
@@ -8453,6 +8479,51 @@ var $;
             $mol_assert_equal(second.delay, 150);
             scene.values_wanted([]);
             $mol_assert_equal(scene.values_task(), null);
+        },
+        /**
+         * The throttle keeps its stamp in the graph, and the read of it is a probe.
+         *
+         * Two things at once, because they hold each other up. Nobody subscribes to the
+         * stamp, so it has to survive a tick on which nobody looked at it — a swept
+         * stamp reads as zero, the wait comes out as nothing, and the throttle silently
+         * turns off while every other test stays green. And the write must NOT wake the
+         * task: a subscribing read would recompute the wait to a full period and send
+         * again what has just gone out, once per period for ever.
+         */
+        async 'the stamp of the last send lives in the graph and wakes nobody'($) {
+            const made = [];
+            $.$mol_after_timeout = class extends $mol_after_timeout {
+                constructor(delay, task) {
+                    super(delay, task);
+                    clearTimeout(this.id);
+                    made.push(this);
+                }
+            };
+            const posted = [];
+            const clock = { now: 1000 };
+            const root = { calc_result() { return 7; } };
+            const scene = $$.$bog_vmap_scene.make({
+                $,
+                instance: () => root,
+                peer: () => ({ postMessage(data) { posted.push(data); } }),
+                now: () => clock.now,
+            });
+            scene.values_wanted(['calc_result']);
+            scene.values_task().task();
+            const sent = posted.filter(m => m.kind === 'values').length;
+            $mol_assert_equal(sent, 1);
+            // the stamp is a cell, and it is the clock reading, not a counter
+            $mol_assert_equal(scene.values_at(), 1000);
+            // the write woke nothing: no new timer was built for a message already gone
+            const built = made.length;
+            await new Promise(next => setTimeout(next, 10));
+            $mol_assert_equal(made.length, built);
+            $mol_assert_equal(posted.filter(m => m.kind === 'values').length, 1);
+            // and after a tick nobody watched it, the stamp is still there, so the
+            // throttle still knows a message went out 100 ms ago
+            clock.now += 100;
+            scene.values_wanted(['calc_result', 'nope']);
+            $mol_assert_equal(scene.values_task().delay, 150);
         },
         'a view like value is its own id, not a JSON walk'($) {
             const root = {

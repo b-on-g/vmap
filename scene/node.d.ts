@@ -4811,11 +4811,15 @@ declare namespace $.$$ {
      * @see ../ARCHITECTURE.md sections 3 and 4
      */
     export class $bog_vmap_scene extends $.$bog_vmap_scene {
-        /** Last failure sent per stage, `null` when the stage is clear. See `error_post()`. */
-        error_sent: {
-            compile: string | null;
-            runtime: string | null;
-        };
+        /**
+         * Last failure sent per stage, `null` when the stage is clear. See `error_post()`.
+         *
+         * A cell and not a field: this is what went out on the wire last, which is a
+         * projection of state outward, and the pane keeps its six the same way. Kept
+         * outside the graph it was a value nobody could wake on and no test could
+         * read without reaching into the object.
+         */
+        error_sent(at: 'compile' | 'runtime', next?: string | null): string | null;
         /** Document source, view.tree text. Full document, never a patch. */
         doc_src(next?: string): string;
         /** Name of the class to instantiate. */
@@ -5243,8 +5247,19 @@ declare namespace $.$$ {
         post(message: $bog_vmap_bridge_up): void;
         /** Wires the host wants labelled: root property names, the whole list each time. */
         values_wanted(next?: readonly string[]): readonly string[];
-        /** Wall clock of the last `values` sent. A plain field, written from a timer. */
-        values_at: number;
+        /**
+         * Wall clock of the last `values` sent, in the graph rather than beside it.
+         *
+         * It stays a CLOCK READING and not a serial number, and that is the one thing
+         * to keep straight about it. A serial number is what an ORDER wants — «did the
+         * answer come after the question», where two events inside one millisecond read
+         * as simultaneous and the pane's watchdog once disarmed over exactly that. This
+         * stamp answers a different question, «how long ago», and a counter cannot
+         * answer it at all: the throttle subtracts it from `now()` to get the wait that
+         * is left. Two sends in one millisecond give the full wait, which is the safe
+         * side of the rounding.
+         */
+        values_at(next?: number): number;
         /** Shortest gap between two `values` messages, in ms. */
         values_period(): number;
         /** The clock. A method so that a test can move it by hand. */
@@ -5259,14 +5274,17 @@ declare namespace $.$$ {
          * changes on every frame costs one message per period and a wire that
          * changes once is reported at once.
          *
-         * `values_at` is read here and written in the callback, past the graph, and
-         * it wants NO counter cell to prop it up — unlike the similar fields in the
-         * pane. Nothing else writes it, so it only ever changes as a consequence of
-         * this cell's own timer having fired, and at that moment the value has just
-         * been sent and there is nothing to recompute. A wake on it would restart
-         * the timer for a message already on the wire, which is one extra message
-         * per period, not one fewer. Measured in `values.test.ts`, on a hand moved
-         * clock: first send at delay 0, a change 100 ms later waits the remaining 150.
+         * `values_at` is a cell, and it is read here through `$mol_wire_probe` —
+         * deliberately, so that this cell does NOT subscribe to it. Nothing else
+         * writes the stamp: it changes only as a consequence of this very cell's
+         * timer having fired, and at that moment the message has just gone out and
+         * there is nothing to recompute. Were the read a subscribing one, the write
+         * would invalidate this cell, the recomputed wait would be a full period,
+         * and a fresh timer would resend values already on the wire — one extra
+         * message per period, for ever. Same reason `mount()` probes its own past.
+         * Measured in `values.test.ts`, on a hand moved clock: first send at delay 0,
+         * a change 100 ms later waits the remaining 150, and the stamp is still there
+         * after a tick on which nobody looked at it.
          */
         values_task(): $mol_after_timeout | null;
         /**
@@ -5324,7 +5342,12 @@ declare namespace $.$$ {
             observer: ResizeObserver;
             destructor: () => void;
         };
-        /** Nodes the observer is watching right now. */
+        /**
+         * Nodes the observer is watching right now. A plain field on purpose: it is a
+         * mirror of what `ResizeObserver` already holds, read by nobody but the one
+         * method that keeps the two in step, so putting it in the graph would add a
+         * cell that can never wake anything.
+         */
         resize_seen: Set<Element>;
         /** Watches exactly the nodes of the last measurement, and nothing else. */
         resize_sync(nodes: readonly Element[]): void;
