@@ -663,6 +663,42 @@ namespace $ {
 		},
 
 		/**
+		 * What went out on the wire last is a cell, and a reader of it is woken.
+		 *
+		 * Edge triggering needs somewhere to remember the edge, and that somewhere used
+		 * to be a plain object field: readable only by reaching into the instance, and
+		 * waking nobody when it changed. As a cell it is a projection outward, the same
+		 * shape as the six push cells of the pane. The two stages are separate keys,
+		 * so clearing one says nothing about the other.
+		 */
+		async 'the last failure sent is a cell, and it wakes its reader'( $ ) {
+
+			const { made } = scene( $ )
+			wired( made )
+			const root = `${d}hot_edge_page`
+
+			await grown( made, root, `${root} ${d}mol_view\n\ttag \\one\n` )
+
+			const seen = {} as object
+			const atom = $mol_wire_atom.solo( seen, function watcher() { return made.error_sent( 'runtime' ) } )
+
+			$mol_assert_equal( atom.sync(), null )
+
+			made.error_post( 'runtime', 'first', '' )
+
+			// the subscriber is asked, not the scene: a field beside the graph would
+			// leave this atom cached on its old answer
+			$mol_assert_equal( atom.sync(), 'first' )
+
+			// the neighbouring stage is a key of its own and stays clear
+			$mol_assert_equal( made.error_sent( 'compile' ), null )
+
+			made.error_post( 'runtime', '', '' )
+			$mol_assert_equal( atom.sync(), null )
+
+		},
+
+		/**
 		 * A COMPILE failure names a class, and a class is not a node. The tree still
 		 * on the screen was built from the previous text, so the live instance of
 		 * the class just broken is the node the user is looking at.
