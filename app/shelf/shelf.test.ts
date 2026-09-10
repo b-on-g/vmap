@@ -325,6 +325,25 @@ namespace $ {
 
 		},
 
+		'the second level replaces the shelf instead of stacking under it'( $ ) {
+
+			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
+
+			const own_scrolls = ()=> shelf.body().filter( view => view instanceof $mol_scroll ).length
+
+			$mol_assert_equal( shelf.classes_showed(), false )
+			$mol_assert_equal( shelf.body().includes( shelf.Stack() ), true )
+			$mol_assert_equal( shelf.body().includes( shelf.Palette() ), false )
+			$mol_assert_equal( own_scrolls(), 1 )
+
+			shelf.classes_showed( true )
+
+			$mol_assert_equal( shelf.body().includes( shelf.Stack() ), false )
+			$mol_assert_equal( shelf.body().includes( shelf.Palette() ), true )
+			$mol_assert_equal( own_scrolls(), 0 )
+
+		},
+
 	})
 
 }
