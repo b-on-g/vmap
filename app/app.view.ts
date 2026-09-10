@@ -494,7 +494,11 @@ namespace $.$$ {
 			const klass = node.props_tree().select( sign ).kids[ 0 ]?.kids[ 0 ]
 			if( !klass || !$mol_view_tree2_class_match( klass ) ) return []
 
-			return this.$.$bog_vmap_app_wire_ports( this.Lib().props_map( klass.type ) )
+			return this.$.$bog_vmap_app_wire_ports(
+				this.Lib().props_map( klass.type ),
+				this.Lib().props_owner( klass.type ),
+				klass.type,
+			)
 		}
 
 		@ $mol_mem
