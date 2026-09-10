@@ -1,20 +1,7 @@
 namespace $ {
 
-	/**
-	 * Tests of the archive.
-	 *
-	 * A format nobody in the project reads back: the readers are the unpacker of
-	 * the operating system and the archiver of the browser, and neither is here.
-	 * So the bytes are checked against the specification directly — signatures,
-	 * offsets, checksums — and the checksum against a value produced by zlib, which
-	 * is a witness of its own rather than this code agreeing with itself.
-	 *
-	 * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-	 * a regexp over sources, literals included.
-	 */
 	const d = '$'
 
-	/** Little endian integer at a position, the way every zip reader takes one. */
 	function number_at( bytes: Uint8Array, at: number, size: number ) {
 
 		let value = 0
@@ -28,11 +15,6 @@ namespace $ {
 		return new TextDecoder().decode( bytes.slice( at, at + size ) )
 	}
 
-	/**
-	 * Entries as the central directory declares them, which is where a reader
-	 * looks. Walking the local headers instead would prove nothing about the
-	 * directory, and the directory is what an unpacker trusts.
-	 */
 	function entries_of( bytes: Uint8Array ) {
 
 		const count = number_at( bytes, bytes.length - 12, 2 )
@@ -65,7 +47,6 @@ namespace $ {
 		return out
 	}
 
-	/** Content of one entry, read through its local header the way an unpacker does. */
 	function body_of( bytes: Uint8Array, offset: number ) {
 
 		const name_size = number_at( bytes, offset + 26, 2 )
@@ -88,11 +69,6 @@ namespace $ {
 
 	$mol_test({
 
-		/**
-		 * The checksum against zlib, not against a second implementation of the same
-		 * table: a table wrong in the same way twice would pass any self comparison,
-		 * and a wrong checksum is exactly what makes an archive refuse to open.
-		 */
 		'the checksum is the one every reader computes'( $ ) {
 
 			$mol_assert_equal(
@@ -105,12 +81,10 @@ namespace $ {
 				779501134,
 			)
 
-			// An empty entry is a normal one, and its checksum is not a special case.
 			$mol_assert_equal( $.$bog_vmap_app_export_zip_crc32( new Uint8Array( 0 ) ), 0 )
 
 		},
 
-		/** Signatures and counts, so that a reader finds the directory at all. */
 		'the archive ends with a directory of every file'( $ ) {
 
 			const bytes = $.$bog_vmap_app_export_zip( module.files )
@@ -127,11 +101,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * THE POINT OF THE WHOLE FILE: what the directory promises is what lies at
-		 * the offset it promises it at. An archive whose offsets are off by a header
-		 * opens as empty, or as garbage, and nothing else in the editor would notice.
-		 */
 		'every entry lies where the directory says it does'( $ ) {
 
 			const bytes = $.$bog_vmap_app_export_zip( module.files )
@@ -151,11 +120,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * Text is stored in UTF-8, and the size in the header is the size in bytes.
-		 * A size counted in characters cuts a russian comment in half, and the
-		 * document of a russian speaking author is the ordinary case here.
-		 */
 		'non ascii text keeps its bytes'( $ ) {
 
 			const bytes = $.$bog_vmap_app_export_zip([
@@ -169,7 +133,6 @@ namespace $ {
 
 		},
 
-		/** Bit 11 of the flags, without which a non ascii NAME arrives mojibake. */
 		'names are marked as utf-8'( $ ) {
 
 			const bytes = $.$bog_vmap_app_export_zip( module.files )
@@ -178,11 +141,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A date, and a fixed one. Zero shows up as `00-00-1980` and makes unpackers
-		 * complain; the wall clock would make one document produce different bytes on
-		 * every export, which no test could then pin down.
-		 */
 		'entries carry a valid date and the same bytes every time'( $ ) {
 
 			const bytes = $.$bog_vmap_app_export_zip( module.files )
@@ -196,12 +154,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The module folder travels INSIDE the archive, so unpacking at the root of a
-		 * checkout puts the module where its class names oblige it to be. Section 10:
-		 * a module in the wrong folder builds into `Root package not found` while
-		 * looking entirely correct.
-		 */
 		'the archive carries the module folder'( $ ) {
 
 			const names = entries_of( $.$bog_vmap_app_export_zip_archive( module ) )
@@ -214,7 +166,6 @@ namespace $ {
 
 		},
 
-		/** An archive of nothing is still an archive: a directory of zero entries. */
 		'an empty list makes an empty archive'( $ ) {
 
 			const bytes = $.$bog_vmap_app_export_zip([])
