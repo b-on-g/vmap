@@ -1,14 +1,14 @@
 - Three sources of one node: its `view.tree` declaration, its method and its rule.
-- Port of `Source_type` of `$hyoo_studio`, down to the deck of three `$mol_textarea`.
+- Port of the source panel of studio, down to the deck of three code editors.
 -
 - A node is a flat property of the class after normalization, so the three texts of
 - a node are three slices of the three texts of the class: the declaration, the
-- method of that name in the body, and the rule addressed to the attribute $mol
-- writes on it. The whole class is one switch away, and that switch is the whole
-- difference between the two modes.
+- method of that name in the body, and the rule addressed to the attribute the
+- framework writes on it. The whole class is one switch away, and that switch is
+- the whole difference between the two modes.
 - @see ../../ARCHITECTURE.md sections 1 and 2
 $bog_vmap_app_code $mol_view
-	- Class the three texts belong to: the root class of the document.
+	- The root class of the document.
 	klass \
 	- Property name of the picked node, empty when nothing is picked. Without one
 	- there is nothing to slice and the panel edits the class whole.
@@ -18,37 +18,32 @@ $bog_vmap_app_code $mol_view
 	- method named after the node itself would shadow the factory of the sub-view
 	- and take the node off the canvas.
 	hooks /string
-	- `view.tree` of the whole document, two way.
 	source? \
-	- Declaration of the picked node, two way. The same value the inspector edits,
-	- so a change made with the mouse shows up in the text without a path of its own.
+	- The same value the inspector edits, so a change made with the mouse shows up
+	- in the text without a path of its own.
 	node_source? \
-	- Handwritten body of the class, two way.
 	js? \
-	- Styles of the class, two way.
 	css? \
 	- What the scene said about this node last, empty when it said nothing.
 	error \
-	- Editing the class whole instead of the picked node.
 	whole? false
 	- Why the last edit was not written into the document, empty when it was.
 	refusal? \
 	sub <= content /$mol_view
 	Head $mol_bar
 		sub <= head_content /$mol_view
-	- Which node the three texts belong to, in words.
 	Scope_note $mol_view
 		sub / <= scope_note \
 	Scope $mol_check
 		title \Весь класс
 		hint \Править класс целиком, а не выбранный узел. Какой это класс, сказано в шапке: у узла со своим классом — его, у остальных — тот, который узел объявляет
 		checked? <=> whole?
-	- The failure the scene reported for this node. Here and not only in the status
-	- strip: an error belongs where the code that caused it is being written.
+	- Here and not only in the status strip: an error belongs where the code that
+	- caused it is being written.
 	Alarm $mol_view
 		sub / <= error
-	- Why the last edit was not written into the document. The text stays in the
-	- field so it can be fixed; the document keeps the last one that parsed.
+	- The refused text stays in the field so it can be fixed; the document keeps the
+	- last one that parsed.
 	Refusal $mol_view
 		sub / <= note \
 	- Parameters without types in the body of this node. Shown while it is being

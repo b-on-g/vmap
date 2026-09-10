@@ -2,17 +2,16 @@
 
 Code does not wrap. Ever.
 
-`$mol_textarea` is `white-space: pre-wrap` with `word-break: break-word`, which
-is right for prose and wrong for a declaration: in the panel at 1440 with all
-three panels open a line holds about 35 characters, and
-`Map $bog_vmap_part_map zoom <= calc_result` broke across two — a break that
-reads as a second property.
+The code editor of mol is `white-space: pre-wrap` with `word-break: break-word`,
+which is right for prose and wrong for a declaration: in this panel a line holds
+about 35 characters, so an ordinary node declaration with one override breaks
+across two — a break that reads as a second property.
 
-A file and not `$mol_style_define`, because the two layers that have to agree are
+A file and not the typed style form, because the two layers that have to agree are
 SUB-VIEWS of a foreign class rather than classes of their own, and the typed form
-has no key for those. A file and not `$mol_style_attach`, because that one is for
-a class born at run time, which has no file to put this in; this module has one,
-and mam compiles it into the bundle by itself.
+has no key for those. A file and not the run time attach either, because that one
+is for a class born at run time, which has no file to put this in; this module has
+one, and mam compiles it into the bundle by itself.
 
 Scoped under this panel, so the textareas the document itself draws inside the
 scene keep wrapping like the prose they usually hold.

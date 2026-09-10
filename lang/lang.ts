@@ -7,23 +7,18 @@ namespace $ {
 	 * the tree is derived from it. Every edit goes through the tree and is written
 	 * straight back as text, which is what makes source export free.
 	 *
-	 * Port of `hyoo_studio_component` and `hyoo_studio_property`, plus the wire
-	 * emitter, which studio has no equivalent of. Deviations are marked at their
-	 * place.
+	 * Port of the component and property models of studio, plus the wire emitter,
+	 * which studio has no equivalent of. Deviations are marked at their place.
 	 *
 	 * Pure model: knows nothing about DOM, compiles nothing, executes nothing.
 	 * @see ../ARCHITECTURE.md sections 1 and 2
 	 */
 
 	/**
-	 * A wire between two nodes of the document.
-	 *
 	 * Serializes to exactly `name = Node prop`, an `=` operator over exactly two
 	 * tokens. The shape of this type is the whole safety story: there is no field
 	 * for the operator, no field for a third token, and one flag for both ends, so
 	 * none of the five traps of section 1 is even expressible.
-	 *
-	 * @see $bog_vmap_lang_wire_tree
 	 */
 	export type $bog_vmap_lang_wire = {
 
@@ -55,8 +50,6 @@ namespace $ {
 	}
 
 	/**
-	 * Checks that a token is a bare property name and returns it.
-	 *
 	 * Bare means: no `*`, no `?`, no `!`, no spaces, nothing but a name. Signs are
 	 * never carried by a token, they are produced from `bidi`. That single rule
 	 * kills three of the five traps at once, because every one of them is a token
@@ -71,8 +64,8 @@ namespace $ {
 	 *   `this.A().B().value()`, and `B` was hoisted onto the root by `upper`, so it
 	 *   is not a method of `A` and never will be.
 	 *
-	 * The grammar is `$mol_view_tree2_prop_signature` itself rather than a regexp of
-	 * our own, so a token this accepts is a token the compiler accepts.
+	 * The grammar is the stock signature regexp itself rather than one of our own,
+	 * so a token this accepts is a token the compiler accepts.
 	 */
 	export function $bog_vmap_lang_token(
 		this: $,
@@ -90,11 +83,9 @@ namespace $ {
 	}
 
 	/**
-	 * Whether a name can be the name of a class of a document.
-	 *
-	 * Stricter than the compiler on purpose. `$mol_view_tree2_class_match` takes
-	 * anything starting with a dollar or a capital, generics and quotes included,
-	 * because it also has to recognize the classes of somebody else's code; a class
+	 * Stricter than the compiler on purpose. The stock class match takes anything
+	 * starting with a dollar or a capital, generics and quotes included, because it
+	 * also has to recognize the classes of somebody else's code; a class
 	 * WE write has to survive one more step, and that step is mam resolving the
 	 * name into a folder. Every underscore is a level of folders, so the name is a
 	 * dollar and at least two lowercase segments, and nothing else fits in a path.
@@ -107,8 +98,6 @@ namespace $ {
 	}
 
 	/**
-	 * Builds the tree of a wire: `name = Node prop`.
-	 *
 	 * The operator is `=` and nothing else. `<= Node prop` looks like the same thing
 	 * and is not: it goes through the `upper` hack, which takes the kids of the
 	 * reference as default values, so it declares a property `Node` valued `prop`
@@ -140,11 +129,10 @@ namespace $ {
 	}
 
 	/**
-	 * Builds a bare reference `<= name`, the form that goes into `sub`.
-	 *
-	 * Bare means childless. A reference with a child is the middle of the three
-	 * forms of `<=`, the only dangerous one, and the guard against it is that this
-	 * takes a token instead of a path.
+	 * A bare reference `<= name`, the form that goes into `sub`. Bare means
+	 * childless: a reference with a child is the middle of the three forms of `<=`,
+	 * the only dangerous one, and the guard against it is that this takes a token
+	 * instead of a path.
 	 */
 	export function $bog_vmap_lang_ref_tree(
 		this: $,
@@ -156,12 +144,10 @@ namespace $ {
 	}
 
 	/**
-	 * Builds a free part: `Calc $bog_vmap_lang_calc` at class level, no operator.
-	 *
-	 * A part declared this way is a plain property of the root class, so the
-	 * compiler makes it a lazy memoized singleton and it creates no DOM, because it
-	 * is not in `sub`. That is the whole mechanism behind a detail lying free on the
-	 * canvas.
+	 * A free part is a name and a class at class level, with no operator between
+	 * them: a plain property of the root class, so the compiler makes it a lazy
+	 * memoized singleton and it creates no DOM, because it is not in `sub`. That is
+	 * the whole mechanism behind a detail lying free on the canvas.
 	 */
 	export function $bog_vmap_lang_part_tree(
 		this: $,
@@ -192,8 +178,6 @@ namespace $ {
 	}
 
 	/**
-	 * Sets one key of a `*` dictionary, or drops it when the value is `null`.
-	 *
 	 * A key already there is replaced where it stands, so `^` keeps the head of the
 	 * dictionary it has to keep: a redeclared dictionary REPLACES the one of the
 	 * base instead of extending it, and `^` is the line that undoes that. Writing a
@@ -220,12 +204,11 @@ namespace $ {
 	}
 
 	/**
-	 * Class declarations reordered so that a base always precedes its heir.
-	 *
-	 * `class $A extends $[ '$B' ]` resolves its base at definition time, and
-	 * `$mol_view_tree2_to_js` emits declarations in the order it received them. A
-	 * heir written above its base therefore inherits the PREVIOUS version of it, or
-	 * `undefined` on a first run, and says nothing about it.
+	 * Class declarations reordered so that a base always precedes its heir. A
+	 * generated class resolves its base at definition time, and the generator emits
+	 * declarations in the order it received them. A heir written above its base
+	 * therefore inherits the PREVIOUS version of it, or `undefined` on a first run,
+	 * and says nothing about it.
 	 *
 	 * Bases the list does not declare — anything from a library — are left alone:
 	 * they are already in the namespace before our code runs.
@@ -273,18 +256,17 @@ namespace $ {
 	/**
 	 * A document: several `view.tree` classes in one text.
 	 *
-	 * `$bog_vmap_lang_node` models one CLASS, and rightly so — but a document is
-	 * not one class, and using the node as if it were silently eats the others.
-	 * Measured: two classes in the source, one property of the first edited, the
-	 * second gone from the text entirely. `tree()` there reads `kids[ 0 ]` and
-	 * `tree( next )` writes `source( next.toString() )`, so every write replaces
-	 * the whole document with the single class it touched. No error, no warning.
+	 * The node model below models one CLASS, and rightly so — but a document is not
+	 * one class, and using the node as if it were silently eats the others: its
+	 * read takes the first kid and its write serializes that one tree over the
+	 * whole source, so editing one property of the first class drops the second
+	 * from the text. No error, no warning.
 	 *
 	 * This level owns the text, cuts it into classes for reading, and puts one back
 	 * without reserializing its neighbours from anything but their own trees. It
-	 * hands out `$bog_vmap_lang_node`s whose `source` is a slice of it, so
-	 * everything already written against the node model keeps working unchanged —
-	 * that is the point of adding a level instead of widening the one below.
+	 * hands out nodes whose `source` is a slice of it, so everything already
+	 * written against the node model keeps working unchanged — that is the point of
+	 * adding a level instead of widening the one below.
 	 *
 	 * A class is addressed BY NAME, which is what the editor speaks and what
 	 * survives reordering. Two things follow, both real:
@@ -295,27 +277,24 @@ namespace $ {
 	 * - two classes of one name are one class here, the first. That is already
 	 *   broken further down: the class index of the library model keeps the LAST of
 	 *   a duplicate pair, so a document with two would disagree with itself about
-	 *   which is real. (The index is not named here: mam reads doc comments for
-	 *   dependencies, and its name dragged the whole library module into the scene.)
+	 *   which is real.
 	 *
 	 * @see ../ARCHITECTURE.md section 1
 	 */
 	export class $bog_vmap_lang_doc extends $mol_object {
 
-		/** Text of the whole document. The truth. */
+		/** The truth. */
 		@ $mol_mem
 		source( next?: string ) {
 			return next ?? ''
 		}
 
 		/**
-		 * Classes of the document, in the order the text declares them.
-		 *
 		 * Read only, and that is deliberate. A cell that both reads and writes
-		 * `source` would be a cell frozen by its own write — writing to a
-		 * `@$mol_mem` freezes its dependencies — and the document would stop
-		 * following the text after the first edit made through it, which is the
-		 * one failure that looks exactly like success.
+		 * `source` would be a cell frozen by its own write — a write to a memoized
+		 * cell freezes its dependencies — and the document would stop following the
+		 * text after the first edit made through it, which is the one failure that
+		 * looks exactly like success.
 		 */
 		@ $mol_mem
 		trees(): readonly $mol_tree2[] {
@@ -324,21 +303,18 @@ namespace $ {
 			).kids
 		}
 
-		/** Names of the classes, in the order of the text. */
 		@ $mol_mem
 		names() {
 			return this.trees().map( tree => tree.type )
 		}
 
 		/**
-		 * Source of one class, cut out of the document and written back into it.
-		 *
 		 * Writing rebuilds the text from the trees of all the classes with this one
 		 * replaced, so a neighbour comes back out of its own tree and nothing else.
 		 * On an already normalized document that is byte for byte; the first write
 		 * to a hand written one normalizes the whole text at once, which is the same
-		 * lossy step `$bog_vmap_lang_node` has always taken, now taken over the
-		 * document rather than over one class.
+		 * lossy step the node model has always taken, now taken over the document
+		 * rather than over one class.
 		 *
 		 * A name the document does not carry appends, so that handing a node a
 		 * source is also how a class is added.
@@ -369,8 +345,6 @@ namespace $ {
 		}
 
 		/**
-		 * Renames a class of the document together with every mention of it.
-		 *
 		 * A class name is spelled in more places than its own declaration: it is the
 		 * base of an heir (`site_card site_page`, both with a leading dollar) and the
 		 * value of a part declared with it (`Card site_card`, same). Retyping the
@@ -416,12 +390,10 @@ namespace $ {
 		}
 
 		/**
-		 * One class of the document as a node model.
-		 *
 		 * `source` is replaced with a slice of the document on the instance itself.
-		 * Everything else of `$bog_vmap_lang_node` — the tree, the property list,
-		 * the wire emitter — is derived from `source` and so needs no changes at
-		 * all: the node cannot tell that its text is a part of a larger one.
+		 * Everything else of the node model — the tree, the property list, the wire
+		 * emitter — is derived from `source` and so needs no changes at all: the
+		 * node cannot tell that its text is a part of a larger one.
 		 */
 		@ $mol_mem_key
 		node( name: string ) {
@@ -432,27 +404,21 @@ namespace $ {
 
 	}
 
-	/**
-	 * One node of the document: a single `view.tree` class.
-	 *
-	 * Port of `hyoo_studio_component`.
-	 */
+	/** One node of the document: a single `view.tree` class. */
 	export class $bog_vmap_lang_node extends $mol_object {
 
-		/** Source text. The truth. Everything else is derived from it. */
+		/** The truth. Everything else is derived from it. */
 		@ $mol_mem
 		source( next?: string ) {
 			return next ?? ''
 		}
 
 		/**
-		 * Class tree, derived from the source. Writing a tree serializes it back.
-		 *
-		 * `$mol_view_tree2_normalize` is lossy: it runs the `upper` hack, so
-		 * `<= Hero $mol_view …` nested in `sub` comes out as a flat property `Hero`
-		 * of the root plus a bare `<= Hero` left in place. Hoisted properties land
-		 * BEFORE the ones already at the top, because `add_inner` fires for them
-		 * during the traversal rather than in the final loop.
+		 * Normalization is lossy: it runs the `upper` hack, so a named sub view
+		 * nested in `sub` comes out as a flat property of the root plus a bare
+		 * reference left in place. Hoisted properties land BEFORE the ones already
+		 * at the top, because they are added during the traversal rather than in the
+		 * final loop.
 		 *
 		 * That flat form is the canonical shape of a document, not a compromise: it
 		 * is the model of section 1 spelled out in the text itself. Round trip is
@@ -508,7 +474,6 @@ namespace $ {
 				.map( tree => this.$.$mol_view_tree2_prop_parts( tree ).name )
 		}
 
-		/** Own properties of the class as a list node. */
 		@ $mol_mem
 		props_tree() {
 			return this.tree().list( this.$.$mol_view_tree2_class_props( this.tree() ) )
@@ -539,7 +504,7 @@ namespace $ {
 			return ''
 		}
 
-		/** Tree of one property. Writing `null` drops it. */
+		/** Writing `null` drops the property. */
 		@ $mol_mem_key
 		prop_tree( name: string, next?: $mol_tree2 | null ) {
 
@@ -574,8 +539,6 @@ namespace $ {
 		}
 
 		/**
-		 * Renames a property together with every reference to it, in one write.
-		 *
 		 * `next` is a whole signature, `d*?` and not `d`, because a rename and a
 		 * change of sign arrive together from the inspector and two writes would
 		 * leave the document renamed but unsigned in between.
@@ -646,9 +609,7 @@ namespace $ {
 		}
 
 		/**
-		 * Declares a free part: `Calc $bog_vmap_lang_calc`.
-		 *
-		 * Deviation from studio, which has no such thing: the write goes through the
+		 * Deviation from studio, which has no free parts: the write goes through the
 		 * `null` step of the path instead of `base()`, so it lands in the class body
 		 * whatever the base is currently called. Same reason `prop_add` does it.
 		 */
@@ -664,18 +625,15 @@ namespace $ {
 		}
 
 		/**
-		 * Draws a wire: `name = Node prop`.
-		 *
 		 * The node end has to be declared already, as a free part or as a sub-view.
 		 * `=` declares nothing, that is exactly why it has no collision with `upper`,
 		 * so a wire to an undeclared node compiles green and throws `is not a
 		 * function` at run time. Refusing here is the only place it can be caught.
 		 *
 		 * The far end, `wire.prop`, is NOT checked: whether the node's class has such
-		 * a port is known only to `bog_vmap_lib.props_map`, and this module knows
-		 * nothing of libraries, deliberately: naming it even in a comment would drag
-		 * the whole fetching module into our graph. Stage 3.1 draws wires from the
-		 * port list, so the question does not arise there either.
+		 * a port is known only to the component library, and this module knows
+		 * nothing of libraries, deliberately. The inspector draws wires from the port
+		 * list, so the question does not arise there either.
 		 */
 		@ $mol_action
 		wire_add( wire: $bog_vmap_lang_wire ) {
@@ -728,9 +686,9 @@ namespace $ {
 		}
 
 		/**
-		 * Declarations of parts: properties whose value is a class name, with the
-		 * overrides written under it. That is where a consumer of a wire lives:
-		 * `Price $mol_text title <= calc_result`.
+		 * Properties whose value is a class name, with the overrides written under
+		 * it. That is where a consumer of a wire lives: a part declaration with a
+		 * port bound to the name of the wire.
 		 */
 		part_names() {
 			return this.props_tree().kids
@@ -807,7 +765,6 @@ namespace $ {
 		}
 
 		/**
-		 * Name of the root property a wire from `from.prop` goes by: `calc_result`.
 		 * An existing wire to the same end is reused, an unrelated property of the
 		 * same name is stepped around with a suffix.
 		 */
@@ -833,13 +790,12 @@ namespace $ {
 		}
 
 		/**
-		 * Connects a port of one part to a port of another: two lines and no more.
-		 *
-		 * The wire `name = From prop` goes through `wire_add` with every guard it
-		 * has, and the consumer is a bare reference in the declaration of the target
-		 * part, `to_prop <= name`, or `to_prop? <=> name?` for a two way wire. The
-		 * reference is built by `$bog_vmap_lang_ref_tree`, so it can carry nothing
-		 * under the name and never turns into the middle form of `<=`.
+		 * Two lines and no more. The wire `name = From prop` goes through `wire_add`
+		 * with every guard it has, and the consumer is a bare reference in the
+		 * declaration of the target part, `to_prop <= name`, or `to_prop? <=> name?`
+		 * for a two way wire. The reference is built by the bare reference emitter,
+		 * so it can carry nothing under the name and never turns into the middle
+		 * form of `<=`.
 		 *
 		 * Refused, with nothing written: a part wired to itself, an undeclared end,
 		 * and a target the source already depends on, because a loop of wires is a
@@ -884,8 +840,6 @@ namespace $ {
 		}
 
 		/**
-		 * Plugs a port of a part, or unplugs it when `next` is `null`.
-		 *
 		 * One override of one part, which is what `over_set` is; a wire has no
 		 * special way of writing its end and must not grow one, or the two would
 		 * drift apart on the first fix to either.
@@ -939,8 +893,6 @@ namespace $ {
 		}
 
 		/**
-		 * Declaration of a property, read off the derivation of the text.
-		 *
 		 * Not through `prop_tree()`: that one is a keyed cell the writes below go
 		 * through, and a read taken from a written cell freezes at what was written.
 		 * `props_tree()` is a plain derivation of the source and stays live.
@@ -951,9 +903,6 @@ namespace $ {
 		}
 
 		/**
-		 * The `/` list of a `sub`, of the class itself or of one part of it, or
-		 * `null` when there is no `sub` there.
-		 *
 		 * The empty owner is the class, a named one is a part. Both are one shape
 		 * because `upper` has already flattened them: the class carries `sub` as a
 		 * property, a part carries it as an override under its class name, and under
@@ -969,7 +918,6 @@ namespace $ {
 		}
 
 		/**
-		 * Names the `sub` of a node references, in the order it draws them, or
 		 * `null` when the node declares no `sub` and so is not a container.
 		 *
 		 * A node WITH a `sub` is an artboard: children of it are laid out by tree,
@@ -1016,8 +964,6 @@ namespace $ {
 		}
 
 		/**
-		 * Puts a list of references back into the `sub` of the class or of a part.
-		 *
 		 * An override already there is replaced where it stands, never dropped and
 		 * appended: the order of the lines under a part is text the user reads, and
 		 * a `sub` that jumped to the bottom on every insertion would rewrite the
@@ -1040,8 +986,6 @@ namespace $ {
 		}
 
 		/**
-		 * One override written under a part, `Board $mol_view style *`, or `null`.
-		 *
 		 * Only under a PART: a property whose value is a class name. Under anything
 		 * else the children are not overrides at all — under `sub` they are bare
 		 * `<=` references — and reading them as property signatures fails on the
@@ -1059,9 +1003,6 @@ namespace $ {
 		}
 
 		/**
-		 * Replaces an override under a part where it stands, appends a new one, or
-		 * drops it on `null`.
-		 *
 		 * In place, because the order of the lines under a part is text the user
 		 * reads: an override that jumped to the bottom every time its value changed
 		 * would rewrite the declaration around an edit that changed one line.
@@ -1083,8 +1024,6 @@ namespace $ {
 		}
 
 		/**
-		 * Refuses to put a node inside itself or inside anything it already holds.
-		 *
 		 * A cycle in `sub` is not a badly drawn document, it is a class whose
 		 * `dom_tree()` never returns: the scene would hang on the first render, and
 		 * the document that hangs it is the one that got saved.
@@ -1104,8 +1043,6 @@ namespace $ {
 		}
 
 		/**
-		 * Puts a bare reference `<= name` into a `sub` at a position.
-		 *
 		 * The position is where the insertion line was drawn, so it is clamped
 		 * rather than checked: a drop at the end of a list the document has since
 		 * shortened is an ordinary race of a gesture against a document, and landing
@@ -1128,9 +1065,6 @@ namespace $ {
 		}
 
 		/**
-		 * Moves a node to a position under another parent, or to another position
-		 * under the same one.
-		 *
 		 * Taken out first and put back after, so reparenting and reordering are one
 		 * operation with one shape. Within one parent the index is corrected for the
 		 * hole the node itself leaves, because the position the user aimed at was
@@ -1158,15 +1092,12 @@ namespace $ {
 
 		}
 
-		/** Appends a bare reference `<= name` to the own `sub` of the class. */
 		@ $mol_action
 		sub_add( name: string ) {
 			this.sub_insert( name, Infinity )
 		}
 
 		/**
-		 * Removes the bare reference `<= name` from the own `sub` of the class.
-		 *
 		 * The empty list is kept rather than the whole property dropped: `sub /` with
 		 * nothing under it is the shape an empty document starts from, so deleting
 		 * the last node returns the source to exactly that, instead of to a class
@@ -1199,10 +1130,8 @@ namespace $ {
 	}
 
 	/**
-	 * One property of a node, with its signature.
-	 *
-	 * Port of `hyoo_studio_property`. `name`, `tree` and `node` are handed in by the
-	 * owner through `make`.
+	 * One property of a node, with its signature. `name`, `tree` and `node` are
+	 * handed in by the owner through `make`.
 	 */
 	export class $bog_vmap_lang_prop extends $mol_object {
 
@@ -1227,8 +1156,6 @@ namespace $ {
 		}
 
 		/**
-		 * Signature parts: bare `name`, `key` (`*`) and `next` (`?`).
-		 *
 		 * A rename goes to the node, because it is not a fact about this property
 		 * alone: everything that spells the old name has to be rewritten in the same
 		 * write. A change of sign is local and is written here.
@@ -1242,11 +1169,10 @@ namespace $ {
 		 *
 		 * **Plain method, and so are the three below.** Every accessor here only
 		 * delegates into `tree()`, which is a cell already, and an accessor of that
-		 * shape under `@ $mol_mem` freezes at the value written THROUGH it: after a
-		 * rename this handle went on reporting the new name although it addressed a
-		 * property no longer under it, which is the very object-past-the-graph the
-		 * patching above was dropped for. Measured; there is a test. The same rule
-		 * and the same measurement as `bog_vmap_app_doc_node.source`.
+		 * shape under a memoizing decorator freezes at the value written THROUGH it:
+		 * after a rename the handle goes on reporting the new name although it
+		 * addresses a property no longer under it, which is the very
+		 * object-past-the-graph the patching above was dropped for. There is a test.
 		 */
 		meta( next?: {
 			readonly name?: string
