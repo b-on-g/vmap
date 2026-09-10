@@ -226,7 +226,15 @@ namespace $ {
 			$mol_assert_ok( stage.pane.watchdog() !== null )
 			$mol_assert_equal( stage.pane.watchdog()!.delay, stage.pane.cold_limit() )
 
-			stage.pane.watchdog()!.task()
+			const watch = stage.pane.watchdog()!
+
+			watch.task()
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.stalled(), false )
+			$mol_assert_equal( stage.pane.restart_tries(), 1 )
+
+			watch.task()
 			stage.redraw()
 
 			$mol_assert_equal( stage.app.stalled(), true )
@@ -1060,9 +1068,37 @@ namespace $ {
 			$mol_assert_equal( timers.at( -1 )!.delay, pane.cold_limit() )
 			$mol_assert_ok( pane.cold_limit() > pane.answer_limit() )
 
-			timers.at( -1 )!.task()
+			const generation = pane.scene_generation()
+			const watch = timers.at( -1 )!
+
+			watch.task()
+
+			$mol_assert_equal( pane.stalled(), false )
+			$mol_assert_equal( pane.restart_tries(), 1 )
+			$mol_assert_equal( pane.scene_generation(), generation + 1 )
+
+			watch.task()
 
 			$mol_assert_equal( pane.stalled(), true )
+			$mol_assert_equal( pane.restart_tries(), 1 )
+			$mol_assert_equal( pane.scene_generation(), generation + 1 )
+
+		},
+
+		'a scene that comes up gets its automatic retry back for next time'( $ ) {
+			const timers = timers_fake( $ )
+			const { pane, answer } = pane_make( $ )
+
+			answer({ kind: 'ready' })
+			pane.watchdog()
+
+			timers.at( -1 )!.task()
+			$mol_assert_equal( pane.restart_tries(), 1 )
+
+			answer({ kind: 'sizes', sizes: {} })
+
+			$mol_assert_equal( pane.warmed(), true )
+			$mol_assert_equal( pane.restart_tries(), 0 )
 
 		},
 

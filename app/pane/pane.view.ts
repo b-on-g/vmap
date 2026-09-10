@@ -173,6 +173,12 @@ namespace $.$$ {
 
 		@ $mol_action
 		override scene_restart() {
+			this.restart_tries( 0 )
+			this.scene_relaunch()
+		}
+
+		@ $mol_action
+		scene_relaunch() {
 			this.scene_generation( this.scene_generation() + 1 )
 			this.warmed( false )
 			this.stalled( false )
@@ -264,7 +270,25 @@ namespace $.$$ {
 
 			const limit = this.warmed() ? this.answer_limit() : this.cold_limit()
 
-			return new this.$.$mol_after_timeout( limit, () => this.stalled( true ) )
+			return new this.$.$mol_after_timeout( limit, () => {
+
+				if( !this.warmed() && this.restart_tries() < this.restart_tries_max() ) {
+					this.restart_tries( this.restart_tries() + 1 )
+					this.scene_relaunch()
+					return
+				}
+
+				this.stalled( true )
+			} )
+		}
+
+		@ $mol_mem
+		restart_tries( next?: number ) {
+			return next ?? 0
+		}
+
+		restart_tries_max() {
+			return 1
 		}
 
 		@ $mol_mem
@@ -1180,6 +1204,7 @@ namespace $.$$ {
 			if( message.kind === 'sizes' ) {
 				this.sizes( this.sizes_merged( message.sizes ) )
 				this.warmed( true )
+				this.restart_tries( 0 )
 				return
 			}
 
