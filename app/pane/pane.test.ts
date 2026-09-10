@@ -1192,7 +1192,7 @@ namespace $ {
 		/**
 		 * The frame is isolated and has no address, and the ORDER of the two says so.
 		 *
-		 * `$mol_dom_render_attributes` writes the dictionary in key order, so a frame
+		 * The attribute renderer writes the dictionary in key order, so a frame
 		 * that got its source before its sandbox is already loading unsandboxed —
 		 * with the attribute present in the DOM and the audit green. Reading the
 		 * dictionary is therefore the check, not reading the element.

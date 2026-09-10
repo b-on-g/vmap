@@ -15,7 +15,7 @@ namespace $ {
 	/**
 	 * A session of its own per test.
 	 *
-	 * `$mol_state_session` keeps its values on the CLASS — in `sessionStorage`
+	 * The session store of the framework keeps its values on the CLASS — in `sessionStorage`
 	 * where there is one, in a field of the class where there is not — so without
 	 * this every test would inherit whatever the previous one folded away. A
 	 * subclass per test gets a store of its own, the same trick the address mock
@@ -474,7 +474,7 @@ namespace $ {
 		},
 
 		/**
-		 * The refusal has to reach the person in words: a throw out of a `$mol_string`
+		 * The refusal has to reach the person in words: a throw out of a text field
 		 * setter lands in `setCustomValidity`, which is not where anybody looks.
 		 */
 		'a name already taken is refused in words and moves nothing'( $ ) {
@@ -1248,12 +1248,12 @@ namespace $ {
 		 *
 		 * The address was the untested half: scenarios switched documents by calling
 		 * the picker directly, so nothing ever proved that a gesture reaches
-		 * `$mol_state_arg` at all. A report from the deploy that the list does not
+		 * the address service at all. A report from the deploy that the list does not
 		 * grow and the address does not follow had no test to answer it.
 		 *
 		 * WHAT THIS CANNOT SAY ANYTHING ABOUT is the timing in a browser: the node
-		 * build of `$mol_state_arg` writes the address into a cell at once, while
-		 * the web build defers it into `$mol_after_frame`, that is into
+		 * build of that service writes the address into a cell at once, while the
+		 * web build defers it into the frame scheduler, that is into
 		 * `requestAnimationFrame` — which does not tick in a hidden tab. This test
 		 * proves the wiring; a frame is a thing only a visible window has.
 		 */

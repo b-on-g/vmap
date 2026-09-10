@@ -65,10 +65,11 @@ namespace $ {
 	/**
 	 * Globals of a browser that node does not define and jsdom does not export.
 	 *
-	 * `$mol_view_selection` names `ShadowRoot` and `$mol_touch` names `PointerEvent`
-	 * bare, so a field or a gesture in a node test dies on a `ReferenceError` that
-	 * says nothing about the editor. Pointer capture is missing from jsdom
-	 * elements outright, and `$mol_touch` calls it without a guard.
+	 * The selection plugin of the view pack names `ShadowRoot` and the touch plugin
+	 * names `PointerEvent` bare, so a field or a gesture in a node test dies on a
+	 * `ReferenceError` that says nothing about the editor. Pointer capture is
+	 * missing from jsdom elements outright, and the touch plugin calls it without a
+	 * guard.
 	 */
 	function browser_gaps( $: $ ) {
 
@@ -116,8 +117,8 @@ namespace $ {
 	 * pane (jsdom has no layout), the timers (they must not fire by themselves),
 	 * and the land of the documents (the home land, so no proof of work).
 	 *
-	 * A NEW SCENARIO NEEDS NONE OF THAT. One line makes the editor,
-	 * `const stage = $bog_vmap_app_flow_stage( $ )`, and from then on everything is
+	 * A NEW SCENARIO NEEDS NONE OF THAT. One line makes the editor — the stand
+	 * factory below, called with the context — and from then on everything is
 	 * a gesture of the user:
 	 *
 	 * - `stage.drop( klass, stage.client([ x, y ]) )` carries a class out of the
@@ -408,9 +409,9 @@ namespace $ {
 			},
 
 			/**
-			 * A checkbox or one option of a switch, by its label. Not a button:
-			 * `$mol_check` answers `role="checkbox"`, and the options of a switch are
-			 * checks, so the head bar toggles and the layout panel are found here.
+			 * A checkbox or one option of a switch, by its label. Not a button: the
+			 * check primitive answers `role="checkbox"`, and the options of a switch
+			 * are checks, so the head bar toggles and the layout panel are found here.
 			 */
 			check( title: string ) {
 				return found( '[role=checkbox]', `check «${ title }»`, el => el.textContent?.includes( title ) ?? false )
@@ -438,7 +439,7 @@ namespace $ {
 				return found( '[bog_vmap_app_shelf_item_row]', `shelf row ${ title }`, el => el.textContent === title )
 			},
 
-			/** A text field, addressed by the tail of the id $mol builds out of the path to it. */
+			/** A text field, addressed by the tail of the id built out of the path to it. */
 			field( tail: string ) {
 
 				return found( 'input, textarea', `field ${ tail }`, el => el.getAttribute( 'id' )?.endsWith( tail ) ?? false ) as HTMLInputElement

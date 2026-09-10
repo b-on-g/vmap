@@ -156,7 +156,7 @@ $bog_vmap_app $mol_view
 		sub / <= export_text* \
 	-
 	- Why the root class was not renamed. On the strip beside the refusal of the
-	- export, because it is about the document as a whole; a `$mol_string` that
+	- export, because it is about the document as a whole; a text field that
 	- throws out of its setter puts the message into `setCustomValidity`, which on
 	- a page without a form is nowhere at all.
 	Root_note $mol_view
@@ -214,8 +214,8 @@ $bog_vmap_app $mol_view
 		sub <= aside_content /$mol_view
 	-
 	- The inspector reads ONE class, and a part declared on the canvas is exactly
-	- that: `Button_minor $mol_button_minor` is a class named `Button_minor` with
-	- `$mol_button_minor` for a base, so its own lines are its own ports and the rest
+	- that: a line naming a part and a base is a class named after the part with
+	- that base under it, so its own lines are its own ports and the rest
 	- come down the chain. Nothing had to be added to the inspector to fit.
 	- The classes of the attached lands ride in through `peers` beside the root of
 	- the document: the inspector already resolves a peer's ports through the same
@@ -264,7 +264,7 @@ $bog_vmap_app $mol_view
 	- Component library of the host: the pack, with the lands of the field stacked
 	- on it. `script_link()` is the bundle the scene is told to load; `land_trees()` feed the
 	- palette and the inspector; `parts()` go to the scene. The pack tree itself is
-	- fetched by the palette from the same address, the two share one `$mol_fetch`
+	- fetched by the palette from the same address, and the two share one fetching
 	- cell. The only object in the editor that opens a land of the field.
 	Lib $bog_vmap_lib_land_stack
 		pack <= pack_link

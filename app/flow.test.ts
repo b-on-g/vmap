@@ -65,7 +65,7 @@ namespace $ {
 			$mol_assert_like( apps, [ 'Button', 'Calc', 'Map' ] )
 
 			// The classes of the pack are a level down, folded away until asked for,
-			// and then they are all there, the `$mol_view` stub included.
+			// and then they are all there, the base view stub included.
 			$mol_assert_equal( stage.root.querySelector( '[bog_vmap_app_palette_class_row]' ), null )
 
 			stage.classes_open()
@@ -377,7 +377,7 @@ namespace $ {
 		 *
 		 * The scene compiles nothing until it has been told a pack, because a class
 		 * picks its base once and a document built a moment early would inherit the
-		 * sandbox's own `$mol_view` for good. So the order of the first three
+		 * sandbox's own base view for good. So the order of the first three
 		 * messages of a handshake is part of the contract, not an accident of how
 		 * the cells happen to be listed.
 		 */

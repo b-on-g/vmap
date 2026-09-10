@@ -102,8 +102,8 @@ namespace $.$$ {
 			 * changes nothing about it.
 			 *
 			 * Written as one string because a camelCase shorthand takes nothing else,
-			 * and `String()` around the token because `$mol_theme.focus` is a
-			 * `$mol_style_func`, not text. Both are TS2322 otherwise — and the WEB
+			 * and `String()` around the token because the focus colour of the theme is
+			 * a style function object, not text. Both are TS2322 otherwise — and the WEB
 			 * audit passes either way, only the node one catches it.
 			 */
 			outline: '1px solid ' + String( $mol_theme.focus ),

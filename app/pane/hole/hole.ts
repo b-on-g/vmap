@@ -16,7 +16,7 @@ namespace $ {
 	 * have to know how big the pane is and does not go stale when it resizes.
 	 *
 	 * `none` and not an absent key when nothing is picked: inline styles are
-	 * written by `$mol_dom_render_styles`, which sets the keys it is given and
+	 * written by the style renderer of the framework, which sets the keys it is given and
 	 * removes nothing, so a key that disappears from the dictionary leaves its last
 	 * value on the element.
 	 */
