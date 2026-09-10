@@ -33025,6 +33025,26 @@ var $;
                 return;
             $mol_assert_like(got.values, { calc_result: '42', calc_value: 'Error: boom' });
         },
+        'a port of a part is asked for by a dotted name and answered by a table'($) {
+            const sent = [];
+            const target = { postMessage: (data) => { sent.push(data); } };
+            const table = 'city\tsum\nМосква\t7\nПитер\t9';
+            $bog_vmap_bridge_send(target, { kind: 'values_want', names: ['calc_result', 'Calc.result', 'Calc.rows'] });
+            $bog_vmap_bridge_send(target, { kind: 'values', values: { 'Calc.result': '42', 'Calc.rows': table } });
+            const want = $bog_vmap_bridge_read({ data: sent[0] });
+            if (want?.kind !== 'values_want')
+                return $mol_assert_equal(want?.kind, 'values_want');
+            $mol_assert_like(want.names, ['calc_result', 'Calc.result', 'Calc.rows']);
+            const got = $bog_vmap_bridge_read({ data: sent[1] });
+            if (got?.kind !== 'values')
+                return $mol_assert_equal(got?.kind, 'values');
+            $mol_assert_equal(got.values['Calc.result'], '42');
+            $mol_assert_like(got.values['Calc.rows'].split('\n').map(line => line.split('\t')), [
+                ['city', 'sum'],
+                ['Москва', '7'],
+                ['Питер', '9'],
+            ]);
+        },
         'a message from another namespace is not ours'($) {
             $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: 'somebody_else', kind: 'libs_set', parts: [] } }), null);
             $mol_assert_equal($bog_vmap_bridge_read({ data: 'text' }), null);

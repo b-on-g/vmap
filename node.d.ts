@@ -47310,6 +47310,7 @@ declare namespace $ {
         readonly uri: string;
     } | {
         readonly kind: 'values_want';
+        /** Either a property of the root class, or `Part.port` of a part of it. */
         readonly names: readonly string[];
     };
     /** Scene to host. */
@@ -47326,8 +47327,9 @@ declare namespace $ {
         };
     } | {
         readonly kind: 'values';
+        /** One line per value; a table comes as rows split by newline and cells by tab, the first row naming the columns. */
         readonly values: {
-            readonly [wire: string]: string;
+            readonly [name: string]: string;
         };
     } | {
         readonly kind: 'asset_want';
