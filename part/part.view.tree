@@ -6,21 +6,11 @@
 - bundle. Nothing is drawn, so there is nothing to configure and nothing to keep
 - in step with the editor.
 -
-- The showcase page this used to be — a title, a demo wiring and seventeen
-- components with sample values in them — was scaffolding for a palette that no
-- longer opens first. What it proved is proved by the tests instead.
--
-- BEFORE SHORTENING THE LIST, a measurement, 09.09.2026. Counted on the built
-- `web.view.tree`: 84 classes with the stub at the time, and **33 of the 84 were
-- there to serve exactly two names below — `$mol_text` and `$mol_select`**;
-- without those two the pack was 51. They stay, because inside a block there is
-- nothing else to lay out text and a dropdown with, and because the whole of mol
-- is one address away for anyone who wants it: `https://mol.hyoo.ru` in the field
-- of the shelf gives 454 classes, measured live the same day.
--
-- The pack is 95 now: the code cell added one, and the chart the plot is built on
-- added nine. Cutting anything here empties the second level of the panel or the
-- shelf itself, not a showcase — the showcase is already gone.
+- BEFORE SHORTENING THE LIST: a third of the pack is here to serve the rich text
+- and the dropdown alone, and they stay, because inside a block there is nothing
+- else to lay out prose and a choice with. Cutting anything here empties the second
+- level of the panel or the shelf itself, not a showcase — the showcase is gone,
+- and what it proved is proved by the tests instead.
 $bog_vmap_part $mol_view
 	- The parts of this pack. Everything else below is mol itself, carried along
 	- so that a page can be laid out and not only assembled.

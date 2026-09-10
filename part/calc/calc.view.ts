@@ -1,7 +1,6 @@
 namespace $.$$ {
 
 	/**
-	 * Calculator part of vmap: two numbers, an operation, one numeric result.
 	 * Division by zero gives NaN instead of Infinity, so that a wire downstream
 	 * sees «no number» and not a number that only looks valid.
 	 */

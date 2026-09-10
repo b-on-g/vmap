@@ -1,9 +1,9 @@
 namespace $.$$ {
 
 	/**
-	 * Map part of vmap over the Yandex map of mol. Zoom is clamped into the
-	 * range the map accepts, the center travels as two numbers, and a mark
-	 * appears at the center as soon as it has a title.
+	 * Zoom is clamped into the range the map accepts, the center travels as two
+	 * numbers, and a mark appears at the center as soon as it has a title — all
+	 * three so that an ordinary wire, which carries one number, lands on a port.
 	 */
 	export class $bog_vmap_part_map extends $.$bog_vmap_part_map {
 

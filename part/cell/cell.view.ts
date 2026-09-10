@@ -13,9 +13,6 @@ namespace $.$$ {
 	}
 
 	/**
-	 * A cell of code: the body of a function, run on demand, answering through
-	 * typed ports.
-	 *
 	 * The code runs inside the sandbox and nowhere else — this class is compiled
 	 * into it like any other part of the pack — so it is exactly as trusted as the
 	 * document around it and no more.
@@ -25,8 +22,6 @@ namespace $.$$ {
 	export class $bog_vmap_part_cell extends $.$bog_vmap_part_cell {
 
 		/**
-		 * The code as of the last run of the button, empty until it is pressed.
-		 *
 		 * The manual mode is this cell and the reactive mode is `code()` itself, so
 		 * the difference between the two is which text the run depends on and
 		 * nothing else. No timer, no flag outside the graph, no re-entry.
@@ -36,7 +31,6 @@ namespace $.$$ {
 			return next ?? ''
 		}
 
-		/** The button. Takes what is in the field now as what to run. */
 		@ $mol_action
 		override run( next?: Event | null ) {
 			this.code_ran( this.code() )
@@ -44,10 +38,8 @@ namespace $.$$ {
 		}
 
 		/**
-		 * One run: what it returned, what it cost and what it complained about, as
-		 * ONE value.
-		 *
-		 * One and not three cells, because a cell may not write into its
+		 * What the run returned, what it cost and what it complained about, as ONE
+		 * value. One and not three cells, because a cell may not write into its
 		 * neighbours: three cells would mean a computation writing twice on the
 		 * side, which is an invalidation loop dressed as bookkeeping. The three
 		 * readings below take this apart, and a reader of the time is not woken by

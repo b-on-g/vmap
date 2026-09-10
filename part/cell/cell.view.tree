@@ -6,8 +6,7 @@
 - goes into a caption, `number` into a zoom, a width, a count. An untyped port
 - would only move the guessing to the far end of the wire.
 $bog_vmap_part_cell $mol_view
-	- Body of a function, run with the sandbox context as `$`. What it returns is
-	- the answer of the cell.
+	- Run with the sandbox context as `$`; what it returns is the answer of the cell.
 	code? \
 	- Run on every edit instead of on the button. Off by default: half typed code
 	- runs on every keystroke, and a half typed loop runs for ever.
@@ -16,8 +15,7 @@ $bog_vmap_part_cell $mol_view
 	- a number field, and an answer that is not a number at all reads as one.
 	result_text \
 	result_number +NaN
-	- What the run cost, in words, and what it complained about. Empty until it
-	- has run at all.
+	- Empty until the cell has run at all.
 	spent \
 	error \
 	run? null

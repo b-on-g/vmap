@@ -6,9 +6,9 @@ namespace $.$$ {
 		align: { items: 'center' },
 
 		/**
-		 * A detail, not a band. Handed the width of a page it took all of it, and
-		 * on a phone width it ran past the edge instead of wrapping; a ceiling of
-		 * its own fixes both.
+		 * A detail, not a band: handed the width of a page it would take all of it,
+		 * and at phone width run past the edge instead of wrapping. A ceiling of its
+		 * own fixes both.
 		 *
 		 * The floor is the other half of the same decision. Zero is what lets a view
 		 * in a flex row shrink below its content at all, but zero also lets it
