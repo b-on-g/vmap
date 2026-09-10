@@ -14212,11 +14212,7 @@ var $;
         },
     });
 })($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
+(function ($_2) {
     /**
      * Tests of a failure of the scene finding its way onto the node.
      *
@@ -14334,11 +14330,7 @@ var $;
         },
     });
 })($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
+(function ($_3) {
     /**
      * Tests of the code editor against the live document.
      *
