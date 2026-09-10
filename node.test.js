@@ -28560,7 +28560,7 @@ var $;
             }
             sub() {
                 return [
-                    this.Scene(this.scene_key()),
+                    ...this.scene_shown() ? [this.Scene(this.scene_key())] : [],
                     this.Overlay(),
                     this.Wire(),
                     this.Marks(),
@@ -28569,10 +28569,18 @@ var $;
                     this.Camera(),
                 ];
             }
+            scene_shown(next) {
+                return next ?? true;
+            }
+            remount_delay() {
+                return 500;
+            }
             scene_restart() {
                 this.scene_generation(this.scene_generation() + 1);
                 this.warmed(false);
                 this.stalled(false);
+                this.scene_shown(false);
+                new this.$.$mol_after_timeout(this.remount_delay(), () => this.scene_shown(true));
             }
             handshake(key, next) {
                 return next ?? 0;
@@ -29384,6 +29392,9 @@ var $;
         __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "mark_style", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "scene_shown", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "scene_restart", null);
@@ -30282,9 +30293,9 @@ var $;
             }
             stall_note() {
                 if (!this.Pane().warmed()) {
-                    return 'Сцена не запустилась: её остановил код документа. Он исполнится снова'
-                        + ' в любом новом кадре и после перезагрузки страницы, поэтому сначала'
-                        + ' исправьте код в панели, а потом нажмите «Перезагрузить сцену».';
+                    return 'Сцена не запустилась. Если код в панели уже исправлен — нажмите'
+                        + ' «Перезагрузить сцену» ещё раз. Если нет — сначала исправьте код:'
+                        + ' он исполнится снова в любом новом кадре и после перезагрузки страницы.';
                 }
                 return 'Сцена не отвечает. Скорее всего её остановил код документа: он исполняется'
                     + ' в песочнице и делит с ней поток. Редактор и документ целы.';
@@ -39318,7 +39329,9 @@ var $;
             $mol_assert_equal(stage.app.stalled(), true);
             const text = stage.text();
             $mol_assert_ok(text.includes('Сцена не запустилась'));
-            $mol_assert_ok(text.includes('исправьте код в панели'));
+            $mol_assert_ok(text.includes('уже исправлен'));
+            $mol_assert_ok(text.includes('ещё раз'));
+            $mol_assert_ok(text.includes('сначала исправьте код'));
             stage.button('Перезагрузить сцену');
             $mol_assert_ok(timer !== null);
         },
@@ -39763,8 +39776,25 @@ var $;
             watch.task();
             $mol_assert_equal(pane.stalled(), true);
         },
+        'a restart takes the old frame down before it puts a new one up'($) {
+            const timers = timers_fake($);
+            const { pane } = pane_make($);
+            const frame_before = pane.Scene(pane.scene_key());
+            $mol_assert_equal(pane.sub()[0], frame_before);
+            pane.scene_restart();
+            $mol_assert_equal(pane.scene_shown(), false);
+            $mol_assert_equal(pane.sub().includes(frame_before), false);
+            $mol_assert_equal(pane.sub().some(kid => kid === pane.Scene(pane.scene_key())), false);
+            $mol_assert_equal(pane.sub()[0], pane.Overlay());
+            const remount = timers.at(-1);
+            $mol_assert_equal(remount.delay, pane.remount_delay());
+            remount.task();
+            $mol_assert_equal(pane.scene_shown(), true);
+            $mol_assert_equal(pane.sub()[0], pane.Scene(pane.scene_key()));
+            $mol_assert_equal(pane.sub()[0] !== frame_before, true);
+        },
         'scene_restart gives a fresh frame and clears stalled'($) {
-            timers_fake($);
+            const timers = timers_fake($);
             const { pane, posted, answer } = pane_make($);
             pane.warmed(true);
             pane.watchdog();
@@ -39774,6 +39804,7 @@ var $;
             pane.stalled(true);
             posted.length = 0;
             pane.scene_restart();
+            timers.at(-1).task();
             $mol_assert_equal(pane.stalled(), false);
             $mol_assert_equal(pane.ready(), false);
             $mol_assert_equal(pane.warmed(), false);

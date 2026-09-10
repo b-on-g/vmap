@@ -36128,7 +36128,7 @@ var $;
             }
             sub() {
                 return [
-                    this.Scene(this.scene_key()),
+                    ...this.scene_shown() ? [this.Scene(this.scene_key())] : [],
                     this.Overlay(),
                     this.Wire(),
                     this.Marks(),
@@ -36137,10 +36137,18 @@ var $;
                     this.Camera(),
                 ];
             }
+            scene_shown(next) {
+                return next ?? true;
+            }
+            remount_delay() {
+                return 500;
+            }
             scene_restart() {
                 this.scene_generation(this.scene_generation() + 1);
                 this.warmed(false);
                 this.stalled(false);
+                this.scene_shown(false);
+                new this.$.$mol_after_timeout(this.remount_delay(), () => this.scene_shown(true));
             }
             handshake(key, next) {
                 return next ?? 0;
@@ -36952,6 +36960,9 @@ var $;
         __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "mark_style", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "scene_shown", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "scene_restart", null);
@@ -37850,9 +37861,9 @@ var $;
             }
             stall_note() {
                 if (!this.Pane().warmed()) {
-                    return 'Сцена не запустилась: её остановил код документа. Он исполнится снова'
-                        + ' в любом новом кадре и после перезагрузки страницы, поэтому сначала'
-                        + ' исправьте код в панели, а потом нажмите «Перезагрузить сцену».';
+                    return 'Сцена не запустилась. Если код в панели уже исправлен — нажмите'
+                        + ' «Перезагрузить сцену» ещё раз. Если нет — сначала исправьте код:'
+                        + ' он исполнится снова в любом новом кадре и после перезагрузки страницы.';
                 }
                 return 'Сцена не отвечает. Скорее всего её остановил код документа: он исполняется'
                     + ' в песочнице и делит с ней поток. Редактор и документ целы.';

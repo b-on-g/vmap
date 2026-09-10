@@ -47694,6 +47694,8 @@ declare namespace $.$$ {
         scene_html(): string;
         scene_peer(): $bog_vmap_app_pane_peer | null;
         sub(): readonly $mol_view[];
+        scene_shown(next?: boolean): boolean;
+        remount_delay(): number;
         scene_restart(): void;
         handshake(key: string, next?: number): number;
         ready(): boolean;
