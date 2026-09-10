@@ -1,9 +1,5 @@
 namespace $ {
 
-	/**
-	 * Tests of the wire protocol: what goes in through `send` comes out of `read`,
-	 * and what is not ours does not. A fake `postMessage` stands in for the window.
-	 */
 	$mol_test({
 
 		'libs_set survives the wire'( $ ) {
@@ -27,7 +23,6 @@ namespace $ {
 
 		},
 
-		/** The question goes down as a list of names, the answer comes up keyed by them. */
 		'values_want and values survive the wire'( $ ) {
 
 			const sent = [] as unknown[]
@@ -60,7 +55,6 @@ namespace $ {
 
 		},
 
-		/** Passing a peer at all turns the check on: an unknown source is refused. */
 		'a message from a window other than the peer is dropped'( $ ) {
 
 			const peer = {}
@@ -79,10 +73,6 @@ namespace $ {
 
 namespace $ {
 
-	/**
-	 * `click_at` on the wire: the relayed click keeps its point and its modifiers,
-	 * and comes in only from the peer, like every other message.
-	 */
 	$mol_test({
 
 		'click_at survives the wire with its point and modifiers'( $ ) {
