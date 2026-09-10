@@ -12222,6 +12222,1200 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    class $mol_view_tree2_error extends Error {
+        spans;
+        constructor(message, spans) {
+            super(message);
+            this.spans = spans;
+        }
+        toJSON() {
+            return {
+                message: this.message,
+                spans: this.spans
+            };
+        }
+    }
+    $.$mol_view_tree2_error = $mol_view_tree2_error;
+    class $mol_view_tree2_error_suggestions {
+        suggestions;
+        constructor(suggestions) {
+            this.suggestions = suggestions;
+        }
+        toString() {
+            return this.suggestions.map(suggestion => `\`${suggestion}\``).join(', ');
+        }
+        toJSON() {
+            return this.suggestions;
+        }
+    }
+    $.$mol_view_tree2_error_suggestions = $mol_view_tree2_error_suggestions;
+    function $mol_view_tree2_error_str(strings, ...parts) {
+        const spans = [];
+        for (const part of parts) {
+            if (part instanceof $mol_span)
+                spans.push(part);
+            if (Array.isArray(part) && part.length > 0 && part[0] instanceof $mol_span)
+                spans.push(...part);
+        }
+        return new $mol_view_tree2_error(join(strings, parts), spans);
+    }
+    $.$mol_view_tree2_error_str = $mol_view_tree2_error_str;
+    function join(strings, objects) {
+        let result = '';
+        let obj_pos = 0;
+        let obj_len = objects.length;
+        for (const str of strings) {
+            result += str;
+            if (obj_pos < obj_len) {
+                const obj = objects[obj_pos++];
+                if (Array.isArray(obj))
+                    result += obj.map(item => `\`${item}\``).join(', ');
+                else
+                    result += `\`${String(obj)}\``;
+            }
+        }
+        return result;
+    }
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_view_tree2_child(tree) {
+        if (tree.kids.length === 0) {
+            return this.$mol_fail($mol_view_tree2_error_str `Required one child at ${tree.span}`);
+        }
+        if (tree.kids.length > 1) {
+            return this.$mol_fail($mol_view_tree2_error_str `Should be only one child at ${tree.span}`);
+        }
+        return tree.kids[0];
+    }
+    $.$mol_view_tree2_child = $mol_view_tree2_child;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_view_tree2_classes(defs) {
+        return defs.clone(defs.hack({
+            '-': () => []
+        }));
+    }
+    $.$mol_view_tree2_classes = $mol_view_tree2_classes;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_view_tree2_normalize(defs) {
+        return defs.clone($mol_view_tree2_classes(defs).kids.map(cl => cl.clone([
+            this.$mol_view_tree2_class_super(cl).clone(this.$mol_view_tree2_class_props(cl))
+        ])));
+    }
+    $.$mol_view_tree2_normalize = $mol_view_tree2_normalize;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function pass(data) {
+        return data;
+    }
+    function $mol_error_fence(task, fallback, loading = pass) {
+        try {
+            return task();
+        }
+        catch (error) {
+            let normalized;
+            try {
+                normalized = $mol_promise_like(error) ? loading(error) : fallback(error);
+            }
+            catch (sub_error) {
+                normalized = $mol_promise_like(sub_error) ? sub_error : new $mol_error_mix(sub_error.message, { error }, sub_error);
+            }
+            if (normalized instanceof Error || $mol_promise_like(normalized)) {
+                $mol_fail_hidden(normalized);
+            }
+            return normalized;
+        }
+    }
+    $.$mol_error_fence = $mol_error_fence;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_error_enriched(cause, cb) {
+        return $mol_error_fence(cb, e => new $mol_error_mix(e.message, cause, e));
+    }
+    $.$mol_error_enriched = $mol_error_enriched;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    class $mol_fetch_response extends $mol_object {
+        native;
+        request;
+        status() {
+            const types = ['unknown', 'inform', 'success', 'redirect', 'wrong', 'failed'];
+            return types[Math.floor(this.native.status / 100)];
+        }
+        code() {
+            return this.native.status;
+        }
+        ok() {
+            return this.native.ok;
+        }
+        message() {
+            return $mol_rest_code[this.code()] || `HTTP Error ${this.code()}`;
+        }
+        headers() {
+            return this.native.headers;
+        }
+        mime() {
+            return this.headers().get('content-type');
+        }
+        stream() {
+            return this.native.body;
+        }
+        text() {
+            const buffer = this.buffer();
+            const mime = this.mime() || '';
+            const [, charset] = /charset=(.*)/.exec(mime) || [, 'utf-8'];
+            const decoder = new TextDecoder(charset);
+            return decoder.decode(buffer);
+        }
+        json() {
+            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).json());
+        }
+        blob() {
+            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).blob());
+        }
+        buffer() {
+            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).arrayBuffer());
+        }
+        xml() {
+            return $mol_dom_parse(this.text(), 'application/xml');
+        }
+        xhtml() {
+            return $mol_dom_parse(this.text(), 'application/xhtml+xml');
+        }
+        html() {
+            return $mol_dom_parse(this.text(), 'text/html');
+        }
+    }
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "stream", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "text", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "xml", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "xhtml", null);
+    __decorate([
+        $mol_action
+    ], $mol_fetch_response.prototype, "html", null);
+    $.$mol_fetch_response = $mol_fetch_response;
+    class $mol_fetch_request extends $mol_object {
+        native;
+        response_async() {
+            const controller = new AbortController();
+            let done = false;
+            const request = new Request(this.native, { signal: controller.signal });
+            const promise = fetch(request).finally(() => {
+                done = true;
+            });
+            return Object.assign(promise, {
+                destructor: () => {
+                    // Abort of done request breaks response parsing
+                    if (!done && !controller.signal.aborted)
+                        controller.abort();
+                },
+            });
+        }
+        response() {
+            const native = $mol_error_enriched(this, () => $mol_wire_sync(this).response_async());
+            return this.$.$mol_fetch_response.make({
+                native,
+                request: this
+            });
+        }
+        success() {
+            const response = this.response();
+            if (response.status() === 'success')
+                return response;
+            throw new Error(response.message(), { cause: response });
+        }
+    }
+    __decorate([
+        $mol_action
+    ], $mol_fetch_request.prototype, "response", null);
+    $.$mol_fetch_request = $mol_fetch_request;
+    class $mol_fetch extends $mol_object {
+        static request(input, init) {
+            return this.$.$mol_fetch_request.make({
+                native: new Request(input, init)
+            });
+        }
+        static response(input, init) {
+            return this.request(input, init).response();
+        }
+        static success(input, init) {
+            return this.request(input, init).success();
+        }
+        static stream(input, init) {
+            return this.success(input, init).stream();
+        }
+        static text(input, init) {
+            return this.success(input, init).text();
+        }
+        static json(input, init) {
+            return this.success(input, init).json();
+        }
+        static blob(input, init) {
+            return this.success(input, init).blob();
+        }
+        static buffer(input, init) {
+            return this.success(input, init).buffer();
+        }
+        static xml(input, init) {
+            return this.success(input, init).xml();
+        }
+        static xhtml(input, init) {
+            return this.success(input, init).xhtml();
+        }
+        static html(input, init) {
+            return this.success(input, init).html();
+        }
+    }
+    __decorate([
+        $mol_action
+    ], $mol_fetch, "request", null);
+    $.$mol_fetch = $mol_fetch;
+})($ || ($ = {}));
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+var $;
+(function ($) {
+    let x = /x/[Symbol.matchAll];
+    /** Type safe reguar expression builder */
+    class $mol_regexp extends RegExp {
+        groups;
+        /** Prefer to use $mol_regexp.from */
+        constructor(source, flags = 'gsu', groups = []) {
+            super(source, flags);
+            this.groups = groups;
+        }
+        *[Symbol.matchAll](str) {
+            const index = this.lastIndex;
+            this.lastIndex = 0;
+            try {
+                while (this.lastIndex < str.length) {
+                    const found = this.exec(str);
+                    if (!found)
+                        break;
+                    yield found;
+                }
+            }
+            finally {
+                this.lastIndex = index;
+            }
+        }
+        /** Parses input and returns found capture groups or null */
+        [Symbol.match](str) {
+            const res = [...this[Symbol.matchAll](str)].filter(r => r.groups).map(r => r[0]);
+            if (!res.length)
+                return null;
+            return res;
+        }
+        /** Splits string by regexp edges */
+        [Symbol.split](str) {
+            const res = [];
+            let token_last = null;
+            for (let token of this[Symbol.matchAll](str)) {
+                if (token.groups && (token_last ? token_last.groups : true))
+                    res.push('');
+                res.push(token[0]);
+                token_last = token;
+            }
+            if (!res.length)
+                res.push('');
+            return res;
+        }
+        test(str) {
+            return Boolean(str.match(this));
+        }
+        exec(str) {
+            const from = this.lastIndex;
+            if (from >= str.length)
+                return null;
+            const res = super.exec(str);
+            if (res === null) {
+                this.lastIndex = str.length;
+                if (!str)
+                    return null;
+                return Object.assign([str.slice(from)], {
+                    index: from,
+                    input: str,
+                });
+            }
+            if (from === this.lastIndex) {
+                $mol_fail(new Error('Captured empty substring'));
+            }
+            const groups = {};
+            const skipped = str.slice(from, this.lastIndex - res[0].length);
+            if (skipped) {
+                this.lastIndex = this.lastIndex - res[0].length;
+                return Object.assign([skipped], {
+                    index: from,
+                    input: res.input,
+                });
+            }
+            for (let i = 0; i < this.groups.length; ++i) {
+                const group = this.groups[i];
+                groups[group] = groups[group] || res[i + 1] || '';
+            }
+            return Object.assign(res, { groups });
+        }
+        generate(params) {
+            return null;
+        }
+        get native() {
+            return new RegExp(this.source, this.flags);
+        }
+        /** Makes regexp that greedy repeats this pattern with delimiter */
+        static separated(chunk, sep) {
+            return $mol_regexp.from([
+                $mol_regexp.repeat_greedy([[chunk], sep], 0),
+                chunk,
+            ]);
+        }
+        /** Makes regexp that non-greedy repeats this pattern from min to max count */
+        static repeat(source, min = 0, max = Number.POSITIVE_INFINITY) {
+            const regexp = $mol_regexp.from(source);
+            const upper = Number.isFinite(max) ? max : '';
+            const str = `(?:${regexp.source}){${min},${upper}}?`;
+            const regexp2 = new $mol_regexp(str, regexp.flags, regexp.groups);
+            regexp2.generate = params => {
+                const res = regexp.generate(params);
+                if (res)
+                    return res;
+                if (min > 0)
+                    return res;
+                return '';
+            };
+            return regexp2;
+        }
+        /** Makes regexp that greedy repeats this pattern from min to max count */
+        static repeat_greedy(source, min = 0, max = Number.POSITIVE_INFINITY) {
+            const regexp = $mol_regexp.from(source);
+            const upper = Number.isFinite(max) ? max : '';
+            const str = `(?:${regexp.source}){${min},${upper}}`;
+            const regexp2 = new $mol_regexp(str, regexp.flags, regexp.groups);
+            regexp2.generate = params => {
+                const res = regexp.generate(params);
+                if (res)
+                    return res;
+                if (min > 0)
+                    return res;
+                return '';
+            };
+            return regexp2;
+        }
+        /** Makes regexp that match any of options */
+        static vary(sources, flags = 'gsu') {
+            const groups = [];
+            const chunks = sources.map(source => {
+                const regexp = $mol_regexp.from(source);
+                groups.push(...regexp.groups);
+                return regexp.source;
+            });
+            return new $mol_regexp(`(?:${chunks.join('|')})`, flags, groups);
+        }
+        /** Makes regexp that allow absent of this pattern */
+        static optional(source) {
+            return $mol_regexp.repeat_greedy(source, 0, 1);
+        }
+        /** Makes regexp that look ahead for pattern */
+        static force_after(source) {
+            const regexp = $mol_regexp.from(source);
+            return new $mol_regexp(`(?=${regexp.source})`, regexp.flags, regexp.groups);
+        }
+        /** Makes regexp that look ahead for pattern */
+        static forbid_after(source) {
+            const regexp = $mol_regexp.from(source);
+            return new $mol_regexp(`(?!${regexp.source})`, regexp.flags, regexp.groups);
+        }
+        /** Converts some js values to regexp */
+        static from(source, { ignoreCase, multiline } = {
+            ignoreCase: false,
+            multiline: false,
+        }) {
+            let flags = 'gsu';
+            if (multiline)
+                flags += 'm';
+            if (ignoreCase)
+                flags += 'i';
+            if (typeof source === 'number') {
+                const src = `\\u{${source.toString(16)}}`;
+                const regexp = new $mol_regexp(src, flags);
+                regexp.generate = () => src;
+                return regexp;
+            }
+            if (typeof source === 'string') {
+                const src = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regexp = new $mol_regexp(src, flags);
+                regexp.generate = () => source;
+                return regexp;
+            }
+            else if (source instanceof $mol_regexp) {
+                const regexp = new $mol_regexp(source.source, flags, source.groups);
+                regexp.generate = params => source.generate(params);
+                return regexp;
+            }
+            if (source instanceof RegExp) {
+                const test = new RegExp('|' + source.source);
+                const groups = Array.from({ length: test.exec('').length - 1 }, (_, i) => String(i + 1));
+                const regexp = new $mol_regexp(source.source, source.flags, groups);
+                regexp.generate = () => '';
+                return regexp;
+            }
+            if (Array.isArray(source)) {
+                const patterns = source.map(src => Array.isArray(src)
+                    ? $mol_regexp.optional(src)
+                    : $mol_regexp.from(src));
+                const chunks = patterns.map(pattern => pattern.source);
+                const groups = [];
+                let index = 0;
+                for (const pattern of patterns) {
+                    for (let group of pattern.groups) {
+                        if (Number(group) >= 0) {
+                            groups.push(String(index++));
+                        }
+                        else {
+                            groups.push(group);
+                        }
+                    }
+                }
+                const regexp = new $mol_regexp(chunks.join(''), flags, groups);
+                regexp.generate = params => {
+                    let res = '';
+                    for (const pattern of patterns) {
+                        let sub = pattern.generate(params);
+                        if (sub === null)
+                            return '';
+                        res += sub;
+                    }
+                    return res;
+                };
+                return regexp;
+            }
+            else {
+                const groups = [];
+                const chunks = Object.keys(source).map(name => {
+                    groups.push(name);
+                    const regexp = $mol_regexp.from(source[name]);
+                    groups.push(...regexp.groups);
+                    return `(${regexp.source})`;
+                });
+                const regexp = new $mol_regexp(`(?:${chunks.join('|')})`, flags, groups);
+                const validator = new RegExp('^' + regexp.source + '$', flags);
+                regexp.generate = (params) => {
+                    for (let option in source) {
+                        if (option in params) {
+                            if (typeof params[option] === 'boolean') {
+                                if (!params[option])
+                                    continue;
+                            }
+                            else {
+                                const str = String(params[option]);
+                                if (str.match(validator))
+                                    return str;
+                                $mol_fail(new Error(`Wrong param: ${option}=${str}`));
+                            }
+                        }
+                        else {
+                            if (typeof source[option] !== 'object')
+                                continue;
+                        }
+                        const res = $mol_regexp.from(source[option]).generate(params);
+                        if (res)
+                            return res;
+                    }
+                    return null;
+                };
+                return regexp;
+            }
+        }
+        /** Makes regexp which includes only unicode category */
+        static unicode_only(...category) {
+            return new $mol_regexp(`\\p{${category.join('=')}}`);
+        }
+        /** Makes regexp which excludes unicode category */
+        static unicode_except(...category) {
+            return new $mol_regexp(`\\P{${category.join('=')}}`);
+        }
+        static char_range(from, to) {
+            return new $mol_regexp(`${$mol_regexp.from(from).source}-${$mol_regexp.from(to).source}`);
+        }
+        static char_only(...allowed) {
+            const regexp = allowed.map(f => $mol_regexp.from(f).source).join('');
+            return new $mol_regexp(`[${regexp}]`);
+        }
+        static char_except(...forbidden) {
+            const regexp = forbidden.map(f => $mol_regexp.from(f).source).join('');
+            return new $mol_regexp(`[^${regexp}]`);
+        }
+        static decimal_only = $mol_regexp.from(/\d/gsu);
+        static decimal_except = $mol_regexp.from(/\D/gsu);
+        static latin_only = $mol_regexp.from(/\w/gsu);
+        static latin_except = $mol_regexp.from(/\W/gsu);
+        static space_only = $mol_regexp.from(/\s/gsu);
+        static space_except = $mol_regexp.from(/\S/gsu);
+        static word_break_only = $mol_regexp.from(/\b/gsu);
+        static word_break_except = $mol_regexp.from(/\B/gsu);
+        static tab = $mol_regexp.from(/\t/gsu);
+        static slash_back = $mol_regexp.from(/\\/gsu);
+        static nul = $mol_regexp.from(/\0/gsu);
+        static char_any = $mol_regexp.from(/./gsu);
+        static begin = $mol_regexp.from(/^/gsu);
+        static end = $mol_regexp.from(/$/gsu);
+        static or = $mol_regexp.from(/|/gsu);
+        static line_end = $mol_regexp.from({
+            win_end: [['\r'], '\n'],
+            mac_end: '\r',
+        });
+    }
+    $.$mol_regexp = $mol_regexp;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const { begin, end, latin_only, or, optional, repeat_greedy } = $mol_regexp;
+    $.$mol_view_tree2_prop_signature = $mol_regexp.from([
+        begin,
+        { name: repeat_greedy(latin_only, 1) },
+        { key: optional(['*', repeat_greedy(latin_only, 0)]) },
+        { next: optional(['?', repeat_greedy(latin_only, 0)]) },
+        end,
+    ]);
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_view_tree2_prop_parts(prop) {
+        const groups = [...prop.type.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
+        if (!groups) {
+            this.$mol_fail($mol_view_tree2_error_str `Required prop like some*? at ${prop.span}`);
+        }
+        return {
+            name: groups.name,
+            key: groups.key,
+            next: groups.next ? '?' : ''
+        };
+    }
+    $.$mol_view_tree2_prop_parts = $mol_view_tree2_prop_parts;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const regular_regex = /^\w+$/;
+    function $mol_view_tree2_prop_quote(name) {
+        if (regular_regex.test(name.value))
+            return name;
+        return name.data(JSON.stringify(name.value));
+    }
+    $.$mol_view_tree2_prop_quote = $mol_view_tree2_prop_quote;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_match_text(query, values) {
+        const tags = query.toLowerCase().trim().split(/\s+/).filter(tag => tag);
+        if (tags.length === 0)
+            return () => true;
+        return (variant) => {
+            const vals = values(variant);
+            return tags.every(tag => vals.some(val => val.toLowerCase().indexOf(tag) >= 0));
+        };
+    }
+    $.$mol_match_text = $mol_match_text;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const class_regex = /^[$A-Z][$\w<>\[\]()"'?|,]+$/;
+    function $mol_view_tree2_class_match(klass) {
+        if (!klass?.type)
+            return false;
+        if (klass.type === 'NaN' || klass.type === 'Infinity')
+            return false;
+        return class_regex.test(klass.type);
+    }
+    $.$mol_view_tree2_class_match = $mol_view_tree2_class_match;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const err = $mol_view_tree2_error_str;
+    function $mol_view_tree2_class_super(klass) {
+        if (!$mol_view_tree2_class_match(klass))
+            return this.$mol_fail(err `Wrong class name at ${klass.span}`);
+        const superclass = klass.kids.length === 1 ? klass.kids[0] : undefined;
+        if (!superclass)
+            return this.$mol_fail(err `No super class at ${klass.span}`);
+        if (!$mol_view_tree2_class_match(superclass))
+            return this.$mol_fail(err `Wrong super class name ${JSON.stringify(superclass.type).replace(/(^"|"$)/g, "")} at ${superclass.span}`);
+        return superclass;
+    }
+    $.$mol_view_tree2_class_super = $mol_view_tree2_class_super;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const err = $mol_view_tree2_error_str;
+    const is_writable = (input) => input.type.includes('?');
+    function $mol_view_tree2_class_props(klass) {
+        let props = this.$mol_view_tree2_class_super(klass);
+        // ! syntax to * and ?val syntax to ?
+        props = props.clone(props.hack({
+            '': (node, belt) => {
+                const next = node.type.indexOf('?');
+                const id = node.type.indexOf('!');
+                let normal = node.type;
+                const ch = node.type[id + 1];
+                if (id !== -1 && ch?.toUpperCase() !== ch?.toLowerCase())
+                    normal = `${normal.substring(0, id)}*${next === -1 ? '' : '?'}`;
+                else if (next !== -1)
+                    normal = normal.substring(0, next + 1);
+                if (node.type === normal)
+                    return [node.clone(node.hack(belt))];
+                console.warn(`Syntax ${node.type} at ${node.span} is deprecated. Use ${normal} instead`);
+                return [node.struct(normal, node.hack(belt))];
+            }
+        }));
+        const props_inner = {};
+        const add_inner = (prop) => {
+            const { name } = this.$mol_view_tree2_prop_parts(prop);
+            const prev = props_inner[name];
+            if (prev && prev.kids[0]?.toString() !== prop.kids[0]?.toString()) {
+                this.$mol_fail(err `Need an equal default values at ${prev.span} vs ${prop.span}`);
+            }
+            props_inner[name] = prop;
+        };
+        const upper = (operator, belt, context) => {
+            const prop = this.$mol_view_tree2_child(operator);
+            const defs = prop.hack(belt, { factory: prop });
+            if (defs.length)
+                add_inner(prop.clone(defs));
+            return [operator.clone([prop.clone([])])];
+        };
+        const props_root = props.hack({
+            '<=': upper,
+            '<=>': upper,
+            '^': (operator, belt, context) => {
+                if (operator.kids.length === 0)
+                    return [operator];
+                return upper(operator, belt, context);
+            },
+            '': (left, belt, context) => {
+                let right;
+                const operator = left.kids[0];
+                if (operator?.type === '=>' && context.factory) {
+                    right = operator.kids[0];
+                    if (!right)
+                        this.$mol_fail(err `Need a child ${operator.span}`);
+                    if (!context.factory)
+                        this.$mol_fail(err `Need a parent ${left.span}`);
+                    if (is_writable(left) !== is_writable(right))
+                        this.$mol_fail(err `Left and right operands are not compatible at ${operator.span}`);
+                    add_inner(right.clone([
+                        right.struct('=', [
+                            context.factory.struct(context.factory.type.replace(/\*.*/, '*'), [left.clone([])]),
+                        ]),
+                    ]));
+                }
+                else if (operator?.type === "<=>") {
+                    const right = operator.kids[0];
+                    if (!right)
+                        this.$mol_fail(err `Need a child ${operator.span}`);
+                    if (!is_writable(left))
+                        this.$mol_fail(err `Expected writable at ${left.span}`);
+                    if (!is_writable(right))
+                        this.$mol_fail(err `Expected writable at ${right.span}`);
+                }
+                else if (context.factory && operator?.type === "<=" && is_writable(left)) {
+                    this.$mol_fail(err `Expected readonly at ${left.span}`);
+                }
+                if (right)
+                    context = { factory: right.clone([]) };
+                else if (operator && !context.factory && $mol_view_tree2_class_match(operator)) {
+                    context = { factory: left.clone([]) };
+                }
+                const hacked = left.clone(left.hack(belt, context));
+                return [hacked];
+            }
+        }, { factory: undefined });
+        for (const prop of props_root)
+            add_inner(prop);
+        return Object.values(props_inner);
+    }
+    $.$mol_view_tree2_class_props = $mol_view_tree2_class_props;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Component library of a vmap document.
+     *
+     * A library is a deployed MAM module: the build drops `web.view.tree` next to
+     * `web.js`, and that file is the whole class tree of the bundle with bases and
+     * properties. Any deployed app of the framework in the world is therefore a
+     * component source, with no cooperation from us.
+     *
+     * Port of `hyoo_studio_library` plus the `library()`, `united()`,
+     * `props_map()`, `props_of()`, `class_list()` and `base_options()` methods of
+     * `hyoo_studio`. Deviations are marked at their place.
+     *
+     * Pure model: knows nothing about DOM and renders nothing.
+     * @see ../ARCHITECTURE.md section 5
+     */
+    /**
+     * Stub declaration of `$mol_view`, prepended to every fetched pack tree.
+     *
+     * Own properties of `$mol_view` (`sub`, `attr`, `style`, `event`, `field`,
+     * `dom_name`, `title`) never reach `web.view.tree`, because `$mol_view` is
+     * written in TS and the build only dumps what came from `.view.tree` sources.
+     * Without the stub every class in the palette silently loses its base ports,
+     * and nothing anywhere reports it.
+     *
+     * Copied verbatim from `hyoo_studio_library.tree()`.
+     */
+    $.$bog_vmap_lib_predef = '$mol_view $mol_object\n\tdom_name \\\n\tstyle *\n\tevent *\n\tfield *\n\tattr *\n\tsub /\n\ttitle \\\n';
+    /**
+     * Parses a pack tree into a normalized class tree.
+     *
+     * Deviation from studio: the stub is parsed as its own source instead of being
+     * string-glued in front of the fetched text. Studio hands `predef + str` to the
+     * parser, so every span in a malformed pack points eight rows above its real
+     * place. We show those spans to the user in an error strip, so they have to be
+     * honest. The stub content itself is byte for byte the same.
+     */
+    function $bog_vmap_lib_parse(src, uri = 'web.view.tree') {
+        const predef = this.$mol_tree2_from_string($.$bog_vmap_lib_predef, '$bog_vmap_lib_predef');
+        const tree = this.$mol_tree2_from_string(src, uri);
+        return this.$mol_view_tree2_normalize(tree.clone([...predef.kids, ...tree.kids]));
+    }
+    $.$bog_vmap_lib_parse = $bog_vmap_lib_parse;
+    /**
+     * The address with a trailing slash, whatever it was typed with.
+     *
+     * `new URL( 'web.js', base )` drops the last segment of a base that does not end
+     * with one, so `https://b-on-g.github.io/gram` would resolve to
+     * `https://b-on-g.github.io/web.js`. The default `https://mol.hyoo.ru` survives
+     * that only by accident, being an origin root.
+     *
+     * A function and not a step inside the field, because the field is edited by
+     * hand: appending the slash on every keystroke would fight the typing. Typed is
+     * stored as is, derived is normalized — the rule for every field a person types.
+     * @see ../ARCHITECTURE.md section 5, «Адрес пака нормализовать до слэша»
+     */
+    function $bog_vmap_lib_slashed(uri) {
+        return uri.replace(/\/?$/, '/');
+    }
+    $.$bog_vmap_lib_slashed = $bog_vmap_lib_slashed;
+    /**
+     * Why a pack did not load, in words somebody can act on.
+     *
+     * `$mol_fetch` throws the status line of the response and nothing else, so a
+     * mistyped address reaches the screen as a bare «Not Found» — true and
+     * useless: it names neither what was looked for nor where to correct it. Seen
+     * on the deploy in the counter of the class list, 09.09.2026.
+     *
+     * The address is repeated back because the field it came from may be scrolled
+     * away or, in the case of the default, never typed at all. It is the ADDRESS
+     * THAT WAS FETCHED and not the one that was typed, and it is handed in rather
+     * than derived here: the rule that grows `web.view.tree` onto a pack lives in
+     * `tree_link` and must not be written a second time to word a complaint.
+     */
+    function $bog_vmap_lib_pack_note(link, error) {
+        const reason = String(error?.message || error);
+        if (!link)
+            return `Пак не отвечает: ${reason}`;
+        return `Пак не отвечает (${reason}). Ожидался ${link}`
+            + ' — дерево классов, которое сборка кладёт рядом с бандлом';
+    }
+    $.$bog_vmap_lib_pack_note = $bog_vmap_lib_pack_note;
+    /**
+     * Base address of a sibling module of the pack, derived from the address of the
+     * page asking. Always ends with a slash, so `new URL` keeps its last segment.
+     *
+     * The two layouts are told apart by a trailing `-`, and they are not two
+     * spellings of one rule but two different places, so the code says so.
+     *
+     * The dev server serves every module of a pack out of `<pack>/<module>/-/`, so
+     * the modules are siblings there in the plain sense: the segment naming ours is
+     * replaced by the one asked for, and the `-` goes back on.
+     *
+     * A deploy has only ONE page in the whole project — the editor, published at
+     * the root of the site — and the other modules are published as folders beneath
+     * it, `web.js` and `web.view.tree` without a page of their own. So there is
+     * nothing to replace: the module asked for is a folder inside the one the
+     * editor is served from.
+     *
+     * A last segment ending in `.html` is the page file — `index.html`, `test.html`
+     * are the only two a module has — and is dropped first. Anything else is a
+     * folder, which is how `https://b-on-g.github.io/vmap` reads the same as the
+     * same address with its slash.
+     *
+     * The test is the extension and not merely a dot in the name, because a folder
+     * may carry one: a deploy versioned as `/vmap/v1.2/` is ordinary, and on a dot
+     * the segment `v1.2` would be taken for a page and eaten.
+     *
+     * @see ../ARCHITECTURE.md sections 5 and 7
+     */
+    function $bog_vmap_lib_sibling(page, module) {
+        const url = new URL(page);
+        const path = url.pathname.split('/').filter(Boolean);
+        if (/\.html?$/i.test(path[path.length - 1] ?? ''))
+            path.pop();
+        // on the dev server the modules stand side by side, each in its own `-`
+        if (path[path.length - 1] === '-') {
+            path.pop();
+            path.pop();
+            path.push(module, '-');
+        }
+        else {
+            path.push(module);
+        }
+        return `${url.origin}/${path.join('/')}/`;
+    }
+    $.$bog_vmap_lib_sibling = $bog_vmap_lib_sibling;
+    /**
+     * Glues the library tree with the classes of the document into one namespace.
+     *
+     * Both sides end up in the same `$` sandbox at run time, so resolution has to
+     * see them as one list — that is the whole point of `united()` in studio.
+     */
+    function $bog_vmap_lib_united(lib, kids) {
+        if (!kids.length)
+            return lib;
+        return lib.clone([...lib.kids, ...kids]);
+    }
+    $.$bog_vmap_lib_united = $bog_vmap_lib_united;
+    /**
+     * Class name to its super node. The kids of that node are the own properties
+     * of the class, which is how `$mol_view_tree2_normalize` shapes a class.
+     *
+     * Deviation from studio: studio walks the kids linearly on every lookup
+     * (`lib.select( cl, null ).kids[0]`), which is O(classes) per inheritance step
+     * against a tree of ~450 classes. Same answer, built once.
+     *
+     * Second deviation, and the one that matters: a later declaration wins, while
+     * `select` takes the first. Document classes are appended after the library, so
+     * studio's order would let a library class shadow a document class of the same
+     * name. The scene compiles document classes into the sandbox *after* the pack's
+     * `web.js` has filled it, so at run time the document wins. The palette has to
+     * agree with what actually runs.
+     */
+    function $bog_vmap_lib_index(united) {
+        const index = new Map();
+        for (const cl of united.kids) {
+            const sup = cl.kids[0];
+            if (!sup)
+                continue;
+            index.set(cl.type, sup);
+        }
+        return index;
+    }
+    $.$bog_vmap_lib_index = $bog_vmap_lib_index;
+    /**
+     * Inheritance chain of a class, nearest first, ending at the first name that
+     * the namespace does not declare (`$mol_object` for anything from a pack).
+     *
+     * Deviation from studio: a visited set. Studio edits exactly one class, so a
+     * cycle cannot occur there. Here the united namespace carries user authored
+     * classes, and two of them declared as each other's base is one keystroke
+     * away — without the guard it hangs the editor with no error at all.
+     */
+    function $bog_vmap_lib_chain(index, base) {
+        const chain = [];
+        const seen = new Set();
+        let cl = base;
+        while (cl && !seen.has(cl)) {
+            seen.add(cl);
+            chain.push(cl);
+            cl = index.get(cl)?.type ?? '';
+        }
+        return chain;
+    }
+    $.$bog_vmap_lib_chain = $bog_vmap_lib_chain;
+    /**
+     * All ports of a class, own and inherited, keyed by property name.
+     *
+     * Ancestors are collected first, so a redefined property keeps the position of
+     * its earliest declaration but carries the most derived node. Same order and
+     * same overriding as `props_map()` in studio, which recurses into the super
+     * before adding its own kids.
+     *
+     * This is what stage 3 grows wire ports out of.
+     */
+    function $bog_vmap_lib_props_map(index, base) {
+        const all = new Map();
+        const chain = $bog_vmap_lib_chain(index, base);
+        for (let i = chain.length - 1; i >= 0; --i) {
+            const sup = index.get(chain[i]);
+            if (!sup)
+                continue;
+            for (const prop of sup.kids) {
+                all.set(this.$mol_view_tree2_prop_parts(prop).name, prop);
+            }
+        }
+        return all;
+    }
+    $.$bog_vmap_lib_props_map = $bog_vmap_lib_props_map;
+    /**
+     * Port name to the class that declared the winning version of it.
+     *
+     * Walks the chain exactly as `$bog_vmap_lib_props_map` does, farthest ancestor
+     * first, overwriting on every redeclaration. `Map.set` on a key that is already
+     * there keeps its position and replaces the value, so the last write wins the
+     * value — the nearest declaration, the one whose node `props_map` returned —
+     * while the key order stays identical to `props_map`. The two maps can then be
+     * read side by side by key.
+     *
+     * A port is inherited exactly when its owner is not the class being asked
+     * about. Walking nearest first and keeping the first answer would give the same
+     * owners in a different order, and a consumer that trusted the two orders to
+     * agree would silently mislabel every row.
+     *
+     * Not in studio: it shows one class at a time and has no notion of a port
+     * coming from somewhere else.
+     */
+    function $bog_vmap_lib_props_owner(index, base) {
+        const owner = new Map();
+        const chain = $bog_vmap_lib_chain(index, base);
+        for (let i = chain.length - 1; i >= 0; --i) {
+            const sup = index.get(chain[i]);
+            if (!sup)
+                continue;
+            for (const prop of sup.kids) {
+                owner.set(this.$mol_view_tree2_prop_parts(prop).name, chain[i]);
+            }
+        }
+        return owner;
+    }
+    $.$bog_vmap_lib_props_owner = $bog_vmap_lib_props_owner;
+    /**
+     * A component library, whatever its classes came from.
+     *
+     * Everything below `tree()` is source agnostic and always was: `united`,
+     * `index`, `props_map` and the rest only ever see a normalized class tree. The
+     * split just makes that visible, so a second source — a land of sources, with
+     * no deploy behind it — is a subclass overriding one method rather than a
+     * parallel implementation of nine.
+     *
+     * The default is the empty library: the `$mol_view` stub and nothing else. A
+     * throw would have been the other option and it is worse, because an empty
+     * library is a real state — a land with no components published yet — and not
+     * an error.
+     *
+     * @see ../ARCHITECTURE.md section 5
+     */
+    class $bog_vmap_lib_any extends $mol_object {
+        /** Class tree of the library. Where it comes from is the subclass's business. */
+        tree() {
+            return this.$.$bog_vmap_lib_parse('');
+        }
+        /**
+         * Classes of the document, to be resolved alongside the library.
+         * Overridden by the owner; empty until a document is open.
+         *
+         * This is also where a land library rides when it is used ON TOP of a pack
+         * rather than instead of one, which section 5 says is the normal case: land
+         * libraries compile into the same sandbox and inherit from the pack's
+         * `$mol_view`. Composition therefore needs no machinery — the classes of a
+         * land go in beside the document's, and `index` already lets a later
+         * declaration win.
+         */
+        classes() {
+            return [];
+        }
+        united() {
+            return this.$.$bog_vmap_lib_united(this.tree(), this.classes());
+        }
+        index() {
+            return this.$.$bog_vmap_lib_index(this.united());
+        }
+        /** Every class name of the namespace, in declaration order, deduped. */
+        class_list() {
+            return [...this.index().keys()];
+        }
+        /** Same list, most recently declared first, for a base class picker. */
+        base_options() {
+            return [...this.class_list()].reverse();
+        }
+        /**
+         * Palette search by class name. Deliberately not memoized by key: a cell per
+         * typed query would accumulate one dead cell per keystroke, and the filter
+         * over a few hundred names is cheaper than the cell.
+         */
+        class_search(query) {
+            return this.class_list().filter(this.$.$mol_match_text(query, (name) => [name]));
+        }
+        inherit_chain(cl) {
+            return this.$.$bog_vmap_lib_chain(this.index(), cl);
+        }
+        props_map(base) {
+            return this.$.$bog_vmap_lib_props_map(this.index(), base);
+        }
+        /** Which class each port of `base` came from. */
+        props_owner(base) {
+            return this.$.$bog_vmap_lib_props_owner(this.index(), base);
+        }
+        /** Same ports as a tree node, most derived first, as in studio. */
+        props_of(base) {
+            return this.united().list([...this.props_map(base).values()].reverse());
+        }
+    }
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lib_any.prototype, "tree", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lib_any.prototype, "united", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lib_any.prototype, "index", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lib_any.prototype, "class_list", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lib_any.prototype, "base_options", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lib_any.prototype, "inherit_chain", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lib_any.prototype, "props_map", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lib_any.prototype, "props_owner", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lib_any.prototype, "props_of", null);
+    $.$bog_vmap_lib_any = $bog_vmap_lib_any;
+    /**
+     * Library from a deployed MAM module.
+     *
+     * The name and the interface are unchanged from before the split, because the
+     * palette and the inspector both declare it and neither should have to care
+     * that a second kind of library now exists.
+     */
+    class $bog_vmap_lib extends $bog_vmap_lib_any {
+        /**
+         * Deployed MAM module the components come from.
+         *
+         * Empty means no pack at all, and that is a state rather than a failure: a
+         * palette fed by lands alone has nothing deployed behind it. Every address
+         * below is then empty too, and `tree()` is the stub on its own.
+         */
+        pack(next) {
+            return next ?? 'https://mol.hyoo.ru';
+        }
+        /** Same address, guaranteed to end with a slash. See `$bog_vmap_lib_slashed`. */
+        pack_base() {
+            const pack = this.pack();
+            return pack ? $bog_vmap_lib_slashed(pack) : '';
+        }
+        /** Behaviour of the classes. Loaded by the scene, not by us. */
+        script_link() {
+            const base = this.pack_base();
+            return base ? new URL('web.js', base).toString() : '';
+        }
+        /** Declarations of the classes. */
+        tree_link() {
+            const base = this.pack_base();
+            return base ? new URL('web.view.tree', base).toString() : '';
+        }
+        /**
+         * Class tree of the pack.
+         *
+         * No try/catch on purpose: `$mol_fetch` throws on any non-2xx and the wire
+         * suspends through exceptions, so catching here would both swallow a dead
+         * pack into an empty palette and break suspension. An unreachable pack has
+         * to reach the view as an error.
+         */
+        tree() {
+            const uri = this.tree_link();
+            if (!uri)
+                return this.$.$bog_vmap_lib_parse('');
+            return this.$.$bog_vmap_lib_parse(this.$.$mol_fetch.text(uri), uri);
+        }
+    }
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lib.prototype, "pack", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lib.prototype, "pack_base", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lib.prototype, "script_link", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lib.prototype, "tree_link", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lib.prototype, "tree", null);
+    $.$bog_vmap_lib = $bog_vmap_lib;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     /**
      * 48-bit streamable string hash function
      * Based on cyrb53: https://stackoverflow.com/a/52171480
@@ -12461,861 +13655,6 @@ var $;
         return $giper_baza_atom_link.to(Value);
     }
     $.$giper_baza_atom_link_to = $giper_baza_atom_link_to;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /** Plugin is component without its own DOM element, but instead uses the owner DOM element */
-    class $mol_plugin extends $mol_view {
-        dom_node_external(next) {
-            return next ?? $mol_owning_get(this).host.dom_node();
-        }
-        render() {
-            this.dom_node_actual();
-        }
-    }
-    $.$mol_plugin = $mol_plugin;
-})($ || ($ = {}));
-
-;
-	($.$mol_hotkey) = class $mol_hotkey extends ($.$mol_plugin) {
-		keydown(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		event(){
-			return {...(super.event()), "keydown": (next) => (this.keydown(next))};
-		}
-		key(){
-			return {};
-		}
-		mod_ctrl(){
-			return false;
-		}
-		mod_alt(){
-			return false;
-		}
-		mod_shift(){
-			return false;
-		}
-	};
-	($mol_mem(($.$mol_hotkey.prototype), "keydown"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Plugin which adds handlers for keyboard keys.
-         * @see [mol_keyboard_code](../keyboard/code/code.ts)
-         */
-        class $mol_hotkey extends $.$mol_hotkey {
-            key() {
-                return super.key();
-            }
-            keydown(event) {
-                if (!event)
-                    return;
-                if (event.defaultPrevented)
-                    return;
-                let name = $mol_keyboard_code[event.keyCode];
-                if (this.mod_ctrl() !== (event.ctrlKey || event.metaKey))
-                    return;
-                if (this.mod_alt() !== event.altKey)
-                    return;
-                if (this.mod_shift() !== event.shiftKey)
-                    return;
-                const handle = this.key()[name];
-                if (handle)
-                    handle(event);
-            }
-        }
-        $$.$mol_hotkey = $mol_hotkey;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_string) = class $mol_string extends ($.$mol_view) {
-		selection_watcher(){
-			return null;
-		}
-		error_report(){
-			return null;
-		}
-		disabled(){
-			return false;
-		}
-		value(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		value_changed(next){
-			return (this.value(next));
-		}
-		hint(){
-			return "";
-		}
-		hint_visible(){
-			return (this.hint());
-		}
-		spellcheck(){
-			return true;
-		}
-		autocomplete_native(){
-			return "";
-		}
-		selection_end(){
-			return 0;
-		}
-		selection_start(){
-			return 0;
-		}
-		keyboard(){
-			return "text";
-		}
-		enter(){
-			return "go";
-		}
-		length_max(){
-			return +Infinity;
-		}
-		type(next){
-			if(next !== undefined) return next;
-			return "text";
-		}
-		event_change(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		submit_with_ctrl(){
-			return false;
-		}
-		submit(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		Submit(){
-			const obj = new this.$.$mol_hotkey();
-			(obj.mod_ctrl) = () => ((this.submit_with_ctrl()));
-			(obj.key) = () => ({"enter": (next) => (this.submit(next))});
-			return obj;
-		}
-		dom_name(){
-			return "input";
-		}
-		enabled(){
-			return true;
-		}
-		minimal_height(){
-			return 40;
-		}
-		autocomplete(){
-			return false;
-		}
-		selection(next){
-			if(next !== undefined) return next;
-			return [0, 0];
-		}
-		auto(){
-			return [(this.selection_watcher()), (this.error_report())];
-		}
-		field(){
-			return {
-				...(super.field()), 
-				"disabled": (this.disabled()), 
-				"value": (this.value_changed()), 
-				"placeholder": (this.hint_visible()), 
-				"spellcheck": (this.spellcheck()), 
-				"autocomplete": (this.autocomplete_native()), 
-				"selectionEnd": (this.selection_end()), 
-				"selectionStart": (this.selection_start()), 
-				"inputMode": (this.keyboard()), 
-				"enterkeyhint": (this.enter())
-			};
-		}
-		attr(){
-			return {
-				...(super.attr()), 
-				"maxlength": (this.length_max()), 
-				"type": (this.type())
-			};
-		}
-		event(){
-			return {...(super.event()), "input": (next) => (this.event_change(next))};
-		}
-		plugins(){
-			return [(this.Submit())];
-		}
-	};
-	($mol_mem(($.$mol_string.prototype), "value"));
-	($mol_mem(($.$mol_string.prototype), "type"));
-	($mol_mem(($.$mol_string.prototype), "event_change"));
-	($mol_mem(($.$mol_string.prototype), "submit"));
-	($mol_mem(($.$mol_string.prototype), "Submit"));
-	($mol_mem(($.$mol_string.prototype), "selection"));
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    class $mol_dom_listener extends $mol_object {
-        _node;
-        _event;
-        _handler;
-        _config;
-        constructor(_node, _event, _handler, _config = { passive: true }) {
-            super();
-            this._node = _node;
-            this._event = _event;
-            this._handler = _handler;
-            this._config = _config;
-            this._node.addEventListener(this._event, this._handler, this._config);
-        }
-        destructor() {
-            this._node.removeEventListener(this._event, this._handler, this._config);
-            super.destructor();
-        }
-    }
-    $.$mol_dom_listener = $mol_dom_listener;
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * An input field for entering single line text.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_string_demo
-         */
-        class $mol_string extends $.$mol_string {
-            event_change(next) {
-                if (!next)
-                    return;
-                const el = this.dom_node();
-                const from = el.selectionStart;
-                const to = el.selectionEnd;
-                el.value = this.value_changed(el.value);
-                if (to === null)
-                    return;
-                el.selectionEnd = to;
-                el.selectionStart = from;
-                this.selection_change(next);
-            }
-            value_changed(next) {
-                const el = this.dom_node();
-                try {
-                    el.setCustomValidity('');
-                    return this.value(next);
-                }
-                catch (error) {
-                    $mol_fail_log(error);
-                    if (error instanceof Error) {
-                        el.setCustomValidity(error.message);
-                        el.reportValidity();
-                    }
-                    return next ?? $mol_mem_cached(() => this.value_changed()) ?? '';
-                }
-            }
-            error_report() {
-                try {
-                    if (this.focused())
-                        this.value();
-                }
-                catch (error) {
-                    const el = this.dom_node();
-                    if (error instanceof Error) {
-                        el.setCustomValidity(error.message);
-                        el.reportValidity();
-                    }
-                }
-            }
-            hint_visible() {
-                return (this.enabled() ? this.hint() : '') || ' ';
-            }
-            disabled() {
-                return !this.enabled();
-            }
-            autocomplete_native() {
-                return this.autocomplete() ? 'on' : 'off';
-            }
-            selection_watcher() {
-                return new $mol_dom_listener(this.$.$mol_dom_context.document, 'selectionchange', $mol_wire_async(event => this.selection_change(event)));
-            }
-            selection_change(event) {
-                const el = this.dom_node();
-                if (el !== this.$.$mol_dom_context.document.activeElement)
-                    return;
-                const [from, to] = this.selection([
-                    el.selectionStart,
-                    el.selectionEnd,
-                ]);
-                el.selectionEnd = to;
-                el.selectionStart = from;
-                if (to !== from && el.selectionEnd === el.selectionStart) {
-                    el.selectionEnd = to;
-                }
-            }
-            selection_start() {
-                const el = this.dom_node();
-                if (!this.focused())
-                    return undefined;
-                if (el.selectionStart == null)
-                    return undefined;
-                return this.selection()[0];
-            }
-            selection_end() {
-                const el = this.dom_node();
-                if (!this.focused())
-                    return undefined;
-                if (el.selectionEnd == null)
-                    return undefined;
-                return this.selection()[1];
-            }
-        }
-        __decorate([
-            $mol_action
-        ], $mol_string.prototype, "event_change", null);
-        __decorate([
-            $mol_mem
-        ], $mol_string.prototype, "value_changed", null);
-        __decorate([
-            $mol_mem
-        ], $mol_string.prototype, "error_report", null);
-        __decorate([
-            $mol_mem
-        ], $mol_string.prototype, "selection_watcher", null);
-        $$.$mol_string = $mol_string;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/string/string.view.css", "[mol_string] {\n\tbox-sizing: border-box;\n\toutline-offset: 0;\n\tborder: none;\n\tborder-radius: var(--mol_gap_round);\n\twhite-space: pre-line;\n\toverflow: hidden;\n\ttext-overflow: ellipsis;\n\tpadding: var(--mol_gap_text);\n\ttext-align: start;\n\tposition: relative;\n\tfont: inherit;\n\tflex: 1 1 auto;\n\tbackground: transparent;\n\tmin-width: 0;\n\tcolor: inherit;\n\tbackground: var(--mol_theme_field);\n}\n\n[mol_string]:disabled:not(:placeholder-shown) {\n\tbackground-color: transparent;\n\tcolor: var(--mol_theme_text);\n}\n\n[mol_string]:where(:not(:disabled)) {\n\tbox-shadow: inset 0 0 0 1px var(--mol_theme_line);\n}\n\n[mol_string]:where(:not(:disabled)):hover {\n\tbox-shadow: inset 0 0 0 2px var(--mol_theme_line);\n\tz-index: var(--mol_layer_hover);\n}\n\n[mol_string]:focus {\n\toutline: none;\n\tz-index: var(--mol_layer_focus);\n\tcolor: var(--mol_theme_text);\n\tbox-shadow: inset 0 0 0 1px var(--mol_theme_focus);\n}\n\n[mol_string]::placeholder {\n\tcolor: var(--mol_theme_shade);\n}\n\n[mol_string]::-ms-clear {\n\tdisplay: none;\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_svg) = class $mol_svg extends ($.$mol_view) {
-		dom_name(){
-			return "svg";
-		}
-		dom_name_space(){
-			return "http://www.w3.org/2000/svg";
-		}
-		font_size(){
-			return 16;
-		}
-		font_family(){
-			return "";
-		}
-		style_size(){
-			return {};
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /** Base SVG component to display SVG images or icons. */
-        class $mol_svg extends $.$mol_svg {
-            computed_style() {
-                const win = this.$.$mol_dom_context;
-                const style = win.getComputedStyle(this.dom_node());
-                if (!style['font-size'])
-                    $mol_state_time.now(0);
-                return style;
-            }
-            font_size() {
-                return parseInt(this.computed_style()['font-size']) || 16;
-            }
-            font_family() {
-                return this.computed_style()['font-family'];
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_svg.prototype, "computed_style", null);
-        __decorate([
-            $mol_mem
-        ], $mol_svg.prototype, "font_size", null);
-        __decorate([
-            $mol_mem
-        ], $mol_svg.prototype, "font_family", null);
-        $$.$mol_svg = $mol_svg;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_svg_root) = class $mol_svg_root extends ($.$mol_svg) {
-		view_box(){
-			return "0 0 100 100";
-		}
-		aspect(){
-			return "xMidYMid";
-		}
-		dom_name(){
-			return "svg";
-		}
-		attr(){
-			return {
-				...(super.attr()), 
-				"viewBox": (this.view_box()), 
-				"preserveAspectRatio": (this.aspect())
-			};
-		}
-	};
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/svg/root/root.view.css", "[mol_svg_root] {\n\toverflow: hidden;\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-	($.$mol_svg_path) = class $mol_svg_path extends ($.$mol_svg) {
-		geometry(){
-			return "";
-		}
-		dom_name(){
-			return "path";
-		}
-		attr(){
-			return {...(super.attr()), "d": (this.geometry())};
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_icon) = class $mol_icon extends ($.$mol_svg_root) {
-		path(){
-			return "";
-		}
-		Path(){
-			const obj = new this.$.$mol_svg_path();
-			(obj.geometry) = () => ((this.path()));
-			return obj;
-		}
-		view_box(){
-			return "0 0 24 24";
-		}
-		minimal_width(){
-			return 16;
-		}
-		minimal_height(){
-			return 16;
-		}
-		sub(){
-			return [(this.Path())];
-		}
-	};
-	($mol_mem(($.$mol_icon.prototype), "Path"));
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/icon/icon.view.css", "[mol_icon] {\n\tfill: currentColor;\n\tstroke: none;\n\twidth: 1em;\n\theight: 1.5em;\n\tflex: 0 0 auto;\n\tvertical-align: top;\n\tdisplay: inline-block;\n\tfilter: drop-shadow(0px 1px 1px var(--mol_theme_back));\n\ttransform-origin: center;\n}\n\n[mol_icon_path] {\n\ttransform-origin: center;\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-	($.$mol_icon_menu) = class $mol_icon_menu extends ($.$mol_icon) {
-		path(){
-			return "M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_icon_menu_down) = class $mol_icon_menu_down extends ($.$mol_icon) {
-		path(){
-			return "M7,10L12,15L17,10H7Z";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_icon_menu_down_outline) = class $mol_icon_menu_down_outline extends ($.$mol_icon) {
-		path(){
-			return "M18,9V10.5L12,16.5L6,10.5V9H18M12,13.67L14.67,11H9.33L12,13.67Z";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_icon_menu_up) = class $mol_icon_menu_up extends ($.$mol_icon) {
-		path(){
-			return "M7,15L12,10L17,15H7Z";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_icon_menu_up_outline) = class $mol_icon_menu_up_outline extends ($.$mol_icon) {
-		path(){
-			return "M18,16V14.5L12,8.5L6,14.5V16H18M12,11.33L14.67,14H9.33L12,11.33Z";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_number) = class $mol_number extends ($.$mol_view) {
-		precision(){
-			return 0;
-		}
-		event_dec(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		event_inc(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		event_dec_boost(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		event_inc_boost(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		Hotkey(){
-			const obj = new this.$.$mol_hotkey();
-			(obj.key) = () => ({
-				"down": (next) => (this.event_dec(next)), 
-				"up": (next) => (this.event_inc(next)), 
-				"pageDown": (next) => (this.event_dec_boost(next)), 
-				"pageUp": (next) => (this.event_inc_boost(next))
-			});
-			return obj;
-		}
-		type(){
-			return "text";
-		}
-		value_string(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		hint(){
-			return " ";
-		}
-		string_enabled(){
-			return (this.enabled());
-		}
-		submit(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		selection(next){
-			if(next !== undefined) return next;
-			return [];
-		}
-		String(){
-			const obj = new this.$.$mol_string();
-			(obj.type) = () => ((this.type()));
-			(obj.keyboard) = () => ("decimal");
-			(obj.value) = (next) => ((this.value_string(next)));
-			(obj.hint) = () => ((this.hint()));
-			(obj.enabled) = () => ((this.string_enabled()));
-			(obj.submit) = (next) => ((this.submit(next)));
-			(obj.selection) = (next) => ((this.selection(next)));
-			return obj;
-		}
-		dec_enabled(){
-			return (this.enabled());
-		}
-		dec_icon(){
-			const obj = new this.$.$mol_icon_menu_down_outline();
-			return obj;
-		}
-		Dec(){
-			const obj = new this.$.$mol_button_minor();
-			(obj.event_click) = (next) => ((this.event_dec(next)));
-			(obj.enabled) = () => ((this.dec_enabled()));
-			(obj.sub) = () => ([(this.dec_icon())]);
-			return obj;
-		}
-		inc_enabled(){
-			return (this.enabled());
-		}
-		inc_icon(){
-			const obj = new this.$.$mol_icon_menu_up_outline();
-			return obj;
-		}
-		Inc(){
-			const obj = new this.$.$mol_button_minor();
-			(obj.event_click) = (next) => ((this.event_inc(next)));
-			(obj.enabled) = () => ((this.inc_enabled()));
-			(obj.sub) = () => ([(this.inc_icon())]);
-			return obj;
-		}
-		precision_view(){
-			return (this.precision());
-		}
-		precision_change(){
-			return (this.precision());
-		}
-		boost(){
-			return 10;
-		}
-		value_min(){
-			return -Infinity;
-		}
-		value_max(){
-			return +Infinity;
-		}
-		value(next){
-			if(next !== undefined) return next;
-			return +NaN;
-		}
-		enabled(){
-			return true;
-		}
-		plugins(){
-			return [(this.Hotkey())];
-		}
-		sub(){
-			return [
-				(this.String()), 
-				(this.Dec()), 
-				(this.Inc())
-			];
-		}
-	};
-	($mol_mem(($.$mol_number.prototype), "event_dec"));
-	($mol_mem(($.$mol_number.prototype), "event_inc"));
-	($mol_mem(($.$mol_number.prototype), "event_dec_boost"));
-	($mol_mem(($.$mol_number.prototype), "event_inc_boost"));
-	($mol_mem(($.$mol_number.prototype), "Hotkey"));
-	($mol_mem(($.$mol_number.prototype), "value_string"));
-	($mol_mem(($.$mol_number.prototype), "submit"));
-	($mol_mem(($.$mol_number.prototype), "selection"));
-	($mol_mem(($.$mol_number.prototype), "String"));
-	($mol_mem(($.$mol_number.prototype), "dec_icon"));
-	($mol_mem(($.$mol_number.prototype), "Dec"));
-	($mol_mem(($.$mol_number.prototype), "inc_icon"));
-	($mol_mem(($.$mol_number.prototype), "Inc"));
-	($mol_mem(($.$mol_number.prototype), "value"));
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/number/number.css", "[mol_number] {\n\tdisplay: flex;\n\tflex: 0 1 auto;\n\tposition: relative;\n\talign-items: stretch;\n\tmax-width: 100%;\n}\n\n[mol_number_string] {\n\tappearance: textfield;\n\tflex: 1 1 7rem;\n\twidth: 7rem;\n}\n\n[mol_number_string]::-webkit-inner-spin-button {\n\tdisplay: none;\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Component for entering, incrementing and decrementing numeric values.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_number_demo
-         */
-        class $mol_number extends $.$mol_number {
-            sub() {
-                return [
-                    this.String(),
-                    ...this.dec_enabled() ? [this.Dec()] : [],
-                    ...this.inc_enabled() ? [this.Inc()] : [],
-                ];
-            }
-            value_limited(val) {
-                if (Number.isNaN(val))
-                    return this.value(val);
-                if (val === undefined)
-                    return this.value();
-                const min = this.value_min();
-                const max = this.value_max();
-                if (val < min)
-                    return this.value(min);
-                if (val > max)
-                    return this.value(max);
-                return this.value(val);
-            }
-            event_dec(next) {
-                this.value_limited((this.value_limited() || 0) - this.precision_change());
-                next?.preventDefault();
-            }
-            precision_change() {
-                return this.precision() || 1;
-            }
-            event_inc(next) {
-                this.value_limited((this.value_limited() || 0) + this.precision_change());
-                next?.preventDefault();
-            }
-            event_dec_boost(next) {
-                this.value_limited((this.value_limited() || 0) - this.precision_change() * this.boost());
-                next?.preventDefault();
-            }
-            event_inc_boost(next) {
-                this.value_limited((this.value_limited() || 0) + this.precision_change() * this.boost());
-                next?.preventDefault();
-            }
-            round(val) {
-                if (Number.isNaN(val))
-                    return '';
-                if (val === 0)
-                    return '0';
-                if (!val)
-                    return '';
-                const precision_view = this.precision_view();
-                if (precision_view === 0)
-                    return String(val);
-                if (precision_view >= 1) {
-                    return (val / precision_view).toFixed();
-                }
-                else {
-                    const fixed_number = Math.log10(1 / precision_view);
-                    return val.toFixed(Math.ceil(fixed_number));
-                }
-            }
-            value_string(next) {
-                // Вытягиваем value
-                // Если кто-то поменяет из вне value, value_string надо обновить
-                const current = this.round(this.value_limited());
-                if (next === undefined)
-                    return current;
-                const precision = this.precision_view();
-                // Точку в конце поставить нельзя, если precision_view целое число > 0
-                if (precision > 0 && precision - Math.floor(precision) === 0)
-                    next = next.replace(/[.,]/g, '');
-                // Запятые меняем на точки, удаляем не-цифры и не-точки и лишние ноли в начале целой части.
-                // Минус получится ввести только в начале.
-                next = (this.value_min() < 0 && next.startsWith('-') ? '-' : '')
-                    + next.replace(/,/g, '.').replace(/[^\d\.]/g, '').replace(/^0{2,}/, '0');
-                let dot_pos = next.indexOf('.');
-                if (dot_pos !== -1) {
-                    const prev = $mol_wire_probe(() => this.value_string()) ?? '';
-                    const dot_pos_prev = prev.indexOf('.');
-                    // Определяем где относительно предыдущей точки юзер поставил новую
-                    if (dot_pos_prev === dot_pos)
-                        dot_pos = next.lastIndexOf('.');
-                    // Из частей до и после новой точки старую точку удаляем
-                    const frac = next.slice(dot_pos + 1).replace(/\./g, '');
-                    // Если точка идет первой, перед ней пишем 0, что бы форматирование выглядело нормально в mask
-                    next = (next.slice(0, dot_pos) || '0').replace(/\./g, '') + '.' + frac;
-                }
-                // Оставляем старое значение в value есть сочетание, приводящие к NaN, например -.
-                if (Number.isNaN(Number(next)))
-                    return next;
-                if (next.endsWith('.'))
-                    return next;
-                if (next.endsWith('-'))
-                    return next;
-                // Если пустая строка - сетим NaN
-                // Применяем округления.
-                this.value_limited(Number(next || Number.NaN));
-                // Возвращаем все-равно не нормализованное значение
-                // Иначе нельзя ввести будет 10, если min/max 5..10
-                return next;
-            }
-            dec_enabled() {
-                return this.enabled() && (!((this.value() || 0) <= this.value_min()));
-            }
-            inc_enabled() {
-                return this.enabled() && (!((this.value() || 0) >= this.value_max()));
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_number.prototype, "sub", null);
-        __decorate([
-            $mol_mem
-        ], $mol_number.prototype, "value_string", null);
-        __decorate([
-            $mol_mem
-        ], $mol_number.prototype, "dec_enabled", null);
-        __decorate([
-            $mol_mem
-        ], $mol_number.prototype, "inc_enabled", null);
-        $$.$mol_number = $mol_number;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /** Entity dictionary Model with Title property included by default */
-    class $giper_baza_entity extends $giper_baza_dict.with({
-        /** Entity Title - default property for use */
-        Title: $giper_baza_atom_text,
-    }) {
-        title(next) {
-            return this.Title(next)?.val(next) ?? '';
-        }
-    }
-    __decorate([
-        $mol_mem
-    ], $giper_baza_entity.prototype, "title", null);
-    $.$giper_baza_entity = $giper_baza_entity;
 })($ || ($ = {}));
 
 ;
@@ -14340,193 +14679,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    function pass(data) {
-        return data;
-    }
-    function $mol_error_fence(task, fallback, loading = pass) {
-        try {
-            return task();
-        }
-        catch (error) {
-            let normalized;
-            try {
-                normalized = $mol_promise_like(error) ? loading(error) : fallback(error);
-            }
-            catch (sub_error) {
-                normalized = $mol_promise_like(sub_error) ? sub_error : new $mol_error_mix(sub_error.message, { error }, sub_error);
-            }
-            if (normalized instanceof Error || $mol_promise_like(normalized)) {
-                $mol_fail_hidden(normalized);
-            }
-            return normalized;
-        }
-    }
-    $.$mol_error_fence = $mol_error_fence;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_error_enriched(cause, cb) {
-        return $mol_error_fence(cb, e => new $mol_error_mix(e.message, cause, e));
-    }
-    $.$mol_error_enriched = $mol_error_enriched;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    class $mol_fetch_response extends $mol_object {
-        native;
-        request;
-        status() {
-            const types = ['unknown', 'inform', 'success', 'redirect', 'wrong', 'failed'];
-            return types[Math.floor(this.native.status / 100)];
-        }
-        code() {
-            return this.native.status;
-        }
-        ok() {
-            return this.native.ok;
-        }
-        message() {
-            return $mol_rest_code[this.code()] || `HTTP Error ${this.code()}`;
-        }
-        headers() {
-            return this.native.headers;
-        }
-        mime() {
-            return this.headers().get('content-type');
-        }
-        stream() {
-            return this.native.body;
-        }
-        text() {
-            const buffer = this.buffer();
-            const mime = this.mime() || '';
-            const [, charset] = /charset=(.*)/.exec(mime) || [, 'utf-8'];
-            const decoder = new TextDecoder(charset);
-            return decoder.decode(buffer);
-        }
-        json() {
-            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).json());
-        }
-        blob() {
-            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).blob());
-        }
-        buffer() {
-            return $mol_error_enriched(this, () => $mol_wire_sync(this.native).arrayBuffer());
-        }
-        xml() {
-            return $mol_dom_parse(this.text(), 'application/xml');
-        }
-        xhtml() {
-            return $mol_dom_parse(this.text(), 'application/xhtml+xml');
-        }
-        html() {
-            return $mol_dom_parse(this.text(), 'text/html');
-        }
-    }
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "stream", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "text", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "xml", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "xhtml", null);
-    __decorate([
-        $mol_action
-    ], $mol_fetch_response.prototype, "html", null);
-    $.$mol_fetch_response = $mol_fetch_response;
-    class $mol_fetch_request extends $mol_object {
-        native;
-        response_async() {
-            const controller = new AbortController();
-            let done = false;
-            const request = new Request(this.native, { signal: controller.signal });
-            const promise = fetch(request).finally(() => {
-                done = true;
-            });
-            return Object.assign(promise, {
-                destructor: () => {
-                    // Abort of done request breaks response parsing
-                    if (!done && !controller.signal.aborted)
-                        controller.abort();
-                },
-            });
-        }
-        response() {
-            const native = $mol_error_enriched(this, () => $mol_wire_sync(this).response_async());
-            return this.$.$mol_fetch_response.make({
-                native,
-                request: this
-            });
-        }
-        success() {
-            const response = this.response();
-            if (response.status() === 'success')
-                return response;
-            throw new Error(response.message(), { cause: response });
-        }
-    }
-    __decorate([
-        $mol_action
-    ], $mol_fetch_request.prototype, "response", null);
-    $.$mol_fetch_request = $mol_fetch_request;
-    class $mol_fetch extends $mol_object {
-        static request(input, init) {
-            return this.$.$mol_fetch_request.make({
-                native: new Request(input, init)
-            });
-        }
-        static response(input, init) {
-            return this.request(input, init).response();
-        }
-        static success(input, init) {
-            return this.request(input, init).success();
-        }
-        static stream(input, init) {
-            return this.success(input, init).stream();
-        }
-        static text(input, init) {
-            return this.success(input, init).text();
-        }
-        static json(input, init) {
-            return this.success(input, init).json();
-        }
-        static blob(input, init) {
-            return this.success(input, init).blob();
-        }
-        static buffer(input, init) {
-            return this.success(input, init).buffer();
-        }
-        static xml(input, init) {
-            return this.success(input, init).xml();
-        }
-        static xhtml(input, init) {
-            return this.success(input, init).xhtml();
-        }
-        static html(input, init) {
-            return this.success(input, init).html();
-        }
-    }
-    __decorate([
-        $mol_action
-    ], $mol_fetch, "request", null);
-    $.$mol_fetch = $mol_fetch;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
     class $mol_file_webdav extends $mol_file_base {
         static relative(path) {
             return this.absolute(new URL(path, this.base).toString());
@@ -14817,6 +14969,31 @@ var $;
 	($mol_mem(($.$mol_scroll.prototype), "scroll_top"));
 	($mol_mem(($.$mol_scroll.prototype), "scroll_left"));
 
+
+;
+"use strict";
+var $;
+(function ($) {
+    class $mol_dom_listener extends $mol_object {
+        _node;
+        _event;
+        _handler;
+        _config;
+        constructor(_node, _event, _handler, _config = { passive: true }) {
+            super();
+            this._node = _node;
+            this._event = _event;
+            this._handler = _handler;
+            this._config = _config;
+            this._node.addEventListener(this._event, this._handler, this._config);
+        }
+        destructor() {
+            this._node.removeEventListener(this._event, this._handler, this._config);
+            super.destructor();
+        }
+    }
+    $.$mol_dom_listener = $mol_dom_listener;
+})($ || ($ = {}));
 
 ;
 "use strict";
@@ -15675,6 +15852,86 @@ var $;
 })($ || ($ = {}));
 
 ;
+"use strict";
+var $;
+(function ($) {
+    /** Plugin is component without its own DOM element, but instead uses the owner DOM element */
+    class $mol_plugin extends $mol_view {
+        dom_node_external(next) {
+            return next ?? $mol_owning_get(this).host.dom_node();
+        }
+        render() {
+            this.dom_node_actual();
+        }
+    }
+    $.$mol_plugin = $mol_plugin;
+})($ || ($ = {}));
+
+;
+	($.$mol_hotkey) = class $mol_hotkey extends ($.$mol_plugin) {
+		keydown(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		event(){
+			return {...(super.event()), "keydown": (next) => (this.keydown(next))};
+		}
+		key(){
+			return {};
+		}
+		mod_ctrl(){
+			return false;
+		}
+		mod_alt(){
+			return false;
+		}
+		mod_shift(){
+			return false;
+		}
+	};
+	($mol_mem(($.$mol_hotkey.prototype), "keydown"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Plugin which adds handlers for keyboard keys.
+         * @see [mol_keyboard_code](../keyboard/code/code.ts)
+         */
+        class $mol_hotkey extends $.$mol_hotkey {
+            key() {
+                return super.key();
+            }
+            keydown(event) {
+                if (!event)
+                    return;
+                if (event.defaultPrevented)
+                    return;
+                let name = $mol_keyboard_code[event.keyCode];
+                if (this.mod_ctrl() !== (event.ctrlKey || event.metaKey))
+                    return;
+                if (this.mod_alt() !== event.altKey)
+                    return;
+                if (this.mod_shift() !== event.shiftKey)
+                    return;
+                const handle = this.key()[name];
+                if (handle)
+                    handle(event);
+            }
+        }
+        $$.$mol_hotkey = $mol_hotkey;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
 	($.$mol_nav) = class $mol_nav extends ($.$mol_plugin) {
 		event_key(next){
 			if(next !== undefined) return next;
@@ -15848,6 +16105,395 @@ var $;
         $$.$mol_nav = $mol_nav;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
+
+;
+	($.$mol_string) = class $mol_string extends ($.$mol_view) {
+		selection_watcher(){
+			return null;
+		}
+		error_report(){
+			return null;
+		}
+		disabled(){
+			return false;
+		}
+		value(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		value_changed(next){
+			return (this.value(next));
+		}
+		hint(){
+			return "";
+		}
+		hint_visible(){
+			return (this.hint());
+		}
+		spellcheck(){
+			return true;
+		}
+		autocomplete_native(){
+			return "";
+		}
+		selection_end(){
+			return 0;
+		}
+		selection_start(){
+			return 0;
+		}
+		keyboard(){
+			return "text";
+		}
+		enter(){
+			return "go";
+		}
+		length_max(){
+			return +Infinity;
+		}
+		type(next){
+			if(next !== undefined) return next;
+			return "text";
+		}
+		event_change(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		submit_with_ctrl(){
+			return false;
+		}
+		submit(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Submit(){
+			const obj = new this.$.$mol_hotkey();
+			(obj.mod_ctrl) = () => ((this.submit_with_ctrl()));
+			(obj.key) = () => ({"enter": (next) => (this.submit(next))});
+			return obj;
+		}
+		dom_name(){
+			return "input";
+		}
+		enabled(){
+			return true;
+		}
+		minimal_height(){
+			return 40;
+		}
+		autocomplete(){
+			return false;
+		}
+		selection(next){
+			if(next !== undefined) return next;
+			return [0, 0];
+		}
+		auto(){
+			return [(this.selection_watcher()), (this.error_report())];
+		}
+		field(){
+			return {
+				...(super.field()), 
+				"disabled": (this.disabled()), 
+				"value": (this.value_changed()), 
+				"placeholder": (this.hint_visible()), 
+				"spellcheck": (this.spellcheck()), 
+				"autocomplete": (this.autocomplete_native()), 
+				"selectionEnd": (this.selection_end()), 
+				"selectionStart": (this.selection_start()), 
+				"inputMode": (this.keyboard()), 
+				"enterkeyhint": (this.enter())
+			};
+		}
+		attr(){
+			return {
+				...(super.attr()), 
+				"maxlength": (this.length_max()), 
+				"type": (this.type())
+			};
+		}
+		event(){
+			return {...(super.event()), "input": (next) => (this.event_change(next))};
+		}
+		plugins(){
+			return [(this.Submit())];
+		}
+	};
+	($mol_mem(($.$mol_string.prototype), "value"));
+	($mol_mem(($.$mol_string.prototype), "type"));
+	($mol_mem(($.$mol_string.prototype), "event_change"));
+	($mol_mem(($.$mol_string.prototype), "submit"));
+	($mol_mem(($.$mol_string.prototype), "Submit"));
+	($mol_mem(($.$mol_string.prototype), "selection"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * An input field for entering single line text.
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_string_demo
+         */
+        class $mol_string extends $.$mol_string {
+            event_change(next) {
+                if (!next)
+                    return;
+                const el = this.dom_node();
+                const from = el.selectionStart;
+                const to = el.selectionEnd;
+                el.value = this.value_changed(el.value);
+                if (to === null)
+                    return;
+                el.selectionEnd = to;
+                el.selectionStart = from;
+                this.selection_change(next);
+            }
+            value_changed(next) {
+                const el = this.dom_node();
+                try {
+                    el.setCustomValidity('');
+                    return this.value(next);
+                }
+                catch (error) {
+                    $mol_fail_log(error);
+                    if (error instanceof Error) {
+                        el.setCustomValidity(error.message);
+                        el.reportValidity();
+                    }
+                    return next ?? $mol_mem_cached(() => this.value_changed()) ?? '';
+                }
+            }
+            error_report() {
+                try {
+                    if (this.focused())
+                        this.value();
+                }
+                catch (error) {
+                    const el = this.dom_node();
+                    if (error instanceof Error) {
+                        el.setCustomValidity(error.message);
+                        el.reportValidity();
+                    }
+                }
+            }
+            hint_visible() {
+                return (this.enabled() ? this.hint() : '') || ' ';
+            }
+            disabled() {
+                return !this.enabled();
+            }
+            autocomplete_native() {
+                return this.autocomplete() ? 'on' : 'off';
+            }
+            selection_watcher() {
+                return new $mol_dom_listener(this.$.$mol_dom_context.document, 'selectionchange', $mol_wire_async(event => this.selection_change(event)));
+            }
+            selection_change(event) {
+                const el = this.dom_node();
+                if (el !== this.$.$mol_dom_context.document.activeElement)
+                    return;
+                const [from, to] = this.selection([
+                    el.selectionStart,
+                    el.selectionEnd,
+                ]);
+                el.selectionEnd = to;
+                el.selectionStart = from;
+                if (to !== from && el.selectionEnd === el.selectionStart) {
+                    el.selectionEnd = to;
+                }
+            }
+            selection_start() {
+                const el = this.dom_node();
+                if (!this.focused())
+                    return undefined;
+                if (el.selectionStart == null)
+                    return undefined;
+                return this.selection()[0];
+            }
+            selection_end() {
+                const el = this.dom_node();
+                if (!this.focused())
+                    return undefined;
+                if (el.selectionEnd == null)
+                    return undefined;
+                return this.selection()[1];
+            }
+        }
+        __decorate([
+            $mol_action
+        ], $mol_string.prototype, "event_change", null);
+        __decorate([
+            $mol_mem
+        ], $mol_string.prototype, "value_changed", null);
+        __decorate([
+            $mol_mem
+        ], $mol_string.prototype, "error_report", null);
+        __decorate([
+            $mol_mem
+        ], $mol_string.prototype, "selection_watcher", null);
+        $$.$mol_string = $mol_string;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/string/string.view.css", "[mol_string] {\n\tbox-sizing: border-box;\n\toutline-offset: 0;\n\tborder: none;\n\tborder-radius: var(--mol_gap_round);\n\twhite-space: pre-line;\n\toverflow: hidden;\n\ttext-overflow: ellipsis;\n\tpadding: var(--mol_gap_text);\n\ttext-align: start;\n\tposition: relative;\n\tfont: inherit;\n\tflex: 1 1 auto;\n\tbackground: transparent;\n\tmin-width: 0;\n\tcolor: inherit;\n\tbackground: var(--mol_theme_field);\n}\n\n[mol_string]:disabled:not(:placeholder-shown) {\n\tbackground-color: transparent;\n\tcolor: var(--mol_theme_text);\n}\n\n[mol_string]:where(:not(:disabled)) {\n\tbox-shadow: inset 0 0 0 1px var(--mol_theme_line);\n}\n\n[mol_string]:where(:not(:disabled)):hover {\n\tbox-shadow: inset 0 0 0 2px var(--mol_theme_line);\n\tz-index: var(--mol_layer_hover);\n}\n\n[mol_string]:focus {\n\toutline: none;\n\tz-index: var(--mol_layer_focus);\n\tcolor: var(--mol_theme_text);\n\tbox-shadow: inset 0 0 0 1px var(--mol_theme_focus);\n}\n\n[mol_string]::placeholder {\n\tcolor: var(--mol_theme_shade);\n}\n\n[mol_string]::-ms-clear {\n\tdisplay: none;\n}\n");
+})($ || ($ = {}));
+
+;
+	($.$mol_svg) = class $mol_svg extends ($.$mol_view) {
+		dom_name(){
+			return "svg";
+		}
+		dom_name_space(){
+			return "http://www.w3.org/2000/svg";
+		}
+		font_size(){
+			return 16;
+		}
+		font_family(){
+			return "";
+		}
+		style_size(){
+			return {};
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /** Base SVG component to display SVG images or icons. */
+        class $mol_svg extends $.$mol_svg {
+            computed_style() {
+                const win = this.$.$mol_dom_context;
+                const style = win.getComputedStyle(this.dom_node());
+                if (!style['font-size'])
+                    $mol_state_time.now(0);
+                return style;
+            }
+            font_size() {
+                return parseInt(this.computed_style()['font-size']) || 16;
+            }
+            font_family() {
+                return this.computed_style()['font-family'];
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_svg.prototype, "computed_style", null);
+        __decorate([
+            $mol_mem
+        ], $mol_svg.prototype, "font_size", null);
+        __decorate([
+            $mol_mem
+        ], $mol_svg.prototype, "font_family", null);
+        $$.$mol_svg = $mol_svg;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$mol_svg_root) = class $mol_svg_root extends ($.$mol_svg) {
+		view_box(){
+			return "0 0 100 100";
+		}
+		aspect(){
+			return "xMidYMid";
+		}
+		dom_name(){
+			return "svg";
+		}
+		attr(){
+			return {
+				...(super.attr()), 
+				"viewBox": (this.view_box()), 
+				"preserveAspectRatio": (this.aspect())
+			};
+		}
+	};
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/svg/root/root.view.css", "[mol_svg_root] {\n\toverflow: hidden;\n}\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+
+
+;
+	($.$mol_svg_path) = class $mol_svg_path extends ($.$mol_svg) {
+		geometry(){
+			return "";
+		}
+		dom_name(){
+			return "path";
+		}
+		attr(){
+			return {...(super.attr()), "d": (this.geometry())};
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon) = class $mol_icon extends ($.$mol_svg_root) {
+		path(){
+			return "";
+		}
+		Path(){
+			const obj = new this.$.$mol_svg_path();
+			(obj.geometry) = () => ((this.path()));
+			return obj;
+		}
+		view_box(){
+			return "0 0 24 24";
+		}
+		minimal_width(){
+			return 16;
+		}
+		minimal_height(){
+			return 16;
+		}
+		sub(){
+			return [(this.Path())];
+		}
+	};
+	($mol_mem(($.$mol_icon.prototype), "Path"));
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/icon/icon.view.css", "[mol_icon] {\n\tfill: currentColor;\n\tstroke: none;\n\twidth: 1em;\n\theight: 1.5em;\n\tflex: 0 0 auto;\n\tvertical-align: top;\n\tdisplay: inline-block;\n\tfilter: drop-shadow(0px 1px 1px var(--mol_theme_back));\n\ttransform-origin: center;\n}\n\n[mol_icon_path] {\n\ttransform-origin: center;\n}\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+
 
 ;
 	($.$mol_icon_close) = class $mol_icon_close extends ($.$mol_icon) {
@@ -16238,314 +16884,6 @@ var $;
 	($mol_mem_key(($.$mol_dimmer.prototype), "Low"));
 	($mol_mem_key(($.$mol_dimmer.prototype), "High"));
 
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($) {
-    let x = /x/[Symbol.matchAll];
-    /** Type safe reguar expression builder */
-    class $mol_regexp extends RegExp {
-        groups;
-        /** Prefer to use $mol_regexp.from */
-        constructor(source, flags = 'gsu', groups = []) {
-            super(source, flags);
-            this.groups = groups;
-        }
-        *[Symbol.matchAll](str) {
-            const index = this.lastIndex;
-            this.lastIndex = 0;
-            try {
-                while (this.lastIndex < str.length) {
-                    const found = this.exec(str);
-                    if (!found)
-                        break;
-                    yield found;
-                }
-            }
-            finally {
-                this.lastIndex = index;
-            }
-        }
-        /** Parses input and returns found capture groups or null */
-        [Symbol.match](str) {
-            const res = [...this[Symbol.matchAll](str)].filter(r => r.groups).map(r => r[0]);
-            if (!res.length)
-                return null;
-            return res;
-        }
-        /** Splits string by regexp edges */
-        [Symbol.split](str) {
-            const res = [];
-            let token_last = null;
-            for (let token of this[Symbol.matchAll](str)) {
-                if (token.groups && (token_last ? token_last.groups : true))
-                    res.push('');
-                res.push(token[0]);
-                token_last = token;
-            }
-            if (!res.length)
-                res.push('');
-            return res;
-        }
-        test(str) {
-            return Boolean(str.match(this));
-        }
-        exec(str) {
-            const from = this.lastIndex;
-            if (from >= str.length)
-                return null;
-            const res = super.exec(str);
-            if (res === null) {
-                this.lastIndex = str.length;
-                if (!str)
-                    return null;
-                return Object.assign([str.slice(from)], {
-                    index: from,
-                    input: str,
-                });
-            }
-            if (from === this.lastIndex) {
-                $mol_fail(new Error('Captured empty substring'));
-            }
-            const groups = {};
-            const skipped = str.slice(from, this.lastIndex - res[0].length);
-            if (skipped) {
-                this.lastIndex = this.lastIndex - res[0].length;
-                return Object.assign([skipped], {
-                    index: from,
-                    input: res.input,
-                });
-            }
-            for (let i = 0; i < this.groups.length; ++i) {
-                const group = this.groups[i];
-                groups[group] = groups[group] || res[i + 1] || '';
-            }
-            return Object.assign(res, { groups });
-        }
-        generate(params) {
-            return null;
-        }
-        get native() {
-            return new RegExp(this.source, this.flags);
-        }
-        /** Makes regexp that greedy repeats this pattern with delimiter */
-        static separated(chunk, sep) {
-            return $mol_regexp.from([
-                $mol_regexp.repeat_greedy([[chunk], sep], 0),
-                chunk,
-            ]);
-        }
-        /** Makes regexp that non-greedy repeats this pattern from min to max count */
-        static repeat(source, min = 0, max = Number.POSITIVE_INFINITY) {
-            const regexp = $mol_regexp.from(source);
-            const upper = Number.isFinite(max) ? max : '';
-            const str = `(?:${regexp.source}){${min},${upper}}?`;
-            const regexp2 = new $mol_regexp(str, regexp.flags, regexp.groups);
-            regexp2.generate = params => {
-                const res = regexp.generate(params);
-                if (res)
-                    return res;
-                if (min > 0)
-                    return res;
-                return '';
-            };
-            return regexp2;
-        }
-        /** Makes regexp that greedy repeats this pattern from min to max count */
-        static repeat_greedy(source, min = 0, max = Number.POSITIVE_INFINITY) {
-            const regexp = $mol_regexp.from(source);
-            const upper = Number.isFinite(max) ? max : '';
-            const str = `(?:${regexp.source}){${min},${upper}}`;
-            const regexp2 = new $mol_regexp(str, regexp.flags, regexp.groups);
-            regexp2.generate = params => {
-                const res = regexp.generate(params);
-                if (res)
-                    return res;
-                if (min > 0)
-                    return res;
-                return '';
-            };
-            return regexp2;
-        }
-        /** Makes regexp that match any of options */
-        static vary(sources, flags = 'gsu') {
-            const groups = [];
-            const chunks = sources.map(source => {
-                const regexp = $mol_regexp.from(source);
-                groups.push(...regexp.groups);
-                return regexp.source;
-            });
-            return new $mol_regexp(`(?:${chunks.join('|')})`, flags, groups);
-        }
-        /** Makes regexp that allow absent of this pattern */
-        static optional(source) {
-            return $mol_regexp.repeat_greedy(source, 0, 1);
-        }
-        /** Makes regexp that look ahead for pattern */
-        static force_after(source) {
-            const regexp = $mol_regexp.from(source);
-            return new $mol_regexp(`(?=${regexp.source})`, regexp.flags, regexp.groups);
-        }
-        /** Makes regexp that look ahead for pattern */
-        static forbid_after(source) {
-            const regexp = $mol_regexp.from(source);
-            return new $mol_regexp(`(?!${regexp.source})`, regexp.flags, regexp.groups);
-        }
-        /** Converts some js values to regexp */
-        static from(source, { ignoreCase, multiline } = {
-            ignoreCase: false,
-            multiline: false,
-        }) {
-            let flags = 'gsu';
-            if (multiline)
-                flags += 'm';
-            if (ignoreCase)
-                flags += 'i';
-            if (typeof source === 'number') {
-                const src = `\\u{${source.toString(16)}}`;
-                const regexp = new $mol_regexp(src, flags);
-                regexp.generate = () => src;
-                return regexp;
-            }
-            if (typeof source === 'string') {
-                const src = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regexp = new $mol_regexp(src, flags);
-                regexp.generate = () => source;
-                return regexp;
-            }
-            else if (source instanceof $mol_regexp) {
-                const regexp = new $mol_regexp(source.source, flags, source.groups);
-                regexp.generate = params => source.generate(params);
-                return regexp;
-            }
-            if (source instanceof RegExp) {
-                const test = new RegExp('|' + source.source);
-                const groups = Array.from({ length: test.exec('').length - 1 }, (_, i) => String(i + 1));
-                const regexp = new $mol_regexp(source.source, source.flags, groups);
-                regexp.generate = () => '';
-                return regexp;
-            }
-            if (Array.isArray(source)) {
-                const patterns = source.map(src => Array.isArray(src)
-                    ? $mol_regexp.optional(src)
-                    : $mol_regexp.from(src));
-                const chunks = patterns.map(pattern => pattern.source);
-                const groups = [];
-                let index = 0;
-                for (const pattern of patterns) {
-                    for (let group of pattern.groups) {
-                        if (Number(group) >= 0) {
-                            groups.push(String(index++));
-                        }
-                        else {
-                            groups.push(group);
-                        }
-                    }
-                }
-                const regexp = new $mol_regexp(chunks.join(''), flags, groups);
-                regexp.generate = params => {
-                    let res = '';
-                    for (const pattern of patterns) {
-                        let sub = pattern.generate(params);
-                        if (sub === null)
-                            return '';
-                        res += sub;
-                    }
-                    return res;
-                };
-                return regexp;
-            }
-            else {
-                const groups = [];
-                const chunks = Object.keys(source).map(name => {
-                    groups.push(name);
-                    const regexp = $mol_regexp.from(source[name]);
-                    groups.push(...regexp.groups);
-                    return `(${regexp.source})`;
-                });
-                const regexp = new $mol_regexp(`(?:${chunks.join('|')})`, flags, groups);
-                const validator = new RegExp('^' + regexp.source + '$', flags);
-                regexp.generate = (params) => {
-                    for (let option in source) {
-                        if (option in params) {
-                            if (typeof params[option] === 'boolean') {
-                                if (!params[option])
-                                    continue;
-                            }
-                            else {
-                                const str = String(params[option]);
-                                if (str.match(validator))
-                                    return str;
-                                $mol_fail(new Error(`Wrong param: ${option}=${str}`));
-                            }
-                        }
-                        else {
-                            if (typeof source[option] !== 'object')
-                                continue;
-                        }
-                        const res = $mol_regexp.from(source[option]).generate(params);
-                        if (res)
-                            return res;
-                    }
-                    return null;
-                };
-                return regexp;
-            }
-        }
-        /** Makes regexp which includes only unicode category */
-        static unicode_only(...category) {
-            return new $mol_regexp(`\\p{${category.join('=')}}`);
-        }
-        /** Makes regexp which excludes unicode category */
-        static unicode_except(...category) {
-            return new $mol_regexp(`\\P{${category.join('=')}}`);
-        }
-        static char_range(from, to) {
-            return new $mol_regexp(`${$mol_regexp.from(from).source}-${$mol_regexp.from(to).source}`);
-        }
-        static char_only(...allowed) {
-            const regexp = allowed.map(f => $mol_regexp.from(f).source).join('');
-            return new $mol_regexp(`[${regexp}]`);
-        }
-        static char_except(...forbidden) {
-            const regexp = forbidden.map(f => $mol_regexp.from(f).source).join('');
-            return new $mol_regexp(`[^${regexp}]`);
-        }
-        static decimal_only = $mol_regexp.from(/\d/gsu);
-        static decimal_except = $mol_regexp.from(/\D/gsu);
-        static latin_only = $mol_regexp.from(/\w/gsu);
-        static latin_except = $mol_regexp.from(/\W/gsu);
-        static space_only = $mol_regexp.from(/\s/gsu);
-        static space_except = $mol_regexp.from(/\S/gsu);
-        static word_break_only = $mol_regexp.from(/\b/gsu);
-        static word_break_except = $mol_regexp.from(/\B/gsu);
-        static tab = $mol_regexp.from(/\t/gsu);
-        static slash_back = $mol_regexp.from(/\\/gsu);
-        static nul = $mol_regexp.from(/\0/gsu);
-        static char_any = $mol_regexp.from(/./gsu);
-        static begin = $mol_regexp.from(/^/gsu);
-        static end = $mol_regexp.from(/$/gsu);
-        static or = $mol_regexp.from(/|/gsu);
-        static line_end = $mol_regexp.from({
-            win_end: [['\r'], '\n'],
-            mac_end: '\r',
-        });
-    }
-    $.$mol_regexp = $mol_regexp;
-})($ || ($ = {}));
 
 ;
 "use strict";
@@ -17520,22 +17858,6 @@ var $;
 	($mol_mem_key(($.$mol_book2_catalog.prototype), "Spread"));
 	($mol_mem(($.$mol_book2_catalog.prototype), "Spread_close"));
 
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_match_text(query, values) {
-        const tags = query.toLowerCase().trim().split(/\s+/).filter(tag => tag);
-        if (tags.length === 0)
-            return () => true;
-        return (variant) => {
-            const vals = values(variant);
-            return tags.every(tag => vals.some(val => val.toLowerCase().indexOf(tag) >= 0));
-        };
-    }
-    $.$mol_match_text = $mol_match_text;
-})($ || ($ = {}));
 
 ;
 "use strict";
@@ -18810,6 +19132,66 @@ var $;
 
 
 ;
+	($.$mol_icon_menu) = class $mol_icon_menu extends ($.$mol_icon) {
+		path(){
+			return "M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_menu_down) = class $mol_icon_menu_down extends ($.$mol_icon) {
+		path(){
+			return "M7,10L12,15L17,10H7Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_menu_down_outline) = class $mol_icon_menu_down_outline extends ($.$mol_icon) {
+		path(){
+			return "M18,9V10.5L12,16.5L6,10.5V9H18M12,13.67L14.67,11H9.33L12,13.67Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_menu_up) = class $mol_icon_menu_up extends ($.$mol_icon) {
+		path(){
+			return "M7,15L12,10L17,15H7Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_menu_up_outline) = class $mol_icon_menu_up_outline extends ($.$mol_icon) {
+		path(){
+			return "M18,16V14.5L12,8.5L6,14.5V16H18M12,11.33L14.67,14H9.33L12,11.33Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
 	($.$mol_bigint_field) = class $mol_bigint_field extends ($.$mol_bar) {
 		decrement(next){
 			if(next !== undefined) return next;
@@ -19046,6 +19428,288 @@ var $;
                 width: `7rem`,
             },
         });
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$mol_number) = class $mol_number extends ($.$mol_view) {
+		precision(){
+			return 0;
+		}
+		event_dec(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		event_inc(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		event_dec_boost(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		event_inc_boost(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Hotkey(){
+			const obj = new this.$.$mol_hotkey();
+			(obj.key) = () => ({
+				"down": (next) => (this.event_dec(next)), 
+				"up": (next) => (this.event_inc(next)), 
+				"pageDown": (next) => (this.event_dec_boost(next)), 
+				"pageUp": (next) => (this.event_inc_boost(next))
+			});
+			return obj;
+		}
+		type(){
+			return "text";
+		}
+		value_string(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		hint(){
+			return " ";
+		}
+		string_enabled(){
+			return (this.enabled());
+		}
+		submit(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		selection(next){
+			if(next !== undefined) return next;
+			return [];
+		}
+		String(){
+			const obj = new this.$.$mol_string();
+			(obj.type) = () => ((this.type()));
+			(obj.keyboard) = () => ("decimal");
+			(obj.value) = (next) => ((this.value_string(next)));
+			(obj.hint) = () => ((this.hint()));
+			(obj.enabled) = () => ((this.string_enabled()));
+			(obj.submit) = (next) => ((this.submit(next)));
+			(obj.selection) = (next) => ((this.selection(next)));
+			return obj;
+		}
+		dec_enabled(){
+			return (this.enabled());
+		}
+		dec_icon(){
+			const obj = new this.$.$mol_icon_menu_down_outline();
+			return obj;
+		}
+		Dec(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.event_click) = (next) => ((this.event_dec(next)));
+			(obj.enabled) = () => ((this.dec_enabled()));
+			(obj.sub) = () => ([(this.dec_icon())]);
+			return obj;
+		}
+		inc_enabled(){
+			return (this.enabled());
+		}
+		inc_icon(){
+			const obj = new this.$.$mol_icon_menu_up_outline();
+			return obj;
+		}
+		Inc(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.event_click) = (next) => ((this.event_inc(next)));
+			(obj.enabled) = () => ((this.inc_enabled()));
+			(obj.sub) = () => ([(this.inc_icon())]);
+			return obj;
+		}
+		precision_view(){
+			return (this.precision());
+		}
+		precision_change(){
+			return (this.precision());
+		}
+		boost(){
+			return 10;
+		}
+		value_min(){
+			return -Infinity;
+		}
+		value_max(){
+			return +Infinity;
+		}
+		value(next){
+			if(next !== undefined) return next;
+			return +NaN;
+		}
+		enabled(){
+			return true;
+		}
+		plugins(){
+			return [(this.Hotkey())];
+		}
+		sub(){
+			return [
+				(this.String()), 
+				(this.Dec()), 
+				(this.Inc())
+			];
+		}
+	};
+	($mol_mem(($.$mol_number.prototype), "event_dec"));
+	($mol_mem(($.$mol_number.prototype), "event_inc"));
+	($mol_mem(($.$mol_number.prototype), "event_dec_boost"));
+	($mol_mem(($.$mol_number.prototype), "event_inc_boost"));
+	($mol_mem(($.$mol_number.prototype), "Hotkey"));
+	($mol_mem(($.$mol_number.prototype), "value_string"));
+	($mol_mem(($.$mol_number.prototype), "submit"));
+	($mol_mem(($.$mol_number.prototype), "selection"));
+	($mol_mem(($.$mol_number.prototype), "String"));
+	($mol_mem(($.$mol_number.prototype), "dec_icon"));
+	($mol_mem(($.$mol_number.prototype), "Dec"));
+	($mol_mem(($.$mol_number.prototype), "inc_icon"));
+	($mol_mem(($.$mol_number.prototype), "Inc"));
+	($mol_mem(($.$mol_number.prototype), "value"));
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/number/number.css", "[mol_number] {\n\tdisplay: flex;\n\tflex: 0 1 auto;\n\tposition: relative;\n\talign-items: stretch;\n\tmax-width: 100%;\n}\n\n[mol_number_string] {\n\tappearance: textfield;\n\tflex: 1 1 7rem;\n\twidth: 7rem;\n}\n\n[mol_number_string]::-webkit-inner-spin-button {\n\tdisplay: none;\n}\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Component for entering, incrementing and decrementing numeric values.
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_number_demo
+         */
+        class $mol_number extends $.$mol_number {
+            sub() {
+                return [
+                    this.String(),
+                    ...this.dec_enabled() ? [this.Dec()] : [],
+                    ...this.inc_enabled() ? [this.Inc()] : [],
+                ];
+            }
+            value_limited(val) {
+                if (Number.isNaN(val))
+                    return this.value(val);
+                if (val === undefined)
+                    return this.value();
+                const min = this.value_min();
+                const max = this.value_max();
+                if (val < min)
+                    return this.value(min);
+                if (val > max)
+                    return this.value(max);
+                return this.value(val);
+            }
+            event_dec(next) {
+                this.value_limited((this.value_limited() || 0) - this.precision_change());
+                next?.preventDefault();
+            }
+            precision_change() {
+                return this.precision() || 1;
+            }
+            event_inc(next) {
+                this.value_limited((this.value_limited() || 0) + this.precision_change());
+                next?.preventDefault();
+            }
+            event_dec_boost(next) {
+                this.value_limited((this.value_limited() || 0) - this.precision_change() * this.boost());
+                next?.preventDefault();
+            }
+            event_inc_boost(next) {
+                this.value_limited((this.value_limited() || 0) + this.precision_change() * this.boost());
+                next?.preventDefault();
+            }
+            round(val) {
+                if (Number.isNaN(val))
+                    return '';
+                if (val === 0)
+                    return '0';
+                if (!val)
+                    return '';
+                const precision_view = this.precision_view();
+                if (precision_view === 0)
+                    return String(val);
+                if (precision_view >= 1) {
+                    return (val / precision_view).toFixed();
+                }
+                else {
+                    const fixed_number = Math.log10(1 / precision_view);
+                    return val.toFixed(Math.ceil(fixed_number));
+                }
+            }
+            value_string(next) {
+                // Вытягиваем value
+                // Если кто-то поменяет из вне value, value_string надо обновить
+                const current = this.round(this.value_limited());
+                if (next === undefined)
+                    return current;
+                const precision = this.precision_view();
+                // Точку в конце поставить нельзя, если precision_view целое число > 0
+                if (precision > 0 && precision - Math.floor(precision) === 0)
+                    next = next.replace(/[.,]/g, '');
+                // Запятые меняем на точки, удаляем не-цифры и не-точки и лишние ноли в начале целой части.
+                // Минус получится ввести только в начале.
+                next = (this.value_min() < 0 && next.startsWith('-') ? '-' : '')
+                    + next.replace(/,/g, '.').replace(/[^\d\.]/g, '').replace(/^0{2,}/, '0');
+                let dot_pos = next.indexOf('.');
+                if (dot_pos !== -1) {
+                    const prev = $mol_wire_probe(() => this.value_string()) ?? '';
+                    const dot_pos_prev = prev.indexOf('.');
+                    // Определяем где относительно предыдущей точки юзер поставил новую
+                    if (dot_pos_prev === dot_pos)
+                        dot_pos = next.lastIndexOf('.');
+                    // Из частей до и после новой точки старую точку удаляем
+                    const frac = next.slice(dot_pos + 1).replace(/\./g, '');
+                    // Если точка идет первой, перед ней пишем 0, что бы форматирование выглядело нормально в mask
+                    next = (next.slice(0, dot_pos) || '0').replace(/\./g, '') + '.' + frac;
+                }
+                // Оставляем старое значение в value есть сочетание, приводящие к NaN, например -.
+                if (Number.isNaN(Number(next)))
+                    return next;
+                if (next.endsWith('.'))
+                    return next;
+                if (next.endsWith('-'))
+                    return next;
+                // Если пустая строка - сетим NaN
+                // Применяем округления.
+                this.value_limited(Number(next || Number.NaN));
+                // Возвращаем все-равно не нормализованное значение
+                // Иначе нельзя ввести будет 10, если min/max 5..10
+                return next;
+            }
+            dec_enabled() {
+                return this.enabled() && (!((this.value() || 0) <= this.value_min()));
+            }
+            inc_enabled() {
+                return this.enabled() && (!((this.value() || 0) >= this.value_max()));
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_number.prototype, "sub", null);
+        __decorate([
+            $mol_mem
+        ], $mol_number.prototype, "value_string", null);
+        __decorate([
+            $mol_mem
+        ], $mol_number.prototype, "dec_enabled", null);
+        __decorate([
+            $mol_mem
+        ], $mol_number.prototype, "inc_enabled", null);
+        $$.$mol_number = $mol_number;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
 
@@ -22961,6 +23625,25 @@ var $;
         $mol_mem_key
     ], $giper_baza_text.prototype, "selection", null);
     $.$giper_baza_text = $giper_baza_text;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /** Entity dictionary Model with Title property included by default */
+    class $giper_baza_entity extends $giper_baza_dict.with({
+        /** Entity Title - default property for use */
+        Title: $giper_baza_atom_text,
+    }) {
+        title(next) {
+            return this.Title(next)?.val(next) ?? '';
+        }
+    }
+    __decorate([
+        $mol_mem
+    ], $giper_baza_entity.prototype, "title", null);
+    $.$giper_baza_entity = $giper_baza_entity;
 })($ || ($ = {}));
 
 ;
@@ -28532,856 +29215,6 @@ var $;
 var $;
 (function ($) {
     /**
-     * Document of the editor in Giper Baza.
-     *
-     * Pure schema. No `static @$mol_action` anywhere: on a static the wire method
-     * takes the class itself as the fiber owner, fibers stop deduplicating
-     * consistently, and writes go missing between devices without a single error.
-     * All CRUD lives in the views. There is a test that keeps it that way.
-     *
-     * What is stored here is exactly what nothing else can recompute. Everything
-     * derivable from the source text is deliberately absent, see the note on wires
-     * below.
-     *
-     * @see ../../ARCHITECTURE.md sections 1 and 9
-     */
-    /**
-     * One node of the document: a class with its three sources.
-     *
-     * The `view.tree` text is the truth, exactly as in `bog_vmap_lang_node`, and
-     * everything the editor shows is derived from it by parsing. So the tree, the
-     * property list, the class name (which is the first token of the text) and the
-     * compiled class are all absent from the schema on purpose.
-     *
-     * **Wires are absent too, and that is the one decision here worth arguing
-     * about.** A wire is two lines of source: `calc_result = Calc result` on the
-     * root and `<= calc_result` at the target property. Both live in `Tree`.
-     * A separate wire record would be a second source of truth for the very thing
-     * section 1 declares the only one, and the two would part company the first
-     * time somebody edits the text by hand in the code editor of stage 4.1.
-     * The curve on the canvas is drawn from its two ends and has no data of its own.
-     *
-     * One atom per source per node, never one `sand_ordered` over the document:
-     * that one loses text on simultaneous edits and is quadratic on write, 76 ms
-     * per edit at 500 edits. Co-editing is therefore per node, last write wins.
-     */
-    class $bog_vmap_app_doc_node extends $giper_baza_dict.with({
-        /** `view.tree` declaration. The truth of this node. */
-        Tree: $giper_baza_atom_text,
-        /** Hand written class body, applied on top of the generated one. */
-        Js: $giper_baza_atom_text,
-        /** Styles, attached separately from the class so a CSS edit rebuilds nothing. */
-        Css: $giper_baza_atom_text,
-    }) {
-        /**
-         * `view.tree` text of the node.
-         *
-         * Named after `bog_vmap_lang_node.source()`, which holds the same string, and
-         * NOT after the `Tree` field: `tree()` over there returns the parsed AST, and
-         * two methods of the same name returning text in one model and a tree in the
-         * other would be a trap for the next reader.
-         *
-         * **No `@$mol_mem` here, and that is not an oversight.** Measured: an accessor
-         * of this shape that has been WRITTEN through once freezes at the written
-         * value for good. A remote edit lands in the atom, the atom reports the new
-         * text, and the cell keeps handing out the old one — permanently, a later
-         * local write does not thaw it either. Read-only cells of the same shape track
-         * fine, so the symptom only shows up on the node you edited yourself, which in
-         * a co-editing document is the worst possible place for it.
-         *
-         * Nothing is lost by dropping the decorator: `val()` is already a wire cell
-         * inside the pawn, so a view reading this stays reactive and a `<=>` binding
-         * writes straight through.
-         */
-        source(next) {
-            return this.Tree(next)?.val(next) ?? '';
-        }
-        js(next) {
-            return this.Js(next)?.val(next) ?? '';
-        }
-        css(next) {
-            return this.Css(next)?.val(next) ?? '';
-        }
-    }
-    $.$bog_vmap_app_doc_node = $bog_vmap_app_doc_node;
-    /**
-     * Place of one item on the canvas.
-     *
-     * Kept apart from the node, and keyed by property name rather than by node,
-     * because a free part takes its class from the library: `Calc $mol_number` has
-     * no sources of its own at all, and its whole identity is the name of the
-     * property it occupies on the root class. Coordinates therefore cannot hang off
-     * `doc_node`, which exists only for classes the document itself authors.
-     *
-     * Coordinates are `atom_real`. `atom_bint` does not survive a write and a read:
-     * you put `3000n` in and get `null` back.
-     */
-    class $bog_vmap_app_doc_spot extends $giper_baza_dict.with({
-        X: $giper_baza_atom_real,
-        Y: $giper_baza_atom_real,
-    }) {
-        /** Plain methods, not `@$mol_mem`, for the reason spelled out at `doc_node.source`. */
-        x(next) {
-            return this.X(next)?.val(next) ?? 0;
-        }
-        y(next) {
-            return this.Y(next)?.val(next) ?? 0;
-        }
-    }
-    $.$bog_vmap_app_doc_spot = $bog_vmap_app_doc_spot;
-    /**
-     * The document itself.
-     *
-     * `Nodes` are made in the SAME land as the document (`make( null )`), not each
-     * in its own. Section 9 asks for a separate atom per node, which is what gives
-     * per node last-write-wins, and says nothing about separate lands. A land per
-     * node would mean proof of work on every detail dropped onto the canvas, and
-     * per node access rights nobody asked for.
-     *
-     * `Assets` are missing on purpose: an asset is a separate blob land of its own,
-     * addressed by an `asset:` id, and the module that owns them is `bog_vmap_asset`
-     * at stage 5.1. Naming it here, even in a comment, would drag it into our graph
-     * before it exists.
-     */
-    class $bog_vmap_app_doc extends $giper_baza_dict.with({
-        /**
-         * Human name of the document. Genuinely stored, nothing derives it.
-         *
-         * Declared here rather than inherited from `$giper_baza_entity`, which
-         * carries the same field. The entity also carries a `@$mol_mem` `title()`,
-         * and that accessor freezes after a write, see the note at
-         * `doc_node.source`. Overriding it is refused by the type system, because
-         * `$mol_type_override` presents the base members as properties, so the field
-         * is declared here instead. Same key, same bytes on the wire, plain accessor.
-         */
-        Title: $giper_baza_atom_text,
-        /** Classes the document authors itself, root included. */
-        Nodes: $giper_baza_list_link.to(() => $bog_vmap_app_doc_node),
-        /** Which of them is the page. A choice, not a derivation from the order. */
-        Root: $giper_baza_atom_link.to(() => $bog_vmap_app_doc_node),
-        /** Canvas places, keyed by the property name of the root class. */
-        Spots: $giper_baza_dict_to($bog_vmap_app_doc_spot),
-        /** Deployed MAM module the components come from. Empty means the default. */
-        Pack: $giper_baza_atom_text,
-    }) {
-        pack(next) {
-            return this.Pack(next)?.val(next) ?? '';
-        }
-        title(next) {
-            return this.Title(next)?.val(next) ?? '';
-        }
-    }
-    $.$bog_vmap_app_doc = $bog_vmap_app_doc;
-    /**
-     * Anchor of the documents in the home land of a user.
-     *
-     * Without it the types above are unreachable: something has to hold the list a
-     * session starts from. Deliberately nothing more than that list — which land a
-     * document is grabbed into, and with which rights, is a decision of the views,
-     * and masters are chosen by the node, never declared by a module.
-     */
-    class $bog_vmap_app_doc_home extends $giper_baza_dict.with({
-        Docs: $giper_baza_list_link.to(() => $bog_vmap_app_doc),
-    }) {
-    }
-    $.$bog_vmap_app_doc_home = $bog_vmap_app_doc_home;
-    /** Every schema class of the module, for the purity test. */
-    $.$bog_vmap_app_doc_schema = [
-        $bog_vmap_app_doc,
-        $bog_vmap_app_doc_node,
-        $bog_vmap_app_doc_spot,
-        $bog_vmap_app_doc_home,
-    ];
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    class $mol_view_tree2_error extends Error {
-        spans;
-        constructor(message, spans) {
-            super(message);
-            this.spans = spans;
-        }
-        toJSON() {
-            return {
-                message: this.message,
-                spans: this.spans
-            };
-        }
-    }
-    $.$mol_view_tree2_error = $mol_view_tree2_error;
-    class $mol_view_tree2_error_suggestions {
-        suggestions;
-        constructor(suggestions) {
-            this.suggestions = suggestions;
-        }
-        toString() {
-            return this.suggestions.map(suggestion => `\`${suggestion}\``).join(', ');
-        }
-        toJSON() {
-            return this.suggestions;
-        }
-    }
-    $.$mol_view_tree2_error_suggestions = $mol_view_tree2_error_suggestions;
-    function $mol_view_tree2_error_str(strings, ...parts) {
-        const spans = [];
-        for (const part of parts) {
-            if (part instanceof $mol_span)
-                spans.push(part);
-            if (Array.isArray(part) && part.length > 0 && part[0] instanceof $mol_span)
-                spans.push(...part);
-        }
-        return new $mol_view_tree2_error(join(strings, parts), spans);
-    }
-    $.$mol_view_tree2_error_str = $mol_view_tree2_error_str;
-    function join(strings, objects) {
-        let result = '';
-        let obj_pos = 0;
-        let obj_len = objects.length;
-        for (const str of strings) {
-            result += str;
-            if (obj_pos < obj_len) {
-                const obj = objects[obj_pos++];
-                if (Array.isArray(obj))
-                    result += obj.map(item => `\`${item}\``).join(', ');
-                else
-                    result += `\`${String(obj)}\``;
-            }
-        }
-        return result;
-    }
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_view_tree2_child(tree) {
-        if (tree.kids.length === 0) {
-            return this.$mol_fail($mol_view_tree2_error_str `Required one child at ${tree.span}`);
-        }
-        if (tree.kids.length > 1) {
-            return this.$mol_fail($mol_view_tree2_error_str `Should be only one child at ${tree.span}`);
-        }
-        return tree.kids[0];
-    }
-    $.$mol_view_tree2_child = $mol_view_tree2_child;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_view_tree2_classes(defs) {
-        return defs.clone(defs.hack({
-            '-': () => []
-        }));
-    }
-    $.$mol_view_tree2_classes = $mol_view_tree2_classes;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_view_tree2_normalize(defs) {
-        return defs.clone($mol_view_tree2_classes(defs).kids.map(cl => cl.clone([
-            this.$mol_view_tree2_class_super(cl).clone(this.$mol_view_tree2_class_props(cl))
-        ])));
-    }
-    $.$mol_view_tree2_normalize = $mol_view_tree2_normalize;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const { begin, end, latin_only, or, optional, repeat_greedy } = $mol_regexp;
-    $.$mol_view_tree2_prop_signature = $mol_regexp.from([
-        begin,
-        { name: repeat_greedy(latin_only, 1) },
-        { key: optional(['*', repeat_greedy(latin_only, 0)]) },
-        { next: optional(['?', repeat_greedy(latin_only, 0)]) },
-        end,
-    ]);
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_view_tree2_prop_parts(prop) {
-        const groups = [...prop.type.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
-        if (!groups) {
-            this.$mol_fail($mol_view_tree2_error_str `Required prop like some*? at ${prop.span}`);
-        }
-        return {
-            name: groups.name,
-            key: groups.key,
-            next: groups.next ? '?' : ''
-        };
-    }
-    $.$mol_view_tree2_prop_parts = $mol_view_tree2_prop_parts;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const regular_regex = /^\w+$/;
-    function $mol_view_tree2_prop_quote(name) {
-        if (regular_regex.test(name.value))
-            return name;
-        return name.data(JSON.stringify(name.value));
-    }
-    $.$mol_view_tree2_prop_quote = $mol_view_tree2_prop_quote;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const class_regex = /^[$A-Z][$\w<>\[\]()"'?|,]+$/;
-    function $mol_view_tree2_class_match(klass) {
-        if (!klass?.type)
-            return false;
-        if (klass.type === 'NaN' || klass.type === 'Infinity')
-            return false;
-        return class_regex.test(klass.type);
-    }
-    $.$mol_view_tree2_class_match = $mol_view_tree2_class_match;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const err = $mol_view_tree2_error_str;
-    function $mol_view_tree2_class_super(klass) {
-        if (!$mol_view_tree2_class_match(klass))
-            return this.$mol_fail(err `Wrong class name at ${klass.span}`);
-        const superclass = klass.kids.length === 1 ? klass.kids[0] : undefined;
-        if (!superclass)
-            return this.$mol_fail(err `No super class at ${klass.span}`);
-        if (!$mol_view_tree2_class_match(superclass))
-            return this.$mol_fail(err `Wrong super class name ${JSON.stringify(superclass.type).replace(/(^"|"$)/g, "")} at ${superclass.span}`);
-        return superclass;
-    }
-    $.$mol_view_tree2_class_super = $mol_view_tree2_class_super;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const err = $mol_view_tree2_error_str;
-    const is_writable = (input) => input.type.includes('?');
-    function $mol_view_tree2_class_props(klass) {
-        let props = this.$mol_view_tree2_class_super(klass);
-        // ! syntax to * and ?val syntax to ?
-        props = props.clone(props.hack({
-            '': (node, belt) => {
-                const next = node.type.indexOf('?');
-                const id = node.type.indexOf('!');
-                let normal = node.type;
-                const ch = node.type[id + 1];
-                if (id !== -1 && ch?.toUpperCase() !== ch?.toLowerCase())
-                    normal = `${normal.substring(0, id)}*${next === -1 ? '' : '?'}`;
-                else if (next !== -1)
-                    normal = normal.substring(0, next + 1);
-                if (node.type === normal)
-                    return [node.clone(node.hack(belt))];
-                console.warn(`Syntax ${node.type} at ${node.span} is deprecated. Use ${normal} instead`);
-                return [node.struct(normal, node.hack(belt))];
-            }
-        }));
-        const props_inner = {};
-        const add_inner = (prop) => {
-            const { name } = this.$mol_view_tree2_prop_parts(prop);
-            const prev = props_inner[name];
-            if (prev && prev.kids[0]?.toString() !== prop.kids[0]?.toString()) {
-                this.$mol_fail(err `Need an equal default values at ${prev.span} vs ${prop.span}`);
-            }
-            props_inner[name] = prop;
-        };
-        const upper = (operator, belt, context) => {
-            const prop = this.$mol_view_tree2_child(operator);
-            const defs = prop.hack(belt, { factory: prop });
-            if (defs.length)
-                add_inner(prop.clone(defs));
-            return [operator.clone([prop.clone([])])];
-        };
-        const props_root = props.hack({
-            '<=': upper,
-            '<=>': upper,
-            '^': (operator, belt, context) => {
-                if (operator.kids.length === 0)
-                    return [operator];
-                return upper(operator, belt, context);
-            },
-            '': (left, belt, context) => {
-                let right;
-                const operator = left.kids[0];
-                if (operator?.type === '=>' && context.factory) {
-                    right = operator.kids[0];
-                    if (!right)
-                        this.$mol_fail(err `Need a child ${operator.span}`);
-                    if (!context.factory)
-                        this.$mol_fail(err `Need a parent ${left.span}`);
-                    if (is_writable(left) !== is_writable(right))
-                        this.$mol_fail(err `Left and right operands are not compatible at ${operator.span}`);
-                    add_inner(right.clone([
-                        right.struct('=', [
-                            context.factory.struct(context.factory.type.replace(/\*.*/, '*'), [left.clone([])]),
-                        ]),
-                    ]));
-                }
-                else if (operator?.type === "<=>") {
-                    const right = operator.kids[0];
-                    if (!right)
-                        this.$mol_fail(err `Need a child ${operator.span}`);
-                    if (!is_writable(left))
-                        this.$mol_fail(err `Expected writable at ${left.span}`);
-                    if (!is_writable(right))
-                        this.$mol_fail(err `Expected writable at ${right.span}`);
-                }
-                else if (context.factory && operator?.type === "<=" && is_writable(left)) {
-                    this.$mol_fail(err `Expected readonly at ${left.span}`);
-                }
-                if (right)
-                    context = { factory: right.clone([]) };
-                else if (operator && !context.factory && $mol_view_tree2_class_match(operator)) {
-                    context = { factory: left.clone([]) };
-                }
-                const hacked = left.clone(left.hack(belt, context));
-                return [hacked];
-            }
-        }, { factory: undefined });
-        for (const prop of props_root)
-            add_inner(prop);
-        return Object.values(props_inner);
-    }
-    $.$mol_view_tree2_class_props = $mol_view_tree2_class_props;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * Component library of a vmap document.
-     *
-     * A library is a deployed MAM module: the build drops `web.view.tree` next to
-     * `web.js`, and that file is the whole class tree of the bundle with bases and
-     * properties. Any deployed $mol app in the world is therefore a component
-     * source, with no cooperation from us.
-     *
-     * Port of `hyoo_studio_library` plus the `library()`, `united()`,
-     * `props_map()`, `props_of()`, `class_list()` and `base_options()` methods of
-     * `hyoo_studio`. Deviations are marked at their place.
-     *
-     * Pure model: knows nothing about DOM and renders nothing.
-     * @see ../ARCHITECTURE.md section 5
-     */
-    /**
-     * Stub declaration of `$mol_view`, prepended to every fetched pack tree.
-     *
-     * Own properties of `$mol_view` (`sub`, `attr`, `style`, `event`, `field`,
-     * `dom_name`, `title`) never reach `web.view.tree`, because `$mol_view` is
-     * written in TS and the build only dumps what came from `.view.tree` sources.
-     * Without the stub every class in the palette silently loses its base ports,
-     * and nothing anywhere reports it.
-     *
-     * Copied verbatim from `hyoo_studio_library.tree()`.
-     */
-    $.$bog_vmap_lib_predef = '$mol_view $mol_object\n\tdom_name \\\n\tstyle *\n\tevent *\n\tfield *\n\tattr *\n\tsub /\n\ttitle \\\n';
-    /**
-     * Parses a pack tree into a normalized class tree.
-     *
-     * Deviation from studio: the stub is parsed as its own source instead of being
-     * string-glued in front of the fetched text. Studio hands `predef + str` to the
-     * parser, so every span in a malformed pack points eight rows above its real
-     * place. We show those spans to the user in an error strip, so they have to be
-     * honest. The stub content itself is byte for byte the same.
-     */
-    function $bog_vmap_lib_parse(src, uri = 'web.view.tree') {
-        const predef = this.$mol_tree2_from_string($.$bog_vmap_lib_predef, '$bog_vmap_lib_predef');
-        const tree = this.$mol_tree2_from_string(src, uri);
-        return this.$mol_view_tree2_normalize(tree.clone([...predef.kids, ...tree.kids]));
-    }
-    $.$bog_vmap_lib_parse = $bog_vmap_lib_parse;
-    /**
-     * The address with a trailing slash, whatever it was typed with.
-     *
-     * `new URL( 'web.js', base )` drops the last segment of a base that does not end
-     * with one, so `https://b-on-g.github.io/gram` would resolve to
-     * `https://b-on-g.github.io/web.js`. The default `https://mol.hyoo.ru` survives
-     * that only by accident, being an origin root.
-     *
-     * A function and not a step inside the field, because the field is edited by
-     * hand: appending the slash on every keystroke would fight the typing. Typed is
-     * stored as is, derived is normalized — the rule for every field a person types.
-     * @see ../ARCHITECTURE.md section 5, «Адрес пака нормализовать до слэша»
-     */
-    function $bog_vmap_lib_slashed(uri) {
-        return uri.replace(/\/?$/, '/');
-    }
-    $.$bog_vmap_lib_slashed = $bog_vmap_lib_slashed;
-    /**
-     * Why a pack did not load, in words somebody can act on.
-     *
-     * `$mol_fetch` throws the status line of the response and nothing else, so a
-     * mistyped address reaches the screen as a bare «Not Found» — true and
-     * useless: it names neither what was looked for nor where to correct it. Seen
-     * on the deploy in the counter of the class list, 09.09.2026.
-     *
-     * The address is repeated back because the field it came from may be scrolled
-     * away or, in the case of the default, never typed at all. It is the ADDRESS
-     * THAT WAS FETCHED and not the one that was typed, and it is handed in rather
-     * than derived here: the rule that grows `web.view.tree` onto a pack lives in
-     * `tree_link` and must not be written a second time to word a complaint.
-     */
-    function $bog_vmap_lib_pack_note(link, error) {
-        const reason = String(error?.message || error);
-        if (!link)
-            return `Пак не отвечает: ${reason}`;
-        return `Пак не отвечает (${reason}). Ожидался ${link}`
-            + ' — дерево классов, которое сборка кладёт рядом с бандлом';
-    }
-    $.$bog_vmap_lib_pack_note = $bog_vmap_lib_pack_note;
-    /**
-     * Base address of a sibling module of the pack, derived from the address of the
-     * page asking. Always ends with a slash, so `new URL` keeps its last segment.
-     *
-     * The two layouts are told apart by a trailing `-`, and they are not two
-     * spellings of one rule but two different places, so the code says so.
-     *
-     * The dev server serves every module of a pack out of `<pack>/<module>/-/`, so
-     * the modules are siblings there in the plain sense: the segment naming ours is
-     * replaced by the one asked for, and the `-` goes back on.
-     *
-     * A deploy has only ONE page in the whole project — the editor, published at
-     * the root of the site — and the other modules are published as folders beneath
-     * it, `web.js` and `web.view.tree` without a page of their own. So there is
-     * nothing to replace: the module asked for is a folder inside the one the
-     * editor is served from.
-     *
-     * A last segment ending in `.html` is the page file — `index.html`, `test.html`
-     * are the only two a module has — and is dropped first. Anything else is a
-     * folder, which is how `https://b-on-g.github.io/vmap` reads the same as the
-     * same address with its slash.
-     *
-     * The test is the extension and not merely a dot in the name, because a folder
-     * may carry one: a deploy versioned as `/vmap/v1.2/` is ordinary, and on a dot
-     * the segment `v1.2` would be taken for a page and eaten.
-     *
-     * @see ../ARCHITECTURE.md sections 5 and 7
-     */
-    function $bog_vmap_lib_sibling(page, module) {
-        const url = new URL(page);
-        const path = url.pathname.split('/').filter(Boolean);
-        if (/\.html?$/i.test(path[path.length - 1] ?? ''))
-            path.pop();
-        // on the dev server the modules stand side by side, each in its own `-`
-        if (path[path.length - 1] === '-') {
-            path.pop();
-            path.pop();
-            path.push(module, '-');
-        }
-        else {
-            path.push(module);
-        }
-        return `${url.origin}/${path.join('/')}/`;
-    }
-    $.$bog_vmap_lib_sibling = $bog_vmap_lib_sibling;
-    /**
-     * Glues the library tree with the classes of the document into one namespace.
-     *
-     * Both sides end up in the same `$` sandbox at run time, so resolution has to
-     * see them as one list — that is the whole point of `united()` in studio.
-     */
-    function $bog_vmap_lib_united(lib, kids) {
-        if (!kids.length)
-            return lib;
-        return lib.clone([...lib.kids, ...kids]);
-    }
-    $.$bog_vmap_lib_united = $bog_vmap_lib_united;
-    /**
-     * Class name to its super node. The kids of that node are the own properties
-     * of the class, which is how `$mol_view_tree2_normalize` shapes a class.
-     *
-     * Deviation from studio: studio walks the kids linearly on every lookup
-     * (`lib.select( cl, null ).kids[0]`), which is O(classes) per inheritance step
-     * against a tree of ~450 classes. Same answer, built once.
-     *
-     * Second deviation, and the one that matters: a later declaration wins, while
-     * `select` takes the first. Document classes are appended after the library, so
-     * studio's order would let a library class shadow a document class of the same
-     * name. The scene compiles document classes into the sandbox *after* the pack's
-     * `web.js` has filled it, so at run time the document wins. The palette has to
-     * agree with what actually runs.
-     */
-    function $bog_vmap_lib_index(united) {
-        const index = new Map();
-        for (const cl of united.kids) {
-            const sup = cl.kids[0];
-            if (!sup)
-                continue;
-            index.set(cl.type, sup);
-        }
-        return index;
-    }
-    $.$bog_vmap_lib_index = $bog_vmap_lib_index;
-    /**
-     * Inheritance chain of a class, nearest first, ending at the first name that
-     * the namespace does not declare (`$mol_object` for anything from a pack).
-     *
-     * Deviation from studio: a visited set. Studio edits exactly one class, so a
-     * cycle cannot occur there. Here the united namespace carries user authored
-     * classes, and two of them declared as each other's base is one keystroke
-     * away — without the guard it hangs the editor with no error at all.
-     */
-    function $bog_vmap_lib_chain(index, base) {
-        const chain = [];
-        const seen = new Set();
-        let cl = base;
-        while (cl && !seen.has(cl)) {
-            seen.add(cl);
-            chain.push(cl);
-            cl = index.get(cl)?.type ?? '';
-        }
-        return chain;
-    }
-    $.$bog_vmap_lib_chain = $bog_vmap_lib_chain;
-    /**
-     * All ports of a class, own and inherited, keyed by property name.
-     *
-     * Ancestors are collected first, so a redefined property keeps the position of
-     * its earliest declaration but carries the most derived node. Same order and
-     * same overriding as `props_map()` in studio, which recurses into the super
-     * before adding its own kids.
-     *
-     * This is what stage 3 grows wire ports out of.
-     */
-    function $bog_vmap_lib_props_map(index, base) {
-        const all = new Map();
-        const chain = $bog_vmap_lib_chain(index, base);
-        for (let i = chain.length - 1; i >= 0; --i) {
-            const sup = index.get(chain[i]);
-            if (!sup)
-                continue;
-            for (const prop of sup.kids) {
-                all.set(this.$mol_view_tree2_prop_parts(prop).name, prop);
-            }
-        }
-        return all;
-    }
-    $.$bog_vmap_lib_props_map = $bog_vmap_lib_props_map;
-    /**
-     * Port name to the class that declared the winning version of it.
-     *
-     * Walks the chain exactly as `$bog_vmap_lib_props_map` does, farthest ancestor
-     * first, overwriting on every redeclaration. `Map.set` on a key that is already
-     * there keeps its position and replaces the value, so the last write wins the
-     * value — the nearest declaration, the one whose node `props_map` returned —
-     * while the key order stays identical to `props_map`. The two maps can then be
-     * read side by side by key.
-     *
-     * A port is inherited exactly when its owner is not the class being asked
-     * about. Walking nearest first and keeping the first answer would give the same
-     * owners in a different order, and a consumer that trusted the two orders to
-     * agree would silently mislabel every row.
-     *
-     * Not in studio: it shows one class at a time and has no notion of a port
-     * coming from somewhere else.
-     */
-    function $bog_vmap_lib_props_owner(index, base) {
-        const owner = new Map();
-        const chain = $bog_vmap_lib_chain(index, base);
-        for (let i = chain.length - 1; i >= 0; --i) {
-            const sup = index.get(chain[i]);
-            if (!sup)
-                continue;
-            for (const prop of sup.kids) {
-                owner.set(this.$mol_view_tree2_prop_parts(prop).name, chain[i]);
-            }
-        }
-        return owner;
-    }
-    $.$bog_vmap_lib_props_owner = $bog_vmap_lib_props_owner;
-    /**
-     * A component library, whatever its classes came from.
-     *
-     * Everything below `tree()` is source agnostic and always was: `united`,
-     * `index`, `props_map` and the rest only ever see a normalized class tree. The
-     * split just makes that visible, so a second source — a land of sources, with
-     * no deploy behind it — is a subclass overriding one method rather than a
-     * parallel implementation of nine.
-     *
-     * The default is the empty library: the `$mol_view` stub and nothing else. A
-     * throw would have been the other option and it is worse, because an empty
-     * library is a real state — a land with no components published yet — and not
-     * an error.
-     *
-     * @see ../ARCHITECTURE.md section 5
-     */
-    class $bog_vmap_lib_any extends $mol_object {
-        /** Class tree of the library. Where it comes from is the subclass's business. */
-        tree() {
-            return this.$.$bog_vmap_lib_parse('');
-        }
-        /**
-         * Classes of the document, to be resolved alongside the library.
-         * Overridden by the owner; empty until a document is open.
-         *
-         * This is also where a land library rides when it is used ON TOP of a pack
-         * rather than instead of one, which section 5 says is the normal case: land
-         * libraries compile into the same sandbox and inherit from the pack's
-         * `$mol_view`. Composition therefore needs no machinery — the classes of a
-         * land go in beside the document's, and `index` already lets a later
-         * declaration win.
-         */
-        classes() {
-            return [];
-        }
-        united() {
-            return this.$.$bog_vmap_lib_united(this.tree(), this.classes());
-        }
-        index() {
-            return this.$.$bog_vmap_lib_index(this.united());
-        }
-        /** Every class name of the namespace, in declaration order, deduped. */
-        class_list() {
-            return [...this.index().keys()];
-        }
-        /** Same list, most recently declared first, for a base class picker. */
-        base_options() {
-            return [...this.class_list()].reverse();
-        }
-        /**
-         * Palette search by class name. Deliberately not memoized by key: a cell per
-         * typed query would accumulate one dead cell per keystroke, and the filter
-         * over a few hundred names is cheaper than the cell.
-         */
-        class_search(query) {
-            return this.class_list().filter(this.$.$mol_match_text(query, (name) => [name]));
-        }
-        inherit_chain(cl) {
-            return this.$.$bog_vmap_lib_chain(this.index(), cl);
-        }
-        props_map(base) {
-            return this.$.$bog_vmap_lib_props_map(this.index(), base);
-        }
-        /** Which class each port of `base` came from. */
-        props_owner(base) {
-            return this.$.$bog_vmap_lib_props_owner(this.index(), base);
-        }
-        /** Same ports as a tree node, most derived first, as in studio. */
-        props_of(base) {
-            return this.united().list([...this.props_map(base).values()].reverse());
-        }
-    }
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lib_any.prototype, "tree", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lib_any.prototype, "united", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lib_any.prototype, "index", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lib_any.prototype, "class_list", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lib_any.prototype, "base_options", null);
-    __decorate([
-        $mol_mem_key
-    ], $bog_vmap_lib_any.prototype, "inherit_chain", null);
-    __decorate([
-        $mol_mem_key
-    ], $bog_vmap_lib_any.prototype, "props_map", null);
-    __decorate([
-        $mol_mem_key
-    ], $bog_vmap_lib_any.prototype, "props_owner", null);
-    __decorate([
-        $mol_mem_key
-    ], $bog_vmap_lib_any.prototype, "props_of", null);
-    $.$bog_vmap_lib_any = $bog_vmap_lib_any;
-    /**
-     * Library from a deployed MAM module.
-     *
-     * The name and the interface are unchanged from before the split, because the
-     * palette and the inspector both declare it and neither should have to care
-     * that a second kind of library now exists.
-     */
-    class $bog_vmap_lib extends $bog_vmap_lib_any {
-        /**
-         * Deployed MAM module the components come from.
-         *
-         * Empty means no pack at all, and that is a state rather than a failure: a
-         * palette fed by lands alone has nothing deployed behind it. Every address
-         * below is then empty too, and `tree()` is the stub on its own.
-         */
-        pack(next) {
-            return next ?? 'https://mol.hyoo.ru';
-        }
-        /** Same address, guaranteed to end with a slash. See `$bog_vmap_lib_slashed`. */
-        pack_base() {
-            const pack = this.pack();
-            return pack ? $bog_vmap_lib_slashed(pack) : '';
-        }
-        /** Behaviour of the classes. Loaded by the scene, not by us. */
-        script_link() {
-            const base = this.pack_base();
-            return base ? new URL('web.js', base).toString() : '';
-        }
-        /** Declarations of the classes. */
-        tree_link() {
-            const base = this.pack_base();
-            return base ? new URL('web.view.tree', base).toString() : '';
-        }
-        /**
-         * Class tree of the pack.
-         *
-         * No try/catch on purpose: `$mol_fetch` throws on any non-2xx and the wire
-         * suspends through exceptions, so catching here would both swallow a dead
-         * pack into an empty palette and break suspension. An unreachable pack has
-         * to reach the view as an error.
-         */
-        tree() {
-            const uri = this.tree_link();
-            if (!uri)
-                return this.$.$bog_vmap_lib_parse('');
-            return this.$.$bog_vmap_lib_parse(this.$.$mol_fetch.text(uri), uri);
-        }
-    }
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lib.prototype, "pack", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lib.prototype, "pack_base", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lib.prototype, "script_link", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lib.prototype, "tree_link", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lib.prototype, "tree", null);
-    $.$bog_vmap_lib = $bog_vmap_lib;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
      * Component library published as a land of Giper Baza, sources and all.
      *
      * The second source of section 5, and the one that needs no deploy: publish a
@@ -29489,8 +29322,8 @@ var $;
      * Library backed by a land of sources.
      *
      * Only `tree()` differs from a pack, and it differs by where the text comes
-     * from — not by what is done with it: the same `$bog_vmap_lib_parse`, the same
-     * `$mol_view` stub, the same normalization. A tree built here and a tree fetched
+     * from — not by what is done with it: the same parse, the same base class stub,
+     * the same normalization. A tree built here and a tree fetched
      * from `web.view.tree` are indistinguishable downstream, which is the whole
      * requirement.
      */
@@ -29527,13 +29360,13 @@ var $;
             return this.$.$bog_vmap_lib_parse(this.source(), 'land');
         }
         /**
-         * Classes of the library WITHOUT the `$mol_view` stub, for composing this
+         * Classes of the library WITHOUT the base class stub, for composing this
          * library into another one through its `classes()`.
          *
          * The stub has to go: it is a stand-in for a class the pack really carries,
-         * and `$bog_vmap_lib_index` keeps the last declaration of a name, so handing
-         * it over would let the stand-in shadow the real thing. `tree()` keeps it,
-         * because standing alone this library has no other `$mol_view` at all.
+         * and the class index keeps the last declaration of a name, so handing it
+         * over would let the stand-in shadow the real thing. `tree()` keeps it,
+         * because standing alone this library has no other base class at all.
          */
         class_trees() {
             return this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(this.source(), 'land')).kids;
@@ -32206,8 +32039,8 @@ var $;
     /**
      * Anchor of the component library of a user, in the home land.
      *
-     * A neighbour of `$bog_vmap_app_doc_home` on the same root pawn, not a field on
-     * it: fields are keyed by name inside the pawn, so `Libs` sits beside `Docs`
+     * A neighbour of the home anchor of documents on the same root pawn, not a field
+     * on it: fields are keyed by name inside the pawn, so `Libs` sits beside `Docs`
      * without the document schema learning about libraries.
      *
      * A LIST and not one link, on purpose. A pointer made «when there is none» is
@@ -32290,11 +32123,11 @@ var $;
         /**
          * Name of the library class a part of the document is published as.
          *
-         * A part is a property of the root class, `Button_minor $mol_button_minor`,
-         * and a property name cannot start with `$`, while a class of a library must:
-         * the scene compiles nothing else. So `Button_minor` becomes
-         * `$bog_vmap_pub_button_minor`. Its own prefix, so that a part called `App`
-         * or `Scene` cannot shadow a real module of this pack.
+         * A part is a property of the root class, and a property name cannot start
+         * with `$`, while a class of a library must: the scene compiles nothing else.
+         * So `Button_minor` becomes the lowercased name under the prefix below. Its
+         * own prefix, so that a part called `App` or `Scene` cannot shadow a real
+         * module of this pack.
          */
         class_name(part) {
             return '$bog_vmap_pub_' + part.toLowerCase();
@@ -32753,6 +32586,173 @@ var $;
 var $;
 (function ($) {
     /**
+     * Document of the editor in Giper Baza.
+     *
+     * Pure schema. No `static @$mol_action` anywhere: on a static the wire method
+     * takes the class itself as the fiber owner, fibers stop deduplicating
+     * consistently, and writes go missing between devices without a single error.
+     * All CRUD lives in the views. There is a test that keeps it that way.
+     *
+     * What is stored here is exactly what nothing else can recompute. Everything
+     * derivable from the source text is deliberately absent, see the note on wires
+     * below.
+     *
+     * @see ../../ARCHITECTURE.md sections 1 and 9
+     */
+    /**
+     * One node of the document: a class with its three sources.
+     *
+     * The `view.tree` text is the truth, exactly as in `bog_vmap_lang_node`, and
+     * everything the editor shows is derived from it by parsing. So the tree, the
+     * property list, the class name (which is the first token of the text) and the
+     * compiled class are all absent from the schema on purpose.
+     *
+     * **Wires are absent too, and that is the one decision here worth arguing
+     * about.** A wire is two lines of source: `calc_result = Calc result` on the
+     * root and `<= calc_result` at the target property. Both live in `Tree`.
+     * A separate wire record would be a second source of truth for the very thing
+     * section 1 declares the only one, and the two would part company the first
+     * time somebody edits the text by hand in the code editor of stage 4.1.
+     * The curve on the canvas is drawn from its two ends and has no data of its own.
+     *
+     * One atom per source per node, never one `sand_ordered` over the document:
+     * that one loses text on simultaneous edits and is quadratic on write, 76 ms
+     * per edit at 500 edits. Co-editing is therefore per node, last write wins.
+     */
+    class $bog_vmap_app_doc_node extends $giper_baza_dict.with({
+        /** `view.tree` declaration. The truth of this node. */
+        Tree: $giper_baza_atom_text,
+        /** Hand written class body, applied on top of the generated one. */
+        Js: $giper_baza_atom_text,
+        /** Styles, attached separately from the class so a CSS edit rebuilds nothing. */
+        Css: $giper_baza_atom_text,
+    }) {
+        /**
+         * `view.tree` text of the node.
+         *
+         * Named after `bog_vmap_lang_node.source()`, which holds the same string, and
+         * NOT after the `Tree` field: `tree()` over there returns the parsed AST, and
+         * two methods of the same name returning text in one model and a tree in the
+         * other would be a trap for the next reader.
+         *
+         * **No `@$mol_mem` here, and that is not an oversight.** Measured: an accessor
+         * of this shape that has been WRITTEN through once freezes at the written
+         * value for good. A remote edit lands in the atom, the atom reports the new
+         * text, and the cell keeps handing out the old one — permanently, a later
+         * local write does not thaw it either. Read-only cells of the same shape track
+         * fine, so the symptom only shows up on the node you edited yourself, which in
+         * a co-editing document is the worst possible place for it.
+         *
+         * Nothing is lost by dropping the decorator: `val()` is already a wire cell
+         * inside the pawn, so a view reading this stays reactive and a `<=>` binding
+         * writes straight through.
+         */
+        source(next) {
+            return this.Tree(next)?.val(next) ?? '';
+        }
+        js(next) {
+            return this.Js(next)?.val(next) ?? '';
+        }
+        css(next) {
+            return this.Css(next)?.val(next) ?? '';
+        }
+    }
+    $.$bog_vmap_app_doc_node = $bog_vmap_app_doc_node;
+    /**
+     * Place of one item on the canvas.
+     *
+     * Kept apart from the node, and keyed by property name rather than by node,
+     * because a free part takes its class from the library: `Calc $mol_number` has
+     * no sources of its own at all, and its whole identity is the name of the
+     * property it occupies on the root class. Coordinates therefore cannot hang off
+     * `doc_node`, which exists only for classes the document itself authors.
+     *
+     * Coordinates are `atom_real`. `atom_bint` does not survive a write and a read:
+     * you put `3000n` in and get `null` back.
+     */
+    class $bog_vmap_app_doc_spot extends $giper_baza_dict.with({
+        X: $giper_baza_atom_real,
+        Y: $giper_baza_atom_real,
+    }) {
+        /** Plain methods, not `@$mol_mem`, for the reason spelled out at `doc_node.source`. */
+        x(next) {
+            return this.X(next)?.val(next) ?? 0;
+        }
+        y(next) {
+            return this.Y(next)?.val(next) ?? 0;
+        }
+    }
+    $.$bog_vmap_app_doc_spot = $bog_vmap_app_doc_spot;
+    /**
+     * The document itself.
+     *
+     * `Nodes` are made in the SAME land as the document (`make( null )`), not each
+     * in its own. Section 9 asks for a separate atom per node, which is what gives
+     * per node last-write-wins, and says nothing about separate lands. A land per
+     * node would mean proof of work on every detail dropped onto the canvas, and
+     * per node access rights nobody asked for.
+     *
+     * `Assets` are missing on purpose: an asset is a separate blob land of its own,
+     * addressed by an `asset:` id, and the module that owns them is `bog_vmap_asset`
+     * at stage 5.1. Naming it here, even in a comment, would drag it into our graph
+     * before it exists.
+     */
+    class $bog_vmap_app_doc extends $giper_baza_dict.with({
+        /**
+         * Human name of the document. Genuinely stored, nothing derives it.
+         *
+         * Declared here rather than inherited from `$giper_baza_entity`, which
+         * carries the same field. The entity also carries a `@$mol_mem` `title()`,
+         * and that accessor freezes after a write, see the note at
+         * `doc_node.source`. Overriding it is refused by the type system, because
+         * `$mol_type_override` presents the base members as properties, so the field
+         * is declared here instead. Same key, same bytes on the wire, plain accessor.
+         */
+        Title: $giper_baza_atom_text,
+        /** Classes the document authors itself, root included. */
+        Nodes: $giper_baza_list_link.to(() => $bog_vmap_app_doc_node),
+        /** Which of them is the page. A choice, not a derivation from the order. */
+        Root: $giper_baza_atom_link.to(() => $bog_vmap_app_doc_node),
+        /** Canvas places, keyed by the property name of the root class. */
+        Spots: $giper_baza_dict_to($bog_vmap_app_doc_spot),
+        /** Deployed MAM module the components come from. Empty means the default. */
+        Pack: $giper_baza_atom_text,
+    }) {
+        pack(next) {
+            return this.Pack(next)?.val(next) ?? '';
+        }
+        title(next) {
+            return this.Title(next)?.val(next) ?? '';
+        }
+    }
+    $.$bog_vmap_app_doc = $bog_vmap_app_doc;
+    /**
+     * Anchor of the documents in the home land of a user.
+     *
+     * Without it the types above are unreachable: something has to hold the list a
+     * session starts from. Deliberately nothing more than that list — which land a
+     * document is grabbed into, and with which rights, is a decision of the views,
+     * and masters are chosen by the node, never declared by a module.
+     */
+    class $bog_vmap_app_doc_home extends $giper_baza_dict.with({
+        Docs: $giper_baza_list_link.to(() => $bog_vmap_app_doc),
+    }) {
+    }
+    $.$bog_vmap_app_doc_home = $bog_vmap_app_doc_home;
+    /** Every schema class of the module, for the purity test. */
+    $.$bog_vmap_app_doc_schema = [
+        $bog_vmap_app_doc,
+        $bog_vmap_app_doc_node,
+        $bog_vmap_app_doc_spot,
+        $bog_vmap_app_doc_home,
+    ];
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
      * Persistence of the editor: the documents of a user in Giper Baza.
      *
      * The CRUD lives here so the schema can stay pure, and the views ask this
@@ -32943,10 +32943,47 @@ var $;
          * invalidation that causes is dropped rather than remembered.
          */
         boot() {
-            if (this.doc_current())
+            const doc = this.doc_current();
+            if (doc) {
+                this.doc_keep(doc);
                 return 'ready';
+            }
             this.doc_first_task();
             return 'making';
+        }
+        /**
+         * Asks that the document on screen be kept on disk, whatever the quota says.
+         *
+         * **Keeping a land locally is not a flag but a SHARDING RULE.** The base
+         * answers `persisted()` by comparing the tail of the reader's key with the
+         * tail of the land link, cropped by how full the storage is: at level one
+         * through six a land is kept with a chance of one in two to the power of the
+         * level, and when the browser cannot tell the quota at all the level is
+         * infinite and nothing is kept. What hides this is that a WRITE sets the
+         * flag — the base does it on every broadcast, and a write freezes the
+         * dependencies of the cell, so the rule never runs again for that land. So
+         * the rule only ever bites a land nobody wrote to in this session, which is
+         * exactly a document opened by a link and read.
+         *
+         * Measured 10.09.2026 on the node stand of this module: somebody else's
+         * document, delivered the way the network delivers it and read without a
+         * single edit, left NOTHING on disk under an unknown quota — nine units with
+         * a quota, zero without — and the next session opened an empty editor.
+         *
+         * The request is the same one a write makes, and it is honest rather than a
+         * trick: the sharding rule exists so that lands nobody cares about do not
+         * fill the disk, and the document a person has open is the definition of one
+         * they care about. It covers the addressed document and the last one alike,
+         * because on a second device the user's own document arrives from the master
+         * the same way and is just as unwritten.
+         *
+         * Called from `boot`, which the editor runs out of `auto`: a request to
+         * another object is an effect and belongs where the other effects of the
+         * session start. `giper/baza` is not ours to change, so this is a mitigation
+         * in our own code and not a fix of the rule.
+         */
+        doc_keep(doc) {
+            doc.land().persisted(true);
         }
         /**
          * Text the editor works on before it has a document, and never after: the
@@ -33206,7 +33243,7 @@ var $;
          */
         $mol_style_define($bog_vmap_app_palette_item, {
             justify: { content: 'flex-start' },
-            // `$mol_button_typed` asks for a 40 px tap target; a palette row is a line
+            // The typed button asks for a 40 px tap target; a palette row is a line
             // of text, and at 40 px a third of the list fits on screen
             minHeight: '1.5rem',
             minWidth: 0,
@@ -33319,8 +33356,8 @@ var $;
                 font: { size: '.7rem' },
             },
             /**
-             * `false` renders no attribute at all, `$mol_dom_render_attributes` drops
-             * it, so an own port is the plain state and only the inherited one is
+             * `false` renders no attribute at all — the attribute renderer drops it —
+             * so an own port is the plain state and only the inherited one is
              * selectable. Written the other way round the rule would never match.
              */
             '@': {
@@ -33592,12 +33629,12 @@ var $;
             }
             /**
              * Classes matching the query, or all of them for an empty query —
-             * `$mol_match_text` of nothing matches everything, so no branch is needed.
+             * the text matcher of nothing matches everything, so no branch is needed.
              *
              * SUSPENSION PASSES THROUGH, a failure does not, and the difference is the
-             * whole point. `$mol_view` turns a suspension into its waiting state, which
-             * is right; it turns a failure into a strip carrying whatever `$mol_fetch`
-             * threw, which is the status line and nothing else — a mistyped address
+             * whole point. A view turns a suspension into its waiting state, which is
+             * right; it turns a failure into a strip carrying whatever the fetch threw,
+             * which is the status line and nothing else — a mistyped address
              * reached the counter as a bare «Not Found», naming neither the file that
              * was missing nor the field to fix. Seen on the deploy 09.09.2026.
              *

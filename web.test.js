@@ -7246,8 +7246,9 @@ var $;
      * would make the build depend on a third party host being up.
      *
      * `d` keeps `$` out of the string literals: mam builds its dependency graph by
-     * a regexp over sources, literals included, so a bare `$mol_button` in a
-     * fixture would drag a whole module into the bundle.
+     * a regexp over sources, literals included, so a bare class name in a fixture
+     * would drag a whole module into the bundle. Naming one HERE would do it too,
+     * which is why this sentence names none.
      */
     const d = '$';
     const lib_src = [
@@ -12088,7 +12089,7 @@ var $;
         },
         /**
          * The requirement of the task in one assertion: what a land library answers
-         * is what a pack library answers, down to the `$mol_view` stub that a pack
+         * is what a pack library answers, down to the base class stub that a pack
          * never carries in its own file.
          */
         'a land library lists its classes exactly as a pack would'($) {
@@ -12123,7 +12124,7 @@ var $;
         /**
          * Composing a land onto a pack, which section 5 says is the normal case.
          * The stub has to be absent from what is handed over, or it shadows the real
-         * `$mol_view` of the pack: `index` keeps the LAST declaration of a name.
+         * base class of the pack: the index keeps the LAST declaration of a name.
          */
         'classes handed to another library carry no stub'($) {
             const one = shelf($);
@@ -12528,6 +12529,50 @@ var $;
             doc_land_config: () => null,
         });
     }
+    /**
+     * A mine in the shape of the real driver: units and balls, kept in a map that
+     * outlives the session.
+     *
+     * The shape matters as much as the keeping. A mine that keeps units and forgets
+     * BALLS gives back a list of documents with titles and no text at all — which is
+     * the picture the deploy showed, so a stand that cannot produce it proves
+     * nothing about the case it exists for.
+     */
+    function $bog_vmap_app_store_test_mine(disk) {
+        return class extends $giper_baza_mine_temp {
+            units_save(diff) {
+                const key = this.land().str;
+                let kept = disk.get(key);
+                if (!kept)
+                    disk.set(key, kept = new Map);
+                for (const unit of diff.del)
+                    kept.delete(unit.path());
+                for (const unit of diff.ins) {
+                    const ball = unit instanceof $giper_baza_unit_sand && unit.big()
+                        ? unit.ball()
+                        : null;
+                    kept.set(unit.path(), {
+                        bin: unit.buffer.slice(unit.byteOffset, unit.byteOffset + unit.byteLength),
+                        ball: ball && new Uint8Array(ball.buffer.slice(ball.byteOffset, ball.byteOffset + ball.byteLength)),
+                    });
+                    this.units_persisted.add(unit);
+                }
+            }
+            units_load() {
+                const kept = disk.get(this.land().str);
+                if (!kept)
+                    return [];
+                const units = [...kept.values()].map(one => $giper_baza_unit_base.narrow(one.bin));
+                for (const unit of units)
+                    this.units_persisted.add(unit);
+                return units;
+            }
+            ball_load(sand) {
+                return disk.get(this.land().str)?.get(sand.path())?.ball
+                    ?? new Uint8Array();
+            }
+        };
+    }
     $mol_test({
         'no documents, no address: nothing is current and the text is empty'($) {
             const s = store($);
@@ -12646,40 +12691,8 @@ var $;
          */
         async 'a document written in one session comes back in the next'($) {
             /** The disk, shared by the sessions and by nothing else. */
-            const disk = new Map();
-            class mine extends $giper_baza_mine_temp {
-                units_save(diff) {
-                    const key = this.land().str;
-                    let kept = disk.get(key);
-                    if (!kept)
-                        disk.set(key, kept = new Map);
-                    for (const unit of diff.del)
-                        kept.delete(unit.path());
-                    for (const unit of diff.ins) {
-                        const ball = unit instanceof $giper_baza_unit_sand && unit.big()
-                            ? unit.ball()
-                            : null;
-                        kept.set(unit.path(), {
-                            bin: unit.buffer.slice(unit.byteOffset, unit.byteOffset + unit.byteLength),
-                            ball: ball && new Uint8Array(ball.buffer.slice(ball.byteOffset, ball.byteOffset + ball.byteLength)),
-                        });
-                        this.units_persisted.add(unit);
-                    }
-                }
-                units_load() {
-                    const kept = disk.get(this.land().str);
-                    if (!kept)
-                        return [];
-                    const units = [...kept.values()].map(one => $giper_baza_unit_base.narrow(one.bin));
-                    for (const unit of units)
-                        this.units_persisted.add(unit);
-                    return units;
-                }
-                ball_load(sand) {
-                    return disk.get(this.land().str)?.get(sand.path())?.ball
-                        ?? new Uint8Array();
-                }
-            }
+            const disk = new Map;
+            const mine = $bog_vmap_app_store_test_mine(disk);
             const session = () => {
                 const ctx = Object.create($);
                 // The real land, whose `sync()` loads and saves.
@@ -12745,6 +12758,119 @@ var $;
             const current = await read(three.store, 'doc_current');
             $mol_assert_equal(current.link().str, link);
             $mol_assert_equal(await read(three.store, 'source'), src_page);
+        },
+        /**
+         * P2: A DOCUMENT OPENED BY A LINK AND ONLY READ USED TO BE KEPT BY A COIN
+         * TOSS, and under an unknown quota by no toss at all.
+         *
+         * Keeping a land on disk is not a flag but a sharding rule: the base compares
+         * the tail of the reader's key with the tail of the land link, cropped by how
+         * full the storage is, and a browser that cannot tell its quota reads as
+         * completely full — nothing is kept. What hides this everywhere else is that
+         * a WRITE sets the flag and freezes the rule, so only a land nobody wrote to
+         * this session is exposed. Somebody else's document, opened by its link and
+         * read, is exactly that land.
+         *
+         * The stand states the quota rather than taking the one of this machine: what
+         * is under test is the rule, and a test whose answer depends on how full the
+         * disk of the runner happens to be answers about the runner.
+         *
+         * Measured 10.09.2026 before the mitigation: under an unknown quota the
+         * document left NOTHING on disk — nine units with a quota, zero without — and
+         * the second session opened onto an empty editor.
+         */
+        async 'a document opened by a link survives a restart with the quota unknown'($) {
+            const disk = new Map;
+            const mine = $bog_vmap_app_store_test_mine(disk);
+            /**
+             * The document belongs to somebody else and never touches our disk on the
+             * way in: it is made under their key, in their own land.
+             */
+            const owner = await $.$giper_baza_auth.grab();
+            const theirs = $giper_baza_land.make({ $, auth: () => owner });
+            const their_doc = theirs.Data($bog_vmap_app_doc);
+            their_doc.title('Theirs');
+            store($).doc_source(their_doc, src_hero);
+            const link = their_doc.link();
+            const session = () => {
+                const ctx = Object.create($);
+                ctx.$giper_baza_land = class extends $$.$giper_baza_land {
+                };
+                ctx.$giper_baza_mine = class extends mine {
+                };
+                const glob = class extends $.$giper_baza_glob {
+                    static lands_touched = new $mol_wire_set();
+                };
+                glob.$ = ctx;
+                ctx.$giper_baza_glob = glob;
+                ctx.$mol_state_arg = class extends $.$mol_state_arg {
+                };
+                // A browser that cannot tell the quota: nothing to divide by, so the
+                // fullness is one and the level infinite — «no room», says the rule.
+                ctx.$mol_storage = class extends $.$mol_storage {
+                    static total() { return 0; }
+                    static used() { return 0; }
+                    static portion() { return 1; }
+                };
+                const store = $bog_vmap_app_store.make({
+                    $: ctx,
+                    doc_land_config: () => null,
+                });
+                const eye = new $mol_wire_atom('eye', () => {
+                    try {
+                        return store.source().length;
+                    }
+                    catch (error) {
+                        if ($mol_promise_like(error))
+                            return $mol_fail_hidden(error);
+                        return -1;
+                    }
+                });
+                return { store, look: () => { try {
+                        eye.fresh();
+                    }
+                    catch (error) { } } };
+            };
+            /**
+             * Every read of the store goes through a fiber. Outside one, the check of
+             * a signature lets its promise out as if it were a failure, and the test
+             * reports a loss that is its own doing.
+             */
+            const read = (store, name, ...args) => $mol_wire_async(store)[name](...args);
+            const one = session();
+            // The address names it, and the editor boots on it — the whole of what a
+            // person does. A direct pick, because a write to the address through a
+            // fiber does not settle on this stand.
+            one.store.doc_pick(link);
+            /**
+             * THE READER COMES FIRST, and the order is not cosmetic. A land object
+             * made while nobody is looking belongs to whatever made it and goes away
+             * with it, and the request to keep it goes away too: measured on this
+             * stand, booting before the first read left nothing on disk even with the
+             * mitigation in place, and the loss looked exactly like the defect. The
+             * editor draws before it boots — `boot` is called out of `auto`, which
+             * runs while the view renders — so this is the product order as well.
+             */
+            one.look();
+            // Called plainly, the way `auto` calls it, and not through a fiber.
+            $mol_assert_equal(one.store.boot(), 'ready');
+            // The land arrives the way the network delivers it, and NOTHING is
+            // written into it here: that is the case under test.
+            await $mol_wire_async(one.store.doc(link).land()).units_steal(theirs);
+            one.look();
+            $mol_assert_equal(await read(one.store, 'source'), src_hero);
+            // Saving is driven by the yard, which has no master here, so it is asked
+            // for directly: what this checks is the rule, not the timer.
+            await $mol_wire_async(one.store.doc(link).land()).units_saving();
+            // On disk at all: the assertion that fails first, and before the reads
+            // below could wait for a master that is not there.
+            $mol_assert_equal((disk.get(link.land().str)?.size ?? 0) > 0, true);
+            // A reload: same disk, every cache new, and no network behind it.
+            const two = session();
+            two.store.doc_pick(link);
+            two.look();
+            $mol_assert_equal(await read(two.store, 'source'), src_hero);
+            $mol_assert_equal(await read(two.store, 'title'), 'Theirs');
         },
         /**
          * The recorded choice can be moved, and that is what a rename of the root
@@ -13114,7 +13240,7 @@ var $;
         },
         /**
          * A dead address is answered in words, not by the status line of the
-         * response. `$mol_fetch` throws «Not Found» and nothing else, and that
+         * response. The fetch throws «Not Found» and nothing else, and that
          * reached the counter as the whole explanation.
          */
         'a pack that does not answer says so, and says what was looked for'($) {

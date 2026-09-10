@@ -43,123 +43,6 @@ $mol_check $mol_button_minor
 				sub /
 					<= title \
 
-$mol_hotkey $mol_plugin
-	event *
-		^
-		keydown? <=> keydown? null
-	key *
-	mod_ctrl false
-	mod_alt false
-	mod_shift false
-
-$mol_string $mol_view
-	dom_name \input
-	enabled true
-	minimal_height 40
-	autocomplete false
-	selection? /number
-		0
-		0
-	auto /
-		<= selection_watcher null
-		<= error_report null
-	field *
-		^
-		disabled <= disabled false
-		value <= value_changed? <=> value? \
-		placeholder <= hint_visible <= hint \
-		spellcheck <= spellcheck true
-		autocomplete <= autocomplete_native \
-		selectionEnd <= selection_end 0
-		selectionStart <= selection_start 0
-		inputMode <= keyboard \text
-		enterkeyhint <= enter \go
-	attr *
-		^
-		maxlength <= length_max +Infinity
-		type <= type? \text
-	event *
-		^
-		input? <=> event_change? null
-	plugins /
-		<= Submit $mol_hotkey
-			mod_ctrl <= submit_with_ctrl false
-			key * enter? <=> submit? null
-
-$mol_svg $mol_view
-	dom_name \svg
-	dom_name_space \http://www.w3.org/2000/svg
-	font_size 16
-	font_family \
-	style_size *
-
-$mol_svg_root $mol_svg
-	dom_name \svg
-	attr *
-		^
-		viewBox <= view_box \0 0 100 100
-		preserveAspectRatio <= aspect \xMidYMid
-
-$mol_svg_path $mol_svg
-	dom_name \path
-	attr *
-		^
-		d <= geometry \
-
-
-$mol_icon $mol_svg_root
-	view_box \0 0 24 24
-	minimal_width 16
-	minimal_height 16
-	sub /
-		<= Path $mol_svg_path
-			geometry <= path \
-
-$mol_icon_menu $mol_icon path \M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z
-
-$mol_icon_menu_down $mol_icon path \M7,10L12,15L17,10H7Z
-
-$mol_icon_menu_down_outline $mol_icon path \M18,9V10.5L12,16.5L6,10.5V9H18M12,13.67L14.67,11H9.33L12,13.67Z
-
-$mol_icon_menu_up $mol_icon path \M7,15L12,10L17,15H7Z
-
-$mol_icon_menu_up_outline $mol_icon path \M18,16V14.5L12,8.5L6,14.5V16H18M12,11.33L14.67,14H9.33L12,11.33Z
-
-$mol_number $mol_view
-	precision_view <= precision 0
-	precision_change <= precision 0
-	boost 10
-	value_min -Infinity
-	value_max +Infinity
-	value? +NaN
-	enabled true
-	plugins /
-		<= Hotkey $mol_hotkey
-			key *
-				down? <=> event_dec? null
-				up? <=> event_inc? null
-				pageDown? <=> event_dec_boost? null
-				pageUp? <=> event_inc_boost? null
-	sub /
-		<= String $mol_string
-			- \ we don't want native number controls in mobile devices
-			- \ https://stackoverflow.com/questions/3790935/can-i-hide-the-html5-number-input-s-spin-box
-			type <= type \text
-			keyboard \decimal
-			value? <=> value_string? \
-			hint <= hint \ 
-			enabled <= string_enabled <= enabled
-			submit? <=> submit? null
-			selection? <=> selection? /number
-		<= Dec $mol_button_minor
-			event_click? <=> event_dec? null
-			enabled <= dec_enabled <= enabled
-			sub / <= dec_icon $mol_icon_menu_down_outline
-		<= Inc $mol_button_minor
-			event_click? <=> event_inc? null
-			enabled <= inc_enabled <= enabled
-			sub / <= inc_icon $mol_icon_menu_up_outline
-
 $mol_bar $mol_view
 
 $mol_list $mol_view
@@ -252,6 +135,35 @@ $mol_text_code_line $mol_paragraph
 		uri <= token_uri* \
 	find_pos* null
 
+$mol_svg $mol_view
+	dom_name \svg
+	dom_name_space \http://www.w3.org/2000/svg
+	font_size 16
+	font_family \
+	style_size *
+
+$mol_svg_root $mol_svg
+	dom_name \svg
+	attr *
+		^
+		viewBox <= view_box \0 0 100 100
+		preserveAspectRatio <= aspect \xMidYMid
+
+$mol_svg_path $mol_svg
+	dom_name \path
+	attr *
+		^
+		d <= geometry \
+
+
+$mol_icon $mol_svg_root
+	view_box \0 0 24 24
+	minimal_width 16
+	minimal_height 16
+	sub /
+		<= Path $mol_svg_path
+			geometry <= path \
+
 $mol_icon_clipboard $mol_icon path \M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3
 
 $mol_icon_clipboard_outline $mol_icon path \M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V5H19V19H5V5H7V7Z
@@ -293,6 +205,49 @@ $mol_text_code $mol_stack
 		<= Copy $mol_button_copy
 			hint @ \Copy whole code
 			text <= text_export \
+
+$mol_hotkey $mol_plugin
+	event *
+		^
+		keydown? <=> keydown? null
+	key *
+	mod_ctrl false
+	mod_alt false
+	mod_shift false
+
+$mol_string $mol_view
+	dom_name \input
+	enabled true
+	minimal_height 40
+	autocomplete false
+	selection? /number
+		0
+		0
+	auto /
+		<= selection_watcher null
+		<= error_report null
+	field *
+		^
+		disabled <= disabled false
+		value <= value_changed? <=> value? \
+		placeholder <= hint_visible <= hint \
+		spellcheck <= spellcheck true
+		autocomplete <= autocomplete_native \
+		selectionEnd <= selection_end 0
+		selectionStart <= selection_start 0
+		inputMode <= keyboard \text
+		enterkeyhint <= enter \go
+	attr *
+		^
+		maxlength <= length_max +Infinity
+		type <= type? \text
+	event *
+		^
+		input? <=> event_change? null
+	plugins /
+		<= Submit $mol_hotkey
+			mod_ctrl <= submit_with_ctrl false
+			key * enter? <=> submit? null
 
 $mol_textarea $mol_stack
 	attr *
@@ -457,7 +412,8 @@ $bog_vmap_app_publish $mol_view
 	- Property name of the picked part on the root class, empty when nothing is
 	- picked. The button is off without one.
 	part \
-	- Declaration of the picked part, as the inspector reads it: `Name $base …`.
+	- Declaration of the picked part, as the inspector reads it: a name, its base
+	- class and the properties under them.
 	source \
 	- Method of the part, cut out of the body of the class it belongs to.
 	js \
@@ -499,11 +455,56 @@ $mol_button_download $mol_button_minor
 		<= Icon $mol_icon_download
 		<= title \
 
+$mol_icon_menu $mol_icon path \M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z
+
+$mol_icon_menu_down $mol_icon path \M7,10L12,15L17,10H7Z
+
+$mol_icon_menu_down_outline $mol_icon path \M18,9V10.5L12,16.5L6,10.5V9H18M12,13.67L14.67,11H9.33L12,13.67Z
+
+$mol_icon_menu_up $mol_icon path \M7,15L12,10L17,15H7Z
+
+$mol_icon_menu_up_outline $mol_icon path \M18,16V14.5L12,8.5L6,14.5V16H18M12,11.33L14.67,14H9.33L12,11.33Z
+
+$mol_number $mol_view
+	precision_view <= precision 0
+	precision_change <= precision 0
+	boost 10
+	value_min -Infinity
+	value_max +Infinity
+	value? +NaN
+	enabled true
+	plugins /
+		<= Hotkey $mol_hotkey
+			key *
+				down? <=> event_dec? null
+				up? <=> event_inc? null
+				pageDown? <=> event_dec_boost? null
+				pageUp? <=> event_inc_boost? null
+	sub /
+		<= String $mol_string
+			- \ we don't want native number controls in mobile devices
+			- \ https://stackoverflow.com/questions/3790935/can-i-hide-the-html5-number-input-s-spin-box
+			type <= type \text
+			keyboard \decimal
+			value? <=> value_string? \
+			hint <= hint \ 
+			enabled <= string_enabled <= enabled
+			submit? <=> submit? null
+			selection? <=> selection? /number
+		<= Dec $mol_button_minor
+			event_click? <=> event_dec? null
+			enabled <= dec_enabled <= enabled
+			sub / <= dec_icon $mol_icon_menu_down_outline
+		<= Inc $mol_button_minor
+			event_click? <=> event_inc? null
+			enabled <= inc_enabled <= enabled
+			sub / <= inc_icon $mol_icon_menu_up_outline
+
 $bog_vmap_app_palette_item $mol_button_minor
 	current false
-	- A palette row is a line of text, not a tap target: 40 px of `$mol_button_typed`
-	- would show a dozen classes where three dozen fit. `$mol_list` sizes its virtual
-	- window by this very number, so it has to be the truth, not just CSS.
+	- A palette row is a line of text, not a tap target: the 40 px the typed button
+	- asks for would show a dozen classes where three dozen fit. The virtual list
+	- sizes its window by this very number, so it has to be the truth, not just CSS.
 	minimal_height 24
 	- Pointer down, not HTML5 `dragstart`. The native protocol cannot be driven by
 	- synthetic events at all, which would leave dragging unverifiable here, and it
@@ -597,7 +598,7 @@ $bog_vmap_app_palette $mol_view
 					<= Port_list $mol_list
 						rows <= port_rows /
 	-
-	- One button per class. `$mol_list` renders only what is on screen, so all
+	- One button per class. The virtual list renders only what is on screen, so all
 	- 449 of them cost nothing until scrolled to.
 	Class_row* $bog_vmap_app_palette_item
 		title <= class_title* \
