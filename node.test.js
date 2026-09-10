@@ -28535,6 +28535,7 @@ var $;
                     this.Scene(this.scene_key()),
                     this.Overlay(),
                     this.Wire(),
+                    this.Marks(),
                     ...this.slot() ? [this.Insert()] : [],
                     ...this.band() ? [this.Band()] : [],
                     this.Camera(),
@@ -39692,8 +39693,9 @@ var $;
             $mol_assert_equal(pane.warmed(), false);
             $mol_assert_equal(pane.sub()[0] !== frame_before, true);
             $mol_assert_equal(pane.sub()[0], pane.Scene(pane.scene_key()));
-            $mol_assert_equal(pane.sub().length, 4);
-            $mol_assert_equal(pane.sub()[3], pane.Camera());
+            $mol_assert_equal(pane.sub().length, 5);
+            $mol_assert_equal(pane.sub()[3], pane.Marks());
+            $mol_assert_equal(pane.sub()[4], pane.Camera());
             $mol_assert_equal(pane.watchdog(), null);
             $mol_assert_equal(pane.heartbeat(), null);
             $mol_assert_equal(posted.length, 0);
@@ -40095,6 +40097,18 @@ var $;
             });
             $mol_assert_equal(pane.error_marks().length, 1);
             $mol_assert_equal(pane.mark_hint('Calc'), 'исполнение — Calc: boom');
+        },
+        'the mark of a failure reaches the screen'($) {
+            const { pane, answer } = pane_make($);
+            answer({
+                kind: 'sizes',
+                sizes: { [`${root}/Calc`]: { x: 10, y: 20, width: 100, height: 50 } },
+            });
+            answer({ kind: 'error', at: 'runtime', message: 'boom', node: 'Calc' });
+            pane.dom_tree();
+            const node = pane.Mark('Calc').dom_tree();
+            $mol_assert_equal(node.getAttribute('title'), 'исполнение — Calc: boom');
+            $mol_assert_equal(pane.dom_node().contains(node), true);
         },
         'a node that stops being drawn keeps its mark where it was'($) {
             const { pane, answer } = pane_make($);
