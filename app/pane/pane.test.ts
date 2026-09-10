@@ -19,8 +19,13 @@ namespace $ {
 
 	/**
 	 * A pane with a scene that has said `ready`, a known rectangle and a listening
-	 * peer. The clock is the test's own and moves only when the test says so, or a
-	 * push and its answer could land on the same millisecond.
+	 * peer.
+	 *
+	 * No clock is handed in, and there used to be one: the stamps a question and an
+	 * answer are ordered by were read off a wall clock, so two of them could land on
+	 * the same millisecond and the watch would disarm over a scene that had answered
+	 * nothing. They are serial numbers now, and a serial cannot repeat, so the stand
+	 * has nothing left to hold still.
 	 */
 	const pane_make = (
 		$: $mol_ambient_context,
@@ -35,15 +40,13 @@ namespace $ {
 			postMessage( data: unknown ) { posted.push( data as sent ) },
 		}
 
-		const clock = { now: 1000 }
-
 		// Every name the geometry mentions is a node of the document, unless the
 		// scenario says otherwise: these tests hand in the boxes themselves, and
 		// what they hand in is what they mean. A scenario about the boundary
 		// between the document and the insides of a pack class says so outright.
 		const declared = ()=> {
 			const names = new Set< string >()
-			for( const key of Object.keys( pane.sizes_last ) ) {
+			for( const key of Object.keys( pane.sizes() ) ) {
 				for( const step of key.split( '/' ).slice( 1 ) ) names.add( step )
 			}
 			return [ ... names ]
@@ -55,18 +58,16 @@ namespace $ {
 			doc_names: declared,
 			pane_rect: ()=> ({ left: 0, top: 0, width: 1000, height: 800, ... rect }),
 			scene_peer: ()=> peer,
-			now: ()=> clock.now,
 			... over,
 		})
 
 		pane.handshake( pane.scene_key(), 1 )
 
 		const answer = ( data: object )=> {
-			clock.now ++
 			pane.message_receive( { data: { ns: $bog_vmap_bridge_ns, ... data }, source: peer } as unknown as MessageEvent )
 		}
 
-		return { pane, peer, posted, clock, answer }
+		return { pane, peer, posted, answer }
 	}
 
 	const box = ( x: number, y: number, width = 100, height = 50 ) => ({ x, y, width, height })
@@ -431,7 +432,7 @@ namespace $ {
 			pane.camera_shift( new $mol_vector_2d( 100, 50 ) )
 			pane.camera_zoom( 2 )
 
-			pane.sizes_last = { [ `${root}/A` ]: box( 30, 40 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 30, 40 ) })
 
 			// World (50, 60) is screen 50*2+100+10, 60*2+50+20.
 			pane.node_press( pointer( 210, 190 ) )
@@ -453,12 +454,56 @@ namespace $ {
 
 		},
 
+		/**
+		 * CARRYING A NODE IS NOT ENTERING IT. The second press on a node picked alone
+		 * is the one that would let the pointer in, and a drag begins with exactly
+		 * that press — so the only thing telling the two apart is how far the pointer
+		 * travelled, and it is read on the release.
+		 *
+		 * THE RELEASE IS ITS OWN WITNESS, and that is what this pins down. A move
+		 * records the travel as it goes, so an ordinary drag is told from a click
+		 * long before the button comes up. What has no move at all is a release that
+		 * arrives far from its press — the pointer went out of the window and the
+		 * capture was lost, or the release is a synthetic one — and there the only
+		 * measurement ever taken is the one the release takes itself.
+		 *
+		 * The guarantee is thin enough to lose by accident: the press lives in a cell
+		 * now, its travel is recorded by replacing the value, and a release that took
+		 * its reference to the press BEFORE measuring would read the press as it
+		 * started — never moved, therefore a click, therefore a way in. Written after
+		 * a negative run: the first version of this scenario moved the pointer first
+		 * and stayed green with the fault put back, because the move had already
+		 * recorded everything.
+		 */
+		'a release far from its press is not a way into the node'( $ ) {
+
+			const { pane } = pane_make( $ )
+
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
+			pane.spots({ A: { x: 0, y: 0 } })
+
+			// First click: picked, and the pointer stays outside.
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
+
+			$mol_assert_equal( pane.primary(), 'A' )
+			$mol_assert_equal( pane.inside(), false )
+
+			// The press that would have let the pointer in, and then nothing until a
+			// release two hundred pixels away.
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_release( pointer( 250, 225, { buttons: 0 } ) )
+
+			$mol_assert_equal( pane.inside(), false )
+
+		},
+
 		/** A pick of anything else closes the hole without anybody clearing it. */
 		'picking another node puts the pointer back outside'( $ ) {
 
 			const { pane } = pane_make( $ )
 
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ), [ `${root}/B` ]: box( 300, 0 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ), [ `${root}/B` ]: box( 300, 0 ) })
 
 			pane.node_press( pointer( 50, 25 ) )
 			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
@@ -488,7 +533,7 @@ namespace $ {
 
 			const { pane, posted } = pane_make( $ )
 
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
 
 			pane.node_press( pointer( 50, 25 ) )
 			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
@@ -504,7 +549,7 @@ namespace $ {
 
 			const { pane, posted } = pane_make( $ )
 
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
 			pane.spots({ A: { x: 0, y: 0 } })
 
 			pane.node_press( pointer( 50, 25 ) )
@@ -515,6 +560,42 @@ namespace $ {
 			$mol_assert_equal( pane.spots().A.x, 20 )
 			$mol_assert_equal( pane.spots().A.y, 0 )
 			$mol_assert_equal( clicks( posted ).length, 0 )
+
+		},
+
+		/**
+		 * THE RING FOLLOWS THE POINTER, AND COUNTS THE MOVE ONCE. Measured boxes are
+		 * debounced inside the scene and the timer restarts on every change, so
+		 * through a continuous drag no fresh report arrives at all: a ring drawn from
+		 * the report alone would stand at the grab until the pointer stopped. The
+		 * live offset is added for exactly that. But the moment a report DOES arrive
+		 * it already carries the move, and adding the offset on top of it would count
+		 * the same twenty pixels twice.
+		 *
+		 * The two cases are told apart by the identity of the report the grab was
+		 * taken against, and by nothing else — a fresh report is a new object. Written
+		 * because the guard had no test at all: it was a version counter before, and
+		 * the negative run on the identity that replaced it came back green.
+		 */
+		'the ring carries the live offset only until a fresh report arrives'( $ ) {
+
+			const { pane } = pane_make( $ )
+
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
+			pane.spots({ A: { x: 0, y: 0 } })
+
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_move( pointer( 70, 25 ) )
+
+			// Nothing has been measured since the grab: the box is still at the
+			// origin, and the ring stands twenty pixels to the right of it.
+			$mol_assert_equal( pane.sizes()[ `${root}/A` ].x, 0 )
+			$mol_assert_equal( pane.part_box( 'A' )!.left, 20 )
+
+			// Now the scene reports the node where the drag has already put it.
+			pane.sizes({ [ `${root}/A` ]: box( 20, 0 ) })
+
+			$mol_assert_equal( pane.part_box( 'A' )!.left, 20 )
 
 		},
 
@@ -534,7 +615,7 @@ namespace $ {
 
 			const { pane, posted } = pane_make( $ )
 
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
 
 			pane.node_press( pointer( 50, 25 ) )
 			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
@@ -556,7 +637,7 @@ namespace $ {
 
 			const { pane, posted } = pane_make( $ )
 
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
 			pane.picked([ 'A' ])
 
 			pane.node_press( pointer( 500, 500 ) )
@@ -602,7 +683,7 @@ namespace $ {
 
 			const { pane } = pane_make( $ )
 
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0, 100, 100 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0, 100, 100 ) })
 
 			pane.camera_zoom( 1 )
 			$mol_assert_equal( pane.node_at( [ 106, 50 ] ), 'A' )
@@ -621,7 +702,7 @@ namespace $ {
 
 			pane.camera_shift( new $mol_vector_2d( 100, 50 ) )
 			pane.camera_zoom( 2 )
-			pane.sizes_last = { [ `${root}/A` ]: box( 30, 40, 100, 50 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 30, 40, 100, 50 ) })
 
 			$mol_assert_equal( pane.overlay_style().clipPath, 'none' )
 
@@ -651,11 +732,11 @@ namespace $ {
 
 			const { pane } = pane_make( $ )
 
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${root}/A` ]: box( 0, 0, 100, 50 ),
 				[ `${root}/Page` ]: box( 200, 0, 300, 200 ),
 				[ `${root}/Page/B` ]: box( 200, 0, 100, 50 ),
-			}
+			})
 
 			// A sweep across the lot: the page comes, its child does not.
 			pane.node_press( pointer( -10, -10, { ctrlKey: true } ) )
@@ -679,7 +760,7 @@ namespace $ {
 
 			const { pane } = pane_make( $ )
 
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
 
 			pane.node_press( pointer( 50, 25 ) )
 			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
@@ -708,11 +789,11 @@ namespace $ {
 			const { pane } = pane_make( $, {}, { doc_names: ()=> [ 'Calc' ] } )
 
 			// A part of the document, and two views of its class inside it.
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${root}/Calc` ]: box( 0, 0, 200, 100 ),
 				[ `${root}/Calc/Head` ]: box( 0, 0, 200, 30 ),
 				[ `${root}/Calc/Head/String` ]: box( 10, 5, 80, 20 ),
-			}
+			})
 
 			$mol_assert_equal( pane.node_at([ 50, 15 ]), 'Calc' )
 			$mol_assert_equal( pane.node_at([ 100, 50 ]), 'Calc' )
@@ -729,11 +810,11 @@ namespace $ {
 
 			const { pane } = pane_make( $, {}, { doc_names: ()=> [ 'Page', 'Calc' ] } )
 
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${root}/Page` ]: box( 0, 0, 400, 300 ),
 				[ `${root}/Page/Calc` ]: box( 0, 0, 200, 100 ),
 				[ `${root}/Page/Calc/Head` ]: box( 0, 0, 200, 30 ),
-			}
+			})
 
 			$mol_assert_equal( pane.node_at([ 100, 15 ]), 'Calc' )
 			$mol_assert_equal( pane.node_at([ 300, 200 ]), 'Page' )
@@ -749,7 +830,7 @@ namespace $ {
 
 			const { pane } = pane_make( $ )
 
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
 			pane.spots({ A: { x: 0, y: 0 } })
 
 			// Picked and grabbed in the middle; the release fell into the hole and
@@ -775,10 +856,10 @@ namespace $ {
 
 			const { pane } = pane_make( $, {}, { doc_names: ()=> [ 'Pair', 'Schet' ] } )
 
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${root}/Schet` ]: box( 700, 600 ),
 				[ `${root}/Pair` ]: box( 0, 0, 400, 300 ),
-			}
+			})
 
 			// Carried into the pair: the scene will measure it at the new path, and
 			// the owner tells the canvas to forget where it used to be.
@@ -787,8 +868,7 @@ namespace $ {
 			$mol_assert_like( Object.keys( pane.sizes() ), [ `${root}/Pair` ] )
 
 			// And the new report puts it inside, with one box answering to the name.
-			pane.sizes_last = { ... pane.sizes_last, [ `${root}/Pair/Schet` ]: box( 10, 10 ) }
-			pane.sizes_version( pane.sizes_version() + 1 )
+			pane.sizes({ ... pane.sizes(), [ `${root}/Pair/Schet` ]: box( 10, 10 ) })
 
 			$mol_assert_like( pane.part_size( 'Schet' ), box( 10, 10 ) )
 			$mol_assert_equal( pane.part_names().filter( name => name === 'Schet' ).length, 1 )
@@ -819,11 +899,11 @@ namespace $ {
 			} )
 
 			// Stacked inside the pair, sharing a left edge: Map_2 above Map.
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${root}/Pair` ]: box( 0, 0, 400, 500 ),
 				[ `${root}/Pair/Map_2` ]: box( 0, 0, 320, 220 ),
 				[ `${root}/Pair/Map` ]: box( 0, 220, 320, 220 ),
-			}
+			})
 
 			pane.wire_drag({ from: 'Pair', from_prop: 'x', kind: 'number' })
 
@@ -844,7 +924,7 @@ namespace $ {
 
 			const { pane } = pane_make( $ )
 
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
 			pane.picked([ 'A' ])
 
 			pane.node_press( pointer( 500, 500, { ctrlKey: true } ) )
@@ -860,7 +940,7 @@ namespace $ {
 
 			const { pane } = pane_make( $ )
 
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ), [ `${root}/B` ]: box( 300, 0 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ), [ `${root}/B` ]: box( 300, 0 ) })
 			pane.spots({ A: { x: 0, y: 0 }, B: { x: 300, y: 0 } })
 			pane.picked([ 'A', 'B' ])
 
@@ -876,7 +956,7 @@ namespace $ {
 
 			const { pane } = pane_make( $ )
 
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
 			pane.picked([ 'A' ])
 			pane.entered( 'A' )
 			pane.carrying = ()=> true
@@ -895,7 +975,7 @@ namespace $ {
 		'the heartbeat pings once warmed and re-arms on the pong'( $ ) {
 
 			const timers = timers_fake( $ )
-			const { pane, posted, clock, answer } = pane_make( $ )
+			const { pane, posted, answer } = pane_make( $ )
 
 			// Not warmed: no baseline, no pulse.
 			$mol_assert_equal( pane.heartbeat(), null )
@@ -911,17 +991,21 @@ namespace $ {
 			const first = pane.heartbeat()
 			$mol_assert_equal( first, timers[ timers.length - 1 ] )
 
-			clock.now ++
 			first!.task()
 
 			const pings = posted.filter( m => m.kind === 'ping' )
 			$mol_assert_equal( pings.length, 1 )
-			$mol_assert_equal( pings[0].nonce, 1 )
+
+			// The nonce is a serial off the same clock as the stamps, so what is
+			// promised about it is that it is a number and that the echo carries it
+			// back, not what its value happens to be.
+			const nonce = pings[0].nonce as number
+			$mol_assert_equal( nonce > 0, true )
 
 			// The ping is a question: the watchdog is armed by it.
 			$mol_assert_equal( pane.watchdog() !== null, true )
 
-			answer({ kind: 'pong', nonce: 1 })
+			answer({ kind: 'pong', nonce })
 
 			// Answered: disarmed, and the next ping is scheduled.
 			$mol_assert_equal( pane.watchdog(), null )
@@ -932,10 +1016,9 @@ namespace $ {
 		'a silent scene is called stalled when the limit runs out'( $ ) {
 
 			const timers = timers_fake( $ )
-			const { pane, clock } = pane_make( $ )
+			const { pane } = pane_make( $ )
 
 			pane.warmed( true )
-			clock.now ++
 			pane.heartbeat()!.task()
 
 			const watch = pane.watchdog()
@@ -1058,9 +1141,9 @@ namespace $ {
 		'a relayed click arms the watchdog and sizes disarm it'( $ ) {
 
 			timers_fake( $ )
-			const { pane, clock, answer } = pane_make( $ )
+			const { pane, answer } = pane_make( $ )
 
-			pane.sizes_last = { [ `${root}/A` ]: box( 0, 0 ) }
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
 			pane.warmed( true )
 
 			// The first read pushes the document and the rest; answered, the watch rests.
@@ -1068,7 +1151,6 @@ namespace $ {
 			answer({ kind: 'sizes', sizes: {} })
 			$mol_assert_equal( pane.watchdog(), null )
 
-			clock.now ++
 
 			// Twice: the click that goes to the scene is the one that lets the
 			// pointer inside, and the watch is armed by what is sent, not by a pick.
@@ -1111,13 +1193,12 @@ namespace $ {
 		'a frame that never answered at all is called out, on a limit of its own'( $ ) {
 
 			const timers = timers_fake( $ )
-			const { pane, clock, answer } = pane_make( $ )
+			const { pane, answer } = pane_make( $ )
 
 			// The frame boots and says `ready`, which proves nothing but the boot.
 			answer({ kind: 'ready' })
 
 			// The host asks its questions; the scene compiles the document and stops.
-			clock.now ++
 			pane.watchdog()
 
 			$mol_assert_equal( pane.warmed(), false )
@@ -1146,7 +1227,7 @@ namespace $ {
 			pane.camera_zoom( 2 )
 
 			// Calc at world (0,0) is screen (100,50) 200×100; Map at world (300,0) is screen (700,50).
-			pane.sizes_last = { [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) }
+			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) })
 			pane.picked([ 'Calc' ])
 
 			const before = node.source()
@@ -1195,7 +1276,7 @@ namespace $ {
 
 			const { pane, node } = wired_make( $ )
 
-			pane.sizes_last = { [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) }
+			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) })
 			pane.picked([ 'Calc' ])
 
 			const before = node.source()
@@ -1221,14 +1302,14 @@ namespace $ {
 			const { pane } = wired_make( $ )
 
 			pane.camera_zoom( .5 )
-			pane.sizes_last = { [ `${root}/Calc` ]: box( 0, 0 ) }
+			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ) })
 			pane.picked([ 'Calc' ])
 
 			// Box is 50 wide on screen, the dot at 62, the grip strip reaches 8 px past 50.
 			pane.node_press( pointer( 62, 7 ) )
 
 			$mol_assert_equal( pane.wire_drag() !== null, true )
-			$mol_assert_equal( pane.drag, null )
+			$mol_assert_equal( pane.drag(), null )
 
 			pane.node_release( pointer( 62, 7, { buttons: 0 } ) )
 
@@ -1239,7 +1320,7 @@ namespace $ {
 
 			const { pane, node } = wired_make( $ )
 
-			pane.sizes_last = { [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) }
+			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) })
 
 			const before = node.source()
 			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' })
@@ -1302,13 +1383,12 @@ namespace $ {
 			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' })
 			node.link_add({ from: 'Calc_2', from_prop: 'result', to: 'Map_2', to_prop: 'zoom' })
 
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${root}/Calc` ]: box( 0, 0 ),
 				[ `${root}/Map` ]: box( 300, 0 ),
 				[ `${root}/Calc_2` ]: box( 5000, 5000 ),
 				[ `${root}/Map_2` ]: box( 5300, 5000 ),
-			}
-			pane.sizes_version( pane.sizes_version() + 1 )
+			})
 
 			const wants = ()=> posted.filter( m => m.kind === 'values_want' ).map( m => m.names )
 
@@ -1351,11 +1431,11 @@ namespace $ {
 
 			const { pane } = pane_make( $ )
 
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${root}/Board` ]: box( 0, 0, 400, 300 ),
 				[ `${root}/Board/Head` ]: box( 0, 0, 400, 100 ),
 				[ `${root}/Loose` ]: box( 600, 0, 100, 50 ),
-			}
+			})
 
 			$mol_assert_equal( pane.node_at( [ 200, 50 ] ), 'Head' )
 			$mol_assert_equal( pane.node_at( [ 200, 200 ] ), 'Board' )
@@ -1378,11 +1458,11 @@ namespace $ {
 
 			const { pane } = pane_make( $, {}, { containers: ()=> [ 'Board' ] } )
 
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${root}/Board` ]: box( 0, 0, 400, 300 ),
 				[ `${root}/Board/Head` ]: box( 0, 0, 400, 100 ),
 				[ `${root}/Board/Foot` ]: box( 0, 100, 400, 100 ),
-			}
+			})
 
 			const world = [ 200, 120 ] as const
 			const flat = pane.insert_slot( world )!
@@ -1418,11 +1498,11 @@ namespace $ {
 				},
 			} )
 
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${root}/Board` ]: box( 0, 0, 400, 300 ),
 				[ `${root}/Board/Head` ]: box( 0, 0, 400, 100 ),
 				[ `${root}/Loose` ]: box( 600, 0, 100, 50 ),
-			}
+			})
 
 			pane.spots({ Loose: { x: 600, y: 0 } })
 
@@ -1455,10 +1535,10 @@ namespace $ {
 				},
 			} )
 
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${root}/Board` ]: box( 0, 0, 400, 300 ),
 				[ `${root}/Loose` ]: box( 600, 0, 100, 50 ),
-			}
+			})
 
 			pane.spots({ Loose: { x: 600, y: 0 } })
 
@@ -1489,11 +1569,11 @@ namespace $ {
 				},
 			} )
 
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${root}/Board` ]: box( 0, 0, 400, 300 ),
 				[ `${root}/Board/Head` ]: box( 0, 0, 400, 100 ),
 				[ `${root}/Board/Foot` ]: box( 0, 100, 400, 100 ),
-			}
+			})
 
 			// Head taken by its own strip and carried below Foot.
 			pane.node_press( pointer( 200, 50 ) )
@@ -1516,14 +1596,14 @@ namespace $ {
 				axis: ( name: string )=> name === 'Bar' ? 'row' : 'column',
 			} )
 
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${root}/Page` ]: box( 0, 0, 400, 600 ),
 				[ `${root}/Page/Head` ]: box( 0, 0, 400, 100 ),
 				[ `${root}/Page/Bar` ]: box( 0, 100, 400, 100 ),
 				[ `${root}/Page/Bar/Left` ]: box( 0, 100, 200, 100 ),
 				[ `${root}/Page/Bar/Right` ]: box( 200, 100, 200, 100 ),
 				[ `${root}/Page/Foot` ]: box( 0, 200, 400, 100 ),
-			}
+			})
 
 			// Inside the bar, which lies inside the page: the deeper one wins.
 			const inner = pane.insert_slot( [ 250, 150 ] )!
@@ -1552,10 +1632,10 @@ namespace $ {
 
 			const { pane } = pane_make( $, {}, { containers: ()=> [ 'Board', 'Inner' ] } )
 
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${root}/Board` ]: box( 0, 0, 400, 300 ),
 				[ `${root}/Board/Inner` ]: box( 0, 0, 400, 100 ),
-			}
+			})
 
 			$mol_assert_equal( pane.insert_slot( [ 200, 50 ], 'Board' ), null )
 			$mol_assert_equal( pane.insert_slot( [ 200, 50 ], 'Inner' )?.owner, 'Board' )

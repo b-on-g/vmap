@@ -85,21 +85,21 @@ namespace $ {
 				doc_root: ()=> `${d}doc`,
 			}) as $$.$bog_vmap_app_pane
 
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${d}doc/A` ]: { x: 0, y: 0, width: 10, height: 10 },
 				[ `${d}doc/B` ]: { x: 20, y: 0, width: 10, height: 10 },
-			}
+			})
 
 			// What a report looks like once `B` has been culled: it is simply absent.
-			pane.sizes_last = { ... pane.sizes_last, [ `${d}doc/A` ]: { x: 5, y: 5, width: 10, height: 10 } }
+			pane.sizes({ ... pane.sizes(), [ `${d}doc/A` ]: { x: 5, y: 5, width: 10, height: 10 } })
 
-			$mol_assert_equal( pane.sizes_last[ `${d}doc/A` ].x, 5 )
-			$mol_assert_equal( Boolean( pane.sizes_last[ `${d}doc/B` ] ), true )
+			$mol_assert_equal( pane.sizes()[ `${d}doc/A` ].x, 5 )
+			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/B` ] ), true )
 
 			pane.sizes_forget( 'B' )
 
-			$mol_assert_equal( Boolean( pane.sizes_last[ `${d}doc/B` ] ), false )
-			$mol_assert_equal( Boolean( pane.sizes_last[ `${d}doc/A` ] ), true )
+			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/B` ] ), false )
+			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/A` ] ), true )
 
 		},
 
@@ -111,19 +111,19 @@ namespace $ {
 				doc_root: ()=> `${d}doc`,
 			}) as $$.$bog_vmap_app_pane
 
-			pane.sizes_last = {
+			pane.sizes({
 				[ `${d}doc/Icon` ]: { x: 0, y: 0, width: 10, height: 10 },
 				[ `${d}doc/Icon/Path` ]: { x: 0, y: 0, width: 8, height: 8 },
 				[ `${d}doc/Icons` ]: { x: 0, y: 0, width: 10, height: 10 },
-			}
+			})
 
 			pane.sizes_forget( 'Icon' )
 
-			$mol_assert_equal( Boolean( pane.sizes_last[ `${d}doc/Icon` ] ), false )
-			$mol_assert_equal( Boolean( pane.sizes_last[ `${d}doc/Icon/Path` ] ), false )
+			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/Icon` ] ), false )
+			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/Icon/Path` ] ), false )
 
 			// A name this one is a prefix of is a different part and must stay.
-			$mol_assert_equal( Boolean( pane.sizes_last[ `${d}doc/Icons` ] ), true )
+			$mol_assert_equal( Boolean( pane.sizes()[ `${d}doc/Icons` ] ), true )
 
 		},
 
@@ -328,8 +328,7 @@ namespace $ {
 
 			app.board_add()
 
-			pane.sizes_last = { [ `${ app.doc_root() }/Page` ]: { x: 0, y: 0, width: 1280, height: 720 } }
-			pane.sizes_version( pane.sizes_version() + 1 )
+			pane.sizes({ [ `${ app.doc_root() }/Page` ]: { x: 0, y: 0, width: 1280, height: 720 } })
 
 			app.part_drop( `${d}mol_button_minor`, 100, 100 )
 
