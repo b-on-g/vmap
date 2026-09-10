@@ -6030,8 +6030,8 @@ var $;
     var $$;
     (function ($$) {
         /**
-         * Infinite background grid. Feeds two $mol_plot_ruler instances the same way
-         * $mol_plot_pane feeds its graphs, and renders only their curves.
+         * Infinite background grid. Feeds two rulers of the plotting module the same way
+         * its pane feeds its graphs, and renders only their curves.
          * @see ../../ARCHITECTURE.md section 8
          */
         class $bog_vmap_scene_grid extends $.$bog_vmap_scene_grid {
@@ -6238,331 +6238,6 @@ var $;
 })($ || ($ = {}));
 
 ;
-	($.$mol_list) = class $mol_list extends ($.$mol_view) {
-		gap_before(){
-			return 0;
-		}
-		Gap_before(){
-			const obj = new this.$.$mol_view();
-			(obj.style) = () => ({"paddingTop": (this.gap_before())});
-			return obj;
-		}
-		Empty(){
-			const obj = new this.$.$mol_view();
-			return obj;
-		}
-		gap_after(){
-			return 0;
-		}
-		Gap_after(){
-			const obj = new this.$.$mol_view();
-			(obj.style) = () => ({"paddingTop": (this.gap_after())});
-			return obj;
-		}
-		rows(){
-			return [
-				(this.Gap_before()), 
-				(this.Empty()), 
-				(this.Gap_after())
-			];
-		}
-		render_visible_only(){
-			return true;
-		}
-		render_over(){
-			return 0.1;
-		}
-		sub(){
-			return (this.rows());
-		}
-		item_height_min(id){
-			return 1;
-		}
-		item_width_min(id){
-			return 1;
-		}
-		view_window_shift(next){
-			if(next !== undefined) return next;
-			return 0;
-		}
-		view_window(){
-			return [0, 0];
-		}
-	};
-	($mol_mem(($.$mol_list.prototype), "Gap_before"));
-	($mol_mem(($.$mol_list.prototype), "Empty"));
-	($mol_mem(($.$mol_list.prototype), "Gap_after"));
-	($mol_mem(($.$mol_list.prototype), "view_window_shift"));
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    let cache = null;
-    function $mol_support_css_overflow_anchor() {
-        return cache ?? (cache = this.$mol_dom_context.CSS?.supports('overflow-anchor:auto') ?? false);
-    }
-    $.$mol_support_css_overflow_anchor = $mol_support_css_overflow_anchor;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    class $mol_dom_listener extends $mol_object {
-        _node;
-        _event;
-        _handler;
-        _config;
-        constructor(_node, _event, _handler, _config = { passive: true }) {
-            super();
-            this._node = _node;
-            this._event = _event;
-            this._handler = _handler;
-            this._config = _config;
-            this._node.addEventListener(this._event, this._handler, this._config);
-        }
-        destructor() {
-            this._node.removeEventListener(this._event, this._handler, this._config);
-            super.destructor();
-        }
-    }
-    $.$mol_dom_listener = $mol_dom_listener;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    class $mol_print extends $mol_object {
-        static before() {
-            return new $mol_dom_listener(this.$.$mol_dom_context, 'beforeprint', () => {
-                this.active(true);
-            });
-        }
-        static after() {
-            return new $mol_dom_listener(this.$.$mol_dom_context, 'afterprint', () => {
-                this.active(false);
-            });
-        }
-        static active(next) {
-            this.before();
-            this.after();
-            return next || false;
-        }
-    }
-    __decorate([
-        $mol_mem
-    ], $mol_print, "before", null);
-    __decorate([
-        $mol_mem
-    ], $mol_print, "after", null);
-    __decorate([
-        $mol_mem
-    ], $mol_print, "active", null);
-    $.$mol_print = $mol_print;
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * The list of rows with lazy/virtual rendering support based on `minimal_height` of rows.
-         * `mol_list` should contain only components that inherits `mol_view`. You should not place raw strings or numbers in list.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_list_demo
-         */
-        class $mol_list extends $.$mol_list {
-            sub() {
-                const rows = this.rows();
-                const next = (rows.length === 0) ? [this.Empty()] : rows;
-                const prev = $mol_mem_cached(() => this.sub());
-                const [start, end] = $mol_mem_cached(() => this.view_window()) ?? [0, 0];
-                if (prev && $mol_mem_cached(() => prev[start] !== next[start])) {
-                    const index = $mol_mem_cached(() => next.indexOf(prev[start])) ?? -1;
-                    if (index >= 0)
-                        this.view_window_shift(index - start);
-                }
-                return next;
-            }
-            render_visible_only() {
-                return this.$.$mol_support_css_overflow_anchor();
-            }
-            _view_window_last = [0, 0];
-            view_window(next) {
-                const kids = this.sub();
-                if (kids.length < 3)
-                    return [0, kids.length];
-                if (this.$.$mol_print.active())
-                    return [0, kids.length];
-                const rect = this.view_rect();
-                if (next)
-                    return next;
-                let [min, max] = $mol_mem_cached(() => this.view_window()) ?? this._view_window_last;
-                const shift = this.view_window_shift();
-                this.view_window_shift(0);
-                min += shift;
-                max += shift;
-                let max2 = max = Math.min(max, kids.length);
-                let min2 = min = Math.max(0, Math.min(min, max - 1));
-                const anchoring = this.render_visible_only();
-                const window_height = this.$.$mol_window.size().height + 40;
-                const over = Math.ceil(window_height * this.render_over());
-                const limit_top = -over;
-                const limit_bottom = window_height + over;
-                const gap_before = $mol_mem_cached(() => this.gap_before()) ?? 0;
-                const gap_after = $mol_mem_cached(() => this.gap_after()) ?? 0;
-                let top = Math.ceil(rect?.top ?? 0) + gap_before;
-                let bottom = Math.ceil(rect?.bottom ?? 0) - gap_after;
-                // change nothing when already covers all limits
-                if (top <= limit_top && bottom >= limit_bottom) {
-                    return [min2, max2];
-                }
-                // jumps when fully over limits
-                if (anchoring && ((bottom < limit_top) || (top > limit_bottom))) {
-                    min = 0;
-                    top = Math.ceil(rect?.top ?? 0);
-                    while (min < (kids.length - 1)) {
-                        const height = this.item_height_min(min);
-                        if (top + height >= limit_top)
-                            break;
-                        top += height;
-                        ++min;
-                    }
-                    min2 = min;
-                    max2 = max = min;
-                    bottom = top;
-                }
-                let top2 = top;
-                let bottom2 = bottom;
-                // force recalc min when overlapse top limit
-                if (anchoring && (top < limit_top) && (bottom < limit_bottom) && (max < kids.length)) {
-                    min2 = max;
-                    top2 = bottom;
-                }
-                // force recalc max when overlapse bottom limit
-                if ((bottom > limit_bottom) && (top > limit_top) && (min > 0)) {
-                    max2 = min;
-                    bottom2 = top;
-                }
-                // extend min to cover top limit
-                while (anchoring && ((top2 > limit_top) && (min2 > 0))) {
-                    --min2;
-                    top2 -= this.item_height_min(min2);
-                }
-                // extend max to cover bottom limit
-                while (bottom2 < limit_bottom && max2 < kids.length) {
-                    bottom2 += this.item_height_min(max2);
-                    ++max2;
-                }
-                return [min2, max2];
-            }
-            item_height_min(index) {
-                try {
-                    return this.sub()[index]?.minimal_height() ?? 0;
-                }
-                catch (error) {
-                    $mol_fail_log(error);
-                    return 0;
-                }
-            }
-            row_width_min(index) {
-                try {
-                    return this.sub()[index]?.minimal_width() ?? 0;
-                }
-                catch (error) {
-                    $mol_fail_log(error);
-                    return 0;
-                }
-            }
-            gap_before() {
-                let gap = 0;
-                const skipped = this.view_window()[0];
-                for (let i = 0; i < skipped; ++i)
-                    gap += this.item_height_min(i);
-                return gap;
-            }
-            gap_after() {
-                let gap = 0;
-                const from = this.view_window()[1];
-                const to = this.sub().length;
-                for (let i = from; i < to; ++i)
-                    gap += this.item_height_min(i);
-                return gap;
-            }
-            sub_visible() {
-                return [
-                    ...this.gap_before() ? [this.Gap_before()] : [],
-                    ...this.sub().slice(...this._view_window_last = this.view_window()),
-                    ...this.gap_after() ? [this.Gap_after()] : [],
-                ];
-            }
-            minimal_height() {
-                let height = 0;
-                const len = this.sub().length;
-                for (let i = 0; i < len; ++i)
-                    height += this.item_height_min(i);
-                return height;
-            }
-            minimal_width() {
-                let width = 0;
-                const len = this.sub().length;
-                for (let i = 0; i < len; ++i)
-                    width = Math.max(width, this.item_width_min(i));
-                return width;
-            }
-            force_render(path) {
-                const kids = this.rows();
-                const index = kids.findIndex(item => path.has(item));
-                if (index >= 0) {
-                    const win = this.view_window();
-                    if (index < win[0] || index >= win[1]) {
-                        this.view_window([this.render_visible_only() ? index : 0, index + 1]);
-                    }
-                    kids[index].force_render(path);
-                }
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_list.prototype, "sub", null);
-        __decorate([
-            $mol_mem
-        ], $mol_list.prototype, "view_window", null);
-        __decorate([
-            $mol_mem
-        ], $mol_list.prototype, "gap_before", null);
-        __decorate([
-            $mol_mem
-        ], $mol_list.prototype, "gap_after", null);
-        __decorate([
-            $mol_mem
-        ], $mol_list.prototype, "sub_visible", null);
-        __decorate([
-            $mol_mem
-        ], $mol_list.prototype, "minimal_height", null);
-        __decorate([
-            $mol_mem
-        ], $mol_list.prototype, "minimal_width", null);
-        $$.$mol_list = $mol_list;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/list/list.view.css", "[mol_list] {\n\twill-change: contents;\n\tdisplay: flex;\n\tflex-direction: column;\n\tflex-shrink: 0;\n\tmax-width: 100%;\n\t/* display: flex;\n\talign-items: stretch;\n\talign-content: stretch; */\n\ttransition: none;\n\t/* will-change: contents; */\n}\n\n[mol_list]:where([mol_view_error]) {\n\tmin-height: 1.5rem;\n}\n\n[mol_list_gap_before] ,\n[mol_list_gap_after] {\n\tdisplay: block !important;\n\tflex: none;\n\ttransition: none;\n\toverflow-anchor: none;\n}\n");
-})($ || ($ = {}));
-
-;
 "use strict";
 var $;
 (function ($) {
@@ -6583,22 +6258,19 @@ var $;
     }
     $.$bog_vmap_bridge_send = $bog_vmap_bridge_send;
     /**
-     * Takes a message off the wire, or null when it is not ours.
-     *
-     * The channel has no origin to check against, because the scene runs in an
-     * opaque origin, so anything able to reach this window can post here.
-     * Unknown shapes are dropped rather than trusted.
+     * Takes a message off the wire, or null when it is not ours. The channel has no
+     * origin to check against — the scene runs in an opaque one — so anything able
+     * to reach this window can post here, and unknown shapes are dropped.
      *
      * Always pass `peer` on the host side. Without it any window that posts a
-     * `ready` can take the channel over, and the host will happily talk to it:
-     * seen for real on stage 1, where a stray debug frame stole the bridge and
-     * the host spent an hour posting into a dead window. Identity of the peer
-     * comes from `Scene().dom_node().contentWindow`, never from `event.source`.
+     * `ready` takes the channel over: seen for real on stage 1, where a stray debug
+     * frame stole the bridge and the host spent an hour posting into a dead window.
+     * Identity comes from the frame element, never from `event.source`.
      *
-     * Passing the argument at all turns the check on, so a peer that is not
-     * known yet rejects every message instead of letting everything through.
-     * Omitting it entirely is the only way to opt out, and only the scene may:
-     * it has exactly one correspondent and answers into the same window.
+     * Passing the argument at all turns the check on, so a peer not known yet
+     * rejects everything instead of letting everything through. Omitting it is the
+     * only way to opt out, and only the scene may: it has one correspondent and
+     * answers into the same window.
      */
     function $bog_vmap_bridge_read(event, peer) {
         if (arguments.length > 1 && event.source !== peer)
@@ -8265,8 +7937,8 @@ var $;
      * Libraries first because the document is written against them, and a stable
      * sort keeps that unless a library class inherits a document class — legal,
      * odd, and then the base still comes first. The sort itself is the canonical
-     * `$bog_vmap_lang_sorted`: ordering declarations is a property of the language,
-     * and the scene's own copy of it was the second one too many.
+     * sort of the language module: ordering declarations is a property of the
+     * language, and the scene's own copy of it was the second one too many.
      *
      * A name declared twice keeps the LAST declaration and drops the earlier one,
      * which is the rule the class index of the library model already lives by and the rule the
@@ -10299,724 +9971,6 @@ var $;
 })($ || ($ = {}));
 
 ;
-	($.$mol_speck) = class $mol_speck extends ($.$mol_view) {
-		value(){
-			return null;
-		}
-		theme(){
-			return "$mol_theme_accent";
-		}
-		sub(){
-			return [(this.value())];
-		}
-	};
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * Z-index values for layers
-     * https://page.hyoo.ru/#!=xthcpx_wqmiba
-     */
-    $.$mol_layer = $mol_style_prop('mol_layer', [
-        'hover',
-        'focus',
-        'speck',
-        'float',
-        'popup',
-    ]);
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/layer/layer.css", ":root {\n\t--mol_layer_hover: 1;\n\t--mol_layer_focus: 2;\n\t--mol_layer_speck: 3;\n\t--mol_layer_float: 4;\n\t--mol_layer_popup: 5;\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/speck/speck.view.css", "[mol_speck] {\n\tfont-size: .75rem;\n\tborder-radius: 1rem;\n\tmargin: -0.5rem -0.2rem;\n\talign-self: flex-start;\n\tmin-height: 1em;\n\tmin-width: .75rem;\n\tvertical-align: sub;\n\tpadding: 0 .2rem;\n\tposition: absolute;\n\tz-index: var(--mol_layer_speck);\n\ttext-align: center;\n\tline-height: .9;\n\tdisplay: inline-block;\n\twhite-space: nowrap;\n\ttext-overflow: ellipsis;\n\tuser-select: none;\n\tbox-shadow: 0 0 3px rgba(0,0,0,.5);\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-	($.$mol_button) = class $mol_button extends ($.$mol_view) {
-		event_activate(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		activate(next){
-			return (this.event_activate(next));
-		}
-		clicks(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		event_key_press(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		key_press(next){
-			return (this.event_key_press(next));
-		}
-		disabled(){
-			return false;
-		}
-		tab_index(){
-			return 0;
-		}
-		hint(){
-			return "";
-		}
-		hint_safe(){
-			return (this.hint());
-		}
-		error(){
-			return "";
-		}
-		enabled(){
-			return true;
-		}
-		click(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		event_click(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		status(next){
-			if(next !== undefined) return next;
-			return [];
-		}
-		event(){
-			return {
-				...(super.event()), 
-				"click": (next) => (this.activate(next)), 
-				"dblclick": (next) => (this.clicks(next)), 
-				"keydown": (next) => (this.key_press(next))
-			};
-		}
-		attr(){
-			return {
-				...(super.attr()), 
-				"disabled": (this.disabled()), 
-				"role": "button", 
-				"tabindex": (this.tab_index()), 
-				"title": (this.hint_safe())
-			};
-		}
-		sub(){
-			return [(this.title())];
-		}
-		Speck(){
-			const obj = new this.$.$mol_speck();
-			(obj.value) = () => ((this.error()));
-			return obj;
-		}
-	};
-	($mol_mem(($.$mol_button.prototype), "event_activate"));
-	($mol_mem(($.$mol_button.prototype), "clicks"));
-	($mol_mem(($.$mol_button.prototype), "event_key_press"));
-	($mol_mem(($.$mol_button.prototype), "click"));
-	($mol_mem(($.$mol_button.prototype), "event_click"));
-	($mol_mem(($.$mol_button.prototype), "status"));
-	($mol_mem(($.$mol_button.prototype), "Speck"));
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-    * Key names code for hotkey
-    * @see [mol_hotkey](../../hotkey/hotkey.view.ts)
-    */
-    let $mol_keyboard_code;
-    (function ($mol_keyboard_code) {
-        $mol_keyboard_code[$mol_keyboard_code["backspace"] = 8] = "backspace";
-        $mol_keyboard_code[$mol_keyboard_code["tab"] = 9] = "tab";
-        $mol_keyboard_code[$mol_keyboard_code["enter"] = 13] = "enter";
-        $mol_keyboard_code[$mol_keyboard_code["shift"] = 16] = "shift";
-        $mol_keyboard_code[$mol_keyboard_code["ctrl"] = 17] = "ctrl";
-        $mol_keyboard_code[$mol_keyboard_code["alt"] = 18] = "alt";
-        $mol_keyboard_code[$mol_keyboard_code["pause"] = 19] = "pause";
-        $mol_keyboard_code[$mol_keyboard_code["capsLock"] = 20] = "capsLock";
-        $mol_keyboard_code[$mol_keyboard_code["escape"] = 27] = "escape";
-        $mol_keyboard_code[$mol_keyboard_code["space"] = 32] = "space";
-        $mol_keyboard_code[$mol_keyboard_code["pageUp"] = 33] = "pageUp";
-        $mol_keyboard_code[$mol_keyboard_code["pageDown"] = 34] = "pageDown";
-        $mol_keyboard_code[$mol_keyboard_code["end"] = 35] = "end";
-        $mol_keyboard_code[$mol_keyboard_code["home"] = 36] = "home";
-        $mol_keyboard_code[$mol_keyboard_code["left"] = 37] = "left";
-        $mol_keyboard_code[$mol_keyboard_code["up"] = 38] = "up";
-        $mol_keyboard_code[$mol_keyboard_code["right"] = 39] = "right";
-        $mol_keyboard_code[$mol_keyboard_code["down"] = 40] = "down";
-        $mol_keyboard_code[$mol_keyboard_code["insert"] = 45] = "insert";
-        $mol_keyboard_code[$mol_keyboard_code["delete"] = 46] = "delete";
-        $mol_keyboard_code[$mol_keyboard_code["key0"] = 48] = "key0";
-        $mol_keyboard_code[$mol_keyboard_code["key1"] = 49] = "key1";
-        $mol_keyboard_code[$mol_keyboard_code["key2"] = 50] = "key2";
-        $mol_keyboard_code[$mol_keyboard_code["key3"] = 51] = "key3";
-        $mol_keyboard_code[$mol_keyboard_code["key4"] = 52] = "key4";
-        $mol_keyboard_code[$mol_keyboard_code["key5"] = 53] = "key5";
-        $mol_keyboard_code[$mol_keyboard_code["key6"] = 54] = "key6";
-        $mol_keyboard_code[$mol_keyboard_code["key7"] = 55] = "key7";
-        $mol_keyboard_code[$mol_keyboard_code["key8"] = 56] = "key8";
-        $mol_keyboard_code[$mol_keyboard_code["key9"] = 57] = "key9";
-        $mol_keyboard_code[$mol_keyboard_code["A"] = 65] = "A";
-        $mol_keyboard_code[$mol_keyboard_code["B"] = 66] = "B";
-        $mol_keyboard_code[$mol_keyboard_code["C"] = 67] = "C";
-        $mol_keyboard_code[$mol_keyboard_code["D"] = 68] = "D";
-        $mol_keyboard_code[$mol_keyboard_code["E"] = 69] = "E";
-        $mol_keyboard_code[$mol_keyboard_code["F"] = 70] = "F";
-        $mol_keyboard_code[$mol_keyboard_code["G"] = 71] = "G";
-        $mol_keyboard_code[$mol_keyboard_code["H"] = 72] = "H";
-        $mol_keyboard_code[$mol_keyboard_code["I"] = 73] = "I";
-        $mol_keyboard_code[$mol_keyboard_code["J"] = 74] = "J";
-        $mol_keyboard_code[$mol_keyboard_code["K"] = 75] = "K";
-        $mol_keyboard_code[$mol_keyboard_code["L"] = 76] = "L";
-        $mol_keyboard_code[$mol_keyboard_code["M"] = 77] = "M";
-        $mol_keyboard_code[$mol_keyboard_code["N"] = 78] = "N";
-        $mol_keyboard_code[$mol_keyboard_code["O"] = 79] = "O";
-        $mol_keyboard_code[$mol_keyboard_code["P"] = 80] = "P";
-        $mol_keyboard_code[$mol_keyboard_code["Q"] = 81] = "Q";
-        $mol_keyboard_code[$mol_keyboard_code["R"] = 82] = "R";
-        $mol_keyboard_code[$mol_keyboard_code["S"] = 83] = "S";
-        $mol_keyboard_code[$mol_keyboard_code["T"] = 84] = "T";
-        $mol_keyboard_code[$mol_keyboard_code["U"] = 85] = "U";
-        $mol_keyboard_code[$mol_keyboard_code["V"] = 86] = "V";
-        $mol_keyboard_code[$mol_keyboard_code["W"] = 87] = "W";
-        $mol_keyboard_code[$mol_keyboard_code["X"] = 88] = "X";
-        $mol_keyboard_code[$mol_keyboard_code["Y"] = 89] = "Y";
-        $mol_keyboard_code[$mol_keyboard_code["Z"] = 90] = "Z";
-        $mol_keyboard_code[$mol_keyboard_code["metaLeft"] = 91] = "metaLeft";
-        $mol_keyboard_code[$mol_keyboard_code["metaRight"] = 92] = "metaRight";
-        $mol_keyboard_code[$mol_keyboard_code["select"] = 93] = "select";
-        $mol_keyboard_code[$mol_keyboard_code["numpad0"] = 96] = "numpad0";
-        $mol_keyboard_code[$mol_keyboard_code["numpad1"] = 97] = "numpad1";
-        $mol_keyboard_code[$mol_keyboard_code["numpad2"] = 98] = "numpad2";
-        $mol_keyboard_code[$mol_keyboard_code["numpad3"] = 99] = "numpad3";
-        $mol_keyboard_code[$mol_keyboard_code["numpad4"] = 100] = "numpad4";
-        $mol_keyboard_code[$mol_keyboard_code["numpad5"] = 101] = "numpad5";
-        $mol_keyboard_code[$mol_keyboard_code["numpad6"] = 102] = "numpad6";
-        $mol_keyboard_code[$mol_keyboard_code["numpad7"] = 103] = "numpad7";
-        $mol_keyboard_code[$mol_keyboard_code["numpad8"] = 104] = "numpad8";
-        $mol_keyboard_code[$mol_keyboard_code["numpad9"] = 105] = "numpad9";
-        $mol_keyboard_code[$mol_keyboard_code["multiply"] = 106] = "multiply";
-        $mol_keyboard_code[$mol_keyboard_code["add"] = 107] = "add";
-        $mol_keyboard_code[$mol_keyboard_code["subtract"] = 109] = "subtract";
-        $mol_keyboard_code[$mol_keyboard_code["decimal"] = 110] = "decimal";
-        $mol_keyboard_code[$mol_keyboard_code["divide"] = 111] = "divide";
-        $mol_keyboard_code[$mol_keyboard_code["F1"] = 112] = "F1";
-        $mol_keyboard_code[$mol_keyboard_code["F2"] = 113] = "F2";
-        $mol_keyboard_code[$mol_keyboard_code["F3"] = 114] = "F3";
-        $mol_keyboard_code[$mol_keyboard_code["F4"] = 115] = "F4";
-        $mol_keyboard_code[$mol_keyboard_code["F5"] = 116] = "F5";
-        $mol_keyboard_code[$mol_keyboard_code["F6"] = 117] = "F6";
-        $mol_keyboard_code[$mol_keyboard_code["F7"] = 118] = "F7";
-        $mol_keyboard_code[$mol_keyboard_code["F8"] = 119] = "F8";
-        $mol_keyboard_code[$mol_keyboard_code["F9"] = 120] = "F9";
-        $mol_keyboard_code[$mol_keyboard_code["F10"] = 121] = "F10";
-        $mol_keyboard_code[$mol_keyboard_code["F11"] = 122] = "F11";
-        $mol_keyboard_code[$mol_keyboard_code["F12"] = 123] = "F12";
-        $mol_keyboard_code[$mol_keyboard_code["numLock"] = 144] = "numLock";
-        $mol_keyboard_code[$mol_keyboard_code["scrollLock"] = 145] = "scrollLock";
-        $mol_keyboard_code[$mol_keyboard_code["semicolon"] = 186] = "semicolon";
-        $mol_keyboard_code[$mol_keyboard_code["equals"] = 187] = "equals";
-        $mol_keyboard_code[$mol_keyboard_code["comma"] = 188] = "comma";
-        $mol_keyboard_code[$mol_keyboard_code["dash"] = 189] = "dash";
-        $mol_keyboard_code[$mol_keyboard_code["period"] = 190] = "period";
-        $mol_keyboard_code[$mol_keyboard_code["forwardSlash"] = 191] = "forwardSlash";
-        $mol_keyboard_code[$mol_keyboard_code["graveAccent"] = 192] = "graveAccent";
-        $mol_keyboard_code[$mol_keyboard_code["bracketOpen"] = 219] = "bracketOpen";
-        $mol_keyboard_code[$mol_keyboard_code["slashBack"] = 220] = "slashBack";
-        $mol_keyboard_code[$mol_keyboard_code["slashBackLeft"] = 226] = "slashBackLeft";
-        $mol_keyboard_code[$mol_keyboard_code["bracketClose"] = 221] = "bracketClose";
-        $mol_keyboard_code[$mol_keyboard_code["quoteSingle"] = 222] = "quoteSingle";
-    })($mol_keyboard_code = $.$mol_keyboard_code || ($.$mol_keyboard_code = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Simple button.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_button_demo
-         */
-        class $mol_button extends $.$mol_button {
-            disabled() {
-                return !this.enabled();
-            }
-            event_activate(next) {
-                if (!next)
-                    return;
-                if (!this.enabled())
-                    return;
-                try {
-                    this.event_click(next);
-                    this.click(next);
-                    this.status([null]);
-                }
-                catch (error) {
-                    // Calling actions from catch section, if throwing promise breaks idempotency
-                    Promise.resolve().then(() => this.status([error]));
-                    $mol_fail_hidden(error);
-                }
-            }
-            event_key_press(event) {
-                if (event.keyCode === $mol_keyboard_code.enter) {
-                    return this.activate(event);
-                }
-            }
-            tab_index() {
-                return this.enabled() ? super.tab_index() : -1;
-            }
-            error() {
-                const error = this.status()?.[0];
-                if (!error)
-                    return '';
-                if ($mol_promise_like(error)) {
-                    return $mol_fail_hidden(error);
-                }
-                return this.$.$mol_error_message(error);
-            }
-            hint_safe() {
-                try {
-                    return this.hint();
-                }
-                catch (error) {
-                    $mol_fail_log(error);
-                    return '';
-                }
-            }
-            sub_visible() {
-                return [
-                    ...this.error() ? [this.Speck()] : [],
-                    ...this.sub(),
-                ];
-            }
-        }
-        $$.$mol_button = $mol_button;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/button/button.view.css", "[mol_button] {\n\tborder: none;\n\tfont: inherit;\n\tdisplay: inline-flex;\n\tflex-shrink: 0;\n\ttext-decoration: inherit;\n\tcursor: inherit;\n\tposition: relative;\n\tbox-sizing: border-box;\n\tword-break: normal;\n\tcursor: default;\n\tuser-select: none;\n\t-webkit-user-select: none;\n\tborder-radius: var(--mol_gap_round);\n\tbackground: transparent;\n\tcolor: inherit;\n}\n\n[mol_button]:where(:not(:disabled)):hover {\n\tz-index: var(--mol_layer_hover);\n}\n\n[mol_button]:focus {\n\toutline: none;\n\tz-index: var(--mol_layer_focus);\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_button_typed) = class $mol_button_typed extends ($.$mol_button) {
-		minimal_height(){
-			return 40;
-		}
-		minimal_width(){
-			return 40;
-		}
-	};
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/button/typed/typed.view.css", "[mol_button_typed] {\n\talign-content: center;\n\talign-items: center;\n\tpadding: var(--mol_gap_text);\n\tborder-radius: var(--mol_gap_round);\n\tgap: var(--mol_gap_space);\n\tuser-select: none;\n\tcursor: pointer;\n\tmin-width: 2.5rem;\n\tmin-height: 2.5rem;\n}\n\n[mol_button_typed][disabled] {\n\tpointer-events: none;\n}\n\n[mol_button_typed]:hover ,\n[mol_button_typed]:focus-visible {\n\tbox-shadow: inset 0 0 0 100vmax var(--mol_theme_hover);\n}\n\n[mol_button_typed]:active {\n\tcolor: var(--mol_theme_focus);\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-	($.$mol_button_minor) = class $mol_button_minor extends ($.$mol_button_typed) {};
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/button/minor/minor.view.css", "[mol_button_minor]:where(:not([disabled])) {\n\tcolor: var(--mol_theme_control);\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-	($.$mol_icon) = class $mol_icon extends ($.$mol_svg_root) {
-		path(){
-			return "";
-		}
-		Path(){
-			const obj = new this.$.$mol_svg_path();
-			(obj.geometry) = () => ((this.path()));
-			return obj;
-		}
-		view_box(){
-			return "0 0 24 24";
-		}
-		minimal_width(){
-			return 16;
-		}
-		minimal_height(){
-			return 16;
-		}
-		sub(){
-			return [(this.Path())];
-		}
-	};
-	($mol_mem(($.$mol_icon.prototype), "Path"));
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/icon/icon.view.css", "[mol_icon] {\n\tfill: currentColor;\n\tstroke: none;\n\twidth: 1em;\n\theight: 1.5em;\n\tflex: 0 0 auto;\n\tvertical-align: top;\n\tdisplay: inline-block;\n\tfilter: drop-shadow(0px 1px 1px var(--mol_theme_back));\n\ttransform-origin: center;\n}\n\n[mol_icon_path] {\n\ttransform-origin: center;\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-	($.$mol_icon_close) = class $mol_icon_close extends ($.$mol_icon) {
-		path(){
-			return "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_hotkey) = class $mol_hotkey extends ($.$mol_plugin) {
-		keydown(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		event(){
-			return {...(super.event()), "keydown": (next) => (this.keydown(next))};
-		}
-		key(){
-			return {};
-		}
-		mod_ctrl(){
-			return false;
-		}
-		mod_alt(){
-			return false;
-		}
-		mod_shift(){
-			return false;
-		}
-	};
-	($mol_mem(($.$mol_hotkey.prototype), "keydown"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Plugin which adds handlers for keyboard keys.
-         * @see [mol_keyboard_code](../keyboard/code/code.ts)
-         */
-        class $mol_hotkey extends $.$mol_hotkey {
-            key() {
-                return super.key();
-            }
-            keydown(event) {
-                if (!event)
-                    return;
-                if (event.defaultPrevented)
-                    return;
-                let name = $mol_keyboard_code[event.keyCode];
-                if (this.mod_ctrl() !== (event.ctrlKey || event.metaKey))
-                    return;
-                if (this.mod_alt() !== event.altKey)
-                    return;
-                if (this.mod_shift() !== event.shiftKey)
-                    return;
-                const handle = this.key()[name];
-                if (handle)
-                    handle(event);
-            }
-        }
-        $$.$mol_hotkey = $mol_hotkey;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_string) = class $mol_string extends ($.$mol_view) {
-		selection_watcher(){
-			return null;
-		}
-		error_report(){
-			return null;
-		}
-		disabled(){
-			return false;
-		}
-		value(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		value_changed(next){
-			return (this.value(next));
-		}
-		hint(){
-			return "";
-		}
-		hint_visible(){
-			return (this.hint());
-		}
-		spellcheck(){
-			return true;
-		}
-		autocomplete_native(){
-			return "";
-		}
-		selection_end(){
-			return 0;
-		}
-		selection_start(){
-			return 0;
-		}
-		keyboard(){
-			return "text";
-		}
-		enter(){
-			return "go";
-		}
-		length_max(){
-			return +Infinity;
-		}
-		type(next){
-			if(next !== undefined) return next;
-			return "text";
-		}
-		event_change(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		submit_with_ctrl(){
-			return false;
-		}
-		submit(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		Submit(){
-			const obj = new this.$.$mol_hotkey();
-			(obj.mod_ctrl) = () => ((this.submit_with_ctrl()));
-			(obj.key) = () => ({"enter": (next) => (this.submit(next))});
-			return obj;
-		}
-		dom_name(){
-			return "input";
-		}
-		enabled(){
-			return true;
-		}
-		minimal_height(){
-			return 40;
-		}
-		autocomplete(){
-			return false;
-		}
-		selection(next){
-			if(next !== undefined) return next;
-			return [0, 0];
-		}
-		auto(){
-			return [(this.selection_watcher()), (this.error_report())];
-		}
-		field(){
-			return {
-				...(super.field()), 
-				"disabled": (this.disabled()), 
-				"value": (this.value_changed()), 
-				"placeholder": (this.hint_visible()), 
-				"spellcheck": (this.spellcheck()), 
-				"autocomplete": (this.autocomplete_native()), 
-				"selectionEnd": (this.selection_end()), 
-				"selectionStart": (this.selection_start()), 
-				"inputMode": (this.keyboard()), 
-				"enterkeyhint": (this.enter())
-			};
-		}
-		attr(){
-			return {
-				...(super.attr()), 
-				"maxlength": (this.length_max()), 
-				"type": (this.type())
-			};
-		}
-		event(){
-			return {...(super.event()), "input": (next) => (this.event_change(next))};
-		}
-		plugins(){
-			return [(this.Submit())];
-		}
-	};
-	($mol_mem(($.$mol_string.prototype), "value"));
-	($mol_mem(($.$mol_string.prototype), "type"));
-	($mol_mem(($.$mol_string.prototype), "event_change"));
-	($mol_mem(($.$mol_string.prototype), "submit"));
-	($mol_mem(($.$mol_string.prototype), "Submit"));
-	($mol_mem(($.$mol_string.prototype), "selection"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * An input field for entering single line text.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_string_demo
-         */
-        class $mol_string extends $.$mol_string {
-            event_change(next) {
-                if (!next)
-                    return;
-                const el = this.dom_node();
-                const from = el.selectionStart;
-                const to = el.selectionEnd;
-                el.value = this.value_changed(el.value);
-                if (to === null)
-                    return;
-                el.selectionEnd = to;
-                el.selectionStart = from;
-                this.selection_change(next);
-            }
-            value_changed(next) {
-                const el = this.dom_node();
-                try {
-                    el.setCustomValidity('');
-                    return this.value(next);
-                }
-                catch (error) {
-                    $mol_fail_log(error);
-                    if (error instanceof Error) {
-                        el.setCustomValidity(error.message);
-                        el.reportValidity();
-                    }
-                    return next ?? $mol_mem_cached(() => this.value_changed()) ?? '';
-                }
-            }
-            error_report() {
-                try {
-                    if (this.focused())
-                        this.value();
-                }
-                catch (error) {
-                    const el = this.dom_node();
-                    if (error instanceof Error) {
-                        el.setCustomValidity(error.message);
-                        el.reportValidity();
-                    }
-                }
-            }
-            hint_visible() {
-                return (this.enabled() ? this.hint() : '') || ' ';
-            }
-            disabled() {
-                return !this.enabled();
-            }
-            autocomplete_native() {
-                return this.autocomplete() ? 'on' : 'off';
-            }
-            selection_watcher() {
-                return new $mol_dom_listener(this.$.$mol_dom_context.document, 'selectionchange', $mol_wire_async(event => this.selection_change(event)));
-            }
-            selection_change(event) {
-                const el = this.dom_node();
-                if (el !== this.$.$mol_dom_context.document.activeElement)
-                    return;
-                const [from, to] = this.selection([
-                    el.selectionStart,
-                    el.selectionEnd,
-                ]);
-                el.selectionEnd = to;
-                el.selectionStart = from;
-                if (to !== from && el.selectionEnd === el.selectionStart) {
-                    el.selectionEnd = to;
-                }
-            }
-            selection_start() {
-                const el = this.dom_node();
-                if (!this.focused())
-                    return undefined;
-                if (el.selectionStart == null)
-                    return undefined;
-                return this.selection()[0];
-            }
-            selection_end() {
-                const el = this.dom_node();
-                if (!this.focused())
-                    return undefined;
-                if (el.selectionEnd == null)
-                    return undefined;
-                return this.selection()[1];
-            }
-        }
-        __decorate([
-            $mol_action
-        ], $mol_string.prototype, "event_change", null);
-        __decorate([
-            $mol_mem
-        ], $mol_string.prototype, "value_changed", null);
-        __decorate([
-            $mol_mem
-        ], $mol_string.prototype, "error_report", null);
-        __decorate([
-            $mol_mem
-        ], $mol_string.prototype, "selection_watcher", null);
-        $$.$mol_string = $mol_string;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/string/string.view.css", "[mol_string] {\n\tbox-sizing: border-box;\n\toutline-offset: 0;\n\tborder: none;\n\tborder-radius: var(--mol_gap_round);\n\twhite-space: pre-line;\n\toverflow: hidden;\n\ttext-overflow: ellipsis;\n\tpadding: var(--mol_gap_text);\n\ttext-align: start;\n\tposition: relative;\n\tfont: inherit;\n\tflex: 1 1 auto;\n\tbackground: transparent;\n\tmin-width: 0;\n\tcolor: inherit;\n\tbackground: var(--mol_theme_field);\n}\n\n[mol_string]:disabled:not(:placeholder-shown) {\n\tbackground-color: transparent;\n\tcolor: var(--mol_theme_text);\n}\n\n[mol_string]:where(:not(:disabled)) {\n\tbox-shadow: inset 0 0 0 1px var(--mol_theme_line);\n}\n\n[mol_string]:where(:not(:disabled)):hover {\n\tbox-shadow: inset 0 0 0 2px var(--mol_theme_line);\n\tz-index: var(--mol_layer_hover);\n}\n\n[mol_string]:focus {\n\toutline: none;\n\tz-index: var(--mol_layer_focus);\n\tcolor: var(--mol_theme_text);\n\tbox-shadow: inset 0 0 0 1px var(--mol_theme_focus);\n}\n\n[mol_string]::placeholder {\n\tcolor: var(--mol_theme_shade);\n}\n\n[mol_string]::-ms-clear {\n\tdisplay: none;\n}\n");
-})($ || ($ = {}));
-
-;
 "use strict";
 var $;
 (function ($) {
@@ -11085,15 +10039,39 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    class $mol_dom_listener extends $mol_object {
+        _node;
+        _event;
+        _handler;
+        _config;
+        constructor(_node, _event, _handler, _config = { passive: true }) {
+            super();
+            this._node = _node;
+            this._event = _event;
+            this._handler = _handler;
+            this._config = _config;
+            this._node.addEventListener(this._event, this._handler, this._config);
+        }
+        destructor() {
+            this._node.removeEventListener(this._event, this._handler, this._config);
+            super.destructor();
+        }
+    }
+    $.$mol_dom_listener = $mol_dom_listener;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     /**
-     * Geometry of a rendered document, in world units, and the nodes it was read
-     * off.
+     * Geometry of a rendered document, in world units, and the nodes it was read off.
      *
      * Pure, and out of the view for the reason the culling decision is: this is the
      * whole of what the host learns about the layout, and a walk worth testing is
-     * worth testing without a compiled document. Everything that knows about `$mol`
-     * — what counts as a view, what a view's children are, which property holds it —
-     * is handed in, so the function itself knows only rectangles and paths.
+     * worth testing without a compiled document. Everything that knows about the
+     * framework — what counts as a view, what a view's children are, which property
+     * holds it — is handed in, so the function itself knows only rectangles and paths.
      *
      * The nodes come back beside the sizes because the two are one question asked
      * twice: what the host is told about, and what has to be watched for changing
@@ -11315,8 +10293,8 @@ var $;
          * `styles_sweep()` drops everything under `style_scope` on each compile, so a
          * placement element sharing that prefix would be swept away by the next
          * keystroke in the document and come back only on the next `spots_set`.
-         * The id is constant besides: there is one document per scene, and
-         * `$mol_style_attach` reuses the element it finds by id.
+         * The id is constant besides: there is one document per scene, and the attach
+         * helper reuses the element it finds by id.
          */
         const spots_id = 'bog_vmap_spots:stage';
         /** Styles of the land libraries, one element, same reasoning as `spots_id`. */
@@ -11338,7 +10316,7 @@ var $;
         const class_name_ok = /^\$[a-zA-Z][\w$]*$/;
         const unmounted = { made: null, pack: '', root: '', supers: {}, error: '', klass: '' };
         /**
-         * Sandbox application of $bog_vmap.
+         * Sandbox application of the editor.
          *
          * Takes a document over the bridge, compiles it, renders it, answers with
          * measured geometry and errors. It has no network, no Giper Baza and no
@@ -11445,7 +10423,7 @@ var $;
             }
             /**
              * Puts the filter between the document root and the DOM, as `sub_visible()`:
-             * the hook `$mol_view.render()` draws by and `$mol_list` narrows the same way,
+             * the hook the renderer draws by and the standard list narrows the same way,
              * so `sub()` stays whole for every other reader — the walks, the seek, the
              * values. An own property, which the prototype swap of a rebuild leaves be.
              */
@@ -11486,23 +10464,20 @@ var $;
                 return `translate(${-x * zoom}px,${-y * zoom}px) scale(${zoom})`;
             }
             /**
-             * Donor pack of this realm, as the host names it in `pack_set`.
+             * The frame has no address of its own — it is raised from markup — so the pack
+             * arrives by message. One pack per realm still holds by construction: a realm
+             * cannot unload a bundle, so the host makes the address part of the key of the
+             * frame, and a second pack arrives in a frame that never saw a first.
              *
-             * This frame has no address of its own — it is raised from markup, so there
-             * is no query to read a pack out of. The rule of section 5 still holds and
-             * still holds by construction: a realm cannot unload a bundle, so the host
-             * makes the address of the pack part of the key of the frame, and a second
-             * pack arrives in a frame that has never seen a first one.
-             *
-             * Empty until the message lands, and that is an ORDINARY state now rather
-             * than an impossible one, which is why `instance()` refuses to compile in it.
+             * Empty until the message lands, and that is an ORDINARY state rather than an
+             * impossible one, which is why `instance()` refuses to compile in it.
              * @see ../ARCHITECTURE.md section 5
              */
             pack_uri(next) {
                 return next ?? '';
             }
             /**
-             * The importer of THIS bundle, resolved once. The pack rewrites `$mol_import`
+             * The importer of THIS bundle, resolved once. The pack rewrites the importer
              * in the global `$` as it lands, and read late-bound after that the name
              * gives the pack's copy, whose cache is empty — which loads the pack again,
              * and again, six hundred script tags a second. Measured in headless Chrome.
@@ -11516,17 +10491,17 @@ var $;
              * Suspends until the pack bundle is in the realm, then stays resolved.
              * Everything that compiles reads this first: a class picks its base once, at
              * definition time, and a document compiled before the pack lands would keep
-             * the scene's own `$mol_view` for good. A cross-origin `<script src>` needs
-             * no permission of its own inside the boundary.
+             * the base class of the scene's own bundle for good. A cross-origin
+             * `<script src>` needs no permission of its own inside the boundary.
              */
             pack_ready() {
                 const uri = this.pack_uri();
                 if (!uri)
                     return uri;
                 this.importer().script(uri);
-                // Two copies of `$mol_try_web` now listen on `self`, each calling a
-                // `handler` private to its own bundle, so a dispatch from one copy throws
-                // `handler is not a function` in the other. Plain try/catch for both.
+                // Two copies of the framework's error reporter now listen on `self`, each
+                // calling a handler private to its own bundle, so a dispatch from one copy
+                // throws «handler is not a function» in the other. Plain try/catch for both.
                 this.$.$mol_try = handler => {
                     try {
                         return handler();
@@ -11541,8 +10516,8 @@ var $;
              * Why the canvas is empty, or an empty string when it is not.
              *
              * The suspension is caught here rather than in `stage()` so that the wait
-             * has a face. Catching costs no reactivity: `$mol_wire_fiber.sync()`
-             * promotes the dependency before it throws, so this cell is subscribed to
+             * has a face. Catching costs no reactivity: a suspending read promotes the
+             * dependency before it throws, so this cell is subscribed to
              * `pack_ready()` either way and recomputes when the pack lands.
              */
             pack_note() {
@@ -11563,8 +10538,8 @@ var $;
              * One sandbox per document, never recreated.
              *
              * Reads nothing reactive, so the cell is computed once and never goes
-             * stale. That is the requirement, not an accident: `$mol_object2` caches
-             * its context in `[$mol_ambient_ref]` at the first read, so a fresh
+             * stale. That is the requirement, not an accident: the base object of the
+             * framework caches its context on first read, so a fresh
              * `Object.create( $ )` would silently cut already built instances off the
              * classes compiled after it.
              */
@@ -11575,25 +10550,20 @@ var $;
                 return sandbox;
             }
             /**
-             * Sources of the land libraries, from the host, compiled before the document.
-             *
              * Texts and nothing else: the scene has no database and no keys, so a land is
-             * read by the host and arrives here as the three strings of each component.
-             * On the bridge and not in the frame address, unlike the pack — a land is
-             * compiled into the sandbox like the document and inherits the current
-             * `$['$mol_view']`, so a change of the list is a recompile, not a reload.
+             * read by the host and arrives as the three strings of each component. On the
+             * bridge and not in the frame address, unlike the pack — a land is compiled
+             * into the sandbox like the document and inherits the base class already
+             * there, so a change of the list is a recompile, not a reload.
              * @see ../ARCHITECTURE.md section 5
              */
             libs(next) {
                 return next ?? [];
             }
             /**
-             * The libraries parsed: every declaration, and the handwritten bodies keyed
-             * by the class each part declares.
-             *
-             * The name of a class is read off its own tree rather than carried beside
-             * it, the same rule the land model lives by: one source of truth for a
-             * derivable fact. A part with no class declares nothing and keys nothing.
+             * The name of a class is read off its own tree rather than carried beside it,
+             * the same rule the land model lives by: one source of truth for a derivable
+             * fact. A part with no class declares nothing and keys nothing.
              *
              * Read inside `code()`, so a malformed library fails on the compile channel
              * with the name of the file it came from, like a malformed document does.
@@ -11614,8 +10584,8 @@ var $;
             /**
              * Normalized declarations of the libraries and the document, in the order
              * they can be defined in: libraries first, a base before its heir, one
-             * declaration per name. The order is `$bog_vmap_scene_order`, and the sort
-             * inside it is the canonical one from `lang` — the scene used to carry a
+             * declaration per name. The ordering helper of this module does it, and the
+             * sort inside it is the canonical one from `lang` — the scene used to carry a
              * copy, and two copies of a sort are one divergence away from `Class
              * extends value undefined`.
              */
@@ -11637,14 +10607,12 @@ var $;
                 return map;
             }
             /**
-             * What each class declares and which of it is keyed, bases folded in.
-             *
-             * The hot swap reads this to tell a property that lost its cell from one
-             * that changed between solo and keyed, and both questions are asked of a
-             * live instance — whose atoms come from the whole chain, not from the last
+             * The hot swap reads this to tell a property that lost its cell from one that
+             * changed between solo and keyed, and both questions are asked of a live
+             * instance — whose atoms come from the whole chain, not from the last
              * declaration alone. So a base declared by the document is folded into its
-             * heir, while a base from the pack is left out on purpose: its properties
-             * are not ours to judge and their shape does not change under us.
+             * heir, while a base from the pack is left out on purpose: its properties are
+             * not ours to judge and their shape does not change under us.
              */
             shapes() {
                 const own = {};
@@ -11676,7 +10644,7 @@ var $;
              * The call that makes cells of the handwritten body, emitted right after the
              * class: a decorator cannot be written into the string handed to
              * `new Function`. What the tree says is keyed or changeable goes along as
-             * data, the rest `$bog_vmap_scene_cells` reads off the class itself.
+             * data, the rest the cells helper reads off the class itself.
              */
             cells_code(self) {
                 const keyed = [];
@@ -11691,18 +10659,15 @@ var $;
                 return `$.$bog_vmap_scene_cells( $[ ${JSON.stringify(self.type)} ], ${JSON.stringify(keyed)}, ${JSON.stringify(changeable)} );`;
             }
             /**
-             * Generated source of the whole document.
-             *
-             * Emitted class by class in topological order, and the handwritten body of
-             * a class goes right after its own declaration, before the next class is
+             * Emitted class by class in topological order, and the handwritten body of a
+             * class goes right after its own declaration, before the next class is
              * declared at all. Generating every declaration first and wrapping them
-             * afterwards would look tidier and be wrong: the wrapper is a NEW class,
-             * so a subclass built earlier keeps the unwrapped base in its prototype
-             * chain and simply loses the handwritten methods of its parent.
+             * afterwards would look tidier and be wrong: the wrapper is a NEW class, so a
+             * subclass built earlier keeps the unwrapped base in its prototype chain and
+             * loses the handwritten methods of its parent.
              *
-             * Class name and CSS go in as data through `JSON.stringify`: a user CSS
-             * with a backtick or a `${` would tear the string apart otherwise, and a
-             * name is not a global here at all.
+             * Class name and CSS go in as data through `JSON.stringify`: a user CSS with a
+             * backtick or a `${` would tear the string apart otherwise.
              */
             code_parts() {
                 const root = this.doc_root();
@@ -11774,10 +10739,10 @@ var $;
              * Compiles the document into the sandbox, overwriting classes in place.
              *
              * Returns a plain record rather than the class itself. A class has a
-             * static `destructor`, so `$mol_wire_atom.put` would take ownership of it
-             * and stamp `Symbol.toStringTag` with the atom id — and `dom_name()` is
-             * `$mol_dom_qname( this.constructor.toString() )`, which reads exactly
-             * that stamp. A plain object has no `destructor` and stays untouched.
+             * static `destructor`, so an atom would take ownership of it and stamp
+             * `Symbol.toStringTag` with the atom id — and `dom_name()` is derived from
+             * the string form of the constructor, which reads exactly that stamp. A
+             * plain object has no `destructor` and stays untouched.
              */
             build() {
                 const code = this.code();
@@ -11795,14 +10760,11 @@ var $;
                 return { Root: Root };
             }
             /**
-             * Class whose generated code throws, found by running the document again
-             * class by class.
-             *
-             * The whole document goes into ONE `new Function`, so a failure there — a
-             * base nobody declared, a syntax error in a handwritten body — carries no
-             * name. Splitting the fast path into a call per class to keep that name
-             * would cost every keystroke for the sake of the rare round that fails, so
-             * the search happens only once something already went wrong.
+             * The whole document goes into ONE `new Function`, so a failure there — a base
+             * nobody declared, a syntax error in a handwritten body — carries no name.
+             * Splitting the fast path into a call per class to keep that name would cost
+             * every keystroke for the sake of the rare round that fails, so the search
+             * runs only once something already went wrong.
              *
              * Into a scratch context and not into the sandbox: the retry must not add
              * half a generation of classes to the one the living component is using.
@@ -11846,7 +10808,7 @@ var $;
              * The live root instance, the identity it was built under and why the last
              * compile failed, in one value: one computation, one cell. `instance()` and
              * `compile_error()` split it so that each moves only its own readers. A plain
-             * record, which `$mol_owning_catch` refuses to stamp or destroy.
+             * record, which the owning catch of the framework refuses to stamp or destroy.
              *
              * An edit moves the living component onto the new classes instead of
              * building another one: cells are own fields of an instance, so a prototype
@@ -11854,8 +10816,8 @@ var $;
              * focus and scroll, which no snapshot carries. 6.1 ms against 8.7 ms for a
              * rebuild on the S2 bench, and flat in the size of the component.
              *
-             * What it built last time is read off its own cache through `$mol_wire_probe`,
-             * the way `view_rect()` does. A failed rebuild answers with that instance, so
+             * What it built last time is read off its own cache through a probe, the way
+             * `view_rect()` does. A failed rebuild answers with that instance, so
              * `instance()` keeps its value and the living component stays whole.
              */
             mount() {
@@ -11863,7 +10825,7 @@ var $;
                 const src = this.doc_src();
                 const root = this.doc_root();
                 // No pack, no compile: a document built before the pack lands would
-                // inherit OUR `$mol_view`, and a class picks its base once for good.
+                // inherit OUR base class, and a class picks its base once for good.
                 const pack = this.pack_uri();
                 if (!src.trim() || !root || !pack)
                     return unmounted;
@@ -11922,14 +10884,12 @@ var $;
                 return this.mount().klass;
             }
             /**
-             * Styles, attached apart from the class.
+             * What keeps a CSS edit cheap: `doc_css()` is read here and nowhere else, so
+             * restyling moves this cell alone while `sandbox()` and `instance()` stand
+             * still together with all the live state.
              *
-             * This is what keeps a CSS edit cheap: `doc_css()` is read here and
-             * nowhere else, so restyling moves this cell alone while `sandbox()` and
-             * `instance()` stand still together with all the live state.
-             *
-             * Not named `style()`: `$mol_view.style()` already exists and must return
-             * a dictionary of CSS properties for the rendered node.
+             * Not named `style()`: that name is taken by the base view and must return a
+             * dictionary of CSS properties for the rendered node.
              */
             css_attach() {
                 const root = this.doc_root();
@@ -11950,20 +10910,17 @@ var $;
              * rules — the document text never sees them at all.
              *
              * Absolute positioning is TEMPORARY, scaffolding until artboards of stage 6:
-             * inside an artboard the layout is a plain $mol flex tree and only free parts
+             * inside an artboard the layout is a plain flex tree and only free parts
              * lie by coordinates.
              */
             spots_attach() {
                 return this.$.$mol_style_attach(spots_id, this.spots_css());
             }
             /**
-             * Styles of the land libraries, as one element of the scene's own.
-             *
-             * Under a constant id outside `style_scope`, like the placement: the sweep
-             * on every compile of the document must not take the library styles with
-             * it, and `$mol_style_attach` reuses the element it finds by id. Read off
-             * the raw parts and not off `libs_parsed()`, so that a library that fails
-             * to parse fails on the compile channel and does not take the styles of its
+             * Under a constant id outside `style_scope`, like the placement: the sweep on
+             * every compile of the document must not take the library styles with it. Read
+             * off the raw parts and not off `libs_parsed()`, so a library that fails to
+             * parse fails on the compile channel and does not take the styles of its
              * neighbours down with it.
              */
             libs_css_attach() {
@@ -11971,32 +10928,25 @@ var $;
                 return this.$.$mol_style_attach(libs_id, this.assets_apply(css));
             }
             /**
-             * The placement rules.
-             *
-             * A sub view of a class carries `[<root without $>_<property lowercased>]`
-             * (`view_names_owned`, `view.tsx:365`), which is how a part is addressed.
              * World coordinates go into `left`/`top` unchanged: the stage sits under one
-             * `transform` with `transform-origin: 0 0`, so the root class is at world
-             * zero and its offset children are already in world units.
+             * `transform` with `transform-origin: 0 0`, so the root class is at world zero
+             * and its offset children are already in world units.
              *
              * **`!important` is not laziness here, it is the only thing that works.**
-             * Half the standard library positions itself: `[mol_string]` alone declares
-             * `position: relative`, at the same specificity as a single attribute
-             * selector, so the cascade falls through to source order — and this element
-             * is attached before the pack script has even been fetched, which puts every
-             * pack rule after it. Measured: three components dropped at one x,
-             * `$mol_button_minor` and `$mol_icon_close` landed on it, `$mol_string` came
-             * out 122 px to the right, offset by exactly the width of its in-flow
-             * neighbour, because it stayed `relative` and read `left` as a shift from its
-             * static position. Two of three looked right by luck. The pack is somebody
-             * else's CSS and we do not get to renumber it, so placement wins by
-             * declaration instead of by position.
+             * Half the standard library positions itself, and a bare attribute selector
+             * declaring `position: relative` ties on specificity, so the cascade falls
+             * through to source order — and this element is attached before the pack
+             * script has even been fetched, which puts every pack rule after it. Measured:
+             * three components dropped at one x, two landed on it, the text field came out
+             * 122 px to the right, offset by exactly the width of its in-flow neighbour,
+             * because it stayed `relative` and read `left` as a shift from its static
+             * position. Two of three looked right by luck, and the pack is somebody else's
+             * CSS we do not get to renumber.
              *
              * Margins are left alone, and a component carrying its own lands offset by
-             * them: `$mol_speck` has `margin: -.5rem -.2rem` and comes out 8 px above and
-             * 4 px left of the point it was aimed at. That is the badge doing what a badge
-             * does, and overriding it would be the editor deciding how somebody else's
-             * component looks.
+             * them — the standard badge has a negative one and comes out 8 px above the
+             * point it was aimed at. Overriding that would be the editor deciding how
+             * somebody else's component looks.
              */
             spots_css() {
                 const attr = this.doc_root().replace(/^\$/, '');
@@ -12023,7 +10973,7 @@ var $;
             /**
              * Drops style elements of the previous compilation.
              *
-             * `$mol_style_attach` never removes them, and a class renamed while the
+             * The attach helper never removes them, and a class renamed while the
              * user types leaves one behind on every keystroke — hundreds per editing
              * session. Only elements of this scene are swept, never someone else's,
              * and never the placement element: it lives under `spots_id`, outside this
@@ -12083,20 +11033,12 @@ var $;
             assets_push() {
                 return this.assets_missing().map(id => this.asset_ask(id));
             }
-            /**
-             * Mounted content.
-             *
-             * `css_attach()` is read right here, next to the instance, on purpose: a
-             * cell nobody reads during render is swept by `$mol_wire`, and then the
-             * styles would stop updating after the very first attach.
-             */
             stage() {
                 this.css_attach();
-                // Read here for the same reason as the styles above: a cell nobody
-                // reads during render is swept by `$mol_wire` together with its value,
-                // and placement would then stop following the canvas after the first
-                // attach. Before the early return, because a part may be dropped while
-                // the pack is still on its way.
+                // Read here for the same reason as the styles above: a cell nobody reads
+                // during render is swept together with its value, and placement would then
+                // stop following the canvas after the first attach. Before the early
+                // return, because a part may be dropped while the pack is still on its way.
                 this.spots_attach();
                 this.libs_css_attach();
                 // `instance()` is suspended while the pack travels, and a suspended
@@ -12148,8 +11090,8 @@ var $;
              * changes on every frame costs one message per period and a wire that
              * changes once is reported at once.
              *
-             * `values_at` is a cell, and it is read here through `$mol_wire_probe` —
-             * deliberately, so that this cell does NOT subscribe to it. Nothing else
+             * `values_at` is a cell, and it is read here through a probe — deliberately,
+             * so that this cell does NOT subscribe to it. Nothing else
              * writes the stamp: it changes only as a consequence of this very cell's
              * timer having fired, and at that moment the message has just gone out and
              * there is nothing to recompute. Were the read a subscribing one, the write
@@ -12178,10 +11120,10 @@ var $;
             /**
              * The one window the scene talks to.
              *
-             * A plain field, never a cell: a cross-origin `Window` put through
-             * `$mol_wire_atom.put` is walked by `$mol_compare_deep`, which reads
-             * `location.href` and throws `SecurityError` — and the handler then dies
-             * silently. Identity comparison alone touches no property and is safe.
+             * A plain field, never a cell: a cross-origin `Window` written into an atom
+             * is walked by the framework's deep comparison, which reads `location.href`
+             * and throws `SecurityError` — and the handler then dies silently. Identity
+             * comparison alone touches no property and is safe.
              */
             peer() {
                 return this.$.$mol_dom_context.parent;
@@ -12208,7 +11150,7 @@ var $;
                     // First message of every handshake, before the document and the
                     // libraries. A host older than this contract never sends it, and the
                     // scene then compiles nothing, which is the honest outcome: without a
-                    // pack every class of the document would inherit our own `$mol_view`.
+                    // pack every class of the document would inherit our own base class.
                     case 'pack_set':
                         this.pack_uri(String(message.uri ?? ''));
                         return;
@@ -12263,7 +11205,7 @@ var $;
              * The host sends world coordinates and this side owns the same camera the
              * stage is drawn with, so the point on this window is `(world - camera) *
              * zoom` — the inverse of what `sizes_of` does to a measured box. The replay
-             * itself lives in `$bog_vmap_scene_click`, which is where it is tested.
+             * itself lives in the click helper of this module, where it is tested.
              */
             click_apply(x, y, mods) {
                 const camera = this.camera();
@@ -12291,19 +11233,16 @@ var $;
                 this.post({ kind: 'key', key: 'Escape' });
             }
             /**
-             * Re-reports whenever the layout of the document actually changes.
-             *
-             * The wire graph does not see layout, and that is a whole class of
-             * silent staleness, not one occasion. A frame with no layout at all —
-             * a hidden tab, a collapsed panel — measures 0x0; a late font or a
-             * decoded image resizes the document with nothing in the graph moving.
-             * In every case the host would keep the stale numbers until the next
-             * edit. The observer covers all of them at once, because its very first
-             * delivery happens exactly when the box first exists.
+             * The wire graph does not see layout, and that is a whole class of silent
+             * staleness, not one occasion. A frame with no layout at all — a hidden tab, a
+             * collapsed panel — measures 0x0; a late font or a decoded image resizes the
+             * document with nothing in the graph moving. In every case the host would keep
+             * the stale numbers until the next edit. The observer covers all of them at
+             * once, because its first delivery happens exactly when the box first exists.
              *
              * The wrapper is here to give the observer a `destructor`: a bare
-             * `ResizeObserver` is not ownable, so the atom would leave the previous
-             * one connected on every rebuild.
+             * `ResizeObserver` is not ownable, so the atom would leave the previous one
+             * connected on every rebuild.
              *
              * The set of watched nodes is not decided here — it is every node the last
              * report measured, which `resize_sync()` hands over. The root alone is not
@@ -12330,8 +11269,8 @@ var $;
             /**
              * Debounced answer to the host.
              *
-             * `$mol_after_timeout` and not `$mol_after_frame`: the scene lives in an
-             * iframe, and a background tab stops firing animation frames.
+             * A timeout and not an animation frame: the scene lives in an iframe, and a
+             * background tab stops firing animation frames.
              *
              * The cell depends on the rendered tree, not only on the sources. The
              * report reads geometry and failures off the DOM, and a timer started
@@ -12445,8 +11384,8 @@ var $;
             /**
              * The failure written on the node of one view, or an empty string.
              *
-             * A suspension is not a failure: `$mol` writes the same attribute while a
-             * fiber waits, and reporting that would light the node up on every load.
+             * A suspension is not a failure: the framework writes the same attribute while
+             * a fiber waits, and reporting that would light the node up on every load.
              */
             view_broken(view) {
                 let node;
@@ -12461,8 +11400,8 @@ var $;
                 const broken = node.getAttribute('mol_view_error');
                 if (!broken || broken === 'Promise' || broken === '$mol_promise_blocker')
                     return '';
-                // The attribute holds only the error name; $mol puts the message
-                // itself into the text of the node.
+                // The attribute holds only the error name; the message itself is put
+                // into the text of the node.
                 const text = (node.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 500);
                 return text ? `${broken}: ${text}` : broken;
             }
@@ -12489,8 +11428,8 @@ var $;
             }
             /**
              * How to walk a rendered document: the three things the walks need to know
-             * about `$mol`, in one place because both of them need the same three and a
-             * second copy would be a second vocabulary.
+             * about the framework, in one place because both of them need the same three
+             * and a second copy would be a second vocabulary.
              */
             walk_of(made) {
                 return {
@@ -12537,9 +11476,9 @@ var $;
             /**
              * Geometry of the document, in world units, and the nodes it was read off.
              *
-             * The walk itself is `$bog_vmap_scene_measure`, which knows nothing of `$mol`;
-             * what a view is, what its children are and which property holds it are the
-             * three things this class knows and hands over.
+             * The walk itself knows nothing of the framework; what a view is, what its
+             * children are and which property holds it are the three things this class
+             * knows and hands over.
              */
             sizes_of(root) {
                 return this.$.$bog_vmap_scene_measure(root, {
@@ -12550,23 +11489,22 @@ var $;
             /**
              * Is this piece of content a view, told by shape rather than by class.
              *
-             * Not a fix for a break: measured, `instanceof $mol_view` reports all
-             * seven nodes here, pack built ones included. It works by a coincidence
-             * of scope, and the coincidence is worth spelling out because the same
-             * operator does the opposite one file away.
+             * Not a fix for a break: measured, an `instanceof` against the base class
+             * reports all seven nodes here, pack built ones included. It works by a
+             * coincidence of scope, and the coincidence is worth spelling out because the
+             * same operator does the opposite one file away.
              *
-             * A bare `$mol_view` written in THIS file compiles to a bare identifier,
-             * and no `class $mol_view` is declared in the emitted closure around it,
-             * so the name goes up the scope chain to the global — which is where the
-             * donor pack puts its own classes, and which is therefore the very class
-             * the document extends. Late binding, check passes. The same text inside
-             * `view.tsx` sits next to the declaration and binds to the file's own
-             * copy early, which is exactly why `render()` refuses a pack built
-             * document and why it is mounted here as a DOM node.
+             * The base class named in THIS file compiles to a bare identifier, and no
+             * declaration of that name stands in the emitted closure around it, so the
+             * name goes up the scope chain to the global — which is where the donor pack
+             * puts its own classes, and which is therefore the very class the document
+             * extends. Late binding, check passes. The same text inside the framework's
+             * own file sits next to the declaration and binds early, which is exactly why
+             * `render()` refuses a pack built document and why it is mounted as a DOM node.
              *
-             * So the operator holds only while this method stays in a file that does
-             * not declare `$mol_view`, and while the pack is the last writer of the
-             * global. Neither is a property of what is being asked. Shape is.
+             * So the operator holds only while this method stays in a file that does not
+             * declare that name, and while the pack is the last writer of the global.
+             * Neither is a property of what is being asked. Shape is.
              * @see ../ARCHITECTURE.md section 4
              */
             view_like(kid) {
@@ -12708,19 +11646,22 @@ var $;
         __decorate([
             $mol_mem
             /**
-             * The document, mounted as a DOM node rather than as a sub view.
+             * The document is mounted as a DOM node rather than as a sub view.
              *
-             * `$mol_view.render()` (`view.tsx:307`) decides between "a view" and "a
-             * string" by `child instanceof $mol_view`, and that `$mol_view` is the
-             * class local to its own file, that is the private copy of its bundle.
-             * The document inherits from the `$mol_view` of the donor pack, so the
-             * check is false and the branch falls through to `String( child )`:
-             * compilation stays green, no error reaches the bridge, and the document
-             * is rendered into its own node that simply never enters the DOM.
+             * The renderer (`view.tsx:307`) tells "a view" from "a string" by an
+             * `instanceof` against the base class local to its own file, that is the
+             * private copy of its own bundle. The document inherits from the base class of
+             * the donor pack, so the check is false and the branch falls through to
+             * `String( child )`: compilation stays green, no error reaches the bridge, and
+             * the document renders into its own node that never enters the DOM.
              *
-             * An `Element` takes the `instanceof Node` branch instead, and about that
-             * one the second copy of the framework has no opinion. Reactivity of the
-             * document is untouched, it lives entirely inside its own subtree.
+             * An `Element` takes the `instanceof Node` branch instead, and about that one
+             * the second copy of the framework has no opinion. Reactivity of the document
+             * is untouched, it lives entirely inside its own subtree.
+             *
+             * `css_attach()` is read right here, next to the instance, on purpose: a cell
+             * nobody reads during render is swept by the graph, and the styles would then
+             * stop updating after the very first attach.
              * @see ../ARCHITECTURE.md section 4, "Два бандла в одном документе"
              */
         ], $bog_vmap_scene.prototype, "stage", null);
@@ -12809,8 +11750,8 @@ var $;
                 transition: 'none',
             },
             // The note lies over the canvas and its grid, so it needs a ground of its
-            // own and full contrast text: `$mol_theme.shade` was measured on screen and
-            // came out unreadable over the canvas.
+            // own and full contrast text: the shade token of the theme was measured on
+            // screen and came out unreadable over the canvas.
             Wait: {
                 padding: $mol_gap.block,
                 maxWidth: '22rem',
@@ -12833,8 +11774,9 @@ var $;
      * A value of the document as a short label for a wire.
      *
      * Text and numbers as they are, arrays and plain objects as JSON, anything
-     * else — a view, a class — by its own `toString`, which for `$mol_object` is
-     * its id. Whitespace is folded and the tail is cut, a label sits on a line.
+     * else — a view, a class — by its own `toString`, which for an object of the
+     * framework is its id. Whitespace is folded and the tail cut: a label sits on
+     * one line.
      */
     function $bog_vmap_scene_value_text(val, limit = 40) {
         let text;
@@ -12896,7 +11838,7 @@ var $;
     /**
      * First node of a rendered document the probe accepts, and its path.
      *
-     * The path is built exactly as `$bog_vmap_scene_measure` builds it, and that is
+     * The path is built exactly as the measuring walk builds it, and that is
      * the whole reason this exists as a walk of its own rather than as a read of the
      * DOM. A failing element does carry an attribute naming it, but that attribute
      * is lowercased and joined by underscores, so `My_box` and `my/Box` arrive as the

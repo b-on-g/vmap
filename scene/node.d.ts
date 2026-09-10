@@ -2641,8 +2641,8 @@ declare namespace $ {
 //# sourceMappingURL=grid.view.tree.d.ts.map
 declare namespace $.$$ {
     /**
-     * Infinite background grid. Feeds two $mol_plot_ruler instances the same way
-     * $mol_plot_pane feeds its graphs, and renders only their curves.
+     * Infinite background grid. Feeds two rulers of the plotting module the same way
+     * its pane feeds its graphs, and renders only their curves.
      * @see ../../ARCHITECTURE.md section 8
      */
     class $bog_vmap_scene_grid extends $.$bog_vmap_scene_grid {
@@ -2717,93 +2717,6 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    function $mol_support_css_overflow_anchor(this: $): boolean;
-}
-
-declare namespace $ {
-    class $mol_dom_listener extends $mol_object {
-        _node: any;
-        _event: string;
-        _handler: (event: any) => any;
-        _config: boolean | {
-            passive: boolean;
-        };
-        constructor(_node: any, _event: string, _handler: (event: any) => any, _config?: boolean | {
-            passive: boolean;
-        });
-        destructor(): void;
-    }
-}
-
-declare namespace $ {
-    class $mol_print extends $mol_object {
-        static before(): $mol_dom_listener;
-        static after(): $mol_dom_listener;
-        static active(next?: boolean): boolean;
-    }
-}
-
-declare namespace $ {
-
-	type $mol_view__style_mol_list_1 = $mol_type_enforce<
-		({ 
-			'paddingTop': ReturnType< $mol_list['gap_before'] >,
-		}) 
-		,
-		ReturnType< $mol_view['style'] >
-	>
-	type $mol_view__style_mol_list_2 = $mol_type_enforce<
-		({ 
-			'paddingTop': ReturnType< $mol_list['gap_after'] >,
-		}) 
-		,
-		ReturnType< $mol_view['style'] >
-	>
-	export class $mol_list extends $mol_view {
-		gap_before( ): number
-		Gap_before( ): $mol_view
-		Empty( ): $mol_view
-		gap_after( ): number
-		Gap_after( ): $mol_view
-		rows( ): readonly($mol_view)[]
-		render_visible_only( ): boolean
-		render_over( ): number
-		sub( ): ReturnType< $mol_list['rows'] >
-		item_height_min( id: any): number
-		item_width_min( id: any): number
-		view_window_shift( next?: number ): number
-		view_window( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=list.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * The list of rows with lazy/virtual rendering support based on `minimal_height` of rows.
-     * `mol_list` should contain only components that inherits `mol_view`. You should not place raw strings or numbers in list.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_list_demo
-     */
-    class $mol_list extends $.$mol_list {
-        sub(): readonly $mol_view[];
-        render_visible_only(): boolean;
-        _view_window_last: number[];
-        view_window(next?: [number, number]): [number, number];
-        item_height_min(index: number): number;
-        row_width_min(index: number): number;
-        gap_before(): number;
-        gap_after(): number;
-        sub_visible(): $mol_view[];
-        minimal_height(): number;
-        minimal_width(): number;
-        force_render(path: Set<$mol_view>): void;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
     /**
      * Wire protocol between the vmap host and its sandboxed scene.
      *
@@ -2829,10 +2742,7 @@ declare namespace $ {
         readonly width: number;
         readonly height: number;
     };
-    /**
-     * One component of a land library: the three sources a class is built from.
-     * Texts and nothing else, the scene has no way to reach the land itself.
-     */
+    /** Texts and nothing else: the scene has no way to reach the land itself. */
     type $bog_vmap_bridge_part = {
         readonly tree: string;
         readonly js: string;
@@ -2846,29 +2756,22 @@ declare namespace $ {
         readonly shiftKey: boolean;
     };
     /**
-     * Host to scene.
-     *
-     * `doc_set` carries the whole document, not a patch: the scene holds no
-     * source of truth of its own and must never have to merge.
+     * Host to scene. `doc_set` carries the whole document, not a patch: the scene
+     * holds no source of truth of its own and must never have to merge.
      */
     type $bog_vmap_bridge_down = {
         readonly kind: 'doc_set';
         /**
-         * Full document source in view.tree.
-         *
          * Declaration order is NOT guaranteed: sorting is the scene's job,
          * because only the scene knows the whole set of classes going into
-         * one `new Function` — the document's own plus everything its
+         * one compiled string — the document's own plus everything its
          * libraries contribute.
          */
         readonly src: string;
         /**
-         * Bodies of the document classes, as JS source.
-         *
-         * A component is built from three sources, and this is the second.
-         * Without it every property stays undecorated, and an undecorated
+         * Hand written bodies, keyed by class name, absent for a class without
+         * one. Without them every property stays undecorated, and an undecorated
          * property is invisible to the hot swap of stage 4.
-         * Keyed by class name; a class with no handwritten body is absent.
          */
         readonly js: {
             readonly [klass: string]: string;
@@ -2884,16 +2787,15 @@ declare namespace $ {
         readonly camera: $bog_vmap_bridge_camera;
     } | {
         /**
-         * Where free details sit on the canvas, in world coordinates.
-         *
-         * A channel of its own, apart from `css_set`, and that is the whole
-         * point: the scene hangs these as its own style element, so the
-         * document's styles never carry them and the export cannot see them
-         * even by accident. Placement is editor state, not site content.
+         * World coordinates, and a channel of its own apart from `css_set` —
+         * that is the whole point: the scene hangs these as its own style
+         * element, so the document's styles never carry them and the export
+         * cannot see them even by accident. Placement is editor state, not
+         * site content.
          *
          * Scaffolding until artboards (stage 6): inside an artboard layout is
-         * a plain $mol flex tree, and only free details lie by coordinates.
-         * The "everything absolute" model was considered and rejected.
+         * a plain flex tree, and only free details lie by coordinates. The
+         * "everything absolute" model was considered and rejected.
          */
         readonly kind: 'spots_set';
         readonly spots: {
@@ -2904,17 +2806,13 @@ declare namespace $ {
         };
     } | {
         /**
-         * A click that landed on the host overlay and is meant for the document.
-         *
          * There are no editor modes: the overlay takes every gesture, so a plain
-         * click — press and release without movement — is relayed here, and the
-         * scene replays it on the element under the point as synthetic pointer
-         * and click events, with focus. One click therefore both picks a part
-         * on the host and presses the live component in the sandbox.
+         * click — press and release without movement — is relayed here and the
+         * scene replays it on the element under the point, with focus. One click
+         * therefore both picks a part on the host and presses the live component.
          *
-         * World coordinates, not screen ones: the host resolves its camera the
-         * same way it does for the hit test, and the scene resolves its own,
-         * so neither side has to know the other's pixel geometry.
+         * World coordinates, not screen ones: each side resolves its own camera,
+         * so neither has to know the other's pixel geometry.
          *
          * Answered like every other push, with `sizes`: a click is the most
          * likely thing to start a loop in document code, so a scene that takes
@@ -2926,14 +2824,11 @@ declare namespace $ {
         readonly mods: $bog_vmap_bridge_mods;
     } | {
         /**
-         * Are you alive.
-         *
-         * Штатный трафик уже несёт пульс: всякий толчок хоста сцена обязана
-         * подтвердить `sizes`. Слепая зона одна — код документа завис, когда его
-         * никто не толкал: живой компонент нажат настоящим событием сквозь дыру
-         * в оверлее, хосту толкать нечего, документ не менялся.
-         *
-         * Поэтому пульс идёт всегда, начиная с первого `sizes`.
+         * Ordinary traffic already carries a pulse: every push of the host is
+         * answered with `sizes`. One blind spot is left — document code hung
+         * while nobody was pushing it, because the live component was pressed by
+         * a real event through the hole in the overlay. So the pulse runs always,
+         * from the first `sizes` on.
          */
         readonly kind: 'ping';
         readonly nonce: number;
@@ -2974,9 +2869,9 @@ declare namespace $ {
          * different pack is a different frame element and a fresh realm.
          *
          * Sent first of everything after the handshake. A document compiled
-         * before the pack lands inherits the scene's own `$mol_view` and no later
-         * load can move it, so the scene waits for this message before it
-         * compiles anything.
+         * before the pack lands inherits the base view class of the scene's own
+         * bundle and no later load can move it, so the scene waits for this
+         * message before it compiles anything.
          * @see ../ARCHITECTURE.md sections 4 and 5
          */
         readonly kind: 'pack_set';
@@ -2996,20 +2891,19 @@ declare namespace $ {
     type $bog_vmap_bridge_up = {
         readonly kind: 'ready';
     } | {
-        /** Ответ на `ping` тем же `nonce`. Живой поток, а не живой кадр. */
+        /** Answers `ping` with the same nonce: a live thread, not a live frame. */
         readonly kind: 'pong';
         readonly nonce: number;
     } | {
         /**
-         * Геометрия узлов, ОТРИСОВАННЫХ в этот раз, а не всех существующих.
+         * Geometry of the nodes DRAWN this round, not of every node there is.
          *
-         * С появлением culling молчание про узел значит «не рисовался», а НЕ
-         * «узла нет». Поэтому хост обязан **мержить**, а не заменять: иначе
-         * коробки всего только что скрытого стираются, и рамка выделения,
-         * которая рисуется ровно из них, мигает на краю холста.
-         *
-         * Раз молчание больше не означает отсутствия, про отсутствие должен
-         * сказать кто-то явно — это делает удаление узла из документа.
+         * With culling, silence about a node means «was not drawn» and not «is
+         * gone», so the host must MERGE rather than replace: otherwise the boxes
+         * of everything just hidden are wiped, and the selection ring, which is
+         * drawn out of exactly those, blinks at the edge of the canvas. Absence
+         * therefore has to be said by someone explicitly, and that someone is the
+         * removal of a node from the document.
          */
         readonly kind: 'sizes';
         readonly sizes: {
@@ -3044,15 +2938,11 @@ declare namespace $ {
         /** Channel. The two clear independently. */
         readonly at: 'compile' | 'runtime';
         /**
-         * `null` means the channel is clear again.
-         *
-         * Errors are edge-triggered: the scene posts only on change, so a
-         * repeated identical failure stays silent. Without an explicit
-         * "clear" the host cannot tell a fixed document from a still
-         * broken one, because silence means both.
-         *
-         * Null rather than an empty string on purpose: an empty error text
-         * is a plausible bug, and it must not read as good news.
+         * `null` means the channel is clear again. Errors are edge-triggered, so
+         * a repeated identical failure stays silent, and without an explicit
+         * clear the host could not tell a fixed document from a still broken one.
+         * Null rather than an empty string on purpose: an empty error text is a
+         * plausible bug and must not read as good news.
          */
         readonly message: string | null;
         /** Node the failure belongs to, when the scene can attribute it. */
@@ -3064,22 +2954,19 @@ declare namespace $ {
         postMessage(data: unknown, origin: string): void;
     }, message: Message): void;
     /**
-     * Takes a message off the wire, or null when it is not ours.
-     *
-     * The channel has no origin to check against, because the scene runs in an
-     * opaque origin, so anything able to reach this window can post here.
-     * Unknown shapes are dropped rather than trusted.
+     * Takes a message off the wire, or null when it is not ours. The channel has no
+     * origin to check against — the scene runs in an opaque one — so anything able
+     * to reach this window can post here, and unknown shapes are dropped.
      *
      * Always pass `peer` on the host side. Without it any window that posts a
-     * `ready` can take the channel over, and the host will happily talk to it:
-     * seen for real on stage 1, where a stray debug frame stole the bridge and
-     * the host spent an hour posting into a dead window. Identity of the peer
-     * comes from `Scene().dom_node().contentWindow`, never from `event.source`.
+     * `ready` takes the channel over: seen for real on stage 1, where a stray debug
+     * frame stole the bridge and the host spent an hour posting into a dead window.
+     * Identity comes from the frame element, never from `event.source`.
      *
-     * Passing the argument at all turns the check on, so a peer that is not
-     * known yet rejects every message instead of letting everything through.
-     * Omitting it entirely is the only way to opt out, and only the scene may:
-     * it has exactly one correspondent and answers into the same window.
+     * Passing the argument at all turns the check on, so a peer not known yet
+     * rejects everything instead of letting everything through. Omitting it is the
+     * only way to opt out, and only the scene may: it has one correspondent and
+     * answers into the same window.
      */
     function $bog_vmap_bridge_read<Message extends $bog_vmap_bridge_message>(event: {
         data?: unknown;
@@ -3824,8 +3711,8 @@ declare namespace $ {
      * Libraries first because the document is written against them, and a stable
      * sort keeps that unless a library class inherits a document class — legal,
      * odd, and then the base still comes first. The sort itself is the canonical
-     * `$bog_vmap_lang_sorted`: ordering declarations is a property of the language,
-     * and the scene's own copy of it was the second one too many.
+     * sort of the language module: ordering declarations is a property of the
+     * language, and the scene's own copy of it was the second one too many.
      *
      * A name declared twice keeps the LAST declaration and drops the earlier one,
      * which is the rule the class index of the library model already lives by and the rule the
@@ -4207,367 +4094,6 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    /**
-     * Z-index values for layers
-     * https://page.hyoo.ru/#!=xthcpx_wqmiba
-     */
-    let $mol_layer: Record<"focus" | "float" | "hover" | "speck" | "popup", $mol_style_func<"var", unknown>>;
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_speck extends $mol_view {
-		value( ): any
-		theme( ): string
-		sub( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=speck.view.tree.d.ts.map
-declare namespace $ {
-    /**
-    * Key names code for hotkey
-    * @see [mol_hotkey](../../hotkey/hotkey.view.ts)
-    */
-    enum $mol_keyboard_code {
-        backspace = 8,
-        tab = 9,
-        enter = 13,
-        shift = 16,
-        ctrl = 17,
-        alt = 18,
-        pause = 19,
-        capsLock = 20,
-        escape = 27,
-        space = 32,
-        pageUp = 33,
-        pageDown = 34,
-        end = 35,
-        home = 36,
-        left = 37,
-        up = 38,
-        right = 39,
-        down = 40,
-        insert = 45,
-        delete = 46,
-        key0 = 48,
-        key1 = 49,
-        key2 = 50,
-        key3 = 51,
-        key4 = 52,
-        key5 = 53,
-        key6 = 54,
-        key7 = 55,
-        key8 = 56,
-        key9 = 57,
-        A = 65,
-        B = 66,
-        C = 67,
-        D = 68,
-        E = 69,
-        F = 70,
-        G = 71,
-        H = 72,
-        I = 73,
-        J = 74,
-        K = 75,
-        L = 76,
-        M = 77,
-        N = 78,
-        O = 79,
-        P = 80,
-        Q = 81,
-        R = 82,
-        S = 83,
-        T = 84,
-        U = 85,
-        V = 86,
-        W = 87,
-        X = 88,
-        Y = 89,
-        Z = 90,
-        metaLeft = 91,
-        metaRight = 92,
-        select = 93,
-        numpad0 = 96,
-        numpad1 = 97,
-        numpad2 = 98,
-        numpad3 = 99,
-        numpad4 = 100,
-        numpad5 = 101,
-        numpad6 = 102,
-        numpad7 = 103,
-        numpad8 = 104,
-        numpad9 = 105,
-        multiply = 106,
-        add = 107,
-        subtract = 109,
-        decimal = 110,
-        divide = 111,
-        F1 = 112,
-        F2 = 113,
-        F3 = 114,
-        F4 = 115,
-        F5 = 116,
-        F6 = 117,
-        F7 = 118,
-        F8 = 119,
-        F9 = 120,
-        F10 = 121,
-        F11 = 122,
-        F12 = 123,
-        numLock = 144,
-        scrollLock = 145,
-        semicolon = 186,
-        equals = 187,
-        comma = 188,
-        dash = 189,
-        period = 190,
-        forwardSlash = 191,
-        graveAccent = 192,
-        bracketOpen = 219,
-        slashBack = 220,
-        slashBackLeft = 226,
-        bracketClose = 221,
-        quoteSingle = 222
-    }
-}
-
-declare namespace $ {
-
-	type $mol_speck__value_mol_button_1 = $mol_type_enforce<
-		ReturnType< $mol_button['error'] >
-		,
-		ReturnType< $mol_speck['value'] >
-	>
-	export class $mol_button extends $mol_view {
-		event_activate( next?: any ): any
-		activate( next?: ReturnType< $mol_button['event_activate'] > ): ReturnType< $mol_button['event_activate'] >
-		clicks( next?: any ): any
-		event_key_press( next?: any ): any
-		key_press( next?: ReturnType< $mol_button['event_key_press'] > ): ReturnType< $mol_button['event_key_press'] >
-		disabled( ): boolean
-		tab_index( ): number
-		hint( ): string
-		hint_safe( ): ReturnType< $mol_button['hint'] >
-		error( ): string
-		enabled( ): boolean
-		click( next?: any ): any
-		event_click( next?: any ): any
-		status( next?: readonly(any)[] ): readonly(any)[]
-		event( ): ({ 
-			click( next?: ReturnType< $mol_button['activate'] > ): ReturnType< $mol_button['activate'] >,
-			dblclick( next?: ReturnType< $mol_button['clicks'] > ): ReturnType< $mol_button['clicks'] >,
-			keydown( next?: ReturnType< $mol_button['key_press'] > ): ReturnType< $mol_button['key_press'] >,
-		})  & ReturnType< $mol_view['event'] >
-		attr( ): ({ 
-			'disabled': ReturnType< $mol_button['disabled'] >,
-			'role': string,
-			'tabindex': ReturnType< $mol_button['tab_index'] >,
-			'title': ReturnType< $mol_button['hint_safe'] >,
-		})  & ReturnType< $mol_view['attr'] >
-		sub( ): readonly($mol_view_content)[]
-		Speck( ): $mol_speck
-	}
-	
-}
-
-//# sourceMappingURL=button.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Simple button.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_button_demo
-     */
-    class $mol_button extends $.$mol_button {
-        disabled(): boolean;
-        event_activate(next: Event): void;
-        event_key_press(event: KeyboardEvent): any;
-        tab_index(): number;
-        error(): string;
-        hint_safe(): string;
-        sub_visible(): ($mol_view_content | $mol_speck)[];
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_button_typed extends $mol_button {
-		minimal_height( ): number
-		minimal_width( ): number
-	}
-	
-}
-
-//# sourceMappingURL=typed.view.tree.d.ts.map
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	export class $mol_button_minor extends $mol_button_typed {
-	}
-	
-}
-
-//# sourceMappingURL=minor.view.tree.d.ts.map
-declare namespace $ {
-}
-
-declare namespace $ {
-
-	type $mol_svg_path__geometry_mol_icon_1 = $mol_type_enforce<
-		ReturnType< $mol_icon['path'] >
-		,
-		ReturnType< $mol_svg_path['geometry'] >
-	>
-	export class $mol_icon extends $mol_svg_root {
-		path( ): string
-		Path( ): $mol_svg_path
-		view_box( ): string
-		minimal_width( ): number
-		minimal_height( ): number
-		sub( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=icon.view.tree.d.ts.map
-declare namespace $ {
-
-	export class $mol_icon_close extends $mol_icon {
-		path( ): string
-	}
-	
-}
-
-//# sourceMappingURL=close.view.tree.d.ts.map
-declare namespace $ {
-
-	export class $mol_hotkey extends $mol_plugin {
-		keydown( next?: any ): any
-		event( ): ({ 
-			keydown( next?: ReturnType< $mol_hotkey['keydown'] > ): ReturnType< $mol_hotkey['keydown'] >,
-		})  & ReturnType< $mol_plugin['event'] >
-		key( ): Record<string, any>
-		mod_ctrl( ): boolean
-		mod_alt( ): boolean
-		mod_shift( ): boolean
-	}
-	
-}
-
-//# sourceMappingURL=hotkey.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * Plugin which adds handlers for keyboard keys.
-     * @see [mol_keyboard_code](../keyboard/code/code.ts)
-     */
-    class $mol_hotkey extends $.$mol_hotkey {
-        key(): { [key in keyof typeof $mol_keyboard_code]?: (event: KeyboardEvent) => void; };
-        keydown(event?: KeyboardEvent): void;
-    }
-}
-
-declare namespace $ {
-
-	type $mol_hotkey__mod_ctrl_mol_string_1 = $mol_type_enforce<
-		ReturnType< $mol_string['submit_with_ctrl'] >
-		,
-		ReturnType< $mol_hotkey['mod_ctrl'] >
-	>
-	type $mol_hotkey__key_mol_string_2 = $mol_type_enforce<
-		({ 
-			enter( next?: ReturnType< $mol_string['submit'] > ): ReturnType< $mol_string['submit'] >,
-		}) 
-		,
-		ReturnType< $mol_hotkey['key'] >
-	>
-	export class $mol_string extends $mol_view {
-		selection_watcher( ): any
-		error_report( ): any
-		disabled( ): boolean
-		value( next?: string ): string
-		value_changed( next?: ReturnType< $mol_string['value'] > ): ReturnType< $mol_string['value'] >
-		hint( ): string
-		hint_visible( ): ReturnType< $mol_string['hint'] >
-		spellcheck( ): boolean
-		autocomplete_native( ): string
-		selection_end( ): number
-		selection_start( ): number
-		keyboard( ): string
-		enter( ): string
-		length_max( ): number
-		type( next?: string ): string
-		event_change( next?: any ): any
-		submit_with_ctrl( ): boolean
-		submit( next?: any ): any
-		Submit( ): $mol_hotkey
-		dom_name( ): string
-		enabled( ): boolean
-		minimal_height( ): number
-		autocomplete( ): boolean
-		selection( next?: readonly(number)[] ): readonly(number)[]
-		auto( ): readonly(any)[]
-		field( ): ({ 
-			'disabled': ReturnType< $mol_string['disabled'] >,
-			'value': ReturnType< $mol_string['value_changed'] >,
-			'placeholder': ReturnType< $mol_string['hint_visible'] >,
-			'spellcheck': ReturnType< $mol_string['spellcheck'] >,
-			'autocomplete': ReturnType< $mol_string['autocomplete_native'] >,
-			'selectionEnd': ReturnType< $mol_string['selection_end'] >,
-			'selectionStart': ReturnType< $mol_string['selection_start'] >,
-			'inputMode': ReturnType< $mol_string['keyboard'] >,
-			'enterkeyhint': ReturnType< $mol_string['enter'] >,
-		})  & ReturnType< $mol_view['field'] >
-		attr( ): ({ 
-			'maxlength': ReturnType< $mol_string['length_max'] >,
-			'type': ReturnType< $mol_string['type'] >,
-		})  & ReturnType< $mol_view['attr'] >
-		event( ): ({ 
-			input( next?: ReturnType< $mol_string['event_change'] > ): ReturnType< $mol_string['event_change'] >,
-		})  & ReturnType< $mol_view['event'] >
-		plugins( ): readonly(any)[]
-	}
-	
-}
-
-//# sourceMappingURL=string.view.tree.d.ts.map
-declare namespace $.$$ {
-    /**
-     * An input field for entering single line text.
-     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_string_demo
-     */
-    class $mol_string extends $.$mol_string {
-        event_change(next?: Event): void;
-        value_changed(next?: string): string;
-        error_report(): void;
-        hint_visible(): string;
-        disabled(): boolean;
-        autocomplete_native(): "on" | "off";
-        selection_watcher(): $mol_dom_listener;
-        selection_change(event: Event): void;
-        selection_start(): number;
-        selection_end(): number;
-    }
-}
-
-declare namespace $ {
-}
-
-declare namespace $ {
     /** Modifier keys of the click, named as `MouseEventInit` names them. */
     type $bog_vmap_scene_click_mods = {
         readonly altKey: boolean;
@@ -4622,6 +4148,21 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    class $mol_dom_listener extends $mol_object {
+        _node: any;
+        _event: string;
+        _handler: (event: any) => any;
+        _config: boolean | {
+            passive: boolean;
+        };
+        constructor(_node: any, _event: string, _handler: (event: any) => any, _config?: boolean | {
+            passive: boolean;
+        });
+        destructor(): void;
+    }
+}
+
+declare namespace $ {
     /** As much of a DOM node as measuring needs. */
     type $bog_vmap_scene_measure_rect = {
         readonly isConnected: boolean;
@@ -4640,14 +4181,13 @@ declare namespace $ {
         readonly nodes: readonly Node[];
     };
     /**
-     * Geometry of a rendered document, in world units, and the nodes it was read
-     * off.
+     * Geometry of a rendered document, in world units, and the nodes it was read off.
      *
      * Pure, and out of the view for the reason the culling decision is: this is the
      * whole of what the host learns about the layout, and a walk worth testing is
-     * worth testing without a compiled document. Everything that knows about `$mol`
-     * — what counts as a view, what a view's children are, which property holds it —
-     * is handed in, so the function itself knows only rectangles and paths.
+     * worth testing without a compiled document. Everything that knows about the
+     * framework — what counts as a view, what a view's children are, which property
+     * holds it — is handed in, so the function itself knows only rectangles and paths.
      *
      * The nodes come back beside the sizes because the two are one question asked
      * twice: what the host is told about, and what has to be watched for changing
@@ -4802,7 +4342,7 @@ declare namespace $.$$ {
         readonly klass: string;
     };
     /**
-     * Sandbox application of $bog_vmap.
+     * Sandbox application of the editor.
      *
      * Takes a document over the bridge, compiles it, renders it, answers with
      * measured geometry and errors. It has no network, no Giper Baza and no
@@ -4889,7 +4429,7 @@ declare namespace $.$$ {
         sub_shown(kids: readonly $mol_view_content[]): $mol_view_content[];
         /**
          * Puts the filter between the document root and the DOM, as `sub_visible()`:
-         * the hook `$mol_view.render()` draws by and `$mol_list` narrows the same way,
+         * the hook the renderer draws by and the standard list narrows the same way,
          * so `sub()` stays whole for every other reader — the walks, the seek, the
          * values. An own property, which the prototype swap of a rebuild leaves be.
          */
@@ -4915,21 +4455,18 @@ declare namespace $.$$ {
         grid_scale(): $mol_vector_2d<number>;
         camera_transform(): string;
         /**
-         * Donor pack of this realm, as the host names it in `pack_set`.
+         * The frame has no address of its own — it is raised from markup — so the pack
+         * arrives by message. One pack per realm still holds by construction: a realm
+         * cannot unload a bundle, so the host makes the address part of the key of the
+         * frame, and a second pack arrives in a frame that never saw a first.
          *
-         * This frame has no address of its own — it is raised from markup, so there
-         * is no query to read a pack out of. The rule of section 5 still holds and
-         * still holds by construction: a realm cannot unload a bundle, so the host
-         * makes the address of the pack part of the key of the frame, and a second
-         * pack arrives in a frame that has never seen a first one.
-         *
-         * Empty until the message lands, and that is an ORDINARY state now rather
-         * than an impossible one, which is why `instance()` refuses to compile in it.
+         * Empty until the message lands, and that is an ORDINARY state rather than an
+         * impossible one, which is why `instance()` refuses to compile in it.
          * @see ../ARCHITECTURE.md section 5
          */
         pack_uri(next?: string): string;
         /**
-         * The importer of THIS bundle, resolved once. The pack rewrites `$mol_import`
+         * The importer of THIS bundle, resolved once. The pack rewrites the importer
          * in the global `$` as it lands, and read late-bound after that the name
          * gives the pack's copy, whose cache is empty — which loads the pack again,
          * and again, six hundred script tags a second. Measured in headless Chrome.
@@ -4942,16 +4479,16 @@ declare namespace $.$$ {
          * Suspends until the pack bundle is in the realm, then stays resolved.
          * Everything that compiles reads this first: a class picks its base once, at
          * definition time, and a document compiled before the pack lands would keep
-         * the scene's own `$mol_view` for good. A cross-origin `<script src>` needs
-         * no permission of its own inside the boundary.
+         * the base class of the scene's own bundle for good. A cross-origin
+         * `<script src>` needs no permission of its own inside the boundary.
          */
         pack_ready(): string;
         /**
          * Why the canvas is empty, or an empty string when it is not.
          *
          * The suspension is caught here rather than in `stage()` so that the wait
-         * has a face. Catching costs no reactivity: `$mol_wire_fiber.sync()`
-         * promotes the dependency before it throws, so this cell is subscribed to
+         * has a face. Catching costs no reactivity: a suspending read promotes the
+         * dependency before it throws, so this cell is subscribed to
          * `pack_ready()` either way and recomputes when the pack lands.
          */
         pack_note(): string;
@@ -4959,30 +4496,25 @@ declare namespace $.$$ {
          * One sandbox per document, never recreated.
          *
          * Reads nothing reactive, so the cell is computed once and never goes
-         * stale. That is the requirement, not an accident: `$mol_object2` caches
-         * its context in `[$mol_ambient_ref]` at the first read, so a fresh
+         * stale. That is the requirement, not an accident: the base object of the
+         * framework caches its context on first read, so a fresh
          * `Object.create( $ )` would silently cut already built instances off the
          * classes compiled after it.
          */
         sandbox(): typeof $$;
         /**
-         * Sources of the land libraries, from the host, compiled before the document.
-         *
          * Texts and nothing else: the scene has no database and no keys, so a land is
-         * read by the host and arrives here as the three strings of each component.
-         * On the bridge and not in the frame address, unlike the pack — a land is
-         * compiled into the sandbox like the document and inherits the current
-         * `$['$mol_view']`, so a change of the list is a recompile, not a reload.
+         * read by the host and arrives as the three strings of each component. On the
+         * bridge and not in the frame address, unlike the pack — a land is compiled
+         * into the sandbox like the document and inherits the base class already
+         * there, so a change of the list is a recompile, not a reload.
          * @see ../ARCHITECTURE.md section 5
          */
         libs(next?: readonly $bog_vmap_bridge_part[]): readonly $bog_vmap_bridge_part[];
         /**
-         * The libraries parsed: every declaration, and the handwritten bodies keyed
-         * by the class each part declares.
-         *
-         * The name of a class is read off its own tree rather than carried beside
-         * it, the same rule the land model lives by: one source of truth for a
-         * derivable fact. A part with no class declares nothing and keys nothing.
+         * The name of a class is read off its own tree rather than carried beside it,
+         * the same rule the land model lives by: one source of truth for a derivable
+         * fact. A part with no class declares nothing and keys nothing.
          *
          * Read inside `code()`, so a malformed library fails on the compile channel
          * with the name of the file it came from, like a malformed document does.
@@ -4996,8 +4528,8 @@ declare namespace $.$$ {
         /**
          * Normalized declarations of the libraries and the document, in the order
          * they can be defined in: libraries first, a base before its heir, one
-         * declaration per name. The order is `$bog_vmap_scene_order`, and the sort
-         * inside it is the canonical one from `lang` — the scene used to carry a
+         * declaration per name. The ordering helper of this module does it, and the
+         * sort inside it is the canonical one from `lang` — the scene used to carry a
          * copy, and two copies of a sort are one divergence away from `Class
          * extends value undefined`.
          */
@@ -5012,14 +4544,12 @@ declare namespace $.$$ {
             readonly [klass: string]: string;
         };
         /**
-         * What each class declares and which of it is keyed, bases folded in.
-         *
-         * The hot swap reads this to tell a property that lost its cell from one
-         * that changed between solo and keyed, and both questions are asked of a
-         * live instance — whose atoms come from the whole chain, not from the last
+         * The hot swap reads this to tell a property that lost its cell from one that
+         * changed between solo and keyed, and both questions are asked of a live
+         * instance — whose atoms come from the whole chain, not from the last
          * declaration alone. So a base declared by the document is folded into its
-         * heir, while a base from the pack is left out on purpose: its properties
-         * are not ours to judge and their shape does not change under us.
+         * heir, while a base from the pack is left out on purpose: its properties are
+         * not ours to judge and their shape does not change under us.
          */
         shapes(): {
             readonly [klass: string]: $bog_vmap_scene_swap_shape;
@@ -5028,22 +4558,19 @@ declare namespace $.$$ {
          * The call that makes cells of the handwritten body, emitted right after the
          * class: a decorator cannot be written into the string handed to
          * `new Function`. What the tree says is keyed or changeable goes along as
-         * data, the rest `$bog_vmap_scene_cells` reads off the class itself.
+         * data, the rest the cells helper reads off the class itself.
          */
         cells_code(self: $mol_tree2): string;
         /**
-         * Generated source of the whole document.
-         *
-         * Emitted class by class in topological order, and the handwritten body of
-         * a class goes right after its own declaration, before the next class is
+         * Emitted class by class in topological order, and the handwritten body of a
+         * class goes right after its own declaration, before the next class is
          * declared at all. Generating every declaration first and wrapping them
-         * afterwards would look tidier and be wrong: the wrapper is a NEW class,
-         * so a subclass built earlier keeps the unwrapped base in its prototype
-         * chain and simply loses the handwritten methods of its parent.
+         * afterwards would look tidier and be wrong: the wrapper is a NEW class, so a
+         * subclass built earlier keeps the unwrapped base in its prototype chain and
+         * loses the handwritten methods of its parent.
          *
-         * Class name and CSS go in as data through `JSON.stringify`: a user CSS
-         * with a backtick or a `${` would tear the string apart otherwise, and a
-         * name is not a global here at all.
+         * Class name and CSS go in as data through `JSON.stringify`: a user CSS with a
+         * backtick or a `${` would tear the string apart otherwise.
          */
         code_parts(): readonly {
             readonly klass: string;
@@ -5073,23 +4600,20 @@ declare namespace $.$$ {
          * Compiles the document into the sandbox, overwriting classes in place.
          *
          * Returns a plain record rather than the class itself. A class has a
-         * static `destructor`, so `$mol_wire_atom.put` would take ownership of it
-         * and stamp `Symbol.toStringTag` with the atom id — and `dom_name()` is
-         * `$mol_dom_qname( this.constructor.toString() )`, which reads exactly
-         * that stamp. A plain object has no `destructor` and stays untouched.
+         * static `destructor`, so an atom would take ownership of it and stamp
+         * `Symbol.toStringTag` with the atom id — and `dom_name()` is derived from
+         * the string form of the constructor, which reads exactly that stamp. A
+         * plain object has no `destructor` and stays untouched.
          */
         build(): {
             readonly Root: typeof $mol_view;
         };
         /**
-         * Class whose generated code throws, found by running the document again
-         * class by class.
-         *
-         * The whole document goes into ONE `new Function`, so a failure there — a
-         * base nobody declared, a syntax error in a handwritten body — carries no
-         * name. Splitting the fast path into a call per class to keep that name
-         * would cost every keystroke for the sake of the rare round that fails, so
-         * the search happens only once something already went wrong.
+         * The whole document goes into ONE `new Function`, so a failure there — a base
+         * nobody declared, a syntax error in a handwritten body — carries no name.
+         * Splitting the fast path into a call per class to keep that name would cost
+         * every keystroke for the sake of the rare round that fails, so the search
+         * runs only once something already went wrong.
          *
          * Into a scratch context and not into the sandbox: the retry must not add
          * half a generation of classes to the one the living component is using.
@@ -5110,7 +4634,7 @@ declare namespace $.$$ {
          * The live root instance, the identity it was built under and why the last
          * compile failed, in one value: one computation, one cell. `instance()` and
          * `compile_error()` split it so that each moves only its own readers. A plain
-         * record, which `$mol_owning_catch` refuses to stamp or destroy.
+         * record, which the owning catch of the framework refuses to stamp or destroy.
          *
          * An edit moves the living component onto the new classes instead of
          * building another one: cells are own fields of an instance, so a prototype
@@ -5118,8 +4642,8 @@ declare namespace $.$$ {
          * focus and scroll, which no snapshot carries. 6.1 ms against 8.7 ms for a
          * rebuild on the S2 bench, and flat in the size of the component.
          *
-         * What it built last time is read off its own cache through `$mol_wire_probe`,
-         * the way `view_rect()` does. A failed rebuild answers with that instance, so
+         * What it built last time is read off its own cache through a probe, the way
+         * `view_rect()` does. A failed rebuild answers with that instance, so
          * `instance()` keeps its value and the living component stays whole.
          */
         mount(): mounted;
@@ -5144,14 +4668,12 @@ declare namespace $.$$ {
         /** Class whose text failed to compile, when the failure names one. */
         compile_class(): string;
         /**
-         * Styles, attached apart from the class.
+         * What keeps a CSS edit cheap: `doc_css()` is read here and nowhere else, so
+         * restyling moves this cell alone while `sandbox()` and `instance()` stand
+         * still together with all the live state.
          *
-         * This is what keeps a CSS edit cheap: `doc_css()` is read here and
-         * nowhere else, so restyling moves this cell alone while `sandbox()` and
-         * `instance()` stand still together with all the live state.
-         *
-         * Not named `style()`: `$mol_view.style()` already exists and must return
-         * a dictionary of CSS properties for the rendered node.
+         * Not named `style()`: that name is taken by the base view and must return a
+         * dictionary of CSS properties for the rendered node.
          */
         css_attach(): HTMLStyleElement | null;
         /**
@@ -5164,54 +4686,44 @@ declare namespace $.$$ {
          * rules — the document text never sees them at all.
          *
          * Absolute positioning is TEMPORARY, scaffolding until artboards of stage 6:
-         * inside an artboard the layout is a plain $mol flex tree and only free parts
+         * inside an artboard the layout is a plain flex tree and only free parts
          * lie by coordinates.
          */
         spots_attach(): HTMLStyleElement | null;
         /**
-         * Styles of the land libraries, as one element of the scene's own.
-         *
-         * Under a constant id outside `style_scope`, like the placement: the sweep
-         * on every compile of the document must not take the library styles with
-         * it, and `$mol_style_attach` reuses the element it finds by id. Read off
-         * the raw parts and not off `libs_parsed()`, so that a library that fails
-         * to parse fails on the compile channel and does not take the styles of its
+         * Under a constant id outside `style_scope`, like the placement: the sweep on
+         * every compile of the document must not take the library styles with it. Read
+         * off the raw parts and not off `libs_parsed()`, so a library that fails to
+         * parse fails on the compile channel and does not take the styles of its
          * neighbours down with it.
          */
         libs_css_attach(): HTMLStyleElement | null;
         /**
-         * The placement rules.
-         *
-         * A sub view of a class carries `[<root without $>_<property lowercased>]`
-         * (`view_names_owned`, `view.tsx:365`), which is how a part is addressed.
          * World coordinates go into `left`/`top` unchanged: the stage sits under one
-         * `transform` with `transform-origin: 0 0`, so the root class is at world
-         * zero and its offset children are already in world units.
+         * `transform` with `transform-origin: 0 0`, so the root class is at world zero
+         * and its offset children are already in world units.
          *
          * **`!important` is not laziness here, it is the only thing that works.**
-         * Half the standard library positions itself: `[mol_string]` alone declares
-         * `position: relative`, at the same specificity as a single attribute
-         * selector, so the cascade falls through to source order — and this element
-         * is attached before the pack script has even been fetched, which puts every
-         * pack rule after it. Measured: three components dropped at one x,
-         * `$mol_button_minor` and `$mol_icon_close` landed on it, `$mol_string` came
-         * out 122 px to the right, offset by exactly the width of its in-flow
-         * neighbour, because it stayed `relative` and read `left` as a shift from its
-         * static position. Two of three looked right by luck. The pack is somebody
-         * else's CSS and we do not get to renumber it, so placement wins by
-         * declaration instead of by position.
+         * Half the standard library positions itself, and a bare attribute selector
+         * declaring `position: relative` ties on specificity, so the cascade falls
+         * through to source order — and this element is attached before the pack
+         * script has even been fetched, which puts every pack rule after it. Measured:
+         * three components dropped at one x, two landed on it, the text field came out
+         * 122 px to the right, offset by exactly the width of its in-flow neighbour,
+         * because it stayed `relative` and read `left` as a shift from its static
+         * position. Two of three looked right by luck, and the pack is somebody else's
+         * CSS we do not get to renumber.
          *
          * Margins are left alone, and a component carrying its own lands offset by
-         * them: `$mol_speck` has `margin: -.5rem -.2rem` and comes out 8 px above and
-         * 4 px left of the point it was aimed at. That is the badge doing what a badge
-         * does, and overriding it would be the editor deciding how somebody else's
-         * component looks.
+         * them — the standard badge has a negative one and comes out 8 px above the
+         * point it was aimed at. Overriding that would be the editor deciding how
+         * somebody else's component looks.
          */
         spots_css(): string;
         /**
          * Drops style elements of the previous compilation.
          *
-         * `$mol_style_attach` never removes them, and a class renamed while the
+         * The attach helper never removes them, and a class renamed while the
          * user types leaves one behind on every keystroke — hundreds per editing
          * session. Only elements of this scene are swept, never someone else's,
          * and never the placement element: it lives under `spots_id`, outside this
@@ -5236,13 +4748,6 @@ declare namespace $.$$ {
         asset_ask(id: string): string;
         /** Projection of `assets_missing()` onto the wire, read from `auto()`. */
         assets_push(): string[];
-        /**
-         * Mounted content.
-         *
-         * `css_attach()` is read right here, next to the instance, on purpose: a
-         * cell nobody reads during render is swept by `$mol_wire`, and then the
-         * styles would stop updating after the very first attach.
-         */
         stage(): readonly $mol_view_content[];
         post(message: $bog_vmap_bridge_up): void;
         /** Wires the host wants labelled: root property names, the whole list each time. */
@@ -5274,8 +4779,8 @@ declare namespace $.$$ {
          * changes on every frame costs one message per period and a wire that
          * changes once is reported at once.
          *
-         * `values_at` is a cell, and it is read here through `$mol_wire_probe` —
-         * deliberately, so that this cell does NOT subscribe to it. Nothing else
+         * `values_at` is a cell, and it is read here through a probe — deliberately,
+         * so that this cell does NOT subscribe to it. Nothing else
          * writes the stamp: it changes only as a consequence of this very cell's
          * timer having fired, and at that moment the message has just gone out and
          * there is nothing to recompute. Were the read a subscribing one, the write
@@ -5290,10 +4795,10 @@ declare namespace $.$$ {
         /**
          * The one window the scene talks to.
          *
-         * A plain field, never a cell: a cross-origin `Window` put through
-         * `$mol_wire_atom.put` is walked by `$mol_compare_deep`, which reads
-         * `location.href` and throws `SecurityError` — and the handler then dies
-         * silently. Identity comparison alone touches no property and is safe.
+         * A plain field, never a cell: a cross-origin `Window` written into an atom
+         * is walked by the framework's deep comparison, which reads `location.href`
+         * and throws `SecurityError` — and the handler then dies silently. Identity
+         * comparison alone touches no property and is safe.
          */
         peer(): Window;
         message_receive(event?: MessageEvent): void;
@@ -5303,7 +4808,7 @@ declare namespace $.$$ {
          * The host sends world coordinates and this side owns the same camera the
          * stage is drawn with, so the point on this window is `(world - camera) *
          * zoom` — the inverse of what `sizes_of` does to a measured box. The replay
-         * itself lives in `$bog_vmap_scene_click`, which is where it is tested.
+         * itself lives in the click helper of this module, where it is tested.
          */
         click_apply(x: number, y: number, mods: $bog_vmap_bridge_mods): void;
         message_listener(): $mol_dom_listener;
@@ -5317,19 +4822,16 @@ declare namespace $.$$ {
         key_listener(): $mol_dom_listener;
         key_relay(event?: KeyboardEvent): void;
         /**
-         * Re-reports whenever the layout of the document actually changes.
-         *
-         * The wire graph does not see layout, and that is a whole class of
-         * silent staleness, not one occasion. A frame with no layout at all —
-         * a hidden tab, a collapsed panel — measures 0x0; a late font or a
-         * decoded image resizes the document with nothing in the graph moving.
-         * In every case the host would keep the stale numbers until the next
-         * edit. The observer covers all of them at once, because its very first
-         * delivery happens exactly when the box first exists.
+         * The wire graph does not see layout, and that is a whole class of silent
+         * staleness, not one occasion. A frame with no layout at all — a hidden tab, a
+         * collapsed panel — measures 0x0; a late font or a decoded image resizes the
+         * document with nothing in the graph moving. In every case the host would keep
+         * the stale numbers until the next edit. The observer covers all of them at
+         * once, because its first delivery happens exactly when the box first exists.
          *
          * The wrapper is here to give the observer a `destructor`: a bare
-         * `ResizeObserver` is not ownable, so the atom would leave the previous
-         * one connected on every rebuild.
+         * `ResizeObserver` is not ownable, so the atom would leave the previous one
+         * connected on every rebuild.
          *
          * The set of watched nodes is not decided here — it is every node the last
          * report measured, which `resize_sync()` hands over. The root alone is not
@@ -5354,8 +4856,8 @@ declare namespace $.$$ {
         /**
          * Debounced answer to the host.
          *
-         * `$mol_after_timeout` and not `$mol_after_frame`: the scene lives in an
-         * iframe, and a background tab stops firing animation frames.
+         * A timeout and not an animation frame: the scene lives in an iframe, and a
+         * background tab stops firing animation frames.
          *
          * The cell depends on the rendered tree, not only on the sources. The
          * report reads geometry and failures off the DOM, and a timer started
@@ -5410,8 +4912,8 @@ declare namespace $.$$ {
         /**
          * The failure written on the node of one view, or an empty string.
          *
-         * A suspension is not a failure: `$mol` writes the same attribute while a
-         * fiber waits, and reporting that would light the node up on every load.
+         * A suspension is not a failure: the framework writes the same attribute while
+         * a fiber waits, and reporting that would light the node up on every load.
          */
         view_broken(view: $mol_view): string;
         /**
@@ -5427,8 +4929,8 @@ declare namespace $.$$ {
         class_node(made: $mol_view, klass: string): string;
         /**
          * How to walk a rendered document: the three things the walks need to know
-         * about `$mol`, in one place because both of them need the same three and a
-         * second copy would be a second vocabulary.
+         * about the framework, in one place because both of them need the same three
+         * and a second copy would be a second vocabulary.
          */
         walk_of(made: $mol_view): {
             key: string;
@@ -5452,31 +4954,30 @@ declare namespace $.$$ {
         /**
          * Geometry of the document, in world units, and the nodes it was read off.
          *
-         * The walk itself is `$bog_vmap_scene_measure`, which knows nothing of `$mol`;
-         * what a view is, what its children are and which property holds it are the
-         * three things this class knows and hands over.
+         * The walk itself knows nothing of the framework; what a view is, what its
+         * children are and which property holds it are the three things this class
+         * knows and hands over.
          */
         sizes_of(root: $mol_view): $bog_vmap_scene_measure_result<Element>;
         /**
          * Is this piece of content a view, told by shape rather than by class.
          *
-         * Not a fix for a break: measured, `instanceof $mol_view` reports all
-         * seven nodes here, pack built ones included. It works by a coincidence
-         * of scope, and the coincidence is worth spelling out because the same
-         * operator does the opposite one file away.
+         * Not a fix for a break: measured, an `instanceof` against the base class
+         * reports all seven nodes here, pack built ones included. It works by a
+         * coincidence of scope, and the coincidence is worth spelling out because the
+         * same operator does the opposite one file away.
          *
-         * A bare `$mol_view` written in THIS file compiles to a bare identifier,
-         * and no `class $mol_view` is declared in the emitted closure around it,
-         * so the name goes up the scope chain to the global — which is where the
-         * donor pack puts its own classes, and which is therefore the very class
-         * the document extends. Late binding, check passes. The same text inside
-         * `view.tsx` sits next to the declaration and binds to the file's own
-         * copy early, which is exactly why `render()` refuses a pack built
-         * document and why it is mounted here as a DOM node.
+         * The base class named in THIS file compiles to a bare identifier, and no
+         * declaration of that name stands in the emitted closure around it, so the
+         * name goes up the scope chain to the global — which is where the donor pack
+         * puts its own classes, and which is therefore the very class the document
+         * extends. Late binding, check passes. The same text inside the framework's
+         * own file sits next to the declaration and binds early, which is exactly why
+         * `render()` refuses a pack built document and why it is mounted as a DOM node.
          *
-         * So the operator holds only while this method stays in a file that does
-         * not declare `$mol_view`, and while the pack is the last writer of the
-         * global. Neither is a property of what is being asked. Shape is.
+         * So the operator holds only while this method stays in a file that does not
+         * declare that name, and while the pack is the last writer of the global.
+         * Neither is a property of what is being asked. Shape is.
          * @see ../ARCHITECTURE.md section 4
          */
         view_like(kid: unknown): kid is $mol_view;
@@ -5501,8 +5002,9 @@ declare namespace $ {
      * A value of the document as a short label for a wire.
      *
      * Text and numbers as they are, arrays and plain objects as JSON, anything
-     * else — a view, a class — by its own `toString`, which for `$mol_object` is
-     * its id. Whitespace is folded and the tail is cut, a label sits on a line.
+     * else — a view, a class — by its own `toString`, which for an object of the
+     * framework is its id. Whitespace is folded and the tail cut: a label sits on
+     * one line.
      */
     function $bog_vmap_scene_value_text(val: unknown, limit?: number): string;
     /**
@@ -5528,7 +5030,7 @@ declare namespace $ {
     /**
      * First node of a rendered document the probe accepts, and its path.
      *
-     * The path is built exactly as `$bog_vmap_scene_measure` builds it, and that is
+     * The path is built exactly as the measuring walk builds it, and that is
      * the whole reason this exists as a walk of its own rather than as a read of the
      * DOM. A failing element does carry an attribute naming it, but that attribute
      * is lowercased and joined by underscores, so `My_box` and `my/Box` arrive as the

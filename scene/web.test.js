@@ -2133,6 +2133,92 @@ var $;
 
 ;
 "use strict";
+var $;
+(function ($_1) {
+    /**
+     * Tests of the wire protocol: what goes in through `send` comes out of `read`,
+     * and what is not ours does not. A fake `postMessage` stands in for the window.
+     */
+    $mol_test({
+        'libs_set survives the wire'($) {
+            const parts = [
+                { tree: 'my_card mol_view\n\tprice 0\n', js: 'price(){ return 1 }', css: '' },
+                { tree: 'my_badge my_card\n', js: '', css: '[my_badge] { color: red }' },
+            ];
+            const sent = [];
+            $bog_vmap_bridge_send({ postMessage: (data) => { sent.push(data); } }, { kind: 'libs_set', parts });
+            $mol_assert_equal(sent.length, 1);
+            const message = $bog_vmap_bridge_read({ data: sent[0] });
+            $mol_assert_equal(message?.kind, 'libs_set');
+            if (message?.kind !== 'libs_set')
+                return;
+            $mol_assert_like(message.parts, parts);
+        },
+        /** The question goes down as a list of names, the answer comes up keyed by them. */
+        'values_want and values survive the wire'($) {
+            const sent = [];
+            const target = { postMessage: (data) => { sent.push(data); } };
+            $bog_vmap_bridge_send(target, { kind: 'values_want', names: ['calc_result', 'calc_value'] });
+            $bog_vmap_bridge_send(target, { kind: 'values', values: { calc_result: '42', calc_value: 'Error: boom' } });
+            const want = $bog_vmap_bridge_read({ data: sent[0] });
+            $mol_assert_equal(want?.kind, 'values_want');
+            if (want?.kind !== 'values_want')
+                return;
+            $mol_assert_like(want.names, ['calc_result', 'calc_value']);
+            const got = $bog_vmap_bridge_read({ data: sent[1] });
+            $mol_assert_equal(got?.kind, 'values');
+            if (got?.kind !== 'values')
+                return;
+            $mol_assert_like(got.values, { calc_result: '42', calc_value: 'Error: boom' });
+        },
+        'a message from another namespace is not ours'($) {
+            $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: 'somebody_else', kind: 'libs_set', parts: [] } }), null);
+            $mol_assert_equal($bog_vmap_bridge_read({ data: 'text' }), null);
+            $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: $bog_vmap_bridge_ns } }), null);
+        },
+        /** Passing a peer at all turns the check on: an unknown source is refused. */
+        'a message from a window other than the peer is dropped'($) {
+            const peer = {};
+            const stranger = {};
+            const data = { ns: $bog_vmap_bridge_ns, kind: 'ready' };
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, peer), null);
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: peer }, peer)?.kind, 'ready');
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, null), null);
+        },
+    });
+})($ || ($ = {}));
+(function ($_2) {
+    /**
+     * `click_at` on the wire: the relayed click keeps its point and its modifiers,
+     * and comes in only from the peer, like every other message.
+     */
+    $mol_test({
+        'click_at survives the wire with its point and modifiers'($) {
+            const posted = [];
+            const target = { postMessage(data) { posted.push(data); } };
+            const mods = { altKey: false, ctrlKey: true, metaKey: false, shiftKey: false };
+            $bog_vmap_bridge_send(target, { kind: 'click_at', x: 12.5, y: -3, mods });
+            $mol_assert_equal(posted.length, 1);
+            const read = $bog_vmap_bridge_read({ data: posted[0], source: target }, target);
+            $mol_assert_equal(read?.kind, 'click_at');
+            if (read?.kind !== 'click_at')
+                return;
+            $mol_assert_equal(read.x, 12.5);
+            $mol_assert_equal(read.y, -3);
+            $mol_assert_like(read.mods, mods);
+        },
+        'a click_at from a stranger is dropped'($) {
+            const peer = {};
+            const stranger = {};
+            const data = { ns: $bog_vmap_bridge_ns, kind: 'click_at', x: 1, y: 2, mods: {} };
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, peer), null);
+            $mol_assert_equal($bog_vmap_bridge_read({ data, source: peer }, peer)?.kind, 'click_at');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
 
 ;
 "use strict";
@@ -2439,96 +2525,6 @@ var $;
             var node = x.dom_node();
             node.click();
             $mol_assert_ok(clicked);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
-     * Tests of the wire protocol: what goes in through `send` comes out of `read`,
-     * and what is not ours does not. A fake `postMessage` stands in for the window.
-     */
-    $mol_test({
-        'libs_set survives the wire'($) {
-            const parts = [
-                { tree: 'my_card mol_view\n\tprice 0\n', js: 'price(){ return 1 }', css: '' },
-                { tree: 'my_badge my_card\n', js: '', css: '[my_badge] { color: red }' },
-            ];
-            const sent = [];
-            $bog_vmap_bridge_send({ postMessage: (data) => { sent.push(data); } }, { kind: 'libs_set', parts });
-            $mol_assert_equal(sent.length, 1);
-            const message = $bog_vmap_bridge_read({ data: sent[0] });
-            $mol_assert_equal(message?.kind, 'libs_set');
-            if (message?.kind !== 'libs_set')
-                return;
-            $mol_assert_like(message.parts, parts);
-        },
-        /** The question goes down as a list of names, the answer comes up keyed by them. */
-        'values_want and values survive the wire'($) {
-            const sent = [];
-            const target = { postMessage: (data) => { sent.push(data); } };
-            $bog_vmap_bridge_send(target, { kind: 'values_want', names: ['calc_result', 'calc_value'] });
-            $bog_vmap_bridge_send(target, { kind: 'values', values: { calc_result: '42', calc_value: 'Error: boom' } });
-            const want = $bog_vmap_bridge_read({ data: sent[0] });
-            $mol_assert_equal(want?.kind, 'values_want');
-            if (want?.kind !== 'values_want')
-                return;
-            $mol_assert_like(want.names, ['calc_result', 'calc_value']);
-            const got = $bog_vmap_bridge_read({ data: sent[1] });
-            $mol_assert_equal(got?.kind, 'values');
-            if (got?.kind !== 'values')
-                return;
-            $mol_assert_like(got.values, { calc_result: '42', calc_value: 'Error: boom' });
-        },
-        'a message from another namespace is not ours'($) {
-            $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: 'somebody_else', kind: 'libs_set', parts: [] } }), null);
-            $mol_assert_equal($bog_vmap_bridge_read({ data: 'text' }), null);
-            $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: $bog_vmap_bridge_ns } }), null);
-        },
-        /** Passing a peer at all turns the check on: an unknown source is refused. */
-        'a message from a window other than the peer is dropped'($) {
-            const peer = {};
-            const stranger = {};
-            const data = { ns: $bog_vmap_bridge_ns, kind: 'ready' };
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, peer), null);
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: peer }, peer)?.kind, 'ready');
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, null), null);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    /**
-     * `click_at` on the wire: the relayed click keeps its point and its modifiers,
-     * and comes in only from the peer, like every other message.
-     */
-    $mol_test({
-        'click_at survives the wire with its point and modifiers'($) {
-            const posted = [];
-            const target = { postMessage(data) { posted.push(data); } };
-            const mods = { altKey: false, ctrlKey: true, metaKey: false, shiftKey: false };
-            $bog_vmap_bridge_send(target, { kind: 'click_at', x: 12.5, y: -3, mods });
-            $mol_assert_equal(posted.length, 1);
-            const read = $bog_vmap_bridge_read({ data: posted[0], source: target }, target);
-            $mol_assert_equal(read?.kind, 'click_at');
-            if (read?.kind !== 'click_at')
-                return;
-            $mol_assert_equal(read.x, 12.5);
-            $mol_assert_equal(read.y, -3);
-            $mol_assert_like(read.mods, mods);
-        },
-        'a click_at from a stranger is dropped'($) {
-            const peer = {};
-            const stranger = {};
-            const data = { ns: $bog_vmap_bridge_ns, kind: 'click_at', x: 1, y: 2, mods: {} };
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: stranger }, peer), null);
-            $mol_assert_equal($bog_vmap_bridge_read({ data, source: peer }, peer)?.kind, 'click_at');
         },
     });
 })($ || ($ = {}));
@@ -3089,7 +3085,338 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$mol_hotkey) = class $mol_hotkey extends ($.$mol_plugin) {
+		keydown(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		event(){
+			return {...(super.event()), "keydown": (next) => (this.keydown(next))};
+		}
+		key(){
+			return {};
+		}
+		mod_ctrl(){
+			return false;
+		}
+		mod_alt(){
+			return false;
+		}
+		mod_shift(){
+			return false;
+		}
+	};
+	($mol_mem(($.$mol_hotkey.prototype), "keydown"));
+
+
+;
 "use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Plugin which adds handlers for keyboard keys.
+         * @see [mol_keyboard_code](../keyboard/code/code.ts)
+         */
+        class $mol_hotkey extends $.$mol_hotkey {
+            key() {
+                return super.key();
+            }
+            keydown(event) {
+                if (!event)
+                    return;
+                if (event.defaultPrevented)
+                    return;
+                let name = $mol_keyboard_code[event.keyCode];
+                if (this.mod_ctrl() !== (event.ctrlKey || event.metaKey))
+                    return;
+                if (this.mod_alt() !== event.altKey)
+                    return;
+                if (this.mod_shift() !== event.shiftKey)
+                    return;
+                const handle = this.key()[name];
+                if (handle)
+                    handle(event);
+            }
+        }
+        $$.$mol_hotkey = $mol_hotkey;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$mol_string) = class $mol_string extends ($.$mol_view) {
+		selection_watcher(){
+			return null;
+		}
+		error_report(){
+			return null;
+		}
+		disabled(){
+			return false;
+		}
+		value(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		value_changed(next){
+			return (this.value(next));
+		}
+		hint(){
+			return "";
+		}
+		hint_visible(){
+			return (this.hint());
+		}
+		spellcheck(){
+			return true;
+		}
+		autocomplete_native(){
+			return "";
+		}
+		selection_end(){
+			return 0;
+		}
+		selection_start(){
+			return 0;
+		}
+		keyboard(){
+			return "text";
+		}
+		enter(){
+			return "go";
+		}
+		length_max(){
+			return +Infinity;
+		}
+		type(next){
+			if(next !== undefined) return next;
+			return "text";
+		}
+		event_change(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		submit_with_ctrl(){
+			return false;
+		}
+		submit(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Submit(){
+			const obj = new this.$.$mol_hotkey();
+			(obj.mod_ctrl) = () => ((this.submit_with_ctrl()));
+			(obj.key) = () => ({"enter": (next) => (this.submit(next))});
+			return obj;
+		}
+		dom_name(){
+			return "input";
+		}
+		enabled(){
+			return true;
+		}
+		minimal_height(){
+			return 40;
+		}
+		autocomplete(){
+			return false;
+		}
+		selection(next){
+			if(next !== undefined) return next;
+			return [0, 0];
+		}
+		auto(){
+			return [(this.selection_watcher()), (this.error_report())];
+		}
+		field(){
+			return {
+				...(super.field()), 
+				"disabled": (this.disabled()), 
+				"value": (this.value_changed()), 
+				"placeholder": (this.hint_visible()), 
+				"spellcheck": (this.spellcheck()), 
+				"autocomplete": (this.autocomplete_native()), 
+				"selectionEnd": (this.selection_end()), 
+				"selectionStart": (this.selection_start()), 
+				"inputMode": (this.keyboard()), 
+				"enterkeyhint": (this.enter())
+			};
+		}
+		attr(){
+			return {
+				...(super.attr()), 
+				"maxlength": (this.length_max()), 
+				"type": (this.type())
+			};
+		}
+		event(){
+			return {...(super.event()), "input": (next) => (this.event_change(next))};
+		}
+		plugins(){
+			return [(this.Submit())];
+		}
+	};
+	($mol_mem(($.$mol_string.prototype), "value"));
+	($mol_mem(($.$mol_string.prototype), "type"));
+	($mol_mem(($.$mol_string.prototype), "event_change"));
+	($mol_mem(($.$mol_string.prototype), "submit"));
+	($mol_mem(($.$mol_string.prototype), "Submit"));
+	($mol_mem(($.$mol_string.prototype), "selection"));
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Z-index values for layers
+     * https://page.hyoo.ru/#!=xthcpx_wqmiba
+     */
+    $.$mol_layer = $mol_style_prop('mol_layer', [
+        'hover',
+        'focus',
+        'speck',
+        'float',
+        'popup',
+    ]);
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/layer/layer.css", ":root {\n\t--mol_layer_hover: 1;\n\t--mol_layer_focus: 2;\n\t--mol_layer_speck: 3;\n\t--mol_layer_float: 4;\n\t--mol_layer_popup: 5;\n}\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * An input field for entering single line text.
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_string_demo
+         */
+        class $mol_string extends $.$mol_string {
+            event_change(next) {
+                if (!next)
+                    return;
+                const el = this.dom_node();
+                const from = el.selectionStart;
+                const to = el.selectionEnd;
+                el.value = this.value_changed(el.value);
+                if (to === null)
+                    return;
+                el.selectionEnd = to;
+                el.selectionStart = from;
+                this.selection_change(next);
+            }
+            value_changed(next) {
+                const el = this.dom_node();
+                try {
+                    el.setCustomValidity('');
+                    return this.value(next);
+                }
+                catch (error) {
+                    $mol_fail_log(error);
+                    if (error instanceof Error) {
+                        el.setCustomValidity(error.message);
+                        el.reportValidity();
+                    }
+                    return next ?? $mol_mem_cached(() => this.value_changed()) ?? '';
+                }
+            }
+            error_report() {
+                try {
+                    if (this.focused())
+                        this.value();
+                }
+                catch (error) {
+                    const el = this.dom_node();
+                    if (error instanceof Error) {
+                        el.setCustomValidity(error.message);
+                        el.reportValidity();
+                    }
+                }
+            }
+            hint_visible() {
+                return (this.enabled() ? this.hint() : '') || ' ';
+            }
+            disabled() {
+                return !this.enabled();
+            }
+            autocomplete_native() {
+                return this.autocomplete() ? 'on' : 'off';
+            }
+            selection_watcher() {
+                return new $mol_dom_listener(this.$.$mol_dom_context.document, 'selectionchange', $mol_wire_async(event => this.selection_change(event)));
+            }
+            selection_change(event) {
+                const el = this.dom_node();
+                if (el !== this.$.$mol_dom_context.document.activeElement)
+                    return;
+                const [from, to] = this.selection([
+                    el.selectionStart,
+                    el.selectionEnd,
+                ]);
+                el.selectionEnd = to;
+                el.selectionStart = from;
+                if (to !== from && el.selectionEnd === el.selectionStart) {
+                    el.selectionEnd = to;
+                }
+            }
+            selection_start() {
+                const el = this.dom_node();
+                if (!this.focused())
+                    return undefined;
+                if (el.selectionStart == null)
+                    return undefined;
+                return this.selection()[0];
+            }
+            selection_end() {
+                const el = this.dom_node();
+                if (!this.focused())
+                    return undefined;
+                if (el.selectionEnd == null)
+                    return undefined;
+                return this.selection()[1];
+            }
+        }
+        __decorate([
+            $mol_action
+        ], $mol_string.prototype, "event_change", null);
+        __decorate([
+            $mol_mem
+        ], $mol_string.prototype, "value_changed", null);
+        __decorate([
+            $mol_mem
+        ], $mol_string.prototype, "error_report", null);
+        __decorate([
+            $mol_mem
+        ], $mol_string.prototype, "selection_watcher", null);
+        $$.$mol_string = $mol_string;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/string/string.view.css", "[mol_string] {\n\tbox-sizing: border-box;\n\toutline-offset: 0;\n\tborder: none;\n\tborder-radius: var(--mol_gap_round);\n\twhite-space: pre-line;\n\toverflow: hidden;\n\ttext-overflow: ellipsis;\n\tpadding: var(--mol_gap_text);\n\ttext-align: start;\n\tposition: relative;\n\tfont: inherit;\n\tflex: 1 1 auto;\n\tbackground: transparent;\n\tmin-width: 0;\n\tcolor: inherit;\n\tbackground: var(--mol_theme_field);\n}\n\n[mol_string]:disabled:not(:placeholder-shown) {\n\tbackground-color: transparent;\n\tcolor: var(--mol_theme_text);\n}\n\n[mol_string]:where(:not(:disabled)) {\n\tbox-shadow: inset 0 0 0 1px var(--mol_theme_line);\n}\n\n[mol_string]:where(:not(:disabled)):hover {\n\tbox-shadow: inset 0 0 0 2px var(--mol_theme_line);\n\tz-index: var(--mol_layer_hover);\n}\n\n[mol_string]:focus {\n\toutline: none;\n\tz-index: var(--mol_layer_focus);\n\tcolor: var(--mol_theme_text);\n\tbox-shadow: inset 0 0 0 1px var(--mol_theme_focus);\n}\n\n[mol_string]::placeholder {\n\tcolor: var(--mol_theme_shade);\n}\n\n[mol_string]::-ms-clear {\n\tdisplay: none;\n}\n");
+})($ || ($ = {}));
 
 ;
 	($.$mol_paragraph) = class $mol_paragraph extends ($.$mol_view) {
@@ -3309,6 +3636,116 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$mol_speck) = class $mol_speck extends ($.$mol_view) {
+		value(){
+			return null;
+		}
+		theme(){
+			return "$mol_theme_accent";
+		}
+		sub(){
+			return [(this.value())];
+		}
+	};
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/speck/speck.view.css", "[mol_speck] {\n\tfont-size: .75rem;\n\tborder-radius: 1rem;\n\tmargin: -0.5rem -0.2rem;\n\talign-self: flex-start;\n\tmin-height: 1em;\n\tmin-width: .75rem;\n\tvertical-align: sub;\n\tpadding: 0 .2rem;\n\tposition: absolute;\n\tz-index: var(--mol_layer_speck);\n\ttext-align: center;\n\tline-height: .9;\n\tdisplay: inline-block;\n\twhite-space: nowrap;\n\ttext-overflow: ellipsis;\n\tuser-select: none;\n\tbox-shadow: 0 0 3px rgba(0,0,0,.5);\n}\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+
+
+;
+	($.$mol_button) = class $mol_button extends ($.$mol_view) {
+		event_activate(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		activate(next){
+			return (this.event_activate(next));
+		}
+		clicks(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		event_key_press(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		key_press(next){
+			return (this.event_key_press(next));
+		}
+		disabled(){
+			return false;
+		}
+		tab_index(){
+			return 0;
+		}
+		hint(){
+			return "";
+		}
+		hint_safe(){
+			return (this.hint());
+		}
+		error(){
+			return "";
+		}
+		enabled(){
+			return true;
+		}
+		click(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		event_click(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		status(next){
+			if(next !== undefined) return next;
+			return [];
+		}
+		event(){
+			return {
+				...(super.event()), 
+				"click": (next) => (this.activate(next)), 
+				"dblclick": (next) => (this.clicks(next)), 
+				"keydown": (next) => (this.key_press(next))
+			};
+		}
+		attr(){
+			return {
+				...(super.attr()), 
+				"disabled": (this.disabled()), 
+				"role": "button", 
+				"tabindex": (this.tab_index()), 
+				"title": (this.hint_safe())
+			};
+		}
+		sub(){
+			return [(this.title())];
+		}
+		Speck(){
+			const obj = new this.$.$mol_speck();
+			(obj.value) = () => ((this.error()));
+			return obj;
+		}
+	};
+	($mol_mem(($.$mol_button.prototype), "event_activate"));
+	($mol_mem(($.$mol_button.prototype), "clicks"));
+	($mol_mem(($.$mol_button.prototype), "event_key_press"));
+	($mol_mem(($.$mol_button.prototype), "click"));
+	($mol_mem(($.$mol_button.prototype), "event_click"));
+	($mol_mem(($.$mol_button.prototype), "status"));
+	($mol_mem(($.$mol_button.prototype), "Speck"));
+
+
+;
 "use strict";
 var $;
 (function ($_1) {
@@ -3353,6 +3790,121 @@ var $;
         });
     })($$ = $_1.$$ || ($_1.$$ = {}));
 })($ || ($ = {}));
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Simple button.
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_button_demo
+         */
+        class $mol_button extends $.$mol_button {
+            disabled() {
+                return !this.enabled();
+            }
+            event_activate(next) {
+                if (!next)
+                    return;
+                if (!this.enabled())
+                    return;
+                try {
+                    this.event_click(next);
+                    this.click(next);
+                    this.status([null]);
+                }
+                catch (error) {
+                    // Calling actions from catch section, if throwing promise breaks idempotency
+                    Promise.resolve().then(() => this.status([error]));
+                    $mol_fail_hidden(error);
+                }
+            }
+            event_key_press(event) {
+                if (event.keyCode === $mol_keyboard_code.enter) {
+                    return this.activate(event);
+                }
+            }
+            tab_index() {
+                return this.enabled() ? super.tab_index() : -1;
+            }
+            error() {
+                const error = this.status()?.[0];
+                if (!error)
+                    return '';
+                if ($mol_promise_like(error)) {
+                    return $mol_fail_hidden(error);
+                }
+                return this.$.$mol_error_message(error);
+            }
+            hint_safe() {
+                try {
+                    return this.hint();
+                }
+                catch (error) {
+                    $mol_fail_log(error);
+                    return '';
+                }
+            }
+            sub_visible() {
+                return [
+                    ...this.error() ? [this.Speck()] : [],
+                    ...this.sub(),
+                ];
+            }
+        }
+        $$.$mol_button = $mol_button;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/button/button.view.css", "[mol_button] {\n\tborder: none;\n\tfont: inherit;\n\tdisplay: inline-flex;\n\tflex-shrink: 0;\n\ttext-decoration: inherit;\n\tcursor: inherit;\n\tposition: relative;\n\tbox-sizing: border-box;\n\tword-break: normal;\n\tcursor: default;\n\tuser-select: none;\n\t-webkit-user-select: none;\n\tborder-radius: var(--mol_gap_round);\n\tbackground: transparent;\n\tcolor: inherit;\n}\n\n[mol_button]:where(:not(:disabled)):hover {\n\tz-index: var(--mol_layer_hover);\n}\n\n[mol_button]:focus {\n\toutline: none;\n\tz-index: var(--mol_layer_focus);\n}\n");
+})($ || ($ = {}));
+
+;
+	($.$mol_button_typed) = class $mol_button_typed extends ($.$mol_button) {
+		minimal_height(){
+			return 40;
+		}
+		minimal_width(){
+			return 40;
+		}
+	};
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/button/typed/typed.view.css", "[mol_button_typed] {\n\talign-content: center;\n\talign-items: center;\n\tpadding: var(--mol_gap_text);\n\tborder-radius: var(--mol_gap_round);\n\tgap: var(--mol_gap_space);\n\tuser-select: none;\n\tcursor: pointer;\n\tmin-width: 2.5rem;\n\tmin-height: 2.5rem;\n}\n\n[mol_button_typed][disabled] {\n\tpointer-events: none;\n}\n\n[mol_button_typed]:hover ,\n[mol_button_typed]:focus-visible {\n\tbox-shadow: inset 0 0 0 100vmax var(--mol_theme_hover);\n}\n\n[mol_button_typed]:active {\n\tcolor: var(--mol_theme_focus);\n}\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+
+
+;
+	($.$mol_button_minor) = class $mol_button_minor extends ($.$mol_button_typed) {};
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/button/minor/minor.view.css", "[mol_button_minor]:where(:not([disabled])) {\n\tcolor: var(--mol_theme_control);\n}\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+
 
 ;
 "use strict";
@@ -4505,6 +5057,39 @@ var $;
 	($mol_mem(($.$mol_scroll.prototype), "scroll_top"));
 	($mol_mem(($.$mol_scroll.prototype), "scroll_left"));
 
+
+;
+"use strict";
+var $;
+(function ($) {
+    class $mol_print extends $mol_object {
+        static before() {
+            return new $mol_dom_listener(this.$.$mol_dom_context, 'beforeprint', () => {
+                this.active(true);
+            });
+        }
+        static after() {
+            return new $mol_dom_listener(this.$.$mol_dom_context, 'afterprint', () => {
+                this.active(false);
+            });
+        }
+        static active(next) {
+            this.before();
+            this.after();
+            return next || false;
+        }
+    }
+    __decorate([
+        $mol_mem
+    ], $mol_print, "before", null);
+    __decorate([
+        $mol_mem
+    ], $mol_print, "after", null);
+    __decorate([
+        $mol_mem
+    ], $mol_print, "active", null);
+    $.$mol_print = $mol_print;
+})($ || ($ = {}));
 
 ;
 "use strict";
@@ -7329,9 +7914,9 @@ var $;
     /**
      * The replay of a relayed click, on a fake realm.
      *
-     * No real DOM is involved on purpose: what a real `$mol_button` inside the
-     * sandbox does with these events is a browser question, this is the contract
-     * the scene keeps towards it — which events, in which order, with what flags.
+     * No real DOM is involved on purpose: what a real button inside the sandbox does
+     * with these events is a browser question, this is the contract the scene keeps
+     * towards it — which events, in which order, with what flags.
      */
     /** A constructor that records what it was asked to make. */
     const recorder = (log) => class {
@@ -7606,8 +8191,8 @@ var $;
     const d = '$';
     const pack = 'https://pack.test/web.js';
     /**
-     * A scene whose pack never leaves the process: `$mol_import.script_async` is
-     * the one thing that touches the network, and it is the only thing replaced.
+     * A scene whose pack never leaves the process: the async script loader is the one
+     * thing that touches the network, and it is the only thing replaced.
      * The pack is named up front unless a test wants the moments before that.
      */
     function scene($, uri = pack) {
@@ -7703,7 +8288,7 @@ var $;
          *
          * The class is checked for in the sandbox as well as the instance, because
          * those are two different failures and only one of them shows. A document
-         * compiled here would inherit the `$mol_view` of the SCENE — a class computes
+         * compiled here would inherit the base class of the SCENE — a class computes
          * its base once, and no later load of the pack can move it — so the damage is
          * done at definition time, before anything is instantiated, and it is done
          * for the life of the frame. Compilation is green, the bridge reports no
@@ -7758,7 +8343,7 @@ var $;
             $mol_assert_equal(made.instance(), null);
         },
         /**
-         * The pack is a whole `$mol` bundle and rewrites `$mol_import` in the global
+         * The pack is a whole framework bundle and rewrites the importer in the global
          * `$` as it lands. Read late-bound after that, the name gives the pack's copy
          * with an empty cache, which loads the pack again — and that copy's `script`
          * loads it again, forever: measured at six hundred script tags a second, the
@@ -7802,11 +8387,11 @@ var $;
             $mol_assert_like(sent.filter(m => m.kind === 'key'), [{ kind: 'key', key: 'Escape' }]);
         },
         /**
-         * Two copies of `$mol_try_web` on one page — the scene's and the pack's —
-         * each listen on `self` and call a `handler` private to their own bundle, so
-         * a dispatch from one throws `handler is not a function` in the other: a
-         * failure of the document was answered by a second failure of our own. Once
-         * the pack has landed, `$mol_try` is plain try/catch and dispatches nothing.
+         * Two copies of the framework's error reporter on one page — the scene's and
+         * the pack's — each listen on `self` and call a handler private to their own
+         * bundle, so a dispatch from one throws «handler is not a function» in the
+         * other: a failure of the document was answered by a second failure of our
+         * own. Once the pack has landed, ours is plain try/catch and dispatches nothing.
          */
         async 'a failure of the document raises no second failure of the scene'($) {
             const { made, ctx } = scene($, '');
@@ -8304,7 +8889,7 @@ var $;
             $mol_assert_equal(made.walk_of(doc).kids_of(doc).length, 2);
         },
         /**
-         * The viewport is the box of the scene, read the one way `$mol` reads a box.
+         * The viewport is the box of the scene, read the one way the framework reads one.
          * Two sizes of the same frame judge the same part differently, which no
          * number taken off the window could do here.
          */
