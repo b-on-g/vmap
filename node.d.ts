@@ -50088,14 +50088,26 @@ declare namespace $.$$ {
          *
          * A plain field, written from inside the `*_push` cells. Writing a field there
          * is fine and writing a CELL there would not be: a cell set from the body of
-         * another cell is an invalidation loop. Nothing reads this reactively either —
-         * `watchdog()` reads it only alongside the cells that move it.
+         * another cell is an invalidation loop. Sending from `auto()` instead is not
+         * the way out it looks like — `auto()` is called from `dom_node()`, which is
+         * a cell as well — so a field here is the only lawful form, not a shortcut.
+         *
+         * Nothing reads this reactively: `watchdog()` reads it only alongside the
+         * cells that move it, and `poke_direct()` covers the two questions no cell
+         * projects.
          */
         poke_at: number;
-        /** Serial of the last message the scene sent, of any kind. */
-        answer_at: number;
-        /** The clock both stamps are taken from. A method so that a test can move it by hand. */
-        now(): number;
+        /**
+         * Serial of the last message the scene sent, of any kind.
+         *
+         * A CELL, unlike the stamp above it, and the difference is where each is
+         * written from: this one from the message handler, which is an effect and may
+         * write cells, that one from the body of a push cell, which may not. So this
+         * one both records the answer and wakes whoever is waiting for it, and the
+         * counter that used to be kept beside it for the waking — bumped for every
+         * message and carrying nothing else — is gone.
+         */
+        answer_at(next?: number): number;
         /**
          * Serial the two stamps are taken from, so a question and an answer can never
          * share one.
@@ -50110,8 +50122,21 @@ declare namespace $.$$ {
          */
         stamp_last: number;
         stamp(): number;
-        /** Bumped for every message accepted, so `watchdog()` recomputes on an answer. */
-        traffic_version(next?: number): number;
+        /**
+         * Serial of the last question asked from OUTSIDE a push cell: the pulse and
+         * the relayed click.
+         *
+         * Everything else the host sends is projected by a `*_push` cell, and the
+         * watchdog hears about it by reading that cell. These two have no cell of
+         * their own — one leaves from a timer, the other from a pointer handler — so
+         * without a word here a question would be asked and nobody would start
+         * counting. Both used to keep a counter apiece for exactly that, one of them
+         * doubling as a nonce the scene echoes and nobody compares.
+         *
+         * The value is the stamp `post()` put on that question, so it says WHICH
+         * question and not merely how many there have been.
+         */
+        poke_direct(next?: number): number;
         /**
          * The scene has reported geometry at least once.
          *
@@ -50164,10 +50189,6 @@ declare namespace $.$$ {
          * `postMessage` and the scene answers it without touching a single cell.
          */
         ping_period(): number;
-        /** Serial of the last `ping`. Only ever moves forward. */
-        ping_nonce(next?: number): number;
-        /** Serial of the last relayed click. Read by the watchdog, so a click arms it. */
-        click_serial(next?: number): number;
         /**
          * The pulse. Always on once the scene has proved itself, see `warmed()`.
          *
@@ -50177,9 +50198,9 @@ declare namespace $.$$ {
          * part, a timer inside the document — and a document that loops there would
          * leave a dead canvas nobody asked a question of. The pulse is that question.
          *
-         * Re-armed by `traffic_version()`, which every answer bumps, so the loop is
-         * ping, pong, wait, ping. A scene that stops answering therefore gets exactly
-         * one outstanding ping and no flood: the watchdog only needs one.
+         * Re-armed by `answer_at()`, which every answer moves, so the loop is ping,
+         * pong, wait, ping. A scene that stops answering therefore gets exactly one
+         * outstanding ping and no flood: the watchdog only needs one.
          */
         heartbeat(): $mol_after_timeout | null;
         /**
@@ -50203,17 +50224,22 @@ declare namespace $.$$ {
          * Latest measured node boxes, in world units, keyed by the path the scene
          * walks: the root class name, then a property name per level.
          *
-         * A plain field with a version cell beside it. The boxes arrive from a
-         * message handler, and a `@ $mol_mem` written from there would still be fine;
-         * what would not is comparing them — `$mol_compare_deep` over a hundred boxes
-         * on every report round, twice a second, to learn that the layout did not
-         * move. The version says «something arrived» and costs one number.
+         * AN ORDINARY CELL, and it used to be a field with a version counter beside
+         * it. The reason written here for that was the price of comparing the boxes —
+         * `$mol_compare_deep` over a hundred of them on every report round — and the
+         * price was never measured. Measured now, on this bundle: 25 boxes 8 µs, 100
+         * boxes 30 µs, 400 boxes 137 µs per compare, against two reports a second.
+         * That is a quarter of a millisecond per second at four hundred nodes.
+         *
+         * The counter was the more expensive of the two, and not by a little: it says
+         * «something arrived» and therefore wakes every reader — the rings, the port
+         * dots, the hit test — twice a second even when the layout has not moved a
+         * pixel, which is the common case while nothing is being dragged. The compare
+         * buys exactly that silence for the microseconds above.
          */
-        sizes_last: {
+        sizes(next?: {
             readonly [node: string]: $bog_vmap_bridge_rect;
-        };
-        sizes_version(next?: number): number;
-        sizes(): {
+        }): {
             readonly [node: string]: $bog_vmap_bridge_rect;
         };
         /**
@@ -50270,19 +50296,28 @@ declare namespace $.$$ {
         /** Where a node is drawn: the names of the nodes it lies inside, outermost first. */
         node_path(name: string): readonly string[];
         /**
-         * The node being dragged, kept as a plain field.
+         * The carry in hand, or `null` when nothing is being carried.
          *
-         * `version` is the reading of `sizes_version()` when the grab started, and it
-         * is what makes the ring exact instead of merely quick. Measured boxes are
-         * debounced by 120 ms in the scene, and the timer restarts on every change,
-         * so during a continuous drag NO fresh box ever arrives: a ring drawn from
-         * `sizes()` alone would sit at the start of the gesture until the pointer
-         * stopped. Adding the live offset fixes that, and would then double count the
-         * move the moment a fresh box did arrive — hence the guard. When the version
-         * moves, the boxes already carry the drag, and the offset stops being added
-         * on the same frame. Nothing has to clear it.
+         * A CELL and not a field, because the ring is drawn from it: as a field it
+         * woke its readers only by riding the report counter, which is the pattern
+         * `$mol_touch` avoids by keeping its whole gesture in cells.
+         *
+         * `sizes` is the report the grab was taken against, and it is what makes the
+         * ring exact instead of merely quick. Measured boxes are debounced by 120 ms
+         * in the scene, and the timer restarts on every change, so during a continuous
+         * drag NO fresh box ever arrives: a ring drawn from `sizes()` alone would sit
+         * at the start of the gesture until the pointer stopped. Adding the live
+         * offset fixes that, and would then double count the move the moment a fresh
+         * box did arrive — hence the guard. A new report is a new object, so the
+         * comparison is an identity, and nothing has to clear anything.
+         *
+         * There is no second flag beside it. There used to be one, for «the button is
+         * still down», and the two could disagree: a release that never arrived left
+         * the carry standing with the flag off, and the next pointer to cross the
+         * canvas picked it up again. The carry is now cleared where it ends, so its
+         * presence IS the flag.
          */
-        drag: {
+        drag(next?: {
             name: string;
             /** Where every node being carried started, by name. A group moves as one. */
             spots: {
@@ -50292,12 +50327,29 @@ declare namespace $.$$ {
                 };
             };
             grab: readonly [number, number];
-            version: number;
+            /** The report the grab was taken against, by identity. */
+            sizes: {
+                readonly [node: string]: $bog_vmap_bridge_rect;
+            };
+            /** Drawn inside another node, so it is laid out by tree and has no coordinate. */
+            nested: boolean;
+        } | null): {
+            name: string;
+            /** Where every node being carried started, by name. A group moves as one. */
+            spots: {
+                readonly [name: string]: {
+                    readonly x: number;
+                    readonly y: number;
+                };
+            };
+            grab: readonly [number, number];
+            /** The report the grab was taken against, by identity. */
+            sizes: {
+                readonly [node: string]: $bog_vmap_bridge_rect;
+            };
             /** Drawn inside another node, so it is laid out by tree and has no coordinate. */
             nested: boolean;
         } | null;
-        /** Whether a moved pointer still counts, i.e. the button is not up yet. */
-        drag_live: boolean;
         /**
          * The press in progress, kept until its release.
          *
@@ -50308,8 +50360,25 @@ declare namespace $.$$ {
          *
          * `entering` says the press landed on the node that was ALREADY picked, so a
          * click out of it is the second one and lets the pointer inside. See `entered`.
+         *
+         * A CELL and not a field, for the reason the whole gesture is one: `$mol_touch`
+         * keeps its press, its start and its travel in cells, and a gesture spread
+         * across fields and cells has two clocks. Nothing draws from this one today,
+         * and that is precisely why it was the easiest of the three to leave behind.
+         *
+         * The value is replaced and never edited in place — see `press_track()`. A
+         * field could be poked at through the reference the reader is holding; a cell
+         * that is poked at the same way keeps its old value as far as the graph is
+         * concerned, and the difference only shows up the day somebody reads it.
          */
-        press: {
+        press(next?: {
+            screen: readonly [number, number];
+            world: readonly [number, number];
+            moved: boolean;
+            entering: boolean;
+            /** The node under the press, `null` for bare canvas. */
+            name: string | null;
+        } | null): {
             screen: readonly [number, number];
             world: readonly [number, number];
             moved: boolean;
@@ -50471,7 +50540,13 @@ declare namespace $.$$ {
          * release, from how far the pointer went.
          */
         node_press(event?: PointerEvent): void;
-        /** Notes whether the pointer has gone further than a click may. */
+        /**
+         * Notes whether the pointer has gone further than a click may.
+         *
+         * A new value rather than a flag flipped on the old one: the press lives in a
+         * cell now, and a cell edited through the object it handed out never hears
+         * about it.
+         */
         press_track(event: PointerEvent): void;
         /**
          * Carrying a node writes straight into `spots`, the same channel a drop from
@@ -50608,10 +50683,13 @@ declare namespace $.$$ {
          * Every push goes through here rather than calling the bridge directly, so
          * the watchdog cannot be defeated by a new kind of message somebody adds
          * later and forgets to stamp.
+         *
+         * Returns the stamp it put on, for the two senders that are not push cells:
+         * they hand it to `poke_direct()` and that is how the watchdog hears them.
          */
         post(target: {
             postMessage(data: unknown, origin: string): void;
-        }, message: $bog_vmap_bridge_down): void;
+        }, message: $bog_vmap_bridge_down): number;
         /**
          * The donor pack, named to the scene before anything else is.
          *

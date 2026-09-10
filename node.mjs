@@ -31182,15 +31182,27 @@ var $;
              *
              * A plain field, written from inside the `*_push` cells. Writing a field there
              * is fine and writing a CELL there would not be: a cell set from the body of
-             * another cell is an invalidation loop. Nothing reads this reactively either —
-             * `watchdog()` reads it only alongside the cells that move it.
+             * another cell is an invalidation loop. Sending from `auto()` instead is not
+             * the way out it looks like — `auto()` is called from `dom_node()`, which is
+             * a cell as well — so a field here is the only lawful form, not a shortcut.
+             *
+             * Nothing reads this reactively: `watchdog()` reads it only alongside the
+             * cells that move it, and `poke_direct()` covers the two questions no cell
+             * projects.
              */
             poke_at = 0;
-            /** Serial of the last message the scene sent, of any kind. */
-            answer_at = 0;
-            /** The clock both stamps are taken from. A method so that a test can move it by hand. */
-            now() {
-                return Date.now();
+            /**
+             * Serial of the last message the scene sent, of any kind.
+             *
+             * A CELL, unlike the stamp above it, and the difference is where each is
+             * written from: this one from the message handler, which is an effect and may
+             * write cells, that one from the body of a push cell, which may not. So this
+             * one both records the answer and wakes whoever is waiting for it, and the
+             * counter that used to be kept beside it for the waking — bumped for every
+             * message and carrying nothing else — is gone.
+             */
+            answer_at(next) {
+                return next ?? 0;
             }
             /**
              * Serial the two stamps are taken from, so a question and an answer can never
@@ -31208,8 +31220,21 @@ var $;
             stamp() {
                 return ++this.stamp_last;
             }
-            /** Bumped for every message accepted, so `watchdog()` recomputes on an answer. */
-            traffic_version(next) {
+            /**
+             * Serial of the last question asked from OUTSIDE a push cell: the pulse and
+             * the relayed click.
+             *
+             * Everything else the host sends is projected by a `*_push` cell, and the
+             * watchdog hears about it by reading that cell. These two have no cell of
+             * their own — one leaves from a timer, the other from a pointer handler — so
+             * without a word here a question would be asked and nobody would start
+             * counting. Both used to keep a counter apiece for exactly that, one of them
+             * doubling as a nonce the scene echoes and nobody compares.
+             *
+             * The value is the stamp `post()` put on that question, so it says WHICH
+             * question and not merely how many there have been.
+             */
+            poke_direct(next) {
                 return next ?? 0;
             }
             /**
@@ -31274,14 +31299,6 @@ var $;
             ping_period() {
                 return 2000;
             }
-            /** Serial of the last `ping`. Only ever moves forward. */
-            ping_nonce(next) {
-                return next ?? 0;
-            }
-            /** Serial of the last relayed click. Read by the watchdog, so a click arms it. */
-            click_serial(next) {
-                return next ?? 0;
-            }
             /**
              * The pulse. Always on once the scene has proved itself, see `warmed()`.
              *
@@ -31291,9 +31308,9 @@ var $;
              * part, a timer inside the document — and a document that loops there would
              * leave a dead canvas nobody asked a question of. The pulse is that question.
              *
-             * Re-armed by `traffic_version()`, which every answer bumps, so the loop is
-             * ping, pong, wait, ping. A scene that stops answering therefore gets exactly
-             * one outstanding ping and no flood: the watchdog only needs one.
+             * Re-armed by `answer_at()`, which every answer moves, so the loop is ping,
+             * pong, wait, ping. A scene that stops answering therefore gets exactly one
+             * outstanding ping and no flood: the watchdog only needs one.
              */
             heartbeat() {
                 if (!this.warmed())
@@ -31301,11 +31318,13 @@ var $;
                 const target = this.target();
                 if (!target)
                     return null;
-                this.traffic_version();
+                this.answer_at();
                 return new this.$.$mol_after_timeout(this.ping_period(), () => {
-                    const nonce = this.ping_nonce() + 1;
-                    this.ping_nonce(nonce);
-                    this.post(target, { kind: 'ping', nonce });
+                    // The nonce comes off the same clock as the stamps. The scene echoes it
+                    // back and nothing here compares it, so it never needed a counter of
+                    // its own; what the watchdog needs is the stamp `post()` returns.
+                    const nonce = this.stamp();
+                    this.poke_direct(this.post(target, { kind: 'ping', nonce }));
                 });
             }
             /**
@@ -31333,13 +31352,11 @@ var $;
                 this.spots_push();
                 this.camera_push();
                 // …including a ping and a click, which are sent from a timer and from a
-                // handler and so move no push cell of their own. Without these reads the
+                // handler and so move no push cell of their own. Without this read the
                 // pulse would stamp `poke_at` and the watch would never notice.
-                this.ping_nonce();
-                this.click_serial();
+                this.poke_direct();
                 // …and disarmed by anything the scene says back.
-                this.traffic_version();
-                if (this.poke_at <= this.answer_at)
+                if (this.poke_at <= this.answer_at())
                     return null;
                 // A cold frame is watched too, on a limit of its own. See `cold_limit()`.
                 const limit = this.warmed() ? this.answer_limit() : this.cold_limit();
@@ -31349,19 +31366,21 @@ var $;
              * Latest measured node boxes, in world units, keyed by the path the scene
              * walks: the root class name, then a property name per level.
              *
-             * A plain field with a version cell beside it. The boxes arrive from a
-             * message handler, and a `@ $mol_mem` written from there would still be fine;
-             * what would not is comparing them — `$mol_compare_deep` over a hundred boxes
-             * on every report round, twice a second, to learn that the layout did not
-             * move. The version says «something arrived» and costs one number.
+             * AN ORDINARY CELL, and it used to be a field with a version counter beside
+             * it. The reason written here for that was the price of comparing the boxes —
+             * `$mol_compare_deep` over a hundred of them on every report round — and the
+             * price was never measured. Measured now, on this bundle: 25 boxes 8 µs, 100
+             * boxes 30 µs, 400 boxes 137 µs per compare, against two reports a second.
+             * That is a quarter of a millisecond per second at four hundred nodes.
+             *
+             * The counter was the more expensive of the two, and not by a little: it says
+             * «something arrived» and therefore wakes every reader — the rings, the port
+             * dots, the hit test — twice a second even when the layout has not moved a
+             * pixel, which is the common case while nothing is being dragged. The compare
+             * buys exactly that silence for the microseconds above.
              */
-            sizes_last = {};
-            sizes_version(next) {
-                return next ?? 0;
-            }
-            sizes() {
-                this.sizes_version();
-                return this.sizes_last;
+            sizes(next) {
+                return next ?? {};
             }
             /**
              * Drops every remembered box of a node: the node itself wherever it was
@@ -31384,14 +31403,14 @@ var $;
             sizes_forget(name) {
                 const prefix = this.doc_root() + '/';
                 const kept = {};
-                for (const key of Object.keys(this.sizes_last)) {
+                const sizes = this.sizes();
+                for (const key of Object.keys(sizes)) {
                     const path = key.startsWith(prefix) ? key.slice(prefix.length).split('/') : [];
                     if (path.includes(name))
                         continue;
-                    kept[key] = this.sizes_last[key];
+                    kept[key] = sizes[key];
                 }
-                this.sizes_last = kept;
-                this.sizes_version(this.sizes_version() + 1);
+                this.sizes(kept);
             }
             /**
              * Every measured node of the document, with the path the scene walked to it
@@ -31465,21 +31484,30 @@ var $;
                 return [];
             }
             /**
-             * The node being dragged, kept as a plain field.
+             * The carry in hand, or `null` when nothing is being carried.
              *
-             * `version` is the reading of `sizes_version()` when the grab started, and it
-             * is what makes the ring exact instead of merely quick. Measured boxes are
-             * debounced by 120 ms in the scene, and the timer restarts on every change,
-             * so during a continuous drag NO fresh box ever arrives: a ring drawn from
-             * `sizes()` alone would sit at the start of the gesture until the pointer
-             * stopped. Adding the live offset fixes that, and would then double count the
-             * move the moment a fresh box did arrive — hence the guard. When the version
-             * moves, the boxes already carry the drag, and the offset stops being added
-             * on the same frame. Nothing has to clear it.
+             * A CELL and not a field, because the ring is drawn from it: as a field it
+             * woke its readers only by riding the report counter, which is the pattern
+             * `$mol_touch` avoids by keeping its whole gesture in cells.
+             *
+             * `sizes` is the report the grab was taken against, and it is what makes the
+             * ring exact instead of merely quick. Measured boxes are debounced by 120 ms
+             * in the scene, and the timer restarts on every change, so during a continuous
+             * drag NO fresh box ever arrives: a ring drawn from `sizes()` alone would sit
+             * at the start of the gesture until the pointer stopped. Adding the live
+             * offset fixes that, and would then double count the move the moment a fresh
+             * box did arrive — hence the guard. A new report is a new object, so the
+             * comparison is an identity, and nothing has to clear anything.
+             *
+             * There is no second flag beside it. There used to be one, for «the button is
+             * still down», and the two could disagree: a release that never arrived left
+             * the carry standing with the flag off, and the next pointer to cross the
+             * canvas picked it up again. The carry is now cleared where it ends, so its
+             * presence IS the flag.
              */
-            drag = null;
-            /** Whether a moved pointer still counts, i.e. the button is not up yet. */
-            drag_live = false;
+            drag(next) {
+                return next ?? null;
+            }
             /**
              * The press in progress, kept until its release.
              *
@@ -31490,8 +31518,20 @@ var $;
              *
              * `entering` says the press landed on the node that was ALREADY picked, so a
              * click out of it is the second one and lets the pointer inside. See `entered`.
+             *
+             * A CELL and not a field, for the reason the whole gesture is one: `$mol_touch`
+             * keeps its press, its start and its travel in cells, and a gesture spread
+             * across fields and cells has two clocks. Nothing draws from this one today,
+             * and that is precisely why it was the easiest of the three to leave behind.
+             *
+             * The value is replaced and never edited in place — see `press_track()`. A
+             * field could be poked at through the reference the reader is holding; a cell
+             * that is poked at the same way keeps its old value as far as the graph is
+             * concerned, and the difference only shows up the day somebody reads it.
              */
-            press = null;
+            press(next) {
+                return next ?? null;
+            }
             /**
              * The node the pointer has been let inside of, or `null`.
              *
@@ -31769,7 +31809,7 @@ var $;
                 if (this.band_wanted(event)) {
                     event.preventDefault();
                     this.band({ from: point, to: point });
-                    this.press = { screen: [event.clientX, event.clientY], world: point, moved: false, entering: false, name: null };
+                    this.press({ screen: [event.clientX, event.clientY], world: point, moved: false, entering: false, name: null });
                     return;
                 }
                 const name = this.node_at(point);
@@ -31786,13 +31826,13 @@ var $;
                     this.picked(name ? [name] : []);
                 if (!entering)
                     this.entered(null);
-                this.press = {
+                this.press({
                     screen: [event.clientX, event.clientY],
                     world: point,
                     moved: false,
                     entering,
                     name,
-                };
+                });
                 if (!name)
                     return;
                 event.preventDefault();
@@ -31804,14 +31844,13 @@ var $;
                         continue;
                     spots[picked] = this.spots()[picked] ?? { x: 0, y: 0 };
                 }
-                this.drag = {
+                this.drag({
                     name,
                     spots,
                     grab: point,
-                    version: this.sizes_version(),
+                    sizes: this.sizes(),
                     nested: this.node_path(name).length > 0,
-                };
-                this.drag_live = true;
+                });
                 // A pointer released off the window would otherwise leave the gesture
                 // hanging. Capture is best effort on purpose: a synthetic pointer never
                 // becomes active, so this throws under an automated browser and nowhere
@@ -31821,15 +31860,21 @@ var $;
                 }
                 catch { }
             }
-            /** Notes whether the pointer has gone further than a click may. */
+            /**
+             * Notes whether the pointer has gone further than a click may.
+             *
+             * A new value rather than a flag flipped on the old one: the press lives in a
+             * cell now, and a cell edited through the object it handed out never hears
+             * about it.
+             */
             press_track(event) {
-                const press = this.press;
+                const press = this.press();
                 if (!press || press.moved)
                     return;
                 const dx = event.clientX - press.screen[0];
                 const dy = event.clientY - press.screen[1];
                 if (Math.hypot(dx, dy) > click_slack)
-                    press.moved = true;
+                    this.press({ ...press, moved: true });
             }
             /**
              * Carrying a node writes straight into `spots`, the same channel a drop from
@@ -31864,8 +31909,8 @@ var $;
                     this.band({ from: band.from, to: this.world_point(event) });
                     return;
                 }
-                const drag = this.drag;
-                if (!drag || !this.drag_live)
+                const drag = this.drag();
+                if (!drag)
                     return;
                 // The button came up somewhere we never heard about it.
                 if (!event.buttons)
@@ -31899,10 +31944,13 @@ var $;
                     return;
                 if (this.carrying())
                     return;
-                const press = this.press;
-                if (press)
+                // Read back AFTER the tracking and not before it: the travel is recorded by
+                // replacing the value, so a reference taken first would be the press as it
+                // started and would call every drag a click.
+                if (this.press())
                     this.press_track(event);
-                this.press = null;
+                const press = this.press();
+                this.press(null);
                 if (this.wire_drag())
                     return this.wire_release(event);
                 // A band that never grew is a modified click, and takes nothing: sweeping
@@ -31920,18 +31968,17 @@ var $;
                     this.picked(this.nodes_covered(box));
                     return;
                 }
-                if (this.drag_live) {
+                if (this.drag()) {
                     // The drop into a tree is asked for here and never written here: the
                     // pane owns the geometry of the gesture, the document is the owner's.
-                    const drag = this.drag;
+                    const drag = this.drag();
                     const slot = this.slot();
                     this.slot(null);
                     if (drag && slot)
                         this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index });
-                    // Cleared, not merely switched off: a carry left standing is a carry
-                    // that some later pointer can pick up again.
-                    this.drag = null;
-                    this.drag_live = false;
+                    // Cleared where it ends: a carry left standing is a carry that some
+                    // later pointer can pick up again.
+                    this.drag(null);
                     try {
                         this.Overlay().dom_node().releasePointerCapture(event.pointerId);
                     }
@@ -31982,8 +32029,7 @@ var $;
                 const target = this.target();
                 if (!target)
                     return;
-                this.click_serial(this.click_serial() + 1);
-                this.post(target, {
+                this.poke_direct(this.post(target, {
                     kind: 'click_at',
                     x: point[0],
                     y: point[1],
@@ -31993,7 +32039,7 @@ var $;
                         metaKey: Boolean(event.metaKey),
                         shiftKey: Boolean(event.shiftKey),
                     },
-                });
+                }));
             }
             /** Names of the picked nodes a ring can be drawn for: the measured ones. */
             frames() {
@@ -32024,13 +32070,13 @@ var $;
                 const box = this.part_size(name);
                 if (!box)
                     return null;
-                const drag = this.drag;
+                const drag = this.drag();
                 const spot = this.spots()[name];
                 const start = drag?.spots[name];
                 // See `drag`: while the measured boxes are stale, and only then, the ring
                 // carries the offset the pointer has added since the grab. Every node of
                 // a group gets its own, which is why the starts are kept by name.
-                const live = start && spot && this.sizes_version() === drag.version;
+                const live = start && spot && this.sizes() === drag.sizes;
                 const dx = live ? spot.x - start.x : 0;
                 const dy = live ? spot.y - start.y : 0;
                 return this.$.$bog_vmap_app_pane_screen({ x: box.x + dx, y: box.y + dy, width: box.width, height: box.height }, this.camera_zoom(), this.camera_shift());
@@ -32186,7 +32232,7 @@ var $;
              */
             wire_press(dot, event) {
                 event.preventDefault();
-                this.press = null;
+                this.press(null);
                 let source = { from: dot.node, from_prop: dot.port.name, kind: dot.port.kind };
                 if (dot.side === 'in') {
                     const link = this.wires().find(link => link.to === dot.node && link.to_prop === dot.port.name);
@@ -32259,10 +32305,13 @@ var $;
              * Every push goes through here rather than calling the bridge directly, so
              * the watchdog cannot be defeated by a new kind of message somebody adds
              * later and forgets to stamp.
+             *
+             * Returns the stamp it put on, for the two senders that are not push cells:
+             * they hand it to `poke_direct()` and that is how the watchdog hears them.
              */
             post(target, message) {
                 this.$.$bog_vmap_bridge_send(target, message);
-                this.poke_at = this.stamp();
+                return this.poke_at = this.stamp();
             }
             /**
              * The donor pack, named to the scene before anything else is.
@@ -32388,8 +32437,7 @@ var $;
                 // Any message at all is proof of life, whatever it says: an `error` means
                 // the scene compiled, failed and got as far as telling us, which is a
                 // working bridge. The claim being retracted here is only about silence.
-                this.answer_at = this.stamp();
-                this.traffic_version(this.traffic_version() + 1);
+                this.answer_at(this.stamp());
                 this.stalled(false);
                 if (message.kind === 'ready') {
                     this.error_at('compile', '');
@@ -32434,8 +32482,7 @@ var $;
                     //
                     // Stale entries are dropped by `sizes_forget()`, from the one place
                     // that knows a node is gone for good: the delete.
-                    this.sizes_last = { ...this.sizes_last, ...message.sizes };
-                    this.sizes_version(this.sizes_version() + 1);
+                    this.sizes({ ...this.sizes(), ...message.sizes });
                     // Geometry is what starts the watch, see `warmed()`.
                     this.warmed(true);
                     return;
@@ -32494,7 +32541,10 @@ var $;
         ], $bog_vmap_app_pane.prototype, "handshake", null);
         __decorate([
             $mol_mem
-        ], $bog_vmap_app_pane.prototype, "traffic_version", null);
+        ], $bog_vmap_app_pane.prototype, "answer_at", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "poke_direct", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "warmed", null);
@@ -32503,22 +32553,22 @@ var $;
         ], $bog_vmap_app_pane.prototype, "stalled", null);
         __decorate([
             $mol_mem
-        ], $bog_vmap_app_pane.prototype, "ping_nonce", null);
-        __decorate([
-            $mol_mem
-        ], $bog_vmap_app_pane.prototype, "click_serial", null);
-        __decorate([
-            $mol_mem
         ], $bog_vmap_app_pane.prototype, "heartbeat", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "watchdog", null);
         __decorate([
             $mol_mem
-        ], $bog_vmap_app_pane.prototype, "sizes_version", null);
+        ], $bog_vmap_app_pane.prototype, "sizes", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "nodes_measured", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "drag", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "press", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "entered", null);

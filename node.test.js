@@ -31173,15 +31173,27 @@ var $;
              *
              * A plain field, written from inside the `*_push` cells. Writing a field there
              * is fine and writing a CELL there would not be: a cell set from the body of
-             * another cell is an invalidation loop. Nothing reads this reactively either —
-             * `watchdog()` reads it only alongside the cells that move it.
+             * another cell is an invalidation loop. Sending from `auto()` instead is not
+             * the way out it looks like — `auto()` is called from `dom_node()`, which is
+             * a cell as well — so a field here is the only lawful form, not a shortcut.
+             *
+             * Nothing reads this reactively: `watchdog()` reads it only alongside the
+             * cells that move it, and `poke_direct()` covers the two questions no cell
+             * projects.
              */
             poke_at = 0;
-            /** Serial of the last message the scene sent, of any kind. */
-            answer_at = 0;
-            /** The clock both stamps are taken from. A method so that a test can move it by hand. */
-            now() {
-                return Date.now();
+            /**
+             * Serial of the last message the scene sent, of any kind.
+             *
+             * A CELL, unlike the stamp above it, and the difference is where each is
+             * written from: this one from the message handler, which is an effect and may
+             * write cells, that one from the body of a push cell, which may not. So this
+             * one both records the answer and wakes whoever is waiting for it, and the
+             * counter that used to be kept beside it for the waking — bumped for every
+             * message and carrying nothing else — is gone.
+             */
+            answer_at(next) {
+                return next ?? 0;
             }
             /**
              * Serial the two stamps are taken from, so a question and an answer can never
@@ -31199,8 +31211,21 @@ var $;
             stamp() {
                 return ++this.stamp_last;
             }
-            /** Bumped for every message accepted, so `watchdog()` recomputes on an answer. */
-            traffic_version(next) {
+            /**
+             * Serial of the last question asked from OUTSIDE a push cell: the pulse and
+             * the relayed click.
+             *
+             * Everything else the host sends is projected by a `*_push` cell, and the
+             * watchdog hears about it by reading that cell. These two have no cell of
+             * their own — one leaves from a timer, the other from a pointer handler — so
+             * without a word here a question would be asked and nobody would start
+             * counting. Both used to keep a counter apiece for exactly that, one of them
+             * doubling as a nonce the scene echoes and nobody compares.
+             *
+             * The value is the stamp `post()` put on that question, so it says WHICH
+             * question and not merely how many there have been.
+             */
+            poke_direct(next) {
                 return next ?? 0;
             }
             /**
@@ -31265,14 +31290,6 @@ var $;
             ping_period() {
                 return 2000;
             }
-            /** Serial of the last `ping`. Only ever moves forward. */
-            ping_nonce(next) {
-                return next ?? 0;
-            }
-            /** Serial of the last relayed click. Read by the watchdog, so a click arms it. */
-            click_serial(next) {
-                return next ?? 0;
-            }
             /**
              * The pulse. Always on once the scene has proved itself, see `warmed()`.
              *
@@ -31282,9 +31299,9 @@ var $;
              * part, a timer inside the document — and a document that loops there would
              * leave a dead canvas nobody asked a question of. The pulse is that question.
              *
-             * Re-armed by `traffic_version()`, which every answer bumps, so the loop is
-             * ping, pong, wait, ping. A scene that stops answering therefore gets exactly
-             * one outstanding ping and no flood: the watchdog only needs one.
+             * Re-armed by `answer_at()`, which every answer moves, so the loop is ping,
+             * pong, wait, ping. A scene that stops answering therefore gets exactly one
+             * outstanding ping and no flood: the watchdog only needs one.
              */
             heartbeat() {
                 if (!this.warmed())
@@ -31292,11 +31309,13 @@ var $;
                 const target = this.target();
                 if (!target)
                     return null;
-                this.traffic_version();
+                this.answer_at();
                 return new this.$.$mol_after_timeout(this.ping_period(), () => {
-                    const nonce = this.ping_nonce() + 1;
-                    this.ping_nonce(nonce);
-                    this.post(target, { kind: 'ping', nonce });
+                    // The nonce comes off the same clock as the stamps. The scene echoes it
+                    // back and nothing here compares it, so it never needed a counter of
+                    // its own; what the watchdog needs is the stamp `post()` returns.
+                    const nonce = this.stamp();
+                    this.poke_direct(this.post(target, { kind: 'ping', nonce }));
                 });
             }
             /**
@@ -31324,13 +31343,11 @@ var $;
                 this.spots_push();
                 this.camera_push();
                 // …including a ping and a click, which are sent from a timer and from a
-                // handler and so move no push cell of their own. Without these reads the
+                // handler and so move no push cell of their own. Without this read the
                 // pulse would stamp `poke_at` and the watch would never notice.
-                this.ping_nonce();
-                this.click_serial();
+                this.poke_direct();
                 // …and disarmed by anything the scene says back.
-                this.traffic_version();
-                if (this.poke_at <= this.answer_at)
+                if (this.poke_at <= this.answer_at())
                     return null;
                 // A cold frame is watched too, on a limit of its own. See `cold_limit()`.
                 const limit = this.warmed() ? this.answer_limit() : this.cold_limit();
@@ -31340,19 +31357,21 @@ var $;
              * Latest measured node boxes, in world units, keyed by the path the scene
              * walks: the root class name, then a property name per level.
              *
-             * A plain field with a version cell beside it. The boxes arrive from a
-             * message handler, and a `@ $mol_mem` written from there would still be fine;
-             * what would not is comparing them — `$mol_compare_deep` over a hundred boxes
-             * on every report round, twice a second, to learn that the layout did not
-             * move. The version says «something arrived» and costs one number.
+             * AN ORDINARY CELL, and it used to be a field with a version counter beside
+             * it. The reason written here for that was the price of comparing the boxes —
+             * `$mol_compare_deep` over a hundred of them on every report round — and the
+             * price was never measured. Measured now, on this bundle: 25 boxes 8 µs, 100
+             * boxes 30 µs, 400 boxes 137 µs per compare, against two reports a second.
+             * That is a quarter of a millisecond per second at four hundred nodes.
+             *
+             * The counter was the more expensive of the two, and not by a little: it says
+             * «something arrived» and therefore wakes every reader — the rings, the port
+             * dots, the hit test — twice a second even when the layout has not moved a
+             * pixel, which is the common case while nothing is being dragged. The compare
+             * buys exactly that silence for the microseconds above.
              */
-            sizes_last = {};
-            sizes_version(next) {
-                return next ?? 0;
-            }
-            sizes() {
-                this.sizes_version();
-                return this.sizes_last;
+            sizes(next) {
+                return next ?? {};
             }
             /**
              * Drops every remembered box of a node: the node itself wherever it was
@@ -31375,14 +31394,14 @@ var $;
             sizes_forget(name) {
                 const prefix = this.doc_root() + '/';
                 const kept = {};
-                for (const key of Object.keys(this.sizes_last)) {
+                const sizes = this.sizes();
+                for (const key of Object.keys(sizes)) {
                     const path = key.startsWith(prefix) ? key.slice(prefix.length).split('/') : [];
                     if (path.includes(name))
                         continue;
-                    kept[key] = this.sizes_last[key];
+                    kept[key] = sizes[key];
                 }
-                this.sizes_last = kept;
-                this.sizes_version(this.sizes_version() + 1);
+                this.sizes(kept);
             }
             /**
              * Every measured node of the document, with the path the scene walked to it
@@ -31456,21 +31475,30 @@ var $;
                 return [];
             }
             /**
-             * The node being dragged, kept as a plain field.
+             * The carry in hand, or `null` when nothing is being carried.
              *
-             * `version` is the reading of `sizes_version()` when the grab started, and it
-             * is what makes the ring exact instead of merely quick. Measured boxes are
-             * debounced by 120 ms in the scene, and the timer restarts on every change,
-             * so during a continuous drag NO fresh box ever arrives: a ring drawn from
-             * `sizes()` alone would sit at the start of the gesture until the pointer
-             * stopped. Adding the live offset fixes that, and would then double count the
-             * move the moment a fresh box did arrive — hence the guard. When the version
-             * moves, the boxes already carry the drag, and the offset stops being added
-             * on the same frame. Nothing has to clear it.
+             * A CELL and not a field, because the ring is drawn from it: as a field it
+             * woke its readers only by riding the report counter, which is the pattern
+             * `$mol_touch` avoids by keeping its whole gesture in cells.
+             *
+             * `sizes` is the report the grab was taken against, and it is what makes the
+             * ring exact instead of merely quick. Measured boxes are debounced by 120 ms
+             * in the scene, and the timer restarts on every change, so during a continuous
+             * drag NO fresh box ever arrives: a ring drawn from `sizes()` alone would sit
+             * at the start of the gesture until the pointer stopped. Adding the live
+             * offset fixes that, and would then double count the move the moment a fresh
+             * box did arrive — hence the guard. A new report is a new object, so the
+             * comparison is an identity, and nothing has to clear anything.
+             *
+             * There is no second flag beside it. There used to be one, for «the button is
+             * still down», and the two could disagree: a release that never arrived left
+             * the carry standing with the flag off, and the next pointer to cross the
+             * canvas picked it up again. The carry is now cleared where it ends, so its
+             * presence IS the flag.
              */
-            drag = null;
-            /** Whether a moved pointer still counts, i.e. the button is not up yet. */
-            drag_live = false;
+            drag(next) {
+                return next ?? null;
+            }
             /**
              * The press in progress, kept until its release.
              *
@@ -31481,8 +31509,20 @@ var $;
              *
              * `entering` says the press landed on the node that was ALREADY picked, so a
              * click out of it is the second one and lets the pointer inside. See `entered`.
+             *
+             * A CELL and not a field, for the reason the whole gesture is one: `$mol_touch`
+             * keeps its press, its start and its travel in cells, and a gesture spread
+             * across fields and cells has two clocks. Nothing draws from this one today,
+             * and that is precisely why it was the easiest of the three to leave behind.
+             *
+             * The value is replaced and never edited in place — see `press_track()`. A
+             * field could be poked at through the reference the reader is holding; a cell
+             * that is poked at the same way keeps its old value as far as the graph is
+             * concerned, and the difference only shows up the day somebody reads it.
              */
-            press = null;
+            press(next) {
+                return next ?? null;
+            }
             /**
              * The node the pointer has been let inside of, or `null`.
              *
@@ -31760,7 +31800,7 @@ var $;
                 if (this.band_wanted(event)) {
                     event.preventDefault();
                     this.band({ from: point, to: point });
-                    this.press = { screen: [event.clientX, event.clientY], world: point, moved: false, entering: false, name: null };
+                    this.press({ screen: [event.clientX, event.clientY], world: point, moved: false, entering: false, name: null });
                     return;
                 }
                 const name = this.node_at(point);
@@ -31777,13 +31817,13 @@ var $;
                     this.picked(name ? [name] : []);
                 if (!entering)
                     this.entered(null);
-                this.press = {
+                this.press({
                     screen: [event.clientX, event.clientY],
                     world: point,
                     moved: false,
                     entering,
                     name,
-                };
+                });
                 if (!name)
                     return;
                 event.preventDefault();
@@ -31795,14 +31835,13 @@ var $;
                         continue;
                     spots[picked] = this.spots()[picked] ?? { x: 0, y: 0 };
                 }
-                this.drag = {
+                this.drag({
                     name,
                     spots,
                     grab: point,
-                    version: this.sizes_version(),
+                    sizes: this.sizes(),
                     nested: this.node_path(name).length > 0,
-                };
-                this.drag_live = true;
+                });
                 // A pointer released off the window would otherwise leave the gesture
                 // hanging. Capture is best effort on purpose: a synthetic pointer never
                 // becomes active, so this throws under an automated browser and nowhere
@@ -31812,15 +31851,21 @@ var $;
                 }
                 catch { }
             }
-            /** Notes whether the pointer has gone further than a click may. */
+            /**
+             * Notes whether the pointer has gone further than a click may.
+             *
+             * A new value rather than a flag flipped on the old one: the press lives in a
+             * cell now, and a cell edited through the object it handed out never hears
+             * about it.
+             */
             press_track(event) {
-                const press = this.press;
+                const press = this.press();
                 if (!press || press.moved)
                     return;
                 const dx = event.clientX - press.screen[0];
                 const dy = event.clientY - press.screen[1];
                 if (Math.hypot(dx, dy) > click_slack)
-                    press.moved = true;
+                    this.press({ ...press, moved: true });
             }
             /**
              * Carrying a node writes straight into `spots`, the same channel a drop from
@@ -31855,8 +31900,8 @@ var $;
                     this.band({ from: band.from, to: this.world_point(event) });
                     return;
                 }
-                const drag = this.drag;
-                if (!drag || !this.drag_live)
+                const drag = this.drag();
+                if (!drag)
                     return;
                 // The button came up somewhere we never heard about it.
                 if (!event.buttons)
@@ -31890,10 +31935,13 @@ var $;
                     return;
                 if (this.carrying())
                     return;
-                const press = this.press;
-                if (press)
+                // Read back AFTER the tracking and not before it: the travel is recorded by
+                // replacing the value, so a reference taken first would be the press as it
+                // started and would call every drag a click.
+                if (this.press())
                     this.press_track(event);
-                this.press = null;
+                const press = this.press();
+                this.press(null);
                 if (this.wire_drag())
                     return this.wire_release(event);
                 // A band that never grew is a modified click, and takes nothing: sweeping
@@ -31911,18 +31959,17 @@ var $;
                     this.picked(this.nodes_covered(box));
                     return;
                 }
-                if (this.drag_live) {
+                if (this.drag()) {
                     // The drop into a tree is asked for here and never written here: the
                     // pane owns the geometry of the gesture, the document is the owner's.
-                    const drag = this.drag;
+                    const drag = this.drag();
                     const slot = this.slot();
                     this.slot(null);
                     if (drag && slot)
                         this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index });
-                    // Cleared, not merely switched off: a carry left standing is a carry
-                    // that some later pointer can pick up again.
-                    this.drag = null;
-                    this.drag_live = false;
+                    // Cleared where it ends: a carry left standing is a carry that some
+                    // later pointer can pick up again.
+                    this.drag(null);
                     try {
                         this.Overlay().dom_node().releasePointerCapture(event.pointerId);
                     }
@@ -31973,8 +32020,7 @@ var $;
                 const target = this.target();
                 if (!target)
                     return;
-                this.click_serial(this.click_serial() + 1);
-                this.post(target, {
+                this.poke_direct(this.post(target, {
                     kind: 'click_at',
                     x: point[0],
                     y: point[1],
@@ -31984,7 +32030,7 @@ var $;
                         metaKey: Boolean(event.metaKey),
                         shiftKey: Boolean(event.shiftKey),
                     },
-                });
+                }));
             }
             /** Names of the picked nodes a ring can be drawn for: the measured ones. */
             frames() {
@@ -32015,13 +32061,13 @@ var $;
                 const box = this.part_size(name);
                 if (!box)
                     return null;
-                const drag = this.drag;
+                const drag = this.drag();
                 const spot = this.spots()[name];
                 const start = drag?.spots[name];
                 // See `drag`: while the measured boxes are stale, and only then, the ring
                 // carries the offset the pointer has added since the grab. Every node of
                 // a group gets its own, which is why the starts are kept by name.
-                const live = start && spot && this.sizes_version() === drag.version;
+                const live = start && spot && this.sizes() === drag.sizes;
                 const dx = live ? spot.x - start.x : 0;
                 const dy = live ? spot.y - start.y : 0;
                 return this.$.$bog_vmap_app_pane_screen({ x: box.x + dx, y: box.y + dy, width: box.width, height: box.height }, this.camera_zoom(), this.camera_shift());
@@ -32177,7 +32223,7 @@ var $;
              */
             wire_press(dot, event) {
                 event.preventDefault();
-                this.press = null;
+                this.press(null);
                 let source = { from: dot.node, from_prop: dot.port.name, kind: dot.port.kind };
                 if (dot.side === 'in') {
                     const link = this.wires().find(link => link.to === dot.node && link.to_prop === dot.port.name);
@@ -32250,10 +32296,13 @@ var $;
              * Every push goes through here rather than calling the bridge directly, so
              * the watchdog cannot be defeated by a new kind of message somebody adds
              * later and forgets to stamp.
+             *
+             * Returns the stamp it put on, for the two senders that are not push cells:
+             * they hand it to `poke_direct()` and that is how the watchdog hears them.
              */
             post(target, message) {
                 this.$.$bog_vmap_bridge_send(target, message);
-                this.poke_at = this.stamp();
+                return this.poke_at = this.stamp();
             }
             /**
              * The donor pack, named to the scene before anything else is.
@@ -32379,8 +32428,7 @@ var $;
                 // Any message at all is proof of life, whatever it says: an `error` means
                 // the scene compiled, failed and got as far as telling us, which is a
                 // working bridge. The claim being retracted here is only about silence.
-                this.answer_at = this.stamp();
-                this.traffic_version(this.traffic_version() + 1);
+                this.answer_at(this.stamp());
                 this.stalled(false);
                 if (message.kind === 'ready') {
                     this.error_at('compile', '');
@@ -32425,8 +32473,7 @@ var $;
                     //
                     // Stale entries are dropped by `sizes_forget()`, from the one place
                     // that knows a node is gone for good: the delete.
-                    this.sizes_last = { ...this.sizes_last, ...message.sizes };
-                    this.sizes_version(this.sizes_version() + 1);
+                    this.sizes({ ...this.sizes(), ...message.sizes });
                     // Geometry is what starts the watch, see `warmed()`.
                     this.warmed(true);
                     return;
@@ -32485,7 +32532,10 @@ var $;
         ], $bog_vmap_app_pane.prototype, "handshake", null);
         __decorate([
             $mol_mem
-        ], $bog_vmap_app_pane.prototype, "traffic_version", null);
+        ], $bog_vmap_app_pane.prototype, "answer_at", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "poke_direct", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "warmed", null);
@@ -32494,22 +32544,22 @@ var $;
         ], $bog_vmap_app_pane.prototype, "stalled", null);
         __decorate([
             $mol_mem
-        ], $bog_vmap_app_pane.prototype, "ping_nonce", null);
-        __decorate([
-            $mol_mem
-        ], $bog_vmap_app_pane.prototype, "click_serial", null);
-        __decorate([
-            $mol_mem
         ], $bog_vmap_app_pane.prototype, "heartbeat", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "watchdog", null);
         __decorate([
             $mol_mem
-        ], $bog_vmap_app_pane.prototype, "sizes_version", null);
+        ], $bog_vmap_app_pane.prototype, "sizes", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "nodes_measured", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "drag", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "press", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "entered", null);
@@ -43858,8 +43908,13 @@ var $;
     const map = `${d}flow_map`;
     /**
      * A pane with a scene that has said `ready`, a known rectangle and a listening
-     * peer. The clock is the test's own and moves only when the test says so, or a
-     * push and its answer could land on the same millisecond.
+     * peer.
+     *
+     * No clock is handed in, and there used to be one: the stamps a question and an
+     * answer are ordered by were read off a wall clock, so two of them could land on
+     * the same millisecond and the watch would disarm over a scene that had answered
+     * nothing. They are serial numbers now, and a serial cannot repeat, so the stand
+     * has nothing left to hold still.
      */
     const pane_make = ($, rect = {}, over = {}) => {
         const posted = [];
@@ -43867,14 +43922,13 @@ var $;
             origin: 'null',
             postMessage(data) { posted.push(data); },
         };
-        const clock = { now: 1000 };
         // Every name the geometry mentions is a node of the document, unless the
         // scenario says otherwise: these tests hand in the boxes themselves, and
         // what they hand in is what they mean. A scenario about the boundary
         // between the document and the insides of a pack class says so outright.
         const declared = () => {
             const names = new Set();
-            for (const key of Object.keys(pane.sizes_last)) {
+            for (const key of Object.keys(pane.sizes())) {
                 for (const step of key.split('/').slice(1))
                     names.add(step);
             }
@@ -43886,15 +43940,13 @@ var $;
             doc_names: declared,
             pane_rect: () => ({ left: 0, top: 0, width: 1000, height: 800, ...rect }),
             scene_peer: () => peer,
-            now: () => clock.now,
             ...over,
         });
         pane.handshake(pane.scene_key(), 1);
         const answer = (data) => {
-            clock.now++;
             pane.message_receive({ data: { ns: $bog_vmap_bridge_ns, ...data }, source: peer });
         };
-        return { pane, peer, posted, clock, answer };
+        return { pane, peer, posted, answer };
     };
     const box = (x, y, width = 100, height = 50) => ({ x, y, width, height });
     const pointer = (clientX, clientY, over = {}) => ({
@@ -44154,7 +44206,7 @@ var $;
             const { pane, posted } = pane_make($, { left: 10, top: 20 });
             pane.camera_shift(new $mol_vector_2d(100, 50));
             pane.camera_zoom(2);
-            pane.sizes_last = { [`${root}/A`]: box(30, 40) };
+            pane.sizes({ [`${root}/A`]: box(30, 40) });
             // World (50, 60) is screen 50*2+100+10, 60*2+50+20.
             pane.node_press(pointer(210, 190));
             pane.node_release(pointer(210, 190, { buttons: 0 }));
@@ -44169,10 +44221,46 @@ var $;
             $mol_assert_equal(sent[0].x, 50);
             $mol_assert_equal(sent[0].y, 60);
         },
+        /**
+         * CARRYING A NODE IS NOT ENTERING IT. The second press on a node picked alone
+         * is the one that would let the pointer in, and a drag begins with exactly
+         * that press — so the only thing telling the two apart is how far the pointer
+         * travelled, and it is read on the release.
+         *
+         * THE RELEASE IS ITS OWN WITNESS, and that is what this pins down. A move
+         * records the travel as it goes, so an ordinary drag is told from a click
+         * long before the button comes up. What has no move at all is a release that
+         * arrives far from its press — the pointer went out of the window and the
+         * capture was lost, or the release is a synthetic one — and there the only
+         * measurement ever taken is the one the release takes itself.
+         *
+         * The guarantee is thin enough to lose by accident: the press lives in a cell
+         * now, its travel is recorded by replacing the value, and a release that took
+         * its reference to the press BEFORE measuring would read the press as it
+         * started — never moved, therefore a click, therefore a way in. Written after
+         * a negative run: the first version of this scenario moved the pointer first
+         * and stayed green with the fault put back, because the move had already
+         * recorded everything.
+         */
+        'a release far from its press is not a way into the node'($) {
+            const { pane } = pane_make($);
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
+            pane.spots({ A: { x: 0, y: 0 } });
+            // First click: picked, and the pointer stays outside.
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
+            $mol_assert_equal(pane.primary(), 'A');
+            $mol_assert_equal(pane.inside(), false);
+            // The press that would have let the pointer in, and then nothing until a
+            // release two hundred pixels away.
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(250, 225, { buttons: 0 }));
+            $mol_assert_equal(pane.inside(), false);
+        },
         /** A pick of anything else closes the hole without anybody clearing it. */
         'picking another node puts the pointer back outside'($) {
             const { pane } = pane_make($);
-            pane.sizes_last = { [`${root}/A`]: box(0, 0), [`${root}/B`]: box(300, 0) };
+            pane.sizes({ [`${root}/A`]: box(0, 0), [`${root}/B`]: box(300, 0) });
             pane.node_press(pointer(50, 25));
             pane.node_release(pointer(50, 25, { buttons: 0 }));
             pane.node_press(pointer(50, 25));
@@ -44192,7 +44280,7 @@ var $;
         },
         'the modifiers travel with the click'($) {
             const { pane, posted } = pane_make($);
-            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
             pane.node_press(pointer(50, 25));
             pane.node_release(pointer(50, 25, { buttons: 0 }));
             pane.node_press(pointer(50, 25));
@@ -44202,7 +44290,7 @@ var $;
         /** A gesture that went somewhere is a drag of the part, not a click. */
         'movement past the threshold moves the part and relays nothing'($) {
             const { pane, posted } = pane_make($);
-            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
             pane.spots({ A: { x: 0, y: 0 } });
             pane.node_press(pointer(50, 25));
             pane.node_move(pointer(70, 25));
@@ -44211,6 +44299,34 @@ var $;
             $mol_assert_equal(pane.spots().A.x, 20);
             $mol_assert_equal(pane.spots().A.y, 0);
             $mol_assert_equal(clicks(posted).length, 0);
+        },
+        /**
+         * THE RING FOLLOWS THE POINTER, AND COUNTS THE MOVE ONCE. Measured boxes are
+         * debounced inside the scene and the timer restarts on every change, so
+         * through a continuous drag no fresh report arrives at all: a ring drawn from
+         * the report alone would stand at the grab until the pointer stopped. The
+         * live offset is added for exactly that. But the moment a report DOES arrive
+         * it already carries the move, and adding the offset on top of it would count
+         * the same twenty pixels twice.
+         *
+         * The two cases are told apart by the identity of the report the grab was
+         * taken against, and by nothing else — a fresh report is a new object. Written
+         * because the guard had no test at all: it was a version counter before, and
+         * the negative run on the identity that replaced it came back green.
+         */
+        'the ring carries the live offset only until a fresh report arrives'($) {
+            const { pane } = pane_make($);
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
+            pane.spots({ A: { x: 0, y: 0 } });
+            pane.node_press(pointer(50, 25));
+            pane.node_move(pointer(70, 25));
+            // Nothing has been measured since the grab: the box is still at the
+            // origin, and the ring stands twenty pixels to the right of it.
+            $mol_assert_equal(pane.sizes()[`${root}/A`].x, 0);
+            $mol_assert_equal(pane.part_box('A').left, 20);
+            // Now the scene reports the node where the drag has already put it.
+            pane.sizes({ [`${root}/A`]: box(20, 0) });
+            $mol_assert_equal(pane.part_box('A').left, 20);
         },
         /** The overlay may miss the moves — a pan captures the pointer away — so the release is measured too. */
         'a release far from the press is not a click even without moves in between'($) {
@@ -44221,7 +44337,7 @@ var $;
         },
         'a wobble within the threshold is still a click'($) {
             const { pane, posted } = pane_make($);
-            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
             pane.node_press(pointer(50, 25));
             pane.node_release(pointer(50, 25, { buttons: 0 }));
             pane.node_press(pointer(50, 25));
@@ -44236,7 +44352,7 @@ var $;
          */
         'a click on bare canvas drops the selection and relays nothing'($) {
             const { pane, posted } = pane_make($);
-            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
             pane.picked(['A']);
             pane.node_press(pointer(500, 500));
             pane.node_release(pointer(500, 500, { buttons: 0 }));
@@ -44266,7 +44382,7 @@ var $;
         /** The grip is a strip of screen pixels, so it does not shrink away when zooming out. */
         'the grip around a part is measured in screen pixels'($) {
             const { pane } = pane_make($);
-            pane.sizes_last = { [`${root}/A`]: box(0, 0, 100, 100) };
+            pane.sizes({ [`${root}/A`]: box(0, 0, 100, 100) });
             pane.camera_zoom(1);
             $mol_assert_equal(pane.node_at([106, 50]), 'A');
             $mol_assert_equal(pane.node_at([110, 50]), null);
@@ -44279,7 +44395,7 @@ var $;
             const { pane } = pane_make($);
             pane.camera_shift(new $mol_vector_2d(100, 50));
             pane.camera_zoom(2);
-            pane.sizes_last = { [`${root}/A`]: box(30, 40, 100, 50) };
+            pane.sizes({ [`${root}/A`]: box(30, 40, 100, 50) });
             $mol_assert_equal(pane.overlay_style().clipPath, 'none');
             pane.picked(['A']);
             // Picked and no more: the ring is drawn, the overlay is still whole.
@@ -44296,11 +44412,11 @@ var $;
          */
         'a band takes what it overlaps, containers and not their children'($) {
             const { pane } = pane_make($);
-            pane.sizes_last = {
+            pane.sizes({
                 [`${root}/A`]: box(0, 0, 100, 50),
                 [`${root}/Page`]: box(200, 0, 300, 200),
                 [`${root}/Page/B`]: box(200, 0, 100, 50),
-            };
+            });
             // A sweep across the lot: the page comes, its child does not.
             pane.node_press(pointer(-10, -10, { ctrlKey: true }));
             pane.node_move(pointer(600, 300, { ctrlKey: true }));
@@ -44316,7 +44432,7 @@ var $;
         /** A band puts the pointer back outside, wherever it ends. */
         'a band takes the pointer out of the node it was let into'($) {
             const { pane } = pane_make($);
-            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
             pane.node_press(pointer(50, 25));
             pane.node_release(pointer(50, 25, { buttons: 0 }));
             pane.node_press(pointer(50, 25));
@@ -44337,11 +44453,11 @@ var $;
         'REPRO the hit test stops at the nodes the document declares'($) {
             const { pane } = pane_make($, {}, { doc_names: () => ['Calc'] });
             // A part of the document, and two views of its class inside it.
-            pane.sizes_last = {
+            pane.sizes({
                 [`${root}/Calc`]: box(0, 0, 200, 100),
                 [`${root}/Calc/Head`]: box(0, 0, 200, 30),
                 [`${root}/Calc/Head/String`]: box(10, 5, 80, 20),
-            };
+            });
             $mol_assert_equal(pane.node_at([50, 15]), 'Calc');
             $mol_assert_equal(pane.node_at([100, 50]), 'Calc');
             $mol_assert_like(pane.part_names(), ['Calc']);
@@ -44352,11 +44468,11 @@ var $;
         /** A node of the document inside an artboard is still reached, at any depth. */
         'REPRO the deepest node of the document wins, the pack inside it does not'($) {
             const { pane } = pane_make($, {}, { doc_names: () => ['Page', 'Calc'] });
-            pane.sizes_last = {
+            pane.sizes({
                 [`${root}/Page`]: box(0, 0, 400, 300),
                 [`${root}/Page/Calc`]: box(0, 0, 200, 100),
                 [`${root}/Page/Calc/Head`]: box(0, 0, 200, 30),
-            };
+            });
             $mol_assert_equal(pane.node_at([100, 15]), 'Calc');
             $mol_assert_equal(pane.node_at([300, 200]), 'Page');
         },
@@ -44367,7 +44483,7 @@ var $;
          */
         'REPRO a drag from the palette carries nothing of the canvas'($) {
             const { pane } = pane_make($);
-            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
             pane.spots({ A: { x: 0, y: 0 } });
             // Picked and grabbed in the middle; the release fell into the hole and
             // never reached the overlay, so the gesture was never ended.
@@ -44385,17 +44501,16 @@ var $;
          */
         'REPRO a node that moved leaves no box behind at its old path'($) {
             const { pane } = pane_make($, {}, { doc_names: () => ['Pair', 'Schet'] });
-            pane.sizes_last = {
+            pane.sizes({
                 [`${root}/Schet`]: box(700, 600),
                 [`${root}/Pair`]: box(0, 0, 400, 300),
-            };
+            });
             // Carried into the pair: the scene will measure it at the new path, and
             // the owner tells the canvas to forget where it used to be.
             pane.sizes_forget('Schet');
             $mol_assert_like(Object.keys(pane.sizes()), [`${root}/Pair`]);
             // And the new report puts it inside, with one box answering to the name.
-            pane.sizes_last = { ...pane.sizes_last, [`${root}/Pair/Schet`]: box(10, 10) };
-            pane.sizes_version(pane.sizes_version() + 1);
+            pane.sizes({ ...pane.sizes(), [`${root}/Pair/Schet`]: box(10, 10) });
             $mol_assert_like(pane.part_size('Schet'), box(10, 10));
             $mol_assert_equal(pane.part_names().filter(name => name === 'Schet').length, 1);
             // Carried OUT of the pair, which is the case a rule written as a prefix of
@@ -44418,11 +44533,11 @@ var $;
                 wires: () => [],
             });
             // Stacked inside the pair, sharing a left edge: Map_2 above Map.
-            pane.sizes_last = {
+            pane.sizes({
                 [`${root}/Pair`]: box(0, 0, 400, 500),
                 [`${root}/Pair/Map_2`]: box(0, 0, 320, 220),
                 [`${root}/Pair/Map`]: box(0, 220, 320, 220),
-            };
+            });
             pane.wire_drag({ from: 'Pair', from_prop: 'x', kind: 'number' });
             const dots = pane.wire_dots();
             const at = (x, y) => $bog_vmap_app_wire_dot_at(dots, [x, y]);
@@ -44435,7 +44550,7 @@ var $;
         /** A modified click without a sweep takes nothing and clears nothing. */
         'a modified click leaves the picked set alone'($) {
             const { pane } = pane_make($);
-            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
             pane.picked(['A']);
             pane.node_press(pointer(500, 500, { ctrlKey: true }));
             pane.node_release(pointer(500, 500, { ctrlKey: true, buttons: 0 }));
@@ -44445,7 +44560,7 @@ var $;
         /** Everything picked travels by the same offset, each from its own start. */
         'a carry moves the whole picked set'($) {
             const { pane } = pane_make($);
-            pane.sizes_last = { [`${root}/A`]: box(0, 0), [`${root}/B`]: box(300, 0) };
+            pane.sizes({ [`${root}/A`]: box(0, 0), [`${root}/B`]: box(300, 0) });
             pane.spots({ A: { x: 0, y: 0 }, B: { x: 300, y: 0 } });
             pane.picked(['A', 'B']);
             pane.node_press(pointer(50, 25));
@@ -44455,7 +44570,7 @@ var $;
         },
         'the hole is closed while a drop from the palette is on'($) {
             const { pane } = pane_make($);
-            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
             pane.picked(['A']);
             pane.entered('A');
             pane.carrying = () => true;
@@ -44469,7 +44584,7 @@ var $;
          */
         'the heartbeat pings once warmed and re-arms on the pong'($) {
             const timers = timers_fake($);
-            const { pane, posted, clock, answer } = pane_make($);
+            const { pane, posted, answer } = pane_make($);
             // Not warmed: no baseline, no pulse.
             $mol_assert_equal(pane.heartbeat(), null);
             pane.warmed(true);
@@ -44480,23 +44595,25 @@ var $;
             $mol_assert_equal(pane.watchdog(), null);
             const first = pane.heartbeat();
             $mol_assert_equal(first, timers[timers.length - 1]);
-            clock.now++;
             first.task();
             const pings = posted.filter(m => m.kind === 'ping');
             $mol_assert_equal(pings.length, 1);
-            $mol_assert_equal(pings[0].nonce, 1);
+            // The nonce is a serial off the same clock as the stamps, so what is
+            // promised about it is that it is a number and that the echo carries it
+            // back, not what its value happens to be.
+            const nonce = pings[0].nonce;
+            $mol_assert_equal(nonce > 0, true);
             // The ping is a question: the watchdog is armed by it.
             $mol_assert_equal(pane.watchdog() !== null, true);
-            answer({ kind: 'pong', nonce: 1 });
+            answer({ kind: 'pong', nonce });
             // Answered: disarmed, and the next ping is scheduled.
             $mol_assert_equal(pane.watchdog(), null);
             $mol_assert_equal(pane.heartbeat() !== first, true);
         },
         'a silent scene is called stalled when the limit runs out'($) {
             const timers = timers_fake($);
-            const { pane, clock } = pane_make($);
+            const { pane } = pane_make($);
             pane.warmed(true);
-            clock.now++;
             pane.heartbeat().task();
             const watch = pane.watchdog();
             $mol_assert_equal(watch, timers[timers.length - 1]);
@@ -44587,14 +44704,13 @@ var $;
         /** A click is a push like any other: it arms the watch, and geometry back disarms it. */
         'a relayed click arms the watchdog and sizes disarm it'($) {
             timers_fake($);
-            const { pane, clock, answer } = pane_make($);
-            pane.sizes_last = { [`${root}/A`]: box(0, 0) };
+            const { pane, answer } = pane_make($);
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
             pane.warmed(true);
             // The first read pushes the document and the rest; answered, the watch rests.
             pane.watchdog();
             answer({ kind: 'sizes', sizes: {} });
             $mol_assert_equal(pane.watchdog(), null);
-            clock.now++;
             // Twice: the click that goes to the scene is the one that lets the
             // pointer inside, and the watch is armed by what is sent, not by a pick.
             pane.node_press(pointer(50, 25));
@@ -44625,11 +44741,10 @@ var $;
          */
         'a frame that never answered at all is called out, on a limit of its own'($) {
             const timers = timers_fake($);
-            const { pane, clock, answer } = pane_make($);
+            const { pane, answer } = pane_make($);
             // The frame boots and says `ready`, which proves nothing but the boot.
             answer({ kind: 'ready' });
             // The host asks its questions; the scene compiles the document and stops.
-            clock.now++;
             pane.watchdog();
             $mol_assert_equal(pane.warmed(), false);
             $mol_assert_ok(pane.watchdog() !== null);
@@ -44649,7 +44764,7 @@ var $;
             pane.camera_shift(new $mol_vector_2d(100, 50));
             pane.camera_zoom(2);
             // Calc at world (0,0) is screen (100,50) 200×100; Map at world (300,0) is screen (700,50).
-            pane.sizes_last = { [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) };
+            pane.sizes({ [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) });
             pane.picked(['Calc']);
             const before = node.source();
             // Output `result` is the first row: right of the box by the gap, half a row down.
@@ -44680,7 +44795,7 @@ var $;
         },
         'a drag let go over nothing, or over an input of the wrong shape, writes nothing'($) {
             const { pane, node } = wired_make($);
-            pane.sizes_last = { [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) };
+            pane.sizes({ [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) });
             pane.picked(['Calc']);
             const before = node.source();
             pane.node_press(pointer(112, 7));
@@ -44697,18 +44812,18 @@ var $;
         'a press on a dot is a wire even where the part would also be hit'($) {
             const { pane } = wired_make($);
             pane.camera_zoom(.5);
-            pane.sizes_last = { [`${root}/Calc`]: box(0, 0) };
+            pane.sizes({ [`${root}/Calc`]: box(0, 0) });
             pane.picked(['Calc']);
             // Box is 50 wide on screen, the dot at 62, the grip strip reaches 8 px past 50.
             pane.node_press(pointer(62, 7));
             $mol_assert_equal(pane.wire_drag() !== null, true);
-            $mol_assert_equal(pane.drag, null);
+            $mol_assert_equal(pane.drag(), null);
             pane.node_release(pointer(62, 7, { buttons: 0 }));
         },
         /** Pressing a wired input unplugs it at once and leaves the wire in hand from the same source. */
         'a press on a wired input unplugs it and carries on from its source'($) {
             const { pane, node } = wired_make($);
-            pane.sizes_last = { [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) };
+            pane.sizes({ [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) });
             const before = node.source();
             node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' });
             pane.picked(['Map']);
@@ -44752,13 +44867,12 @@ var $;
             ]);
             node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' });
             node.link_add({ from: 'Calc_2', from_prop: 'result', to: 'Map_2', to_prop: 'zoom' });
-            pane.sizes_last = {
+            pane.sizes({
                 [`${root}/Calc`]: box(0, 0),
                 [`${root}/Map`]: box(300, 0),
                 [`${root}/Calc_2`]: box(5000, 5000),
                 [`${root}/Map_2`]: box(5300, 5000),
-            };
-            pane.sizes_version(pane.sizes_version() + 1);
+            });
             const wants = () => posted.filter(m => m.kind === 'values_want').map(m => m.names);
             pane.values_push();
             $mol_assert_like(wants(), [['calc_result']]);
@@ -44789,11 +44903,11 @@ var $;
          */
         'the pick goes to the deepest node under the point'($) {
             const { pane } = pane_make($);
-            pane.sizes_last = {
+            pane.sizes({
                 [`${root}/Board`]: box(0, 0, 400, 300),
                 [`${root}/Board/Head`]: box(0, 0, 400, 100),
                 [`${root}/Loose`]: box(600, 0, 100, 50),
-            };
+            });
             $mol_assert_equal(pane.node_at([200, 50]), 'Head');
             $mol_assert_equal(pane.node_at([200, 200]), 'Board');
             $mol_assert_equal(pane.node_at([650, 25]), 'Loose');
@@ -44810,11 +44924,11 @@ var $;
          */
         'a pan and a zoom do not move the slot a drop lands in'($) {
             const { pane } = pane_make($, {}, { containers: () => ['Board'] });
-            pane.sizes_last = {
+            pane.sizes({
                 [`${root}/Board`]: box(0, 0, 400, 300),
                 [`${root}/Board/Head`]: box(0, 0, 400, 100),
                 [`${root}/Board/Foot`]: box(0, 100, 400, 100),
-            };
+            });
             const world = [200, 120];
             const flat = pane.insert_slot(world);
             $mol_assert_equal(flat.owner, 'Board');
@@ -44842,11 +44956,11 @@ var $;
                     return next ?? null;
                 },
             });
-            pane.sizes_last = {
+            pane.sizes({
                 [`${root}/Board`]: box(0, 0, 400, 300),
                 [`${root}/Board/Head`]: box(0, 0, 400, 100),
                 [`${root}/Loose`]: box(600, 0, 100, 50),
-            };
+            });
             pane.spots({ Loose: { x: 600, y: 0 } });
             pane.node_press(pointer(650, 25));
             pane.node_move(pointer(200, 120));
@@ -44870,10 +44984,10 @@ var $;
                     return next ?? null;
                 },
             });
-            pane.sizes_last = {
+            pane.sizes({
                 [`${root}/Board`]: box(0, 0, 400, 300),
                 [`${root}/Loose`]: box(600, 0, 100, 50),
-            };
+            });
             pane.spots({ Loose: { x: 600, y: 0 } });
             pane.node_press(pointer(650, 25));
             pane.node_move(pointer(750, 125));
@@ -44897,11 +45011,11 @@ var $;
                     return next ?? null;
                 },
             });
-            pane.sizes_last = {
+            pane.sizes({
                 [`${root}/Board`]: box(0, 0, 400, 300),
                 [`${root}/Board/Head`]: box(0, 0, 400, 100),
                 [`${root}/Board/Foot`]: box(0, 100, 400, 100),
-            };
+            });
             // Head taken by its own strip and carried below Foot.
             pane.node_press(pointer(200, 50));
             pane.node_move(pointer(200, 180));
@@ -44918,14 +45032,14 @@ var $;
                 containers: () => ['Page', 'Bar'],
                 axis: (name) => name === 'Bar' ? 'row' : 'column',
             });
-            pane.sizes_last = {
+            pane.sizes({
                 [`${root}/Page`]: box(0, 0, 400, 600),
                 [`${root}/Page/Head`]: box(0, 0, 400, 100),
                 [`${root}/Page/Bar`]: box(0, 100, 400, 100),
                 [`${root}/Page/Bar/Left`]: box(0, 100, 200, 100),
                 [`${root}/Page/Bar/Right`]: box(200, 100, 200, 100),
                 [`${root}/Page/Foot`]: box(0, 200, 400, 100),
-            };
+            });
             // Inside the bar, which lies inside the page: the deeper one wins.
             const inner = pane.insert_slot([250, 150]);
             $mol_assert_equal(inner.owner, 'Bar');
@@ -44946,10 +45060,10 @@ var $;
          */
         'an artboard carried over itself offers no slot'($) {
             const { pane } = pane_make($, {}, { containers: () => ['Board', 'Inner'] });
-            pane.sizes_last = {
+            pane.sizes({
                 [`${root}/Board`]: box(0, 0, 400, 300),
                 [`${root}/Board/Inner`]: box(0, 0, 400, 100),
-            };
+            });
             $mol_assert_equal(pane.insert_slot([200, 50], 'Board'), null);
             $mol_assert_equal(pane.insert_slot([200, 50], 'Inner')?.owner, 'Board');
         },
@@ -52436,17 +52550,17 @@ var $;
                 $,
                 doc_root: () => `${d}doc`,
             });
-            pane.sizes_last = {
+            pane.sizes({
                 [`${d}doc/A`]: { x: 0, y: 0, width: 10, height: 10 },
                 [`${d}doc/B`]: { x: 20, y: 0, width: 10, height: 10 },
-            };
+            });
             // What a report looks like once `B` has been culled: it is simply absent.
-            pane.sizes_last = { ...pane.sizes_last, [`${d}doc/A`]: { x: 5, y: 5, width: 10, height: 10 } };
-            $mol_assert_equal(pane.sizes_last[`${d}doc/A`].x, 5);
-            $mol_assert_equal(Boolean(pane.sizes_last[`${d}doc/B`]), true);
+            pane.sizes({ ...pane.sizes(), [`${d}doc/A`]: { x: 5, y: 5, width: 10, height: 10 } });
+            $mol_assert_equal(pane.sizes()[`${d}doc/A`].x, 5);
+            $mol_assert_equal(Boolean(pane.sizes()[`${d}doc/B`]), true);
             pane.sizes_forget('B');
-            $mol_assert_equal(Boolean(pane.sizes_last[`${d}doc/B`]), false);
-            $mol_assert_equal(Boolean(pane.sizes_last[`${d}doc/A`]), true);
+            $mol_assert_equal(Boolean(pane.sizes()[`${d}doc/B`]), false);
+            $mol_assert_equal(Boolean(pane.sizes()[`${d}doc/A`]), true);
         },
         /** A part's own sub views go with it, or they would outlive their owner. */
         'forgetting a part forgets what was measured inside it'($) {
@@ -52454,16 +52568,16 @@ var $;
                 $,
                 doc_root: () => `${d}doc`,
             });
-            pane.sizes_last = {
+            pane.sizes({
                 [`${d}doc/Icon`]: { x: 0, y: 0, width: 10, height: 10 },
                 [`${d}doc/Icon/Path`]: { x: 0, y: 0, width: 8, height: 8 },
                 [`${d}doc/Icons`]: { x: 0, y: 0, width: 10, height: 10 },
-            };
+            });
             pane.sizes_forget('Icon');
-            $mol_assert_equal(Boolean(pane.sizes_last[`${d}doc/Icon`]), false);
-            $mol_assert_equal(Boolean(pane.sizes_last[`${d}doc/Icon/Path`]), false);
+            $mol_assert_equal(Boolean(pane.sizes()[`${d}doc/Icon`]), false);
+            $mol_assert_equal(Boolean(pane.sizes()[`${d}doc/Icon/Path`]), false);
             // A name this one is a prefix of is a different part and must stay.
-            $mol_assert_equal(Boolean(pane.sizes_last[`${d}doc/Icons`]), true);
+            $mol_assert_equal(Boolean(pane.sizes()[`${d}doc/Icons`]), true);
         },
         /**
          * The whole way of a land from the field to the wire, on a land built by hand:
@@ -52616,8 +52730,7 @@ var $;
             const app = $bog_vmap_app.make({ $ });
             const pane = app.Pane();
             app.board_add();
-            pane.sizes_last = { [`${app.doc_root()}/Page`]: { x: 0, y: 0, width: 1280, height: 720 } };
-            pane.sizes_version(pane.sizes_version() + 1);
+            pane.sizes({ [`${app.doc_root()}/Page`]: { x: 0, y: 0, width: 1280, height: 720 } });
             app.part_drop(`${d}mol_button_minor`, 100, 100);
             $mol_assert_like(app.node().sub_names('Page'), ['Button_minor']);
             $mol_assert_equal(app.spots()['Button_minor'], undefined);
