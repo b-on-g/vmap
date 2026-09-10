@@ -47556,6 +47556,11 @@ declare namespace $ {
 		handshake( id: any, next?: number ): number
 		ready( ): boolean
 		stalled( next?: boolean ): boolean
+		warmed( next?: boolean ): boolean
+		entered( next?: any ): any
+		inside( ): boolean
+		node_error( id: any): string
+		scene_restart( next?: any ): any
 		error_at( id: any, next?: string ): string
 		error_node( id: any, next?: string ): string
 		error( ): string

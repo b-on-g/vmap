@@ -2629,6 +2629,11 @@ $bog_vmap_app_pane $mol_view
 	handshake*? 0
 	ready false
 	stalled? false
+	warmed? false
+	entered? null
+	inside false
+	node_error* \
+	scene_restart? null
 	error_at*? \
 	error_node*? \
 	error \

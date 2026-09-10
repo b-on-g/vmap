@@ -35698,6 +35698,24 @@ var $;
 			if(next !== undefined) return next;
 			return false;
 		}
+		warmed(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		entered(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		inside(){
+			return false;
+		}
+		node_error(id){
+			return "";
+		}
+		scene_restart(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		error_at(id, next){
 			if(next !== undefined) return next;
 			return "";
@@ -35782,6 +35800,9 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "values"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "handshake"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "stalled"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "warmed"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "entered"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_restart"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_at"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_node"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_shift"));
@@ -37740,13 +37761,13 @@ var $;
                 return this.Lib().script_link();
             }
             scene_restart() {
-                this.pane().scene_restart();
+                this.Pane().scene_restart();
             }
             stalled() {
                 return this.Pane().stalled();
             }
             stall_note() {
-                if (!this.pane().warmed()) {
+                if (!this.Pane().warmed()) {
                     return 'Сцена не запустилась: её остановил код документа. Он исполнится снова'
                         + ' в любом новом кадре и после перезагрузки страницы, поэтому сначала'
                         + ' исправьте код в панели, а потом нажмите «Перезагрузить сцену».';
@@ -38021,7 +38042,7 @@ var $;
             }
             code_error() {
                 const name = this.selected();
-                return name ? this.pane().node_error(name) : '';
+                return name ? this.Pane().node_error(name) : '';
             }
             node_js() {
                 const hooks = this.code_hooks();
@@ -38041,7 +38062,7 @@ var $;
                 return Boolean(this.dragged());
             }
             inside_note() {
-                const name = this.pane().entered();
+                const name = this.Pane().entered();
                 return name ? `Внутри ${name}: клавиши уходят компоненту. Клик по холсту или Esc — выйти` : '';
             }
             body() {
@@ -38239,8 +38260,8 @@ var $;
                 const y = event.clientY - rect.top;
                 if (x < 0 || y < 0 || x > rect.width || y > rect.height)
                     return null;
-                const shift = this.pane().camera_shift();
-                const zoom = this.pane().camera_zoom();
+                const shift = this.Pane().camera_shift();
+                const zoom = this.Pane().camera_zoom();
                 return [(x - shift[0]) / zoom, (y - shift[1]) / zoom];
             }
             part_name(klass) {
@@ -38324,8 +38345,8 @@ var $;
             }
             canvas_center() {
                 const rect = this.pane().pane_rect();
-                const shift = this.pane().camera_shift();
-                const zoom = this.pane().camera_zoom();
+                const shift = this.Pane().camera_shift();
+                const zoom = this.Pane().camera_zoom();
                 return [
                     (rect.width / 2 - shift[0]) / zoom,
                     (rect.height / 2 - shift[1]) / zoom,
@@ -38481,8 +38502,8 @@ var $;
                 if (!event)
                     return;
                 if (event.key === 'Escape') {
-                    if (this.pane().inside())
-                        this.pane().entered(null);
+                    if (this.Pane().inside())
+                        this.Pane().entered(null);
                     else
                         this.selected(null);
                     return;
