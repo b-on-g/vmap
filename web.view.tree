@@ -2356,9 +2356,13 @@ $bog_vmap_app_publish $mol_view
 	part \
 	- Declaration of the picked part, as the inspector reads it: `Name $base …`.
 	source \
-	- Body and styles of the part. Empty until the code editor of stage 4 keeps
-	- them per part; the shape is here so that it plugs in without a change.
+	- Method of the part, cut out of the body of the class it belongs to.
 	js \
+	- Styles of the ROOT CLASS of the document, whole, and not the rule of the
+	- part alone: a sub view of the part is a flat property of the root too, so
+	- its rule is written beside the rule of the part and nothing in the text says
+	- whose it is. Which rules belong to the part follows from the tree the copy is
+	- made of, and that tree is built here, so the cut is made here as well.
 	css \
 	- The root class of the document, as text: the sub-views the editor hoisted
 	- out of the part are put back into it from here before it goes out.
@@ -3445,11 +3449,17 @@ $bog_vmap_app $mol_view
 			<= Publish $bog_vmap_app_publish
 				part <= publish_part \
 				source <= node_source? \
-				- Method and rule of the picked part, cut out of the two texts of the
-				- class the code editor writes. Without these a published component
-				- would arrive at the next document with its behaviour left behind.
+				- Method of the picked part, cut out of the body the code editor
+				- writes. Without it a published component would arrive at the next
+				- document with its behaviour left behind.
 				js <= node_js \
-				css <= node_css \
+				- Styles go over WHOLE, not cut down to the rule of the picked part.
+				- A part carries its own sub-views out with it, and in the document
+				- every one of them is a flat property of the root beside the part
+				- itself — one stylesheet, rules that name their nodes and nothing
+				- else. Only the publication knows which of those nodes end up inside
+				- the copy, because it is the side that builds the copy.
+				css <= root_css
 				doc <= doc_src
 				classes / <= doc_root
 			- Name of the root class, editable, right beside the button that spells

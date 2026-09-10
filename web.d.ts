@@ -48869,7 +48869,7 @@ declare namespace $ {
          */
         refusal(part: string, source: string, classes?: readonly string[]): string;
         /**
-         * The rule of a part, re-addressed to the class it goes out as.
+         * One rule re-addressed: the attribute it names swapped for another.
          *
          * A rule written in a document names the sub view by the attribute mol puts
          * on it there — the root class plus the property, `[my_site_page_card]`. The
@@ -48878,11 +48878,59 @@ declare namespace $ {
          * document but the one it came from: measured, the styles of a published
          * part simply never applied.
          *
-         * A prefix replacement and not a parse, deliberately. What has to change is
-         * the name, the rest is the author's text, and a stylesheet that fails to
-         * parse would lose rules instead of moving them.
+         * A replacement and not a parse, deliberately. What has to change is the
+         * name, the rest is the author's text, and a stylesheet that fails to parse
+         * would lose rules instead of moving them.
+         *
+         * The whole attribute is matched, closing bracket included, and not just its
+         * beginning: a document addresses its nodes by names that prefix one another
+         * — `[page_calc]` and `[page_calc_note]` are two nodes — and a move by prefix
+         * would rewrite the second one while carrying the first.
+         *
+         * And matched WITHOUT REGARD TO CASE, because the browser matches that way
+         * too. Mol lowercases the attribute it writes, an attribute selector in HTML
+         * is case insensitive, so a rule a person wrote with the node name as they
+         * see it — `[my_site_page_Calc_2]` — works in the document. Compared letter
+         * for letter against the lowered name it matches nothing, and the rule used
+         * to leave for the library still addressing the document it came from.
+         * Measured on the deploy.
          */
         css_moved(css: string, from: string, to: string): string;
+        /**
+         * Names the copy declares as sub views of its own.
+         *
+         * Read off the tree that goes out, and off nothing else. The `upper` hack of
+         * the compiler hoists every declaration written under `<=` or `<=>` into a
+         * property of the class the tree is compiled as, and mol writes the attribute
+         * `[<class>_<property>]` on the node from that. So a sub view put back by
+         * `inlined` and one somebody wrote nested by hand answer the same way, and
+         * the answer follows from the bytes being published rather than from what
+         * anybody meant to publish.
+         *
+         * Sub views of the BASE class are not here and must not be: a part of the
+         * pack declares none of them, and mol writes an attribute for every class of
+         * the chain, so the stylesheet of the pack addresses them in the copy exactly
+         * as it does in the original.
+         */
+        sub_names(source: string): readonly string[];
+        /**
+         * The stylesheet a part takes with it, cut out of the stylesheet of the
+         * document and re-addressed to the copy.
+         *
+         * The document styles ONE class, so every node of it is addressed by the
+         * root class plus the property: the part itself is `[<root>_<part>]`, and a
+         * sub view of the part is `[<root>_<sub>]` too — section 1, a sub view of a
+         * node is a flat property of the root and nothing in the rule says whose it
+         * is. Out here the part is a class, its own rule is addressed by that class
+         * alone, and its sub views become properties of THAT class instead. So each
+         * rule is cut out by the property it belongs to and moved to where the copy
+         * carries the same node.
+         *
+         * What the part does not carry stays in the document: a rule of a neighbour
+         * node has no business in the library, and a class of the pack styles its own
+         * sub views itself.
+         */
+        css_out(css: string, part: string, source: string, root: string): string;
         /** The part of the library declaring this class, or null. */
         part_of(shelf: $bog_vmap_lib_land_shelf, klass: string): $bog_vmap_lib_land_part | null;
         /**
@@ -48896,6 +48944,12 @@ declare namespace $ {
          *
          * A part wired to the document, or based on a class of it, is refused before
          * anything is written, see `refusal`; the view asks it first and shows it.
+         *
+         * `css` is the stylesheet of the ROOT CLASS whole, not the rule of the part:
+         * which rules belong to the part is known here and only here, because it
+         * follows from the tree the copy is made of. Cut before the land is touched,
+         * so a stylesheet that fails to parse stops the publication with words
+         * instead of writing a part with its styles quietly dropped.
          */
         publish(part: string, source: string, js?: string, css?: string, classes?: readonly string[]): string;
         /**
@@ -53346,7 +53400,7 @@ declare namespace $ {
 		ReturnType< $bog_vmap_app_publish['js'] >
 	>
 	type $bog_vmap_app_publish__css_bog_vmap_app_28 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app['node_css'] >
+		ReturnType< $bog_vmap_app['root_css'] >
 		,
 		ReturnType< $bog_vmap_app_publish['css'] >
 	>
@@ -53723,7 +53777,6 @@ declare namespace $ {
 		publish_part( ): string
 		node_source( next?: string ): string
 		node_js( ): string
-		node_css( ): string
 		Publish( ): $bog_vmap_app_publish
 		root_draft( next?: string ): string
 		root_submit( next?: any ): any
@@ -54238,8 +54291,6 @@ declare namespace $.$$ {
         code_error(): string;
         /** Method of the picked node, cut out of the body of its class. */
         node_js(): string;
-        /** Rule of the picked node, cut out of the styles of its class. */
-        node_css(): string;
         /**
          * Whether a class is being carried out of the palette right now.
          *

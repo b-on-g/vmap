@@ -13062,6 +13062,22 @@ var $;
     ].join('\n');
     const src_card = `Card ${d}mol_view\n\tsub / <= Hero\n`;
     const klass_card = `${d}bog_vmap_pub_card`;
+    /** The root class of the document, as the editor hands it in `classes`. */
+    const root_class = `${d}my_site_page`;
+    /** The same document under that root: what a person actually edits. */
+    const doc_card = doc_nested.replace(`${d}bog_vmap_app_page`, root_class);
+    /**
+     * The stylesheet of the document: one rule per node, all of them addressed by
+     * the root class, and one of them about a node the card does not carry.
+     */
+    const css_doc = [
+        '[my_site_page_card] {\n\tpadding: 1rem;\n}',
+        '[my_site_page_hero] {\n\tcolor: red;\n}',
+        '[my_site_page_price] {\n\tfont-weight: bold;\n}',
+        '[my_site_page_aside] {\n\tcolor: green;\n}',
+    ].join('\n\n');
+    const css_button = '[my_site_page_button_minor] {\n\tcolor: red;\n}';
+    const css_button_out = '[bog_vmap_pub_button_minor] {\n\tcolor: red;\n}';
     $mol_test({
         'nothing published: no library, no link'($) {
             const s = store($);
@@ -13082,8 +13098,88 @@ var $;
          */
         async 'the rule of a part is re-addressed to the class it goes out as'($) {
             const s = store($);
-            await $mol_wire_async(s).publish('Button_minor', src_button, '', '[my_site_page_button_minor] {\n\tcolor: red;\n}', [`${d}my_site_page`]);
-            $mol_assert_equal(s.shelf().parts()[0].css(), '[bog_vmap_pub_button_minor] {\n\tcolor: red;\n}');
+            await $mol_wire_async(s).publish('Button_minor', src_button, '', css_button, [root_class]);
+            $mol_assert_equal(s.shelf().parts()[0].css(), css_button_out);
+        },
+        /**
+         * E25, AND THE HALF OF THE MOVE THAT WAS MISSING.
+         *
+         * A part carries its own sub-views out with it — `inlined` puts their
+         * declarations back into the tree — and in the document each of them is a
+         * flat property of the ROOT, addressed `[<root>_<sub>]` exactly like the part
+         * itself. In the copy they become properties of the copy instead, so mol
+         * writes `[<copy>_<sub>]` on them. Moving the rule of the part alone left
+         * every inner rule addressing the document it came from, and a detail with
+         * sub-views of its own went out unstyled inside.
+         *
+         * Three rules out, each moved to where the copy carries that node; the rule
+         * of the neighbour the card does not carry stays in the document.
+         */
+        async 'a part carries the rules of its sub-views, each re-addressed'($) {
+            const s = store($);
+            const inlined = s.inlined(src_card, doc_card);
+            await $mol_wire_async(s).publish('Card', inlined.source, '', css_doc, [root_class]);
+            $mol_assert_equal(s.shelf().parts()[0].css(), [
+                '[bog_vmap_pub_card] {\n\tpadding: 1rem;\n}',
+                '[bog_vmap_pub_card_hero] {\n\tcolor: red;\n}',
+                '[bog_vmap_pub_card_price] {\n\tfont-weight: bold;\n}',
+            ].join('\n\n'));
+        },
+        /**
+         * The names the move is made by, read off the tree that goes out: every
+         * declaration written under `<=` is hoisted by the compiler into a property
+         * of the class the tree is compiled as, and that is what mol names the node
+         * by. Bare references declare nothing and are not sub-views of the copy.
+         */
+        'sub-views of the copy are the declarations the published tree carries'($) {
+            const s = store($);
+            $mol_assert_like(s.sub_names(s.inlined(src_card, doc_card).source), ['Hero', 'Price']);
+            // Nothing was put back: the reference stays bare and declares nothing.
+            $mol_assert_like(s.sub_names(src_card), []);
+        },
+        /**
+         * A part of the PACK declares no sub-views of its own, so none of its inner
+         * nodes is addressed by a rule of the document and none is moved. They are
+         * painted by the stylesheet of the pack in the copy exactly as in the
+         * original: mol writes an attribute for every class of the chain.
+         */
+        'a part of the pack takes no rule of the document with it'($) {
+            const s = store($);
+            const source = `Calc ${d}bog_vmap_part_calc\n`;
+            $mol_assert_like(s.sub_names(source), []);
+            $mol_assert_equal(s.css_out(css_doc, 'Calc', source, root_class), '');
+        },
+        /**
+         * The move matches the WHOLE attribute and not its beginning. A document
+         * addresses nodes by names that prefix one another — `Card` and `Card_note`
+         * are two nodes — and a move by the beginning renamed the neighbour along
+         * with the part. The cut by property hides this from `css_out`, so it is
+         * asked of the move itself, where the two answers differ.
+         */
+        'the move matches the whole attribute, not the beginning of it'($) {
+            const s = store($);
+            const css = '[my_site_page_card] {\n\tcolor: red;\n}\n\n[my_site_page_card_note] {\n\tcolor: blue;\n}';
+            $mol_assert_equal(s.css_moved(css, 'my_site_page_card', 'bog_vmap_pub_card'), '[bog_vmap_pub_card] {\n\tcolor: red;\n}\n\n[my_site_page_card_note] {\n\tcolor: blue;\n}');
+            // And through the cut only the rule of the part travels at all.
+            $mol_assert_equal(s.css_out(css, 'Card', `Card ${d}mol_view\n`, root_class), '[bog_vmap_pub_card] {\n\tcolor: red;\n}');
+        },
+        /**
+         * A rule written with the node name AS THE PERSON SEES IT.
+         *
+         * Mol lowercases the attribute it writes on the node, and an attribute
+         * selector in HTML is matched without regard to case, so `[my_site_page_Card]`
+         * paints the card in the document exactly as the lowered one does. The move
+         * compared letter for letter against the lowered name, found nothing, and the
+         * rule went to the library still addressing the document it came from — the
+         * same «styles never applied» as before, only for the capital. Measured on
+         * the deploy.
+         */
+        'a rule written with a capital in the name is re-addressed too'($) {
+            const s = store($);
+            $mol_assert_equal(s.css_moved('[my_site_page_Card] {\n\tcolor: red;\n}', 'my_site_page_card', 'bog_vmap_pub_card'), '[bog_vmap_pub_card] {\n\tcolor: red;\n}');
+            // Through the cut as well: the slicing lowers the attribute to find the
+            // property, and the move has to reach the very text it found.
+            $mol_assert_equal(s.css_out('[my_site_page_Card] {\n\tcolor: red;\n}\n\n[my_site_page_Hero] {\n\tcolor: blue;\n}', 'Card', s.inlined(src_card, doc_card).source, root_class), '[bog_vmap_pub_card] {\n\tcolor: red;\n}\n\n[bog_vmap_pub_card_hero] {\n\tcolor: blue;\n}');
         },
         /**
          * A part taken from the pack goes out as an HEIR of the pack class and
@@ -13096,12 +13192,13 @@ var $;
             const source = `Calc ${d}bog_vmap_part_calc\n`;
             $mol_assert_equal(s.class_source('Calc', source), `${klass_calc} ${d}bog_vmap_part_calc\n`);
             // Nothing of the document belongs to it: the editor hands over the body
-            // and the rule of the DOCUMENT, and a pack detail has neither.
+            // and the stylesheet of the DOCUMENT, and a pack detail has no rule in it.
             $mol_assert_equal(s.css_moved('', 'my_site_page_calc', 'bog_vmap_pub_calc'), '');
+            $mol_assert_equal(s.css_out('', 'Calc', source, root_class), '');
         },
         async 'a part of the document becomes a class of the library, body and styles with it'($) {
             const s = store($);
-            const link = await $mol_wire_async(s).publish('Button_minor', src_button, 'title(){ return 1 }', '[x]{ color: red }');
+            const link = await $mol_wire_async(s).publish('Button_minor', src_button, 'title(){ return 1 }', css_button, [root_class]);
             const shelf = s.shelf();
             $mol_assert_ok(shelf);
             $mol_assert_equal(shelf.title(), 'Мои компоненты');
@@ -13109,7 +13206,7 @@ var $;
             $mol_assert_equal(parts.length, 1);
             $mol_assert_equal(parts[0].tree(), `${klass_button} ${d}mol_view\n\ttitle \\Hi\n\tminimal true\n`);
             $mol_assert_equal(parts[0].js(), 'title(){ return 1 }');
-            $mol_assert_equal(parts[0].css(), '[x]{ color: red }');
+            $mol_assert_equal(parts[0].css(), css_button_out);
             // The link is the land of the shelf, and the shelf sits at its root.
             $mol_assert_ok(link);
             $mol_assert_equal(link, s.link());
@@ -13147,7 +13244,7 @@ var $;
          */
         async 'the published library reads through the stack as a pack would'($) {
             const s = store($);
-            const link = await $mol_wire_async(s).publish('Button_minor', src_button, 'title(){ return 1 }', '[x]{ color: red }');
+            const link = await $mol_wire_async(s).publish('Button_minor', src_button, 'title(){ return 1 }', css_button, [root_class]);
             const stack = $bog_vmap_lib_land_stack.make({
                 $,
                 tree: () => $.$bog_vmap_lib_parse(pack_src),
@@ -13163,7 +13260,7 @@ var $;
             $mol_assert_like(stack.parts(), [{
                     tree: `${klass_button} ${d}mol_view\n\ttitle \\Hi\n\tminimal true\n`,
                     js: 'title(){ return 1 }',
-                    css: '[x]{ color: red }',
+                    css: css_button_out,
                 }]);
         },
         async 'the link passes the palette field as a land and nothing else'($) {
