@@ -119,6 +119,97 @@ namespace $ {
 		return new RegExp( `(^|[^\\w.$])${ name }\\s*\\(`, 'm' ).test( js )
 	}
 
+	/**
+	 * References of a class that only the hand written body answers.
+	 *
+	 * `title <= greeting` compiles to `this.greeting()` on the class, and section 1
+	 * says writing `greeting()` by hand is the normal thing to do: it is exactly
+	 * what the class does not generate. The scene is happy with that, because a body
+	 * there goes through a run time compile with no types in sight.
+	 *
+	 * **The export is not**, and this is where the two forms parted. The generated
+	 * declaration file states the type of every binding — `ReturnType< Klass['greeting'] >`
+	 * — against the GENERATED class, which declares nothing of the kind, and the
+	 * whole module stops on `TS2339: Property 'greeting' does not exist`. Measured
+	 * 10.09.2026 on a document exported into a real folder: three files right, no
+	 * bundle.
+	 *
+	 * So the declaration is written out for it, `greeting null`, and the answer is
+	 * the reference AS WRITTEN, signs included, so that a two way or a keyed hook
+	 * comes out with the signature it is used with. `null` and not a guessed value:
+	 * it types as `any`, and the body in the subclass narrows it to whatever it
+	 * really returns instead of being checked against a type nobody stated.
+	 *
+	 * Only what the BODY defines. A bare reference the body does not answer either
+	 * is a property of the base class or a plain mistake, and declaring it here
+	 * would shadow the first with `any` and hide the second behind a method that
+	 * silently returns nothing.
+	 */
+	export function $bog_vmap_app_export_hooks(
+		this: $,
+		tree: $mol_tree2,
+		js: string,
+	): readonly string[] {
+
+		if( !js.trim() || !tree.kids[ 0 ] ) return []
+
+		const declared = new Set(
+			this.$mol_view_tree2_class_props( tree ).map(
+				prop => this.$mol_view_tree2_prop_parts( prop ).name
+			)
+		)
+
+		const found = [] as string[]
+
+		const walk = ( node: $mol_tree2 )=> {
+
+			const ref = node.kids[ 0 ]
+
+			if( ref && !ref.kids.length && ( node.type === '<=' || node.type === '<=>' ) ) {
+
+				const name = ref.type.replace( /[*?!]+$/, '' )
+
+				if(
+					name && !declared.has( name )
+					&& $bog_vmap_app_export_defines( js, name )
+					&& !found.includes( ref.type )
+				) found.push( ref.type )
+
+			}
+
+			for( const kid of node.kids ) walk( kid )
+		}
+
+		walk( tree )
+
+		return found
+	}
+
+	/**
+	 * The declaration of a class with those hooks written into it.
+	 *
+	 * The one place the exported text is not the text of the editor, and it is
+	 * additive: nothing written is changed, a line is appended for a property the
+	 * document uses and never declares. The alternative was refusing to export a
+	 * document the editor itself invites people to write.
+	 */
+	export function $bog_vmap_app_export_hooked(
+		this: $,
+		tree: $mol_tree2,
+		js: string,
+	) {
+
+		const hooks = $bog_vmap_app_export_hooks.call( this, tree, js )
+		if( !hooks.length ) return tree
+
+		const base = tree.kids[ 0 ]!
+
+		return tree.clone([ base.clone([
+			... base.kids,
+			... hooks.map( type => base.struct( type, [ base.struct( 'null', [] ) ] ) ),
+		]) ])
+	}
+
 	/** One reason a hand written body would not survive the export. */
 	export type $bog_vmap_app_export_complaint = {
 
@@ -370,7 +461,12 @@ namespace $ {
 			const model = this.$bog_vmap_lang_node.make({})
 			model.source( node.source )
 
-			return { node, model, tree: model.tree(), name: model.name() }
+			// The hooks go in here and not at the writing of the file: everything
+			// downstream — the sorting, the decorators, the text — is then talking
+			// about the class the module will actually declare.
+			const tree = $bog_vmap_app_export_hooked.call( this, model.tree(), node.js ?? '' )
+
+			return { node, model, tree, name: model.name() }
 		} )
 
 		const names = parsed.map( item => item.name )
