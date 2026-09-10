@@ -1,10 +1,5 @@
 namespace $.$$ {
 
-	/**
-	 * Infinite background grid. Feeds two rulers of the plotting module the same way
-	 * its pane feeds its graphs, and renders only their curves.
-	 * @see ../../ARCHITECTURE.md section 8
-	 */
 	export class $bog_vmap_scene_grid extends $.$bog_vmap_scene_grid {
 
 		@ $mol_mem
@@ -34,7 +29,6 @@ namespace $.$$ {
 			)
 		}
 
-		/** Viewport in world coordinates, by the formula from $mol_plot_pane. */
 		@ $mol_mem
 		dimensions_viewport() {
 			const shift = this.shift().multed0( -1 )
@@ -63,7 +57,6 @@ namespace $.$$ {
 
 	}
 
-	/** Base clamps its lines to 1000px tall. The canvas is whatever the window is. */
 	export class $bog_vmap_scene_grid_hor extends $.$bog_vmap_scene_grid_hor {
 
 		override curve() {
@@ -81,7 +74,6 @@ namespace $.$$ {
 
 	}
 
-	/** Same story, base clamps its lines to 2000px wide. */
 	export class $bog_vmap_scene_grid_vert extends $.$bog_vmap_scene_grid_vert {
 
 		override curve() {

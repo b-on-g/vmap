@@ -2,11 +2,6 @@ namespace $ {
 
 	$mol_test({
 
-		/**
-		 * The rule the hot swap depends on: a zero argument method is a cell whether
-		 * or not the tree knows it. One with arguments is left alone, because a cell
-		 * would take its first argument for a write, and an async one too.
-		 */
 		'zero argument methods of a body become cells, the rest stay methods'( $ ) {
 
 			class Probe {
@@ -32,7 +27,6 @@ namespace $ {
 
 		},
 
-		/** What the tree declares keyed or changeable is decorated as such, arguments or not. */
 		'the tree decides for keyed and changeable methods'( $ ) {
 
 			class Probe {

@@ -1,16 +1,7 @@
 namespace $ {
 
-	/**
-	 * The replay of a relayed click, on a fake realm.
-	 *
-	 * No real DOM is involved on purpose: what a real button inside the sandbox does
-	 * with these events is a browser question, this is the contract the scene keeps
-	 * towards it — which events, in which order, with what flags.
-	 */
-
 	type log = { type: string, init: PointerEventInit }
 
-	/** A constructor that records what it was asked to make. */
 	const recorder = ( log: log[] ) => class {
 		type = ''
 		constructor( type: string, init: PointerEventInit = {} ) {
@@ -85,19 +76,16 @@ namespace $ {
 				$mol_assert_equal( init.button, 0 )
 			}
 
-			// The button is held between down and up, and not after.
 			$mol_assert_equal( made[0].init.buttons, 1 )
 			$mol_assert_equal( made[1].init.buttons, 0 )
 			$mol_assert_equal( made[2].init.buttons, 0 )
 
-			// Pointer events are pointer events, the click is a mouse event.
 			$mol_assert_equal( made[0].init.pointerType, 'mouse' )
 			$mol_assert_equal( made[1].init.pointerType, 'mouse' )
 			$mol_assert_equal( made[2].init.pointerType, undefined )
 
 		},
 
-		/** A real click on a label focuses the button around it; so does this one. */
 		'focus goes to the nearest focusable ancestor'( $ ) {
 
 			const button = element( 0 )
@@ -111,7 +99,6 @@ namespace $ {
 			$mol_assert_equal( label.focused, 0 )
 			$mol_assert_equal( button.focused, 1 )
 
-			// The events still go to the element under the point, they bubble up.
 			$mol_assert_like( label.seen, [ 'pointerdown', 'pointerup', 'click' ] )
 			$mol_assert_like( button.seen, [] )
 
@@ -133,11 +120,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A click on bare canvas lands on the root of the scene, which is not
-		 * focusable. Nothing is focused and nothing is blurred: the keyboard stays
-		 * where it was, with the host, so the host's hotkeys keep working.
-		 */
 		'a click on the scene root moves the focus nowhere'( $ ) {
 
 			const root = element( -1 )
@@ -186,7 +168,6 @@ namespace $ {
 
 		},
 
-		/** An element that cannot take focus at all — no `focus` on it — is not an error. */
 		'a target without focus is left alone'( $ ) {
 
 			const seen = [] as string[]

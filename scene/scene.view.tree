@@ -1,20 +1,6 @@
-- The sandbox application. Runs untrusted code, talks to the host only by
-- postMessage. Knows nothing about Giper Baza, the network or user keys.
-- @see ../ARCHITECTURE.md section 4
 
 $bog_vmap_scene $mol_view
 	sub /
-		- The canvas ground. Inside the frame since the frame stopped being see
-		- through: a `color-scheme` is what gives a frame its base colour, and
-		- without one Chrome keeps the frame transparent only until the transform
-		- on `Stage` promotes it to its own layer, then washes it pale. Declaring
-		- the scheme fixes the tone and makes the frame opaque, so anything that
-		- has to be under the document has to be in here with it.
-		-
-		- Still not transformed, and that is the point of section 8: the camera
-		- moves the lines by recomputing the `d` of the path, so a stroke stays one
-		- pixel at any zoom. Exactly one CSS transform in the system, and it is on
-		- `Stage`, not here.
 		<= Grid $bog_vmap_scene_grid
 			shift <= grid_shift $mol_vector_2d<number> /
 				0
@@ -26,9 +12,6 @@ $bog_vmap_scene $mol_view
 			style *
 				transform <= camera_transform \none
 			sub <= stage /$mol_view_content
-	-
-	- Stated wait instead of an empty canvas: a cold pack is 2.25 MB and 610 ms,
-	- and a blank frame for that long reads as a breakage.
 	Wait $mol_view
 		sub /
 			<= pack_note \

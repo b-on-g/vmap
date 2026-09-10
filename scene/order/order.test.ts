@@ -1,12 +1,5 @@
 namespace $ {
 
-	/**
-	 * Tests of the compile order. Trees only, nothing is compiled: the rule that
-	 * says which class is declared before which is a property of the declarations.
-	 *
-	 * `d` keeps `$` out of the literals so mam does not read a fixture as a
-	 * dependency.
-	 */
 	const d = '$'
 
 	const defs = ( $: $, src: string )=> $.$mol_tree2_from_string( src ).kids
@@ -38,10 +31,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The bases nobody declares are the classes of the pack, already in the
-		 * sandbox: they are not in the list and must not be asked for.
-		 */
 		'a base the list does not declare is left to the sandbox'( $ ) {
 
 			const doc = defs( $, `${d}doc ${d}mol_button_minor\n` )
@@ -59,7 +48,6 @@ namespace $ {
 
 			$mol_assert_equal( names( sorted ), `${d}x` )
 
-			// the properties of a class hang under its super node
 			$mol_assert_equal( sorted[ 0 ].kids[ 0 ].kids[ 0 ].type, 'from_doc' )
 
 		},

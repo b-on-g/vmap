@@ -1,13 +1,5 @@
 namespace $ {
 
-	/**
-	 * Tests of the culling decision.
-	 *
-	 * Nothing here needs a DOM, a camera or a compiled document, which is the whole
-	 * reason the decision was pulled out of the view: the measurement of «a thousand
-	 * nodes do not render» belongs in a browser, but the rule that says which ones
-	 * do not is arithmetic and belongs here.
-	 */
 	const view = { x: 0, y: 0, width: 1000, height: 800 }
 
 	const box = ( x: number, y: number, width = 100, height = 40 ) => ({ x, y, width, height })
@@ -40,7 +32,6 @@ namespace $ {
 			$mol_assert_equal( shown.has( 'A' ), false )
 		},
 
-		/** Off screen by its corner, on screen by its body. Culling by the point alone would lose it. */
 		'a part that only overlaps by its size is shown'( $ ) {
 
 			const shown = $bog_vmap_scene_cull(
@@ -66,11 +57,6 @@ namespace $ {
 			$mol_assert_equal( loose.size, 2 )
 		},
 
-		/**
-		 * The deadlock this function must not be able to produce: a part hidden
-		 * because nothing is known about it would never be drawn, never be measured,
-		 * and so never stop being unknown.
-		 */
 		'a part nothing is known about is shown'( $ ) {
 
 			const shown = $bog_vmap_scene_cull( {}, {}, view, 0, [ 'A' ] )
@@ -78,7 +64,6 @@ namespace $ {
 			$mol_assert_equal( shown.has( 'A' ), true )
 		},
 
-		/** A placed but unmeasured part counts as a point, so it is drawn once and measured. */
 		'a placed part with no measurement is judged by its spot'( $ ) {
 
 			const near = $bog_vmap_scene_cull( { A: { x: 100, y: 100 } }, {}, view, 0, [ 'A' ] )
@@ -88,12 +73,6 @@ namespace $ {
 			$mol_assert_equal( far.has( 'A' ), false )
 		},
 
-		/**
-		 * The spot wins over the measured origin, and it has to: after a drag the
-		 * host has already moved the part, while the last measurement still describes
-		 * where it used to be. Judging by the stale origin would blink the node out
-		 * exactly while it is being dragged across the edge.
-		 */
 		'placement wins over the last measured origin'( $ ) {
 
 			const shown = $bog_vmap_scene_cull(
@@ -134,7 +113,6 @@ namespace $ {
 
 		},
 
-		/** A zoom of zero comes from outside, and a viewport of `Infinity` is not an answer. */
 		'a zoom of zero does not make the world infinite'( $ ) {
 
 			$mol_assert_like(

@@ -1,14 +1,5 @@
 namespace $ {
 
-	/**
-	 * Tests of the measurement walk and of what it hands the observer.
-	 *
-	 * No DOM and no compiled document: the walk is handed what a view is, what its
-	 * children are and where its box is, so a fixture here is three plain objects
-	 * and the arithmetic is visible.
-	 */
-
-	/** A node with a box, standing in for an element. */
 	function node( left: number, top: number, width: number, height: number, isConnected = true ) {
 		return {
 			isConnected,
@@ -23,7 +14,6 @@ namespace $ {
 		dom_node(): ReturnType< typeof node >
 	}
 
-	/** A view: a property name, a box and children. */
 	function view( prop: string, box: ReturnType< typeof node >, kids: readonly Fake[] = [] ): Fake {
 		return { prop, box, kids, dom_node: ()=> box }
 	}
@@ -38,10 +28,6 @@ namespace $ {
 		} )
 	}
 
-	/**
-	 * An artboard: a page of fixed width with two rows inside it, and a free part
-	 * beside it on the canvas.
-	 */
 	function doc( width: number ) {
 		return view( 'Doc', node( 0, 0, 2000, 1000 ), [
 			view( 'Board', node( 100, 100, width, 600 ), [
@@ -54,11 +40,6 @@ namespace $ {
 
 	$mol_test({
 
-		/**
-		 * The host addresses a node by the property that holds it, at any depth —
-		 * section 1 — so the path is the chain of those names, and everything inside
-		 * an artboard is reachable by one.
-		 */
 		'every node of the document is measured, not only the free parts'( $ ) {
 
 			const { sizes } = measure( doc( 1280 ) )
@@ -75,10 +56,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * The point of the width switcher: the artboard changes size, and so does
-		 * everything laid out inside it, while the free part beside it does not move.
-		 */
 		'a narrower artboard reports narrower nodes inside it'( $ ) {
 
 			const wide = measure( doc( 1280 ) ).sizes
@@ -92,7 +69,6 @@ namespace $ {
 
 		},
 
-		/** The host owns the camera and is told world units, whatever the zoom. */
 		'boxes are reported in world units, relative to the root'( $ ) {
 
 			const { sizes } = measure( doc( 1280 ), 2 )
@@ -115,11 +91,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * Watching the root alone leaves everything inside an artboard unwatched,
-		 * which is exactly where a late font or a decoded image reflows without the
-		 * root changing size.
-		 */
 		'the observer is handed every measured node'( $ ) {
 
 			const { nodes } = measure( doc( 1280 ) )
@@ -139,9 +110,6 @@ namespace $ {
 			const first = $bog_vmap_scene_measure_watch( watcher, new Set< string >(), [ 'a', 'b' ] )
 			$mol_assert_like( log, [ '+a', '+b' ] )
 
-			// A node still there is NOT observed again: every fresh `observe` gets a
-			// box delivered, and a report that re-observes everything would answer
-			// its own delivery with another report.
 			const second = $bog_vmap_scene_measure_watch( watcher, first, [ 'b', 'c' ] )
 			$mol_assert_like( log, [ '+a', '+b', '-a', '+c' ] )
 			$mol_assert_like( [ ... second ], [ 'b', 'c' ] )

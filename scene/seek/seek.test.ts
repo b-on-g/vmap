@@ -1,12 +1,5 @@
 namespace $ {
 
-	/**
-	 * The walk that gives a failure its node.
-	 *
-	 * Trees of plain objects, nothing compiled: what the path of a node is, is a
-	 * property of the walk and not of the framework, which is exactly why the walk
-	 * takes the three framework questions as arguments.
-	 */
 	type Probe = {
 		readonly name: string
 		readonly kids?: readonly Probe[]
@@ -35,10 +28,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A document whose own render throws is the common case, and it must not be
-		 * answered with a child that merely inherited the failure.
-		 */
 		'the root is asked before any child'( $ ) {
 
 			const tree: Probe = { name: 'root', bad: true, kids: [ { name: 'Kid', bad: true } ] }
@@ -58,10 +47,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A child held by no named property is still on the path, by its position.
-		 * Losing it would shift every sibling after it onto the wrong node.
-		 */
 		'an unnamed child is addressed by its index'( $ ) {
 
 			const tree: Probe = { name: 'root', kids: [ { name: '' }, { name: '', bad: true } ] }
@@ -70,10 +55,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * Content that is not a view is skipped rather than counted: a string
-		 * between two views would otherwise push the second one off its own index.
-		 */
 		'text between views does not take an index'( $ ) {
 
 			const tree = { name: 'root', kids: [ 'just text', { name: '', bad: true } ] } as unknown as Probe
@@ -82,7 +63,6 @@ namespace $ {
 
 		},
 
-		/** A cycle in the tree must end the walk instead of the process. */
 		'a cycle is cut by the depth limit'( $ ) {
 
 			const loop = { name: 'Loop' } as { name: string, kids?: unknown[] }

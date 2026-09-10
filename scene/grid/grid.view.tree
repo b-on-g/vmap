@@ -1,6 +1,3 @@
-- Background grid in world coordinates. Line placement comes from the ruler of the
-- plotting module; its pane is not taken: it auto fits to data and renders svg-only
-- graphs.
 $bog_vmap_scene_grid $mol_svg_root
 	aspect \none
 	shift $mol_vector_2d<number> /
