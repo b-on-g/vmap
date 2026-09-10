@@ -751,6 +751,7 @@ namespace $ {
 			s.source( src_page + src_calc )
 			s.node_js( doc, `${d}bog_vmap_app_store_test_calc`, 'return 1' )
 			s.node_css( doc, `${d}bog_vmap_app_store_test_page`, ':host { color: red }' )
+			s.spots({ Hero: { x: 10, y: 20 } })
 
 			const state = s.doc_state( doc )
 			const snap = s.snap_add( doc, state, 1757000000000 )
@@ -764,6 +765,7 @@ namespace $ {
 				source: src_page + src_calc,
 				js: { [ `${d}bog_vmap_app_store_test_calc` ]: 'return 1' },
 				css: { [ `${d}bog_vmap_app_store_test_page` ]: ':host { color: red }' },
+				spots: { Hero: { x: 10, y: 20 } },
 			} )
 
 		},
@@ -775,17 +777,20 @@ namespace $ {
 
 			s.source( src_page )
 			s.node_css( doc, `${d}bog_vmap_app_store_test_page`, ':host { color: red }' )
+			s.spots({ Hero: { x: 10, y: 20 } })
 
 			const snap = s.snap_add( doc, s.doc_state( doc ), 1 )
 
 			s.source( src_page + src_calc )
 			s.node_css( doc, `${d}bog_vmap_app_store_test_page`, '' )
+			s.spots({ Hero: { x: 300, y: 400 } })
 
 			s.doc_state( doc, s.snap_state( snap ) )
 
 			$mol_assert_equal( s.source(), src_page )
 			$mol_assert_equal( s.node_css( doc, `${d}bog_vmap_app_store_test_page` ), ':host { color: red }' )
 			$mol_assert_equal( s.nodes( doc ).length, 1 )
+			$mol_assert_like( s.spots(), { Hero: { x: 10, y: 20 } } )
 
 		},
 

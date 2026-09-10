@@ -39,6 +39,7 @@ namespace $.$$ {
 				source: raw.source ?? '',
 				js: raw.js ?? {},
 				css: raw.css ?? {},
+				spots: raw.spots ?? {},
 			}
 		}
 
@@ -47,7 +48,7 @@ namespace $.$$ {
 		}
 
 		state_slug( state: $bog_vmap_app_store_state ) {
-			return JSON.stringify([ state.source, state.js, state.css ])
+			return JSON.stringify([ state.source, state.js, state.css, state.spots ])
 		}
 
 		@ $mol_mem

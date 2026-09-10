@@ -9,19 +9,24 @@ namespace $ {
 
 		@ $mol_mem
 		state( next?: $bog_vmap_app_store_state ): $bog_vmap_app_store_state {
-			return next ?? { source: '', js: {}, css: {} }
+			return next ?? { source: '', js: {}, css: {}, spots: {} }
 		}
 
 		source( next?: string ) {
 			const state = this.state()
 			if( next === undefined ) return state.source
-			this.state({ source: next, js: state.js, css: state.css })
+			this.state({ ... state, source: next })
 			return next
 		}
 
 		css( klass: string, next: string ) {
 			const state = this.state()
-			this.state({ source: state.source, js: state.js, css: { ... state.css, [ klass ]: next } })
+			this.state({ ... state, css: { ... state.css, [ klass ]: next } })
+		}
+
+		spot( name: string, x: number, y: number ) {
+			const state = this.state()
+			this.state({ ... state, spots: { ... state.spots, [ name ]: { x, y } } })
 		}
 
 	}
@@ -394,6 +399,46 @@ namespace $ {
 
 			$mol_assert_equal( preview.split( '\n' ).length, one.preview_limit() + 1 )
 			$mol_assert_equal( preview.endsWith( '…' ), true )
+
+		},
+
+		async 'a place of a part is part of the step and comes back with it'( $ ) {
+
+			const { doc, one, commit } = $bog_vmap_app_history_test_pair( $ )
+
+			doc.source( 'page' )
+			doc.spot( 'Hero', 10, 20 )
+			await commit()
+
+			doc.spot( 'Hero', 300, 400 )
+			await commit()
+
+			$mol_assert_equal( one.ring( 'doc' ).length, 2 )
+
+			one.undo()
+
+			$mol_assert_like( doc.state().spots, { Hero: { x: 10, y: 20 } } )
+
+		},
+
+		'a snapshot carries the places of the parts'( $ ) {
+
+			const { store, doc, one } = $bog_vmap_app_history_test_land( $ )
+
+			store.source( src_one )
+			store.spots({ Hero: { x: 10, y: 20 } })
+
+			one.snap_make( 100 )
+
+			store.spots({ Hero: { x: 300, y: 400 } })
+
+			one.snap_revert( store.snaps( doc )[ 0 ].link().str )
+
+			$mol_assert_like( store.spots(), { Hero: { x: 10, y: 20 } } )
+			$mol_assert_like(
+				store.snap_state( store.snaps( doc )[ 1 ] ).spots,
+				{ Hero: { x: 300, y: 400 } },
+			)
 
 		},
 

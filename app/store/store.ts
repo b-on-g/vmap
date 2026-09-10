@@ -12,6 +12,7 @@ namespace $ {
 		readonly source: string
 		readonly js: $bog_vmap_app_store_parts
 		readonly css: $bog_vmap_app_store_parts
+		readonly spots: $bog_vmap_app_store_spots
 	}
 
 	export class $bog_vmap_app_store extends $mol_object {
@@ -304,6 +305,8 @@ namespace $ {
 					node.css( next.css[ name ] ?? '' )
 				}
 
+				this.doc_spots( doc, next.spots )
+
 				return next
 			}
 
@@ -322,7 +325,7 @@ namespace $ {
 
 			}
 
-			return { source: this.doc_source( doc ), js, css }
+			return { source: this.doc_source( doc ), js, css, spots: this.doc_spots( doc ) }
 		}
 
 		snap_limit() {
@@ -344,6 +347,7 @@ namespace $ {
 				source: snap.source(),
 				js: $bog_vmap_app_store_parts_unpack( snap.js() ),
 				css: $bog_vmap_app_store_parts_unpack( snap.css() ),
+				spots: $bog_vmap_app_store_spots_unpack( snap.spots() ),
 			}
 		}
 
@@ -356,6 +360,7 @@ namespace $ {
 			snap.source( state.source )
 			snap.js( $bog_vmap_app_store_parts_pack( state.js ) )
 			snap.css( $bog_vmap_app_store_parts_pack( state.css ) )
+			snap.spots( $bog_vmap_app_store_spots_pack( state.spots ) )
 
 			this.snap_evict( doc )
 
@@ -377,6 +382,7 @@ namespace $ {
 				snap.source( '' )
 				snap.js( '' )
 				snap.css( '' )
+				snap.spots( '' )
 			}
 
 			list.items( links.slice( extra ) )
@@ -390,6 +396,15 @@ namespace $ {
 	}
 
 	export function $bog_vmap_app_store_parts_unpack( packed: string ): $bog_vmap_app_store_parts {
+		if( !packed ) return {}
+		return JSON.parse( packed )
+	}
+
+	export function $bog_vmap_app_store_spots_pack( spots: $bog_vmap_app_store_spots ) {
+		return Object.keys( spots ).length ? JSON.stringify( spots ) : ''
+	}
+
+	export function $bog_vmap_app_store_spots_unpack( packed: string ): $bog_vmap_app_store_spots {
 		if( !packed ) return {}
 		return JSON.parse( packed )
 	}

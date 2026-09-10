@@ -466,6 +466,8 @@ namespace $.$$ {
 					this.class_css( name, next.css[ name ] ?? '' )
 				}
 
+				this.spots( next.spots )
+
 				return next
 			}
 
@@ -479,7 +481,7 @@ namespace $.$$ {
 				if( style ) css[ name ] = style
 			}
 
-			return { source: this.doc_source(), js, css }
+			return { source: this.doc_source(), js, css, spots: this.spots() }
 		}
 
 		aside_content() {

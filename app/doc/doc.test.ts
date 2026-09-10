@@ -140,6 +140,11 @@ namespace $ {
 			)
 
 			$mol_assert_like(
+				Object.keys( $bog_vmap_app_doc_snap.schema ),
+				[ 'Time', 'Author', 'Tree', 'Js', 'Css', 'Places' ],
+			)
+
+			$mol_assert_like(
 				Object.keys( $bog_vmap_app_doc_spot.schema ),
 				[ 'X', 'Y' ],
 			)

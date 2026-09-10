@@ -36,6 +36,8 @@ namespace $ {
 
 		Css: $giper_baza_atom_text,
 
+		Places: $giper_baza_atom_text,
+
 	}) {
 
 		time( next?: number ) {
@@ -56,6 +58,10 @@ namespace $ {
 
 		css( next?: string ) {
 			return this.Css( next )?.val( next ) ?? ''
+		}
+
+		spots( next?: string ) {
+			return this.Places( next )?.val( next ) ?? ''
 		}
 
 	}
