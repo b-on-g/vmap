@@ -18834,9 +18834,17 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		tree_press(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		js_text(next){
 			if(next !== undefined) return next;
 			return "";
+		}
+		js_press(next){
+			if(next !== undefined) return next;
+			return null;
 		}
 		js_idle_note(){
 			return "";
@@ -18844,6 +18852,10 @@ var $;
 		css_text(next){
 			if(next !== undefined) return next;
 			return "";
+		}
+		css_press(next){
+			if(next !== undefined) return next;
+			return null;
 		}
 		klass(){
 			return "";
@@ -18932,6 +18944,7 @@ var $;
 			(obj.hint) = () => ("Имя_узла $mol_view");
 			(obj.sidebar_showed) = () => (true);
 			(obj.value) = (next) => ((this.tree_text(next)));
+			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.tree_press(next))});
 			return obj;
 		}
 		Js(){
@@ -18940,6 +18953,7 @@ var $;
 			(obj.hint) = () => ("");
 			(obj.sidebar_showed) = () => (true);
 			(obj.value) = (next) => ((this.js_text(next)));
+			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.js_press(next))});
 			return obj;
 		}
 		Js_idle(){
@@ -18954,12 +18968,16 @@ var $;
 			(obj.hint) = () => ("");
 			(obj.sidebar_showed) = () => (true);
 			(obj.value) = (next) => ((this.css_text(next)));
+			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.css_press(next))});
 			return obj;
 		}
 	};
 	($mol_mem(($.$bog_vmap_app_code.prototype), "tree_text"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "tree_press"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "js_text"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "js_press"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "css_text"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "css_press"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "source"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "node_source"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "js"));
@@ -20197,6 +20215,21 @@ var $;
                     this.Sources(),
                 ];
             }
+            area_focus(area) {
+                const node = area.Edit().dom_node();
+                if (node !== this.$.$mol_dom_context.document.activeElement)
+                    node.focus();
+                return null;
+            }
+            tree_press(next) {
+                return this.area_focus(this.Tree());
+            }
+            js_press(next) {
+                return this.area_focus(this.Js());
+            }
+            css_press(next) {
+                return this.area_focus(this.Css());
+            }
             note() {
                 const refusal = this.refusal();
                 if (refusal)
@@ -20222,6 +20255,15 @@ var $;
         __decorate([
             $mol_mem_key
         ], $bog_vmap_app_code.prototype, "typing_text", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_code.prototype, "tree_press", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_code.prototype, "js_press", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_code.prototype, "css_press", null);
         $$.$bog_vmap_app_code = $bog_vmap_app_code;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
@@ -44853,6 +44895,26 @@ var $;
             const publish = app.Publish();
             $mol_assert_equal(publish.js(), `greeting() {\n\treturn 1\n}`);
             $mol_assert_equal(publish.css().includes('color: red'), true);
+        },
+        'a press on the strip left of the field puts the caret in the field'($) {
+            const dom = $.$mol_dom_context;
+            const panel = $bog_vmap_app_code.make({
+                $,
+                klass: () => `${d}bog_vmap_app_code_press_page`,
+                prop: () => '',
+                hooks: () => [],
+                whole: () => true,
+                source: (next) => next ?? `${d}bog_vmap_app_code_press_page ${d}mol_view\n\tsub /\n`,
+                node_source: (next) => next ?? '',
+                js: (next) => next ?? '',
+                css: (next) => next ?? '',
+                error: () => '',
+            });
+            dom.document.body.appendChild(panel.dom_tree());
+            const field = panel.Tree().Edit().dom_node();
+            $mol_assert_equal(dom.document.activeElement === field, false);
+            panel.tree_press(new dom.Event('pointerdown'));
+            $mol_assert_equal(dom.document.activeElement === field, true);
         },
     });
 })($ || ($ = {}));

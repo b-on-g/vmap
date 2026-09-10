@@ -359,11 +359,17 @@ $bog_vmap_app_code $mol_view
 		hint \Имя_узла $mol_view
 		sidebar_showed true
 		value? <=> tree_text? \
+		event *
+			^
+			pointerdown? <=> tree_press? null
 	Js $mol_textarea
 		title \JS
 		hint \
 		sidebar_showed true
 		value? <=> js_text? \
+		event *
+			^
+			pointerdown? <=> js_press? null
 	Js_idle $mol_view
 		title \JS
 		sub / <= js_idle_note \
@@ -372,6 +378,9 @@ $bog_vmap_app_code $mol_view
 		hint \
 		sidebar_showed true
 		value? <=> css_text? \
+		event *
+			^
+			pointerdown? <=> css_press? null
 
 $bog_vmap_app_publish $mol_view
 	store $bog_vmap_app_publish_store

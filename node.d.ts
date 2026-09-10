@@ -39671,55 +39671,76 @@ declare namespace $ {
 		,
 		ReturnType< $mol_textarea['value'] >
 	>
-	type $mol_textarea__title_bog_vmap_app_code_15 = $mol_type_enforce<
+	type $mol_textarea__event_bog_vmap_app_code_15 = $mol_type_enforce<
+		({ 
+			pointerdown( next?: ReturnType< $bog_vmap_app_code['tree_press'] > ): ReturnType< $bog_vmap_app_code['tree_press'] >,
+		})  & ReturnType< $mol_textarea['event'] >
+		,
+		ReturnType< $mol_textarea['event'] >
+	>
+	type $mol_textarea__title_bog_vmap_app_code_16 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_textarea['title'] >
 	>
-	type $mol_textarea__hint_bog_vmap_app_code_16 = $mol_type_enforce<
+	type $mol_textarea__hint_bog_vmap_app_code_17 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_textarea['hint'] >
 	>
-	type $mol_textarea__sidebar_showed_bog_vmap_app_code_17 = $mol_type_enforce<
+	type $mol_textarea__sidebar_showed_bog_vmap_app_code_18 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_textarea['sidebar_showed'] >
 	>
-	type $mol_textarea__value_bog_vmap_app_code_18 = $mol_type_enforce<
+	type $mol_textarea__value_bog_vmap_app_code_19 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_code['js_text'] >
 		,
 		ReturnType< $mol_textarea['value'] >
 	>
-	type $mol_view__title_bog_vmap_app_code_19 = $mol_type_enforce<
+	type $mol_textarea__event_bog_vmap_app_code_20 = $mol_type_enforce<
+		({ 
+			pointerdown( next?: ReturnType< $bog_vmap_app_code['js_press'] > ): ReturnType< $bog_vmap_app_code['js_press'] >,
+		})  & ReturnType< $mol_textarea['event'] >
+		,
+		ReturnType< $mol_textarea['event'] >
+	>
+	type $mol_view__title_bog_vmap_app_code_21 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_view['title'] >
 	>
-	type $mol_view__sub_bog_vmap_app_code_20 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_code_22 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_textarea__title_bog_vmap_app_code_21 = $mol_type_enforce<
+	type $mol_textarea__title_bog_vmap_app_code_23 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_textarea['title'] >
 	>
-	type $mol_textarea__hint_bog_vmap_app_code_22 = $mol_type_enforce<
+	type $mol_textarea__hint_bog_vmap_app_code_24 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_textarea['hint'] >
 	>
-	type $mol_textarea__sidebar_showed_bog_vmap_app_code_23 = $mol_type_enforce<
+	type $mol_textarea__sidebar_showed_bog_vmap_app_code_25 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_textarea['sidebar_showed'] >
 	>
-	type $mol_textarea__value_bog_vmap_app_code_24 = $mol_type_enforce<
+	type $mol_textarea__value_bog_vmap_app_code_26 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_code['css_text'] >
 		,
 		ReturnType< $mol_textarea['value'] >
+	>
+	type $mol_textarea__event_bog_vmap_app_code_27 = $mol_type_enforce<
+		({ 
+			pointerdown( next?: ReturnType< $bog_vmap_app_code['css_press'] > ): ReturnType< $bog_vmap_app_code['css_press'] >,
+		})  & ReturnType< $mol_textarea['event'] >
+		,
+		ReturnType< $mol_textarea['event'] >
 	>
 	export class $bog_vmap_app_code extends $mol_view {
 		content( ): readonly($mol_view)[]
@@ -39730,9 +39751,12 @@ declare namespace $ {
 		typing_text( id: any): string
 		source_tabs( ): readonly($mol_view)[]
 		tree_text( next?: string ): string
+		tree_press( next?: any ): any
 		js_text( next?: string ): string
+		js_press( next?: any ): any
 		js_idle_note( ): string
 		css_text( next?: string ): string
+		css_press( next?: any ): any
 		klass( ): string
 		prop( ): string
 		hooks( ): readonly(string)[]
@@ -39785,6 +39809,10 @@ declare namespace $.$$ {
         typing_text(index: number): string;
         head_content(): readonly $mol_view[];
         content(): readonly $mol_view[];
+        area_focus(area: $.$mol_textarea): null;
+        tree_press(next?: Event | null): null;
+        js_press(next?: Event | null): null;
+        css_press(next?: Event | null): null;
         note(): string;
     }
 }
