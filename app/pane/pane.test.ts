@@ -529,6 +529,45 @@ namespace $ {
 
 		},
 
+		/**
+		 * ESCAPE PRESSED INSIDE THE PART GETS OUT OF IT. Once the pointer is let in,
+		 * the focus is the frame's and the keydown lands in the document of the
+		 * frame, where the listener of the host is not — so the host hears nothing
+		 * and the only way out used to be a click on bare canvas. The frame relays
+		 * the key up the bridge instead, and the pane answers it exactly the way it
+		 * answers the host's own Escape.
+		 *
+		 * Through a real message and not a call: what is being pinned down is that
+		 * the relayed key is understood on arrival, and a direct call would prove
+		 * only that the branch exists.
+		 */
+		'Escape relayed from the frame steps out of the node, then out of the pick'( $ ) {
+
+			const { pane, answer } = pane_make( $ )
+
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
+
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_release( pointer( 50, 25, { buttons: 0 } ) )
+
+			$mol_assert_equal( pane.inside(), true )
+
+			// One press, one step: out of the node, and the pick is still there.
+			answer({ kind: 'key', key: 'Escape' })
+
+			$mol_assert_equal( pane.inside(), false )
+			$mol_assert_equal( pane.primary(), 'A' )
+
+			// The next one drops the pick as well.
+			answer({ kind: 'key', key: 'Escape' })
+
+			$mol_assert_equal( pane.primary(), null )
+			$mol_assert_like( pane.picked(), [] )
+
+		},
+
 		'the modifiers travel with the click'( $ ) {
 
 			const { pane, posted } = pane_make( $ )
