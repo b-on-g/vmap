@@ -401,6 +401,14 @@ namespace $.$$ {
 			return Boolean( name ) && this.entered() === name
 		}
 
+		@ $mol_action
+		override leave() {
+			const was = this.inside()
+			this.entered( null )
+			if( was ) this.focused( true )
+			return null
+		}
+
 		pane_rect(): $bog_vmap_app_pane_screen_box {
 			const rect = this.view_rect()
 			if( !rect ) return { left: 0, top: 0, width: 0, height: 0 }
@@ -584,7 +592,7 @@ namespace $.$$ {
 			const entering = already && this.picked().length === 1
 
 			if( !already ) this.picked( name ? [ name ] : [] )
-			if( !entering ) this.entered( null )
+			if( !entering ) this.leave()
 
 			this.press({
 				screen: [ event.clientX, event.clientY ],
@@ -699,7 +707,7 @@ namespace $.$$ {
 				this.band( null )
 				if( !moved ) return
 
-				this.entered( null )
+				this.leave()
 				this.picked( this.nodes_covered( box ) )
 
 				return
@@ -1158,7 +1166,7 @@ namespace $.$$ {
 			}
 
 			if( message.kind === 'key' ) {
-				if( this.inside() ) this.entered( null )
+				if( this.inside() ) this.leave()
 				else this.picked([])
 
 				return

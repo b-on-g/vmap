@@ -128,6 +128,32 @@ namespace $ {
 
 		},
 
+		async 'leaving a part takes the focus back off the frame'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const dom = $.$mol_dom_context
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.tap( stage.client([ 500, 400 ]) )
+
+			stage.tap( stage.part_center( 'Calc' ) )
+			stage.tap( stage.part_center( 'Calc' ) )
+			$mol_assert_equal( stage.pane.inside(), true )
+
+			stage.frame().focus()
+			$mol_assert_equal( dom.document.activeElement, stage.frame() )
+
+			dom.document.dispatchEvent( new dom.KeyboardEvent( 'keydown', { key: 'Escape', bubbles: true } ) )
+			stage.redraw()
+
+			await Promise.resolve()
+			await Promise.resolve()
+
+			$mol_assert_equal( stage.pane.inside(), false )
+			$mol_assert_equal( dom.document.activeElement === stage.frame(), false )
+			$mol_assert_equal( dom.document.activeElement, stage.pane.dom_node() )
+
+		},
+
 		'the Delete key takes the picked part out of the document'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 

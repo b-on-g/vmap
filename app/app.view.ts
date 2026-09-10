@@ -937,7 +937,7 @@ namespace $.$$ {
 			if( !event ) return
 
 			if( event.key === 'Escape' ) {
-				if( this.Pane().inside() ) this.Pane().entered( null )
+				if( this.Pane().inside() ) this.Pane().leave()
 				else this.selected( null )
 				return
 			}
