@@ -96,7 +96,9 @@ namespace $ {
 				values[ name ] = $bog_vmap_scene_values_show( $bog_vmap_scene_values_pick( root, name ), limit, rows )
 			} catch( error: unknown ) {
 				if( this.$mol_promise_like( error ) ) return this.$mol_fail_hidden( error )
-				values[ name ] = '⚠ ' + String( ( error as Error )?.message ?? error )
+				values[ name ] = '⚠ ' + $bog_vmap_scene_value_text(
+					String( ( error as Error )?.message ?? error ), limit,
+				)
 			}
 
 		}
