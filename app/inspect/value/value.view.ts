@@ -1,22 +1,10 @@
 namespace $.$$ {
 
-	/** Signature parts of a token, with the blank studio's callers all repeat. */
 	function sign_of( token: string ) {
 		return [ ... token.matchAll( $mol_view_tree2_prop_signature ) ][ 0 ]?.groups
 			?? { name: token, key: '', next: '' }
 	}
 
-	/**
-	 * The throw is what keeps the document clean, and it has to stay a throw: it is
-	 * the only thing that stops the write on its way to the source. But a throw
-	 * alone is invisible, because the string field catches it and files the message
-	 * under `setCustomValidity`, which a form that is never submitted never shows.
-	 * So the message is put where the view can read it first, and only then thrown.
-	 *
-	 * A suspension is passed through untouched. It is not a refusal, it is a cell
-	 * asking to be called again, and turning it into a message would both lose the
-	 * value and post gibberish.
-	 */
 	function guard< Result >(
 		host: { alarm( next?: string ): string },
 		job: ()=> Result,
@@ -34,14 +22,6 @@ namespace $.$$ {
 
 	}
 
-	/**
-	 * None of the accessors in this file is memoized, deliberately. Each is a two
-	 * line derivation of `tree()`, which is a cell already, and a cell of its own
-	 * here would be a cell that a write freezes: a write to a memoized cell freezes
-	 * its dependencies, so the editor would keep showing the value the user typed
-	 * after the document moved underneath it — the one failure mode of an editor
-	 * that nobody reports as a bug, because it looks like it worked.
-	 */
 	export class $bog_vmap_app_inspect_value extends $.$bog_vmap_app_inspect_value {
 
 		kind() {
@@ -91,8 +71,6 @@ namespace $.$$ {
 			const val = this.tree()
 			if( next === undefined ) return val.text()
 
-			// `data()` splits on newlines into kid nodes by itself, which is what
-			// makes a multi line value survive the round trip.
 			this.tree( val.type === '@' ? val.struct( '@', [ val.data( next ) ] ) : val.data( next ) )
 
 			return next
@@ -112,7 +90,6 @@ namespace $.$$ {
 			return next
 		}
 
-		/** Grows with the value, up to a panel's worth of lines. */
 		override text_rows() {
 			return Math.min( 8, this.text().split( '\n' ).length )
 		}
@@ -161,12 +138,6 @@ namespace $.$$ {
 
 	}
 
-	/**
-	 * `keyed` says whether an element is a bare value or a named node with the
-	 * value under it, `klass` whether the node type is an editable class name.
-	 * Those two bits are the entire difference between a list, a dictionary and an
-	 * object.
-	 */
 	export class $bog_vmap_app_inspect_value_seq extends $.$bog_vmap_app_inspect_value_seq {
 
 		items() {
@@ -184,9 +155,6 @@ namespace $.$$ {
 
 			guard( this, ()=> {
 
-				// The tree constructor refuses a type with a space, a newline or a
-				// backslash before this line is even reached, so what is left to
-				// check is only that the name is a class name.
 				const named = val.struct( next.trim(), val.kids )
 
 				if( !this.$.$mol_view_tree2_class_match( named ) ) this.$.$mol_fail(
@@ -200,11 +168,6 @@ namespace $.$$ {
 			return next
 		}
 
-		/**
-		 * The entry carries nothing under it, so it is `^` and not a pair. In a list
-		 * every element is a bare node and none of them is a marker, which is why
-		 * the answer is `false` there whatever the shape.
-		 */
 		override item_marker( index: number ) {
 			return this.keyed() && !this.tree().kids[ index ]?.kids.length
 		}
@@ -218,10 +181,6 @@ namespace $.$$ {
 
 			guard( this, ()=> {
 
-				// A key is NOT a property name, so the token guard of the language
-				// module would be the wrong grammar here: `padding-top` in a
-				// `style *` is legal and has a hyphen. The guard is the tree
-				// constructor, which is the rule the serializer itself lives by.
 				if( !next.trim() ) this.$.$mol_fail( new Error( 'Ключ не может быть пустым' ) )
 
 				this.tree( tree.insert( kid.struct( next.trim(), kid.kids ), index ) )
@@ -242,9 +201,6 @@ namespace $.$$ {
 				return next
 			}
 
-			// An entry with no kids is `^`, the inherit-everything marker of a
-			// dictionary. It has no value, so it stands for itself and the raw
-			// editor shows it as it is written.
 			if( next === undefined ) return kid.kids[ 0 ] ?? kid
 
 			if( !kid.kids.length ) this.$.$mol_fail(
@@ -295,14 +251,6 @@ namespace $.$$ {
 
 	}
 
-	/**
-	 * The target is one bare name plus the sign it already carries. The sign is
-	 * preserved rather than derived, because both spellings are legal and mean
-	 * different things: `<=> value?` demands the `?` on both ends, while a one way
-	 * binding onto a writable property, as the string field of mol writes its own
-	 * change handler, carries the `?` on one side only. Only the name is editable,
-	 * so neither can be broken by a rename.
-	 */
 	export class $bog_vmap_app_inspect_value_bind extends $.$bog_vmap_app_inspect_value_bind {
 
 		override op() {
@@ -356,28 +304,18 @@ namespace $.$$ {
 
 	}
 
-	/** What the inspector knows about one node of the document. */
 	type Node_meta = { klass: string, ports: readonly string[] }
 
-	/** A wire, `= Узел порт`. */
 	export class $bog_vmap_app_inspect_value_wire extends $.$bog_vmap_app_inspect_value_wire {
 
 		override nodes(): Record< string, Node_meta > {
 			return super.nodes()
 		}
 
-		/** In declaration order. */
 		override node_names() {
 			return Object.keys( this.nodes() )
 		}
 
-		/**
-		 * A wire may point at a node that has since been renamed or dropped, so the
-		 * lookup misses on a perfectly ordinary document and answers with a blank
-		 * rather than failing. The far end is then a text field holding the port
-		 * that is already written, which is the only thing that lets the wire be
-		 * repaired instead of retyped.
-		 */
 		meta(): Node_meta {
 			return this.nodes()[ this.origin() ] ?? { klass: '', ports: [] }
 		}
@@ -386,11 +324,6 @@ namespace $.$$ {
 			return this.meta().ports
 		}
 
-		/**
-		 * Said only when the port cannot be picked, and it names the reason rather
-		 * than the symptom: which node, which class, and which of the two things
-		 * went wrong.
-		 */
 		override note() {
 
 			if( this.ports().length ) return ''
@@ -460,10 +393,6 @@ namespace $.$$ {
 			const name = this.$.$bog_vmap_lang_token( node, 'Узел' )
 			const prop = this.$.$bog_vmap_lang_token( port, 'Порт' )
 
-			// Kept although both ends are now picked from lists. The pickers are the
-			// interface; this is the document's own rule, and it has to hold against
-			// a wire written by hand, imported from a file, or left pointing at a
-			// node that has since been renamed.
 			const names = this.node_names()
 
 			if( !names.includes( name ) ) this.$.$mol_fail( new Error(

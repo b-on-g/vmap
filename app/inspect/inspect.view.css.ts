@@ -2,10 +2,6 @@ namespace $.$$ {
 
 	$mol_style_define( $bog_vmap_app_inspect, {
 
-		/**
-		 * Grows into whatever holds it instead of claiming the viewport: on the
-		 * stand that is the full height, in the editor it is a side panel.
-		 */
 		flex: { direction: 'column', grow: 1, shrink: 1 },
 		minHeight: 0,
 		minWidth: 0,
@@ -20,22 +16,12 @@ namespace $.$$ {
 			border: { bottom: { width: '1px', style: 'solid', color: $mol_theme.line } },
 		},
 
-		/**
-		 * A field that reads as the heading it replaced until it is touched: the
-		 * name is the first thing the panel says, and a heavy input at the top of a
-		 * narrow panel would make it the loudest.
-		 */
 		Title: {
 			font: { family: 'monospace', weight: 'bold' },
 			background: { color: 'transparent' },
 			padding: 0,
 		},
 
-		/**
-		 * The attention colour of the theme and not a red of our own: it is the one
-		 * the theme paints «look here» with, so it follows the hue and the light or
-		 * dark the reader chose instead of staying the same red in both.
-		 */
 		Note: {
 			color: $mol_theme.focus,
 			font: { size: '.75rem' },
@@ -55,13 +41,6 @@ namespace $.$$ {
 		Rows: {
 			flex: { direction: 'column' },
 
-			/**
-			 * While the pack is loading the base view marks the node and paints its
-			 * waiting animation but leaves it empty, and an empty pulsing rectangle
-			 * says nothing to a person waiting 600 ms. `::before`, not `::after`: a
-			 * suspended view keeps the children of its last successful render, and
-			 * anything placed at the end of a long list is far below the fold.
-			 */
 			'@': {
 				mol_view_error: {
 					Promise: {
@@ -92,12 +71,6 @@ namespace $.$$ {
 			border: { right: { width: '1px', style: 'solid', color: $mol_theme.line } },
 		},
 
-		/**
-		 * Below the width the two panes need, they stack instead of shrinking. Side
-		 * by side is the point of the stand — the edit and the line it moves in one
-		 * glance — but at half the width neither pane is readable, and stacked they
-		 * both still are.
-		 */
 		'@media': {
 			'(max-width: 60rem)': {
 				flexDirection: 'column',
@@ -106,8 +79,6 @@ namespace $.$$ {
 					borderRight: 'none',
 					border: { bottom: { width: '1px', style: 'solid', color: $mol_theme.line } },
 				},
-				// The source is the reference here, not the work surface, so stacked
-				// it gives the inspector the screen and keeps a few lines for itself.
 				Source_text: {
 					minHeight: '8rem',
 					maxHeight: '12rem',

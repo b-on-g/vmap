@@ -1,14 +1,5 @@
 namespace $.$$ {
 
-	/**
-	 * Owns nothing. Every control is one key of the `style` dictionary of the node,
-	 * read and written through `value()`, so what the panel shows is what the
-	 * document says and what it writes is an ordinary line of `view.tree`. The
-	 * inspector already has a dictionary editor for the same property; this is the
-	 * same facts with the names of the decisions on them.
-	 *
-	 * @see ../../../ARCHITECTURE.md section 8
-	 */
 	export class $bog_vmap_app_inspect_flex extends $.$bog_vmap_app_inspect_flex {
 
 		override width( next?: string ) {
@@ -31,13 +22,6 @@ namespace $.$$ {
 			return this.value( 'gap', next )
 		}
 
-		/**
-		 * Written as the STRING `1` and never as the number. Inline style rendering
-		 * appends `px` to a number, so `flexGrow 1` in the document comes out as
-		 * `flex-grow: 1px`, which is not a length and not a growth factor either:
-		 * the property is simply dropped and the node does not stretch.
-		 * Dimensionless numbers go in as text.
-		 */
 		override grow( next?: boolean ) {
 
 			if( next === undefined ) return this.value( 'flexGrow' ) === '1'

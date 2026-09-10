@@ -1,15 +1,4 @@
-- Layout of one node, as the four decisions a flex box actually takes: which way
-- the children go, how they line up across and along it, how far apart they are,
-- and whether this node stretches inside its own parent. Plus the width of the
-- page, which is the same kind of fact and is what an artboard is set by.
--
-- Every one of them is a key of the ordinary `style` dictionary of the node, so
-- what this panel writes is what a hand written document would carry, and an export
-- needs to know nothing about artboards at all.
-- @see ../../../ARCHITECTURE.md section 8
 $bog_vmap_app_inspect_flex $mol_view
-	- Two way: this is the whole surface of the panel, and the document is the
-	- owner's to write.
 	value*? \
 	sub /
 		<= Width $bog_vmap_app_inspect_flex_row
@@ -56,7 +45,6 @@ $bog_vmap_app_inspect_flex $mol_view
 				title \занимать свободное место
 				checked? <=> grow? false
 
-- One line of the panel: what is being set, and the control setting it.
 $bog_vmap_app_inspect_flex_row $mol_view
 	title \
 	Field $mol_view

@@ -1,36 +1,12 @@
-- Inspector of one class of the document: every port it has, own and inherited,
-- with an editor for the value of each. Every edit lands in the AST and is written
-- straight back as source text.
--
-- The class is handed in as source. Which class that is — which node is picked on
-- the canvas — is somebody else's question.
-- @see ../../ARCHITECTURE.md sections 1 and 5
 $bog_vmap_app_inspect $mol_view
-	- The truth; everything below is derived from it.
 	source? \
-	- Other classes of the same document, so that a node typed with one of them
-	- resolves its ports like any other. Empty is the honest default: an inspector
-	- handed a lone class has no siblings, and inventing some would be worse than
-	- having none.
 	peers /$mol_tree2
-	- Deployed MAM module the inherited ports are read from.
 	pack? \https://mol.hyoo.ru
-	- Implemented over the local model here; the editor binds it to a rename of its
-	- own, which carries the pick and the placement too.
 	class_title? \
-	- Handed in from outside: the refusal belongs to whoever owns the document, and
-	- the inspector only has one class of it.
 	title_note \
-	- Conditional children belong in a list a method returns, not in a `sub`
-	- somebody splices afterwards.
 	sub <= body /$mol_view
-	-
 	Head $mol_view
 		sub /
-			- Committed on Enter and on leaving the field, NEVER on a keystroke: a
-			- rename rewrites the declaration and everything that points at it, so
-			- writing per letter would rename the node to every prefix of what is
-			- being typed.
 			<= Title $mol_string
 				hint \имя узла
 				minimal_height 28
@@ -41,30 +17,17 @@ $bog_vmap_app_inspect $mol_view
 					blur? <=> title_submit? null
 			<= Base $mol_view sub / <= base_title \
 			<= Total $mol_view sub / <= total \
-	- Layout of the node, above the ports: on a page these five decide what the
-	- thing looks like, and hunting them down among two dozen inherited ports is
-	- not what an inspector is for. They are keys of `style` all the same.
 	Flex $bog_vmap_app_inspect_flex
 		value*? <=> flex_value*? \
 	Body $mol_scroll
 		sub /
 			<= Rows $mol_view sub <= rows /
-	- The refusal, shown under the head and only while there is one: an empty strip
-	- in a panel this narrow reads as a bug.
 	Note $mol_view
 		sub / <= title_note \
-	- A state and not a blank: every cell below derives from one class, and with none
-	- they all fail at once, which without this fills the panel with red strips and
-	- grows the page.
 	Empty $mol_view
 		sub / <= empty_note \Нечего править: в исходнике нет объявления класса
-	- The document model. `source` is bound both ways, so a write through any
-	- property below serializes the whole class and comes back out here as text.
 	Node $bog_vmap_lang_node
 		source? <=> source?
-	- Where inherited ports come from. The class of the document is handed to the
-	- library as well, so that `props_map` resolves the chain through it and
-	- `props_owner` can tell an own port from an inherited one.
 	Lib $bog_vmap_lib
 		pack <= pack
 		classes <= classes /
@@ -79,15 +42,6 @@ $bog_vmap_app_inspect $mol_view
 		binds <= binds /string
 		nodes <= nodes *
 
-- Stand for the inspector: the source of the whole DOCUMENT on the left, the
-- inspector of one of its classes on the right, so that an edit and the line it
-- moves are on screen at once — and so that the lines it must NOT move are on
-- screen too. A document and not a class, because that is where the editing of one
-- class is dangerous: the class model writes what it touched as the whole text, and
-- a stand of one class could never show the neighbour it eats.
--
-- Which class is inspected is picked here by hand: until picking a node on the
-- canvas exists, a stand that pretends to have it would be testing nothing.
 $bog_vmap_app_inspect_demo $mol_view
 	source? \
 	sub /
@@ -106,7 +60,5 @@ $bog_vmap_app_inspect_demo $mol_view
 		<= Inspect $bog_vmap_app_inspect
 			source? <=> class_source? \
 			peers <= trees /$mol_tree2
-	- One text, several classes, and a write through one of them leaves the others
-	- alone.
 	Doc $bog_vmap_lang_doc
 		source? <=> source?

@@ -1,40 +1,10 @@
-- Editor of one value of a `view.tree` property, dispatching on the shape of the
-- value and recursing into composite ones. Port of the value editor of studio and
-- its six sub editors, plus a seventh the studio has no equivalent of: the wire `=`
-- of section 1. Deviations are marked at their place.
--
-- Every class here derives from something OUTSIDE this file, and that is a rule,
-- not a coincidence. Declarations of a `view.tree` are emitted before the
-- handwritten bodies of the same module, so a class inheriting a neighbour from
-- this very file would extend the version without its `.view.ts` methods — half
-- the behaviour gone, nothing reported. Studio can chain its object editor onto its
-- dictionary editor because there the two live in separate modules. List,
-- dictionary and object are therefore one class with two flags rather than three
-- classes in a chain.
-- @see ../../../../ARCHITECTURE.md section 3
 $bog_vmap_app_inspect_value $mol_view
-	- Writing serializes the node back into the document.
 	tree? $mol_tree2_empty
-	- Offered as binding targets.
 	binds /string
-	- Nodes a wire may start from, by name, each carrying the class it is declared
-	- with and the ports that class has. Both ends of a wire are picked out of this
-	- one map, so neither end can be spelled by hand into something that does not
-	- exist.
 	nodes *
-	- A refusal has to be legible, and on its own it is not: the string field of mol
-	- catches what a setter throws and puts the message into `setCustomValidity`,
-	- which the browser shows on form submit and nowhere else. In a form that is
-	- never submitted the value silently stays out of the document and the field
-	- keeps the text nobody accepted — the document is safe and the person is lost.
 	alarm? \
 	sub <= editors /$mol_view
 	Alarm $mol_view sub / <= alarm
-	- Every editor is declared, one is rendered. Studio picks the same way and then
-	- copies the context onto the chosen instance field by field. Here the context
-	- arrives through ordinary bindings instead, so the wiring is visible in the
-	- declaration and type checked, and swapping the shape of a value cannot leave
-	- an editor holding a stale accessor.
 	String $bog_vmap_app_inspect_value_string
 		tree? <=> tree?
 	Number $bog_vmap_app_inspect_value_number
@@ -61,22 +31,13 @@ $bog_vmap_app_inspect_value $mol_view
 	Raw $bog_vmap_app_inspect_value_raw
 		tree? <=> tree?
 
-- Multi line text field. The text area of mol, which studio uses here, is a code
-- editor with a gutter and a highlighter; the plain string field is an `<input>`,
-- which cannot hold a newline, so a two line value would collapse to one line on
-- the first keystroke, silently. The `<textarea>` in between is neither, and is the
-- shape this needs.
 $bog_vmap_app_inspect_value_area $mol_string
 	dom_name \textarea
 	attr *
 		^
 		rows <= rows 1
-	- The string field binds Enter to `submit`. In an input that is the only
-	- sensible meaning of the key; in a text area it is the one key that has to
-	- reach the field itself.
 	plugins /
 
-- A text value: `\Текст`, or `@ \Текст` when it goes through the locale table.
 $bog_vmap_app_inspect_value_string $mol_view
 	tree? $mol_tree2_empty
 	sub /
@@ -89,7 +50,6 @@ $bog_vmap_app_inspect_value_string $mol_view
 			hint \Многоязычное: текст уедет в таблицу локалей
 			checked? <=> locale? false
 
-- A number literal, kept as the exact text of the source.
 $bog_vmap_app_inspect_value_number $mol_view
 	tree? $mol_tree2_empty
 	alarm? \
@@ -98,7 +58,6 @@ $bog_vmap_app_inspect_value_number $mol_view
 			hint \число
 			value? <=> num? \
 
-- `true` or `false`.
 $bog_vmap_app_inspect_value_bool $mol_view
 	tree? $mol_tree2_empty
 	sub /
@@ -106,25 +65,16 @@ $bog_vmap_app_inspect_value_bool $mol_view
 			title <= flag_title \
 			checked? <=> flag? false
 
-- A value with no editor of its own: `null`, `^`, or a shape this module has no
-- form for. Shown as its own source text and left alone, because failing here
-- would take out the whole property list over one node nobody was editing.
 $bog_vmap_app_inspect_value_raw $mol_view
 	tree? $mol_tree2_empty
 	sub / <= raw \
 
-- A list `/`, a dictionary `*` or an object `$Класс`: a column of value editors
-- with an add button. The three differ in two bits — whether an element carries a
-- key, and whether the node itself carries a class name — and in nothing else.
 $bog_vmap_app_inspect_value_seq $mol_view
 	tree? $mol_tree2_empty
 	binds /string
 	nodes *
 	alarm? \
-	- Elements are `ключ значение` pairs rather than bare values: a dictionary and
-	- an object, not a list.
 	keyed false
-	- The node type is the name of a class and is editable: an object.
 	klass false
 	sub <= seq_sub /$mol_view
 	Class_name $mol_string
@@ -136,9 +86,6 @@ $bog_vmap_app_inspect_value_seq $mol_view
 		title <= add_title \
 		hint \Добавить
 		click? <=> item_add? null
-	- A row of the sequence is a class of its own because it has to be: a named
-	- sub view declared inside a keyed one is hoisted by `upper` into a property of
-	- the root WITHOUT the key, so every row would share one editor.
 	Item* $bog_vmap_app_inspect_value_item
 		keyed <= keyed
 		marker <= item_marker* false
@@ -148,14 +95,11 @@ $bog_vmap_app_inspect_value_seq $mol_view
 		nodes <= nodes
 		drop? <=> item_drop*? null
 
-- One element of a list, or one entry of a dictionary when it carries a key.
 $bog_vmap_app_inspect_value_item $mol_view
 	value? $mol_tree2_empty
 	binds /string
 	nodes *
 	keyed false
-	- The entry is a bare marker — `^` — and not a pair. It has no key to edit and
-	- no value to assign, so it is shown whole and left alone.
 	marker false
 	drop? null
 	sub <= item_sub /$mol_view
@@ -171,12 +115,6 @@ $bog_vmap_app_inspect_value_item $mol_view
 		hint \Убрать
 		click? <=> drop?
 
-- A binding: `<= prop`, `<=> prop` or `=> prop`, optionally carrying a default.
--
-- The target is one bare token and there is nowhere to put a second one, which is
-- the guard against the middle form of `<=`: `<= Calc result` looks like a wire,
-- is not one, and either kills the build with a message about default values or
-- ships `Calc(){ return result }` into the bundle.
 $bog_vmap_app_inspect_value_bind $mol_view
 	tree? $mol_tree2_empty
 	binds /string
@@ -184,9 +122,6 @@ $bog_vmap_app_inspect_value_bind $mol_view
 	alarm? \
 	sub <= bind_sub /$mol_view
 	Op $mol_view sub / <= op \
-	- Picked, like both ends of a wire. One end of a link chosen from a list and the
-	- other typed by hand would read as an inconsistency of the editor rather than a
-	- difference between the two things.
 	Target $mol_select
 		hint \свойство
 		value? <=> target? \
@@ -196,18 +131,6 @@ $bog_vmap_app_inspect_value_bind $mol_view
 		binds <= binds
 		nodes <= nodes
 
-- A wire: `= Узел порт`, the two token form of section 1.
--
-- Both ends are PICKED, not typed: the node out of the nodes the document declares,
-- the port out of the ports that node's class has. A wire that cannot be spelled
-- wrong needs no message about being spelled wrong.
--
-- The checks stay underneath all the same, because the pickers are an interface and
-- the document is not: both ends still go through the token guard of the language
-- module, so a sign or a space cannot be smuggled inside one, and the node is still
-- checked against the declared list. The `?` of a two way wire lives on the property
-- signature and is moved by the row, through `wire_add`, so that both ends always
-- move together.
 $bog_vmap_app_inspect_value_wire $mol_view
 	tree? $mol_tree2_empty
 	nodes *
@@ -215,8 +138,6 @@ $bog_vmap_app_inspect_value_wire $mol_view
 	sub <= wire_sub /$mol_view
 	Row $mol_view
 		sub <= wire_row /$mol_view
-	- The operator, shown for the same reason the binding shows `<=`: a wire and a
-	- binding are two different things and the difference is one glyph.
 	Op $mol_view sub / \=
 	Origin $mol_select
 		hint \узел
@@ -227,12 +148,7 @@ $bog_vmap_app_inspect_value_wire $mol_view
 		hint \порт
 		value? <=> port? \
 		options <= ports /string
-	- Free text is the fallback and never the default: it is offered exactly when
-	- there is no list to pick from, that is when the pack does not carry the class
-	- of the node. Refusing to edit at all would be the wrong answer — a document
-	- may legitimately name a class the loaded pack has never heard of.
 	Port_free $mol_string
 		hint \порт
 		value? <=> port? \
-	- Rendered only when there is something to say.
 	Note $mol_view sub / <= note \

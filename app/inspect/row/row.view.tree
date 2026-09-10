@@ -1,11 +1,5 @@
-- A row is a class of its own for the same reason a palette row is: a named sub
-- view declared inside a keyed one is hoisted by `upper` into a property of the
-- ROOT, without the key, so one editor would be shared by every row.
 $bog_vmap_app_inspect_row $mol_view
-	- Full signature as it is written in the source, `Menu_option*` and `click?`
-	- included: the suffixes are the difference between a port and a keyed port.
 	sign \
-	- Empty on an own property, so the badge itself marks what is inherited.
 	owner \
 	inherited false
 	value? $mol_tree2_empty
@@ -24,9 +18,6 @@ $bog_vmap_app_inspect_row $mol_view
 			tree? <=> value?
 			binds <= binds
 			nodes <= nodes
-	- Signature switches are offered on own properties only. An inherited port has
-	- no declaration in this document to put a `*` or a `?` on, and writing one
-	- would mean silently declaring an override the user never asked for.
 	Key $mol_check
 		title \*
 		hint \Много значений по ключу

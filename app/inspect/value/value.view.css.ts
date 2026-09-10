@@ -1,23 +1,11 @@
 namespace $.$$ {
 
-	/**
-	 * Only what the theme and the components do NOT already do: the compact rhythm
-	 * of a two dozen row panel and the monospace face that says a value is code.
-	 * What a field of mol paints itself — its background, its minimum width, its
-	 * stretch in a row — is left to it.
-	 */
 	$mol_style_define( $bog_vmap_app_inspect_value, {
 		flex: { direction: 'column', grow: 1, shrink: 1 },
 		minWidth: 0,
 
-		/** Once for everything below: a field of mol takes its font by inheritance. */
 		font: { family: 'monospace', size: '.8rem' },
 
-		/**
-		 * Rendered only while there is a refusal, so the row does not carry an empty
-		 * strip: an inspector is two dozen rows tall and a reserved line in each of
-		 * them doubles its height for nothing.
-		 */
 		Alarm: {
 			padding: { top: '.15rem', left: '.4rem', right: '.4rem' },
 			color: $mol_theme.focus,
@@ -25,10 +13,6 @@ namespace $.$$ {
 		},
 	} )
 
-	/**
-	 * A text area sized by its content instead of by the browser default of two
-	 * rows: in a property list a one line value has to take one line.
-	 */
 	$mol_style_define( $bog_vmap_app_inspect_value_area, {
 		flex: { grow: 1 },
 		minHeight: '1.5rem',
@@ -70,10 +54,6 @@ namespace $.$$ {
 		},
 	} )
 
-	/**
-	 * A shape with no editor. Dimmed, because the point of the colour is to say
-	 * that this one is shown and not offered for editing.
-	 */
 	$mol_style_define( $bog_vmap_app_inspect_value_raw, {
 		flex: { direction: 'row', grow: 1 },
 		align: { items: 'center' },
@@ -103,8 +83,6 @@ namespace $.$$ {
 			alignSelf: 'stretch',
 			gap: '.15rem',
 			minWidth: 0,
-			// The step that makes nesting readable: without it a list inside a
-			// dictionary inside an object is a flat wall of fields.
 			padding: { left: '.6rem' },
 			border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
 		},
@@ -156,7 +134,6 @@ namespace $.$$ {
 			font: { weight: 'bold' },
 		},
 
-		/** A picker is a button and paints no field, so this one is ours to give. */
 		Target: {
 			flex: { grow: 1 },
 			minWidth: '4rem',
@@ -177,11 +154,6 @@ namespace $.$$ {
 			minWidth: 0,
 		},
 
-		/**
-		 * Both pickers are sized like the fields they replaced, so that swapping a
-		 * text field for a list does not move the row it sits in. Their background is
-		 * ours for the same reason as `Target`.
-		 */
 		Origin: {
 			flex: { grow: 1 },
 			minWidth: '3rem',
