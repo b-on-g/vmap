@@ -41,9 +41,21 @@ namespace $.$$ {
 		}
 
 		@ $mol_action
-		camera_reset() {
+		override camera_reset() {
 			this.camera_zoom( 1 )
 			this.camera_shift( new this.$.$mol_vector_2d( 0, 0 ) )
+		}
+
+		override zoom_title() {
+			return Math.round( this.camera_zoom() * 100 ) + '%'
+		}
+
+		override zoom_in() {
+			this.zoom_by( 1.25 )
+		}
+
+		override zoom_out() {
+			this.zoom_by( 1 / 1.25 )
 		}
 
 		zoom_by( mult: number ) {
@@ -138,6 +150,7 @@ namespace $.$$ {
 				this.Wire(),
 				... this.slot() ? [ this.Insert() ] : [],
 				... this.band() ? [ this.Band() ] : [],
+				this.Camera(),
 			] as readonly $mol_view[]
 		}
 

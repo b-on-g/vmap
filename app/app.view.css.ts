@@ -22,12 +22,6 @@ namespace $.$$ {
 			padding: { right: $mol_gap.text },
 		},
 
-		Zoom_title: {
-			minWidth: '3.5rem',
-			justify: { content: 'center' },
-			color: $mol_theme.shade,
-		},
-
 		Root_name: {
 			minWidth: '14rem',
 			flex: { grow: 0, shrink: 1 },

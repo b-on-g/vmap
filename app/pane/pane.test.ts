@@ -888,7 +888,8 @@ namespace $ {
 			$mol_assert_equal( pane.warmed(), false )
 			$mol_assert_equal( pane.sub()[0] !== frame_before, true )
 			$mol_assert_equal( pane.sub()[0], pane.Scene( pane.scene_key() ) )
-			$mol_assert_equal( pane.sub().length, 3 )
+			$mol_assert_equal( pane.sub().length, 4 )
+			$mol_assert_equal( pane.sub()[3], pane.Camera() )
 
 			$mol_assert_equal( pane.watchdog(), null )
 			$mol_assert_equal( pane.heartbeat(), null )

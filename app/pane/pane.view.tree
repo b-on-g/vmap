@@ -47,6 +47,22 @@ $bog_vmap_app_pane $mol_view
 			drag_geometry <= wire_drag_geometry \
 		<= Marks $mol_view
 			sub <= error_marks /$mol_view
+		<= Camera $mol_view
+			sub /
+				<= Zoom_out $mol_button_minor
+					title \−
+					hint \Отдалить
+					click? <=> zoom_out? null
+				<= Zoom_title $mol_view
+					sub /
+						<= zoom_title \
+				<= Zoom_in $mol_button_minor
+					title \+
+					hint \Приблизить
+					click? <=> zoom_in? null
+				<= Reset $mol_button_minor
+					title \Сбросить вид
+					click? <=> camera_reset? null
 	Mark* $mol_view
 		style <= mark_style* *
 		attr *

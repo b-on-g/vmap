@@ -584,22 +584,6 @@ namespace $.$$ {
 			return this.Pane().ready() ? 'сцена на связи' : 'ожидание сцены…'
 		}
 
-		override zoom_title() {
-			return Math.round( this.Pane().camera_zoom() * 100 ) + '%'
-		}
-
-		override zoom_in() {
-			this.pane().zoom_by( 1.25 )
-		}
-
-		override zoom_out() {
-			this.pane().zoom_by( 1 / 1.25 )
-		}
-
-		override camera_reset() {
-			this.pane().camera_reset()
-		}
-
 		pane() {
 			return this.Pane() as $.$$.$bog_vmap_app_pane
 		}

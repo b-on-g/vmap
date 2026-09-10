@@ -393,11 +393,14 @@ namespace $ {
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.button( 'Новая сцена' )
-			stage.button( '−' )
-			stage.button( '+' )
-			stage.button( 'Сбросить вид' )
 			stage.button( 'Удалить' )
 			stage.button( 'В библиотеку' )
+
+			const canvas = stage.pane.dom_node()
+			for( const title of [ '−', '+', 'Сбросить вид' ] ) {
+				$mol_assert_equal( canvas.contains( stage.button( title ) ), true )
+			}
+			$mol_assert_equal( canvas.contains( stage.button( 'Удалить' ) ), false )
 
 			const text = stage.text()
 			$mol_assert_ok( text.includes( 'Полка' ) )

@@ -34,20 +34,6 @@ $bog_vmap_app $mol_view
 				title \Код
 				hint \Три текста выбранного узла: view.tree, JS и CSS
 				checked? <=> code_showed?
-			<= Zoom_out $mol_button_minor
-				title \−
-				hint \Отдалить
-				click? <=> zoom_out? null
-			<= Zoom_title $mol_view
-				sub /
-					<= zoom_title \
-			<= Zoom_in $mol_button_minor
-				title \+
-				hint \Приблизить
-				click? <=> zoom_in? null
-			<= Reset $mol_button_minor
-				title \Сбросить вид
-				click? <=> camera_reset? null
 			<= Board $mol_button_minor
 				title \Артборд
 				hint \Положить страницу: прямоугольник ширины макета, вёрстка внутри по дереву
