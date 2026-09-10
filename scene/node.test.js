@@ -9631,6 +9631,8 @@ var $;
             text = 'undefined';
         else if (val === null)
             text = 'null';
+        else if (typeof val === 'function')
+            text = 'function';
         else if (typeof val !== 'object')
             text = String(val);
         else if (Array.isArray(val) || Object.getPrototypeOf(val) === Object.prototype) {
@@ -9647,16 +9649,61 @@ var $;
         return text.length > limit ? text.slice(0, limit - 1) + '…' : text;
     }
     $.$bog_vmap_scene_value_text = $bog_vmap_scene_value_text;
-    function $bog_vmap_scene_values(root, names, limit = 40) {
+    function $bog_vmap_scene_values_columns(list) {
+        const columns = [];
+        for (const item of list) {
+            for (const key of Object.keys(item))
+                if (!columns.includes(key))
+                    columns.push(key);
+        }
+        return columns;
+    }
+    $.$bog_vmap_scene_values_columns = $bog_vmap_scene_values_columns;
+    function $bog_vmap_scene_values_table(val, rows = 3, limit = 40) {
+        if (!Array.isArray(val) || !val.length)
+            return null;
+        const plain = (item) => Boolean(item)
+            && typeof item === 'object'
+            && !Array.isArray(item)
+            && Object.getPrototypeOf(item) === Object.prototype;
+        if (!val.every(plain))
+            return null;
+        const shown = val.slice(0, rows);
+        const columns = $bog_vmap_scene_values_columns(shown);
+        if (!columns.length)
+            return null;
+        const lines = [columns.join('\t')];
+        for (const item of shown) {
+            lines.push(columns.map(column => column in item ? $bog_vmap_scene_value_text(item[column], limit) : '').join('\t'));
+        }
+        if (val.length > shown.length)
+            lines.push('… ещё ' + (val.length - shown.length));
+        return lines.join('\n');
+    }
+    $.$bog_vmap_scene_values_table = $bog_vmap_scene_values_table;
+    function $bog_vmap_scene_values_show(val, limit = 40, rows = 3) {
+        return $bog_vmap_scene_values_table(val, rows, limit) ?? $bog_vmap_scene_value_text(val, limit);
+    }
+    $.$bog_vmap_scene_values_show = $bog_vmap_scene_values_show;
+    function $bog_vmap_scene_values_pick(root, name) {
+        let host = root;
+        for (const step of name.split('.')) {
+            if (!host || (typeof host !== 'object' && typeof host !== 'function')) {
+                throw new Error('нет свойства ' + name);
+            }
+            const method = Reflect.get(host, step);
+            if (typeof method !== 'function')
+                throw new Error('нет свойства ' + name);
+            host = method.call(host);
+        }
+        return host;
+    }
+    $.$bog_vmap_scene_values_pick = $bog_vmap_scene_values_pick;
+    function $bog_vmap_scene_values(root, names, limit = 40, rows = 3) {
         const values = {};
         for (const name of names) {
-            const method = Reflect.get(root, name);
-            if (typeof method !== 'function') {
-                values[name] = '⚠ нет свойства ' + name;
-                continue;
-            }
             try {
-                values[name] = $bog_vmap_scene_value_text(method.call(root), limit);
+                values[name] = $bog_vmap_scene_values_show($bog_vmap_scene_values_pick(root, name), limit, rows);
             }
             catch (error) {
                 if (this.$mol_promise_like(error))
@@ -12244,6 +12291,26 @@ var $;
             if (got?.kind !== 'values')
                 return;
             $mol_assert_like(got.values, { calc_result: '42', calc_value: 'Error: boom' });
+        },
+        'a port of a part is asked for by a dotted name and answered by a table'($) {
+            const sent = [];
+            const target = { postMessage: (data) => { sent.push(data); } };
+            const table = 'city\tsum\nМосква\t7\nПитер\t9';
+            $bog_vmap_bridge_send(target, { kind: 'values_want', names: ['calc_result', 'Calc.result', 'Calc.rows'] });
+            $bog_vmap_bridge_send(target, { kind: 'values', values: { 'Calc.result': '42', 'Calc.rows': table } });
+            const want = $bog_vmap_bridge_read({ data: sent[0] });
+            if (want?.kind !== 'values_want')
+                return $mol_assert_equal(want?.kind, 'values_want');
+            $mol_assert_like(want.names, ['calc_result', 'Calc.result', 'Calc.rows']);
+            const got = $bog_vmap_bridge_read({ data: sent[1] });
+            if (got?.kind !== 'values')
+                return $mol_assert_equal(got?.kind, 'values');
+            $mol_assert_equal(got.values['Calc.result'], '42');
+            $mol_assert_like(got.values['Calc.rows'].split('\n').map(line => line.split('\t')), [
+                ['city', 'sum'],
+                ['Москва', '7'],
+                ['Питер', '9'],
+            ]);
         },
         'a message from another namespace is not ours'($) {
             $mol_assert_equal($bog_vmap_bridge_read({ data: { ns: 'somebody_else', kind: 'libs_set', parts: [] } }), null);
@@ -18372,6 +18439,83 @@ var $;
             clock.now += 100;
             scene.values_wanted(['calc_result', 'nope']);
             $mol_assert_equal(scene.values_task().delay, 150);
+        },
+        'a dotted name walks from the root through the part to its port'($) {
+            const part = {
+                result() { return 42; },
+                title() { return 'сумма'; },
+            };
+            const root = {
+                Calc() { return part; },
+                calc_result() { return 1; },
+            };
+            $mol_assert_like($.$bog_vmap_scene_values(root, ['Calc.result', 'Calc.title', 'calc_result']), { 'Calc.result': '42', 'Calc.title': 'сумма', calc_result: '1' });
+        },
+        'a dotted name that leads nowhere names itself in the error'($) {
+            const root = {
+                Calc() { return { result() { return 1; } }; },
+                flat() { return 5; },
+            };
+            const values = $.$bog_vmap_scene_values(root, ['Calc.absent', 'Nope.result', 'flat.result']);
+            $mol_assert_equal(values['Calc.absent'], '⚠ нет свойства Calc.absent');
+            $mol_assert_equal(values['Nope.result'], '⚠ нет свойства Nope.result');
+            $mol_assert_equal(values['flat.result'], '⚠ нет свойства flat.result');
+        },
+        'a list of records becomes a table of columns and the first rows'($) {
+            const root = {
+                rows() {
+                    return [
+                        { city: 'Москва', sum: 7 },
+                        { city: 'Питер', sum: 9 },
+                        { city: 'Казань', sum: 3 },
+                        { city: 'Пермь', sum: 1 },
+                    ];
+                },
+            };
+            const values = $.$bog_vmap_scene_values(root, ['rows']);
+            $mol_assert_like(values.rows.split('\n').map(line => line.split('\t')), [
+                ['city', 'sum'],
+                ['Москва', '7'],
+                ['Питер', '9'],
+                ['Казань', '3'],
+                ['… ещё 1'],
+            ]);
+        },
+        'a wider record widens the table, and a long cell is cut'($) {
+            const root = {
+                rows() {
+                    return [
+                        { name: 'x'.repeat(20) },
+                        { name: 'y', note: 'z' },
+                    ];
+                },
+            };
+            const values = $.$bog_vmap_scene_values(root, ['rows'], 10);
+            $mol_assert_like(values.rows.split('\n').map(line => line.split('\t')), [
+                ['name', 'note'],
+                ['xxxxxxxxx…', ''],
+                ['y', 'z'],
+            ]);
+        },
+        'a plain value stays on one line, so a newline can only mean a table'($) {
+            const root = {
+                text() { return 'два\nслова'; },
+                list() { return [1, 2]; },
+                empty() { return []; },
+                mixed() { return [{ a: 1 }, 2]; },
+            };
+            const values = $.$bog_vmap_scene_values(root, ['text', 'list', 'empty', 'mixed']);
+            $mol_assert_equal(values.text, 'два слова');
+            $mol_assert_equal(values.list, '[1,2]');
+            $mol_assert_equal(values.empty, '[]');
+            $mol_assert_equal(values.mixed, '[{"a":1},2]');
+            for (const name of ['text', 'list', 'empty', 'mixed']) {
+                $mol_assert_equal(values[name].includes('\n'), false);
+            }
+        },
+        'a function value is the name of its type, not its source'($) {
+            const root = { hook() { return (a) => a + 1; } };
+            $mol_assert_equal($.$bog_vmap_scene_values(root, ['hook']).hook, 'function');
         },
         'a view like value is its own id, not a JSON walk'($) {
             const root = {

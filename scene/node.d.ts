@@ -2423,6 +2423,7 @@ declare namespace $ {
         readonly uri: string;
     } | {
         readonly kind: 'values_want';
+        /** Either a property of the root class, or `Part.port` of a part of it. */
         readonly names: readonly string[];
     };
     /** Scene to host. */
@@ -2439,8 +2440,9 @@ declare namespace $ {
         };
     } | {
         readonly kind: 'values';
+        /** One line per value; a table comes as rows split by newline and cells by tab, the first row naming the columns. */
         readonly values: {
-            readonly [wire: string]: string;
+            readonly [name: string]: string;
         };
     } | {
         readonly kind: 'asset_want';
@@ -3457,7 +3459,11 @@ declare namespace $.$$ {
 
 declare namespace $ {
     function $bog_vmap_scene_value_text(val: unknown, limit?: number): string;
-    function $bog_vmap_scene_values(this: $, root: object, names: readonly string[], limit?: number): {
+    function $bog_vmap_scene_values_columns(list: readonly object[]): string[];
+    function $bog_vmap_scene_values_table(val: unknown, rows?: number, limit?: number): string | null;
+    function $bog_vmap_scene_values_show(val: unknown, limit?: number, rows?: number): string;
+    function $bog_vmap_scene_values_pick(root: object, name: string): unknown;
+    function $bog_vmap_scene_values(this: $, root: object, names: readonly string[], limit?: number, rows?: number): {
         readonly [name: string]: string;
     };
 }
