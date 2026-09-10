@@ -1,10 +1,5 @@
 namespace $ {
 
-	/**
-	 * The built pack as the editor reads it. Reads the `web.view.tree` this
-	 * module's own build drops into `-/`, so a missing build fails the test
-	 * instead of passing it: there is no network and no fixture to fall back on.
-	 */
 	const d = '$'
 
 	function part_lib( $: $ ) {
@@ -37,7 +32,6 @@ namespace $ {
 			$mol_assert_ok( map.has( 'lng' ) )
 			$mol_assert_ok( map.has( 'marker' ) )
 
-			// inherited through the stub, as any pack class
 			$mol_assert_ok( map.has( 'sub' ) )
 
 		},
@@ -51,14 +45,8 @@ namespace $ {
 				$mol_assert_ok( list.includes( d + name ) )
 			}
 
-			// more than the handful named here: the second level of the panel has to
-			// be worth opening
 			$mol_assert_ok( list.length > 50 )
 
-			// And no application shell: a page in vmap is an artboard, an ordinary
-			// node with a `sub` of its own — section 8 — so the page component of
-			// the standard library would offer a title bar and a scroll where a
-			// rectangle is meant.
 			$mol_assert_equal( list.includes( `${d}mol_page` ), false )
 
 		},
@@ -79,11 +67,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A document with both parts and a wire between them, resolved against the
-		 * pack and compiled the way the scene does it. The wire has to survive as
-		 * a call chain of two links, which is the whole mechanism of section 1.
-		 */
 		'a document wiring the calculator into the map compiles against the pack'( $ ) {
 
 			const lib = part_lib( $ )
@@ -112,22 +95,6 @@ namespace $ {
 
 		},
 
-		/**
-		 * A DETAIL CARRIES ITS OWN FLOOR, and the canvas is where that is not
-		 * optional: a free part is placed absolutely inside the root of a document,
-		 * which has no width of its own, so a `max-width` in per cent resolves to
-		 * zero and a `min-width` of zero has nothing to stop it. A minimum beats a
-		 * maximum in CSS, which is what keeps the box on screen.
-		 *
-		 * Read off the stylesheet the class attached, so what is checked is what the
-		 * browser will be handed. Only the first rule is read: it belongs to the
-		 * component itself, and the ones after it are its sub views, which may well
-		 * have a floor of zero and should.
-		 *
-		 * The pixels themselves are not checked here and cannot be: a mol test has
-		 * no layout. What this holds is the rule; a box measured on screen is the
-		 * user's check.
-		 */
 		'every detail of the shelf declares a floor of its own'( $ ) {
 
 			const doc = $.$mol_dom_context.document
@@ -141,7 +108,6 @@ namespace $ {
 				const own = ( el!.textContent ?? '' ).split( '}' )[ 0 ]
 				const floor = /min-width:\s*([^;]+)/.exec( own )?.[ 1 ]?.trim() ?? ''
 
-				// Declared at all, and not the zero that lets a box vanish.
 				$mol_assert_ok( floor )
 				$mol_assert_equal( floor === '0' || floor === '0px', false )
 
@@ -157,7 +123,6 @@ namespace $ {
 			$mol_assert_equal( lib.tree_link(), 'http://localhost:9080/bog/vmap/part/-/web.view.tree' )
 			$mol_assert_equal( lib.script_link(), 'http://localhost:9080/bog/vmap/part/-/web.js' )
 
-			// without the slash the last segment survives as well
 			lib.pack( 'http://localhost:9080/bog/vmap/part/-' )
 			$mol_assert_equal( lib.tree_link(), 'http://localhost:9080/bog/vmap/part/-/web.view.tree' )
 

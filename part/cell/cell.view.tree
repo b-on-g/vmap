@@ -1,21 +1,8 @@
-- A cell of code: a body of a function, a button that runs it, how long it took
-- and what it returned. The thing a person in hitolama builds everything out of.
--
-- Two ports for the answer instead of one, and both typed: a wire carries a value
-- into a port of some other part, and the ports of other parts are typed. `text`
-- goes into a caption, `number` into a zoom, a width, a count. An untyped port
-- would only move the guessing to the far end of the wire.
 $bog_vmap_part_cell $mol_view
-	- Run with the sandbox context as `$`; what it returns is the answer of the cell.
 	code? \
-	- Run on every edit instead of on the button. Off by default: half typed code
-	- runs on every keystroke, and a half typed loop runs for ever.
 	auto? false
-	- The answer, as text and as a number. `NaN` is «not a number», the same as in
-	- a number field, and an answer that is not a number at all reads as one.
 	result_text \
 	result_number +NaN
-	- Empty until the cell has run at all.
 	spent \
 	error \
 	run? null

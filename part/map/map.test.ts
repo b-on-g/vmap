@@ -20,7 +20,6 @@ namespace $ {
 			map.lng( 37.62 )
 			$mol_assert_equal( [ ... map.center() ], [ 55.75, 37.62 ] )
 
-			// the map dragged by hand reports a new center through the same cell
 			map.center( new $mol_vector_2d( 48.86, 2.35 ) )
 			$mol_assert_equal( map.lat(), 48.86 )
 			$mol_assert_equal( map.lng(), 2.35 )
@@ -42,7 +41,6 @@ namespace $ {
 			map.zoom( -3 )
 			$mol_assert_equal( map.zoom_limited(), 0 )
 
-			// a fraction from a calculator becomes the nearest whole level
 			map.zoom( 3.7 )
 			$mol_assert_equal( map.zoom_limited(), 4 )
 

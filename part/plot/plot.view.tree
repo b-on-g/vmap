@@ -1,11 +1,4 @@
-- A chart that takes a wire: numbers in, a line out.
--
-- The chart of mol takes a list of GRAPH OBJECTS, which is the right interface for
-- a chart and the wrong end of a wire: a wire carries a value, and nobody is going
-- to build a graph object in a code cell to feed one. So the port here is a list of
-- numbers and the graph is made from it inside.
 $bog_vmap_part_plot $mol_view
-	- The port a wire lands on.
 	values /number
 	title \
 	color \

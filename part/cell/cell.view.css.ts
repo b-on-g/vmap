@@ -7,7 +7,6 @@ namespace $.$$ {
 		padding: $mol_gap.block,
 		maxWidth: '28rem',
 
-		/** A floor of its own, like every detail of the shelf: see the map. */
 		minWidth: '12rem',
 		background: { color: $mol_theme.card },
 		border: { radius: $mol_gap.round },
@@ -35,7 +34,6 @@ namespace $.$$ {
 			whiteSpace: 'pre-wrap',
 		},
 
-		/** Only ever holds the complaint of a run; empty it takes no room. */
 		Error: {
 			color: $mol_theme.focus,
 			font: { family: 'monospace', size: '.8rem' },

@@ -1,9 +1,5 @@
 namespace $.$$ {
 
-	/**
-	 * Division by zero gives NaN instead of Infinity, so that a wire downstream
-	 * sees «no number» and not a number that only looks valid.
-	 */
 	export class $bog_vmap_part_calc extends $.$bog_vmap_part_calc {
 
 		@ $mol_mem
@@ -22,7 +18,6 @@ namespace $.$$ {
 			return NaN
 		}
 
-		/** Result for the eye: the number, or why there is none. */
 		override result_text() {
 
 			const result = this.result()

@@ -46,7 +46,6 @@ namespace $ {
 			$mol_assert_ok( Number.isNaN( calc.result() ) )
 			$mol_assert_equal( calc.result_text(), calc.zero_note() )
 
-			// zero over zero is the same case, not a different one
 			calc.left( 0 )
 			$mol_assert_ok( Number.isNaN( calc.result() ) )
 			$mol_assert_equal( calc.result_text(), calc.zero_note() )

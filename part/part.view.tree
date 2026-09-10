@@ -1,24 +1,8 @@
-- The pack of parts: a LIBRARY, not a page.
--
-- A class reaches `web.js` and `web.view.tree` by being named here, and that is
-- all the editor needs of this module: the shelf offers the two parts, the second
-- level of its panel offers the primitives, and both read the tree beside the
-- bundle. Nothing is drawn, so there is nothing to configure and nothing to keep
-- in step with the editor.
--
-- BEFORE SHORTENING THE LIST: a third of the pack is here to serve the rich text
-- and the dropdown alone, and they stay, because inside a block there is nothing
-- else to lay out prose and a choice with. Cutting anything here empties the second
-- level of the panel or the shelf itself, not a showcase — the showcase is gone,
-- and what it proved is proved by the tests instead.
 $bog_vmap_part $mol_view
-	- The parts of this pack. Everything else below is mol itself, carried along
-	- so that a page can be laid out and not only assembled.
 	Calc $bog_vmap_part_calc
 	Map $bog_vmap_part_map
 	Cell $bog_vmap_part_cell
 	Plot $bog_vmap_part_plot
-	-
 	Button_major $mol_button_major
 	Button_minor $mol_button_minor
 	String $mol_string
