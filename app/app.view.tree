@@ -94,11 +94,17 @@ $bog_vmap_app $mol_view
 			<= Publish $bog_vmap_app_publish
 				part <= publish_part \
 				source <= node_source? \
-				- Method and rule of the picked part, cut out of the two texts of the
-				- class the code editor writes. Without these a published component
-				- would arrive at the next document with its behaviour left behind.
+				- Method of the picked part, cut out of the body the code editor
+				- writes. Without it a published component would arrive at the next
+				- document with its behaviour left behind.
 				js <= node_js \
-				css <= node_css \
+				- Styles go over WHOLE, not cut down to the rule of the picked part.
+				- A part carries its own sub-views out with it, and in the document
+				- every one of them is a flat property of the root beside the part
+				- itself — one stylesheet, rules that name their nodes and nothing
+				- else. Only the publication knows which of those nodes end up inside
+				- the copy, because it is the side that builds the copy.
+				css <= root_css
 				doc <= doc_src
 				classes / <= doc_root
 			- Name of the root class, editable, right beside the button that spells

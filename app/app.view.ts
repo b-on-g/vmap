@@ -774,22 +774,6 @@ namespace $.$$ {
 
 		}
 
-		/** Rule of the picked node, cut out of the styles of its class. */
-		node_css() {
-
-			const name = this.selected()
-			if( !name ) return ''
-
-			try {
-				return this.$.$bog_vmap_app_code_props_css( this.root_css(), this.doc_root() )
-					.get( name.toLowerCase() ) ?? ''
-			} catch( error: unknown ) {
-				if( this.$.$mol_promise_like( error ) ) return this.$.$mol_fail_hidden( error )
-				return ''
-			}
-
-		}
-
 		/**
 		 * Whether a class is being carried out of the palette right now.
 		 *

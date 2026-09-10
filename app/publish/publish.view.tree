@@ -9,9 +9,13 @@ $bog_vmap_app_publish $mol_view
 	part \
 	- Declaration of the picked part, as the inspector reads it: `Name $base …`.
 	source \
-	- Body and styles of the part. Empty until the code editor of stage 4 keeps
-	- them per part; the shape is here so that it plugs in without a change.
+	- Method of the part, cut out of the body of the class it belongs to.
 	js \
+	- Styles of the ROOT CLASS of the document, whole, and not the rule of the
+	- part alone: a sub view of the part is a flat property of the root too, so
+	- its rule is written beside the rule of the part and nothing in the text says
+	- whose it is. Which rules belong to the part follows from the tree the copy is
+	- made of, and that tree is built here, so the cut is made here as well.
 	css \
 	- The root class of the document, as text: the sub-views the editor hoisted
 	- out of the part are put back into it from here before it goes out.
