@@ -7778,7 +7778,12 @@ var $;
             const timer = stage.timers.at(-1);
             $mol_assert_ok(stage.pane.watchdog() !== null);
             $mol_assert_equal(stage.pane.watchdog().delay, stage.pane.cold_limit());
-            stage.pane.watchdog().task();
+            const watch = stage.pane.watchdog();
+            watch.task();
+            stage.redraw();
+            $mol_assert_equal(stage.app.stalled(), false);
+            $mol_assert_equal(stage.pane.restart_tries(), 1);
+            watch.task();
             stage.redraw();
             $mol_assert_equal(stage.app.stalled(), true);
             const text = stage.text();
@@ -8331,8 +8336,27 @@ var $;
             $mol_assert_ok(pane.watchdog() !== null);
             $mol_assert_equal(timers.at(-1).delay, pane.cold_limit());
             $mol_assert_ok(pane.cold_limit() > pane.answer_limit());
-            timers.at(-1).task();
+            const generation = pane.scene_generation();
+            const watch = timers.at(-1);
+            watch.task();
+            $mol_assert_equal(pane.stalled(), false);
+            $mol_assert_equal(pane.restart_tries(), 1);
+            $mol_assert_equal(pane.scene_generation(), generation + 1);
+            watch.task();
             $mol_assert_equal(pane.stalled(), true);
+            $mol_assert_equal(pane.restart_tries(), 1);
+            $mol_assert_equal(pane.scene_generation(), generation + 1);
+        },
+        'a scene that comes up gets its automatic retry back for next time'($) {
+            const timers = timers_fake($);
+            const { pane, answer } = pane_make($);
+            answer({ kind: 'ready' });
+            pane.watchdog();
+            timers.at(-1).task();
+            $mol_assert_equal(pane.restart_tries(), 1);
+            answer({ kind: 'sizes', sizes: {} });
+            $mol_assert_equal(pane.warmed(), true);
+            $mol_assert_equal(pane.restart_tries(), 0);
         },
         'a drag from an output to a fitting input writes exactly two lines'($) {
             const { pane, node, posted } = wired_make($);
@@ -13077,6 +13101,18 @@ var $;
             const zoom = node.over_tree('Map', 'zoom');
             $mol_assert_equal(zoom?.kids[0]?.type, '<=');
             $mol_assert_equal(zoom?.kids[0]?.kids[0]?.type, node.wires()[0].name);
+        },
+        'the second level replaces the shelf instead of stacking under it'($) {
+            const shelf = $bog_vmap_app_shelf.make({ $ });
+            const own_scrolls = () => shelf.body().filter(view => view instanceof $mol_scroll).length;
+            $mol_assert_equal(shelf.classes_showed(), false);
+            $mol_assert_equal(shelf.body().includes(shelf.Stack()), true);
+            $mol_assert_equal(shelf.body().includes(shelf.Palette()), false);
+            $mol_assert_equal(own_scrolls(), 1);
+            shelf.classes_showed(true);
+            $mol_assert_equal(shelf.body().includes(shelf.Stack()), false);
+            $mol_assert_equal(shelf.body().includes(shelf.Palette()), true);
+            $mol_assert_equal(own_scrolls(), 0);
         },
     });
 })($ || ($ = {}));

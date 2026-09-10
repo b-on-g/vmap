@@ -47698,6 +47698,7 @@ declare namespace $.$$ {
         scene_shown(next?: boolean): boolean;
         remount_delay(): number;
         scene_restart(): void;
+        scene_relaunch(): void;
         handshake(key: string, next?: number): number;
         ready(): boolean;
         target(): $bog_vmap_app_pane_peer | null;
@@ -47713,6 +47714,8 @@ declare namespace $.$$ {
         ping_period(): number;
         heartbeat(): $mol_after_timeout | null;
         watchdog(): $mol_after_timeout | null;
+        restart_tries(next?: number): number;
+        restart_tries_max(): number;
         sizes(next?: {
             readonly [node: string]: $bog_vmap_bridge_rect;
         }): {

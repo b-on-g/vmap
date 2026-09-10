@@ -22579,7 +22579,8 @@ var $;
             body() {
                 return [
                     this.Title(),
-                    this.Stack(),
+                    this.Source(),
+                    ...this.classes_showed() ? [] : [this.Stack()],
                     this.Level(),
                     ...this.classes_showed() ? [this.Palette()] : [],
                 ];
@@ -22587,7 +22588,6 @@ var $;
             stack_content() {
                 return [
                     this.Items(),
-                    this.Source(),
                     this.Apps(),
                 ];
             }
@@ -28586,6 +28586,10 @@ var $;
                 return 500;
             }
             scene_restart() {
+                this.restart_tries(0);
+                this.scene_relaunch();
+            }
+            scene_relaunch() {
                 this.scene_generation(this.scene_generation() + 1);
                 this.warmed(false);
                 this.stalled(false);
@@ -28650,7 +28654,20 @@ var $;
                 if (this.poke_at <= this.answer_at())
                     return null;
                 const limit = this.warmed() ? this.answer_limit() : this.cold_limit();
-                return new this.$.$mol_after_timeout(limit, () => this.stalled(true));
+                return new this.$.$mol_after_timeout(limit, () => {
+                    if (!this.warmed() && this.restart_tries() < this.restart_tries_max()) {
+                        this.restart_tries(this.restart_tries() + 1);
+                        this.scene_relaunch();
+                        return;
+                    }
+                    this.stalled(true);
+                });
+            }
+            restart_tries(next) {
+                return next ?? 0;
+            }
+            restart_tries_max() {
+                return 1;
             }
             sizes(next) {
                 return next ?? {};
@@ -29368,6 +29385,7 @@ var $;
                 if (message.kind === 'sizes') {
                     this.sizes(this.sizes_merged(message.sizes));
                     this.warmed(true);
+                    this.restart_tries(0);
                     return;
                 }
             }
@@ -29416,6 +29434,9 @@ var $;
             $mol_action
         ], $bog_vmap_app_pane.prototype, "scene_restart", null);
         __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "scene_relaunch", null);
+        __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "handshake", null);
         __decorate([
@@ -29436,6 +29457,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "watchdog", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "restart_tries", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "sizes", null);

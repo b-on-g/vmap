@@ -22570,7 +22570,8 @@ var $;
             body() {
                 return [
                     this.Title(),
-                    this.Stack(),
+                    this.Source(),
+                    ...this.classes_showed() ? [] : [this.Stack()],
                     this.Level(),
                     ...this.classes_showed() ? [this.Palette()] : [],
                 ];
@@ -22578,7 +22579,6 @@ var $;
             stack_content() {
                 return [
                     this.Items(),
-                    this.Source(),
                     this.Apps(),
                 ];
             }
@@ -28577,6 +28577,10 @@ var $;
                 return 500;
             }
             scene_restart() {
+                this.restart_tries(0);
+                this.scene_relaunch();
+            }
+            scene_relaunch() {
                 this.scene_generation(this.scene_generation() + 1);
                 this.warmed(false);
                 this.stalled(false);
@@ -28641,7 +28645,20 @@ var $;
                 if (this.poke_at <= this.answer_at())
                     return null;
                 const limit = this.warmed() ? this.answer_limit() : this.cold_limit();
-                return new this.$.$mol_after_timeout(limit, () => this.stalled(true));
+                return new this.$.$mol_after_timeout(limit, () => {
+                    if (!this.warmed() && this.restart_tries() < this.restart_tries_max()) {
+                        this.restart_tries(this.restart_tries() + 1);
+                        this.scene_relaunch();
+                        return;
+                    }
+                    this.stalled(true);
+                });
+            }
+            restart_tries(next) {
+                return next ?? 0;
+            }
+            restart_tries_max() {
+                return 1;
             }
             sizes(next) {
                 return next ?? {};
@@ -29359,6 +29376,7 @@ var $;
                 if (message.kind === 'sizes') {
                     this.sizes(this.sizes_merged(message.sizes));
                     this.warmed(true);
+                    this.restart_tries(0);
                     return;
                 }
             }
@@ -29407,6 +29425,9 @@ var $;
             $mol_action
         ], $bog_vmap_app_pane.prototype, "scene_restart", null);
         __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "scene_relaunch", null);
+        __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "handshake", null);
         __decorate([
@@ -29427,6 +29448,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "watchdog", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "restart_tries", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "sizes", null);
@@ -39353,7 +39377,12 @@ var $;
             const timer = stage.timers.at(-1);
             $mol_assert_ok(stage.pane.watchdog() !== null);
             $mol_assert_equal(stage.pane.watchdog().delay, stage.pane.cold_limit());
-            stage.pane.watchdog().task();
+            const watch = stage.pane.watchdog();
+            watch.task();
+            stage.redraw();
+            $mol_assert_equal(stage.app.stalled(), false);
+            $mol_assert_equal(stage.pane.restart_tries(), 1);
+            watch.task();
             stage.redraw();
             $mol_assert_equal(stage.app.stalled(), true);
             const text = stage.text();
@@ -39906,8 +39935,27 @@ var $;
             $mol_assert_ok(pane.watchdog() !== null);
             $mol_assert_equal(timers.at(-1).delay, pane.cold_limit());
             $mol_assert_ok(pane.cold_limit() > pane.answer_limit());
-            timers.at(-1).task();
+            const generation = pane.scene_generation();
+            const watch = timers.at(-1);
+            watch.task();
+            $mol_assert_equal(pane.stalled(), false);
+            $mol_assert_equal(pane.restart_tries(), 1);
+            $mol_assert_equal(pane.scene_generation(), generation + 1);
+            watch.task();
             $mol_assert_equal(pane.stalled(), true);
+            $mol_assert_equal(pane.restart_tries(), 1);
+            $mol_assert_equal(pane.scene_generation(), generation + 1);
+        },
+        'a scene that comes up gets its automatic retry back for next time'($) {
+            const timers = timers_fake($);
+            const { pane, answer } = pane_make($);
+            answer({ kind: 'ready' });
+            pane.watchdog();
+            timers.at(-1).task();
+            $mol_assert_equal(pane.restart_tries(), 1);
+            answer({ kind: 'sizes', sizes: {} });
+            $mol_assert_equal(pane.warmed(), true);
+            $mol_assert_equal(pane.restart_tries(), 0);
         },
         'a drag from an output to a fitting input writes exactly two lines'($) {
             const { pane, node, posted } = wired_make($);
@@ -44478,6 +44526,18 @@ var $;
             const zoom = node.over_tree('Map', 'zoom');
             $mol_assert_equal(zoom?.kids[0]?.type, '<=');
             $mol_assert_equal(zoom?.kids[0]?.kids[0]?.type, node.wires()[0].name);
+        },
+        'the second level replaces the shelf instead of stacking under it'($) {
+            const shelf = $bog_vmap_app_shelf.make({ $ });
+            const own_scrolls = () => shelf.body().filter(view => view instanceof $mol_scroll).length;
+            $mol_assert_equal(shelf.classes_showed(), false);
+            $mol_assert_equal(shelf.body().includes(shelf.Stack()), true);
+            $mol_assert_equal(shelf.body().includes(shelf.Palette()), false);
+            $mol_assert_equal(own_scrolls(), 1);
+            shelf.classes_showed(true);
+            $mol_assert_equal(shelf.body().includes(shelf.Stack()), false);
+            $mol_assert_equal(shelf.body().includes(shelf.Palette()), true);
+            $mol_assert_equal(own_scrolls(), 0);
         },
     });
 })($ || ($ = {}));
