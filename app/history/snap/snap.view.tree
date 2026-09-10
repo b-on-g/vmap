@@ -1,0 +1,20 @@
+$bog_vmap_app_history_snap $mol_view
+	moment \
+	author \
+	preview \
+	editable false
+	back? null
+	sub /
+		<= Bar $mol_view
+			sub /
+				<= Moment $mol_view
+					sub / <= moment
+				<= Back $mol_button_minor
+					title \Вернуть
+					hint \Вернуть документ к этому снимку. Текущее состояние ляжет снимком, поэтому возврат тоже отменяем
+					enabled <= editable
+					click? <=> back?
+		<= Author $mol_view
+			sub / <= author
+		<= Text $mol_view
+			sub / <= preview

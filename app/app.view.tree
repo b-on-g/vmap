@@ -11,6 +11,8 @@ $bog_vmap_app $mol_view
 	palette_showed? true
 	inspect_showed? true
 	code_showed? false
+	history_showed? false
+	history_state? *
 	code_whole? false
 	code_source? \
 	code_js? \
@@ -34,6 +36,10 @@ $bog_vmap_app $mol_view
 				title \Код
 				hint \Три текста выбранного узла: view.tree, JS и CSS
 				checked? <=> code_showed?
+			<= History_check $mol_check
+				title \Версии
+				hint \История документа: шаги этой сессии и снимки в ленде
+				checked? <=> history_showed?
 			<= Board $mol_button_minor
 				title \Артборд
 				hint \Положить страницу: прямоугольник ширины макета, вёрстка внутри по дереву
@@ -117,6 +123,9 @@ $bog_vmap_app $mol_view
 		js? <=> code_js?
 		css? <=> code_css?
 		error <= code_error \
+	History $bog_vmap_app_history
+		store <= store
+		state? <=> history_state?
 	Lib $bog_vmap_lib_land_stack
 		pack <= pack_link
 		lands <= lands /string

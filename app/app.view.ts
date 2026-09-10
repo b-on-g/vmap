@@ -423,6 +423,7 @@ namespace $.$$ {
 				this.Pane(),
 				... this.inspect_showed() ? [ this.Aside() ] : [],
 				... this.code_showed() ? [ this.Code() ] : [],
+				... this.history_showed() ? [ this.History() ] : [],
 			] as readonly $mol_view[]
 		}
 
@@ -436,6 +437,49 @@ namespace $.$$ {
 
 		override code_showed( next?: boolean ) {
 			return this.$.$mol_state_session.value( 'vmap_code', next ) ?? false
+		}
+
+		override history_showed( next?: boolean ) {
+			return this.$.$mol_state_session.value( 'vmap_history', next ) ?? false
+		}
+
+		override history_state( next?: $bog_vmap_app_store_state ): $bog_vmap_app_store_state {
+
+			const store = this.store()
+			const doc = store.doc_current()
+
+			if( !doc ) return this.draft_state( next )
+
+			if( next !== undefined && !doc.can_change() ) return store.doc_state( doc )
+
+			return store.doc_state( doc, next )
+		}
+
+		draft_state( next?: $bog_vmap_app_store_state ): $bog_vmap_app_store_state {
+
+			if( next !== undefined ) {
+
+				this.doc_source( next.source )
+
+				for( const name of this.doc_model().names() ) {
+					this.class_js( name, next.js[ name ] ?? '' )
+					this.class_css( name, next.css[ name ] ?? '' )
+				}
+
+				return next
+			}
+
+			const js = {} as { [ klass: string ]: string }
+			const css = {} as { [ klass: string ]: string }
+
+			for( const name of this.doc_model().names() ) {
+				const body = this.class_js( name )
+				if( body ) js[ name ] = body
+				const style = this.class_css( name )
+				if( style ) css[ name ] = style
+			}
+
+			return { source: this.doc_source(), js, css }
 		}
 
 		aside_content() {
@@ -940,6 +984,8 @@ namespace $.$$ {
 		key_press( event?: KeyboardEvent ) {
 			if( !event ) return
 
+			if( this.History().press( event ) ) return
+
 			if( event.key === 'Escape' ) {
 				if( this.Pane().inside() ) this.Pane().leave()
 				else this.selected( null )
@@ -967,6 +1013,7 @@ namespace $.$$ {
 				this.drag_listeners(),
 				this.hotkeys(),
 				this.store_boot(),
+				this.History().live(),
 			]
 		}
 
