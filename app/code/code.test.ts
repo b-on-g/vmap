@@ -655,6 +655,25 @@ namespace $ {
 
 		},
 
+		'the root renamed and renamed back leaves the style matching'( $ ) {
+
+			const { app, code, name } = editor( $ )
+
+			code.css_text( `[${ $.$bog_vmap_app_code_attr( app.doc_root() ) }_${ name.toLowerCase() }] {\n\tcolor: red;\n}` )
+
+			const before = app.root_css()
+
+			app.root_title( `${d}my_shop_page` )
+
+			$mol_assert_equal( app.doc_root(), `${d}my_shop_page` )
+			$mol_assert_equal( app.root_css().includes( '[my_shop_page_button_minor]' ), true )
+
+			app.root_title( `${d}my_site_page` )
+
+			$mol_assert_equal( app.root_css(), before )
+
+		},
+
 		'a press on a closed tab opens it'( $ ) {
 
 			const { code } = editor( $ )

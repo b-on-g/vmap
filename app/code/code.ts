@@ -134,7 +134,7 @@ namespace $ {
 	}
 
 	export function $bog_vmap_app_code_attr( klass: string ) {
-		return klass.replace( /\$/g, '' ).toLowerCase()
+		return $bog_vmap_lang_attr( klass )
 	}
 
 }

@@ -40,6 +40,39 @@ namespace $ {
 		return /^\$[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test( name )
 	}
 
+	export function $bog_vmap_lang_attr( klass: string ) {
+		return klass.replace( /\$/g, '' ).toLowerCase()
+	}
+
+	function $bog_vmap_lang_quoted( text: string ) {
+		return text.replace( /[.*+?^${}()|[\]\\]/g, '\\$&' )
+	}
+
+	export function $bog_vmap_lang_css_rename( css: string, from: string, to: string ) {
+
+		if( !css || from === to ) return css
+
+		const head = $bog_vmap_lang_attr( from )
+		if( !head ) return css
+
+		return css.replace(
+			new RegExp( '\\[' + $bog_vmap_lang_quoted( head ) + '(?=[\\]_=~^*|$\\s])', 'g' ),
+			'[' + $bog_vmap_lang_attr( to ),
+		)
+
+	}
+
+	export function $bog_vmap_lang_js_rename( js: string, from: string, to: string ) {
+
+		if( !js || from === to ) return js
+
+		return js.replace(
+			new RegExp( '([^\\w$]|^)' + $bog_vmap_lang_quoted( from ) + '(?![\\w])', 'g' ),
+			( _all: string, before: string )=> before + to,
+		)
+
+	}
+
 	export function $bog_vmap_lang_wire_tree(
 		this: $,
 		wire: $bog_vmap_lang_wire,

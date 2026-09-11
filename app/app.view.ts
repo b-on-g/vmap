@@ -1004,8 +1004,8 @@ namespace $.$$ {
 			next: string,
 			carried: { js: string, css: string, rooted: boolean },
 		) {
-			if( carried.js ) this.class_js( next, carried.js )
-			if( carried.css ) this.class_css( next, carried.css )
+			if( carried.js ) this.class_js( next, this.$.$bog_vmap_lang_js_rename( carried.js, name, next ) )
+			if( carried.css ) this.class_css( next, this.$.$bog_vmap_lang_css_rename( carried.css, name, next ) )
 
 			const store = this.store()
 			const doc = store.doc_current()
