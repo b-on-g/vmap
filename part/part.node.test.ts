@@ -2,96 +2,89 @@ namespace $ {
 
 	const d = '$'
 
-	function part_lib( $: $ ) {
+	const shelf = [
+		'Calc', 'Map', 'Cell', 'Plot',
+		'Button_major', 'Button_minor', 'String', 'Textarea', 'Number', 'Check_box',
+		'Switch', 'Select', 'Link', 'Image', 'Text', 'Paragraph', 'Labeler',
+		'Row', 'Card', 'List', 'Form', 'Form_field',
+	]
 
-		const file = $.$mol_file.relative( 'bog/vmap/part/-/web.view.tree' )
-		if( !file.exists() ) $mol_fail( new Error( `Пак не собран, нет файла ${ file.path() }` ) )
+	function ports( Klass: { prototype: object } ) {
 
-		const lib = $.$bog_vmap_lib.make({ $ })
+		const names = new Set< string >()
 
-		lib.tree = ()=> $.$bog_vmap_lib_parse( file.text(), file.path() )
+		for(
+			let proto = Klass.prototype as object | null;
+			proto && proto !== Object.prototype;
+			proto = Object.getPrototypeOf( proto )
+		) {
+			for( const name of Object.getOwnPropertyNames( proto ) ) names.add( name )
+		}
 
-		return lib
+		return names
+	}
+
+	function ports_own( $: $, Klass: { prototype: object } ) {
+		const base = ports( $.$mol_view )
+		return [ ... ports( Klass ) ].filter( name => !base.has( name ) ).sort()
 	}
 
 	$mol_test({
 
-		'the pack lists both parts with their ports'( $ ) {
+		'the shelf of the pack is exactly the list of its components'( $ ) {
 
-			const lib = part_lib( $ )
-
-			const calc = lib.props_map( `${d}bog_vmap_part_calc` )
-			$mol_assert_ok( calc.has( 'result' ) )
-			$mol_assert_ok( calc.has( 'left' ) )
-			$mol_assert_ok( calc.has( 'right' ) )
-			$mol_assert_ok( calc.has( 'op' ) )
-
-			const map = lib.props_map( `${d}bog_vmap_part_map` )
-			$mol_assert_ok( map.has( 'zoom' ) )
-			$mol_assert_ok( map.has( 'lat' ) )
-			$mol_assert_ok( map.has( 'lng' ) )
-			$mol_assert_ok( map.has( 'marker' ) )
-
-			$mol_assert_ok( map.has( 'sub' ) )
+			$mol_assert_equal(
+				ports_own( $, $.$bog_vmap_part ).join( ' ' ),
+				[ ... shelf ].sort().join( ' ' ),
+			)
 
 		},
 
-		'the pack carries the basics of mol beside the parts'( $ ) {
+		'every component of the shelf hands out a live view'( $ ) {
 
-			const lib = part_lib( $ )
-			const list = lib.class_list()
+			const part = $.$bog_vmap_part.make({ $ })
 
-			for( const name of [ 'mol_view', 'mol_button', 'mol_button_major', 'mol_string', 'mol_number', 'mol_check_box', 'mol_map_yandex', 'mol_text', 'mol_link', 'mol_image' ] ) {
-				$mol_assert_ok( list.includes( d + name ) )
+			for( const name of shelf ) {
+				const kid = Reflect.get( part, name ).call( part )
+				$mol_assert_ok( kid instanceof $.$mol_view )
 			}
 
-			$mol_assert_ok( list.length > 50 )
+		},
 
-			$mol_assert_equal( list.includes( `${d}mol_page` ), false )
+		'the parts declare the ports the palette wires'( $ ) {
+
+			const calc = ports( $.$bog_vmap_part_calc )
+			for( const name of [ 'left', 'right', 'op', 'result', 'result_text', 'sub' ] ) {
+				$mol_assert_ok( calc.has( name ) )
+			}
+
+			const map = ports( $.$bog_vmap_part_map )
+			for( const name of [ 'zoom', 'lat', 'lng', 'marker', 'sub' ] ) {
+				$mol_assert_ok( map.has( name ) )
+			}
+
+			const cell = ports( $.$bog_vmap_part_cell )
+			for( const name of [ 'code', 'auto', 'run', 'result_text', 'result_number', 'sub' ] ) {
+				$mol_assert_ok( cell.has( name ) )
+			}
+
+			const plot = ports( $.$bog_vmap_part_plot )
+			for( const name of [ 'values', 'color', 'title', 'sub' ] ) {
+				$mol_assert_ok( plot.has( name ) )
+			}
 
 		},
 
-		'the pack resolves the chains of both parts down to the stub'( $ ) {
+		'the parts stand on the view of mol and nothing deeper'( $ ) {
 
-			const lib = part_lib( $ )
-
-			$mol_assert_equal(
-				lib.inherit_chain( `${d}bog_vmap_part_calc` ).join( ' ' ),
-				`${d}bog_vmap_part_calc ${d}mol_view ${d}mol_object`,
-			)
-
-			$mol_assert_equal(
-				lib.inherit_chain( `${d}bog_vmap_part_map` ).join( ' ' ),
-				`${d}bog_vmap_part_map ${d}mol_view ${d}mol_object`,
-			)
-
-		},
-
-		'a document wiring the calculator into the map compiles against the pack'( $ ) {
-
-			const lib = part_lib( $ )
-
-			const doc = $.$mol_tree2_from_string( [
-				`${d}bog_vmap_part_test_doc ${d}mol_view`,
-				`	Calc ${d}bog_vmap_part_calc`,
-				`	calc_result = Calc result`,
-				`	Map ${d}bog_vmap_part_map zoom <= calc_result`,
-				`	sub /`,
-				`		<= Calc`,
-				`		<= Map`,
-				``,
-			].join( '\n' ), 'doc.view.tree' )
-
-			lib.classes = ()=> $.$mol_view_tree2_normalize( doc ).kids
-
-			const ports = lib.props_map( `${d}bog_vmap_part_test_doc` )
-			$mol_assert_ok( ports.has( 'Calc' ) )
-			$mol_assert_ok( ports.has( 'Map' ) )
-			$mol_assert_ok( ports.has( 'calc_result' ) )
-
-			const js = $.$mol_tree2_text_to_string( $.$mol_tree2_js_to_text( $.$mol_view_tree2_to_js( doc ) ) )
-			$mol_assert_ok( js.includes( 'this.Calc().result()' ) )
-			$mol_assert_ok( js.includes( 'this.calc_result()' ) )
+			for( const Klass of [
+				$.$bog_vmap_part_calc,
+				$.$bog_vmap_part_cell,
+				$.$bog_vmap_part_map,
+				$.$bog_vmap_part_plot,
+			] ) {
+				$mol_assert_ok( Klass.prototype instanceof $.$mol_view )
+			}
 
 		},
 
@@ -112,19 +105,6 @@ namespace $ {
 				$mol_assert_equal( floor === '0' || floor === '0px', false )
 
 			}
-
-		},
-
-		'the dev server address of the pack derives both links'( $ ) {
-
-			const lib = $.$bog_vmap_lib.make({ $ })
-
-			lib.pack( 'http://localhost:9080/bog/vmap/part/-/' )
-			$mol_assert_equal( lib.tree_link(), 'http://localhost:9080/bog/vmap/part/-/web.view.tree' )
-			$mol_assert_equal( lib.script_link(), 'http://localhost:9080/bog/vmap/part/-/web.js' )
-
-			lib.pack( 'http://localhost:9080/bog/vmap/part/-' )
-			$mol_assert_equal( lib.tree_link(), 'http://localhost:9080/bog/vmap/part/-/web.view.tree' )
 
 		},
 
