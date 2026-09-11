@@ -345,6 +345,7 @@
     "$mol_switch",
     "$mol_check_list",
     "$bog_vmap_app_export",
+    "$mol_theme_auto",
     "$mol_button_download",
     "$mol_icon_download",
     "$bog_theme_switch",

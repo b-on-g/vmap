@@ -30470,6 +30470,46 @@ var $;
 
 
 ;
+	($.$mol_theme_auto) = class $mol_theme_auto extends ($.$mol_plugin) {
+		dark(){
+			return "$mol_theme_dark";
+		}
+		theme(){
+			return (this.dark());
+		}
+		light(){
+			return "$mol_theme_light";
+		}
+		attr(){
+			return {"mol_theme": (this.theme())};
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * The [plugin](../../plugin/readme.md) which defines theme based on [mol_lights](../../lights/readme.md).
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_lights_demo
+         */
+        class $mol_theme_auto extends $.$mol_theme_auto {
+            theme() {
+                return this.$.$mol_lights() ? this.light() : this.dark();
+            }
+        }
+        $$.$mol_theme_auto = $mol_theme_auto;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
 "use strict";
 var $;
 (function ($) {
@@ -30533,6 +30573,21 @@ var $;
             ])]);
     }
     $.$bog_vmap_app_export_hooked = $bog_vmap_app_export_hooked;
+    function theme_plug(name) {
+        return `\tplugins /\n\t\t<= ${name} $mol_theme_auto\n`;
+    }
+    function $bog_vmap_app_export_themed(tree) {
+        if (!tree.kids[0])
+            return '';
+        const taken = new Set(this.$mol_view_tree2_class_props(tree).map(prop => this.$mol_view_tree2_prop_parts(prop).name));
+        if (taken.has('plugins'))
+            return '';
+        let name = 'Theme';
+        for (let i = 2; taken.has(name); ++i)
+            name = 'Theme' + i;
+        return theme_plug(name);
+    }
+    $.$bog_vmap_app_export_themed = $bog_vmap_app_export_themed;
     function $bog_vmap_app_export_untyped(js) {
         const out = [];
         const clean = $bog_vmap_app_export_blanked(js);
@@ -30701,7 +30756,9 @@ var $;
         const files = [
             {
                 name: `${name}.view.tree`,
-                text: sorted.map(item => item.tree.toString()).join('')
+                text: sorted.map(item => item.tree.toString() + (router || item.name !== entry
+                    ? ''
+                    : $bog_vmap_app_export_themed.call(this, item.tree))).join('')
                     + (router ? router_tree(router, entry) : ''),
             },
             ...body.includes('export class') ? [{ name: `${name}.view.ts`, text: body }] : [],
@@ -30728,7 +30785,7 @@ var $;
         return name;
     }
     function router_tree(router, doc) {
-        return `${router} $mol_view\n\tDoc ${doc}\n`;
+        return `${router} $mol_view\n${theme_plug('Theme')}\tDoc ${doc}\n`;
     }
     function router_ts(router, pages) {
         const rest = pages.slice(1).map(page => `\t\t\t\tcase ${JSON.stringify(page)}: return [ doc.${page}() ]\n`);
@@ -34148,6 +34205,11 @@ var $;
         return short.slice(0, 1).toUpperCase() + short.slice(1);
     }
     $.$bog_vmap_app_shelf_short = $bog_vmap_app_shelf_short;
+    function $bog_vmap_app_shelf_needs(source) {
+        const draft = $bog_vmap_app_shelf_head.split(' ')[0];
+        return [...new Set(source.match(/\$[a-z][\w]*/g) ?? [])].filter(name => name !== draft);
+    }
+    $.$bog_vmap_app_shelf_needs = $bog_vmap_app_shelf_needs;
     function $bog_vmap_app_shelf_single(klass) {
         const name = $bog_vmap_app_shelf_short(klass);
         return `${$bog_vmap_app_shelf_head}\n\t${name} ${klass}\n\tsub /\n\t\t<= ${name}\n`;
@@ -34494,8 +34556,25 @@ var $;
                     return 'Приложение не отвечает';
                 return this.app_list().length ? 'Объекты приложения' : 'Приложение не подключено';
             }
+            pack_classes() {
+                return this.Palette().Lib().class_list();
+            }
+            pack_known() {
+                if (!this.pack_link())
+                    return null;
+                try {
+                    return new Set(this.pack_classes());
+                }
+                catch {
+                    return null;
+                }
+            }
             items() {
-                return this.$.$bog_vmap_app_shelf_presets();
+                const presets = this.$.$bog_vmap_app_shelf_presets();
+                const known = this.pack_known();
+                if (!known)
+                    return presets;
+                return presets.filter(item => this.$.$bog_vmap_app_shelf_needs(item.source).every(name => known.has(name)));
             }
             item(id) {
                 if (!id)
@@ -34550,6 +34629,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_shelf.prototype, "app_state", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_shelf.prototype, "pack_known", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_shelf.prototype, "item_drag", null);
@@ -37964,6 +38046,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		node_away(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		Overlay(){
 			const obj = new this.$.$bog_vmap_app_pane_overlay();
 			(obj.style) = () => ((this.overlay_style()));
@@ -37972,6 +38058,7 @@ var $;
 			(obj.press) = (next) => ((this.node_press(next)));
 			(obj.move) = (next) => ((this.node_move(next)));
 			(obj.release) = (next) => ((this.node_release(next)));
+			(obj.away) = (next) => ((this.node_away(next)));
 			return obj;
 		}
 		wire_lines(){
@@ -38296,6 +38383,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_press"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_release"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_away"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Overlay"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Wire"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Values"));
@@ -38348,6 +38436,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		away(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		frame_style(id){
 			return {};
 		}
@@ -38379,7 +38471,8 @@ var $;
 				...(super.event()), 
 				"pointerdown": (next) => (this.press(next)), 
 				"pointermove": (next) => (this.move(next)), 
-				"pointerup": (next) => (this.release(next))
+				"pointerup": (next) => (this.release(next)), 
+				"pointerleave": (next) => (this.away(next))
 			};
 		}
 		Frame(id){
@@ -38397,6 +38490,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "press"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "move"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "release"));
+	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "away"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_nw"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_ne"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_sw"));
@@ -39103,12 +39197,25 @@ var $;
                 if (Math.hypot(dx, dy) > click_slack)
                     this.press({ ...press, moved: true });
             }
+            hovered(next) {
+                return next ?? null;
+            }
+            hover_track(event) {
+                if (this.wire_drag() || this.drag() || this.band())
+                    return;
+                this.hovered(this.node_at(this.world_point(event)));
+            }
+            node_away() {
+                this.hovered(null);
+                return null;
+            }
             node_move(event) {
                 if (!event)
                     return;
                 if (this.carrying())
                     return;
                 this.press_track(event);
+                this.hover_track(event);
                 if (this.wire_drag()) {
                     if (!event.buttons)
                         return this.node_release(event);
@@ -39306,7 +39413,7 @@ var $;
                 return found;
             }
             part_spread(name) {
-                return name === this.primary() || name === this.wire_over();
+                return name === this.primary() || name === this.hovered() || name === this.wire_over();
             }
             port_index(name, port) {
                 return Math.max(0, this.part_dots(name).findIndex(known => known.name === port));
@@ -39373,8 +39480,8 @@ var $;
                     }
                     return dots;
                 }
-                const name = this.primary();
-                if (name) {
+                const shown = [this.primary(), this.hovered()].filter(Boolean);
+                for (const name of new Set(shown)) {
                     add(name, 'in', () => true);
                     add(name, 'out', () => true);
                 }
@@ -39744,6 +39851,12 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "band", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "hovered", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "node_away", null);
         __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "part_box", null);

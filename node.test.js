@@ -19932,6 +19932,46 @@ var $;
 
 
 ;
+	($.$mol_theme_auto) = class $mol_theme_auto extends ($.$mol_plugin) {
+		dark(){
+			return "$mol_theme_dark";
+		}
+		theme(){
+			return (this.dark());
+		}
+		light(){
+			return "$mol_theme_light";
+		}
+		attr(){
+			return {"mol_theme": (this.theme())};
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * The [plugin](../../plugin/readme.md) which defines theme based on [mol_lights](../../lights/readme.md).
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_lights_demo
+         */
+        class $mol_theme_auto extends $.$mol_theme_auto {
+            theme() {
+                return this.$.$mol_lights() ? this.light() : this.dark();
+            }
+        }
+        $$.$mol_theme_auto = $mol_theme_auto;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
 "use strict";
 var $;
 (function ($) {
@@ -19995,6 +20035,21 @@ var $;
             ])]);
     }
     $.$bog_vmap_app_export_hooked = $bog_vmap_app_export_hooked;
+    function theme_plug(name) {
+        return `\tplugins /\n\t\t<= ${name} $mol_theme_auto\n`;
+    }
+    function $bog_vmap_app_export_themed(tree) {
+        if (!tree.kids[0])
+            return '';
+        const taken = new Set(this.$mol_view_tree2_class_props(tree).map(prop => this.$mol_view_tree2_prop_parts(prop).name));
+        if (taken.has('plugins'))
+            return '';
+        let name = 'Theme';
+        for (let i = 2; taken.has(name); ++i)
+            name = 'Theme' + i;
+        return theme_plug(name);
+    }
+    $.$bog_vmap_app_export_themed = $bog_vmap_app_export_themed;
     function $bog_vmap_app_export_untyped(js) {
         const out = [];
         const clean = $bog_vmap_app_export_blanked(js);
@@ -20163,7 +20218,9 @@ var $;
         const files = [
             {
                 name: `${name}.view.tree`,
-                text: sorted.map(item => item.tree.toString()).join('')
+                text: sorted.map(item => item.tree.toString() + (router || item.name !== entry
+                    ? ''
+                    : $bog_vmap_app_export_themed.call(this, item.tree))).join('')
                     + (router ? router_tree(router, entry) : ''),
             },
             ...body.includes('export class') ? [{ name: `${name}.view.ts`, text: body }] : [],
@@ -20190,7 +20247,7 @@ var $;
         return name;
     }
     function router_tree(router, doc) {
-        return `${router} $mol_view\n\tDoc ${doc}\n`;
+        return `${router} $mol_view\n${theme_plug('Theme')}\tDoc ${doc}\n`;
     }
     function router_ts(router, pages) {
         const rest = pages.slice(1).map(page => `\t\t\t\tcase ${JSON.stringify(page)}: return [ doc.${page}() ]\n`);
@@ -23366,6 +23423,11 @@ var $;
         return short.slice(0, 1).toUpperCase() + short.slice(1);
     }
     $.$bog_vmap_app_shelf_short = $bog_vmap_app_shelf_short;
+    function $bog_vmap_app_shelf_needs(source) {
+        const draft = $bog_vmap_app_shelf_head.split(' ')[0];
+        return [...new Set(source.match(/\$[a-z][\w]*/g) ?? [])].filter(name => name !== draft);
+    }
+    $.$bog_vmap_app_shelf_needs = $bog_vmap_app_shelf_needs;
     function $bog_vmap_app_shelf_single(klass) {
         const name = $bog_vmap_app_shelf_short(klass);
         return `${$bog_vmap_app_shelf_head}\n\t${name} ${klass}\n\tsub /\n\t\t<= ${name}\n`;
@@ -23712,8 +23774,25 @@ var $;
                     return 'Приложение не отвечает';
                 return this.app_list().length ? 'Объекты приложения' : 'Приложение не подключено';
             }
+            pack_classes() {
+                return this.Palette().Lib().class_list();
+            }
+            pack_known() {
+                if (!this.pack_link())
+                    return null;
+                try {
+                    return new Set(this.pack_classes());
+                }
+                catch {
+                    return null;
+                }
+            }
             items() {
-                return this.$.$bog_vmap_app_shelf_presets();
+                const presets = this.$.$bog_vmap_app_shelf_presets();
+                const known = this.pack_known();
+                if (!known)
+                    return presets;
+                return presets.filter(item => this.$.$bog_vmap_app_shelf_needs(item.source).every(name => known.has(name)));
             }
             item(id) {
                 if (!id)
@@ -23768,6 +23847,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_shelf.prototype, "app_state", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_shelf.prototype, "pack_known", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_shelf.prototype, "item_drag", null);
@@ -29820,6 +29902,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		node_away(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		Overlay(){
 			const obj = new this.$.$bog_vmap_app_pane_overlay();
 			(obj.style) = () => ((this.overlay_style()));
@@ -29828,6 +29914,7 @@ var $;
 			(obj.press) = (next) => ((this.node_press(next)));
 			(obj.move) = (next) => ((this.node_move(next)));
 			(obj.release) = (next) => ((this.node_release(next)));
+			(obj.away) = (next) => ((this.node_away(next)));
 			return obj;
 		}
 		wire_lines(){
@@ -30152,6 +30239,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_press"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_release"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_away"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Overlay"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Wire"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Values"));
@@ -30204,6 +30292,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		away(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		frame_style(id){
 			return {};
 		}
@@ -30235,7 +30327,8 @@ var $;
 				...(super.event()), 
 				"pointerdown": (next) => (this.press(next)), 
 				"pointermove": (next) => (this.move(next)), 
-				"pointerup": (next) => (this.release(next))
+				"pointerup": (next) => (this.release(next)), 
+				"pointerleave": (next) => (this.away(next))
 			};
 		}
 		Frame(id){
@@ -30253,6 +30346,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "press"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "move"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "release"));
+	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "away"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_nw"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_ne"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_sw"));
@@ -30959,12 +31053,25 @@ var $;
                 if (Math.hypot(dx, dy) > click_slack)
                     this.press({ ...press, moved: true });
             }
+            hovered(next) {
+                return next ?? null;
+            }
+            hover_track(event) {
+                if (this.wire_drag() || this.drag() || this.band())
+                    return;
+                this.hovered(this.node_at(this.world_point(event)));
+            }
+            node_away() {
+                this.hovered(null);
+                return null;
+            }
             node_move(event) {
                 if (!event)
                     return;
                 if (this.carrying())
                     return;
                 this.press_track(event);
+                this.hover_track(event);
                 if (this.wire_drag()) {
                     if (!event.buttons)
                         return this.node_release(event);
@@ -31162,7 +31269,7 @@ var $;
                 return found;
             }
             part_spread(name) {
-                return name === this.primary() || name === this.wire_over();
+                return name === this.primary() || name === this.hovered() || name === this.wire_over();
             }
             port_index(name, port) {
                 return Math.max(0, this.part_dots(name).findIndex(known => known.name === port));
@@ -31229,8 +31336,8 @@ var $;
                     }
                     return dots;
                 }
-                const name = this.primary();
-                if (name) {
+                const shown = [this.primary(), this.hovered()].filter(Boolean);
+                for (const name of new Set(shown)) {
                     add(name, 'in', () => true);
                     add(name, 'out', () => true);
                 }
@@ -31600,6 +31707,12 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "band", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "hovered", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "node_away", null);
         __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "part_box", null);
@@ -47312,6 +47425,93 @@ var $;
         },
     });
 })($ || ($ = {}));
+(function ($_4) {
+    const d = '$';
+    const root = `${d}bog_vmap_app_hover`;
+    const ports = [
+        { name: 'result', next: false, own: true, kind: 'number' },
+        { name: 'op', next: true, own: true, kind: 'string' },
+        { name: 'title', next: false, own: false, kind: 'string' },
+    ];
+    const pane_make = ($) => {
+        const peer = { origin: 'null', postMessage() { } };
+        const pane = $$.$bog_vmap_app_pane.make({
+            $,
+            doc_root: () => root,
+            doc_names: () => ['Calc', 'Map'],
+            pane_rect: () => ({ left: 0, top: 0, width: 1000, height: 800 }),
+            scene_peer: () => peer,
+            part_ports: () => ports,
+            wires: () => [],
+        });
+        pane.sizes({
+            [`${root}/Calc`]: { x: 0, y: 0, width: 100, height: 50 },
+            [`${root}/Map`]: { x: 300, y: 0, width: 100, height: 50 },
+        });
+        return pane;
+    };
+    const pointer = (clientX, clientY) => ({
+        button: 0,
+        buttons: 0,
+        pointerId: 1,
+        clientX,
+        clientY,
+        altKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        shiftKey: false,
+        preventDefault() { },
+    });
+    const dots_of = (pane, node) => {
+        return pane.wire_dots().filter(dot => dot.node === node);
+    };
+    $mol_test({
+        'the ports of the node under the pointer come out named'($) {
+            const pane = pane_make($);
+            $mol_assert_equal(dots_of(pane, 'Map').length, 0);
+            pane.node_move(pointer(350, 25));
+            $mol_assert_equal(pane.hovered(), 'Map');
+            const dots = dots_of(pane, 'Map');
+            $mol_assert_equal(dots.length, 4);
+            $mol_assert_equal(dots.every(dot => Boolean(dot.port.name)), true);
+            $mol_assert_like([...new Set(dots.map(dot => dot.port.name))].sort(), ['op', 'result']);
+        },
+        'the pointer off the parts leaves the named ports to the picked one'($) {
+            const pane = pane_make($);
+            pane.picked(['Calc']);
+            pane.node_move(pointer(350, 25));
+            $mol_assert_equal(dots_of(pane, 'Calc').length, 4);
+            $mol_assert_equal(dots_of(pane, 'Map').length, 4);
+            pane.node_move(pointer(700, 400));
+            $mol_assert_equal(pane.hovered(), null);
+            $mol_assert_equal(dots_of(pane, 'Calc').length, 4);
+            $mol_assert_equal(dots_of(pane, 'Map').length, 0);
+        },
+        'the pointer gone off the canvas takes the hover with it'($) {
+            const pane = pane_make($);
+            pane.node_move(pointer(350, 25));
+            $mol_assert_equal(pane.hovered(), 'Map');
+            pane.node_away();
+            $mol_assert_equal(pane.hovered(), null);
+            $mol_assert_equal(dots_of(pane, 'Map').length, 0);
+        },
+        'the picked node stays named while the pointer hovers another'($) {
+            const pane = pane_make($);
+            pane.picked(['Calc']);
+            pane.node_move(pointer(350, 25));
+            const picked = dots_of(pane, 'Calc');
+            $mol_assert_equal(picked.length, 4);
+            $mol_assert_like([...new Set(picked.map(dot => dot.port.name))].sort(), ['op', 'result']);
+        },
+        'a drag in progress keeps the hover out of the dots'($) {
+            const pane = pane_make($);
+            pane.picked(['Calc']);
+            pane.wire_drag({ from: 'Calc', from_prop: 'result', kind: 'number' });
+            pane.node_move(pointer(350, 25));
+            $mol_assert_equal(pane.hovered(), null);
+        },
+    });
+})($ || ($ = {}));
 
 ;
 "use strict";
@@ -48163,6 +48363,38 @@ var $;
             $mol_assert_like(shelf.app_list(), []);
             $mol_assert_equal(shelf.apps_title(), 'Приложение не подключено');
             $mol_assert_ok(shelf.items().length > 4);
+        },
+        'the shelf is cut down to what the pack at hand can build'($) {
+            const shelf = (classes) => $$.$bog_vmap_app_shelf.make({
+                $,
+                pack_link: () => 'https://pack.test/',
+                pack_classes: () => classes,
+            });
+            const ids = (one) => one.items().map(item => item.id);
+            const rich = ids(shelf([
+                `${d}mol_view`, `${d}mol_string`, `${d}mol_number`,
+                `${d}bog_vmap_part_calc`, `${d}bog_vmap_part_map`,
+            ]));
+            const poor = ids(shelf([`${d}mol_view`, `${d}mol_string`]));
+            $mol_assert_equal(rich.includes('calc'), true);
+            $mol_assert_equal(rich.includes('pair'), true);
+            $mol_assert_equal(rich.includes('input_number'), true);
+            $mol_assert_equal(poor.includes('calc'), false);
+            $mol_assert_equal(poor.includes('pair'), false);
+            $mol_assert_equal(poor.includes('input_number'), false);
+            $mol_assert_equal(poor.includes('block'), true);
+            $mol_assert_equal(poor.includes('input_string'), true);
+        },
+        'until the pack answers the shelf keeps offering everything'($) {
+            const shelf = $$.$bog_vmap_app_shelf.make({
+                $,
+                pack_link: () => 'https://pack.test/',
+                pack_classes: () => $mol_fail(new Error('Not Found')),
+            });
+            $mol_assert_equal(shelf.items().length, $bog_vmap_app_shelf_presets().length);
+        },
+        'a preset asks for every class its source names but its own head'($) {
+            $mol_assert_like($.$bog_vmap_app_shelf_needs(preset('calc')), [`${d}mol_view`, `${d}bog_vmap_part_calc`]);
         },
         'files of a module give one source per class, as their author wrote them'($) {
             const text = [
@@ -49120,6 +49352,7 @@ var $;
     function file_of(module, suffix) {
         return module.files.find(file => file.name.endsWith(suffix))?.text ?? '';
     }
+    const theme = `\tplugins /\n\t\t<= Theme ${d}mol_theme_auto\n`;
     $mol_test({
         'module path comes from the class names'($) {
             $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`, `${d}bog_site_hero`]), 'bog/site');
@@ -49204,6 +49437,42 @@ var $;
             $mol_assert_equal(module.root, `${d}bog_site_page`);
             $mol_assert_equal(file_of(module, 'index.html').includes(`mol_view_root="${d}bog_site_page"`), true);
         },
+        'the exported root follows the scheme of the system'($) {
+            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
+            const tree = file_of(module, '.view.tree');
+            $mol_assert_equal(tree, page + theme + hero);
+            $mol_assert_equal(tree.split('plugins /').length, 2);
+        },
+        'the theme plugin lands on the router, not on the page under it'($) {
+            const module = $.$bog_vmap_app_export_build([{ source: pages }, { source: hero }]);
+            const tree = file_of(module, '.view.tree');
+            $mol_assert_equal(module.root, `${d}bog_site_app`);
+            $mol_assert_ok(tree.endsWith(`${d}bog_site_app ${d}mol_view\n${theme}\tDoc ${d}bog_site_page\n`));
+            $mol_assert_equal(tree.split('plugins /').length, 2);
+        },
+        'a document that plugs something in itself is left alone'($) {
+            const own = [
+                `${d}bog_site_page ${d}mol_view`,
+                `	plugins /`,
+                `		<= Hotkey ${d}mol_hotkey`,
+                `	sub /`,
+                ``,
+            ].join('\n');
+            const tree = file_of($.$bog_vmap_app_export_build([{ source: own }]), '.view.tree');
+            $mol_assert_equal(tree.split('plugins /').length, 2);
+            $mol_assert_equal(tree.includes(`${d}mol_theme_auto`), false);
+            $mol_assert_ok(tree.includes(`Hotkey ${d}mol_hotkey`));
+        },
+        'a root with a name of its own gets the next free one'($) {
+            const own = [
+                `${d}bog_site_page ${d}mol_view`,
+                `	Theme ${d}mol_view`,
+                `	sub /`,
+                ``,
+            ].join('\n');
+            const tree = file_of($.$bog_vmap_app_export_build([{ source: own }]), '.view.tree');
+            $mol_assert_ok(tree.includes(`\t\t<= Theme2 ${d}mol_theme_auto\n`));
+        },
         'the workflow builds the module by the stock action and nothing by hand'($) {
             const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
             const yml = file_of(module, '.github/workflows/deploy.yml');
@@ -49277,7 +49546,7 @@ var $;
                 ``,
             ].join('\n');
             const tree = file_of($.$bog_vmap_app_export_build([{ source: board }]), '.view.tree');
-            $mol_assert_equal(tree, board);
+            $mol_assert_equal(tree, board + theme);
             const css = file_of($.$bog_vmap_app_export_build([{ source: board }]), '.view.css');
             $mol_assert_equal(/\bleft\b|\btop\b|position/.test(css), false);
         },
@@ -49285,7 +49554,7 @@ var $;
             const module = $.$bog_vmap_app_export_build([{ source: pages }, { source: hero }]);
             const tree = file_of(module, '.view.tree');
             const ts = file_of(module, '.view.ts');
-            $mol_assert_equal(tree, pages + hero + `${d}bog_site_app ${d}mol_view\n\tDoc ${d}bog_site_page\n`);
+            $mol_assert_equal(tree, pages + hero + `${d}bog_site_app ${d}mol_view\n` + theme + `\tDoc ${d}bog_site_page\n`);
             $mol_assert_equal(tree.indexOf(`${d}bog_site_page `) < tree.indexOf(`${d}bog_site_app `), true);
             $mol_assert_equal(ts.includes(`switch( this.$.${d}mol_state_arg.value( 'page' ) ) {`), true);
             $mol_assert_equal(ts.includes(`case "About": return [ doc.About() ]`), true);
@@ -49309,7 +49578,7 @@ var $;
                 ``,
             ].join('\n');
             const module = $.$bog_vmap_app_export_build([{ source: one }]);
-            $mol_assert_equal(file_of(module, '.view.tree'), one);
+            $mol_assert_equal(file_of(module, '.view.tree'), one + theme);
             $mol_assert_equal(module.root, `${d}bog_site_page`);
             $mol_assert_like(module.files.map(file => file.name), [
                 'page.view.tree',
@@ -49789,7 +50058,7 @@ var $;
             $mol_assert_equal(module.name, 'page');
             $mol_assert_equal(module.files.map(file => file.name).join(' '), 'page.view.tree page.meta.tree index.html README.md'
                 + ' .gitattributes .gitignore .github/workflows/deploy.yml');
-            $mol_assert_equal(module.files[0].text, app.doc_source());
+            $mol_assert_equal(module.files[0].text, app.doc_source() + `\tplugins /\n\t\t<= Theme ${d}mol_theme_auto\n`);
             $mol_assert_equal(app.export_title(), 'Скачать my/site/page');
             $mol_assert_equal(app.export_file(), 'page.zip');
             $mol_assert_ok(app.export_hint().includes('npx mam my/site/page'));
@@ -49867,7 +50136,7 @@ var $;
             const module = app.export_state().module;
             $mol_assert_equal(app.export_ready(), true);
             $mol_assert_equal(module.root, `${d}my_site_page`);
-            $mol_assert_equal(module.files[0].text, `${d}my_site_page ${d}mol_view sub /\n`);
+            $mol_assert_equal(module.files[0].text, `${d}my_site_page ${d}mol_view sub /\n\tplugins /\n\t\t<= Theme ${d}mol_theme_auto\n`);
             $mol_assert_equal(module.path, 'my/site/page');
             $mol_assert_like(module.files.map(file => file.name), [
                 'page.view.tree',
@@ -50171,6 +50440,28 @@ var $;
 var $;
 (function ($_1) {
     const d = '$';
+    $_1.$bog_vmap_app_flow_parts = [
+        `${d}mol_string ${d}mol_view`,
+        `\tvalue? \\`,
+        `${d}mol_number ${d}mol_view`,
+        `\tvalue? 0`,
+        `${d}mol_select ${d}mol_view`,
+        `\tvalue? \\`,
+        `${d}mol_switch ${d}mol_view`,
+        `\tvalue? \\`,
+        `${d}mol_check_box ${d}mol_view`,
+        `\tchecked? false`,
+        `${d}mol_paragraph ${d}mol_view`,
+        `\ttitle \\`,
+        `${d}bog_vmap_part_cell ${d}mol_view`,
+        `\tresult \\`,
+        `${d}bog_vmap_part_plot ${d}mol_view`,
+        `\tseries /`,
+        `${d}bog_vmap_part_calc ${d}mol_view`,
+        `\tresult 0`,
+        `${d}bog_vmap_part_map ${d}mol_view`,
+        `\tzoom 0`,
+    ];
     $_1.$bog_vmap_app_flow_pack = [
         `${d}flow_button ${d}mol_view`,
         `\ttitle \\`,
@@ -50181,6 +50472,7 @@ var $;
         `${d}flow_map ${d}mol_view`,
         `\tzoom 0`,
         `\tmarker \\`,
+        ...$_1.$bog_vmap_app_flow_parts,
         ``,
     ].join('\n');
     $_1.$bog_vmap_app_flow_other = 'http://other.pack/';
@@ -50540,12 +50832,18 @@ var $;
             $mol_assert_ok(shelf.includes('Поле'));
             $mol_assert_ok(shelf.includes('Выбор'));
             const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
-            $mol_assert_like(apps, ['Button', 'Calc', 'Map']);
+            $mol_assert_like(apps, [
+                'Button', 'Calc', 'Map',
+                'Vmap_part_cell', 'Vmap_part_plot', 'Vmap_part_calc', 'Vmap_part_map',
+            ]);
             $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_palette_class_row]'), null);
             stage.classes_open();
             const rows = [...stage.root.querySelectorAll('[bog_vmap_app_palette_class_row]')]
                 .map(el => el.textContent);
-            $mol_assert_like(rows, [`${d}mol_view`, button, calc, map]);
+            $mol_assert_like(rows, [
+                `${d}mol_view`, button, calc, map,
+                ...$_2.$bog_vmap_app_flow_parts.filter(line => line[0] === '$').map(line => line.split(' ')[0]),
+            ]);
             $mol_assert_like(stage.broken(), [stage.pane.Scene(stage.pane.scene_key()).dom_id()]);
         },
         'a ready made pair lands wired, by one click on the shelf'($) {
@@ -51042,7 +51340,10 @@ var $;
             stage.scene.hello();
             $mol_assert_equal(stage.app.links(), '');
             const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
-            $mol_assert_like(apps, ['Button', 'Calc', 'Map']);
+            $mol_assert_like(apps, [
+                'Button', 'Calc', 'Map',
+                'Vmap_part_cell', 'Vmap_part_plot', 'Vmap_part_calc', 'Vmap_part_map',
+            ]);
         },
     });
 })($ || ($ = {}));
