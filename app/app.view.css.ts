@@ -133,6 +133,11 @@ namespace $.$$ {
 			color: $mol_theme.back,
 		},
 
+		Stall_pack: {
+			flex: { shrink: 0 },
+			color: $mol_theme.back,
+		},
+
 	} )
 
 }

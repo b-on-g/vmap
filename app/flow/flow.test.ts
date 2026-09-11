@@ -904,6 +904,9 @@ namespace $ {
 			stage.redraw()
 
 			const generation = stage.pane.scene_generation()
+
+			$mol_assert_ok( stage.pane.watchdog() !== null )
+
 			const watch = stage.timers.filter( timer => timer.delay === stage.pane.cold_limit() ).at( -1 )!
 			$mol_assert_ok( watch )
 

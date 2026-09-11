@@ -278,7 +278,9 @@ namespace $.$$ {
 
 			this.poke_direct()
 
-			if( this.poke_at <= this.answer_at() ) return null
+			const held = !this.warmed() && Boolean( this.pack_note() )
+
+			if( !held && this.poke_at <= this.answer_at() ) return null
 
 			const limit = this.warmed() ? this.answer_limit() : this.cold_limit()
 

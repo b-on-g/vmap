@@ -1107,9 +1107,16 @@ namespace $ {
 			const { pane, answer } = pane_make( $ )
 
 			answer({ kind: 'ready' })
-			answer({ kind: 'error', at: 'pack', message: 'Загрузка библиотеки компонентов… http://dead.test/web.js' } )
-
 			pane.watchdog()
+			answer({ kind: 'sizes', sizes: {} })
+
+			$mol_assert_equal( pane.watchdog(), null )
+
+			answer({ kind: 'error', at: 'pack', message: 'Загрузка библиотеки компонентов… http://dead.test/web.js' } )
+			pane.warmed( false )
+
+			$mol_assert_ok( pane.watchdog() !== null )
+			$mol_assert_equal( timers.at( -1 )!.delay, pane.cold_limit() )
 
 			const generation = pane.scene_generation()
 
