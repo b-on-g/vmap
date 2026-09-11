@@ -1302,10 +1302,17 @@ namespace $.$$ {
 			}
 
 			if( message.kind === 'error' ) {
-				const at = message.at === 'compile' ? 'compile' : 'runtime'
+				const at = message.at === 'compile' ? 'compile'
+					: message.at === 'pack' ? 'pack'
+					: 'runtime'
 
 				if( message.message === null ) {
 					this.error_at( at, '' )
+					return
+				}
+
+				if( at === 'pack' ) {
+					this.error_at( at, message.message )
 					return
 				}
 
