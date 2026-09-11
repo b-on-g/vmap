@@ -350,15 +350,21 @@ namespace $ {
 
 			const page = stage.pane.part_box( 'Page' )!
 
-			stage.drop( calc, stage.client([ page.left + 200, page.top + 40 ]) )
-			stage.drop( map, stage.client([ page.left + 200, page.top + 250 ]) )
+			const zoom = stage.pane.camera_zoom()
+			const inside = ( x: number, y: number )=> stage.client([
+				page.left + x * zoom,
+				page.top + y * zoom,
+			])
+
+			stage.drop( calc, inside( 200, 40 ) )
+			stage.drop( map, inside( 200, 250 ) )
 
 			const node = stage.app.node()
 			$mol_assert_like( node.sub_names( 'Page' ), [ 'Calc', 'Map' ] )
 
 			const overlay = stage.overlay()
 			const from = stage.part_center( 'Map' )
-			const to = stage.client([ page.left + 200, page.top + 5 ])
+			const to = inside( 200, 5 )
 
 			stage.press( overlay, from )
 			stage.move( overlay, to )
@@ -1894,6 +1900,121 @@ namespace $ {
 			$mol_assert_equal( stage.app.selected(), 'Image' )
 			$mol_assert_ok( stage.app.doc_source().includes( `uri \\${ uri }` ) )
 			$mol_assert_like( stage.app.spots(), { Image: { x: 300, y: 200 } } )
+
+		},
+
+	})
+
+}
+
+namespace $ {
+	const d = '$'
+
+	const root = `${d}bog_vmap_app_board`
+
+	const pane_make = ( $: $mol_ambient_context, width: number, height: number )=> {
+		const peer = { origin: 'null', postMessage() {} }
+
+		const pane = $$.$bog_vmap_app_pane.make({
+			$,
+			doc_root: ()=> root,
+			doc_names: ()=> [ 'Near', 'Far' ],
+			pane_rect: ()=> ({ left: 0, top: 0, width, height }),
+			scene_peer: ()=> peer,
+		})
+
+		const screen = ( box: $bog_vmap_bridge_rect )=> {
+			const zoom = pane.camera_zoom()
+			const shift = pane.camera_shift()
+			return {
+				left: box.x * zoom + shift[0],
+				top: box.y * zoom + shift[1],
+				right: ( box.x + box.width ) * zoom + shift[0],
+				bottom: ( box.y + box.height ) * zoom + shift[1],
+			}
+		}
+
+		const inside = ( box: $bog_vmap_bridge_rect )=> {
+			const seen = screen( box )
+			return seen.left >= 0 && seen.top >= 0 && seen.right <= width && seen.bottom <= height
+		}
+
+		return { pane, screen, inside }
+	}
+
+	$mol_test({
+		'a board wider than the pane is fitted whole and centred'( $ ) {
+			const { pane, screen, inside } = pane_make( $, 600, 500 )
+
+			const board = { x: -340, y: 250, width: 1280, height: 720 }
+
+			$mol_assert_ok( Boolean( pane.camera_fit([ board ]) ) )
+			$mol_assert_equal( pane.camera_zoom(), ( 600 - 48 ) / 1280 )
+			$mol_assert_equal( inside( board ), true )
+
+			const seen = screen( board )
+			$mol_assert_equal( Math.round( ( seen.left + seen.right ) / 2 ), 300 )
+			$mol_assert_equal( Math.round( ( seen.top + seen.bottom ) / 2 ), 250 )
+
+		},
+
+		'fitting a small box never zooms past life size'( $ ) {
+			const { pane, inside } = pane_make( $, 600, 500 )
+
+			const box = { x: 0, y: 0, width: 40, height: 20 }
+
+			pane.camera_fit([ box ])
+
+			$mol_assert_equal( pane.camera_zoom(), 1 )
+			$mol_assert_equal( inside( box ), true )
+
+		},
+
+		'reset view brings every free node into the frame'( $ ) {
+			const { pane, inside } = pane_make( $, 600, 500 )
+
+			const near = { x: -600, y: -400, width: 200, height: 100 }
+			const far = { x: 1800, y: 900, width: 200, height: 100 }
+
+			pane.sizes({ [ `${ root }/Near` ]: near, [ `${ root }/Far` ]: far })
+
+			pane.camera_shift( new $mol_vector_2d( 700, 700 ) )
+			pane.camera_zoom( 4 )
+
+			pane.camera_reset()
+
+			$mol_assert_equal( inside( near ), true )
+			$mol_assert_equal( inside( far ), true )
+
+		},
+
+		'reset view on an empty document goes back to the origin'( $ ) {
+			const { pane } = pane_make( $, 600, 500 )
+
+			pane.camera_shift( new $mol_vector_2d( 700, 700 ) )
+			pane.camera_zoom( 4 )
+
+			pane.camera_reset()
+
+			$mol_assert_equal( pane.camera_zoom(), 1 )
+			$mol_assert_like( [ ... pane.camera_shift() ], [ 0, 0 ] )
+
+		},
+
+		'a node laid out inside a board does not stretch the reset'( $ ) {
+			const { pane, inside } = pane_make( $, 600, 500 )
+
+			const board = { x: 500, y: 400, width: 400, height: 300 }
+
+			pane.sizes({
+				[ `${ root }/Near` ]: board,
+				[ `${ root }/Near/Far` ]: { x: 520, y: 420, width: 100, height: 50 },
+			})
+
+			pane.camera_reset()
+
+			$mol_assert_equal( pane.camera_zoom(), 1 )
+			$mol_assert_equal( inside( board ), true )
 
 		},
 

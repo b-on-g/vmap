@@ -55,10 +55,55 @@ namespace $.$$ {
 			return { x: -shift[0] / zoom, y: -shift[1] / zoom, zoom }
 		}
 
+		fit_gap() { return 24 }
+
+		box_union( boxes: readonly $bog_vmap_bridge_rect[] ) {
+			let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity
+
+			for( const box of boxes ) {
+				if( !( box.width > 0 ) || !( box.height > 0 ) ) continue
+				left = Math.min( left, box.x )
+				top = Math.min( top, box.y )
+				right = Math.max( right, box.x + box.width )
+				bottom = Math.max( bottom, box.y + box.height )
+			}
+
+			if( !( right > left ) || !( bottom > top ) ) return null
+
+			return { x: left, y: top, width: right - left, height: bottom - top }
+		}
+
+		@ $mol_action
+		override camera_fit( next?: readonly $bog_vmap_bridge_rect[] | null ) {
+			const box = this.box_union( next ?? [] )
+			const rect = this.pane_rect()
+
+			if( !box || !rect.width || !rect.height ) return null
+
+			const gap = this.fit_gap()
+
+			const zoom = this.camera_zoom( Math.min(
+				1,
+				Math.max( rect.width - gap * 2, 1 ) / box.width,
+				Math.max( rect.height - gap * 2, 1 ) / box.height,
+			) )
+
+			this.camera_shift( new this.$.$mol_vector_2d(
+				rect.width / 2 - ( box.x + box.width / 2 ) * zoom,
+				rect.height / 2 - ( box.y + box.height / 2 ) * zoom,
+			) )
+
+			return box
+		}
+
 		@ $mol_action
 		override camera_reset() {
+			if( this.camera_fit( this.free_boxes() ) ) return null
+
 			this.camera_zoom( 1 )
 			this.camera_shift( new this.$.$mol_vector_2d( 0, 0 ) )
+
+			return null
 		}
 
 		override zoom_title() {
@@ -361,6 +406,10 @@ namespace $.$$ {
 
 		free_names() {
 			return this.nodes_measured().filter( node => node.path.length === 1 ).map( node => node.name )
+		}
+
+		free_boxes() {
+			return this.nodes_measured().filter( node => node.path.length === 1 ).map( node => node.box )
 		}
 
 		override world_center(): readonly number[] {

@@ -218,6 +218,33 @@ namespace $ {
 
 		},
 
+		'a new artboard lands where the camera shows the whole of it'( $ ) {
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+			const pane = app.Pane() as $$.$bog_vmap_app_pane
+
+			pane.view_rect = ()=> ({
+				left: 0, top: 0, width: 600, height: 500, right: 600, bottom: 500,
+			})
+
+			app.board_add()
+
+			const size = app.board_size()
+			const spot = app.spots()[ 'Page' ]
+			const zoom = pane.camera_zoom()
+			const shift = pane.camera_shift()
+
+			$mol_assert_equal( zoom, ( 600 - 48 ) / size.width )
+
+			const left = spot.x * zoom + shift[0]
+			const top = spot.y * zoom + shift[1]
+
+			$mol_assert_equal( Math.round( left ), 24 )
+			$mol_assert_equal( Math.round( left + size.width * zoom ), 576 )
+			$mol_assert_ok( top >= 0 )
+			$mol_assert_ok( top + size.height * zoom <= 500 )
+
+		},
+
 		'the direction a container is set to comes off the document'( $ ) {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 

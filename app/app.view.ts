@@ -844,10 +844,15 @@ namespace $.$$ {
 			return ''
 		}
 
+		board_size() {
+			return { width: 1280, height: 720 }
+		}
+
 		board_style() {
+			const size = this.board_size()
 			return {
-				width: '1280px',
-				minHeight: '720px',
+				width: `${ size.width }px`,
+				minHeight: `${ size.height }px`,
 				flexDirection: 'column',
 				background: '#ffffff',
 			} as { readonly [ key: string ]: string }
@@ -870,10 +875,16 @@ namespace $.$$ {
 			node.sub_open( name )
 			node.sub_add( name )
 
-			const spot = this.Pane().world_center()
-			this.spots({ ... this.spots(), [ name ]: { x: spot[0], y: spot[1] } })
+			const pane = this.Pane()
+			const size = this.board_size()
+			const spot = pane.free_spot()
+
+			const box = { x: spot[0] - size.width / 2, y: spot[1], ... size }
+			this.spots({ ... this.spots(), [ name ]: { x: box.x, y: box.y } })
 
 			this.selected( name )
+
+			pane.camera_fit([ box ])
 
 		}
 

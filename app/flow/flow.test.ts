@@ -821,7 +821,14 @@ namespace $ {
 
 			stage.click( stage.button( 'Сбросить вид' ) )
 			$mol_assert_ok( stage.text().includes( '100%' ) )
-			$mol_assert_like( [ ... stage.pane.camera_shift() ], [ 0, 0 ] )
+
+			const size = $bog_vmap_app_flow_size
+			const shift = stage.pane.camera_shift()
+
+			$mol_assert_like(
+				[ 300 + size.width / 2 + shift[0], 100 + size.height / 2 + shift[1] ],
+				[ $bog_vmap_app_flow_rect.width / 2, $bog_vmap_app_flow_rect.height / 2 ],
+			)
 
 			$mol_assert_equal( stage.app.doc_source(), source )
 
@@ -840,14 +847,20 @@ namespace $ {
 			const page = stage.pane.part_box( 'Page' )!
 			$mol_assert_ok( page )
 
-			stage.drop( calc, stage.client([ page.left + 200, page.top + 40 ]) )
-			stage.drop( map, stage.client([ page.left + 200, page.top + 250 ]) )
+			const zoom = stage.pane.camera_zoom()
+			const inside = ( x: number, y: number )=> stage.client([
+				page.left + x * zoom,
+				page.top + y * zoom,
+			])
+
+			stage.drop( calc, inside( 200, 40 ) )
+			stage.drop( map, inside( 200, 250 ) )
 
 			$mol_assert_like( node.sub_names( 'Page' ), [ 'Calc', 'Map' ] )
 			$mol_assert_like( Object.keys( stage.app.spots() ), [ 'Page' ] )
 			$mol_assert_equal( stage.app.doc_source().includes( '\t\tsub /\n\t\t\t<= Calc\n\t\t\t<= Map\n' ), true )
 
-			stage.tap( stage.client([ page.left + 200, page.top + 250 ]) )
+			stage.tap( inside( 200, 250 ) )
 			$mol_assert_equal( stage.app.selected(), 'Page' )
 
 			stage.click( stage.check( 'рядом' ) )
@@ -860,7 +873,7 @@ namespace $ {
 			$mol_assert_equal( first.top, second.top )
 			$mol_assert_ok( second.left > first.left )
 
-			stage.drop( button, stage.client([ page.left + 20, page.top + 20 ]) )
+			stage.drop( button, inside( 20, 20 ) )
 			$mol_assert_like( node.sub_names( 'Page' ), [ 'Button', 'Calc', 'Map' ] )
 
 		},
