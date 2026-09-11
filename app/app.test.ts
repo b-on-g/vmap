@@ -218,6 +218,26 @@ namespace $ {
 
 		},
 
+		'an artboard carried into the download takes a colour with its background'( $ ) {
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			app.board_add()
+
+			const module = app.export_state().module!
+			const tree = module.files.find( file => file.name.endsWith( '.view.tree' ) )!.text
+
+			const styled = ( prop: string )=> tree.split( '\n' )
+				.map( line => line.trim() )
+				.find( line => line.startsWith( prop + ' \\' ) )
+				?.slice( prop.length + 2 ) ?? ''
+
+			$mol_assert_equal( styled( 'background' ), 'var(--mol_theme_back)' )
+			$mol_assert_equal( styled( 'color' ), 'var(--mol_theme_text)' )
+
+			$mol_assert_equal( /#[0-9a-f]{3,8}/i.test( tree ), false )
+
+		},
+
 		'a new artboard lands where the camera shows the whole of it'( $ ) {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 			const pane = app.Pane() as $$.$bog_vmap_app_pane

@@ -861,7 +861,8 @@ namespace $.$$ {
 				width: `${ size.width }px`,
 				minHeight: `${ size.height }px`,
 				flexDirection: 'column',
-				background: '#ffffff',
+				background: 'var(--mol_theme_back)',
+				color: 'var(--mol_theme_text)',
 			} as { readonly [ key: string ]: string }
 		}
 
