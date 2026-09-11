@@ -37979,7 +37979,7 @@ declare namespace $.$$ {
         text(next?: string): string;
         list(next?: readonly unknown[]): readonly unknown[];
         tupl(next?: [readonly string[], readonly unknown[]]): [readonly string[], readonly unknown[]];
-        head(): ($.$mol_string | $mol_button_minor | $.$mol_number | $.$mol_textarea | $.$mol_bigint_field | $.$mol_date)[];
+        head(): ($.$mol_string | $mol_button_minor | $.$mol_number | $.$mol_bigint_field | $.$mol_date | $.$mol_textarea)[];
         body(): $mol_bar[];
         item_key(index: number): string | number;
         item_val(index: number, next?: unknown): unknown;
