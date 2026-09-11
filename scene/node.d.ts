@@ -2419,6 +2419,10 @@ declare namespace $ {
         readonly kind: 'values_want';
         /** Either a property of the root class, or `Part.port` of a part of it. */
         readonly names: readonly string[];
+    } | {
+        readonly kind: 'theme_set';
+        /** Value of the `mol_theme` attribute the host wears right now. */
+        readonly theme: string;
     };
     /** Scene to host. */
     type $bog_vmap_bridge_up = {
@@ -3388,6 +3392,9 @@ declare namespace $.$$ {
         libs_css_attach(): HTMLStyleElement | null;
         spots_css(): string;
         styles_sweep(keep: string): void;
+        theme(next?: string | null): string | null;
+        scheme(): "light" | "dark";
+        scheme_attach(): "light" | "dark";
         stage(): readonly $mol_view_content[];
         post(message: $bog_vmap_bridge_up): void;
         values_wanted(next?: readonly string[]): readonly string[];

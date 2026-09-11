@@ -8396,6 +8396,32 @@ var $;
             made.doc_src(`${d}visible_asset ${d}mol_view\n\ttitle \\${uri}\n`);
             $mol_assert_ok(made.doc_tree().toString().includes(uri));
         },
+        'the theme named by the host is worn by the scene and by the frame'($) {
+            const { made } = scene($);
+            const dom = $.$mol_dom_context;
+            $mol_assert_equal(made.theme(), null);
+            $mol_assert_equal(made.scheme(), 'dark');
+            deliver($, made, { kind: 'theme_set', theme: '$mol_theme_light' });
+            $mol_assert_equal(made.theme(), '$mol_theme_light');
+            $mol_assert_equal(made.dom_node_actual().getAttribute('mol_theme'), '$mol_theme_light');
+            $mol_assert_equal(made.scheme(), 'light');
+            made.scheme_attach();
+            $mol_assert_equal(dom.document.documentElement.style.colorScheme, 'light');
+            deliver($, made, { kind: 'theme_set', theme: '$mol_theme_dark' });
+            $mol_assert_equal(made.scheme(), 'dark');
+            made.scheme_attach();
+            $mol_assert_equal(dom.document.documentElement.style.colorScheme, 'dark');
+        },
+        'a theme named by a stranger is not heard'($) {
+            const { made } = scene($);
+            const dom = $.$mol_dom_context;
+            const event = new dom.MessageEvent('message', {
+                data: { ns: $bog_vmap_bridge_ns, kind: 'theme_set', theme: '$mol_theme_light' },
+            });
+            Object.defineProperty(event, 'source', { value: {} });
+            made.message_receive(event);
+            $mol_assert_equal(made.theme(), null);
+        },
     });
 })($ || ($ = {}));
 

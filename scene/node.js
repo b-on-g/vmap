@@ -9162,6 +9162,17 @@ var $;
                     el.remove();
                 }
             }
+            theme(next) {
+                return next ?? null;
+            }
+            scheme() {
+                return this.theme()?.includes('light') ? 'light' : 'dark';
+            }
+            scheme_attach() {
+                const scheme = this.scheme();
+                this.$.$mol_dom_context.document.documentElement.style.colorScheme = scheme;
+                return scheme;
+            }
             stage() {
                 this.css_attach();
                 this.spots_attach();
@@ -9220,6 +9231,9 @@ var $;
                     }
                     case 'pack_set':
                         this.pack_uri(String(message.uri ?? ''));
+                        return;
+                    case 'theme_set':
+                        this.theme(String(message.theme ?? ''));
                         return;
                     case 'css_set':
                         this.doc_css(message.css);
@@ -9405,6 +9419,7 @@ var $;
                     this.pack_task(),
                     this.report_task(),
                     this.values_task(),
+                    this.scheme_attach(),
                 ];
             }
         }
@@ -9504,6 +9519,12 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "libs_css_attach", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "theme", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "scheme_attach", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "stage", null);
