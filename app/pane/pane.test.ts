@@ -827,7 +827,7 @@ namespace $ {
 			const at = ( x: number, y: number )=> $bog_vmap_app_wire_dot_at( dots, [ x, y ] )
 
 			$mol_assert_equal( at( -12, 227 )?.node, 'Map' )
-			$mol_assert_equal( at( -12, 110 )?.node, 'Map_2' )
+			$mol_assert_equal( at( -12, 7 )?.node, 'Map_2' )
 
 			$mol_assert_equal( dots.filter( dot => dot.node === 'Map' ).length, 2 )
 			$mol_assert_equal( dots.filter( dot => dot.node === 'Map_2' ).length, 1 )
@@ -878,6 +878,14 @@ namespace $ {
 			$mol_assert_equal( Math.abs( cost[1] - total[1] ) > $bog_vmap_app_wire_hit, true )
 			$mol_assert_equal( at( cost[0], cost[1] )?.node, 'Cost' )
 			$mol_assert_equal( at( total[0], total[1] )?.node, 'Total' )
+
+			pane.wire_point( cost )
+
+			const opened = pane.wire_dots().filter( dot => dot.node === 'Cost' )
+
+			$mol_assert_equal( opened.length, own.length )
+			$mol_assert_like( [ opened[ 0 ].x, opened[ 0 ].y ], [ cost[0], cost[1] ] )
+			$mol_assert_equal( opened[ 0 ].port.name, 'left' )
 
 		},
 
@@ -1220,7 +1228,7 @@ namespace $ {
 
 			$mol_assert_like(
 				pane.wire_dots().map( dot => [ dot.node, dot.port.name, dot.side, dot.x, dot.y, dot.lit ] ),
-				[ [ 'Map', 'zoom', 'in', 688, 100, true ] ],
+				[ [ 'Map', 'zoom', 'in', 688, 57, true ] ],
 			)
 
 			pane.node_move( pointer( 710, 60 ) )
@@ -1245,11 +1253,13 @@ namespace $ {
 
 			$mol_assert_equal( pane.wire_lines().length, 1 )
 			$mol_assert_equal( pane.wire_lines()[0].geometry.startsWith( 'M 312 57 C' ), true )
-			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 688 100' ), true )
+			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 688 57' ), true )
 			$mol_assert_equal( pane.wire_dots().find( dot => dot.port.name === 'zoom' )?.linked, undefined )
 
+			const folded = pane.wire_lines()[0].geometry
+
 			pane.picked([ 'Map' ])
-			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 688 57' ), true )
+			$mol_assert_equal( pane.wire_lines()[0].geometry, folded )
 			$mol_assert_equal( pane.wire_dots().find( dot => dot.port.name === 'zoom' && dot.side === 'in' )?.linked, true )
 
 		},
@@ -1334,11 +1344,13 @@ namespace $ {
 
 			answer({ kind: 'sizes', sizes: { [ `${root}/Calc` ]: box( 0, 100 ) } })
 			$mol_assert_equal( pane.wire_lines().length, 1 )
-			$mol_assert_equal( pane.wire_lines()[0].geometry.startsWith( 'M 112 125 C' ), true )
-			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 288 25' ), true )
+			$mol_assert_equal( pane.wire_lines()[0].geometry.startsWith( 'M 112 107 C' ), true )
+			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 288 7' ), true )
+
+			const folded = pane.wire_lines()[0].geometry
 
 			pane.picked([ 'Calc' ])
-			$mol_assert_equal( pane.wire_lines()[0].geometry.startsWith( 'M 112 107 C' ), true )
+			$mol_assert_equal( pane.wire_lines()[0].geometry, folded )
 
 		},
 

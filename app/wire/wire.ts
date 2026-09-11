@@ -97,11 +97,7 @@ namespace $ {
 		box: $bog_vmap_app_wire_box,
 		side: $bog_vmap_app_wire_side,
 	): readonly [ number, number ] {
-		const x = side === 'in'
-			? box.left - $bog_vmap_app_wire_gap
-			: box.left + box.width + $bog_vmap_app_wire_gap
-
-		return [ x, box.top + box.height / 2 ]
+		return $bog_vmap_app_wire_port_point( box, side, 0 )
 	}
 
 	export function $bog_vmap_app_wire_over(

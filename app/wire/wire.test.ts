@@ -112,7 +112,21 @@ namespace $ {
 			$mol_assert_equal( own[0], next[0] )
 			$mol_assert_equal( Math.abs( own[1] - next[1] ) > $bog_vmap_app_wire_hit, true )
 
-			$mol_assert_like( own, [ 0 - $bog_vmap_app_wire_gap, height / 2 ] )
+			$mol_assert_like( own, [ 0 - $bog_vmap_app_wire_gap, $bog_vmap_app_wire_row / 2 ] )
+
+		},
+
+		'opening the column leaves the point of the first port where it was'( $ ) {
+			for( const b of [ box( 0, 0, 200, 17 ), box( 100, 200, 60, 30 ), box( -40, -10, 1280, 720 ) ] ) {
+				for( const side of [ 'in', 'out' ] as const ) {
+
+					$mol_assert_like(
+						$bog_vmap_app_wire_side_point( b, side ),
+						$bog_vmap_app_wire_port_point( b, side, 0 ),
+					)
+
+				}
+			}
 
 		},
 
