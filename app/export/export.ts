@@ -358,6 +358,10 @@ namespace $ {
 			... style ? [ { name: `${ name }.view.css`, text: style } ] : [],
 			{ name: `${ name }.meta.tree`, text: 'include \\/mol/theme/auto\n' },
 			{ name: 'index.html', text: index_html( router || entry ) },
+			{ name: 'README.md', text: readme_md( path, name ) },
+			{ name: '.gitattributes', text: '*\t-text\n' },
+			{ name: '.gitignore', text: '-*\n.DS_Store\n' },
+			{ name: '.github/workflows/deploy.yml', text: deploy_yml( path ) },
 		]
 
 		return { path, name, root: router || entry, files }
@@ -518,6 +522,75 @@ namespace $ {
 			'\t\t<script src="web.js"></script>',
 			'\t</body>',
 			'</html>',
+			'',
+		].join( '\n' )
+	}
+
+	function readme_md( path: string, name: string ) {
+		return [
+			`# ${ name }`,
+			'',
+			'Приложение, собранное в редакторе vmap и выгруженное паком MAM.',
+			'',
+			'Сборка: клонировать https://github.com/hyoo-ru/mam, положить этот репозиторий'
+				+ ` в \`${ path }\` и выполнить \`npm start ${ path }\`.`
+				+ ` Страница ложится в \`${ path }/-/index.html\`.`,
+			'',
+			'Публикация: прогон `.github/workflows/deploy.yml` на ветке `main` кладёт сборку'
+				+ ' в ветку `gh-pages`. Настройки репозитория, Pages, Deploy from a branch,'
+				+ ' ветка `gh-pages`, папка `/ (root)`.',
+			'',
+		].join( '\n' )
+	}
+
+	function deploy_yml( path: string ) {
+		return [
+			`name: ${ '$' + path.replace( /\//g, '_' ) }`,
+			'',
+			'permissions: write-all',
+			'',
+			'on:',
+			'  workflow_dispatch:',
+			'  push:',
+			'    branches: [ main ]',
+			'',
+			'concurrency:',
+			'  group: deploy-${{ github.ref }}',
+			'  cancel-in-progress: true',
+			'',
+			'jobs:',
+			'',
+			'  build:',
+			'    runs-on: ubuntu-latest',
+			'',
+			'    steps:',
+			'',
+			'    - uses: hyoo-ru/mam_build@master2',
+			'      with:',
+			`        package: '${ path }'`,
+			'',
+			'    - name: Audits',
+			'      run: |',
+			'        set -euo pipefail',
+			`        grep -q 'Audit passed' ${ path }/-/web.audit.js`,
+			`        grep -q 'Audit passed' ${ path }/-/node.audit.js`,
+			'',
+			'    - name: Cache-bust the bundle',
+			'      run: |',
+			'        set -euo pipefail',
+			'        sed -i "s|src=\\"web.js\\"|src=\\"web.js?v=${GITHUB_SHA::7}\\"|"'
+				+ ` ${ path }/-/index.html`,
+			`        grep -q "web.js?v=\${GITHUB_SHA::7}" ${ path }/-/index.html`,
+			'',
+			'    - uses: hyoo-ru/gh-deploy@v4.4.1',
+			'      with:',
+			`        folder: '${ path }/-'`,
+			'',
+			'    - name: URL',
+			'      run: |',
+			'        set -euo pipefail',
+			'        echo "- https://${{ github.repository_owner }}.github.io/'
+				+ '${{ github.event.repository.name }}/" >> "$GITHUB_STEP_SUMMARY"',
 			'',
 		].join( '\n' )
 	}

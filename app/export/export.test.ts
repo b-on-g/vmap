@@ -199,6 +199,35 @@ namespace $ {
 
 		},
 
+		'the workflow builds the module by the stock action and nothing by hand'( $ ) {
+
+			const module = $.$bog_vmap_app_export_build([ { source: page }, { source: hero } ])
+			const yml = file_of( module, '.github/workflows/deploy.yml' )
+
+			$mol_assert_ok( yml.includes( 'uses: hyoo-ru/mam_build@master2' ) )
+			$mol_assert_ok( yml.includes( `package: '${ module.path }'` ) )
+			$mol_assert_ok( yml.includes( `folder: '${ module.path }/-'` ) )
+
+			$mol_assert_equal( yml.includes( 'git clone' ), false )
+			$mol_assert_equal( yml.includes( 'npm start' ), false )
+			$mol_assert_equal( yml.includes( 'bog/vmap' ), false )
+
+			$mol_assert_equal( file_of( module, '.gitattributes' ), '*\t-text\n' )
+			$mol_assert_ok( file_of( module, '.gitignore' ).startsWith( '-*' ) )
+
+		},
+
+		'the readme names the module path, not the editor'( $ ) {
+
+			const module = $.$bog_vmap_app_export_build([ { source: page }, { source: hero } ])
+			const readme = file_of( module, 'README.md' )
+
+			$mol_assert_ok( readme.startsWith( `# ${ module.name }\n` ) )
+			$mol_assert_ok( readme.includes( `npm start ${ module.path }` ) )
+			$mol_assert_equal( readme.includes( 'bog/vmap' ), false )
+
+		},
+
 		'the module is the files a person would have written'( $ ) {
 
 			const module = $.$bog_vmap_app_export_build([ { source: page }, { source: hero } ])
@@ -212,6 +241,10 @@ namespace $ {
 					'site.view.tree',
 					'site.meta.tree',
 					'index.html',
+					'README.md',
+					'.gitattributes',
+					'.gitignore',
+					'.github/workflows/deploy.yml',
 				],
 			)
 
@@ -228,6 +261,10 @@ namespace $ {
 					'site.view.css',
 					'site.meta.tree',
 					'index.html',
+					'README.md',
+					'.gitattributes',
+					'.gitignore',
+					'.github/workflows/deploy.yml',
 				],
 			)
 
@@ -329,7 +366,15 @@ namespace $ {
 			$mol_assert_equal( module.root, `${d}bog_site_page` )
 			$mol_assert_like(
 				module.files.map( file => file.name ),
-				[ 'page.view.tree', 'page.meta.tree', 'index.html' ],
+				[
+					'page.view.tree',
+					'page.meta.tree',
+					'index.html',
+					'README.md',
+					'.gitattributes',
+					'.gitignore',
+					'.github/workflows/deploy.yml',
+				],
 			)
 
 		},
