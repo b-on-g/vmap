@@ -5,8 +5,7 @@ namespace $.$$ {
 		override body() {
 			return [
 				this.Title(),
-				this.Source(),
-				... this.classes_showed() ? [] : [ this.Stack() ],
+				... this.classes_showed() ? [ this.Source() ] : [ this.Stack() ],
 				this.Level(),
 				... this.classes_showed() ? [ this.Palette() ] : [],
 			] as readonly $mol_view[]
@@ -14,6 +13,7 @@ namespace $.$$ {
 
 		stack_content() {
 			return [
+				this.Source(),
 				this.Items(),
 				this.Apps(),
 			] as readonly $mol_view[]

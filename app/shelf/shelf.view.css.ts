@@ -46,7 +46,7 @@ namespace $.$$ {
 
 		Source: {
 			flex: { direction: 'column', shrink: 0 },
-			padding: { left: $mol_gap.space, right: $mol_gap.space },
+			padding: { left: $mol_gap.space, right: $mol_gap.space, top: $mol_gap.space },
 			gap: $mol_gap.space,
 		},
 

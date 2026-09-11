@@ -94,6 +94,27 @@ namespace $ {
 
 		},
 
+		'only the heading and the switch are pinned, everything else scrolls'( $ ) {
+
+			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
+
+			const body = shelf.body()
+
+			$mol_assert_equal( body.length, 3 )
+			$mol_assert_equal( body[ 0 ] === shelf.Title(), true )
+			$mol_assert_equal( body[ 1 ] === shelf.Stack(), true )
+			$mol_assert_equal( body[ 2 ] === shelf.Level(), true )
+
+			const dom = shelf.dom_tree()
+
+			$mol_assert_equal(
+				dom.querySelector( '[bog_vmap_app_shelf_stack]' )!
+					.contains( dom.querySelector( '[bog_vmap_app_shelf_source]' ) ),
+				true,
+			)
+
+		},
+
 		'the shelf is cut down to what the pack at hand can build'( $ ) {
 
 			const shelf = ( classes: readonly string[] )=> $$.$bog_vmap_app_shelf.make({
