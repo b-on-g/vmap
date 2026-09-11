@@ -1112,6 +1112,37 @@ namespace $ {
 
 		},
 
+		'entering a node does not move the canvas down by a row'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			const column = stage.app.body()
+
+			stage.tap( stage.part_center( 'Calc' ) )
+			stage.tap( stage.part_center( 'Calc' ) )
+			stage.redraw()
+
+			$mol_assert_ok( stage.app.inside_note() )
+			$mol_assert_equal( stage.pane.inside(), true )
+
+			const after = stage.app.body()
+			$mol_assert_equal( after.length, column.length )
+			for( let i = 0; i < column.length; ++i ) $mol_assert_equal( after[ i ], column[ i ] )
+
+			const note = stage.app.Notes().dom_node()
+			$mol_assert_equal( stage.app.Body().dom_node().contains( note ), true )
+			$mol_assert_equal( note.parentElement === stage.root, false )
+
+			const sheet = $mol_dom_context.document.getElementById(
+				'$mol_style_attach:$bog_vmap_app',
+			)!.innerHTML
+
+			const rule = sheet.slice( sheet.indexOf( '[bog_vmap_app_notes]' ) )
+			$mol_assert_ok( rule.slice( 0, rule.indexOf( '}' ) ).includes( 'position: absolute' ) )
+
+		},
+
 	})
 
 }

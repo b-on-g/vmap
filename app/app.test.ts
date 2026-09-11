@@ -550,7 +550,8 @@ namespace $ {
 
 			$mol_assert_equal( app.export_rows().length, 2 )
 			$mol_assert_equal( app.export_text( 1 ), notes[ 1 ] )
-			$mol_assert_ok( app.body().includes( app.Export_note() ) )
+			$mol_assert_ok( app.notes().includes( app.Export_note() ) )
+			$mol_assert_equal( app.body().includes( app.Export_note() ), false )
 
 			$mol_assert_fail( ()=> app.export_blob(), Error )
 
@@ -834,7 +835,8 @@ namespace $ {
 			$mol_assert_equal( app.root_title( 'Страница' ), `${d}my_site_page` )
 			$mol_assert_equal( app.doc_source(), before )
 			$mol_assert_ok( app.root_title_note().includes( 'Страница' ) )
-			$mol_assert_ok( app.body().includes( app.Root_note() ) )
+			$mol_assert_ok( app.notes().includes( app.Root_note() ) )
+			$mol_assert_equal( app.body().includes( app.Root_note() ), false )
 
 			app.root_draft( 'Страница' )
 			app.root_submit()

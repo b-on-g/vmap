@@ -435,13 +435,19 @@ namespace $.$$ {
 		override body() {
 			return [
 				this.Head(),
+				this.Body(),
+				... this.dragged() ? [ this.Ghost() ] : [],
+			] as readonly $mol_view[]
+		}
+
+		@ $mol_mem
+		override notes() {
+			return [
 				... this.inside_note() ? [ this.Inside_note() ] : [],
 				... this.stalled() ? [ this.Stall() ] : [],
 				... this.error() ? [ this.Alarm() ] : [],
 				... this.export_notes().length ? [ this.Export_note() ] : [],
 				... this.root_title_note() ? [ this.Root_note() ] : [],
-				this.Body(),
-				... this.dragged() ? [ this.Ghost() ] : [],
 			] as readonly $mol_view[]
 		}
 
@@ -452,6 +458,7 @@ namespace $.$$ {
 				... this.inspect_showed() ? [ this.Aside() ] : [],
 				... this.code_showed() ? [ this.Code() ] : [],
 				... this.history_showed() ? [ this.History() ] : [],
+				... this.notes().length ? [ this.Notes() ] : [],
 			] as readonly $mol_view[]
 		}
 

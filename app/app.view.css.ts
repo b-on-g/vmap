@@ -41,6 +41,17 @@ namespace $.$$ {
 			flex: { grow: 1, shrink: 1 },
 			minHeight: 0,
 			overflow: { x: 'auto', y: 'hidden' },
+			position: 'relative',
+		},
+
+		Notes: {
+			position: 'absolute',
+			zIndex: 20,
+			left: 0,
+			right: 0,
+			top: 0,
+			flex: { direction: 'column' },
+			pointerEvents: 'none',
 		},
 
 		Side: {
@@ -100,6 +111,27 @@ namespace $.$$ {
 			color: $mol_theme.back,
 			font: { family: 'monospace', size: '.8rem' },
 			whiteSpace: 'pre-wrap',
+			pointerEvents: 'auto',
+		},
+
+		Inside_note: {
+			flex: { shrink: 0 },
+			padding: { top: '.25rem', bottom: '.25rem', left: $mol_gap.text, right: $mol_gap.text },
+			background: { color: $mol_theme.card },
+			color: $mol_theme.text,
+			font: { size: '.8rem' },
+			whiteSpace: 'normal',
+			pointerEvents: 'auto',
+		},
+
+		Root_note: {
+			flex: { shrink: 0 },
+			padding: { top: '.25rem', bottom: '.25rem', left: $mol_gap.text, right: $mol_gap.text },
+			background: { color: $mol_theme.card },
+			color: $mol_theme.text,
+			font: { size: '.8rem' },
+			whiteSpace: 'normal',
+			pointerEvents: 'auto',
 		},
 
 		Stall: {
@@ -109,6 +141,7 @@ namespace $.$$ {
 			padding: $mol_gap.text,
 			background: { color: $mol_theme.special },
 			color: $mol_theme.back,
+			pointerEvents: 'auto',
 		},
 
 		Stall_note: {
@@ -126,6 +159,7 @@ namespace $.$$ {
 			color: $mol_theme.back,
 			font: { size: '.8rem' },
 			whiteSpace: 'normal',
+			pointerEvents: 'auto',
 		},
 
 		Stall_reload: {
