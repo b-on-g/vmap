@@ -95,6 +95,13 @@ namespace $ {
 			readonly names: readonly string[]
 		}
 
+		| {
+			readonly kind: 'theme_set'
+
+			/** Value of the `mol_theme` attribute the host wears right now. */
+			readonly theme: string
+		}
+
 	/** Scene to host. */
 	export type $bog_vmap_bridge_up =
 
