@@ -5879,6 +5879,28 @@ var $;
         return /^\$[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(name);
     }
     $.$bog_vmap_lang_class_ok = $bog_vmap_lang_class_ok;
+    function $bog_vmap_lang_attr(klass) {
+        return klass.replace(/\$/g, '').toLowerCase();
+    }
+    $.$bog_vmap_lang_attr = $bog_vmap_lang_attr;
+    function $bog_vmap_lang_quoted(text) {
+        return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    function $bog_vmap_lang_css_rename(css, from, to) {
+        if (!css || from === to)
+            return css;
+        const head = $bog_vmap_lang_attr(from);
+        if (!head)
+            return css;
+        return css.replace(new RegExp('\\[' + $bog_vmap_lang_quoted(head) + '(?=[\\]_=~^*|$\\s])', 'g'), '[' + $bog_vmap_lang_attr(to));
+    }
+    $.$bog_vmap_lang_css_rename = $bog_vmap_lang_css_rename;
+    function $bog_vmap_lang_js_rename(js, from, to) {
+        if (!js || from === to)
+            return js;
+        return js.replace(new RegExp('([^\\w$]|^)' + $bog_vmap_lang_quoted(from) + '(?![\\w])', 'g'), (_all, before) => before + to);
+    }
+    $.$bog_vmap_lang_js_rename = $bog_vmap_lang_js_rename;
     function $bog_vmap_lang_wire_tree(wire) {
         const sign = wire.bidi ? '?' : '';
         const name = this.$bog_vmap_lang_token(wire.name, 'Wire name') + sign;

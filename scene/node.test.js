@@ -5988,6 +5988,28 @@ var $;
         return /^\$[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(name);
     }
     $.$bog_vmap_lang_class_ok = $bog_vmap_lang_class_ok;
+    function $bog_vmap_lang_attr(klass) {
+        return klass.replace(/\$/g, '').toLowerCase();
+    }
+    $.$bog_vmap_lang_attr = $bog_vmap_lang_attr;
+    function $bog_vmap_lang_quoted(text) {
+        return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    function $bog_vmap_lang_css_rename(css, from, to) {
+        if (!css || from === to)
+            return css;
+        const head = $bog_vmap_lang_attr(from);
+        if (!head)
+            return css;
+        return css.replace(new RegExp('\\[' + $bog_vmap_lang_quoted(head) + '(?=[\\]_=~^*|$\\s])', 'g'), '[' + $bog_vmap_lang_attr(to));
+    }
+    $.$bog_vmap_lang_css_rename = $bog_vmap_lang_css_rename;
+    function $bog_vmap_lang_js_rename(js, from, to) {
+        if (!js || from === to)
+            return js;
+        return js.replace(new RegExp('([^\\w$]|^)' + $bog_vmap_lang_quoted(from) + '(?![\\w])', 'g'), (_all, before) => before + to);
+    }
+    $.$bog_vmap_lang_js_rename = $bog_vmap_lang_js_rename;
     function $bog_vmap_lang_wire_tree(wire) {
         const sign = wire.bidi ? '?' : '';
         const name = this.$bog_vmap_lang_token(wire.name, 'Wire name') + sign;
@@ -17066,6 +17088,27 @@ var $;
                 `${d}bog_vmap_lang_test_one`,
                 `${d}bog_vmap_lang_test_two`,
             ]);
+        },
+        'a rename moves the selector of the class and of its nodes'($) {
+            const css = '[my_site_page] {\n\tcolor: red;\n}\n\n[my_site_page_calc] {\n\tflex: 1;\n}\n';
+            const next = $.$bog_vmap_lang_css_rename(css, `${d}my_site_page`, `${d}my_shop_page`);
+            $mol_assert_equal(next, '[my_shop_page] {\n\tcolor: red;\n}\n\n[my_shop_page_calc] {\n\tflex: 1;\n}\n');
+        },
+        'a rename leaves the rules of other classes where they were'($) {
+            const css = '[mol_view] {\n\tcolor: red;\n}\n\n[my_site_pager] {\n\tflex: 1;\n}\n';
+            $mol_assert_equal($.$bog_vmap_lang_css_rename(css, `${d}my_site_page`, `${d}my_shop_page`), css);
+        },
+        'a rename moves the mentions of the class inside a body'($) {
+            const js = `title() {\n\treturn this.$.${d}my_site_page_calc ? '${d}my_site_page' : ''\n}\n`;
+            $mol_assert_equal($.$bog_vmap_lang_js_rename(js, `${d}my_site_page`, `${d}my_shop_page`), `title() {\n\treturn this.$.${d}my_site_page_calc ? '${d}my_shop_page' : ''\n}\n`);
+        },
+        'a class renamed and renamed back gives the styles and the body byte for byte'($) {
+            const css = '[my_site_page] {\n\tcolor: red;\n}\n\n[my_site_page_calc] {\n\tflex: 1;\n}\n';
+            const js = `title() {\n\treturn '${d}my_site_page'\n}\n`;
+            const from = `${d}my_site_page`;
+            const to = `${d}my_shop_page`;
+            $mol_assert_equal($.$bog_vmap_lang_css_rename($.$bog_vmap_lang_css_rename(css, from, to), to, from), css);
+            $mol_assert_equal($.$bog_vmap_lang_js_rename($.$bog_vmap_lang_js_rename(js, from, to), to, from), js);
         },
         'a rename of a class the document lacks is refused'($) {
             const d1 = pair_doc();

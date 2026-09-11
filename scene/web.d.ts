@@ -2734,6 +2734,9 @@ declare namespace $ {
     };
     function $bog_vmap_lang_token(this: $, token: string, role: string): string;
     function $bog_vmap_lang_class_ok(name: string): boolean;
+    function $bog_vmap_lang_attr(klass: string): string;
+    function $bog_vmap_lang_css_rename(css: string, from: string, to: string): string;
+    function $bog_vmap_lang_js_rename(js: string, from: string, to: string): string;
     function $bog_vmap_lang_wire_tree(this: $, wire: $bog_vmap_lang_wire): $mol_tree2;
     function $bog_vmap_lang_ref_tree(this: $, name: string): $mol_tree2;
     function $bog_vmap_lang_part_tree(this: $, name: string, klass: string): $mol_tree2;
