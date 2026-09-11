@@ -33542,6 +33542,11 @@ var $;
                         + ' в имени узла только латинские буквы, цифры и подчёркивание');
                     return name;
                 }
+                if (/^[0-9]/.test(next)) {
+                    this.node_title_note_at(name, `Имя «${next}» не годится:`
+                        + ' имя узла становится именем метода, а оно не начинается с цифры');
+                    return name;
+                }
                 if (this.node().prop_names().includes(next)) {
                     this.node_title_note_at(name, `Имя «${next}» в этом документе уже занято`);
                     return name;
@@ -50043,6 +50048,20 @@ var $;
             $mol_assert_ok(app.node_title_note().startsWith('Имя «Send button» не годится'));
             app.node_title('Send');
             $mol_assert_equal(app.selected(), 'Send');
+            $mol_assert_equal(app.node_title_note(), '');
+        },
+        'a name that opens with a digit is refused, because it becomes a method name'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            app.selected('Button_minor');
+            const before = app.doc_source();
+            app.node_title('9bad');
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(app.selected(), 'Button_minor');
+            $mol_assert_equal(app.node_title_note(), 'Имя «9bad» не годится: имя узла становится именем метода, а оно не начинается'
+                + ' с цифры. Узел по-прежнему называется «Button_minor»');
+            app.node_title('bad9');
+            $mol_assert_equal(app.selected(), 'bad9');
             $mol_assert_equal(app.node_title_note(), '');
         },
         'renaming through the name field carries the wire'($) {

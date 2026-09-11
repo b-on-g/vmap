@@ -33551,6 +33551,11 @@ var $;
                         + ' в имени узла только латинские буквы, цифры и подчёркивание');
                     return name;
                 }
+                if (/^[0-9]/.test(next)) {
+                    this.node_title_note_at(name, `Имя «${next}» не годится:`
+                        + ' имя узла становится именем метода, а оно не начинается с цифры');
+                    return name;
+                }
                 if (this.node().prop_names().includes(next)) {
                     this.node_title_note_at(name, `Имя «${next}» в этом документе уже занято`);
                     return name;
