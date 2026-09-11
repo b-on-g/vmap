@@ -541,6 +541,22 @@ namespace $.$$ {
 		}
 
 		@ $mol_mem
+		override theme( next?: string | null ): string | null {
+			return next ?? null
+		}
+
+		scheme() {
+			return this.theme()?.includes( 'light' ) ? 'light' : 'dark'
+		}
+
+		@ $mol_mem
+		scheme_attach() {
+			const scheme = this.scheme()
+			this.$.$mol_dom_context.document.documentElement.style.colorScheme = scheme
+			return scheme
+		}
+
+		@ $mol_mem
 		override stage(): readonly $mol_view_content[] {
 
 			this.css_attach()
@@ -620,6 +636,8 @@ namespace $.$$ {
 				}
 
 				case 'pack_set': this.pack_uri( String( message.uri ?? '' ) ); return
+
+				case 'theme_set': this.theme( String( message.theme ?? '' ) ); return
 
 				case 'css_set': this.doc_css( message.css ); return
 
@@ -869,6 +887,7 @@ namespace $.$$ {
 				this.pack_task(),
 				this.report_task(),
 				this.values_task(),
+				this.scheme_attach(),
 			]
 		}
 
