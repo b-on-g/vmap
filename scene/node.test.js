@@ -8797,7 +8797,6 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        const asset_ref = /asset:([\w.\-]+)/g;
         const style_scope = 'bog_vmap_scene:';
         const spots_id = 'bog_vmap_spots:stage';
         const libs_id = 'bog_vmap_libs:stage';
@@ -8864,9 +8863,6 @@ var $;
                     value: () => this.sub_shown(made.sub() ?? []),
                 });
             }
-            assets(next) {
-                return next ?? {};
-            }
             camera(next) {
                 return next ?? { x: 0, y: 0, zoom: 1 };
             }
@@ -8931,7 +8927,7 @@ var $;
                 const defs = [];
                 const js = {};
                 for (const part of this.libs()) {
-                    const src = this.assets_apply(part.tree).replace(/\n?$/, '\n');
+                    const src = part.tree.replace(/\n?$/, '\n');
                     const kids = this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(src, 'lib.view.tree')).kids;
                     defs.push(...kids);
                     const name = kids[0]?.type;
@@ -8941,7 +8937,7 @@ var $;
                 return { defs: defs, js: js };
             }
             doc_tree() {
-                const src = this.assets_apply(this.doc_src()).replace(/\n?$/, '\n');
+                const src = this.doc_src().replace(/\n?$/, '\n');
                 const defs = this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(src, 'vmap.view.tree'));
                 return defs.clone(this.$.$bog_vmap_scene_order(this.libs_parsed().defs, defs.kids));
             }
@@ -9109,7 +9105,7 @@ var $;
             }
             css_attach() {
                 const root = this.doc_root();
-                const css = this.assets_apply(this.doc_css());
+                const css = this.doc_css();
                 const id = root && style_scope + root;
                 this.styles_sweep(id);
                 if (!id)
@@ -9121,7 +9117,7 @@ var $;
             }
             libs_css_attach() {
                 const css = this.libs().map(part => part.css).filter(Boolean).join('\n');
-                return this.$.$mol_style_attach(libs_id, this.assets_apply(css));
+                return this.$.$mol_style_attach(libs_id, css);
             }
             spots_css() {
                 const attr = this.doc_root().replace(/^\$/, '');
@@ -9152,35 +9148,6 @@ var $;
                         continue;
                     el.remove();
                 }
-            }
-            assets_apply(text) {
-                const known = this.assets();
-                return text.replace(asset_ref, (whole, id) => known[id] ?? whole);
-            }
-            texts() {
-                return [
-                    this.doc_src(),
-                    this.doc_css(),
-                    ...this.libs().flatMap(part => [part.tree, part.css]),
-                ];
-            }
-            assets_missing() {
-                const known = this.assets();
-                const missing = new Set();
-                for (const text of this.texts()) {
-                    for (const [, id] of text.matchAll(asset_ref)) {
-                        if (!known[id])
-                            missing.add(id);
-                    }
-                }
-                return [...missing];
-            }
-            asset_ask(id) {
-                this.post({ kind: 'asset_want', id });
-                return id;
-            }
-            assets_push() {
-                return this.assets_missing().map(id => this.asset_ask(id));
             }
             stage() {
                 this.css_attach();
@@ -9264,14 +9231,6 @@ var $;
                     case 'ping':
                         this.post({ kind: 'pong', nonce: message.nonce });
                         return;
-                    case 'asset_put': {
-                        const stale = this.assets()[message.id];
-                        const uri = URL.createObjectURL(new Blob([message.bytes], { type: message.mime }));
-                        this.assets({ ...this.assets(), [message.id]: uri });
-                        if (stale)
-                            URL.revokeObjectURL(stale);
-                        return;
-                    }
                 }
             }
             click_apply(x, y, mods) {
@@ -9308,7 +9267,6 @@ var $;
                 this.doc_css();
                 this.libs();
                 this.spots();
-                this.assets();
                 this.camera();
                 const made = this.instance();
                 if (made)
@@ -9433,7 +9391,6 @@ var $;
                     this.boot(),
                     this.report_task(),
                     this.values_task(),
-                    this.assets_push(),
                 ];
             }
         }
@@ -9461,9 +9418,6 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "shown", null);
-        __decorate([
-            $mol_mem
-        ], $bog_vmap_scene.prototype, "assets", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "camera", null);
@@ -9533,15 +9487,6 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "libs_css_attach", null);
-        __decorate([
-            $mol_mem
-        ], $bog_vmap_scene.prototype, "assets_missing", null);
-        __decorate([
-            $mol_mem_key
-        ], $bog_vmap_scene.prototype, "asset_ask", null);
-        __decorate([
-            $mol_mem
-        ], $bog_vmap_scene.prototype, "assets_push", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "stage", null);
@@ -18301,36 +18246,12 @@ var $;
             made.sizes_remember({ [root + '/Near']: { x: 5, y: 6, width: 7, height: 8 } });
             $mol_assert_like(Object.keys(made.sizes_seen()), ['Far', 'Near']);
         },
-        async 'a missing asset is asked for once, and again once it is missing again'($) {
+        'the address of an asset reaches the document untouched'($) {
             const { made } = scene($);
-            const sent = [];
-            made.post = (message) => { sent.push(message); };
-            const asks = () => sent.filter(m => m.kind === 'asset_want').map(m => m.id);
-            const src = (uri) => `${d}visible_asset ${d}mol_view\n\ttitle \\${uri}\n`;
+            const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png';
             made.doc_root(`${d}visible_asset`);
-            made.doc_src(src('asset:abc'));
-            made.assets_push();
-            made.assets_push();
-            $mol_assert_like(asks(), ['abc']);
-            made.assets({ abc: 'blob:null/1' });
-            made.assets_push();
-            $mol_assert_like(made.assets_missing(), []);
-            $mol_assert_like(asks(), ['abc']);
-            made.doc_src(src('asset:xyz'));
-            made.assets_push();
-            $mol_assert_like(asks(), ['abc', 'xyz']);
-            made.doc_src(src('nothing'));
-            made.assets_push();
-            await new Promise(next => setTimeout(next, 10));
-            made.doc_src(src('asset:xyz'));
-            made.assets_push();
-            $mol_assert_like(asks(), ['abc', 'xyz', 'xyz']);
-        },
-        'assets are missed from the styles and the libraries too'($) {
-            const { made } = scene($);
-            made.doc_css('a { background: url(asset:css1) }');
-            made.libs([{ tree: `${d}visible_lib ${d}mol_view\n\turi \\asset:lib1\n`, js: '', css: 'b { background: url(asset:lib2) }' }]);
-            $mol_assert_like(made.assets_missing(), ['css1', 'lib1', 'lib2']);
+            made.doc_src(`${d}visible_asset ${d}mol_view\n\ttitle \\${uri}\n`);
+            $mol_assert_ok(made.doc_tree().toString().includes(uri));
         },
     });
 })($ || ($ = {}));

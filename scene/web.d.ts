@@ -2290,12 +2290,6 @@ declare namespace $ {
         readonly kind: 'ping';
         readonly nonce: number;
     } | {
-        readonly kind: 'asset_put';
-        readonly id: string;
-        readonly mime: string;
-        /** Bytes, not a blob: URL. A host blob: URL is dead in an opaque origin. */
-        readonly bytes: ArrayBuffer;
-    } | {
         readonly kind: 'libs_set';
         readonly parts: readonly $bog_vmap_bridge_part[];
     } | {
@@ -2324,9 +2318,6 @@ declare namespace $ {
         readonly values: {
             readonly [name: string]: string;
         };
-    } | {
-        readonly kind: 'asset_want';
-        readonly id: string;
     } | {
         readonly kind: 'key';
         readonly key: 'Escape';
@@ -3494,11 +3485,6 @@ declare namespace $.$$ {
         shown(): Set<string>;
         sub_shown(kids: readonly $mol_view_content[]): $mol_view_content[];
         cull_attach(made: $mol_view): void;
-        assets(next?: {
-            readonly [id: string]: string;
-        }): {
-            readonly [id: string]: string;
-        };
         camera(next?: $bog_vmap_bridge_camera): $bog_vmap_bridge_camera;
         grid_shift(): $mol_vector_2d<number>;
         grid_scale(): $mol_vector_2d<number>;
@@ -3550,11 +3536,6 @@ declare namespace $.$$ {
         libs_css_attach(): HTMLStyleElement | null;
         spots_css(): string;
         styles_sweep(keep: string): void;
-        assets_apply(text: string): string;
-        texts(): string[];
-        assets_missing(): string[];
-        asset_ask(id: string): string;
-        assets_push(): string[];
         stage(): readonly $mol_view_content[];
         post(message: $bog_vmap_bridge_up): void;
         values_wanted(next?: readonly string[]): readonly string[];
