@@ -52,8 +52,14 @@ jobs:
       with:
         chrome-version: stable
 
+    # `test -x` здесь обязателен. Честный пропуск без браузера придуман для машины
+    # молера, а в CI пустой путь означал бы, что деплой охраняет тест, который не
+    # запускался, и охрана эта молчаливая. Пусть шаг падает вслух.
     - name: Point the smoke test at Chrome
-      run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+      run: |
+        set -euo pipefail
+        test -x "${{ steps.chrome.outputs.chrome-path }}"
+        echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
 
     # `smoke` последним: он поднимает собранный `app/-/index.html` со статики и
     # требует готовых `scene` и `part` рядом. Красный дымовой тест кладёт этот шаг
@@ -63,6 +69,23 @@ jobs:
       with:
         package: 'bog/vmap'
         modules: 'app scene part demo pages smoke'
+
+    # `$mol_run.spawn` глотает stdout прогона тестов, и в логе от дымового теста остаётся
+    # только строка запуска: по ней не отличить настоящий прогон от честного пропуска без
+    # браузера. Поэтому тест кладёт свой отчёт файлом, а этот шаг требует в нём строку про
+    # перезапуск сцены — она печатается только после полного сценария — и выносит замеры
+    # в сводку прогона.
+    - name: Smoke report
+      run: |
+        set -euo pipefail
+        file="bog/vmap/smoke/-/smoke.log"
+        test -s "$file"
+        grep -q 'перезапуск одним нажатием' "$file"
+        {
+          echo '```'
+          cat "$file"
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
 
     # GitHub Pages отдаёт web.js с `cache-control: max-age=600`, поэтому первые
     # десять минут после деплоя вернувшийся читатель получает старый бандл и

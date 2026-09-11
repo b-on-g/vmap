@@ -30,6 +30,7 @@ namespace $ {
 			const out = String( run.stdout ?? '' ) + String( run.stderr ?? '' )
 
 			$node.fs.writeSync( 1, out )
+			$node.fs.writeFileSync( $.$mol_file.relative( 'bog/vmap/smoke/-/smoke.log' ).path(), out )
 
 			if( run.status !== 0 ) $mol_fail( new Error(
 				`Дымовой тест: код ${ run.status }, сигнал ${ run.signal }\n${ out }`
