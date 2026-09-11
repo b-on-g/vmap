@@ -7482,7 +7482,14 @@ var $;
             const next = $bog_vmap_app_wire_side_point(below, 'in');
             $mol_assert_equal(own[0], next[0]);
             $mol_assert_equal(Math.abs(own[1] - next[1]) > $bog_vmap_app_wire_hit, true);
-            $mol_assert_like(own, [0 - $bog_vmap_app_wire_gap, height / 2]);
+            $mol_assert_like(own, [0 - $bog_vmap_app_wire_gap, $bog_vmap_app_wire_row / 2]);
+        },
+        'opening the column leaves the point of the first port where it was'($) {
+            for (const b of [box(0, 0, 200, 17), box(100, 200, 60, 30), box(-40, -10, 1280, 720)]) {
+                for (const side of ['in', 'out']) {
+                    $mol_assert_like($bog_vmap_app_wire_side_point(b, side), $bog_vmap_app_wire_port_point(b, side, 0));
+                }
+            }
         },
         'a point on the dot column counts as over the part, a point a row above does not'($) {
             const b = box(100, 200, 60, 30);
@@ -12660,7 +12667,7 @@ var $;
             const dots = pane.wire_dots();
             const at = (x, y) => $bog_vmap_app_wire_dot_at(dots, [x, y]);
             $mol_assert_equal(at(-12, 227)?.node, 'Map');
-            $mol_assert_equal(at(-12, 110)?.node, 'Map_2');
+            $mol_assert_equal(at(-12, 7)?.node, 'Map_2');
             $mol_assert_equal(dots.filter(dot => dot.node === 'Map').length, 2);
             $mol_assert_equal(dots.filter(dot => dot.node === 'Map_2').length, 1);
         },
@@ -12697,6 +12704,11 @@ var $;
             $mol_assert_equal(Math.abs(cost[1] - total[1]) > $bog_vmap_app_wire_hit, true);
             $mol_assert_equal(at(cost[0], cost[1])?.node, 'Cost');
             $mol_assert_equal(at(total[0], total[1])?.node, 'Total');
+            pane.wire_point(cost);
+            const opened = pane.wire_dots().filter(dot => dot.node === 'Cost');
+            $mol_assert_equal(opened.length, own.length);
+            $mol_assert_like([opened[0].x, opened[0].y], [cost[0], cost[1]]);
+            $mol_assert_equal(opened[0].port.name, 'left');
         },
         'a modified click leaves the picked set alone'($) {
             const { pane } = pane_make($);
@@ -12919,7 +12931,7 @@ var $;
             $mol_assert_like(pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' });
             $mol_assert_equal(pane.primary(), 'Calc');
             pane.node_move(pointer(600, 100));
-            $mol_assert_like(pane.wire_dots().map(dot => [dot.node, dot.port.name, dot.side, dot.x, dot.y, dot.lit]), [['Map', 'zoom', 'in', 688, 100, true]]);
+            $mol_assert_like(pane.wire_dots().map(dot => [dot.node, dot.port.name, dot.side, dot.x, dot.y, dot.lit]), [['Map', 'zoom', 'in', 688, 57, true]]);
             pane.node_move(pointer(710, 60));
             $mol_assert_like(pane.wire_dots().map(dot => [dot.node, dot.port.name, dot.side, dot.x, dot.y, dot.lit]), [['Map', 'zoom', 'in', 688, 57, true], ['Map', 'marker', 'in', 688, 71, false]]);
             $mol_assert_equal(pane.wire_drag_geometry().startsWith('M 312 57 C'), true);
@@ -12933,10 +12945,11 @@ var $;
             $mol_assert_equal(clicks(posted).length, 0);
             $mol_assert_equal(pane.wire_lines().length, 1);
             $mol_assert_equal(pane.wire_lines()[0].geometry.startsWith('M 312 57 C'), true);
-            $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 688 100'), true);
-            $mol_assert_equal(pane.wire_dots().find(dot => dot.port.name === 'zoom')?.linked, undefined);
-            pane.picked(['Map']);
             $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 688 57'), true);
+            $mol_assert_equal(pane.wire_dots().find(dot => dot.port.name === 'zoom')?.linked, undefined);
+            const folded = pane.wire_lines()[0].geometry;
+            pane.picked(['Map']);
+            $mol_assert_equal(pane.wire_lines()[0].geometry, folded);
             $mol_assert_equal(pane.wire_dots().find(dot => dot.port.name === 'zoom' && dot.side === 'in')?.linked, true);
         },
         'a drag let go over nothing, or over an input of the wrong shape, writes nothing'($) {
@@ -12991,10 +13004,11 @@ var $;
             $mol_assert_equal(drawn.length, 1);
             answer({ kind: 'sizes', sizes: { [`${root}/Calc`]: box(0, 100) } });
             $mol_assert_equal(pane.wire_lines().length, 1);
-            $mol_assert_equal(pane.wire_lines()[0].geometry.startsWith('M 112 125 C'), true);
-            $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 288 25'), true);
-            pane.picked(['Calc']);
             $mol_assert_equal(pane.wire_lines()[0].geometry.startsWith('M 112 107 C'), true);
+            $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 288 7'), true);
+            const folded = pane.wire_lines()[0].geometry;
+            pane.picked(['Calc']);
+            $mol_assert_equal(pane.wire_lines()[0].geometry, folded);
         },
         'values_want names the visible wires and the output ports of the visible free parts'($) {
             const { pane, node, posted } = wired_make($, [

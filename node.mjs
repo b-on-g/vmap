@@ -28614,10 +28614,7 @@ var $;
     }
     $.$bog_vmap_app_wire_port_point = $bog_vmap_app_wire_port_point;
     function $bog_vmap_app_wire_side_point(box, side) {
-        const x = side === 'in'
-            ? box.left - $.$bog_vmap_app_wire_gap
-            : box.left + box.width + $.$bog_vmap_app_wire_gap;
-        return [x, box.top + box.height / 2];
+        return $bog_vmap_app_wire_port_point(box, side, 0);
     }
     $.$bog_vmap_app_wire_side_point = $bog_vmap_app_wire_side_point;
     function $bog_vmap_app_wire_over(box, point) {
