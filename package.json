@@ -346,6 +346,7 @@
     "$bog_vmap_app_scenes",
     "$bog_vmap_app_store",
     "$bog_vmap_app_doc",
+    "$bog_vmap_asset",
     "$bog_vmap_app_palette_item",
     "$bog_vmap_app_palette",
     "$mol_scroll",

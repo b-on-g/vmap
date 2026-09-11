@@ -11971,6 +11971,639 @@ var $;
 ;
 "use strict";
 var $;
+(function ($) {
+    function check(str, query) {
+        $mol_assert_like(str, $hyoo_harp_to_string(query));
+        $mol_assert_like(query, $hyoo_harp_from_string(str));
+    }
+    $mol_test({
+        'root'() {
+            check('', {});
+        },
+        'only field'() {
+            check('user%3D777', {
+                'user=777': {},
+            });
+        },
+        'primary key'() {
+            check('user=jin%2C777!=', {
+                user: {
+                    '=': [['jin,777!']],
+                },
+            });
+        },
+        'single fetch'() {
+            check('friend(age%24)', {
+                friend: {
+                    age$: {},
+                },
+            });
+        },
+        'fetch and primary key'() {
+            check('user=jin()=(friend)', {
+                'user': {
+                    '=': [['jin()']],
+                    friend: {},
+                },
+            });
+        },
+        'multiple fetch'() {
+            check('age;friend', {
+                age: {},
+                friend: {},
+            });
+        },
+        'common query string back compatible'() {
+            $mol_assert_like($hyoo_harp_from_string('user=jin&age=100500'), {
+                user: {
+                    '=': [['jin']],
+                },
+                age: {
+                    '=': [['100500']],
+                },
+            });
+        },
+        'common pathname back compatible'() {
+            $mol_assert_like($hyoo_harp_from_string('users/jin/comments'), {
+                users: {},
+                jin: {},
+                comments: {},
+            });
+        },
+        'deep fetch'() {
+            check('my(friend(age);name);stat', {
+                my: {
+                    friend: {
+                        age: {},
+                    },
+                    name: {},
+                },
+                stat: {},
+            });
+        },
+        'orders'() {
+            check('+age;-name', {
+                age: {
+                    '+': true
+                },
+                name: {
+                    '+': false
+                },
+            });
+        },
+        'filter types'() {
+            check('sex=female=;status!=married=', {
+                sex: {
+                    '=': [['female']],
+                },
+                status: {
+                    '!=': [['married']],
+                },
+            });
+        },
+        'filter ranges'() {
+            check('sex=female=;age=18@25=;weight=@50=;height=150@=;hobby=paint=singing=', {
+                sex: {
+                    '=': [['female']],
+                },
+                age: {
+                    '=': [['18', '25']],
+                },
+                weight: {
+                    '=': [['', '50']],
+                },
+                height: {
+                    '=': [['150', '']],
+                },
+                hobby: {
+                    '=': [['paint'], ['singing']],
+                },
+            });
+        },
+        'unescaped values'() {
+            $mol_assert_like($hyoo_harp_from_string('foo=jin=777=;bar=jin!=666='), {
+                foo: {
+                    '=': [['jin'], ['777']],
+                },
+                bar: {
+                    '=': [['jin!'], ['666']],
+                },
+            });
+        },
+        'slicing'() {
+            check('friend(_num=0@100=)', {
+                friend: {
+                    _num: { '=': [['0', '100']] },
+                },
+            });
+        },
+        'complex'() {
+            check('pullRequest(state=closed=merged=;+repository(name;private);-updateTime;_num=0@100=)', {
+                pullRequest: {
+                    state: {
+                        '=': [
+                            ['closed'],
+                            ['merged'],
+                        ]
+                    },
+                    repository: {
+                        '+': true,
+                        name: {},
+                        private: {},
+                    },
+                    updateTime: {
+                        '+': false,
+                    },
+                    _num: {
+                        '=': [['0', '100']],
+                    },
+                },
+            });
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'Is string'() {
+            $mol_data_string('');
+        },
+        'Is not string'() {
+            $mol_assert_fail(() => {
+                $mol_data_string(0);
+            }, '0 is not a string');
+        },
+        'Is object string'() {
+            $mol_assert_fail(() => {
+                $mol_data_string(new String('x'));
+            }, 'x is not a string');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'Is first'() {
+            $mol_data_variant($mol_data_number, $mol_data_string)(0);
+        },
+        'Is second'() {
+            $mol_data_variant($mol_data_number, $mol_data_string)('');
+        },
+        'Is false'() {
+            $mol_assert_fail(() => {
+                $mol_data_variant($mol_data_number, $mol_data_string)(false);
+            }, 'false is not any of variants');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const Age = $mol_data_optional($mol_data_number);
+    const Age_or_zero = $mol_data_optional($mol_data_number, () => 0);
+    $mol_test({
+        'Is not present'() {
+            $mol_assert_equal(Age(undefined), undefined);
+        },
+        'Is present'() {
+            $mol_assert_equal(Age(0), 0);
+        },
+        'Fallbacked'() {
+            $mol_assert_equal(Age_or_zero(undefined), 0);
+        },
+        'Is null'() {
+            $mol_assert_fail(() => Age(null), 'null is not a number');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'Fit to record'() {
+            const User = $mol_data_record({ age: $mol_data_number });
+            User({ age: 0 });
+        },
+        'Extends record'() {
+            const User = $mol_data_record({ age: $mol_data_number });
+            User({ age: 0, name: 'Jin' });
+        },
+        // 'Recursive record' () {
+        // 	const User = $mol_data_record({
+        // 		name : $mol_data_string ,
+        // 		get kids() { return $mol_data_array( User ) } ,
+        // 	})
+        // 	User({
+        // 		name : 'Jin' ,
+        // 		kids : [
+        // 			{
+        // 				name : 'John' ,
+        // 				kids : [] ,
+        // 			}
+        // 		] ,
+        // 	})
+        // } ,
+        'Shrinks record'() {
+            $mol_assert_fail(() => {
+                const User = $mol_data_record({ age: $mol_data_number, name: $mol_data_string });
+                User({ age: 0 });
+            }, '["name"] undefined is not a string');
+        },
+        'Shrinks deep record'() {
+            $mol_assert_fail(() => {
+                const User = $mol_data_record({ wife: $mol_data_record({ age: $mol_data_number }) });
+                User({ wife: {} });
+            }, '["wife"] ["age"] undefined is not a number');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'Is empty array'() {
+            $mol_data_array($mol_data_number)([]);
+        },
+        'Is array'() {
+            $mol_data_array($mol_data_number)([1, 2]);
+        },
+        'Is not array'() {
+            $mol_assert_fail(() => {
+                $mol_data_array($mol_data_number)({ [0]: 1, length: 1, map: () => { } });
+            }, '[object Object] is not an array');
+        },
+        'Has wrong item'() {
+            $mol_assert_fail(() => {
+                $mol_data_array($mol_data_number)([1, '1']);
+            }, '[1] 1 is not a number');
+        },
+        'Has wrong deep item'() {
+            $mol_assert_fail(() => {
+                $mol_data_array($mol_data_array($mol_data_number))([[], [0, 0, false]]);
+            }, '[1] [2] false is not a number');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'Is boolean - true'() {
+            $mol_data_boolean(true);
+        },
+        'Is boolean - false'() {
+            $mol_data_boolean(false);
+        },
+        'Is not boolean'() {
+            $mol_assert_fail(() => {
+                $mol_data_boolean('x');
+            }, 'x is not a boolean');
+        },
+        'Is object boolean'() {
+            $mol_assert_fail(() => {
+                $mol_data_boolean(new Boolean(''));
+            }, 'false is not a boolean');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Checks for value of given enum and returns expected type.
+     * @see https://mol.hyoo.ru/#!section=demos/demo=mol_data_enum_demo
+     */
+    function $mol_data_enum(name, dict) {
+        const index = {};
+        for (let key in dict) {
+            if (Number.isNaN(Number(key))) {
+                index[dict[key]] = key;
+            }
+        }
+        return $mol_data_setup((value) => {
+            if (typeof index[value] !== 'string') {
+                return $mol_fail(new $mol_data_error(`${value} is not value of ${name} enum`));
+            }
+            return value;
+        }, { name, dict });
+    }
+    $.$mol_data_enum = $mol_data_enum;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    let sex;
+    (function (sex) {
+        sex[sex["male"] = 0] = "male";
+        sex[sex["female"] = 1] = "female";
+    })(sex || (sex = {}));
+    let gender;
+    (function (gender) {
+        gender["bisexual"] = "bisexual";
+        gender["trans"] = "transgender";
+    })(gender || (gender = {}));
+    // Test disabled due https://github.com/microsoft/TypeScript/issues/46112
+    // const Sex = $mol_data_enum( 'sex' , sex )
+    // type sex_value =  $mol_type_assert< typeof Sex.Value , sex >
+    $mol_test({
+        'config of enum'() {
+            const Sex = $mol_data_enum('sex', sex);
+            $mol_assert_like(Sex.config, {
+                name: 'sex',
+                dict: sex,
+            });
+        },
+        'name of enum'() {
+            const Sex = $mol_data_enum('sex', sex);
+            $mol_assert_equal(Sex.config.name, 'sex');
+        },
+        'Is right value of enum'() {
+            const Sex = $mol_data_enum('sex', sex);
+            $mol_assert_equal(Sex(0), sex.male);
+        },
+        'Is wrong value of enum'() {
+            const Sex = $mol_data_enum('sex', sex);
+            $mol_assert_fail(() => Sex(2), `2 is not value of sex enum`);
+        },
+        'Is name instead of value'() {
+            const Sex = $mol_data_enum('sex', sex);
+            $mol_assert_fail(() => Sex('male'), `male is not value of sex enum`);
+        },
+        'Is common object field'() {
+            const Sex = $mol_data_enum('sex', sex);
+            $mol_assert_fail(() => Sex('__proto__'), `__proto__ is not value of sex enum`);
+        },
+    });
+    // Test disabled due https://github.com/microsoft/TypeScript/issues/46112
+    // type gender_value =  $mol_type_assert< typeof Gender.Value , gender >
+    $mol_test({
+        'config of enum'() {
+            const Gender = $mol_data_enum('gender', gender);
+            $mol_assert_like(Gender.config, {
+                name: 'gender',
+                dict: gender,
+            });
+        },
+        'Is right value of enum'() {
+            const Gender = $mol_data_enum('gender', gender);
+            $mol_assert_equal(Gender('transgender'), gender.trans);
+        },
+        'Is wrong value of enum'() {
+            const Gender = $mol_data_enum('gender', gender);
+            $mol_assert_fail(() => Gender('xxx'), `xxx is not value of gender enum`);
+        },
+        'Is name instead of value'() {
+            const Gender = $mol_data_enum('gender', gender);
+            $mol_assert_fail(() => Gender('trans'), `trans is not value of gender enum`);
+        },
+        'Is common object field'() {
+            const Gender = $mol_data_enum('gender', gender);
+            $mol_assert_fail(() => Gender('__proto__'), `__proto__ is not value of gender enum`);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'type safe build & parse'() {
+            let States;
+            (function (States) {
+                States["opened"] = "opened";
+                States["closed"] = "closed";
+            })(States || (States = {}));
+            const State = $hyoo_harp_scheme({}, $mol_data_enum('States', States));
+            const Str = $hyoo_harp_scheme({}, $mol_data_string);
+            const Bool = $hyoo_harp_scheme({}, $mol_data_boolean);
+            const Repository = $hyoo_harp_scheme({
+                name: $mol_data_optional(Str),
+                isPrivate: $mol_data_optional(Bool),
+                // pullRequests: PullRequest,
+            });
+            const PullRequest = $hyoo_harp_scheme({
+                state: $mol_data_optional(State),
+                updated_at: $mol_data_optional(Str),
+                repository: $mol_data_optional(Repository),
+            });
+            const Request = $hyoo_harp_scheme({
+                pullRequest: $mol_data_optional(PullRequest),
+            });
+            const uri = 'pullRequest(state=closed=;-updated_at;repository(name;isPrivate);_num=0@100=)';
+            let query = Request({
+                pullRequest: {
+                    state: { '=': [[States.closed]] }, // filter
+                    updated_at: { '+': false }, // order
+                    repository: {
+                        name: {},
+                        isPrivate: {},
+                    },
+                    _num: { '=': [[0, 100]] }, // slice
+                }
+            });
+            $mol_assert_like(uri, Request.build(query));
+            $mol_assert_like(query, Request.parse(uri));
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'save and load buffers'($) {
+            const land = $giper_baza_land.make({ $ });
+            const file = land.Data($giper_baza_file);
+            const source = new Uint8Array(2 ** 15 + 1);
+            source[2 ** 15] = 255;
+            file.buffer(source);
+            $mol_assert_equal(file.chunks().length, 2);
+            $mol_assert_equal(file.buffer(), source);
+        },
+        async 'save and load blobs'($) {
+            const land = $giper_baza_land.make({ $ });
+            const file = land.Data($giper_baza_file);
+            const source = new Uint8Array(2 ** 16 + 1);
+            source[2 ** 16 + 1] = 255;
+            await $mol_wire_async(file).blob(new $mol_blob([source], { type: 'test/test' }));
+            $mol_assert_equal('test/test', file.blob().type);
+            $mol_assert_equal(source, new Uint8Array(await file.blob().arrayBuffer()));
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test_mocks.push($ => {
+        class $giper_baza_yard_mock extends $.$giper_baza_yard {
+            master() {
+                return null;
+            }
+        }
+        $.$giper_baza_yard = $giper_baza_yard_mock;
+    });
+    $giper_baza_yard.masters = () => {
+        $giper_baza_glob.Seed();
+        return ['http://localhost:9090/'];
+    };
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    const d = '$';
+    const master = 'https://baza.test/';
+    function land($) {
+        return $giper_baza_land.make({ $ });
+    }
+    function assets($, at = master) {
+        return $bog_vmap_asset.make({ $, master: () => at });
+    }
+    function file_of($, name = 'logo.png', head = '11111111') {
+        const one = land($).Pawn($giper_baza_file).Head(new $giper_baza_link(head));
+        one.buffer(new Uint8Array([137, 80, 78, 71]));
+        one.type('image/png');
+        one.name(name);
+        return one;
+    }
+    $mol_test({
+        'an address is made from the master and read back as the same link'($) {
+            const file = file_of($);
+            const uri = assets($).uri(file);
+            $mol_assert_ok(uri.startsWith(master + '?BAZA:file='));
+            $mol_assert_equal($bog_vmap_asset_link(uri), file.link().str);
+        },
+        'a master written without a trailing slash gets exactly one'($) {
+            const file = file_of($);
+            const uri = assets($, 'https://baza.test').uri(file);
+            $mol_assert_ok(uri.startsWith('https://baza.test/?BAZA:file='));
+            $mol_assert_equal($bog_vmap_asset_link(uri), file.link().str);
+        },
+        'without a master there is no address at all'($) {
+            $mol_assert_equal(assets($, '').uri(file_of($)), '');
+        },
+        'the address carries the file name for whoever saves it'($) {
+            const uri = assets($).uri(file_of($, 'logo.png'));
+            $mol_assert_ok(uri.includes(';name=logo.png'));
+        },
+        'what is not an address reads as no link'($) {
+            $mol_assert_equal($bog_vmap_asset_link('https://example.org/pic.png'), null);
+            $mol_assert_equal($bog_vmap_asset_link('aaaaaaaa'), null);
+            $mol_assert_equal($bog_vmap_asset_link('https://baza.test/?BAZA:file='), null);
+            $mol_assert_equal($bog_vmap_asset_link('https://baza.test/?BAZA:file=not a link'), null);
+        },
+        'the assets of a document are listed once each, in order of mention'($) {
+            const one = assets($);
+            const a = file_of($, 'a.png', '11111111');
+            const b = file_of($, 'b.png', '22222222');
+            const source = [
+                `${d}my_page ${d}mol_view`,
+                `	Logo ${d}mol_image uri \\${one.uri(b)}`,
+                `	Hero ${d}mol_image uri \\${one.uri(a)}`,
+                `	Again ${d}mol_image uri \\${one.uri(b)}`,
+                '',
+            ].join('\n');
+            $mol_assert_like($bog_vmap_asset_links(source), [b.link().str, a.link().str]);
+        },
+        'a document mentioning no asset lists none'($) {
+            $mol_assert_like($bog_vmap_asset_links(`${d}my_page ${d}mol_view\n\ttitle \\Hi\n`), []);
+        },
+        'bytes, name and mime survive the round trip through a file'($) {
+            const file = land($).Data($giper_baza_file);
+            const bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+            file.buffer(bytes);
+            file.type('image/png');
+            file.name('logo.png');
+            $mol_assert_like([...file.buffer()], [...bytes]);
+            $mol_assert_equal(file.type(), 'image/png');
+            $mol_assert_equal(file.name(), 'logo.png');
+        },
+        'a file larger than one chunk comes back whole'($) {
+            const file = land($).Data($giper_baza_file);
+            const bytes = new Uint8Array(2 ** 15 + 100);
+            for (let i = 0; i < bytes.length; ++i)
+                bytes[i] = i % 251;
+            file.buffer(bytes);
+            const back = file.buffer();
+            $mol_assert_equal(back.byteLength, bytes.byteLength);
+            $mol_assert_equal(back[0], bytes[0]);
+            $mol_assert_equal(back[2 ** 15 - 1], bytes[2 ** 15 - 1]);
+            $mol_assert_equal(back[2 ** 15], bytes[2 ** 15]);
+            $mol_assert_equal(back[back.length - 1], bytes[bytes.length - 1]);
+        },
+        'an address that is not one resolves to no file at all'($) {
+            const one = assets($);
+            $mol_assert_equal(one.file('not an address'), null);
+            $mol_assert_equal(one.bytes('not an address'), null);
+            $mol_assert_equal(one.mime('not an address'), '');
+            $mol_assert_equal(one.name('not an address'), '');
+        },
+        'reading a file syncs its land unasked'($) {
+            const one = land($);
+            const file = one.Data($giper_baza_file);
+            file.name('logo.png');
+            let synced = 0;
+            one.sync = () => { synced++; return one; };
+            $mol_assert_equal(file.name(), 'logo.png');
+            $mol_assert_ok(synced > 0);
+        },
+        async 'a dropped file goes into a land and comes back as an address'($) {
+            const bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+            const one = $bog_vmap_asset.make({
+                $,
+                master: () => master,
+                land: () => $giper_baza_land.make({ $ }),
+            });
+            const file = await $mol_wire_async(one).made(new $mol_blob([bytes], { type: 'image/png' }));
+            $mol_assert_like([...file.buffer()], [...bytes]);
+            $mol_assert_equal(file.type(), 'image/png');
+            const uri = one.uri(file);
+            $mol_assert_ok(uri.startsWith(master + '?BAZA:file='));
+            $mol_assert_equal($bog_vmap_asset_link(uri), file.link().str);
+            const put = await $mol_wire_async(one).put(new $mol_blob([bytes], { type: 'image/png' }));
+            $mol_assert_ok(!!$bog_vmap_asset_link(put));
+        },
+        'the master is the one that is not the page itself'($) {
+            $.$giper_baza_yard = class extends $giper_baza_yard {
+                static masters_default = ['https://page.test/'];
+                static masters() {
+                    return ['https://page.test/', 'https://baza.test/'];
+                }
+            };
+            $mol_assert_equal($bog_vmap_asset.make({ $ }).master(), 'https://baza.test/');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
 (function ($_1) {
     const d = '$';
     $mol_test_mocks.push($ => {
@@ -12581,6 +13214,20 @@ var $;
             $mol_assert_equal(await $mol_wire_async(snaps[0]).time(), 1757);
             const back = await read(two.store, 'snap_state', snaps[0]);
             $mol_assert_equal(back.source, src_page);
+        },
+        async 'a file put into the base is addressed from the document'($) {
+            const s = store($);
+            s.doc_add('Landing');
+            s.assets = () => $bog_vmap_asset.make({
+                $,
+                master: () => 'https://baza.test/',
+                land: () => $giper_baza_land.make({ $ }),
+            });
+            const uri = await $mol_wire_async(s).asset_put(new $mol_blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' }));
+            s.source(`${d}bog_vmap_app_store_test_page ${d}mol_view\n\tLogo ${d}mol_image uri \\${uri}\n\tsub / <= Logo\n`);
+            $mol_assert_ok(s.source().includes(uri));
+            $mol_assert_equal(s.asset_links().length, 1);
+            $mol_assert_ok(uri.includes(s.asset_links()[0]));
         },
     });
 })($ || ($ = {}));
@@ -14262,25 +14909,16 @@ var $;
                 { source: `${d}bog_site_b ${d}bog_site_a\n\ty \\2\n` },
             ]), Error);
         },
+        'the address of an asset leaves the export exactly as it entered'($) {
+            const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png';
+            const module = $.$bog_vmap_app_export_build([
+                { source: `${d}bog_site_page ${d}mol_view\n\tLogo ${d}mol_image uri \\${uri}\n\tsub / <= Logo\n` },
+            ]);
+            const tree = file_of(module, '.view.tree');
+            $mol_assert_ok(tree.includes(`uri \\${uri}`));
+            $mol_assert_equal(module.files.some(file => file.name.startsWith('assets/')), false);
+        },
     });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test_mocks.push($ => {
-        class $giper_baza_yard_mock extends $.$giper_baza_yard {
-            master() {
-                return null;
-            }
-        }
-        $.$giper_baza_yard = $giper_baza_yard_mock;
-    });
-    $giper_baza_yard.masters = () => {
-        $giper_baza_glob.Seed();
-        return ['http://localhost:9090/'];
-    };
 })($ || ($ = {}));
 
 ;

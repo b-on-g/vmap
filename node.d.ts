@@ -44728,6 +44728,22 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    function $bog_vmap_asset_link(uri: string): string | null;
+    function $bog_vmap_asset_links(source: string): readonly string[];
+    class $bog_vmap_asset extends $mol_object {
+        master(): string;
+        uri(file: $giper_baza_file): string;
+        file(uri: string): $giper_baza_file | null;
+        bytes(uri: string): Uint8Array<ArrayBuffer> | null;
+        mime(uri: string): string;
+        name(uri: string): string;
+        land(): $giper_baza_land;
+        made(blob: $mol_blob): $giper_baza_file;
+        put(blob: $mol_blob): string;
+    }
+}
+
+declare namespace $ {
     type $bog_vmap_app_store_spots = {
         readonly [name: string]: {
             readonly x: number;
@@ -44772,6 +44788,9 @@ declare namespace $ {
         doc_root(doc: $bog_vmap_app_doc, next?: string): string;
         doc_spots(doc: $bog_vmap_app_doc, next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
         source(next?: string): string;
+        assets(): $bog_vmap_asset;
+        asset_put(blob: $mol_blob): string;
+        asset_links(): readonly string[];
         spots(next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
         title(next?: string): string;
         pack(next?: string): string;

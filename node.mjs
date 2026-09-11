@@ -20896,6 +20896,73 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    const $bog_vmap_asset_mark = '?BAZA:file=';
+    function $bog_vmap_asset_link(uri) {
+        const pos = uri.indexOf($bog_vmap_asset_mark);
+        if (pos < 0)
+            return null;
+        try {
+            var id = $giper_baza_file_query.parse(uri.slice(pos)).file['=']?.[0][0];
+        }
+        catch {
+            return null;
+        }
+        return id ? $giper_baza_link.check(id) : null;
+    }
+    $.$bog_vmap_asset_link = $bog_vmap_asset_link;
+    function $bog_vmap_asset_links(source) {
+        const found = new Set();
+        for (const [uri] of source.matchAll(/\?BAZA:file=\S*/g)) {
+            const link = $bog_vmap_asset_link(uri);
+            if (link)
+                found.add(link);
+        }
+        return [...found];
+    }
+    $.$bog_vmap_asset_links = $bog_vmap_asset_links;
+    class $bog_vmap_asset extends $mol_object {
+        master() {
+            const yard = this.$.$giper_baza_yard;
+            return yard.masters().find(uri => !yard.masters_default.includes(uri)) ?? '';
+        }
+        uri(file) {
+            const master = this.master();
+            return master ? master.replace(/\/$/, '') + '/' + file.uri() : '';
+        }
+        file(uri) {
+            const link = $bog_vmap_asset_link(uri);
+            if (!link)
+                return null;
+            return this.$.$giper_baza_glob.Pawn(new $giper_baza_link(link), $giper_baza_file);
+        }
+        bytes(uri) {
+            return this.file(uri)?.buffer() ?? null;
+        }
+        mime(uri) {
+            return this.file(uri)?.type() ?? '';
+        }
+        name(uri) {
+            return this.file(uri)?.name() ?? '';
+        }
+        land() {
+            return this.$.$giper_baza_glob.land_grab();
+        }
+        made(blob) {
+            const file = this.land().Data($giper_baza_file);
+            file.blob(blob);
+            return file;
+        }
+        put(blob) {
+            return this.uri(this.made(blob));
+        }
+    }
+    $.$bog_vmap_asset = $bog_vmap_asset;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     class $bog_vmap_app_store extends $mol_object {
         home() {
             return this.$.$giper_baza_glob.home().land().Data($bog_vmap_app_doc_home);
@@ -21078,6 +21145,15 @@ var $;
                 return this.doc_source(doc);
             return this.doc_source(doc, next);
         }
+        assets() {
+            return $bog_vmap_asset.make({ $: this.$ });
+        }
+        asset_put(blob) {
+            return this.assets().put(blob);
+        }
+        asset_links() {
+            return $bog_vmap_asset_links(this.source());
+        }
         spots(next) {
             const doc = this.doc_current();
             if (!doc)
@@ -21182,6 +21258,9 @@ var $;
     __decorate([
         $mol_mem
     ], $bog_vmap_app_store.prototype, "draft_pack", null);
+    __decorate([
+        $mol_memo.method
+    ], $bog_vmap_app_store.prototype, "assets", null);
     $.$bog_vmap_app_store = $bog_vmap_app_store;
     function $bog_vmap_app_store_parts_pack(parts) {
         return Object.keys(parts).length ? JSON.stringify(parts) : '';
