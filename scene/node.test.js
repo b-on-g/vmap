@@ -8914,6 +8914,10 @@ var $;
                     return String(error?.message ?? error);
                 }
             }
+            pack_task() {
+                const note = this.pack_note();
+                return new this.$.$mol_after_timeout(60, () => this.error_post('pack', note, ''));
+            }
             sandbox() {
                 const host = this.$;
                 const sandbox = Object.create(host);
@@ -9389,6 +9393,7 @@ var $;
                     this.key_listener(),
                     this.resize_watch(),
                     this.boot(),
+                    this.pack_task(),
                     this.report_task(),
                     this.values_task(),
                 ];
@@ -9439,6 +9444,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "pack_note", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "pack_task", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "sandbox", null);
@@ -17828,6 +17836,14 @@ var $;
         const errors = sent.filter(m => m.kind === 'error' && m.at === at);
         return errors[errors.length - 1];
     }
+    function held(ctx) {
+        Reflect.set(ctx, '$mol_after_timeout', class extends $mol_after_timeout {
+            constructor(delay, task) {
+                super(delay, task);
+                clearTimeout(this.id);
+            }
+        });
+    }
     async function grown(made, root, src) {
         made.doc_root(root);
         made.doc_src(src);
@@ -18074,6 +18090,26 @@ var $;
             const failed = failure(sent, 'runtime');
             $mol_assert_equal(failed?.node, 'Tail');
             $mol_assert_ok(failed?.message);
+        },
+        'a scene with no pack yet says so upwards, not only on its own canvas'($) {
+            const { made, ctx } = scene($, '');
+            const sent = wired(made);
+            held(ctx);
+            made.pack_task();
+            $mol_assert_equal(failure(sent, 'pack'), undefined);
+            made.pack_task().task();
+            $mol_assert_equal(failure(sent, 'pack')?.message, 'Ожидание библиотеки компонентов…');
+        },
+        async 'a pack that answered clears the note it sent upwards'($) {
+            const { made, ctx } = scene($, '');
+            const sent = wired(made);
+            held(ctx);
+            made.pack_task().task();
+            $mol_assert_equal(failure(sent, 'pack')?.message, 'Ожидание библиотеки компонентов…');
+            deliver($, made, { kind: 'pack_set', uri: pack });
+            await settled(() => made.pack_ready());
+            made.pack_task().task();
+            $mol_assert_equal(failure(sent, 'pack')?.message, null);
         },
         async 'a failure with no node to blame reports an empty one'($) {
             const { made } = scene($);

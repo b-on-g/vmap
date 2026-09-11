@@ -9055,6 +9055,10 @@ var $;
                     return String(error?.message ?? error);
                 }
             }
+            pack_task() {
+                const note = this.pack_note();
+                return new this.$.$mol_after_timeout(60, () => this.error_post('pack', note, ''));
+            }
             sandbox() {
                 const host = this.$;
                 const sandbox = Object.create(host);
@@ -9530,6 +9534,7 @@ var $;
                     this.key_listener(),
                     this.resize_watch(),
                     this.boot(),
+                    this.pack_task(),
                     this.report_task(),
                     this.values_task(),
                 ];
@@ -9580,6 +9585,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "pack_note", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "pack_task", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "sandbox", null);

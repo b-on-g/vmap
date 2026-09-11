@@ -2443,8 +2443,8 @@ declare namespace $ {
         readonly key: 'Escape';
     } | {
         readonly kind: 'error';
-        /** Channel. The two clear independently. */
-        readonly at: 'compile' | 'runtime';
+        /** Channel. The three clear independently. */
+        readonly at: 'compile' | 'runtime' | 'pack';
         readonly message: string | null;
         /** Node the failure belongs to, when the scene can attribute it. */
         readonly node?: string;
@@ -3304,7 +3304,7 @@ declare namespace $.$$ {
         readonly klass: string;
     };
     export class $bog_vmap_scene extends $.$bog_vmap_scene {
-        error_sent(at: 'compile' | 'runtime', next?: string | null): string | null;
+        error_sent(at: 'compile' | 'runtime' | 'pack', next?: string | null): string | null;
         doc_src(next?: string): string;
         doc_root(next?: string): string;
         doc_js(next?: {
@@ -3346,6 +3346,7 @@ declare namespace $.$$ {
         };
         pack_ready(): string;
         pack_note(): string;
+        pack_task(): $mol_after_timeout;
         sandbox(): typeof $$;
         libs(next?: readonly $bog_vmap_bridge_part[]): readonly $bog_vmap_bridge_part[];
         libs_parsed(): {
@@ -3426,7 +3427,7 @@ declare namespace $.$$ {
             kids_of: (view: $mol_view) => readonly $mol_view_content[];
             prop_of: (view: $mol_view) => string;
         };
-        error_post(at: 'compile' | 'runtime', message: string, node: string): void;
+        error_post(at: 'compile' | 'runtime' | 'pack', message: string, node: string): void;
         sizes_of(root: $mol_view): $bog_vmap_scene_measure_result<Element>;
         view_like(kid: unknown): kid is $mol_view;
         view_prop(view: $mol_view): string;
