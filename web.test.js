@@ -12671,6 +12671,36 @@ var $;
             $mol_assert_equal(dots.filter(dot => dot.node === 'Map').length, 2);
             $mol_assert_equal(dots.filter(dot => dot.node === 'Map_2').length, 1);
         },
+        'a folded dot whose first port is of the wrong shape stands on the row it carries'($) {
+            const ports = [
+                { name: 'result', next: false, own: true, kind: 'number' },
+                { name: 'op', next: false, own: true, kind: 'string' },
+            ];
+            const { pane } = pane_make($, {}, {
+                doc_names: () => ['Calc', 'Map'],
+                part_ports: () => ports,
+                wires: () => [],
+            });
+            pane.sizes({
+                [`${root}/Calc`]: box(0, 0, 200, 50),
+                [`${root}/Map`]: box(400, 0, 200, 50),
+            });
+            pane.wire_drag({ from: 'Map', from_prop: 'marker', kind: 'string' });
+            pane.wire_point([-9999, -9999]);
+            const folded = pane.wire_dots().filter(dot => dot.node === 'Calc');
+            const row = $bog_vmap_app_wire_port_point(pane.part_box('Calc'), 'in', 1);
+            $mol_assert_equal(folded.length, 1);
+            $mol_assert_equal(folded[0].port.name, 'op');
+            $mol_assert_equal(folded[0].x, row[0]);
+            $mol_assert_equal(folded[0].y, row[1]);
+            pane.wire_point([folded[0].x, folded[0].y]);
+            const opened = pane.wire_dots();
+            const under = $bog_vmap_app_wire_dot_at(opened, [folded[0].x, folded[0].y]);
+            $mol_assert_equal(opened.filter(dot => dot.node === 'Calc').length, 2);
+            $mol_assert_equal(under?.node, 'Calc');
+            $mol_assert_equal(under?.port.name, 'op');
+            $mol_assert_equal(under?.lit, true);
+        },
         'a stack of short parts keeps every dot on the part it belongs to'($) {
             const own = ['left', 'right', 'op', 'result'];
             const base = ['dom_name', 'title', 'style', 'minimal_height'];
