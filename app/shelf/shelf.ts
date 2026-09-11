@@ -21,6 +21,11 @@ namespace $ {
 		return short.slice( 0, 1 ).toUpperCase() + short.slice( 1 )
 	}
 
+	export function $bog_vmap_app_shelf_needs( source: string ) {
+		const draft = $bog_vmap_app_shelf_head.split( ' ' )[ 0 ]
+		return [ ... new Set( source.match( /\$[a-z][\w]*/g ) ?? [] ) ].filter( name => name !== draft )
+	}
+
 	export function $bog_vmap_app_shelf_single( klass: string ) {
 		const name = $bog_vmap_app_shelf_short( klass )
 		return `${ $bog_vmap_app_shelf_head }\n\t${ name } ${ klass }\n\tsub /\n\t\t<= ${ name }\n`

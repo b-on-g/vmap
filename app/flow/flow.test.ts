@@ -1,6 +1,29 @@
 namespace $ {
 	const d = '$'
 
+	export const $bog_vmap_app_flow_parts = [
+		`${d}mol_string ${d}mol_view`,
+		`\tvalue? \\`,
+		`${d}mol_number ${d}mol_view`,
+		`\tvalue? 0`,
+		`${d}mol_select ${d}mol_view`,
+		`\tvalue? \\`,
+		`${d}mol_switch ${d}mol_view`,
+		`\tvalue? \\`,
+		`${d}mol_check_box ${d}mol_view`,
+		`\tchecked? false`,
+		`${d}mol_paragraph ${d}mol_view`,
+		`\ttitle \\`,
+		`${d}bog_vmap_part_cell ${d}mol_view`,
+		`\tresult \\`,
+		`${d}bog_vmap_part_plot ${d}mol_view`,
+		`\tseries /`,
+		`${d}bog_vmap_part_calc ${d}mol_view`,
+		`\tresult 0`,
+		`${d}bog_vmap_part_map ${d}mol_view`,
+		`\tzoom 0`,
+	]
+
 	export const $bog_vmap_app_flow_pack = [
 		`${d}flow_button ${d}mol_view`,
 		`\ttitle \\`,
@@ -11,6 +34,7 @@ namespace $ {
 		`${d}flow_map ${d}mol_view`,
 		`\tzoom 0`,
 		`\tmarker \\`,
+		... $bog_vmap_app_flow_parts,
 		``,
 	].join( '\n' )
 
@@ -474,7 +498,10 @@ namespace $ {
 				'[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]',
 			) ].map( el => el.textContent )
 
-			$mol_assert_like( apps, [ 'Button', 'Calc', 'Map' ] )
+			$mol_assert_like( apps, [
+				'Button', 'Calc', 'Map',
+				'Vmap_part_cell', 'Vmap_part_plot', 'Vmap_part_calc', 'Vmap_part_map',
+			] )
 
 			$mol_assert_equal( stage.root.querySelector( '[bog_vmap_app_palette_class_row]' ), null )
 
@@ -483,7 +510,10 @@ namespace $ {
 			const rows = [ ... stage.root.querySelectorAll( '[bog_vmap_app_palette_class_row]' ) ]
 				.map( el => el.textContent )
 
-			$mol_assert_like( rows, [ `${d}mol_view`, button, calc, map ] )
+			$mol_assert_like( rows, [
+				`${d}mol_view`, button, calc, map,
+				... $bog_vmap_app_flow_parts.filter( line => line[ 0 ] === '$' ).map( line => line.split( ' ' )[ 0 ] ),
+			] )
 
 			$mol_assert_like( stage.broken(), [ stage.pane.Scene( stage.pane.scene_key() ).dom_id() ] )
 
@@ -1257,7 +1287,10 @@ namespace $ {
 				'[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]',
 			) ].map( el => el.textContent )
 
-			$mol_assert_like( apps, [ 'Button', 'Calc', 'Map' ] )
+			$mol_assert_like( apps, [
+				'Button', 'Calc', 'Map',
+				'Vmap_part_cell', 'Vmap_part_plot', 'Vmap_part_calc', 'Vmap_part_map',
+			] )
 
 		},
 

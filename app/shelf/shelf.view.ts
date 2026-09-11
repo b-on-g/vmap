@@ -157,8 +157,34 @@ namespace $.$$ {
 			return this.app_list().length ? 'Объекты приложения' : 'Приложение не подключено'
 		}
 
+		pack_classes(): readonly string[] {
+			return this.Palette().Lib().class_list()
+		}
+
+		@ $mol_mem
+		pack_known(): ReadonlySet< string > | null {
+
+			if( !this.pack_link() ) return null
+
+			try {
+				return new Set( this.pack_classes() )
+			} catch {
+				return null
+			}
+
+		}
+
 		items(): readonly $bog_vmap_app_shelf_item[] {
-			return this.$.$bog_vmap_app_shelf_presets()
+
+			const presets = this.$.$bog_vmap_app_shelf_presets()
+
+			const known = this.pack_known()
+			if( !known ) return presets
+
+			return presets.filter(
+				item => this.$.$bog_vmap_app_shelf_needs( item.source ).every( name => known.has( name ) )
+			)
+
 		}
 
 		item( id: string ): $bog_vmap_app_shelf_item | null {

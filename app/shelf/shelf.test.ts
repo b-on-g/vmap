@@ -94,6 +94,57 @@ namespace $ {
 
 		},
 
+		'the shelf is cut down to what the pack at hand can build'( $ ) {
+
+			const shelf = ( classes: readonly string[] )=> $$.$bog_vmap_app_shelf.make({
+				$,
+				pack_link: ()=> 'https://pack.test/',
+				pack_classes: ()=> classes,
+			})
+
+			const ids = ( one: $$.$bog_vmap_app_shelf )=> one.items().map( item => item.id )
+
+			const rich = ids( shelf([
+				`${d}mol_view`, `${d}mol_string`, `${d}mol_number`,
+				`${d}bog_vmap_part_calc`, `${d}bog_vmap_part_map`,
+			]) )
+
+			const poor = ids( shelf([ `${d}mol_view`, `${d}mol_string` ]) )
+
+			$mol_assert_equal( rich.includes( 'calc' ), true )
+			$mol_assert_equal( rich.includes( 'pair' ), true )
+			$mol_assert_equal( rich.includes( 'input_number' ), true )
+
+			$mol_assert_equal( poor.includes( 'calc' ), false )
+			$mol_assert_equal( poor.includes( 'pair' ), false )
+			$mol_assert_equal( poor.includes( 'input_number' ), false )
+
+			$mol_assert_equal( poor.includes( 'block' ), true )
+			$mol_assert_equal( poor.includes( 'input_string' ), true )
+
+		},
+
+		'until the pack answers the shelf keeps offering everything'( $ ) {
+
+			const shelf = $$.$bog_vmap_app_shelf.make({
+				$,
+				pack_link: ()=> 'https://pack.test/',
+				pack_classes: ()=> $mol_fail( new Error( 'Not Found' ) ),
+			})
+
+			$mol_assert_equal( shelf.items().length, $bog_vmap_app_shelf_presets().length )
+
+		},
+
+		'a preset asks for every class its source names but its own head'( $ ) {
+
+			$mol_assert_like(
+				$.$bog_vmap_app_shelf_needs( preset( 'calc' ) ),
+				[ `${d}mol_view`, `${d}bog_vmap_part_calc` ],
+			)
+
+		},
+
 		'files of a module give one source per class, as their author wrote them'( $ ) {
 
 			const text = [
