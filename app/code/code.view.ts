@@ -2,6 +2,14 @@ namespace $.$$ {
 
 	export type $bog_vmap_app_code_slot = 'tree' | 'js' | 'css'
 
+	export class $bog_vmap_app_code_deck extends $.$bog_vmap_app_code_deck {
+
+		override current( next?: string ) {
+			return this.$.$mol_state_session.value< string >( `${ this }.current()`, next || undefined ) || '0'
+		}
+
+	}
+
 	export class $bog_vmap_app_code extends $.$bog_vmap_app_code {
 
 		sliced() {

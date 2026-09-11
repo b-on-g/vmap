@@ -26,7 +26,7 @@ $bog_vmap_app_code $mol_view
 		sub <= typing_rows /$mol_view
 	Typing_row* $mol_view
 		sub / <= typing_text* \
-	Sources $mol_deck
+	Sources $bog_vmap_app_code_deck
 		items <= source_tabs /$mol_view
 	Tree $mol_textarea
 		title \view.tree
@@ -55,3 +55,5 @@ $bog_vmap_app_code $mol_view
 		event *
 			^
 			pointerdown? <=> css_press? null
+
+$bog_vmap_app_code_deck $mol_deck
