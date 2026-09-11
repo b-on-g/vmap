@@ -1780,6 +1780,66 @@ namespace $ {
 
 		},
 
+		'a file dropped on the canvas is handed on with the point it landed at'( $ ) {
+
+			const { pane } = pane_make( $ )
+
+			const dropped = [] as $$.$bog_vmap_app_pane_files[]
+			pane.files_drop = next => {
+				if( next ) dropped.push( next )
+				return next ?? null
+			}
+
+			const file = new $mol_blob( [ new Uint8Array([ 137 ]) ], { type: 'image/png' } )
+
+			let prevented = 0
+
+			pane.file_take({
+				clientX: 200,
+				clientY: 150,
+				preventDefault: ()=> { prevented ++ },
+				dataTransfer: { files: [ file ] },
+			} as unknown as DragEvent )
+
+			$mol_assert_equal( prevented, 1 )
+			$mol_assert_equal( dropped.length, 1 )
+			$mol_assert_equal( dropped[ 0 ].files[ 0 ], file )
+			$mol_assert_like( [ dropped[ 0 ].x, dropped[ 0 ].y ], [ 200, 150 ] )
+
+		},
+
+		'a drag that carries no file hands nothing on'( $ ) {
+
+			const { pane } = pane_make( $ )
+
+			const dropped = [] as $$.$bog_vmap_app_pane_files[]
+			pane.files_drop = next => {
+				if( next ) dropped.push( next )
+				return next ?? null
+			}
+
+			pane.file_take({
+				clientX: 200,
+				clientY: 150,
+				preventDefault: ()=> {},
+				dataTransfer: { files: [] },
+			} as unknown as DragEvent )
+
+			$mol_assert_equal( dropped.length, 0 )
+
+		},
+
+		'a drag over the canvas is claimed, or the browser opens the file itself'( $ ) {
+
+			const { pane } = pane_make( $ )
+
+			let prevented = 0
+			pane.file_over({ preventDefault: ()=> { prevented ++ } } as unknown as Event )
+
+			$mol_assert_equal( prevented, 1 )
+
+		},
+
 	})
 
 }

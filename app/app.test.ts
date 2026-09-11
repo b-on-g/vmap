@@ -963,6 +963,51 @@ namespace $ {
 			$mol_assert_equal( two.body_main().includes( two.Code() ), true )
 
 		},
+
+		'an image dropped on the canvas becomes a node addressed at the file'( $ ) {
+
+			const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png'
+
+			const store = $bog_vmap_app_store.make({ $, asset_put: ()=> uri })
+			const app = $bog_vmap_app.make({ $, store: ()=> store }) as $$.$bog_vmap_app
+
+			const file = new $.$mol_dom_context.File(
+				[ new Uint8Array([ 137, 80, 78, 71 ]) ], 'logo.png', { type: 'image/png' },
+			)
+
+			app.files_drop({ files: [ file ], x: 100, y: 200, owner: '', index: -1 })
+
+			const name = app.selected()!
+			const source = app.doc_source()
+
+			$mol_assert_equal( name, 'Image' )
+			$mol_assert_ok( source.includes( `Image ${d}mol_image` ) )
+			$mol_assert_ok( source.includes( `uri \\${ uri }` ) )
+			$mol_assert_like( app.spots()[ name ], { x: 100, y: 200 } )
+
+		},
+
+		'a file that is not an image becomes a link carrying its name'( $ ) {
+
+			const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=notes.pdf'
+
+			const store = $bog_vmap_app_store.make({ $, asset_put: ()=> uri })
+			const app = $bog_vmap_app.make({ $, store: ()=> store }) as $$.$bog_vmap_app
+
+			const file = new $.$mol_dom_context.File(
+				[ new Uint8Array([ 37 ]) ], 'notes.pdf', { type: 'application/pdf' },
+			)
+
+			app.files_drop({ files: [ file ], x: 10, y: 20, owner: '', index: -1 })
+
+			const source = app.doc_source()
+
+			$mol_assert_equal( app.selected(), 'File' )
+			$mol_assert_ok( source.includes( `File ${d}mol_link` ) )
+			$mol_assert_ok( source.includes( `uri \\${ uri }` ) )
+			$mol_assert_ok( source.includes( 'title \\notes.pdf' ) )
+
+		},
 	})
 
 }

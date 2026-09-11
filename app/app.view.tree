@@ -161,3 +161,4 @@ $bog_vmap_app $mol_view
 		axis* <= doc_axis* \
 		tree_move? <=> tree_move? null
 		carry_drop? <=> carry_drop? null
+		files_drop? <=> files_drop? null

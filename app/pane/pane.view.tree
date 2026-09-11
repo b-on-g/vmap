@@ -24,6 +24,13 @@ $bog_vmap_app_pane $mol_view
 	tree_move? null
 	carry_at? null
 	carry_drop? null
+	files_drop? null
+	file_over? null
+	file_take? null
+	event *
+		^
+		dragover? <=> file_over? null
+		drop? <=> file_take? null
 	values? *
 	handshake*? 0
 	ready false

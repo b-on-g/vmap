@@ -22,6 +22,14 @@ namespace $.$$ {
 		readonly index: number
 	}
 
+	export type $bog_vmap_app_pane_files = {
+		readonly files: readonly File[]
+		readonly x: number
+		readonly y: number
+		readonly owner: string
+		readonly index: number
+	}
+
 	export type $bog_vmap_app_pane_peer = {
 		postMessage( data: unknown, origin: string ): void
 		readonly origin: string
@@ -443,12 +451,12 @@ namespace $.$$ {
 			return { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
 		}
 
-		screen_point( event: PointerEvent ) {
+		screen_point( event: { readonly clientX: number, readonly clientY: number } ) {
 			const rect = this.pane_rect()
 			return [ event.clientX - rect.left, event.clientY - rect.top ] as const
 		}
 
-		world_point( event: PointerEvent ) {
+		world_point( event: { readonly clientX: number, readonly clientY: number } ) {
 			const screen = this.screen_point( event )
 			const shift = this.camera_shift()
 			const zoom = this.camera_zoom()
@@ -540,6 +548,38 @@ namespace $.$$ {
 
 		override carry_drop( next?: $bog_vmap_app_pane_carry | null ) {
 			return next ?? null
+		}
+
+		override files_drop( next?: $bog_vmap_app_pane_files | null ) {
+			return next ?? null
+		}
+
+		override file_over( next?: Event | null ) {
+			next?.preventDefault()
+			return next ?? null
+		}
+
+		override file_take( next?: DragEvent | null ) {
+
+			if( !next ) return null
+
+			next.preventDefault()
+
+			const files = next.dataTransfer ? [ ... next.dataTransfer.files ] : []
+			if( !files.length ) return next
+
+			const point = this.world_point( next )
+			const slot = this.insert_slot( point )
+
+			this.files_drop({
+				files,
+				x: point[ 0 ],
+				y: point[ 1 ],
+				owner: slot?.owner ?? '',
+				index: slot?.index ?? -1,
+			})
+
+			return next
 		}
 
 		@ $mol_action

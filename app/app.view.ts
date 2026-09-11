@@ -623,6 +623,56 @@ namespace $.$$ {
 			return next
 		}
 
+		override files_drop( next?: $bog_vmap_app_pane_files | null ) {
+
+			if( !next ) return null
+
+			next.files.forEach( ( file, i )=> this.file_place(
+				file,
+				next.x + i * 24,
+				next.y + i * 24,
+				next.owner ? { owner: next.owner, index: next.index + i } : null,
+			) )
+
+			return next
+		}
+
+		file_place(
+			file: File,
+			x: number,
+			y: number,
+			slot: { readonly owner: string, readonly index: number } | null,
+		) {
+
+			const uri = this.store().asset_put( file )
+			if( !uri ) return ''
+
+			const node = this.node()
+			const tree = node.tree()
+
+			const image = file.type.startsWith( 'image/' )
+			const name = this.name_free( image ? 'Image' : 'File' )
+
+			node.part_add( name, image ? '$mol_image' : '$mol_link' )
+			node.over_set( name, 'uri', tree.struct( 'uri', [ tree.data( uri ) ] ) )
+
+			if( !image ) node.over_set(
+				name,
+				'title',
+				tree.struct( 'title', [ tree.data( file.name ) ] ),
+			)
+
+			if( slot ) node.sub_insert( name, slot.index, slot.owner )
+			else {
+				node.sub_add( name )
+				this.spots({ ... this.spots(), [ name ]: { x, y } })
+			}
+
+			this.selected( name )
+
+			return name
+		}
+
 		override link_add( next?: $bog_vmap_app_pane_link_new | null ) {
 			if( next ) {
 				const taken = this.doc_wires().some( link => link.to === next.to && link.to_prop === next.to_prop )
