@@ -49223,6 +49223,7 @@ var $;
             });
     }
     let $bog_vmap_app_flow_last = null;
+    let $bog_vmap_app_flow_host = null;
     async function $bog_vmap_app_flow_settle(done, limit = 300) {
         const till = Date.now() + limit;
         while (!done() && Date.now() < till) {
@@ -49235,7 +49236,14 @@ var $;
         browser_gaps($);
         const dom = $.$mol_dom_context;
         $bog_vmap_app_flow_last?.destructor();
-        dom.document.body.innerHTML = '';
+        $bog_vmap_app_flow_host?.remove();
+        const host = dom.document.createElement('div');
+        host.setAttribute('bog_vmap_app_flow_host', '');
+        host.style.position = 'fixed';
+        host.style.left = '-20000px';
+        host.style.top = '0';
+        dom.document.body.appendChild(host);
+        $bog_vmap_app_flow_host = host;
         const timers = [];
         class $mol_after_timeout_flow extends $mol_after_timeout {
             constructor(delay, task) {
@@ -49370,7 +49378,7 @@ var $;
         const pane = app.Pane();
         pane.scene_peer = () => peer;
         const root = app.dom_tree();
-        dom.document.body.appendChild(root);
+        host.appendChild(root);
         const rect = $_1.$bog_vmap_app_flow_rect;
         pane.dom_node().getBoundingClientRect = () => rect;
         pane.view_rect = () => rect;
@@ -49823,6 +49831,21 @@ var $;
             $mol_assert_equal(stage.pane.ready(), false);
             $mol_assert_equal(stage.text().includes('Сцена не отвечает'), false);
             $mol_assert_ok(stage.frame() !== frame);
+        },
+        'the stand keeps to its own corner and leaves the page it was opened on alone'($) {
+            const dom = $.$mol_dom_context;
+            const live = dom.document.createElement('div');
+            live.setAttribute('id', 'flow_live_mark');
+            dom.document.body.appendChild(live);
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_equal(live.isConnected, true);
+            $mol_assert_equal(stage.root.isConnected, true);
+            $mol_assert_equal(stage.root.parentElement === dom.document.body, false);
+            $_2.$bog_vmap_app_flow_stage($);
+            $mol_assert_equal(live.isConnected, true);
+            $mol_assert_equal(stage.root.isConnected, false);
+            live.remove();
         },
         'a pack that never answers names itself in the header instead of a green lie'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
