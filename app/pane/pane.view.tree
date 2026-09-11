@@ -65,6 +65,7 @@ $bog_vmap_app_pane $mol_view
 			press? <=> node_press? null
 			move? <=> node_move? null
 			release? <=> node_release? null
+			away? <=> node_away? null
 		<= Wire $bog_vmap_app_wire
 			lines <= wire_lines /$bog_vmap_app_wire_line
 			dots <= wire_dots /$bog_vmap_app_wire_dot
@@ -118,11 +119,13 @@ $bog_vmap_app_pane_overlay $mol_view
 	press? null
 	move? null
 	release? null
+	away? null
 	event *
 		^
 		pointerdown? <=> press? null
 		pointermove? <=> move? null
 		pointerup? <=> release? null
+		pointerleave? <=> away? null
 	Frame* $mol_view
 		style <= frame_style* *
 		sub /

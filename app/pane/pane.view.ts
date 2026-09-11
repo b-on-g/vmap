@@ -756,11 +756,28 @@ namespace $.$$ {
 			if( Math.hypot( dx, dy ) > click_slack ) this.press({ ... press, moved: true })
 		}
 
+		@ $mol_mem
+		hovered( next?: string | null ) {
+			return next ?? null
+		}
+
+		hover_track( event: PointerEvent ) {
+			if( this.wire_drag() || this.drag() || this.band() ) return
+			this.hovered( this.node_at( this.world_point( event ) ) )
+		}
+
+		@ $mol_action
+		override node_away() {
+			this.hovered( null )
+			return null
+		}
+
 		node_move( event?: PointerEvent ) {
 			if( !event ) return
 			if( this.carrying() ) return
 
 			this.press_track( event )
+			this.hover_track( event )
 
 			if( this.wire_drag() ) {
 				if( !event.buttons ) return this.node_release( event )
@@ -1017,7 +1034,7 @@ namespace $.$$ {
 		}
 
 		part_spread( name: string ) {
-			return name === this.primary() || name === this.wire_over()
+			return name === this.primary() || name === this.hovered() || name === this.wire_over()
 		}
 
 		port_index( name: string, port: string ) {
@@ -1105,8 +1122,9 @@ namespace $.$$ {
 				return dots
 			}
 
-			const name = this.primary()
-			if( name ) {
+			const shown = [ this.primary(), this.hovered() ].filter( Boolean ) as readonly string[]
+
+			for( const name of new Set( shown ) ) {
 				add( name, 'in', ()=> true )
 				add( name, 'out', ()=> true )
 			}

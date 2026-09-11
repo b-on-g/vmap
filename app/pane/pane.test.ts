@@ -2080,3 +2080,134 @@ namespace $ {
 	})
 
 }
+
+namespace $ {
+	const d = '$'
+
+	const root = `${d}bog_vmap_app_hover`
+
+	const ports = [
+		{ name: 'result', next: false, own: true, kind: 'number' as const },
+		{ name: 'op', next: true, own: true, kind: 'string' as const },
+		{ name: 'title', next: false, own: false, kind: 'string' as const },
+	]
+
+	const pane_make = ( $: $mol_ambient_context )=> {
+		const peer = { origin: 'null', postMessage() {} }
+
+		const pane = $$.$bog_vmap_app_pane.make({
+			$,
+			doc_root: ()=> root,
+			doc_names: ()=> [ 'Calc', 'Map' ],
+			pane_rect: ()=> ({ left: 0, top: 0, width: 1000, height: 800 }),
+			scene_peer: ()=> peer,
+			part_ports: ()=> ports,
+			wires: ()=> [],
+		})
+
+		pane.sizes({
+			[ `${ root }/Calc` ]: { x: 0, y: 0, width: 100, height: 50 },
+			[ `${ root }/Map` ]: { x: 300, y: 0, width: 100, height: 50 },
+		})
+
+		return pane
+	}
+
+	const pointer = ( clientX: number, clientY: number )=> ({
+		button: 0,
+		buttons: 0,
+		pointerId: 1,
+		clientX,
+		clientY,
+		altKey: false,
+		ctrlKey: false,
+		metaKey: false,
+		shiftKey: false,
+		preventDefault() {},
+	}) as unknown as PointerEvent
+
+	const dots_of = ( pane: $$.$bog_vmap_app_pane, node: string )=> {
+		return pane.wire_dots().filter( dot => dot.node === node )
+	}
+
+	$mol_test({
+		'the ports of the node under the pointer come out named'( $ ) {
+			const pane = pane_make( $ )
+
+			$mol_assert_equal( dots_of( pane, 'Map' ).length, 0 )
+
+			pane.node_move( pointer( 350, 25 ) )
+
+			$mol_assert_equal( pane.hovered(), 'Map' )
+
+			const dots = dots_of( pane, 'Map' )
+			$mol_assert_equal( dots.length, 4 )
+			$mol_assert_equal( dots.every( dot => Boolean( dot.port.name ) ), true )
+
+			$mol_assert_like(
+				[ ... new Set( dots.map( dot => dot.port.name ) ) ].sort(),
+				[ 'op', 'result' ],
+			)
+
+		},
+
+		'the pointer off the parts leaves the named ports to the picked one'( $ ) {
+			const pane = pane_make( $ )
+
+			pane.picked([ 'Calc' ])
+			pane.node_move( pointer( 350, 25 ) )
+
+			$mol_assert_equal( dots_of( pane, 'Calc' ).length, 4 )
+			$mol_assert_equal( dots_of( pane, 'Map' ).length, 4 )
+
+			pane.node_move( pointer( 700, 400 ) )
+
+			$mol_assert_equal( pane.hovered(), null )
+			$mol_assert_equal( dots_of( pane, 'Calc' ).length, 4 )
+			$mol_assert_equal( dots_of( pane, 'Map' ).length, 0 )
+
+		},
+
+		'the pointer gone off the canvas takes the hover with it'( $ ) {
+			const pane = pane_make( $ )
+
+			pane.node_move( pointer( 350, 25 ) )
+			$mol_assert_equal( pane.hovered(), 'Map' )
+
+			pane.node_away()
+
+			$mol_assert_equal( pane.hovered(), null )
+			$mol_assert_equal( dots_of( pane, 'Map' ).length, 0 )
+
+		},
+
+		'the picked node stays named while the pointer hovers another'( $ ) {
+			const pane = pane_make( $ )
+
+			pane.picked([ 'Calc' ])
+			pane.node_move( pointer( 350, 25 ) )
+
+			const picked = dots_of( pane, 'Calc' )
+
+			$mol_assert_equal( picked.length, 4 )
+			$mol_assert_like(
+				[ ... new Set( picked.map( dot => dot.port.name ) ) ].sort(),
+				[ 'op', 'result' ],
+			)
+
+		},
+
+		'a drag in progress keeps the hover out of the dots'( $ ) {
+			const pane = pane_make( $ )
+
+			pane.picked([ 'Calc' ])
+			pane.wire_drag({ from: 'Calc', from_prop: 'result', kind: 'number' })
+			pane.node_move( pointer( 350, 25 ) )
+
+			$mol_assert_equal( pane.hovered(), null )
+
+		},
+
+	})
+
+}
