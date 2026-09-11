@@ -50,6 +50,40 @@ namespace $.$$ {
 			gap: $mol_gap.space,
 		},
 
+		Packs: {
+			flex: { direction: 'column', shrink: 0 },
+			gap: $mol_gap.space,
+		},
+
+		Packs_title: {
+			color: $mol_theme.shade,
+			font: { size: '.8rem' },
+		},
+
+		Pack_list: {
+			flex: { direction: 'row', wrap: 'wrap' },
+			gap: $mol_gap.space,
+		},
+
+		Pack_row: {
+			padding: $mol_gap.text,
+			font: { family: 'inherit', size: '.8rem' },
+			border: {
+				radius: $mol_gap.round,
+				width: '1px',
+				style: 'solid',
+				color: $mol_theme.line,
+			},
+			background: { color: $mol_theme.card },
+
+			'[bog_vmap_app_shelf_pack_current]': {
+				true: {
+					background: { color: $mol_theme.current },
+					color: $mol_theme.back,
+				},
+			},
+		},
+
 		Links: {
 			background: { color: $mol_theme.field },
 			font: { family: 'monospace', size: '.8rem' },

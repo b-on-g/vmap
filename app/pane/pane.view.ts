@@ -270,6 +270,7 @@ namespace $.$$ {
 		@ $mol_mem
 		watchdog() {
 			this.pack_push()
+			this.theme_push()
 			this.doc_push()
 			this.css_push()
 			this.libs_push()
@@ -1202,6 +1203,17 @@ namespace $.$$ {
 		}
 
 		@ $mol_mem
+		theme_push() {
+			const target = this.target()
+			const theme = this.theme()
+			if( !target ) return theme
+
+			this.post( target, { kind: 'theme_set', theme } )
+
+			return theme
+		}
+
+		@ $mol_mem
 		doc_push() {
 			const target = this.target()
 			const src = this.doc_src()
@@ -1359,6 +1371,7 @@ namespace $.$$ {
 				this.view_rect(),
 				this.message_listener(),
 				this.pack_push(),
+				this.theme_push(),
 				this.doc_push(),
 				this.css_push(),
 				this.libs_push(),

@@ -19,8 +19,42 @@ namespace $.$$ {
 			] as readonly $mol_view[]
 		}
 
+		packs() {
+			return this.$.$bog_vmap_app_shelf_packs()
+		}
+
+		pack_offer( id: string ) {
+			return this.packs().find( offer => offer.id === id ) ?? null
+		}
+
+		pack_rows() {
+			return this.packs().map( offer => this.Pack_row( offer.id ) )
+		}
+
+		override pack_title( id: string ) {
+			return this.pack_offer( id )?.title ?? ''
+		}
+
+		override pack_hint( id: string ) {
+			return this.pack_offer( id )?.hint ?? ''
+		}
+
+		override pack_current( id: string ) {
+			const link = this.pack_offer( id )?.link ?? ''
+			if( !link ) return !this.links_parsed().pack
+
+			return this.$.$bog_vmap_lib_slashed( link ) === this.pack_link()
+		}
+
+		@ $mol_action
+		override pack_click( id: string ) {
+			this.links( this.$.$bog_vmap_app_shelf_pack_swap( this.links(), this.pack_offer( id )?.link ?? '' ) )
+			return null
+		}
+
 		source_content() {
 			return [
+				this.Packs(),
 				this.Links(),
 				... this.rejected_note() ? [ this.Note() ] : [],
 				this.Import(),

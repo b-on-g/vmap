@@ -6,6 +6,7 @@ $bog_vmap_app_pane $mol_view
 	scene_bundle \
 	scene_html \
 	pack_uri \
+	theme \
 	doc_src \
 	doc_css \
 	spots? *

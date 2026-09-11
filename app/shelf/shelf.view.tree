@@ -24,6 +24,20 @@ $bog_vmap_app_shelf $mol_view
 		rows <= item_rows /
 	Source $mol_view
 		sub <= source_content /$mol_view
+	Packs $mol_view
+		sub /
+			<= Packs_title $mol_view
+				sub /
+					\Пак компонентов
+			<= Pack_list $mol_list
+				rows <= pack_rows /
+	Pack_row* $mol_button_minor
+		title <= pack_title* \
+		hint <= pack_hint* \
+		attr *
+			^
+			bog_vmap_app_shelf_pack_current <= pack_current* false
+		click? <=> pack_click*? null
 	Links $mol_string
 		hint \Адрес приложения, ленды через запятую
 		value? <=> links?

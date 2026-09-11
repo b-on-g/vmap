@@ -344,6 +344,36 @@ namespace $ {
 
 		},
 
+		'swapping the pack keeps the lands and drops only the old address'( $ ) {
+
+			const swap = $bog_vmap_app_shelf_pack_swap
+			const one = 'https://one.pack/'
+			const two = 'https://two.pack/'
+			const land = 'aaaaaaaa_bbbbbbbb'
+
+			$mol_assert_equal( swap( '', one ), one )
+			$mol_assert_equal( swap( one, two ), two )
+			$mol_assert_equal( swap( `${ one }, ${ land }`, two ), `${ two }, ${ land }` )
+			$mol_assert_equal( swap( `${ land }, ${ one }`, two ), `${ two }, ${ land }` )
+			$mol_assert_equal( swap( `${ one }, ${ land }`, '' ), land )
+			$mol_assert_equal( swap( land, '' ), land )
+
+		},
+
+		'every pack the shelf offers names itself and points at a folder'( $ ) {
+
+			const offers = $bog_vmap_app_shelf_packs()
+
+			$mol_assert_equal( offers.length, new Set( offers.map( one => one.id ) ).size )
+
+			for( const offer of offers ) {
+				$mol_assert_ok( offer.title )
+				$mol_assert_ok( offer.hint )
+				if( offer.link ) $mol_assert_equal( offer.link.endsWith( '/' ), true )
+			}
+
+		},
+
 	})
 
 }

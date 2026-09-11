@@ -693,6 +693,10 @@ namespace $.$$ {
 			return this.$.$bog_vmap_lib_links_parse( this.links() )
 		}
 
+		override scene_theme() {
+			return this.Theme().theme()
+		}
+
 		override pack_link() {
 			const pack = this.links_parsed().pack
 			if( pack ) return this.$.$bog_vmap_lib_slashed( pack )

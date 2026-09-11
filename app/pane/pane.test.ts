@@ -978,7 +978,7 @@ namespace $ {
 			$mol_assert_equal( pane.ready(), true )
 			$mol_assert_like(
 				posted.map( m => m.kind ),
-				[ 'pack_set', 'doc_set', 'css_set', 'libs_set', 'spots_set', 'camera_set' ],
+				[ 'pack_set', 'theme_set', 'doc_set', 'css_set', 'libs_set', 'spots_set', 'camera_set' ],
 			)
 
 		},

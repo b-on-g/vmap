@@ -20,6 +20,10 @@ $bog_vmap_app $mol_view
 	root_js? \
 	root_css? \
 	store $bog_vmap_app_store
+	plugins /
+		<= Theme $bog_theme_auto
+	style *
+		--mol_theme_hue <= theme_hue \240deg
 	sub <= body /$mol_view
 	Head $mol_bar
 		sub /
@@ -72,6 +76,8 @@ $bog_vmap_app $mol_view
 			<= Status $mol_view
 				sub /
 					<= status \
+			<= Theme_switch $bog_theme_switch
+				theme_auto <= Theme
 	Alarm $mol_view
 		sub /
 			<= error \
@@ -144,6 +150,7 @@ $bog_vmap_app $mol_view
 	Pane $bog_vmap_app_pane
 		scene_bundle <= scene_bundle
 		pack_uri <= pack_script \
+		theme <= scene_theme \
 		doc_src <= doc_src
 		doc_css <= doc_css
 		spots? <=> spots?

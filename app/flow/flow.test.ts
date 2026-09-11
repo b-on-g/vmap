@@ -22,6 +22,14 @@ namespace $ {
 		``,
 	].join( '\n' )
 
+	export const $bog_vmap_app_flow_ui = $bog_vmap_app_shelf_packs().find( offer => offer.id === 'builderui' )!.link
+
+	export const $bog_vmap_app_flow_ui_pack = [
+		`${d}bog_builderui_card ${d}mol_view`,
+		`\ttitle \\`,
+		``,
+	].join( '\n' )
+
 	export const $bog_vmap_app_flow_rect = {
 		left: 200, top: 50, width: 600, height: 500, right: 800, bottom: 550,
 	}
@@ -88,10 +96,26 @@ namespace $ {
 		}
 		$.$mol_after_timeout = $mol_after_timeout_flow
 
+		const kept = {} as { [ key: string ]: string | undefined }
+
+		class $mol_state_local_flow< Value > extends $mol_state_local< Value > {
+			static override value< Value >( key: string, next?: Value | null ): Value | null {
+
+				if( next === undefined ) return JSON.parse( kept[ key ] ?? 'null' )
+
+				if( next === null ) delete kept[ key ]
+				else kept[ key ] = JSON.stringify( next )
+
+				return next
+			}
+		}
+		$.$mol_state_local = $mol_state_local_flow
+
 		class $mol_fetch_flow extends $mol_fetch {
 			static override text( input: RequestInfo ) {
 				const uri = String( input )
 				if( uri === $bog_vmap_app_flow_other + 'web.view.tree' ) return $bog_vmap_app_flow_other_pack
+				if( uri === $bog_vmap_app_flow_ui + 'web.view.tree' ) return $bog_vmap_app_flow_ui_pack
 				if( uri.endsWith( 'web.view.tree' ) ) return $bog_vmap_app_flow_pack
 				return $mol_fail( new Error( 'network in a test: ' + uri ) )
 			}
@@ -258,7 +282,7 @@ namespace $ {
 		}
 
 		return {
-			app, pane, store, scene, root, timers,
+			app, pane, store, scene, root, timers, kept,
 
 			client( point: readonly [ number, number ] ) {
 				return [ rect.left + point[0], rect.top + point[1] ] as const
@@ -296,6 +320,18 @@ namespace $ {
 
 			shelf_row( title: string ) {
 				return found( '[bog_vmap_app_shelf_item_row]', `shelf row ${ title }`, el => el.textContent === title )
+			},
+
+			pack_row( title: string ) {
+				return found( '[bog_vmap_app_shelf_pack_row]', `pack row ${ title }`, el => el.textContent === title )
+			},
+
+			theme_button( which: 'light' | 'system' | 'dark' ) {
+				return found( `[bog_theme_switch_${ which }]`, `theme button ${ which }`, ()=> true )
+			},
+
+			theme_worn() {
+				return root.getAttribute( 'mol_theme' )
 			},
 
 			field( tail: string ) {
@@ -1029,6 +1065,124 @@ namespace $ {
 			const tree = module.files.find( file => file.name.endsWith( '.view.tree' ) )!.text
 
 			$mol_assert_ok( tree.includes( `uri \\${ uri }` ) )
+
+		},
+
+	})
+
+}
+
+namespace $ {
+	const d = '$'
+
+	const card = `${d}bog_builderui_card`
+
+	$mol_test({
+
+		'the theme picked in the bar is worn by the editor and told to the scene'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.click( stage.theme_button( 'light' ) )
+
+			$mol_assert_equal( stage.theme_worn(), '$mol_theme_light' )
+			$mol_assert_equal( stage.scene.last( 'theme_set' )!.theme, '$mol_theme_light' )
+
+			stage.click( stage.theme_button( 'dark' ) )
+
+			$mol_assert_equal( stage.theme_worn(), '$mol_theme_dark' )
+			$mol_assert_equal( stage.scene.last( 'theme_set' )!.theme, '$mol_theme_dark' )
+
+		},
+
+		'the editor keeps the hue of the scene, so the two halves of the screen agree'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			$mol_assert_ok( stage.root.getAttribute( 'style' )?.includes( '--mol_theme_hue: 240deg' ) )
+
+		},
+
+		'the theme is kept under a key of this app, not one shared by the origin'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.click( stage.theme_button( 'light' ) )
+
+			const keys = Object.keys( stage.kept )
+
+			$mol_assert_equal( keys.length, 1 )
+			$mol_assert_ok( keys[ 0 ].startsWith( '$bog_vmap_app' ) )
+			$mol_assert_equal( stage.kept[ keys[ 0 ] ], '"light"' )
+
+		},
+
+		'the shelf offers the packs by name, and the current one is marked'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			const offers = [ ... stage.root.querySelectorAll( '[bog_vmap_app_shelf_pack_row]' ) ]
+				.map( el => el.textContent )
+
+			$mol_assert_like( offers, [ 'Детали vmap', 'Builderui' ] )
+
+			const marked = ()=> [ ... stage.root.querySelectorAll( '[bog_vmap_app_shelf_pack_current]' ) ]
+				.map( el => el.textContent )
+
+			$mol_assert_like( marked(), [ 'Детали vmap' ] )
+
+			stage.click( stage.pack_row( 'Builderui' ) )
+			stage.scene.hello()
+
+			$mol_assert_like( marked(), [ 'Builderui' ] )
+
+		},
+
+		'the pack chosen on the shelf is the one the scene is sent to load'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.click( stage.pack_row( 'Builderui' ) )
+			stage.scene.hello()
+
+			$mol_assert_equal( stage.app.links(), $bog_vmap_app_flow_ui )
+			$mol_assert_equal( stage.scene.last( 'pack_set' )!.uri, $bog_vmap_app_flow_ui + 'web.js' )
+
+			const apps = [ ... stage.root.querySelectorAll(
+				'[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]',
+			) ].map( el => el.textContent )
+
+			$mol_assert_like( apps, [ 'Builderui_card' ] )
+
+		},
+
+		'a class of the chosen pack lands on the canvas and gets measured'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.click( stage.pack_row( 'Builderui' ) )
+			stage.scene.hello()
+
+			stage.drop( card, stage.client([ 200, 150 ]) )
+
+			$mol_assert_ok( stage.app.doc_source().includes( `Builderui_card ${ card }` ) )
+			$mol_assert_like( stage.app.spots(), { Builderui_card: { x: 200, y: 150 } } )
+			$mol_assert_like( stage.pane.part_box( 'Builderui_card' ), {
+				left: 200, top: 150, width: 100, height: 50,
+			} )
+
+		},
+
+		'a pack taken back gives the editor its own parts again'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.click( stage.pack_row( 'Builderui' ) )
+			stage.scene.hello()
+
+			stage.click( stage.pack_row( 'Детали vmap' ) )
+			stage.scene.hello()
+
+			$mol_assert_equal( stage.app.links(), '' )
+
+			const apps = [ ... stage.root.querySelectorAll(
+				'[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]',
+			) ].map( el => el.textContent )
+
+			$mol_assert_like( apps, [ 'Button', 'Calc', 'Map' ] )
 
 		},
 

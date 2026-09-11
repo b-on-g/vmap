@@ -46,6 +46,46 @@ namespace $ {
 
 	}
 
+	export type $bog_vmap_app_shelf_pack_offer = {
+
+		readonly id: string
+
+		readonly title: string
+
+		readonly hint: string
+
+		readonly link: string
+
+	}
+
+	export function $bog_vmap_app_shelf_packs(): readonly $bog_vmap_app_shelf_pack_offer[] {
+		return [
+
+			{
+				id: 'part',
+				title: 'Детали vmap',
+				hint: 'Пак этого редактора: калькулятор, карта, ячейка, график и примитивы под ними',
+				link: '',
+			},
+
+			{
+				id: 'builderui',
+				title: 'Builderui',
+				hint: 'Набор интерфейсных компонентов: карточки, кнопки, диалоги, вкладки, график',
+				link: 'https://b-on-g.github.io/builderui/',
+			},
+
+		]
+	}
+
+	export function $bog_vmap_app_shelf_pack_swap( links: string, link: string ) {
+
+		const stale = $bog_vmap_lib_links_parse( links ).pack
+		const rest = links.split( /[,\s]+/ ).filter( token => token && token !== stale )
+
+		return [ ... link ? [ link ] : [], ... rest ].join( ', ' )
+	}
+
 	export function $bog_vmap_app_shelf_presets(): readonly $bog_vmap_app_shelf_item[] {
 
 		const pack = $bog_vmap_app_shelf_pack
