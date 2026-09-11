@@ -2,6 +2,10 @@ namespace $ {
 
 	export type $bog_vmap_app_code_props = Map< string, string >
 
+	export const $bog_vmap_app_code_blank = 'Пустой текст документ не стирает.'
+		+ ' Уберите объявление узла, если он больше не нужен, а чтобы начать с чистого листа —'
+		+ ' заведите новую сцену'
+
 	export function $bog_vmap_app_code_props_js( this: $, body: string ) {
 
 		const props: $bog_vmap_app_code_props = new Map

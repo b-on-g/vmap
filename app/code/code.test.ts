@@ -179,6 +179,16 @@ namespace $ {
 		return { app, code, name: app.selected()! }
 	}
 
+	const stroke = ( code: $$.$bog_vmap_app_code )=> ({
+		code: 'KeyZ',
+		metaKey: true,
+		ctrlKey: false,
+		altKey: false,
+		shiftKey: false,
+		target: code.Tree().Edit().dom_node(),
+		preventDefault() {},
+	}) as unknown as KeyboardEvent
+
 	const wired = ( $: $mol_ambient_context )=> {
 
 		const one = editor( $ )
@@ -530,6 +540,118 @@ namespace $ {
 			panel.tree_press( new dom.Event( 'pointerdown' ) )
 
 			$mol_assert_equal( dom.document.activeElement === field, true )
+
+		},
+
+		'a declaration typed key by key gives the same tree as a block paste'( $ ) {
+
+			const add = `\tPage ${d}mol_view\n\t\tsub / <= Button_minor\n`
+
+			const block = editor( $ )
+			block.code.whole( true )
+			block.code.tree_text( block.code.tree_text() + add )
+
+			const typed = editor( $ )
+			typed.code.whole( true )
+			for( const char of add ) typed.code.tree_text( typed.code.tree_text() + char )
+
+			$mol_assert_equal( typed.app.doc_source(), block.app.doc_source() )
+
+		},
+
+		'a field left by focus shows the canonical text again'( $ ) {
+
+			const dom = $.$mol_dom_context
+			const { app, code } = editor( $ )
+
+			code.whole( true )
+			dom.document.body.appendChild( code.dom_tree() )
+
+			code.tree_text( code.tree_text() + `\tPage ${d}mol_view\n\t\tsub / <= Button_minor\n` )
+
+			$mol_assert_equal( code.tree_text() === app.doc_source(), false )
+
+			code.field_leave( { relatedTarget: dom.document.body } as unknown as Event )
+
+			$mol_assert_equal( code.tree_text(), app.doc_source() )
+
+		},
+
+		'the whole class wiped out is refused and the document stays'( $ ) {
+
+			const { app, code } = editor( $ )
+
+			code.whole( true )
+
+			const before = app.doc_source()
+
+			code.tree_text( '' )
+
+			$mol_assert_equal( app.doc_source(), before )
+			$mol_assert_equal( code.note(), $.$bog_vmap_app_code_blank )
+
+		},
+
+		'a node declaration wiped out is refused as well'( $ ) {
+
+			const { app, code } = editor( $ )
+
+			const before = app.doc_source()
+
+			code.tree_text( ' \n\t\n' )
+
+			$mol_assert_equal( app.doc_source(), before )
+			$mol_assert_equal( code.note(), $.$bog_vmap_app_code_blank )
+
+		},
+
+		'undo with the caret in a field rolls the typed text back'( $ ) {
+
+			const dom = $.$mol_dom_context
+			const { app, code } = editor( $ )
+
+			app.code_showed( true )
+			code.whole( true )
+			dom.document.body.appendChild( code.dom_tree() )
+
+			code.tree_text( code.tree_text() + `\tPage ${d}mol_view\n\t\tsub / <= Button_minor\n` )
+
+			$mol_assert_equal( code.field_dirty(), true )
+
+			$mol_assert_equal( app.code_undo( stroke( code ) ), true )
+
+			$mol_assert_equal( code.field_dirty(), false )
+			$mol_assert_equal( code.tree_text(), app.doc_source() )
+
+		},
+
+		'undo with the caret in an untouched field walks the ring'( $ ) {
+
+			const dom = $.$mol_dom_context
+			const { app, code } = editor( $ )
+
+			app.code_showed( true )
+			code.whole( true )
+			dom.document.body.appendChild( code.dom_tree() )
+
+			const history = app.History() as $$.$bog_vmap_app_history
+			const key = history.doc_key()
+
+			history.step_push( key, history.doc_state() )
+
+			const before = app.doc_source()
+
+			code.tree_text( code.tree_text() + `\tPage ${d}mol_view\n\t\tsub / <= Button_minor\n` )
+			code.field_undo()
+
+			history.step_push( key, history.doc_state() )
+
+			$mol_assert_equal( code.field_dirty(), false )
+			$mol_assert_equal( app.doc_source() === before, false )
+
+			$mol_assert_equal( app.code_undo( stroke( code ) ), true )
+
+			$mol_assert_equal( app.doc_source(), before )
 
 		},
 

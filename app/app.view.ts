@@ -1077,8 +1077,31 @@ namespace $.$$ {
 			)
 		}
 
+		code_undo( event: KeyboardEvent ) {
+
+			if( event.code !== 'KeyZ' ) return false
+			if( !event.metaKey && !event.ctrlKey ) return false
+			if( event.altKey ) return false
+			if( !this.code_showed() ) return false
+
+			const target = event.target as Node | null
+			if( !target ) return false
+			if( !this.Code().dom_node().contains( target ) ) return false
+
+			event.preventDefault()
+
+			if( !event.shiftKey && ( this.Code() as $bog_vmap_app_code ).field_undo() ) return true
+
+			if( event.shiftKey ) this.History().redo()
+			else this.History().undo()
+
+			return true
+		}
+
 		key_press( event?: KeyboardEvent ) {
 			if( !event ) return
+
+			if( this.code_undo( event ) ) return
 
 			if( this.History().press( event ) ) return
 

@@ -2,6 +2,11 @@ namespace $.$$ {
 
 	export type $bog_vmap_app_code_slot = 'tree' | 'js' | 'css'
 
+	export type $bog_vmap_app_code_draft = {
+		readonly typed: string
+		readonly seen: string
+	}
+
 	export class $bog_vmap_app_code_deck extends $.$bog_vmap_app_code_deck {
 
 		override current( next?: string ) {
@@ -23,7 +28,7 @@ namespace $.$$ {
 		}
 
 		@ $mol_mem_key
-		draft( id: string, next?: string | null ) {
+		draft( id: string, next?: $bog_vmap_app_code_draft | null ) {
 			return next ?? null
 		}
 
@@ -36,32 +41,89 @@ namespace $.$$ {
 			return next ?? ''
 		}
 
+		canon( slot: $bog_vmap_app_code_slot ): string {
+			if( slot === 'tree' ) return this.tree_canon()
+			if( slot === 'js' ) return this.js_canon()
+			return this.css_canon()
+		}
+
+		drafted( slot: $bog_vmap_app_code_slot ) {
+
+			const canon = this.canon( slot )
+			const draft = this.draft( this.draft_id( slot ) )
+
+			if( !draft ) return canon
+			if( draft.seen !== canon ) return canon
+
+			return draft.typed
+		}
+
 		written( slot: $bog_vmap_app_code_slot, next: string, write: ( next: string )=> void ) {
 
-			const id = this.draft_id( slot )
+			let refusal = ''
 
 			try {
 				write( next )
 			} catch( error: unknown ) {
 				if( this.$.$mol_promise_like( error ) ) return this.$.$mol_fail_hidden( error )
-				this.draft( id, next )
-				this.refusal( String( ( error as Error )?.message ?? error ) )
-				return next
+				refusal = String( ( error as Error )?.message ?? error )
 			}
 
-			this.draft( id, null )
-			this.refusal( '' )
+			this.draft( this.draft_id( slot ), { typed: next, seen: this.canon( slot ) } )
+			this.refusal( refusal )
 
 			return next
 		}
 
+		slot_open(): $bog_vmap_app_code_slot {
+			const open = this.Sources().current()
+			if( open === '1' ) return 'js'
+			if( open === '2' ) return 'css'
+			return 'tree'
+		}
+
+		field_dirty() {
+			const slot = this.slot_open()
+			const draft = this.draft( this.draft_id( slot ) )
+			if( !draft ) return false
+			return draft.typed !== this.canon( slot )
+		}
+
+		@ $mol_action
+		field_undo() {
+
+			if( !this.field_dirty() ) return false
+
+			this.draft( this.draft_id( this.slot_open() ), null )
+			this.refusal( '' )
+
+			return true
+		}
+
+		@ $mol_action
+		field_leave( next?: Event | null ) {
+
+			const gone = ( next as FocusEvent | null )?.relatedTarget as Node | null
+			if( !gone ) return null
+			if( this.dom_node().contains( gone ) ) return null
+
+			if( this.refusal() ) return null
+
+			for( const slot of [ 'tree', 'js', 'css' ] as const ) this.draft( this.draft_id( slot ), null )
+
+			return null
+		}
+
+		tree_canon() {
+			return this.sliced() ? this.node_source() : this.source()
+		}
+
 		override tree_text( next?: string ): string {
 
-			if( next === undefined ) {
-				return this.draft( this.draft_id( 'tree' ) ) ?? ( this.sliced() ? this.node_source() : this.source() )
-			}
+			if( next === undefined ) return this.drafted( 'tree' )
 
 			return this.written( 'tree', next, text => {
+				if( !text.trim() ) this.$.$mol_fail( new Error( this.$.$bog_vmap_app_code_blank ) )
 				if( this.sliced() ) this.node_source( text )
 				else this.source( text )
 			} )
@@ -76,26 +138,29 @@ namespace $.$$ {
 			return this.$.$bog_vmap_app_code_props_css( this.css(), this.klass() )
 		}
 
-		override js_text( next?: string ): string {
+		js_canon(): string {
 
-			if( !this.sliced() ) {
-				if( next === undefined ) return this.draft( this.draft_id( 'js' ) ) ?? this.js()
-				return this.written( 'js', next, text => this.js( text ) )
-			}
+			if( !this.sliced() ) return this.js()
 
 			const hooks = this.hooks()
 
-			if( next === undefined ) {
-				return this.draft( this.draft_id( 'js' ) ) ?? this.sliced_read(
-					()=> {
-						const props = this.props_js()
-						return hooks
-							.map( name => props.get( name ) ?? this.$.$bog_vmap_app_code_js_default( name ) )
-							.join( '\n\n' )
-					},
-					()=> hooks.map( name => this.$.$bog_vmap_app_code_js_default( name ) ).join( '\n\n' ),
-				)
-			}
+			return this.sliced_read(
+				()=> {
+					const props = this.props_js()
+					return hooks
+						.map( name => props.get( name ) ?? this.$.$bog_vmap_app_code_js_default( name ) )
+						.join( '\n\n' )
+				},
+				()=> hooks.map( name => this.$.$bog_vmap_app_code_js_default( name ) ).join( '\n\n' ),
+			)
+
+		}
+
+		override js_text( next?: string ): string {
+
+			if( next === undefined ) return this.drafted( 'js' )
+
+			if( !this.sliced() ) return this.written( 'js', next, text => this.js( text ) )
 
 			return this.written( 'js', next, text => {
 
@@ -132,22 +197,26 @@ namespace $.$$ {
 			] as readonly $mol_view[]
 		}
 
-		override css_text( next?: string ): string {
+		css_canon(): string {
 
-			if( !this.sliced() ) {
-				if( next === undefined ) return this.draft( this.draft_id( 'css' ) ) ?? this.css()
-				return this.written( 'css', next, text => this.css( text ) )
-			}
+			if( !this.sliced() ) return this.css()
 
 			const prop = this.prop()
-			const key = prop.toLowerCase()
 
-			if( next === undefined ) {
-				return this.draft( this.draft_id( 'css' ) ) ?? this.sliced_read(
-					()=> this.props_css().get( key ),
-					()=> this.$.$bog_vmap_app_code_css_default( prop, this.klass() ),
-				)
-			}
+			return this.sliced_read(
+				()=> this.props_css().get( prop.toLowerCase() ),
+				()=> this.$.$bog_vmap_app_code_css_default( prop, this.klass() ),
+			)
+
+		}
+
+		override css_text( next?: string ): string {
+
+			if( next === undefined ) return this.drafted( 'css' )
+
+			if( !this.sliced() ) return this.written( 'css', next, text => this.css( text ) )
+
+			const key = this.prop().toLowerCase()
 
 			return this.written( 'css', next, text => this.css(
 				this.$.$bog_vmap_app_code_joined(
