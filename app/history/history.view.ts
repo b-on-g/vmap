@@ -256,9 +256,53 @@ namespace $.$$ {
 
 		}
 
+		@ $mol_mem_key
+		note_at( slug: string, next?: string ) {
+			return next ?? ''
+		}
+
+		override note( next?: string ) {
+			return this.note_at( this.slug(), next )
+		}
+
+		override content() {
+			return [
+				this.Head(),
+				this.Steps(),
+				... this.note() ? [ this.Note() ] : [],
+				this.List(),
+			] as readonly $mol_view[]
+		}
+
+		snap_press() {
+
+			const doc = this.store().doc_current()
+			if( !doc ) return this.note( 'Сцена ещё заводится, снимать нечего' )
+			if( !doc.can_change() ) return this.note( 'Чужая сцена: снимок в неё не пишется' )
+
+			this.note( this.snap_make( this.now() ) ? '' : 'Изменений с прошлого снимка нет' )
+
+		}
+
 		override snap_take( next?: Event | null ) {
-			$mol_wire_async( this ).snap_make( this.now() )
+			$mol_wire_async( this ).snap_press()
 			return null
+		}
+
+		@ $mol_mem_key
+		override snap_change( link: string ) {
+
+			const snaps = this.snaps()
+			const index = snaps.findIndex( snap => snap.link().str === link )
+			if( index < 0 ) return ''
+
+			const store = this.store()
+
+			return this.$.$bog_vmap_app_history_change(
+				index > 0 ? store.snap_state( snaps[ index - 1 ] ) : null,
+				store.snap_state( snaps[ index ] ),
+			)
+
 		}
 
 		snap_revert( link: string ) {

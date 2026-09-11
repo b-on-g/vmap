@@ -4,32 +4,36 @@ $bog_vmap_app_history $mol_view
 	live /
 	press? null
 	editable false
-	sub /
-		<= Head $mol_view
-			sub /
-				\Версии
-		<= Steps $mol_view
-			sub /
-				<= Undo $mol_button_minor
-					title \Отменить
-					hint \Шаг назад по правкам этой сессии. Cmd+Z или Ctrl+Z
-					enabled <= undoable false
-					click? <=> undo? null
-				<= Redo $mol_button_minor
-					title \Повторить
-					hint \Вернуть отменённый шаг. Cmd+Shift+Z или Ctrl+Shift+Z
-					enabled <= redoable false
-					click? <=> redo? null
-				<= Take $mol_button_minor
-					title \Снимок
-					hint \Записать текущее состояние документа снимком в его ленд
-					enabled <= editable
-					click? <=> snap_take? null
-		<= List $mol_list
-			rows <= snap_rows /
+	note? \
+	sub <= content /$mol_view
+	Head $mol_view
+		sub /
+			\Версии
+	Steps $mol_view
+		sub /
+			<= Undo $mol_button_minor
+				title \Отменить
+				hint \Шаг назад по правкам этой сессии. Cmd+Z или Ctrl+Z
+				enabled <= undoable false
+				click? <=> undo? null
+			<= Redo $mol_button_minor
+				title \Повторить
+				hint \Вернуть отменённый шаг. Cmd+Shift+Z или Ctrl+Shift+Z
+				enabled <= redoable false
+				click? <=> redo? null
+			<= Take $mol_button_minor
+				title \Снимок
+				hint \Записать текущее состояние документа снимком в его ленд
+				enabled <= editable
+				click? <=> snap_take? null
+	Note $mol_view
+		sub / <= note
+	List $mol_list
+		rows <= snap_rows /
 	Snap_row* $bog_vmap_app_history_snap
 		moment <= snap_moment* \
 		author <= snap_author* \
+		change <= snap_change* \
 		preview <= snap_preview* \
 		editable <= editable
 		back? <=> snap_back*? null

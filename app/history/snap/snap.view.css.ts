@@ -18,6 +18,12 @@ namespace $.$$ {
 			font: { weight: 'bold', size: '.9rem' },
 		},
 
+		Change: {
+			font: { size: '.85rem' },
+			color: $mol_theme.current,
+			whiteSpace: 'normal',
+		},
+
 		Author: {
 			font: { size: '.8rem' },
 			color: $mol_theme.shade,

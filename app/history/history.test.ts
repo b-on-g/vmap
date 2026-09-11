@@ -384,6 +384,90 @@ namespace $ {
 
 		},
 
+		'a snapshot is signed with the class that changed and by how much'( $ ) {
+
+			const { store, one } = $bog_vmap_app_history_test_land( $ )
+
+			store.source( src_one )
+			one.snap_make( 1 )
+
+			store.source( src_one.replace( '\tsub / <= title\n', '\tsub / <= title\n\tCard $mol_view\n' ) )
+			one.snap_make( 2 )
+
+			const links = one.snap_links()
+
+			$mol_assert_equal( one.snap_change( links[ 1 ] ), 'первый снимок' )
+			$mol_assert_equal( one.snap_change( links[ 0 ] ), 'bog_vmap_app_history_test_page Card +1' )
+
+		},
+
+		'two snapshots in a row are signed differently'( $ ) {
+
+			const { store, one } = $bog_vmap_app_history_test_land( $ )
+
+			store.source( src_one )
+			one.snap_make( 1 )
+
+			store.source( src_two )
+			one.snap_make( 2 )
+
+			const links = one.snap_links()
+
+			$mol_assert_equal( one.snap_change( links[ 0 ] ) === one.snap_change( links[ 1 ] ), false )
+
+		},
+
+		'a style written without touching the tree is named in the signature'( $ ) {
+
+			const { store, one } = $bog_vmap_app_history_test_land( $ )
+
+			store.source( src_one )
+			one.snap_make( 1 )
+
+			store.node_css( store.doc_current()!, `${d}bog_vmap_app_history_test_page`, '[x] {}' )
+			one.snap_make( 2 )
+
+			$mol_assert_equal(
+				one.snap_change( one.snap_links()[ 0 ] ),
+				'bog_vmap_app_history_test_page стиль +1',
+			)
+
+		},
+
+		'the button on an unchanged document says so instead of keeping quiet'( $ ) {
+
+			const { store, doc, one } = $bog_vmap_app_history_test_land( $ )
+
+			store.source( src_one )
+
+			one.snap_press()
+
+			$mol_assert_equal( store.snaps( doc ).length, 1 )
+			$mol_assert_equal( one.note(), '' )
+
+			one.snap_press()
+
+			$mol_assert_equal( store.snaps( doc ).length, 1 )
+			$mol_assert_equal( one.note(), 'Изменений с прошлого снимка нет' )
+
+		},
+
+		'the note goes away as soon as the document moves on'( $ ) {
+
+			const { store, one } = $bog_vmap_app_history_test_land( $ )
+
+			store.source( src_one )
+			one.snap_press()
+			one.snap_press()
+
+			$mol_assert_equal( one.note() !== '', true )
+
+			store.source( src_two )
+
+			$mol_assert_equal( one.note(), '' )
+
+		},
+
 		'a long snapshot is previewed trimmed'( $ ) {
 
 			const { store, one } = $bog_vmap_app_history_test_land( $ )

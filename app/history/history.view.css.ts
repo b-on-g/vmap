@@ -22,6 +22,15 @@ namespace $.$$ {
 			padding: $mol_gap.block,
 		},
 
+		Note: {
+			flex: { shrink: 0 },
+			padding: $mol_gap.text,
+			background: { color: $mol_theme.card },
+			color: $mol_theme.text,
+			font: { size: '.8rem' },
+			whiteSpace: 'normal',
+		},
+
 		List: {
 			flex: { grow: 1, shrink: 1 },
 			minHeight: 0,
