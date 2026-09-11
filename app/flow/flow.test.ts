@@ -985,6 +985,53 @@ namespace $ {
 
 		},
 
+		'a file dropped on the canvas reaches the scene and the export by one address'( $ ) {
+
+			const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png'
+
+			const store = $bog_vmap_app_store.make({
+				$,
+				doc_land_config: ()=> null,
+				asset_put: ()=> uri,
+			})
+			store.doc_add( 'Сцена 1' )
+
+			const stage = $bog_vmap_app_flow_stage( $, { store } )
+			const dom = $.$mol_dom_context
+
+			const point = stage.client([ 300, 200 ])
+
+			const drop = new dom.Event( 'drop', { bubbles: true, cancelable: true } )
+			Object.defineProperty( drop, 'clientX', { value: point[ 0 ] } )
+			Object.defineProperty( drop, 'clientY', { value: point[ 1 ] } )
+			Object.defineProperty( drop, 'dataTransfer', {
+				value: {
+					files: [ new dom.File(
+						[ new Uint8Array([ 137, 80, 78, 71 ]) ],
+						'logo.png',
+						{ type: 'image/png' },
+					) ],
+				},
+			} )
+
+			stage.overlay().dispatchEvent( drop )
+			stage.redraw()
+
+			const source = stage.app.doc_source()
+
+			$mol_assert_ok( source.includes( `uri \\${ uri }` ) )
+			$mol_assert_like( stage.app.spots(), { Image: { x: 300, y: 200 } } )
+			$mol_assert_equal( stage.app.selected(), 'Image' )
+
+			$mol_assert_equal( stage.scene.last( 'doc_set' )!.src, source )
+
+			const module = stage.app.export_state().module!
+			const tree = module.files.find( file => file.name.endsWith( '.view.tree' ) )!.text
+
+			$mol_assert_ok( tree.includes( `uri \\${ uri }` ) )
+
+		},
+
 	})
 
 }
