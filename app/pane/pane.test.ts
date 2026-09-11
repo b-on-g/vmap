@@ -1847,6 +1847,56 @@ namespace $ {
 
 		},
 
+
+		async 'a file whose write suspends still becomes a node, though the drag empties itself'( $ ) {
+
+			const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png'
+
+			let waited = 0
+
+			const store = $bog_vmap_app_store.make({
+				$,
+				doc_land_config: ()=> null,
+				asset_put: ()=> {
+					if( waited ++ === 0 ) $mol_fail_hidden( Promise.resolve() )
+					return uri
+				},
+			})
+			store.doc_add( 'Сцена 1' )
+
+			const stage = $bog_vmap_app_flow_stage( $, { store } )
+			const dom = $.$mol_dom_context
+
+			const carried = [ new dom.File(
+				[ new Uint8Array([ 137, 80, 78, 71 ]) ],
+				'logo.png',
+				{ type: 'image/png' },
+			) ]
+
+			let taken = 0
+
+			const point = stage.client([ 300, 200 ])
+			const drop = new dom.Event( 'drop', { bubbles: true, cancelable: true } )
+
+			Object.defineProperty( drop, 'clientX', { value: point[ 0 ] } )
+			Object.defineProperty( drop, 'clientY', { value: point[ 1 ] } )
+			Object.defineProperty( drop, 'dataTransfer', {
+				value: { get files() { return taken ++ ? [] : carried } },
+			} )
+
+			stage.overlay().dispatchEvent( drop )
+
+			await $bog_vmap_app_flow_settle( ()=> waited > 1 )
+			stage.redraw()
+
+			$mol_assert_equal( waited, 2 )
+			$mol_assert_equal( taken, 1 )
+			$mol_assert_equal( stage.app.selected(), 'Image' )
+			$mol_assert_ok( stage.app.doc_source().includes( `uri \\${ uri }` ) )
+			$mol_assert_like( stage.app.spots(), { Image: { x: 300, y: 200 } } )
+
+		},
+
 	})
 
 }

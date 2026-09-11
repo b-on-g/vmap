@@ -574,7 +574,7 @@ namespace $.$$ {
 			const point = this.world_point( next )
 			const slot = this.insert_slot( point )
 
-			this.files_drop({
+			$mol_wire_async( this ).files_drop({
 				files,
 				x: point[ 0 ],
 				y: point[ 1 ],
