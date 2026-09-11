@@ -1,4 +1,7 @@
 {
+	"$bog_theme_switch_dark_hint": "Тёмная",
+	"$bog_theme_switch_light_hint": "Светлая",
+	"$bog_theme_switch_system_hint": "Как в системе",
 	"$giper_baza_flex_field_Link_new_dictionary_deny": "🔐 Private",
 	"$giper_baza_flex_field_Link_new_dictionary_local": "💼 Local",
 	"$giper_baza_flex_field_Link_new_dictionary_post": "✍ All post",

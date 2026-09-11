@@ -1,3 +1,15 @@
+$bog_theme_auto $mol_plugin
+	themes <= themes_default /
+	theme_light \$mol_theme_light
+	theme_dark \$mol_theme_dark
+	mode? \system
+	mode_next? null
+	theme_next? null
+	theme_prev? null
+	theme_set? null
+	is_light_now false
+	attr * mol_theme <= theme \
+
 $mol_speck $mol_view
 	theme \$mol_theme_accent
 	sub /
@@ -414,6 +426,40 @@ $mol_button_download $mol_button_minor
 		<= Icon $mol_icon_download
 		<= title \
 
+$mol_icon_white_balance_sunny $mol_icon path \M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13
+
+$mol_icon_monitor $mol_icon path \M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z
+
+$mol_icon_weather_night $mol_icon path \M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z
+
+$bog_theme_switch $mol_view
+	theme_auto $bog_theme_auto
+	sub /
+		<= Light $mol_button_minor
+			attr *
+				^
+				bog_theme_switch_active <= light_active false
+			hint <= light_hint @ \Светлая
+			click?event <=> set_light?event null
+			sub /
+				<= Light_icon $mol_icon_white_balance_sunny
+		<= System $mol_button_minor
+			attr *
+				^
+				bog_theme_switch_active <= system_active false
+			hint <= system_hint @ \Как в системе
+			click?event <=> set_system?event null
+			sub /
+				<= System_icon $mol_icon_monitor
+		<= Dark $mol_button_minor
+			attr *
+				^
+				bog_theme_switch_active <= dark_active false
+			hint <= dark_hint @ \Тёмная
+			click?event <=> set_dark?event null
+			sub /
+				<= Dark_icon $mol_icon_weather_night
+
 $bog_vmap_app_palette_item $mol_button_minor
 	current false
 	minimal_height 24
@@ -569,6 +615,20 @@ $bog_vmap_app_shelf $mol_view
 		rows <= item_rows /
 	Source $mol_view
 		sub <= source_content /$mol_view
+	Packs $mol_view
+		sub /
+			<= Packs_title $mol_view
+				sub /
+					\Пак компонентов
+			<= Pack_list $mol_list
+				rows <= pack_rows /
+	Pack_row* $mol_button_minor
+		title <= pack_title* \
+		hint <= pack_hint* \
+		attr *
+			^
+			bog_vmap_app_shelf_pack_current <= pack_current* false
+		click? <=> pack_click*? null
 	Links $mol_string
 		hint \Адрес приложения, ленды через запятую
 		value? <=> links?
@@ -1357,6 +1417,7 @@ $bog_vmap_app_pane $mol_view
 	scene_bundle \
 	scene_html \
 	pack_uri \
+	theme \
 	doc_src \
 	doc_css \
 	spots? *
@@ -1522,6 +1583,10 @@ $bog_vmap_app $mol_view
 	root_js? \
 	root_css? \
 	store $bog_vmap_app_store
+	plugins /
+		<= Theme $bog_theme_auto
+	style *
+		--mol_theme_hue <= theme_hue \240deg
 	sub <= body /$mol_view
 	Head $mol_bar
 		sub /
@@ -1574,6 +1639,8 @@ $bog_vmap_app $mol_view
 			<= Status $mol_view
 				sub /
 					<= status \
+			<= Theme_switch $bog_theme_switch
+				theme_auto <= Theme
 	Alarm $mol_view
 		sub /
 			<= error \
@@ -1646,6 +1713,7 @@ $bog_vmap_app $mol_view
 	Pane $bog_vmap_app_pane
 		scene_bundle <= scene_bundle
 		pack_uri <= pack_script \
+		theme <= scene_theme \
 		doc_src <= doc_src
 		doc_css <= doc_css
 		spots? <=> spots?

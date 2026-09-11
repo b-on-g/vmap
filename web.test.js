@@ -8321,7 +8321,7 @@ var $;
             answer({ kind: 'ready' });
             pane.watchdog();
             $mol_assert_equal(pane.ready(), true);
-            $mol_assert_like(posted.map(m => m.kind), ['pack_set', 'doc_set', 'css_set', 'libs_set', 'spots_set', 'camera_set']);
+            $mol_assert_like(posted.map(m => m.kind), ['pack_set', 'theme_set', 'doc_set', 'css_set', 'libs_set', 'spots_set', 'camera_set']);
         },
         'the frame is sandboxed first, addressed never and raised from markup'($) {
             const { pane } = pane_make($, {}, { scene_bundle: () => 'https://vmap.test/scene/web.js' });
@@ -14066,6 +14066,28 @@ var $;
             $mol_assert_equal(shelf.body().includes(shelf.Palette()), true);
             $mol_assert_equal(own_scrolls(), 0);
         },
+        'swapping the pack keeps the lands and drops only the old address'($) {
+            const swap = $bog_vmap_app_shelf_pack_swap;
+            const one = 'https://one.pack/';
+            const two = 'https://two.pack/';
+            const land = 'aaaaaaaa_bbbbbbbb';
+            $mol_assert_equal(swap('', one), one);
+            $mol_assert_equal(swap(one, two), two);
+            $mol_assert_equal(swap(`${one}, ${land}`, two), `${two}, ${land}`);
+            $mol_assert_equal(swap(`${land}, ${one}`, two), `${two}, ${land}`);
+            $mol_assert_equal(swap(`${one}, ${land}`, ''), land);
+            $mol_assert_equal(swap(land, ''), land);
+        },
+        'every pack the shelf offers names itself and points at a folder'($) {
+            const offers = $bog_vmap_app_shelf_packs();
+            $mol_assert_equal(offers.length, new Set(offers.map(one => one.id)).size);
+            for (const offer of offers) {
+                $mol_assert_ok(offer.title);
+                $mol_assert_ok(offer.hint);
+                if (offer.link)
+                    $mol_assert_equal(offer.link.endsWith('/'), true);
+            }
+        },
     });
 })($ || ($ = {}));
 
@@ -15904,6 +15926,12 @@ var $;
         `\ttitle \\`,
         ``,
     ].join('\n');
+    $_1.$bog_vmap_app_flow_ui = $bog_vmap_app_shelf_packs().find(offer => offer.id === 'builderui').link;
+    $_1.$bog_vmap_app_flow_ui_pack = [
+        `${d}bog_builderui_card ${d}mol_view`,
+        `\ttitle \\`,
+        ``,
+    ].join('\n');
     $_1.$bog_vmap_app_flow_rect = {
         left: 200, top: 50, width: 600, height: 500, right: 800, bottom: 550,
     };
@@ -15946,11 +15974,26 @@ var $;
             }
         }
         $.$mol_after_timeout = $mol_after_timeout_flow;
+        const kept = {};
+        class $mol_state_local_flow extends $mol_state_local {
+            static value(key, next) {
+                if (next === undefined)
+                    return JSON.parse(kept[key] ?? 'null');
+                if (next === null)
+                    delete kept[key];
+                else
+                    kept[key] = JSON.stringify(next);
+                return next;
+            }
+        }
+        $.$mol_state_local = $mol_state_local_flow;
         class $mol_fetch_flow extends $mol_fetch {
             static text(input) {
                 const uri = String(input);
                 if (uri === $_1.$bog_vmap_app_flow_other + 'web.view.tree')
                     return $_1.$bog_vmap_app_flow_other_pack;
+                if (uri === $_1.$bog_vmap_app_flow_ui + 'web.view.tree')
+                    return $_1.$bog_vmap_app_flow_ui_pack;
                 if (uri.endsWith('web.view.tree'))
                     return $_1.$bog_vmap_app_flow_pack;
                 return $mol_fail(new Error('network in a test: ' + uri));
@@ -16091,7 +16134,7 @@ var $;
             });
         };
         return {
-            app, pane, store, scene, root, timers,
+            app, pane, store, scene, root, timers, kept,
             client(point) {
                 return [rect.left + point[0], rect.top + point[1]];
             },
@@ -16120,6 +16163,15 @@ var $;
             },
             shelf_row(title) {
                 return found('[bog_vmap_app_shelf_item_row]', `shelf row ${title}`, el => el.textContent === title);
+            },
+            pack_row(title) {
+                return found('[bog_vmap_app_shelf_pack_row]', `pack row ${title}`, el => el.textContent === title);
+            },
+            theme_button(which) {
+                return found(`[bog_theme_switch_${which}]`, `theme button ${which}`, () => true);
+            },
+            theme_worn() {
+                return root.getAttribute('mol_theme');
             },
             field(tail) {
                 return found('input, textarea', `field ${tail}`, el => el.getAttribute('id')?.endsWith(tail) ?? false);
@@ -16579,6 +16631,105 @@ var $;
             $mol_assert_equal(stage.app.doc_source().includes('calc_result'), false);
             $mol_assert_ok(stage.app.doc_source().includes(`Calc ${calc}`));
             $mol_assert_equal(stage.app.doc_source().includes(`Map ${map}`), false);
+        },
+        'a file dropped on the canvas reaches the scene and the export by one address'($) {
+            const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png';
+            const store = $bog_vmap_app_store.make({
+                $,
+                doc_land_config: () => null,
+                asset_put: () => uri,
+            });
+            store.doc_add('Сцена 1');
+            const stage = $_2.$bog_vmap_app_flow_stage($, { store });
+            const dom = $.$mol_dom_context;
+            const point = stage.client([300, 200]);
+            const drop = new dom.Event('drop', { bubbles: true, cancelable: true });
+            Object.defineProperty(drop, 'clientX', { value: point[0] });
+            Object.defineProperty(drop, 'clientY', { value: point[1] });
+            Object.defineProperty(drop, 'dataTransfer', {
+                value: {
+                    files: [new dom.File([new Uint8Array([137, 80, 78, 71])], 'logo.png', { type: 'image/png' })],
+                },
+            });
+            stage.overlay().dispatchEvent(drop);
+            stage.redraw();
+            const source = stage.app.doc_source();
+            $mol_assert_ok(source.includes(`uri \\${uri}`));
+            $mol_assert_like(stage.app.spots(), { Image: { x: 300, y: 200 } });
+            $mol_assert_equal(stage.app.selected(), 'Image');
+            $mol_assert_equal(stage.scene.last('doc_set').src, source);
+            const module = stage.app.export_state().module;
+            const tree = module.files.find(file => file.name.endsWith('.view.tree')).text;
+            $mol_assert_ok(tree.includes(`uri \\${uri}`));
+        },
+    });
+})($ || ($ = {}));
+(function ($_3) {
+    const d = '$';
+    const card = `${d}bog_builderui_card`;
+    $mol_test({
+        'the theme picked in the bar is worn by the editor and told to the scene'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.click(stage.theme_button('light'));
+            $mol_assert_equal(stage.theme_worn(), '$mol_theme_light');
+            $mol_assert_equal(stage.scene.last('theme_set').theme, '$mol_theme_light');
+            stage.click(stage.theme_button('dark'));
+            $mol_assert_equal(stage.theme_worn(), '$mol_theme_dark');
+            $mol_assert_equal(stage.scene.last('theme_set').theme, '$mol_theme_dark');
+        },
+        'the editor keeps the hue of the scene, so the two halves of the screen agree'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            $mol_assert_ok(stage.root.getAttribute('style')?.includes('--mol_theme_hue: 240deg'));
+        },
+        'the theme is kept under a key of this app, not one shared by the origin'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.click(stage.theme_button('light'));
+            const keys = Object.keys(stage.kept);
+            $mol_assert_equal(keys.length, 1);
+            $mol_assert_ok(keys[0].startsWith('$bog_vmap_app'));
+            $mol_assert_equal(stage.kept[keys[0]], '"light"');
+        },
+        'the shelf offers the packs by name, and the current one is marked'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            const offers = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_pack_row]')]
+                .map(el => el.textContent);
+            $mol_assert_like(offers, ['Детали vmap', 'Builderui']);
+            const marked = () => [...stage.root.querySelectorAll('[bog_vmap_app_shelf_pack_current]')]
+                .map(el => el.textContent);
+            $mol_assert_like(marked(), ['Детали vmap']);
+            stage.click(stage.pack_row('Builderui'));
+            stage.scene.hello();
+            $mol_assert_like(marked(), ['Builderui']);
+        },
+        'the pack chosen on the shelf is the one the scene is sent to load'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.click(stage.pack_row('Builderui'));
+            stage.scene.hello();
+            $mol_assert_equal(stage.app.links(), $_3.$bog_vmap_app_flow_ui);
+            $mol_assert_equal(stage.scene.last('pack_set').uri, $_3.$bog_vmap_app_flow_ui + 'web.js');
+            const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
+            $mol_assert_like(apps, ['Builderui_card']);
+        },
+        'a class of the chosen pack lands on the canvas and gets measured'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.click(stage.pack_row('Builderui'));
+            stage.scene.hello();
+            stage.drop(card, stage.client([200, 150]));
+            $mol_assert_ok(stage.app.doc_source().includes(`Builderui_card ${card}`));
+            $mol_assert_like(stage.app.spots(), { Builderui_card: { x: 200, y: 150 } });
+            $mol_assert_like(stage.pane.part_box('Builderui_card'), {
+                left: 200, top: 150, width: 100, height: 50,
+            });
+        },
+        'a pack taken back gives the editor its own parts again'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.click(stage.pack_row('Builderui'));
+            stage.scene.hello();
+            stage.click(stage.pack_row('Детали vmap'));
+            stage.scene.hello();
+            $mol_assert_equal(stage.app.links(), '');
+            const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
+            $mol_assert_like(apps, ['Button', 'Calc', 'Map']);
         },
     });
 })($ || ($ = {}));
