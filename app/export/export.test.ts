@@ -29,6 +29,8 @@ namespace $ {
 		return module.files.find( file => file.name.endsWith( suffix ) )?.text ?? ''
 	}
 
+	const theme = `\tplugins /\n\t\t<= Theme ${d}mol_theme_auto\n`
+
 	$mol_test({
 
 		'module path comes from the class names'( $ ) {
@@ -199,6 +201,71 @@ namespace $ {
 
 		},
 
+		'the exported root follows the scheme of the system'( $ ) {
+
+			const module = $.$bog_vmap_app_export_build([ { source: page }, { source: hero } ])
+			const tree = file_of( module, '.view.tree' )
+
+			$mol_assert_equal( tree, page + theme + hero )
+
+			$mol_assert_equal( tree.split( 'plugins /' ).length, 2 )
+
+		},
+
+		'the theme plugin lands on the router, not on the page under it'( $ ) {
+
+			const module = $.$bog_vmap_app_export_build([ { source: pages }, { source: hero } ])
+			const tree = file_of( module, '.view.tree' )
+
+			$mol_assert_equal( module.root, `${d}bog_site_app` )
+
+			$mol_assert_ok( tree.endsWith(
+				`${d}bog_site_app ${d}mol_view\n${ theme }\tDoc ${d}bog_site_page\n`
+			) )
+
+			$mol_assert_equal( tree.split( 'plugins /' ).length, 2 )
+
+		},
+
+		'a document that plugs something in itself is left alone'( $ ) {
+
+			const own = [
+				`${d}bog_site_page ${d}mol_view`,
+				`	plugins /`,
+				`		<= Hotkey ${d}mol_hotkey`,
+				`	sub /`,
+				``,
+			].join( '\n' )
+
+			const tree = file_of(
+				$.$bog_vmap_app_export_build([ { source: own } ]),
+				'.view.tree',
+			)
+
+			$mol_assert_equal( tree.split( 'plugins /' ).length, 2 )
+			$mol_assert_equal( tree.includes( `${d}mol_theme_auto` ), false )
+			$mol_assert_ok( tree.includes( `Hotkey ${d}mol_hotkey` ) )
+
+		},
+
+		'a root with a name of its own gets the next free one'( $ ) {
+
+			const own = [
+				`${d}bog_site_page ${d}mol_view`,
+				`	Theme ${d}mol_view`,
+				`	sub /`,
+				``,
+			].join( '\n' )
+
+			const tree = file_of(
+				$.$bog_vmap_app_export_build([ { source: own } ]),
+				'.view.tree',
+			)
+
+			$mol_assert_ok( tree.includes( `\t\t<= Theme2 ${d}mol_theme_auto\n` ) )
+
+		},
+
 		'the workflow builds the module by the stock action and nothing by hand'( $ ) {
 
 			const module = $.$bog_vmap_app_export_build([ { source: page }, { source: hero } ])
@@ -310,7 +377,7 @@ namespace $ {
 
 			const tree = file_of( $.$bog_vmap_app_export_build([ { source: board } ]), '.view.tree' )
 
-			$mol_assert_equal( tree, board )
+			$mol_assert_equal( tree, board + theme )
 
 			const css = file_of( $.$bog_vmap_app_export_build([ { source: board } ]), '.view.css' )
 			$mol_assert_equal( /\bleft\b|\btop\b|position/.test( css ), false )
@@ -324,7 +391,7 @@ namespace $ {
 			const tree = file_of( module, '.view.tree' )
 			const ts = file_of( module, '.view.ts' )
 
-			$mol_assert_equal( tree, pages + hero + `${d}bog_site_app ${d}mol_view\n\tDoc ${d}bog_site_page\n` )
+			$mol_assert_equal( tree, pages + hero + `${d}bog_site_app ${d}mol_view\n` + theme + `\tDoc ${d}bog_site_page\n` )
 
 			$mol_assert_equal( tree.indexOf( `${d}bog_site_page ` ) < tree.indexOf( `${d}bog_site_app ` ), true )
 
@@ -362,7 +429,7 @@ namespace $ {
 
 			const module = $.$bog_vmap_app_export_build([ { source: one } ])
 
-			$mol_assert_equal( file_of( module, '.view.tree' ), one )
+			$mol_assert_equal( file_of( module, '.view.tree' ), one + theme )
 			$mol_assert_equal( module.root, `${d}bog_site_page` )
 			$mol_assert_like(
 				module.files.map( file => file.name ),

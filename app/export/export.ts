@@ -122,6 +122,31 @@ namespace $ {
 		]) ])
 	}
 
+	function theme_plug( name: string ) {
+		return `\tplugins /\n\t\t<= ${ name } $mol_theme_auto\n`
+	}
+
+	export function $bog_vmap_app_export_themed(
+		this: $,
+		tree: $mol_tree2,
+	) {
+
+		if( !tree.kids[ 0 ] ) return ''
+
+		const taken = new Set(
+			this.$mol_view_tree2_class_props( tree ).map(
+				prop => this.$mol_view_tree2_prop_parts( prop ).name
+			)
+		)
+
+		if( taken.has( 'plugins' ) ) return ''
+
+		let name = 'Theme'
+		for( let i = 2; taken.has( name ); ++i ) name = 'Theme' + i
+
+		return theme_plug( name )
+	}
+
 	export type $bog_vmap_app_export_complaint = {
 
 		readonly line: number
@@ -351,7 +376,11 @@ namespace $ {
 		const files = [
 			{
 				name: `${ name }.view.tree`,
-				text: sorted.map( item => item.tree.toString() ).join( '' )
+				text: sorted.map( item => item.tree.toString() + (
+					router || item.name !== entry
+						? ''
+						: $bog_vmap_app_export_themed.call( this, item.tree )
+				) ).join( '' )
 					+ ( router ? router_tree( router, entry ) : '' ),
 			},
 			... body.includes( 'export class' ) ? [ { name: `${ name }.view.ts`, text: body } ] : [],
@@ -382,7 +411,7 @@ namespace $ {
 	}
 
 	function router_tree( router: string, doc: string ) {
-		return `${ router } $mol_view\n\tDoc ${ doc }\n`
+		return `${ router } $mol_view\n${ theme_plug( 'Theme' ) }\tDoc ${ doc }\n`
 	}
 
 	function router_ts( router: string, pages: readonly string[] ) {

@@ -498,7 +498,7 @@ namespace $ {
 
 			$mol_assert_equal(
 				module.files[ 0 ].text,
-				app.doc_source(),
+				app.doc_source() + `\tplugins /\n\t\t<= Theme ${d}mol_theme_auto\n`,
 			)
 
 			$mol_assert_equal( app.export_title(), 'Скачать my/site/page' )
@@ -611,7 +611,10 @@ namespace $ {
 
 			$mol_assert_equal( app.export_ready(), true )
 			$mol_assert_equal( module.root, `${d}my_site_page` )
-			$mol_assert_equal( module.files[ 0 ].text, `${d}my_site_page ${d}mol_view sub /\n` )
+			$mol_assert_equal(
+				module.files[ 0 ].text,
+				`${d}my_site_page ${d}mol_view sub /\n\tplugins /\n\t\t<= Theme ${d}mol_theme_auto\n`,
+			)
 
 			$mol_assert_equal( module.path, 'my/site/page' )
 
