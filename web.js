@@ -36827,6 +36827,11 @@ var $;
 			(obj.sub) = () => ([(this.Moment()), (this.Back())]);
 			return obj;
 		}
+		Change(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.change())]);
+			return obj;
+		}
 		Author(){
 			const obj = new this.$.$mol_view();
 			(obj.sub) = () => ([(this.author())]);
@@ -36843,6 +36848,9 @@ var $;
 		author(){
 			return "";
 		}
+		change(){
+			return "";
+		}
 		preview(){
 			return "";
 		}
@@ -36856,6 +36864,7 @@ var $;
 		sub(){
 			return [
 				(this.Bar()), 
+				(this.Change()), 
 				(this.Author()), 
 				(this.Text())
 			];
@@ -36864,6 +36873,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_history_snap.prototype), "Moment"));
 	($mol_mem(($.$bog_vmap_app_history_snap.prototype), "Back"));
 	($mol_mem(($.$bog_vmap_app_history_snap.prototype), "Bar"));
+	($mol_mem(($.$bog_vmap_app_history_snap.prototype), "Change"));
 	($mol_mem(($.$bog_vmap_app_history_snap.prototype), "Author"));
 	($mol_mem(($.$bog_vmap_app_history_snap.prototype), "Text"));
 	($mol_mem(($.$bog_vmap_app_history_snap.prototype), "back"));
@@ -36893,6 +36903,11 @@ var $;
             Moment: {
                 font: { weight: 'bold', size: '.9rem' },
             },
+            Change: {
+                font: { size: '.85rem' },
+                color: $mol_theme.current,
+                whiteSpace: 'normal',
+            },
             Author: {
                 font: { size: '.8rem' },
                 color: $mol_theme.shade,
@@ -36913,10 +36928,8 @@ var $;
 
 ;
 	($.$bog_vmap_app_history) = class $bog_vmap_app_history extends ($.$mol_view) {
-		Head(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => (["Версии"]);
-			return obj;
+		content(){
+			return [];
 		}
 		undoable(){
 			return false;
@@ -36960,27 +36973,16 @@ var $;
 			(obj.click) = (next) => ((this.snap_take(next)));
 			return obj;
 		}
-		Steps(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([
-				(this.Undo()), 
-				(this.Redo()), 
-				(this.Take())
-			]);
-			return obj;
-		}
 		snap_rows(){
 			return [];
-		}
-		List(){
-			const obj = new this.$.$mol_list();
-			(obj.rows) = () => ((this.snap_rows()));
-			return obj;
 		}
 		snap_moment(id){
 			return "";
 		}
 		snap_author(id){
+			return "";
+		}
+		snap_change(id){
 			return "";
 		}
 		snap_preview(id){
@@ -37008,38 +37010,181 @@ var $;
 		editable(){
 			return false;
 		}
+		note(next){
+			if(next !== undefined) return next;
+			return "";
+		}
 		sub(){
-			return [
-				(this.Head()), 
-				(this.Steps()), 
-				(this.List())
-			];
+			return (this.content());
+		}
+		Head(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => (["Версии"]);
+			return obj;
+		}
+		Steps(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([
+				(this.Undo()), 
+				(this.Redo()), 
+				(this.Take())
+			]);
+			return obj;
+		}
+		Note(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.note())]);
+			return obj;
+		}
+		List(){
+			const obj = new this.$.$mol_list();
+			(obj.rows) = () => ((this.snap_rows()));
+			return obj;
 		}
 		Snap_row(id){
 			const obj = new this.$.$bog_vmap_app_history_snap();
 			(obj.moment) = () => ((this.snap_moment(id)));
 			(obj.author) = () => ((this.snap_author(id)));
+			(obj.change) = () => ((this.snap_change(id)));
 			(obj.preview) = () => ((this.snap_preview(id)));
 			(obj.editable) = () => ((this.editable()));
 			(obj.back) = (next) => ((this.snap_back(id, next)));
 			return obj;
 		}
 	};
-	($mol_mem(($.$bog_vmap_app_history.prototype), "Head"));
 	($mol_mem(($.$bog_vmap_app_history.prototype), "undo"));
 	($mol_mem(($.$bog_vmap_app_history.prototype), "Undo"));
 	($mol_mem(($.$bog_vmap_app_history.prototype), "redo"));
 	($mol_mem(($.$bog_vmap_app_history.prototype), "Redo"));
 	($mol_mem(($.$bog_vmap_app_history.prototype), "snap_take"));
 	($mol_mem(($.$bog_vmap_app_history.prototype), "Take"));
-	($mol_mem(($.$bog_vmap_app_history.prototype), "Steps"));
-	($mol_mem(($.$bog_vmap_app_history.prototype), "List"));
 	($mol_mem_key(($.$bog_vmap_app_history.prototype), "snap_back"));
 	($mol_mem(($.$bog_vmap_app_history.prototype), "store"));
 	($mol_mem(($.$bog_vmap_app_history.prototype), "state"));
 	($mol_mem(($.$bog_vmap_app_history.prototype), "press"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "note"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "Head"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "Steps"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "Note"));
+	($mol_mem(($.$bog_vmap_app_history.prototype), "List"));
 	($mol_mem_key(($.$bog_vmap_app_history.prototype), "Snap_row"));
 
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $bog_vmap_app_history_classes(source) {
+        const blocks = new Map();
+        let name = '';
+        let lines = [];
+        for (const line of source.split('\n')) {
+            if (line && !/^[\t ]/.test(line)) {
+                if (name)
+                    blocks.set(name, lines.join('\n'));
+                name = line.split(/\s/)[0];
+                lines = [line];
+                continue;
+            }
+            if (name)
+                lines.push(line);
+        }
+        if (name)
+            blocks.set(name, lines.join('\n'));
+        return blocks;
+    }
+    $.$bog_vmap_app_history_classes = $bog_vmap_app_history_classes;
+    function $bog_vmap_app_history_delta(was, now) {
+        const rest = new Map();
+        for (const line of was ? was.split('\n') : []) {
+            rest.set(line, (rest.get(line) ?? 0) + 1);
+        }
+        let added = 0;
+        for (const line of now ? now.split('\n') : []) {
+            const count = rest.get(line) ?? 0;
+            if (count)
+                rest.set(line, count - 1);
+            else
+                ++added;
+        }
+        let gone = 0;
+        for (const count of rest.values())
+            gone += count;
+        const parts = [...added ? [`+${added}`] : [], ...gone ? [`−${gone}`] : []];
+        return parts.join(' ') || 'правка';
+    }
+    $.$bog_vmap_app_history_delta = $bog_vmap_app_history_delta;
+    function $bog_vmap_app_history_spot(was, now) {
+        const left = was.split('\n');
+        const right = now.split('\n');
+        for (let i = 0; i < Math.max(left.length, right.length); ++i) {
+            if (left[i] === right[i])
+                continue;
+            for (let back = i; back >= 0; --back) {
+                const name = /^\t([A-Z]\w*)/.exec(right[back] ?? left[back] ?? '')?.[1];
+                if (name)
+                    return name;
+            }
+            return '';
+        }
+        return '';
+    }
+    $.$bog_vmap_app_history_spot = $bog_vmap_app_history_spot;
+    function $bog_vmap_app_history_named(klass) {
+        return klass.replace(/^\$/, '');
+    }
+    $.$bog_vmap_app_history_named = $bog_vmap_app_history_named;
+    function $bog_vmap_app_history_body(was, now, role) {
+        for (const klass of Object.keys(now)) {
+            if (was[klass] === now[klass])
+                continue;
+            return `${$bog_vmap_app_history_named(klass)} ${role}`
+                + ` ${$bog_vmap_app_history_delta(was[klass] ?? '', now[klass])}`;
+        }
+        for (const klass of Object.keys(was)) {
+            if (klass in now)
+                continue;
+            return `${$bog_vmap_app_history_named(klass)} ${role} убран`;
+        }
+        return '';
+    }
+    function $bog_vmap_app_history_change(was, now) {
+        if (!was)
+            return 'первый снимок';
+        const left = $bog_vmap_app_history_classes(was.source);
+        const right = $bog_vmap_app_history_classes(now.source);
+        for (const [klass, text] of right) {
+            const before = left.get(klass);
+            if (before === text)
+                continue;
+            const named = $bog_vmap_app_history_named(klass);
+            if (before === undefined)
+                return `${named} заведён`;
+            const spot = $bog_vmap_app_history_spot(before, text);
+            return [named, spot, $bog_vmap_app_history_delta(before, text)]
+                .filter(Boolean).join(' ');
+        }
+        for (const klass of left.keys()) {
+            if (!right.has(klass))
+                return `${$bog_vmap_app_history_named(klass)} убран`;
+        }
+        const js = $bog_vmap_app_history_body(was.js, now.js, 'тело');
+        if (js)
+            return js;
+        const css = $bog_vmap_app_history_body(was.css, now.css, 'стиль');
+        if (css)
+            return css;
+        for (const name of Object.keys(now.spots)) {
+            const before = was.spots[name];
+            const after = now.spots[name];
+            if (before && before.x === after.x && before.y === after.y)
+                continue;
+            return `${name} передвинут`;
+        }
+        return 'без изменений';
+    }
+    $.$bog_vmap_app_history_change = $bog_vmap_app_history_change;
+})($ || ($ = {}));
 
 ;
 "use strict";
@@ -37228,9 +37373,39 @@ var $;
                     return;
                 this.snap_make(this.now());
             }
+            note_at(slug, next) {
+                return next ?? '';
+            }
+            note(next) {
+                return this.note_at(this.slug(), next);
+            }
+            content() {
+                return [
+                    this.Head(),
+                    this.Steps(),
+                    ...this.note() ? [this.Note()] : [],
+                    this.List(),
+                ];
+            }
+            snap_press() {
+                const doc = this.store().doc_current();
+                if (!doc)
+                    return this.note('Сцена ещё заводится, снимать нечего');
+                if (!doc.can_change())
+                    return this.note('Чужая сцена: снимок в неё не пишется');
+                this.note(this.snap_make(this.now()) ? '' : 'Изменений с прошлого снимка нет');
+            }
             snap_take(next) {
-                $mol_wire_async(this).snap_make(this.now());
+                $mol_wire_async(this).snap_press();
                 return null;
+            }
+            snap_change(link) {
+                const snaps = this.snaps();
+                const index = snaps.findIndex(snap => snap.link().str === link);
+                if (index < 0)
+                    return '';
+                const store = this.store();
+                return this.$.$bog_vmap_app_history_change(index > 0 ? store.snap_state(snaps[index - 1]) : null, store.snap_state(snaps[index]));
             }
             snap_revert(link) {
                 const snap = this.snap_at(link);
@@ -37312,6 +37487,12 @@ var $;
         __decorate([
             $mol_mem_key
         ], $bog_vmap_app_history.prototype, "snap_task", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_history.prototype, "note_at", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_history.prototype, "snap_change", null);
         $$.$bog_vmap_app_history = $bog_vmap_app_history;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
@@ -37339,6 +37520,14 @@ var $;
                 flex: { direction: 'row', shrink: 0 },
                 gap: $mol_gap.space,
                 padding: $mol_gap.block,
+            },
+            Note: {
+                flex: { shrink: 0 },
+                padding: $mol_gap.text,
+                background: { color: $mol_theme.card },
+                color: $mol_theme.text,
+                font: { size: '.8rem' },
+                whiteSpace: 'normal',
             },
             List: {
                 flex: { grow: 1, shrink: 1 },
@@ -37536,6 +37725,26 @@ var $;
         return [x, y];
     }
     $.$bog_vmap_app_wire_port_point = $bog_vmap_app_wire_port_point;
+    function $bog_vmap_app_wire_side_point(box, side) {
+        const x = side === 'in'
+            ? box.left - $.$bog_vmap_app_wire_gap
+            : box.left + box.width + $.$bog_vmap_app_wire_gap;
+        return [x, box.top + box.height / 2];
+    }
+    $.$bog_vmap_app_wire_side_point = $bog_vmap_app_wire_side_point;
+    function $bog_vmap_app_wire_over(box, point) {
+        const reach = $.$bog_vmap_app_wire_gap + $.$bog_vmap_app_wire_hit;
+        if (point[0] < box.left - reach)
+            return false;
+        if (point[0] > box.left + box.width + reach)
+            return false;
+        if (point[1] < box.top)
+            return false;
+        if (point[1] > box.top + box.height)
+            return false;
+        return true;
+    }
+    $.$bog_vmap_app_wire_over = $bog_vmap_app_wire_over;
     function wire_reach(span) {
         return Math.max(40, Math.abs(span) / 2);
     }
@@ -37563,10 +37772,15 @@ var $;
     $.$bog_vmap_app_wire_curve_mid = $bog_vmap_app_wire_curve_mid;
     function $bog_vmap_app_wire_dot_at(dots, point) {
         let found = null;
+        let best = Infinity;
         for (const dot of dots) {
-            if (Math.hypot(dot.x - point[0], dot.y - point[1]) > $.$bog_vmap_app_wire_hit)
+            const span = Math.hypot(dot.x - point[0], dot.y - point[1]);
+            if (span > $.$bog_vmap_app_wire_hit)
+                continue;
+            if (found && span > best)
                 continue;
             found = dot;
+            best = span;
         }
         return found;
     }
@@ -37918,6 +38132,9 @@ var $;
 			return [];
 		}
 		part_ports(id){
+			return [];
+		}
+		part_overs(id){
 			return [];
 		}
 		link_add(next){
@@ -39069,12 +39286,38 @@ var $;
             wire_point(next) {
                 return next ?? [0, 0];
             }
+            part_dots(name) {
+                const written = new Set(this.part_overs(name));
+                return this.part_ports(name).filter(port => port.own || written.has(port.name));
+            }
+            wire_over() {
+                if (!this.wire_drag())
+                    return null;
+                const point = this.wire_point();
+                let found = null;
+                for (const name of this.part_names()) {
+                    const box = this.part_box(name);
+                    if (!box)
+                        continue;
+                    if (!$bog_vmap_app_wire_over(box, point))
+                        continue;
+                    found = name;
+                }
+                return found;
+            }
+            part_spread(name) {
+                return name === this.primary() || name === this.wire_over();
+            }
             port_index(name, port) {
-                return Math.max(0, this.part_ports(name).findIndex(known => known.name === port));
+                return Math.max(0, this.part_dots(name).findIndex(known => known.name === port));
             }
             port_point(name, port, side) {
                 const box = this.part_box(name);
-                return box && $bog_vmap_app_wire_port_point(box, side, this.port_index(name, port));
+                if (!box)
+                    return null;
+                return this.part_spread(name)
+                    ? $bog_vmap_app_wire_port_point(box, side, this.port_index(name, port))
+                    : $bog_vmap_app_wire_side_point(box, side);
             }
             wire_lines() {
                 const values = this.values();
@@ -39102,14 +39345,24 @@ var $;
                     const box = this.part_box(node);
                     if (!box)
                         return;
-                    this.part_ports(node).forEach((port, index) => {
-                        const [x, y] = $bog_vmap_app_wire_port_point(box, side, index);
-                        dots.push({
-                            node, port, side, x, y,
-                            lit: lit(port),
-                            linked: side === 'in' && linked.has(`${node}.${port.name}`),
-                        });
+                    const ports = this.part_dots(node);
+                    const mark = (port, x, y) => dots.push({
+                        node, port, side, x, y,
+                        lit: lit(port),
+                        linked: side === 'in' && linked.has(`${node}.${port.name}`),
                     });
+                    if (this.part_spread(node)) {
+                        ports.forEach((port, index) => {
+                            const [x, y] = $bog_vmap_app_wire_port_point(box, side, index);
+                            mark(port, x, y);
+                        });
+                        return;
+                    }
+                    const port = ports.find(lit) ?? ports[0];
+                    if (!port)
+                        return;
+                    const [x, y] = $bog_vmap_app_wire_side_point(box, side);
+                    mark(port, x, y);
                 };
                 const drag = this.wire_drag();
                 if (drag) {
@@ -39157,7 +39410,8 @@ var $;
             }
             wire_release(event) {
                 const drag = this.wire_drag();
-                const dot = $bog_vmap_app_wire_dot_at(this.wire_dots(), this.screen_point(event));
+                const point = this.wire_point(this.screen_point(event));
+                const dot = $bog_vmap_app_wire_dot_at(this.wire_dots(), point);
                 this.wire_drag(null);
                 try {
                     this.Overlay().dom_node().releasePointerCapture(event.pointerId);
@@ -39511,6 +39765,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "wire_point", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "part_dots", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "wire_lines", null);
@@ -40006,6 +40263,9 @@ var $;
 		part_ports(id){
 			return [];
 		}
+		part_overs(id){
+			return [];
+		}
 		link_add(next){
 			if(next !== undefined) return next;
 			return null;
@@ -40273,6 +40533,7 @@ var $;
 			(obj.carrying) = () => ((this.carrying()));
 			(obj.wires) = () => ((this.doc_wires()));
 			(obj.part_ports) = (id) => ((this.part_ports(id)));
+			(obj.part_overs) = (id) => ((this.part_overs(id)));
 			(obj.link_add) = (next) => ((this.link_add(next)));
 			(obj.link_drop) = (next) => ((this.link_drop(next)));
 			(obj.containers) = () => ((this.doc_containers()));
@@ -41038,6 +41299,16 @@ var $;
                     return [];
                 return this.$.$bog_vmap_app_wire_ports(this.Lib().props_map(klass.type), this.Lib().props_owner(klass.type), klass.type);
             }
+            part_overs(name) {
+                const node = this.node();
+                const sign = node.prop_fullname(name);
+                if (!sign)
+                    return [];
+                const klass = node.props_tree().select(sign).kids[0]?.kids[0];
+                if (!klass || !$mol_view_tree2_class_match(klass))
+                    return [];
+                return klass.kids.map(over => this.$.$mol_view_tree2_prop_parts(over).name);
+            }
             doc_names() {
                 return this.node().prop_names();
             }
@@ -41228,7 +41499,8 @@ var $;
                     width: `${size.width}px`,
                     minHeight: `${size.height}px`,
                     flexDirection: 'column',
-                    background: '#ffffff',
+                    background: 'var(--mol_theme_back)',
+                    color: 'var(--mol_theme_text)',
                 };
             }
             board_add() {
@@ -41504,6 +41776,9 @@ var $;
         __decorate([
             $mol_mem_key
         ], $bog_vmap_app.prototype, "part_ports", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "part_overs", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "doc_names", null);

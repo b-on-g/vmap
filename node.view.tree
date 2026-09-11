@@ -1204,6 +1204,7 @@ $mol_number $mol_view
 $bog_vmap_app_history_snap $mol_view
 	moment \
 	author \
+	change \
 	preview \
 	editable false
 	back? null
@@ -1217,6 +1218,8 @@ $bog_vmap_app_history_snap $mol_view
 					hint \Вернуть документ к этому снимку. Текущее состояние ляжет снимком, поэтому возврат тоже отменяем
 					enabled <= editable
 					click? <=> back?
+		<= Change $mol_view
+			sub / <= change
 		<= Author $mol_view
 			sub / <= author
 		<= Text $mol_view
@@ -1228,32 +1231,36 @@ $bog_vmap_app_history $mol_view
 	live /
 	press? null
 	editable false
-	sub /
-		<= Head $mol_view
-			sub /
-				\Версии
-		<= Steps $mol_view
-			sub /
-				<= Undo $mol_button_minor
-					title \Отменить
-					hint \Шаг назад по правкам этой сессии. Cmd+Z или Ctrl+Z
-					enabled <= undoable false
-					click? <=> undo? null
-				<= Redo $mol_button_minor
-					title \Повторить
-					hint \Вернуть отменённый шаг. Cmd+Shift+Z или Ctrl+Shift+Z
-					enabled <= redoable false
-					click? <=> redo? null
-				<= Take $mol_button_minor
-					title \Снимок
-					hint \Записать текущее состояние документа снимком в его ленд
-					enabled <= editable
-					click? <=> snap_take? null
-		<= List $mol_list
-			rows <= snap_rows /
+	note? \
+	sub <= content /$mol_view
+	Head $mol_view
+		sub /
+			\Версии
+	Steps $mol_view
+		sub /
+			<= Undo $mol_button_minor
+				title \Отменить
+				hint \Шаг назад по правкам этой сессии. Cmd+Z или Ctrl+Z
+				enabled <= undoable false
+				click? <=> undo? null
+			<= Redo $mol_button_minor
+				title \Повторить
+				hint \Вернуть отменённый шаг. Cmd+Shift+Z или Ctrl+Shift+Z
+				enabled <= redoable false
+				click? <=> redo? null
+			<= Take $mol_button_minor
+				title \Снимок
+				hint \Записать текущее состояние документа снимком в его ленд
+				enabled <= editable
+				click? <=> snap_take? null
+	Note $mol_view
+		sub / <= note
+	List $mol_list
+		rows <= snap_rows /
 	Snap_row* $bog_vmap_app_history_snap
 		moment <= snap_moment* \
 		author <= snap_author* \
+		change <= snap_change* \
 		preview <= snap_preview* \
 		editable <= editable
 		back? <=> snap_back*? null
@@ -1433,6 +1440,7 @@ $bog_vmap_app_pane $mol_view
 	carrying false
 	wires /$bog_vmap_lang_link
 	part_ports* /$bog_vmap_app_wire_port
+	part_overs* /string
 	link_add? null
 	link_drop? null
 	containers /string
@@ -1732,6 +1740,7 @@ $bog_vmap_app $mol_view
 		carrying <= carrying false
 		wires <= doc_wires /$bog_vmap_lang_link
 		part_ports* <= part_ports* /$bog_vmap_app_wire_port
+		part_overs* <= part_overs* /string
 		link_add? <=> link_add? null
 		link_drop? <=> link_drop? null
 		containers <= doc_containers /string

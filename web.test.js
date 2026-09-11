@@ -7454,7 +7454,7 @@ var $;
         'a short forward wire keeps a minimal reach'($) {
             $mol_assert_equal($bog_vmap_app_wire_curve([0, 0], [10, 0]), 'M 0 0 C 40 0, -30 0, 10 0');
         },
-        'the dot under a point, last one on top'($) {
+        'the dot under a point, the nearest one, and on a tie the one on top'($) {
             const dots = [
                 dot({ x: 10, y: 10, node: 'A' }),
                 dot({ x: 14, y: 10, node: 'B' }),
@@ -7465,6 +7465,32 @@ var $;
             $mol_assert_equal($bog_vmap_app_wire_dot_at(dots, [100, 100 + $bog_vmap_app_wire_hit])?.node, 'C');
             $mol_assert_equal($bog_vmap_app_wire_dot_at(dots, [100, 100 + $bog_vmap_app_wire_hit + 1]), null);
             $mol_assert_equal($bog_vmap_app_wire_dot_at(dots, [50, 50]), null);
+        },
+        'a point inside the reach of two dots goes to the nearer, not the later'($) {
+            const dots = [
+                dot({ x: 10, y: 10, node: 'A', port: port('near', 'number') }),
+                dot({ x: 15, y: 10, node: 'B', port: port('far', 'number') }),
+            ];
+            $mol_assert_equal($bog_vmap_app_wire_dot_at(dots, [11, 10])?.node, 'A');
+            $mol_assert_equal($bog_vmap_app_wire_dot_at(dots, [14, 10])?.node, 'B');
+        },
+        'a column of a short part does not reach into the part below it'($) {
+            const height = 17;
+            const above = box(0, 0, 200, height);
+            const below = box(0, height, 200, height);
+            const own = $bog_vmap_app_wire_side_point(above, 'in');
+            const next = $bog_vmap_app_wire_side_point(below, 'in');
+            $mol_assert_equal(own[0], next[0]);
+            $mol_assert_equal(Math.abs(own[1] - next[1]) > $bog_vmap_app_wire_hit, true);
+            $mol_assert_like(own, [0 - $bog_vmap_app_wire_gap, height / 2]);
+        },
+        'a point on the dot column counts as over the part, a point a row above does not'($) {
+            const b = box(100, 200, 60, 30);
+            const [x, y] = $bog_vmap_app_wire_side_point(b, 'in');
+            $mol_assert_equal($bog_vmap_app_wire_over(b, [x, y]), true);
+            $mol_assert_equal($bog_vmap_app_wire_over(b, [b.left + 10, b.top + 1]), true);
+            $mol_assert_equal($bog_vmap_app_wire_over(b, [x, b.top - 1]), false);
+            $mol_assert_equal($bog_vmap_app_wire_over(b, [x - $bog_vmap_app_wire_hit - 1, y]), false);
         },
         'compatibility by shape'($) {
             $mol_assert_equal($bog_vmap_app_wire_fits('number', 'number'), true);
@@ -12630,11 +12656,47 @@ var $;
                 [`${root}/Pair/Map`]: box(0, 220, 320, 220),
             });
             pane.wire_drag({ from: 'Pair', from_prop: 'x', kind: 'number' });
+            pane.wire_point([-12, 227]);
             const dots = pane.wire_dots();
             const at = (x, y) => $bog_vmap_app_wire_dot_at(dots, [x, y]);
-            $mol_assert_equal(at(-12, 7)?.node, 'Map_2');
             $mol_assert_equal(at(-12, 227)?.node, 'Map');
+            $mol_assert_equal(at(-12, 110)?.node, 'Map_2');
             $mol_assert_equal(dots.filter(dot => dot.node === 'Map').length, 2);
+            $mol_assert_equal(dots.filter(dot => dot.node === 'Map_2').length, 1);
+        },
+        'a stack of short parts keeps every dot on the part it belongs to'($) {
+            const own = ['left', 'right', 'op', 'result'];
+            const base = ['dom_name', 'title', 'style', 'minimal_height'];
+            const ports = [
+                ...own.map(name => ({ name, next: false, own: true, kind: 'number' })),
+                ...base.map(name => ({ name, next: false, own: false, kind: 'number' })),
+            ];
+            const { pane } = pane_make($, {}, {
+                doc_names: () => ['Fuel', 'Cost', 'Total'],
+                part_ports: () => ports,
+                wires: () => [],
+            });
+            pane.sizes({
+                [`${root}/Fuel`]: box(0, 0, 200, 17),
+                [`${root}/Cost`]: box(0, 17, 200, 17),
+                [`${root}/Total`]: box(0, 34, 200, 17),
+            });
+            pane.wire_drag({ from: 'Board', from_prop: 'x', kind: 'number' });
+            pane.wire_point([100, 8]);
+            const dots = pane.wire_dots();
+            const at = (x, y) => $bog_vmap_app_wire_dot_at(dots, [x, y]);
+            $mol_assert_equal(dots.some(dot => base.includes(dot.port.name)), false);
+            $mol_assert_equal(dots.filter(dot => dot.node === 'Fuel').length, own.length);
+            $mol_assert_equal(dots.filter(dot => dot.node === 'Cost').length, 1);
+            $mol_assert_equal(dots.filter(dot => dot.node === 'Total').length, 1);
+            const left = $bog_vmap_app_wire_port_point(pane.part_box('Fuel'), 'in', 0);
+            $mol_assert_equal(at(left[0], left[1])?.node, 'Fuel');
+            $mol_assert_equal(at(left[0], left[1])?.port.name, 'left');
+            const cost = $bog_vmap_app_wire_side_point(pane.part_box('Cost'), 'in');
+            const total = $bog_vmap_app_wire_side_point(pane.part_box('Total'), 'in');
+            $mol_assert_equal(Math.abs(cost[1] - total[1]) > $bog_vmap_app_wire_hit, true);
+            $mol_assert_equal(at(cost[0], cost[1])?.node, 'Cost');
+            $mol_assert_equal(at(total[0], total[1])?.node, 'Total');
         },
         'a modified click leaves the picked set alone'($) {
             const { pane } = pane_make($);
@@ -12857,6 +12919,8 @@ var $;
             $mol_assert_like(pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' });
             $mol_assert_equal(pane.primary(), 'Calc');
             pane.node_move(pointer(600, 100));
+            $mol_assert_like(pane.wire_dots().map(dot => [dot.node, dot.port.name, dot.side, dot.x, dot.y, dot.lit]), [['Map', 'zoom', 'in', 688, 100, true]]);
+            pane.node_move(pointer(710, 60));
             $mol_assert_like(pane.wire_dots().map(dot => [dot.node, dot.port.name, dot.side, dot.x, dot.y, dot.lit]), [['Map', 'zoom', 'in', 688, 57, true], ['Map', 'marker', 'in', 688, 71, false]]);
             $mol_assert_equal(pane.wire_drag_geometry().startsWith('M 312 57 C'), true);
             pane.node_release(pointer(688, 57, { buttons: 0 }));
@@ -12869,9 +12933,10 @@ var $;
             $mol_assert_equal(clicks(posted).length, 0);
             $mol_assert_equal(pane.wire_lines().length, 1);
             $mol_assert_equal(pane.wire_lines()[0].geometry.startsWith('M 312 57 C'), true);
-            $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 688 57'), true);
+            $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 688 100'), true);
             $mol_assert_equal(pane.wire_dots().find(dot => dot.port.name === 'zoom')?.linked, undefined);
             pane.picked(['Map']);
+            $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 688 57'), true);
             $mol_assert_equal(pane.wire_dots().find(dot => dot.port.name === 'zoom' && dot.side === 'in')?.linked, true);
         },
         'a drag let go over nothing, or over an input of the wrong shape, writes nothing'($) {
@@ -12926,8 +12991,10 @@ var $;
             $mol_assert_equal(drawn.length, 1);
             answer({ kind: 'sizes', sizes: { [`${root}/Calc`]: box(0, 100) } });
             $mol_assert_equal(pane.wire_lines().length, 1);
+            $mol_assert_equal(pane.wire_lines()[0].geometry.startsWith('M 112 125 C'), true);
+            $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 288 25'), true);
+            pane.picked(['Calc']);
             $mol_assert_equal(pane.wire_lines()[0].geometry.startsWith('M 112 107 C'), true);
-            $mol_assert_equal(pane.wire_lines()[0].geometry.endsWith(', 288 7'), true);
         },
         'values_want names the visible wires and the output ports of the visible free parts'($) {
             const { pane, node, posted } = wired_make($, [
@@ -14710,6 +14777,52 @@ var $;
             $mol_assert_equal(one.snap_moment(links[0]) === one.snap_moment(links[1]), false);
             $mol_assert_equal(one.snap_author(links[0]), doc.land().auth().pass().lord().str);
         },
+        'a snapshot is signed with the class that changed and by how much'($) {
+            const { store, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_make(1);
+            store.source(src_one.replace('\tsub / <= title\n', '\tsub / <= title\n\tCard $mol_view\n'));
+            one.snap_make(2);
+            const links = one.snap_links();
+            $mol_assert_equal(one.snap_change(links[1]), 'первый снимок');
+            $mol_assert_equal(one.snap_change(links[0]), 'bog_vmap_app_history_test_page Card +1');
+        },
+        'two snapshots in a row are signed differently'($) {
+            const { store, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_make(1);
+            store.source(src_two);
+            one.snap_make(2);
+            const links = one.snap_links();
+            $mol_assert_equal(one.snap_change(links[0]) === one.snap_change(links[1]), false);
+        },
+        'a style written without touching the tree is named in the signature'($) {
+            const { store, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_make(1);
+            store.node_css(store.doc_current(), `${d}bog_vmap_app_history_test_page`, '[x] {}');
+            one.snap_make(2);
+            $mol_assert_equal(one.snap_change(one.snap_links()[0]), 'bog_vmap_app_history_test_page стиль +1');
+        },
+        'the button on an unchanged document says so instead of keeping quiet'($) {
+            const { store, doc, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_press();
+            $mol_assert_equal(store.snaps(doc).length, 1);
+            $mol_assert_equal(one.note(), '');
+            one.snap_press();
+            $mol_assert_equal(store.snaps(doc).length, 1);
+            $mol_assert_equal(one.note(), 'Изменений с прошлого снимка нет');
+        },
+        'the note goes away as soon as the document moves on'($) {
+            const { store, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_press();
+            one.snap_press();
+            $mol_assert_equal(one.note() !== '', true);
+            store.source(src_two);
+            $mol_assert_equal(one.note(), '');
+        },
         'a long snapshot is previewed trimmed'($) {
             const { store, one } = $bog_vmap_app_history_test_land($);
             const long = src_one.replace(/\n$/, '')
@@ -15662,6 +15775,19 @@ var $;
             app.board_add();
             $mol_assert_like(app.doc_containers(), ['Page', 'Page_2']);
         },
+        'an artboard carried into the download takes a colour with its background'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.board_add();
+            const module = app.export_state().module;
+            const tree = module.files.find(file => file.name.endsWith('.view.tree')).text;
+            const styled = (prop) => tree.split('\n')
+                .map(line => line.trim())
+                .find(line => line.startsWith(prop + ' \\'))
+                ?.slice(prop.length + 2) ?? '';
+            $mol_assert_equal(styled('background'), 'var(--mol_theme_back)');
+            $mol_assert_equal(styled('color'), 'var(--mol_theme_text)');
+            $mol_assert_equal(/#[0-9a-f]{3,8}/i.test(tree), false);
+        },
         'a new artboard lands where the camera shows the whole of it'($) {
             const app = $bog_vmap_app.make({ $ });
             const pane = app.Pane();
@@ -16537,7 +16663,7 @@ var $;
             },
             port_dot(name, port, side) {
                 const box = pane.part_box(name);
-                const index = app.part_ports(name).findIndex(known => known.name === port);
+                const index = pane.part_dots(name).findIndex(known => known.name === port);
                 if (!box || index < 0)
                     $mol_fail(new Error(`no port ${name}.${port} on screen`));
                 return this.client($bog_vmap_app_wire_port_point(box, side, index));
