@@ -547,6 +547,21 @@ namespace $ {
 
 		},
 
+		'the address of an asset leaves the export exactly as it entered'( $ ) {
+
+			const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png'
+
+			const module = $.$bog_vmap_app_export_build([
+				{ source: `${d}bog_site_page ${d}mol_view\n\tLogo ${d}mol_image uri \\${ uri }\n\tsub / <= Logo\n` },
+			])
+
+			const tree = file_of( module, '.view.tree' )
+
+			$mol_assert_ok( tree.includes( `uri \\${ uri }` ) )
+			$mol_assert_equal( module.files.some( file => file.name.startsWith( 'assets/' ) ), false )
+
+		},
+
 	})
 
 }

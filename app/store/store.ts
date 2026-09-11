@@ -263,6 +263,19 @@ namespace $ {
 			return this.doc_source( doc, next )
 		}
 
+		@ $mol_memo.method
+		assets() {
+			return $bog_vmap_asset.make({ $: this.$ })
+		}
+
+		asset_put( blob: $mol_blob ) {
+			return this.assets().put( blob )
+		}
+
+		asset_links() {
+			return $bog_vmap_asset_links( this.source() )
+		}
+
 		spots( next?: $bog_vmap_app_store_spots ): $bog_vmap_app_store_spots {
 
 			const doc = this.doc_current()

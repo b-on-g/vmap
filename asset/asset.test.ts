@@ -2,82 +2,96 @@ namespace $ {
 
 	const d = '$'
 
+	const master = 'https://baza.test/'
+
 	function land( $: $ ) {
 		return $giper_baza_land.make({ $ })
 	}
 
-	const link_a = 'aaaaaaaa'
-	const link_b = 'bbbbbbbb_cccccccc'
+	function assets( $: $, at = master ) {
+		return $bog_vmap_asset.make({ $, master: ()=> at })
+	}
+
+	function file_of( $: $, name = 'logo.png', head = '11111111' ) {
+		const one = land( $ ).Pawn( $giper_baza_file ).Head( new $giper_baza_link( head ) )
+		one.buffer( new Uint8Array([ 137, 80, 78, 71 ]) )
+		one.type( 'image/png' )
+		one.name( name )
+		return one
+	}
 
 	$mol_test({
 
-		'an address is made and read back'( $ ) {
+		'an address is made from the master and read back as the same link'( $ ) {
 
-			$mol_assert_equal( $bog_vmap_asset_uri( link_a ), 'asset:' + link_a )
-			$mol_assert_equal( $bog_vmap_asset_id( 'asset:' + link_a ), link_a )
+			const file = file_of( $ )
+			const uri = assets( $ ).uri( file )
+
+			$mol_assert_ok( uri.startsWith( master + '?BAZA:file=' ) )
+			$mol_assert_equal( $bog_vmap_asset_link( uri ), file.link().str )
 
 		},
 
-		'what is not an address reads as none of one'( $ ) {
+		'a master written without a trailing slash gets exactly one'( $ ) {
 
-			$mol_assert_equal( $bog_vmap_asset_id( 'https://example.org/pic.png' ), null )
-			$mol_assert_equal( $bog_vmap_asset_id( link_a ), null )
+			const file = file_of( $ )
+			const uri = assets( $, 'https://baza.test' ).uri( file )
 
-			$mol_assert_equal( $bog_vmap_asset_id( 'asset:' ), null )
-			$mol_assert_equal( $bog_vmap_asset_id( 'asset:not a link' ), null )
+			$mol_assert_ok( uri.startsWith( 'https://baza.test/?BAZA:file=' ) )
+			$mol_assert_equal( $bog_vmap_asset_link( uri ), file.link().str )
+
+		},
+
+		'without a master there is no address at all'( $ ) {
+
+			$mol_assert_equal( assets( $, '' ).uri( file_of( $ ) ), '' )
+
+		},
+
+		'the address carries the file name for whoever saves it'( $ ) {
+
+			const uri = assets( $ ).uri( file_of( $, 'logo.png' ) )
+
+			$mol_assert_ok( uri.includes( ';name=logo.png' ) )
+
+		},
+
+		'what is not an address reads as no link'( $ ) {
+
+			$mol_assert_equal( $bog_vmap_asset_link( 'https://example.org/pic.png' ), null )
+			$mol_assert_equal( $bog_vmap_asset_link( 'aaaaaaaa' ), null )
+			$mol_assert_equal( $bog_vmap_asset_link( 'https://baza.test/?BAZA:file=' ), null )
+			$mol_assert_equal( $bog_vmap_asset_link( 'https://baza.test/?BAZA:file=not a link' ), null )
 
 		},
 
 		'the assets of a document are listed once each, in order of mention'( $ ) {
 
+			const one = assets( $ )
+			const a = file_of( $, 'a.png', '11111111' )
+			const b = file_of( $, 'b.png', '22222222' )
+
 			const source = [
 				`${d}my_page ${d}mol_view`,
-				`	Logo ${d}mol_image uri \\asset:${ link_b }`,
-				`	Hero ${d}mol_image uri \\asset:${ link_a }`,
-				`	Again ${d}mol_image uri \\asset:${ link_b }`,
+				`	Logo ${d}mol_image uri \\${ one.uri( b ) }`,
+				`	Hero ${d}mol_image uri \\${ one.uri( a ) }`,
+				`	Again ${d}mol_image uri \\${ one.uri( b ) }`,
 				'',
 			].join( '\n' )
 
-			$mol_assert_like( $bog_vmap_asset_ids( source ), [ link_b, link_a ] )
+			$mol_assert_like(
+				$bog_vmap_asset_links( source ),
+				[ b.link().str, a.link().str ],
+			)
 
 		},
 
 		'a document mentioning no asset lists none'( $ ) {
 
 			$mol_assert_like(
-				$bog_vmap_asset_ids( `${d}my_page ${d}mol_view\n\ttitle \\Hi\n` ),
+				$bog_vmap_asset_links( `${d}my_page ${d}mol_view\n\ttitle \\Hi\n` ),
 				[],
 			)
-
-		},
-
-		'every address is swapped for what the renderer answers'( $ ) {
-
-			const source = `uri \\asset:${ link_a } and \\asset:${ link_b }`
-
-			$mol_assert_equal(
-				$bog_vmap_asset_swap( source, id => `blob:${ id }` ),
-				`uri \\blob:${ link_a } and \\blob:${ link_b }`,
-			)
-
-		},
-
-		'an address the renderer has no answer for is left untouched'( $ ) {
-
-			const source = `uri \\asset:${ link_a } and \\asset:${ link_b }`
-
-			$mol_assert_equal(
-				$bog_vmap_asset_swap( source, id => id === link_a ? 'blob:here' : null ),
-				`uri \\blob:here and \\asset:${ link_b }`,
-			)
-
-		},
-
-		'text that is not an address survives a swap'( $ ) {
-
-			const source = 'uri \\https://example.org/asset:x\n\ttitle \\asset:\n'
-
-			$mol_assert_equal( $bog_vmap_asset_swap( source, ()=> 'blob:x' ), source )
 
 		},
 
@@ -114,13 +128,14 @@ namespace $ {
 
 		},
 
-		'an id that is not a link resolves to no file at all'( $ ) {
+		'an address that is not one resolves to no file at all'( $ ) {
 
-			const assets = $bog_vmap_asset.make({ $ })
+			const one = assets( $ )
 
-			$mol_assert_equal( assets.file( 'not a link' ), null )
-			$mol_assert_equal( assets.bytes( 'not a link' ), null )
-			$mol_assert_equal( assets.mime( 'not a link' ), '' )
+			$mol_assert_equal( one.file( 'not an address' ), null )
+			$mol_assert_equal( one.bytes( 'not an address' ), null )
+			$mol_assert_equal( one.mime( 'not an address' ), '' )
+			$mol_assert_equal( one.name( 'not an address' ), '' )
 
 		},
 
@@ -136,6 +151,49 @@ namespace $ {
 
 			$mol_assert_equal( file.name(), 'logo.png' )
 			$mol_assert_ok( synced > 0 )
+
+		},
+
+		async 'a dropped file goes into a land and comes back as an address'( $ ) {
+
+			const bytes = new Uint8Array([ 137, 80, 78, 71, 13, 10, 26, 10 ])
+
+			const one = $bog_vmap_asset.make({
+				$,
+				master: ()=> master,
+				land: ()=> $giper_baza_land.make({ $ }),
+			})
+
+			const file = await $mol_wire_async( one ).made(
+				new $mol_blob( [ bytes ], { type: 'image/png' } )
+			)
+
+			$mol_assert_like( [ ... file.buffer() ], [ ... bytes ] )
+			$mol_assert_equal( file.type(), 'image/png' )
+
+			const uri = one.uri( file )
+
+			$mol_assert_ok( uri.startsWith( master + '?BAZA:file=' ) )
+			$mol_assert_equal( $bog_vmap_asset_link( uri ), file.link().str )
+
+			const put = await $mol_wire_async( one ).put(
+				new $mol_blob( [ bytes ], { type: 'image/png' } )
+			)
+
+			$mol_assert_ok( !!$bog_vmap_asset_link( put ) )
+
+		},
+
+		'the master is the one that is not the page itself'( $ ) {
+
+			$.$giper_baza_yard = class extends $giper_baza_yard {
+				static override masters_default = [ 'https://page.test/' ]
+				static override masters() {
+					return [ 'https://page.test/', 'https://baza.test/' ]
+				}
+			}
+
+			$mol_assert_equal( $bog_vmap_asset.make({ $ }).master(), 'https://baza.test/' )
 
 		},
 

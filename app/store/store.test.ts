@@ -895,6 +895,29 @@ namespace $ {
 
 		},
 
+		async 'a file put into the base is addressed from the document'( $ ) {
+
+			const s = store( $ )
+			s.doc_add( 'Landing' )
+
+			s.assets = ()=> $bog_vmap_asset.make({
+				$,
+				master: ()=> 'https://baza.test/',
+				land: ()=> $giper_baza_land.make({ $ }),
+			})
+
+			const uri = await $mol_wire_async( s ).asset_put(
+				new $mol_blob( [ new Uint8Array([ 137, 80, 78, 71 ]) ], { type: 'image/png' } )
+			)
+
+			s.source( `${d}bog_vmap_app_store_test_page ${d}mol_view\n\tLogo ${d}mol_image uri \\${ uri }\n\tsub / <= Logo\n` )
+
+			$mol_assert_ok( s.source().includes( uri ) )
+			$mol_assert_equal( s.asset_links().length, 1 )
+			$mol_assert_ok( uri.includes( s.asset_links()[ 0 ] ) )
+
+		},
+
 	})
 
 }

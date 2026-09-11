@@ -1,83 +1,80 @@
 namespace $ {
 
-	const $bog_vmap_asset_prefix = 'asset:'
+	const $bog_vmap_asset_mark = '?BAZA:file='
 
-	const $bog_vmap_asset_chars = /[A-Za-zÆæ0-9_]+/
+	export function $bog_vmap_asset_link( uri: string ) {
 
-	export function $bog_vmap_asset_uri( id: string ) {
-		return $bog_vmap_asset_prefix + id
-	}
+		const pos = uri.indexOf( $bog_vmap_asset_mark )
+		if( pos < 0 ) return null
 
-	export function $bog_vmap_asset_id( uri: string ) {
-
-		if( !uri.startsWith( $bog_vmap_asset_prefix ) ) return null
-
-		const id = uri.slice( $bog_vmap_asset_prefix.length )
+		try {
+			var id = $giper_baza_file_query.parse( uri.slice( pos ) ).file[ '=' ]?.[ 0 ][ 0 ]
+		} catch {
+			return null
+		}
 
 		return id ? $giper_baza_link.check( id ) : null
 	}
 
-	export function $bog_vmap_asset_ids( source: string ) {
+	export function $bog_vmap_asset_links( source: string ) {
 
 		const found = new Set< string >()
 
-		for( const [ uri ] of source.matchAll(
-			new RegExp( $bog_vmap_asset_prefix + $bog_vmap_asset_chars.source, 'g' )
-		) ) {
-			const id = $bog_vmap_asset_id( uri )
-			if( id ) found.add( id )
+		for( const [ uri ] of source.matchAll( /\?BAZA:file=\S*/g ) ) {
+			const link = $bog_vmap_asset_link( uri )
+			if( link ) found.add( link )
 		}
 
 		return [ ... found ] as readonly string[]
 	}
 
-	export function $bog_vmap_asset_swap( source: string, at: ( id: string )=> string | null ) {
-
-		return source.replace(
-			new RegExp( $bog_vmap_asset_prefix + $bog_vmap_asset_chars.source, 'g' ),
-			uri => {
-				const id = $bog_vmap_asset_id( uri )
-				if( !id ) return uri
-				return at( id ) ?? uri
-			},
-		)
-	}
-
 	export class $bog_vmap_asset extends $mol_object {
 
-		file( id: string ) {
+		master() {
+			const yard = this.$.$giper_baza_yard
+			return yard.masters().find( uri => !yard.masters_default.includes( uri ) ) ?? ''
+		}
 
-			const checked = $giper_baza_link.check( id )
-			if( !checked ) return null
+		uri( file: $giper_baza_file ) {
+			const master = this.master()
+			return master ? master.replace( /\/$/, '' ) + '/' + file.uri() : ''
+		}
+
+		file( uri: string ) {
+
+			const link = $bog_vmap_asset_link( uri )
+			if( !link ) return null
 
 			return this.$.$giper_baza_glob.Pawn(
-				new $giper_baza_link( checked ),
+				new $giper_baza_link( link ),
 				$giper_baza_file,
 			)
 		}
 
-		bytes( id: string ) {
-			return this.file( id )?.buffer() ?? null
+		bytes( uri: string ) {
+			return this.file( uri )?.buffer() ?? null
 		}
 
-		mime( id: string ) {
-			return this.file( id )?.type() ?? ''
+		mime( uri: string ) {
+			return this.file( uri )?.type() ?? ''
 		}
 
-		name( id: string ) {
-			return this.file( id )?.name() ?? ''
+		name( uri: string ) {
+			return this.file( uri )?.name() ?? ''
 		}
 
-		put( bytes: Uint8Array< ArrayBuffer >, mime: string, name: string ) {
+		land() {
+			return this.$.$giper_baza_glob.land_grab()
+		}
 
-			const land = this.$.$giper_baza_glob.land_grab()
-			const file = land.Data( $giper_baza_file )
+		made( blob: $mol_blob ) {
+			const file = this.land().Data( $giper_baza_file )
+			file.blob( blob )
+			return file
+		}
 
-			file.buffer( bytes )
-			file.type( mime )
-			file.name( name )
-
-			return file.link().str
+		put( blob: $mol_blob ) {
+			return this.uri( this.made( blob ) )
 		}
 
 	}
