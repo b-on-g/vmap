@@ -1,10 +1,3 @@
-// S4 probe. Loaded into `a.html`, `b.html` or the shipping scene page itself
-// with a `<script src>`; everything it needs is on `window.S4`.
-//
-// The scene page, opened at the top level, is its own `parent`, and `parent` is
-// exactly the peer the scene's bridge answers to. So `window.postMessage` here
-// is indistinguishable from the host talking through an iframe, and no scene
-// code has to be touched to measure it.
 ;( function () {
 
 	const S4 = window.S4 = window.S4 || {}
@@ -23,9 +16,6 @@
 
 	S4.wait = ms => new Promise( done => setTimeout( done, ms ) )
 
-	// Everything a second bundle can overwrite. Identity before and after the
-	// load is the whole measurement: a kept identity means one copy, a new one
-	// means the old objects are now talking to a stranger.
 	S4.snap = () => ( {
 		view: window.$mol_view,
 		object2: window.$mol_object2,
@@ -42,9 +32,6 @@
 	S4.scene = () => window.$bog_vmap_scene.Root( 0 )
 	S4.stage = () => document.querySelector( '[bog_vmap_scene_stage]' )
 
-	// Names are glued, never written whole: mam parses string literals too, and
-	// a literal `$mol_string` in a file of this pack would drag the module into
-	// the dependency graph — which is the very thing being measured here.
 	const N = name => '$' + name
 
 	S4.doc_plain_root = N( 'bog_vmap_spike_s4_demo' )
@@ -79,7 +66,6 @@
 		document.head.appendChild( el )
 	} )
 
-	/** Message → cell → render → DOM, on the scene's own state. */
 	S4.scene_reactive = async zoom => {
 		const before = S4.stage()?.style.transform
 		S4.send( { kind: 'camera_set', camera: { x: 10, y: 20, zoom } } )
@@ -104,14 +90,12 @@
 			compile_error: scene.compile_error,
 			errors: S4.errors.slice( -4 ),
 			instance: inst && inst.constructor.name,
-			// The whole story of variant A lives in this pair.
 			instance_of_global_view: inst instanceof window.$mol_view,
 			mounted: stage ? [ ... stage.querySelectorAll( '*' ) ].map( n => n.tagName.toLowerCase() ) : null,
 			stage_text: stage && stage.textContent.slice( 0, 120 ),
 		}
 	}
 
-	/** Mounts by DOM node instead of by `sub()`, the proposed scene fix. */
 	S4.mount_by_node = () => {
 		const el = S4.scene().instance().dom_tree()
 		const stage = S4.stage()
@@ -120,7 +104,6 @@
 		return [ ... stage.querySelectorAll( '*' ) ].map( n => n.tagName.toLowerCase() )
 	}
 
-	/** Does the rendered document actually take input and clicks. */
 	S4.interact = async () => {
 		const inst = S4.scene().instance()
 		const stage = S4.stage()
