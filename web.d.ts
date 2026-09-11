@@ -42541,10 +42541,10 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_deck__items_bog_vmap_app_code_10 = $mol_type_enforce<
+	type $bog_vmap_app_code_deck__items_bog_vmap_app_code_10 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_code['source_tabs'] >
 		,
-		ReturnType< $mol_deck['items'] >
+		ReturnType< $bog_vmap_app_code_deck['items'] >
 	>
 	type $mol_textarea__title_bog_vmap_app_code_11 = $mol_type_enforce<
 		string
@@ -42670,11 +42670,14 @@ declare namespace $ {
 		Refusal( ): $mol_view
 		Typing( ): $mol_view
 		Typing_row( id: any): $mol_view
-		Sources( ): $mol_deck
+		Sources( ): $bog_vmap_app_code_deck
 		Tree( ): $mol_textarea
 		Js( ): $mol_textarea
 		Js_idle( ): $mol_view
 		Css( ): $mol_textarea
+	}
+	
+	export class $bog_vmap_app_code_deck extends $mol_deck {
 	}
 	
 }
@@ -42682,6 +42685,9 @@ declare namespace $ {
 //# sourceMappingURL=code.view.tree.d.ts.map
 declare namespace $.$$ {
     type $bog_vmap_app_code_slot = 'tree' | 'js' | 'css';
+    class $bog_vmap_app_code_deck extends $.$bog_vmap_app_code_deck {
+        current(next?: string): string;
+    }
     class $bog_vmap_app_code extends $.$bog_vmap_app_code {
         sliced(): boolean;
         scope_note(): string;

@@ -57,44 +57,6 @@ $mol_check $mol_button_minor
 
 $mol_bar $mol_view
 
-$mol_list $mol_view
-	render_visible_only true
-	render_over 0.1
-	sub <= rows /$mol_view
-		<= Gap_before $mol_view style * paddingTop <= gap_before 0
-		<= Empty $mol_view
-		<= Gap_after $mol_view style * paddingTop <= gap_after 0
-	item_height_min* 1
-	item_width_min* 1
-	view_window_shift? 0
-	view_window /
-		0
-		0
-
-$mol_check_list $mol_view
-	dictionary *
-	Option* $mol_check
-		checked? <=> option_checked*? false
-		label <= option_label* /
-			<= option_title* \
-		enabled <= option_enabled* <= enabled true
-		hint <= option_hint* \
-		minimal_height 24
-	options *
-	keys /string
-	sub <= items /$mol_check
-
-$mol_switch $mol_check_list
-	value? \
-
-$mol_deck $mol_list
-	items /$mol_view
-	rows /$mol_view
-		<= Switch $mol_switch
-			value? <=> current? \0
-			options <= switch_options *
-		<= Content $mol_view
-
 $mol_stack $mol_view
 
 $mol_paragraph $mol_view
@@ -146,6 +108,20 @@ $mol_text_code_line $mol_paragraph
 		needle <= highlight \
 		uri <= token_uri* \
 	find_pos* null
+
+$mol_list $mol_view
+	render_visible_only true
+	render_over 0.1
+	sub <= rows /$mol_view
+		<= Gap_before $mol_view style * paddingTop <= gap_before 0
+		<= Empty $mol_view
+		<= Gap_after $mol_view style * paddingTop <= gap_after 0
+	item_height_min* 1
+	item_width_min* 1
+	view_window_shift? 0
+	view_window /
+		0
+		0
 
 $mol_svg $mol_view
 	dom_name \svg
@@ -336,6 +312,30 @@ $mol_textarea_edit $mol_string
 		^
 		scrollTop 0
 
+$mol_check_list $mol_view
+	dictionary *
+	Option* $mol_check
+		checked? <=> option_checked*? false
+		label <= option_label* /
+			<= option_title* \
+		enabled <= option_enabled* <= enabled true
+		hint <= option_hint* \
+		minimal_height 24
+	options *
+	keys /string
+	sub <= items /$mol_check
+
+$mol_switch $mol_check_list
+	value? \
+
+$mol_deck $mol_list
+	items /$mol_view
+	rows /$mol_view
+		<= Switch $mol_switch
+			value? <=> current? \0
+			options <= switch_options *
+		<= Content $mol_view
+
 $bog_vmap_app_code $mol_view
 	klass \
 	prop \
@@ -364,7 +364,7 @@ $bog_vmap_app_code $mol_view
 		sub <= typing_rows /$mol_view
 	Typing_row* $mol_view
 		sub / <= typing_text* \
-	Sources $mol_deck
+	Sources $bog_vmap_app_code_deck
 		items <= source_tabs /$mol_view
 	Tree $mol_textarea
 		title \view.tree
@@ -393,6 +393,8 @@ $bog_vmap_app_code $mol_view
 		event *
 			^
 			pointerdown? <=> css_press? null
+
+$bog_vmap_app_code_deck $mol_deck
 
 $bog_vmap_app_publish $mol_view
 	store $bog_vmap_app_publish_store

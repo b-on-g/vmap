@@ -14691,6 +14691,19 @@ var $;
             panel.tree_press(new dom.Event('pointerdown'));
             $mol_assert_equal(dom.document.activeElement === field, true);
         },
+        'a press on a closed tab opens it'($) {
+            const { code } = editor($);
+            const deck = code.Sources();
+            deck.Switch().option_checked('2', true);
+            $mol_assert_equal(deck.current(), '2');
+        },
+        'a repeated press on the open tab keeps it open'($) {
+            const { code } = editor($);
+            const deck = code.Sources();
+            deck.Switch().option_checked('2', true);
+            deck.Switch().option_checked('2', false);
+            $mol_assert_equal(deck.current(), '2');
+        },
     });
 })($ || ($ = {}));
 

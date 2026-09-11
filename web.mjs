@@ -29774,7 +29774,7 @@ var $;
 			return obj;
 		}
 		Sources(){
-			const obj = new this.$.$mol_deck();
+			const obj = new this.$.$bog_vmap_app_code_deck();
 			(obj.items) = () => ((this.source_tabs()));
 			return obj;
 		}
@@ -29836,6 +29836,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_code.prototype), "Js"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "Js_idle"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "Css"));
+	($.$bog_vmap_app_code_deck) = class $bog_vmap_app_code_deck extends ($.$mol_deck) {};
 
 
 ;
@@ -30901,6 +30902,12 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
+        class $bog_vmap_app_code_deck extends $.$bog_vmap_app_code_deck {
+            current(next) {
+                return this.$.$mol_state_session.value(`${this}.current()`, next || undefined) || '0';
+            }
+        }
+        $$.$bog_vmap_app_code_deck = $bog_vmap_app_code_deck;
         class $bog_vmap_app_code extends $.$bog_vmap_app_code {
             sliced() {
                 return Boolean(this.prop()) && !this.whole();
