@@ -30,9 +30,19 @@ namespace $ {
 
 	export class $bog_vmap_asset extends $mol_object {
 
+		yard() {
+			return this.$.$giper_baza_glob.yard()
+		}
+
 		master() {
-			const yard = this.$.$giper_baza_yard
-			return yard.masters().find( uri => !yard.masters_default.includes( uri ) ) ?? ''
+
+			const kind = this.$.$giper_baza_yard
+
+			const all = kind.masters()
+			const from = this.yard().master_cursor()
+			const tried = [ ... all.slice( from ), ... all.slice( 0, from ) ]
+
+			return tried.find( uri => !kind.masters_default.includes( uri ) ) ?? ''
 		}
 
 		uri( file: $giper_baza_file ) {

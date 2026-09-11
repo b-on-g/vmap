@@ -1,7 +1,5 @@
 namespace $.$$ {
 
-	const asset_ref = /asset:([\w.\-]+)/g
-
 	const style_scope = 'bog_vmap_scene:'
 
 	const spots_id = 'bog_vmap_spots:stage'
@@ -112,11 +110,6 @@ namespace $.$$ {
 		}
 
 		@ $mol_mem
-		assets( next?: { readonly [ id: string ]: string } ): { readonly [ id: string ]: string } {
-			return next ?? {}
-		}
-
-		@ $mol_mem
 		camera( next?: $bog_vmap_bridge_camera ): $bog_vmap_bridge_camera {
 			return next ?? { x: 0, y: 0, zoom: 1 }
 		}
@@ -203,7 +196,7 @@ namespace $.$$ {
 
 			for( const part of this.libs() ) {
 
-				const src = this.assets_apply( part.tree ).replace( /\n?$/, '\n' )
+				const src = part.tree.replace( /\n?$/, '\n' )
 
 				const kids = this.$.$mol_view_tree2_normalize(
 					this.$.$mol_tree2_from_string( src, 'lib.view.tree' )
@@ -222,7 +215,7 @@ namespace $.$$ {
 		@ $mol_mem
 		doc_tree() {
 
-			const src = this.assets_apply( this.doc_src() ).replace( /\n?$/, '\n' )
+			const src = this.doc_src().replace( /\n?$/, '\n' )
 
 			const defs = this.$.$mol_view_tree2_normalize(
 				this.$.$mol_tree2_from_string( src, 'vmap.view.tree' )
@@ -480,7 +473,7 @@ namespace $.$$ {
 		css_attach() {
 
 			const root = this.doc_root()
-			const css = this.assets_apply( this.doc_css() )
+			const css = this.doc_css()
 
 			const id = root && style_scope + root
 			this.styles_sweep( id )
@@ -498,7 +491,7 @@ namespace $.$$ {
 		@ $mol_mem
 		libs_css_attach() {
 			const css = this.libs().map( part => part.css ).filter( Boolean ).join( '\n' )
-			return this.$.$mol_style_attach( libs_id, this.assets_apply( css ) )
+			return this.$.$mol_style_attach( libs_id, css )
 		}
 
 		spots_css() {
@@ -539,45 +532,6 @@ namespace $.$$ {
 				el.remove()
 			}
 
-		}
-
-		assets_apply( text: string ) {
-			const known = this.assets()
-			return text.replace( asset_ref, ( whole, id: string )=> known[ id ] ?? whole )
-		}
-
-		texts() {
-			return [
-				this.doc_src(),
-				this.doc_css(),
-				... this.libs().flatMap( part => [ part.tree, part.css ] ),
-			]
-		}
-
-		@ $mol_mem
-		assets_missing() {
-
-			const known = this.assets()
-			const missing = new Set< string >()
-
-			for( const text of this.texts() ) {
-				for( const [ , id ] of text.matchAll( asset_ref ) ) {
-					if( !known[ id ] ) missing.add( id )
-				}
-			}
-
-			return [ ... missing ]
-		}
-
-		@ $mol_mem_key
-		asset_ask( id: string ) {
-			this.post({ kind: 'asset_want', id })
-			return id
-		}
-
-		@ $mol_mem
-		assets_push() {
-			return this.assets_missing().map( id => this.asset_ask( id ) )
 		}
 
 		@ $mol_mem
@@ -682,18 +636,6 @@ namespace $.$$ {
 
 				case 'ping': this.post({ kind: 'pong', nonce: message.nonce }); return
 
-				case 'asset_put': {
-
-					const stale = this.assets()[ message.id ]
-					const uri = URL.createObjectURL( new Blob( [ message.bytes ], { type: message.mime } ) )
-
-					this.assets({ ... this.assets(), [ message.id ]: uri })
-
-					if( stale ) URL.revokeObjectURL( stale )
-
-					return
-				}
-
 			}
 
 		}
@@ -769,7 +711,6 @@ namespace $.$$ {
 			this.doc_css()
 			this.libs()
 			this.spots()
-			this.assets()
 			this.camera()
 
 			const made = this.instance()
@@ -921,7 +862,6 @@ namespace $.$$ {
 				this.boot(),
 				this.report_task(),
 				this.values_task(),
-				this.assets_push(),
 			]
 		}
 

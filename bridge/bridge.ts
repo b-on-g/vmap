@@ -79,14 +79,6 @@ namespace $ {
 		}
 
 		| {
-			readonly kind: 'asset_put'
-			readonly id: string
-			readonly mime: string
-			/** Bytes, not a blob: URL. A host blob: URL is dead in an opaque origin. */
-			readonly bytes: ArrayBuffer
-		}
-
-		| {
 			readonly kind: 'libs_set'
 			readonly parts: readonly $bog_vmap_bridge_part[]
 		}
@@ -124,11 +116,6 @@ namespace $ {
 
 			/** One line per value; a table comes as rows split by newline and cells by tab, the first row naming the columns. */
 			readonly values: { readonly [ name: string ]: string }
-		}
-
-		| {
-			readonly kind: 'asset_want'
-			readonly id: string
 		}
 
 		| {

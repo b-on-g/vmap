@@ -741,50 +741,16 @@ namespace $ {
 
 		},
 
-		async 'a missing asset is asked for once, and again once it is missing again'( $ ) {
+		'the address of an asset reaches the document untouched'( $ ) {
 
 			const { made } = scene( $ )
-			const sent = [] as $bog_vmap_bridge_up[]
-			made.post = ( message: $bog_vmap_bridge_up )=> { sent.push( message ) }
 
-			const asks = ()=> sent.filter( m => m.kind === 'asset_want' ).map( m => ( m as { id: string } ).id )
-
-			const src = ( uri: string )=> `${d}visible_asset ${d}mol_view\n\ttitle \\${ uri }\n`
+			const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png'
 
 			made.doc_root( `${d}visible_asset` )
-			made.doc_src( src( 'asset:abc' ) )
+			made.doc_src( `${d}visible_asset ${d}mol_view\n\ttitle \\${ uri }\n` )
 
-			made.assets_push()
-			made.assets_push()
-			$mol_assert_like( asks(), [ 'abc' ] )
-
-			made.assets({ abc: 'blob:null/1' })
-			made.assets_push()
-			$mol_assert_like( made.assets_missing(), [] )
-			$mol_assert_like( asks(), [ 'abc' ] )
-
-			made.doc_src( src( 'asset:xyz' ) )
-			made.assets_push()
-			$mol_assert_like( asks(), [ 'abc', 'xyz' ] )
-
-			made.doc_src( src( 'nothing' ) )
-			made.assets_push()
-			await new Promise( next => setTimeout( next, 10 ) )
-
-			made.doc_src( src( 'asset:xyz' ) )
-			made.assets_push()
-			$mol_assert_like( asks(), [ 'abc', 'xyz', 'xyz' ] )
-
-		},
-
-		'assets are missed from the styles and the libraries too'( $ ) {
-
-			const { made } = scene( $ )
-
-			made.doc_css( 'a { background: url(asset:css1) }' )
-			made.libs([ { tree: `${d}visible_lib ${d}mol_view\n\turi \\asset:lib1\n`, js: '', css: 'b { background: url(asset:lib2) }' } ])
-
-			$mol_assert_like( made.assets_missing(), [ 'css1', 'lib1', 'lib2' ] )
+			$mol_assert_ok( made.doc_tree().toString().includes( uri ) )
 
 		},
 
