@@ -16741,6 +16741,628 @@ var $;
 })($ || ($ = {}));
 
 ;
+"use strict";
+var $;
+(function ($) {
+    function $bog_vmap_lang_token(token, role) {
+        const parts = [...token.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
+        if (!parts || parts.name !== token)
+            this.$mol_fail(new Error(`${role} must be a bare name, got ${JSON.stringify(token)}`));
+        return token;
+    }
+    $.$bog_vmap_lang_token = $bog_vmap_lang_token;
+    function $bog_vmap_lang_class_ok(name) {
+        return /^\$[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(name);
+    }
+    $.$bog_vmap_lang_class_ok = $bog_vmap_lang_class_ok;
+    function $bog_vmap_lang_attr(klass) {
+        return klass.replace(/\$/g, '').toLowerCase();
+    }
+    $.$bog_vmap_lang_attr = $bog_vmap_lang_attr;
+    function $bog_vmap_lang_quoted(text) {
+        return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    function $bog_vmap_lang_css_rename(css, from, to) {
+        if (!css || from === to)
+            return css;
+        const head = $bog_vmap_lang_attr(from);
+        if (!head)
+            return css;
+        return css.replace(new RegExp('\\[' + $bog_vmap_lang_quoted(head) + '(?=[\\]_=~^*|$\\s])', 'g'), '[' + $bog_vmap_lang_attr(to));
+    }
+    $.$bog_vmap_lang_css_rename = $bog_vmap_lang_css_rename;
+    function $bog_vmap_lang_js_rename(js, from, to) {
+        if (!js || from === to)
+            return js;
+        return js.replace(new RegExp('([^\\w$]|^)' + $bog_vmap_lang_quoted(from) + '(?![\\w])', 'g'), (_all, before) => before + to);
+    }
+    $.$bog_vmap_lang_js_rename = $bog_vmap_lang_js_rename;
+    function $bog_vmap_lang_wire_tree(wire) {
+        const sign = wire.bidi ? '?' : '';
+        const name = this.$bog_vmap_lang_token(wire.name, 'Wire name') + sign;
+        const node = this.$bog_vmap_lang_token(wire.node, 'Wire node');
+        const prop = this.$bog_vmap_lang_token(wire.prop, 'Wire prop') + sign;
+        return $mol_tree2.struct(name, [
+            $mol_tree2.struct('=', [
+                $mol_tree2.struct(node, [
+                    $mol_tree2.struct(prop),
+                ]),
+            ]),
+        ]);
+    }
+    $.$bog_vmap_lang_wire_tree = $bog_vmap_lang_wire_tree;
+    function $bog_vmap_lang_ref_tree(name) {
+        return $mol_tree2.struct('<=', [
+            $mol_tree2.struct(this.$bog_vmap_lang_token(name, 'Reference')),
+        ]);
+    }
+    $.$bog_vmap_lang_ref_tree = $bog_vmap_lang_ref_tree;
+    function $bog_vmap_lang_part_tree(name, klass) {
+        const base = $mol_tree2.struct(klass);
+        if (!$mol_view_tree2_class_match(base))
+            this.$mol_fail(new Error(`Part class must be a class name, got ${JSON.stringify(klass)}`));
+        return $mol_tree2.struct(this.$bog_vmap_lang_token(name, 'Part name'), [base]);
+    }
+    $.$bog_vmap_lang_part_tree = $bog_vmap_lang_part_tree;
+    function $bog_vmap_lang_dict_get(dict, key) {
+        if (dict?.type !== '*')
+            return null;
+        const found = dict.kids.find(kid => kid.type === key);
+        return found?.kids[0] ?? null;
+    }
+    $.$bog_vmap_lang_dict_get = $bog_vmap_lang_dict_get;
+    function $bog_vmap_lang_dict_set(dict, key, value) {
+        const name = this.$bog_vmap_lang_token(key, 'Dictionary key');
+        if (!value)
+            return dict.clone(dict.kids.filter(kid => kid.type !== name));
+        const entry = dict.struct(name, [value]);
+        if (!dict.kids.some(kid => kid.type === name)) {
+            return dict.clone([...dict.kids, entry]);
+        }
+        return dict.clone(dict.kids.map(kid => kid.type === name ? entry : kid));
+    }
+    $.$bog_vmap_lang_dict_set = $bog_vmap_lang_dict_set;
+    function $bog_vmap_lang_sorted(defs) {
+        const by_name = new Map();
+        for (const def of defs)
+            by_name.set(def.type, def);
+        const sorted = [];
+        const done = new Set();
+        const path = new Set();
+        const walk = (def) => {
+            if (done.has(def.type))
+                return;
+            if (path.has(def.type))
+                this.$mol_fail(new Error(`Circular inheritance around ${def.type}`));
+            path.add(def.type);
+            const base = by_name.get(def.kids[0]?.type ?? '');
+            if (base && base !== def)
+                walk(base);
+            path.delete(def.type);
+            done.add(def.type);
+            sorted.push(def);
+        };
+        for (const def of defs)
+            walk(def);
+        return sorted;
+    }
+    $.$bog_vmap_lang_sorted = $bog_vmap_lang_sorted;
+    class $bog_vmap_lang_doc extends $mol_object {
+        source(next) {
+            return next ?? '';
+        }
+        trees() {
+            return this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(this.source().replace(/\n?$/, '\n'))).kids;
+        }
+        names() {
+            return this.trees().map(tree => tree.type);
+        }
+        class_source(name, next) {
+            const trees = this.trees();
+            const index = trees.findIndex(tree => tree.type === name);
+            if (next === undefined)
+                return trees[index]?.toString() ?? '';
+            const parsed = this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(next.replace(/\n?$/, '\n'))).kids;
+            const kept = index < 0
+                ? [...trees, ...parsed]
+                : [...trees.slice(0, index), ...parsed, ...trees.slice(index + 1)];
+            this.source(this.$.$mol_tree2.list(kept).toString());
+            return next;
+        }
+        class_rename(from, to) {
+            if (from === to)
+                return;
+            const trees = this.trees();
+            if (!trees.some(tree => tree.type === from))
+                return this.$.$mol_fail(new Error(`Class ${JSON.stringify(from)} is not declared in the document`));
+            if (trees.some(tree => tree.type === to))
+                return this.$.$mol_fail(new Error(`Class ${JSON.stringify(to)} is already declared in the document`));
+            const renamed = (tree) => {
+                const kids = tree.kids.map(renamed);
+                return tree.type === from ? tree.struct(to, kids) : tree.clone(kids);
+            };
+            this.source(this.$.$mol_tree2.list(trees.map(renamed)).toString());
+        }
+        node(name) {
+            return $bog_vmap_lang_node.make({
+                source: (next) => this.class_source(name, next),
+            });
+        }
+    }
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_doc.prototype, "source", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_doc.prototype, "trees", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_doc.prototype, "names", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_doc.prototype, "class_rename", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lang_doc.prototype, "node", null);
+    $.$bog_vmap_lang_doc = $bog_vmap_lang_doc;
+    class $bog_vmap_lang_node extends $mol_object {
+        source(next) {
+            return next ?? '';
+        }
+        tree(next) {
+            const source = this.source(next && next.toString()).replace(/\n?$/, '\n');
+            const tree = this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(source)).kids[0];
+            if (!tree)
+                return this.$.$mol_fail(new Error('No class declared in the source'));
+            return tree;
+        }
+        name(next) {
+            const tree = this.tree();
+            if (!next)
+                return tree.type;
+            this.tree(tree.struct(next, tree.kids));
+            return next;
+        }
+        base(next) {
+            const self = this.tree();
+            const base = this.$.$mol_view_tree2_class_super(self);
+            if (!next)
+                return base.type;
+            this.tree(self.clone([base.struct(next, base.kids)]));
+            return next;
+        }
+        prop_names() {
+            return this.$.$mol_view_tree2_class_props(this.tree())
+                .map(tree => this.$.$mol_view_tree2_prop_parts(tree).name);
+        }
+        props_tree() {
+            return this.tree().list(this.$.$mol_view_tree2_class_props(this.tree()));
+        }
+        prop_fullname(name) {
+            if (/[*?!]/.test(name))
+                return name;
+            for (const tree of this.props_tree().kids) {
+                const sign = tree?.type ?? '';
+                const meta = [...sign.matchAll($mol_view_tree2_prop_signature)][0]?.groups
+                    ?? { name: '', key: '', next: '' };
+                if (meta.name === name)
+                    return `${meta.name}${meta.key || ''}${meta.next || ''}`;
+            }
+            return '';
+        }
+        prop_tree(name, next) {
+            const sign = this.prop_fullname(name);
+            if (next !== undefined) {
+                this.tree(this.tree().insert(next, this.base(), sign));
+                return next;
+            }
+            return this.props_tree().select(sign).kids[0] ?? null;
+        }
+        prop_add(name) {
+            const tree = this.tree();
+            this.tree(tree.insert(tree.struct(name, [tree.struct('null')]), null, name));
+        }
+        prop_drop(name) {
+            this.prop_tree(name, null);
+        }
+        prop_rename(name, next) {
+            const to = [...next.matchAll($mol_view_tree2_prop_signature)][0]?.groups?.name;
+            if (!to)
+                return this.$.$mol_fail(new Error(`Bad property signature ${JSON.stringify(next)}`));
+            if (to !== name && this.prop_names().includes(to))
+                return this.$.$mol_fail(new Error(`Property ${JSON.stringify(to)} is already declared in ${this.name()}`));
+            const self = this.tree();
+            const base = self.kids[0];
+            if (!base)
+                return;
+            const refs = (tree) => {
+                const kids = tree.kids.map(refs);
+                const head = kids[0];
+                if (head?.type === name
+                    && (tree.type === '<=' || tree.type === '<=>' || tree.type === '='))
+                    return tree.clone([head.struct(to, head.kids), ...kids.slice(1)]);
+                return tree.clone(kids);
+            };
+            const props = base.kids.map(prop => {
+                const meta = [...prop.type.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
+                return meta?.name === name ? prop.struct(next, prop.kids) : prop;
+            });
+            this.tree(self.clone([base.clone(props.map(refs))]));
+        }
+        property(name) {
+            return $bog_vmap_lang_prop.make({
+                name: $mol_const(name),
+                tree: next => this.prop_tree(name, next),
+                node: $mol_const(this),
+            });
+        }
+        part_add(name, klass) {
+            const tree = this.tree();
+            this.tree(tree.insert(this.$.$bog_vmap_lang_part_tree(name, klass), null, name));
+        }
+        wire_add(wire) {
+            const next = this.$.$bog_vmap_lang_wire_tree(wire);
+            if (!this.prop_names().includes(wire.node))
+                this.$.$mol_fail(new Error(`Wire node ${JSON.stringify(wire.node)} is not declared in ${this.name()}`));
+            const prev = this.prop_fullname(wire.name);
+            if (prev && prev !== next.type)
+                this.prop_drop(wire.name);
+            this.tree(this.tree().insert(next, null, next.type));
+        }
+        wires() {
+            const wires = [];
+            for (const prop of this.props_tree().kids) {
+                const op = prop.kids[0];
+                if (op?.type !== '=')
+                    continue;
+                const node = op.kids[0];
+                const far = node?.kids[0];
+                if (!node || !far)
+                    continue;
+                const meta = this.$.$mol_view_tree2_prop_parts(prop);
+                wires.push({
+                    name: meta.name,
+                    node: node.type,
+                    prop: this.$.$mol_view_tree2_prop_parts(far).name,
+                    bidi: Boolean(meta.next),
+                });
+            }
+            return wires;
+        }
+        part_names() {
+            return this.props_tree().kids
+                .filter(prop => {
+                const val = prop.kids[0];
+                return val && $mol_view_tree2_class_match(val);
+            })
+                .map(prop => this.$.$mol_view_tree2_prop_parts(prop).name);
+        }
+        links() {
+            const wires = new Map(this.wires().map(wire => [wire.name, wire]));
+            const links = [];
+            for (const decl of this.props_tree().kids) {
+                const klass = decl.kids[0];
+                if (!klass || !$mol_view_tree2_class_match(klass))
+                    continue;
+                const to = this.$.$mol_view_tree2_prop_parts(decl).name;
+                for (const over of klass.kids) {
+                    const op = over.kids[0];
+                    if (op?.type !== '<=' && op?.type !== '<=>')
+                        continue;
+                    const ref = op.kids[0];
+                    if (!ref || ref.kids.length)
+                        continue;
+                    const wire = wires.get(this.$.$mol_view_tree2_prop_parts(ref).name);
+                    if (!wire)
+                        continue;
+                    links.push({
+                        from: wire.node,
+                        from_prop: wire.prop,
+                        to,
+                        to_prop: this.$.$mol_view_tree2_prop_parts(over).name,
+                        name: wire.name,
+                        bidi: Boolean(wire.bidi) && op.type === '<=>',
+                    });
+                }
+            }
+            return links;
+        }
+        link_reaches(from, to) {
+            const seen = new Set();
+            const queue = [from];
+            while (queue.length) {
+                const at = queue.shift();
+                if (at === to)
+                    return true;
+                if (seen.has(at))
+                    continue;
+                seen.add(at);
+                for (const link of this.links())
+                    if (link.from === at)
+                        queue.push(link.to);
+            }
+            return false;
+        }
+        link_name(from, prop, bidi) {
+            const base = `${from.toLowerCase()}_${prop}`;
+            const taken = new Set(this.prop_names());
+            for (let i = 1;; ++i) {
+                const name = i === 1 ? base : `${base}_${i}`;
+                const wire = this.wires().find(wire => wire.name === name);
+                if (wire) {
+                    if (wire.node === from && wire.prop === prop && wire.bidi === bidi)
+                        return name;
+                    continue;
+                }
+                if (!taken.has(name))
+                    return name;
+            }
+        }
+        link_add(link) {
+            const bidi = Boolean(link.bidi);
+            if (link.from === link.to)
+                this.$.$mol_fail(new Error(`Part ${JSON.stringify(link.to)} cannot be wired to itself`));
+            const parts = new Set(this.part_names());
+            for (const end of [link.from, link.to])
+                if (!parts.has(end))
+                    this.$.$mol_fail(new Error(`Part ${JSON.stringify(end)} is not declared in ${this.name()}`));
+            if (this.link_reaches(link.to, link.from))
+                this.$.$mol_fail(new Error(`Wire ${link.from} → ${link.to} closes a loop: ${link.to} already feeds ${link.from}`));
+            const to_prop = this.$.$bog_vmap_lang_token(link.to_prop, 'Target port');
+            const name = this.link_name(link.from, link.from_prop, bidi);
+            this.wire_add({ name, node: link.from, prop: link.from_prop, bidi });
+            const ref = bidi
+                ? $mol_tree2.struct('<=>', [$mol_tree2.struct(name + '?')])
+                : this.$.$bog_vmap_lang_ref_tree(name);
+            this.link_target(link.to, to_prop, $mol_tree2.struct(to_prop + (bidi ? '?' : ''), [ref]));
+            return name;
+        }
+        link_target(to, to_prop, next) {
+            this.over_set(to, to_prop, next);
+        }
+        link_drop(to, to_prop) {
+            const link = this.links().find(link => link.to === to && link.to_prop === to_prop);
+            if (!link)
+                return;
+            this.link_target(to, to_prop, null);
+            const used = this.links().some(other => other.name === link.name);
+            if (!used)
+                this.prop_drop(link.name);
+        }
+        links_drop(node) {
+            for (const link of [...this.links()]) {
+                if (link.from !== node && link.to !== node)
+                    continue;
+                this.link_drop(link.to, link.to_prop);
+            }
+            for (const wire of [...this.wires()]) {
+                if (wire.node !== node)
+                    continue;
+                this.prop_drop(wire.name);
+            }
+        }
+        prop_decl(name) {
+            const sign = this.prop_fullname(name);
+            return sign ? this.props_tree().select(sign).kids[0] ?? null : null;
+        }
+        sub_list(owner = '') {
+            const prop = owner ? this.over_tree(owner, 'sub') : this.prop_decl('sub');
+            const list = prop?.kids[0] ?? null;
+            return list?.type[0] === '/' ? list : null;
+        }
+        sub_names(owner = '') {
+            const list = this.sub_list(owner);
+            return list && list.kids.map(ref => ref.kids[0]?.type ?? '');
+        }
+        sub_holder(name) {
+            for (const owner of ['', ...this.part_names()]) {
+                if (this.sub_names(owner)?.includes(name))
+                    return owner;
+            }
+            return null;
+        }
+        sub_within(owner, name) {
+            const seen = new Set();
+            const queue = [owner];
+            while (queue.length) {
+                const at = queue.shift();
+                if (at === name)
+                    return true;
+                if (seen.has(at))
+                    continue;
+                seen.add(at);
+                for (const kid of this.sub_names(at) ?? [])
+                    if (kid)
+                        queue.push(kid);
+            }
+            return false;
+        }
+        sub_write(owner, list) {
+            const sub = list.struct('sub', [list]);
+            if (owner)
+                return this.over_set(owner, 'sub', sub);
+            this.tree(this.tree().insert(sub, null, this.prop_fullname('sub') || 'sub'));
+        }
+        sub_open(owner) {
+            if (this.sub_list(owner))
+                return;
+            this.sub_write(owner, this.tree().struct('/'));
+        }
+        over_tree(owner, prop) {
+            const klass = this.prop_decl(owner)?.kids[0];
+            if (!klass || !$mol_view_tree2_class_match(klass))
+                return null;
+            return klass.kids.find(over => this.$.$mol_view_tree2_prop_parts(over).name === prop) ?? null;
+        }
+        over_set(owner, prop, next) {
+            const decl = this.prop_decl(owner);
+            const klass = decl?.kids[0];
+            if (!decl || !klass || !$mol_view_tree2_class_match(klass))
+                return;
+            const named = (over) => this.$.$mol_view_tree2_prop_parts(over).name === prop;
+            const kids = klass.kids.some(named)
+                ? klass.kids.flatMap(over => named(over) ? next ? [next] : [] : [over])
+                : next ? [...klass.kids, next] : klass.kids;
+            this.prop_tree(owner, decl.clone([klass.clone(kids)]));
+        }
+        sub_check(name, owner) {
+            if (!owner)
+                return;
+            if (name === owner)
+                this.$.$mol_fail(new Error(`Node ${JSON.stringify(name)} cannot be put inside itself`));
+            if (this.sub_within(name, owner))
+                this.$.$mol_fail(new Error(`Node ${JSON.stringify(name)} cannot be put inside ${JSON.stringify(owner)}, which it already holds`));
+        }
+        sub_insert(name, index, owner = '') {
+            const ref = this.$.$bog_vmap_lang_ref_tree(name);
+            this.sub_check(name, owner);
+            const list = this.sub_list(owner) ?? ref.struct('/');
+            const kids = [...list.kids];
+            kids.splice(Math.max(0, Math.min(index, kids.length)), 0, ref);
+            this.sub_write(owner, list.clone(kids));
+        }
+        sub_move(name, index, owner = '') {
+            this.sub_check(name, owner);
+            const from = this.sub_holder(name);
+            if (from === owner) {
+                const at = this.sub_names(owner).indexOf(name);
+                if (at >= 0 && at < index)
+                    index -= 1;
+            }
+            if (from !== null)
+                this.sub_drop(name);
+            this.sub_insert(name, index, owner);
+        }
+        sub_add(name) {
+            this.sub_insert(name, Infinity);
+        }
+        sub_drop(name) {
+            const owner = this.sub_holder(name);
+            if (owner === null)
+                return;
+            const list = this.sub_list(owner);
+            this.sub_write(owner, list.clone(list.kids.filter(ref => ref.kids[0]?.type !== name)));
+        }
+    }
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "source", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "tree", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "name", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "base", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "prop_names", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "props_tree", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lang_node.prototype, "prop_fullname", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lang_node.prototype, "prop_tree", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "prop_add", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "prop_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "prop_rename", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lang_node.prototype, "property", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "part_add", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "wire_add", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "wires", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_lang_node.prototype, "links", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "link_add", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "link_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "links_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "sub_open", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "sub_insert", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "sub_move", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "sub_add", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "sub_drop", null);
+    $.$bog_vmap_lang_node = $bog_vmap_lang_node;
+    class $bog_vmap_lang_prop extends $mol_object {
+        name() {
+            return this.$.$mol_fail(new Error('Not defined'));
+        }
+        node() {
+            return this.$.$mol_fail(new Error('Not defined'));
+        }
+        tree(next) {
+            return this.$.$mol_fail(new Error('Not defined'));
+        }
+        as(Prop) {
+            return Prop.make({
+                name: () => this.name(),
+                tree: next => this.tree(next),
+            });
+        }
+        meta(next) {
+            const tree = this.tree();
+            const sign = tree?.type ?? '';
+            let meta = [...sign.matchAll($mol_view_tree2_prop_signature)][0]?.groups
+                ?? { name: '', key: '', next: '' };
+            if (next) {
+                const made = { ...meta, ...next };
+                const sign = `${made.name}${made.key || ''}${made.next || ''}`;
+                if (made.name === meta.name)
+                    this.tree(tree.struct(sign, tree.kids));
+                else
+                    this.node().prop_rename(meta.name, sign);
+                meta = made;
+            }
+            return meta;
+        }
+        title(next) {
+            return this.meta(next === undefined ? undefined : { name: next }).name;
+        }
+        key(next) {
+            return Boolean(this.meta(next === undefined ? undefined : { key: next ? '*' : '' }).key);
+        }
+        next(next) {
+            return Boolean(this.meta(next === undefined ? undefined : { next: next ? '?' : '' }).next);
+        }
+    }
+    $.$bog_vmap_lang_prop = $bog_vmap_lang_prop;
+})($ || ($ = {}));
+
+;
 	($.$mol_bar) = class $mol_bar extends ($.$mol_view) {};
 
 
@@ -19313,606 +19935,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    function $bog_vmap_lang_token(token, role) {
-        const parts = [...token.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
-        if (!parts || parts.name !== token)
-            this.$mol_fail(new Error(`${role} must be a bare name, got ${JSON.stringify(token)}`));
-        return token;
-    }
-    $.$bog_vmap_lang_token = $bog_vmap_lang_token;
-    function $bog_vmap_lang_class_ok(name) {
-        return /^\$[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(name);
-    }
-    $.$bog_vmap_lang_class_ok = $bog_vmap_lang_class_ok;
-    function $bog_vmap_lang_wire_tree(wire) {
-        const sign = wire.bidi ? '?' : '';
-        const name = this.$bog_vmap_lang_token(wire.name, 'Wire name') + sign;
-        const node = this.$bog_vmap_lang_token(wire.node, 'Wire node');
-        const prop = this.$bog_vmap_lang_token(wire.prop, 'Wire prop') + sign;
-        return $mol_tree2.struct(name, [
-            $mol_tree2.struct('=', [
-                $mol_tree2.struct(node, [
-                    $mol_tree2.struct(prop),
-                ]),
-            ]),
-        ]);
-    }
-    $.$bog_vmap_lang_wire_tree = $bog_vmap_lang_wire_tree;
-    function $bog_vmap_lang_ref_tree(name) {
-        return $mol_tree2.struct('<=', [
-            $mol_tree2.struct(this.$bog_vmap_lang_token(name, 'Reference')),
-        ]);
-    }
-    $.$bog_vmap_lang_ref_tree = $bog_vmap_lang_ref_tree;
-    function $bog_vmap_lang_part_tree(name, klass) {
-        const base = $mol_tree2.struct(klass);
-        if (!$mol_view_tree2_class_match(base))
-            this.$mol_fail(new Error(`Part class must be a class name, got ${JSON.stringify(klass)}`));
-        return $mol_tree2.struct(this.$bog_vmap_lang_token(name, 'Part name'), [base]);
-    }
-    $.$bog_vmap_lang_part_tree = $bog_vmap_lang_part_tree;
-    function $bog_vmap_lang_dict_get(dict, key) {
-        if (dict?.type !== '*')
-            return null;
-        const found = dict.kids.find(kid => kid.type === key);
-        return found?.kids[0] ?? null;
-    }
-    $.$bog_vmap_lang_dict_get = $bog_vmap_lang_dict_get;
-    function $bog_vmap_lang_dict_set(dict, key, value) {
-        const name = this.$bog_vmap_lang_token(key, 'Dictionary key');
-        if (!value)
-            return dict.clone(dict.kids.filter(kid => kid.type !== name));
-        const entry = dict.struct(name, [value]);
-        if (!dict.kids.some(kid => kid.type === name)) {
-            return dict.clone([...dict.kids, entry]);
-        }
-        return dict.clone(dict.kids.map(kid => kid.type === name ? entry : kid));
-    }
-    $.$bog_vmap_lang_dict_set = $bog_vmap_lang_dict_set;
-    function $bog_vmap_lang_sorted(defs) {
-        const by_name = new Map();
-        for (const def of defs)
-            by_name.set(def.type, def);
-        const sorted = [];
-        const done = new Set();
-        const path = new Set();
-        const walk = (def) => {
-            if (done.has(def.type))
-                return;
-            if (path.has(def.type))
-                this.$mol_fail(new Error(`Circular inheritance around ${def.type}`));
-            path.add(def.type);
-            const base = by_name.get(def.kids[0]?.type ?? '');
-            if (base && base !== def)
-                walk(base);
-            path.delete(def.type);
-            done.add(def.type);
-            sorted.push(def);
-        };
-        for (const def of defs)
-            walk(def);
-        return sorted;
-    }
-    $.$bog_vmap_lang_sorted = $bog_vmap_lang_sorted;
-    class $bog_vmap_lang_doc extends $mol_object {
-        source(next) {
-            return next ?? '';
-        }
-        trees() {
-            return this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(this.source().replace(/\n?$/, '\n'))).kids;
-        }
-        names() {
-            return this.trees().map(tree => tree.type);
-        }
-        class_source(name, next) {
-            const trees = this.trees();
-            const index = trees.findIndex(tree => tree.type === name);
-            if (next === undefined)
-                return trees[index]?.toString() ?? '';
-            const parsed = this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(next.replace(/\n?$/, '\n'))).kids;
-            const kept = index < 0
-                ? [...trees, ...parsed]
-                : [...trees.slice(0, index), ...parsed, ...trees.slice(index + 1)];
-            this.source(this.$.$mol_tree2.list(kept).toString());
-            return next;
-        }
-        class_rename(from, to) {
-            if (from === to)
-                return;
-            const trees = this.trees();
-            if (!trees.some(tree => tree.type === from))
-                return this.$.$mol_fail(new Error(`Class ${JSON.stringify(from)} is not declared in the document`));
-            if (trees.some(tree => tree.type === to))
-                return this.$.$mol_fail(new Error(`Class ${JSON.stringify(to)} is already declared in the document`));
-            const renamed = (tree) => {
-                const kids = tree.kids.map(renamed);
-                return tree.type === from ? tree.struct(to, kids) : tree.clone(kids);
-            };
-            this.source(this.$.$mol_tree2.list(trees.map(renamed)).toString());
-        }
-        node(name) {
-            return $bog_vmap_lang_node.make({
-                source: (next) => this.class_source(name, next),
-            });
-        }
-    }
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_doc.prototype, "source", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_doc.prototype, "trees", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_doc.prototype, "names", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_doc.prototype, "class_rename", null);
-    __decorate([
-        $mol_mem_key
-    ], $bog_vmap_lang_doc.prototype, "node", null);
-    $.$bog_vmap_lang_doc = $bog_vmap_lang_doc;
-    class $bog_vmap_lang_node extends $mol_object {
-        source(next) {
-            return next ?? '';
-        }
-        tree(next) {
-            const source = this.source(next && next.toString()).replace(/\n?$/, '\n');
-            const tree = this.$.$mol_view_tree2_normalize(this.$.$mol_tree2_from_string(source)).kids[0];
-            if (!tree)
-                return this.$.$mol_fail(new Error('No class declared in the source'));
-            return tree;
-        }
-        name(next) {
-            const tree = this.tree();
-            if (!next)
-                return tree.type;
-            this.tree(tree.struct(next, tree.kids));
-            return next;
-        }
-        base(next) {
-            const self = this.tree();
-            const base = this.$.$mol_view_tree2_class_super(self);
-            if (!next)
-                return base.type;
-            this.tree(self.clone([base.struct(next, base.kids)]));
-            return next;
-        }
-        prop_names() {
-            return this.$.$mol_view_tree2_class_props(this.tree())
-                .map(tree => this.$.$mol_view_tree2_prop_parts(tree).name);
-        }
-        props_tree() {
-            return this.tree().list(this.$.$mol_view_tree2_class_props(this.tree()));
-        }
-        prop_fullname(name) {
-            if (/[*?!]/.test(name))
-                return name;
-            for (const tree of this.props_tree().kids) {
-                const sign = tree?.type ?? '';
-                const meta = [...sign.matchAll($mol_view_tree2_prop_signature)][0]?.groups
-                    ?? { name: '', key: '', next: '' };
-                if (meta.name === name)
-                    return `${meta.name}${meta.key || ''}${meta.next || ''}`;
-            }
-            return '';
-        }
-        prop_tree(name, next) {
-            const sign = this.prop_fullname(name);
-            if (next !== undefined) {
-                this.tree(this.tree().insert(next, this.base(), sign));
-                return next;
-            }
-            return this.props_tree().select(sign).kids[0] ?? null;
-        }
-        prop_add(name) {
-            const tree = this.tree();
-            this.tree(tree.insert(tree.struct(name, [tree.struct('null')]), null, name));
-        }
-        prop_drop(name) {
-            this.prop_tree(name, null);
-        }
-        prop_rename(name, next) {
-            const to = [...next.matchAll($mol_view_tree2_prop_signature)][0]?.groups?.name;
-            if (!to)
-                return this.$.$mol_fail(new Error(`Bad property signature ${JSON.stringify(next)}`));
-            if (to !== name && this.prop_names().includes(to))
-                return this.$.$mol_fail(new Error(`Property ${JSON.stringify(to)} is already declared in ${this.name()}`));
-            const self = this.tree();
-            const base = self.kids[0];
-            if (!base)
-                return;
-            const refs = (tree) => {
-                const kids = tree.kids.map(refs);
-                const head = kids[0];
-                if (head?.type === name
-                    && (tree.type === '<=' || tree.type === '<=>' || tree.type === '='))
-                    return tree.clone([head.struct(to, head.kids), ...kids.slice(1)]);
-                return tree.clone(kids);
-            };
-            const props = base.kids.map(prop => {
-                const meta = [...prop.type.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
-                return meta?.name === name ? prop.struct(next, prop.kids) : prop;
-            });
-            this.tree(self.clone([base.clone(props.map(refs))]));
-        }
-        property(name) {
-            return $bog_vmap_lang_prop.make({
-                name: $mol_const(name),
-                tree: next => this.prop_tree(name, next),
-                node: $mol_const(this),
-            });
-        }
-        part_add(name, klass) {
-            const tree = this.tree();
-            this.tree(tree.insert(this.$.$bog_vmap_lang_part_tree(name, klass), null, name));
-        }
-        wire_add(wire) {
-            const next = this.$.$bog_vmap_lang_wire_tree(wire);
-            if (!this.prop_names().includes(wire.node))
-                this.$.$mol_fail(new Error(`Wire node ${JSON.stringify(wire.node)} is not declared in ${this.name()}`));
-            const prev = this.prop_fullname(wire.name);
-            if (prev && prev !== next.type)
-                this.prop_drop(wire.name);
-            this.tree(this.tree().insert(next, null, next.type));
-        }
-        wires() {
-            const wires = [];
-            for (const prop of this.props_tree().kids) {
-                const op = prop.kids[0];
-                if (op?.type !== '=')
-                    continue;
-                const node = op.kids[0];
-                const far = node?.kids[0];
-                if (!node || !far)
-                    continue;
-                const meta = this.$.$mol_view_tree2_prop_parts(prop);
-                wires.push({
-                    name: meta.name,
-                    node: node.type,
-                    prop: this.$.$mol_view_tree2_prop_parts(far).name,
-                    bidi: Boolean(meta.next),
-                });
-            }
-            return wires;
-        }
-        part_names() {
-            return this.props_tree().kids
-                .filter(prop => {
-                const val = prop.kids[0];
-                return val && $mol_view_tree2_class_match(val);
-            })
-                .map(prop => this.$.$mol_view_tree2_prop_parts(prop).name);
-        }
-        links() {
-            const wires = new Map(this.wires().map(wire => [wire.name, wire]));
-            const links = [];
-            for (const decl of this.props_tree().kids) {
-                const klass = decl.kids[0];
-                if (!klass || !$mol_view_tree2_class_match(klass))
-                    continue;
-                const to = this.$.$mol_view_tree2_prop_parts(decl).name;
-                for (const over of klass.kids) {
-                    const op = over.kids[0];
-                    if (op?.type !== '<=' && op?.type !== '<=>')
-                        continue;
-                    const ref = op.kids[0];
-                    if (!ref || ref.kids.length)
-                        continue;
-                    const wire = wires.get(this.$.$mol_view_tree2_prop_parts(ref).name);
-                    if (!wire)
-                        continue;
-                    links.push({
-                        from: wire.node,
-                        from_prop: wire.prop,
-                        to,
-                        to_prop: this.$.$mol_view_tree2_prop_parts(over).name,
-                        name: wire.name,
-                        bidi: Boolean(wire.bidi) && op.type === '<=>',
-                    });
-                }
-            }
-            return links;
-        }
-        link_reaches(from, to) {
-            const seen = new Set();
-            const queue = [from];
-            while (queue.length) {
-                const at = queue.shift();
-                if (at === to)
-                    return true;
-                if (seen.has(at))
-                    continue;
-                seen.add(at);
-                for (const link of this.links())
-                    if (link.from === at)
-                        queue.push(link.to);
-            }
-            return false;
-        }
-        link_name(from, prop, bidi) {
-            const base = `${from.toLowerCase()}_${prop}`;
-            const taken = new Set(this.prop_names());
-            for (let i = 1;; ++i) {
-                const name = i === 1 ? base : `${base}_${i}`;
-                const wire = this.wires().find(wire => wire.name === name);
-                if (wire) {
-                    if (wire.node === from && wire.prop === prop && wire.bidi === bidi)
-                        return name;
-                    continue;
-                }
-                if (!taken.has(name))
-                    return name;
-            }
-        }
-        link_add(link) {
-            const bidi = Boolean(link.bidi);
-            if (link.from === link.to)
-                this.$.$mol_fail(new Error(`Part ${JSON.stringify(link.to)} cannot be wired to itself`));
-            const parts = new Set(this.part_names());
-            for (const end of [link.from, link.to])
-                if (!parts.has(end))
-                    this.$.$mol_fail(new Error(`Part ${JSON.stringify(end)} is not declared in ${this.name()}`));
-            if (this.link_reaches(link.to, link.from))
-                this.$.$mol_fail(new Error(`Wire ${link.from} → ${link.to} closes a loop: ${link.to} already feeds ${link.from}`));
-            const to_prop = this.$.$bog_vmap_lang_token(link.to_prop, 'Target port');
-            const name = this.link_name(link.from, link.from_prop, bidi);
-            this.wire_add({ name, node: link.from, prop: link.from_prop, bidi });
-            const ref = bidi
-                ? $mol_tree2.struct('<=>', [$mol_tree2.struct(name + '?')])
-                : this.$.$bog_vmap_lang_ref_tree(name);
-            this.link_target(link.to, to_prop, $mol_tree2.struct(to_prop + (bidi ? '?' : ''), [ref]));
-            return name;
-        }
-        link_target(to, to_prop, next) {
-            this.over_set(to, to_prop, next);
-        }
-        link_drop(to, to_prop) {
-            const link = this.links().find(link => link.to === to && link.to_prop === to_prop);
-            if (!link)
-                return;
-            this.link_target(to, to_prop, null);
-            const used = this.links().some(other => other.name === link.name);
-            if (!used)
-                this.prop_drop(link.name);
-        }
-        links_drop(node) {
-            for (const link of [...this.links()]) {
-                if (link.from !== node && link.to !== node)
-                    continue;
-                this.link_drop(link.to, link.to_prop);
-            }
-            for (const wire of [...this.wires()]) {
-                if (wire.node !== node)
-                    continue;
-                this.prop_drop(wire.name);
-            }
-        }
-        prop_decl(name) {
-            const sign = this.prop_fullname(name);
-            return sign ? this.props_tree().select(sign).kids[0] ?? null : null;
-        }
-        sub_list(owner = '') {
-            const prop = owner ? this.over_tree(owner, 'sub') : this.prop_decl('sub');
-            const list = prop?.kids[0] ?? null;
-            return list?.type[0] === '/' ? list : null;
-        }
-        sub_names(owner = '') {
-            const list = this.sub_list(owner);
-            return list && list.kids.map(ref => ref.kids[0]?.type ?? '');
-        }
-        sub_holder(name) {
-            for (const owner of ['', ...this.part_names()]) {
-                if (this.sub_names(owner)?.includes(name))
-                    return owner;
-            }
-            return null;
-        }
-        sub_within(owner, name) {
-            const seen = new Set();
-            const queue = [owner];
-            while (queue.length) {
-                const at = queue.shift();
-                if (at === name)
-                    return true;
-                if (seen.has(at))
-                    continue;
-                seen.add(at);
-                for (const kid of this.sub_names(at) ?? [])
-                    if (kid)
-                        queue.push(kid);
-            }
-            return false;
-        }
-        sub_write(owner, list) {
-            const sub = list.struct('sub', [list]);
-            if (owner)
-                return this.over_set(owner, 'sub', sub);
-            this.tree(this.tree().insert(sub, null, this.prop_fullname('sub') || 'sub'));
-        }
-        sub_open(owner) {
-            if (this.sub_list(owner))
-                return;
-            this.sub_write(owner, this.tree().struct('/'));
-        }
-        over_tree(owner, prop) {
-            const klass = this.prop_decl(owner)?.kids[0];
-            if (!klass || !$mol_view_tree2_class_match(klass))
-                return null;
-            return klass.kids.find(over => this.$.$mol_view_tree2_prop_parts(over).name === prop) ?? null;
-        }
-        over_set(owner, prop, next) {
-            const decl = this.prop_decl(owner);
-            const klass = decl?.kids[0];
-            if (!decl || !klass || !$mol_view_tree2_class_match(klass))
-                return;
-            const named = (over) => this.$.$mol_view_tree2_prop_parts(over).name === prop;
-            const kids = klass.kids.some(named)
-                ? klass.kids.flatMap(over => named(over) ? next ? [next] : [] : [over])
-                : next ? [...klass.kids, next] : klass.kids;
-            this.prop_tree(owner, decl.clone([klass.clone(kids)]));
-        }
-        sub_check(name, owner) {
-            if (!owner)
-                return;
-            if (name === owner)
-                this.$.$mol_fail(new Error(`Node ${JSON.stringify(name)} cannot be put inside itself`));
-            if (this.sub_within(name, owner))
-                this.$.$mol_fail(new Error(`Node ${JSON.stringify(name)} cannot be put inside ${JSON.stringify(owner)}, which it already holds`));
-        }
-        sub_insert(name, index, owner = '') {
-            const ref = this.$.$bog_vmap_lang_ref_tree(name);
-            this.sub_check(name, owner);
-            const list = this.sub_list(owner) ?? ref.struct('/');
-            const kids = [...list.kids];
-            kids.splice(Math.max(0, Math.min(index, kids.length)), 0, ref);
-            this.sub_write(owner, list.clone(kids));
-        }
-        sub_move(name, index, owner = '') {
-            this.sub_check(name, owner);
-            const from = this.sub_holder(name);
-            if (from === owner) {
-                const at = this.sub_names(owner).indexOf(name);
-                if (at >= 0 && at < index)
-                    index -= 1;
-            }
-            if (from !== null)
-                this.sub_drop(name);
-            this.sub_insert(name, index, owner);
-        }
-        sub_add(name) {
-            this.sub_insert(name, Infinity);
-        }
-        sub_drop(name) {
-            const owner = this.sub_holder(name);
-            if (owner === null)
-                return;
-            const list = this.sub_list(owner);
-            this.sub_write(owner, list.clone(list.kids.filter(ref => ref.kids[0]?.type !== name)));
-        }
-    }
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "source", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "tree", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "name", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "base", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "prop_names", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "props_tree", null);
-    __decorate([
-        $mol_mem_key
-    ], $bog_vmap_lang_node.prototype, "prop_fullname", null);
-    __decorate([
-        $mol_mem_key
-    ], $bog_vmap_lang_node.prototype, "prop_tree", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "prop_add", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "prop_drop", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "prop_rename", null);
-    __decorate([
-        $mol_mem_key
-    ], $bog_vmap_lang_node.prototype, "property", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "part_add", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "wire_add", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "wires", null);
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_lang_node.prototype, "links", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "link_add", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "link_drop", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "links_drop", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "sub_open", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "sub_insert", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "sub_move", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "sub_add", null);
-    __decorate([
-        $mol_action
-    ], $bog_vmap_lang_node.prototype, "sub_drop", null);
-    $.$bog_vmap_lang_node = $bog_vmap_lang_node;
-    class $bog_vmap_lang_prop extends $mol_object {
-        name() {
-            return this.$.$mol_fail(new Error('Not defined'));
-        }
-        node() {
-            return this.$.$mol_fail(new Error('Not defined'));
-        }
-        tree(next) {
-            return this.$.$mol_fail(new Error('Not defined'));
-        }
-        as(Prop) {
-            return Prop.make({
-                name: () => this.name(),
-                tree: next => this.tree(next),
-            });
-        }
-        meta(next) {
-            const tree = this.tree();
-            const sign = tree?.type ?? '';
-            let meta = [...sign.matchAll($mol_view_tree2_prop_signature)][0]?.groups
-                ?? { name: '', key: '', next: '' };
-            if (next) {
-                const made = { ...meta, ...next };
-                const sign = `${made.name}${made.key || ''}${made.next || ''}`;
-                if (made.name === meta.name)
-                    this.tree(tree.struct(sign, tree.kids));
-                else
-                    this.node().prop_rename(meta.name, sign);
-                meta = made;
-            }
-            return meta;
-        }
-        title(next) {
-            return this.meta(next === undefined ? undefined : { name: next }).name;
-        }
-        key(next) {
-            return Boolean(this.meta(next === undefined ? undefined : { key: next ? '*' : '' }).key);
-        }
-        next(next) {
-            return Boolean(this.meta(next === undefined ? undefined : { next: next ? '?' : '' }).next);
-        }
-    }
-    $.$bog_vmap_lang_prop = $bog_vmap_lang_prop;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
     function $bog_vmap_app_export_path(names) {
         if (!names.length)
             this.$mol_fail(new Error('Nothing to export'));
@@ -20431,7 +20453,7 @@ var $;
     }
     $.$bog_vmap_app_code_css_default = $bog_vmap_app_code_css_default;
     function $bog_vmap_app_code_attr(klass) {
-        return klass.replace(/\$/g, '').toLowerCase();
+        return $bog_vmap_lang_attr(klass);
     }
     $.$bog_vmap_app_code_attr = $bog_vmap_app_code_attr;
 })($ || ($ = {}));
@@ -31720,6 +31742,9 @@ var $;
 			(obj.theme_auto) = () => ((this.Theme()));
 			return obj;
 		}
+		notes(){
+			return [];
+		}
 		error(){
 			return "";
 		}
@@ -31972,6 +31997,11 @@ var $;
 			]);
 			return obj;
 		}
+		Notes(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.notes()));
+			return obj;
+		}
 		Alarm(){
 			const obj = new this.$.$mol_view();
 			(obj.sub) = () => ([(this.error())]);
@@ -32157,6 +32187,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "root_css"));
 	($mol_mem(($.$bog_vmap_app.prototype), "store"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Head"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Notes"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Alarm"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Export_note"));
 	($mol_mem_key(($.$bog_vmap_app.prototype), "Export_row"));
@@ -32749,13 +32780,17 @@ var $;
             body() {
                 return [
                     this.Head(),
+                    this.Body(),
+                    ...this.dragged() ? [this.Ghost()] : [],
+                ];
+            }
+            notes() {
+                return [
                     ...this.inside_note() ? [this.Inside_note()] : [],
                     ...this.stalled() ? [this.Stall()] : [],
                     ...this.error() ? [this.Alarm()] : [],
                     ...this.export_notes().length ? [this.Export_note()] : [],
                     ...this.root_title_note() ? [this.Root_note()] : [],
-                    this.Body(),
-                    ...this.dragged() ? [this.Ghost()] : [],
                 ];
             }
             body_main() {
@@ -32765,6 +32800,7 @@ var $;
                     ...this.inspect_showed() ? [this.Aside()] : [],
                     ...this.code_showed() ? [this.Code()] : [],
                     ...this.history_showed() ? [this.History()] : [],
+                    ...this.notes().length ? [this.Notes()] : [],
                 ];
             }
             palette_showed(next) {
@@ -33158,9 +33194,9 @@ var $;
             }
             class_carry(name, next, carried) {
                 if (carried.js)
-                    this.class_js(next, carried.js);
+                    this.class_js(next, this.$.$bog_vmap_lang_js_rename(carried.js, name, next));
                 if (carried.css)
-                    this.class_css(next, carried.css);
+                    this.class_css(next, this.$.$bog_vmap_lang_css_rename(carried.css, name, next));
                 const store = this.store();
                 const doc = store.doc_current();
                 if (carried.rooted && doc && doc.can_change())
@@ -33317,6 +33353,9 @@ var $;
         ], $bog_vmap_app.prototype, "body", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app.prototype, "notes", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_app.prototype, "node_peers", null);
         __decorate([
             $mol_mem_key
@@ -33420,6 +33459,16 @@ var $;
                 flex: { grow: 1, shrink: 1 },
                 minHeight: 0,
                 overflow: { x: 'auto', y: 'hidden' },
+                position: 'relative',
+            },
+            Notes: {
+                position: 'absolute',
+                zIndex: 20,
+                left: 0,
+                right: 0,
+                top: 0,
+                flex: { direction: 'column' },
+                pointerEvents: 'none',
             },
             Side: {
                 flex: { direction: 'column', grow: 0, shrink: 1, basis: '20rem' },
@@ -33472,6 +33521,25 @@ var $;
                 color: $mol_theme.back,
                 font: { family: 'monospace', size: '.8rem' },
                 whiteSpace: 'pre-wrap',
+                pointerEvents: 'auto',
+            },
+            Inside_note: {
+                flex: { shrink: 0 },
+                padding: { top: '.25rem', bottom: '.25rem', left: $mol_gap.text, right: $mol_gap.text },
+                background: { color: $mol_theme.card },
+                color: $mol_theme.text,
+                font: { size: '.8rem' },
+                whiteSpace: 'normal',
+                pointerEvents: 'auto',
+            },
+            Root_note: {
+                flex: { shrink: 0 },
+                padding: { top: '.25rem', bottom: '.25rem', left: $mol_gap.text, right: $mol_gap.text },
+                background: { color: $mol_theme.card },
+                color: $mol_theme.text,
+                font: { size: '.8rem' },
+                whiteSpace: 'normal',
+                pointerEvents: 'auto',
             },
             Stall: {
                 flex: { direction: 'row', shrink: 0, wrap: 'wrap' },
@@ -33480,6 +33548,7 @@ var $;
                 padding: $mol_gap.text,
                 background: { color: $mol_theme.special },
                 color: $mol_theme.back,
+                pointerEvents: 'auto',
             },
             Stall_note: {
                 flex: { grow: 1, shrink: 1 },
@@ -33495,6 +33564,7 @@ var $;
                 color: $mol_theme.back,
                 font: { size: '.8rem' },
                 whiteSpace: 'normal',
+                pointerEvents: 'auto',
             },
             Stall_reload: {
                 flex: { shrink: 0 },
@@ -40571,6 +40641,27 @@ var $;
                 `${d}bog_vmap_lang_test_one`,
                 `${d}bog_vmap_lang_test_two`,
             ]);
+        },
+        'a rename moves the selector of the class and of its nodes'($) {
+            const css = '[my_site_page] {\n\tcolor: red;\n}\n\n[my_site_page_calc] {\n\tflex: 1;\n}\n';
+            const next = $.$bog_vmap_lang_css_rename(css, `${d}my_site_page`, `${d}my_shop_page`);
+            $mol_assert_equal(next, '[my_shop_page] {\n\tcolor: red;\n}\n\n[my_shop_page_calc] {\n\tflex: 1;\n}\n');
+        },
+        'a rename leaves the rules of other classes where they were'($) {
+            const css = '[mol_view] {\n\tcolor: red;\n}\n\n[my_site_pager] {\n\tflex: 1;\n}\n';
+            $mol_assert_equal($.$bog_vmap_lang_css_rename(css, `${d}my_site_page`, `${d}my_shop_page`), css);
+        },
+        'a rename moves the mentions of the class inside a body'($) {
+            const js = `title() {\n\treturn this.$.${d}my_site_page_calc ? '${d}my_site_page' : ''\n}\n`;
+            $mol_assert_equal($.$bog_vmap_lang_js_rename(js, `${d}my_site_page`, `${d}my_shop_page`), `title() {\n\treturn this.$.${d}my_site_page_calc ? '${d}my_shop_page' : ''\n}\n`);
+        },
+        'a class renamed and renamed back gives the styles and the body byte for byte'($) {
+            const css = '[my_site_page] {\n\tcolor: red;\n}\n\n[my_site_page_calc] {\n\tflex: 1;\n}\n';
+            const js = `title() {\n\treturn '${d}my_site_page'\n}\n`;
+            const from = `${d}my_site_page`;
+            const to = `${d}my_shop_page`;
+            $mol_assert_equal($.$bog_vmap_lang_css_rename($.$bog_vmap_lang_css_rename(css, from, to), to, from), css);
+            $mol_assert_equal($.$bog_vmap_lang_js_rename($.$bog_vmap_lang_js_rename(js, from, to), to, from), js);
         },
         'a rename of a class the document lacks is refused'($) {
             const d1 = pair_doc();
@@ -48587,6 +48678,16 @@ var $;
             $mol_assert_equal(app.code_undo(stroke(code)), true);
             $mol_assert_equal(app.doc_source(), before);
         },
+        'the root renamed and renamed back leaves the style matching'($) {
+            const { app, code, name } = editor($);
+            code.css_text(`[${$.$bog_vmap_app_code_attr(app.doc_root())}_${name.toLowerCase()}] {\n\tcolor: red;\n}`);
+            const before = app.root_css();
+            app.root_title(`${d}my_shop_page`);
+            $mol_assert_equal(app.doc_root(), `${d}my_shop_page`);
+            $mol_assert_equal(app.root_css().includes('[my_shop_page_button_minor]'), true);
+            app.root_title(`${d}my_site_page`);
+            $mol_assert_equal(app.root_css(), before);
+        },
         'a press on a closed tab opens it'($) {
             const { code } = editor($);
             const deck = code.Sources();
@@ -49335,7 +49436,8 @@ var $;
             $mol_assert_ok(notes[1].includes('who'));
             $mol_assert_equal(app.export_rows().length, 2);
             $mol_assert_equal(app.export_text(1), notes[1]);
-            $mol_assert_ok(app.body().includes(app.Export_note()));
+            $mol_assert_ok(app.notes().includes(app.Export_note()));
+            $mol_assert_equal(app.body().includes(app.Export_note()), false);
             $mol_assert_fail(() => app.export_blob(), Error);
             app.root_js('greeting( who: string ) {\n\treturn who\n}\n');
             $mol_assert_equal(app.export_ready(), true);
@@ -49526,7 +49628,8 @@ var $;
             $mol_assert_equal(app.root_title('Страница'), `${d}my_site_page`);
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_ok(app.root_title_note().includes('Страница'));
-            $mol_assert_ok(app.body().includes(app.Root_note()));
+            $mol_assert_ok(app.notes().includes(app.Root_note()));
+            $mol_assert_equal(app.body().includes(app.Root_note()), false);
             app.root_draft('Страница');
             app.root_submit();
             $mol_assert_equal(app.root_draft(), 'Страница');
@@ -50450,6 +50553,26 @@ var $;
             const module = stage.app.export_state().module;
             const tree = module.files.find(file => file.name.endsWith('.view.tree')).text;
             $mol_assert_ok(tree.includes(`uri \\${uri}`));
+        },
+        'entering a node does not move the canvas down by a row'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            const column = stage.app.body();
+            stage.tap(stage.part_center('Calc'));
+            stage.tap(stage.part_center('Calc'));
+            stage.redraw();
+            $mol_assert_ok(stage.app.inside_note());
+            $mol_assert_equal(stage.pane.inside(), true);
+            const after = stage.app.body();
+            $mol_assert_equal(after.length, column.length);
+            for (let i = 0; i < column.length; ++i)
+                $mol_assert_equal(after[i], column[i]);
+            const note = stage.app.Notes().dom_node();
+            $mol_assert_equal(stage.app.Body().dom_node().contains(note), true);
+            $mol_assert_equal(note.parentElement === stage.root, false);
+            const sheet = $mol_dom_context.document.getElementById('$mol_style_attach:$bog_vmap_app').innerHTML;
+            const rule = sheet.slice(sheet.indexOf('[bog_vmap_app_notes]'));
+            $mol_assert_ok(rule.slice(0, rule.indexOf('}')).includes('position: absolute'));
         },
     });
 })($ || ($ = {}));

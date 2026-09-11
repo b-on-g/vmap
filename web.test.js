@@ -6719,6 +6719,27 @@ var $;
                 `${d}bog_vmap_lang_test_two`,
             ]);
         },
+        'a rename moves the selector of the class and of its nodes'($) {
+            const css = '[my_site_page] {\n\tcolor: red;\n}\n\n[my_site_page_calc] {\n\tflex: 1;\n}\n';
+            const next = $.$bog_vmap_lang_css_rename(css, `${d}my_site_page`, `${d}my_shop_page`);
+            $mol_assert_equal(next, '[my_shop_page] {\n\tcolor: red;\n}\n\n[my_shop_page_calc] {\n\tflex: 1;\n}\n');
+        },
+        'a rename leaves the rules of other classes where they were'($) {
+            const css = '[mol_view] {\n\tcolor: red;\n}\n\n[my_site_pager] {\n\tflex: 1;\n}\n';
+            $mol_assert_equal($.$bog_vmap_lang_css_rename(css, `${d}my_site_page`, `${d}my_shop_page`), css);
+        },
+        'a rename moves the mentions of the class inside a body'($) {
+            const js = `title() {\n\treturn this.$.${d}my_site_page_calc ? '${d}my_site_page' : ''\n}\n`;
+            $mol_assert_equal($.$bog_vmap_lang_js_rename(js, `${d}my_site_page`, `${d}my_shop_page`), `title() {\n\treturn this.$.${d}my_site_page_calc ? '${d}my_shop_page' : ''\n}\n`);
+        },
+        'a class renamed and renamed back gives the styles and the body byte for byte'($) {
+            const css = '[my_site_page] {\n\tcolor: red;\n}\n\n[my_site_page_calc] {\n\tflex: 1;\n}\n';
+            const js = `title() {\n\treturn '${d}my_site_page'\n}\n`;
+            const from = `${d}my_site_page`;
+            const to = `${d}my_shop_page`;
+            $mol_assert_equal($.$bog_vmap_lang_css_rename($.$bog_vmap_lang_css_rename(css, from, to), to, from), css);
+            $mol_assert_equal($.$bog_vmap_lang_js_rename($.$bog_vmap_lang_js_rename(js, from, to), to, from), js);
+        },
         'a rename of a class the document lacks is refused'($) {
             const d1 = pair_doc();
             $mol_assert_fail(() => d1.class_rename(`${d}bog_vmap_lang_test_absent`, `${d}bog_vmap_lang_test_four`), Error);
@@ -15095,6 +15116,16 @@ var $;
             $mol_assert_equal(app.code_undo(stroke(code)), true);
             $mol_assert_equal(app.doc_source(), before);
         },
+        'the root renamed and renamed back leaves the style matching'($) {
+            const { app, code, name } = editor($);
+            code.css_text(`[${$.$bog_vmap_app_code_attr(app.doc_root())}_${name.toLowerCase()}] {\n\tcolor: red;\n}`);
+            const before = app.root_css();
+            app.root_title(`${d}my_shop_page`);
+            $mol_assert_equal(app.doc_root(), `${d}my_shop_page`);
+            $mol_assert_equal(app.root_css().includes('[my_shop_page_button_minor]'), true);
+            app.root_title(`${d}my_site_page`);
+            $mol_assert_equal(app.root_css(), before);
+        },
         'a press on a closed tab opens it'($) {
             const { code } = editor($);
             const deck = code.Sources();
@@ -15843,7 +15874,8 @@ var $;
             $mol_assert_ok(notes[1].includes('who'));
             $mol_assert_equal(app.export_rows().length, 2);
             $mol_assert_equal(app.export_text(1), notes[1]);
-            $mol_assert_ok(app.body().includes(app.Export_note()));
+            $mol_assert_ok(app.notes().includes(app.Export_note()));
+            $mol_assert_equal(app.body().includes(app.Export_note()), false);
             $mol_assert_fail(() => app.export_blob(), Error);
             app.root_js('greeting( who: string ) {\n\treturn who\n}\n');
             $mol_assert_equal(app.export_ready(), true);
@@ -16034,7 +16066,8 @@ var $;
             $mol_assert_equal(app.root_title('Страница'), `${d}my_site_page`);
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_ok(app.root_title_note().includes('Страница'));
-            $mol_assert_ok(app.body().includes(app.Root_note()));
+            $mol_assert_ok(app.notes().includes(app.Root_note()));
+            $mol_assert_equal(app.body().includes(app.Root_note()), false);
             app.root_draft('Страница');
             app.root_submit();
             $mol_assert_equal(app.root_draft(), 'Страница');
@@ -16958,6 +16991,26 @@ var $;
             const module = stage.app.export_state().module;
             const tree = module.files.find(file => file.name.endsWith('.view.tree')).text;
             $mol_assert_ok(tree.includes(`uri \\${uri}`));
+        },
+        'entering a node does not move the canvas down by a row'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            const column = stage.app.body();
+            stage.tap(stage.part_center('Calc'));
+            stage.tap(stage.part_center('Calc'));
+            stage.redraw();
+            $mol_assert_ok(stage.app.inside_note());
+            $mol_assert_equal(stage.pane.inside(), true);
+            const after = stage.app.body();
+            $mol_assert_equal(after.length, column.length);
+            for (let i = 0; i < column.length; ++i)
+                $mol_assert_equal(after[i], column[i]);
+            const note = stage.app.Notes().dom_node();
+            $mol_assert_equal(stage.app.Body().dom_node().contains(note), true);
+            $mol_assert_equal(note.parentElement === stage.root, false);
+            const sheet = $mol_dom_context.document.getElementById('$mol_style_attach:$bog_vmap_app').innerHTML;
+            const rule = sheet.slice(sheet.indexOf('[bog_vmap_app_notes]'));
+            $mol_assert_ok(rule.slice(0, rule.indexOf('}')).includes('position: absolute'));
         },
     });
 })($ || ($ = {}));

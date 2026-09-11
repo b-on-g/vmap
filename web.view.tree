@@ -2974,6 +2974,8 @@ $bog_vmap_app $mol_view
 					<= status \
 			<= Theme_switch $bog_theme_switch
 				theme_auto <= Theme
+	Notes $mol_view
+		sub <= notes /$mol_view
 	Alarm $mol_view
 		sub /
 			<= error \

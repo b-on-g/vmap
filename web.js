@@ -29435,419 +29435,6 @@ var $;
 })($ || ($ = {}));
 
 ;
-	($.$mol_check_list) = class $mol_check_list extends ($.$mol_view) {
-		option_checked(id, next){
-			if(next !== undefined) return next;
-			return false;
-		}
-		option_title(id){
-			return "";
-		}
-		option_label(id){
-			return [(this.option_title(id))];
-		}
-		enabled(){
-			return true;
-		}
-		option_enabled(id){
-			return (this.enabled());
-		}
-		option_hint(id){
-			return "";
-		}
-		items(){
-			return [];
-		}
-		dictionary(){
-			return {};
-		}
-		Option(id){
-			const obj = new this.$.$mol_check();
-			(obj.checked) = (next) => ((this.option_checked(id, next)));
-			(obj.label) = () => ((this.option_label(id)));
-			(obj.enabled) = () => ((this.option_enabled(id)));
-			(obj.hint) = () => ((this.option_hint(id)));
-			(obj.minimal_height) = () => (24);
-			return obj;
-		}
-		options(){
-			return {};
-		}
-		keys(){
-			return [];
-		}
-		sub(){
-			return (this.items());
-		}
-	};
-	($mol_mem_key(($.$mol_check_list.prototype), "option_checked"));
-	($mol_mem_key(($.$mol_check_list.prototype), "Option"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * List of checkboxes
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_check_list_demo
-         */
-        class $mol_check_list extends $.$mol_check_list {
-            options() {
-                return {};
-            }
-            dictionary(next) {
-                return next ?? {};
-            }
-            option_checked(id, next) {
-                const prev = this.dictionary();
-                if (next === undefined)
-                    return prev[id] ?? null;
-                const next_rec = { ...prev, [id]: next };
-                if (next === null)
-                    delete next_rec[id];
-                return this.dictionary(next_rec)[id] ?? null;
-            }
-            keys() {
-                return Object.keys(this.options());
-            }
-            items() {
-                return this.keys().map(key => this.Option(key));
-            }
-            option_title(key) {
-                return this.options()[key] || key;
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_check_list.prototype, "keys", null);
-        __decorate([
-            $mol_mem
-        ], $mol_check_list.prototype, "items", null);
-        $$.$mol_check_list = $mol_check_list;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/check/list/list.view.css", "[mol_check_list] {\n\tdisplay: flex;\n\tflex-wrap: wrap;\n\tflex: 1 1 auto;\n\tborder-radius: var(--mol_gap_round);\n\tgap: 1px;\n}\n\n[mol_check_list_option] {\n\tflex: 0 1 auto;\n}\n\n[mol_check_list_option]:where([mol_check_checked=\"true\"]) {\n\ttext-shadow: 0 0;\n\tcolor: var(--mol_theme_current);\n}\n\n[mol_check_list_option]:where([mol_check_checked=\"true\"][disabled]) {\n\tcolor: var(--mol_theme_text);\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_switch) = class $mol_switch extends ($.$mol_check_list) {
-		value(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-	};
-	($mol_mem(($.$mol_switch.prototype), "value"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Buttons which switching the state
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_switch_demo
-         */
-        class $mol_switch extends $.$mol_switch {
-            value(next) {
-                return $mol_state_session.value(`${this}.value()`, next) ?? '';
-            }
-            option_checked(key, next) {
-                if (next === undefined)
-                    return this.value() == key;
-                this.value(next ? key : '');
-                return next;
-            }
-        }
-        $$.$mol_switch = $mol_switch;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_deck) = class $mol_deck extends ($.$mol_list) {
-		current(next){
-			if(next !== undefined) return next;
-			return "0";
-		}
-		switch_options(){
-			return {};
-		}
-		Switch(){
-			const obj = new this.$.$mol_switch();
-			(obj.value) = (next) => ((this.current(next)));
-			(obj.options) = () => ((this.switch_options()));
-			return obj;
-		}
-		Content(){
-			const obj = new this.$.$mol_view();
-			return obj;
-		}
-		items(){
-			return [];
-		}
-		rows(){
-			return [(this.Switch()), (this.Content())];
-		}
-	};
-	($mol_mem(($.$mol_deck.prototype), "current"));
-	($mol_mem(($.$mol_deck.prototype), "Switch"));
-	($mol_mem(($.$mol_deck.prototype), "Content"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * The component which arrange content in multiple tabs.
-         * @seehttps://mol.hyoo.ru/#!section=demos/demo=mol_deck_demo
-         */
-        class $mol_deck extends $.$mol_deck {
-            current(next) {
-                return $mol_state_session.value(`${this}.current()`, next) || '0';
-            }
-            switch_options() {
-                let options = {};
-                this.items().forEach((item, index) => {
-                    options[String(index)] = item.title();
-                });
-                return options;
-            }
-            Content() {
-                return this.items()[Number(this.current())];
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_deck.prototype, "Content", null);
-        $$.$mol_deck = $mol_deck;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$bog_vmap_app_code) = class $bog_vmap_app_code extends ($.$mol_view) {
-		field_leave(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		content(){
-			return [];
-		}
-		head_content(){
-			return [];
-		}
-		scope_note(){
-			return "";
-		}
-		note(){
-			return "";
-		}
-		typing_rows(){
-			return [];
-		}
-		typing_text(id){
-			return "";
-		}
-		source_tabs(){
-			return [];
-		}
-		tree_text(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		tree_press(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		js_text(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		js_press(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		js_idle_note(){
-			return "";
-		}
-		css_text(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		css_press(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		klass(){
-			return "";
-		}
-		prop(){
-			return "";
-		}
-		hooks(){
-			return [];
-		}
-		source(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		node_source(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		js(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		css(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		error(){
-			return "";
-		}
-		whole(next){
-			if(next !== undefined) return next;
-			return false;
-		}
-		refusal(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		event(){
-			return {...(super.event()), "focusout": (next) => (this.field_leave(next))};
-		}
-		sub(){
-			return (this.content());
-		}
-		Head(){
-			const obj = new this.$.$mol_bar();
-			(obj.sub) = () => ((this.head_content()));
-			return obj;
-		}
-		Scope_note(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.scope_note())]);
-			return obj;
-		}
-		Scope(){
-			const obj = new this.$.$mol_check();
-			(obj.title) = () => ("Весь класс");
-			(obj.hint) = () => ("Править класс целиком, а не выбранный узел. Какой это класс, сказано в шапке: у узла со своим классом — его, у остальных — тот, который узел объявляет");
-			(obj.checked) = (next) => ((this.whole(next)));
-			return obj;
-		}
-		Alarm(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.error())]);
-			return obj;
-		}
-		Refusal(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.note())]);
-			return obj;
-		}
-		Typing(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ((this.typing_rows()));
-			return obj;
-		}
-		Typing_row(id){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.typing_text(id))]);
-			return obj;
-		}
-		Sources(){
-			const obj = new this.$.$bog_vmap_app_code_deck();
-			(obj.items) = () => ((this.source_tabs()));
-			return obj;
-		}
-		Tree(){
-			const obj = new this.$.$mol_textarea();
-			(obj.title) = () => ("view.tree");
-			(obj.hint) = () => ("Имя_узла $mol_view");
-			(obj.sidebar_showed) = () => (true);
-			(obj.value) = (next) => ((this.tree_text(next)));
-			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.tree_press(next))});
-			return obj;
-		}
-		Js(){
-			const obj = new this.$.$mol_textarea();
-			(obj.title) = () => ("JS");
-			(obj.hint) = () => ("");
-			(obj.sidebar_showed) = () => (true);
-			(obj.value) = (next) => ((this.js_text(next)));
-			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.js_press(next))});
-			return obj;
-		}
-		Js_idle(){
-			const obj = new this.$.$mol_view();
-			(obj.title) = () => ("JS");
-			(obj.sub) = () => ([(this.js_idle_note())]);
-			return obj;
-		}
-		Css(){
-			const obj = new this.$.$mol_textarea();
-			(obj.title) = () => ("CSS");
-			(obj.hint) = () => ("");
-			(obj.sidebar_showed) = () => (true);
-			(obj.value) = (next) => ((this.css_text(next)));
-			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.css_press(next))});
-			return obj;
-		}
-	};
-	($mol_mem(($.$bog_vmap_app_code.prototype), "field_leave"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "tree_text"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "tree_press"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "js_text"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "js_press"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "css_text"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "css_press"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "source"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "node_source"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "js"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "css"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "whole"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "refusal"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Head"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Scope_note"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Scope"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Alarm"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Refusal"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Typing"));
-	($mol_mem_key(($.$bog_vmap_app_code.prototype), "Typing_row"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Sources"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Tree"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Js"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Js_idle"));
-	($mol_mem(($.$bog_vmap_app_code.prototype), "Css"));
-	($.$bog_vmap_app_code_deck) = class $bog_vmap_app_code_deck extends ($.$mol_deck) {};
-
-
-;
 "use strict";
 var $;
 (function ($) {
@@ -29862,6 +29449,28 @@ var $;
         return /^\$[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(name);
     }
     $.$bog_vmap_lang_class_ok = $bog_vmap_lang_class_ok;
+    function $bog_vmap_lang_attr(klass) {
+        return klass.replace(/\$/g, '').toLowerCase();
+    }
+    $.$bog_vmap_lang_attr = $bog_vmap_lang_attr;
+    function $bog_vmap_lang_quoted(text) {
+        return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    function $bog_vmap_lang_css_rename(css, from, to) {
+        if (!css || from === to)
+            return css;
+        const head = $bog_vmap_lang_attr(from);
+        if (!head)
+            return css;
+        return css.replace(new RegExp('\\[' + $bog_vmap_lang_quoted(head) + '(?=[\\]_=~^*|$\\s])', 'g'), '[' + $bog_vmap_lang_attr(to));
+    }
+    $.$bog_vmap_lang_css_rename = $bog_vmap_lang_css_rename;
+    function $bog_vmap_lang_js_rename(js, from, to) {
+        if (!js || from === to)
+            return js;
+        return js.replace(new RegExp('([^\\w$]|^)' + $bog_vmap_lang_quoted(from) + '(?![\\w])', 'g'), (_all, before) => before + to);
+    }
+    $.$bog_vmap_lang_js_rename = $bog_vmap_lang_js_rename;
     function $bog_vmap_lang_wire_tree(wire) {
         const sign = wire.bidi ? '?' : '';
         const name = this.$bog_vmap_lang_token(wire.name, 'Wire name') + sign;
@@ -30448,6 +30057,419 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$mol_check_list) = class $mol_check_list extends ($.$mol_view) {
+		option_checked(id, next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		option_title(id){
+			return "";
+		}
+		option_label(id){
+			return [(this.option_title(id))];
+		}
+		enabled(){
+			return true;
+		}
+		option_enabled(id){
+			return (this.enabled());
+		}
+		option_hint(id){
+			return "";
+		}
+		items(){
+			return [];
+		}
+		dictionary(){
+			return {};
+		}
+		Option(id){
+			const obj = new this.$.$mol_check();
+			(obj.checked) = (next) => ((this.option_checked(id, next)));
+			(obj.label) = () => ((this.option_label(id)));
+			(obj.enabled) = () => ((this.option_enabled(id)));
+			(obj.hint) = () => ((this.option_hint(id)));
+			(obj.minimal_height) = () => (24);
+			return obj;
+		}
+		options(){
+			return {};
+		}
+		keys(){
+			return [];
+		}
+		sub(){
+			return (this.items());
+		}
+	};
+	($mol_mem_key(($.$mol_check_list.prototype), "option_checked"));
+	($mol_mem_key(($.$mol_check_list.prototype), "Option"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * List of checkboxes
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_check_list_demo
+         */
+        class $mol_check_list extends $.$mol_check_list {
+            options() {
+                return {};
+            }
+            dictionary(next) {
+                return next ?? {};
+            }
+            option_checked(id, next) {
+                const prev = this.dictionary();
+                if (next === undefined)
+                    return prev[id] ?? null;
+                const next_rec = { ...prev, [id]: next };
+                if (next === null)
+                    delete next_rec[id];
+                return this.dictionary(next_rec)[id] ?? null;
+            }
+            keys() {
+                return Object.keys(this.options());
+            }
+            items() {
+                return this.keys().map(key => this.Option(key));
+            }
+            option_title(key) {
+                return this.options()[key] || key;
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_check_list.prototype, "keys", null);
+        __decorate([
+            $mol_mem
+        ], $mol_check_list.prototype, "items", null);
+        $$.$mol_check_list = $mol_check_list;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/check/list/list.view.css", "[mol_check_list] {\n\tdisplay: flex;\n\tflex-wrap: wrap;\n\tflex: 1 1 auto;\n\tborder-radius: var(--mol_gap_round);\n\tgap: 1px;\n}\n\n[mol_check_list_option] {\n\tflex: 0 1 auto;\n}\n\n[mol_check_list_option]:where([mol_check_checked=\"true\"]) {\n\ttext-shadow: 0 0;\n\tcolor: var(--mol_theme_current);\n}\n\n[mol_check_list_option]:where([mol_check_checked=\"true\"][disabled]) {\n\tcolor: var(--mol_theme_text);\n}\n");
+})($ || ($ = {}));
+
+;
+	($.$mol_switch) = class $mol_switch extends ($.$mol_check_list) {
+		value(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+	};
+	($mol_mem(($.$mol_switch.prototype), "value"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Buttons which switching the state
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_switch_demo
+         */
+        class $mol_switch extends $.$mol_switch {
+            value(next) {
+                return $mol_state_session.value(`${this}.value()`, next) ?? '';
+            }
+            option_checked(key, next) {
+                if (next === undefined)
+                    return this.value() == key;
+                this.value(next ? key : '');
+                return next;
+            }
+        }
+        $$.$mol_switch = $mol_switch;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$mol_deck) = class $mol_deck extends ($.$mol_list) {
+		current(next){
+			if(next !== undefined) return next;
+			return "0";
+		}
+		switch_options(){
+			return {};
+		}
+		Switch(){
+			const obj = new this.$.$mol_switch();
+			(obj.value) = (next) => ((this.current(next)));
+			(obj.options) = () => ((this.switch_options()));
+			return obj;
+		}
+		Content(){
+			const obj = new this.$.$mol_view();
+			return obj;
+		}
+		items(){
+			return [];
+		}
+		rows(){
+			return [(this.Switch()), (this.Content())];
+		}
+	};
+	($mol_mem(($.$mol_deck.prototype), "current"));
+	($mol_mem(($.$mol_deck.prototype), "Switch"));
+	($mol_mem(($.$mol_deck.prototype), "Content"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * The component which arrange content in multiple tabs.
+         * @seehttps://mol.hyoo.ru/#!section=demos/demo=mol_deck_demo
+         */
+        class $mol_deck extends $.$mol_deck {
+            current(next) {
+                return $mol_state_session.value(`${this}.current()`, next) || '0';
+            }
+            switch_options() {
+                let options = {};
+                this.items().forEach((item, index) => {
+                    options[String(index)] = item.title();
+                });
+                return options;
+            }
+            Content() {
+                return this.items()[Number(this.current())];
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_deck.prototype, "Content", null);
+        $$.$mol_deck = $mol_deck;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$bog_vmap_app_code) = class $bog_vmap_app_code extends ($.$mol_view) {
+		field_leave(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		content(){
+			return [];
+		}
+		head_content(){
+			return [];
+		}
+		scope_note(){
+			return "";
+		}
+		note(){
+			return "";
+		}
+		typing_rows(){
+			return [];
+		}
+		typing_text(id){
+			return "";
+		}
+		source_tabs(){
+			return [];
+		}
+		tree_text(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		tree_press(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		js_text(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		js_press(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		js_idle_note(){
+			return "";
+		}
+		css_text(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		css_press(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		klass(){
+			return "";
+		}
+		prop(){
+			return "";
+		}
+		hooks(){
+			return [];
+		}
+		source(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		node_source(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		js(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		css(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		error(){
+			return "";
+		}
+		whole(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		refusal(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		event(){
+			return {...(super.event()), "focusout": (next) => (this.field_leave(next))};
+		}
+		sub(){
+			return (this.content());
+		}
+		Head(){
+			const obj = new this.$.$mol_bar();
+			(obj.sub) = () => ((this.head_content()));
+			return obj;
+		}
+		Scope_note(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.scope_note())]);
+			return obj;
+		}
+		Scope(){
+			const obj = new this.$.$mol_check();
+			(obj.title) = () => ("Весь класс");
+			(obj.hint) = () => ("Править класс целиком, а не выбранный узел. Какой это класс, сказано в шапке: у узла со своим классом — его, у остальных — тот, который узел объявляет");
+			(obj.checked) = (next) => ((this.whole(next)));
+			return obj;
+		}
+		Alarm(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.error())]);
+			return obj;
+		}
+		Refusal(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.note())]);
+			return obj;
+		}
+		Typing(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.typing_rows()));
+			return obj;
+		}
+		Typing_row(id){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.typing_text(id))]);
+			return obj;
+		}
+		Sources(){
+			const obj = new this.$.$bog_vmap_app_code_deck();
+			(obj.items) = () => ((this.source_tabs()));
+			return obj;
+		}
+		Tree(){
+			const obj = new this.$.$mol_textarea();
+			(obj.title) = () => ("view.tree");
+			(obj.hint) = () => ("Имя_узла $mol_view");
+			(obj.sidebar_showed) = () => (true);
+			(obj.value) = (next) => ((this.tree_text(next)));
+			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.tree_press(next))});
+			return obj;
+		}
+		Js(){
+			const obj = new this.$.$mol_textarea();
+			(obj.title) = () => ("JS");
+			(obj.hint) = () => ("");
+			(obj.sidebar_showed) = () => (true);
+			(obj.value) = (next) => ((this.js_text(next)));
+			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.js_press(next))});
+			return obj;
+		}
+		Js_idle(){
+			const obj = new this.$.$mol_view();
+			(obj.title) = () => ("JS");
+			(obj.sub) = () => ([(this.js_idle_note())]);
+			return obj;
+		}
+		Css(){
+			const obj = new this.$.$mol_textarea();
+			(obj.title) = () => ("CSS");
+			(obj.hint) = () => ("");
+			(obj.sidebar_showed) = () => (true);
+			(obj.value) = (next) => ((this.css_text(next)));
+			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.css_press(next))});
+			return obj;
+		}
+	};
+	($mol_mem(($.$bog_vmap_app_code.prototype), "field_leave"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "tree_text"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "tree_press"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "js_text"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "js_press"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "css_text"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "css_press"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "source"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "node_source"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "js"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "css"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "whole"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "refusal"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Head"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Scope_note"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Scope"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Alarm"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Refusal"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Typing"));
+	($mol_mem_key(($.$bog_vmap_app_code.prototype), "Typing_row"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Sources"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Tree"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Js"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Js_idle"));
+	($mol_mem(($.$bog_vmap_app_code.prototype), "Css"));
+	($.$bog_vmap_app_code_deck) = class $bog_vmap_app_code_deck extends ($.$mol_deck) {};
+
+
+;
 "use strict";
 var $;
 (function ($) {
@@ -30969,7 +30991,7 @@ var $;
     }
     $.$bog_vmap_app_code_css_default = $bog_vmap_app_code_css_default;
     function $bog_vmap_app_code_attr(klass) {
-        return klass.replace(/\$/g, '').toLowerCase();
+        return $bog_vmap_lang_attr(klass);
     }
     $.$bog_vmap_app_code_attr = $bog_vmap_app_code_attr;
 })($ || ($ = {}));
@@ -39864,6 +39886,9 @@ var $;
 			(obj.theme_auto) = () => ((this.Theme()));
 			return obj;
 		}
+		notes(){
+			return [];
+		}
 		error(){
 			return "";
 		}
@@ -40116,6 +40141,11 @@ var $;
 			]);
 			return obj;
 		}
+		Notes(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.notes()));
+			return obj;
+		}
 		Alarm(){
 			const obj = new this.$.$mol_view();
 			(obj.sub) = () => ([(this.error())]);
@@ -40301,6 +40331,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "root_css"));
 	($mol_mem(($.$bog_vmap_app.prototype), "store"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Head"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Notes"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Alarm"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Export_note"));
 	($mol_mem_key(($.$bog_vmap_app.prototype), "Export_row"));
@@ -40893,13 +40924,17 @@ var $;
             body() {
                 return [
                     this.Head(),
+                    this.Body(),
+                    ...this.dragged() ? [this.Ghost()] : [],
+                ];
+            }
+            notes() {
+                return [
                     ...this.inside_note() ? [this.Inside_note()] : [],
                     ...this.stalled() ? [this.Stall()] : [],
                     ...this.error() ? [this.Alarm()] : [],
                     ...this.export_notes().length ? [this.Export_note()] : [],
                     ...this.root_title_note() ? [this.Root_note()] : [],
-                    this.Body(),
-                    ...this.dragged() ? [this.Ghost()] : [],
                 ];
             }
             body_main() {
@@ -40909,6 +40944,7 @@ var $;
                     ...this.inspect_showed() ? [this.Aside()] : [],
                     ...this.code_showed() ? [this.Code()] : [],
                     ...this.history_showed() ? [this.History()] : [],
+                    ...this.notes().length ? [this.Notes()] : [],
                 ];
             }
             palette_showed(next) {
@@ -41302,9 +41338,9 @@ var $;
             }
             class_carry(name, next, carried) {
                 if (carried.js)
-                    this.class_js(next, carried.js);
+                    this.class_js(next, this.$.$bog_vmap_lang_js_rename(carried.js, name, next));
                 if (carried.css)
-                    this.class_css(next, carried.css);
+                    this.class_css(next, this.$.$bog_vmap_lang_css_rename(carried.css, name, next));
                 const store = this.store();
                 const doc = store.doc_current();
                 if (carried.rooted && doc && doc.can_change())
@@ -41461,6 +41497,9 @@ var $;
         ], $bog_vmap_app.prototype, "body", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app.prototype, "notes", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_app.prototype, "node_peers", null);
         __decorate([
             $mol_mem_key
@@ -41564,6 +41603,16 @@ var $;
                 flex: { grow: 1, shrink: 1 },
                 minHeight: 0,
                 overflow: { x: 'auto', y: 'hidden' },
+                position: 'relative',
+            },
+            Notes: {
+                position: 'absolute',
+                zIndex: 20,
+                left: 0,
+                right: 0,
+                top: 0,
+                flex: { direction: 'column' },
+                pointerEvents: 'none',
             },
             Side: {
                 flex: { direction: 'column', grow: 0, shrink: 1, basis: '20rem' },
@@ -41616,6 +41665,25 @@ var $;
                 color: $mol_theme.back,
                 font: { family: 'monospace', size: '.8rem' },
                 whiteSpace: 'pre-wrap',
+                pointerEvents: 'auto',
+            },
+            Inside_note: {
+                flex: { shrink: 0 },
+                padding: { top: '.25rem', bottom: '.25rem', left: $mol_gap.text, right: $mol_gap.text },
+                background: { color: $mol_theme.card },
+                color: $mol_theme.text,
+                font: { size: '.8rem' },
+                whiteSpace: 'normal',
+                pointerEvents: 'auto',
+            },
+            Root_note: {
+                flex: { shrink: 0 },
+                padding: { top: '.25rem', bottom: '.25rem', left: $mol_gap.text, right: $mol_gap.text },
+                background: { color: $mol_theme.card },
+                color: $mol_theme.text,
+                font: { size: '.8rem' },
+                whiteSpace: 'normal',
+                pointerEvents: 'auto',
             },
             Stall: {
                 flex: { direction: 'row', shrink: 0, wrap: 'wrap' },
@@ -41624,6 +41692,7 @@ var $;
                 padding: $mol_gap.text,
                 background: { color: $mol_theme.special },
                 color: $mol_theme.back,
+                pointerEvents: 'auto',
             },
             Stall_note: {
                 flex: { grow: 1, shrink: 1 },
@@ -41639,6 +41708,7 @@ var $;
                 color: $mol_theme.back,
                 font: { size: '.8rem' },
                 whiteSpace: 'normal',
+                pointerEvents: 'auto',
             },
             Stall_reload: {
                 flex: { shrink: 0 },
