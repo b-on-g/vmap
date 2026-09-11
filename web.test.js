@@ -12596,7 +12596,21 @@ var $;
                     return ['https://page.test/', 'https://baza.test/'];
                 }
             };
-            $mol_assert_equal($bog_vmap_asset.make({ $ }).master(), 'https://baza.test/');
+            const yard = $.$giper_baza_yard.make({ $ });
+            $mol_assert_equal($bog_vmap_asset.make({ $, yard: () => yard }).master(), 'https://baza.test/');
+        },
+        'the master is the one the application talks to right now'($) {
+            $.$giper_baza_yard = class extends $giper_baza_yard {
+                static masters_default = ['https://page.test/'];
+                static masters() {
+                    return ['https://page.test/', 'https://one.test/', 'https://two.test/'];
+                }
+            };
+            const yard = $.$giper_baza_yard.make({ $ });
+            const one = $bog_vmap_asset.make({ $, yard: () => yard });
+            $mol_assert_equal(one.master(), 'https://one.test/');
+            yard.master_cursor(2);
+            $mol_assert_equal(one.master(), 'https://two.test/');
         },
     });
 })($ || ($ = {}));

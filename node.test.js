@@ -20912,9 +20912,15 @@ var $;
     }
     $.$bog_vmap_asset_links = $bog_vmap_asset_links;
     class $bog_vmap_asset extends $mol_object {
+        yard() {
+            return this.$.$giper_baza_glob.yard();
+        }
         master() {
-            const yard = this.$.$giper_baza_yard;
-            return yard.masters().find(uri => !yard.masters_default.includes(uri)) ?? '';
+            const kind = this.$.$giper_baza_yard;
+            const all = kind.masters();
+            const from = this.yard().master_cursor();
+            const tried = [...all.slice(from), ...all.slice(0, from)];
+            return tried.find(uri => !kind.masters_default.includes(uri)) ?? '';
         }
         uri(file) {
             const master = this.master();
@@ -45069,7 +45075,21 @@ var $;
                     return ['https://page.test/', 'https://baza.test/'];
                 }
             };
-            $mol_assert_equal($bog_vmap_asset.make({ $ }).master(), 'https://baza.test/');
+            const yard = $.$giper_baza_yard.make({ $ });
+            $mol_assert_equal($bog_vmap_asset.make({ $, yard: () => yard }).master(), 'https://baza.test/');
+        },
+        'the master is the one the application talks to right now'($) {
+            $.$giper_baza_yard = class extends $giper_baza_yard {
+                static masters_default = ['https://page.test/'];
+                static masters() {
+                    return ['https://page.test/', 'https://one.test/', 'https://two.test/'];
+                }
+            };
+            const yard = $.$giper_baza_yard.make({ $ });
+            const one = $bog_vmap_asset.make({ $, yard: () => yard });
+            $mol_assert_equal(one.master(), 'https://one.test/');
+            yard.master_cursor(2);
+            $mol_assert_equal(one.master(), 'https://two.test/');
         },
     });
 })($ || ($ = {}));

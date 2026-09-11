@@ -50703,6 +50703,7 @@ declare namespace $ {
     function $bog_vmap_asset_link(uri: string): string | null;
     function $bog_vmap_asset_links(source: string): readonly string[];
     class $bog_vmap_asset extends $mol_object {
+        yard(): $giper_baza_yard;
         master(): string;
         uri(file: $giper_baza_file): string;
         file(uri: string): $giper_baza_file | null;
@@ -53106,12 +53107,6 @@ declare namespace $ {
         readonly kind: 'ping';
         readonly nonce: number;
     } | {
-        readonly kind: 'asset_put';
-        readonly id: string;
-        readonly mime: string;
-        /** Bytes, not a blob: URL. A host blob: URL is dead in an opaque origin. */
-        readonly bytes: ArrayBuffer;
-    } | {
         readonly kind: 'libs_set';
         readonly parts: readonly $bog_vmap_bridge_part[];
     } | {
@@ -53140,9 +53135,6 @@ declare namespace $ {
         readonly values: {
             readonly [name: string]: string;
         };
-    } | {
-        readonly kind: 'asset_want';
-        readonly id: string;
     } | {
         readonly kind: 'key';
         readonly key: 'Escape';
