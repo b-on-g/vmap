@@ -12297,13 +12297,18 @@ var $;
             const stage = $bog_vmap_app_flow_stage($);
             stage.click(stage.button('Артборд'));
             const page = stage.pane.part_box('Page');
-            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
-            stage.drop(map, stage.client([page.left + 200, page.top + 250]));
+            const zoom = stage.pane.camera_zoom();
+            const inside = (x, y) => stage.client([
+                page.left + x * zoom,
+                page.top + y * zoom,
+            ]);
+            stage.drop(calc, inside(200, 40));
+            stage.drop(map, inside(200, 250));
             const node = stage.app.node();
             $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
             const overlay = stage.overlay();
             const from = stage.part_center('Map');
-            const to = stage.client([page.left + 200, page.top + 5]);
+            const to = inside(200, 5);
             stage.press(overlay, from);
             stage.move(overlay, to);
             stage.release(overlay, to);
@@ -13336,6 +13341,84 @@ var $;
             $mol_assert_equal(stage.app.selected(), 'Image');
             $mol_assert_ok(stage.app.doc_source().includes(`uri \\${uri}`));
             $mol_assert_like(stage.app.spots(), { Image: { x: 300, y: 200 } });
+        },
+    });
+})($ || ($ = {}));
+(function ($_3) {
+    const d = '$';
+    const root = `${d}bog_vmap_app_board`;
+    const pane_make = ($, width, height) => {
+        const peer = { origin: 'null', postMessage() { } };
+        const pane = $$.$bog_vmap_app_pane.make({
+            $,
+            doc_root: () => root,
+            doc_names: () => ['Near', 'Far'],
+            pane_rect: () => ({ left: 0, top: 0, width, height }),
+            scene_peer: () => peer,
+        });
+        const screen = (box) => {
+            const zoom = pane.camera_zoom();
+            const shift = pane.camera_shift();
+            return {
+                left: box.x * zoom + shift[0],
+                top: box.y * zoom + shift[1],
+                right: (box.x + box.width) * zoom + shift[0],
+                bottom: (box.y + box.height) * zoom + shift[1],
+            };
+        };
+        const inside = (box) => {
+            const seen = screen(box);
+            return seen.left >= 0 && seen.top >= 0 && seen.right <= width && seen.bottom <= height;
+        };
+        return { pane, screen, inside };
+    };
+    $mol_test({
+        'a board wider than the pane is fitted whole and centred'($) {
+            const { pane, screen, inside } = pane_make($, 600, 500);
+            const board = { x: -340, y: 250, width: 1280, height: 720 };
+            $mol_assert_ok(Boolean(pane.camera_fit([board])));
+            $mol_assert_equal(pane.camera_zoom(), (600 - 48) / 1280);
+            $mol_assert_equal(inside(board), true);
+            const seen = screen(board);
+            $mol_assert_equal(Math.round((seen.left + seen.right) / 2), 300);
+            $mol_assert_equal(Math.round((seen.top + seen.bottom) / 2), 250);
+        },
+        'fitting a small box never zooms past life size'($) {
+            const { pane, inside } = pane_make($, 600, 500);
+            const box = { x: 0, y: 0, width: 40, height: 20 };
+            pane.camera_fit([box]);
+            $mol_assert_equal(pane.camera_zoom(), 1);
+            $mol_assert_equal(inside(box), true);
+        },
+        'reset view brings every free node into the frame'($) {
+            const { pane, inside } = pane_make($, 600, 500);
+            const near = { x: -600, y: -400, width: 200, height: 100 };
+            const far = { x: 1800, y: 900, width: 200, height: 100 };
+            pane.sizes({ [`${root}/Near`]: near, [`${root}/Far`]: far });
+            pane.camera_shift(new $mol_vector_2d(700, 700));
+            pane.camera_zoom(4);
+            pane.camera_reset();
+            $mol_assert_equal(inside(near), true);
+            $mol_assert_equal(inside(far), true);
+        },
+        'reset view on an empty document goes back to the origin'($) {
+            const { pane } = pane_make($, 600, 500);
+            pane.camera_shift(new $mol_vector_2d(700, 700));
+            pane.camera_zoom(4);
+            pane.camera_reset();
+            $mol_assert_equal(pane.camera_zoom(), 1);
+            $mol_assert_like([...pane.camera_shift()], [0, 0]);
+        },
+        'a node laid out inside a board does not stretch the reset'($) {
+            const { pane, inside } = pane_make($, 600, 500);
+            const board = { x: 500, y: 400, width: 400, height: 300 };
+            pane.sizes({
+                [`${root}/Near`]: board,
+                [`${root}/Near/Far`]: { x: 520, y: 420, width: 100, height: 50 },
+            });
+            pane.camera_reset();
+            $mol_assert_equal(pane.camera_zoom(), 1);
+            $mol_assert_equal(inside(board), true);
         },
     });
 })($ || ($ = {}));
@@ -14739,6 +14822,15 @@ var $;
         const code = app.Code();
         return { app, code, name: app.selected() };
     };
+    const stroke = (code) => ({
+        code: 'KeyZ',
+        metaKey: true,
+        ctrlKey: false,
+        altKey: false,
+        shiftKey: false,
+        target: code.Tree().Edit().dom_node(),
+        preventDefault() { },
+    });
     const wired = ($) => {
         const one = editor($);
         one.code.tree_text(`${one.name} ${d}mol_button_minor\n\ttitle <= greeting\n`);
@@ -14936,6 +15028,72 @@ var $;
             $mol_assert_equal(dom.document.activeElement === field, false);
             panel.tree_press(new dom.Event('pointerdown'));
             $mol_assert_equal(dom.document.activeElement === field, true);
+        },
+        'a declaration typed key by key gives the same tree as a block paste'($) {
+            const add = `\tPage ${d}mol_view\n\t\tsub / <= Button_minor\n`;
+            const block = editor($);
+            block.code.whole(true);
+            block.code.tree_text(block.code.tree_text() + add);
+            const typed = editor($);
+            typed.code.whole(true);
+            for (const char of add)
+                typed.code.tree_text(typed.code.tree_text() + char);
+            $mol_assert_equal(typed.app.doc_source(), block.app.doc_source());
+        },
+        'a field left by focus shows the canonical text again'($) {
+            const dom = $.$mol_dom_context;
+            const { app, code } = editor($);
+            code.whole(true);
+            dom.document.body.appendChild(code.dom_tree());
+            code.tree_text(code.tree_text() + `\tPage ${d}mol_view\n\t\tsub / <= Button_minor\n`);
+            $mol_assert_equal(code.tree_text() === app.doc_source(), false);
+            code.field_leave({ relatedTarget: dom.document.body });
+            $mol_assert_equal(code.tree_text(), app.doc_source());
+        },
+        'the whole class wiped out is refused and the document stays'($) {
+            const { app, code } = editor($);
+            code.whole(true);
+            const before = app.doc_source();
+            code.tree_text('');
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(code.note(), $.$bog_vmap_app_code_blank);
+        },
+        'a node declaration wiped out is refused as well'($) {
+            const { app, code } = editor($);
+            const before = app.doc_source();
+            code.tree_text(' \n\t\n');
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(code.note(), $.$bog_vmap_app_code_blank);
+        },
+        'undo with the caret in a field rolls the typed text back'($) {
+            const dom = $.$mol_dom_context;
+            const { app, code } = editor($);
+            app.code_showed(true);
+            code.whole(true);
+            dom.document.body.appendChild(code.dom_tree());
+            code.tree_text(code.tree_text() + `\tPage ${d}mol_view\n\t\tsub / <= Button_minor\n`);
+            $mol_assert_equal(code.field_dirty(), true);
+            $mol_assert_equal(app.code_undo(stroke(code)), true);
+            $mol_assert_equal(code.field_dirty(), false);
+            $mol_assert_equal(code.tree_text(), app.doc_source());
+        },
+        'undo with the caret in an untouched field walks the ring'($) {
+            const dom = $.$mol_dom_context;
+            const { app, code } = editor($);
+            app.code_showed(true);
+            code.whole(true);
+            dom.document.body.appendChild(code.dom_tree());
+            const history = app.History();
+            const key = history.doc_key();
+            history.step_push(key, history.doc_state());
+            const before = app.doc_source();
+            code.tree_text(code.tree_text() + `\tPage ${d}mol_view\n\t\tsub / <= Button_minor\n`);
+            code.field_undo();
+            history.step_push(key, history.doc_state());
+            $mol_assert_equal(code.field_dirty(), false);
+            $mol_assert_equal(app.doc_source() === before, false);
+            $mol_assert_equal(app.code_undo(stroke(code)), true);
+            $mol_assert_equal(app.doc_source(), before);
         },
         'a press on a closed tab opens it'($) {
             const { code } = editor($);
@@ -15472,6 +15630,25 @@ var $;
             $mol_assert_ok(Boolean(app.spots()['Page']));
             app.board_add();
             $mol_assert_like(app.doc_containers(), ['Page', 'Page_2']);
+        },
+        'a new artboard lands where the camera shows the whole of it'($) {
+            const app = $bog_vmap_app.make({ $ });
+            const pane = app.Pane();
+            pane.view_rect = () => ({
+                left: 0, top: 0, width: 600, height: 500, right: 600, bottom: 500,
+            });
+            app.board_add();
+            const size = app.board_size();
+            const spot = app.spots()['Page'];
+            const zoom = pane.camera_zoom();
+            const shift = pane.camera_shift();
+            $mol_assert_equal(zoom, (600 - 48) / size.width);
+            const left = spot.x * zoom + shift[0];
+            const top = spot.y * zoom + shift[1];
+            $mol_assert_equal(Math.round(left), 24);
+            $mol_assert_equal(Math.round(left + size.width * zoom), 576);
+            $mol_assert_ok(top >= 0);
+            $mol_assert_ok(top + size.height * zoom <= 500);
         },
         'the direction a container is set to comes off the document'($) {
             const app = $bog_vmap_app.make({ $ });
@@ -16587,7 +16764,9 @@ var $;
             $mol_assert_ok(stage.text().includes('125%'));
             stage.click(stage.button('Сбросить вид'));
             $mol_assert_ok(stage.text().includes('100%'));
-            $mol_assert_like([...stage.pane.camera_shift()], [0, 0]);
+            const size = $_2.$bog_vmap_app_flow_size;
+            const shift = stage.pane.camera_shift();
+            $mol_assert_like([300 + size.width / 2 + shift[0], 100 + size.height / 2 + shift[1]], [$_2.$bog_vmap_app_flow_rect.width / 2, $_2.$bog_vmap_app_flow_rect.height / 2]);
             $mol_assert_equal(stage.app.doc_source(), source);
         },
         'a page takes the parts dropped into it and stacks them the way it is set'($) {
@@ -16598,12 +16777,17 @@ var $;
             $mol_assert_like(node.sub_names('Page'), []);
             const page = stage.pane.part_box('Page');
             $mol_assert_ok(page);
-            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
-            stage.drop(map, stage.client([page.left + 200, page.top + 250]));
+            const zoom = stage.pane.camera_zoom();
+            const inside = (x, y) => stage.client([
+                page.left + x * zoom,
+                page.top + y * zoom,
+            ]);
+            stage.drop(calc, inside(200, 40));
+            stage.drop(map, inside(200, 250));
             $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
             $mol_assert_like(Object.keys(stage.app.spots()), ['Page']);
             $mol_assert_equal(stage.app.doc_source().includes('\t\tsub /\n\t\t\t<= Calc\n\t\t\t<= Map\n'), true);
-            stage.tap(stage.client([page.left + 200, page.top + 250]));
+            stage.tap(inside(200, 250));
             $mol_assert_equal(stage.app.selected(), 'Page');
             stage.click(stage.check('рядом'));
             $mol_assert_ok(stage.app.doc_source().includes('flexDirection \\row'));
@@ -16612,7 +16796,7 @@ var $;
             const second = stage.pane.part_box('Map');
             $mol_assert_equal(first.top, second.top);
             $mol_assert_ok(second.left > first.left);
-            stage.drop(button, stage.client([page.left + 20, page.top + 20]));
+            stage.drop(button, inside(20, 20));
             $mol_assert_like(node.sub_names('Page'), ['Button', 'Calc', 'Map']);
         },
         'the sandbox comes up while the document of the address is still on its way'($) {

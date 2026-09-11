@@ -42485,6 +42485,7 @@ declare namespace $ {
 
 declare namespace $ {
     type $bog_vmap_app_code_props = Map<string, string>;
+    const $bog_vmap_app_code_blank: string;
     function $bog_vmap_app_code_props_js(this: $, body: string): $bog_vmap_app_code_props;
     function $bog_vmap_app_code_props_css(this: $, css: string, klass: string): $bog_vmap_app_code_props;
     function $bog_vmap_app_code_joined(props: $bog_vmap_app_code_props): string;
@@ -42638,6 +42639,7 @@ declare namespace $ {
 		ReturnType< $mol_textarea['event'] >
 	>
 	export class $bog_vmap_app_code extends $mol_view {
+		field_leave( next?: any ): any
 		content( ): readonly($mol_view)[]
 		head_content( ): readonly($mol_view)[]
 		scope_note( ): string
@@ -42662,6 +42664,9 @@ declare namespace $ {
 		error( ): string
 		whole( next?: boolean ): boolean
 		refusal( next?: string ): string
+		event( ): ({ 
+			focusout( next?: ReturnType< $bog_vmap_app_code['field_leave'] > ): ReturnType< $bog_vmap_app_code['field_leave'] >,
+		})  & ReturnType< $mol_view['event'] >
 		sub( ): ReturnType< $bog_vmap_app_code['content'] >
 		Head( ): $mol_bar
 		Scope_note( ): $mol_view
@@ -42685,23 +42690,36 @@ declare namespace $ {
 //# sourceMappingURL=code.view.tree.d.ts.map
 declare namespace $.$$ {
     type $bog_vmap_app_code_slot = 'tree' | 'js' | 'css';
+    type $bog_vmap_app_code_draft = {
+        readonly typed: string;
+        readonly seen: string;
+    };
     class $bog_vmap_app_code_deck extends $.$bog_vmap_app_code_deck {
         current(next?: string): string;
     }
     class $bog_vmap_app_code extends $.$bog_vmap_app_code {
         sliced(): boolean;
         scope_note(): string;
-        draft(id: string, next?: string | null): string | null;
+        draft(id: string, next?: $bog_vmap_app_code_draft | null): $bog_vmap_app_code_draft | null;
         draft_id(slot: $bog_vmap_app_code_slot): string;
         refusal(next?: string): string;
+        canon(slot: $bog_vmap_app_code_slot): string;
+        drafted(slot: $bog_vmap_app_code_slot): string;
         written(slot: $bog_vmap_app_code_slot, next: string, write: (next: string) => void): string;
+        slot_open(): $bog_vmap_app_code_slot;
+        field_dirty(): boolean;
+        field_undo(): boolean;
+        field_leave(next?: Event | null): null;
+        tree_canon(): string;
         tree_text(next?: string): string;
         props_js(): $bog_vmap_app_code_props;
         props_css(): $bog_vmap_app_code_props;
+        js_canon(): string;
         js_text(next?: string): string;
         js_writable(): boolean;
         js_idle_note(): string;
         source_tabs(): readonly $mol_view[];
+        css_canon(): string;
         css_text(next?: string): string;
         sliced_read(read: () => string | undefined, empty: () => string): string;
         sliceable(): boolean;
@@ -53719,6 +53737,7 @@ declare namespace $ {
 		inside( ): boolean
 		world_center( ): readonly(number)[]
 		free_spot( ): readonly(number)[]
+		camera_fit( next?: any ): any
 		node_error( id: any): string
 		scene_restart( next?: any ): any
 		error_at( id: any, next?: string ): string
@@ -53856,7 +53875,20 @@ declare namespace $.$$ {
         zoom_max(): number;
         camera_zoom(next?: number): number;
         camera(): $bog_vmap_bridge_camera;
-        camera_reset(): void;
+        fit_gap(): number;
+        box_union(boxes: readonly $bog_vmap_bridge_rect[]): {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+        } | null;
+        camera_fit(next?: readonly $bog_vmap_bridge_rect[] | null): {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+        } | null;
+        camera_reset(): null;
         zoom_title(): string;
         zoom_in(): void;
         zoom_out(): void;
@@ -53915,6 +53947,7 @@ declare namespace $.$$ {
         part_size(name: string): $bog_vmap_bridge_rect | null;
         part_names(): string[];
         free_names(): string[];
+        free_boxes(): $bog_vmap_bridge_rect[];
         world_center(): readonly number[];
         free_spot(): readonly number[];
         node_path(name: string): readonly string[];
@@ -54876,6 +54909,10 @@ declare namespace $.$$ {
         } | null): void;
         part_drop(klass: string, x: number, y: number): void;
         shelf_place(next?: string): string;
+        board_size(): {
+            width: number;
+            height: number;
+        };
         board_style(): {
             readonly [key: string]: string;
         };
@@ -54904,6 +54941,7 @@ declare namespace $.$$ {
         root_title_refusal(next?: string): string;
         root_title_note(): string;
         hotkeys(): $mol_dom_listener;
+        code_undo(event: KeyboardEvent): boolean;
         key_press(event?: KeyboardEvent): void;
         auto(): any[];
     }

@@ -19120,6 +19120,10 @@ var $;
 
 ;
 	($.$bog_vmap_app_code) = class $bog_vmap_app_code extends ($.$mol_view) {
+		field_leave(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		content(){
 			return [];
 		}
@@ -19204,6 +19208,9 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		event(){
+			return {...(super.event()), "focusout": (next) => (this.field_leave(next))};
+		}
 		sub(){
 			return (this.content());
 		}
@@ -19283,6 +19290,7 @@ var $;
 			return obj;
 		}
 	};
+	($mol_mem(($.$bog_vmap_app_code.prototype), "field_leave"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "tree_text"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "tree_press"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "js_text"));
@@ -20336,6 +20344,9 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    $.$bog_vmap_app_code_blank = 'Пустой текст документ не стирает.'
+        + ' Уберите объявление узла, если он больше не нужен, а чтобы начать с чистого листа —'
+        + ' заведите новую сцену';
     function $bog_vmap_app_code_props_js(body) {
         const props = new Map;
         let code_start = 0;
@@ -20469,27 +20480,79 @@ var $;
             refusal(next) {
                 return next ?? '';
             }
+            canon(slot) {
+                if (slot === 'tree')
+                    return this.tree_canon();
+                if (slot === 'js')
+                    return this.js_canon();
+                return this.css_canon();
+            }
+            drafted(slot) {
+                const canon = this.canon(slot);
+                const draft = this.draft(this.draft_id(slot));
+                if (!draft)
+                    return canon;
+                if (draft.seen !== canon)
+                    return canon;
+                return draft.typed;
+            }
             written(slot, next, write) {
-                const id = this.draft_id(slot);
+                let refusal = '';
                 try {
                     write(next);
                 }
                 catch (error) {
                     if (this.$.$mol_promise_like(error))
                         return this.$.$mol_fail_hidden(error);
-                    this.draft(id, next);
-                    this.refusal(String(error?.message ?? error));
-                    return next;
+                    refusal = String(error?.message ?? error);
                 }
-                this.draft(id, null);
-                this.refusal('');
+                this.draft(this.draft_id(slot), { typed: next, seen: this.canon(slot) });
+                this.refusal(refusal);
                 return next;
             }
+            slot_open() {
+                const open = this.Sources().current();
+                if (open === '1')
+                    return 'js';
+                if (open === '2')
+                    return 'css';
+                return 'tree';
+            }
+            field_dirty() {
+                const slot = this.slot_open();
+                const draft = this.draft(this.draft_id(slot));
+                if (!draft)
+                    return false;
+                return draft.typed !== this.canon(slot);
+            }
+            field_undo() {
+                if (!this.field_dirty())
+                    return false;
+                this.draft(this.draft_id(this.slot_open()), null);
+                this.refusal('');
+                return true;
+            }
+            field_leave(next) {
+                const gone = next?.relatedTarget;
+                if (!gone)
+                    return null;
+                if (this.dom_node().contains(gone))
+                    return null;
+                if (this.refusal())
+                    return null;
+                for (const slot of ['tree', 'js', 'css'])
+                    this.draft(this.draft_id(slot), null);
+                return null;
+            }
+            tree_canon() {
+                return this.sliced() ? this.node_source() : this.source();
+            }
             tree_text(next) {
-                if (next === undefined) {
-                    return this.draft(this.draft_id('tree')) ?? (this.sliced() ? this.node_source() : this.source());
-                }
+                if (next === undefined)
+                    return this.drafted('tree');
                 return this.written('tree', next, text => {
+                    if (!text.trim())
+                        this.$.$mol_fail(new Error(this.$.$bog_vmap_app_code_blank));
                     if (this.sliced())
                         this.node_source(text);
                     else
@@ -20502,21 +20565,22 @@ var $;
             props_css() {
                 return this.$.$bog_vmap_app_code_props_css(this.css(), this.klass());
             }
-            js_text(next) {
-                if (!this.sliced()) {
-                    if (next === undefined)
-                        return this.draft(this.draft_id('js')) ?? this.js();
-                    return this.written('js', next, text => this.js(text));
-                }
+            js_canon() {
+                if (!this.sliced())
+                    return this.js();
                 const hooks = this.hooks();
-                if (next === undefined) {
-                    return this.draft(this.draft_id('js')) ?? this.sliced_read(() => {
-                        const props = this.props_js();
-                        return hooks
-                            .map(name => props.get(name) ?? this.$.$bog_vmap_app_code_js_default(name))
-                            .join('\n\n');
-                    }, () => hooks.map(name => this.$.$bog_vmap_app_code_js_default(name)).join('\n\n'));
-                }
+                return this.sliced_read(() => {
+                    const props = this.props_js();
+                    return hooks
+                        .map(name => props.get(name) ?? this.$.$bog_vmap_app_code_js_default(name))
+                        .join('\n\n');
+                }, () => hooks.map(name => this.$.$bog_vmap_app_code_js_default(name)).join('\n\n'));
+            }
+            js_text(next) {
+                if (next === undefined)
+                    return this.drafted('js');
+                if (!this.sliced())
+                    return this.written('js', next, text => this.js(text));
                 return this.written('js', next, text => {
                     const all = this.props_js();
                     for (const [name, code] of this.$.$bog_vmap_app_code_props_js(text)) {
@@ -20544,17 +20608,18 @@ var $;
                     this.Css(),
                 ];
             }
-            css_text(next) {
-                if (!this.sliced()) {
-                    if (next === undefined)
-                        return this.draft(this.draft_id('css')) ?? this.css();
-                    return this.written('css', next, text => this.css(text));
-                }
+            css_canon() {
+                if (!this.sliced())
+                    return this.css();
                 const prop = this.prop();
-                const key = prop.toLowerCase();
-                if (next === undefined) {
-                    return this.draft(this.draft_id('css')) ?? this.sliced_read(() => this.props_css().get(key), () => this.$.$bog_vmap_app_code_css_default(prop, this.klass()));
-                }
+                return this.sliced_read(() => this.props_css().get(prop.toLowerCase()), () => this.$.$bog_vmap_app_code_css_default(prop, this.klass()));
+            }
+            css_text(next) {
+                if (next === undefined)
+                    return this.drafted('css');
+                if (!this.sliced())
+                    return this.written('css', next, text => this.css(text));
+                const key = this.prop().toLowerCase();
                 return this.written('css', next, text => this.css(this.$.$bog_vmap_app_code_joined(this.$.$bog_vmap_app_code_with(this.props_css(), key, text))));
             }
             sliced_read(read, empty) {
@@ -20635,6 +20700,12 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_code.prototype, "refusal", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_code.prototype, "field_undo", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_code.prototype, "field_leave", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_code.prototype, "sliceable", null);
@@ -29764,6 +29835,10 @@ var $;
 		free_spot(){
 			return [];
 		}
+		camera_fit(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		node_error(id){
 			return "";
 		}
@@ -29874,6 +29949,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "stalled"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "warmed"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "entered"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_fit"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_restart"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_at"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_node"));
@@ -30124,9 +30200,37 @@ var $;
                 const zoom = this.camera_zoom();
                 return { x: -shift[0] / zoom, y: -shift[1] / zoom, zoom };
             }
+            fit_gap() { return 24; }
+            box_union(boxes) {
+                let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+                for (const box of boxes) {
+                    if (!(box.width > 0) || !(box.height > 0))
+                        continue;
+                    left = Math.min(left, box.x);
+                    top = Math.min(top, box.y);
+                    right = Math.max(right, box.x + box.width);
+                    bottom = Math.max(bottom, box.y + box.height);
+                }
+                if (!(right > left) || !(bottom > top))
+                    return null;
+                return { x: left, y: top, width: right - left, height: bottom - top };
+            }
+            camera_fit(next) {
+                const box = this.box_union(next ?? []);
+                const rect = this.pane_rect();
+                if (!box || !rect.width || !rect.height)
+                    return null;
+                const gap = this.fit_gap();
+                const zoom = this.camera_zoom(Math.min(1, Math.max(rect.width - gap * 2, 1) / box.width, Math.max(rect.height - gap * 2, 1) / box.height));
+                this.camera_shift(new this.$.$mol_vector_2d(rect.width / 2 - (box.x + box.width / 2) * zoom, rect.height / 2 - (box.y + box.height / 2) * zoom));
+                return box;
+            }
             camera_reset() {
+                if (this.camera_fit(this.free_boxes()))
+                    return null;
                 this.camera_zoom(1);
                 this.camera_shift(new this.$.$mol_vector_2d(0, 0));
+                return null;
             }
             zoom_title() {
                 return Math.round(this.camera_zoom() * 100) + '%';
@@ -30348,6 +30452,9 @@ var $;
             }
             free_names() {
                 return this.nodes_measured().filter(node => node.path.length === 1).map(node => node.name);
+            }
+            free_boxes() {
+                return this.nodes_measured().filter(node => node.path.length === 1).map(node => node.box);
             }
             world_center() {
                 const rect = this.pane_rect();
@@ -31148,6 +31255,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "camera_zoom", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "camera_fit", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "camera_reset", null);
@@ -32938,10 +33048,14 @@ var $;
                     this.preset_place(source);
                 return '';
             }
+            board_size() {
+                return { width: 1280, height: 720 };
+            }
             board_style() {
+                const size = this.board_size();
                 return {
-                    width: '1280px',
-                    minHeight: '720px',
+                    width: `${size.width}px`,
+                    minHeight: `${size.height}px`,
                     flexDirection: 'column',
                     background: '#ffffff',
                 };
@@ -32956,9 +33070,13 @@ var $;
                 ]));
                 node.sub_open(name);
                 node.sub_add(name);
-                const spot = this.Pane().world_center();
-                this.spots({ ...this.spots(), [name]: { x: spot[0], y: spot[1] } });
+                const pane = this.Pane();
+                const size = this.board_size();
+                const spot = pane.free_spot();
+                const box = { x: spot[0] - size.width / 2, y: spot[1], ...size };
+                this.spots({ ...this.spots(), [name]: { x: box.x, y: box.y } });
                 this.selected(name);
+                pane.camera_fit([box]);
             }
             delete_hint() {
                 const name = this.selected();
@@ -33103,8 +33221,33 @@ var $;
             hotkeys() {
                 return new this.$.$mol_dom_listener(this.$.$mol_dom_context, 'keydown', $mol_wire_async(this).key_press);
             }
+            code_undo(event) {
+                if (event.code !== 'KeyZ')
+                    return false;
+                if (!event.metaKey && !event.ctrlKey)
+                    return false;
+                if (event.altKey)
+                    return false;
+                if (!this.code_showed())
+                    return false;
+                const target = event.target;
+                if (!target)
+                    return false;
+                if (!this.Code().dom_node().contains(target))
+                    return false;
+                event.preventDefault();
+                if (!event.shiftKey && this.Code().field_undo())
+                    return true;
+                if (event.shiftKey)
+                    this.History().redo();
+                else
+                    this.History().undo();
+                return true;
+            }
             key_press(event) {
                 if (!event)
+                    return;
+                if (this.code_undo(event))
                     return;
                 if (this.History().press(event))
                     return;

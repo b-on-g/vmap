@@ -347,6 +347,9 @@ $bog_vmap_app_code $mol_view
 	error \
 	whole? false
 	refusal? \
+	event *
+		^
+		focusout? <=> field_leave? null
 	sub <= content /$mol_view
 	Head $mol_bar
 		sub <= head_content /$mol_view
@@ -1454,6 +1457,7 @@ $bog_vmap_app_pane $mol_view
 	inside false
 	world_center /number
 	free_spot /number
+	camera_fit? null
 	node_error* \
 	scene_restart? null
 	error_at*? \

@@ -19111,6 +19111,10 @@ var $;
 
 ;
 	($.$bog_vmap_app_code) = class $bog_vmap_app_code extends ($.$mol_view) {
+		field_leave(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		content(){
 			return [];
 		}
@@ -19195,6 +19199,9 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		event(){
+			return {...(super.event()), "focusout": (next) => (this.field_leave(next))};
+		}
 		sub(){
 			return (this.content());
 		}
@@ -19274,6 +19281,7 @@ var $;
 			return obj;
 		}
 	};
+	($mol_mem(($.$bog_vmap_app_code.prototype), "field_leave"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "tree_text"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "tree_press"));
 	($mol_mem(($.$bog_vmap_app_code.prototype), "js_text"));
@@ -20327,6 +20335,9 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    $.$bog_vmap_app_code_blank = 'Пустой текст документ не стирает.'
+        + ' Уберите объявление узла, если он больше не нужен, а чтобы начать с чистого листа —'
+        + ' заведите новую сцену';
     function $bog_vmap_app_code_props_js(body) {
         const props = new Map;
         let code_start = 0;
@@ -20460,27 +20471,79 @@ var $;
             refusal(next) {
                 return next ?? '';
             }
+            canon(slot) {
+                if (slot === 'tree')
+                    return this.tree_canon();
+                if (slot === 'js')
+                    return this.js_canon();
+                return this.css_canon();
+            }
+            drafted(slot) {
+                const canon = this.canon(slot);
+                const draft = this.draft(this.draft_id(slot));
+                if (!draft)
+                    return canon;
+                if (draft.seen !== canon)
+                    return canon;
+                return draft.typed;
+            }
             written(slot, next, write) {
-                const id = this.draft_id(slot);
+                let refusal = '';
                 try {
                     write(next);
                 }
                 catch (error) {
                     if (this.$.$mol_promise_like(error))
                         return this.$.$mol_fail_hidden(error);
-                    this.draft(id, next);
-                    this.refusal(String(error?.message ?? error));
-                    return next;
+                    refusal = String(error?.message ?? error);
                 }
-                this.draft(id, null);
-                this.refusal('');
+                this.draft(this.draft_id(slot), { typed: next, seen: this.canon(slot) });
+                this.refusal(refusal);
                 return next;
             }
+            slot_open() {
+                const open = this.Sources().current();
+                if (open === '1')
+                    return 'js';
+                if (open === '2')
+                    return 'css';
+                return 'tree';
+            }
+            field_dirty() {
+                const slot = this.slot_open();
+                const draft = this.draft(this.draft_id(slot));
+                if (!draft)
+                    return false;
+                return draft.typed !== this.canon(slot);
+            }
+            field_undo() {
+                if (!this.field_dirty())
+                    return false;
+                this.draft(this.draft_id(this.slot_open()), null);
+                this.refusal('');
+                return true;
+            }
+            field_leave(next) {
+                const gone = next?.relatedTarget;
+                if (!gone)
+                    return null;
+                if (this.dom_node().contains(gone))
+                    return null;
+                if (this.refusal())
+                    return null;
+                for (const slot of ['tree', 'js', 'css'])
+                    this.draft(this.draft_id(slot), null);
+                return null;
+            }
+            tree_canon() {
+                return this.sliced() ? this.node_source() : this.source();
+            }
             tree_text(next) {
-                if (next === undefined) {
-                    return this.draft(this.draft_id('tree')) ?? (this.sliced() ? this.node_source() : this.source());
-                }
+                if (next === undefined)
+                    return this.drafted('tree');
                 return this.written('tree', next, text => {
+                    if (!text.trim())
+                        this.$.$mol_fail(new Error(this.$.$bog_vmap_app_code_blank));
                     if (this.sliced())
                         this.node_source(text);
                     else
@@ -20493,21 +20556,22 @@ var $;
             props_css() {
                 return this.$.$bog_vmap_app_code_props_css(this.css(), this.klass());
             }
-            js_text(next) {
-                if (!this.sliced()) {
-                    if (next === undefined)
-                        return this.draft(this.draft_id('js')) ?? this.js();
-                    return this.written('js', next, text => this.js(text));
-                }
+            js_canon() {
+                if (!this.sliced())
+                    return this.js();
                 const hooks = this.hooks();
-                if (next === undefined) {
-                    return this.draft(this.draft_id('js')) ?? this.sliced_read(() => {
-                        const props = this.props_js();
-                        return hooks
-                            .map(name => props.get(name) ?? this.$.$bog_vmap_app_code_js_default(name))
-                            .join('\n\n');
-                    }, () => hooks.map(name => this.$.$bog_vmap_app_code_js_default(name)).join('\n\n'));
-                }
+                return this.sliced_read(() => {
+                    const props = this.props_js();
+                    return hooks
+                        .map(name => props.get(name) ?? this.$.$bog_vmap_app_code_js_default(name))
+                        .join('\n\n');
+                }, () => hooks.map(name => this.$.$bog_vmap_app_code_js_default(name)).join('\n\n'));
+            }
+            js_text(next) {
+                if (next === undefined)
+                    return this.drafted('js');
+                if (!this.sliced())
+                    return this.written('js', next, text => this.js(text));
                 return this.written('js', next, text => {
                     const all = this.props_js();
                     for (const [name, code] of this.$.$bog_vmap_app_code_props_js(text)) {
@@ -20535,17 +20599,18 @@ var $;
                     this.Css(),
                 ];
             }
-            css_text(next) {
-                if (!this.sliced()) {
-                    if (next === undefined)
-                        return this.draft(this.draft_id('css')) ?? this.css();
-                    return this.written('css', next, text => this.css(text));
-                }
+            css_canon() {
+                if (!this.sliced())
+                    return this.css();
                 const prop = this.prop();
-                const key = prop.toLowerCase();
-                if (next === undefined) {
-                    return this.draft(this.draft_id('css')) ?? this.sliced_read(() => this.props_css().get(key), () => this.$.$bog_vmap_app_code_css_default(prop, this.klass()));
-                }
+                return this.sliced_read(() => this.props_css().get(prop.toLowerCase()), () => this.$.$bog_vmap_app_code_css_default(prop, this.klass()));
+            }
+            css_text(next) {
+                if (next === undefined)
+                    return this.drafted('css');
+                if (!this.sliced())
+                    return this.written('css', next, text => this.css(text));
+                const key = this.prop().toLowerCase();
                 return this.written('css', next, text => this.css(this.$.$bog_vmap_app_code_joined(this.$.$bog_vmap_app_code_with(this.props_css(), key, text))));
             }
             sliced_read(read, empty) {
@@ -20626,6 +20691,12 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_code.prototype, "refusal", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_code.prototype, "field_undo", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_code.prototype, "field_leave", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_code.prototype, "sliceable", null);
@@ -29755,6 +29826,10 @@ var $;
 		free_spot(){
 			return [];
 		}
+		camera_fit(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		node_error(id){
 			return "";
 		}
@@ -29865,6 +29940,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "stalled"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "warmed"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "entered"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_fit"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_restart"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_at"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_node"));
@@ -30115,9 +30191,37 @@ var $;
                 const zoom = this.camera_zoom();
                 return { x: -shift[0] / zoom, y: -shift[1] / zoom, zoom };
             }
+            fit_gap() { return 24; }
+            box_union(boxes) {
+                let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+                for (const box of boxes) {
+                    if (!(box.width > 0) || !(box.height > 0))
+                        continue;
+                    left = Math.min(left, box.x);
+                    top = Math.min(top, box.y);
+                    right = Math.max(right, box.x + box.width);
+                    bottom = Math.max(bottom, box.y + box.height);
+                }
+                if (!(right > left) || !(bottom > top))
+                    return null;
+                return { x: left, y: top, width: right - left, height: bottom - top };
+            }
+            camera_fit(next) {
+                const box = this.box_union(next ?? []);
+                const rect = this.pane_rect();
+                if (!box || !rect.width || !rect.height)
+                    return null;
+                const gap = this.fit_gap();
+                const zoom = this.camera_zoom(Math.min(1, Math.max(rect.width - gap * 2, 1) / box.width, Math.max(rect.height - gap * 2, 1) / box.height));
+                this.camera_shift(new this.$.$mol_vector_2d(rect.width / 2 - (box.x + box.width / 2) * zoom, rect.height / 2 - (box.y + box.height / 2) * zoom));
+                return box;
+            }
             camera_reset() {
+                if (this.camera_fit(this.free_boxes()))
+                    return null;
                 this.camera_zoom(1);
                 this.camera_shift(new this.$.$mol_vector_2d(0, 0));
+                return null;
             }
             zoom_title() {
                 return Math.round(this.camera_zoom() * 100) + '%';
@@ -30339,6 +30443,9 @@ var $;
             }
             free_names() {
                 return this.nodes_measured().filter(node => node.path.length === 1).map(node => node.name);
+            }
+            free_boxes() {
+                return this.nodes_measured().filter(node => node.path.length === 1).map(node => node.box);
             }
             world_center() {
                 const rect = this.pane_rect();
@@ -31139,6 +31246,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "camera_zoom", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "camera_fit", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "camera_reset", null);
@@ -32929,10 +33039,14 @@ var $;
                     this.preset_place(source);
                 return '';
             }
+            board_size() {
+                return { width: 1280, height: 720 };
+            }
             board_style() {
+                const size = this.board_size();
                 return {
-                    width: '1280px',
-                    minHeight: '720px',
+                    width: `${size.width}px`,
+                    minHeight: `${size.height}px`,
                     flexDirection: 'column',
                     background: '#ffffff',
                 };
@@ -32947,9 +33061,13 @@ var $;
                 ]));
                 node.sub_open(name);
                 node.sub_add(name);
-                const spot = this.Pane().world_center();
-                this.spots({ ...this.spots(), [name]: { x: spot[0], y: spot[1] } });
+                const pane = this.Pane();
+                const size = this.board_size();
+                const spot = pane.free_spot();
+                const box = { x: spot[0] - size.width / 2, y: spot[1], ...size };
+                this.spots({ ...this.spots(), [name]: { x: box.x, y: box.y } });
                 this.selected(name);
+                pane.camera_fit([box]);
             }
             delete_hint() {
                 const name = this.selected();
@@ -33094,8 +33212,33 @@ var $;
             hotkeys() {
                 return new this.$.$mol_dom_listener(this.$.$mol_dom_context, 'keydown', $mol_wire_async(this).key_press);
             }
+            code_undo(event) {
+                if (event.code !== 'KeyZ')
+                    return false;
+                if (!event.metaKey && !event.ctrlKey)
+                    return false;
+                if (event.altKey)
+                    return false;
+                if (!this.code_showed())
+                    return false;
+                const target = event.target;
+                if (!target)
+                    return false;
+                if (!this.Code().dom_node().contains(target))
+                    return false;
+                event.preventDefault();
+                if (!event.shiftKey && this.Code().field_undo())
+                    return true;
+                if (event.shiftKey)
+                    this.History().redo();
+                else
+                    this.History().undo();
+                return true;
+            }
             key_press(event) {
                 if (!event)
+                    return;
+                if (this.code_undo(event))
                     return;
                 if (this.History().press(event))
                     return;
@@ -45611,13 +45754,18 @@ var $;
             const stage = $bog_vmap_app_flow_stage($);
             stage.click(stage.button('Артборд'));
             const page = stage.pane.part_box('Page');
-            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
-            stage.drop(map, stage.client([page.left + 200, page.top + 250]));
+            const zoom = stage.pane.camera_zoom();
+            const inside = (x, y) => stage.client([
+                page.left + x * zoom,
+                page.top + y * zoom,
+            ]);
+            stage.drop(calc, inside(200, 40));
+            stage.drop(map, inside(200, 250));
             const node = stage.app.node();
             $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
             const overlay = stage.overlay();
             const from = stage.part_center('Map');
-            const to = stage.client([page.left + 200, page.top + 5]);
+            const to = inside(200, 5);
             stage.press(overlay, from);
             stage.move(overlay, to);
             stage.release(overlay, to);
@@ -46650,6 +46798,84 @@ var $;
             $mol_assert_equal(stage.app.selected(), 'Image');
             $mol_assert_ok(stage.app.doc_source().includes(`uri \\${uri}`));
             $mol_assert_like(stage.app.spots(), { Image: { x: 300, y: 200 } });
+        },
+    });
+})($ || ($ = {}));
+(function ($_3) {
+    const d = '$';
+    const root = `${d}bog_vmap_app_board`;
+    const pane_make = ($, width, height) => {
+        const peer = { origin: 'null', postMessage() { } };
+        const pane = $$.$bog_vmap_app_pane.make({
+            $,
+            doc_root: () => root,
+            doc_names: () => ['Near', 'Far'],
+            pane_rect: () => ({ left: 0, top: 0, width, height }),
+            scene_peer: () => peer,
+        });
+        const screen = (box) => {
+            const zoom = pane.camera_zoom();
+            const shift = pane.camera_shift();
+            return {
+                left: box.x * zoom + shift[0],
+                top: box.y * zoom + shift[1],
+                right: (box.x + box.width) * zoom + shift[0],
+                bottom: (box.y + box.height) * zoom + shift[1],
+            };
+        };
+        const inside = (box) => {
+            const seen = screen(box);
+            return seen.left >= 0 && seen.top >= 0 && seen.right <= width && seen.bottom <= height;
+        };
+        return { pane, screen, inside };
+    };
+    $mol_test({
+        'a board wider than the pane is fitted whole and centred'($) {
+            const { pane, screen, inside } = pane_make($, 600, 500);
+            const board = { x: -340, y: 250, width: 1280, height: 720 };
+            $mol_assert_ok(Boolean(pane.camera_fit([board])));
+            $mol_assert_equal(pane.camera_zoom(), (600 - 48) / 1280);
+            $mol_assert_equal(inside(board), true);
+            const seen = screen(board);
+            $mol_assert_equal(Math.round((seen.left + seen.right) / 2), 300);
+            $mol_assert_equal(Math.round((seen.top + seen.bottom) / 2), 250);
+        },
+        'fitting a small box never zooms past life size'($) {
+            const { pane, inside } = pane_make($, 600, 500);
+            const box = { x: 0, y: 0, width: 40, height: 20 };
+            pane.camera_fit([box]);
+            $mol_assert_equal(pane.camera_zoom(), 1);
+            $mol_assert_equal(inside(box), true);
+        },
+        'reset view brings every free node into the frame'($) {
+            const { pane, inside } = pane_make($, 600, 500);
+            const near = { x: -600, y: -400, width: 200, height: 100 };
+            const far = { x: 1800, y: 900, width: 200, height: 100 };
+            pane.sizes({ [`${root}/Near`]: near, [`${root}/Far`]: far });
+            pane.camera_shift(new $mol_vector_2d(700, 700));
+            pane.camera_zoom(4);
+            pane.camera_reset();
+            $mol_assert_equal(inside(near), true);
+            $mol_assert_equal(inside(far), true);
+        },
+        'reset view on an empty document goes back to the origin'($) {
+            const { pane } = pane_make($, 600, 500);
+            pane.camera_shift(new $mol_vector_2d(700, 700));
+            pane.camera_zoom(4);
+            pane.camera_reset();
+            $mol_assert_equal(pane.camera_zoom(), 1);
+            $mol_assert_like([...pane.camera_shift()], [0, 0]);
+        },
+        'a node laid out inside a board does not stretch the reset'($) {
+            const { pane, inside } = pane_make($, 600, 500);
+            const board = { x: 500, y: 400, width: 400, height: 300 };
+            pane.sizes({
+                [`${root}/Near`]: board,
+                [`${root}/Near/Far`]: { x: 520, y: 420, width: 100, height: 50 },
+            });
+            pane.camera_reset();
+            $mol_assert_equal(pane.camera_zoom(), 1);
+            $mol_assert_equal(inside(board), true);
         },
     });
 })($ || ($ = {}));
@@ -48088,6 +48314,15 @@ var $;
         const code = app.Code();
         return { app, code, name: app.selected() };
     };
+    const stroke = (code) => ({
+        code: 'KeyZ',
+        metaKey: true,
+        ctrlKey: false,
+        altKey: false,
+        shiftKey: false,
+        target: code.Tree().Edit().dom_node(),
+        preventDefault() { },
+    });
     const wired = ($) => {
         const one = editor($);
         one.code.tree_text(`${one.name} ${d}mol_button_minor\n\ttitle <= greeting\n`);
@@ -48285,6 +48520,72 @@ var $;
             $mol_assert_equal(dom.document.activeElement === field, false);
             panel.tree_press(new dom.Event('pointerdown'));
             $mol_assert_equal(dom.document.activeElement === field, true);
+        },
+        'a declaration typed key by key gives the same tree as a block paste'($) {
+            const add = `\tPage ${d}mol_view\n\t\tsub / <= Button_minor\n`;
+            const block = editor($);
+            block.code.whole(true);
+            block.code.tree_text(block.code.tree_text() + add);
+            const typed = editor($);
+            typed.code.whole(true);
+            for (const char of add)
+                typed.code.tree_text(typed.code.tree_text() + char);
+            $mol_assert_equal(typed.app.doc_source(), block.app.doc_source());
+        },
+        'a field left by focus shows the canonical text again'($) {
+            const dom = $.$mol_dom_context;
+            const { app, code } = editor($);
+            code.whole(true);
+            dom.document.body.appendChild(code.dom_tree());
+            code.tree_text(code.tree_text() + `\tPage ${d}mol_view\n\t\tsub / <= Button_minor\n`);
+            $mol_assert_equal(code.tree_text() === app.doc_source(), false);
+            code.field_leave({ relatedTarget: dom.document.body });
+            $mol_assert_equal(code.tree_text(), app.doc_source());
+        },
+        'the whole class wiped out is refused and the document stays'($) {
+            const { app, code } = editor($);
+            code.whole(true);
+            const before = app.doc_source();
+            code.tree_text('');
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(code.note(), $.$bog_vmap_app_code_blank);
+        },
+        'a node declaration wiped out is refused as well'($) {
+            const { app, code } = editor($);
+            const before = app.doc_source();
+            code.tree_text(' \n\t\n');
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(code.note(), $.$bog_vmap_app_code_blank);
+        },
+        'undo with the caret in a field rolls the typed text back'($) {
+            const dom = $.$mol_dom_context;
+            const { app, code } = editor($);
+            app.code_showed(true);
+            code.whole(true);
+            dom.document.body.appendChild(code.dom_tree());
+            code.tree_text(code.tree_text() + `\tPage ${d}mol_view\n\t\tsub / <= Button_minor\n`);
+            $mol_assert_equal(code.field_dirty(), true);
+            $mol_assert_equal(app.code_undo(stroke(code)), true);
+            $mol_assert_equal(code.field_dirty(), false);
+            $mol_assert_equal(code.tree_text(), app.doc_source());
+        },
+        'undo with the caret in an untouched field walks the ring'($) {
+            const dom = $.$mol_dom_context;
+            const { app, code } = editor($);
+            app.code_showed(true);
+            code.whole(true);
+            dom.document.body.appendChild(code.dom_tree());
+            const history = app.History();
+            const key = history.doc_key();
+            history.step_push(key, history.doc_state());
+            const before = app.doc_source();
+            code.tree_text(code.tree_text() + `\tPage ${d}mol_view\n\t\tsub / <= Button_minor\n`);
+            code.field_undo();
+            history.step_push(key, history.doc_state());
+            $mol_assert_equal(code.field_dirty(), false);
+            $mol_assert_equal(app.doc_source() === before, false);
+            $mol_assert_equal(app.code_undo(stroke(code)), true);
+            $mol_assert_equal(app.doc_source(), before);
         },
         'a press on a closed tab opens it'($) {
             const { code } = editor($);
@@ -48821,6 +49122,25 @@ var $;
             $mol_assert_ok(Boolean(app.spots()['Page']));
             app.board_add();
             $mol_assert_like(app.doc_containers(), ['Page', 'Page_2']);
+        },
+        'a new artboard lands where the camera shows the whole of it'($) {
+            const app = $bog_vmap_app.make({ $ });
+            const pane = app.Pane();
+            pane.view_rect = () => ({
+                left: 0, top: 0, width: 600, height: 500, right: 600, bottom: 500,
+            });
+            app.board_add();
+            const size = app.board_size();
+            const spot = app.spots()['Page'];
+            const zoom = pane.camera_zoom();
+            const shift = pane.camera_shift();
+            $mol_assert_equal(zoom, (600 - 48) / size.width);
+            const left = spot.x * zoom + shift[0];
+            const top = spot.y * zoom + shift[1];
+            $mol_assert_equal(Math.round(left), 24);
+            $mol_assert_equal(Math.round(left + size.width * zoom), 576);
+            $mol_assert_ok(top >= 0);
+            $mol_assert_ok(top + size.height * zoom <= 500);
         },
         'the direction a container is set to comes off the document'($) {
             const app = $bog_vmap_app.make({ $ });
@@ -49936,7 +50256,9 @@ var $;
             $mol_assert_ok(stage.text().includes('125%'));
             stage.click(stage.button('Сбросить вид'));
             $mol_assert_ok(stage.text().includes('100%'));
-            $mol_assert_like([...stage.pane.camera_shift()], [0, 0]);
+            const size = $_2.$bog_vmap_app_flow_size;
+            const shift = stage.pane.camera_shift();
+            $mol_assert_like([300 + size.width / 2 + shift[0], 100 + size.height / 2 + shift[1]], [$_2.$bog_vmap_app_flow_rect.width / 2, $_2.$bog_vmap_app_flow_rect.height / 2]);
             $mol_assert_equal(stage.app.doc_source(), source);
         },
         'a page takes the parts dropped into it and stacks them the way it is set'($) {
@@ -49947,12 +50269,17 @@ var $;
             $mol_assert_like(node.sub_names('Page'), []);
             const page = stage.pane.part_box('Page');
             $mol_assert_ok(page);
-            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
-            stage.drop(map, stage.client([page.left + 200, page.top + 250]));
+            const zoom = stage.pane.camera_zoom();
+            const inside = (x, y) => stage.client([
+                page.left + x * zoom,
+                page.top + y * zoom,
+            ]);
+            stage.drop(calc, inside(200, 40));
+            stage.drop(map, inside(200, 250));
             $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
             $mol_assert_like(Object.keys(stage.app.spots()), ['Page']);
             $mol_assert_equal(stage.app.doc_source().includes('\t\tsub /\n\t\t\t<= Calc\n\t\t\t<= Map\n'), true);
-            stage.tap(stage.client([page.left + 200, page.top + 250]));
+            stage.tap(inside(200, 250));
             $mol_assert_equal(stage.app.selected(), 'Page');
             stage.click(stage.check('рядом'));
             $mol_assert_ok(stage.app.doc_source().includes('flexDirection \\row'));
@@ -49961,7 +50288,7 @@ var $;
             const second = stage.pane.part_box('Map');
             $mol_assert_equal(first.top, second.top);
             $mol_assert_ok(second.left > first.left);
-            stage.drop(button, stage.client([page.left + 20, page.top + 20]));
+            stage.drop(button, inside(20, 20));
             $mol_assert_like(node.sub_names('Page'), ['Button', 'Calc', 'Map']);
         },
         'the sandbox comes up while the document of the address is still on its way'($) {
