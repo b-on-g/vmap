@@ -8390,6 +8390,33 @@ var $;
             $mol_assert_equal(pane.restart_tries(), 1);
             $mol_assert_equal(pane.scene_generation(), generation + 1);
         },
+        'the pack channel of the scene lands in its own note and a fresh frame clears it'($) {
+            const { pane, answer } = pane_make($);
+            $mol_assert_equal(pane.pack_note(), '');
+            answer({ kind: 'error', at: 'pack', message: 'Загрузка библиотеки компонентов… http://dead.test/web.js' });
+            $mol_assert_equal(pane.pack_note(), 'Загрузка библиотеки компонентов… http://dead.test/web.js');
+            $mol_assert_equal(pane.error().includes('библиотеки'), false);
+            $mol_assert_like(pane.errors(), {});
+            answer({ kind: 'ready' });
+            $mol_assert_equal(pane.pack_note(), '');
+        },
+        'a frame held up by the pack is called out at once, without a pointless relaunch'($) {
+            const timers = timers_fake($);
+            const { pane, answer } = pane_make($);
+            answer({ kind: 'ready' });
+            pane.watchdog();
+            answer({ kind: 'sizes', sizes: {} });
+            $mol_assert_equal(pane.watchdog(), null);
+            answer({ kind: 'error', at: 'pack', message: 'Загрузка библиотеки компонентов… http://dead.test/web.js' });
+            pane.warmed(false);
+            $mol_assert_ok(pane.watchdog() !== null);
+            $mol_assert_equal(timers.at(-1).delay, pane.cold_limit());
+            const generation = pane.scene_generation();
+            timers.at(-1).task();
+            $mol_assert_equal(pane.stalled(), true);
+            $mol_assert_equal(pane.restart_tries(), 0);
+            $mol_assert_equal(pane.scene_generation(), generation);
+        },
         'a scene that comes up gets its automatic retry back for next time'($) {
             const timers = timers_fake($);
             const { pane, answer } = pane_make($);
@@ -8841,6 +8868,49 @@ var $;
             $mol_assert_equal(app.code_error(), 'исполнение: boom');
             app.selected(null);
             $mol_assert_equal(app.code_error(), '');
+        },
+        'a file dropped on the canvas is handed on with the point it landed at'($) {
+            const { pane } = pane_make($);
+            const dropped = [];
+            pane.files_drop = next => {
+                if (next)
+                    dropped.push(next);
+                return next ?? null;
+            };
+            const file = new $mol_blob([new Uint8Array([137])], { type: 'image/png' });
+            let prevented = 0;
+            pane.file_take({
+                clientX: 200,
+                clientY: 150,
+                preventDefault: () => { prevented++; },
+                dataTransfer: { files: [file] },
+            });
+            $mol_assert_equal(prevented, 1);
+            $mol_assert_equal(dropped.length, 1);
+            $mol_assert_equal(dropped[0].files[0], file);
+            $mol_assert_like([dropped[0].x, dropped[0].y], [200, 150]);
+        },
+        'a drag that carries no file hands nothing on'($) {
+            const { pane } = pane_make($);
+            const dropped = [];
+            pane.files_drop = next => {
+                if (next)
+                    dropped.push(next);
+                return next ?? null;
+            };
+            pane.file_take({
+                clientX: 200,
+                clientY: 150,
+                preventDefault: () => { },
+                dataTransfer: { files: [] },
+            });
+            $mol_assert_equal(dropped.length, 0);
+        },
+        'a drag over the canvas is claimed, or the browser opens the file itself'($) {
+            const { pane } = pane_make($);
+            let prevented = 0;
+            pane.file_over({ preventDefault: () => { prevented++; } });
+            $mol_assert_equal(prevented, 1);
         },
     });
 })($ || ($ = {}));
@@ -15783,6 +15853,31 @@ var $;
             $mol_assert_equal(two.body_main().includes(two.Side()), false);
             $mol_assert_equal(two.body_main().includes(two.Code()), true);
         },
+        'an image dropped on the canvas becomes a node addressed at the file'($) {
+            const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png';
+            const store = $bog_vmap_app_store.make({ $, asset_put: () => uri });
+            const app = $bog_vmap_app.make({ $, store: () => store });
+            const file = new $.$mol_dom_context.File([new Uint8Array([137, 80, 78, 71])], 'logo.png', { type: 'image/png' });
+            app.files_drop({ files: [file], x: 100, y: 200, owner: '', index: -1 });
+            const name = app.selected();
+            const source = app.doc_source();
+            $mol_assert_equal(name, 'Image');
+            $mol_assert_ok(source.includes(`Image ${d}mol_image`));
+            $mol_assert_ok(source.includes(`uri \\${uri}`));
+            $mol_assert_like(app.spots()[name], { x: 100, y: 200 });
+        },
+        'a file that is not an image becomes a link carrying its name'($) {
+            const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=notes.pdf';
+            const store = $bog_vmap_app_store.make({ $, asset_put: () => uri });
+            const app = $bog_vmap_app.make({ $, store: () => store });
+            const file = new $.$mol_dom_context.File([new Uint8Array([37])], 'notes.pdf', { type: 'application/pdf' });
+            app.files_drop({ files: [file], x: 10, y: 20, owner: '', index: -1 });
+            const source = app.doc_source();
+            $mol_assert_equal(app.selected(), 'File');
+            $mol_assert_ok(source.includes(`File ${d}mol_link`));
+            $mol_assert_ok(source.includes(`uri \\${uri}`));
+            $mol_assert_ok(source.includes('title \\notes.pdf'));
+        },
     });
 })($ || ($ = {}));
 
@@ -15943,6 +16038,10 @@ var $;
             silence() {
                 silent = true;
                 queue.length = 0;
+            },
+            pack_note(message) {
+                deliver({ kind: 'error', at: 'pack', message });
+                app.dom_tree();
             },
             hello() {
                 deliver({ kind: 'ready' });
@@ -16378,7 +16477,7 @@ var $;
             const stage = $_2.$bog_vmap_app_flow_stage($, { store });
             $mol_assert_ok(stage.frame().getAttribute('srcdoc'));
             $mol_assert_equal(stage.pane.ready(), true);
-            $mol_assert_equal(stage.text().includes('ожидание сцены'), false);
+            $mol_assert_equal(stage.text().includes('сцена на связи'), false);
             $mol_assert_equal(stage.app.links(), '');
             stage.classes_open();
             stage.class_row(calc);
@@ -16401,6 +16500,55 @@ var $;
             $mol_assert_equal(stage.pane.ready(), false);
             $mol_assert_equal(stage.text().includes('Сцена не отвечает'), false);
             $mol_assert_ok(stage.frame() !== frame);
+        },
+        'a pack that never answers names itself in the header instead of a green lie'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const note = 'Загрузка библиотеки компонентов… http://localhost:9080/bog/vmap/part/-/web.js';
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_ok(stage.text().includes('сцена на связи'));
+            stage.scene.silence();
+            stage.pane.warmed(false);
+            stage.scene.pack_note(note);
+            stage.redraw();
+            $mol_assert_equal(stage.pane.pack_note(), note);
+            $mol_assert_ok(stage.text().includes(note));
+            $mol_assert_equal(stage.text().includes('сцена на связи'), false);
+        },
+        'a dead pack skips the pointless relaunch and the plate hands the default pack back'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const dead = 'https://dead.test/';
+            stage.drop(calc, stage.client([200, 150]));
+            stage.app.links(dead);
+            stage.scene.silence();
+            stage.pane.warmed(false);
+            stage.scene.pack_note('Загрузка библиотеки компонентов… ' + dead + 'web.js');
+            stage.redraw();
+            const generation = stage.pane.scene_generation();
+            $mol_assert_ok(stage.pane.watchdog() !== null);
+            const watch = stage.timers.filter(timer => timer.delay === stage.pane.cold_limit()).at(-1);
+            $mol_assert_ok(watch);
+            watch.task();
+            stage.redraw();
+            $mol_assert_equal(stage.pane.stalled(), true);
+            $mol_assert_equal(stage.pane.restart_tries(), 0);
+            $mol_assert_equal(stage.pane.scene_generation(), generation);
+            $mol_assert_ok(stage.text().includes('верните пак по умолчанию'));
+            stage.click(stage.button('Вернуть пак по умолчанию'));
+            stage.redraw();
+            $mol_assert_equal(stage.app.links(), '');
+            $mol_assert_equal(stage.app.links_parsed().pack, null);
+            $mol_assert_equal(stage.pane.scene_generation(), generation + 1);
+            $mol_assert_equal(stage.pane.stalled(), false);
+        },
+        'the default pack comes back without taking the lands of the shelf with it'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const land = 'AbCdEfGh';
+            stage.app.links('https://dead.test/, ' + land);
+            $mol_assert_like(stage.app.links_parsed().lands, [land]);
+            stage.app.pack_default();
+            $mol_assert_equal(stage.app.links(), land);
+            $mol_assert_equal(stage.app.links_parsed().pack, null);
+            $mol_assert_like(stage.app.links_parsed().lands, [land]);
         },
         'deleting a wired part leaves no wire to a node that is gone'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);

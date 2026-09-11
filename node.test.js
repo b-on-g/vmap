@@ -28739,6 +28739,14 @@ var $;
 
 ;
 	($.$bog_vmap_app_pane) = class $bog_vmap_app_pane extends ($.$mol_view) {
+		file_over(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		file_take(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		overlay_style(){
 			return {};
 		}
@@ -28956,6 +28964,17 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		files_drop(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		event(){
+			return {
+				...(super.event()), 
+				"dragover": (next) => (this.file_over(next)), 
+				"drop": (next) => (this.file_take(next))
+			};
+		}
 		values(next){
 			if(next !== undefined) return next;
 			return {};
@@ -29001,6 +29020,9 @@ var $;
 		}
 		error_node(id, next){
 			if(next !== undefined) return next;
+			return "";
+		}
+		pack_note(){
 			return "";
 		}
 		error(){
@@ -29063,6 +29085,8 @@ var $;
 			return [...(super.plugins()), (this.Touch())];
 		}
 	};
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "file_over"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "file_take"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_press"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_release"));
@@ -29087,6 +29111,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "carry_at"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "carry_drop"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "files_drop"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "values"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "handshake"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "stalled"));
@@ -29368,6 +29393,9 @@ var $;
                     .filter(Boolean)
                     .join('\n');
             }
+            pack_note() {
+                return this.error_at('pack');
+            }
             errors() {
                 const res = {};
                 for (const at of ['compile', 'runtime']) {
@@ -29501,11 +29529,12 @@ var $;
                 this.spots_push();
                 this.camera_push();
                 this.poke_direct();
-                if (this.poke_at <= this.answer_at())
+                const held = !this.warmed() && Boolean(this.pack_note());
+                if (!held && this.poke_at <= this.answer_at())
                     return null;
                 const limit = this.warmed() ? this.answer_limit() : this.cold_limit();
                 return new this.$.$mol_after_timeout(limit, () => {
-                    if (!this.warmed() && this.restart_tries() < this.restart_tries_max()) {
+                    if (!this.warmed() && !this.pack_note() && this.restart_tries() < this.restart_tries_max()) {
                         this.restart_tries(this.restart_tries() + 1);
                         this.scene_relaunch();
                         return;
@@ -29701,6 +29730,31 @@ var $;
             }
             carry_drop(next) {
                 return next ?? null;
+            }
+            files_drop(next) {
+                return next ?? null;
+            }
+            file_over(next) {
+                next?.preventDefault();
+                return next ?? null;
+            }
+            file_take(next) {
+                if (!next)
+                    return null;
+                next.preventDefault();
+                const files = next.dataTransfer ? [...next.dataTransfer.files] : [];
+                if (!files.length)
+                    return next;
+                const point = this.world_point(next);
+                const slot = this.insert_slot(point);
+                this.files_drop({
+                    files,
+                    x: point[0],
+                    y: point[1],
+                    owner: slot?.owner ?? '',
+                    index: slot?.index ?? -1,
+                });
+                return next;
             }
             carry_at(next) {
                 if (!next)
@@ -30262,15 +30316,22 @@ var $;
                 if (message.kind === 'ready') {
                     this.error_at('compile', '');
                     this.error_at('runtime', '');
+                    this.error_at('pack', '');
                     this.warmed(false);
                     const key = this.scene_key();
                     this.handshake(key, this.handshake(key) + 1);
                     return;
                 }
                 if (message.kind === 'error') {
-                    const at = message.at === 'compile' ? 'compile' : 'runtime';
+                    const at = message.at === 'compile' ? 'compile'
+                        : message.at === 'pack' ? 'pack'
+                            : 'runtime';
                     if (message.message === null) {
                         this.error_at(at, '');
+                        return;
+                    }
+                    if (at === 'pack') {
+                        this.error_at(at, message.message);
                         return;
                     }
                     const label = at === 'compile' ? 'компиляция' : 'исполнение';
@@ -30791,24 +30852,19 @@ var $;
 		inside_note(){
 			return "";
 		}
+		stall_content(){
+			return [];
+		}
 		stall_note(){
 			return "";
 		}
-		Stall_note(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.stall_note())]);
-			return obj;
+		pack_default(next){
+			if(next !== undefined) return next;
+			return null;
 		}
 		scene_restart(next){
 			if(next !== undefined) return next;
 			return null;
-		}
-		Stall_reload(){
-			const obj = new this.$.$mol_button_minor();
-			(obj.title) = () => ("Перезагрузить сцену");
-			(obj.hint) = () => ("Поднять кадр заново. Документ хранится в редакторе и не потеряется");
-			(obj.click) = (next) => ((this.scene_restart(next)));
-			return obj;
 		}
 		body_main(){
 			return [];
@@ -30917,6 +30973,10 @@ var $;
 			return null;
 		}
 		carry_drop(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		files_drop(next){
 			if(next !== undefined) return next;
 			return null;
 		}
@@ -31044,9 +31104,31 @@ var $;
 			(obj.sub) = () => ([(this.inside_note())]);
 			return obj;
 		}
+		pack_stalled(){
+			return false;
+		}
 		Stall(){
 			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.Stall_note()), (this.Stall_reload())]);
+			(obj.sub) = () => ((this.stall_content()));
+			return obj;
+		}
+		Stall_note(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.stall_note())]);
+			return obj;
+		}
+		Stall_pack(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("Вернуть пак по умолчанию");
+			(obj.hint) = () => ("Убрать адрес библиотеки из полки и взять пак рядом со страницей редактора");
+			(obj.click) = (next) => ((this.pack_default(next)));
+			return obj;
+		}
+		Stall_reload(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("Перезагрузить сцену");
+			(obj.hint) = () => ("Поднять кадр заново. Документ хранится в редакторе и не потеряется");
+			(obj.click) = (next) => ((this.scene_restart(next)));
 			return obj;
 		}
 		Body(){
@@ -31130,6 +31212,7 @@ var $;
 			(obj.axis) = (id) => ((this.doc_axis(id)));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
 			(obj.carry_drop) = (next) => ((this.carry_drop(next)));
+			(obj.files_drop) = (next) => ((this.files_drop(next)));
 			return obj;
 		}
 	};
@@ -31150,9 +31233,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "export_blob"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Download"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Status"));
-	($mol_mem(($.$bog_vmap_app.prototype), "Stall_note"));
+	($mol_mem(($.$bog_vmap_app.prototype), "pack_default"));
 	($mol_mem(($.$bog_vmap_app.prototype), "scene_restart"));
-	($mol_mem(($.$bog_vmap_app.prototype), "Stall_reload"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Scenes"));
 	($mol_mem(($.$bog_vmap_app.prototype), "shelf_place"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Shelf"));
@@ -31161,6 +31243,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "link_drop"));
 	($mol_mem(($.$bog_vmap_app.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app.prototype), "carry_drop"));
+	($mol_mem(($.$bog_vmap_app.prototype), "files_drop"));
 	($mol_mem(($.$bog_vmap_app.prototype), "spots"));
 	($mol_mem(($.$bog_vmap_app.prototype), "selected"));
 	($mol_mem(($.$bog_vmap_app.prototype), "picked"));
@@ -31184,6 +31267,9 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Root_note"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Inside_note"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Stall"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Stall_note"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Stall_pack"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Stall_reload"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Body"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Side"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Aside"));
@@ -31315,6 +31401,109 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$mol_image) = class $mol_image extends ($.$mol_view) {
+		uri(){
+			return "";
+		}
+		title(){
+			return "";
+		}
+		loading(){
+			return "lazy";
+		}
+		decoding(){
+			return "async";
+		}
+		cors(){
+			return null;
+		}
+		natural_width(){
+			return 0;
+		}
+		natural_height(){
+			return 0;
+		}
+		load(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		dom_name(){
+			return "img";
+		}
+		attr(){
+			return {
+				...(super.attr()), 
+				"src": (this.uri()), 
+				"title": (this.hint()), 
+				"alt": (this.title()), 
+				"loading": (this.loading()), 
+				"decoding": (this.decoding()), 
+				"crossOrigin": (this.cors()), 
+				"width": (this.natural_width()), 
+				"height": (this.natural_height())
+			};
+		}
+		event(){
+			return {"load": (next) => (this.load(next))};
+		}
+		minimal_width(){
+			return 16;
+		}
+		minimal_height(){
+			return 16;
+		}
+	};
+	($mol_mem(($.$mol_image.prototype), "load"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        class $mol_image extends $.$mol_image {
+            natural_width(next) {
+                const dom = this.dom_node();
+                if (dom.naturalWidth)
+                    return dom.naturalWidth;
+                const found = this.uri().match(/\bwidth=(\d+)/);
+                return found ? Number(found[1]) : null;
+            }
+            natural_height(next) {
+                const dom = this.dom_node();
+                if (dom.naturalHeight)
+                    return dom.naturalHeight;
+                const found = this.uri().match(/\bheight=(\d+)/);
+                return found ? Number(found[1]) : null;
+            }
+            load() {
+                this.natural_width(null);
+                this.natural_height(null);
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_image.prototype, "natural_width", null);
+        __decorate([
+            $mol_mem
+        ], $mol_image.prototype, "natural_height", null);
+        $$.$mol_image = $mol_image;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/image/image.view.css", "[mol_image] {\n\tborder-radius: var(--mol_gap_round);\n\toverflow: hidden;\n\tflex: 0 1 auto;\n\tmax-width: 100%;\n\tobject-fit: cover;\n\theight: fit-content;\n}\n");
+})($ || ($ = {}));
+
+;
 "use strict";
 
 
@@ -31338,10 +31527,31 @@ var $;
             scene_restart() {
                 this.Pane().scene_restart();
             }
+            pack_default() {
+                this.links(this.links_parsed().lands.join(', '));
+                this.Pane().scene_restart();
+                return null;
+            }
+            pack_stalled() {
+                return Boolean(this.Pane().pack_note());
+            }
+            stall_content() {
+                return [
+                    this.Stall_note(),
+                    ...this.pack_stalled() ? [this.Stall_pack()] : [],
+                    this.Stall_reload(),
+                ];
+            }
             stalled() {
                 return this.Pane().stalled();
             }
             stall_note() {
+                const pack = this.Pane().pack_note();
+                if (pack) {
+                    return `${pack} — библиотека компонентов так и не ответила.`
+                        + ' Адрес взят из поля полки. Если он остался от локального стенда,'
+                        + ' верните пак по умолчанию: он лежит рядом со страницей редактора.';
+                }
                 if (!this.Pane().warmed()) {
                     return 'Сцена не запустилась. Если код в панели уже исправлен — нажмите'
                         + ' «Перезагрузить сцену» ещё раз. Если нет — сначала исправьте код:'
@@ -31782,6 +31992,33 @@ var $;
                 this.preset_apply(source, next.x, next.y, next.owner ? { owner: next.owner, index: next.index } : null);
                 return next;
             }
+            files_drop(next) {
+                if (!next)
+                    return null;
+                next.files.forEach((file, i) => this.file_place(file, next.x + i * 24, next.y + i * 24, next.owner ? { owner: next.owner, index: next.index + i } : null));
+                return next;
+            }
+            file_place(file, x, y, slot) {
+                const uri = this.store().asset_put(file);
+                if (!uri)
+                    return '';
+                const node = this.node();
+                const tree = node.tree();
+                const image = file.type.startsWith('image/');
+                const name = this.name_free(image ? 'Image' : 'File');
+                node.part_add(name, image ? '$mol_image' : '$mol_link');
+                node.over_set(name, 'uri', tree.struct('uri', [tree.data(uri)]));
+                if (!image)
+                    node.over_set(name, 'title', tree.struct('title', [tree.data(file.name)]));
+                if (slot)
+                    node.sub_insert(name, slot.index, slot.owner);
+                else {
+                    node.sub_add(name);
+                    this.spots({ ...this.spots(), [name]: { x, y } });
+                }
+                this.selected(name);
+                return name;
+            }
             link_add(next) {
                 if (next) {
                     const taken = this.doc_wires().some(link => link.to === next.to && link.to_prop === next.to_prop);
@@ -31827,7 +32064,9 @@ var $;
                     return note;
                 if (this.stalled())
                     return 'сцена не отвечает';
-                return this.Pane().ready() ? 'сцена на связи' : 'ожидание сцены…';
+                if (this.Pane().warmed())
+                    return 'сцена на связи';
+                return this.Pane().pack_note() || 'ожидание сцены…';
             }
             dragged() {
                 return this.Shelf().drag_source();
@@ -32103,6 +32342,12 @@ var $;
             }
         }
         __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "pack_default", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app.prototype, "stall_content", null);
+        __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "store", null);
         __decorate([
@@ -32320,6 +32565,10 @@ var $;
                 whiteSpace: 'normal',
             },
             Stall_reload: {
+                flex: { shrink: 0 },
+                color: $mol_theme.back,
+            },
+            Stall_pack: {
                 flex: { shrink: 0 },
                 color: $mol_theme.back,
             },
@@ -41043,6 +41292,33 @@ var $;
             $mol_assert_equal(pane.restart_tries(), 1);
             $mol_assert_equal(pane.scene_generation(), generation + 1);
         },
+        'the pack channel of the scene lands in its own note and a fresh frame clears it'($) {
+            const { pane, answer } = pane_make($);
+            $mol_assert_equal(pane.pack_note(), '');
+            answer({ kind: 'error', at: 'pack', message: 'Загрузка библиотеки компонентов… http://dead.test/web.js' });
+            $mol_assert_equal(pane.pack_note(), 'Загрузка библиотеки компонентов… http://dead.test/web.js');
+            $mol_assert_equal(pane.error().includes('библиотеки'), false);
+            $mol_assert_like(pane.errors(), {});
+            answer({ kind: 'ready' });
+            $mol_assert_equal(pane.pack_note(), '');
+        },
+        'a frame held up by the pack is called out at once, without a pointless relaunch'($) {
+            const timers = timers_fake($);
+            const { pane, answer } = pane_make($);
+            answer({ kind: 'ready' });
+            pane.watchdog();
+            answer({ kind: 'sizes', sizes: {} });
+            $mol_assert_equal(pane.watchdog(), null);
+            answer({ kind: 'error', at: 'pack', message: 'Загрузка библиотеки компонентов… http://dead.test/web.js' });
+            pane.warmed(false);
+            $mol_assert_ok(pane.watchdog() !== null);
+            $mol_assert_equal(timers.at(-1).delay, pane.cold_limit());
+            const generation = pane.scene_generation();
+            timers.at(-1).task();
+            $mol_assert_equal(pane.stalled(), true);
+            $mol_assert_equal(pane.restart_tries(), 0);
+            $mol_assert_equal(pane.scene_generation(), generation);
+        },
         'a scene that comes up gets its automatic retry back for next time'($) {
             const timers = timers_fake($);
             const { pane, answer } = pane_make($);
@@ -41494,6 +41770,49 @@ var $;
             $mol_assert_equal(app.code_error(), 'исполнение: boom');
             app.selected(null);
             $mol_assert_equal(app.code_error(), '');
+        },
+        'a file dropped on the canvas is handed on with the point it landed at'($) {
+            const { pane } = pane_make($);
+            const dropped = [];
+            pane.files_drop = next => {
+                if (next)
+                    dropped.push(next);
+                return next ?? null;
+            };
+            const file = new $mol_blob([new Uint8Array([137])], { type: 'image/png' });
+            let prevented = 0;
+            pane.file_take({
+                clientX: 200,
+                clientY: 150,
+                preventDefault: () => { prevented++; },
+                dataTransfer: { files: [file] },
+            });
+            $mol_assert_equal(prevented, 1);
+            $mol_assert_equal(dropped.length, 1);
+            $mol_assert_equal(dropped[0].files[0], file);
+            $mol_assert_like([dropped[0].x, dropped[0].y], [200, 150]);
+        },
+        'a drag that carries no file hands nothing on'($) {
+            const { pane } = pane_make($);
+            const dropped = [];
+            pane.files_drop = next => {
+                if (next)
+                    dropped.push(next);
+                return next ?? null;
+            };
+            pane.file_take({
+                clientX: 200,
+                clientY: 150,
+                preventDefault: () => { },
+                dataTransfer: { files: [] },
+            });
+            $mol_assert_equal(dropped.length, 0);
+        },
+        'a drag over the canvas is claimed, or the browser opens the file itself'($) {
+            const { pane } = pane_make($);
+            let prevented = 0;
+            pane.file_over({ preventDefault: () => { prevented++; } });
+            $mol_assert_equal(prevented, 1);
         },
     });
 })($ || ($ = {}));
@@ -48094,6 +48413,31 @@ var $;
             $mol_assert_equal(two.body_main().includes(two.Side()), false);
             $mol_assert_equal(two.body_main().includes(two.Code()), true);
         },
+        'an image dropped on the canvas becomes a node addressed at the file'($) {
+            const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png';
+            const store = $bog_vmap_app_store.make({ $, asset_put: () => uri });
+            const app = $bog_vmap_app.make({ $, store: () => store });
+            const file = new $.$mol_dom_context.File([new Uint8Array([137, 80, 78, 71])], 'logo.png', { type: 'image/png' });
+            app.files_drop({ files: [file], x: 100, y: 200, owner: '', index: -1 });
+            const name = app.selected();
+            const source = app.doc_source();
+            $mol_assert_equal(name, 'Image');
+            $mol_assert_ok(source.includes(`Image ${d}mol_image`));
+            $mol_assert_ok(source.includes(`uri \\${uri}`));
+            $mol_assert_like(app.spots()[name], { x: 100, y: 200 });
+        },
+        'a file that is not an image becomes a link carrying its name'($) {
+            const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=notes.pdf';
+            const store = $bog_vmap_app_store.make({ $, asset_put: () => uri });
+            const app = $bog_vmap_app.make({ $, store: () => store });
+            const file = new $.$mol_dom_context.File([new Uint8Array([37])], 'notes.pdf', { type: 'application/pdf' });
+            app.files_drop({ files: [file], x: 10, y: 20, owner: '', index: -1 });
+            const source = app.doc_source();
+            $mol_assert_equal(app.selected(), 'File');
+            $mol_assert_ok(source.includes(`File ${d}mol_link`));
+            $mol_assert_ok(source.includes(`uri \\${uri}`));
+            $mol_assert_ok(source.includes('title \\notes.pdf'));
+        },
     });
 })($ || ($ = {}));
 
@@ -48254,6 +48598,10 @@ var $;
             silence() {
                 silent = true;
                 queue.length = 0;
+            },
+            pack_note(message) {
+                deliver({ kind: 'error', at: 'pack', message });
+                app.dom_tree();
             },
             hello() {
                 deliver({ kind: 'ready' });
@@ -48689,7 +49037,7 @@ var $;
             const stage = $_2.$bog_vmap_app_flow_stage($, { store });
             $mol_assert_ok(stage.frame().getAttribute('srcdoc'));
             $mol_assert_equal(stage.pane.ready(), true);
-            $mol_assert_equal(stage.text().includes('ожидание сцены'), false);
+            $mol_assert_equal(stage.text().includes('сцена на связи'), false);
             $mol_assert_equal(stage.app.links(), '');
             stage.classes_open();
             stage.class_row(calc);
@@ -48712,6 +49060,55 @@ var $;
             $mol_assert_equal(stage.pane.ready(), false);
             $mol_assert_equal(stage.text().includes('Сцена не отвечает'), false);
             $mol_assert_ok(stage.frame() !== frame);
+        },
+        'a pack that never answers names itself in the header instead of a green lie'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const note = 'Загрузка библиотеки компонентов… http://localhost:9080/bog/vmap/part/-/web.js';
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_ok(stage.text().includes('сцена на связи'));
+            stage.scene.silence();
+            stage.pane.warmed(false);
+            stage.scene.pack_note(note);
+            stage.redraw();
+            $mol_assert_equal(stage.pane.pack_note(), note);
+            $mol_assert_ok(stage.text().includes(note));
+            $mol_assert_equal(stage.text().includes('сцена на связи'), false);
+        },
+        'a dead pack skips the pointless relaunch and the plate hands the default pack back'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const dead = 'https://dead.test/';
+            stage.drop(calc, stage.client([200, 150]));
+            stage.app.links(dead);
+            stage.scene.silence();
+            stage.pane.warmed(false);
+            stage.scene.pack_note('Загрузка библиотеки компонентов… ' + dead + 'web.js');
+            stage.redraw();
+            const generation = stage.pane.scene_generation();
+            $mol_assert_ok(stage.pane.watchdog() !== null);
+            const watch = stage.timers.filter(timer => timer.delay === stage.pane.cold_limit()).at(-1);
+            $mol_assert_ok(watch);
+            watch.task();
+            stage.redraw();
+            $mol_assert_equal(stage.pane.stalled(), true);
+            $mol_assert_equal(stage.pane.restart_tries(), 0);
+            $mol_assert_equal(stage.pane.scene_generation(), generation);
+            $mol_assert_ok(stage.text().includes('верните пак по умолчанию'));
+            stage.click(stage.button('Вернуть пак по умолчанию'));
+            stage.redraw();
+            $mol_assert_equal(stage.app.links(), '');
+            $mol_assert_equal(stage.app.links_parsed().pack, null);
+            $mol_assert_equal(stage.pane.scene_generation(), generation + 1);
+            $mol_assert_equal(stage.pane.stalled(), false);
+        },
+        'the default pack comes back without taking the lands of the shelf with it'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const land = 'AbCdEfGh';
+            stage.app.links('https://dead.test/, ' + land);
+            $mol_assert_like(stage.app.links_parsed().lands, [land]);
+            stage.app.pack_default();
+            $mol_assert_equal(stage.app.links(), land);
+            $mol_assert_equal(stage.app.links_parsed().pack, null);
+            $mol_assert_like(stage.app.links_parsed().lands, [land]);
         },
         'deleting a wired part leaves no wire to a node that is gone'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);

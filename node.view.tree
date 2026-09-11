@@ -1375,6 +1375,13 @@ $bog_vmap_app_pane $mol_view
 	tree_move? null
 	carry_at? null
 	carry_drop? null
+	files_drop? null
+	file_over? null
+	file_take? null
+	event *
+		^
+		dragover? <=> file_over? null
+		drop? <=> file_take? null
 	values? *
 	handshake*? 0
 	ready false
@@ -1388,6 +1395,7 @@ $bog_vmap_app_pane $mol_view
 	scene_restart? null
 	error_at*? \
 	error_node*? \
+	pack_note \
 	error \
 	isolation \
 	camera_shift? $mol_vector_2d<number> /
@@ -1577,13 +1585,19 @@ $bog_vmap_app $mol_view
 		sub / <= root_title_note \
 	Inside_note $mol_view
 		sub / <= inside_note \
+	pack_stalled false
 	Stall $mol_view
-		sub /
-			<= Stall_note $mol_view sub / <= stall_note \
-			<= Stall_reload $mol_button_minor
-				title \Перезагрузить сцену
-				hint \Поднять кадр заново. Документ хранится в редакторе и не потеряется
-				click? <=> scene_restart? null
+		sub <= stall_content /$mol_view
+	Stall_note $mol_view
+		sub / <= stall_note \
+	Stall_pack $mol_button_minor
+		title \Вернуть пак по умолчанию
+		hint \Убрать адрес библиотеки из полки и взять пак рядом со страницей редактора
+		click? <=> pack_default? null
+	Stall_reload $mol_button_minor
+		title \Перезагрузить сцену
+		hint \Поднять кадр заново. Документ хранится в редакторе и не потеряется
+		click? <=> scene_restart? null
 	Body $mol_view
 		sub <= body_main /$mol_view
 	Side $mol_view
@@ -1649,3 +1663,21 @@ $bog_vmap_app $mol_view
 		axis* <= doc_axis* \
 		tree_move? <=> tree_move? null
 		carry_drop? <=> carry_drop? null
+		files_drop? <=> files_drop? null
+
+$mol_image $mol_view
+	dom_name \img
+	attr *any
+		^
+		src <= uri \
+		title <= hint
+		alt <= title \
+		loading <= loading \lazy
+		decoding <= decoding \async
+		crossOrigin <= cors null
+		width <= natural_width 0
+		height <= natural_height 0
+	event *any
+		load? <=> load? null
+	minimal_width 16
+	minimal_height 16

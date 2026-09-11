@@ -397,7 +397,8 @@
     "$bog_vmap_app_pane_screen",
     "$bog_vmap_app_pane_slot",
     "$bog_vmap_app_pane_hole",
-    "$bog_vmap_app_export_zip"
+    "$bog_vmap_app_export_zip",
+    "$mol_image"
   ],
   "dependencies": {
     "autoinstall": "*",
