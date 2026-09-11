@@ -993,13 +993,44 @@ namespace $.$$ {
 			return next ?? [ 0, 0 ] as const
 		}
 
+		@ $mol_mem_key
+		part_dots( name: string ): readonly $bog_vmap_app_wire_port[] {
+			const written = new Set( this.part_overs( name ) )
+			return this.part_ports( name ).filter( port => port.own || written.has( port.name ) )
+		}
+
+		wire_over() {
+			if( !this.wire_drag() ) return null
+
+			const point = this.wire_point()
+			let found = null as string | null
+
+			for( const name of this.part_names() ) {
+				const box = this.part_box( name )
+				if( !box ) continue
+				if( !$bog_vmap_app_wire_over( box, point ) ) continue
+
+				found = name
+			}
+
+			return found
+		}
+
+		part_spread( name: string ) {
+			return name === this.primary() || name === this.wire_over()
+		}
+
 		port_index( name: string, port: string ) {
-			return Math.max( 0, this.part_ports( name ).findIndex( known => known.name === port ) )
+			return Math.max( 0, this.part_dots( name ).findIndex( known => known.name === port ) )
 		}
 
 		port_point( name: string, port: string, side: $bog_vmap_app_wire_side ) {
 			const box = this.part_box( name )
-			return box && $bog_vmap_app_wire_port_point( box, side, this.port_index( name, port ) )
+			if( !box ) return null
+
+			return this.part_spread( name )
+				? $bog_vmap_app_wire_port_point( box, side, this.port_index( name, port ) )
+				: $bog_vmap_app_wire_side_point( box, side )
 		}
 
 		@ $mol_mem
@@ -1040,14 +1071,27 @@ namespace $.$$ {
 				const box = this.part_box( node )
 				if( !box ) return
 
-				this.part_ports( node ).forEach( ( port, index )=> {
-					const [ x, y ] = $bog_vmap_app_wire_port_point( box, side, index )
-					dots.push({
-						node, port, side, x, y,
-						lit: lit( port ),
-						linked: side === 'in' && linked.has( `${ node }.${ port.name }` ),
-					})
-				} )
+				const ports = this.part_dots( node )
+
+				const mark = ( port: $bog_vmap_app_wire_port, x: number, y: number )=> dots.push({
+					node, port, side, x, y,
+					lit: lit( port ),
+					linked: side === 'in' && linked.has( `${ node }.${ port.name }` ),
+				})
+
+				if( this.part_spread( node ) ) {
+					ports.forEach( ( port, index )=> {
+						const [ x, y ] = $bog_vmap_app_wire_port_point( box, side, index )
+						mark( port, x, y )
+					} )
+					return
+				}
+
+				const port = ports.find( lit ) ?? ports[ 0 ]
+				if( !port ) return
+
+				const [ x, y ] = $bog_vmap_app_wire_side_point( box, side )
+				mark( port, x, y )
 
 			}
 
@@ -1108,7 +1152,8 @@ namespace $.$$ {
 
 		wire_release( event: PointerEvent ) {
 			const drag = this.wire_drag()!
-			const dot = $bog_vmap_app_wire_dot_at( this.wire_dots(), this.screen_point( event ) )
+			const point = this.wire_point( this.screen_point( event ) )
+			const dot = $bog_vmap_app_wire_dot_at( this.wire_dots(), point )
 
 			this.wire_drag( null )
 

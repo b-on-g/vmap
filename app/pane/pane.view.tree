@@ -17,6 +17,7 @@ $bog_vmap_app_pane $mol_view
 	carrying false
 	wires /$bog_vmap_lang_link
 	part_ports* /$bog_vmap_app_wire_port
+	part_overs* /string
 	link_add? null
 	link_drop? null
 	containers /string

@@ -163,6 +163,7 @@ $bog_vmap_app $mol_view
 		carrying <= carrying false
 		wires <= doc_wires /$bog_vmap_lang_link
 		part_ports* <= part_ports* /$bog_vmap_app_wire_port
+		part_overs* <= part_overs* /string
 		link_add? <=> link_add? null
 		link_drop? <=> link_drop? null
 		containers <= doc_containers /string

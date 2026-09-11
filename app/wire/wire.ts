@@ -93,6 +93,31 @@ namespace $ {
 		return [ x, y ]
 	}
 
+	export function $bog_vmap_app_wire_side_point(
+		box: $bog_vmap_app_wire_box,
+		side: $bog_vmap_app_wire_side,
+	): readonly [ number, number ] {
+		const x = side === 'in'
+			? box.left - $bog_vmap_app_wire_gap
+			: box.left + box.width + $bog_vmap_app_wire_gap
+
+		return [ x, box.top + box.height / 2 ]
+	}
+
+	export function $bog_vmap_app_wire_over(
+		box: $bog_vmap_app_wire_box,
+		point: readonly [ number, number ],
+	) {
+		const reach = $bog_vmap_app_wire_gap + $bog_vmap_app_wire_hit
+
+		if( point[0] < box.left - reach ) return false
+		if( point[0] > box.left + box.width + reach ) return false
+		if( point[1] < box.top ) return false
+		if( point[1] > box.top + box.height ) return false
+
+		return true
+	}
+
 	function wire_reach( span: number ) {
 		return Math.max( 40, Math.abs( span ) / 2 )
 	}
@@ -138,10 +163,15 @@ namespace $ {
 		point: readonly [ number, number ],
 	) {
 		let found = null as $bog_vmap_app_wire_dot | null
+		let best = Infinity
 
 		for( const dot of dots ) {
-			if( Math.hypot( dot.x - point[0], dot.y - point[1] ) > $bog_vmap_app_wire_hit ) continue
+			const span = Math.hypot( dot.x - point[0], dot.y - point[1] )
+			if( span > $bog_vmap_app_wire_hit ) continue
+			if( found && span > best ) continue
+
 			found = dot
+			best = span
 		}
 
 		return found

@@ -74,7 +74,7 @@ namespace $ {
 
 		},
 
-		'the dot under a point, last one on top'( $ ) {
+		'the dot under a point, the nearest one, and on a tie the one on top'( $ ) {
 			const dots = [
 				dot({ x: 10, y: 10, node: 'A' }),
 				dot({ x: 14, y: 10, node: 'B' }),
@@ -86,6 +86,45 @@ namespace $ {
 			$mol_assert_equal( $bog_vmap_app_wire_dot_at( dots, [ 100, 100 + $bog_vmap_app_wire_hit ] )?.node, 'C' )
 			$mol_assert_equal( $bog_vmap_app_wire_dot_at( dots, [ 100, 100 + $bog_vmap_app_wire_hit + 1 ] ), null )
 			$mol_assert_equal( $bog_vmap_app_wire_dot_at( dots, [ 50, 50 ] ), null )
+
+		},
+
+		'a point inside the reach of two dots goes to the nearer, not the later'( $ ) {
+			const dots = [
+				dot({ x: 10, y: 10, node: 'A', port: port( 'near', 'number' ) }),
+				dot({ x: 15, y: 10, node: 'B', port: port( 'far', 'number' ) }),
+			]
+
+			$mol_assert_equal( $bog_vmap_app_wire_dot_at( dots, [ 11, 10 ] )?.node, 'A' )
+			$mol_assert_equal( $bog_vmap_app_wire_dot_at( dots, [ 14, 10 ] )?.node, 'B' )
+
+		},
+
+		'a column of a short part does not reach into the part below it'( $ ) {
+			const height = 17
+
+			const above = box( 0, 0, 200, height )
+			const below = box( 0, height, 200, height )
+
+			const own = $bog_vmap_app_wire_side_point( above, 'in' )
+			const next = $bog_vmap_app_wire_side_point( below, 'in' )
+
+			$mol_assert_equal( own[0], next[0] )
+			$mol_assert_equal( Math.abs( own[1] - next[1] ) > $bog_vmap_app_wire_hit, true )
+
+			$mol_assert_like( own, [ 0 - $bog_vmap_app_wire_gap, height / 2 ] )
+
+		},
+
+		'a point on the dot column counts as over the part, a point a row above does not'( $ ) {
+			const b = box( 100, 200, 60, 30 )
+
+			const [ x, y ] = $bog_vmap_app_wire_side_point( b, 'in' )
+
+			$mol_assert_equal( $bog_vmap_app_wire_over( b, [ x, y ] ), true )
+			$mol_assert_equal( $bog_vmap_app_wire_over( b, [ b.left + 10, b.top + 1 ] ), true )
+			$mol_assert_equal( $bog_vmap_app_wire_over( b, [ x, b.top - 1 ] ), false )
+			$mol_assert_equal( $bog_vmap_app_wire_over( b, [ x - $bog_vmap_app_wire_hit - 1, y ] ), false )
 
 		},
 

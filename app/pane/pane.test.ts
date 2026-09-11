@@ -821,14 +821,63 @@ namespace $ {
 			})
 
 			pane.wire_drag({ from: 'Pair', from_prop: 'x', kind: 'number' })
+			pane.wire_point([ -12, 227 ])
 
 			const dots = pane.wire_dots()
 			const at = ( x: number, y: number )=> $bog_vmap_app_wire_dot_at( dots, [ x, y ] )
 
-			$mol_assert_equal( at( -12, 7 )?.node, 'Map_2' )
 			$mol_assert_equal( at( -12, 227 )?.node, 'Map' )
+			$mol_assert_equal( at( -12, 110 )?.node, 'Map_2' )
 
 			$mol_assert_equal( dots.filter( dot => dot.node === 'Map' ).length, 2 )
+			$mol_assert_equal( dots.filter( dot => dot.node === 'Map_2' ).length, 1 )
+
+		},
+
+		'a stack of short parts keeps every dot on the part it belongs to'( $ ) {
+			const own = [ 'left', 'right', 'op', 'result' ]
+			const base = [ 'dom_name', 'title', 'style', 'minimal_height' ]
+
+			const ports = [
+				... own.map( name => ({ name, next: false, own: true, kind: 'number' as const }) ),
+				... base.map( name => ({ name, next: false, own: false, kind: 'number' as const }) ),
+			]
+
+			const { pane } = pane_make( $, {}, {
+				doc_names: ()=> [ 'Fuel', 'Cost', 'Total' ],
+				part_ports: ()=> ports,
+				wires: ()=> [],
+			} )
+
+			pane.sizes({
+				[ `${root}/Fuel` ]: box( 0, 0, 200, 17 ),
+				[ `${root}/Cost` ]: box( 0, 17, 200, 17 ),
+				[ `${root}/Total` ]: box( 0, 34, 200, 17 ),
+			})
+
+			pane.wire_drag({ from: 'Board', from_prop: 'x', kind: 'number' })
+			pane.wire_point([ 100, 8 ])
+
+			const dots = pane.wire_dots()
+			const at = ( x: number, y: number )=> $bog_vmap_app_wire_dot_at( dots, [ x, y ] )
+
+			$mol_assert_equal( dots.some( dot => base.includes( dot.port.name ) ), false )
+
+			$mol_assert_equal( dots.filter( dot => dot.node === 'Fuel' ).length, own.length )
+			$mol_assert_equal( dots.filter( dot => dot.node === 'Cost' ).length, 1 )
+			$mol_assert_equal( dots.filter( dot => dot.node === 'Total' ).length, 1 )
+
+			const left = $bog_vmap_app_wire_port_point( pane.part_box( 'Fuel' )!, 'in', 0 )
+
+			$mol_assert_equal( at( left[0], left[1] )?.node, 'Fuel' )
+			$mol_assert_equal( at( left[0], left[1] )?.port.name, 'left' )
+
+			const cost = $bog_vmap_app_wire_side_point( pane.part_box( 'Cost' )!, 'in' )
+			const total = $bog_vmap_app_wire_side_point( pane.part_box( 'Total' )!, 'in' )
+
+			$mol_assert_equal( Math.abs( cost[1] - total[1] ) > $bog_vmap_app_wire_hit, true )
+			$mol_assert_equal( at( cost[0], cost[1] )?.node, 'Cost' )
+			$mol_assert_equal( at( total[0], total[1] )?.node, 'Total' )
 
 		},
 
@@ -1171,6 +1220,13 @@ namespace $ {
 
 			$mol_assert_like(
 				pane.wire_dots().map( dot => [ dot.node, dot.port.name, dot.side, dot.x, dot.y, dot.lit ] ),
+				[ [ 'Map', 'zoom', 'in', 688, 100, true ] ],
+			)
+
+			pane.node_move( pointer( 710, 60 ) )
+
+			$mol_assert_like(
+				pane.wire_dots().map( dot => [ dot.node, dot.port.name, dot.side, dot.x, dot.y, dot.lit ] ),
 				[ [ 'Map', 'zoom', 'in', 688, 57, true ], [ 'Map', 'marker', 'in', 688, 71, false ] ],
 			)
 			$mol_assert_equal( pane.wire_drag_geometry().startsWith( 'M 312 57 C' ), true )
@@ -1189,10 +1245,11 @@ namespace $ {
 
 			$mol_assert_equal( pane.wire_lines().length, 1 )
 			$mol_assert_equal( pane.wire_lines()[0].geometry.startsWith( 'M 312 57 C' ), true )
-			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 688 57' ), true )
+			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 688 100' ), true )
 			$mol_assert_equal( pane.wire_dots().find( dot => dot.port.name === 'zoom' )?.linked, undefined )
 
 			pane.picked([ 'Map' ])
+			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 688 57' ), true )
 			$mol_assert_equal( pane.wire_dots().find( dot => dot.port.name === 'zoom' && dot.side === 'in' )?.linked, true )
 
 		},
@@ -1277,8 +1334,11 @@ namespace $ {
 
 			answer({ kind: 'sizes', sizes: { [ `${root}/Calc` ]: box( 0, 100 ) } })
 			$mol_assert_equal( pane.wire_lines().length, 1 )
+			$mol_assert_equal( pane.wire_lines()[0].geometry.startsWith( 'M 112 125 C' ), true )
+			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 288 25' ), true )
+
+			pane.picked([ 'Calc' ])
 			$mol_assert_equal( pane.wire_lines()[0].geometry.startsWith( 'M 112 107 C' ), true )
-			$mol_assert_equal( pane.wire_lines()[0].geometry.endsWith( ', 288 7' ), true )
 
 		},
 
@@ -1852,7 +1912,6 @@ namespace $ {
 			$mol_assert_equal( prevented, 1 )
 
 		},
-
 
 		async 'a file whose write suspends still becomes a node, though the drag empties itself'( $ ) {
 

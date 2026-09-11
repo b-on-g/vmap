@@ -582,6 +582,18 @@ namespace $.$$ {
 			)
 		}
 
+		@ $mol_mem_key
+		override part_overs( name: string ): readonly string[] {
+			const node = this.node()
+			const sign = node.prop_fullname( name )
+			if( !sign ) return []
+
+			const klass = node.props_tree().select( sign ).kids[ 0 ]?.kids[ 0 ]
+			if( !klass || !$mol_view_tree2_class_match( klass ) ) return []
+
+			return klass.kids.map( over => this.$.$mol_view_tree2_prop_parts( over ).name )
+		}
+
 		@ $mol_mem
 		override doc_names() {
 			return this.node().prop_names()

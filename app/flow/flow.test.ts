@@ -416,7 +416,7 @@ namespace $ {
 
 			port_dot( name: string, port: string, side: $bog_vmap_app_wire_side ) {
 				const box = pane.part_box( name )!
-				const index = app.part_ports( name ).findIndex( known => known.name === port )
+				const index = pane.part_dots( name ).findIndex( known => known.name === port )
 				if( !box || index < 0 ) $mol_fail( new Error( `no port ${ name }.${ port } on screen` ) )
 
 				return this.client( $bog_vmap_app_wire_port_point( box, side, index ) )
