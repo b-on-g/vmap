@@ -1104,10 +1104,11 @@ namespace $.$$ {
 					return
 				}
 
-				const port = ports.find( lit ) ?? ports[ 0 ]
+				const index = Math.max( 0, ports.findIndex( lit ) )
+				const port = ports[ index ]
 				if( !port ) return
 
-				const [ x, y ] = $bog_vmap_app_wire_side_point( box, side )
+				const [ x, y ] = $bog_vmap_app_wire_port_point( box, side, index )
 				mark( port, x, y )
 
 			}
