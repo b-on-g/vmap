@@ -20140,6 +20140,10 @@ var $;
             ...style ? [{ name: `${name}.view.css`, text: style }] : [],
             { name: `${name}.meta.tree`, text: 'include \\/mol/theme/auto\n' },
             { name: 'index.html', text: index_html(router || entry) },
+            { name: 'README.md', text: readme_md(path, name) },
+            { name: '.gitattributes', text: '*\t-text\n' },
+            { name: '.gitignore', text: '-*\n.DS_Store\n' },
+            { name: '.github/workflows/deploy.yml', text: deploy_yml(path) },
         ];
         return { path, name, root: router || entry, files };
     }
@@ -20247,6 +20251,73 @@ var $;
             '\t\t<script src="web.js"></script>',
             '\t</body>',
             '</html>',
+            '',
+        ].join('\n');
+    }
+    function readme_md(path, name) {
+        return [
+            `# ${name}`,
+            '',
+            'Приложение, собранное в редакторе vmap и выгруженное паком MAM.',
+            '',
+            'Сборка: клонировать https://github.com/hyoo-ru/mam, положить этот репозиторий'
+                + ` в \`${path}\` и выполнить \`npm start ${path}\`.`
+                + ` Страница ложится в \`${path}/-/index.html\`.`,
+            '',
+            'Публикация: прогон `.github/workflows/deploy.yml` на ветке `main` кладёт сборку'
+                + ' в ветку `gh-pages`. Настройки репозитория, Pages, Deploy from a branch,'
+                + ' ветка `gh-pages`, папка `/ (root)`.',
+            '',
+        ].join('\n');
+    }
+    function deploy_yml(path) {
+        return [
+            `name: ${'$' + path.replace(/\//g, '_')}`,
+            '',
+            'permissions: write-all',
+            '',
+            'on:',
+            '  workflow_dispatch:',
+            '  push:',
+            '    branches: [ main ]',
+            '',
+            'concurrency:',
+            '  group: deploy-${{ github.ref }}',
+            '  cancel-in-progress: true',
+            '',
+            'jobs:',
+            '',
+            '  build:',
+            '    runs-on: ubuntu-latest',
+            '',
+            '    steps:',
+            '',
+            '    - uses: hyoo-ru/mam_build@master2',
+            '      with:',
+            `        package: '${path}'`,
+            '',
+            '    - name: Audits',
+            '      run: |',
+            '        set -euo pipefail',
+            `        grep -q 'Audit passed' ${path}/-/web.audit.js`,
+            `        grep -q 'Audit passed' ${path}/-/node.audit.js`,
+            '',
+            '    - name: Cache-bust the bundle',
+            '      run: |',
+            '        set -euo pipefail',
+            '        sed -i "s|src=\\"web.js\\"|src=\\"web.js?v=${GITHUB_SHA::7}\\"|"'
+                + ` ${path}/-/index.html`,
+            `        grep -q "web.js?v=\${GITHUB_SHA::7}" ${path}/-/index.html`,
+            '',
+            '    - uses: hyoo-ru/gh-deploy@v4.4.1',
+            '      with:',
+            `        folder: '${path}/-'`,
+            '',
+            '    - name: URL',
+            '      run: |',
+            '        set -euo pipefail',
+            '        echo "- https://${{ github.repository_owner }}.github.io/'
+                + '${{ github.event.repository.name }}/" >> "$GITHUB_STEP_SUMMARY"',
             '',
         ].join('\n');
     }
@@ -48343,6 +48414,25 @@ var $;
             $mol_assert_equal(module.root, `${d}bog_site_page`);
             $mol_assert_equal(file_of(module, 'index.html').includes(`mol_view_root="${d}bog_site_page"`), true);
         },
+        'the workflow builds the module by the stock action and nothing by hand'($) {
+            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
+            const yml = file_of(module, '.github/workflows/deploy.yml');
+            $mol_assert_ok(yml.includes('uses: hyoo-ru/mam_build@master2'));
+            $mol_assert_ok(yml.includes(`package: '${module.path}'`));
+            $mol_assert_ok(yml.includes(`folder: '${module.path}/-'`));
+            $mol_assert_equal(yml.includes('git clone'), false);
+            $mol_assert_equal(yml.includes('npm start'), false);
+            $mol_assert_equal(yml.includes('bog/vmap'), false);
+            $mol_assert_equal(file_of(module, '.gitattributes'), '*\t-text\n');
+            $mol_assert_ok(file_of(module, '.gitignore').startsWith('-*'));
+        },
+        'the readme names the module path, not the editor'($) {
+            const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
+            const readme = file_of(module, 'README.md');
+            $mol_assert_ok(readme.startsWith(`# ${module.name}\n`));
+            $mol_assert_ok(readme.includes(`npm start ${module.path}`));
+            $mol_assert_equal(readme.includes('bog/vmap'), false);
+        },
         'the module is the files a person would have written'($) {
             const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
             $mol_assert_equal(module.path, 'bog/site');
@@ -48351,6 +48441,10 @@ var $;
                 'site.view.tree',
                 'site.meta.tree',
                 'index.html',
+                'README.md',
+                '.gitattributes',
+                '.gitignore',
+                '.github/workflows/deploy.yml',
             ]);
             const full = $.$bog_vmap_app_export_build([
                 { source: page },
@@ -48362,6 +48456,10 @@ var $;
                 'site.view.css',
                 'site.meta.tree',
                 'index.html',
+                'README.md',
+                '.gitattributes',
+                '.gitignore',
+                '.github/workflows/deploy.yml',
             ]);
         },
         'a root outside the document is refused'($) {
@@ -48423,7 +48521,15 @@ var $;
             const module = $.$bog_vmap_app_export_build([{ source: one }]);
             $mol_assert_equal(file_of(module, '.view.tree'), one);
             $mol_assert_equal(module.root, `${d}bog_site_page`);
-            $mol_assert_like(module.files.map(file => file.name), ['page.view.tree', 'page.meta.tree', 'index.html']);
+            $mol_assert_like(module.files.map(file => file.name), [
+                'page.view.tree',
+                'page.meta.tree',
+                'index.html',
+                'README.md',
+                '.gitattributes',
+                '.gitignore',
+                '.github/workflows/deploy.yml',
+            ]);
         },
         'the router leaves the module where the document put it'($) {
             const module = $.$bog_vmap_app_export_build([{ source: pages }, { source: hero }]);
@@ -48859,7 +48965,8 @@ var $;
             $mol_assert_equal(app.export_ready(), true);
             $mol_assert_equal(module.path, 'my/site/page');
             $mol_assert_equal(module.name, 'page');
-            $mol_assert_equal(module.files.map(file => file.name).join(' '), 'page.view.tree page.meta.tree index.html');
+            $mol_assert_equal(module.files.map(file => file.name).join(' '), 'page.view.tree page.meta.tree index.html README.md'
+                + ' .gitattributes .gitignore .github/workflows/deploy.yml');
             $mol_assert_equal(module.files[0].text, app.doc_source());
             $mol_assert_equal(app.export_title(), 'Скачать my/site/page');
             $mol_assert_equal(app.export_file(), 'page.zip');
@@ -48939,7 +49046,15 @@ var $;
             $mol_assert_equal(module.root, `${d}my_site_page`);
             $mol_assert_equal(module.files[0].text, `${d}my_site_page ${d}mol_view sub /\n`);
             $mol_assert_equal(module.path, 'my/site/page');
-            $mol_assert_like(module.files.map(file => file.name), ['page.view.tree', 'page.meta.tree', 'index.html']);
+            $mol_assert_like(module.files.map(file => file.name), [
+                'page.view.tree',
+                'page.meta.tree',
+                'index.html',
+                'README.md',
+                '.gitattributes',
+                '.gitignore',
+                '.github/workflows/deploy.yml',
+            ]);
         },
         'an edit of the root leaves the other classes byte for byte'($) {
             const app = $bog_vmap_app.make({ $ });
