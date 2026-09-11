@@ -42,10 +42,27 @@ jobs:
     # кто вспомнит, то есть ровно не тогда, когда их ломают. Публиковать их не
     # надо: шага `gh-deploy` у них нет, папок на сайте они не заводят, и
     # `clean-exclude` ниже их не касается.
+    # Chrome ставится ДО сборки, потому что `smoke` идёт последним в списке ниже и
+    # гоняет свой node-тест прямо в пайплайне сборки. Адрес бинаря кладётся в
+    # `CHROME_PATH`: тест ищет браузер сперва по нему, а `command -v chrome` держим
+    # запасным путём. Без браузера тест печатает «Chrome не найден, дымовой тест
+    # пропущен» и остаётся зелёным — это честный пропуск, а не молчаливая зелень.
+    - uses: browser-actions/setup-chrome@v1
+      id: chrome
+      with:
+        chrome-version: stable
+
+    - name: Point the smoke test at Chrome
+      run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+
+    # `smoke` последним: он поднимает собранный `app/-/index.html` со статики и
+    # требует готовых `scene` и `part` рядом. Красный дымовой тест кладёт этот шаг
+    # со статусом 1, и ни один `gh-deploy` ниже не выполняется — у шагов с `if`
+    # неявная проверка `success()` остаётся в силе.
     - uses: hyoo-ru/mam_build@master2
       with:
         package: 'bog/vmap'
-        modules: 'app scene part demo pages'
+        modules: 'app scene part demo pages smoke'
 
     # GitHub Pages отдаёт web.js с `cache-control: max-age=600`, поэтому первые
     # десять минут после деплоя вернувшийся читатель получает старый бандл и
