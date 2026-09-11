@@ -126,8 +126,8 @@ namespace $ {
 		| {
 			readonly kind: 'error'
 
-			/** Channel. The two clear independently. */
-			readonly at: 'compile' | 'runtime'
+			/** Channel. The three clear independently. */
+			readonly at: 'compile' | 'runtime' | 'pack'
 
 			readonly message: string | null
 

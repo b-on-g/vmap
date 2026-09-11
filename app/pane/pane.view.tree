@@ -37,6 +37,7 @@ $bog_vmap_app_pane $mol_view
 	scene_restart? null
 	error_at*? \
 	error_node*? \
+	pack_note \
 	error \
 	isolation \
 	camera_shift? $mol_vector_2d<number> /

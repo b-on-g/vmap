@@ -1085,6 +1085,42 @@ namespace $ {
 
 		},
 
+		'the pack channel of the scene lands in its own note and a fresh frame clears it'( $ ) {
+			const { pane, answer } = pane_make( $ )
+
+			$mol_assert_equal( pane.pack_note(), '' )
+
+			answer({ kind: 'error', at: 'pack', message: 'Загрузка библиотеки компонентов… http://dead.test/web.js' } )
+
+			$mol_assert_equal( pane.pack_note(), 'Загрузка библиотеки компонентов… http://dead.test/web.js' )
+			$mol_assert_equal( pane.error().includes( 'библиотеки' ), false )
+			$mol_assert_like( pane.errors(), {} )
+
+			answer({ kind: 'ready' })
+
+			$mol_assert_equal( pane.pack_note(), '' )
+
+		},
+
+		'a frame held up by the pack is called out at once, without a pointless relaunch'( $ ) {
+			const timers = timers_fake( $ )
+			const { pane, answer } = pane_make( $ )
+
+			answer({ kind: 'ready' })
+			answer({ kind: 'error', at: 'pack', message: 'Загрузка библиотеки компонентов… http://dead.test/web.js' } )
+
+			pane.watchdog()
+
+			const generation = pane.scene_generation()
+
+			timers.at( -1 )!.task()
+
+			$mol_assert_equal( pane.stalled(), true )
+			$mol_assert_equal( pane.restart_tries(), 0 )
+			$mol_assert_equal( pane.scene_generation(), generation )
+
+		},
+
 		'a scene that comes up gets its automatic retry back for next time'( $ ) {
 			const timers = timers_fake( $ )
 			const { pane, answer } = pane_make( $ )

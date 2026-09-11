@@ -85,6 +85,10 @@ namespace $.$$ {
 				.join( '\n' )
 		}
 
+		override pack_note() {
+			return this.error_at( 'pack' )
+		}
+
 		@ $mol_mem
 		errors(): { readonly [ node: string ]: string } {
 			const res = {} as { [ node: string ]: string }
@@ -272,7 +276,7 @@ namespace $.$$ {
 
 			return new this.$.$mol_after_timeout( limit, () => {
 
-				if( !this.warmed() && this.restart_tries() < this.restart_tries_max() ) {
+				if( !this.warmed() && !this.pack_note() && this.restart_tries() < this.restart_tries_max() ) {
 					this.restart_tries( this.restart_tries() + 1 )
 					this.scene_relaunch()
 					return
@@ -1246,6 +1250,7 @@ namespace $.$$ {
 			if( message.kind === 'ready' ) {
 				this.error_at( 'compile', '' )
 				this.error_at( 'runtime', '' )
+				this.error_at( 'pack', '' )
 
 				this.warmed( false )
 

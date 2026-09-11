@@ -197,6 +197,11 @@ namespace $ {
 				queue.length = 0
 			},
 
+			pack_note( message: string | null ) {
+				deliver({ kind: 'error', at: 'pack', message })
+				app.dom_tree()
+			},
+
 			hello() {
 				deliver({ kind: 'ready' })
 				app.dom_tree()
@@ -829,7 +834,7 @@ namespace $ {
 			$mol_assert_ok( stage.frame().getAttribute( 'srcdoc' ) )
 			$mol_assert_equal( stage.pane.ready(), true )
 
-			$mol_assert_equal( stage.text().includes( 'ожидание сцены' ), false )
+			$mol_assert_equal( stage.text().includes( 'сцена на связи' ), false )
 
 			$mol_assert_equal( stage.app.links(), '' )
 			stage.classes_open()
@@ -865,6 +870,73 @@ namespace $ {
 			$mol_assert_equal( stage.text().includes( 'Сцена не отвечает' ), false )
 
 			$mol_assert_ok( stage.frame() !== frame )
+
+		},
+
+		'a pack that never answers names itself in the header instead of a green lie'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const note = 'Загрузка библиотеки компонентов… http://localhost:9080/bog/vmap/part/-/web.js'
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			$mol_assert_ok( stage.text().includes( 'сцена на связи' ) )
+
+			stage.scene.silence()
+			stage.pane.warmed( false )
+			stage.scene.pack_note( note )
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.pack_note(), note )
+			$mol_assert_ok( stage.text().includes( note ) )
+			$mol_assert_equal( stage.text().includes( 'сцена на связи' ), false )
+
+		},
+
+		'a dead pack skips the pointless relaunch and the plate hands the default pack back'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const dead = 'https://dead.test/'
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			stage.app.links( dead )
+			stage.scene.silence()
+			stage.pane.warmed( false )
+			stage.scene.pack_note( 'Загрузка библиотеки компонентов… ' + dead + 'web.js' )
+			stage.redraw()
+
+			const generation = stage.pane.scene_generation()
+			const watch = stage.timers.filter( timer => timer.delay === stage.pane.cold_limit() ).at( -1 )!
+			$mol_assert_ok( watch )
+
+			watch.task()
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.stalled(), true )
+			$mol_assert_equal( stage.pane.restart_tries(), 0 )
+			$mol_assert_equal( stage.pane.scene_generation(), generation )
+			$mol_assert_ok( stage.text().includes( 'верните пак по умолчанию' ) )
+
+			stage.click( stage.button( 'Вернуть пак по умолчанию' ) )
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.links(), '' )
+			$mol_assert_equal( stage.app.links_parsed().pack, null )
+			$mol_assert_equal( stage.pane.scene_generation(), generation + 1 )
+			$mol_assert_equal( stage.pane.stalled(), false )
+
+		},
+
+		'the default pack comes back without taking the lands of the shelf with it'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const land = 'AbCdEfGh'
+
+			stage.app.links( 'https://dead.test/, ' + land )
+			$mol_assert_like( stage.app.links_parsed().lands, [ land ] )
+
+			stage.app.pack_default()
+
+			$mol_assert_equal( stage.app.links(), land )
+			$mol_assert_equal( stage.app.links_parsed().pack, null )
+			$mol_assert_like( stage.app.links_parsed().lands, [ land ] )
 
 		},
 

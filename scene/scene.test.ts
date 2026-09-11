@@ -62,9 +62,18 @@ namespace $ {
 		return sent
 	}
 
-	function failure( sent: readonly $bog_vmap_bridge_up[], at: 'compile' | 'runtime' ) {
+	function failure( sent: readonly $bog_vmap_bridge_up[], at: 'compile' | 'runtime' | 'pack' ) {
 		const errors = sent.filter( m => m.kind === 'error' && m.at === at )
 		return errors[ errors.length - 1 ] as undefined | { message: string | null, node?: string }
+	}
+
+	function held( ctx: $ ) {
+		Reflect.set( ctx, '$mol_after_timeout', class extends $mol_after_timeout {
+			constructor( delay: number, task: ()=> void ) {
+				super( delay, task )
+				clearTimeout( this.id )
+			}
+		} )
 	}
 
 	async function grown( made: $$.$bog_vmap_scene, root: string, src: string ) {
@@ -455,6 +464,40 @@ namespace $ {
 
 			$mol_assert_equal( failed?.node, 'Tail' )
 			$mol_assert_ok( failed?.message )
+
+		},
+
+		'a scene with no pack yet says so upwards, not only on its own canvas'( $ ) {
+
+			const { made, ctx } = scene( $, '' )
+			const sent = wired( made )
+			held( ctx )
+
+			made.pack_task()
+
+			$mol_assert_equal( failure( sent, 'pack' ), undefined )
+
+			made.pack_task().task()
+
+			$mol_assert_equal( failure( sent, 'pack' )?.message, 'Ожидание библиотеки компонентов…' )
+
+		},
+
+		async 'a pack that answered clears the note it sent upwards'( $ ) {
+
+			const { made, ctx } = scene( $, '' )
+			const sent = wired( made )
+			held( ctx )
+
+			made.pack_task().task()
+			$mol_assert_equal( failure( sent, 'pack' )?.message, 'Ожидание библиотеки компонентов…' )
+
+			deliver( $, made, { kind: 'pack_set', uri: pack } )
+			await settled( ()=> made.pack_ready() )
+
+			made.pack_task().task()
+
+			$mol_assert_equal( failure( sent, 'pack' )?.message, null )
 
 		},
 

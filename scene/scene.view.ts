@@ -26,7 +26,7 @@ namespace $.$$ {
 	export class $bog_vmap_scene extends $.$bog_vmap_scene {
 
 		@ $mol_mem_key
-		error_sent( at: 'compile' | 'runtime', next?: string | null ): string | null {
+		error_sent( at: 'compile' | 'runtime' | 'pack', next?: string | null ): string | null {
 			return next === undefined ? null : next
 		}
 
@@ -171,6 +171,12 @@ namespace $.$$ {
 				return String( ( error as Error )?.message ?? error )
 			}
 
+		}
+
+		@ $mol_mem
+		pack_task() {
+			const note = this.pack_note()
+			return new this.$.$mol_after_timeout( 60, ()=> this.error_post( 'pack', note, '' ) )
 		}
 
 		@ $mol_mem
@@ -820,7 +826,7 @@ namespace $.$$ {
 			}
 		}
 
-		error_post( at: 'compile' | 'runtime', message: string, node: string ) {
+		error_post( at: 'compile' | 'runtime' | 'pack', message: string, node: string ) {
 
 			const next = message || null
 
@@ -860,6 +866,7 @@ namespace $.$$ {
 				this.key_listener(),
 				this.resize_watch(),
 				this.boot(),
+				this.pack_task(),
 				this.report_task(),
 				this.values_task(),
 			]

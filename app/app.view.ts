@@ -17,11 +17,39 @@ namespace $.$$ {
 			this.Pane().scene_restart()
 		}
 
+		@ $mol_action
+		override pack_default() {
+			this.links( this.links_parsed().lands.join( ', ' ) )
+			this.Pane().scene_restart()
+			return null
+		}
+
+		override pack_stalled() {
+			return Boolean( this.Pane().pack_note() )
+		}
+
+		@ $mol_mem
+		override stall_content() {
+			return [
+				this.Stall_note(),
+				... this.pack_stalled() ? [ this.Stall_pack() ] : [],
+				this.Stall_reload(),
+			]
+		}
+
 		stalled() {
 			return this.Pane().stalled()
 		}
 
 		override stall_note() {
+			const pack = this.Pane().pack_note()
+
+			if( pack ) {
+				return `${ pack } — библиотека компонентов так и не ответила.`
+					+ ' Адрес взят из поля полки. Если он остался от локального стенда,'
+					+ ' верните пак по умолчанию: он лежит рядом со страницей редактора.'
+			}
+
 			if( !this.Pane().warmed() ) {
 				return 'Сцена не запустилась. Если код в панели уже исправлен — нажмите'
 					+ ' «Перезагрузить сцену» ещё раз. Если нет — сначала исправьте код:'
@@ -647,7 +675,8 @@ namespace $.$$ {
 			const note = this.store_note()
 			if( note ) return note
 			if( this.stalled() ) return 'сцена не отвечает'
-			return this.Pane().ready() ? 'сцена на связи' : 'ожидание сцены…'
+			if( this.Pane().warmed() ) return 'сцена на связи'
+			return this.Pane().pack_note() || 'ожидание сцены…'
 		}
 
 		dragged() {
