@@ -23656,14 +23656,14 @@ var $;
             body() {
                 return [
                     this.Title(),
-                    this.Source(),
-                    ...this.classes_showed() ? [] : [this.Stack()],
+                    ...this.classes_showed() ? [this.Source()] : [this.Stack()],
                     this.Level(),
                     ...this.classes_showed() ? [this.Palette()] : [],
                 ];
             }
             stack_content() {
                 return [
+                    this.Source(),
                     this.Items(),
                     this.Apps(),
                 ];
@@ -23905,7 +23905,7 @@ var $;
             },
             Source: {
                 flex: { direction: 'column', shrink: 0 },
-                padding: { left: $mol_gap.space, right: $mol_gap.space },
+                padding: { left: $mol_gap.space, right: $mol_gap.space, top: $mol_gap.space },
                 gap: $mol_gap.space,
             },
             Packs: {
@@ -48363,6 +48363,17 @@ var $;
             $mol_assert_like(shelf.app_list(), []);
             $mol_assert_equal(shelf.apps_title(), 'Приложение не подключено');
             $mol_assert_ok(shelf.items().length > 4);
+        },
+        'only the heading and the switch are pinned, everything else scrolls'($) {
+            const shelf = $bog_vmap_app_shelf.make({ $ });
+            const body = shelf.body();
+            $mol_assert_equal(body.length, 3);
+            $mol_assert_equal(body[0] === shelf.Title(), true);
+            $mol_assert_equal(body[1] === shelf.Stack(), true);
+            $mol_assert_equal(body[2] === shelf.Level(), true);
+            const dom = shelf.dom_tree();
+            $mol_assert_equal(dom.querySelector('[bog_vmap_app_shelf_stack]')
+                .contains(dom.querySelector('[bog_vmap_app_shelf_source]')), true);
         },
         'the shelf is cut down to what the pack at hand can build'($) {
             const shelf = (classes) => $$.$bog_vmap_app_shelf.make({

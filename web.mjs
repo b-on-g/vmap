@@ -34438,14 +34438,14 @@ var $;
             body() {
                 return [
                     this.Title(),
-                    this.Source(),
-                    ...this.classes_showed() ? [] : [this.Stack()],
+                    ...this.classes_showed() ? [this.Source()] : [this.Stack()],
                     this.Level(),
                     ...this.classes_showed() ? [this.Palette()] : [],
                 ];
             }
             stack_content() {
                 return [
+                    this.Source(),
                     this.Items(),
                     this.Apps(),
                 ];
@@ -34687,7 +34687,7 @@ var $;
             },
             Source: {
                 flex: { direction: 'column', shrink: 0 },
-                padding: { left: $mol_gap.space, right: $mol_gap.space },
+                padding: { left: $mol_gap.space, right: $mol_gap.space, top: $mol_gap.space },
                 gap: $mol_gap.space,
             },
             Packs: {
