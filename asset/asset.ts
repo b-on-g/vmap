@@ -118,8 +118,10 @@ namespace $ {
 		}
 
 		made( blob: $mol_blob ) {
-			const file = this.land().Data( $giper_baza_file )
+			const land = this.land()
+			const file = land.Data( $giper_baza_file )
 			file.blob( blob )
+			this.yard().sync_land( land.link() )
 			return file
 		}
 
