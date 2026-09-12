@@ -4456,6 +4456,164 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$mol_svg) = class $mol_svg extends ($.$mol_view) {
+		dom_name(){
+			return "svg";
+		}
+		dom_name_space(){
+			return "http://www.w3.org/2000/svg";
+		}
+		font_size(){
+			return 16;
+		}
+		font_family(){
+			return "";
+		}
+		style_size(){
+			return {};
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /** Base SVG component to display SVG images or icons. */
+        class $mol_svg extends $.$mol_svg {
+            computed_style() {
+                const win = this.$.$mol_dom_context;
+                const style = win.getComputedStyle(this.dom_node());
+                if (!style['font-size'])
+                    $mol_state_time.now(0);
+                return style;
+            }
+            font_size() {
+                return parseInt(this.computed_style()['font-size']) || 16;
+            }
+            font_family() {
+                return this.computed_style()['font-family'];
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_svg.prototype, "computed_style", null);
+        __decorate([
+            $mol_mem
+        ], $mol_svg.prototype, "font_size", null);
+        __decorate([
+            $mol_mem
+        ], $mol_svg.prototype, "font_family", null);
+        $$.$mol_svg = $mol_svg;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$mol_svg_root) = class $mol_svg_root extends ($.$mol_svg) {
+		view_box(){
+			return "0 0 100 100";
+		}
+		aspect(){
+			return "xMidYMid";
+		}
+		dom_name(){
+			return "svg";
+		}
+		attr(){
+			return {
+				...(super.attr()), 
+				"viewBox": (this.view_box()), 
+				"preserveAspectRatio": (this.aspect())
+			};
+		}
+	};
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/svg/root/root.view.css", "[mol_svg_root] {\n\toverflow: hidden;\n}\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+
+
+;
+	($.$mol_svg_path) = class $mol_svg_path extends ($.$mol_svg) {
+		geometry(){
+			return "";
+		}
+		dom_name(){
+			return "path";
+		}
+		attr(){
+			return {...(super.attr()), "d": (this.geometry())};
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon) = class $mol_icon extends ($.$mol_svg_root) {
+		path(){
+			return "";
+		}
+		Path(){
+			const obj = new this.$.$mol_svg_path();
+			(obj.geometry) = () => ((this.path()));
+			return obj;
+		}
+		view_box(){
+			return "0 0 24 24";
+		}
+		minimal_width(){
+			return 16;
+		}
+		minimal_height(){
+			return 16;
+		}
+		sub(){
+			return [(this.Path())];
+		}
+	};
+	($mol_mem(($.$mol_icon.prototype), "Path"));
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/icon/icon.view.css", "[mol_icon] {\n\tfill: currentColor;\n\tstroke: none;\n\twidth: 1em;\n\theight: 1.5em;\n\tflex: 0 0 auto;\n\tvertical-align: top;\n\tdisplay: inline-block;\n\tfilter: drop-shadow(0px 1px 1px var(--mol_theme_back));\n\ttransform-origin: center;\n}\n\n[mol_icon_path] {\n\ttransform-origin: center;\n}\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_widgets) = class $mol_icon_widgets extends ($.$mol_icon) {
+		path(){
+			return "M3,3H11V7.34L16.66,1.69L22.31,7.34L16.66,13H21V21H13V13H16.66L11,7.34V11H3V3M3,13H11V21H3V13Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
 	($.$mol_speck) = class $mol_speck extends ($.$mol_view) {
 		value(){
 			return null;
@@ -4795,6 +4953,57 @@ var $;
         $$.$mol_check = $mol_check;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
+
+;
+	($.$mol_check_icon) = class $mol_check_icon extends ($.$mol_check) {};
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/check/icon/icon.view.css", "[mol_check_icon]:where([mol_check_checked]) {\n\tcolor: var(--mol_theme_current);\n}\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_tune) = class $mol_icon_tune extends ($.$mol_icon) {
+		path(){
+			return "M3,17V19H9V17H3M3,5V7H13V5H3M13,21V19H21V17H13V15H11V21H13M7,9V11H3V13H7V15H9V9H7M21,13V11H11V13H21M15,9H17V7H21V5H17V3H15V9Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_code_tags) = class $mol_icon_code_tags extends ($.$mol_icon) {
+		path(){
+			return "M14.6,16.6L19.2,12L14.6,7.4L16,6L22,12L16,18L14.6,16.6M9.4,16.6L4.8,12L9.4,7.4L8,6L2,12L8,18L9.4,16.6Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_history) = class $mol_icon_history extends ($.$mol_icon) {
+		path(){
+			return "M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3";
+		}
+	};
+
+
+;
+"use strict";
+
 
 ;
 	($.$mol_hotkey) = class $mol_hotkey extends ($.$mol_plugin) {
@@ -16230,152 +16439,6 @@ var $;
         $$.$mol_nav = $mol_nav;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
-
-;
-	($.$mol_svg) = class $mol_svg extends ($.$mol_view) {
-		dom_name(){
-			return "svg";
-		}
-		dom_name_space(){
-			return "http://www.w3.org/2000/svg";
-		}
-		font_size(){
-			return 16;
-		}
-		font_family(){
-			return "";
-		}
-		style_size(){
-			return {};
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /** Base SVG component to display SVG images or icons. */
-        class $mol_svg extends $.$mol_svg {
-            computed_style() {
-                const win = this.$.$mol_dom_context;
-                const style = win.getComputedStyle(this.dom_node());
-                if (!style['font-size'])
-                    $mol_state_time.now(0);
-                return style;
-            }
-            font_size() {
-                return parseInt(this.computed_style()['font-size']) || 16;
-            }
-            font_family() {
-                return this.computed_style()['font-family'];
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_svg.prototype, "computed_style", null);
-        __decorate([
-            $mol_mem
-        ], $mol_svg.prototype, "font_size", null);
-        __decorate([
-            $mol_mem
-        ], $mol_svg.prototype, "font_family", null);
-        $$.$mol_svg = $mol_svg;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-	($.$mol_svg_root) = class $mol_svg_root extends ($.$mol_svg) {
-		view_box(){
-			return "0 0 100 100";
-		}
-		aspect(){
-			return "xMidYMid";
-		}
-		dom_name(){
-			return "svg";
-		}
-		attr(){
-			return {
-				...(super.attr()), 
-				"viewBox": (this.view_box()), 
-				"preserveAspectRatio": (this.aspect())
-			};
-		}
-	};
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/svg/root/root.view.css", "[mol_svg_root] {\n\toverflow: hidden;\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
-	($.$mol_svg_path) = class $mol_svg_path extends ($.$mol_svg) {
-		geometry(){
-			return "";
-		}
-		dom_name(){
-			return "path";
-		}
-		attr(){
-			return {...(super.attr()), "d": (this.geometry())};
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_icon) = class $mol_icon extends ($.$mol_svg_root) {
-		path(){
-			return "";
-		}
-		Path(){
-			const obj = new this.$.$mol_svg_path();
-			(obj.geometry) = () => ((this.path()));
-			return obj;
-		}
-		view_box(){
-			return "0 0 24 24";
-		}
-		minimal_width(){
-			return 16;
-		}
-		minimal_height(){
-			return 16;
-		}
-		sub(){
-			return [(this.Path())];
-		}
-	};
-	($mol_mem(($.$mol_icon.prototype), "Path"));
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/icon/icon.view.css", "[mol_icon] {\n\tfill: currentColor;\n\tstroke: none;\n\twidth: 1em;\n\theight: 1.5em;\n\tflex: 0 0 auto;\n\tvertical-align: top;\n\tdisplay: inline-block;\n\tfilter: drop-shadow(0px 1px 1px var(--mol_theme_back));\n\ttransform-origin: center;\n}\n\n[mol_icon_path] {\n\ttransform-origin: center;\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
 
 ;
 	($.$mol_icon_close) = class $mol_icon_close extends ($.$mol_icon) {
@@ -28732,21 +28795,6 @@ var $;
 
 
 ;
-	($.$mol_check_icon) = class $mol_check_icon extends ($.$mol_check) {};
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/check/icon/icon.view.css", "[mol_check_icon]:where([mol_check_checked]) {\n\tcolor: var(--mol_theme_current);\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
-
-;
 	($.$giper_baza_auth_slot) = class $giper_baza_auth_slot extends ($.$mol_page) {
 		prefix(next){
 			if(next !== undefined) return next;
@@ -39022,29 +39070,47 @@ var $;
 		floats(){
 			return [];
 		}
+		Palette_icon(){
+			const obj = new this.$.$mol_icon_widgets();
+			return obj;
+		}
 		Palette_check(){
-			const obj = new this.$.$mol_check();
-			(obj.title) = () => ("Полка");
+			const obj = new this.$.$mol_check_icon();
+			(obj.Icon) = () => ((this.Palette_icon()));
+			(obj.hint) = () => ("Полка: компоненты, которые можно положить на холст");
 			(obj.checked) = (next) => ((this.palette_showed(next)));
 			return obj;
 		}
+		Inspect_icon(){
+			const obj = new this.$.$mol_icon_tune();
+			return obj;
+		}
 		Inspect_check(){
-			const obj = new this.$.$mol_check();
-			(obj.title) = () => ("Свойства");
+			const obj = new this.$.$mol_check_icon();
+			(obj.Icon) = () => ((this.Inspect_icon()));
+			(obj.hint) = () => ("Свойства выбранного узла");
 			(obj.checked) = (next) => ((this.inspect_showed(next)));
 			return obj;
 		}
+		Code_icon(){
+			const obj = new this.$.$mol_icon_code_tags();
+			return obj;
+		}
 		Code_check(){
-			const obj = new this.$.$mol_check();
-			(obj.title) = () => ("Код");
-			(obj.hint) = () => ("Три текста выбранного узла: view.tree, JS и CSS");
+			const obj = new this.$.$mol_check_icon();
+			(obj.Icon) = () => ((this.Code_icon()));
+			(obj.hint) = () => ("Код: три текста выбранного узла — view.tree, JS и CSS");
 			(obj.checked) = (next) => ((this.code_showed(next)));
 			return obj;
 		}
+		History_icon(){
+			const obj = new this.$.$mol_icon_history();
+			return obj;
+		}
 		History_check(){
-			const obj = new this.$.$mol_check();
-			(obj.title) = () => ("Версии");
-			(obj.hint) = () => ("История документа: шаги этой сессии и снимки в ленде");
+			const obj = new this.$.$mol_check_icon();
+			(obj.Icon) = () => ((this.History_icon()));
+			(obj.hint) = () => ("Версии: шаги этой сессии и снимки в ленде");
 			(obj.checked) = (next) => ((this.history_showed(next)));
 			return obj;
 		}
@@ -39179,14 +39245,6 @@ var $;
 			(obj.lights) = (next) => ((this.lights(next)));
 			return obj;
 		}
-		status(){
-			return "";
-		}
-		Status(){
-			const obj = new this.$.$mol_status();
-			(obj.status) = () => ((this.status()));
-			return obj;
-		}
 		pack_script(){
 			return "";
 		}
@@ -39311,6 +39369,9 @@ var $;
 		}
 		lands(){
 			return [];
+		}
+		status(){
+			return "";
 		}
 		error(){
 			return "";
@@ -39452,8 +39513,7 @@ var $;
 				(this.Zoom_out()), 
 				(this.Zoom_reset()), 
 				(this.Zoom_in()), 
-				(this.Lights()), 
-				(this.Status())
+				(this.Lights())
 			]);
 			(obj.body) = () => ([(this.Pane())]);
 			(obj.foot) = () => ((this.notes()));
@@ -39513,6 +39573,11 @@ var $;
 			(obj.lands) = () => ((this.lands()));
 			return obj;
 		}
+		Status(){
+			const obj = new this.$.$mol_status();
+			(obj.status) = () => ((this.status()));
+			return obj;
+		}
 		Alarm(){
 			const obj = new this.$.$mol_status();
 			(obj.status) = () => ((this.error()));
@@ -39568,9 +39633,13 @@ var $;
 		}
 	};
 	($mol_mem(($.$bog_vmap_app.prototype), "Theme"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Palette_icon"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Palette_check"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Inspect_icon"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Inspect_check"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Code_icon"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Code_check"));
+	($mol_mem(($.$bog_vmap_app.prototype), "History_icon"));
 	($mol_mem(($.$bog_vmap_app.prototype), "History_check"));
 	($mol_mem(($.$bog_vmap_app.prototype), "board_add"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Board"));
@@ -39590,7 +39659,6 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "zoom_in"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Zoom_in"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Lights"));
-	($mol_mem(($.$bog_vmap_app.prototype), "Status"));
 	($mol_mem(($.$bog_vmap_app.prototype), "link_add"));
 	($mol_mem(($.$bog_vmap_app.prototype), "link_drop"));
 	($mol_mem(($.$bog_vmap_app.prototype), "tree_move"));
@@ -39627,6 +39695,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Code"));
 	($mol_mem(($.$bog_vmap_app.prototype), "History"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Lib"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Status"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Alarm"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Inside_note"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Root_note"));
@@ -40245,6 +40314,7 @@ var $;
                     ...this.error() ? [this.Alarm()] : [],
                     ...this.export_rows(),
                     ...this.root_title_note() ? [this.Root_note()] : [],
+                    this.Status(),
                 ];
             }
             pages() {

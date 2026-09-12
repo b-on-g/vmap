@@ -17284,12 +17284,26 @@ var $;
                 app.Zoom_reset(),
                 app.Zoom_in(),
                 app.Lights(),
-                app.Status(),
             ])
                 $mol_assert_ok(tools.includes(tool));
+            $mol_assert_equal(tools.includes(app.Status()), false);
             $mol_assert_equal(app.Canvas().body()[0], app.Pane());
-            $mol_assert_equal(app.Canvas().foot().length, 0);
+            $mol_assert_equal(app.Canvas().foot(), [app.Status()]);
             $mol_assert_equal(app.floats().length, 0);
+        },
+        'the panel switches carry an icon and a hint instead of a label'($) {
+            const app = $bog_vmap_app.make({ $ });
+            const switches = [
+                [app.Palette_check(), app.Palette_icon()],
+                [app.Inspect_check(), app.Inspect_icon()],
+                [app.Code_check(), app.Code_icon()],
+                [app.History_check(), app.History_icon()],
+            ];
+            for (const [check, icon] of switches) {
+                $mol_assert_equal(check.Icon(), icon);
+                $mol_assert_equal(check.title(), '');
+                $mol_assert_ok(check.hint().length > 0);
+            }
         },
         'which panels are open outlives the page'($) {
             const one = $bog_vmap_app.make({ $ });
@@ -18259,9 +18273,11 @@ var $;
             $mol_assert_ok(inside(app.Zoom_reset()));
             $mol_assert_ok(inside(app.Zoom_in()));
             $mol_assert_ok(inside(app.Lights()));
-            $mol_assert_ok(inside(app.Status()));
+            $mol_assert_equal(inside(app.Status()), false);
+            const foot = stage.root.querySelector('[bog_vmap_app_canvas_foot]');
             $mol_assert_ok(app.Canvas().body().includes(app.Pane()));
-            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_foot]').childElementCount, 0);
+            $mol_assert_equal(foot.childElementCount, 1);
+            $mol_assert_ok(foot.contains(app.Status().dom_node()));
         },
         'the percent in the canvas tools zooms and gives the view back'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
