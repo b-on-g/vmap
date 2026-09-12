@@ -36768,8 +36768,10 @@ var $;
             return this.$.$giper_baza_glob.land_grab();
         }
         made(blob) {
-            const file = this.land().Data($giper_baza_file);
+            const land = this.land();
+            const file = land.Data($giper_baza_file);
             file.blob(blob);
+            this.yard().sync_land(land.link());
             return file;
         }
         put(blob) {

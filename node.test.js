@@ -29056,8 +29056,10 @@ var $;
             return this.$.$giper_baza_glob.land_grab();
         }
         made(blob) {
-            const file = this.land().Data($giper_baza_file);
+            const land = this.land();
+            const file = land.Data($giper_baza_file);
             file.blob(blob);
+            this.yard().sync_land(land.link());
             return file;
         }
         put(blob) {
@@ -44623,6 +44625,24 @@ var $;
             $mol_assert_equal(one.filled(link), false);
             $mol_assert_equal(one.sent(link), true);
             $mol_assert_equal(one.ready(link), false);
+        },
+        async 'a written asset is pushed to the master without waiting for a reader'($) {
+            const home = land($);
+            const pushed = [];
+            const Yard = class extends $giper_baza_yard {
+                sync_land(at) {
+                    pushed.push(at.str);
+                }
+            };
+            const one = $bog_vmap_asset.make({
+                $,
+                master: () => master,
+                land: () => home,
+                yard: () => Yard.make({ $ }),
+            });
+            const file = await $mol_wire_async(one).made(new $mol_blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' }));
+            $mol_assert_ok(pushed.includes(home.link().str));
+            $mol_assert_equal(file.type(), 'image/png');
         },
         'the master is the one that is not the page itself'($) {
             $.$giper_baza_yard = class extends $giper_baza_yard {
