@@ -1,4 +1,4 @@
-$bog_vmap_app_palette $mol_view
+$bog_vmap_app_palette $mol_list
 	pack_link \
 	query? \
 	selected? \
@@ -7,33 +7,17 @@ $bog_vmap_app_palette $mol_view
 	drag_x? 0
 	drag_y? 0
 	land_classes /$mol_tree2
-	attr *
-		^
-		bog_vmap_app_palette_compact <= compact
-	sub <= body /$mol_view
-	Head $mol_bar
-		sub /
-			<= Brand $mol_view sub / \Палитра
-			<= Query $mol_string
-				hint \Поиск по имени
-				value? <=> query?
-			<= Total $mol_view sub / <= total \
-	Body $mol_view
-		sub <= body_content /$mol_view
-	Classes $mol_scroll
-		sub /
-			<= Class_list $mol_list
-				rows <= class_rows /
-	Ports $mol_view
-		sub /
-			<= Ports_head $mol_view
-				sub /
-					<= Selected $mol_view sub / <= selected_title \
-					<= Chain $mol_view sub / <= chain_title \
-			<= Ports_scroll $mol_scroll
-				sub /
-					<= Port_list $mol_list
-						rows <= port_rows /
+	rows <= body /$mol_view
+	Classes $mol_form_field
+		name \Классы пака
+		bids / <= total \
+		control <= Class_list $mol_list
+			rows <= class_rows /
+	Ports $mol_form_field
+		name <= selected_title \
+		bids / <= chain_title \
+		control <= Port_list $mol_list
+			rows <= port_rows /
 	Class_row* $bog_vmap_app_palette_item
 		title <= class_title* \
 		click? <=> class_click*? null
@@ -43,7 +27,7 @@ $bog_vmap_app_palette $mol_view
 		sign <= port_sign* \
 		body <= port_body* \
 		owner <= port_owner* \
-		inherited <= port_inherited* false
+		needle <= query?
 	Lib $bog_vmap_lib
 		pack <= pack_link
 		classes <= land_classes

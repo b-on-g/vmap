@@ -57,6 +57,58 @@ namespace $ {
 
 		},
 
+		'the list of classes is a field whose bid counts what is shown'( $ ) {
+
+			const palette = $bog_vmap_app_palette.make({ $, compact: ()=> true }) as $$.$bog_vmap_app_palette
+
+			const dom = palette.dom_tree()
+
+			const classes = dom.querySelector( '[bog_vmap_app_palette_classes]' )!
+
+			$mol_assert_ok( classes.matches( '[mol_form_field]' ) )
+			$mol_assert_ok( classes.textContent!.includes( 'Классы пака' ) )
+			$mol_assert_ok(
+				classes.querySelector( '[mol_form_field_bid]' )!.textContent!.includes( 'классов' ),
+			)
+			$mol_assert_ok( classes.querySelector( '[bog_vmap_app_palette_class_row]' ) )
+
+			$mol_assert_equal( dom.querySelector( '[bog_vmap_app_palette_ports]' ), null )
+
+		},
+
+		'every port is a field with its name, its declaration and the class it came from'( $ ) {
+
+			const d = '$'
+
+			const palette = $bog_vmap_app_palette.make({
+				$,
+				land_classes: ()=> $.$mol_tree2_from_string( `${d}my_card ${d}mol_view\n\tprice 0\n` ).kids,
+				selected: ()=> `${d}my_card`,
+			}) as $$.$bog_vmap_app_palette
+
+			const dom = palette.dom_tree()
+
+			const ports = [ ... dom.querySelectorAll( '[bog_vmap_app_palette_port]' ) ]
+
+			$mol_assert_ok( ports.length > 1 )
+
+			for( const port of ports ) $mol_assert_ok( port.matches( '[mol_form_field]' ) )
+
+			const bid = ( el: Element )=> el.querySelector( '[mol_form_field_bid]' )!.textContent
+
+			const own = ports.find( el => el.textContent!.includes( 'price' ) )!
+
+			$mol_assert_ok( own )
+			$mol_assert_equal( bid( own ), '' )
+			$mol_assert_ok( own.textContent!.includes( '0' ) )
+
+			const sub = ports.find( el => el.textContent!.includes( 'sub' ) )!
+
+			$mol_assert_ok( sub )
+			$mol_assert_ok( bid( sub )!.includes( `${d}mol_view` ) )
+
+		},
+
 	})
 
 }

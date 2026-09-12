@@ -3,13 +3,6 @@ namespace $.$$ {
 	export class $bog_vmap_app_palette extends $.$bog_vmap_app_palette {
 
 		override body() {
-			return [
-				this.Head(),
-				this.Body(),
-			] as readonly $mol_view[]
-		}
-
-		override body_content() {
 			return (
 				this.compact()
 					? [ this.Classes() ]
@@ -113,10 +106,6 @@ namespace $.$$ {
 			if( !cl ) return ''
 			const owner = this.Lib().props_owner( cl ).get( name ) ?? ''
 			return owner === cl ? '' : owner
-		}
-
-		port_inherited( name: string ) {
-			return Boolean( this.port_owner( name ) )
 		}
 
 	}
