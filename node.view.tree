@@ -1,14 +1,25 @@
-$bog_theme_auto $mol_plugin
-	themes <= themes_default /
-	theme_light \$mol_theme_light
-	theme_dark \$mol_theme_dark
-	mode? \system
-	mode_next? null
-	theme_next? null
-	theme_prev? null
-	theme_set? null
-	is_light_now false
-	attr * mol_theme <= theme \
+$mol_scroll $mol_view
+	scroll_top? 0
+	scroll_left? 0
+	attr *
+		^
+		tabindex <= tabindex -1
+	event *
+		^
+		scroll? <=> event_scroll? null
+
+$mol_book2 $mol_scroll
+	menu_title \
+	sub /$mol_view
+		^ pages <= pages_deep /$mol_view
+		^ placeholders /$mol_view
+			<= Placeholder $mol_view
+	minimal_width 0
+	Gap* $mol_view title \
+
+$mol_theme_auto $mol_plugin
+	light \$mol_theme_light
+	attr * mol_theme <= theme <= dark \$mol_theme_dark
 
 $mol_speck $mol_view
 	theme \$mol_theme_accent
@@ -55,7 +66,95 @@ $mol_check $mol_button_minor
 				sub /
 					<= title \
 
-$mol_bar $mol_view
+$mol_hotkey $mol_plugin
+	event *
+		^
+		keydown? <=> keydown? null
+	key *
+	mod_ctrl false
+	mod_alt false
+	mod_shift false
+
+$mol_string $mol_view
+	dom_name \input
+	enabled true
+	minimal_height 40
+	autocomplete false
+	selection? /number
+		0
+		0
+	auto /
+		<= selection_watcher null
+		<= error_report null
+	field *
+		^
+		disabled <= disabled false
+		value <= value_changed? <=> value? \
+		placeholder <= hint_visible <= hint \
+		spellcheck <= spellcheck true
+		autocomplete <= autocomplete_native \
+		selectionEnd <= selection_end 0
+		selectionStart <= selection_start 0
+		inputMode <= keyboard \text
+		enterkeyhint <= enter \go
+	attr *
+		^
+		maxlength <= length_max +Infinity
+		type <= type? \text
+	event *
+		^
+		input? <=> event_change? null
+	plugins /
+		<= Submit $mol_hotkey
+			mod_ctrl <= submit_with_ctrl false
+			key * enter? <=> submit? null
+
+$mol_page $mol_view
+	dom_name \article
+	attr *
+		^
+		tabIndex <= tabindex -1
+	sub /
+		<= Head $mol_view
+			minimal_height 64
+			dom_name \header
+			sub <= head /
+				<= Title $mol_view
+					dom_name \h1
+					sub <= title_content /
+						<= Logo null
+						<= title
+				<= Tools $mol_view
+					sub <= tools /$mol_view_content
+		<= Body $mol_scroll
+			scroll_top? => body_scroll_top?
+			sub <= body_content /
+				<= Body_content $mol_view
+					sub <= body /$mol_view
+		<= Foot $mol_view
+			dom_name \footer
+			sub <= foot /$mol_view
+
+$mol_status $mol_view
+	status <= title
+	minimal_height 24
+	minimal_width 0
+	sub /
+		<= message \
+
+$mol_list $mol_view
+	render_visible_only true
+	render_over 0.1
+	sub <= rows /$mol_view
+		<= Gap_before $mol_view style * paddingTop <= gap_before 0
+		<= Empty $mol_view
+		<= Gap_after $mol_view style * paddingTop <= gap_after 0
+	item_height_min* 1
+	item_width_min* 1
+	view_window_shift? 0
+	view_window /
+		0
+		0
 
 $mol_stack $mol_view
 
@@ -108,20 +207,6 @@ $mol_text_code_line $mol_paragraph
 		needle <= highlight \
 		uri <= token_uri* \
 	find_pos* null
-
-$mol_list $mol_view
-	render_visible_only true
-	render_over 0.1
-	sub <= rows /$mol_view
-		<= Gap_before $mol_view style * paddingTop <= gap_before 0
-		<= Empty $mol_view
-		<= Gap_after $mol_view style * paddingTop <= gap_after 0
-	item_height_min* 1
-	item_width_min* 1
-	view_window_shift? 0
-	view_window /
-		0
-		0
 
 $mol_svg $mol_view
 	dom_name \svg
@@ -193,49 +278,6 @@ $mol_text_code $mol_stack
 		<= Copy $mol_button_copy
 			hint @ \Copy whole code
 			text <= text_export \
-
-$mol_hotkey $mol_plugin
-	event *
-		^
-		keydown? <=> keydown? null
-	key *
-	mod_ctrl false
-	mod_alt false
-	mod_shift false
-
-$mol_string $mol_view
-	dom_name \input
-	enabled true
-	minimal_height 40
-	autocomplete false
-	selection? /number
-		0
-		0
-	auto /
-		<= selection_watcher null
-		<= error_report null
-	field *
-		^
-		disabled <= disabled false
-		value <= value_changed? <=> value? \
-		placeholder <= hint_visible <= hint \
-		spellcheck <= spellcheck true
-		autocomplete <= autocomplete_native \
-		selectionEnd <= selection_end 0
-		selectionStart <= selection_start 0
-		inputMode <= keyboard \text
-		enterkeyhint <= enter \go
-	attr *
-		^
-		maxlength <= length_max +Infinity
-		type <= type? \text
-	event *
-		^
-		input? <=> event_change? null
-	plugins /
-		<= Submit $mol_hotkey
-			mod_ctrl <= submit_with_ctrl false
-			key * enter? <=> submit? null
 
 $mol_textarea $mol_stack
 	attr *
@@ -336,7 +378,7 @@ $mol_deck $mol_list
 			options <= switch_options *
 		<= Content $mol_view
 
-$bog_vmap_app_code $mol_view
+$bog_vmap_app_code $mol_page
 	klass \
 	prop \
 	hooks /string
@@ -350,23 +392,20 @@ $bog_vmap_app_code $mol_view
 	event *
 		^
 		focusout? <=> field_leave? null
-	sub <= content /$mol_view
-	Head $mol_bar
-		sub <= head_content /$mol_view
-	Scope_note $mol_view
-		sub / <= scope_note \
-	Scope $mol_check
-		title \Весь класс
-		hint \Править класс целиком, а не выбранный узел. Какой это класс, сказано в шапке: у узла со своим классом — его, у остальных — тот, который узел объявляет
-		checked? <=> whole?
-	Alarm $mol_view
-		sub / <= error
-	Refusal $mol_view
-		sub / <= note \
-	Typing $mol_view
-		sub <= typing_rows /$mol_view
-	Typing_row* $mol_view
-		sub / <= typing_text* \
+	title <= scope_note \
+	tools /
+		<= Scope $mol_check
+			title \Весь класс
+			hint \Править класс целиком, а не выбранный узел. Какой это класс, сказано в шапке: у узла со своим классом — его, у остальных — тот, который узел объявляет
+			checked? <=> whole?
+	Alarm $mol_status
+		status <= error
+	Refusal $mol_status
+		status <= note \
+	Typing $mol_list
+		rows <= typing_rows /$mol_view
+	Typing_row* $mol_status
+		status <= typing_text* \
 	Sources $bog_vmap_app_code_deck
 		items <= source_tabs /$mol_view
 	Tree $mol_textarea
@@ -385,9 +424,9 @@ $bog_vmap_app_code $mol_view
 		event *
 			^
 			pointerdown? <=> js_press? null
-	Js_idle $mol_view
+	Js_idle $mol_status
 		title \JS
-		sub / <= js_idle_note \
+		status <= js_idle_note \
 	Css $mol_textarea
 		title \CSS
 		hint \
@@ -398,10 +437,6 @@ $bog_vmap_app_code $mol_view
 			pointerdown? <=> css_press? null
 
 $bog_vmap_app_code_deck $mol_deck
-
-$mol_theme_auto $mol_plugin
-	light \$mol_theme_light
-	attr * mol_theme <= theme <= dark \$mol_theme_dark
 
 $bog_vmap_app_publish $mol_view
 	store $bog_vmap_app_publish_store
@@ -435,306 +470,16 @@ $mol_button_download $mol_button_minor
 		<= Icon $mol_icon_download
 		<= title \
 
-$mol_icon_white_balance_sunny $mol_icon path \M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13
+$mol_check_icon $mol_check
 
-$mol_icon_monitor $mol_icon path \M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z
+$mol_icon_brightness_4 $mol_icon path \M12,18C11.11,18 10.26,17.8 9.5,17.45C11.56,16.5 13,14.42 13,12C13,9.58 11.56,7.5 9.5,6.55C10.26,6.2 11.11,6 12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31L23.31,12L20,8.69Z
 
-$mol_icon_weather_night $mol_icon path \M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z
+$mol_lights_toggle $mol_check_icon
+	Icon <= Lights_icon $mol_icon_brightness_4
+	hint @ \Toggle lights
+	checked? <=> lights? false
 
-$bog_theme_switch $mol_view
-	theme_auto $bog_theme_auto
-	sub /
-		<= Light $mol_button_minor
-			attr *
-				^
-				bog_theme_switch_active <= light_active false
-			hint <= light_hint @ \Светлая
-			click?event <=> set_light?event null
-			sub /
-				<= Light_icon $mol_icon_white_balance_sunny
-		<= System $mol_button_minor
-			attr *
-				^
-				bog_theme_switch_active <= system_active false
-			hint <= system_hint @ \Как в системе
-			click?event <=> set_system?event null
-			sub /
-				<= System_icon $mol_icon_monitor
-		<= Dark $mol_button_minor
-			attr *
-				^
-				bog_theme_switch_active <= dark_active false
-			hint <= dark_hint @ \Тёмная
-			click?event <=> set_dark?event null
-			sub /
-				<= Dark_icon $mol_icon_weather_night
-
-$bog_vmap_app_palette_item $mol_button_minor
-	current false
-	minimal_height 24
-	drag_start? null
-	attr *
-		^
-		bog_vmap_app_palette_item_current <= current
-	event *
-		^
-		pointerdown? <=> drag_start?
-
-$mol_scroll $mol_view
-	scroll_top? 0
-	scroll_left? 0
-	attr *
-		^
-		tabindex <= tabindex -1
-	event *
-		^
-		scroll? <=> event_scroll? null
-
-$bog_vmap_app_palette_port $mol_view
-	sign \
-	body \
-	owner \
-	inherited false
-	attr *
-		^
-		bog_vmap_app_palette_port_inherited <= inherited
-	sub /
-		<= Sign $mol_view sub / <= sign
-		<= Body $mol_view sub / <= body
-		<= Owner $mol_view sub / <= owner
-
-$bog_vmap_app_palette $mol_view
-	pack_link \
-	query? \
-	selected? \
-	compact false
-	dragged? \
-	drag_x? 0
-	drag_y? 0
-	land_classes /$mol_tree2
-	attr *
-		^
-		bog_vmap_app_palette_compact <= compact
-	sub <= body /$mol_view
-	Head $mol_bar
-		sub /
-			<= Brand $mol_view sub / \Палитра
-			<= Query $mol_string
-				hint \Поиск по имени
-				value? <=> query?
-			<= Total $mol_view sub / <= total \
-	Body $mol_view
-		sub <= body_content /$mol_view
-	Classes $mol_scroll
-		sub /
-			<= Class_list $mol_list
-				rows <= class_rows /
-	Ports $mol_view
-		sub /
-			<= Ports_head $mol_view
-				sub /
-					<= Selected $mol_view sub / <= selected_title \
-					<= Chain $mol_view sub / <= chain_title \
-			<= Ports_scroll $mol_scroll
-				sub /
-					<= Port_list $mol_list
-						rows <= port_rows /
-	Class_row* $bog_vmap_app_palette_item
-		title <= class_title* \
-		click? <=> class_click*? null
-		current <= class_current* false
-		drag_start? <=> class_drag*? null
-	Port_row* $bog_vmap_app_palette_port
-		sign <= port_sign* \
-		body <= port_body* \
-		owner <= port_owner* \
-		inherited <= port_inherited* false
-	Lib $bog_vmap_lib
-		pack <= pack_link
-		classes <= land_classes
-
-$bog_vmap_app_scenes $mol_view
-	store $bog_vmap_app_store
-	current? \
-	title? \
-	current_exists false
-	sub /
-		<= Head $mol_view
-			sub /
-				\Сцены
-		<= List $mol_list
-			rows <= scene_rows /
-		<= Title $mol_string
-			hint \Название сцены
-			enabled <= current_exists
-			value? <=> title?
-		<= Add $mol_button_minor
-			title \Новая сцена
-			hint \Завести новый документ. Он станет текущим
-			click? <=> add? null
-	Scene_row* $bog_vmap_app_palette_item
-		title <= scene_title* \
-		hint <= scene_title* \
-		current <= scene_current* false
-		click? <=> scene_click*? null
-
-$mol_icon_upload $mol_icon path \M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z
-
-$mol_button_open $mol_button_minor
-	sub /
-		<= Icon $mol_icon_upload
-		<= Native $mol_button_open_native
-			files? <=> files_handled? <=> files? /File
-			accept <= accept \
-			multiple <= multiple true
-
-$mol_button_open_native $mol_view
-	dom_name \input
-	files? /File
-	attr *
-		type \file
-		accept <= accept \
-		multiple <= multiple true
-	event *
-		change? <=> picked? null
-
-$bog_vmap_app_shelf $mol_view
-	links? \
-	pack_link \
-	land_classes /$mol_tree2
-	class_list /string
-	dragged? \
-	drag_x? 0
-	drag_y? 0
-	drag_source \
-	drag_title \
-	item_source* \
-	place? \
-	files? /File
-	classes_showed? false
-	sub <= body /$mol_view
-	Title $mol_view
-		sub /
-			\Полка
-	Stack $mol_scroll
-		sub /
-			<= Stack_body $mol_view
-				sub <= stack_content /$mol_view
-	Items $mol_list
-		rows <= item_rows /
-	Source $mol_view
-		sub <= source_content /$mol_view
-	Packs $mol_view
-		sub /
-			<= Packs_title $mol_view
-				sub /
-					\Пак компонентов
-			<= Pack_list $mol_list
-				rows <= pack_rows /
-	Pack_row* $mol_button_minor
-		title <= pack_title* \
-		hint <= pack_hint* \
-		attr *
-			^
-			bog_vmap_app_shelf_pack_current <= pack_current* false
-		click? <=> pack_click*? null
-	Links $mol_string
-		hint \Адрес приложения, ленды через запятую
-		value? <=> links?
-	Import $mol_view
-		sub /
-			<= Import_open $mol_button_open
-				hint \Файлы .view.tree модуля mol. Объявления приедут, поведение — нет
-				accept \.tree
-				multiple true
-				files? <=> files?
-			<= Import_title $mol_view
-				sub /
-					\Файлы модуля
-	Import_note $mol_view
-		sub / <= import_note? \
-	Store $bog_vmap_app_publish_store
-	Note $mol_view
-		sub / <= rejected_note \
-	Apps $mol_view
-		sub <= apps_content /$mol_view
-	Apps_head $mol_view
-		sub /
-			<= apps_title \
-	App_list $mol_list
-		rows <= app_rows /
-	Apps_note $mol_view
-		sub / <= app_error \
-	Level $mol_check
-		title \Все классы пака
-		hint \Классы донорского пака целиком: примитивы, из которых верстают внутри блока
-		checked? <=> classes_showed?
-	Palette $bog_vmap_app_palette
-		compact true
-		pack_link <= pack_link
-		land_classes <= land_classes
-		dragged? <=> dragged?
-		drag_x? <=> drag_x?
-		drag_y? <=> drag_y?
-	Item_row* $bog_vmap_app_palette_item
-		title <= item_title* \
-		hint <= item_hint* \
-		click? <=> item_click*? null
-		drag_start? <=> item_drag*? null
-
-$bog_vmap_app_inspect_flex $mol_view
-	value*? \
-	sub /
-		<= Width $bog_vmap_app_inspect_flex_row
-			title \Ширина
-			Field <= Width_pick $mol_switch
-				value? <=> width? \
-				options *
-					390px \мобильная
-					768px \планшет
-					1280px \десктоп
-		<= Direction $bog_vmap_app_inspect_flex_row
-			title \Направление
-			Field <= Direction_pick $mol_switch
-				value? <=> direction? \
-				options *
-					column \колонкой
-					row \рядом
-		<= Across $bog_vmap_app_inspect_flex_row
-			title \Поперёк
-			Field <= Across_pick $mol_switch
-				value? <=> across? \
-				options *
-					flex-start \к началу
-					center \по центру
-					flex-end \к концу
-					stretch \во всю
-		<= Along $bog_vmap_app_inspect_flex_row
-			title \Вдоль
-			Field <= Along_pick $mol_switch
-				value? <=> along? \
-				options *
-					flex-start \к началу
-					center \по центру
-					flex-end \к концу
-					space-between \по краям
-		<= Gap $bog_vmap_app_inspect_flex_row
-			title \Зазор
-			Field <= Gap_field $mol_string
-				hint \1rem
-				value? <=> gap? \
-		<= Grow $bog_vmap_app_inspect_flex_row
-			title \Растяжение
-			Field <= Grow_check $mol_check
-				title \занимать свободное место
-				checked? <=> grow? false
-
-$bog_vmap_app_inspect_flex_row $mol_view
-	title \
-	Field $mol_view
-	sub /
-		<= Title $mol_view sub / <= title
-		<= Field
+$mol_bar $mol_view
 
 $mol_ghost $mol_view
 	Sub $mol_view
@@ -902,20 +647,25 @@ $mol_select $mol_pick
 	Trigger_icon $mol_icon_dots_vertical
 	trigger_enabled <= enabled
 
-$bog_vmap_app_inspect_value $mol_view
+$bog_vmap_app_inspect_value $mol_list
 	tree? $mol_tree2_empty
 	binds /string
 	nodes *
 	alarm? \
-	sub <= editors /$mol_view
-	Alarm $mol_view sub / <= alarm
+	rows <= editors /$mol_view
+	Alarm $mol_status
+		status <= alarm
 	String $bog_vmap_app_inspect_value_string
 		tree? <=> tree?
-	Number $bog_vmap_app_inspect_value_number
-		tree? <=> tree?
-		alarm? <=> alarm?
-	Bool $bog_vmap_app_inspect_value_bool
-		tree? <=> tree?
+	Num $mol_string
+		hint \число
+		value? <=> num? \
+	Flag $mol_check
+		title <= flag_title \
+		checked? <=> flag? false
+	Raw $mol_string
+		enabled false
+		value <= raw \
 	Seq $bog_vmap_app_inspect_value_seq
 		tree? <=> tree?
 		keyed <= seq_keyed false
@@ -932,8 +682,6 @@ $bog_vmap_app_inspect_value $mol_view
 		tree? <=> tree?
 		nodes <= nodes
 		alarm? <=> alarm?
-	Raw $bog_vmap_app_inspect_value_raw
-		tree? <=> tree?
 
 $bog_vmap_app_inspect_value_area $mol_string
 	dom_name \textarea
@@ -942,7 +690,7 @@ $bog_vmap_app_inspect_value_area $mol_string
 		rows <= rows 1
 	plugins /
 
-$bog_vmap_app_inspect_value_string $mol_view
+$bog_vmap_app_inspect_value_string $mol_bar
 	tree? $mol_tree2_empty
 	sub /
 		<= Text $bog_vmap_app_inspect_value_area
@@ -954,38 +702,19 @@ $bog_vmap_app_inspect_value_string $mol_view
 			hint \Многоязычное: текст уедет в таблицу локалей
 			checked? <=> locale? false
 
-$bog_vmap_app_inspect_value_number $mol_view
-	tree? $mol_tree2_empty
-	alarm? \
-	sub /
-		<= Num $mol_string
-			hint \число
-			value? <=> num? \
-
-$bog_vmap_app_inspect_value_bool $mol_view
-	tree? $mol_tree2_empty
-	sub /
-		<= Flag $mol_check
-			title <= flag_title \
-			checked? <=> flag? false
-
-$bog_vmap_app_inspect_value_raw $mol_view
-	tree? $mol_tree2_empty
-	sub / <= raw \
-
-$bog_vmap_app_inspect_value_seq $mol_view
+$bog_vmap_app_inspect_value_seq $mol_list
 	tree? $mol_tree2_empty
 	binds /string
 	nodes *
 	alarm? \
 	keyed false
 	klass false
-	sub <= seq_sub /$mol_view
+	rows <= seq_sub /$mol_view
 	Class_name $mol_string
 		hint \класс
 		value? <=> class_name? \
-	Items $mol_view
-		sub <= items /
+	Items $mol_list
+		rows <= items /$mol_view
 	Add $mol_button_minor
 		title <= add_title \
 		hint \Добавить
@@ -999,7 +728,7 @@ $bog_vmap_app_inspect_value_seq $mol_view
 		nodes <= nodes
 		drop? <=> item_drop*? null
 
-$bog_vmap_app_inspect_value_item $mol_view
+$bog_vmap_app_inspect_value_item $mol_bar
 	value? $mol_tree2_empty
 	binds /string
 	nodes *
@@ -1019,13 +748,12 @@ $bog_vmap_app_inspect_value_item $mol_view
 		hint \Убрать
 		click? <=> drop?
 
-$bog_vmap_app_inspect_value_bind $mol_view
+$bog_vmap_app_inspect_value_bind $mol_bar
 	tree? $mol_tree2_empty
 	binds /string
 	nodes *
 	alarm? \
-	sub <= bind_sub /$mol_view
-	Op $mol_view sub / <= op \
+	sub <= bind_sub /$mol_view_content
 	Target $mol_select
 		hint \свойство
 		value? <=> target? \
@@ -1035,19 +763,19 @@ $bog_vmap_app_inspect_value_bind $mol_view
 		binds <= binds
 		nodes <= nodes
 
-$bog_vmap_app_inspect_value_wire $mol_view
+$bog_vmap_app_inspect_value_wire $mol_list
 	tree? $mol_tree2_empty
 	nodes *
 	alarm? \
-	sub <= wire_sub /$mol_view
-	Row $mol_view
-		sub <= wire_row /$mol_view
-	Op $mol_view sub / \=
+	wire_op \=
+	wire_dot \.
+	rows <= wire_sub /$mol_view
+	Row $mol_bar
+		sub <= wire_row /$mol_view_content
 	Origin $mol_select
 		hint \узел
 		value? <=> origin? \
 		options <= node_names /string
-	Dot $mol_view sub / \.
 	Port_pick $mol_select
 		hint \порт
 		value? <=> port? \
@@ -1055,9 +783,180 @@ $bog_vmap_app_inspect_value_wire $mol_view
 	Port_free $mol_string
 		hint \порт
 		value? <=> port? \
-	Note $mol_view sub / <= note \
+	Note $mol_status
+		status <= note \
 
-$bog_vmap_app_inspect_row $mol_view
+$mol_svg_text $mol_svg
+	dom_name \text
+	pos /
+	attr *
+		^
+		x <= pos_x \
+		y <= pos_y \
+		text-anchor <= align_hor <= align \middle
+		alignment-baseline <= align_vert \baseline
+	sub /
+		<= text \
+
+$mol_svg_circle $mol_svg
+	dom_name \circle
+	pos /
+	attr *
+		^
+		r <= radius \.5%
+		cx <= pos_x \
+		cy <= pos_y \
+
+$bog_vmap_app_wire $mol_svg_root
+	attr *
+		^
+		viewBox null
+	lines /$bog_vmap_app_wire_line
+	dots /$bog_vmap_app_wire_dot
+	drag_geometry \
+	sub <= shapes /$mol_view
+	Line* $mol_svg_path
+		geometry <= line_geometry* \
+	Label* $mol_svg_text
+		pos <= label_pos* /number
+		text <= label_text* \
+	Dot* $mol_svg_circle
+		radius <= dot_radius \5
+		pos <= dot_pos* /number
+		attr *
+			^
+			bog_vmap_app_wire_dot_side <= dot_side* \
+			bog_vmap_app_wire_dot_lit <= dot_lit* true
+			bog_vmap_app_wire_dot_linked <= dot_linked* false
+	Name* $mol_svg_text
+		pos <= name_pos* /number
+		align <= name_align* \start
+		text <= name_text* \
+	Drag $mol_svg_path
+		geometry <= drag_geometry
+
+$mol_labeler $mol_list
+	rows /
+		<= Label $mol_view
+			minimal_height 32
+			sub <= label /$mol_view_content
+				<= title
+		<= Content $mol_view
+			minimal_height 24
+			sub <= content /
+
+$mol_form_field $mol_labeler
+	attr *
+		^
+		mol_form_field_state <= state null string
+	bids /string
+	label /
+		<= name \
+		<= Bid $mol_view
+			sub / <= bid \
+	content / <= control null
+
+$mol_button_major $mol_button_minor
+	theme \$mol_theme_base
+
+$mol_row $mol_view
+
+$mol_form $mol_list
+	submit_allowed true
+	submit_blocked false
+	event *
+		^
+		keydown? <=> keydown? null
+	save? null
+	message_done @ \Saved
+	errors *string
+		\Form invalid
+			<= form_invalid @ \Form is not valid
+	rows /
+		<= Body $mol_list
+			sub <= body <= form_fields /$mol_form_field
+		<= Foot $mol_row
+			sub <= foot <= buttons /$mol_view
+				<= Submit $mol_button_major
+					title <= submit_title @ \Save
+					hint <= submit_hint \
+					activate? => submit_activate?
+					click? <=> submit? null
+				<= Result $mol_status
+					message <= result? null
+
+$bog_vmap_app_inspect_flex $mol_list
+	value*? \
+	rows /
+		<= Width $mol_form_field
+			name \Ширина
+			control <= Width_pick $mol_switch
+				value? <=> width? \
+				options *
+					390px \мобильная
+					768px \планшет
+					1280px \десктоп
+		<= Direction $mol_form_field
+			name \Направление
+			control <= Direction_pick $mol_switch
+				value? <=> direction? \
+				options *
+					column \колонкой
+					row \рядом
+		<= Across $mol_form_field
+			name \Поперёк
+			control <= Across_pick $mol_switch
+				value? <=> across? \
+				options *
+					flex-start \к началу
+					center \по центру
+					flex-end \к концу
+					stretch \во всю
+		<= Along $mol_form_field
+			name \Вдоль
+			control <= Along_pick $mol_switch
+				value? <=> along? \
+				options *
+					flex-start \к началу
+					center \по центру
+					flex-end \к концу
+					space-between \по краям
+		<= Gap $mol_form_field
+			name \Зазор
+			control <= Gap_field $mol_string
+				hint \1rem
+				value? <=> gap? \
+		<= Grow $mol_form_field
+			name \Растяжение
+			control <= Grow_check $mol_check
+				title \занимать свободное место
+				checked? <=> grow? false
+
+$mol_icon_chevron $mol_icon path \M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z
+
+$mol_check_expand $mol_check
+	Icon $mol_icon_chevron
+	level 0
+	style *
+		^
+		paddingLeft <= level_style \0px
+	checked? <=> expanded? false
+	enabled <= expandable false
+
+$mol_expander $mol_list
+	rows /
+		<= Label $mol_view
+			sub /
+				<= Trigger $mol_check_expand
+					checked? <=> expanded? false
+					expandable <= expandable true
+					label <= label /
+						<= title
+				<= Tools null
+		<= Content $mol_list
+			rows <= content /
+
+$bog_vmap_app_inspect_row $mol_form_field
 	sign \
 	owner \
 	inherited false
@@ -1067,16 +966,16 @@ $bog_vmap_app_inspect_row $mol_view
 	keyed? false
 	changeable? false
 	drop? null
-	sub /
-		<= Head $mol_view
-			sub /
-				<= Sign $mol_view sub / <= sign
-				<= Owner $mol_view sub / <= owner
-				<= Tools $mol_view sub <= tools /
-		<= Value $bog_vmap_app_inspect_value
-			tree? <=> value?
-			binds <= binds
-			nodes <= nodes
+	name <= sign
+	bid <= owner
+	label /
+		^
+		<= Tools $mol_row
+			sub <= tools /$mol_view
+	control <= Value $bog_vmap_app_inspect_value
+		tree? <=> value?
+		binds <= binds
+		nodes <= nodes
 	Key $mol_check
 		title \*
 		hint \Много значений по ключу
@@ -1089,40 +988,38 @@ $bog_vmap_app_inspect_row $mol_view
 		title \✕
 		hint \Убрать свойство из документа
 		click? <=> drop?
-	attr *
-		^
-		bog_vmap_app_inspect_row_inherited <= inherited
 
-$bog_vmap_app_inspect $mol_view
+$bog_vmap_app_inspect $mol_page
 	source? \
 	peers /$mol_tree2
 	pack? \https://mol.hyoo.ru
 	class_title? \
 	title_note \
-	sub <= body /$mol_view
-	Head $mol_view
-		sub /
-			<= Title $mol_string
-				hint \имя узла
-				minimal_height 28
-				value? <=> title_value? \
-				submit? <=> title_submit? null
-				event *
-					^
-					blur? <=> title_submit? null
-			<= Base $mol_view sub / <= base_title \
-			<= Total $mol_view sub / <= total \
-	Flex $bog_vmap_app_inspect_flex
-		value*? <=> flex_value*? \
-	Body $mol_scroll
-		sub /
-			<= Stack $mol_view
-				sub <= body_content /$mol_view
-	Rows $mol_view sub <= rows /
-	Note $mol_view
-		sub / <= title_note \
-	Empty $mol_view
-		sub / <= empty_note \Нечего править: в исходнике нет объявления класса
+	title <= class_title
+	title_content /
+		<= Name $mol_string
+			hint \имя узла
+			value? <=> title_value? \
+			submit? <=> title_submit? null
+			event *
+				^
+				blur? <=> title_submit? null
+	tools /$mol_view_content
+		<= base_title \
+		<= total \
+		<= Note $mol_status
+			status <= title_note
+	body /$mol_view
+		<= Flex $bog_vmap_app_inspect_flex
+			value*? <=> flex_value*? \
+		<= Rows $mol_list
+			rows <= rows /$mol_view
+		<= Inherited $mol_expander
+			title \Наследованные
+			expanded? <=> inherited_shown? true
+			content <= inherited_rows /$mol_view
+	Empty $mol_status
+		status <= empty_note \Нечего править: в исходнике нет объявления класса
 	Node $bog_vmap_lang_node
 		source? <=> source?
 	Lib $bog_vmap_lib
@@ -1139,18 +1036,17 @@ $bog_vmap_app_inspect $mol_view
 		binds <= binds /string
 		nodes <= nodes *
 
-$bog_vmap_app_inspect_demo $mol_view
+$bog_vmap_app_inspect_demo $mol_book2
 	source? \
-	sub /
-		<= Source $mol_view
-			sub /
-				<= Source_head $mol_view
-					sub /
-						<= Source_title $mol_view sub / \Исходник документа
-						<= Class_pick $mol_select
-							hint \класс
-							value? <=> klass? \
-							options <= names /string
+	pages /
+		<= Source $mol_page
+			title \Исходник документа
+			tools /
+				<= Class_pick $mol_select
+					hint \класс
+					value? <=> klass? \
+					options <= names /string
+			body /
 				<= Source_text $bog_vmap_app_inspect_value_area
 					rows 26
 					value? <=> source?
@@ -1204,119 +1100,6 @@ $mol_number $mol_view
 			event_click? <=> event_inc? null
 			enabled <= inc_enabled <= enabled
 			sub / <= inc_icon $mol_icon_menu_up_outline
-
-$bog_vmap_app_history_snap $mol_view
-	moment \
-	author \
-	change \
-	preview \
-	editable false
-	back? null
-	sub /
-		<= Bar $mol_view
-			sub /
-				<= Moment $mol_view
-					sub / <= moment
-				<= Back $mol_button_minor
-					title \Вернуть
-					hint \Вернуть документ к этому снимку. Текущее состояние ляжет снимком, поэтому возврат тоже отменяем
-					enabled <= editable
-					click? <=> back?
-		<= Change $mol_view
-			sub / <= change
-		<= Author $mol_view
-			sub / <= author
-		<= Text $mol_view
-			sub / <= preview
-
-$bog_vmap_app_history $mol_view
-	store $bog_vmap_app_store
-	state? *
-	live /
-	press? null
-	editable false
-	note? \
-	sub <= content /$mol_view
-	Head $mol_view
-		sub /
-			\Версии
-	Steps $mol_view
-		sub /
-			<= Undo $mol_button_minor
-				title \Отменить
-				hint \Шаг назад по правкам этой сессии. Cmd+Z или Ctrl+Z
-				enabled <= undoable false
-				click? <=> undo? null
-			<= Redo $mol_button_minor
-				title \Повторить
-				hint \Вернуть отменённый шаг. Cmd+Shift+Z или Ctrl+Shift+Z
-				enabled <= redoable false
-				click? <=> redo? null
-			<= Take $mol_button_minor
-				title \Снимок
-				hint \Записать текущее состояние документа снимком в его ленд
-				enabled <= editable
-				click? <=> snap_take? null
-	Note $mol_view
-		sub / <= note
-	List $mol_list
-		rows <= snap_rows /
-	Snap_row* $bog_vmap_app_history_snap
-		moment <= snap_moment* \
-		author <= snap_author* \
-		change <= snap_change* \
-		preview <= snap_preview* \
-		editable <= editable
-		back? <=> snap_back*? null
-
-$mol_svg_text $mol_svg
-	dom_name \text
-	pos /
-	attr *
-		^
-		x <= pos_x \
-		y <= pos_y \
-		text-anchor <= align_hor <= align \middle
-		alignment-baseline <= align_vert \baseline
-	sub /
-		<= text \
-
-$mol_svg_circle $mol_svg
-	dom_name \circle
-	pos /
-	attr *
-		^
-		r <= radius \.5%
-		cx <= pos_x \
-		cy <= pos_y \
-
-$bog_vmap_app_wire $mol_svg_root
-	attr *
-		^
-		viewBox null
-	lines /$bog_vmap_app_wire_line
-	dots /$bog_vmap_app_wire_dot
-	drag_geometry \
-	sub <= shapes /$mol_view
-	Line* $mol_svg_path
-		geometry <= line_geometry* \
-	Label* $mol_svg_text
-		pos <= label_pos* /number
-		text <= label_text* \
-	Dot* $mol_svg_circle
-		radius <= dot_radius \5
-		pos <= dot_pos* /number
-		attr *
-			^
-			bog_vmap_app_wire_dot_side <= dot_side* \
-			bog_vmap_app_wire_dot_lit <= dot_lit* true
-			bog_vmap_app_wire_dot_linked <= dot_linked* false
-	Name* $mol_svg_text
-		pos <= name_pos* /number
-		align <= name_align* \start
-		text <= name_text* \
-	Drag $mol_svg_path
-		geometry <= drag_geometry
 
 $mol_touch $mol_plugin
 	start_zoom? 0
@@ -1582,7 +1365,240 @@ $bog_vmap_app_pane_frame $mol_frame
 		^
 		src null
 
-$bog_vmap_app $mol_view
+$bog_vmap_app_palette_item $mol_button_minor
+	current false
+	minimal_height 24
+	drag_start? null
+	attr *
+		^
+		bog_vmap_app_palette_item_current <= current
+	event *
+		^
+		pointerdown? <=> drag_start?
+
+$bog_vmap_app_palette_port $mol_form_field
+	sign \
+	body \
+	owner \
+	needle \
+	name <= sign
+	bids / <= owner
+	control <= Body $mol_dimmer
+		haystack <= body
+		needle <= needle
+
+$bog_vmap_app_palette $mol_list
+	pack_link \
+	query? \
+	selected? \
+	compact false
+	dragged? \
+	drag_x? 0
+	drag_y? 0
+	land_classes /$mol_tree2
+	rows <= body /$mol_view
+	Classes $mol_form_field
+		name \Классы пака
+		bids / <= total \
+		control <= Class_list $mol_list
+			rows <= class_rows /
+	Ports $mol_form_field
+		name <= selected_title \
+		bids / <= chain_title \
+		control <= Port_list $mol_list
+			rows <= port_rows /
+	Class_row* $bog_vmap_app_palette_item
+		title <= class_title* \
+		click? <=> class_click*? null
+		current <= class_current* false
+		drag_start? <=> class_drag*? null
+	Port_row* $bog_vmap_app_palette_port
+		sign <= port_sign* \
+		body <= port_body* \
+		owner <= port_owner* \
+		needle <= query?
+	Lib $bog_vmap_lib
+		pack <= pack_link
+		classes <= land_classes
+
+$bog_vmap_app_scenes $mol_page
+	store $bog_vmap_app_store
+	current? \
+	doc_title? \
+	current_exists false
+	title \Сцены
+	tools /
+		<= Name $mol_string
+			hint \Название сцены
+			enabled <= current_exists
+			value? <=> doc_title?
+		<= Add $mol_button_minor
+			title \Новая сцена
+			hint \Завести новый документ. Он станет текущим
+			click? <=> add? null
+	body /
+		<= List $mol_list
+			rows <= scene_rows /
+	Scene_row* $bog_vmap_app_palette_item
+		title <= scene_title* \
+		hint <= scene_title* \
+		current <= scene_current* false
+		click? <=> scene_click*? null
+
+$mol_icon_upload $mol_icon path \M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z
+
+$mol_button_open $mol_button_minor
+	sub /
+		<= Icon $mol_icon_upload
+		<= Native $mol_button_open_native
+			files? <=> files_handled? <=> files? /File
+			accept <= accept \
+			multiple <= multiple true
+
+$mol_button_open_native $mol_view
+	dom_name \input
+	files? /File
+	attr *
+		type \file
+		accept <= accept \
+		multiple <= multiple true
+	event *
+		change? <=> picked? null
+
+$bog_vmap_app_shelf $mol_page
+	links? \
+	pack_link \
+	land_classes /$mol_tree2
+	class_list /string
+	dragged? \
+	drag_x? 0
+	drag_y? 0
+	drag_source \
+	drag_title \
+	item_source* \
+	place? \
+	files? /File
+	classes_showed? false
+	filter? \
+	title \Полка
+	tools /
+		<= Filter $mol_search
+			hint \Поиск по деталям и классам
+			query? <=> filter?
+		<= Level $mol_check
+			title \Все классы пака
+			hint \Классы донорского пака целиком: примитивы, из которых верстают внутри блока
+			checked? <=> classes_showed?
+	Source $mol_expander
+		title \Пак компонентов
+		expanded? true
+		content /
+			<= Pack_list $mol_list
+				rows <= pack_rows /
+			<= Links_field $mol_form_field
+				name \Адрес приложения
+				bids / <= rejected_note \
+				control <= Links $mol_string
+					hint \Адрес приложения, ленды через запятую
+					value? <=> links?
+			<= Import_field $mol_form_field
+				name \Файлы модуля
+				bids / <= import_note? \
+				control <= Import_open $mol_button_open
+					hint \Файлы .view.tree модуля mol. Объявления приедут, поведение — нет
+					accept \.tree
+					multiple true
+					files? <=> files?
+	Parts $mol_expander
+		title \Готовые детали
+		expanded? true
+		content /
+			<= Items $mol_list
+				rows <= item_rows /
+	Apps $mol_form_field
+		name <= apps_title \
+		bids / <= app_error \
+		control <= App_list $mol_list
+			rows <= app_rows /
+	Pack_row* $mol_button_minor
+		title <= pack_title* \
+		hint <= pack_hint* \
+		attr *
+			^
+			bog_vmap_app_shelf_pack_current <= pack_current* false
+		click? <=> pack_click*? null
+	Store $bog_vmap_app_publish_store
+	Palette $bog_vmap_app_palette
+		compact true
+		pack_link <= pack_link
+		land_classes <= land_classes
+		query? <=> filter?
+		dragged? <=> dragged?
+		drag_x? <=> drag_x?
+		drag_y? <=> drag_y?
+	Item_row* $bog_vmap_app_palette_item
+		title <= item_title* \
+		hint <= item_hint* \
+		click? <=> item_click*? null
+		drag_start? <=> item_drag*? null
+
+$bog_vmap_app_history_snap $mol_button_minor
+	moment \
+	author \
+	change \
+	preview \
+	editable false
+	enabled <= editable
+	hint \Вернуть документ к этому снимку. Текущее состояние ляжет снимком, поэтому возврат тоже отменяем
+	click? <=> back? null
+	sub /
+		<= Sign $mol_labeler
+			label /
+				<= moment
+				<= change
+				<= author
+			content /
+				<= Preview $mol_text_code
+					text <= preview
+					Copy null
+
+$bog_vmap_app_history $mol_page
+	store $bog_vmap_app_store
+	state? *
+	live /
+	press? null
+	editable false
+	note? \
+	title \Версии
+	tools /
+		<= Undo $mol_button_minor
+			title \Отменить
+			hint \Шаг назад по правкам этой сессии. Cmd+Z или Ctrl+Z
+			enabled <= undoable false
+			click? <=> undo? null
+		<= Redo $mol_button_minor
+			title \Повторить
+			hint \Вернуть отменённый шаг. Cmd+Shift+Z или Ctrl+Shift+Z
+			enabled <= redoable false
+			click? <=> redo? null
+		<= Take $mol_button_minor
+			title \Снимок
+			hint \Записать текущее состояние документа снимком в его ленд
+			enabled <= editable
+			click? <=> snap_take? null
+	Note $mol_status
+		status <= note
+	List $mol_list
+		rows <= snap_rows /
+	Snap_row* $bog_vmap_app_history_snap
+		moment <= snap_moment* \
+		author <= snap_author* \
+		change <= snap_change* \
+		preview <= snap_preview* \
+		editable <= editable
+		back? <=> snap_back*? null
+
+$bog_vmap_app $mol_book2
 	doc_src \
 	doc_css \
 	spots? *
@@ -1603,17 +1619,15 @@ $bog_vmap_app $mol_view
 	code_css? \
 	root_js? \
 	root_css? \
+	lights? false
 	store $bog_vmap_app_store
 	plugins /
-		<= Theme $bog_theme_auto
-	style *
-		--mol_theme_hue <= theme_hue \240deg
-	sub <= body /$mol_view
-	Head $mol_bar
-		sub /
-			<= Brand $mol_view
-				sub /
-					\vmap
+		<= Theme $mol_theme_auto
+			theme <= theme_name \$mol_theme_dark
+	placeholders <= floats /$mol_view
+	Canvas $mol_page
+		title \Холст
+		tools /
 			<= Palette_check $mol_check
 				title \Полка
 				checked? <=> palette_showed?
@@ -1637,13 +1651,6 @@ $bog_vmap_app $mol_view
 				hint <= delete_hint \
 				enabled <= selection_showed false
 				click? <=> node_delete? null
-			<= Publish $bog_vmap_app_publish
-				part <= publish_part \
-				source <= node_source? \
-				js <= node_js \
-				css <= root_css
-				doc <= doc_src
-				classes / <= doc_root
 			<= Root_name $mol_string
 				hint \Имя корневого класса
 				value? <=> root_draft? \
@@ -1651,66 +1658,67 @@ $bog_vmap_app $mol_view
 				event *
 					^
 					blur? <=> root_submit? null
+			<= Publish $bog_vmap_app_publish
+				part <= publish_part \
+				source <= node_source? \
+				js <= node_js \
+				css <= root_css
+				doc <= doc_src
+				classes / <= doc_root
 			<= Download $mol_button_download
 				title <= export_title \
 				hint <= export_hint \
 				enabled <= export_ready false
 				blob <= export_blob $mol_blob
 				file_name <= export_file \
-			<= Status $mol_view
-				sub /
-					<= status \
-			<= Theme_switch $bog_theme_switch
-				theme_auto <= Theme
-	Notes $mol_view
-		sub <= notes /$mol_view
-	Alarm $mol_view
-		sub /
-			<= error \
-	Export_note $mol_view
-		sub <= export_rows /$mol_view
-	Export_row* $mol_view
-		sub / <= export_text* \
-	Root_note $mol_view
-		sub / <= root_title_note \
-	Inside_note $mol_view
-		sub / <= inside_note \
-	pack_stalled false
-	Stall $mol_view
-		sub <= stall_content /$mol_view
-	Stall_note $mol_view
-		sub / <= stall_note \
-	Stall_pack $mol_button_minor
-		title \Вернуть пак по умолчанию
-		hint \Убрать адрес библиотеки из полки и взять пак рядом со страницей редактора
-		click? <=> pack_default? null
-	Stall_reload $mol_button_minor
-		title \Перезагрузить сцену
-		hint \Поднять кадр заново. Документ хранится в редакторе и не потеряется
-		click? <=> scene_restart? null
-	Body $mol_view
-		sub <= body_main /$mol_view
-	Side $mol_view
-		sub /
-			<= Scenes $bog_vmap_app_scenes
-				store <= store
-			<= Shelf $bog_vmap_app_shelf
-				links? <=> links?
-				pack_link <= pack_link
-				land_classes <= lib_classes /$mol_tree2
-				class_list <= lib_class_list /string
-				place? <=> shelf_place? \
-	Aside $mol_view
-		sub <= aside_content /$mol_view
+			<= Lights $mol_lights_toggle
+				lights? <=> lights?
+			<= Status $mol_status
+				status <= status \
+		body /
+			<= Pane $bog_vmap_app_pane
+				scene_bundle <= scene_bundle
+				pack_uri <= pack_script \
+				theme <= scene_theme \
+				doc_src <= doc_src
+				doc_css <= doc_css
+				spots? <=> spots?
+				picked? <=> picked?
+				doc_js <= doc_js
+				doc_root <= doc_root
+				libs <= libs /$bog_vmap_bridge_part
+				carrying <= carrying false
+				wires <= doc_wires /$bog_vmap_lang_link
+				part_ports* <= part_ports* /$bog_vmap_app_wire_port
+				part_overs* <= part_overs* /string
+				link_add? <=> link_add? null
+				link_drop? <=> link_drop? null
+				containers <= doc_containers /string
+				doc_names <= doc_names /string
+				axis* <= doc_axis* \
+				tree_move? <=> tree_move? null
+				carry_drop? <=> carry_drop? null
+				files_drop? <=> files_drop? null
+		foot <= notes /$mol_view
+	Scenes $bog_vmap_app_scenes
+		store <= store
+	Shelf $bog_vmap_app_shelf
+		links? <=> links?
+		pack_link <= pack_link
+		land_classes <= lib_classes /$mol_tree2
+		class_list <= lib_class_list /string
+		place? <=> shelf_place? \
 	Inspect $bog_vmap_app_inspect
 		source? <=> node_source? \
 		peers <= node_peers /$mol_tree2
 		pack <= pack_link \
 		class_title? <=> node_title? \
 		title_note <= node_title_note \
-	Idle $mol_view
-		sub /
-			<= idle_note \Выберите узел на холсте, чтобы править его свойства
+	Idle $mol_page
+		title \Свойства
+		body /
+			<= Idle_note $mol_paragraph
+				title <= idle_note \Выберите узел на холсте, чтобы править его свойства
 	Code $bog_vmap_app_code
 		klass <= code_klass \
 		prop <= code_prop \
@@ -1727,35 +1735,33 @@ $bog_vmap_app $mol_view
 	Lib $bog_vmap_lib_land_stack
 		pack <= pack_link
 		lands <= lands /string
+	Alarm $mol_status
+		status <= error \
+	Inside_note $mol_paragraph
+		title <= inside_note \
+	Root_note $mol_paragraph
+		title <= root_title_note \
+	Export_row* $mol_paragraph
+		title <= export_text* \
+	pack_stalled false
+	Stall $mol_bar
+		sub <= stall_content /$mol_view
+	Stall_note $mol_paragraph
+		title <= stall_note \
+	Stall_pack $mol_button_minor
+		title \Вернуть пак по умолчанию
+		hint \Убрать адрес библиотеки из полки и взять пак рядом со страницей редактора
+		click? <=> pack_default? null
+	Stall_reload $mol_button_minor
+		title \Перезагрузить сцену
+		hint \Поднять кадр заново. Документ хранится в редакторе и не потеряется
+		click? <=> scene_restart? null
 	Ghost $mol_view
 		style *
 			left <= ghost_left \0px
 			top <= ghost_top \0px
 		sub /
 			<= ghost_title \
-	Pane $bog_vmap_app_pane
-		scene_bundle <= scene_bundle
-		pack_uri <= pack_script \
-		theme <= scene_theme \
-		doc_src <= doc_src
-		doc_css <= doc_css
-		spots? <=> spots?
-		picked? <=> picked?
-		doc_js <= doc_js
-		doc_root <= doc_root
-		libs <= libs /$bog_vmap_bridge_part
-		carrying <= carrying false
-		wires <= doc_wires /$bog_vmap_lang_link
-		part_ports* <= part_ports* /$bog_vmap_app_wire_port
-		part_overs* <= part_overs* /string
-		link_add? <=> link_add? null
-		link_drop? <=> link_drop? null
-		containers <= doc_containers /string
-		doc_names <= doc_names /string
-		axis* <= doc_axis* \
-		tree_move? <=> tree_move? null
-		carry_drop? <=> carry_drop? null
-		files_drop? <=> files_drop? null
 
 $mol_image $mol_view
 	dom_name \img

@@ -1,4 +1,8 @@
 {
+	"$mol_form_form_invalid": "В форме есть ошибки",
+	"$mol_form_message_done": "Сохранено",
+	"$mol_form_submit_title": "Сохранить",
+	"$mol_lights_toggle_hint": "Переключить освещение",
 	"$mol_search_Clear_hint": "Очистить",
 	"$mol_search_hint": "Поиск..",
 	"$mol_select_filter_hint": "Фильтр..",

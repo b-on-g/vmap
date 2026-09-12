@@ -7273,7 +7273,7 @@ var $;
             $mol_assert_like(types, stand.names());
         },
         'layout properties land in the style of the node and read back'($) {
-            const inspect = inspect_of($, [
+            const inspect = panel($, [
                 `${d}bog_vmap_app_inspect_test_page ${d}mol_view`,
                 '	sub /',
                 '',
@@ -7298,7 +7298,7 @@ var $;
             $mol_assert_equal(inspect.Flex().direction(), 'column');
         },
         'the inherited head of the style dictionary is kept'($) {
-            const inspect = inspect_of($, [
+            const inspect = panel($, [
                 `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
                 '	style *',
                 '		^',
@@ -7309,7 +7309,7 @@ var $;
             $mol_assert_like(inspect.style_dict().kids.map(kid => kid.type), ['^', 'padding', 'alignItems']);
         },
         'stretching is written as text, because a number would get px'($) {
-            const inspect = inspect_of($, [
+            const inspect = panel($, [
                 `${d}bog_vmap_app_inspect_test_cell ${d}mol_view`,
                 '	sub /',
                 '',
@@ -7322,7 +7322,7 @@ var $;
             $mol_assert_equal(inspect.Node().source().includes('flexGrow'), false);
         },
         'the width switch sets the width of the artboard'($) {
-            const inspect = inspect_of($, [
+            const inspect = panel($, [
                 `${d}bog_vmap_app_inspect_test_board ${d}mol_view`,
                 '	style * width \\1280px',
                 '	sub /',
@@ -7333,8 +7333,23 @@ var $;
             $mol_assert_equal(inspect.Flex().width(), '390px');
             $mol_assert_ok(inspect.Node().source().includes('width \\390px'));
         },
+        'every layout row is a form field with a stock control'($) {
+            const inspect = panel($, [
+                `${d}bog_vmap_app_inspect_test_board ${d}mol_view`,
+                '	sub /',
+                '',
+            ].join('\n'));
+            const flex = inspect.Flex();
+            flex.dom_tree();
+            $mol_assert_equal(flex.Width().dom_node().hasAttribute('mol_form_field'), true);
+            $mol_assert_equal(flex.Width().name(), 'Ширина');
+            $mol_assert_equal(flex.Width().control(), flex.Width_pick());
+            $mol_assert_equal(flex.Gap().control(), flex.Gap_field());
+            $mol_assert_ok(flex.Width_pick().dom_node().hasAttribute('mol_switch'));
+            $mol_assert_ok(flex.Gap_field().dom_node().hasAttribute('mol_string'));
+        },
         'the name field renames on submit and not on a keystroke'($) {
-            const inspect = inspect_of($, [
+            const inspect = panel($, [
                 `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
                 '	sub /',
                 '',
@@ -7348,7 +7363,7 @@ var $;
             $mol_assert_ok(inspect.Node().source().startsWith(`${d}bog_vmap_app_inspect_test_hero `));
         },
         'the field follows the name once the rename lands'($) {
-            const inspect = inspect_of($, [
+            const inspect = panel($, [
                 `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
                 '	sub /',
                 '',
@@ -7359,46 +7374,199 @@ var $;
             inspect.title_submit();
             $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_hero`);
         },
-        'the refusal strip is there only while there is a refusal'($) {
-            const inspect = inspect_of($, [
+        'the head of the panel is the head of a page'($) {
+            const inspect = panel($, [
                 `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
                 '	sub /',
                 '',
             ].join('\n'));
-            $mol_assert_equal(inspect.sub().includes(inspect.Note()), false);
+            const root = inspect.dom_tree();
+            $mol_assert_ok(root.querySelector('[mol_page_head]'));
+            $mol_assert_equal(inspect.Name().dom_node().hasAttribute('mol_string'), true);
+            $mol_assert_equal(root.contains(inspect.Name().dom_node()), true);
+            $mol_assert_equal(inspect.Name().value(), `${d}bog_vmap_app_inspect_test_name`);
+            $mol_assert_equal(inspect.Name().dom_node().getAttribute('id').endsWith('Name()'), true);
+        },
+        'the refusal strip is there only while there is a refusal'($) {
+            const inspect = panel($, [
+                `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
+                '	sub /',
+                '',
+            ].join('\n'));
+            $mol_assert_equal(inspect.tools().includes(inspect.Note()), false);
             const refused = $.$bog_vmap_app_inspect.make({
                 $,
                 source: () => `${d}bog_vmap_app_inspect_test_name ${d}mol_view\n\tsub /\n`,
+                pack: () => '',
                 title_note: () => 'Имя занято',
             });
-            $mol_assert_equal(refused.sub()[1], refused.Note());
+            $mol_assert_equal(refused.tools().includes(refused.Note()), true);
+            $mol_assert_equal(refused.Note().message(), 'Имя занято');
         },
         'a source naming no class leaves an invitation, not twenty failures'($) {
-            const one = inspect_of($, '');
+            const one = panel($, '');
             $mol_assert_equal(one.class_ready(), false);
-            $mol_assert_equal(one.sub().length, 1);
-            $mol_assert_equal(one.sub()[0], one.Empty());
-            const two = inspect_of($, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n`);
+            $mol_assert_equal(one.body().length, 1);
+            $mol_assert_equal(one.body()[0], one.Empty());
+            const two = panel($, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n`);
             $mol_assert_equal(two.class_ready(), true);
-            $mol_assert_ok(two.sub().length > 1);
+            $mol_assert_ok(two.body().length > 1);
         },
-        'everything that can grow is inside the one scroll of the panel'($) {
-            const one = inspect_of($, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n`);
+        'everything that can grow is inside the one scroll of the page'($) {
+            const one = panel($, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n`);
+            $mol_assert_equal(one.Body() instanceof $mol_scroll, true);
+            $mol_assert_equal(one.body_content().length, 1);
+            $mol_assert_equal(one.body_content()[0], one.Body_content());
             const body = one.body();
-            $mol_assert_equal(body.filter(view => view instanceof $mol_scroll).length, 1);
-            $mol_assert_equal(body.includes(one.Body()), true);
-            $mol_assert_equal(body.includes(one.Flex()), false);
-            $mol_assert_equal(body.includes(one.Rows()), false);
-            $mol_assert_equal(one.body_content().includes(one.Flex()), true);
-            $mol_assert_equal(one.body_content().includes(one.Rows()), true);
+            $mol_assert_equal(body.includes(one.Flex()), true);
+            $mol_assert_equal(body.includes(one.Rows()), true);
+            $mol_assert_equal(body.includes(one.Inherited()), true);
+        },
+        'every property row is a form field labelled by the signature'($) {
+            const one = panel($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	title \\Hi',
+                '	count 24',
+                '',
+            ].join('\n'));
+            one.dom_tree();
+            const row = one.Row('title');
+            $mol_assert_equal(row.dom_node().hasAttribute('mol_form_field'), true);
+            $mol_assert_equal(row.name(), 'title');
+            $mol_assert_equal(one.Rows().dom_node().contains(row.dom_node()), true);
+            $mol_assert_equal(row.control(), row.Value());
+        },
+        'the field of a row is the stock one for the kind of the value'($) {
+            const one = panel($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	title \\Hi',
+                '	count 24',
+                '	dense false',
+                '	style * padding \\4px',
+                '	sub / <= Hero',
+                `	Hero ${d}mol_view`,
+                '	calc = Hero title',
+                '',
+            ].join('\n'));
+            one.dom_tree();
+            const value = (name) => one.Row(name).Value();
+            $mol_assert_equal(value('title').Editor(), value('title').String());
+            $mol_assert_equal(value('count').Editor(), value('count').Num());
+            $mol_assert_equal(value('dense').Editor(), value('dense').Flag());
+            $mol_assert_equal(value('style').Editor(), value('style').Seq());
+            $mol_assert_equal(value('sub').Editor(), value('sub').Seq());
+            $mol_assert_equal(value('calc').Editor(), value('calc').Wire());
+            $mol_assert_equal(value('title').String().Text().dom_node().hasAttribute('mol_string'), true);
+            $mol_assert_equal(value('count').Num().dom_node().hasAttribute('mol_string'), true);
+            $mol_assert_equal(value('dense').Flag().dom_node().hasAttribute('mol_check'), true);
+            $mol_assert_equal(value('style').Seq().dom_node().hasAttribute('mol_list'), true);
+            $mol_assert_equal(value('calc').Wire().Origin().dom_node().hasAttribute('mol_select'), true);
+        },
+        'an edit in the field of a row reaches the document'($) {
+            const one = panel($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	title \\Hi',
+                '',
+            ].join('\n'));
+            one.dom_tree();
+            const field = one.Row('title').Value()
+                .String().Text();
+            $mol_assert_equal(field.value(), 'Hi');
+            field.value('Hey');
+            $mol_assert_equal(one.row_value('title').text(), 'Hey');
+            $mol_assert_ok(one.Node().source().includes('title \\Hey'));
+        },
+        'a number keeps the literal the document holds'($) {
+            const one = panel($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	ratio 1e3',
+                '',
+            ].join('\n'));
+            one.dom_tree();
+            const value = one.Row('ratio').Value();
+            $mol_assert_equal(value.Editor(), value.Num());
+            $mol_assert_equal(value.num(), '1e3');
+            value.num('2e4');
+            $mol_assert_ok(one.Node().source().includes('ratio 2e4'));
+        },
+        'inherited rows live in the expander and own rows do not'($) {
+            const one = pair($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	caption \\Карточка',
+                `${d}bog_vmap_app_inspect_test_hero ${d}bog_vmap_app_inspect_test_card`,
+                '	title \\Hi',
+                '',
+            ].join('\n'), `${d}bog_vmap_app_inspect_test_hero`);
+            $mol_assert_equal(one.row_inherited('caption'), true);
+            $mol_assert_equal(one.row_inherited('title'), false);
+            $mol_assert_like(one.own_ports(), ['title']);
+            $mol_assert_ok(one.inherited_ports().includes('caption'));
+            $mol_assert_equal(one.inherited_ports().includes('title'), false);
+            $mol_assert_equal(one.Inherited().expanded(), true);
+            one.dom_tree();
+            $mol_assert_equal(one.Inherited().dom_node().hasAttribute('mol_expander'), true);
+            $mol_assert_equal(one.Inherited().dom_node().contains(one.Row('caption').dom_node()), true);
+            $mol_assert_equal(one.Inherited().dom_node().contains(one.Row('title').dom_node()), false);
+            $mol_assert_equal(one.Rows().dom_node().contains(one.Row('title').dom_node()), true);
+        },
+        'an inherited row offers no tools'($) {
+            const one = pair($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	caption \\Карточка',
+                `${d}bog_vmap_app_inspect_test_hero ${d}bog_vmap_app_inspect_test_card`,
+                '	title \\Hi',
+                '',
+            ].join('\n'), `${d}bog_vmap_app_inspect_test_hero`);
+            $mol_assert_equal(one.Row('caption').tools().length, 0);
+            $mol_assert_equal(one.Row('title').tools().length, 3);
+            $mol_assert_equal(one.Row('caption').bid(), `${d}bog_vmap_app_inspect_test_card`);
+        },
+        'the inherited group opens by default and closing it hides the rows'($) {
+            const one = pair($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	caption \\Карточка',
+                `${d}bog_vmap_app_inspect_test_hero ${d}bog_vmap_app_inspect_test_card`,
+                '	title \\Hi',
+                '',
+            ].join('\n'), `${d}bog_vmap_app_inspect_test_hero`);
+            $mol_assert_equal(one.inherited_shown(), true);
+            one.dom_tree();
+            $mol_assert_ok(one.Inherited().dom_node().querySelector('[mol_form_field]'));
+            one.inherited_shown(false);
+            one.dom_tree();
+            $mol_assert_equal(one.Inherited().dom_node().querySelector('[mol_form_field]'), null);
         },
     });
     const d = '$';
-    function inspect_of($, source) {
+    function browser_gaps($) {
+        const dom = $.$mol_dom_context;
+        Object.assign(globalThis, {
+            ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
+            PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
+        });
+    }
+    function panel($, source, peers = []) {
+        browser_gaps($);
         let text = source;
         return $.$bog_vmap_app_inspect.make({
             $,
             source: (next) => next === undefined ? text : (text = next),
+            peers: () => peers,
+            pack: () => '',
+        });
+    }
+    function pair($, source, klass) {
+        browser_gaps($);
+        let text = source;
+        const doc = $.$bog_vmap_lang_doc.make({
+            $,
+            source: (next) => next === undefined ? text : (text = next),
+        });
+        return $.$bog_vmap_app_inspect.make({
+            $,
+            source: (next) => doc.class_source(klass, next),
+            peers: () => doc.trees(),
+            pack: () => '',
         });
     }
 })($ || ($ = {}));
@@ -13941,6 +14109,37 @@ var $;
             $mol_assert_like(palette.Lib().class_list(), [`${d}mol_view`, `${d}my_card`]);
             $mol_assert_ok([...palette.Lib().props_map(`${d}my_card`).keys()].includes('sub'));
         },
+        'the list of classes is a field whose bid counts what is shown'($) {
+            const palette = $bog_vmap_app_palette.make({ $, compact: () => true });
+            const dom = palette.dom_tree();
+            const classes = dom.querySelector('[bog_vmap_app_palette_classes]');
+            $mol_assert_ok(classes.matches('[mol_form_field]'));
+            $mol_assert_ok(classes.textContent.includes('Классы пака'));
+            $mol_assert_ok(classes.querySelector('[mol_form_field_bid]').textContent.includes('классов'));
+            $mol_assert_ok(classes.querySelector('[bog_vmap_app_palette_class_row]'));
+            $mol_assert_equal(dom.querySelector('[bog_vmap_app_palette_ports]'), null);
+        },
+        'every port is a field with its name, its declaration and the class it came from'($) {
+            const d = '$';
+            const palette = $bog_vmap_app_palette.make({
+                $,
+                land_classes: () => $.$mol_tree2_from_string(`${d}my_card ${d}mol_view\n\tprice 0\n`).kids,
+                selected: () => `${d}my_card`,
+            });
+            const dom = palette.dom_tree();
+            const ports = [...dom.querySelectorAll('[bog_vmap_app_palette_port]')];
+            $mol_assert_ok(ports.length > 1);
+            for (const port of ports)
+                $mol_assert_ok(port.matches('[mol_form_field]'));
+            const bid = (el) => el.querySelector('[mol_form_field_bid]').textContent;
+            const own = ports.find(el => el.textContent.includes('price'));
+            $mol_assert_ok(own);
+            $mol_assert_equal(bid(own), '');
+            $mol_assert_ok(own.textContent.includes('0'));
+            const sub = ports.find(el => el.textContent.includes('sub'));
+            $mol_assert_ok(sub);
+            $mol_assert_ok(bid(sub).includes(`${d}mol_view`));
+        },
     });
 })($ || ($ = {}));
 
@@ -13968,7 +14167,7 @@ var $;
             $mol_assert_like(view.scene_links(), []);
             $mol_assert_equal(view.current(), '');
             $mol_assert_equal(view.current_exists(), false);
-            $mol_assert_equal(view.title(), '');
+            $mol_assert_equal(view.doc_title(), '');
             $mol_assert_equal(view.add_title(), 'Сцена 1');
         },
         'the list carries every document by title, the last one open'($) {
@@ -13980,7 +14179,7 @@ var $;
             $mol_assert_like(view.scene_links().map(link => view.scene_current(link)), [false, true]);
             $mol_assert_equal(view.current(), second.link().str);
             $mol_assert_equal(view.current_exists(), true);
-            $mol_assert_equal(view.title(), 'Second');
+            $mol_assert_equal(view.doc_title(), 'Second');
             $mol_assert_equal(view.add_title(), 'Сцена 3');
         },
         'picking a document changes what the store reads'($) {
@@ -13989,7 +14188,7 @@ var $;
             store.doc_add('Second', src_hero);
             view.current(first.link().str);
             $mol_assert_equal(store.source(), src_page);
-            $mol_assert_equal(view.title(), 'First');
+            $mol_assert_equal(view.doc_title(), 'First');
             view.current('');
             $mol_assert_equal(store.source(), src_hero);
             view.current(first.link().str);
@@ -14000,10 +14199,21 @@ var $;
             const { store, view } = scenes($);
             const first = store.doc_add('First', src_page);
             const second = store.doc_add('Second', src_hero);
-            view.title('Landing');
+            view.doc_title('Landing');
             $mol_assert_equal(second.title(), 'Landing');
             $mol_assert_equal(first.title(), 'First');
             $mol_assert_equal(view.scene_title(second.link().str), 'Landing');
+        },
+        'the list of documents is a page with the name field and the add button in its tools'($) {
+            const { store, view } = scenes($);
+            store.doc_add('First', src_page);
+            const dom = view.dom_tree();
+            $mol_assert_ok(dom.querySelector('[mol_page_head]'));
+            $mol_assert_equal(view.title(), 'Сцены');
+            const tools = dom.querySelector('[mol_page_tools]');
+            $mol_assert_ok(tools.contains(view.Name().dom_node()));
+            $mol_assert_ok(tools.contains(view.Add().dom_node()));
+            $mol_assert_ok(dom.querySelector('[mol_page_body]').contains(view.List().dom_node()));
         },
     });
 })($ || ($ = {}));
@@ -14457,9 +14667,8 @@ var $;
             shelf.links('https://mol.hyoo.ru, https://b-on-g.github.io/gram/');
             $mol_assert_equal(shelf.links(), 'https://mol.hyoo.ru, https://b-on-g.github.io/gram/');
             $mol_assert_equal(shelf.rejected_note(), 'https://b-on-g.github.io/gram/: ' + $bog_vmap_lib_links_reason.pack_second);
-            $mol_assert_equal(shelf.source_content().includes(shelf.Note()), true);
             shelf.links('https://mol.hyoo.ru');
-            $mol_assert_equal(shelf.source_content().includes(shelf.Note()), false);
+            $mol_assert_equal(shelf.rejected_note(), '');
         },
         'the objects of the application are its own classes, mol left out'($) {
             const d = '$';
@@ -14482,10 +14691,12 @@ var $;
             $mol_assert_equal(shelf.apps_title(), 'Приложение не отвечает');
             $mol_assert_ok(shelf.app_error().includes('Not Found'));
             $mol_assert_ok(shelf.app_error().includes('http://dead.test/web.view.tree'));
-            $mol_assert_equal(shelf.apps_content().includes(shelf.Apps_note()), true);
-            $mol_assert_equal(shelf.apps_content().includes(shelf.App_list()), false);
+            const dom = shelf.dom_tree();
+            const apps = dom.querySelector('[bog_vmap_app_shelf_apps]');
+            $mol_assert_ok(apps.querySelector('[mol_form_field_bid]').textContent.includes('Not Found'));
+            $mol_assert_equal(apps.querySelector('[bog_vmap_app_shelf_item_row]'), null);
             $mol_assert_ok(shelf.items().length > 4);
-            $mol_assert_ok(shelf.stack_content().includes(shelf.Items()));
+            $mol_assert_ok(shelf.body().includes(shelf.Parts()));
         },
         'nothing connected is a state and not a failure'($) {
             const shelf = $bog_vmap_app_shelf.make({ $ });
@@ -14493,16 +14704,58 @@ var $;
             $mol_assert_equal(shelf.apps_title(), 'Приложение не подключено');
             $mol_assert_ok(shelf.items().length > 4);
         },
-        'only the heading and the switch are pinned, everything else scrolls'($) {
+        'the shelf is a page: heading and filter pinned, groups scroll in its body'($) {
             const shelf = $bog_vmap_app_shelf.make({ $ });
             const body = shelf.body();
             $mol_assert_equal(body.length, 3);
-            $mol_assert_equal(body[0] === shelf.Title(), true);
-            $mol_assert_equal(body[1] === shelf.Stack(), true);
-            $mol_assert_equal(body[2] === shelf.Level(), true);
+            $mol_assert_equal(body[0] === shelf.Source(), true);
+            $mol_assert_equal(body[1] === shelf.Parts(), true);
+            $mol_assert_equal(body[2] === shelf.Apps(), true);
+            $mol_assert_equal(body.filter(view => view instanceof $mol_scroll).length, 0);
             const dom = shelf.dom_tree();
-            $mol_assert_equal(dom.querySelector('[bog_vmap_app_shelf_stack]')
-                .contains(dom.querySelector('[bog_vmap_app_shelf_source]')), true);
+            const head = dom.querySelector('[mol_page_head]');
+            $mol_assert_ok(head.textContent.includes('Полка'));
+            $mol_assert_ok(head.querySelector('[bog_vmap_app_shelf_filter]'));
+            $mol_assert_ok(head.querySelector('[bog_vmap_app_shelf_level]'));
+            $mol_assert_equal(head.querySelector('[bog_vmap_app_shelf_items]'), null);
+            const page = dom.querySelector('[mol_page_body]');
+            $mol_assert_ok(page.querySelector('[bog_vmap_app_shelf_items]'));
+            $mol_assert_ok(page.querySelector('[bog_vmap_app_shelf_pack_row]'));
+        },
+        'the pack, its address and its files sit in one expander, refusal under the field'($) {
+            const shelf = $bog_vmap_app_shelf.make({ $ });
+            shelf.links('https://mol.hyoo.ru, https://b-on-g.github.io/gram/');
+            const dom = shelf.dom_tree();
+            const source = dom.querySelector('[bog_vmap_app_shelf_source]');
+            $mol_assert_ok(source.matches('[mol_expander]'));
+            $mol_assert_ok(source.textContent.includes('Пак компонентов'));
+            $mol_assert_ok(source.querySelector('[bog_vmap_app_shelf_pack_row]'));
+            const field = dom.querySelector('[bog_vmap_app_shelf_links_field]');
+            $mol_assert_ok(field.matches('[mol_form_field]'));
+            $mol_assert_ok(field.querySelector('[bog_vmap_app_shelf_links]'));
+            $mol_assert_ok(field.querySelector('[mol_form_field_bid]')
+                .textContent.includes($bog_vmap_lib_links_reason.pack_second));
+        },
+        'the filter narrows both the parts and the objects of the application'($) {
+            const shelf = $bog_vmap_app_shelf.make({
+                $,
+                class_list: () => [`${d}bog_gram`, `${d}bog_gram_chat`, `${d}bog_other`],
+            });
+            const parts = () => shelf.items_shown().map(item => item.id);
+            const apps = () => shelf.shown(shelf.app_list());
+            $mol_assert_ok(parts().includes('block'));
+            $mol_assert_equal(apps().length, 3);
+            shelf.filter('калькулятор');
+            $mol_assert_like(parts(), ['calc', 'pair']);
+            $mol_assert_like(apps(), []);
+            shelf.filter('gram_chat');
+            $mol_assert_like(parts(), []);
+            $mol_assert_like(apps(), [`${d}bog_gram_chat`]);
+            const rows = [...shelf.dom_tree().querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
+            $mol_assert_like(rows, ['Gram_chat']);
+            shelf.filter('');
+            $mol_assert_ok(parts().includes('block'));
+            $mol_assert_equal(apps().length, 3);
         },
         'the shelf is cut down to what the pack at hand can build'($) {
             const shelf = (classes) => $$.$bog_vmap_app_shelf.make({
@@ -14606,7 +14859,9 @@ var $;
             $mol_assert_equal(parts[0].css(), '[my_card] { color: red }');
             $mol_assert_equal(shelf.links(), shelf.Store().link());
             $mol_assert_ok(shelf.import_note().includes('card.view.ts'));
-            $mol_assert_ok(shelf.source_content().includes(shelf.Import_note()));
+            $mol_assert_ok(shelf.dom_tree()
+                .querySelector('[bog_vmap_app_shelf_import_field] [mol_form_field_bid]')
+                .textContent.includes('card.view.ts'));
         },
         'a declaration that names no class is refused before anything is written'($) {
             const store = $bog_vmap_app_publish_store.make({
@@ -14682,15 +14937,15 @@ var $;
         },
         'the second level replaces the shelf instead of stacking under it'($) {
             const shelf = $bog_vmap_app_shelf.make({ $ });
-            const own_scrolls = () => shelf.body().filter(view => view instanceof $mol_scroll).length;
             $mol_assert_equal(shelf.classes_showed(), false);
-            $mol_assert_equal(shelf.body().includes(shelf.Stack()), true);
+            $mol_assert_equal(shelf.body().includes(shelf.Parts()), true);
+            $mol_assert_equal(shelf.body().includes(shelf.Apps()), true);
             $mol_assert_equal(shelf.body().includes(shelf.Palette()), false);
-            $mol_assert_equal(own_scrolls(), 1);
             shelf.classes_showed(true);
-            $mol_assert_equal(shelf.body().includes(shelf.Stack()), false);
+            $mol_assert_equal(shelf.body().includes(shelf.Parts()), false);
+            $mol_assert_equal(shelf.body().includes(shelf.Apps()), false);
             $mol_assert_equal(shelf.body().includes(shelf.Palette()), true);
-            $mol_assert_equal(own_scrolls(), 0);
+            $mol_assert_equal(shelf.body().includes(shelf.Source()), true);
         },
         'swapping the pack keeps the lands and drops only the old address'($) {
             const swap = $bog_vmap_app_shelf_pack_swap;
@@ -15028,6 +15283,55 @@ var $;
             one.snap_revert(store.snaps(doc)[0].link().str);
             $mol_assert_like(store.spots(), { Hero: { x: 10, y: 20 } });
             $mol_assert_like(store.snap_state(store.snaps(doc)[1]).spots, { Hero: { x: 300, y: 400 } });
+        },
+        'the panel is a page with the three steps in its tools'($) {
+            const dom = $.$mol_dom_context;
+            const { one } = $bog_vmap_app_history_test_land($);
+            dom.document.body.appendChild(one.dom_tree());
+            const node = one.dom_node();
+            $mol_assert_equal(node.querySelectorAll('[mol_page_head]').length, 1);
+            $mol_assert_equal(node.querySelectorAll('[mol_page_tools] [mol_button_minor]').length, 3);
+        },
+        'every snapshot is a button with a labeler inside a list'($) {
+            const dom = $.$mol_dom_context;
+            const { store, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_make(100);
+            store.source(src_two);
+            one.snap_make(200);
+            dom.document.body.appendChild(one.dom_tree());
+            const rows = one.dom_node().querySelectorAll('[mol_list] > [bog_vmap_app_history_snap]');
+            $mol_assert_equal(rows.length, 2);
+            $mol_assert_equal(rows[0].hasAttribute('mol_button_minor'), true);
+            $mol_assert_equal(rows[0].querySelectorAll('[mol_labeler]').length, 1);
+            $mol_assert_equal(rows[0].textContent.includes(one.snap_moment(one.snap_links()[0])), true);
+        },
+        'a press on the row of a snapshot asks to go back to it'($) {
+            const dom = $.$mol_dom_context;
+            const store = $bog_vmap_app_store.make({ $, doc_land_config: () => null });
+            const doc = store.doc_add('Landing');
+            const asked = [];
+            const one = $$.$bog_vmap_app_history.make({
+                $,
+                store: () => store,
+                step_delay: () => 0,
+                snap_delay: () => 0,
+                state: (next) => store.doc_state(doc, next),
+                snap_back: (link, next) => {
+                    asked.push(link);
+                    return null;
+                },
+            });
+            store.source(src_one);
+            one.snap_make(100);
+            store.source(src_two);
+            one.snap_make(200);
+            dom.document.body.appendChild(one.dom_tree());
+            const rows = one.dom_node().querySelectorAll('[mol_list] > [bog_vmap_app_history_snap]');
+            $mol_assert_equal(rows.length, 2);
+            $mol_assert_equal(one.editable(), true);
+            rows[0].click();
+            $mol_assert_equal(asked.join(' '), one.snap_links()[0]);
         },
     });
 })($ || ($ = {}));
@@ -15425,6 +15729,36 @@ var $;
             deck.Switch().option_checked('2', true);
             deck.Switch().option_checked('2', false);
             $mol_assert_equal(deck.current(), '2');
+        },
+        'the panel is a page whose head carries the scope of the edit'($) {
+            const dom = $.$mol_dom_context;
+            const { code } = editor($);
+            code.whole(true);
+            dom.document.body.appendChild(code.dom_tree());
+            const head = code.dom_node().querySelectorAll('[mol_page_head]');
+            const title = head[0].querySelector('[mol_page_title]');
+            $mol_assert_equal(head.length, 1);
+            $mol_assert_equal(title.textContent, code.scope_note());
+            $mol_assert_equal(title.textContent.includes(code.klass()), true);
+        },
+        'the check of the whole class stands in the tools of the page'($) {
+            const dom = $.$mol_dom_context;
+            const { code } = editor($);
+            dom.document.body.appendChild(code.dom_tree());
+            $mol_assert_equal(code.tools().length, 1);
+            $mol_assert_equal(code.tools()[0] === code.Scope(), true);
+            $mol_assert_equal(code.dom_node().querySelectorAll('[mol_page_tools] [mol_check]').length, 1);
+        },
+        'the deck stands in the body and every tab holds a field'($) {
+            const dom = $.$mol_dom_context;
+            const { code } = editor($);
+            code.whole(true);
+            dom.document.body.appendChild(code.dom_tree());
+            $mol_assert_equal(code.dom_node().querySelectorAll('[mol_page_body] [mol_deck]').length, 1);
+            for (const tab of ['0', '1', '2']) {
+                code.Sources().current(tab);
+                $mol_assert_equal(code.dom_tree().querySelectorAll('[mol_textarea]').length, 1);
+            }
         },
     });
 })($ || ($ = {}));
@@ -16225,13 +16559,13 @@ var $;
             $mol_assert_ok(notes[1].includes('who'));
             $mol_assert_equal(app.export_rows().length, 2);
             $mol_assert_equal(app.export_text(1), notes[1]);
-            $mol_assert_ok(app.notes().includes(app.Export_note()));
-            $mol_assert_equal(app.body().includes(app.Export_note()), false);
+            $mol_assert_ok(app.notes().includes(app.Export_row(1)));
+            $mol_assert_equal(app.Canvas().foot().includes(app.Export_row(1)), true);
             $mol_assert_fail(() => app.export_blob(), Error);
             app.root_js('greeting( who: string ) {\n\treturn who\n}\n');
             $mol_assert_equal(app.export_ready(), true);
             $mol_assert_equal(app.export_notes().length, 0);
-            $mol_assert_equal(app.body().includes(app.Export_note()), false);
+            $mol_assert_equal(app.export_rows().length, 0);
         },
         'a document still on its way holds nothing up'($) {
             const waiting = new Promise(() => { });
@@ -16247,7 +16581,7 @@ var $;
             });
             $mol_assert_equal(app.export_ready(), false);
             $mol_assert_equal(app.export_notes().length, 0);
-            $mol_assert_equal(app.body().includes(app.Export_note()), false);
+            $mol_assert_equal(app.export_rows().length, 0);
             $mol_assert_equal(app.export_hint(), 'Документ ещё загружается');
         },
         'an untouched document downloads as the empty page'($) {
@@ -16418,7 +16752,8 @@ var $;
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_ok(app.root_title_note().includes('Страница'));
             $mol_assert_ok(app.notes().includes(app.Root_note()));
-            $mol_assert_equal(app.body().includes(app.Root_note()), false);
+            $mol_assert_ok(app.Canvas().foot().includes(app.Root_note()));
+            $mol_assert_equal(app.Canvas().body().includes(app.Root_note()), false);
             app.root_draft('Страница');
             app.root_submit();
             $mol_assert_equal(app.root_draft(), 'Страница');
@@ -16480,11 +16815,11 @@ var $;
             const stage = $bog_vmap_app_flow_stage($);
             stage.drop(`${d}flow_calc`, stage.client([200, 150]));
             stage.tap(stage.part_center('Calc'));
-            const field = stage.field('Inspect().Title()');
+            const field = stage.field('Inspect().Name()');
             stage.type(field, 'Кнопка');
             stage.blur(field);
             $mol_assert_equal(stage.app.selected(), 'Calc');
-            $mol_assert_equal(stage.field('Inspect().Title()').value, 'Кнопка');
+            $mol_assert_equal(stage.field('Inspect().Name()').value, 'Кнопка');
             $mol_assert_ok(stage.text().includes('Узел по-прежнему называется «Calc»'));
         },
         async 'a click on «Новая сцена» makes a scene, and the address follows the pick'($) {
@@ -16512,6 +16847,33 @@ var $;
             stage.click(stage.scene_row('Сцена 1'));
             $mol_assert_equal($.$mol_state_arg.value('doc'), first);
         },
+        'the canvas page carries the tools, the pane and the notes'($) {
+            const app = $bog_vmap_app.make({ $ });
+            const pages = app.pages();
+            $mol_assert_equal(pages.length, 4);
+            $mol_assert_equal(pages[0], app.Scenes());
+            $mol_assert_equal(pages[1], app.Shelf());
+            $mol_assert_equal(pages[2], app.Canvas());
+            $mol_assert_equal(pages[3], app.Idle());
+            const tools = app.Canvas().tools();
+            for (const tool of [
+                app.Palette_check(),
+                app.Inspect_check(),
+                app.Code_check(),
+                app.History_check(),
+                app.Board(),
+                app.Delete(),
+                app.Root_name(),
+                app.Publish(),
+                app.Download(),
+                app.Lights(),
+                app.Status(),
+            ])
+                $mol_assert_ok(tools.includes(tool));
+            $mol_assert_equal(app.Canvas().body()[0], app.Pane());
+            $mol_assert_equal(app.Canvas().foot().length, 0);
+            $mol_assert_equal(app.floats().length, 0);
+        },
         'which panels are open outlives the page'($) {
             const one = $bog_vmap_app.make({ $ });
             $mol_assert_equal(one.palette_showed(), true);
@@ -16523,8 +16885,9 @@ var $;
             $mol_assert_equal(two.palette_showed(), false);
             $mol_assert_equal(two.inspect_showed(), true);
             $mol_assert_equal(two.code_showed(), true);
-            $mol_assert_equal(two.body_main().includes(two.Side()), false);
-            $mol_assert_equal(two.body_main().includes(two.Code()), true);
+            $mol_assert_equal(two.pages().includes(two.Shelf()), false);
+            $mol_assert_equal(two.pages().includes(two.Scenes()), false);
+            $mol_assert_equal(two.pages().includes(two.Code()), true);
         },
         'an image dropped on the canvas becomes a node addressed at the file'($) {
             const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png';
@@ -16668,6 +17031,9 @@ var $;
                 return next;
             }
         }
+        __decorate([
+            $mol_mem_key
+        ], $mol_state_local_flow, "value", null);
         $.$mol_state_local = $mol_state_local_flow;
         class $mol_fetch_flow extends $mol_fetch {
             static text(input) {
@@ -16849,8 +17215,8 @@ var $;
             pack_row(title) {
                 return found('[bog_vmap_app_shelf_pack_row]', `pack row ${title}`, el => el.textContent === title);
             },
-            theme_button(which) {
-                return found(`[bog_theme_switch_${which}]`, `theme button ${which}`, () => true);
+            lights_toggle() {
+                return found('[bog_vmap_app_lights]', 'lights toggle', () => true);
             },
             theme_worn() {
                 return root.getAttribute('mol_theme');
@@ -16998,7 +17364,7 @@ var $;
             $mol_assert_equal(stage.scene.last('doc_set').src, source);
             $mol_assert_equal(stage.app.selected(), 'Calc');
             $mol_assert_ok(stage.root.querySelector('[bog_vmap_app_pane_handle]') !== null);
-            stage.field("Row('result').Value().Number().Num()");
+            stage.field("Row('result').Value().Num()");
             stage.tap(stage.part_center('Calc'));
             $mol_assert_equal(stage.app.selected(), 'Calc');
             const click = stage.scene.last('click_at');
@@ -17010,7 +17376,7 @@ var $;
             stage.drop(calc, stage.client([200, 150]));
             stage.tap(stage.part_center('Calc'));
             const before = stage.scene.sent('doc_set').length;
-            stage.type(stage.field("Row('result').Value().Number().Num()"), '42');
+            stage.type(stage.field("Row('result').Value().Num()"), '42');
             const source = stage.app.doc_source();
             $mol_assert_ok(source.includes(`Calc ${calc} result 42`));
             $mol_assert_ok(source.includes('<= Calc'));
@@ -17375,22 +17741,19 @@ var $;
         'entering a node does not move the canvas down by a row'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([200, 150]));
-            const column = stage.app.body();
+            const column = stage.app.Canvas().body();
             stage.tap(stage.part_center('Calc'));
             stage.tap(stage.part_center('Calc'));
             stage.redraw();
             $mol_assert_ok(stage.app.inside_note());
             $mol_assert_equal(stage.pane.inside(), true);
-            const after = stage.app.body();
+            const after = stage.app.Canvas().body();
             $mol_assert_equal(after.length, column.length);
             for (let i = 0; i < column.length; ++i)
                 $mol_assert_equal(after[i], column[i]);
-            const note = stage.app.Notes().dom_node();
-            $mol_assert_equal(stage.app.Body().dom_node().contains(note), true);
-            $mol_assert_equal(note.parentElement === stage.root, false);
-            const sheet = $mol_dom_context.document.getElementById('$mol_style_attach:$bog_vmap_app').innerHTML;
-            const rule = sheet.slice(sheet.indexOf('[bog_vmap_app_notes]'));
-            $mol_assert_ok(rule.slice(0, rule.indexOf('}')).includes('position: absolute'));
+            const note = stage.app.Inside_note().dom_node();
+            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_foot]').contains(note), true);
+            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_body]').contains(note), false);
         },
     });
 })($ || ($ = {}));
@@ -17398,26 +17761,68 @@ var $;
     const d = '$';
     const card = `${d}bog_builderui_card`;
     $mol_test({
-        'the theme picked in the bar is worn by the editor and told to the scene'($) {
+        'the light switch is worn by the editor and told to the scene'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
-            stage.click(stage.theme_button('light'));
+            $mol_assert_equal(stage.theme_worn(), '$mol_theme_dark');
+            stage.click(stage.lights_toggle());
             $mol_assert_equal(stage.theme_worn(), '$mol_theme_light');
             $mol_assert_equal(stage.scene.last('theme_set').theme, '$mol_theme_light');
-            stage.click(stage.theme_button('dark'));
+            stage.click(stage.lights_toggle());
             $mol_assert_equal(stage.theme_worn(), '$mol_theme_dark');
             $mol_assert_equal(stage.scene.last('theme_set').theme, '$mol_theme_dark');
         },
-        'the editor keeps the hue of the scene, so the two halves of the screen agree'($) {
+        'the light choice is kept under a key of this app, not one shared by the origin'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
-            $mol_assert_ok(stage.root.getAttribute('style')?.includes('--mol_theme_hue: 240deg'));
-        },
-        'the theme is kept under a key of this app, not one shared by the origin'($) {
-            const stage = $_3.$bog_vmap_app_flow_stage($);
-            stage.click(stage.theme_button('light'));
+            stage.click(stage.lights_toggle());
             const keys = Object.keys(stage.kept);
             $mol_assert_equal(keys.length, 1);
             $mol_assert_ok(keys[0].startsWith('$bog_vmap_app'));
-            $mol_assert_equal(stage.kept[keys[0]], '"light"');
+            $mol_assert_equal(stage.kept[keys[0]], 'true');
+        },
+        'the shell is a book of pages and the canvas carries its tools in its own head'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            $mol_assert_ok(stage.root.hasAttribute('mol_book2'));
+            const head = stage.root.querySelector('[bog_vmap_app_canvas_head]');
+            $mol_assert_ok(head.hasAttribute('mol_page_head'));
+            $mol_assert_equal(app.Canvas().title(), 'Холст');
+            const tools = stage.root.querySelector('[bog_vmap_app_canvas_tools]');
+            const inside = (view) => tools.contains(view.dom_node());
+            $mol_assert_ok(inside(app.Palette_check()));
+            $mol_assert_ok(inside(app.Inspect_check()));
+            $mol_assert_ok(inside(app.Code_check()));
+            $mol_assert_ok(inside(app.History_check()));
+            $mol_assert_ok(inside(app.Board()));
+            $mol_assert_ok(inside(app.Delete()));
+            $mol_assert_ok(inside(app.Root_name()));
+            $mol_assert_ok(inside(app.Publish()));
+            $mol_assert_ok(inside(app.Download()));
+            $mol_assert_ok(inside(app.Lights()));
+            $mol_assert_ok(inside(app.Status()));
+            $mol_assert_ok(app.Canvas().body().includes(app.Pane()));
+            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_foot]').childElementCount, 0);
+        },
+        'each check in the canvas tools adds and removes its page'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            const showed = (page) => stage.root.contains(page.dom_node());
+            $mol_assert_ok(showed(app.Scenes()));
+            $mol_assert_ok(showed(app.Shelf()));
+            $mol_assert_ok(showed(app.Idle()));
+            $mol_assert_equal(showed(app.Code()), false);
+            $mol_assert_equal(showed(app.History()), false);
+            stage.click(app.Palette_check().dom_node());
+            $mol_assert_equal(showed(app.Scenes()), false);
+            $mol_assert_equal(showed(app.Shelf()), false);
+            stage.click(app.Inspect_check().dom_node());
+            $mol_assert_equal(showed(app.Idle()), false);
+            stage.click(app.Code_check().dom_node());
+            $mol_assert_ok(showed(app.Code()));
+            stage.click(app.History_check().dom_node());
+            $mol_assert_ok(showed(app.History()));
+            stage.click(app.Palette_check().dom_node());
+            $mol_assert_ok(showed(app.Scenes()));
+            $mol_assert_ok(showed(app.Shelf()));
         },
         'the shelf offers the packs by name, and the current one is marked'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
