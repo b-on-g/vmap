@@ -1028,6 +1028,18 @@ namespace $.$$ {
 			return this.wire_shift() && this.wire_source_next()
 		}
 
+		wire_hinted( dots: readonly $bog_vmap_app_wire_dot[] ) {
+			if( this.wire_shift() ) return dots
+			if( !this.wire_source_next() ) return dots
+
+			const aimed = $bog_vmap_app_wire_dot_at( dots, this.wire_point() )
+			if( !aimed || !aimed.lit || !aimed.port.next ) return dots
+
+			return dots.map(
+				dot => dot === aimed ? { ... dot, hint: $bog_vmap_app_wire_hint } : dot
+			)
+		}
+
 		@ $mol_mem_key
 		part_dots( name: string ): readonly $bog_vmap_app_wire_port[] {
 			const written = new Set( this.part_overs( name ) )
@@ -1111,6 +1123,7 @@ namespace $.$$ {
 
 				const mark = ( port: $bog_vmap_app_wire_port, x: number, y: number )=> dots.push({
 					node, port, side, x, y,
+					hint: '',
 					lit: lit( port ),
 					linked: side === 'in' && linked.has( `${ node }.${ port.name }` ),
 				})
@@ -1139,7 +1152,7 @@ namespace $.$$ {
 					if( name === drag.from ) continue
 					add( name, 'in', port => $bog_vmap_app_wire_takes( drag.kind, port, this.wire_bidi() ) )
 				}
-				return dots
+				return this.wire_hinted( dots )
 			}
 
 			const shown = [ this.primary(), this.hovered() ].filter( Boolean ) as readonly string[]

@@ -23,6 +23,7 @@ namespace $ {
 		readonly y: number
 		readonly lit: boolean
 		readonly linked: boolean
+		readonly hint: string
 	}
 
 	export type $bog_vmap_app_wire_line = {
@@ -35,6 +36,8 @@ namespace $ {
 	}
 
 	export const $bog_vmap_app_wire_sign = '⇄'
+
+	export const $bog_vmap_app_wire_hint = 'Shift — двусторонний'
 
 	export const $bog_vmap_app_wire_row = 14
 
@@ -97,6 +100,15 @@ namespace $ {
 		readonly bidi: boolean
 	} ) {
 		return [ line.bidi ? $bog_vmap_app_wire_sign : '', line.label ].filter( Boolean ).join( ' ' )
+	}
+
+	export function $bog_vmap_app_wire_name( dot: {
+		readonly port: { readonly name: string, readonly next: boolean }
+		readonly hint: string
+	} ) {
+		const name = dot.port.name + ( dot.port.next ? '?' : '' )
+
+		return dot.hint ? `${ name } · ${ dot.hint }` : name
 	}
 
 	export function $bog_vmap_app_wire_port_point(

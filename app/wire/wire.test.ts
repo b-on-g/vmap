@@ -13,6 +13,7 @@ namespace $ {
 		side: 'in',
 		lit: true,
 		linked: false,
+		hint: '',
 		... over,
 	})
 
@@ -182,6 +183,25 @@ namespace $ {
 
 			$mol_assert_equal( $bog_vmap_app_wire_label({ label: '', bidi: false }), '' )
 			$mol_assert_equal( $bog_vmap_app_wire_label({ label: '', bidi: true }), '⇄' )
+
+		},
+
+		'the name at a dot carries the sign of the port and, when given, the hint'( $ ) {
+			$mol_assert_equal( $bog_vmap_app_wire_name( dot({ x: 0, y: 0 }) ), 'value' )
+
+			$mol_assert_equal(
+				$bog_vmap_app_wire_name( dot({ x: 0, y: 0, port: port( 'value', 'string', true ) }) ),
+				'value?',
+			)
+
+			$mol_assert_equal(
+				$bog_vmap_app_wire_name( dot({
+					x: 0, y: 0,
+					port: port( 'value', 'string', true ),
+					hint: $bog_vmap_app_wire_hint,
+				}) ),
+				'value? · Shift — двусторонний',
+			)
 
 		},
 

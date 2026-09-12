@@ -86,7 +86,8 @@ namespace $.$$ {
 
 		override name_text( key: string ) {
 			const dot = this.dot_of( key )
-			return dot ? dot.port.name + ( dot.port.next ? '?' : '' ) : ''
+
+			return dot ? $bog_vmap_app_wire_name( dot ) : ''
 		}
 
 	}
