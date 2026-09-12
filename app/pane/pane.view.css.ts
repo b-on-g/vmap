@@ -36,6 +36,22 @@ namespace $.$$ {
 			pointerEvents: 'none',
 		},
 
+		Draft: {
+			position: 'absolute',
+			outline: '1px solid ' + String( $mol_theme.focus ),
+			pointerEvents: 'none',
+			transition: 'none',
+		},
+
+		'@': {
+			bog_vmap_app_pane_tool: {
+				board: { cursor: 'crosshair' },
+			},
+			bog_vmap_app_pane_hand: {
+				true: { cursor: 'grab' },
+			},
+		},
+
 		Values: {
 			position: 'absolute',
 			top: 0,

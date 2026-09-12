@@ -2444,3 +2444,641 @@ namespace $ {
 	})
 
 }
+
+namespace $ {
+	const d = '$'
+
+	const root = `${d}doc`
+
+	const calc = `${d}flow_calc`
+	const map = `${d}flow_map`
+
+	const box = ( x: number, y: number, width = 100, height = 50 ) => ({ x, y, width, height })
+
+	const tools_make = ( $: $mol_ambient_context, over: Partial< $$.$bog_vmap_app_pane > = {} ) => {
+		const peer = { origin: 'null', postMessage() {} }
+
+		const pane = $$.$bog_vmap_app_pane.make({
+			$,
+			doc_root: ()=> root,
+			doc_names: ()=> {
+				const names = new Set< string >()
+				for( const key of Object.keys( pane.sizes() ) ) {
+					for( const step of key.split( '/' ).slice( 1 ) ) names.add( step )
+				}
+				return [ ... names ]
+			},
+			pane_rect: ()=> ({ left: 10, top: 20, width: 1000, height: 800 }),
+			scene_peer: ()=> peer,
+			... over,
+		})
+
+		pane.handshake( pane.scene_key(), 1 )
+
+		return pane
+	}
+
+	const stroke = ( code: string, over: Partial< $$.$bog_vmap_app_pane_stroke > = {} ) => {
+		let prevented = false
+
+		return {
+			code,
+			altKey: false,
+			ctrlKey: false,
+			metaKey: false,
+			shiftKey: false,
+			target: null as EventTarget | null,
+			get prevented() { return prevented },
+			preventDefault() { prevented = true },
+			... over,
+		}
+	}
+
+	const pointer = ( clientX: number, clientY: number, over: Partial< PointerEvent > = {} ) => ({
+		button: 0,
+		buttons: 1,
+		pointerId: 1,
+		clientX,
+		clientY,
+		altKey: false,
+		ctrlKey: false,
+		metaKey: false,
+		shiftKey: false,
+		preventDefault() {},
+		... over,
+	}) as unknown as PointerEvent
+
+	const tap = ( pane: $$.$bog_vmap_app_pane, x: number, y: number ) => {
+		pane.node_press( pointer( x, y ) )
+		pane.node_release( pointer( x, y, { buttons: 0 } ) )
+	}
+
+	const drawn = ()=> {
+		const boards = [] as ( $bog_vmap_bridge_rect | null | undefined )[]
+		const board_draw = ( next?: $bog_vmap_bridge_rect | null )=> {
+			boards.push( next )
+			return next ?? null
+		}
+		return { boards, board_draw }
+	}
+
+	const settle = async ()=> {
+		await Promise.resolve()
+		await Promise.resolve()
+	}
+
+	$mol_test({
+
+		'the tool keys switch the tool, and Escape steps back to the arrow'( $ ) {
+			const pane = tools_make( $ )
+
+			$mol_assert_equal( pane.tool(), 'select' )
+
+			const f = stroke( 'KeyF' )
+			$mol_assert_equal( pane.key_down( f ), true )
+			$mol_assert_equal( f.prevented, true )
+			$mol_assert_equal( pane.tool(), 'board' )
+
+			pane.key_down( stroke( 'KeyH' ) )
+			$mol_assert_equal( pane.tool(), 'hand' )
+			$mol_assert_equal( pane.hand(), true )
+
+			pane.key_down( stroke( 'KeyV' ) )
+			$mol_assert_equal( pane.tool(), 'select' )
+			$mol_assert_equal( pane.hand(), false )
+
+			pane.key_down( stroke( 'KeyF' ) )
+			pane.key_down( stroke( 'Escape' ) )
+			$mol_assert_equal( pane.tool(), 'select' )
+
+		},
+
+		'a tool key with a modifier, or typed into a field, changes nothing'( $ ) {
+			const pane = tools_make( $ )
+			const dom = $.$mol_dom_context
+
+			for( const key of [
+				stroke( 'KeyF', { metaKey: true } ),
+				stroke( 'KeyH', { ctrlKey: true } ),
+				stroke( 'KeyF', { altKey: true } ),
+				stroke( 'KeyH', { shiftKey: true } ),
+				stroke( 'KeyF', { target: dom.document.createElement( 'input' ) } ),
+				stroke( 'KeyH', { target: dom.document.createElement( 'textarea' ) } ),
+				stroke( 'KeyF', { target: dom.document.createElement( 'select' ) } ),
+				stroke( 'KeyF', { target: { tagName: 'DIV', isContentEditable: true } as unknown as EventTarget } ),
+				stroke( 'Space', { target: dom.document.createElement( 'input' ) } ),
+			] ) {
+				$mol_assert_equal( pane.key_down( key ), false )
+				$mol_assert_equal( key.prevented, false )
+			}
+
+			$mol_assert_equal( pane.tool(), 'select' )
+			$mol_assert_equal( pane.grip(), false )
+
+		},
+
+		'Escape takes the draft away, then the tool, then the pick'( $ ) {
+			const pane = tools_make( $ )
+
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
+
+			tap( pane, 60, 45 )
+			$mol_assert_like( pane.picked(), [ 'A' ] )
+
+			pane.key_down( stroke( 'KeyF' ) )
+			pane.node_press( pointer( 510, 420 ) )
+			$mol_assert_ok( pane.draft() !== null )
+
+			pane.key_down( stroke( 'Escape' ) )
+			$mol_assert_equal( pane.draft(), null )
+			$mol_assert_equal( pane.tool(), 'board' )
+			$mol_assert_like( pane.picked(), [ 'A' ] )
+
+			pane.key_down( stroke( 'Escape' ) )
+			$mol_assert_equal( pane.tool(), 'select' )
+			$mol_assert_like( pane.picked(), [ 'A' ] )
+
+			pane.key_down( stroke( 'Escape' ) )
+			$mol_assert_like( pane.picked(), [] )
+
+		},
+
+		'Escape takes the pointer out of the node before it takes the pick'( $ ) {
+			const pane = tools_make( $ )
+
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
+
+			tap( pane, 60, 45 )
+			tap( pane, 60, 45 )
+			$mol_assert_equal( pane.inside(), true )
+
+			pane.key_down( stroke( 'Escape' ) )
+			$mol_assert_equal( pane.inside(), false )
+			$mol_assert_like( pane.picked(), [ 'A' ] )
+
+			pane.key_down( stroke( 'Escape' ) )
+			$mol_assert_like( pane.picked(), [] )
+
+		},
+
+		'a tool picked while inside a node takes the pointer out of it'( $ ) {
+			const pane = tools_make( $ )
+
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
+
+			tap( pane, 60, 45 )
+			tap( pane, 60, 45 )
+			$mol_assert_equal( pane.inside(), true )
+
+			pane.key_down( stroke( 'KeyF' ) )
+
+			$mol_assert_equal( pane.inside(), false )
+			$mol_assert_equal( pane.entered(), null )
+			$mol_assert_like( pane.picked(), [ 'A' ] )
+
+		},
+
+		'Delete and Backspace ask for the delete, Cmd+D and Ctrl+D for a copy, only with a pick'( $ ) {
+			let deleted = 0
+			let copied = 0
+
+			const pane = tools_make( $, {
+				node_delete: ()=> { ++ deleted; return null },
+				node_copy: ()=> { ++ copied; return null },
+			} )
+
+			for( const code of [ 'Delete', 'Backspace' ] ) $mol_assert_equal( pane.key_down( stroke( code ) ), false )
+			$mol_assert_equal( pane.key_down( stroke( 'KeyD', { metaKey: true } ) ), false )
+			$mol_assert_equal( deleted + copied, 0 )
+
+			pane.picked([ 'A' ])
+
+			const del = stroke( 'Delete' )
+			$mol_assert_equal( pane.key_down( del ), true )
+			$mol_assert_equal( del.prevented, true )
+			pane.key_down( stroke( 'Backspace' ) )
+			pane.key_down( stroke( 'Delete', { shiftKey: true } ) )
+			$mol_assert_equal( deleted, 3 )
+
+			for( const key of [
+				stroke( 'Delete', { metaKey: true } ),
+				stroke( 'Backspace', { ctrlKey: true } ),
+				stroke( 'Backspace', { altKey: true } ),
+				stroke( 'Delete', { target: $.$mol_dom_context.document.createElement( 'input' ) } ),
+			] ) $mol_assert_equal( pane.key_down( key ), false )
+			$mol_assert_equal( deleted, 3 )
+
+			const cmd = stroke( 'KeyD', { metaKey: true } )
+			$mol_assert_equal( pane.key_down( cmd ), true )
+			$mol_assert_equal( cmd.prevented, true )
+			pane.key_down( stroke( 'KeyD', { ctrlKey: true } ) )
+			$mol_assert_equal( copied, 2 )
+
+			for( const key of [
+				stroke( 'KeyD' ),
+				stroke( 'KeyD', { metaKey: true, shiftKey: true } ),
+				stroke( 'KeyD', { ctrlKey: true, altKey: true } ),
+				stroke( 'KeyD', { metaKey: true, target: $.$mol_dom_context.document.createElement( 'textarea' ) } ),
+			] ) $mol_assert_equal( pane.key_down( key ), false )
+			$mol_assert_equal( copied, 2 )
+
+			$mol_assert_equal( pane.tool(), 'select' )
+
+		},
+
+		'the space bar holds the hand until it goes up'( $ ) {
+			const pane = tools_make( $ )
+
+			const space = stroke( 'Space' )
+			$mol_assert_equal( pane.key_down( space ), true )
+			$mol_assert_equal( space.prevented, true )
+			$mol_assert_equal( pane.grip(), true )
+			$mol_assert_equal( pane.hand(), true )
+			$mol_assert_equal( pane.tool(), 'select' )
+
+			pane.key_up( stroke( 'KeyV' ) )
+			$mol_assert_equal( pane.grip(), true )
+
+			pane.key_up( stroke( 'Space' ) )
+			$mol_assert_equal( pane.grip(), false )
+			$mol_assert_equal( pane.hand(), false )
+
+			$mol_assert_equal( pane.key_down( stroke( 'Space', { shiftKey: true } ) ), false )
+			$mol_assert_equal( pane.grip(), false )
+
+		},
+
+		'the tool ports of the head switch the tool and say which one is on'( $ ) {
+			const pane = tools_make( $ )
+
+			$mol_assert_equal( pane.tool_select(), true )
+
+			pane.tool_board( true )
+			$mol_assert_equal( pane.tool(), 'board' )
+			$mol_assert_equal( pane.tool_board(), true )
+			$mol_assert_equal( pane.tool_select(), false )
+
+			pane.tool_board( false )
+			$mol_assert_equal( pane.tool(), 'select' )
+
+			pane.tool_board( true )
+			pane.tool_hand( true )
+			$mol_assert_equal( pane.tool(), 'hand' )
+			$mol_assert_equal( pane.tool_board(), false )
+
+			pane.tool_hand( false )
+			$mol_assert_equal( pane.tool(), 'select' )
+
+			pane.tool_board( true )
+			pane.tool_select( true )
+			$mol_assert_equal( pane.tool(), 'select' )
+
+			pane.tool_select( false )
+			$mol_assert_equal( pane.tool(), 'select' )
+
+		},
+
+		'a drag with the board tool asks for a board of that box in the world'( $ ) {
+			const { boards, board_draw } = drawn()
+			const pane = tools_make( $, { board_draw } )
+
+			pane.camera_shift( new $mol_vector_2d( 100, 50 ) )
+			pane.camera_zoom( 2 )
+
+			pane.key_down( stroke( 'KeyF' ) )
+
+			pane.node_press( pointer( 310, 270 ) )
+			pane.node_move( pointer( 710, 470 ) )
+
+			$mol_assert_like( pane.draft_style(), { left: '300px', top: '250px', width: '400px', height: '200px' } )
+
+			pane.node_release( pointer( 710, 470, { buttons: 0 } ) )
+
+			$mol_assert_like( boards, [ { x: 100, y: 100, width: 200, height: 100 } ] )
+			$mol_assert_equal( pane.draft(), null )
+			$mol_assert_like( pane.draft_style(), {} )
+			$mol_assert_equal( pane.tool(), 'select' )
+
+		},
+
+		'a drag the other way asks for the same box, rounded to whole pixels'( $ ) {
+			const { boards, board_draw } = drawn()
+			const pane = tools_make( $, { board_draw } )
+
+			pane.camera_shift( new $mol_vector_2d( 100, 50 ) )
+			pane.camera_zoom( 2 )
+
+			pane.tool_board( true )
+
+			pane.node_press( pointer( 711, 471 ) )
+			pane.node_move( pointer( 311, 271 ) )
+			pane.node_release( pointer( 311, 271, { buttons: 0 } ) )
+
+			$mol_assert_like( boards, [ { x: 101, y: 101, width: 200, height: 100 } ] )
+
+		},
+
+		'a click with the board tool asks for the default board at the point'( $ ) {
+			const { boards, board_draw } = drawn()
+			const pane = tools_make( $, { board_draw } )
+
+			pane.camera_shift( new $mol_vector_2d( 100, 50 ) )
+			pane.camera_zoom( 2 )
+
+			pane.tool_board( true )
+
+			pane.node_press( pointer( 310, 270 ) )
+			pane.node_move( pointer( 313, 271 ) )
+			pane.node_release( pointer( 313, 271, { buttons: 0 } ) )
+
+			$mol_assert_like( boards, [ { x: 100, y: 100, width: 0, height: 0 } ] )
+			$mol_assert_equal( pane.tool(), 'select' )
+
+		},
+
+		'the board tool draws over a node without picking or carrying it'( $ ) {
+			const { boards, board_draw } = drawn()
+			const pane = tools_make( $, { board_draw } )
+
+			pane.sizes({ [ `${root}/A` ]: box( 80, 80 ) })
+			pane.spots({ A: { x: 80, y: 80 } })
+
+			pane.tool_board( true )
+
+			pane.node_press( pointer( 110, 120 ) )
+			pane.node_move( pointer( 410, 320 ) )
+			pane.node_release( pointer( 410, 320, { buttons: 0 } ) )
+
+			$mol_assert_like( pane.picked(), [] )
+			$mol_assert_like( pane.spots(), { A: { x: 80, y: 80 } } )
+			$mol_assert_like( boards, [ { x: 100, y: 100, width: 300, height: 200 } ] )
+
+		},
+
+		'the hand and the board tool keep the pointer off the ports'( $ ) {
+			const pane = tools_make( $ )
+
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
+
+			pane.tool_hand( true )
+			pane.node_move( pointer( 60, 45, { buttons: 0 } ) )
+			$mol_assert_equal( pane.hovered(), null )
+
+			pane.tool_board( true )
+			pane.node_move( pointer( 60, 45, { buttons: 0 } ) )
+			$mol_assert_equal( pane.hovered(), null )
+
+			pane.tool_select( true )
+			pane.grip( true )
+			pane.node_move( pointer( 60, 45, { buttons: 0 } ) )
+			$mol_assert_equal( pane.hovered(), null )
+
+			pane.grip( false )
+			pane.node_move( pointer( 60, 45, { buttons: 0 } ) )
+			$mol_assert_equal( pane.hovered(), 'A' )
+
+		},
+
+		'the hand takes the press away from the node and the wire'( $ ) {
+			const pane = tools_make( $ )
+
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ) })
+			pane.spots({ A: { x: 0, y: 0 } })
+
+			pane.tool_hand( true )
+
+			pane.node_press( pointer( 60, 45 ) )
+			pane.node_move( pointer( 160, 95 ) )
+			pane.node_release( pointer( 160, 95, { buttons: 0 } ) )
+
+			$mol_assert_like( pane.picked(), [] )
+			$mol_assert_equal( pane.drag(), null )
+			$mol_assert_equal( pane.band(), null )
+			$mol_assert_equal( pane.wire_drag(), null )
+			$mol_assert_like( pane.spots(), { A: { x: 0, y: 0 } } )
+
+		},
+
+		'a copy of a free node stands to the right of it, a nested one gets no spot'( $ ) {
+			const pane = tools_make( $ )
+
+			pane.sizes({
+				[ `${root}/A` ]: box( 80, 80 ),
+				[ `${root}/P` ]: box( 400, 0, 300, 200 ),
+				[ `${root}/P/B` ]: box( 400, 0 ),
+			})
+			pane.spots({ A: { x: 80, y: 80 }, P: { x: 400, y: 0 }, C: { x: 5, y: 6 } })
+
+			$mol_assert_like( pane.copy_spot( 'A' ), { x: 204, y: 80 } )
+			$mol_assert_like( pane.copy_spot( 'P' ), { x: 724, y: 0 } )
+			$mol_assert_like( pane.copy_spot( 'C' ), { x: 29, y: 6 } )
+			$mol_assert_equal( pane.copy_spot( 'B' ), null )
+
+		},
+
+		'the draft is drawn on the canvas while the board tool is dragged'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const overlay = stage.overlay()
+			const drafts = ()=> stage.root.querySelectorAll( '[bog_vmap_app_pane_draft]' )
+
+			stage.pane.tool_board( true )
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.dom_node().getAttribute( 'bog_vmap_app_pane_tool' ), 'board' )
+			$mol_assert_equal( drafts().length, 0 )
+
+			stage.press( overlay, stage.client([ 100, 100 ]) )
+			stage.move( overlay, stage.client([ 300, 250 ]) )
+			stage.redraw()
+
+			$mol_assert_equal( drafts().length, 1 )
+
+			const style = ( drafts()[ 0 ] as HTMLElement ).style
+			$mol_assert_like(
+				[ style.left, style.top, style.width, style.height ],
+				[ '100px', '100px', '200px', '150px' ],
+			)
+
+			stage.release( overlay, stage.client([ 300, 250 ]) )
+			stage.redraw()
+
+			$mol_assert_equal( drafts().length, 0 )
+			$mol_assert_equal( stage.pane.dom_node().getAttribute( 'bog_vmap_app_pane_tool' ), 'select' )
+
+		},
+
+		'the hand pans over a node and leaves the node and the pick alone'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const overlay = stage.overlay()
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			$mol_assert_like( [ ... stage.app.picked() ], [ 'Calc' ] )
+
+			stage.pane.tool_hand( true )
+
+			const from = stage.part_center( 'Calc' )
+			stage.press( overlay, from )
+			stage.move( overlay, [ from[0] + 60, from[1] + 40 ] )
+			stage.release( overlay, [ from[0] + 60, from[1] + 40 ] )
+			stage.redraw()
+
+			$mol_assert_like( [ ... stage.pane.camera_shift() ], [ 60, 40 ] )
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 200, y: 150 } } )
+			$mol_assert_like( [ ... stage.app.picked() ], [ 'Calc' ] )
+
+		},
+
+		'the space bar pans over a node, and a drag begun before it stays a drag'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const overlay = stage.overlay()
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			stage.pane.key_down( stroke( 'Space' ) )
+
+			let from = stage.part_center( 'Calc' )
+			stage.press( overlay, from )
+			stage.move( overlay, [ from[0] + 60, from[1] + 40 ] )
+			stage.release( overlay, [ from[0] + 60, from[1] + 40 ] )
+			stage.redraw()
+
+			stage.pane.key_up( stroke( 'Space' ) )
+
+			$mol_assert_like( [ ... stage.pane.camera_shift() ], [ 60, 40 ] )
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 200, y: 150 } } )
+
+			from = stage.part_center( 'Calc' )
+			stage.press( overlay, from )
+			stage.move( overlay, [ from[0] + 10, from[1] ] )
+
+			stage.pane.key_down( stroke( 'Space' ) )
+
+			stage.move( overlay, [ from[0] + 30, from[1] + 20 ] )
+			stage.release( overlay, [ from[0] + 30, from[1] + 20 ] )
+			stage.redraw()
+
+			stage.pane.key_up( stroke( 'Space' ) )
+
+			$mol_assert_like( [ ... stage.pane.camera_shift() ], [ 60, 40 ] )
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 230, y: 170 } } )
+
+		},
+
+		'the held hand lifts the hole over the entered node, and lets it back'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.tap( stage.part_center( 'Calc' ) )
+			stage.tap( stage.part_center( 'Calc' ) )
+
+			$mol_assert_equal( stage.pane.inside(), true )
+			$mol_assert_ok( stage.pane.overlay_style().clipPath !== 'none' )
+
+			stage.pane.key_down( stroke( 'Space' ) )
+			$mol_assert_equal( stage.pane.overlay_style().clipPath, 'none' )
+			$mol_assert_equal( stage.pane.inside(), true )
+
+			stage.redraw()
+			$mol_assert_equal( stage.pane.dom_node().getAttribute( 'bog_vmap_app_pane_hand' ), 'true' )
+
+			stage.pane.key_up( stroke( 'Space' ) )
+			$mol_assert_ok( stage.pane.overlay_style().clipPath !== 'none' )
+
+			stage.redraw()
+			$mol_assert_equal( stage.pane.dom_node().hasAttribute( 'bog_vmap_app_pane_hand' ), false )
+
+		},
+
+		async 'a press on another node takes the keyboard back from the frame'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const dom = $.$mol_dom_context
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.drop( map, stage.client([ 400, 150 ]) )
+
+			stage.tap( stage.part_center( 'Calc' ) )
+			stage.tap( stage.part_center( 'Calc' ) )
+			$mol_assert_equal( stage.pane.inside(), true )
+
+			stage.frame().focus()
+			$mol_assert_equal( dom.document.activeElement, stage.frame() )
+
+			stage.tap( stage.part_center( 'Map' ) )
+			await settle()
+
+			$mol_assert_equal( stage.app.selected(), 'Map' )
+			$mol_assert_equal( stage.pane.inside(), false )
+			$mol_assert_equal( dom.document.activeElement, stage.pane.dom_node() )
+
+		},
+
+		async 'a press on the empty canvas takes the keyboard back from the frame'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const dom = $.$mol_dom_context
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			stage.tap( stage.part_center( 'Calc' ) )
+			stage.tap( stage.part_center( 'Calc' ) )
+			$mol_assert_equal( stage.pane.inside(), true )
+
+			stage.frame().focus()
+
+			stage.tap( stage.client([ 520, 420 ]) )
+			await settle()
+
+			$mol_assert_equal( stage.app.selected(), null )
+			$mol_assert_equal( dom.document.activeElement, stage.pane.dom_node() )
+
+		},
+
+		async 'Escape relayed from the frame gives the keyboard back to the host'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const dom = $.$mol_dom_context
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			stage.tap( stage.part_center( 'Calc' ) )
+			stage.tap( stage.part_center( 'Calc' ) )
+
+			stage.frame().focus()
+
+			const event = new dom.MessageEvent( 'message', { data: { ns: $bog_vmap_bridge_ns, kind: 'key', key: 'Escape' } } )
+			Object.defineProperty( event, 'source', { value: stage.pane.scene_peer() } )
+			dom.dispatchEvent( event )
+			stage.redraw()
+			await settle()
+
+			$mol_assert_equal( stage.pane.inside(), false )
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+			$mol_assert_equal( dom.document.activeElement, stage.pane.dom_node() )
+
+		},
+
+		async 'Escape in a field of the host only takes the focus off the field'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const dom = $.$mol_dom_context
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+
+			const field = stage.app.Root_name().dom_node() as HTMLInputElement
+			field.focus()
+			$mol_assert_equal( dom.document.activeElement, field )
+
+			const first = stroke( 'Escape', { target: field } )
+			$mol_assert_equal( stage.pane.key_down( first ), true )
+			await settle()
+
+			$mol_assert_equal( dom.document.activeElement, stage.pane.dom_node() )
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+
+			stage.pane.key_down( stroke( 'Escape', { target: stage.pane.dom_node() } ) )
+
+			$mol_assert_equal( stage.app.selected(), null )
+
+		},
+
+	})
+
+}

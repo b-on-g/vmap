@@ -2,6 +2,17 @@ $bog_vmap_app_pane $mol_view
 	attr *
 		^
 		tabindex \-1
+		bog_vmap_app_pane_tool <= tool
+		bog_vmap_app_pane_hand <= hand
+	tool? \select
+	grip? false
+	hand false
+	tool_select? false
+	tool_board? false
+	tool_hand? false
+	board_draw? null
+	node_delete? null
+	node_copy? null
 	leave? null
 	scene_bundle \
 	scene_html \
@@ -92,6 +103,8 @@ $bog_vmap_app_pane $mol_view
 		style <= insert_style *
 	Band $mol_view
 		style <= band_style *
+	Draft $mol_view
+		style <= draft_style *
 	plugins /
 		^
 		<= Touch $mol_touch

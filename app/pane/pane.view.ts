@@ -37,6 +37,23 @@ namespace $.$$ {
 		readonly origin: string
 	}
 
+	export type $bog_vmap_app_pane_tool = 'select' | 'board' | 'hand'
+
+	export type $bog_vmap_app_pane_stroke = {
+		readonly code: string
+		readonly altKey: boolean
+		readonly ctrlKey: boolean
+		readonly metaKey: boolean
+		readonly shiftKey: boolean
+		readonly target: EventTarget | null
+		preventDefault(): void
+	}
+
+	export type $bog_vmap_app_pane_draft = {
+		readonly from: readonly [ number, number ]
+		readonly to: readonly [ number, number ]
+	}
+
 	export class $bog_vmap_app_pane extends $.$bog_vmap_app_pane {
 		override doc_js(): { readonly [ klass: string ]: string } {
 			return {}
@@ -217,6 +234,7 @@ namespace $.$$ {
 				this.Marks(),
 				... this.slot() ? [ this.Insert() ] : [],
 				... this.band() ? [ this.Band() ] : [],
+				... this.draft() ? [ this.Draft() ] : [],
 			] as readonly $mol_view[]
 		}
 
@@ -492,10 +510,122 @@ namespace $.$$ {
 
 		@ $mol_action
 		override leave() {
-			const was = this.inside()
+			const was = this.entered() !== null
 			this.entered( null )
 			if( was ) this.focused( true )
 			return null
+		}
+
+		override hand() {
+			return this.tool() === 'hand' || this.grip()
+		}
+
+		@ $mol_action
+		tool_take( next: $bog_vmap_app_pane_tool ) {
+			if( next !== 'select' ) this.leave()
+			this.draft( null )
+			this.tool( next )
+		}
+
+		override tool_select( next?: boolean ) {
+			if( next !== undefined ) this.tool_take( 'select' )
+			return this.tool() === 'select'
+		}
+
+		override tool_board( next?: boolean ) {
+			if( next !== undefined ) this.tool_take( next ? 'board' : 'select' )
+			return this.tool() === 'board'
+		}
+
+		override tool_hand( next?: boolean ) {
+			if( next !== undefined ) this.tool_take( next ? 'hand' : 'select' )
+			return this.tool() === 'hand'
+		}
+
+		key_tools(): { readonly [ code: string ]: $bog_vmap_app_pane_tool | undefined } {
+			return { KeyV: 'select', KeyF: 'board', KeyH: 'hand' }
+		}
+
+		key_field( target: EventTarget | null ) {
+			const element = target as { readonly tagName?: string, readonly isContentEditable?: boolean } | null
+			if( element?.isContentEditable ) return true
+			return /^(INPUT|TEXTAREA|SELECT)$/.test( element?.tagName ?? '' )
+		}
+
+		key_down( stroke: $bog_vmap_app_pane_stroke ) {
+			const field = this.key_field( stroke.target )
+			const command = stroke.metaKey || stroke.ctrlKey
+
+			if( stroke.code === 'Escape' ) {
+				stroke.preventDefault()
+				if( field ) this.focused( true )
+				else this.escape()
+				return true
+			}
+
+			if( field ) return false
+
+			if( stroke.code === 'KeyD' ) {
+				if( !command || stroke.altKey || stroke.shiftKey ) return false
+				if( !this.picked().length ) return false
+
+				stroke.preventDefault()
+				this.leave()
+				this.node_copy( null )
+				return true
+			}
+
+			if( stroke.code === 'Delete' || stroke.code === 'Backspace' ) {
+				if( command || stroke.altKey ) return false
+				if( !this.picked().length ) return false
+
+				stroke.preventDefault()
+				this.leave()
+				this.node_delete( null )
+				return true
+			}
+
+			if( command || stroke.altKey || stroke.shiftKey ) return false
+
+			const tool = this.key_tools()[ stroke.code ]
+			if( tool ) {
+				stroke.preventDefault()
+				this.tool_take( tool )
+				return true
+			}
+
+			if( stroke.code === 'Space' ) {
+				stroke.preventDefault()
+				this.grip( true )
+				return true
+			}
+
+			return false
+		}
+
+		key_up( stroke: Pick< $bog_vmap_app_pane_stroke, 'code' > ) {
+			if( stroke.code === 'Space' ) this.grip( false )
+		}
+
+		@ $mol_action
+		escape() {
+			if( this.draft() ) this.draft( null )
+			else if( this.inside() ) this.leave()
+			else if( this.tool() !== 'select' ) this.tool( 'select' )
+			else this.picked( [] )
+		}
+
+		copy_gap() {
+			return 24
+		}
+
+		copy_spot( name: string ) {
+			const spot = this.spots()[ name ]
+			if( !spot ) return null
+
+			const width = this.part_size( name )?.width ?? 0
+
+			return { x: spot.x + width + this.copy_gap(), y: spot.y }
 		}
 
 		pane_rect(): $bog_vmap_app_pane_screen_box {
@@ -695,10 +825,14 @@ namespace $.$$ {
 
 			if( this.carrying() ) return
 
-			const dot = $bog_vmap_app_wire_dot_at( this.wire_dots(), this.screen_point( event ) )
-			if( dot ) return this.wire_press( dot, event )
+			if( this.hand() ) return this.press( null )
 
 			const point = this.world_point( event )
+
+			if( this.tool() === 'board' ) return this.draft_press( point, event )
+
+			const dot = $bog_vmap_app_wire_dot_at( this.wire_dots(), this.screen_point( event ) )
+			if( dot ) return this.wire_press( dot, event )
 
 			if( this.band_wanted( event ) ) {
 				event.preventDefault()
@@ -764,7 +898,90 @@ namespace $.$$ {
 
 		hover_track( event: PointerEvent ) {
 			if( this.wire_drag() || this.drag() || this.band() ) return
-			this.hovered( this.node_at( this.world_point( event ) ) )
+
+			const aimed = this.tool() === 'select' && !this.hand()
+			this.hovered( aimed ? this.node_at( this.world_point( event ) ) : null )
+		}
+
+		@ $mol_mem
+		draft( next?: $bog_vmap_app_pane_draft | null ) {
+			return next ?? null
+		}
+
+		draft_press( point: readonly [ number, number ], event: PointerEvent ) {
+			event.preventDefault()
+			this.press( null )
+			this.draft({ from: point, to: point })
+
+			try {
+				this.Overlay().dom_node().setPointerCapture( event.pointerId )
+			} catch {}
+		}
+
+		draft_rect( draft: $bog_vmap_app_pane_draft ): $bog_vmap_bridge_rect {
+			const left = Math.min( draft.from[0], draft.to[0] )
+			const top = Math.min( draft.from[1], draft.to[1] )
+
+			return {
+				x: left,
+				y: top,
+				width: Math.max( draft.from[0], draft.to[0] ) - left,
+				height: Math.max( draft.from[1], draft.to[1] ) - top,
+			}
+		}
+
+		draft_box( draft: $bog_vmap_app_pane_draft ): $bog_vmap_bridge_rect {
+			const rect = this.draft_rect( draft )
+
+			if( Math.max( rect.width, rect.height ) * this.camera_zoom() <= click_slack ) {
+				return { x: Math.round( draft.from[0] ), y: Math.round( draft.from[1] ), width: 0, height: 0 }
+			}
+
+			const x = Math.round( rect.x )
+			const y = Math.round( rect.y )
+
+			return {
+				x,
+				y,
+				width: Math.max( 1, Math.round( rect.x + rect.width ) - x ),
+				height: Math.max( 1, Math.round( rect.y + rect.height ) - y ),
+			}
+		}
+
+		draft_release( draft: $bog_vmap_app_pane_draft, event: PointerEvent ) {
+			const box = this.draft_box({ from: draft.from, to: this.world_point( event ) })
+
+			this.draft( null )
+			this.tool( 'select' )
+
+			try {
+				this.Overlay().dom_node().releasePointerCapture( event.pointerId )
+			} catch {}
+
+			this.board_draw( box )
+		}
+
+		override board_draw( next?: $bog_vmap_bridge_rect | null ) {
+			return next ?? null
+		}
+
+		@ $mol_mem
+		override draft_style(): { readonly [ prop: string ]: string } {
+			const draft = this.draft()
+			if( !draft ) return {}
+
+			const rect = this.$.$bog_vmap_app_pane_screen(
+				this.draft_rect( draft ),
+				this.camera_zoom(),
+				this.camera_shift(),
+			)
+
+			return {
+				left: rect.left + 'px',
+				top: rect.top + 'px',
+				width: rect.width + 'px',
+				height: rect.height + 'px',
+			}
 		}
 
 		@ $mol_action
@@ -779,6 +996,14 @@ namespace $.$$ {
 
 			this.press_track( event )
 			this.hover_track( event )
+
+			const draft = this.draft()
+			if( draft ) {
+				if( !event.buttons ) return this.node_release( event )
+				event.preventDefault()
+				this.draft({ from: draft.from, to: this.world_point( event ) })
+				return
+			}
 
 			if( this.wire_drag() ) {
 				if( !event.buttons ) return this.node_release( event )
@@ -831,6 +1056,9 @@ namespace $.$$ {
 				this.carry_at({ x: point[0], y: point[1] })
 				return
 			}
+
+			const draft = this.draft()
+			if( draft ) return this.draft_release( draft, event )
 
 			const press = this.press()
 			this.press( null )
@@ -990,7 +1218,7 @@ namespace $.$$ {
 
 		@ $mol_mem
 		override overlay_style(): { readonly [ prop: string ]: string } {
-			const rect = !this.carrying() && this.inside() ? this.frame_box() : null
+			const rect = !this.carrying() && !this.hand() && this.inside() ? this.frame_box() : null
 			return { clipPath: this.$.$bog_vmap_app_pane_hole( rect ) }
 		}
 
@@ -1490,9 +1718,7 @@ namespace $.$$ {
 			}
 
 			if( message.kind === 'key' ) {
-				if( this.inside() ) this.leave()
-				else this.picked([])
-
+				this.escape()
 				return
 			}
 
