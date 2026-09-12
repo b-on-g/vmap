@@ -79,6 +79,55 @@ namespace $ {
 		return { store, doc, one }
 	}
 
+	async function $bog_vmap_app_history_test_peers( $: $, writable: boolean ) {
+
+		const auth_own = await $.$giper_baza_auth.grab()
+		const auth_mate = await $.$giper_baza_auth.grab()
+
+		const land_own = $giper_baza_land.make({ $, auth: ()=> auth_own })
+		const land_mate = $giper_baza_land.make({
+			$,
+			link: ()=> land_own.link(),
+			auth: ()=> auth_mate,
+		})
+
+		if( writable ) land_own.give( auth_mate.pass(), $giper_baza_rank_post( 'just' ) )
+
+		const peer = ( land: $giper_baza_land, lord: string )=> {
+
+			const doc = land.Data( $bog_vmap_app_doc )
+			const store = $bog_vmap_app_store.make({ $, doc_current: ()=> doc })
+
+			const one = $$.$bog_vmap_app_history.make({
+				$,
+				store: ()=> store,
+				step_delay: ()=> 0,
+				snap_delay: ()=> 0,
+				state: ( next?: $bog_vmap_app_store_state )=> store.doc_state( doc, next ),
+			})
+
+			return { land, doc, store, one, lord }
+		}
+
+		const sync = (
+			from: { readonly land: $giper_baza_land },
+			to: { readonly land: $giper_baza_land },
+		)=> $mol_wire_async( to.land ).units_steal( from.land )
+
+		return {
+			own: peer( land_own, auth_own.pass().lord().str ),
+			mate: peer( land_mate, auth_mate.pass().lord().str ),
+			sync,
+		}
+	}
+
+	function $bog_vmap_app_history_test_times(
+		store: $bog_vmap_app_store,
+		doc: $bog_vmap_app_doc,
+	) {
+		return store.snaps( doc ).map( snap => snap.time() )
+	}
+
 	function $bog_vmap_app_history_test_stroke(
 		next: Partial< $$.$bog_vmap_app_history_stroke >,
 	): $$.$bog_vmap_app_history_stroke {
@@ -608,6 +657,102 @@ namespace $ {
 			;( rows[ 0 ] as HTMLElement ).click()
 
 			$mol_assert_equal( asked.join( ' ' ), one.snap_links()[ 0 ] )
+
+		},
+
+		async 'a document of somebody else refuses a snapshot in words and turns the button off'( $ ) {
+
+			const { own, mate, sync } = await $bog_vmap_app_history_test_peers( $, false )
+
+			own.store.doc_source( own.doc, src_one )
+			await sync( own, mate )
+
+			$mol_assert_equal( mate.store.doc_source( mate.doc ), src_one )
+			$mol_assert_equal( mate.one.editable(), false )
+			$mol_assert_equal( mate.one.Take().enabled(), false )
+			$mol_assert_equal( own.one.Take().enabled(), true )
+
+			const before = ( await $mol_wire_async( mate.land ).diff_units() ).length
+
+			mate.one.snap_press()
+
+			$mol_assert_equal( mate.one.note(), 'Чужая сцена: снимок в неё не пишется' )
+			$mol_assert_equal( mate.one.snap_make( 100 ), null )
+			$mol_assert_equal( mate.store.snaps( mate.doc ).length, 0 )
+			$mol_assert_equal( ( await $mol_wire_async( mate.land ).diff_units() ).length, before )
+
+			await sync( mate, own )
+
+			$mol_assert_equal( own.store.snaps( own.doc ).length, 0 )
+
+		},
+
+		async 'two peers with the right to write take snapshots in turn and both see both in one order'( $ ) {
+
+			const { own, mate, sync } = await $bog_vmap_app_history_test_peers( $, true )
+			await sync( own, mate )
+
+			$mol_assert_equal( mate.one.editable(), true )
+			$mol_assert_equal( mate.one.Take().enabled(), true )
+
+			own.store.doc_source( own.doc, src_one )
+			own.one.snap_make( 100 )
+			await sync( own, mate )
+
+			mate.store.doc_source( mate.doc, src_two )
+			mate.one.snap_make( 200 )
+			await sync( mate, own )
+
+			$mol_assert_equal( own.store.snaps( own.doc ).length, 2 )
+			$mol_assert_like(
+				own.store.snaps( own.doc ).map( snap => snap.link().str ),
+				mate.store.snaps( mate.doc ).map( snap => snap.link().str ),
+			)
+			$mol_assert_like( own.one.snap_links(), mate.one.snap_links() )
+
+			$mol_assert_like( $bog_vmap_app_history_test_times( own.store, own.doc ), [ 100, 200 ] )
+			$mol_assert_like( $bog_vmap_app_history_test_times( mate.store, mate.doc ), [ 100, 200 ] )
+
+			$mol_assert_like(
+				mate.store.snaps( mate.doc ).map( snap => mate.store.snap_state( snap ).source ),
+				[ src_one, src_two ],
+			)
+			$mol_assert_like(
+				own.store.snaps( own.doc ).map( snap => snap.author() ),
+				[ own.lord, mate.lord ],
+			)
+			$mol_assert_like(
+				mate.store.snaps( mate.doc ).map( snap => snap.author() ),
+				[ own.lord, mate.lord ],
+			)
+
+		},
+
+		async 'a return to a snapshot at one peer reaches the other'( $ ) {
+
+			const { own, mate, sync } = await $bog_vmap_app_history_test_peers( $, true )
+			await sync( own, mate )
+
+			own.store.doc_source( own.doc, src_one )
+			own.one.snap_make( 100 )
+
+			own.store.doc_source( own.doc, src_two )
+			await sync( own, mate )
+
+			$mol_assert_equal( mate.store.doc_source( mate.doc ), src_two )
+
+			own.one.snap_revert( own.store.snaps( own.doc )[ 0 ].link().str )
+
+			$mol_assert_equal( own.store.doc_source( own.doc ), src_one )
+
+			await sync( own, mate )
+
+			$mol_assert_equal( mate.store.doc_source( mate.doc ), src_one )
+			$mol_assert_equal( mate.store.snaps( mate.doc ).length, 2 )
+			$mol_assert_equal(
+				mate.store.snap_state( mate.store.snaps( mate.doc )[ 1 ] ).source,
+				src_two,
+			)
 
 		},
 
