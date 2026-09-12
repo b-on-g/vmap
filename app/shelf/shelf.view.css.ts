@@ -4,6 +4,11 @@ namespace $.$$ {
 
 		flex: { basis: '20rem' },
 
+		Filter: {
+			minWidth: '6rem',
+			flex: { shrink: 1, basis: '6rem' },
+		},
+
 		Item_row: {
 			font: { family: 'inherit', size: '.9rem' },
 		},

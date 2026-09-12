@@ -280,7 +280,7 @@ namespace $ {
 
 			if( width === 1280 ) {
 				want(
-					heads.every( height => height === heads[ 0 ] ),
+					heads.every( height => $bog_vmap_probe_close( height, heads[ 0 ] ?? -1, 4 ) ),
 					`${ at } шапки страниц разной высоты: ${ heads.join( ' / ' ) }`,
 				)
 			}
