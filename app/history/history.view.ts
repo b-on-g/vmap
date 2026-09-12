@@ -265,10 +265,8 @@ namespace $.$$ {
 			return this.note_at( this.slug(), next )
 		}
 
-		override content() {
+		override body() {
 			return [
-				this.Head(),
-				this.Steps(),
 				... this.note() ? [ this.Note() ] : [],
 				this.List(),
 			] as readonly $mol_view[]

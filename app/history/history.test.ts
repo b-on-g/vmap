@@ -526,6 +526,91 @@ namespace $ {
 
 		},
 
+		'the panel is a page with the three steps in its tools'( $ ) {
+
+			const dom = $.$mol_dom_context
+			const { one } = $bog_vmap_app_history_test_land( $ )
+
+			dom.document.body.appendChild( one.dom_tree() )
+
+			const node = one.dom_node()
+
+			$mol_assert_equal( node.querySelectorAll( '[mol_page_head]' ).length, 1 )
+			$mol_assert_equal(
+				node.querySelectorAll( '[mol_page_tools] [mol_button_minor]' ).length,
+				3,
+			)
+
+		},
+
+		'every snapshot is a button with a labeler inside a list'( $ ) {
+
+			const dom = $.$mol_dom_context
+			const { store, one } = $bog_vmap_app_history_test_land( $ )
+
+			store.source( src_one )
+			one.snap_make( 100 )
+
+			store.source( src_two )
+			one.snap_make( 200 )
+
+			dom.document.body.appendChild( one.dom_tree() )
+
+			const rows = one.dom_node().querySelectorAll(
+				'[mol_list] > [bog_vmap_app_history_snap]',
+			)
+
+			$mol_assert_equal( rows.length, 2 )
+			$mol_assert_equal( rows[ 0 ].hasAttribute( 'mol_button_minor' ), true )
+			$mol_assert_equal( rows[ 0 ].querySelectorAll( '[mol_labeler]' ).length, 1 )
+			$mol_assert_equal(
+				rows[ 0 ].textContent!.includes( one.snap_moment( one.snap_links()[ 0 ] ) ),
+				true,
+			)
+
+		},
+
+		'a press on the row of a snapshot asks to go back to it'( $ ) {
+
+			const dom = $.$mol_dom_context
+
+			const store = $bog_vmap_app_store.make({ $, doc_land_config: ()=> null })
+			const doc = store.doc_add( 'Landing' )
+			const asked = [] as string[]
+
+			const one = $$.$bog_vmap_app_history.make({
+				$,
+				store: ()=> store,
+				step_delay: ()=> 0,
+				snap_delay: ()=> 0,
+				state: ( next?: $bog_vmap_app_store_state )=> store.doc_state( doc, next ),
+				snap_back: ( link: string, next?: Event | null )=> {
+					asked.push( link )
+					return null
+				},
+			})
+
+			store.source( src_one )
+			one.snap_make( 100 )
+
+			store.source( src_two )
+			one.snap_make( 200 )
+
+			dom.document.body.appendChild( one.dom_tree() )
+
+			const rows = one.dom_node().querySelectorAll(
+				'[mol_list] > [bog_vmap_app_history_snap]',
+			)
+
+			$mol_assert_equal( rows.length, 2 )
+			$mol_assert_equal( one.editable(), true )
+
+			;( rows[ 0 ] as HTMLElement ).click()
+
+			$mol_assert_equal( asked.join( ' ' ), one.snap_links()[ 0 ] )
+
+		},
+
 	})
 
 }
