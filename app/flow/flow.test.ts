@@ -464,6 +464,8 @@ namespace $ {
 	const map = `${d}flow_map`
 	const button = `${d}flow_button`
 
+	const number = `${d}mol_number`
+
 	$mol_test({
 		'the editor opens with the head of its canvas, its palette and its canvas'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
@@ -653,6 +655,57 @@ namespace $ {
 
 			const after = stage.app.doc_source()
 			$mol_assert_equal( after.includes( 'calc_result' ), false )
+			$mol_assert_like( stage.app.doc_wires(), [] )
+
+		},
+
+		async 'a drag with the shift held writes a two way wire, and one undo takes it back'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const history = stage.app.History() as $$.$bog_vmap_app_history
+
+			const stepped = async ()=> {
+				const source = stage.app.doc_source()
+				const taken = ()=> history.ring( history.doc_key() ).at( -1 )?.source === source
+
+				for( let i = 0; i < 10 && !taken(); ++i ) {
+					stage.timers.filter( timer => timer.delay === history.step_delay() ).at( -1 )?.task()
+					await $bog_vmap_app_flow_settle( taken, 30 )
+					stage.redraw()
+				}
+
+				$mol_assert_equal( taken(), true )
+			}
+
+			stage.drop( number, stage.client([ 100, 100 ]) )
+			stage.drop( number, stage.client([ 400, 100 ]) )
+			stage.tap( stage.part_center( 'Number' ) )
+
+			await stepped()
+			const before = stage.app.doc_source()
+
+			const overlay = stage.overlay()
+			const out = stage.port_dot( 'Number', 'value', 'out' )
+			const into = stage.port_dot( 'Number_2', 'value', 'in' )
+
+			stage.press( overlay, out, { shiftKey: true } )
+			stage.move( overlay, into, { shiftKey: true } )
+			stage.release( overlay, into, { shiftKey: true } )
+			stage.redraw()
+
+			const source = stage.app.doc_source()
+			$mol_assert_ok( source.includes( '\tnumber_value? = Number value?\n' ) )
+			$mol_assert_ok( source.includes( 'value? <=> number_value?\n' ) )
+			$mol_assert_equal( stage.app.doc_wires()[0].bidi, true )
+			$mol_assert_equal( stage.pane.Wire().label_text( 'Number_2.value' ), '⇄' )
+
+			stage.scene.values({ number_value: '7' })
+			$mol_assert_equal( stage.pane.Wire().label_text( 'Number_2.value' ), '⇄ 7' )
+
+			await stepped()
+			history.undo()
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.doc_source(), before )
 			$mol_assert_like( stage.app.doc_wires(), [] )
 
 		},

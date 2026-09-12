@@ -154,6 +154,37 @@ namespace $ {
 
 		},
 
+		'a two way wire takes only a port declared with a sign'( $ ) {
+			const signed = port( 'value', 'number', true )
+			const plain = port( 'result', 'number' )
+
+			$mol_assert_equal( $bog_vmap_app_wire_takes( 'number', signed, false ), true )
+			$mol_assert_equal( $bog_vmap_app_wire_takes( 'number', plain, false ), true )
+
+			$mol_assert_equal( $bog_vmap_app_wire_takes( 'number', signed, true ), true )
+			$mol_assert_equal( $bog_vmap_app_wire_takes( 'number', plain, true ), false )
+
+		},
+
+		'an unfitting shape is refused whichever way the wire runs'( $ ) {
+			const signed = port( 'value', 'string', true )
+
+			$mol_assert_equal( $bog_vmap_app_wire_takes( 'number', signed, false ), false )
+			$mol_assert_equal( $bog_vmap_app_wire_takes( 'number', signed, true ), false )
+
+			$mol_assert_equal( $bog_vmap_app_wire_takes( 'locale', signed, true ), true )
+
+		},
+
+		'the label of a two way wire carries the sign, of a one way one only the value'( $ ) {
+			$mol_assert_equal( $bog_vmap_app_wire_label({ label: '42', bidi: false }), '42' )
+			$mol_assert_equal( $bog_vmap_app_wire_label({ label: '42', bidi: true }), '⇄ 42' )
+
+			$mol_assert_equal( $bog_vmap_app_wire_label({ label: '', bidi: false }), '' )
+			$mol_assert_equal( $bog_vmap_app_wire_label({ label: '', bidi: true }), '⇄' )
+
+		},
+
 		'ports are the value shaped, unkeyed properties of the class'( $ ) {
 			const d = '$'
 			const tree = $.$mol_tree2_from_string( [

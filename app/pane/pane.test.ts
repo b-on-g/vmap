@@ -1369,6 +1369,121 @@ namespace $ {
 
 		},
 
+		'a drag with the shift held between two signed ports writes a two way wire'( $ ) {
+			const { pane, node } = wired_make( $ )
+
+			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) })
+			pane.picked([ 'Calc' ])
+
+			const out = pane.port_point( 'Calc', 'op', 'out' )!
+
+			pane.node_press( pointer( out[0], out[1], { shiftKey: true } ) )
+
+			$mol_assert_equal( pane.wire_bidi(), true )
+
+			pane.node_move( pointer( 320, 20, { shiftKey: true } ) )
+
+			const into = pane.wire_dots().find( dot => dot.port.name === 'marker' )!
+			$mol_assert_equal( into.lit, true )
+
+			pane.node_release( pointer( into.x, into.y, { buttons: 0, shiftKey: true } ) )
+
+			$mol_assert_equal( pane.wire_bidi(), false )
+			$mol_assert_equal( pane.wire_shift(), false )
+
+			$mol_assert_equal( node.source().includes( '\tcalc_op? = Calc op?\n' ), true )
+			$mol_assert_equal( node.source().includes( 'marker? <=> calc_op?\n' ), true )
+			$mol_assert_like( node.wires(), [ { name: 'calc_op', node: 'Calc', prop: 'op', bidi: true } ] )
+			$mol_assert_equal( node.links()[0].bidi, true )
+
+			$mol_assert_equal( pane.wire_lines()[0].bidi, true )
+			$mol_assert_equal( pane.Wire().label_text( 'Map.marker' ), '⇄' )
+
+		},
+
+		'the same drag without the shift stays one way'( $ ) {
+			const { pane, node } = wired_make( $ )
+
+			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) })
+			pane.picked([ 'Calc' ])
+
+			const out = pane.port_point( 'Calc', 'op', 'out' )!
+
+			pane.node_press( pointer( out[0], out[1] ) )
+
+			$mol_assert_equal( pane.wire_bidi(), false )
+
+			pane.node_move( pointer( 320, 20 ) )
+
+			const into = pane.wire_dots().find( dot => dot.port.name === 'marker' )!
+			pane.node_release( pointer( into.x, into.y, { buttons: 0 } ) )
+
+			$mol_assert_equal( node.source().includes( '\tcalc_op = Calc op\n' ), true )
+			$mol_assert_equal( node.source().includes( 'marker <= calc_op\n' ), true )
+			$mol_assert_equal( node.links()[0].bidi, false )
+
+			$mol_assert_equal( pane.wire_lines()[0].bidi, false )
+			$mol_assert_equal( pane.Wire().label_text( 'Map.marker' ), '' )
+
+		},
+
+		'with the shift held an input without a sign is dark and takes nothing'( $ ) {
+			const { pane, node } = wired_make( $ )
+
+			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) })
+			pane.picked([ 'Map' ])
+
+			const before = node.source()
+			const out = pane.port_point( 'Map', 'zoom', 'out' )!
+
+			pane.node_press( pointer( out[0], out[1], { shiftKey: true } ) )
+			pane.node_move( pointer( 50, 20, { shiftKey: true } ) )
+
+			const dark = pane.wire_dots().find( dot => dot.port.name === 'result' )!
+			$mol_assert_equal( dark.lit, false )
+
+			pane.node_release( pointer( dark.x, dark.y, { buttons: 0, shiftKey: true } ) )
+
+			$mol_assert_equal( node.source(), before )
+			$mol_assert_like( node.links(), [] )
+
+			pane.node_press( pointer( out[0], out[1] ) )
+			pane.node_move( pointer( 50, 20 ) )
+
+			const open = pane.wire_dots().find( dot => dot.port.name === 'result' )!
+			$mol_assert_equal( open.lit, true )
+
+			pane.node_release( pointer( open.x, open.y, { buttons: 0 } ) )
+
+			$mol_assert_equal( node.source().includes( '\tmap_zoom = Map zoom\n' ), true )
+			$mol_assert_equal( node.links()[0].bidi, false )
+
+		},
+
+		'the shift let go in the middle of a drag leaves a one way wire'( $ ) {
+			const { pane, node } = wired_make( $ )
+
+			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) })
+			pane.picked([ 'Calc' ])
+
+			const out = pane.port_point( 'Calc', 'op', 'out' )!
+
+			pane.node_press( pointer( out[0], out[1], { shiftKey: true } ) )
+			pane.node_move( pointer( 320, 20, { shiftKey: true } ) )
+
+			$mol_assert_equal( pane.wire_bidi(), true )
+
+			pane.node_move( pointer( 320, 20 ) )
+
+			$mol_assert_equal( pane.wire_bidi(), false )
+
+			const into = pane.wire_dots().find( dot => dot.port.name === 'marker' )!
+			pane.node_release( pointer( into.x, into.y, { buttons: 0 } ) )
+
+			$mol_assert_equal( node.links()[0].bidi, false )
+
+		},
+
 		'a wire is drawn from the last known box when one end is no longer reported'( $ ) {
 			const { pane, node, answer } = wired_make( $ )
 

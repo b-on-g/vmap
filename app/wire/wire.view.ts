@@ -6,7 +6,7 @@ namespace $.$$ {
 
 			for( const line of this.lines() ) {
 				shapes.push( this.Line( line.key ) )
-				if( line.label ) shapes.push( this.Label( line.key ) )
+				if( this.label_text( line.key ) ) shapes.push( this.Label( line.key ) )
 			}
 
 			for( const dot of this.dots() ) {
@@ -38,7 +38,9 @@ namespace $.$$ {
 		}
 
 		override label_text( key: string ) {
-			return this.line_of( key )?.label ?? ''
+			const line = this.line_of( key )
+
+			return line ? $bog_vmap_app_wire_label( line ) : ''
 		}
 
 		dot_key( dot: $bog_vmap_app_wire_dot ) {

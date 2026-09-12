@@ -5,7 +5,9 @@ namespace $.$$ {
 
 	const scene_root = '$' + 'bog_vmap_scene'
 
-	export type $bog_vmap_app_pane_link_new = Pick< $bog_vmap_lang_link, 'from' | 'from_prop' | 'to' | 'to_prop' >
+	export type $bog_vmap_app_pane_link_new =
+		Pick< $bog_vmap_lang_link, 'from' | 'from_prop' | 'to' | 'to_prop' >
+		& { readonly bidi?: boolean }
 
 	export type $bog_vmap_app_pane_link_end = Pick< $bog_vmap_lang_link, 'to' | 'to_prop' >
 
@@ -782,6 +784,7 @@ namespace $.$$ {
 				if( !event.buttons ) return this.node_release( event )
 				event.preventDefault()
 				this.wire_point( this.screen_point( event ) )
+				this.wire_shift( event.shiftKey )
 				return
 			}
 
@@ -1009,6 +1012,22 @@ namespace $.$$ {
 			return next ?? [ 0, 0 ] as const
 		}
 
+		@ $mol_mem
+		wire_shift( next?: boolean ) {
+			return next ?? false
+		}
+
+		wire_source_next() {
+			const drag = this.wire_drag()
+			if( !drag ) return false
+
+			return this.part_ports( drag.from ).find( port => port.name === drag.from_prop )?.next ?? false
+		}
+
+		wire_bidi() {
+			return this.wire_shift() && this.wire_source_next()
+		}
+
 		@ $mol_mem_key
 		part_dots( name: string ): readonly $bog_vmap_app_wire_port[] {
 			const written = new Set( this.part_overs( name ) )
@@ -1067,6 +1086,7 @@ namespace $.$$ {
 					label: String( values[ link.name ] ?? '' ),
 					label_x: mid[0],
 					label_y: mid[1],
+					bidi: link.bidi,
 				})
 
 			}
@@ -1117,7 +1137,7 @@ namespace $.$$ {
 			if( drag ) {
 				for( const name of this.part_names() ) {
 					if( name === drag.from ) continue
-					add( name, 'in', port => $bog_vmap_app_wire_fits( drag.kind, port.kind ) )
+					add( name, 'in', port => $bog_vmap_app_wire_takes( drag.kind, port, this.wire_bidi() ) )
 				}
 				return dots
 			}
@@ -1161,6 +1181,7 @@ namespace $.$$ {
 
 			this.wire_point( this.screen_point( event ) )
 			this.wire_drag( source )
+			this.wire_shift( event.shiftKey )
 
 			try {
 				this.Overlay().dom_node().setPointerCapture( event.pointerId )
@@ -1171,9 +1192,11 @@ namespace $.$$ {
 		wire_release( event: PointerEvent ) {
 			const drag = this.wire_drag()!
 			const point = this.wire_point( this.screen_point( event ) )
+			const bidi = this.wire_bidi()
 			const dot = $bog_vmap_app_wire_dot_at( this.wire_dots(), point )
 
 			this.wire_drag( null )
+			this.wire_shift( false )
 
 			try {
 				this.Overlay().dom_node().releasePointerCapture( event.pointerId )
@@ -1181,7 +1204,13 @@ namespace $.$$ {
 
 			if( !dot || !dot.lit ) return
 
-			this.link_add({ from: drag.from, from_prop: drag.from_prop, to: dot.node, to_prop: dot.port.name })
+			this.link_add({
+				from: drag.from,
+				from_prop: drag.from_prop,
+				to: dot.node,
+				to_prop: dot.port.name,
+				bidi,
+			})
 
 		}
 

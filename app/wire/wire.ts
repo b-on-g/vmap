@@ -31,7 +31,10 @@ namespace $ {
 		readonly label: string
 		readonly label_x: number
 		readonly label_y: number
+		readonly bidi: boolean
 	}
+
+	export const $bog_vmap_app_wire_sign = '⇄'
 
 	export const $bog_vmap_app_wire_row = 14
 
@@ -77,6 +80,23 @@ namespace $ {
 		const norm = ( kind: $bog_vmap_app_inspect_value_kind ) => kind === 'locale' ? 'string' : kind
 
 		return norm( out ) === norm( into )
+	}
+
+	export function $bog_vmap_app_wire_takes(
+		out: $bog_vmap_app_inspect_value_kind,
+		into: $bog_vmap_app_wire_port,
+		bidi: boolean,
+	) {
+		if( !$bog_vmap_app_wire_fits( out, into.kind ) ) return false
+
+		return bidi ? into.next : true
+	}
+
+	export function $bog_vmap_app_wire_label( line: {
+		readonly label: string
+		readonly bidi: boolean
+	} ) {
+		return [ line.bidi ? $bog_vmap_app_wire_sign : '', line.label ].filter( Boolean ).join( ' ' )
 	}
 
 	export function $bog_vmap_app_wire_port_point(
