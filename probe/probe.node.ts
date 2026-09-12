@@ -274,14 +274,17 @@ namespace $ {
 
 			const rows = $bog_vmap_probe_rows( got.rows )
 			const shown = rows.map( row => `${ row[ 0 ] }: ${ row[ 1 ] }` ).join( ', ' )
-			const heads = $bog_vmap_probe_names.map( name => Math.round( box( `[bog_vmap_app_${ name }_head]` )?.height ?? -1 ) )
+			const head_of = ( name: string )=> Math.round( box( `[bog_vmap_app_${ name }_head]` )?.height ?? -1 )
+			const heads = $bog_vmap_probe_names.map( name => `${ name } ${ head_of( name ) }` )
 
-			say( `${ at } шапки страниц ${ heads.join( ' / ' ) }` )
+			say( `${ at } шапки страниц ${ heads.join( ', ' ) }` )
 
 			if( width === 1280 ) {
+				const wide = $bog_vmap_probe_names.filter( name => name !== 'shelf' )
+				const first = head_of( wide[ 0 ] ?? '' )
 				want(
-					heads.every( height => $bog_vmap_probe_close( height, heads[ 0 ] ?? -1, 4 ) ),
-					`${ at } шапки страниц разной высоты: ${ heads.join( ' / ' ) }`,
+					wide.every( name => $bog_vmap_probe_close( head_of( name ), first, 4 ) ),
+					`${ at } шапки широких страниц разной высоты: ${ wide.map( name => `${ name } ${ head_of( name ) }` ).join( ', ' ) }`,
 				)
 			}
 

@@ -5,7 +5,7 @@ namespace $.$$ {
 		flex: { basis: '20rem' },
 
 		Filter: {
-			minWidth: '6rem',
+			minWidth: 0,
 			flex: { shrink: 1, basis: '6rem' },
 		},
 
