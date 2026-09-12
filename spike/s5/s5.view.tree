@@ -1,16 +1,4 @@
 $bog_vmap_spike_s5_base $mol_view
 	greet \дефолт из .view.tree
-	sub / <= greet
 
 $bog_vmap_spike_s5_near $bog_vmap_spike_s5_base
-
-$bog_vmap_spike_s5 $mol_view
-	sub /
-		<= L1 $mol_view sub / \Базовый класс, живёт в этом же .view.tree:
-		<= Base $bog_vmap_spike_s5_base
-		<= L2 $mol_view sub / \Наследник ИЗ ТОГО ЖЕ файла:
-		<= Near $bog_vmap_spike_s5_near
-		<= L3 $mol_view sub / \Наследник ИЗ СОСЕДНЕГО модуля:
-		<= Apart $bog_vmap_spike_s5_apart
-		<= L4 $mol_view sub / \Цепочки прототипов:
-		<= Chains $mol_view sub <= chains /
