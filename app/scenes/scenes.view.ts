@@ -45,7 +45,7 @@ namespace $.$$ {
 			return Boolean( this.store().doc_current() )
 		}
 
-		override title( next?: string ) {
+		override doc_title( next?: string ) {
 			return this.store().title( next )
 		}
 

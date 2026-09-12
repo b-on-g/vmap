@@ -300,7 +300,7 @@ namespace $.$$ {
 			return refusal ? refusal.split( '\n' ).filter( Boolean ) : []
 		}
 
-		override export_rows() {
+		export_rows() {
 			return this.export_notes().map( ( _, index )=> this.Export_row( index ) )
 		}
 
@@ -432,34 +432,37 @@ namespace $.$$ {
 		}
 
 		@ $mol_mem
-		override body() {
-			return [
-				this.Head(),
-				this.Body(),
-				... this.dragged() ? [ this.Ghost() ] : [],
-			] as readonly $mol_view[]
-		}
-
-		@ $mol_mem
 		override notes() {
 			return [
 				... this.inside_note() ? [ this.Inside_note() ] : [],
 				... this.stalled() ? [ this.Stall() ] : [],
 				... this.error() ? [ this.Alarm() ] : [],
-				... this.export_notes().length ? [ this.Export_note() ] : [],
+				... this.export_rows(),
 				... this.root_title_note() ? [ this.Root_note() ] : [],
 			] as readonly $mol_view[]
 		}
 
-		override body_main() {
+		override pages() {
 			return [
-				... this.palette_showed() ? [ this.Side() ] : [],
-				this.Pane(),
-				... this.inspect_showed() ? [ this.Aside() ] : [],
+				... this.palette_showed() ? [ this.Scenes(), this.Shelf() ] : [],
+				this.Canvas(),
+				... this.inspect_showed() ? [ this.selection_alive() ? this.Inspect() : this.Idle() ] : [],
 				... this.code_showed() ? [ this.Code() ] : [],
 				... this.history_showed() ? [ this.History() ] : [],
-				... this.notes().length ? [ this.Notes() ] : [],
 			] as readonly $mol_view[]
+		}
+
+		override floats() {
+			return ( this.dragged() ? [ this.Ghost() ] : [] ) as readonly $mol_view[]
+		}
+
+		override lights( next?: boolean ) {
+			const kept = this.$.$mol_state_local.value< boolean >( `${ this }.lights()`, next )
+			return kept ?? Boolean( this.$.$mol_lights() )
+		}
+
+		override theme_name() {
+			return this.lights() ? '$mol_theme_light' : '$mol_theme_dark'
 		}
 
 		override palette_showed( next?: boolean ) {
@@ -517,10 +520,6 @@ namespace $.$$ {
 			}
 
 			return { source: this.doc_source(), js, css, spots: this.spots() }
-		}
-
-		aside_content() {
-			return ( this.selection_alive() ? [ this.Inspect() ] : [ this.Idle() ] ) as readonly $mol_view[]
 		}
 
 		selection_alive() {

@@ -1,22 +1,21 @@
-$bog_vmap_app_scenes $mol_view
+$bog_vmap_app_scenes $mol_page
 	store $bog_vmap_app_store
 	current? \
-	title? \
+	doc_title? \
 	current_exists false
-	sub /
-		<= Head $mol_view
-			sub /
-				\Сцены
-		<= List $mol_list
-			rows <= scene_rows /
-		<= Title $mol_string
+	title \Сцены
+	tools /
+		<= Name $mol_string
 			hint \Название сцены
 			enabled <= current_exists
-			value? <=> title?
+			value? <=> doc_title?
 		<= Add $mol_button_minor
 			title \Новая сцена
 			hint \Завести новый документ. Он станет текущим
 			click? <=> add? null
+	body /
+		<= List $mol_list
+			rows <= scene_rows /
 	Scene_row* $bog_vmap_app_palette_item
 		title <= scene_title* \
 		hint <= scene_title* \

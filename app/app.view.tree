@@ -1,4 +1,4 @@
-$bog_vmap_app $mol_view
+$bog_vmap_app $mol_book2
 	doc_src \
 	doc_css \
 	spots? *
@@ -19,17 +19,15 @@ $bog_vmap_app $mol_view
 	code_css? \
 	root_js? \
 	root_css? \
+	lights? false
 	store $bog_vmap_app_store
 	plugins /
-		<= Theme $bog_theme_auto
-	style *
-		--mol_theme_hue <= theme_hue \240deg
-	sub <= body /$mol_view
-	Head $mol_bar
-		sub /
-			<= Brand $mol_view
-				sub /
-					\vmap
+		<= Theme $mol_theme_auto
+			theme <= theme_name \$mol_theme_dark
+	placeholders <= floats /$mol_view
+	Canvas $mol_page
+		title \Холст
+		tools /
 			<= Palette_check $mol_check
 				title \Полка
 				checked? <=> palette_showed?
@@ -53,13 +51,6 @@ $bog_vmap_app $mol_view
 				hint <= delete_hint \
 				enabled <= selection_showed false
 				click? <=> node_delete? null
-			<= Publish $bog_vmap_app_publish
-				part <= publish_part \
-				source <= node_source? \
-				js <= node_js \
-				css <= root_css
-				doc <= doc_src
-				classes / <= doc_root
 			<= Root_name $mol_string
 				hint \Имя корневого класса
 				value? <=> root_draft? \
@@ -67,73 +58,73 @@ $bog_vmap_app $mol_view
 				event *
 					^
 					blur? <=> root_submit? null
+			<= Publish $bog_vmap_app_publish
+				part <= publish_part \
+				source <= node_source? \
+				js <= node_js \
+				css <= root_css
+				doc <= doc_src
+				classes / <= doc_root
 			<= Download $mol_button_download
 				title <= export_title \
 				hint <= export_hint \
 				enabled <= export_ready false
 				blob <= export_blob $mol_blob
 				file_name <= export_file \
-			<= Status $mol_view
-				sub /
-					<= status \
-			<= Theme_switch $bog_theme_switch
-				theme_auto <= Theme
-	Notes $mol_view
-		sub <= notes /$mol_view
-	Alarm $mol_view
-		sub /
-			<= error \
-	Export_note $mol_view
-		sub <= export_rows /$mol_view
-	Export_row* $mol_view
-		sub / <= export_text* \
-	Root_note $mol_view
-		sub / <= root_title_note \
-	Inside_note $mol_view
-		sub / <= inside_note \
-	pack_stalled false
-	Stall $mol_view
-		sub <= stall_content /$mol_view
-	Stall_note $mol_view
-		sub / <= stall_note \
-	Stall_pack $mol_button_minor
-		title \Вернуть пак по умолчанию
-		hint \Убрать адрес библиотеки из полки и взять пак рядом со страницей редактора
-		click? <=> pack_default? null
-	Stall_reload $mol_button_minor
-		title \Перезагрузить сцену
-		hint \Поднять кадр заново. Документ хранится в редакторе и не потеряется
-		click? <=> scene_restart? null
-	Body $mol_view
-		sub <= body_main /$mol_view
-	Side $mol_view
-		sub /
-			<= Scenes $bog_vmap_app_scenes
-				store <= store
-			<= Shelf $bog_vmap_app_shelf
-				links? <=> links?
-				pack_link <= pack_link
-				land_classes <= lib_classes /$mol_tree2
-				class_list <= lib_class_list /string
-				place? <=> shelf_place? \
-	Aside $mol_view
-		sub <= aside_content /$mol_view
+			<= Lights $mol_lights_toggle
+				lights? <=> lights?
+			<= Status $mol_status
+				status <= status \
+		body /
+			<= Pane $bog_vmap_app_pane
+				scene_bundle <= scene_bundle
+				pack_uri <= pack_script \
+				theme <= scene_theme \
+				doc_src <= doc_src
+				doc_css <= doc_css
+				spots? <=> spots?
+				picked? <=> picked?
+				doc_js <= doc_js
+				doc_root <= doc_root
+				libs <= libs /$bog_vmap_bridge_part
+				carrying <= carrying false
+				wires <= doc_wires /$bog_vmap_lang_link
+				part_ports* <= part_ports* /$bog_vmap_app_wire_port
+				part_overs* <= part_overs* /string
+				link_add? <=> link_add? null
+				link_drop? <=> link_drop? null
+				containers <= doc_containers /string
+				doc_names <= doc_names /string
+				axis* <= doc_axis* \
+				tree_move? <=> tree_move? null
+				carry_drop? <=> carry_drop? null
+				files_drop? <=> files_drop? null
+		foot <= notes /$mol_view
+	Scenes $bog_vmap_app_scenes
+		store <= store
+	Shelf $bog_vmap_app_shelf
+		links? <=> links?
+		pack_link <= pack_link
+		land_classes <= lib_classes /$mol_tree2
+		class_list <= lib_class_list /string
+		place? <=> shelf_place? \
 	Inspect $bog_vmap_app_inspect
 		source? <=> node_source? \
 		peers <= node_peers /$mol_tree2
 		pack <= pack_link \
 		class_title? <=> node_title? \
 		title_note <= node_title_note \
-	Idle $mol_view
-		sub /
-			<= idle_note \Выберите узел на холсте, чтобы править его свойства
+	Idle $mol_page
+		title \Свойства
+		body /
+			<= Idle_note $mol_paragraph
+				title <= idle_note \Выберите узел на холсте, чтобы править его свойства
 	Code $bog_vmap_app_code
 		klass <= code_klass \
 		prop <= code_prop \
 		hooks <= code_hooks /string
 		whole? <=> code_whole?
-		source? <=> code_source?
-		node_source? <=> node_source?
+		source? <=> node_source?
 		js? <=> code_js?
 		css? <=> code_css?
 		error <= code_error \
@@ -143,32 +134,30 @@ $bog_vmap_app $mol_view
 	Lib $bog_vmap_lib_land_stack
 		pack <= pack_link
 		lands <= lands /string
+	Alarm $mol_status
+		status <= error \
+	Inside_note $mol_paragraph
+		title <= inside_note \
+	Root_note $mol_paragraph
+		title <= root_title_note \
+	Export_row* $mol_paragraph
+		title <= export_text* \
+	pack_stalled false
+	Stall $mol_bar
+		sub <= stall_content /$mol_view
+	Stall_note $mol_paragraph
+		title <= stall_note \
+	Stall_pack $mol_button_minor
+		title \Вернуть пак по умолчанию
+		hint \Убрать адрес библиотеки из полки и взять пак рядом со страницей редактора
+		click? <=> pack_default? null
+	Stall_reload $mol_button_minor
+		title \Перезагрузить сцену
+		hint \Поднять кадр заново. Документ хранится в редакторе и не потеряется
+		click? <=> scene_restart? null
 	Ghost $mol_view
 		style *
 			left <= ghost_left \0px
 			top <= ghost_top \0px
 		sub /
 			<= ghost_title \
-	Pane $bog_vmap_app_pane
-		scene_bundle <= scene_bundle
-		pack_uri <= pack_script \
-		theme <= scene_theme \
-		doc_src <= doc_src
-		doc_css <= doc_css
-		spots? <=> spots?
-		picked? <=> picked?
-		doc_js <= doc_js
-		doc_root <= doc_root
-		libs <= libs /$bog_vmap_bridge_part
-		carrying <= carrying false
-		wires <= doc_wires /$bog_vmap_lang_link
-		part_ports* <= part_ports* /$bog_vmap_app_wire_port
-		part_overs* <= part_overs* /string
-		link_add? <=> link_add? null
-		link_drop? <=> link_drop? null
-		containers <= doc_containers /string
-		doc_names <= doc_names /string
-		axis* <= doc_axis* \
-		tree_move? <=> tree_move? null
-		carry_drop? <=> carry_drop? null
-		files_drop? <=> files_drop? null

@@ -595,8 +595,8 @@ namespace $ {
 
 			$mol_assert_equal( app.export_rows().length, 2 )
 			$mol_assert_equal( app.export_text( 1 ), notes[ 1 ] )
-			$mol_assert_ok( app.notes().includes( app.Export_note() ) )
-			$mol_assert_equal( app.body().includes( app.Export_note() ), false )
+			$mol_assert_ok( app.notes().includes( app.Export_row( 1 ) ) )
+			$mol_assert_equal( app.Canvas().foot().includes( app.Export_row( 1 ) ), true )
 
 			$mol_assert_fail( ()=> app.export_blob(), Error )
 
@@ -604,7 +604,7 @@ namespace $ {
 
 			$mol_assert_equal( app.export_ready(), true )
 			$mol_assert_equal( app.export_notes().length, 0 )
-			$mol_assert_equal( app.body().includes( app.Export_note() ), false )
+			$mol_assert_equal( app.export_rows().length, 0 )
 
 		},
 
@@ -624,7 +624,7 @@ namespace $ {
 
 			$mol_assert_equal( app.export_ready(), false )
 			$mol_assert_equal( app.export_notes().length, 0 )
-			$mol_assert_equal( app.body().includes( app.Export_note() ), false )
+			$mol_assert_equal( app.export_rows().length, 0 )
 			$mol_assert_equal( app.export_hint(), 'Документ ещё загружается' )
 
 		},
@@ -884,7 +884,8 @@ namespace $ {
 			$mol_assert_equal( app.doc_source(), before )
 			$mol_assert_ok( app.root_title_note().includes( 'Страница' ) )
 			$mol_assert_ok( app.notes().includes( app.Root_note() ) )
-			$mol_assert_equal( app.body().includes( app.Root_note() ), false )
+			$mol_assert_ok( app.Canvas().foot().includes( app.Root_note() ) )
+			$mol_assert_equal( app.Canvas().body().includes( app.Root_note() ), false )
 
 			app.root_draft( 'Страница' )
 			app.root_submit()
@@ -1029,6 +1030,39 @@ namespace $ {
 			$mol_assert_equal( $.$mol_state_arg.value( 'doc' ), first )
 
 		},
+		'the canvas page carries the tools, the pane and the notes'( $ ) {
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			const pages = app.pages()
+
+			$mol_assert_equal( pages.length, 4 )
+			$mol_assert_equal( pages[ 0 ], app.Scenes() )
+			$mol_assert_equal( pages[ 1 ], app.Shelf() )
+			$mol_assert_equal( pages[ 2 ], app.Canvas() )
+			$mol_assert_equal( pages[ 3 ], app.Idle() )
+
+			const tools = app.Canvas().tools()
+
+			for( const tool of [
+				app.Palette_check(),
+				app.Inspect_check(),
+				app.Code_check(),
+				app.History_check(),
+				app.Board(),
+				app.Delete(),
+				app.Root_name(),
+				app.Publish(),
+				app.Download(),
+				app.Lights(),
+				app.Status(),
+			] ) $mol_assert_ok( tools.includes( tool ) )
+
+			$mol_assert_equal( app.Canvas().body()[ 0 ], app.Pane() )
+			$mol_assert_equal( app.Canvas().foot().length, 0 )
+			$mol_assert_equal( app.floats().length, 0 )
+
+		},
+
 		'which panels are open outlives the page'( $ ) {
 			const one = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
@@ -1045,8 +1079,9 @@ namespace $ {
 			$mol_assert_equal( two.inspect_showed(), true )
 			$mol_assert_equal( two.code_showed(), true )
 
-			$mol_assert_equal( two.body_main().includes( two.Side() ), false )
-			$mol_assert_equal( two.body_main().includes( two.Code() ), true )
+			$mol_assert_equal( two.pages().includes( two.Shelf() ), false )
+			$mol_assert_equal( two.pages().includes( two.Scenes() ), false )
+			$mol_assert_equal( two.pages().includes( two.Code() ), true )
 
 		},
 

@@ -133,6 +133,7 @@ namespace $ {
 		const kept = {} as { [ key: string ]: string | undefined }
 
 		class $mol_state_local_flow< Value > extends $mol_state_local< Value > {
+			@ $mol_mem_key
 			static override value< Value >( key: string, next?: Value | null ): Value | null {
 
 				if( next === undefined ) return JSON.parse( kept[ key ] ?? 'null' )
@@ -360,8 +361,8 @@ namespace $ {
 				return found( '[bog_vmap_app_shelf_pack_row]', `pack row ${ title }`, el => el.textContent === title )
 			},
 
-			theme_button( which: 'light' | 'system' | 'dark' ) {
-				return found( `[bog_theme_switch_${ which }]`, `theme button ${ which }`, ()=> true )
+			lights_toggle() {
+				return found( '[bog_vmap_app_lights]', 'lights toggle', ()=> true )
 			},
 
 			theme_worn() {
@@ -1147,7 +1148,7 @@ namespace $ {
 
 			stage.drop( calc, stage.client([ 200, 150 ]) )
 
-			const column = stage.app.body()
+			const column = stage.app.Canvas().body()
 
 			stage.tap( stage.part_center( 'Calc' ) )
 			stage.tap( stage.part_center( 'Calc' ) )
@@ -1156,20 +1157,14 @@ namespace $ {
 			$mol_assert_ok( stage.app.inside_note() )
 			$mol_assert_equal( stage.pane.inside(), true )
 
-			const after = stage.app.body()
+			const after = stage.app.Canvas().body()
 			$mol_assert_equal( after.length, column.length )
 			for( let i = 0; i < column.length; ++i ) $mol_assert_equal( after[ i ], column[ i ] )
 
-			const note = stage.app.Notes().dom_node()
-			$mol_assert_equal( stage.app.Body().dom_node().contains( note ), true )
-			$mol_assert_equal( note.parentElement === stage.root, false )
+			const note = stage.app.Inside_note().dom_node()
 
-			const sheet = $mol_dom_context.document.getElementById(
-				'$mol_style_attach:$bog_vmap_app',
-			)!.innerHTML
-
-			const rule = sheet.slice( sheet.indexOf( '[bog_vmap_app_notes]' ) )
-			$mol_assert_ok( rule.slice( 0, rule.indexOf( '}' ) ).includes( 'position: absolute' ) )
+			$mol_assert_equal( stage.root.querySelector( '[bog_vmap_app_canvas_foot]' )!.contains( note ), true )
+			$mol_assert_equal( stage.root.querySelector( '[bog_vmap_app_canvas_body]' )!.contains( note ), false )
 
 		},
 
@@ -1184,38 +1179,103 @@ namespace $ {
 
 	$mol_test({
 
-		'the theme picked in the bar is worn by the editor and told to the scene'( $ ) {
+		'the light switch is worn by the editor and told to the scene'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 
-			stage.click( stage.theme_button( 'light' ) )
+			$mol_assert_equal( stage.theme_worn(), '$mol_theme_dark' )
+
+			stage.click( stage.lights_toggle() )
 
 			$mol_assert_equal( stage.theme_worn(), '$mol_theme_light' )
 			$mol_assert_equal( stage.scene.last( 'theme_set' )!.theme, '$mol_theme_light' )
 
-			stage.click( stage.theme_button( 'dark' ) )
+			stage.click( stage.lights_toggle() )
 
 			$mol_assert_equal( stage.theme_worn(), '$mol_theme_dark' )
 			$mol_assert_equal( stage.scene.last( 'theme_set' )!.theme, '$mol_theme_dark' )
 
 		},
 
-		'the editor keeps the hue of the scene, so the two halves of the screen agree'( $ ) {
+		'the light choice is kept under a key of this app, not one shared by the origin'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 
-			$mol_assert_ok( stage.root.getAttribute( 'style' )?.includes( '--mol_theme_hue: 240deg' ) )
-
-		},
-
-		'the theme is kept under a key of this app, not one shared by the origin'( $ ) {
-			const stage = $bog_vmap_app_flow_stage( $ )
-
-			stage.click( stage.theme_button( 'light' ) )
+			stage.click( stage.lights_toggle() )
 
 			const keys = Object.keys( stage.kept )
 
 			$mol_assert_equal( keys.length, 1 )
 			$mol_assert_ok( keys[ 0 ].startsWith( '$bog_vmap_app' ) )
-			$mol_assert_equal( stage.kept[ keys[ 0 ] ], '"light"' )
+			$mol_assert_equal( stage.kept[ keys[ 0 ] ], 'true' )
+
+		},
+
+		'the shell is a book of pages and the canvas carries its tools in its own head'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			$mol_assert_ok( stage.root.hasAttribute( 'mol_book2' ) )
+
+			const head = stage.root.querySelector( '[bog_vmap_app_canvas_head]' )!
+
+			$mol_assert_ok( head.hasAttribute( 'mol_page_head' ) )
+			$mol_assert_equal( app.Canvas().title(), 'Холст' )
+
+			const tools = stage.root.querySelector( '[bog_vmap_app_canvas_tools]' )!
+			const inside = ( view: $mol_view )=> tools.contains( view.dom_node() )
+
+			$mol_assert_ok( inside( app.Palette_check() ) )
+			$mol_assert_ok( inside( app.Inspect_check() ) )
+			$mol_assert_ok( inside( app.Code_check() ) )
+			$mol_assert_ok( inside( app.History_check() ) )
+			$mol_assert_ok( inside( app.Board() ) )
+			$mol_assert_ok( inside( app.Delete() ) )
+			$mol_assert_ok( inside( app.Root_name() ) )
+			$mol_assert_ok( inside( app.Publish() ) )
+			$mol_assert_ok( inside( app.Download() ) )
+			$mol_assert_ok( inside( app.Lights() ) )
+			$mol_assert_ok( inside( app.Status() ) )
+
+			$mol_assert_ok( app.Canvas().body().includes( app.Pane() ) )
+			$mol_assert_equal(
+				stage.root.querySelector( '[bog_vmap_app_canvas_foot]' )!.childElementCount,
+				0,
+			)
+
+		},
+
+		'each check in the canvas tools adds and removes its page'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			const showed = ( page: $mol_view )=> stage.root.contains( page.dom_node() )
+
+			$mol_assert_ok( showed( app.Scenes() ) )
+			$mol_assert_ok( showed( app.Shelf() ) )
+			$mol_assert_ok( showed( app.Idle() ) )
+			$mol_assert_equal( showed( app.Code() ), false )
+			$mol_assert_equal( showed( app.History() ), false )
+
+			stage.click( app.Palette_check().dom_node() )
+
+			$mol_assert_equal( showed( app.Scenes() ), false )
+			$mol_assert_equal( showed( app.Shelf() ), false )
+
+			stage.click( app.Inspect_check().dom_node() )
+
+			$mol_assert_equal( showed( app.Idle() ), false )
+
+			stage.click( app.Code_check().dom_node() )
+
+			$mol_assert_ok( showed( app.Code() ) )
+
+			stage.click( app.History_check().dom_node() )
+
+			$mol_assert_ok( showed( app.History() ) )
+
+			stage.click( app.Palette_check().dom_node() )
+
+			$mol_assert_ok( showed( app.Scenes() ) )
+			$mol_assert_ok( showed( app.Shelf() ) )
 
 		},
 

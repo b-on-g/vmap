@@ -29,7 +29,7 @@ namespace $ {
 			$mol_assert_like( view.scene_links(), [] )
 			$mol_assert_equal( view.current(), '' )
 			$mol_assert_equal( view.current_exists(), false )
-			$mol_assert_equal( view.title(), '' )
+			$mol_assert_equal( view.doc_title(), '' )
 			$mol_assert_equal( view.add_title(), 'Сцена 1' )
 
 		},
@@ -58,7 +58,7 @@ namespace $ {
 
 			$mol_assert_equal( view.current(), second.link().str )
 			$mol_assert_equal( view.current_exists(), true )
-			$mol_assert_equal( view.title(), 'Second' )
+			$mol_assert_equal( view.doc_title(), 'Second' )
 			$mol_assert_equal( view.add_title(), 'Сцена 3' )
 
 		},
@@ -73,7 +73,7 @@ namespace $ {
 			view.current( first.link().str )
 
 			$mol_assert_equal( store.source(), src_page )
-			$mol_assert_equal( view.title(), 'First' )
+			$mol_assert_equal( view.doc_title(), 'First' )
 
 			view.current( '' )
 			$mol_assert_equal( store.source(), src_hero )
@@ -91,11 +91,30 @@ namespace $ {
 			const first = store.doc_add( 'First', src_page )
 			const second = store.doc_add( 'Second', src_hero )
 
-			view.title( 'Landing' )
+			view.doc_title( 'Landing' )
 
 			$mol_assert_equal( second.title(), 'Landing' )
 			$mol_assert_equal( first.title(), 'First' )
 			$mol_assert_equal( view.scene_title( second.link().str ), 'Landing' )
+
+		},
+
+		'the list of documents is a page with the name field and the add button in its tools'( $ ) {
+
+			const { store, view } = scenes( $ )
+
+			store.doc_add( 'First', src_page )
+
+			const dom = view.dom_tree() as Element
+
+			$mol_assert_ok( dom.querySelector( '[mol_page_head]' ) )
+			$mol_assert_equal( view.title(), 'Сцены' )
+
+			const tools = dom.querySelector( '[mol_page_tools]' )!
+
+			$mol_assert_ok( tools.contains( view.Name().dom_node() ) )
+			$mol_assert_ok( tools.contains( view.Add().dom_node() ) )
+			$mol_assert_ok( dom.querySelector( '[mol_page_body]' )!.contains( view.List().dom_node() ) )
 
 		},
 
