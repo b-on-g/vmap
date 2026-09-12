@@ -7583,6 +7583,7 @@ var $;
         side: 'in',
         lit: true,
         linked: false,
+        hint: '',
         ...over,
     });
     $mol_test({
@@ -7695,6 +7696,15 @@ var $;
             $mol_assert_equal($bog_vmap_app_wire_label({ label: '42', bidi: true }), '⇄ 42');
             $mol_assert_equal($bog_vmap_app_wire_label({ label: '', bidi: false }), '');
             $mol_assert_equal($bog_vmap_app_wire_label({ label: '', bidi: true }), '⇄');
+        },
+        'the name at a dot carries the sign of the port and, when given, the hint'($) {
+            $mol_assert_equal($bog_vmap_app_wire_name(dot({ x: 0, y: 0 })), 'value');
+            $mol_assert_equal($bog_vmap_app_wire_name(dot({ x: 0, y: 0, port: port('value', 'string', true) })), 'value?');
+            $mol_assert_equal($bog_vmap_app_wire_name(dot({
+                x: 0, y: 0,
+                port: port('value', 'string', true),
+                hint: $bog_vmap_app_wire_hint,
+            })), 'value? · Shift — двусторонний');
         },
         'ports are the value shaped, unkeyed properties of the class'($) {
             const d = '$';
@@ -13424,6 +13434,46 @@ var $;
             const into = pane.wire_dots().find(dot => dot.port.name === 'marker');
             pane.node_release(pointer(into.x, into.y, { buttons: 0 }));
             $mol_assert_equal(node.links()[0].bidi, false);
+        },
+        'the port aimed at during a drag offers the shift, and stops once it is held'($) {
+            const { pane } = wired_make($);
+            pane.sizes({ [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) });
+            pane.picked(['Calc']);
+            const aimed = () => pane.wire_dots().find(dot => dot.hint);
+            const out = pane.port_point('Calc', 'op', 'out');
+            pane.node_press(pointer(out[0], out[1]));
+            pane.node_move(pointer(320, 20));
+            $mol_assert_equal(aimed(), undefined);
+            const into = pane.wire_dots().find(dot => dot.port.name === 'marker');
+            pane.node_move(pointer(into.x, into.y));
+            $mol_assert_equal(aimed()?.port.name, 'marker');
+            $mol_assert_equal(pane.Wire().name_text('in:Map.marker'), 'marker? · Shift — двусторонний');
+            pane.node_move(pointer(into.x, into.y, { shiftKey: true }));
+            $mol_assert_equal(aimed(), undefined);
+            $mol_assert_equal(pane.Wire().name_text('in:Map.marker'), 'marker?');
+            pane.node_release(pointer(into.x, into.y, { buttons: 0, shiftKey: true }));
+        },
+        'a port that cannot go both ways never offers the shift'($) {
+            const { pane } = wired_make($);
+            pane.sizes({ [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) });
+            pane.picked(['Map']);
+            const aimed = () => pane.wire_dots().find(dot => dot.hint);
+            const signed = pane.port_point('Map', 'zoom', 'out');
+            pane.node_press(pointer(signed[0], signed[1]));
+            pane.node_move(pointer(50, 20));
+            const plain = pane.wire_dots().find(dot => dot.port.name === 'result');
+            pane.node_move(pointer(plain.x, plain.y));
+            $mol_assert_equal(aimed(), undefined);
+            pane.node_release(pointer(900, 700, { buttons: 0 }));
+            pane.picked(['Calc']);
+            const plain_out = pane.port_point('Calc', 'result', 'out');
+            pane.node_press(pointer(plain_out[0], plain_out[1]));
+            pane.node_move(pointer(320, 20));
+            const target = pane.wire_dots().find(dot => dot.port.name === 'zoom');
+            pane.node_move(pointer(target.x, target.y));
+            $mol_assert_equal(target.port.next, true);
+            $mol_assert_equal(aimed(), undefined);
+            pane.node_release(pointer(900, 700, { buttons: 0 }));
         },
         'a wire is drawn from the last known box when one end is no longer reported'($) {
             const { pane, node, answer } = wired_make($);

@@ -25492,6 +25492,7 @@ var $;
 var $;
 (function ($) {
     $.$bog_vmap_app_wire_sign = '⇄';
+    $.$bog_vmap_app_wire_hint = 'Shift — двусторонний';
     $.$bog_vmap_app_wire_row = 14;
     $.$bog_vmap_app_wire_gap = 12;
     $.$bog_vmap_app_wire_radius = 5;
@@ -25531,6 +25532,11 @@ var $;
         return [line.bidi ? $.$bog_vmap_app_wire_sign : '', line.label].filter(Boolean).join(' ');
     }
     $.$bog_vmap_app_wire_label = $bog_vmap_app_wire_label;
+    function $bog_vmap_app_wire_name(dot) {
+        const name = dot.port.name + (dot.port.next ? '?' : '');
+        return dot.hint ? `${name} · ${dot.hint}` : name;
+    }
+    $.$bog_vmap_app_wire_name = $bog_vmap_app_wire_name;
     function $bog_vmap_app_wire_port_point(box, side, index) {
         const x = side === 'in'
             ? box.left - $.$bog_vmap_app_wire_gap
@@ -25675,7 +25681,7 @@ var $;
             }
             name_text(key) {
                 const dot = this.dot_of(key);
-                return dot ? dot.port.name + (dot.port.next ? '?' : '') : '';
+                return dot ? $bog_vmap_app_wire_name(dot) : '';
             }
         }
         __decorate([
@@ -28171,6 +28177,16 @@ var $;
             wire_bidi() {
                 return this.wire_shift() && this.wire_source_next();
             }
+            wire_hinted(dots) {
+                if (this.wire_shift())
+                    return dots;
+                if (!this.wire_source_next())
+                    return dots;
+                const aimed = $bog_vmap_app_wire_dot_at(dots, this.wire_point());
+                if (!aimed || !aimed.lit || !aimed.port.next)
+                    return dots;
+                return dots.map(dot => dot === aimed ? { ...dot, hint: $bog_vmap_app_wire_hint } : dot);
+            }
             part_dots(name) {
                 const written = new Set(this.part_overs(name));
                 return this.part_ports(name).filter(port => port.own || written.has(port.name));
@@ -28234,6 +28250,7 @@ var $;
                     const ports = this.part_dots(node);
                     const mark = (port, x, y) => dots.push({
                         node, port, side, x, y,
+                        hint: '',
                         lit: lit(port),
                         linked: side === 'in' && linked.has(`${node}.${port.name}`),
                     });
@@ -28258,7 +28275,7 @@ var $;
                             continue;
                         add(name, 'in', port => $bog_vmap_app_wire_takes(drag.kind, port, this.wire_bidi()));
                     }
-                    return dots;
+                    return this.wire_hinted(dots);
                 }
                 const shown = [this.primary(), this.hovered()].filter(Boolean);
                 for (const name of new Set(shown)) {

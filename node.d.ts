@@ -43191,6 +43191,7 @@ declare namespace $ {
         readonly y: number;
         readonly lit: boolean;
         readonly linked: boolean;
+        readonly hint: string;
     };
     type $bog_vmap_app_wire_line = {
         readonly key: string;
@@ -43201,6 +43202,7 @@ declare namespace $ {
         readonly bidi: boolean;
     };
     const $bog_vmap_app_wire_sign = "\u21C4";
+    const $bog_vmap_app_wire_hint = "Shift \u2014 \u0434\u0432\u0443\u0441\u0442\u043E\u0440\u043E\u043D\u043D\u0438\u0439";
     const $bog_vmap_app_wire_row = 14;
     const $bog_vmap_app_wire_gap = 12;
     const $bog_vmap_app_wire_radius = 5;
@@ -43211,6 +43213,13 @@ declare namespace $ {
     function $bog_vmap_app_wire_label(line: {
         readonly label: string;
         readonly bidi: boolean;
+    }): string;
+    function $bog_vmap_app_wire_name(dot: {
+        readonly port: {
+            readonly name: string;
+            readonly next: boolean;
+        };
+        readonly hint: string;
     }): string;
     function $bog_vmap_app_wire_port_point(box: $bog_vmap_app_wire_box, side: $bog_vmap_app_wire_side, index: number): readonly [number, number];
     function $bog_vmap_app_wire_side_point(box: $bog_vmap_app_wire_box, side: $bog_vmap_app_wire_side): readonly [number, number];
@@ -44341,6 +44350,7 @@ declare namespace $.$$ {
         wire_shift(next?: boolean): boolean;
         wire_source_next(): boolean;
         wire_bidi(): boolean;
+        wire_hinted(dots: readonly $bog_vmap_app_wire_dot[]): readonly $bog_vmap_app_wire_dot[];
         part_dots(name: string): readonly $bog_vmap_app_wire_port[];
         wire_over(): string | null;
         part_spread(name: string): boolean;
