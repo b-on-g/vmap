@@ -15006,6 +15006,13 @@ var $;
             $mol_assert_ok(tools.contains(view.Add().dom_node()));
             $mol_assert_ok(dom.querySelector('[mol_page_body]').contains(view.List().dom_node()));
         },
+        'the add button is a plus with its name in the hint, like the pages of a design tool'($) {
+            const { view } = scenes($);
+            const add = view.Add().dom_tree();
+            $mol_assert_equal(add.textContent, '');
+            $mol_assert_ok(add.contains(view.Add_icon().dom_node()));
+            $mol_assert_ok(add.getAttribute('title').startsWith('Новая сцена'));
+        },
     });
 })($ || ($ = {}));
 
@@ -17771,42 +17778,60 @@ var $;
             stage.click(stage.scene_row('Сцена 1'));
             $mol_assert_equal($.$mol_state_arg.value('doc'), first);
         },
-        'the canvas page carries the tools, the pane and the notes'($) {
+        'the shell is a head bar over three columns, and the canvas keeps no head of its own'($) {
             const app = $bog_vmap_app.make({ $ });
-            const pages = app.pages();
-            $mol_assert_equal(pages.length, 4);
-            $mol_assert_equal(pages[0], app.Scenes());
-            $mol_assert_equal(pages[1], app.Shelf());
-            $mol_assert_equal(pages[2], app.Canvas());
-            $mol_assert_equal(pages[3], app.Idle());
-            const tools = app.Canvas().tools();
+            const sub = app.sub();
+            $mol_assert_equal(sub.length, 2);
+            $mol_assert_equal(sub[0], app.Head());
+            $mol_assert_equal(sub[1], app.Main());
+            const main = app.main();
+            $mol_assert_equal(main.length, 3);
+            $mol_assert_equal(main[0], app.Left());
+            $mol_assert_equal(main[1], app.Canvas());
+            $mol_assert_equal(main[2], app.Right());
+            const left = app.Left().sub();
+            $mol_assert_equal(left.length, 3);
+            $mol_assert_equal(left[0], app.Scenes());
+            $mol_assert_equal(left[1], app.Left_tabs());
+            $mol_assert_equal(left[2], app.Shelf());
+            const right = app.Right().sub();
+            $mol_assert_equal(right.length, 2);
+            $mol_assert_equal(right[0], app.Right_tabs());
+            $mol_assert_equal(right[1], app.Idle());
+            const head = app.head();
+            $mol_assert_equal(head.length, 4);
+            $mol_assert_equal(head[0], app.Left_check());
+            $mol_assert_equal(head[1], app.Instruments());
+            $mol_assert_equal(head[2], app.Root_name());
+            $mol_assert_equal(head[3], app.Tools());
+            $mol_assert_ok(app.instruments().includes(app.Board()));
+            $mol_assert_ok(app.instruments().includes(app.Delete()));
+            const tools = app.tools();
             for (const tool of [
-                app.Palette_check(),
-                app.Inspect_check(),
-                app.Code_check(),
-                app.History_check(),
-                app.Board(),
-                app.Delete(),
-                app.Root_name(),
-                app.Publish(),
-                app.Download(),
                 app.Zoom_out(),
                 app.Zoom_reset(),
                 app.Zoom_in(),
+                app.History_check(),
+                app.Publish(),
+                app.Download(),
                 app.Lights(),
+                app.Right_check(),
             ])
                 $mol_assert_ok(tools.includes(tool));
             $mol_assert_equal(tools.includes(app.Status()), false);
+            const canvas = app.Canvas().sub();
+            $mol_assert_equal(canvas.length, 2);
+            $mol_assert_equal(canvas[0], app.Canvas().Body());
+            $mol_assert_equal(canvas[1], app.Canvas().Foot());
             $mol_assert_equal(app.Canvas().body()[0], app.Pane());
             $mol_assert_equal(app.Canvas().foot(), [app.Status()]);
             $mol_assert_equal(app.floats().length, 0);
         },
-        'the panel switches carry an icon and a hint instead of a label'($) {
+        'the column switches carry an icon and a hint instead of a label'($) {
             const app = $bog_vmap_app.make({ $ });
             const switches = [
-                [app.Palette_check(), app.Palette_icon()],
-                [app.Inspect_check(), app.Inspect_icon()],
-                [app.Code_check(), app.Code_icon()],
+                [app.Left_check(), app.Left_icon()],
+                [app.Right_check(), app.Right_icon()],
                 [app.History_check(), app.History_icon()],
             ];
             for (const [check, icon] of switches) {
@@ -17815,20 +17840,114 @@ var $;
                 $mol_assert_ok(check.hint().length > 0);
             }
         },
-        'which panels are open outlives the page'($) {
+        'which columns and tabs are open outlives the page'($) {
             const one = $bog_vmap_app.make({ $ });
-            $mol_assert_equal(one.palette_showed(), true);
-            $mol_assert_equal(one.inspect_showed(), true);
-            $mol_assert_equal(one.code_showed(), false);
-            one.palette_showed(false);
-            one.code_showed(true);
+            $mol_assert_equal(one.left_showed(), true);
+            $mol_assert_equal(one.right_showed(), true);
+            $mol_assert_equal(one.left_tab(), 'assets');
+            $mol_assert_equal(one.right_tab(), 'design');
+            one.left_showed(false);
+            one.right_tab('code');
             const two = $bog_vmap_app.make({ $ });
-            $mol_assert_equal(two.palette_showed(), false);
-            $mol_assert_equal(two.inspect_showed(), true);
-            $mol_assert_equal(two.code_showed(), true);
-            $mol_assert_equal(two.pages().includes(two.Shelf()), false);
-            $mol_assert_equal(two.pages().includes(two.Scenes()), false);
-            $mol_assert_equal(two.pages().includes(two.Code()), true);
+            $mol_assert_equal(two.left_showed(), false);
+            $mol_assert_equal(two.right_showed(), true);
+            $mol_assert_equal(two.right_tab(), 'code');
+            $mol_assert_equal(two.main().includes(two.Left()), false);
+            $mol_assert_equal(two.Right().sub()[1], two.Code());
+        },
+        'each tab shows one panel of its column'($) {
+            const app = $bog_vmap_app.make({ $ });
+            const left = () => app.Left().sub()[2];
+            const right = () => app.Right().sub()[1];
+            app.left_tab('layers');
+            $mol_assert_equal(left(), app.Layers());
+            app.left_tab('assets');
+            $mol_assert_equal(left(), app.Shelf());
+            app.right_tab('code');
+            $mol_assert_equal(right(), app.Code());
+            app.right_tab('history');
+            $mol_assert_equal(right(), app.History());
+            app.right_tab('design');
+            $mol_assert_equal(right(), app.Idle());
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            $mol_assert_equal(right(), app.Inspect());
+        },
+        'a click on the open tab keeps it open'($) {
+            const app = $bog_vmap_app.make({ $ });
+            const tabs = app.Right_tabs();
+            tabs.option_checked('code', true);
+            $mol_assert_equal(app.right_tab(), 'code');
+            tabs.option_checked('code', false);
+            $mol_assert_equal(app.right_tab(), 'code');
+            $mol_assert_equal(app.Right().sub()[1], app.Code());
+            const left = app.Left_tabs();
+            left.option_checked('assets', false);
+            $mol_assert_equal(app.left_tab(), 'assets');
+        },
+        'a narrow window starts with the canvas alone, and a column opens over it on demand'($) {
+            $.$mol_window = class extends $mol_window {
+                static size() {
+                    return { width: 400, height: 800 };
+                }
+            };
+            const app = $bog_vmap_app.make({ $ });
+            $mol_assert_equal(app.left_showed(), false);
+            $mol_assert_equal(app.right_showed(), false);
+            $mol_assert_equal(app.main().length, 1);
+            $mol_assert_equal(app.main()[0], app.Canvas());
+            app.left_showed(true);
+            $mol_assert_equal(app.main()[0], app.Left());
+            $mol_assert_equal(app.main()[1], app.Canvas());
+        },
+        'shift and backslash hide both columns and bring them back, but not from a field'($) {
+            const app = $bog_vmap_app.make({ $ });
+            const dom = $.$mol_dom_context;
+            let prevented = 0;
+            const stroke = (target, over = {}) => app.key_press({
+                code: 'Backslash',
+                key: '|',
+                shiftKey: true,
+                metaKey: false,
+                ctrlKey: false,
+                altKey: false,
+                target,
+                preventDefault() { ++prevented; },
+                ...over,
+            });
+            stroke(null);
+            $mol_assert_equal(app.left_showed(), false);
+            $mol_assert_equal(app.right_showed(), false);
+            $mol_assert_equal(app.main().length, 1);
+            $mol_assert_equal(prevented, 1);
+            stroke(null);
+            $mol_assert_equal(app.left_showed(), true);
+            $mol_assert_equal(app.right_showed(), true);
+            app.left_showed(false);
+            stroke(null);
+            $mol_assert_equal(app.left_showed(), false);
+            $mol_assert_equal(app.right_showed(), false);
+            stroke(dom.document.createElement('input'));
+            stroke(null, { metaKey: true });
+            stroke(null, { shiftKey: false });
+            $mol_assert_equal(app.left_showed(), false);
+            $mol_assert_equal(app.right_showed(), false);
+            $mol_assert_equal(prevented, 3);
+        },
+        'the code tab is what the code panel asks for'($) {
+            const app = $bog_vmap_app.make({ $ });
+            $mol_assert_equal(app.code_showed(), false);
+            app.right_showed(false);
+            app.code_showed(true);
+            $mol_assert_equal(app.right_showed(), true);
+            $mol_assert_equal(app.right_tab(), 'code');
+            $mol_assert_equal(app.code_showed(), true);
+            $mol_assert_equal(app.history_showed(), false);
+            app.history_showed(true);
+            $mol_assert_equal(app.right_tab(), 'history');
+            $mol_assert_equal(app.code_showed(), false);
+            app.history_showed(false);
+            $mol_assert_equal(app.right_tab(), 'design');
+            $mol_assert_equal(app.right_showed(), true);
         },
         'an image dropped on the canvas becomes a node addressed at the file'($) {
             const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png';
@@ -18134,7 +18253,8 @@ var $;
                 return [...root.querySelectorAll('[mol_view_error]')].map(el => el.getAttribute('id'));
             },
             button(title) {
-                return found('[role=button]', `button «${title}»`, el => el.textContent?.startsWith(title) ?? false);
+                const named = [...root.querySelectorAll('[role=button]')].find(el => el.textContent?.startsWith(title));
+                return named ?? found('[role=button]', `button «${title}»`, el => el.getAttribute('title')?.startsWith(title) ?? false);
             },
             check(title) {
                 return found('[role=checkbox]', `check «${title}»`, el => el.textContent?.includes(title) ?? false);
@@ -18243,14 +18363,14 @@ var $;
             stage.button('Удалить');
             stage.button('В библиотеку');
             const canvas = stage.pane.dom_node();
-            const tools = stage.root.querySelector('[bog_vmap_app_canvas_tools]');
+            const tools = stage.root.querySelector('[bog_vmap_app_tools]');
             for (const title of ['−', '100%', '+']) {
                 $mol_assert_equal(tools.contains(stage.button(title)), true);
                 $mol_assert_equal(canvas.contains(stage.button(title)), false);
             }
             $mol_assert_equal(canvas.querySelector('[role=button]'), null);
             const text = stage.text();
-            $mol_assert_ok(text.includes('Полка'));
+            $mol_assert_ok(text.includes('Ассеты'));
             $mol_assert_ok(text.includes('Свойства'));
             $mol_assert_ok(text.includes('100%'));
             $mol_assert_ok(text.includes('Выберите узел на холсте'));
@@ -18761,29 +18881,42 @@ var $;
             $mol_assert_ok(keys[0].startsWith('$bog_vmap_app'));
             $mol_assert_equal(stage.kept[keys[0]], 'true');
         },
-        'the shell is a book of pages and the canvas carries its tools in its own head'($) {
+        'the shell is a head bar over three columns and the canvas has no head of its own'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
             const app = stage.app;
-            $mol_assert_ok(stage.root.hasAttribute('mol_book2'));
-            const head = stage.root.querySelector('[bog_vmap_app_canvas_head]');
+            $mol_assert_ok(stage.root.hasAttribute('mol_page'));
+            $mol_assert_equal(stage.root.hasAttribute('mol_book2'), false);
+            const head = stage.root.querySelector('[bog_vmap_app_head]');
             $mol_assert_ok(head.hasAttribute('mol_page_head'));
-            $mol_assert_equal(app.Canvas().title(), 'Холст');
-            const tools = stage.root.querySelector('[bog_vmap_app_canvas_tools]');
-            const inside = (view) => tools.contains(view.dom_node());
-            $mol_assert_ok(inside(app.Palette_check()));
-            $mol_assert_ok(inside(app.Inspect_check()));
-            $mol_assert_ok(inside(app.Code_check()));
-            $mol_assert_ok(inside(app.History_check()));
-            $mol_assert_ok(inside(app.Board()));
-            $mol_assert_ok(inside(app.Delete()));
-            $mol_assert_ok(inside(app.Root_name()));
-            $mol_assert_ok(inside(app.Publish()));
-            $mol_assert_ok(inside(app.Download()));
-            $mol_assert_ok(inside(app.Zoom_out()));
-            $mol_assert_ok(inside(app.Zoom_reset()));
-            $mol_assert_ok(inside(app.Zoom_in()));
-            $mol_assert_ok(inside(app.Lights()));
+            $mol_assert_equal(head.parentElement, stage.root);
+            const inside = (view) => head.contains(view.dom_node());
+            for (const view of [
+                app.Left_check(),
+                app.Board(),
+                app.Delete(),
+                app.Root_name(),
+                app.Zoom_out(),
+                app.Zoom_reset(),
+                app.Zoom_in(),
+                app.History_check(),
+                app.Publish(),
+                app.Download(),
+                app.Lights(),
+                app.Right_check(),
+            ])
+                $mol_assert_ok(inside(view));
             $mol_assert_equal(inside(app.Status()), false);
+            const holds = (parent, kids) => {
+                const nodes = [...parent.dom_node().children];
+                $mol_assert_equal(nodes.length, kids.length);
+                kids.forEach((kid, index) => $mol_assert_ok(nodes[index] === kid.dom_node()));
+            };
+            holds(app.Main(), [app.Left(), app.Canvas(), app.Right()]);
+            holds(app.Left(), [app.Scenes(), app.Left_tabs(), app.Shelf()]);
+            holds(app.Right(), [app.Right_tabs(), app.Idle()]);
+            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_head]'), null);
+            $mol_assert_equal(app.Canvas().dom_node().querySelector('[mol_page_head]'), null);
+            $mol_assert_equal(app.Canvas().title(), 'Холст');
             const foot = stage.root.querySelector('[bog_vmap_app_canvas_foot]');
             $mol_assert_ok(app.Canvas().body().includes(app.Pane()));
             $mol_assert_equal(foot.childElementCount, 1);
@@ -18804,27 +18937,80 @@ var $;
             $mol_assert_like([...stage.pane.camera_shift()], [0, 0]);
             $mol_assert_ok(stage.button('100%'));
         },
-        'each check in the canvas tools adds and removes its page'($) {
+        'the column checks and the tabs put panels on screen and take them off'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
             const app = stage.app;
             const showed = (page) => stage.root.contains(page.dom_node());
             $mol_assert_ok(showed(app.Scenes()));
             $mol_assert_ok(showed(app.Shelf()));
             $mol_assert_ok(showed(app.Idle()));
+            $mol_assert_equal(showed(app.Layers()), false);
             $mol_assert_equal(showed(app.Code()), false);
             $mol_assert_equal(showed(app.History()), false);
-            stage.click(app.Palette_check().dom_node());
-            $mol_assert_equal(showed(app.Scenes()), false);
+            stage.click(stage.check('Слои'));
+            $mol_assert_ok(showed(app.Layers()));
             $mol_assert_equal(showed(app.Shelf()), false);
-            stage.click(app.Inspect_check().dom_node());
-            $mol_assert_equal(showed(app.Idle()), false);
-            stage.click(app.Code_check().dom_node());
+            stage.click(stage.check('Ассеты'));
+            $mol_assert_ok(showed(app.Shelf()));
+            $mol_assert_equal(showed(app.Layers()), false);
+            stage.click(stage.check('Код'));
             $mol_assert_ok(showed(app.Code()));
+            $mol_assert_equal(showed(app.Idle()), false);
+            stage.click(stage.check('Код'));
+            $mol_assert_ok(showed(app.Code()));
+            stage.click(stage.check('Версии'));
+            $mol_assert_ok(showed(app.History()));
+            $mol_assert_equal(showed(app.Code()), false);
+            stage.click(app.History_check().dom_node());
+            $mol_assert_ok(showed(app.Idle()));
+            $mol_assert_equal(showed(app.History()), false);
             stage.click(app.History_check().dom_node());
             $mol_assert_ok(showed(app.History()));
-            stage.click(app.Palette_check().dom_node());
+            stage.click(app.Left_check().dom_node());
+            $mol_assert_equal(showed(app.Scenes()), false);
+            $mol_assert_equal(showed(app.Shelf()), false);
+            stage.click(app.Right_check().dom_node());
+            $mol_assert_equal(showed(app.History()), false);
+            $mol_assert_equal(app.Main().dom_node().childElementCount, 1);
+            $mol_assert_ok(showed(app.Canvas()));
+            stage.click(app.Left_check().dom_node());
             $mol_assert_ok(showed(app.Scenes()));
             $mol_assert_ok(showed(app.Shelf()));
+        },
+        'a panel under a tab keeps its tools, and a title that only repeats the tab is gone'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            const title = (page) => page.dom_node().querySelector('[mol_page_title]');
+            const tools = (page) => page.dom_node().querySelector('[mol_page_tools]');
+            $mol_assert_equal(title(app.Shelf()), null);
+            $mol_assert_ok(tools(app.Shelf()).contains(app.Shelf().Filter().dom_node()));
+            stage.click(stage.check('Версии'));
+            $mol_assert_equal(title(app.History()), null);
+            $mol_assert_ok(tools(app.History()).contains(stage.button('Отменить')));
+            stage.click(stage.check('Код'));
+            $mol_assert_ok(title(app.Code()));
+            stage.click(stage.check('Дизайн'));
+            stage.drop(`${d}flow_calc`, stage.client([200, 150]));
+            $mol_assert_ok(title(app.Inspect()).contains(app.Inspect().Name().dom_node()));
+        },
+        'shift and backslash on the page fold both columns away, and typed into a field it stays a letter'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            const dom = $.$mol_dom_context;
+            const stroke = (target) => {
+                target.dispatchEvent(new dom.KeyboardEvent('keydown', { code: 'Backslash', key: '|', shiftKey: true, bubbles: true }));
+                stage.redraw();
+            };
+            const count = () => app.Main().dom_node().childElementCount;
+            $mol_assert_equal(count(), 3);
+            stroke(dom.document);
+            $mol_assert_equal(count(), 1);
+            $mol_assert_equal(stage.root.contains(app.Shelf().dom_node()), false);
+            stroke(stage.field('Root_name()'));
+            $mol_assert_equal(count(), 1);
+            stroke(dom.document);
+            $mol_assert_equal(count(), 3);
+            $mol_assert_ok(stage.root.contains(app.Shelf().dom_node()));
         },
         'the shelf offers the packs by name, and the current one is marked'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);

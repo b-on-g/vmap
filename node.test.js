@@ -4023,22 +4023,6 @@ var $;
 })($ || ($ = {}));
 
 ;
-"use strict";
-var $;
-(function ($) {
-    /** Plugin is component without its own DOM element, but instead uses the owner DOM element */
-    class $mol_plugin extends $mol_view {
-        dom_node_external(next) {
-            return next ?? $mol_owning_get(this).host.dom_node();
-        }
-        render() {
-            this.dom_node_actual();
-        }
-    }
-    $.$mol_plugin = $mol_plugin;
-})($ || ($ = {}));
-
-;
 	($.$mol_scroll) = class $mol_scroll extends ($.$mol_view) {
 		tabindex(){
 			return -1;
@@ -4363,72 +4347,108 @@ var $;
 })($ || ($ = {}));
 
 ;
-	($.$mol_book2) = class $mol_book2 extends ($.$mol_scroll) {
-		pages_deep(){
+"use strict";
+
+;
+	($.$mol_page) = class $mol_page extends ($.$mol_view) {
+		tabindex(){
+			return -1;
+		}
+		Logo(){
+			return null;
+		}
+		title_content(){
+			return [(this.Logo()), (this.title())];
+		}
+		Title(){
+			const obj = new this.$.$mol_view();
+			(obj.dom_name) = () => ("h1");
+			(obj.sub) = () => ((this.title_content()));
+			return obj;
+		}
+		tools(){
 			return [];
 		}
-		pages(){
-			return (this.pages_deep());
-		}
-		Placeholder(){
+		Tools(){
 			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.tools()));
 			return obj;
 		}
-		placeholders(){
-			return [(this.Placeholder())];
+		head(){
+			return [(this.Title()), (this.Tools())];
 		}
-		menu_title(){
-			return "";
+		Head(){
+			const obj = new this.$.$mol_view();
+			(obj.minimal_height) = () => (64);
+			(obj.dom_name) = () => ("header");
+			(obj.sub) = () => ((this.head()));
+			return obj;
+		}
+		body_scroll_top(next){
+			return (this.Body().scroll_top(next));
+		}
+		body(){
+			return [];
+		}
+		Body_content(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.body()));
+			return obj;
+		}
+		body_content(){
+			return [(this.Body_content())];
+		}
+		Body(){
+			const obj = new this.$.$mol_scroll();
+			(obj.sub) = () => ((this.body_content()));
+			return obj;
+		}
+		foot(){
+			return [];
+		}
+		Foot(){
+			const obj = new this.$.$mol_view();
+			(obj.dom_name) = () => ("footer");
+			(obj.sub) = () => ((this.foot()));
+			return obj;
+		}
+		dom_name(){
+			return "article";
+		}
+		attr(){
+			return {...(super.attr()), "tabIndex": (this.tabindex())};
 		}
 		sub(){
-			return [...(this.pages()), ...(this.placeholders())];
-		}
-		minimal_width(){
-			return 0;
-		}
-		Gap(id){
-			const obj = new this.$.$mol_view();
-			(obj.title) = () => ("");
-			return obj;
+			return [
+				(this.Head()), 
+				(this.Body()), 
+				(this.Foot())
+			];
 		}
 	};
-	($mol_mem(($.$mol_book2.prototype), "Placeholder"));
-	($mol_mem_key(($.$mol_book2.prototype), "Gap"));
+	($mol_mem(($.$mol_page.prototype), "Title"));
+	($mol_mem(($.$mol_page.prototype), "Tools"));
+	($mol_mem(($.$mol_page.prototype), "Head"));
+	($mol_mem(($.$mol_page.prototype), "Body_content"));
+	($mol_mem(($.$mol_page.prototype), "Body"));
+	($mol_mem(($.$mol_page.prototype), "Foot"));
 
 
 ;
 "use strict";
 var $;
 (function ($) {
-    $.$mol_mem_cached = $mol_wire_probe;
+    /** Plugin is component without its own DOM element, but instead uses the owner DOM element */
+    class $mol_plugin extends $mol_view {
+        dom_node_external(next) {
+            return next ?? $mol_owning_get(this).host.dom_node();
+        }
+        render() {
+            this.dom_node_actual();
+        }
+    }
+    $.$mol_plugin = $mol_plugin;
 })($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    /**
-     * Z-index values for layers
-     * https://page.hyoo.ru/#!=xthcpx_wqmiba
-     */
-    $.$mol_layer = $mol_style_prop('mol_layer', [
-        'hover',
-        'focus',
-        'speck',
-        'float',
-        'popup',
-    ]);
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/layer/layer.css", ":root {\n\t--mol_layer_hover: 1;\n\t--mol_layer_focus: 2;\n\t--mol_layer_speck: 3;\n\t--mol_layer_float: 4;\n\t--mol_layer_popup: 5;\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
 
 ;
 "use strict";
@@ -4440,81 +4460,133 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
-        /**
-         * Root component for adaptivity to various screen sizes. Implements booklet UX.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_book2_demo
-         */
-        class $mol_book2 extends $.$mol_book2 {
-            pages_deep() {
-                let result = [];
-                for (const subpage of this.pages()) {
-                    if (subpage instanceof $mol_book2)
-                        result = [...result, ...subpage.pages_deep()];
-                    else
-                        result.push(subpage);
-                }
-                return result;
-            }
-            title() {
-                return this.pages_deep().map(page => {
-                    try {
-                        return page?.title();
-                    }
-                    catch (error) {
-                        $mol_fail_log(error);
-                    }
-                }).reverse().filter(Boolean).join(' | ');
-            }
-            menu_title() {
-                return this.pages_deep()[0]?.title() || this.title();
-            }
-            sub() {
-                const placeholders = this.placeholders();
-                const next = this.pages_deep().filter(Boolean);
-                const prev = $mol_mem_cached(() => this.sub())?.filter(page => !placeholders.includes(page)) ?? [];
-                for (let i = 1; i; ++i) {
-                    const p = prev[prev.length - i];
-                    const n = next[next.length - i];
-                    if (!n)
-                        break;
-                    if (p === n)
-                        continue;
-                    new this.$.$mol_after_tick(() => {
-                        const b = this.dom_node();
-                        const p = n.dom_node();
-                        b.scroll({
-                            left: p.offsetLeft + p.offsetWidth - b.offsetWidth,
-                            behavior: 'smooth',
-                        });
-                        // new this.$.$mol_after_timeout( 1000, ()=> n.bring() )
-                    });
-                    break;
-                }
-                return [...next, ...placeholders];
-            }
-            bring() {
-                const pages = this.pages_deep();
-                if (pages.length)
-                    pages[pages.length - 1].bring();
-                else
-                    super.bring();
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_book2.prototype, "pages_deep", null);
-        __decorate([
-            $mol_mem
-        ], $mol_book2.prototype, "sub", null);
-        $$.$mol_book2 = $mol_book2;
+        const { per, rem } = $mol_style_unit;
+        const { hsla, blur } = $mol_style_func;
+        $mol_style_define($mol_page, {
+            display: 'flex',
+            flex: {
+                basis: 'auto',
+                direction: 'column',
+            },
+            position: 'relative',
+            alignSelf: 'stretch',
+            maxWidth: per(100),
+            maxHeight: per(100),
+            boxSizing: 'border-box',
+            color: $mol_theme.text,
+            // backdropFilter: blur( `3px` ), enforces layering
+            // zIndex: 0 ,
+            ':focus': {
+                outline: 'none',
+            },
+            Head: {
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'flex-end',
+                flex: 'none',
+                position: 'relative',
+                margin: 0,
+                minHeight: rem(4),
+                padding: $mol_gap.block,
+                background: {
+                    color: $mol_theme.card,
+                },
+                border: {
+                    radius: $mol_gap.round,
+                },
+                box: {
+                    shadow: [
+                        [0, `-0.5rem`, `0.5rem`, `-0.5rem`, hsla(0, 0, 0, .25)],
+                        [0, `0.5rem`, `0.5rem`, `-0.5rem`, hsla(0, 0, 0, .25)],
+                    ],
+                },
+                zIndex: 2,
+                '@media': {
+                    'print': {
+                        box: {
+                            shadow: [[0, `1px`, 0, 0, hsla(0, 0, 0, .25)]],
+                        },
+                    },
+                },
+            },
+            Title: {
+                minHeight: rem(2),
+                margin: 0,
+                padding: $mol_gap.text,
+                gap: $mol_gap.text,
+                wordBreak: 'normal',
+                textShadow: '0 0',
+                font: {
+                    size: 'inherit',
+                    weight: 'normal',
+                },
+                flex: {
+                    grow: 1,
+                    shrink: 1,
+                    basis: 'auto',
+                },
+            },
+            Tools: {
+                flex: {
+                    basis: 'auto',
+                    grow: 0,
+                    shrink: 1,
+                },
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'flex-start',
+                flexWrap: 'wrap',
+                '@media': {
+                    'print': {
+                        display: 'none',
+                    },
+                },
+            },
+            Body: {
+                flex: {
+                    grow: 1000,
+                    shrink: 1,
+                    basis: per(100),
+                },
+            },
+            Body_content: {
+                padding: $mol_gap.block,
+                minHeight: 0,
+                minWidth: 0,
+                flex: {
+                    direction: 'column',
+                    shrink: 1,
+                    grow: 1,
+                },
+                justify: {
+                    self: 'stretch',
+                },
+            },
+            Foot: {
+                display: 'flex',
+                justifyContent: 'space-between',
+                flex: 'none',
+                margin: 0,
+                background: {
+                    color: $mol_theme.card,
+                },
+                border: {
+                    radius: $mol_gap.round,
+                },
+                box: {
+                    shadow: [
+                        [0, `-0.5rem`, `0.5rem`, `-0.5rem`, hsla(0, 0, 0, .25)],
+                        [0, `0.5rem`, `0.5rem`, `-0.5rem`, hsla(0, 0, 0, .25)],
+                    ],
+                },
+                zIndex: 1,
+                padding: $mol_gap.block,
+                ':empty': {
+                    display: 'none',
+                },
+            },
+        });
     })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/book2/book2.view.css", "[mol_book2] {\n\tdisplay: flex;\n\tflex-flow: row nowrap;\n\talign-items: stretch;\n\tflex: 1 1 auto;\n\talign-self: stretch;\n\tmargin: 0;\n\t/* box-shadow: 0 0 0 1px var(--mol_theme_line); */\n\t/* transform: translateZ(0); */\n\ttransition: none;\n\tscroll-snap-type: x mandatory;\n\t/* padding: 0 1px;\n\tscroll-padding: 0 1px;\n\tgap: 1px; */\n}\n\n[mol_book2] > * {\n/* \tflex: none; */\n\tscroll-snap-stop: always;\n\tscroll-snap-align: end;\n\tposition: relative;\n\tmin-height: 100%;\n\tmax-height: 100%;\n\tmax-width: 100%;\n\tflex-shrink: 0;\n\tbox-shadow: inset 0 0 0 1px var(--mol_theme_field);\n}\n\n[mol_book2] > *:not(:first-of-type):before,\n[mol_book2] > *:not(:last-of-type)::after {\n\tcontent: '';\n\tposition: absolute;\n\ttop: 1.5rem;\n\twidth: 3px;\n\theight: 1rem;\n\tbackground: linear-gradient(\n\t\tto bottom,\n\t\tvar(--mol_theme_special) 0%,\n\t\tvar(--mol_theme_special) 14%,\n\t\ttransparent 15%,\n\t\ttransparent 42%,\n\t\tvar(--mol_theme_special) 43%,\n\t\tvar(--mol_theme_special) 57%,\n\t\ttransparent 58%,\n\t\ttransparent 85%,\n\t\tvar(--mol_theme_special) 86%,\n\t\tvar(--mol_theme_special) 100%\n\t);\n\topacity: .5;\n\tz-index: var(--mol_layer_speck);\n}\n[mol_book2] > *:not(:first-of-type):before {\n\tleft: -3px;\n}\n[mol_book2] > *:not(:last-of-type)::after {\n\tright: -3px;\n}\n\n:where([mol_book2]) > * {\n\tbackground-color: var(--mol_theme_card);\n\t/* box-shadow: 0 0 0 1px var(--mol_theme_back); */\n}\n\n[mol_book2] > [mol_book2] {\n\tdisplay: contents;\n}\n\n[mol_book2] > *:first-child {\n\tscroll-snap-align: start;\n}\n\n[mol_book2] > [mol_view] {\n\ttransform: none; /* prevent content clipping */\n}\n\n[mol_book2_placeholder] {\n\tflex: 1 1 0;\n\tbackground: none;\n}\n\n[mol_book2_gap] {\n\tbackground: none;\n\tflex-grow: 1;\n\tscroll-snap-align: none;\n\tmargin-inline-end: -1px;\n\tbox-shadow: none;\n}\n\n[mol_book2_gap]::before,\n[mol_book2_gap]::after {\n\tdisplay: none;\n}\n");
 })($ || ($ = {}));
 
 ;
@@ -4862,6 +4934,13 @@ var $;
         grab() { return $mol_wire_sync(this).wait(); }
     }
     $.$mol_lock = $mol_lock;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $.$mol_mem_cached = $mol_wire_probe;
 })($ || ($ = {}));
 
 ;
@@ -5906,9 +5985,9 @@ var $;
 
 
 ;
-	($.$mol_icon_widgets) = class $mol_icon_widgets extends ($.$mol_icon) {
+	($.$mol_icon_dock_left) = class $mol_icon_dock_left extends ($.$mol_icon) {
 		path(){
-			return "M3,3H11V7.34L16.66,1.69L22.31,7.34L16.66,13H21V21H13V13H16.66L11,7.34V11H3V3M3,13H11V21H3V13Z";
+			return "M20 4H4A2 2 0 0 0 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V6A2 2 0 0 0 20 4M20 18H9V6H20Z";
 		}
 	};
 
@@ -5930,6 +6009,30 @@ var $;
 		}
 	};
 
+
+;
+"use strict";
+var $;
+(function ($) {
+    /**
+     * Z-index values for layers
+     * https://page.hyoo.ru/#!=xthcpx_wqmiba
+     */
+    $.$mol_layer = $mol_style_prop('mol_layer', [
+        'hover',
+        'focus',
+        'speck',
+        'float',
+        'popup',
+    ]);
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/layer/layer.css", ":root {\n\t--mol_layer_hover: 1;\n\t--mol_layer_focus: 2;\n\t--mol_layer_speck: 3;\n\t--mol_layer_float: 4;\n\t--mol_layer_popup: 5;\n}\n");
+})($ || ($ = {}));
 
 ;
 "use strict";
@@ -6387,36 +6490,15 @@ var $;
 
 
 ;
-	($.$mol_icon_tune) = class $mol_icon_tune extends ($.$mol_icon) {
-		path(){
-			return "M3,17V19H9V17H3M3,5V7H13V5H3M13,21V19H21V17H13V15H11V21H13M7,9V11H3V13H7V15H9V9H7M21,13V11H11V13H21M15,9H17V7H21V5H17V3H15V9Z";
-		}
-	};
+	($.$mol_bar) = class $mol_bar extends ($.$mol_view) {};
 
 
 ;
 "use strict";
-
-
-;
-	($.$mol_icon_code_tags) = class $mol_icon_code_tags extends ($.$mol_icon) {
-		path(){
-			return "M14.6,16.6L19.2,12L14.6,7.4L16,6L22,12L16,18L14.6,16.6M9.4,16.6L4.8,12L9.4,7.4L8,6L2,12L8,18L9.4,16.6Z";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_icon_history) = class $mol_icon_history extends ($.$mol_icon) {
-		path(){
-			return "M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3";
-		}
-	};
-
+var $;
+(function ($) {
+    $mol_style_attach("mol/bar/bar.view.css", "[mol_bar] {\n\tdisplay: flex;\n\t/* box-shadow: inset 0 0 0 1px var(--mol_theme_line); */\n\tborder-radius: var(--mol_gap_round);\n}\n");
+})($ || ($ = {}));
 
 ;
 "use strict";
@@ -6728,6 +6810,18 @@ var $;
 (function ($) {
     $mol_style_attach("mol/string/string.view.css", "[mol_string] {\n\tbox-sizing: border-box;\n\toutline-offset: 0;\n\tborder: none;\n\tborder-radius: var(--mol_gap_round);\n\twhite-space: pre-line;\n\toverflow: hidden;\n\ttext-overflow: ellipsis;\n\tpadding: var(--mol_gap_text);\n\ttext-align: start;\n\tposition: relative;\n\tfont: inherit;\n\tflex: 1 1 auto;\n\tbackground: transparent;\n\tmin-width: 0;\n\tcolor: inherit;\n\tbackground: var(--mol_theme_field);\n}\n\n[mol_string]:disabled:not(:placeholder-shown) {\n\tbackground-color: transparent;\n\tcolor: var(--mol_theme_text);\n}\n\n[mol_string]:where(:not(:disabled)) {\n\tbox-shadow: inset 0 0 0 1px var(--mol_theme_line);\n}\n\n[mol_string]:where(:not(:disabled)):hover {\n\tbox-shadow: inset 0 0 0 2px var(--mol_theme_line);\n\tz-index: var(--mol_layer_hover);\n}\n\n[mol_string]:focus {\n\toutline: none;\n\tz-index: var(--mol_layer_focus);\n\tcolor: var(--mol_theme_text);\n\tbox-shadow: inset 0 0 0 1px var(--mol_theme_focus);\n}\n\n[mol_string]::placeholder {\n\tcolor: var(--mol_theme_shade);\n}\n\n[mol_string]::-ms-clear {\n\tdisplay: none;\n}\n");
 })($ || ($ = {}));
+
+;
+	($.$mol_icon_history) = class $mol_icon_history extends ($.$mol_icon) {
+		path(){
+			return "M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3";
+		}
+	};
+
+
+;
+"use strict";
+
 
 ;
 "use strict";
@@ -18063,230 +18157,6 @@ var $;
 })($ || ($ = {}));
 
 ;
-	($.$mol_page) = class $mol_page extends ($.$mol_view) {
-		tabindex(){
-			return -1;
-		}
-		Logo(){
-			return null;
-		}
-		title_content(){
-			return [(this.Logo()), (this.title())];
-		}
-		Title(){
-			const obj = new this.$.$mol_view();
-			(obj.dom_name) = () => ("h1");
-			(obj.sub) = () => ((this.title_content()));
-			return obj;
-		}
-		tools(){
-			return [];
-		}
-		Tools(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ((this.tools()));
-			return obj;
-		}
-		head(){
-			return [(this.Title()), (this.Tools())];
-		}
-		Head(){
-			const obj = new this.$.$mol_view();
-			(obj.minimal_height) = () => (64);
-			(obj.dom_name) = () => ("header");
-			(obj.sub) = () => ((this.head()));
-			return obj;
-		}
-		body_scroll_top(next){
-			return (this.Body().scroll_top(next));
-		}
-		body(){
-			return [];
-		}
-		Body_content(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ((this.body()));
-			return obj;
-		}
-		body_content(){
-			return [(this.Body_content())];
-		}
-		Body(){
-			const obj = new this.$.$mol_scroll();
-			(obj.sub) = () => ((this.body_content()));
-			return obj;
-		}
-		foot(){
-			return [];
-		}
-		Foot(){
-			const obj = new this.$.$mol_view();
-			(obj.dom_name) = () => ("footer");
-			(obj.sub) = () => ((this.foot()));
-			return obj;
-		}
-		dom_name(){
-			return "article";
-		}
-		attr(){
-			return {...(super.attr()), "tabIndex": (this.tabindex())};
-		}
-		sub(){
-			return [
-				(this.Head()), 
-				(this.Body()), 
-				(this.Foot())
-			];
-		}
-	};
-	($mol_mem(($.$mol_page.prototype), "Title"));
-	($mol_mem(($.$mol_page.prototype), "Tools"));
-	($mol_mem(($.$mol_page.prototype), "Head"));
-	($mol_mem(($.$mol_page.prototype), "Body_content"));
-	($mol_mem(($.$mol_page.prototype), "Body"));
-	($mol_mem(($.$mol_page.prototype), "Foot"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        const { per, rem } = $mol_style_unit;
-        const { hsla, blur } = $mol_style_func;
-        $mol_style_define($mol_page, {
-            display: 'flex',
-            flex: {
-                basis: 'auto',
-                direction: 'column',
-            },
-            position: 'relative',
-            alignSelf: 'stretch',
-            maxWidth: per(100),
-            maxHeight: per(100),
-            boxSizing: 'border-box',
-            color: $mol_theme.text,
-            // backdropFilter: blur( `3px` ), enforces layering
-            // zIndex: 0 ,
-            ':focus': {
-                outline: 'none',
-            },
-            Head: {
-                display: 'flex',
-                flexWrap: 'wrap',
-                justifyContent: 'flex-end',
-                flex: 'none',
-                position: 'relative',
-                margin: 0,
-                minHeight: rem(4),
-                padding: $mol_gap.block,
-                background: {
-                    color: $mol_theme.card,
-                },
-                border: {
-                    radius: $mol_gap.round,
-                },
-                box: {
-                    shadow: [
-                        [0, `-0.5rem`, `0.5rem`, `-0.5rem`, hsla(0, 0, 0, .25)],
-                        [0, `0.5rem`, `0.5rem`, `-0.5rem`, hsla(0, 0, 0, .25)],
-                    ],
-                },
-                zIndex: 2,
-                '@media': {
-                    'print': {
-                        box: {
-                            shadow: [[0, `1px`, 0, 0, hsla(0, 0, 0, .25)]],
-                        },
-                    },
-                },
-            },
-            Title: {
-                minHeight: rem(2),
-                margin: 0,
-                padding: $mol_gap.text,
-                gap: $mol_gap.text,
-                wordBreak: 'normal',
-                textShadow: '0 0',
-                font: {
-                    size: 'inherit',
-                    weight: 'normal',
-                },
-                flex: {
-                    grow: 1,
-                    shrink: 1,
-                    basis: 'auto',
-                },
-            },
-            Tools: {
-                flex: {
-                    basis: 'auto',
-                    grow: 0,
-                    shrink: 1,
-                },
-                display: 'flex',
-                justifyContent: 'flex-end',
-                alignItems: 'flex-start',
-                flexWrap: 'wrap',
-                '@media': {
-                    'print': {
-                        display: 'none',
-                    },
-                },
-            },
-            Body: {
-                flex: {
-                    grow: 1000,
-                    shrink: 1,
-                    basis: per(100),
-                },
-            },
-            Body_content: {
-                padding: $mol_gap.block,
-                minHeight: 0,
-                minWidth: 0,
-                flex: {
-                    direction: 'column',
-                    shrink: 1,
-                    grow: 1,
-                },
-                justify: {
-                    self: 'stretch',
-                },
-            },
-            Foot: {
-                display: 'flex',
-                justifyContent: 'space-between',
-                flex: 'none',
-                margin: 0,
-                background: {
-                    color: $mol_theme.card,
-                },
-                border: {
-                    radius: $mol_gap.round,
-                },
-                box: {
-                    shadow: [
-                        [0, `-0.5rem`, `0.5rem`, `-0.5rem`, hsla(0, 0, 0, .25)],
-                        [0, `0.5rem`, `0.5rem`, `-0.5rem`, hsla(0, 0, 0, .25)],
-                    ],
-                },
-                zIndex: 1,
-                padding: $mol_gap.block,
-                ':empty': {
-                    display: 'none',
-                },
-            },
-        });
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
 	($.$mol_status) = class $mol_status extends ($.$mol_view) {
 		message(){
 			return "";
@@ -21664,6 +21534,18 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$mol_icon_dock_right) = class $mol_icon_dock_right extends ($.$mol_icon) {
+		path(){
+			return "M20 4H4A2 2 0 0 0 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V6A2 2 0 0 0 20 4M15 18H4V6H15Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
 "use strict";
 var $;
 (function ($) {
@@ -21672,21 +21554,6 @@ var $;
     }
     $.$mol_tree2_js_is_number = $mol_tree2_js_is_number;
 })($ || ($ = {}));
-
-;
-	($.$mol_bar) = class $mol_bar extends ($.$mol_view) {};
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/bar/bar.view.css", "[mol_bar] {\n\tdisplay: flex;\n\t/* box-shadow: inset 0 0 0 1px var(--mol_theme_line); */\n\tborder-radius: var(--mol_gap_round);\n}\n");
-})($ || ($ = {}));
-
-;
-"use strict";
-
 
 ;
 	($.$mol_ghost) = class $mol_ghost extends ($.$mol_view) {
@@ -24664,6 +24531,127 @@ var $;
             },
         });
     })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$mol_book2) = class $mol_book2 extends ($.$mol_scroll) {
+		pages_deep(){
+			return [];
+		}
+		pages(){
+			return (this.pages_deep());
+		}
+		Placeholder(){
+			const obj = new this.$.$mol_view();
+			return obj;
+		}
+		placeholders(){
+			return [(this.Placeholder())];
+		}
+		menu_title(){
+			return "";
+		}
+		sub(){
+			return [...(this.pages()), ...(this.placeholders())];
+		}
+		minimal_width(){
+			return 0;
+		}
+		Gap(id){
+			const obj = new this.$.$mol_view();
+			(obj.title) = () => ("");
+			return obj;
+		}
+	};
+	($mol_mem(($.$mol_book2.prototype), "Placeholder"));
+	($mol_mem_key(($.$mol_book2.prototype), "Gap"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Root component for adaptivity to various screen sizes. Implements booklet UX.
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_book2_demo
+         */
+        class $mol_book2 extends $.$mol_book2 {
+            pages_deep() {
+                let result = [];
+                for (const subpage of this.pages()) {
+                    if (subpage instanceof $mol_book2)
+                        result = [...result, ...subpage.pages_deep()];
+                    else
+                        result.push(subpage);
+                }
+                return result;
+            }
+            title() {
+                return this.pages_deep().map(page => {
+                    try {
+                        return page?.title();
+                    }
+                    catch (error) {
+                        $mol_fail_log(error);
+                    }
+                }).reverse().filter(Boolean).join(' | ');
+            }
+            menu_title() {
+                return this.pages_deep()[0]?.title() || this.title();
+            }
+            sub() {
+                const placeholders = this.placeholders();
+                const next = this.pages_deep().filter(Boolean);
+                const prev = $mol_mem_cached(() => this.sub())?.filter(page => !placeholders.includes(page)) ?? [];
+                for (let i = 1; i; ++i) {
+                    const p = prev[prev.length - i];
+                    const n = next[next.length - i];
+                    if (!n)
+                        break;
+                    if (p === n)
+                        continue;
+                    new this.$.$mol_after_tick(() => {
+                        const b = this.dom_node();
+                        const p = n.dom_node();
+                        b.scroll({
+                            left: p.offsetLeft + p.offsetWidth - b.offsetWidth,
+                            behavior: 'smooth',
+                        });
+                        // new this.$.$mol_after_timeout( 1000, ()=> n.bring() )
+                    });
+                    break;
+                }
+                return [...next, ...placeholders];
+            }
+            bring() {
+                const pages = this.pages_deep();
+                if (pages.length)
+                    pages[pages.length - 1].bring();
+                else
+                    super.bring();
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_book2.prototype, "pages_deep", null);
+        __decorate([
+            $mol_mem
+        ], $mol_book2.prototype, "sub", null);
+        $$.$mol_book2 = $mol_book2;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/book2/book2.view.css", "[mol_book2] {\n\tdisplay: flex;\n\tflex-flow: row nowrap;\n\talign-items: stretch;\n\tflex: 1 1 auto;\n\talign-self: stretch;\n\tmargin: 0;\n\t/* box-shadow: 0 0 0 1px var(--mol_theme_line); */\n\t/* transform: translateZ(0); */\n\ttransition: none;\n\tscroll-snap-type: x mandatory;\n\t/* padding: 0 1px;\n\tscroll-padding: 0 1px;\n\tgap: 1px; */\n}\n\n[mol_book2] > * {\n/* \tflex: none; */\n\tscroll-snap-stop: always;\n\tscroll-snap-align: end;\n\tposition: relative;\n\tmin-height: 100%;\n\tmax-height: 100%;\n\tmax-width: 100%;\n\tflex-shrink: 0;\n\tbox-shadow: inset 0 0 0 1px var(--mol_theme_field);\n}\n\n[mol_book2] > *:not(:first-of-type):before,\n[mol_book2] > *:not(:last-of-type)::after {\n\tcontent: '';\n\tposition: absolute;\n\ttop: 1.5rem;\n\twidth: 3px;\n\theight: 1rem;\n\tbackground: linear-gradient(\n\t\tto bottom,\n\t\tvar(--mol_theme_special) 0%,\n\t\tvar(--mol_theme_special) 14%,\n\t\ttransparent 15%,\n\t\ttransparent 42%,\n\t\tvar(--mol_theme_special) 43%,\n\t\tvar(--mol_theme_special) 57%,\n\t\ttransparent 58%,\n\t\ttransparent 85%,\n\t\tvar(--mol_theme_special) 86%,\n\t\tvar(--mol_theme_special) 100%\n\t);\n\topacity: .5;\n\tz-index: var(--mol_layer_speck);\n}\n[mol_book2] > *:not(:first-of-type):before {\n\tleft: -3px;\n}\n[mol_book2] > *:not(:last-of-type)::after {\n\tright: -3px;\n}\n\n:where([mol_book2]) > * {\n\tbackground-color: var(--mol_theme_card);\n\t/* box-shadow: 0 0 0 1px var(--mol_theme_back); */\n}\n\n[mol_book2] > [mol_book2] {\n\tdisplay: contents;\n}\n\n[mol_book2] > *:first-child {\n\tscroll-snap-align: start;\n}\n\n[mol_book2] > [mol_view] {\n\ttransform: none; /* prevent content clipping */\n}\n\n[mol_book2_placeholder] {\n\tflex: 1 1 0;\n\tbackground: none;\n}\n\n[mol_book2_gap] {\n\tbackground: none;\n\tflex-grow: 1;\n\tscroll-snap-align: none;\n\tmargin-inline-end: -1px;\n\tbox-shadow: none;\n}\n\n[mol_book2_gap]::before,\n[mol_book2_gap]::after {\n\tdisplay: none;\n}\n");
 })($ || ($ = {}));
 
 ;
@@ -29737,6 +29725,18 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$mol_icon_plus) = class $mol_icon_plus extends ($.$mol_icon) {
+		path(){
+			return "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
 	($.$bog_vmap_app_palette_item) = class $bog_vmap_app_palette_item extends ($.$mol_button_minor) {
 		current(){
 			return false;
@@ -30101,11 +30101,15 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		Add_icon(){
+			const obj = new this.$.$mol_icon_plus();
+			return obj;
+		}
 		Add(){
 			const obj = new this.$.$mol_button_minor();
-			(obj.title) = () => ("Новая сцена");
-			(obj.hint) = () => ("Завести новый документ. Он станет текущим");
+			(obj.hint) = () => ("Новая сцена: завести документ, он станет текущим");
 			(obj.click) = (next) => ((this.add(next)));
+			(obj.sub) = () => ([(this.Add_icon())]);
 			return obj;
 		}
 		scene_rows(){
@@ -30161,6 +30165,7 @@ var $;
 	};
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Name"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "add"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Add_icon"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Add"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "List"));
 	($mol_mem_key(($.$bog_vmap_app_scenes.prototype), "scene_click"));
@@ -30230,6 +30235,25 @@ var $;
             $mol_action
         ], $bog_vmap_app_scenes.prototype, "scene_click", null);
         $$.$bog_vmap_app_scenes = $bog_vmap_app_scenes;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        $mol_style_define($bog_vmap_app_scenes, {
+            Tools: {
+                minWidth: 0,
+                flex: { grow: 1, shrink: 1, basis: '6rem' },
+            },
+            Name: {
+                minWidth: 0,
+                flex: { grow: 1, shrink: 1, basis: 0 },
+            },
+        });
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
 
@@ -31745,7 +31769,7 @@ var $;
 })($ || ($ = {}));
 
 ;
-	($.$bog_vmap_app) = class $bog_vmap_app extends ($.$mol_book2) {
+	($.$bog_vmap_app) = class $bog_vmap_app extends ($.$mol_page) {
 		theme_name(){
 			return "$mol_theme_dark";
 		}
@@ -31754,51 +31778,26 @@ var $;
 			(obj.theme) = () => ((this.theme_name()));
 			return obj;
 		}
+		main(){
+			return [];
+		}
+		Main(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.main()));
+			return obj;
+		}
 		floats(){
 			return [];
 		}
-		Palette_icon(){
-			const obj = new this.$.$mol_icon_widgets();
+		Left_icon(){
+			const obj = new this.$.$mol_icon_dock_left();
 			return obj;
 		}
-		Palette_check(){
+		Left_check(){
 			const obj = new this.$.$mol_check_icon();
-			(obj.Icon) = () => ((this.Palette_icon()));
-			(obj.hint) = () => ("Полка: компоненты, которые можно положить на холст");
-			(obj.checked) = (next) => ((this.palette_showed(next)));
-			return obj;
-		}
-		Inspect_icon(){
-			const obj = new this.$.$mol_icon_tune();
-			return obj;
-		}
-		Inspect_check(){
-			const obj = new this.$.$mol_check_icon();
-			(obj.Icon) = () => ((this.Inspect_icon()));
-			(obj.hint) = () => ("Свойства выбранного узла");
-			(obj.checked) = (next) => ((this.inspect_showed(next)));
-			return obj;
-		}
-		Code_icon(){
-			const obj = new this.$.$mol_icon_code_tags();
-			return obj;
-		}
-		Code_check(){
-			const obj = new this.$.$mol_check_icon();
-			(obj.Icon) = () => ((this.Code_icon()));
-			(obj.hint) = () => ("Код: три текста выбранного узла — view.tree, JS и CSS");
-			(obj.checked) = (next) => ((this.code_showed(next)));
-			return obj;
-		}
-		History_icon(){
-			const obj = new this.$.$mol_icon_history();
-			return obj;
-		}
-		History_check(){
-			const obj = new this.$.$mol_check_icon();
-			(obj.Icon) = () => ((this.History_icon()));
-			(obj.hint) = () => ("Версии: шаги этой сессии и снимки в ленде");
-			(obj.checked) = (next) => ((this.history_showed(next)));
+			(obj.Icon) = () => ((this.Left_icon()));
+			(obj.hint) = () => ("Левая колонка: сцены, слои и ассеты. Shift+\\ прячет и возвращает обе колонки");
+			(obj.checked) = (next) => ((this.left_showed(next)));
 			return obj;
 		}
 		board_add(next){
@@ -31830,6 +31829,14 @@ var $;
 			(obj.click) = (next) => ((this.node_delete(next)));
 			return obj;
 		}
+		instruments(){
+			return [(this.Board()), (this.Delete())];
+		}
+		Instruments(){
+			const obj = new this.$.$mol_bar();
+			(obj.sub) = () => ((this.instruments()));
+			return obj;
+		}
 		root_draft(next){
 			if(next !== undefined) return next;
 			return "";
@@ -31844,6 +31851,53 @@ var $;
 			(obj.value) = (next) => ((this.root_draft(next)));
 			(obj.submit) = (next) => ((this.root_submit(next)));
 			(obj.event) = () => ({...(this.$.$mol_string.prototype.event.call(obj)), "blur": (next) => (this.root_submit(next))});
+			return obj;
+		}
+		zoom_out(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Zoom_out(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("−");
+			(obj.hint) = () => ("Отдалить");
+			(obj.click) = (next) => ((this.zoom_out(next)));
+			return obj;
+		}
+		zoom_title(){
+			return "";
+		}
+		camera_reset(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Zoom_reset(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ((this.zoom_title()));
+			(obj.hint) = () => ("Сбросить вид");
+			(obj.click) = (next) => ((this.camera_reset(next)));
+			return obj;
+		}
+		zoom_in(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Zoom_in(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("+");
+			(obj.hint) = () => ("Приблизить");
+			(obj.click) = (next) => ((this.zoom_in(next)));
+			return obj;
+		}
+		History_icon(){
+			const obj = new this.$.$mol_icon_history();
+			return obj;
+		}
+		History_check(){
+			const obj = new this.$.$mol_check_icon();
+			(obj.Icon) = () => ((this.History_icon()));
+			(obj.hint) = () => ("Версии: шаги этой сессии и снимки в ленде");
+			(obj.checked) = (next) => ((this.history_showed(next)));
 			return obj;
 		}
 		publish_part(){
@@ -31891,46 +31945,49 @@ var $;
 			(obj.file_name) = () => ((this.export_file()));
 			return obj;
 		}
-		zoom_out(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		Zoom_out(){
-			const obj = new this.$.$mol_button_minor();
-			(obj.title) = () => ("−");
-			(obj.hint) = () => ("Отдалить");
-			(obj.click) = (next) => ((this.zoom_out(next)));
-			return obj;
-		}
-		zoom_title(){
-			return "";
-		}
-		camera_reset(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		Zoom_reset(){
-			const obj = new this.$.$mol_button_minor();
-			(obj.title) = () => ((this.zoom_title()));
-			(obj.hint) = () => ("Сбросить вид");
-			(obj.click) = (next) => ((this.camera_reset(next)));
-			return obj;
-		}
-		zoom_in(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		Zoom_in(){
-			const obj = new this.$.$mol_button_minor();
-			(obj.title) = () => ("+");
-			(obj.hint) = () => ("Приблизить");
-			(obj.click) = (next) => ((this.zoom_in(next)));
-			return obj;
-		}
 		Lights(){
 			const obj = new this.$.$mol_lights_toggle();
 			(obj.lights) = (next) => ((this.lights(next)));
 			return obj;
+		}
+		Right_icon(){
+			const obj = new this.$.$mol_icon_dock_right();
+			return obj;
+		}
+		Right_check(){
+			const obj = new this.$.$mol_check_icon();
+			(obj.Icon) = () => ((this.Right_icon()));
+			(obj.hint) = () => ("Правая колонка: дизайн, код и версии. Shift+\\ прячет и возвращает обе колонки");
+			(obj.checked) = (next) => ((this.right_showed(next)));
+			return obj;
+		}
+		Left_tabs(){
+			const obj = new this.$.$mol_switch();
+			(obj.value) = (next) => ((this.left_tab(next)));
+			(obj.options) = () => ({"layers": "Слои", "assets": "Ассеты"});
+			return obj;
+		}
+		left_panel(){
+			return null;
+		}
+		Right_tabs(){
+			const obj = new this.$.$mol_switch();
+			(obj.value) = (next) => ((this.right_tab(next)));
+			(obj.options) = () => ({
+				"design": "Дизайн", 
+				"code": "Код", 
+				"history": "Версии"
+			});
+			return obj;
+		}
+		right_panel(){
+			return null;
+		}
+		Canvas_body(){
+			return (this.Canvas().Body());
+		}
+		Canvas_foot(){
+			return (this.Canvas().Foot());
 		}
 		pack_script(){
 			return "";
@@ -32126,13 +32183,21 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
-		palette_showed(next){
+		left_showed(next){
 			if(next !== undefined) return next;
 			return true;
 		}
-		inspect_showed(next){
+		right_showed(next){
 			if(next !== undefined) return next;
 			return true;
+		}
+		left_tab(next){
+			if(next !== undefined) return next;
+			return "assets";
+		}
+		right_tab(next){
+			if(next !== undefined) return next;
+			return "design";
 		}
 		code_showed(next){
 			if(next !== undefined) return next;
@@ -32178,30 +32243,57 @@ var $;
 			const obj = new this.$.$bog_vmap_app_store();
 			return obj;
 		}
+		title(){
+			return "vmap";
+		}
 		plugins(){
 			return [(this.Theme())];
 		}
-		placeholders(){
-			return (this.floats());
+		sub(){
+			return [
+				(this.Head()), 
+				(this.Main()), 
+				...(this.floats())
+			];
+		}
+		head(){
+			return [
+				(this.Left_check()), 
+				(this.Instruments()), 
+				(this.Root_name()), 
+				(this.Tools())
+			];
+		}
+		tools(){
+			return [
+				(this.Zoom_out()), 
+				(this.Zoom_reset()), 
+				(this.Zoom_in()), 
+				(this.History_check()), 
+				(this.Publish()), 
+				(this.Download()), 
+				(this.Lights()), 
+				(this.Right_check())
+			];
+		}
+		Left(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([
+				(this.Scenes()), 
+				(this.Left_tabs()), 
+				(this.left_panel())
+			]);
+			return obj;
+		}
+		Right(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.Right_tabs()), (this.right_panel())]);
+			return obj;
 		}
 		Canvas(){
 			const obj = new this.$.$mol_page();
 			(obj.title) = () => ("Холст");
-			(obj.tools) = () => ([
-				(this.Palette_check()), 
-				(this.Inspect_check()), 
-				(this.Code_check()), 
-				(this.History_check()), 
-				(this.Board()), 
-				(this.Delete()), 
-				(this.Root_name()), 
-				(this.Publish()), 
-				(this.Download()), 
-				(this.Zoom_out()), 
-				(this.Zoom_reset()), 
-				(this.Zoom_in()), 
-				(this.Lights())
-			]);
+			(obj.sub) = () => ([(this.Canvas_body()), (this.Canvas_foot())]);
 			(obj.body) = () => ([(this.Pane())]);
 			(obj.foot) = () => ((this.notes()));
 			return obj;
@@ -32211,8 +32303,14 @@ var $;
 			(obj.store) = () => ((this.store()));
 			return obj;
 		}
+		Layers(){
+			const obj = new this.$.$mol_page();
+			(obj.title) = () => ("Слои");
+			return obj;
+		}
 		Shelf(){
 			const obj = new this.$.$bog_vmap_app_shelf();
+			(obj.Title) = () => (null);
 			(obj.links) = (next) => ((this.links(next)));
 			(obj.pack_link) = () => ((this.pack_link()));
 			(obj.land_classes) = () => ((this.lib_classes()));
@@ -32250,6 +32348,7 @@ var $;
 		}
 		History(){
 			const obj = new this.$.$bog_vmap_app_history();
+			(obj.Title) = () => (null);
 			(obj.store) = () => ((this.store()));
 			(obj.state) = (next) => ((this.history_state(next)));
 			return obj;
@@ -32320,32 +32419,34 @@ var $;
 		}
 	};
 	($mol_mem(($.$bog_vmap_app.prototype), "Theme"));
-	($mol_mem(($.$bog_vmap_app.prototype), "Palette_icon"));
-	($mol_mem(($.$bog_vmap_app.prototype), "Palette_check"));
-	($mol_mem(($.$bog_vmap_app.prototype), "Inspect_icon"));
-	($mol_mem(($.$bog_vmap_app.prototype), "Inspect_check"));
-	($mol_mem(($.$bog_vmap_app.prototype), "Code_icon"));
-	($mol_mem(($.$bog_vmap_app.prototype), "Code_check"));
-	($mol_mem(($.$bog_vmap_app.prototype), "History_icon"));
-	($mol_mem(($.$bog_vmap_app.prototype), "History_check"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Main"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Left_icon"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Left_check"));
 	($mol_mem(($.$bog_vmap_app.prototype), "board_add"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Board"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_delete"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Delete"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Instruments"));
 	($mol_mem(($.$bog_vmap_app.prototype), "root_draft"));
 	($mol_mem(($.$bog_vmap_app.prototype), "root_submit"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Root_name"));
-	($mol_mem(($.$bog_vmap_app.prototype), "node_source"));
-	($mol_mem(($.$bog_vmap_app.prototype), "Publish"));
-	($mol_mem(($.$bog_vmap_app.prototype), "export_blob"));
-	($mol_mem(($.$bog_vmap_app.prototype), "Download"));
 	($mol_mem(($.$bog_vmap_app.prototype), "zoom_out"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Zoom_out"));
 	($mol_mem(($.$bog_vmap_app.prototype), "camera_reset"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Zoom_reset"));
 	($mol_mem(($.$bog_vmap_app.prototype), "zoom_in"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Zoom_in"));
+	($mol_mem(($.$bog_vmap_app.prototype), "History_icon"));
+	($mol_mem(($.$bog_vmap_app.prototype), "History_check"));
+	($mol_mem(($.$bog_vmap_app.prototype), "node_source"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Publish"));
+	($mol_mem(($.$bog_vmap_app.prototype), "export_blob"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Download"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Lights"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Right_icon"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Right_check"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Left_tabs"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Right_tabs"));
 	($mol_mem(($.$bog_vmap_app.prototype), "link_add"));
 	($mol_mem(($.$bog_vmap_app.prototype), "link_drop"));
 	($mol_mem(($.$bog_vmap_app.prototype), "tree_move"));
@@ -32361,8 +32462,10 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "selected"));
 	($mol_mem(($.$bog_vmap_app.prototype), "picked"));
 	($mol_mem(($.$bog_vmap_app.prototype), "links"));
-	($mol_mem(($.$bog_vmap_app.prototype), "palette_showed"));
-	($mol_mem(($.$bog_vmap_app.prototype), "inspect_showed"));
+	($mol_mem(($.$bog_vmap_app.prototype), "left_showed"));
+	($mol_mem(($.$bog_vmap_app.prototype), "right_showed"));
+	($mol_mem(($.$bog_vmap_app.prototype), "left_tab"));
+	($mol_mem(($.$bog_vmap_app.prototype), "right_tab"));
 	($mol_mem(($.$bog_vmap_app.prototype), "code_showed"));
 	($mol_mem(($.$bog_vmap_app.prototype), "history_showed"));
 	($mol_mem(($.$bog_vmap_app.prototype), "history_state"));
@@ -32374,8 +32477,11 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "root_css"));
 	($mol_mem(($.$bog_vmap_app.prototype), "lights"));
 	($mol_mem(($.$bog_vmap_app.prototype), "store"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Left"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Right"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Canvas"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Scenes"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Layers"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Shelf"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Inspect"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Idle"));
@@ -33004,14 +33110,22 @@ var $;
                     this.Status(),
                 ];
             }
-            pages() {
+            main() {
                 return [
-                    ...this.palette_showed() ? [this.Scenes(), this.Shelf()] : [],
+                    ...this.left_showed() ? [this.Left()] : [],
                     this.Canvas(),
-                    ...this.inspect_showed() ? [this.selection_alive() ? this.Inspect() : this.Idle()] : [],
-                    ...this.code_showed() ? [this.Code()] : [],
-                    ...this.history_showed() ? [this.History()] : [],
+                    ...this.right_showed() ? [this.Right()] : [],
                 ];
+            }
+            left_panel() {
+                return this.left_tab() === 'layers' ? this.Layers() : this.Shelf();
+            }
+            right_panel() {
+                switch (this.right_tab()) {
+                    case 'code': return this.Code();
+                    case 'history': return this.History();
+                    default: return this.selection_alive() ? this.Inspect() : this.Idle();
+                }
             }
             floats() {
                 return (this.dragged() ? [this.Ghost()] : []);
@@ -33023,17 +33137,40 @@ var $;
             theme_name() {
                 return this.lights() ? '$mol_theme_light' : '$mol_theme_dark';
             }
-            palette_showed(next) {
-                return this.$.$mol_state_session.value('vmap_palette', next) ?? true;
+            columns_wide() {
+                return this.$.$mol_window.size().width >= 960;
             }
-            inspect_showed(next) {
-                return this.$.$mol_state_session.value('vmap_inspect', next) ?? true;
+            left_showed(next) {
+                return this.$.$mol_state_session.value('vmap_left', next) ?? this.columns_wide();
+            }
+            right_showed(next) {
+                return this.$.$mol_state_session.value('vmap_right', next) ?? this.columns_wide();
+            }
+            left_tab(next) {
+                return this.$.$mol_state_session.value('vmap_left_tab', next || undefined) ?? 'assets';
+            }
+            right_tab(next) {
+                return this.$.$mol_state_session.value('vmap_right_tab', next || undefined) ?? 'design';
             }
             code_showed(next) {
-                return this.$.$mol_state_session.value('vmap_code', next) ?? false;
+                return this.tab_showed('code', next);
             }
             history_showed(next) {
-                return this.$.$mol_state_session.value('vmap_history', next) ?? false;
+                return this.tab_showed('history', next);
+            }
+            tab_showed(tab, next) {
+                if (next === true) {
+                    this.right_showed(true);
+                    this.right_tab(tab);
+                }
+                if (next === false && this.right_tab() === tab)
+                    this.right_tab('design');
+                return this.right_showed() && this.right_tab() === tab;
+            }
+            columns_toggle() {
+                const shown = this.left_showed() || this.right_showed();
+                this.left_showed(!shown);
+                this.right_showed(!shown);
             }
             history_state(next) {
                 const store = this.store();
@@ -33507,6 +33644,19 @@ var $;
                     this.History().undo();
                 return true;
             }
+            typing(event) {
+                const target = event.target;
+                if (target?.isContentEditable)
+                    return true;
+                return Boolean(target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
+            }
+            columns_key(event) {
+                if (event.code !== 'Backslash' || !event.shiftKey)
+                    return false;
+                if (event.metaKey || event.ctrlKey || event.altKey)
+                    return false;
+                return !this.typing(event);
+            }
             key_press(event) {
                 if (!event)
                     return;
@@ -33521,14 +33671,16 @@ var $;
                         this.selected(null);
                     return;
                 }
+                if (this.columns_key(event)) {
+                    event.preventDefault();
+                    this.columns_toggle();
+                    return;
+                }
                 if (event.key !== 'Delete' && event.key !== 'Backspace')
                     return;
                 if (event.metaKey || event.ctrlKey || event.altKey)
                     return;
-                const target = event.target;
-                if (target?.isContentEditable)
-                    return;
-                if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
+                if (this.typing(event))
                     return;
                 if (!this.selected())
                     return;
@@ -33661,8 +33813,38 @@ var $;
     var $$;
     (function ($$) {
         $mol_style_define($bog_vmap_app, {
+            Root_name: {
+                flex: { grow: 1, shrink: 1, basis: '12rem' },
+                maxWidth: '24rem',
+                margin: { left: 'auto', right: 'auto' },
+            },
+            Main: {
+                position: 'relative',
+                flex: { grow: 1, shrink: 1, basis: 0 },
+                minHeight: 0,
+            },
+            Left: {
+                width: '15rem',
+                maxWidth: '100%',
+                display: 'grid',
+                gridTemplateRows: 'fit-content(40%) auto minmax(0, 1fr)',
+                gridTemplateColumns: 'minmax(0, 1fr)',
+                background: { color: $mol_theme.card },
+            },
+            Scenes: {
+                minHeight: 0,
+            },
+            Right: {
+                width: '17rem',
+                maxWidth: '100%',
+                display: 'grid',
+                gridTemplateRows: 'auto minmax(0, 1fr)',
+                gridTemplateColumns: 'minmax(0, 1fr)',
+                background: { color: $mol_theme.card },
+            },
             Canvas: {
-                flex: { grow: 1 },
+                flex: { grow: 1, shrink: 1, basis: 0 },
+                minWidth: 0,
                 Body: {
                     align: { items: 'stretch' },
                 },
@@ -33674,13 +33856,9 @@ var $;
                     gap: $mol_gap.text,
                 },
             },
-            Pane: {
-                minWidth: '28rem',
-            },
             Ghost: {
                 position: 'fixed',
                 zIndex: 100,
-                minHeight: 0,
                 pointerEvents: 'none',
                 transform: 'translate(.75rem, .75rem)',
                 padding: { top: '.25rem', bottom: '.25rem', left: $mol_gap.text, right: $mol_gap.text },
@@ -33690,8 +33868,23 @@ var $;
                 font: { family: 'monospace', size: '.8rem' },
                 whiteSpace: 'nowrap',
                 box: { shadow: [[0, '.25rem', '.75rem', 0, $mol_style_func.hsla(0, 0, 0, .5)]] },
-                '::before': {
-                    display: 'none',
+            },
+            '@media': {
+                '(max-width: 60rem)': {
+                    Left: {
+                        position: 'absolute',
+                        zIndex: 3,
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                    },
+                    Right: {
+                        position: 'absolute',
+                        zIndex: 3,
+                        top: 0,
+                        bottom: 0,
+                        right: 0,
+                    },
                 },
             },
         });
@@ -48429,6 +48622,13 @@ var $;
             $mol_assert_ok(tools.contains(view.Add().dom_node()));
             $mol_assert_ok(dom.querySelector('[mol_page_body]').contains(view.List().dom_node()));
         },
+        'the add button is a plus with its name in the hint, like the pages of a design tool'($) {
+            const { view } = scenes($);
+            const add = view.Add().dom_tree();
+            $mol_assert_equal(add.textContent, '');
+            $mol_assert_ok(add.contains(view.Add_icon().dom_node()));
+            $mol_assert_ok(add.getAttribute('title').startsWith('Новая сцена'));
+        },
     });
 })($ || ($ = {}));
 
@@ -51229,42 +51429,60 @@ var $;
             stage.click(stage.scene_row('Сцена 1'));
             $mol_assert_equal($.$mol_state_arg.value('doc'), first);
         },
-        'the canvas page carries the tools, the pane and the notes'($) {
+        'the shell is a head bar over three columns, and the canvas keeps no head of its own'($) {
             const app = $bog_vmap_app.make({ $ });
-            const pages = app.pages();
-            $mol_assert_equal(pages.length, 4);
-            $mol_assert_equal(pages[0], app.Scenes());
-            $mol_assert_equal(pages[1], app.Shelf());
-            $mol_assert_equal(pages[2], app.Canvas());
-            $mol_assert_equal(pages[3], app.Idle());
-            const tools = app.Canvas().tools();
+            const sub = app.sub();
+            $mol_assert_equal(sub.length, 2);
+            $mol_assert_equal(sub[0], app.Head());
+            $mol_assert_equal(sub[1], app.Main());
+            const main = app.main();
+            $mol_assert_equal(main.length, 3);
+            $mol_assert_equal(main[0], app.Left());
+            $mol_assert_equal(main[1], app.Canvas());
+            $mol_assert_equal(main[2], app.Right());
+            const left = app.Left().sub();
+            $mol_assert_equal(left.length, 3);
+            $mol_assert_equal(left[0], app.Scenes());
+            $mol_assert_equal(left[1], app.Left_tabs());
+            $mol_assert_equal(left[2], app.Shelf());
+            const right = app.Right().sub();
+            $mol_assert_equal(right.length, 2);
+            $mol_assert_equal(right[0], app.Right_tabs());
+            $mol_assert_equal(right[1], app.Idle());
+            const head = app.head();
+            $mol_assert_equal(head.length, 4);
+            $mol_assert_equal(head[0], app.Left_check());
+            $mol_assert_equal(head[1], app.Instruments());
+            $mol_assert_equal(head[2], app.Root_name());
+            $mol_assert_equal(head[3], app.Tools());
+            $mol_assert_ok(app.instruments().includes(app.Board()));
+            $mol_assert_ok(app.instruments().includes(app.Delete()));
+            const tools = app.tools();
             for (const tool of [
-                app.Palette_check(),
-                app.Inspect_check(),
-                app.Code_check(),
-                app.History_check(),
-                app.Board(),
-                app.Delete(),
-                app.Root_name(),
-                app.Publish(),
-                app.Download(),
                 app.Zoom_out(),
                 app.Zoom_reset(),
                 app.Zoom_in(),
+                app.History_check(),
+                app.Publish(),
+                app.Download(),
                 app.Lights(),
+                app.Right_check(),
             ])
                 $mol_assert_ok(tools.includes(tool));
             $mol_assert_equal(tools.includes(app.Status()), false);
+            const canvas = app.Canvas().sub();
+            $mol_assert_equal(canvas.length, 2);
+            $mol_assert_equal(canvas[0], app.Canvas().Body());
+            $mol_assert_equal(canvas[1], app.Canvas().Foot());
             $mol_assert_equal(app.Canvas().body()[0], app.Pane());
             $mol_assert_equal(app.Canvas().foot(), [app.Status()]);
             $mol_assert_equal(app.floats().length, 0);
         },
-        'the panel switches carry an icon and a hint instead of a label'($) {
+        'the column switches carry an icon and a hint instead of a label'($) {
             const app = $bog_vmap_app.make({ $ });
             const switches = [
-                [app.Palette_check(), app.Palette_icon()],
-                [app.Inspect_check(), app.Inspect_icon()],
-                [app.Code_check(), app.Code_icon()],
+                [app.Left_check(), app.Left_icon()],
+                [app.Right_check(), app.Right_icon()],
                 [app.History_check(), app.History_icon()],
             ];
             for (const [check, icon] of switches) {
@@ -51273,20 +51491,114 @@ var $;
                 $mol_assert_ok(check.hint().length > 0);
             }
         },
-        'which panels are open outlives the page'($) {
+        'which columns and tabs are open outlives the page'($) {
             const one = $bog_vmap_app.make({ $ });
-            $mol_assert_equal(one.palette_showed(), true);
-            $mol_assert_equal(one.inspect_showed(), true);
-            $mol_assert_equal(one.code_showed(), false);
-            one.palette_showed(false);
-            one.code_showed(true);
+            $mol_assert_equal(one.left_showed(), true);
+            $mol_assert_equal(one.right_showed(), true);
+            $mol_assert_equal(one.left_tab(), 'assets');
+            $mol_assert_equal(one.right_tab(), 'design');
+            one.left_showed(false);
+            one.right_tab('code');
             const two = $bog_vmap_app.make({ $ });
-            $mol_assert_equal(two.palette_showed(), false);
-            $mol_assert_equal(two.inspect_showed(), true);
-            $mol_assert_equal(two.code_showed(), true);
-            $mol_assert_equal(two.pages().includes(two.Shelf()), false);
-            $mol_assert_equal(two.pages().includes(two.Scenes()), false);
-            $mol_assert_equal(two.pages().includes(two.Code()), true);
+            $mol_assert_equal(two.left_showed(), false);
+            $mol_assert_equal(two.right_showed(), true);
+            $mol_assert_equal(two.right_tab(), 'code');
+            $mol_assert_equal(two.main().includes(two.Left()), false);
+            $mol_assert_equal(two.Right().sub()[1], two.Code());
+        },
+        'each tab shows one panel of its column'($) {
+            const app = $bog_vmap_app.make({ $ });
+            const left = () => app.Left().sub()[2];
+            const right = () => app.Right().sub()[1];
+            app.left_tab('layers');
+            $mol_assert_equal(left(), app.Layers());
+            app.left_tab('assets');
+            $mol_assert_equal(left(), app.Shelf());
+            app.right_tab('code');
+            $mol_assert_equal(right(), app.Code());
+            app.right_tab('history');
+            $mol_assert_equal(right(), app.History());
+            app.right_tab('design');
+            $mol_assert_equal(right(), app.Idle());
+            app.part_drop(`${d}mol_button_minor`, 100, 200);
+            $mol_assert_equal(right(), app.Inspect());
+        },
+        'a click on the open tab keeps it open'($) {
+            const app = $bog_vmap_app.make({ $ });
+            const tabs = app.Right_tabs();
+            tabs.option_checked('code', true);
+            $mol_assert_equal(app.right_tab(), 'code');
+            tabs.option_checked('code', false);
+            $mol_assert_equal(app.right_tab(), 'code');
+            $mol_assert_equal(app.Right().sub()[1], app.Code());
+            const left = app.Left_tabs();
+            left.option_checked('assets', false);
+            $mol_assert_equal(app.left_tab(), 'assets');
+        },
+        'a narrow window starts with the canvas alone, and a column opens over it on demand'($) {
+            $.$mol_window = class extends $mol_window {
+                static size() {
+                    return { width: 400, height: 800 };
+                }
+            };
+            const app = $bog_vmap_app.make({ $ });
+            $mol_assert_equal(app.left_showed(), false);
+            $mol_assert_equal(app.right_showed(), false);
+            $mol_assert_equal(app.main().length, 1);
+            $mol_assert_equal(app.main()[0], app.Canvas());
+            app.left_showed(true);
+            $mol_assert_equal(app.main()[0], app.Left());
+            $mol_assert_equal(app.main()[1], app.Canvas());
+        },
+        'shift and backslash hide both columns and bring them back, but not from a field'($) {
+            const app = $bog_vmap_app.make({ $ });
+            const dom = $.$mol_dom_context;
+            let prevented = 0;
+            const stroke = (target, over = {}) => app.key_press({
+                code: 'Backslash',
+                key: '|',
+                shiftKey: true,
+                metaKey: false,
+                ctrlKey: false,
+                altKey: false,
+                target,
+                preventDefault() { ++prevented; },
+                ...over,
+            });
+            stroke(null);
+            $mol_assert_equal(app.left_showed(), false);
+            $mol_assert_equal(app.right_showed(), false);
+            $mol_assert_equal(app.main().length, 1);
+            $mol_assert_equal(prevented, 1);
+            stroke(null);
+            $mol_assert_equal(app.left_showed(), true);
+            $mol_assert_equal(app.right_showed(), true);
+            app.left_showed(false);
+            stroke(null);
+            $mol_assert_equal(app.left_showed(), false);
+            $mol_assert_equal(app.right_showed(), false);
+            stroke(dom.document.createElement('input'));
+            stroke(null, { metaKey: true });
+            stroke(null, { shiftKey: false });
+            $mol_assert_equal(app.left_showed(), false);
+            $mol_assert_equal(app.right_showed(), false);
+            $mol_assert_equal(prevented, 3);
+        },
+        'the code tab is what the code panel asks for'($) {
+            const app = $bog_vmap_app.make({ $ });
+            $mol_assert_equal(app.code_showed(), false);
+            app.right_showed(false);
+            app.code_showed(true);
+            $mol_assert_equal(app.right_showed(), true);
+            $mol_assert_equal(app.right_tab(), 'code');
+            $mol_assert_equal(app.code_showed(), true);
+            $mol_assert_equal(app.history_showed(), false);
+            app.history_showed(true);
+            $mol_assert_equal(app.right_tab(), 'history');
+            $mol_assert_equal(app.code_showed(), false);
+            app.history_showed(false);
+            $mol_assert_equal(app.right_tab(), 'design');
+            $mol_assert_equal(app.right_showed(), true);
         },
         'an image dropped on the canvas becomes a node addressed at the file'($) {
             const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png';
@@ -51592,7 +51904,8 @@ var $;
                 return [...root.querySelectorAll('[mol_view_error]')].map(el => el.getAttribute('id'));
             },
             button(title) {
-                return found('[role=button]', `button «${title}»`, el => el.textContent?.startsWith(title) ?? false);
+                const named = [...root.querySelectorAll('[role=button]')].find(el => el.textContent?.startsWith(title));
+                return named ?? found('[role=button]', `button «${title}»`, el => el.getAttribute('title')?.startsWith(title) ?? false);
             },
             check(title) {
                 return found('[role=checkbox]', `check «${title}»`, el => el.textContent?.includes(title) ?? false);
@@ -51701,14 +52014,14 @@ var $;
             stage.button('Удалить');
             stage.button('В библиотеку');
             const canvas = stage.pane.dom_node();
-            const tools = stage.root.querySelector('[bog_vmap_app_canvas_tools]');
+            const tools = stage.root.querySelector('[bog_vmap_app_tools]');
             for (const title of ['−', '100%', '+']) {
                 $mol_assert_equal(tools.contains(stage.button(title)), true);
                 $mol_assert_equal(canvas.contains(stage.button(title)), false);
             }
             $mol_assert_equal(canvas.querySelector('[role=button]'), null);
             const text = stage.text();
-            $mol_assert_ok(text.includes('Полка'));
+            $mol_assert_ok(text.includes('Ассеты'));
             $mol_assert_ok(text.includes('Свойства'));
             $mol_assert_ok(text.includes('100%'));
             $mol_assert_ok(text.includes('Выберите узел на холсте'));
@@ -52219,29 +52532,42 @@ var $;
             $mol_assert_ok(keys[0].startsWith('$bog_vmap_app'));
             $mol_assert_equal(stage.kept[keys[0]], 'true');
         },
-        'the shell is a book of pages and the canvas carries its tools in its own head'($) {
+        'the shell is a head bar over three columns and the canvas has no head of its own'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
             const app = stage.app;
-            $mol_assert_ok(stage.root.hasAttribute('mol_book2'));
-            const head = stage.root.querySelector('[bog_vmap_app_canvas_head]');
+            $mol_assert_ok(stage.root.hasAttribute('mol_page'));
+            $mol_assert_equal(stage.root.hasAttribute('mol_book2'), false);
+            const head = stage.root.querySelector('[bog_vmap_app_head]');
             $mol_assert_ok(head.hasAttribute('mol_page_head'));
-            $mol_assert_equal(app.Canvas().title(), 'Холст');
-            const tools = stage.root.querySelector('[bog_vmap_app_canvas_tools]');
-            const inside = (view) => tools.contains(view.dom_node());
-            $mol_assert_ok(inside(app.Palette_check()));
-            $mol_assert_ok(inside(app.Inspect_check()));
-            $mol_assert_ok(inside(app.Code_check()));
-            $mol_assert_ok(inside(app.History_check()));
-            $mol_assert_ok(inside(app.Board()));
-            $mol_assert_ok(inside(app.Delete()));
-            $mol_assert_ok(inside(app.Root_name()));
-            $mol_assert_ok(inside(app.Publish()));
-            $mol_assert_ok(inside(app.Download()));
-            $mol_assert_ok(inside(app.Zoom_out()));
-            $mol_assert_ok(inside(app.Zoom_reset()));
-            $mol_assert_ok(inside(app.Zoom_in()));
-            $mol_assert_ok(inside(app.Lights()));
+            $mol_assert_equal(head.parentElement, stage.root);
+            const inside = (view) => head.contains(view.dom_node());
+            for (const view of [
+                app.Left_check(),
+                app.Board(),
+                app.Delete(),
+                app.Root_name(),
+                app.Zoom_out(),
+                app.Zoom_reset(),
+                app.Zoom_in(),
+                app.History_check(),
+                app.Publish(),
+                app.Download(),
+                app.Lights(),
+                app.Right_check(),
+            ])
+                $mol_assert_ok(inside(view));
             $mol_assert_equal(inside(app.Status()), false);
+            const holds = (parent, kids) => {
+                const nodes = [...parent.dom_node().children];
+                $mol_assert_equal(nodes.length, kids.length);
+                kids.forEach((kid, index) => $mol_assert_ok(nodes[index] === kid.dom_node()));
+            };
+            holds(app.Main(), [app.Left(), app.Canvas(), app.Right()]);
+            holds(app.Left(), [app.Scenes(), app.Left_tabs(), app.Shelf()]);
+            holds(app.Right(), [app.Right_tabs(), app.Idle()]);
+            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_head]'), null);
+            $mol_assert_equal(app.Canvas().dom_node().querySelector('[mol_page_head]'), null);
+            $mol_assert_equal(app.Canvas().title(), 'Холст');
             const foot = stage.root.querySelector('[bog_vmap_app_canvas_foot]');
             $mol_assert_ok(app.Canvas().body().includes(app.Pane()));
             $mol_assert_equal(foot.childElementCount, 1);
@@ -52262,27 +52588,80 @@ var $;
             $mol_assert_like([...stage.pane.camera_shift()], [0, 0]);
             $mol_assert_ok(stage.button('100%'));
         },
-        'each check in the canvas tools adds and removes its page'($) {
+        'the column checks and the tabs put panels on screen and take them off'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
             const app = stage.app;
             const showed = (page) => stage.root.contains(page.dom_node());
             $mol_assert_ok(showed(app.Scenes()));
             $mol_assert_ok(showed(app.Shelf()));
             $mol_assert_ok(showed(app.Idle()));
+            $mol_assert_equal(showed(app.Layers()), false);
             $mol_assert_equal(showed(app.Code()), false);
             $mol_assert_equal(showed(app.History()), false);
-            stage.click(app.Palette_check().dom_node());
-            $mol_assert_equal(showed(app.Scenes()), false);
+            stage.click(stage.check('Слои'));
+            $mol_assert_ok(showed(app.Layers()));
             $mol_assert_equal(showed(app.Shelf()), false);
-            stage.click(app.Inspect_check().dom_node());
-            $mol_assert_equal(showed(app.Idle()), false);
-            stage.click(app.Code_check().dom_node());
+            stage.click(stage.check('Ассеты'));
+            $mol_assert_ok(showed(app.Shelf()));
+            $mol_assert_equal(showed(app.Layers()), false);
+            stage.click(stage.check('Код'));
             $mol_assert_ok(showed(app.Code()));
+            $mol_assert_equal(showed(app.Idle()), false);
+            stage.click(stage.check('Код'));
+            $mol_assert_ok(showed(app.Code()));
+            stage.click(stage.check('Версии'));
+            $mol_assert_ok(showed(app.History()));
+            $mol_assert_equal(showed(app.Code()), false);
+            stage.click(app.History_check().dom_node());
+            $mol_assert_ok(showed(app.Idle()));
+            $mol_assert_equal(showed(app.History()), false);
             stage.click(app.History_check().dom_node());
             $mol_assert_ok(showed(app.History()));
-            stage.click(app.Palette_check().dom_node());
+            stage.click(app.Left_check().dom_node());
+            $mol_assert_equal(showed(app.Scenes()), false);
+            $mol_assert_equal(showed(app.Shelf()), false);
+            stage.click(app.Right_check().dom_node());
+            $mol_assert_equal(showed(app.History()), false);
+            $mol_assert_equal(app.Main().dom_node().childElementCount, 1);
+            $mol_assert_ok(showed(app.Canvas()));
+            stage.click(app.Left_check().dom_node());
             $mol_assert_ok(showed(app.Scenes()));
             $mol_assert_ok(showed(app.Shelf()));
+        },
+        'a panel under a tab keeps its tools, and a title that only repeats the tab is gone'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            const title = (page) => page.dom_node().querySelector('[mol_page_title]');
+            const tools = (page) => page.dom_node().querySelector('[mol_page_tools]');
+            $mol_assert_equal(title(app.Shelf()), null);
+            $mol_assert_ok(tools(app.Shelf()).contains(app.Shelf().Filter().dom_node()));
+            stage.click(stage.check('Версии'));
+            $mol_assert_equal(title(app.History()), null);
+            $mol_assert_ok(tools(app.History()).contains(stage.button('Отменить')));
+            stage.click(stage.check('Код'));
+            $mol_assert_ok(title(app.Code()));
+            stage.click(stage.check('Дизайн'));
+            stage.drop(`${d}flow_calc`, stage.client([200, 150]));
+            $mol_assert_ok(title(app.Inspect()).contains(app.Inspect().Name().dom_node()));
+        },
+        'shift and backslash on the page fold both columns away, and typed into a field it stays a letter'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            const dom = $.$mol_dom_context;
+            const stroke = (target) => {
+                target.dispatchEvent(new dom.KeyboardEvent('keydown', { code: 'Backslash', key: '|', shiftKey: true, bubbles: true }));
+                stage.redraw();
+            };
+            const count = () => app.Main().dom_node().childElementCount;
+            $mol_assert_equal(count(), 3);
+            stroke(dom.document);
+            $mol_assert_equal(count(), 1);
+            $mol_assert_equal(stage.root.contains(app.Shelf().dom_node()), false);
+            stroke(stage.field('Root_name()'));
+            $mol_assert_equal(count(), 1);
+            stroke(dom.document);
+            $mol_assert_equal(count(), 3);
+            $mol_assert_ok(stage.root.contains(app.Shelf().dom_node()));
         },
         'the shelf offers the packs by name, and the current one is marked'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
