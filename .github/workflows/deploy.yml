@@ -111,7 +111,7 @@ jobs:
         file="bog/vmap/probe/-/probe.log"
         test -s "$file"
         grep -q 'вёрстка редактора в порядке' "$file"
-        grep -E 'шапки страниц|кнопок Холста|книга ' "$file" || true
+        grep -E 'колонки |верхняя панель|холст |шапки панелей' "$file" || true
         {
           echo '```'
           cat "$file"

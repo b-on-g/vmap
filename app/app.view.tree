@@ -1,4 +1,4 @@
-$bog_vmap_app $mol_book2
+$bog_vmap_app $mol_page
 	doc_src \
 	doc_css \
 	spots? *
@@ -8,8 +8,10 @@ $bog_vmap_app $mol_book2
 	doc_root \
 	scene_bundle \
 	links? \
-	palette_showed? true
-	inspect_showed? true
+	left_showed? true
+	right_showed? true
+	left_tab? \assets
+	right_tab? \design
 	code_showed? false
 	history_showed? false
 	history_state? *
@@ -21,72 +23,100 @@ $bog_vmap_app $mol_book2
 	root_css? \
 	lights? false
 	store $bog_vmap_app_store
+	title \vmap
 	plugins /
 		<= Theme $mol_theme_auto
 			theme <= theme_name \$mol_theme_dark
-	placeholders <= floats /$mol_view
+	sub /
+		<= Head
+		<= Main $mol_view
+			sub <= main /$mol_view
+		^ floats /$mol_view
+	head /
+		<= Left_check $mol_check_icon
+			Icon <= Left_icon $mol_icon_dock_left
+			hint \Левая колонка: сцены, слои и ассеты. Shift+\ прячет и возвращает обе колонки
+			checked? <=> left_showed?
+		<= Instruments $mol_bar
+			sub <= instruments /
+				<= Board $mol_button_minor
+					title \Артборд
+					hint \Положить страницу: прямоугольник ширины макета, вёрстка внутри по дереву
+					click? <=> board_add? null
+				<= Delete $mol_button_minor
+					title \Удалить
+					hint <= delete_hint \
+					enabled <= selection_showed false
+					click? <=> node_delete? null
+		<= Root_name $mol_string
+			hint \Имя корневого класса
+			value? <=> root_draft? \
+			submit? <=> root_submit? null
+			event *
+				^
+				blur? <=> root_submit? null
+		<= Tools
+	tools /
+		<= Zoom_out $mol_button_minor
+			title \−
+			hint \Отдалить
+			click? <=> zoom_out? null
+		<= Zoom_reset $mol_button_minor
+			title <= zoom_title \
+			hint \Сбросить вид
+			click? <=> camera_reset? null
+		<= Zoom_in $mol_button_minor
+			title \+
+			hint \Приблизить
+			click? <=> zoom_in? null
+		<= History_check $mol_check_icon
+			Icon <= History_icon $mol_icon_history
+			hint \Версии: шаги этой сессии и снимки в ленде
+			checked? <=> history_showed?
+		<= Publish $bog_vmap_app_publish
+			part <= publish_part \
+			source <= node_source? \
+			js <= node_js \
+			css <= root_css
+			doc <= doc_src
+			classes / <= doc_root
+		<= Download $mol_button_download
+			title <= export_title \
+			hint <= export_hint \
+			enabled <= export_ready false
+			blob <= export_blob $mol_blob
+			file_name <= export_file \
+		<= Lights $mol_lights_toggle
+			lights? <=> lights?
+		<= Right_check $mol_check_icon
+			Icon <= Right_icon $mol_icon_dock_right
+			hint \Правая колонка: дизайн, код и версии. Shift+\ прячет и возвращает обе колонки
+			checked? <=> right_showed?
+	Left $mol_view
+		sub /
+			<= Scenes
+			<= Left_tabs $mol_switch
+				value? <=> left_tab?
+				options *
+					layers \Слои
+					assets \Ассеты
+			<= left_panel null
+	Right $mol_view
+		sub /
+			<= Right_tabs $mol_switch
+				value? <=> right_tab?
+				options *
+					design \Дизайн
+					code \Код
+					history \Версии
+			<= right_panel null
 	Canvas $mol_page
 		title \Холст
-		tools /
-			<= Palette_check $mol_check_icon
-				Icon <= Palette_icon $mol_icon_widgets
-				hint \Полка: компоненты, которые можно положить на холст
-				checked? <=> palette_showed?
-			<= Inspect_check $mol_check_icon
-				Icon <= Inspect_icon $mol_icon_tune
-				hint \Свойства выбранного узла
-				checked? <=> inspect_showed?
-			<= Code_check $mol_check_icon
-				Icon <= Code_icon $mol_icon_code_tags
-				hint \Код: три текста выбранного узла — view.tree, JS и CSS
-				checked? <=> code_showed?
-			<= History_check $mol_check_icon
-				Icon <= History_icon $mol_icon_history
-				hint \Версии: шаги этой сессии и снимки в ленде
-				checked? <=> history_showed?
-			<= Board $mol_button_minor
-				title \Артборд
-				hint \Положить страницу: прямоугольник ширины макета, вёрстка внутри по дереву
-				click? <=> board_add? null
-			<= Delete $mol_button_minor
-				title \Удалить
-				hint <= delete_hint \
-				enabled <= selection_showed false
-				click? <=> node_delete? null
-			<= Root_name $mol_string
-				hint \Имя корневого класса
-				value? <=> root_draft? \
-				submit? <=> root_submit? null
-				event *
-					^
-					blur? <=> root_submit? null
-			<= Publish $bog_vmap_app_publish
-				part <= publish_part \
-				source <= node_source? \
-				js <= node_js \
-				css <= root_css
-				doc <= doc_src
-				classes / <= doc_root
-			<= Download $mol_button_download
-				title <= export_title \
-				hint <= export_hint \
-				enabled <= export_ready false
-				blob <= export_blob $mol_blob
-				file_name <= export_file \
-			<= Zoom_out $mol_button_minor
-				title \−
-				hint \Отдалить
-				click? <=> zoom_out? null
-			<= Zoom_reset $mol_button_minor
-				title <= zoom_title \
-				hint \Сбросить вид
-				click? <=> camera_reset? null
-			<= Zoom_in $mol_button_minor
-				title \+
-				hint \Приблизить
-				click? <=> zoom_in? null
-			<= Lights $mol_lights_toggle
-				lights? <=> lights?
+		Body => Canvas_body
+		Foot => Canvas_foot
+		sub /
+			<= Canvas_body
+			<= Canvas_foot
 		body /
 			<= Pane $bog_vmap_app_pane
 				scene_bundle <= scene_bundle
@@ -114,7 +144,10 @@ $bog_vmap_app $mol_book2
 		foot <= notes /$mol_view
 	Scenes $bog_vmap_app_scenes
 		store <= store
+	Layers $mol_page
+		title \Слои
 	Shelf $bog_vmap_app_shelf
+		Title null
 		links? <=> links?
 		pack_link <= pack_link
 		land_classes <= lib_classes /$mol_tree2
@@ -142,6 +175,7 @@ $bog_vmap_app $mol_book2
 		css? <=> code_css?
 		error <= code_error \
 	History $bog_vmap_app_history
+		Title null
 		store <= store
 		state? <=> history_state?
 	Lib $bog_vmap_lib_land_stack

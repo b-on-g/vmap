@@ -118,6 +118,18 @@ namespace $ {
 
 		},
 
+		'the add button is a plus with its name in the hint, like the pages of a design tool'( $ ) {
+
+			const { view } = scenes( $ )
+
+			const add = view.Add().dom_tree() as Element
+
+			$mol_assert_equal( add.textContent, '' )
+			$mol_assert_ok( add.contains( view.Add_icon().dom_node() ) )
+			$mol_assert_ok( add.getAttribute( 'title' )!.startsWith( 'Новая сцена' ) )
+
+		},
+
 	})
 
 }

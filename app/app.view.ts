@@ -482,14 +482,24 @@ namespace $.$$ {
 			] as readonly $mol_view[]
 		}
 
-		override pages() {
+		override main() {
 			return [
-				... this.palette_showed() ? [ this.Scenes(), this.Shelf() ] : [],
+				... this.left_showed() ? [ this.Left() ] : [],
 				this.Canvas(),
-				... this.inspect_showed() ? [ this.selection_alive() ? this.Inspect() : this.Idle() ] : [],
-				... this.code_showed() ? [ this.Code() ] : [],
-				... this.history_showed() ? [ this.History() ] : [],
+				... this.right_showed() ? [ this.Right() ] : [],
 			] as readonly $mol_view[]
+		}
+
+		override left_panel() {
+			return this.left_tab() === 'layers' ? this.Layers() : this.Shelf()
+		}
+
+		override right_panel() {
+			switch( this.right_tab() ) {
+				case 'code': return this.Code()
+				case 'history': return this.History()
+				default: return this.selection_alive() ? this.Inspect() : this.Idle()
+			}
 		}
 
 		override floats() {
@@ -505,20 +515,50 @@ namespace $.$$ {
 			return this.lights() ? '$mol_theme_light' : '$mol_theme_dark'
 		}
 
-		override palette_showed( next?: boolean ) {
-			return this.$.$mol_state_session.value( 'vmap_palette', next ) ?? true
+		columns_wide() {
+			return this.$.$mol_window.size().width >= 960
 		}
 
-		override inspect_showed( next?: boolean ) {
-			return this.$.$mol_state_session.value( 'vmap_inspect', next ) ?? true
+		override left_showed( next?: boolean ) {
+			return this.$.$mol_state_session.value( 'vmap_left', next ) ?? this.columns_wide()
+		}
+
+		override right_showed( next?: boolean ) {
+			return this.$.$mol_state_session.value( 'vmap_right', next ) ?? this.columns_wide()
+		}
+
+		override left_tab( next?: string ) {
+			return this.$.$mol_state_session.value( 'vmap_left_tab', next || undefined ) ?? 'assets'
+		}
+
+		override right_tab( next?: string ) {
+			return this.$.$mol_state_session.value( 'vmap_right_tab', next || undefined ) ?? 'design'
 		}
 
 		override code_showed( next?: boolean ) {
-			return this.$.$mol_state_session.value( 'vmap_code', next ) ?? false
+			return this.tab_showed( 'code', next )
 		}
 
 		override history_showed( next?: boolean ) {
-			return this.$.$mol_state_session.value( 'vmap_history', next ) ?? false
+			return this.tab_showed( 'history', next )
+		}
+
+		tab_showed( tab: string, next?: boolean ) {
+
+			if( next === true ) {
+				this.right_showed( true )
+				this.right_tab( tab )
+			}
+
+			if( next === false && this.right_tab() === tab ) this.right_tab( 'design' )
+
+			return this.right_showed() && this.right_tab() === tab
+		}
+
+		columns_toggle() {
+			const shown = this.left_showed() || this.right_showed()
+			this.left_showed( !shown )
+			this.right_showed( !shown )
 		}
 
 		override history_state( next?: $bog_vmap_app_store_state ): $bog_vmap_app_store_state {
@@ -1167,6 +1207,18 @@ namespace $.$$ {
 			return true
 		}
 
+		typing( event: KeyboardEvent ) {
+			const target = event.target as HTMLElement | null
+			if( target?.isContentEditable ) return true
+			return Boolean( target && /^(INPUT|TEXTAREA|SELECT)$/.test( target.tagName ) )
+		}
+
+		columns_key( event: KeyboardEvent ) {
+			if( event.code !== 'Backslash' || !event.shiftKey ) return false
+			if( event.metaKey || event.ctrlKey || event.altKey ) return false
+			return !this.typing( event )
+		}
+
 		key_press( event?: KeyboardEvent ) {
 			if( !event ) return
 
@@ -1180,12 +1232,15 @@ namespace $.$$ {
 				return
 			}
 
+			if( this.columns_key( event ) ) {
+				event.preventDefault()
+				this.columns_toggle()
+				return
+			}
+
 			if( event.key !== 'Delete' && event.key !== 'Backspace' ) return
 			if( event.metaKey || event.ctrlKey || event.altKey ) return
-
-			const target = event.target as HTMLElement | null
-			if( target?.isContentEditable ) return
-			if( target && /^(INPUT|TEXTAREA|SELECT)$/.test( target.tagName ) ) return
+			if( this.typing( event ) ) return
 
 			if( !this.selected() ) return
 

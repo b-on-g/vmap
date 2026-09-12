@@ -332,7 +332,8 @@ namespace $ {
 			},
 
 			button( title: string ) {
-				return found( '[role=button]', `button «${ title }»`, el => el.textContent?.startsWith( title ) ?? false )
+				const named = [ ... root.querySelectorAll( '[role=button]' ) ].find( el => el.textContent?.startsWith( title ) )
+				return named ?? found( '[role=button]', `button «${ title }»`, el => el.getAttribute( 'title' )?.startsWith( title ) ?? false )
 			},
 
 			check( title: string ) {
@@ -475,7 +476,7 @@ namespace $ {
 			stage.button( 'В библиотеку' )
 
 			const canvas = stage.pane.dom_node()
-			const tools = stage.root.querySelector( '[bog_vmap_app_canvas_tools]' )!
+			const tools = stage.root.querySelector( '[bog_vmap_app_tools]' )!
 
 			for( const title of [ '−', '100%', '+' ] ) {
 				$mol_assert_equal( tools.contains( stage.button( title ) ), true )
@@ -484,7 +485,7 @@ namespace $ {
 			$mol_assert_equal( canvas.querySelector( '[role=button]' ), null )
 
 			const text = stage.text()
-			$mol_assert_ok( text.includes( 'Полка' ) )
+			$mol_assert_ok( text.includes( 'Ассеты' ) )
 			$mol_assert_ok( text.includes( 'Свойства' ) )
 			$mol_assert_ok( text.includes( '100%' ) )
 			$mol_assert_ok( text.includes( 'Выберите узел на холсте' ) )
@@ -1265,34 +1266,50 @@ namespace $ {
 
 		},
 
-		'the shell is a book of pages and the canvas carries its tools in its own head'( $ ) {
+		'the shell is a head bar over three columns and the canvas has no head of its own'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 			const app = stage.app
 
-			$mol_assert_ok( stage.root.hasAttribute( 'mol_book2' ) )
+			$mol_assert_ok( stage.root.hasAttribute( 'mol_page' ) )
+			$mol_assert_equal( stage.root.hasAttribute( 'mol_book2' ), false )
 
-			const head = stage.root.querySelector( '[bog_vmap_app_canvas_head]' )!
+			const head = stage.root.querySelector( '[bog_vmap_app_head]' )!
 
 			$mol_assert_ok( head.hasAttribute( 'mol_page_head' ) )
-			$mol_assert_equal( app.Canvas().title(), 'Холст' )
+			$mol_assert_equal( head.parentElement, stage.root )
 
-			const tools = stage.root.querySelector( '[bog_vmap_app_canvas_tools]' )!
-			const inside = ( view: $mol_view )=> tools.contains( view.dom_node() )
+			const inside = ( view: $mol_view )=> head.contains( view.dom_node() )
 
-			$mol_assert_ok( inside( app.Palette_check() ) )
-			$mol_assert_ok( inside( app.Inspect_check() ) )
-			$mol_assert_ok( inside( app.Code_check() ) )
-			$mol_assert_ok( inside( app.History_check() ) )
-			$mol_assert_ok( inside( app.Board() ) )
-			$mol_assert_ok( inside( app.Delete() ) )
-			$mol_assert_ok( inside( app.Root_name() ) )
-			$mol_assert_ok( inside( app.Publish() ) )
-			$mol_assert_ok( inside( app.Download() ) )
-			$mol_assert_ok( inside( app.Zoom_out() ) )
-			$mol_assert_ok( inside( app.Zoom_reset() ) )
-			$mol_assert_ok( inside( app.Zoom_in() ) )
-			$mol_assert_ok( inside( app.Lights() ) )
+			for( const view of [
+				app.Left_check(),
+				app.Board(),
+				app.Delete(),
+				app.Root_name(),
+				app.Zoom_out(),
+				app.Zoom_reset(),
+				app.Zoom_in(),
+				app.History_check(),
+				app.Publish(),
+				app.Download(),
+				app.Lights(),
+				app.Right_check(),
+			] ) $mol_assert_ok( inside( view ) )
+
 			$mol_assert_equal( inside( app.Status() ), false )
+
+			const holds = ( parent: $mol_view, kids: readonly $mol_view[] )=> {
+				const nodes = [ ... parent.dom_node().children ]
+				$mol_assert_equal( nodes.length, kids.length )
+				kids.forEach( ( kid, index )=> $mol_assert_ok( nodes[ index ] === kid.dom_node() ) )
+			}
+
+			holds( app.Main(), [ app.Left(), app.Canvas(), app.Right() ] )
+			holds( app.Left(), [ app.Scenes(), app.Left_tabs(), app.Shelf() ] )
+			holds( app.Right(), [ app.Right_tabs(), app.Idle() ] )
+
+			$mol_assert_equal( stage.root.querySelector( '[bog_vmap_app_canvas_head]' ), null )
+			$mol_assert_equal( app.Canvas().dom_node().querySelector( '[mol_page_head]' ), null )
+			$mol_assert_equal( app.Canvas().title(), 'Холст' )
 
 			const foot = stage.root.querySelector( '[bog_vmap_app_canvas_foot]' )!
 
@@ -1326,7 +1343,7 @@ namespace $ {
 
 		},
 
-		'each check in the canvas tools adds and removes its page'( $ ) {
+		'the column checks and the tabs put panels on screen and take them off'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 			const app = stage.app
 
@@ -1335,30 +1352,114 @@ namespace $ {
 			$mol_assert_ok( showed( app.Scenes() ) )
 			$mol_assert_ok( showed( app.Shelf() ) )
 			$mol_assert_ok( showed( app.Idle() ) )
+			$mol_assert_equal( showed( app.Layers() ), false )
 			$mol_assert_equal( showed( app.Code() ), false )
 			$mol_assert_equal( showed( app.History() ), false )
 
-			stage.click( app.Palette_check().dom_node() )
+			stage.click( stage.check( 'Слои' ) )
 
-			$mol_assert_equal( showed( app.Scenes() ), false )
+			$mol_assert_ok( showed( app.Layers() ) )
 			$mol_assert_equal( showed( app.Shelf() ), false )
 
-			stage.click( app.Inspect_check().dom_node() )
+			stage.click( stage.check( 'Ассеты' ) )
 
-			$mol_assert_equal( showed( app.Idle() ), false )
+			$mol_assert_ok( showed( app.Shelf() ) )
+			$mol_assert_equal( showed( app.Layers() ), false )
 
-			stage.click( app.Code_check().dom_node() )
+			stage.click( stage.check( 'Код' ) )
 
 			$mol_assert_ok( showed( app.Code() ) )
+			$mol_assert_equal( showed( app.Idle() ), false )
+
+			stage.click( stage.check( 'Код' ) )
+
+			$mol_assert_ok( showed( app.Code() ) )
+
+			stage.click( stage.check( 'Версии' ) )
+
+			$mol_assert_ok( showed( app.History() ) )
+			$mol_assert_equal( showed( app.Code() ), false )
+
+			stage.click( app.History_check().dom_node() )
+
+			$mol_assert_ok( showed( app.Idle() ) )
+			$mol_assert_equal( showed( app.History() ), false )
 
 			stage.click( app.History_check().dom_node() )
 
 			$mol_assert_ok( showed( app.History() ) )
 
-			stage.click( app.Palette_check().dom_node() )
+			stage.click( app.Left_check().dom_node() )
+
+			$mol_assert_equal( showed( app.Scenes() ), false )
+			$mol_assert_equal( showed( app.Shelf() ), false )
+
+			stage.click( app.Right_check().dom_node() )
+
+			$mol_assert_equal( showed( app.History() ), false )
+			$mol_assert_equal( app.Main().dom_node().childElementCount, 1 )
+			$mol_assert_ok( showed( app.Canvas() ) )
+
+			stage.click( app.Left_check().dom_node() )
 
 			$mol_assert_ok( showed( app.Scenes() ) )
 			$mol_assert_ok( showed( app.Shelf() ) )
+
+		},
+
+		'a panel under a tab keeps its tools, and a title that only repeats the tab is gone'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			const title = ( page: $mol_view )=> page.dom_node().querySelector( '[mol_page_title]' )
+			const tools = ( page: $mol_view )=> page.dom_node().querySelector( '[mol_page_tools]' )!
+
+			$mol_assert_equal( title( app.Shelf() ), null )
+			$mol_assert_ok( tools( app.Shelf() ).contains( ( app.Shelf() as $$.$bog_vmap_app_shelf ).Filter().dom_node() ) )
+
+			stage.click( stage.check( 'Версии' ) )
+
+			$mol_assert_equal( title( app.History() ), null )
+			$mol_assert_ok( tools( app.History() ).contains( stage.button( 'Отменить' ) ) )
+
+			stage.click( stage.check( 'Код' ) )
+
+			$mol_assert_ok( title( app.Code() ) )
+
+			stage.click( stage.check( 'Дизайн' ) )
+			stage.drop( `${d}flow_calc`, stage.client([ 200, 150 ]) )
+
+			$mol_assert_ok( title( app.Inspect() )!.contains( ( app.Inspect() as $$.$bog_vmap_app_inspect ).Name().dom_node() ) )
+
+		},
+
+		'shift and backslash on the page fold both columns away, and typed into a field it stays a letter'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+			const dom = $.$mol_dom_context
+
+			const stroke = ( target: EventTarget )=> {
+				target.dispatchEvent( new dom.KeyboardEvent( 'keydown', { code: 'Backslash', key: '|', shiftKey: true, bubbles: true } ) )
+				stage.redraw()
+			}
+
+			const count = ()=> app.Main().dom_node().childElementCount
+
+			$mol_assert_equal( count(), 3 )
+
+			stroke( dom.document )
+
+			$mol_assert_equal( count(), 1 )
+			$mol_assert_equal( stage.root.contains( app.Shelf().dom_node() ), false )
+
+			stroke( stage.field( 'Root_name()' ) )
+
+			$mol_assert_equal( count(), 1 )
+
+			stroke( dom.document )
+
+			$mol_assert_equal( count(), 3 )
+			$mol_assert_ok( stage.root.contains( app.Shelf().dom_node() ) )
 
 		},
 

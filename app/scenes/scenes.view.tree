@@ -10,9 +10,10 @@ $bog_vmap_app_scenes $mol_page
 			enabled <= current_exists
 			value? <=> doc_title?
 		<= Add $mol_button_minor
-			title \Новая сцена
-			hint \Завести новый документ. Он станет текущим
+			hint \Новая сцена: завести документ, он станет текущим
 			click? <=> add? null
+			sub /
+				<= Add_icon $mol_icon_plus
 	body /
 		<= List $mol_list
 			rows <= scene_rows /
