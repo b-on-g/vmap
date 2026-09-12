@@ -34015,56 +34015,6 @@ var $;
 			(obj.sub) = () => ((this.error_marks()));
 			return obj;
 		}
-		zoom_out(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		Zoom_out(){
-			const obj = new this.$.$mol_button_minor();
-			(obj.title) = () => ("−");
-			(obj.hint) = () => ("Отдалить");
-			(obj.click) = (next) => ((this.zoom_out(next)));
-			return obj;
-		}
-		zoom_title(){
-			return "";
-		}
-		Zoom_title(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.zoom_title())]);
-			return obj;
-		}
-		zoom_in(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		Zoom_in(){
-			const obj = new this.$.$mol_button_minor();
-			(obj.title) = () => ("+");
-			(obj.hint) = () => ("Приблизить");
-			(obj.click) = (next) => ((this.zoom_in(next)));
-			return obj;
-		}
-		camera_reset(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		Reset(){
-			const obj = new this.$.$mol_button_minor();
-			(obj.title) = () => ("Сбросить вид");
-			(obj.click) = (next) => ((this.camera_reset(next)));
-			return obj;
-		}
-		Camera(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([
-				(this.Zoom_out()), 
-				(this.Zoom_title()), 
-				(this.Zoom_in()), 
-				(this.Reset())
-			]);
-			return obj;
-		}
 		label_style(id){
 			return {};
 		}
@@ -34222,6 +34172,21 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		camera_reset(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		zoom_out(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		zoom_in(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		zoom_title(){
+			return "";
+		}
 		node_error(id){
 			return "";
 		}
@@ -34269,8 +34234,7 @@ var $;
 				(this.Overlay()), 
 				(this.Wire()), 
 				(this.Values()), 
-				(this.Marks()), 
-				(this.Camera())
+				(this.Marks())
 			];
 		}
 		Label(id){
@@ -34310,14 +34274,6 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Wire"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Values"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Marks"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "zoom_out"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Zoom_out"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Zoom_title"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "zoom_in"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Zoom_in"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_reset"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Reset"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Camera"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Touch"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "leave"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "spots"));
@@ -34334,6 +34290,9 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "warmed"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "entered"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_fit"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_reset"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "zoom_out"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "zoom_in"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_restart"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_at"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_node"));
@@ -34705,7 +34664,6 @@ var $;
                     this.Marks(),
                     ...this.slot() ? [this.Insert()] : [],
                     ...this.band() ? [this.Band()] : [],
-                    this.Camera(),
                 ];
             }
             scene_shown(next) {
@@ -35946,26 +35904,6 @@ var $;
                 width: '100%',
                 height: '100%',
                 pointerEvents: 'none',
-            },
-            Camera: {
-                position: 'absolute',
-                right: '.5rem',
-                bottom: '.5rem',
-                flex: { direction: 'row' },
-                alignItems: 'center',
-                gap: '.25rem',
-                padding: '.25rem',
-                borderRadius: String($mol_gap.round),
-                background: { color: $mol_theme.card },
-                boxShadow: String($mol_theme.shade) + ' 0 0 .5rem',
-                userSelect: 'none'
-            },
-            Zoom_title: {
-                minWidth: '3.5rem',
-                justify: { content: 'center' },
-                font: { size: '.75rem' },
-                color: $mol_theme.shade,
-                userSelect: 'none'
             },
             Mark: {
                 position: 'absolute',
@@ -39102,6 +39040,42 @@ var $;
 			(obj.file_name) = () => ((this.export_file()));
 			return obj;
 		}
+		zoom_out(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Zoom_out(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("−");
+			(obj.hint) = () => ("Отдалить");
+			(obj.click) = (next) => ((this.zoom_out(next)));
+			return obj;
+		}
+		zoom_title(){
+			return "";
+		}
+		camera_reset(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Zoom_reset(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ((this.zoom_title()));
+			(obj.hint) = () => ("Сбросить вид");
+			(obj.click) = (next) => ((this.camera_reset(next)));
+			return obj;
+		}
+		zoom_in(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Zoom_in(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("+");
+			(obj.hint) = () => ("Приблизить");
+			(obj.click) = (next) => ((this.zoom_in(next)));
+			return obj;
+		}
 		Lights(){
 			const obj = new this.$.$mol_lights_toggle();
 			(obj.lights) = (next) => ((this.lights(next)));
@@ -39377,6 +39351,9 @@ var $;
 				(this.Root_name()), 
 				(this.Publish()), 
 				(this.Download()), 
+				(this.Zoom_out()), 
+				(this.Zoom_reset()), 
+				(this.Zoom_in()), 
 				(this.Lights()), 
 				(this.Status())
 			]);
@@ -39508,6 +39485,12 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Publish"));
 	($mol_mem(($.$bog_vmap_app.prototype), "export_blob"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Download"));
+	($mol_mem(($.$bog_vmap_app.prototype), "zoom_out"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Zoom_out"));
+	($mol_mem(($.$bog_vmap_app.prototype), "camera_reset"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Zoom_reset"));
+	($mol_mem(($.$bog_vmap_app.prototype), "zoom_in"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Zoom_in"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Lights"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Status"));
 	($mol_mem(($.$bog_vmap_app.prototype), "link_add"));
@@ -39801,6 +39784,18 @@ var $;
             }
             scene_restart() {
                 this.Pane().scene_restart();
+            }
+            zoom_title() {
+                return this.Pane().zoom_title();
+            }
+            zoom_in() {
+                this.Pane().zoom_in();
+            }
+            zoom_out() {
+                this.Pane().zoom_out();
+            }
+            camera_reset() {
+                this.Pane().camera_reset();
             }
             pack_default() {
                 this.links(this.links_parsed().lands.join(', '));
@@ -40802,7 +40797,6 @@ var $;
                 },
             },
             Pane: {
-                flex: { grow: 1 },
                 minWidth: '28rem',
             },
             Ghost: {

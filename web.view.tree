@@ -2529,6 +2529,10 @@ $bog_vmap_app_pane $mol_view
 	world_center /number
 	free_spot /number
 	camera_fit? null
+	camera_reset? null
+	zoom_out? null
+	zoom_in? null
+	zoom_title \
 	node_error* \
 	scene_restart? null
 	error_at*? \
@@ -2560,22 +2564,6 @@ $bog_vmap_app_pane $mol_view
 			sub <= value_labels /$mol_view
 		<= Marks $mol_view
 			sub <= error_marks /$mol_view
-		<= Camera $mol_view
-			sub /
-				<= Zoom_out $mol_button_minor
-					title \−
-					hint \Отдалить
-					click? <=> zoom_out? null
-				<= Zoom_title $mol_view
-					sub /
-						<= zoom_title \
-				<= Zoom_in $mol_button_minor
-					title \+
-					hint \Приблизить
-					click? <=> zoom_in? null
-				<= Reset $mol_button_minor
-					title \Сбросить вид
-					click? <=> camera_reset? null
 	Label* $bog_vmap_app_pane_label
 		style <= label_style* *
 		lines <= label_lines* /string
@@ -2927,6 +2915,18 @@ $bog_vmap_app $mol_book2
 				enabled <= export_ready false
 				blob <= export_blob $mol_blob
 				file_name <= export_file \
+			<= Zoom_out $mol_button_minor
+				title \−
+				hint \Отдалить
+				click? <=> zoom_out? null
+			<= Zoom_reset $mol_button_minor
+				title <= zoom_title \
+				hint \Сбросить вид
+				click? <=> camera_reset? null
+			<= Zoom_in $mol_button_minor
+				title \+
+				hint \Приблизить
+				click? <=> zoom_in? null
 			<= Lights $mol_lights_toggle
 				lights? <=> lights?
 			<= Status $mol_status

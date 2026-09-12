@@ -13002,9 +13002,8 @@ var $;
             $mol_assert_equal(pane.warmed(), false);
             $mol_assert_equal(pane.sub()[0] !== frame_before, true);
             $mol_assert_equal(pane.sub()[0], pane.Scene(pane.scene_key()));
-            $mol_assert_equal(pane.sub().length, 5);
+            $mol_assert_equal(pane.sub().length, 4);
             $mol_assert_equal(pane.sub()[3], pane.Marks());
-            $mol_assert_equal(pane.sub()[4], pane.Camera());
             $mol_assert_equal(pane.watchdog(), null);
             $mol_assert_equal(pane.heartbeat(), null);
             $mol_assert_equal(posted.length, 0);
@@ -16866,6 +16865,9 @@ var $;
                 app.Root_name(),
                 app.Publish(),
                 app.Download(),
+                app.Zoom_out(),
+                app.Zoom_reset(),
+                app.Zoom_in(),
                 app.Lights(),
                 app.Status(),
             ])
@@ -17295,16 +17297,18 @@ var $;
     const map = `${d}flow_map`;
     const button = `${d}flow_button`;
     $mol_test({
-        'the editor opens with its bar, its palette and its canvas'($) {
+        'the editor opens with the head of its canvas, its palette and its canvas'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
             stage.button('Новая сцена');
             stage.button('Удалить');
             stage.button('В библиотеку');
             const canvas = stage.pane.dom_node();
-            for (const title of ['−', '+', 'Сбросить вид']) {
-                $mol_assert_equal(canvas.contains(stage.button(title)), true);
+            const tools = stage.root.querySelector('[bog_vmap_app_canvas_tools]');
+            for (const title of ['−', '100%', '+']) {
+                $mol_assert_equal(tools.contains(stage.button(title)), true);
+                $mol_assert_equal(canvas.contains(stage.button(title)), false);
             }
-            $mol_assert_equal(canvas.contains(stage.button('Удалить')), false);
+            $mol_assert_equal(canvas.querySelector('[role=button]'), null);
             const text = stage.text();
             $mol_assert_ok(text.includes('Полка'));
             $mol_assert_ok(text.includes('Свойства'));
@@ -17541,7 +17545,7 @@ var $;
             $mol_assert_like([...stage.pane.camera_shift()], [50, 30]);
             stage.click(stage.button('+'));
             $mol_assert_ok(stage.text().includes('125%'));
-            stage.click(stage.button('Сбросить вид'));
+            stage.click(stage.button('125%'));
             $mol_assert_ok(stage.text().includes('100%'));
             const size = $_2.$bog_vmap_app_flow_size;
             const shift = stage.pane.camera_shift();
@@ -17797,10 +17801,28 @@ var $;
             $mol_assert_ok(inside(app.Root_name()));
             $mol_assert_ok(inside(app.Publish()));
             $mol_assert_ok(inside(app.Download()));
+            $mol_assert_ok(inside(app.Zoom_out()));
+            $mol_assert_ok(inside(app.Zoom_reset()));
+            $mol_assert_ok(inside(app.Zoom_in()));
             $mol_assert_ok(inside(app.Lights()));
             $mol_assert_ok(inside(app.Status()));
             $mol_assert_ok(app.Canvas().body().includes(app.Pane()));
             $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_foot]').childElementCount, 0);
+        },
+        'the percent in the canvas tools zooms and gives the view back'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.pane.camera_shift(new $mol_vector_2d(700, 700));
+            stage.redraw();
+            stage.click(stage.button('+'));
+            $mol_assert_equal(stage.pane.camera_zoom(), 1.25);
+            $mol_assert_ok(stage.button('125%'));
+            stage.click(stage.button('−'));
+            $mol_assert_equal(stage.pane.camera_zoom(), 1);
+            stage.click(stage.button('+'));
+            stage.click(stage.button('125%'));
+            $mol_assert_equal(stage.pane.camera_zoom(), 1);
+            $mol_assert_like([...stage.pane.camera_shift()], [0, 0]);
+            $mol_assert_ok(stage.button('100%'));
         },
         'each check in the canvas tools adds and removes its page'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
