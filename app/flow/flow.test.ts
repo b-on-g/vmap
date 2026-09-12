@@ -1292,13 +1292,13 @@ namespace $ {
 			$mol_assert_ok( inside( app.Zoom_reset() ) )
 			$mol_assert_ok( inside( app.Zoom_in() ) )
 			$mol_assert_ok( inside( app.Lights() ) )
-			$mol_assert_ok( inside( app.Status() ) )
+			$mol_assert_equal( inside( app.Status() ), false )
+
+			const foot = stage.root.querySelector( '[bog_vmap_app_canvas_foot]' )!
 
 			$mol_assert_ok( app.Canvas().body().includes( app.Pane() ) )
-			$mol_assert_equal(
-				stage.root.querySelector( '[bog_vmap_app_canvas_foot]' )!.childElementCount,
-				0,
-			)
+			$mol_assert_equal( foot.childElementCount, 1 )
+			$mol_assert_ok( foot.contains( app.Status().dom_node() ) )
 
 		},
 

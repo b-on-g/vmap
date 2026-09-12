@@ -1119,12 +1119,31 @@ namespace $ {
 				app.Zoom_reset(),
 				app.Zoom_in(),
 				app.Lights(),
-				app.Status(),
 			] ) $mol_assert_ok( tools.includes( tool ) )
 
+			$mol_assert_equal( tools.includes( app.Status() ), false )
+
 			$mol_assert_equal( app.Canvas().body()[ 0 ], app.Pane() )
-			$mol_assert_equal( app.Canvas().foot().length, 0 )
+			$mol_assert_equal( app.Canvas().foot(), [ app.Status() ] )
 			$mol_assert_equal( app.floats().length, 0 )
+
+		},
+
+		'the panel switches carry an icon and a hint instead of a label'( $ ) {
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			const switches = [
+				[ app.Palette_check(), app.Palette_icon() ],
+				[ app.Inspect_check(), app.Inspect_icon() ],
+				[ app.Code_check(), app.Code_icon() ],
+				[ app.History_check(), app.History_icon() ],
+			] as const
+
+			for( const [ check, icon ] of switches ) {
+				$mol_assert_equal( check.Icon(), icon )
+				$mol_assert_equal( check.title(), '' )
+				$mol_assert_ok( check.hint().length > 0 )
+			}
 
 		},
 

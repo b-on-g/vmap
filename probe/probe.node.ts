@@ -28,6 +28,8 @@ namespace $ {
 		readonly settle: $bog_vmap_probe_settle
 		readonly rows: { readonly [ top: string ]: number }
 		readonly tools: number
+		readonly span: number
+		readonly feet: { readonly [ name: string ]: number }
 		readonly pages: readonly $bog_probe_rect[]
 	}
 
@@ -62,9 +64,17 @@ namespace $ {
 			const rows = {}
 			const tools = document.querySelector( '[bog_vmap_app_canvas_tools]' )
 			const kids = tools ? [ ... tools.children ] : []
+			let span = 0
 			for( const kid of kids ) {
-				const top = Math.round( kid.getBoundingClientRect().top )
+				const box = kid.getBoundingClientRect()
+				const top = Math.round( box.top )
 				rows[ top ] = ( rows[ top ] || 0 ) + 1
+				span += box.width
+			}
+			const feet = {}
+			for( const name of ${ JSON.stringify( $bog_vmap_probe_names ) } ) {
+				const foot = document.querySelector( '[bog_vmap_app_' + name + '_foot]' )
+				feet[ name ] = foot ? foot.childElementCount : -1
 			}
 			const pages = [ ... book.children ].map( kid => {
 				const box = kid.getBoundingClientRect()
@@ -79,6 +89,8 @@ namespace $ {
 				settle: { waited, left, max: book.scrollWidth - book.clientWidth, width: book.scrollWidth, frame: book.clientWidth },
 				rows,
 				tools: kids.length,
+				span: Math.round( span ),
+				feet,
 				pages,
 			}
 		`
@@ -197,10 +209,23 @@ namespace $ {
 					$bog_vmap_probe_close( head!.height + body!.height + foot!.height, page!.height ),
 					`${ at } шапка ${ Math.round( head!.height ) } плюс тело ${ Math.round( body!.height ) } плюс подвал ${ Math.round( foot!.height ) } не дают высоту страницы ${ name } ${ Math.round( page!.height ) }`,
 				)
-				want(
-					foot!.height === 0 && foot!.width === 0,
-					`${ at } пустой подвал ${ name } занимает место: ${ $bog_vmap_probe_show( foot ) }`,
-				)
+				const kids = got.feet[ name ] ?? -1
+
+				if( name === 'canvas' ) {
+					want(
+						kids === 1,
+						`${ at } в подвале Холста ${ kids } узлов вместо одного, статуса`,
+					)
+					want(
+						foot!.height > 0 && foot!.height <= 64,
+						`${ at } подвал Холста высотой ${ Math.round( foot!.height ) }, ждали не больше строки: ${ $bog_vmap_probe_show( foot ) }`,
+					)
+				} else {
+					want(
+						kids === 0 && foot!.height === 0 && foot!.width === 0,
+						`${ at } пустой подвал ${ name } занимает место: ${ kids } узлов, ${ $bog_vmap_probe_show( foot ) }`,
+					)
+				}
 				want(
 					$bog_probe_inside( tools, head ),
 					`${ at } полоса кнопок ${ name } вылезла из шапки: ${ $bog_vmap_probe_show( tools ) } против ${ $bog_vmap_probe_show( head ) }`,
@@ -249,19 +274,15 @@ namespace $ {
 
 			const rows = $bog_vmap_probe_rows( got.rows )
 			const shown = rows.map( row => `${ row[ 0 ] }: ${ row[ 1 ] }` ).join( ', ' )
-			say( `${ at } кнопок Холста ${ got.tools }, строк ${ rows.length } — ${ shown }` )
+			const spare = Math.round( got.viewport.width - ( box( '[bog_vmap_app_canvas]' )?.width ?? 0 ) )
+
+			say( `${ at } кнопок Холста ${ got.tools }, строк ${ rows.length } — ${ shown }, полосе нужно ${ got.span }, странице Холста до крышки вьюпорта ${ spare }` )
 
 			if( width === 1280 ) {
 
 				want(
-					rows.length * 2 < got.tools,
-					`${ at } кнопки Холста расползлись на ${ rows.length } строк при ${ got.tools } кнопках: ${ shown }`,
-				)
-
-				const top = rows[ 0 ]?.[ 1 ] ?? 0
-				want(
-					top * 2 >= got.tools,
-					`${ at } в верхней строке кнопок Холста ${ top } из ${ got.tools }: ${ shown }`,
+					rows.length === 1,
+					`${ at } кнопки Холста легли в ${ rows.length } строк при ${ got.tools } кнопках: ${ shown }, полосе нужно ${ got.span }, запаса до крышки было ${ spare }`,
 				)
 				want(
 					$bog_probe_inside( pane, hole ),

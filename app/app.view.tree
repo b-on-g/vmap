@@ -28,19 +28,21 @@ $bog_vmap_app $mol_book2
 	Canvas $mol_page
 		title \Холст
 		tools /
-			<= Palette_check $mol_check
-				title \Полка
+			<= Palette_check $mol_check_icon
+				Icon <= Palette_icon $mol_icon_widgets
+				hint \Полка: компоненты, которые можно положить на холст
 				checked? <=> palette_showed?
-			<= Inspect_check $mol_check
-				title \Свойства
+			<= Inspect_check $mol_check_icon
+				Icon <= Inspect_icon $mol_icon_tune
+				hint \Свойства выбранного узла
 				checked? <=> inspect_showed?
-			<= Code_check $mol_check
-				title \Код
-				hint \Три текста выбранного узла: view.tree, JS и CSS
+			<= Code_check $mol_check_icon
+				Icon <= Code_icon $mol_icon_code_tags
+				hint \Код: три текста выбранного узла — view.tree, JS и CSS
 				checked? <=> code_showed?
-			<= History_check $mol_check
-				title \Версии
-				hint \История документа: шаги этой сессии и снимки в ленде
+			<= History_check $mol_check_icon
+				Icon <= History_icon $mol_icon_history
+				hint \Версии: шаги этой сессии и снимки в ленде
 				checked? <=> history_showed?
 			<= Board $mol_button_minor
 				title \Артборд
@@ -85,8 +87,6 @@ $bog_vmap_app $mol_book2
 				click? <=> zoom_in? null
 			<= Lights $mol_lights_toggle
 				lights? <=> lights?
-			<= Status $mol_status
-				status <= status \
 		body /
 			<= Pane $bog_vmap_app_pane
 				scene_bundle <= scene_bundle
@@ -147,6 +147,8 @@ $bog_vmap_app $mol_book2
 	Lib $bog_vmap_lib_land_stack
 		pack <= pack_link
 		lands <= lands /string
+	Status $mol_status
+		status <= status \
 	Alarm $mol_status
 		status <= error \
 	Inside_note $mol_paragraph

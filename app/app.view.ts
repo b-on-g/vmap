@@ -478,6 +478,7 @@ namespace $.$$ {
 				... this.error() ? [ this.Alarm() ] : [],
 				... this.export_rows(),
 				... this.root_title_note() ? [ this.Root_note() ] : [],
+				this.Status(),
 			] as readonly $mol_view[]
 		}
 
