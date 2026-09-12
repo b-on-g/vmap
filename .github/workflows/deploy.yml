@@ -129,6 +129,7 @@ jobs:
         file="bog/vmap/border/-/border.log"
         test -s "$file"
         grep -q 'граница держит' "$file"
+        grep -E 'origin кадра|сессий с корнем сцены|атрибут песочницы' "$file" || true
         {
           echo '```'
           cat "$file"
