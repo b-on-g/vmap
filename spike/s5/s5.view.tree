@@ -1,9 +1,7 @@
-- S5. Наследование между классами ОДНОГО .view.tree, когда у базы есть тело в .view.ts.
 $bog_vmap_spike_s5_base $mol_view
 	greet \дефолт из .view.tree
 	sub / <= greet
 
-- Наследник, объявленный в ТОМ ЖЕ файле. Своего тела в .view.ts не имеет.
 $bog_vmap_spike_s5_near $bog_vmap_spike_s5_base
 
 $bog_vmap_spike_s5 $mol_view
