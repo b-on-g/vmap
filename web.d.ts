@@ -53448,95 +53448,95 @@ declare namespace $ {
 		,
 		ReturnType< $mol_search['query'] >
 	>
-	type $mol_check__title_bog_vmap_app_shelf_3 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_check['title'] >
-	>
-	type $mol_check__hint_bog_vmap_app_shelf_4 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_check['hint'] >
-	>
-	type $mol_check__checked_bog_vmap_app_shelf_5 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_shelf['classes_showed'] >
-		,
-		ReturnType< $mol_check['checked'] >
-	>
-	type $mol_list__rows_bog_vmap_app_shelf_6 = $mol_type_enforce<
+	type $mol_list__rows_bog_vmap_app_shelf_3 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['pack_rows'] >
 		,
 		ReturnType< $mol_list['rows'] >
 	>
-	type $mol_string__hint_bog_vmap_app_shelf_7 = $mol_type_enforce<
+	type $mol_string__hint_bog_vmap_app_shelf_4 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_string['hint'] >
 	>
-	type $mol_string__value_bog_vmap_app_shelf_8 = $mol_type_enforce<
+	type $mol_string__value_bog_vmap_app_shelf_5 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['links'] >
 		,
 		ReturnType< $mol_string['value'] >
 	>
-	type $mol_form_field__name_bog_vmap_app_shelf_9 = $mol_type_enforce<
+	type $mol_form_field__name_bog_vmap_app_shelf_6 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_form_field['name'] >
 	>
-	type $mol_form_field__bids_bog_vmap_app_shelf_10 = $mol_type_enforce<
+	type $mol_form_field__bids_bog_vmap_app_shelf_7 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_form_field['bids'] >
 	>
-	type $mol_form_field__control_bog_vmap_app_shelf_11 = $mol_type_enforce<
+	type $mol_form_field__control_bog_vmap_app_shelf_8 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['Links'] >
 		,
 		ReturnType< $mol_form_field['control'] >
 	>
-	type $mol_button_open__hint_bog_vmap_app_shelf_12 = $mol_type_enforce<
+	type $mol_button_open__hint_bog_vmap_app_shelf_9 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_open['hint'] >
 	>
-	type $mol_button_open__accept_bog_vmap_app_shelf_13 = $mol_type_enforce<
+	type $mol_button_open__accept_bog_vmap_app_shelf_10 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_open['accept'] >
 	>
-	type $mol_button_open__multiple_bog_vmap_app_shelf_14 = $mol_type_enforce<
+	type $mol_button_open__multiple_bog_vmap_app_shelf_11 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_button_open['multiple'] >
 	>
-	type $mol_button_open__files_bog_vmap_app_shelf_15 = $mol_type_enforce<
+	type $mol_button_open__files_bog_vmap_app_shelf_12 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['files'] >
 		,
 		ReturnType< $mol_button_open['files'] >
 	>
-	type $mol_form_field__name_bog_vmap_app_shelf_16 = $mol_type_enforce<
+	type $mol_form_field__name_bog_vmap_app_shelf_13 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_form_field['name'] >
 	>
-	type $mol_form_field__bids_bog_vmap_app_shelf_17 = $mol_type_enforce<
+	type $mol_form_field__bids_bog_vmap_app_shelf_14 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_form_field['bids'] >
 	>
-	type $mol_form_field__control_bog_vmap_app_shelf_18 = $mol_type_enforce<
+	type $mol_form_field__control_bog_vmap_app_shelf_15 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['Import_open'] >
 		,
 		ReturnType< $mol_form_field['control'] >
 	>
-	type $mol_list__rows_bog_vmap_app_shelf_19 = $mol_type_enforce<
+	type $mol_list__rows_bog_vmap_app_shelf_16 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['item_rows'] >
 		,
 		ReturnType< $mol_list['rows'] >
 	>
-	type $mol_list__rows_bog_vmap_app_shelf_20 = $mol_type_enforce<
+	type $mol_list__rows_bog_vmap_app_shelf_17 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['app_rows'] >
 		,
 		ReturnType< $mol_list['rows'] >
+	>
+	type $mol_check__title_bog_vmap_app_shelf_18 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_check['title'] >
+	>
+	type $mol_check__hint_bog_vmap_app_shelf_19 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_check['hint'] >
+	>
+	type $mol_check__checked_bog_vmap_app_shelf_20 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_shelf['classes_showed'] >
+		,
+		ReturnType< $mol_check['checked'] >
 	>
 	type $mol_expander__title_bog_vmap_app_shelf_21 = $mol_type_enforce<
 		string
@@ -53662,7 +53662,6 @@ declare namespace $ {
 	>
 	export class $bog_vmap_app_shelf extends $mol_page {
 		Filter( ): $mol_search
-		Level( ): $mol_check
 		pack_rows( ): readonly(any)[]
 		Pack_list( ): $mol_list
 		rejected_note( ): string
@@ -53701,6 +53700,7 @@ declare namespace $ {
 		filter( next?: string ): string
 		title( ): string
 		tools( ): readonly(any)[]
+		Level( ): $mol_check
 		Source( ): $mol_expander
 		Parts( ): $mol_expander
 		Apps( ): $mol_form_field

@@ -37735,13 +37735,6 @@ var $;
 			(obj.query) = (next) => ((this.filter(next)));
 			return obj;
 		}
-		Level(){
-			const obj = new this.$.$mol_check();
-			(obj.title) = () => ("Все классы пака");
-			(obj.hint) = () => ("Классы донорского пака целиком: примитивы, из которых верстают внутри блока");
-			(obj.checked) = (next) => ((this.classes_showed(next)));
-			return obj;
-		}
 		pack_rows(){
 			return [];
 		}
@@ -37888,7 +37881,14 @@ var $;
 			return "Полка";
 		}
 		tools(){
-			return [(this.Filter()), (this.Level())];
+			return [(this.Filter())];
+		}
+		Level(){
+			const obj = new this.$.$mol_check();
+			(obj.title) = () => ("Все классы пака");
+			(obj.hint) = () => ("Классы донорского пака целиком: примитивы, из которых верстают внутри блока");
+			(obj.checked) = (next) => ((this.classes_showed(next)));
+			return obj;
 		}
 		Source(){
 			const obj = new this.$.$mol_expander();
@@ -37948,7 +37948,6 @@ var $;
 		}
 	};
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Filter"));
-	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Level"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Pack_list"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Links"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Links_field"));
@@ -37968,6 +37967,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "files"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "classes_showed"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "filter"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Level"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Source"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Parts"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Apps"));
@@ -38227,8 +38227,8 @@ var $;
         class $bog_vmap_app_shelf extends $.$bog_vmap_app_shelf {
             body() {
                 return (this.classes_showed()
-                    ? [this.Source(), this.Palette()]
-                    : [this.Source(), this.Parts(), this.Apps()]);
+                    ? [this.Level(), this.Source(), this.Palette()]
+                    : [this.Level(), this.Source(), this.Parts(), this.Apps()]);
             }
             packs() {
                 return this.$.$bog_vmap_app_shelf_packs();
@@ -38421,6 +38421,10 @@ var $;
     (function ($$) {
         $mol_style_define($bog_vmap_app_shelf, {
             flex: { basis: '20rem' },
+            Filter: {
+                minWidth: 0,
+                flex: { shrink: 1, basis: '6rem' },
+            },
             Item_row: {
                 font: { family: 'inherit', size: '.9rem' },
             },

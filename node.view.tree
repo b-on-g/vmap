@@ -1481,10 +1481,10 @@ $bog_vmap_app_shelf $mol_page
 		<= Filter $mol_search
 			hint \Поиск по деталям и классам
 			query? <=> filter?
-		<= Level $mol_check
-			title \Все классы пака
-			hint \Классы донорского пака целиком: примитивы, из которых верстают внутри блока
-			checked? <=> classes_showed?
+	Level $mol_check
+		title \Все классы пака
+		hint \Классы донорского пака целиком: примитивы, из которых верстают внутри блока
+		checked? <=> classes_showed?
 	Source $mol_expander
 		title \Пак компонентов
 		expanded? true
