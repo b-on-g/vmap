@@ -5,6 +5,15 @@ Every file next to this one is **generated output**, written by
 the same reason as in `../demo/`: the folder is worth something only while
 nobody has touched it since the export ran.
 
+`index.html` is missing on purpose, as in `../demo/`: the pack keeps a single
+page by section 7 of [ARCHITECTURE.md](../ARCHITECTURE.md), and the page was
+removed by hand after the export ran. What the router is worth as a fixture does
+not pass through the page anyway — the address is measured on the built node
+bundle, and the page the export writes is held byte for byte by a unit test of
+the export. Without a source page the build writes no `-/index.html` and
+synthesizes `-/test.html` around a root named after the module path, a class
+this module does not declare; the tests in it still run.
+
 `demo/` answers whether an exported document builds. This one answers the
 question stage 6.5 adds: does a document of **several pages** build, and is a
 page addressable once it does. A unit test cannot show either — what has to

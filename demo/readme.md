@@ -4,6 +4,19 @@ Every file next to this one is **generated output**, written by
 `$bog_vmap_app_export_build` from `../app/export/`. Do not hand edit them: the
 whole point of the folder is that nobody touched it after the export ran.
 
+One file the export writes is missing here on purpose, `index.html`. The pack
+keeps a single page, the editor's, by section 7 of
+[ARCHITECTURE.md](../ARCHITECTURE.md), so the page was removed by hand once the
+export had run. Nothing else was touched and nothing was lost: the page is a
+fixed template with the root class dropped into it, and a unit test of the
+export already holds those bytes. Regenerating means running the export over
+the same two sources and deleting the page again.
+
+Without a source page the build writes no `-/index.html` at all and synthesizes
+`-/test.html` around a root named after the module path, a class this module
+does not declare. The tests in it still run, and `../scene/` and `../part/` have
+lived that way since they lost their pages.
+
 It exists to answer one question, the acceptance criterion of stage 7 in
 [PLAN.md](../PLAN.md): does an exported document drop into the tree and build
 with no manual fixes? Section 10 of [ARCHITECTURE.md](../ARCHITECTURE.md) states
