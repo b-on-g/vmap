@@ -215,7 +215,6 @@ namespace $.$$ {
 				this.Marks(),
 				... this.slot() ? [ this.Insert() ] : [],
 				... this.band() ? [ this.Band() ] : [],
-				this.Camera(),
 			] as readonly $mol_view[]
 		}
 

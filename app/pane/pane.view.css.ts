@@ -54,28 +54,6 @@ namespace $.$$ {
 			pointerEvents: 'none',
 		},
 
-		Camera: {
-			position: 'absolute',
-			right: '.5rem',
-			bottom: '.5rem',
-			flex: { direction: 'row' },
-			alignItems: 'center',
-			gap: '.25rem',
-			padding: '.25rem',
-			borderRadius: String( $mol_gap.round ),
-			background: { color: $mol_theme.card },
-			boxShadow: String( $mol_theme.shade ) + ' 0 0 .5rem',
-			userSelect: 'none'
-		},
-
-		Zoom_title: {
-			minWidth: '3.5rem',
-			justify: { content: 'center' },
-			font: { size: '.75rem' },
-			color: $mol_theme.shade,
-			userSelect: 'none'
-		},
-
 		Mark: {
 			position: 'absolute',
 			transform: 'translate(-50%, -50%)',

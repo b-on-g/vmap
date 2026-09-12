@@ -17,6 +17,22 @@ namespace $.$$ {
 			this.Pane().scene_restart()
 		}
 
+		override zoom_title() {
+			return this.Pane().zoom_title()
+		}
+
+		override zoom_in() {
+			this.Pane().zoom_in()
+		}
+
+		override zoom_out() {
+			this.Pane().zoom_out()
+		}
+
+		override camera_reset() {
+			this.Pane().camera_reset()
+		}
+
 		@ $mol_action
 		override pack_default() {
 			this.links( this.links_parsed().lands.join( ', ' ) )

@@ -20,7 +20,6 @@ namespace $.$$ {
 		},
 
 		Pane: {
-			flex: { grow: 1 },
 			minWidth: '28rem',
 		},
 

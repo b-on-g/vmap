@@ -1053,6 +1053,9 @@ namespace $ {
 				app.Root_name(),
 				app.Publish(),
 				app.Download(),
+				app.Zoom_out(),
+				app.Zoom_reset(),
+				app.Zoom_in(),
 				app.Lights(),
 				app.Status(),
 			] ) $mol_assert_ok( tools.includes( tool ) )
