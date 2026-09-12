@@ -1977,8 +1977,10 @@ CDP, ни скриншоты. Приёмка только мол-тестами 
   выгрузки; проверить, что он не тянет `bog/theme`.
 - [ ] **W23.2. Свойства** (`props`): `app/inspect/` — `$mol_page` с `title` = имя узла в
   `$mol_string` в `tools` (как сейчас), `body` из `$mol_form_field` на строку
-  (`$mol_form_field title <= row_sign*`, внутри штатное поле по типу значения: `$mol_string`,
-  `$mol_number`, `$mol_switch`, `$mol_select`, `$mol_textarea`); наследованные строки — группа
+  (`$mol_form_field name <= row_sign*` — подпись поля это порт `name`, `title` у него не
+  рисуется; внутри штатное поле по типу значения: `$mol_string`, `$mol_switch`, `$mol_select`,
+  `$mol_textarea`; число — тоже `$mol_string`, потому что «число» дерева это литерал текста,
+  а `$mol_number` нормализует `1e3`/`0x10`); наследованные строки — группа
   `$mol_expander`; `Flex` — тоже `$mol_form_field`/`$mol_labeler`. `inspect`, `row`,
   `value` CSS — к нулю или к нескольким строкам.
 - [ ] **W23.3. Полка и палитра** (`shelf`): `app/shelf/` — `$mol_page`, фильтр `$mol_search`
