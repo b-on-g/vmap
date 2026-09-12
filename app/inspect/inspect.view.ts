@@ -38,18 +38,15 @@ namespace $.$$ {
 
 			if( !this.class_ready() ) return [ this.Empty() ] as readonly $mol_view[]
 
-			return [
-				this.Head(),
-				... this.title_note() ? [ this.Note() ] : [],
-				this.Body(),
-			] as readonly $mol_view[]
+			return super.body()
 		}
 
-		body_content() {
+		override tools() {
 			return [
-				this.Flex(),
-				this.Rows(),
-			] as readonly $mol_view[]
+				this.base_title(),
+				this.total(),
+				... this.title_note() ? [ this.Note() ] : [],
+			] as readonly $mol_view_content[]
 		}
 
 		class_ready() {
@@ -87,8 +84,22 @@ namespace $.$$ {
 			]
 		}
 
+		@ $mol_mem
+		own_ports() {
+			return this.port_list().filter( name => !this.row_inherited( name ) )
+		}
+
+		@ $mol_mem
+		inherited_ports() {
+			return this.port_list().filter( name => this.row_inherited( name ) )
+		}
+
 		rows() {
-			return this.port_list().map( name => this.Row( name ) )
+			return this.own_ports().map( name => this.Row( name ) )
+		}
+
+		inherited_rows() {
+			return this.inherited_ports().map( name => this.Row( name ) )
 		}
 
 		total() {

@@ -578,7 +578,7 @@ namespace $ {
 
 			$mol_assert_equal( stage.app.selected(), 'Calc' )
 			$mol_assert_ok( stage.root.querySelector( '[bog_vmap_app_pane_handle]' ) !== null )
-			stage.field( "Row('result').Value().Number().Num()" )
+			stage.field( "Row('result').Value().Num()" )
 
 			stage.tap( stage.part_center( 'Calc' ) )
 
@@ -598,7 +598,7 @@ namespace $ {
 
 			const before = stage.scene.sent( 'doc_set' ).length
 
-			stage.type( stage.field( "Row('result').Value().Number().Num()" ), '42' )
+			stage.type( stage.field( "Row('result').Value().Num()" ), '42' )
 
 			const source = stage.app.doc_source()
 			$mol_assert_ok( source.includes( `Calc ${ calc } result 42` ) )

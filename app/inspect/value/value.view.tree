@@ -1,17 +1,22 @@
-$bog_vmap_app_inspect_value $mol_view
+$bog_vmap_app_inspect_value $mol_list
 	tree? $mol_tree2_empty
 	binds /string
 	nodes *
 	alarm? \
-	sub <= editors /$mol_view
-	Alarm $mol_view sub / <= alarm
+	rows <= editors /$mol_view
+	Alarm $mol_status
+		status <= alarm
 	String $bog_vmap_app_inspect_value_string
 		tree? <=> tree?
-	Number $bog_vmap_app_inspect_value_number
-		tree? <=> tree?
-		alarm? <=> alarm?
-	Bool $bog_vmap_app_inspect_value_bool
-		tree? <=> tree?
+	Num $mol_string
+		hint \число
+		value? <=> num? \
+	Flag $mol_check
+		title <= flag_title \
+		checked? <=> flag? false
+	Raw $mol_string
+		enabled false
+		value <= raw \
 	Seq $bog_vmap_app_inspect_value_seq
 		tree? <=> tree?
 		keyed <= seq_keyed false
@@ -28,8 +33,6 @@ $bog_vmap_app_inspect_value $mol_view
 		tree? <=> tree?
 		nodes <= nodes
 		alarm? <=> alarm?
-	Raw $bog_vmap_app_inspect_value_raw
-		tree? <=> tree?
 
 $bog_vmap_app_inspect_value_area $mol_string
 	dom_name \textarea
@@ -38,7 +41,7 @@ $bog_vmap_app_inspect_value_area $mol_string
 		rows <= rows 1
 	plugins /
 
-$bog_vmap_app_inspect_value_string $mol_view
+$bog_vmap_app_inspect_value_string $mol_bar
 	tree? $mol_tree2_empty
 	sub /
 		<= Text $bog_vmap_app_inspect_value_area
@@ -50,38 +53,19 @@ $bog_vmap_app_inspect_value_string $mol_view
 			hint \Многоязычное: текст уедет в таблицу локалей
 			checked? <=> locale? false
 
-$bog_vmap_app_inspect_value_number $mol_view
-	tree? $mol_tree2_empty
-	alarm? \
-	sub /
-		<= Num $mol_string
-			hint \число
-			value? <=> num? \
-
-$bog_vmap_app_inspect_value_bool $mol_view
-	tree? $mol_tree2_empty
-	sub /
-		<= Flag $mol_check
-			title <= flag_title \
-			checked? <=> flag? false
-
-$bog_vmap_app_inspect_value_raw $mol_view
-	tree? $mol_tree2_empty
-	sub / <= raw \
-
-$bog_vmap_app_inspect_value_seq $mol_view
+$bog_vmap_app_inspect_value_seq $mol_list
 	tree? $mol_tree2_empty
 	binds /string
 	nodes *
 	alarm? \
 	keyed false
 	klass false
-	sub <= seq_sub /$mol_view
+	rows <= seq_sub /$mol_view
 	Class_name $mol_string
 		hint \класс
 		value? <=> class_name? \
-	Items $mol_view
-		sub <= items /
+	Items $mol_list
+		rows <= items /$mol_view
 	Add $mol_button_minor
 		title <= add_title \
 		hint \Добавить
@@ -95,7 +79,7 @@ $bog_vmap_app_inspect_value_seq $mol_view
 		nodes <= nodes
 		drop? <=> item_drop*? null
 
-$bog_vmap_app_inspect_value_item $mol_view
+$bog_vmap_app_inspect_value_item $mol_bar
 	value? $mol_tree2_empty
 	binds /string
 	nodes *
@@ -115,13 +99,12 @@ $bog_vmap_app_inspect_value_item $mol_view
 		hint \Убрать
 		click? <=> drop?
 
-$bog_vmap_app_inspect_value_bind $mol_view
+$bog_vmap_app_inspect_value_bind $mol_bar
 	tree? $mol_tree2_empty
 	binds /string
 	nodes *
 	alarm? \
-	sub <= bind_sub /$mol_view
-	Op $mol_view sub / <= op \
+	sub <= bind_sub /$mol_view_content
 	Target $mol_select
 		hint \свойство
 		value? <=> target? \
@@ -131,19 +114,19 @@ $bog_vmap_app_inspect_value_bind $mol_view
 		binds <= binds
 		nodes <= nodes
 
-$bog_vmap_app_inspect_value_wire $mol_view
+$bog_vmap_app_inspect_value_wire $mol_list
 	tree? $mol_tree2_empty
 	nodes *
 	alarm? \
-	sub <= wire_sub /$mol_view
-	Row $mol_view
-		sub <= wire_row /$mol_view
-	Op $mol_view sub / \=
+	wire_op \=
+	wire_dot \.
+	rows <= wire_sub /$mol_view
+	Row $mol_bar
+		sub <= wire_row /$mol_view_content
 	Origin $mol_select
 		hint \узел
 		value? <=> origin? \
 		options <= node_names /string
-	Dot $mol_view sub / \.
 	Port_pick $mol_select
 		hint \порт
 		value? <=> port? \
@@ -151,4 +134,5 @@ $bog_vmap_app_inspect_value_wire $mol_view
 	Port_free $mol_string
 		hint \порт
 		value? <=> port? \
-	Note $mol_view sub / <= note \
+	Note $mol_status
+		status <= note \

@@ -1,53 +1,46 @@
-$bog_vmap_app_inspect_flex $mol_view
+$bog_vmap_app_inspect_flex $mol_list
 	value*? \
-	sub /
-		<= Width $bog_vmap_app_inspect_flex_row
-			title \Ширина
-			Field <= Width_pick $mol_switch
+	rows /
+		<= Width $mol_form_field
+			name \Ширина
+			control <= Width_pick $mol_switch
 				value? <=> width? \
 				options *
 					390px \мобильная
 					768px \планшет
 					1280px \десктоп
-		<= Direction $bog_vmap_app_inspect_flex_row
-			title \Направление
-			Field <= Direction_pick $mol_switch
+		<= Direction $mol_form_field
+			name \Направление
+			control <= Direction_pick $mol_switch
 				value? <=> direction? \
 				options *
 					column \колонкой
 					row \рядом
-		<= Across $bog_vmap_app_inspect_flex_row
-			title \Поперёк
-			Field <= Across_pick $mol_switch
+		<= Across $mol_form_field
+			name \Поперёк
+			control <= Across_pick $mol_switch
 				value? <=> across? \
 				options *
 					flex-start \к началу
 					center \по центру
 					flex-end \к концу
 					stretch \во всю
-		<= Along $bog_vmap_app_inspect_flex_row
-			title \Вдоль
-			Field <= Along_pick $mol_switch
+		<= Along $mol_form_field
+			name \Вдоль
+			control <= Along_pick $mol_switch
 				value? <=> along? \
 				options *
 					flex-start \к началу
 					center \по центру
 					flex-end \к концу
 					space-between \по краям
-		<= Gap $bog_vmap_app_inspect_flex_row
-			title \Зазор
-			Field <= Gap_field $mol_string
+		<= Gap $mol_form_field
+			name \Зазор
+			control <= Gap_field $mol_string
 				hint \1rem
 				value? <=> gap? \
-		<= Grow $bog_vmap_app_inspect_flex_row
-			title \Растяжение
-			Field <= Grow_check $mol_check
+		<= Grow $mol_form_field
+			name \Растяжение
+			control <= Grow_check $mol_check
 				title \занимать свободное место
 				checked? <=> grow? false
-
-$bog_vmap_app_inspect_flex_row $mol_view
-	title \
-	Field $mol_view
-	sub /
-		<= Title $mol_view sub / <= title
-		<= Field

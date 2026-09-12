@@ -1,33 +1,34 @@
-$bog_vmap_app_inspect $mol_view
+$bog_vmap_app_inspect $mol_page
 	source? \
 	peers /$mol_tree2
 	pack? \https://mol.hyoo.ru
 	class_title? \
 	title_note \
-	sub <= body /$mol_view
-	Head $mol_view
-		sub /
-			<= Title $mol_string
-				hint \имя узла
-				minimal_height 28
-				value? <=> title_value? \
-				submit? <=> title_submit? null
-				event *
-					^
-					blur? <=> title_submit? null
-			<= Base $mol_view sub / <= base_title \
-			<= Total $mol_view sub / <= total \
-	Flex $bog_vmap_app_inspect_flex
-		value*? <=> flex_value*? \
-	Body $mol_scroll
-		sub /
-			<= Stack $mol_view
-				sub <= body_content /$mol_view
-	Rows $mol_view sub <= rows /
-	Note $mol_view
-		sub / <= title_note \
-	Empty $mol_view
-		sub / <= empty_note \Нечего править: в исходнике нет объявления класса
+	title <= class_title
+	title_content /
+		<= Name $mol_string
+			hint \имя узла
+			value? <=> title_value? \
+			submit? <=> title_submit? null
+			event *
+				^
+				blur? <=> title_submit? null
+	tools /$mol_view_content
+		<= base_title \
+		<= total \
+		<= Note $mol_status
+			status <= title_note
+	body /$mol_view
+		<= Flex $bog_vmap_app_inspect_flex
+			value*? <=> flex_value*? \
+		<= Rows $mol_list
+			rows <= rows /$mol_view
+		<= Inherited $mol_expander
+			title \Наследованные
+			expanded? <=> inherited_shown? true
+			content <= inherited_rows /$mol_view
+	Empty $mol_status
+		status <= empty_note \Нечего править: в исходнике нет объявления класса
 	Node $bog_vmap_lang_node
 		source? <=> source?
 	Lib $bog_vmap_lib
@@ -44,18 +45,17 @@ $bog_vmap_app_inspect $mol_view
 		binds <= binds /string
 		nodes <= nodes *
 
-$bog_vmap_app_inspect_demo $mol_view
+$bog_vmap_app_inspect_demo $mol_book2
 	source? \
-	sub /
-		<= Source $mol_view
-			sub /
-				<= Source_head $mol_view
-					sub /
-						<= Source_title $mol_view sub / \Исходник документа
-						<= Class_pick $mol_select
-							hint \класс
-							value? <=> klass? \
-							options <= names /string
+	pages /
+		<= Source $mol_page
+			title \Исходник документа
+			tools /
+				<= Class_pick $mol_select
+					hint \класс
+					value? <=> klass? \
+					options <= names /string
+			body /
 				<= Source_text $bog_vmap_app_inspect_value_area
 					rows 26
 					value? <=> source?

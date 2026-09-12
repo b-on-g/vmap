@@ -980,13 +980,13 @@ namespace $ {
 			stage.drop( `${d}flow_calc`, stage.client([ 200, 150 ]) )
 			stage.tap( stage.part_center( 'Calc' ) )
 
-			const field = stage.field( 'Inspect().Title()' )
+			const field = stage.field( 'Inspect().Name()' )
 			stage.type( field, 'Кнопка' )
 
 			stage.blur( field )
 
 			$mol_assert_equal( stage.app.selected(), 'Calc' )
-			$mol_assert_equal( stage.field( 'Inspect().Title()' ).value, 'Кнопка' )
+			$mol_assert_equal( stage.field( 'Inspect().Name()' ).value, 'Кнопка' )
 
 			$mol_assert_ok( stage.text().includes( 'Узел по-прежнему называется «Calc»' ) )
 

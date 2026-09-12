@@ -36,13 +36,43 @@ namespace $.$$ {
 			return this.kind() === 'object'
 		}
 
+		override num( next?: string ) {
+
+			const val = this.tree()
+			if( next === undefined ) return val.type
+
+			guard( this, ()=> this.tree(
+				val.struct( this.$.$bog_vmap_app_inspect_value_literal( next ) )
+			) )
+
+			return next
+		}
+
+		override flag_title() {
+			return this.tree().type
+		}
+
+		override flag( next?: boolean ) {
+
+			const val = this.tree()
+			if( next === undefined ) return val.type === 'true'
+
+			this.tree( val.struct( next ? 'true' : 'false' ) )
+
+			return next
+		}
+
+		override raw() {
+			return this.tree().toString().trimEnd()
+		}
+
 		Editor(): $mol_view {
 
 			switch( this.kind() ) {
 				case 'string': return this.String()
 				case 'locale': return this.String()
-				case 'number': return this.Number()
-				case 'bool': return this.Bool()
+				case 'number': return this.Num()
+				case 'bool': return this.Flag()
 				case 'list': return this.Seq()
 				case 'dict': return this.Seq()
 				case 'object': return this.Seq()
@@ -92,48 +122,6 @@ namespace $.$$ {
 
 		override text_rows() {
 			return Math.min( 8, this.text().split( '\n' ).length )
-		}
-
-	}
-
-	export class $bog_vmap_app_inspect_value_number extends $.$bog_vmap_app_inspect_value_number {
-
-		override num( next?: string ) {
-
-			const val = this.tree()
-			if( next === undefined ) return val.type
-
-			guard( this, ()=> this.tree(
-				val.struct( this.$.$bog_vmap_app_inspect_value_literal( next ) )
-			) )
-
-			return next
-		}
-
-	}
-
-	export class $bog_vmap_app_inspect_value_bool extends $.$bog_vmap_app_inspect_value_bool {
-
-		override flag_title() {
-			return this.tree().type
-		}
-
-		override flag( next?: boolean ) {
-
-			const val = this.tree()
-			if( next === undefined ) return val.type === 'true'
-
-			this.tree( val.struct( next ? 'true' : 'false' ) )
-
-			return next
-		}
-
-	}
-
-	export class $bog_vmap_app_inspect_value_raw extends $.$bog_vmap_app_inspect_value_raw {
-
-		override raw() {
-			return this.tree().toString().trimEnd()
 		}
 
 	}
@@ -253,7 +241,7 @@ namespace $.$$ {
 
 	export class $bog_vmap_app_inspect_value_bind extends $.$bog_vmap_app_inspect_value_bind {
 
-		override op() {
+		op() {
 			return this.tree().type
 		}
 
@@ -296,10 +284,10 @@ namespace $.$$ {
 
 		override bind_sub() {
 			return [
-				this.Op(),
+				this.op(),
 				this.Target(),
 				... this.ref()?.kids.length ? [ this.Default() ] : [],
-			] as readonly $mol_view[]
+			] as readonly $mol_view_content[]
 		}
 
 	}
@@ -340,11 +328,11 @@ namespace $.$$ {
 
 		override wire_row() {
 			return [
-				this.Op(),
+				this.wire_op(),
 				this.Origin(),
-				this.Dot(),
+				this.wire_dot(),
 				this.ports().length ? this.Port_pick() : this.Port_free(),
-			] as readonly $mol_view[]
+			] as readonly $mol_view_content[]
 		}
 
 		override wire_sub() {

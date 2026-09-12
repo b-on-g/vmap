@@ -1,4 +1,4 @@
-$bog_vmap_app_inspect_row $mol_view
+$bog_vmap_app_inspect_row $mol_form_field
 	sign \
 	owner \
 	inherited false
@@ -8,16 +8,16 @@ $bog_vmap_app_inspect_row $mol_view
 	keyed? false
 	changeable? false
 	drop? null
-	sub /
-		<= Head $mol_view
-			sub /
-				<= Sign $mol_view sub / <= sign
-				<= Owner $mol_view sub / <= owner
-				<= Tools $mol_view sub <= tools /
-		<= Value $bog_vmap_app_inspect_value
-			tree? <=> value?
-			binds <= binds
-			nodes <= nodes
+	name <= sign
+	bid <= owner
+	label /
+		^
+		<= Tools $mol_row
+			sub <= tools /$mol_view
+	control <= Value $bog_vmap_app_inspect_value
+		tree? <=> value?
+		binds <= binds
+		nodes <= nodes
 	Key $mol_check
 		title \*
 		hint \Много значений по ключу
@@ -30,6 +30,3 @@ $bog_vmap_app_inspect_row $mol_view
 		title \✕
 		hint \Убрать свойство из документа
 		click? <=> drop?
-	attr *
-		^
-		bog_vmap_app_inspect_row_inherited <= inherited
