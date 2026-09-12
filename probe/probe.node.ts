@@ -280,11 +280,10 @@ namespace $ {
 			say( `${ at } шапки страниц ${ heads.join( ', ' ) }` )
 
 			if( width === 1280 ) {
-				const wide = $bog_vmap_probe_names.filter( name => name !== 'shelf' )
-				const first = head_of( wide[ 0 ] ?? '' )
+				const first = head_of( $bog_vmap_probe_names[ 0 ] ?? '' )
 				want(
-					wide.every( name => $bog_vmap_probe_close( head_of( name ), first, 4 ) ),
-					`${ at } шапки широких страниц разной высоты: ${ wide.map( name => `${ name } ${ head_of( name ) }` ).join( ', ' ) }`,
+					$bog_vmap_probe_names.every( name => $bog_vmap_probe_close( head_of( name ), first, 4 ) ),
+					`${ at } шапки страниц разной высоты: ${ heads.join( ', ' ) }`,
 				)
 			}
 
