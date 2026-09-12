@@ -7676,6 +7676,26 @@ var $;
             $mol_assert_equal($bog_vmap_app_wire_fits('number', 'get'), true);
             $mol_assert_equal($bog_vmap_app_wire_fits('bind', 'number'), true);
         },
+        'a two way wire takes only a port declared with a sign'($) {
+            const signed = port('value', 'number', true);
+            const plain = port('result', 'number');
+            $mol_assert_equal($bog_vmap_app_wire_takes('number', signed, false), true);
+            $mol_assert_equal($bog_vmap_app_wire_takes('number', plain, false), true);
+            $mol_assert_equal($bog_vmap_app_wire_takes('number', signed, true), true);
+            $mol_assert_equal($bog_vmap_app_wire_takes('number', plain, true), false);
+        },
+        'an unfitting shape is refused whichever way the wire runs'($) {
+            const signed = port('value', 'string', true);
+            $mol_assert_equal($bog_vmap_app_wire_takes('number', signed, false), false);
+            $mol_assert_equal($bog_vmap_app_wire_takes('number', signed, true), false);
+            $mol_assert_equal($bog_vmap_app_wire_takes('locale', signed, true), true);
+        },
+        'the label of a two way wire carries the sign, of a one way one only the value'($) {
+            $mol_assert_equal($bog_vmap_app_wire_label({ label: '42', bidi: false }), '42');
+            $mol_assert_equal($bog_vmap_app_wire_label({ label: '42', bidi: true }), '⇄ 42');
+            $mol_assert_equal($bog_vmap_app_wire_label({ label: '', bidi: false }), '');
+            $mol_assert_equal($bog_vmap_app_wire_label({ label: '', bidi: true }), '⇄');
+        },
         'ports are the value shaped, unkeyed properties of the class'($) {
             const d = '$';
             const tree = $.$mol_tree2_from_string([
@@ -11152,6 +11172,33 @@ var $;
     function assets($, at = master) {
         return $bog_vmap_asset.make({ $, master: () => at });
     }
+    function yard_of($, seen, ports) {
+        const Yard = class extends $giper_baza_yard {
+            masters() {
+                return ports;
+            }
+            face_port_land([port, land]) {
+                return seen(land.str);
+            }
+        };
+        return Yard.make({ $ });
+    }
+    function mirror_of(land, shift = {}) {
+        const mirror = new $giper_baza_face_map;
+        for (const [peer, face] of land.faces) {
+            mirror.peer_time(peer, face.time + (shift.time ?? 0), face.tick);
+            mirror.peer_summ(peer, face.summ + (shift.summ ?? 0));
+        }
+        return mirror;
+    }
+    function assets_of($, file, yard) {
+        return $bog_vmap_asset.make({
+            $,
+            master: () => master,
+            pawn: () => file,
+            yard: () => yard,
+        });
+    }
     function file_of($, name = 'logo.png', head = '11111111') {
         const one = land($).Pawn($giper_baza_file).Head(new $giper_baza_link(head));
         one.buffer(new Uint8Array([137, 80, 78, 71]));
@@ -11255,6 +11302,60 @@ var $;
             $mol_assert_equal($bog_vmap_asset_link(uri), file.link().str);
             const put = await $mol_wire_async(one).put(new $mol_blob([bytes], { type: 'image/png' }));
             $mol_assert_ok(!!$bog_vmap_asset_link(put));
+        },
+        'a land no master has answered about is still on its way'($) {
+            const file = file_of($);
+            const link = file.link().str;
+            const one = assets_of($, file, yard_of($, () => null, [$mol_rest_port.make({})]));
+            $mol_assert_equal(one.filled(link), true);
+            $mol_assert_equal(one.sent(link), false);
+            $mol_assert_equal(one.ready(link), false);
+        },
+        'units the master has not seen yet keep the asset on its way'($) {
+            const file = file_of($);
+            const link = file.link().str;
+            const land = file.land();
+            const port = $mol_rest_port.make({});
+            $mol_assert_ok(land.faces.size > 0);
+            const by_summ = assets_of($, file, yard_of($, () => mirror_of(land, { summ: -1 }), [port]));
+            $mol_assert_equal(by_summ.sent(link), false);
+            const by_time = assets_of($, file, yard_of($, () => mirror_of(land, { time: -1 }), [port]));
+            $mol_assert_equal(by_time.sent(link), false);
+            const empty = assets_of($, file, yard_of($, () => new $giper_baza_face_map, [port]));
+            $mol_assert_equal(empty.sent(link), false);
+        },
+        'a land the master reports back in full counts as sent'($) {
+            const file = file_of($);
+            const link = file.link().str;
+            const land = file.land();
+            const one = assets_of($, file, yard_of($, () => mirror_of(land), [$mol_rest_port.make({})]));
+            $mol_assert_equal(one.sent(link), true);
+            $mol_assert_equal(one.ready(link), true);
+        },
+        'the mirror is looked up by the land of the asset'($) {
+            const file = file_of($);
+            const land = file.land();
+            const asked = [];
+            const one = assets_of($, file, yard_of($, at => {
+                asked.push(at);
+                return at === 'another land' ? mirror_of(land) : null;
+            }, [$mol_rest_port.make({})]));
+            $mol_assert_equal(one.sent(file.link().str), false);
+            $mol_assert_like(asked, [land.link().str]);
+        },
+        'without a master port nothing counts as sent'($) {
+            const file = file_of($);
+            const land = file.land();
+            const one = assets_of($, file, yard_of($, () => mirror_of(land), []));
+            $mol_assert_equal(one.sent(file.link().str), false);
+        },
+        'bytes that are not here yet leave the asset unready'($) {
+            const empty = land($).Pawn($giper_baza_file).Head(new $giper_baza_link('33333333'));
+            const link = empty.link().str;
+            const one = assets_of($, empty, yard_of($, () => mirror_of(empty.land()), [$mol_rest_port.make({})]));
+            $mol_assert_equal(one.filled(link), false);
+            $mol_assert_equal(one.sent(link), true);
+            $mol_assert_equal(one.ready(link), false);
         },
         'the master is the one that is not the page itself'($) {
             $.$giper_baza_yard = class extends $giper_baza_yard {
@@ -12185,6 +12286,50 @@ var $;
             $mol_assert_ok(s.source().includes(uri));
             $mol_assert_equal(s.asset_links().length, 1);
             $mol_assert_ok(uri.includes(s.asset_links()[0]));
+        },
+        'the store lists the assets that have not reached the master'($) {
+            let polled = 0;
+            $.$mol_state_time = class extends $mol_state_time {
+                static now() {
+                    polled++;
+                    return 0;
+                }
+            };
+            const arrived = new Set();
+            const assets = $bog_vmap_asset.make({
+                $,
+                master: () => 'https://baza.test/',
+                ready: (link) => arrived.has(link),
+            });
+            const s = store($);
+            s.assets = () => assets;
+            const land = $giper_baza_land.make({ $ });
+            const one = land.Pawn($giper_baza_file).Head(new $giper_baza_link('11111111'));
+            one.name('one.png');
+            const two = land.Pawn($giper_baza_file).Head(new $giper_baza_link('22222222'));
+            two.name('two.png');
+            s.source(`${d}bog_vmap_app_store_test_page ${d}mol_view\n`
+                + `\tLogo ${d}mol_image uri \\${assets.uri(one)}\n`
+                + `\tHero ${d}mol_image uri \\${assets.uri(two)}\n`
+                + `\tsub / <= Logo\n`);
+            const links = s.asset_links();
+            $mol_assert_equal(links.length, 2);
+            arrived.add(links[0]);
+            $mol_assert_like(s.assets_pending(), [links[1]]);
+            $mol_assert_ok(polled > 0);
+        },
+        'a document without assets asks about nothing and polls nothing'($) {
+            let polled = 0;
+            $.$mol_state_time = class extends $mol_state_time {
+                static now() {
+                    polled++;
+                    return 0;
+                }
+            };
+            const s = store($);
+            s.source(src_hero);
+            $mol_assert_like(s.assets_pending(), []);
+            $mol_assert_equal(polled, 0);
         },
     });
 })($ || ($ = {}));
@@ -13190,6 +13335,77 @@ var $;
             pane.node_press(pointer(288, 7));
             pane.node_release(pointer(288, 7, { buttons: 0 }));
             $mol_assert_equal(node.source(), wired);
+        },
+        'a drag with the shift held between two signed ports writes a two way wire'($) {
+            const { pane, node } = wired_make($);
+            pane.sizes({ [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) });
+            pane.picked(['Calc']);
+            const out = pane.port_point('Calc', 'op', 'out');
+            pane.node_press(pointer(out[0], out[1], { shiftKey: true }));
+            $mol_assert_equal(pane.wire_bidi(), true);
+            pane.node_move(pointer(320, 20, { shiftKey: true }));
+            const into = pane.wire_dots().find(dot => dot.port.name === 'marker');
+            $mol_assert_equal(into.lit, true);
+            pane.node_release(pointer(into.x, into.y, { buttons: 0, shiftKey: true }));
+            $mol_assert_equal(pane.wire_bidi(), false);
+            $mol_assert_equal(pane.wire_shift(), false);
+            $mol_assert_equal(node.source().includes('\tcalc_op? = Calc op?\n'), true);
+            $mol_assert_equal(node.source().includes('marker? <=> calc_op?\n'), true);
+            $mol_assert_like(node.wires(), [{ name: 'calc_op', node: 'Calc', prop: 'op', bidi: true }]);
+            $mol_assert_equal(node.links()[0].bidi, true);
+            $mol_assert_equal(pane.wire_lines()[0].bidi, true);
+            $mol_assert_equal(pane.Wire().label_text('Map.marker'), '⇄');
+        },
+        'the same drag without the shift stays one way'($) {
+            const { pane, node } = wired_make($);
+            pane.sizes({ [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) });
+            pane.picked(['Calc']);
+            const out = pane.port_point('Calc', 'op', 'out');
+            pane.node_press(pointer(out[0], out[1]));
+            $mol_assert_equal(pane.wire_bidi(), false);
+            pane.node_move(pointer(320, 20));
+            const into = pane.wire_dots().find(dot => dot.port.name === 'marker');
+            pane.node_release(pointer(into.x, into.y, { buttons: 0 }));
+            $mol_assert_equal(node.source().includes('\tcalc_op = Calc op\n'), true);
+            $mol_assert_equal(node.source().includes('marker <= calc_op\n'), true);
+            $mol_assert_equal(node.links()[0].bidi, false);
+            $mol_assert_equal(pane.wire_lines()[0].bidi, false);
+            $mol_assert_equal(pane.Wire().label_text('Map.marker'), '');
+        },
+        'with the shift held an input without a sign is dark and takes nothing'($) {
+            const { pane, node } = wired_make($);
+            pane.sizes({ [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) });
+            pane.picked(['Map']);
+            const before = node.source();
+            const out = pane.port_point('Map', 'zoom', 'out');
+            pane.node_press(pointer(out[0], out[1], { shiftKey: true }));
+            pane.node_move(pointer(50, 20, { shiftKey: true }));
+            const dark = pane.wire_dots().find(dot => dot.port.name === 'result');
+            $mol_assert_equal(dark.lit, false);
+            pane.node_release(pointer(dark.x, dark.y, { buttons: 0, shiftKey: true }));
+            $mol_assert_equal(node.source(), before);
+            $mol_assert_like(node.links(), []);
+            pane.node_press(pointer(out[0], out[1]));
+            pane.node_move(pointer(50, 20));
+            const open = pane.wire_dots().find(dot => dot.port.name === 'result');
+            $mol_assert_equal(open.lit, true);
+            pane.node_release(pointer(open.x, open.y, { buttons: 0 }));
+            $mol_assert_equal(node.source().includes('\tmap_zoom = Map zoom\n'), true);
+            $mol_assert_equal(node.links()[0].bidi, false);
+        },
+        'the shift let go in the middle of a drag leaves a one way wire'($) {
+            const { pane, node } = wired_make($);
+            pane.sizes({ [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) });
+            pane.picked(['Calc']);
+            const out = pane.port_point('Calc', 'op', 'out');
+            pane.node_press(pointer(out[0], out[1], { shiftKey: true }));
+            pane.node_move(pointer(320, 20, { shiftKey: true }));
+            $mol_assert_equal(pane.wire_bidi(), true);
+            pane.node_move(pointer(320, 20));
+            $mol_assert_equal(pane.wire_bidi(), false);
+            const into = pane.wire_dots().find(dot => dot.port.name === 'marker');
+            pane.node_release(pointer(into.x, into.y, { buttons: 0 }));
+            $mol_assert_equal(node.links()[0].bidi, false);
         },
         'a wire is drawn from the last known box when one end is no longer reported'($) {
             const { pane, node, answer } = wired_make($);
@@ -15037,6 +15253,39 @@ var $;
         });
         return { store, doc, one };
     }
+    async function $bog_vmap_app_history_test_peers($, writable) {
+        const auth_own = await $.$giper_baza_auth.grab();
+        const auth_mate = await $.$giper_baza_auth.grab();
+        const land_own = $giper_baza_land.make({ $, auth: () => auth_own });
+        const land_mate = $giper_baza_land.make({
+            $,
+            link: () => land_own.link(),
+            auth: () => auth_mate,
+        });
+        if (writable)
+            land_own.give(auth_mate.pass(), $giper_baza_rank_post('just'));
+        const peer = (land, lord) => {
+            const doc = land.Data($bog_vmap_app_doc);
+            const store = $bog_vmap_app_store.make({ $, doc_current: () => doc });
+            const one = $$.$bog_vmap_app_history.make({
+                $,
+                store: () => store,
+                step_delay: () => 0,
+                snap_delay: () => 0,
+                state: (next) => store.doc_state(doc, next),
+            });
+            return { land, doc, store, one, lord };
+        };
+        const sync = (from, to) => $mol_wire_async(to.land).units_steal(from.land);
+        return {
+            own: peer(land_own, auth_own.pass().lord().str),
+            mate: peer(land_mate, auth_mate.pass().lord().str),
+            sync,
+        };
+    }
+    function $bog_vmap_app_history_test_times(store, doc) {
+        return store.snaps(doc).map(snap => snap.time());
+    }
     function $bog_vmap_app_history_test_stroke(next) {
         return {
             code: 'KeyZ',
@@ -15331,6 +15580,58 @@ var $;
             $mol_assert_equal(one.editable(), true);
             rows[0].click();
             $mol_assert_equal(asked.join(' '), one.snap_links()[0]);
+        },
+        async 'a document of somebody else refuses a snapshot in words and turns the button off'($) {
+            const { own, mate, sync } = await $bog_vmap_app_history_test_peers($, false);
+            own.store.doc_source(own.doc, src_one);
+            await sync(own, mate);
+            $mol_assert_equal(mate.store.doc_source(mate.doc), src_one);
+            $mol_assert_equal(mate.one.editable(), false);
+            $mol_assert_equal(mate.one.Take().enabled(), false);
+            $mol_assert_equal(own.one.Take().enabled(), true);
+            const before = (await $mol_wire_async(mate.land).diff_units()).length;
+            mate.one.snap_press();
+            $mol_assert_equal(mate.one.note(), 'Чужая сцена: снимок в неё не пишется');
+            $mol_assert_equal(mate.one.snap_make(100), null);
+            $mol_assert_equal(mate.store.snaps(mate.doc).length, 0);
+            $mol_assert_equal((await $mol_wire_async(mate.land).diff_units()).length, before);
+            await sync(mate, own);
+            $mol_assert_equal(own.store.snaps(own.doc).length, 0);
+        },
+        async 'two peers with the right to write take snapshots in turn and both see both in one order'($) {
+            const { own, mate, sync } = await $bog_vmap_app_history_test_peers($, true);
+            await sync(own, mate);
+            $mol_assert_equal(mate.one.editable(), true);
+            $mol_assert_equal(mate.one.Take().enabled(), true);
+            own.store.doc_source(own.doc, src_one);
+            own.one.snap_make(100);
+            await sync(own, mate);
+            mate.store.doc_source(mate.doc, src_two);
+            mate.one.snap_make(200);
+            await sync(mate, own);
+            $mol_assert_equal(own.store.snaps(own.doc).length, 2);
+            $mol_assert_like(own.store.snaps(own.doc).map(snap => snap.link().str), mate.store.snaps(mate.doc).map(snap => snap.link().str));
+            $mol_assert_like(own.one.snap_links(), mate.one.snap_links());
+            $mol_assert_like($bog_vmap_app_history_test_times(own.store, own.doc), [100, 200]);
+            $mol_assert_like($bog_vmap_app_history_test_times(mate.store, mate.doc), [100, 200]);
+            $mol_assert_like(mate.store.snaps(mate.doc).map(snap => mate.store.snap_state(snap).source), [src_one, src_two]);
+            $mol_assert_like(own.store.snaps(own.doc).map(snap => snap.author()), [own.lord, mate.lord]);
+            $mol_assert_like(mate.store.snaps(mate.doc).map(snap => snap.author()), [own.lord, mate.lord]);
+        },
+        async 'a return to a snapshot at one peer reaches the other'($) {
+            const { own, mate, sync } = await $bog_vmap_app_history_test_peers($, true);
+            await sync(own, mate);
+            own.store.doc_source(own.doc, src_one);
+            own.one.snap_make(100);
+            own.store.doc_source(own.doc, src_two);
+            await sync(own, mate);
+            $mol_assert_equal(mate.store.doc_source(mate.doc), src_two);
+            own.one.snap_revert(own.store.snaps(own.doc)[0].link().str);
+            $mol_assert_equal(own.store.doc_source(own.doc), src_one);
+            await sync(own, mate);
+            $mol_assert_equal(mate.store.doc_source(mate.doc), src_one);
+            $mol_assert_equal(mate.store.snaps(mate.doc).length, 2);
+            $mol_assert_equal(mate.store.snap_state(mate.store.snaps(mate.doc)[1]).source, src_two);
         },
     });
 })($ || ($ = {}));
@@ -16566,6 +16867,52 @@ var $;
             $mol_assert_equal(app.export_notes().length, 0);
             $mol_assert_equal(app.export_rows().length, 0);
         },
+        'the download warns while the assets are still leaving'($) {
+            const app = $bog_vmap_app.make({
+                $,
+                store: () => $bog_vmap_app_store.make({
+                    $,
+                    doc_land_config: () => null,
+                    stage: () => 'ready',
+                    asset_links: () => ['one', 'two', 'three'],
+                    assets_pending: () => ['three'],
+                }),
+            });
+            $mol_assert_ok(app.export_state().module);
+            $mol_assert_equal(app.export_ready(), true);
+            $mol_assert_equal(app.status(), 'ассеты ещё уходят на сервер: 2 из 3');
+            $mol_assert_equal(app.export_hint(), 'Скачать можно, но ассеты ещё уходят на сервер: 2 из 3');
+        },
+        'assets that reached the master leave the download silent'($) {
+            const app = $bog_vmap_app.make({
+                $,
+                store: () => $bog_vmap_app_store.make({
+                    $,
+                    doc_land_config: () => null,
+                    stage: () => 'ready',
+                    asset_links: () => ['one'],
+                    assets_pending: () => [],
+                }),
+            });
+            $mol_assert_equal(app.export_ready(), true);
+            $mol_assert_equal(app.assets_note(), '');
+            $mol_assert_ok(app.export_hint().includes('npx mam my/site/page'));
+        },
+        'a document still on its way says nothing about its assets'($) {
+            const waiting = new Promise(() => { });
+            const app = $bog_vmap_app.make({
+                $,
+                store: () => $bog_vmap_app_store.make({
+                    $,
+                    doc_land_config: () => null,
+                    stage: () => 'ready',
+                    source: () => { throw waiting; },
+                    assets_pending: () => { throw waiting; },
+                }),
+            });
+            $mol_assert_equal(app.assets_note(), '');
+            $mol_assert_equal(app.export_ready(), false);
+        },
         'a document still on its way holds nothing up'($) {
             const waiting = new Promise(() => { });
             const app = $bog_vmap_app.make({
@@ -17296,6 +17643,7 @@ var $;
     const calc = `${d}flow_calc`;
     const map = `${d}flow_map`;
     const button = `${d}flow_button`;
+    const number = `${d}mol_number`;
     $mol_test({
         'the editor opens with the head of its canvas, its palette and its canvas'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
@@ -17413,6 +17761,44 @@ var $;
             stage.redraw();
             const after = stage.app.doc_source();
             $mol_assert_equal(after.includes('calc_result'), false);
+            $mol_assert_like(stage.app.doc_wires(), []);
+        },
+        async 'a drag with the shift held writes a two way wire, and one undo takes it back'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const history = stage.app.History();
+            const stepped = async () => {
+                const source = stage.app.doc_source();
+                const taken = () => history.ring(history.doc_key()).at(-1)?.source === source;
+                for (let i = 0; i < 10 && !taken(); ++i) {
+                    stage.timers.filter(timer => timer.delay === history.step_delay()).at(-1)?.task();
+                    await $_2.$bog_vmap_app_flow_settle(taken, 30);
+                    stage.redraw();
+                }
+                $mol_assert_equal(taken(), true);
+            };
+            stage.drop(number, stage.client([100, 100]));
+            stage.drop(number, stage.client([400, 100]));
+            stage.tap(stage.part_center('Number'));
+            await stepped();
+            const before = stage.app.doc_source();
+            const overlay = stage.overlay();
+            const out = stage.port_dot('Number', 'value', 'out');
+            const into = stage.port_dot('Number_2', 'value', 'in');
+            stage.press(overlay, out, { shiftKey: true });
+            stage.move(overlay, into, { shiftKey: true });
+            stage.release(overlay, into, { shiftKey: true });
+            stage.redraw();
+            const source = stage.app.doc_source();
+            $mol_assert_ok(source.includes('\tnumber_value? = Number value?\n'));
+            $mol_assert_ok(source.includes('value? <=> number_value?\n'));
+            $mol_assert_equal(stage.app.doc_wires()[0].bidi, true);
+            $mol_assert_equal(stage.pane.Wire().label_text('Number_2.value'), '⇄');
+            stage.scene.values({ number_value: '7' });
+            $mol_assert_equal(stage.pane.Wire().label_text('Number_2.value'), '⇄ 7');
+            await stepped();
+            history.undo();
+            stage.redraw();
+            $mol_assert_equal(stage.app.doc_source(), before);
             $mol_assert_like(stage.app.doc_wires(), []);
         },
         async 'a published part comes back through the palette field'($) {

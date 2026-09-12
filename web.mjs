@@ -33695,6 +33695,7 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    $.$bog_vmap_app_wire_sign = '⇄';
     $.$bog_vmap_app_wire_row = 14;
     $.$bog_vmap_app_wire_gap = 12;
     $.$bog_vmap_app_wire_radius = 5;
@@ -33724,6 +33725,16 @@ var $;
         return norm(out) === norm(into);
     }
     $.$bog_vmap_app_wire_fits = $bog_vmap_app_wire_fits;
+    function $bog_vmap_app_wire_takes(out, into, bidi) {
+        if (!$bog_vmap_app_wire_fits(out, into.kind))
+            return false;
+        return bidi ? into.next : true;
+    }
+    $.$bog_vmap_app_wire_takes = $bog_vmap_app_wire_takes;
+    function $bog_vmap_app_wire_label(line) {
+        return [line.bidi ? $.$bog_vmap_app_wire_sign : '', line.label].filter(Boolean).join(' ');
+    }
+    $.$bog_vmap_app_wire_label = $bog_vmap_app_wire_label;
     function $bog_vmap_app_wire_port_point(box, side, index) {
         const x = side === 'in'
             ? box.left - $.$bog_vmap_app_wire_gap
@@ -33806,7 +33817,7 @@ var $;
                 const shapes = [];
                 for (const line of this.lines()) {
                     shapes.push(this.Line(line.key));
-                    if (line.label)
+                    if (this.label_text(line.key))
                         shapes.push(this.Label(line.key));
                 }
                 for (const dot of this.dots()) {
@@ -33831,7 +33842,8 @@ var $;
                 return line ? [line.label_x, line.label_y] : [0, 0];
             }
             label_text(key) {
-                return this.line_of(key)?.label ?? '';
+                const line = this.line_of(key);
+                return line ? $bog_vmap_app_wire_label(line) : '';
             }
             dot_key(dot) {
                 return `${dot.side}:${dot.node}.${dot.port.name}`;
@@ -35101,6 +35113,7 @@ var $;
                         return this.node_release(event);
                     event.preventDefault();
                     this.wire_point(this.screen_point(event));
+                    this.wire_shift(event.shiftKey);
                     return;
                 }
                 const band = this.band();
@@ -35273,6 +35286,18 @@ var $;
             wire_point(next) {
                 return next ?? [0, 0];
             }
+            wire_shift(next) {
+                return next ?? false;
+            }
+            wire_source_next() {
+                const drag = this.wire_drag();
+                if (!drag)
+                    return false;
+                return this.part_ports(drag.from).find(port => port.name === drag.from_prop)?.next ?? false;
+            }
+            wire_bidi() {
+                return this.wire_shift() && this.wire_source_next();
+            }
             part_dots(name) {
                 const written = new Set(this.part_overs(name));
                 return this.part_ports(name).filter(port => port.own || written.has(port.name));
@@ -35321,6 +35346,7 @@ var $;
                         label: String(values[link.name] ?? ''),
                         label_x: mid[0],
                         label_y: mid[1],
+                        bidi: link.bidi,
                     });
                 }
                 return lines;
@@ -35357,7 +35383,7 @@ var $;
                     for (const name of this.part_names()) {
                         if (name === drag.from)
                             continue;
-                        add(name, 'in', port => $bog_vmap_app_wire_fits(drag.kind, port.kind));
+                        add(name, 'in', port => $bog_vmap_app_wire_takes(drag.kind, port, this.wire_bidi()));
                     }
                     return dots;
                 }
@@ -35391,6 +35417,7 @@ var $;
                 }
                 this.wire_point(this.screen_point(event));
                 this.wire_drag(source);
+                this.wire_shift(event.shiftKey);
                 try {
                     this.Overlay().dom_node().setPointerCapture(event.pointerId);
                 }
@@ -35399,15 +35426,23 @@ var $;
             wire_release(event) {
                 const drag = this.wire_drag();
                 const point = this.wire_point(this.screen_point(event));
+                const bidi = this.wire_bidi();
                 const dot = $bog_vmap_app_wire_dot_at(this.wire_dots(), point);
                 this.wire_drag(null);
+                this.wire_shift(false);
                 try {
                     this.Overlay().dom_node().releasePointerCapture(event.pointerId);
                 }
                 catch { }
                 if (!dot || !dot.lit)
                     return;
-                this.link_add({ from: drag.from, from_prop: drag.from_prop, to: dot.node, to_prop: dot.port.name });
+                this.link_add({
+                    from: drag.from,
+                    from_prop: drag.from_prop,
+                    to: dot.node,
+                    to_prop: dot.port.name,
+                    bidi,
+                });
             }
             wires_visible() {
                 const rect = this.pane_rect();
@@ -35759,6 +35794,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "wire_point", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "wire_shift", null);
         __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "part_dots", null);
@@ -36680,11 +36718,42 @@ var $;
             const master = this.master();
             return master ? master.replace(/\/$/, '') + '/' + file.uri() : '';
         }
+        pawn(link) {
+            return this.$.$giper_baza_glob.Pawn(new $giper_baza_link(link), $giper_baza_file);
+        }
         file(uri) {
             const link = $bog_vmap_asset_link(uri);
             if (!link)
                 return null;
-            return this.$.$giper_baza_glob.Pawn(new $giper_baza_link(link), $giper_baza_file);
+            return this.pawn(link);
+        }
+        ports() {
+            return this.yard().masters();
+        }
+        filled(link) {
+            return this.pawn(link).filled();
+        }
+        sent(link) {
+            const land = this.pawn(link).land();
+            const yard = this.yard();
+            return this.ports().some(port => {
+                const mirror = yard.face_port_land([port, land.link()]);
+                if (!mirror)
+                    return false;
+                for (const [peer, face] of land.faces) {
+                    const seen = mirror.get(peer);
+                    if (!seen)
+                        return false;
+                    if (seen.time_tick < face.time_tick)
+                        return false;
+                    if (seen.summ < face.summ)
+                        return false;
+                }
+                return true;
+            });
+        }
+        ready(link) {
+            return this.filled(link) && this.sent(link);
         }
         bytes(uri) {
             return this.file(uri)?.buffer() ?? null;
@@ -36905,6 +36974,13 @@ var $;
         asset_links() {
             return $bog_vmap_asset_links(this.source());
         }
+        assets_pending() {
+            const assets = this.assets();
+            const pending = this.asset_links().filter(link => !assets.ready(link));
+            if (pending.length)
+                this.$.$mol_state_time.now(1000);
+            return pending;
+        }
         spots(next) {
             const doc = this.doc_current();
             if (!doc)
@@ -37012,6 +37088,9 @@ var $;
     __decorate([
         $mol_memo.method
     ], $bog_vmap_app_store.prototype, "assets", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_app_store.prototype, "assets_pending", null);
     $.$bog_vmap_app_store = $bog_vmap_app_store;
     function $bog_vmap_app_store_parts_pack(parts) {
         return Object.keys(parts).length ? JSON.stringify(parts) : '';
@@ -39986,6 +40065,23 @@ var $;
                     return { module: null, refusal: String(error?.message ?? error) };
                 }
             }
+            assets_pending() {
+                return this.store().assets_pending();
+            }
+            assets_note() {
+                try {
+                    var pending = this.assets_pending().length;
+                }
+                catch (error) {
+                    if (this.$.$mol_promise_like(error))
+                        return '';
+                    return $mol_fail(error);
+                }
+                if (!pending)
+                    return '';
+                const total = this.store().asset_links().length;
+                return `ассеты ещё уходят на сервер: ${total - pending} из ${total}`;
+            }
             export_ready() {
                 return Boolean(this.export_state().module);
             }
@@ -40004,6 +40100,9 @@ var $;
                 const module = state.module;
                 if (!module)
                     return 'Документ ещё загружается';
+                const note = this.assets_note();
+                if (note)
+                    return `Скачать можно, но ${note}`;
                 return `${module.files.length} файлов модуля ${module.path}.`
                     + ` Распаковать в корень MAM и собрать «npx mam ${module.path}»`;
             }
@@ -40349,6 +40448,9 @@ var $;
                 const note = this.store_note();
                 if (note)
                     return note;
+                const assets = this.assets_note();
+                if (assets)
+                    return assets;
                 if (this.stalled())
                     return 'сцена не отвечает';
                 if (this.Pane().warmed())
