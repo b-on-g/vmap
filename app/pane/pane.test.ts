@@ -2478,10 +2478,17 @@ namespace $ {
 		return pane
 	}
 
+	const key_of = ( code: string )=> {
+		if( code === 'Space' ) return ' '
+		if( code.startsWith( 'Key' ) ) return code.slice( 3 ).toLowerCase()
+		return code
+	}
+
 	const stroke = ( code: string, over: Partial< $$.$bog_vmap_app_pane_stroke > = {} ) => {
 		let prevented = false
 
 		return {
+			key: key_of( code ),
 			code,
 			altKey: false,
 			ctrlKey: false,
@@ -2550,6 +2557,30 @@ namespace $ {
 			pane.key_down( stroke( 'KeyF' ) )
 			pane.key_down( stroke( 'Escape' ) )
 			$mol_assert_equal( pane.tool(), 'select' )
+
+		},
+
+		'letters go by the place of the key on any layout, Escape and Delete by their name'( $ ) {
+			let deleted = 0
+			const pane = tools_make( $, { node_delete: ()=> { ++ deleted; return null } } )
+
+			pane.key_down( stroke( 'KeyF', { key: 'а' } ) )
+			$mol_assert_equal( pane.tool(), 'board' )
+
+			pane.key_down( stroke( 'KeyV', { key: 'м' } ) )
+			$mol_assert_equal( pane.tool(), 'select' )
+
+			$mol_assert_equal( pane.key_down( stroke( 'KeyJ', { key: 'h' } ) ), false )
+			$mol_assert_equal( pane.tool(), 'select' )
+
+			pane.key_down( stroke( 'KeyH' ) )
+			$mol_assert_equal( pane.key_down( stroke( '', { key: 'Escape' } ) ), true )
+			$mol_assert_equal( pane.tool(), 'select' )
+
+			pane.picked([ 'A' ])
+			$mol_assert_equal( pane.key_down( stroke( '', { key: 'Backspace' } ) ), true )
+			$mol_assert_equal( pane.key_down( stroke( '', { key: 'Delete' } ) ), true )
+			$mol_assert_equal( deleted, 2 )
 
 		},
 

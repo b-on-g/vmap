@@ -40,6 +40,7 @@ namespace $.$$ {
 	export type $bog_vmap_app_pane_tool = 'select' | 'board' | 'hand'
 
 	export type $bog_vmap_app_pane_stroke = {
+		readonly key: string
 		readonly code: string
 		readonly altKey: boolean
 		readonly ctrlKey: boolean
@@ -556,7 +557,7 @@ namespace $.$$ {
 			const field = this.key_field( stroke.target )
 			const command = stroke.metaKey || stroke.ctrlKey
 
-			if( stroke.code === 'Escape' ) {
+			if( stroke.key === 'Escape' ) {
 				stroke.preventDefault()
 				if( field ) this.focused( true )
 				else this.escape()
@@ -575,7 +576,7 @@ namespace $.$$ {
 				return true
 			}
 
-			if( stroke.code === 'Delete' || stroke.code === 'Backspace' ) {
+			if( stroke.key === 'Delete' || stroke.key === 'Backspace' ) {
 				if( command || stroke.altKey ) return false
 				if( !this.picked().length ) return false
 
