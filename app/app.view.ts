@@ -293,8 +293,7 @@ namespace $.$$ {
 		}
 
 		override export_ready() {
-			if( !this.export_state().module ) return false
-			return !this.assets_pending().length
+			return Boolean( this.export_state().module )
 		}
 
 		override export_title() {
@@ -315,7 +314,7 @@ namespace $.$$ {
 			if( !module ) return 'Документ ещё загружается'
 
 			const note = this.assets_note()
-			if( note ) return `Выгрузка подождёт, ${ note }`
+			if( note ) return `Скачать можно, но ${ note }`
 
 			return `${ module.files.length } файлов модуля ${ module.path }.`
 				+ ` Распаковать в корень MAM и собрать «npx mam ${ module.path }»`

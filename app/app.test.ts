@@ -608,7 +608,7 @@ namespace $ {
 
 		},
 
-		'the download waits while the assets are still leaving'( $ ) {
+		'the download warns while the assets are still leaving'( $ ) {
 
 			const app = $bog_vmap_app.make({
 				$,
@@ -622,16 +622,16 @@ namespace $ {
 			}) as $$.$bog_vmap_app
 
 			$mol_assert_ok( app.export_state().module )
-			$mol_assert_equal( app.export_ready(), false )
+			$mol_assert_equal( app.export_ready(), true )
 			$mol_assert_equal( app.status(), 'ассеты ещё уходят на сервер: 2 из 3' )
 			$mol_assert_equal(
 				app.export_hint(),
-				'Выгрузка подождёт, ассеты ещё уходят на сервер: 2 из 3',
+				'Скачать можно, но ассеты ещё уходят на сервер: 2 из 3',
 			)
 
 		},
 
-		'assets that reached the master hold the download up no more'( $ ) {
+		'assets that reached the master leave the download silent'( $ ) {
 
 			const app = $bog_vmap_app.make({
 				$,
