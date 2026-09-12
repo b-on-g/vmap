@@ -39,10 +39,9 @@ namespace $ {
 				shelf.rejected_note(),
 				'https://b-on-g.github.io/gram/: ' + $bog_vmap_lib_links_reason.pack_second,
 			)
-			$mol_assert_equal( shelf.source_content().includes( shelf.Note() ), true )
 
 			shelf.links( 'https://mol.hyoo.ru' )
-			$mol_assert_equal( shelf.source_content().includes( shelf.Note() ), false )
+			$mol_assert_equal( shelf.rejected_note(), '' )
 
 		},
 
@@ -75,11 +74,15 @@ namespace $ {
 			$mol_assert_equal( shelf.apps_title(), 'Приложение не отвечает' )
 			$mol_assert_ok( shelf.app_error().includes( 'Not Found' ) )
 			$mol_assert_ok( shelf.app_error().includes( 'http://dead.test/web.view.tree' ) )
-			$mol_assert_equal( shelf.apps_content().includes( shelf.Apps_note() ), true )
-			$mol_assert_equal( shelf.apps_content().includes( shelf.App_list() ), false )
+
+			const dom = shelf.dom_tree()
+			const apps = dom.querySelector( '[bog_vmap_app_shelf_apps]' )!
+
+			$mol_assert_ok( apps.querySelector( '[mol_form_field_bid]' )!.textContent!.includes( 'Not Found' ) )
+			$mol_assert_equal( apps.querySelector( '[bog_vmap_app_shelf_item_row]' ), null )
 
 			$mol_assert_ok( shelf.items().length > 4 )
-			$mol_assert_ok( shelf.stack_content().includes( shelf.Items() ) )
+			$mol_assert_ok( shelf.body().includes( shelf.Parts() ) )
 
 		},
 
@@ -94,24 +97,93 @@ namespace $ {
 
 		},
 
-		'only the heading and the switch are pinned, everything else scrolls'( $ ) {
+		'the shelf is a page: heading and filter pinned, groups scroll in its body'( $ ) {
 
 			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
 
 			const body = shelf.body()
 
 			$mol_assert_equal( body.length, 3 )
-			$mol_assert_equal( body[ 0 ] === shelf.Title(), true )
-			$mol_assert_equal( body[ 1 ] === shelf.Stack(), true )
-			$mol_assert_equal( body[ 2 ] === shelf.Level(), true )
+			$mol_assert_equal( body[ 0 ] === shelf.Source(), true )
+			$mol_assert_equal( body[ 1 ] === shelf.Parts(), true )
+			$mol_assert_equal( body[ 2 ] === shelf.Apps(), true )
+
+			$mol_assert_equal( body.filter( view => view instanceof $mol_scroll ).length, 0 )
 
 			const dom = shelf.dom_tree()
 
-			$mol_assert_equal(
-				dom.querySelector( '[bog_vmap_app_shelf_stack]' )!
-					.contains( dom.querySelector( '[bog_vmap_app_shelf_source]' ) ),
-				true,
+			const head = dom.querySelector( '[mol_page_head]' )!
+
+			$mol_assert_ok( head.textContent!.includes( 'Полка' ) )
+			$mol_assert_ok( head.querySelector( '[bog_vmap_app_shelf_filter]' ) )
+			$mol_assert_ok( head.querySelector( '[bog_vmap_app_shelf_level]' ) )
+			$mol_assert_equal( head.querySelector( '[bog_vmap_app_shelf_items]' ), null )
+
+			const page = dom.querySelector( '[mol_page_body]' )!
+
+			$mol_assert_ok( page.querySelector( '[bog_vmap_app_shelf_items]' ) )
+			$mol_assert_ok( page.querySelector( '[bog_vmap_app_shelf_pack_row]' ) )
+
+		},
+
+		'the pack, its address and its files sit in one expander, refusal under the field'( $ ) {
+
+			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
+
+			shelf.links( 'https://mol.hyoo.ru, https://b-on-g.github.io/gram/' )
+
+			const dom = shelf.dom_tree()
+
+			const source = dom.querySelector( '[bog_vmap_app_shelf_source]' )!
+
+			$mol_assert_ok( source.matches( '[mol_expander]' ) )
+			$mol_assert_ok( source.textContent!.includes( 'Пак компонентов' ) )
+			$mol_assert_ok( source.querySelector( '[bog_vmap_app_shelf_pack_row]' ) )
+
+			const field = dom.querySelector( '[bog_vmap_app_shelf_links_field]' )!
+
+			$mol_assert_ok( field.matches( '[mol_form_field]' ) )
+			$mol_assert_ok( field.querySelector( '[bog_vmap_app_shelf_links]' ) )
+			$mol_assert_ok(
+				field.querySelector( '[mol_form_field_bid]' )!
+					.textContent!.includes( $bog_vmap_lib_links_reason.pack_second ),
 			)
+
+		},
+
+		'the filter narrows both the parts and the objects of the application'( $ ) {
+
+			const shelf = $bog_vmap_app_shelf.make({
+				$,
+				class_list: ()=> [ `${d}bog_gram`, `${d}bog_gram_chat`, `${d}bog_other` ],
+			}) as $$.$bog_vmap_app_shelf
+
+			const parts = ()=> shelf.items_shown().map( item => item.id )
+			const apps = ()=> shelf.shown( shelf.app_list() )
+
+			$mol_assert_ok( parts().includes( 'block' ) )
+			$mol_assert_equal( apps().length, 3 )
+
+			shelf.filter( 'калькулятор' )
+
+			$mol_assert_like( parts(), [ 'calc', 'pair' ] )
+			$mol_assert_like( apps(), [] )
+
+			shelf.filter( 'gram_chat' )
+
+			$mol_assert_like( parts(), [] )
+			$mol_assert_like( apps(), [ `${d}bog_gram_chat` ] )
+
+			const rows = [ ... shelf.dom_tree().querySelectorAll(
+				'[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]',
+			) ].map( el => el.textContent )
+
+			$mol_assert_like( rows, [ 'Gram_chat' ] )
+
+			shelf.filter( '' )
+
+			$mol_assert_ok( parts().includes( 'block' ) )
+			$mol_assert_equal( apps().length, 3 )
 
 		},
 
@@ -266,7 +338,12 @@ namespace $ {
 			$mol_assert_equal( shelf.links(), shelf.Store().link() )
 
 			$mol_assert_ok( shelf.import_note().includes( 'card.view.ts' ) )
-			$mol_assert_ok( shelf.source_content().includes( shelf.Import_note() ) )
+
+			$mol_assert_ok(
+				shelf.dom_tree()
+					.querySelector( '[bog_vmap_app_shelf_import_field] [mol_form_field_bid]' )!
+					.textContent!.includes( 'card.view.ts' ),
+			)
 
 		},
 
@@ -401,18 +478,17 @@ namespace $ {
 
 			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
 
-			const own_scrolls = ()=> shelf.body().filter( view => view instanceof $mol_scroll ).length
-
 			$mol_assert_equal( shelf.classes_showed(), false )
-			$mol_assert_equal( shelf.body().includes( shelf.Stack() ), true )
+			$mol_assert_equal( shelf.body().includes( shelf.Parts() ), true )
+			$mol_assert_equal( shelf.body().includes( shelf.Apps() ), true )
 			$mol_assert_equal( shelf.body().includes( shelf.Palette() ), false )
-			$mol_assert_equal( own_scrolls(), 1 )
 
 			shelf.classes_showed( true )
 
-			$mol_assert_equal( shelf.body().includes( shelf.Stack() ), false )
+			$mol_assert_equal( shelf.body().includes( shelf.Parts() ), false )
+			$mol_assert_equal( shelf.body().includes( shelf.Apps() ), false )
 			$mol_assert_equal( shelf.body().includes( shelf.Palette() ), true )
-			$mol_assert_equal( own_scrolls(), 0 )
+			$mol_assert_equal( shelf.body().includes( shelf.Source() ), true )
 
 		},
 

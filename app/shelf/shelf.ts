@@ -21,6 +21,14 @@ namespace $ {
 		return short.slice( 0, 1 ).toUpperCase() + short.slice( 1 )
 	}
 
+	export function $bog_vmap_app_shelf_match( needle: string, ... hay: readonly string[] ) {
+
+		const query = needle.trim().toLowerCase()
+		if( !query ) return true
+
+		return hay.some( text => text.toLowerCase().includes( query ) )
+	}
+
 	export function $bog_vmap_app_shelf_needs( source: string ) {
 		const draft = $bog_vmap_app_shelf_head.split( ' ' )[ 0 ]
 		return [ ... new Set( source.match( /\$[a-z][\w]*/g ) ?? [] ) ].filter( name => name !== draft )

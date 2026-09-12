@@ -1,4 +1,4 @@
-$bog_vmap_app_shelf $mol_view
+$bog_vmap_app_shelf $mol_page
 	links? \
 	pack_link \
 	land_classes /$mol_tree2
@@ -12,25 +12,47 @@ $bog_vmap_app_shelf $mol_view
 	place? \
 	files? /File
 	classes_showed? false
-	sub <= body /$mol_view
-	Title $mol_view
-		sub /
-			\Полка
-	Stack $mol_scroll
-		sub /
-			<= Stack_body $mol_view
-				sub <= stack_content /$mol_view
-	Items $mol_list
-		rows <= item_rows /
-	Source $mol_view
-		sub <= source_content /$mol_view
-	Packs $mol_view
-		sub /
-			<= Packs_title $mol_view
-				sub /
-					\Пак компонентов
+	filter? \
+	title \Полка
+	tools /
+		<= Filter $mol_search
+			hint \Поиск по деталям и классам
+			query? <=> filter?
+		<= Level $mol_check
+			title \Все классы пака
+			hint \Классы донорского пака целиком: примитивы, из которых верстают внутри блока
+			checked? <=> classes_showed?
+	Source $mol_expander
+		title \Пак компонентов
+		expanded? true
+		content /
 			<= Pack_list $mol_list
 				rows <= pack_rows /
+			<= Links_field $mol_form_field
+				name \Адрес приложения
+				bids / <= rejected_note \
+				control <= Links $mol_string
+					hint \Адрес приложения, ленды через запятую
+					value? <=> links?
+			<= Import_field $mol_form_field
+				name \Файлы модуля
+				bids / <= import_note? \
+				control <= Import_open $mol_button_open
+					hint \Файлы .view.tree модуля mol. Объявления приедут, поведение — нет
+					accept \.tree
+					multiple true
+					files? <=> files?
+	Parts $mol_expander
+		title \Готовые детали
+		expanded? true
+		content /
+			<= Items $mol_list
+				rows <= item_rows /
+	Apps $mol_form_field
+		name <= apps_title \
+		bids / <= app_error \
+		control <= App_list $mol_list
+			rows <= app_rows /
 	Pack_row* $mol_button_minor
 		title <= pack_title* \
 		hint <= pack_hint* \
@@ -38,41 +60,12 @@ $bog_vmap_app_shelf $mol_view
 			^
 			bog_vmap_app_shelf_pack_current <= pack_current* false
 		click? <=> pack_click*? null
-	Links $mol_string
-		hint \Адрес приложения, ленды через запятую
-		value? <=> links?
-	Import $mol_view
-		sub /
-			<= Import_open $mol_button_open
-				hint \Файлы .view.tree модуля mol. Объявления приедут, поведение — нет
-				accept \.tree
-				multiple true
-				files? <=> files?
-			<= Import_title $mol_view
-				sub /
-					\Файлы модуля
-	Import_note $mol_view
-		sub / <= import_note? \
 	Store $bog_vmap_app_publish_store
-	Note $mol_view
-		sub / <= rejected_note \
-	Apps $mol_view
-		sub <= apps_content /$mol_view
-	Apps_head $mol_view
-		sub /
-			<= apps_title \
-	App_list $mol_list
-		rows <= app_rows /
-	Apps_note $mol_view
-		sub / <= app_error \
-	Level $mol_check
-		title \Все классы пака
-		hint \Классы донорского пака целиком: примитивы, из которых верстают внутри блока
-		checked? <=> classes_showed?
 	Palette $bog_vmap_app_palette
 		compact true
 		pack_link <= pack_link
 		land_classes <= land_classes
+		query? <=> filter?
 		dragged? <=> dragged?
 		drag_x? <=> drag_x?
 		drag_y? <=> drag_y?

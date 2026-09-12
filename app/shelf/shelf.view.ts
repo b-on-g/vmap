@@ -3,20 +3,11 @@ namespace $.$$ {
 	export class $bog_vmap_app_shelf extends $.$bog_vmap_app_shelf {
 
 		override body() {
-			return [
-				this.Title(),
-				... this.classes_showed() ? [ this.Source() ] : [ this.Stack() ],
-				this.Level(),
-				... this.classes_showed() ? [ this.Palette() ] : [],
-			] as readonly $mol_view[]
-		}
-
-		stack_content() {
-			return [
-				this.Source(),
-				this.Items(),
-				this.Apps(),
-			] as readonly $mol_view[]
+			return (
+				this.classes_showed()
+					? [ this.Source(), this.Palette() ]
+					: [ this.Source(), this.Parts(), this.Apps() ]
+			) as readonly $mol_view[]
 		}
 
 		packs() {
@@ -50,16 +41,6 @@ namespace $.$$ {
 		override pack_click( id: string ) {
 			this.links( this.$.$bog_vmap_app_shelf_pack_swap( this.links(), this.pack_offer( id )?.link ?? '' ) )
 			return null
-		}
-
-		source_content() {
-			return [
-				this.Packs(),
-				this.Links(),
-				... this.rejected_note() ? [ this.Note() ] : [],
-				this.Import(),
-				... this.import_note() ? [ this.Import_note() ] : [],
-			] as readonly $mol_view[]
 		}
 
 		override files( next?: readonly File[] ) {
@@ -138,23 +119,20 @@ namespace $.$$ {
 		}
 
 		app_rows() {
-			return this.app_list().map( name => this.Item_row( name ) )
+			return this.shown( this.app_list() ).map( name => this.Item_row( name ) )
 		}
 
 		app_error() {
 			return this.app_state().error
 		}
 
-		apps_content() {
-			return [
-				this.Apps_head(),
-				... this.app_error() ? [ this.Apps_note() ] : [ this.App_list() ],
-			] as readonly $mol_view[]
-		}
-
 		apps_title() {
 			if( this.app_error() ) return 'Приложение не отвечает'
 			return this.app_list().length ? 'Объекты приложения' : 'Приложение не подключено'
+		}
+
+		shown( names: readonly string[] ) {
+			return names.filter( name => this.$.$bog_vmap_app_shelf_match( this.filter(), name ) )
 		}
 
 		pack_classes(): readonly string[] {
@@ -187,6 +165,12 @@ namespace $.$$ {
 
 		}
 
+		items_shown() {
+			return this.items().filter(
+				item => this.$.$bog_vmap_app_shelf_match( this.filter(), item.title, item.hint )
+			)
+		}
+
 		item( id: string ): $bog_vmap_app_shelf_item | null {
 
 			if( !id ) return null
@@ -206,7 +190,7 @@ namespace $.$$ {
 		}
 
 		item_rows() {
-			return this.items().map( item => this.Item_row( item.id ) )
+			return this.items_shown().map( item => this.Item_row( item.id ) )
 		}
 
 		item_title( id: string ) {
