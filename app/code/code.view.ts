@@ -262,16 +262,12 @@ namespace $.$$ {
 			return one ? `Строка ${ one.line }. ${ one.text }` : ''
 		}
 
-		override head_content() {
-			return [
-				this.Scope_note(),
-				... this.prop() ? [ this.Scope() ] : [],
-			] as readonly $mol_view[]
+		override tools() {
+			return this.prop() ? [ this.Scope() ] : []
 		}
 
-		override content() {
+		override body() {
 			return [
-				this.Head(),
 				... this.error() ? [ this.Alarm() ] : [],
 				... this.note() ? [ this.Refusal() ] : [],
 				... this.complaints().length ? [ this.Typing() ] : [],

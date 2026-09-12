@@ -1,4 +1,4 @@
-$bog_vmap_app_code $mol_view
+$bog_vmap_app_code $mol_page
 	klass \
 	prop \
 	hooks /string
@@ -12,23 +12,20 @@ $bog_vmap_app_code $mol_view
 	event *
 		^
 		focusout? <=> field_leave? null
-	sub <= content /$mol_view
-	Head $mol_bar
-		sub <= head_content /$mol_view
-	Scope_note $mol_view
-		sub / <= scope_note \
-	Scope $mol_check
-		title \Весь класс
-		hint \Править класс целиком, а не выбранный узел. Какой это класс, сказано в шапке: у узла со своим классом — его, у остальных — тот, который узел объявляет
-		checked? <=> whole?
-	Alarm $mol_view
-		sub / <= error
-	Refusal $mol_view
-		sub / <= note \
-	Typing $mol_view
-		sub <= typing_rows /$mol_view
-	Typing_row* $mol_view
-		sub / <= typing_text* \
+	title <= scope_note \
+	tools /
+		<= Scope $mol_check
+			title \Весь класс
+			hint \Править класс целиком, а не выбранный узел. Какой это класс, сказано в шапке: у узла со своим классом — его, у остальных — тот, который узел объявляет
+			checked? <=> whole?
+	Alarm $mol_status
+		status <= error
+	Refusal $mol_status
+		status <= note \
+	Typing $mol_list
+		rows <= typing_rows /$mol_view
+	Typing_row* $mol_status
+		status <= typing_text* \
 	Sources $bog_vmap_app_code_deck
 		items <= source_tabs /$mol_view
 	Tree $mol_textarea
@@ -47,9 +44,9 @@ $bog_vmap_app_code $mol_view
 		event *
 			^
 			pointerdown? <=> js_press? null
-	Js_idle $mol_view
+	Js_idle $mol_status
 		title \JS
-		sub / <= js_idle_note \
+		status <= js_idle_note \
 	Css $mol_textarea
 		title \CSS
 		hint \

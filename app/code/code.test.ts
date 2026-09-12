@@ -697,6 +697,61 @@ namespace $ {
 
 		},
 
+		'the panel is a page whose head carries the scope of the edit'( $ ) {
+
+			const dom = $.$mol_dom_context
+			const { code } = editor( $ )
+
+			code.whole( true )
+
+			dom.document.body.appendChild( code.dom_tree() )
+
+			const head = code.dom_node().querySelectorAll( '[mol_page_head]' )
+			const title = head[ 0 ].querySelector( '[mol_page_title]' )!
+
+			$mol_assert_equal( head.length, 1 )
+			$mol_assert_equal( title.textContent, code.scope_note() )
+			$mol_assert_equal( title.textContent!.includes( code.klass() ), true )
+
+		},
+
+		'the check of the whole class stands in the tools of the page'( $ ) {
+
+			const dom = $.$mol_dom_context
+			const { code } = editor( $ )
+
+			dom.document.body.appendChild( code.dom_tree() )
+
+			$mol_assert_equal( code.tools().length, 1 )
+			$mol_assert_equal( code.tools()[ 0 ] === code.Scope(), true )
+			$mol_assert_equal(
+				code.dom_node().querySelectorAll( '[mol_page_tools] [mol_check]' ).length,
+				1,
+			)
+
+		},
+
+		'the deck stands in the body and every tab holds a field'( $ ) {
+
+			const dom = $.$mol_dom_context
+			const { code } = editor( $ )
+
+			code.whole( true )
+
+			dom.document.body.appendChild( code.dom_tree() )
+
+			$mol_assert_equal(
+				code.dom_node().querySelectorAll( '[mol_page_body] [mol_deck]' ).length,
+				1,
+			)
+
+			for( const tab of [ '0', '1', '2' ] ) {
+				code.Sources().current( tab )
+				$mol_assert_equal( code.dom_tree().querySelectorAll( '[mol_textarea]' ).length, 1 )
+			}
+
+		},
+
 	})
 
 }
