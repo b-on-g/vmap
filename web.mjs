@@ -34099,6 +34099,9 @@ var $;
 		band_style(){
 			return {};
 		}
+		draft_style(){
+			return {};
+		}
 		Touch(){
 			const obj = new this.$.$mol_touch();
 			(obj.allow_draw) = () => (false);
@@ -34109,7 +34112,47 @@ var $;
 			return obj;
 		}
 		attr(){
-			return {...(super.attr()), "tabindex": "-1"};
+			return {
+				...(super.attr()), 
+				"tabindex": "-1", 
+				"bog_vmap_app_pane_tool": (this.tool()), 
+				"bog_vmap_app_pane_hand": (this.hand())
+			};
+		}
+		tool(next){
+			if(next !== undefined) return next;
+			return "select";
+		}
+		grip(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		hand(){
+			return false;
+		}
+		tool_select(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		tool_board(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		tool_hand(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		board_draw(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		node_delete(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		node_copy(next){
+			if(next !== undefined) return next;
+			return null;
 		}
 		leave(next){
 			if(next !== undefined) return next;
@@ -34326,6 +34369,11 @@ var $;
 			(obj.style) = () => ((this.band_style()));
 			return obj;
 		}
+		Draft(){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.draft_style()));
+			return obj;
+		}
 		plugins(){
 			return [...(super.plugins()), (this.Touch())];
 		}
@@ -34341,6 +34389,14 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Values"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Marks"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Touch"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "tool"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "grip"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "tool_select"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "tool_board"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "tool_hand"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "board_draw"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_delete"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_copy"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "leave"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "spots"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "picked"));
@@ -34370,6 +34426,7 @@ var $;
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Mark"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Insert"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Band"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Draft"));
 	($.$bog_vmap_app_pane_overlay) = class $bog_vmap_app_pane_overlay extends ($.$mol_view) {
 		press(next){
 			if(next !== undefined) return next;
@@ -34730,6 +34787,7 @@ var $;
                     this.Marks(),
                     ...this.slot() ? [this.Insert()] : [],
                     ...this.band() ? [this.Band()] : [],
+                    ...this.draft() ? [this.Draft()] : [],
                 ];
             }
             scene_shown(next) {
@@ -34920,11 +34978,116 @@ var $;
                 return Boolean(name) && this.entered() === name;
             }
             leave() {
-                const was = this.inside();
+                const was = this.entered() !== null;
                 this.entered(null);
                 if (was)
                     this.focused(true);
                 return null;
+            }
+            hand() {
+                return this.tool() === 'hand' || this.grip();
+            }
+            tool_take(next) {
+                if (next !== 'select')
+                    this.leave();
+                this.draft(null);
+                this.tool(next);
+            }
+            tool_select(next) {
+                if (next !== undefined)
+                    this.tool_take('select');
+                return this.tool() === 'select';
+            }
+            tool_board(next) {
+                if (next !== undefined)
+                    this.tool_take(next ? 'board' : 'select');
+                return this.tool() === 'board';
+            }
+            tool_hand(next) {
+                if (next !== undefined)
+                    this.tool_take(next ? 'hand' : 'select');
+                return this.tool() === 'hand';
+            }
+            key_tools() {
+                return { KeyV: 'select', KeyF: 'board', KeyH: 'hand' };
+            }
+            key_field(target) {
+                const element = target;
+                if (element?.isContentEditable)
+                    return true;
+                return /^(INPUT|TEXTAREA|SELECT)$/.test(element?.tagName ?? '');
+            }
+            key_down(stroke) {
+                const field = this.key_field(stroke.target);
+                const command = stroke.metaKey || stroke.ctrlKey;
+                if (stroke.code === 'Escape') {
+                    stroke.preventDefault();
+                    if (field)
+                        this.focused(true);
+                    else
+                        this.escape();
+                    return true;
+                }
+                if (field)
+                    return false;
+                if (stroke.code === 'KeyD') {
+                    if (!command || stroke.altKey || stroke.shiftKey)
+                        return false;
+                    if (!this.picked().length)
+                        return false;
+                    stroke.preventDefault();
+                    this.leave();
+                    this.node_copy(null);
+                    return true;
+                }
+                if (stroke.code === 'Delete' || stroke.code === 'Backspace') {
+                    if (command || stroke.altKey)
+                        return false;
+                    if (!this.picked().length)
+                        return false;
+                    stroke.preventDefault();
+                    this.leave();
+                    this.node_delete(null);
+                    return true;
+                }
+                if (command || stroke.altKey || stroke.shiftKey)
+                    return false;
+                const tool = this.key_tools()[stroke.code];
+                if (tool) {
+                    stroke.preventDefault();
+                    this.tool_take(tool);
+                    return true;
+                }
+                if (stroke.code === 'Space') {
+                    stroke.preventDefault();
+                    this.grip(true);
+                    return true;
+                }
+                return false;
+            }
+            key_up(stroke) {
+                if (stroke.code === 'Space')
+                    this.grip(false);
+            }
+            escape() {
+                if (this.draft())
+                    this.draft(null);
+                else if (this.inside())
+                    this.leave();
+                else if (this.tool() !== 'select')
+                    this.tool('select');
+                else
+                    this.picked([]);
+            }
+            copy_gap() {
+                return 24;
+            }
+            copy_spot(name) {
+                const spot = this.spots()[name];
+                if (!spot)
+                    return null;
+                const width = this.part_size(name)?.width ?? 0;
+                return { x: spot.x + width + this.copy_gap(), y: spot.y };
             }
             pane_rect() {
                 const rect = this.view_rect();
@@ -35089,10 +35252,14 @@ var $;
                     return;
                 if (this.carrying())
                     return;
+                if (this.hand())
+                    return this.press(null);
+                const point = this.world_point(event);
+                if (this.tool() === 'board')
+                    return this.draft_press(point, event);
                 const dot = $bog_vmap_app_wire_dot_at(this.wire_dots(), this.screen_point(event));
                 if (dot)
                     return this.wire_press(dot, event);
-                const point = this.world_point(event);
                 if (this.band_wanted(event)) {
                     event.preventDefault();
                     this.band({ from: point, to: point });
@@ -35149,7 +35316,69 @@ var $;
             hover_track(event) {
                 if (this.wire_drag() || this.drag() || this.band())
                     return;
-                this.hovered(this.node_at(this.world_point(event)));
+                const aimed = this.tool() === 'select' && !this.hand();
+                this.hovered(aimed ? this.node_at(this.world_point(event)) : null);
+            }
+            draft(next) {
+                return next ?? null;
+            }
+            draft_press(point, event) {
+                event.preventDefault();
+                this.press(null);
+                this.draft({ from: point, to: point });
+                try {
+                    this.Overlay().dom_node().setPointerCapture(event.pointerId);
+                }
+                catch { }
+            }
+            draft_rect(draft) {
+                const left = Math.min(draft.from[0], draft.to[0]);
+                const top = Math.min(draft.from[1], draft.to[1]);
+                return {
+                    x: left,
+                    y: top,
+                    width: Math.max(draft.from[0], draft.to[0]) - left,
+                    height: Math.max(draft.from[1], draft.to[1]) - top,
+                };
+            }
+            draft_box(draft) {
+                const rect = this.draft_rect(draft);
+                if (Math.max(rect.width, rect.height) * this.camera_zoom() <= click_slack) {
+                    return { x: Math.round(draft.from[0]), y: Math.round(draft.from[1]), width: 0, height: 0 };
+                }
+                const x = Math.round(rect.x);
+                const y = Math.round(rect.y);
+                return {
+                    x,
+                    y,
+                    width: Math.max(1, Math.round(rect.x + rect.width) - x),
+                    height: Math.max(1, Math.round(rect.y + rect.height) - y),
+                };
+            }
+            draft_release(draft, event) {
+                const box = this.draft_box({ from: draft.from, to: this.world_point(event) });
+                this.draft(null);
+                this.tool('select');
+                try {
+                    this.Overlay().dom_node().releasePointerCapture(event.pointerId);
+                }
+                catch { }
+                this.board_draw(box);
+            }
+            board_draw(next) {
+                return next ?? null;
+            }
+            draft_style() {
+                const draft = this.draft();
+                if (!draft)
+                    return {};
+                const rect = this.$.$bog_vmap_app_pane_screen(this.draft_rect(draft), this.camera_zoom(), this.camera_shift());
+                return {
+                    left: rect.left + 'px',
+                    top: rect.top + 'px',
+                    width: rect.width + 'px',
+                    height: rect.height + 'px',
+                };
             }
             node_away() {
                 this.hovered(null);
@@ -35162,6 +35391,14 @@ var $;
                     return;
                 this.press_track(event);
                 this.hover_track(event);
+                const draft = this.draft();
+                if (draft) {
+                    if (!event.buttons)
+                        return this.node_release(event);
+                    event.preventDefault();
+                    this.draft({ from: draft.from, to: this.world_point(event) });
+                    return;
+                }
                 if (this.wire_drag()) {
                     if (!event.buttons)
                         return this.node_release(event);
@@ -35206,6 +35443,9 @@ var $;
                     this.carry_at({ x: point[0], y: point[1] });
                     return;
                 }
+                const draft = this.draft();
+                if (draft)
+                    return this.draft_release(draft, event);
                 const press = this.press();
                 this.press(null);
                 const moved = press
@@ -35325,7 +35565,7 @@ var $;
                 };
             }
             overlay_style() {
-                const rect = !this.carrying() && this.inside() ? this.frame_box() : null;
+                const rect = !this.carrying() && !this.hand() && this.inside() ? this.frame_box() : null;
                 return { clipPath: this.$.$bog_vmap_app_pane_hole(rect) };
             }
             link_add(next) {
@@ -35713,10 +35953,7 @@ var $;
                     return;
                 }
                 if (message.kind === 'key') {
-                    if (this.inside())
-                        this.leave();
-                    else
-                        this.picked([]);
+                    this.escape();
                     return;
                 }
                 if (message.kind === 'values') {
@@ -35824,6 +36061,12 @@ var $;
             $mol_action
         ], $bog_vmap_app_pane.prototype, "leave", null);
         __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "tool_take", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "escape", null);
+        __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "slot", null);
         __decorate([
@@ -35835,6 +36078,12 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "hovered", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "draft", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "draft_style", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "node_away", null);
@@ -35991,6 +36240,20 @@ var $;
                 outline: '1px solid ' + String($mol_theme.focus),
                 background: { color: $mol_theme.hover },
                 pointerEvents: 'none',
+            },
+            Draft: {
+                position: 'absolute',
+                outline: '1px solid ' + String($mol_theme.focus),
+                pointerEvents: 'none',
+                transition: 'none',
+            },
+            '@': {
+                bog_vmap_app_pane_tool: {
+                    board: { cursor: 'crosshair' },
+                },
+                bog_vmap_app_pane_hand: {
+                    true: { cursor: 'grab' },
+                },
             },
             Values: {
                 position: 'absolute',

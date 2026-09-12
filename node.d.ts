@@ -43973,6 +43973,11 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['style'] >
 	>
+	type $mol_view__style_bog_vmap_app_pane_27 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['draft_style'] >
+		,
+		ReturnType< $mol_view['style'] >
+	>
 	export class $bog_vmap_app_pane extends $mol_view {
 		file_over( next?: any ): any
 		file_take( next?: any ): any
@@ -43998,10 +44003,22 @@ declare namespace $ {
 		mark_hint( id: any): string
 		insert_style( ): Record<string, any>
 		band_style( ): Record<string, any>
+		draft_style( ): Record<string, any>
 		Touch( ): $mol_touch
 		attr( ): ({ 
 			'tabindex': string,
+			'bog_vmap_app_pane_tool': ReturnType< $bog_vmap_app_pane['tool'] >,
+			'bog_vmap_app_pane_hand': ReturnType< $bog_vmap_app_pane['hand'] >,
 		})  & ReturnType< $mol_view['attr'] >
+		tool( next?: string ): string
+		grip( next?: boolean ): boolean
+		hand( ): boolean
+		tool_select( next?: boolean ): boolean
+		tool_board( next?: boolean ): boolean
+		tool_hand( next?: boolean ): boolean
+		board_draw( next?: any ): any
+		node_delete( next?: any ): any
+		node_copy( next?: any ): any
 		leave( next?: any ): any
 		scene_bundle( ): string
 		scene_html( ): string
@@ -44061,6 +44078,7 @@ declare namespace $ {
 		Mark( id: any): $mol_view
 		Insert( ): $mol_view
 		Band( ): $mol_view
+		Draft( ): $mol_view
 		plugins( ): readonly(any)[]
 	}
 	
@@ -44177,6 +44195,20 @@ declare namespace $.$$ {
     type $bog_vmap_app_pane_peer = {
         postMessage(data: unknown, origin: string): void;
         readonly origin: string;
+    };
+    type $bog_vmap_app_pane_tool = 'select' | 'board' | 'hand';
+    type $bog_vmap_app_pane_stroke = {
+        readonly code: string;
+        readonly altKey: boolean;
+        readonly ctrlKey: boolean;
+        readonly metaKey: boolean;
+        readonly shiftKey: boolean;
+        readonly target: EventTarget | null;
+        preventDefault(): void;
+    };
+    type $bog_vmap_app_pane_draft = {
+        readonly from: readonly [number, number];
+        readonly to: readonly [number, number];
     };
     class $bog_vmap_app_pane extends $.$bog_vmap_app_pane {
         doc_js(): {
@@ -44306,6 +44338,23 @@ declare namespace $.$$ {
         primary(): string | null;
         inside(): boolean;
         leave(): null;
+        hand(): boolean;
+        tool_take(next: $bog_vmap_app_pane_tool): void;
+        tool_select(next?: boolean): boolean;
+        tool_board(next?: boolean): boolean;
+        tool_hand(next?: boolean): boolean;
+        key_tools(): {
+            readonly [code: string]: $bog_vmap_app_pane_tool | undefined;
+        };
+        key_field(target: EventTarget | null): boolean;
+        key_down(stroke: $bog_vmap_app_pane_stroke): boolean;
+        key_up(stroke: Pick<$bog_vmap_app_pane_stroke, 'code'>): void;
+        escape(): void;
+        copy_gap(): number;
+        copy_spot(name: string): {
+            x: any;
+            y: any;
+        } | null;
         pane_rect(): $bog_vmap_app_pane_screen_box;
         screen_point(event: {
             readonly clientX: number;
@@ -44347,10 +44396,25 @@ declare namespace $.$$ {
             height: number;
         } | null;
         nodes_covered(box: $bog_vmap_bridge_rect): string[];
-        node_press(event?: PointerEvent): void;
+        node_press(event?: PointerEvent): void | {
+            screen: readonly [number, number];
+            world: readonly [number, number];
+            moved: boolean;
+            entering: boolean;
+            name: string | null;
+        } | null;
         press_track(event: PointerEvent): void;
         hovered(next?: string | null): string | null;
         hover_track(event: PointerEvent): void;
+        draft(next?: $bog_vmap_app_pane_draft | null): $bog_vmap_app_pane_draft | null;
+        draft_press(point: readonly [number, number], event: PointerEvent): void;
+        draft_rect(draft: $bog_vmap_app_pane_draft): $bog_vmap_bridge_rect;
+        draft_box(draft: $bog_vmap_app_pane_draft): $bog_vmap_bridge_rect;
+        draft_release(draft: $bog_vmap_app_pane_draft, event: PointerEvent): void;
+        board_draw(next?: $bog_vmap_bridge_rect | null): $bog_vmap_bridge_rect | null;
+        draft_style(): {
+            readonly [prop: string]: string;
+        };
         node_away(): null;
         node_move(event?: PointerEvent): void | readonly string[];
         node_release(event?: PointerEvent): void | readonly string[];
