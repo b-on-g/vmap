@@ -103,10 +103,11 @@ namespace $ {
 
 			const body = shelf.body()
 
-			$mol_assert_equal( body.length, 3 )
-			$mol_assert_equal( body[ 0 ] === shelf.Source(), true )
-			$mol_assert_equal( body[ 1 ] === shelf.Parts(), true )
-			$mol_assert_equal( body[ 2 ] === shelf.Apps(), true )
+			$mol_assert_equal( body.length, 4 )
+			$mol_assert_equal( body[ 0 ] === shelf.Level(), true )
+			$mol_assert_equal( body[ 1 ] === shelf.Source(), true )
+			$mol_assert_equal( body[ 2 ] === shelf.Parts(), true )
+			$mol_assert_equal( body[ 3 ] === shelf.Apps(), true )
 
 			$mol_assert_equal( body.filter( view => view instanceof $mol_scroll ).length, 0 )
 
@@ -116,11 +117,12 @@ namespace $ {
 
 			$mol_assert_ok( head.textContent!.includes( 'Полка' ) )
 			$mol_assert_ok( head.querySelector( '[bog_vmap_app_shelf_filter]' ) )
-			$mol_assert_ok( head.querySelector( '[bog_vmap_app_shelf_level]' ) )
+			$mol_assert_equal( head.querySelector( '[bog_vmap_app_shelf_level]' ), null )
 			$mol_assert_equal( head.querySelector( '[bog_vmap_app_shelf_items]' ), null )
 
 			const page = dom.querySelector( '[mol_page_body]' )!
 
+			$mol_assert_ok( page.querySelector( '[bog_vmap_app_shelf_level]' ) )
 			$mol_assert_ok( page.querySelector( '[bog_vmap_app_shelf_items]' ) )
 			$mol_assert_ok( page.querySelector( '[bog_vmap_app_shelf_pack_row]' ) )
 

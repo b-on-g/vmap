@@ -274,6 +274,17 @@ namespace $ {
 
 			const rows = $bog_vmap_probe_rows( got.rows )
 			const shown = rows.map( row => `${ row[ 0 ] }: ${ row[ 1 ] }` ).join( ', ' )
+			const heads = $bog_vmap_probe_names.map( name => Math.round( box( `[bog_vmap_app_${ name }_head]` )?.height ?? -1 ) )
+
+			say( `${ at } шапки страниц ${ heads.join( ' / ' ) }` )
+
+			if( width === 1280 ) {
+				want(
+					heads.every( height => height === heads[ 0 ] ),
+					`${ at } шапки страниц разной высоты: ${ heads.join( ' / ' ) }`,
+				)
+			}
+
 			const spare = Math.round( got.viewport.width - ( box( '[bog_vmap_app_canvas]' )?.width ?? 0 ) )
 
 			say( `${ at } кнопок Холста ${ got.tools }, строк ${ rows.length } — ${ shown }, полосе нужно ${ got.span }, странице Холста до крышки вьюпорта ${ spare }` )

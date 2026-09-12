@@ -5,8 +5,8 @@ namespace $.$$ {
 		override body() {
 			return (
 				this.classes_showed()
-					? [ this.Source(), this.Palette() ]
-					: [ this.Source(), this.Parts(), this.Apps() ]
+					? [ this.Level(), this.Source(), this.Palette() ]
+					: [ this.Level(), this.Source(), this.Parts(), this.Apps() ]
 			) as readonly $mol_view[]
 		}
 
