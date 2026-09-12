@@ -2708,6 +2708,36 @@ namespace $ {
 
 		},
 
+		'a host that forgets the entered node on a new pick still gets the keyboard back'( $ ) {
+			const pane = tools_make( $ )
+
+			const own = pane.picked.bind( pane )
+			pane.picked = ( next?: readonly string[] )=> {
+				if( next !== undefined && !$mol_compare_deep( next, own() ) ) pane.entered( null )
+				return own( next )
+			}
+
+			let focused = 0
+			pane.focused = ( next?: boolean )=> {
+				if( next ) ++ focused
+				return Boolean( next )
+			}
+
+			pane.sizes({ [ `${root}/A` ]: box( 0, 0 ), [ `${root}/B` ]: box( 300, 0 ) })
+
+			tap( pane, 60, 45 )
+			tap( pane, 60, 45 )
+			$mol_assert_equal( pane.inside(), true )
+			$mol_assert_equal( focused, 0 )
+
+			tap( pane, 360, 45 )
+
+			$mol_assert_like( pane.picked(), [ 'B' ] )
+			$mol_assert_equal( pane.inside(), false )
+			$mol_assert_equal( focused, 1 )
+
+		},
+
 		'the tool ports of the head switch the tool and say which one is on'( $ ) {
 			const pane = tools_make( $ )
 

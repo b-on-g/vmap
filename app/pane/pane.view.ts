@@ -846,8 +846,8 @@ namespace $.$$ {
 			const already = Boolean( name ) && this.picked().includes( name! )
 			const entering = already && this.picked().length === 1
 
-			if( !already ) this.picked( name ? [ name ] : [] )
 			if( !entering ) this.leave()
+			if( !already ) this.picked( name ? [ name ] : [] )
 
 			this.press({
 				screen: [ event.clientX, event.clientY ],
