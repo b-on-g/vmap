@@ -35020,7 +35020,7 @@ var $;
             key_down(stroke) {
                 const field = this.key_field(stroke.target);
                 const command = stroke.metaKey || stroke.ctrlKey;
-                if (stroke.code === 'Escape') {
+                if (stroke.key === 'Escape') {
                     stroke.preventDefault();
                     if (field)
                         this.focused(true);
@@ -35040,7 +35040,7 @@ var $;
                     this.node_copy(null);
                     return true;
                 }
-                if (stroke.code === 'Delete' || stroke.code === 'Backspace') {
+                if (stroke.key === 'Delete' || stroke.key === 'Backspace') {
                     if (command || stroke.altKey)
                         return false;
                     if (!this.picked().length)

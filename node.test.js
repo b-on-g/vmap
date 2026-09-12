@@ -27884,7 +27884,7 @@ var $;
             key_down(stroke) {
                 const field = this.key_field(stroke.target);
                 const command = stroke.metaKey || stroke.ctrlKey;
-                if (stroke.code === 'Escape') {
+                if (stroke.key === 'Escape') {
                     stroke.preventDefault();
                     if (field)
                         this.focused(true);
@@ -27904,7 +27904,7 @@ var $;
                     this.node_copy(null);
                     return true;
                 }
-                if (stroke.code === 'Delete' || stroke.code === 'Backspace') {
+                if (stroke.key === 'Delete' || stroke.key === 'Backspace') {
                     if (command || stroke.altKey)
                         return false;
                     if (!this.picked().length)
@@ -47541,9 +47541,17 @@ var $;
         pane.handshake(pane.scene_key(), 1);
         return pane;
     };
+    const key_of = (code) => {
+        if (code === 'Space')
+            return ' ';
+        if (code.startsWith('Key'))
+            return code.slice(3).toLowerCase();
+        return code;
+    };
     const stroke = (code, over = {}) => {
         let prevented = false;
         return {
+            key: key_of(code),
             code,
             altKey: false,
             ctrlKey: false,
@@ -47601,6 +47609,23 @@ var $;
             pane.key_down(stroke('KeyF'));
             pane.key_down(stroke('Escape'));
             $mol_assert_equal(pane.tool(), 'select');
+        },
+        'letters go by the place of the key on any layout, Escape and Delete by their name'($) {
+            let deleted = 0;
+            const pane = tools_make($, { node_delete: () => { ++deleted; return null; } });
+            pane.key_down(stroke('KeyF', { key: 'а' }));
+            $mol_assert_equal(pane.tool(), 'board');
+            pane.key_down(stroke('KeyV', { key: 'м' }));
+            $mol_assert_equal(pane.tool(), 'select');
+            $mol_assert_equal(pane.key_down(stroke('KeyJ', { key: 'h' })), false);
+            $mol_assert_equal(pane.tool(), 'select');
+            pane.key_down(stroke('KeyH'));
+            $mol_assert_equal(pane.key_down(stroke('', { key: 'Escape' })), true);
+            $mol_assert_equal(pane.tool(), 'select');
+            pane.picked(['A']);
+            $mol_assert_equal(pane.key_down(stroke('', { key: 'Backspace' })), true);
+            $mol_assert_equal(pane.key_down(stroke('', { key: 'Delete' })), true);
+            $mol_assert_equal(deleted, 2);
         },
         'a tool key with a modifier, or typed into a field, changes nothing'($) {
             const pane = tools_make($);

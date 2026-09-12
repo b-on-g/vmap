@@ -44198,6 +44198,7 @@ declare namespace $.$$ {
     };
     type $bog_vmap_app_pane_tool = 'select' | 'board' | 'hand';
     type $bog_vmap_app_pane_stroke = {
+        readonly key: string;
         readonly code: string;
         readonly altKey: boolean;
         readonly ctrlKey: boolean;
