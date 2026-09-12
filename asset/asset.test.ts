@@ -12,6 +12,51 @@ namespace $ {
 		return $bog_vmap_asset.make({ $, master: ()=> at })
 	}
 
+	function yard_of(
+		$: $,
+		seen: ( land: string )=> null | $giper_baza_face_map,
+		ports: $mol_rest_port[],
+	) {
+
+		const Yard = class extends $giper_baza_yard {
+
+			override masters() {
+				return ports
+			}
+
+			override face_port_land( [ port, land ]: [ $mol_rest_port, $giper_baza_link ] ) {
+				return seen( land.str )
+			}
+
+		}
+
+		return Yard.make({ $ })
+	}
+
+	function mirror_of(
+		land: $giper_baza_land,
+		shift: { time?: number, summ?: number } = {},
+	) {
+
+		const mirror = new $giper_baza_face_map
+
+		for( const [ peer, face ] of land.faces ) {
+			mirror.peer_time( peer, face.time + ( shift.time ?? 0 ), face.tick )
+			mirror.peer_summ( peer, face.summ + ( shift.summ ?? 0 ) )
+		}
+
+		return mirror
+	}
+
+	function assets_of( $: $, file: $giper_baza_file, yard: $giper_baza_yard ) {
+		return $bog_vmap_asset.make({
+			$,
+			master: ()=> master,
+			pawn: ()=> file,
+			yard: ()=> yard,
+		})
+	}
+
 	function file_of( $: $, name = 'logo.png', head = '11111111' ) {
 		const one = land( $ ).Pawn( $giper_baza_file ).Head( new $giper_baza_link( head ) )
 		one.buffer( new Uint8Array([ 137, 80, 78, 71 ]) )
@@ -181,6 +226,117 @@ namespace $ {
 			)
 
 			$mol_assert_ok( !!$bog_vmap_asset_link( put ) )
+
+		},
+
+		'a land no master has answered about is still on its way'( $ ) {
+
+			const file = file_of( $ )
+			const link = file.link().str
+
+			const one = assets_of( $, file, yard_of( $, ()=> null, [ $mol_rest_port.make({}) ] ) )
+
+			$mol_assert_equal( one.filled( link ), true )
+			$mol_assert_equal( one.sent( link ), false )
+			$mol_assert_equal( one.ready( link ), false )
+
+		},
+
+		'units the master has not seen yet keep the asset on its way'( $ ) {
+
+			const file = file_of( $ )
+			const link = file.link().str
+			const land = file.land()
+			const port = $mol_rest_port.make({})
+
+			$mol_assert_ok( land.faces.size > 0 )
+
+			const by_summ = assets_of(
+				$, file,
+				yard_of( $, ()=> mirror_of( land, { summ: -1 } ), [ port ] ),
+			)
+
+			$mol_assert_equal( by_summ.sent( link ), false )
+
+			const by_time = assets_of(
+				$, file,
+				yard_of( $, ()=> mirror_of( land, { time: -1 } ), [ port ] ),
+			)
+
+			$mol_assert_equal( by_time.sent( link ), false )
+
+			const empty = assets_of(
+				$, file,
+				yard_of( $, ()=> new $giper_baza_face_map, [ port ] ),
+			)
+
+			$mol_assert_equal( empty.sent( link ), false )
+
+		},
+
+		'a land the master reports back in full counts as sent'( $ ) {
+
+			const file = file_of( $ )
+			const link = file.link().str
+			const land = file.land()
+
+			const one = assets_of(
+				$, file,
+				yard_of( $, ()=> mirror_of( land ), [ $mol_rest_port.make({}) ] ),
+			)
+
+			$mol_assert_equal( one.sent( link ), true )
+			$mol_assert_equal( one.ready( link ), true )
+
+		},
+
+		'the mirror is looked up by the land of the asset'( $ ) {
+
+			const file = file_of( $ )
+			const land = file.land()
+			const asked = [] as string[]
+
+			const one = assets_of(
+				$, file,
+				yard_of(
+					$,
+					at => {
+						asked.push( at )
+						return at === 'another land' ? mirror_of( land ) : null
+					},
+					[ $mol_rest_port.make({}) ],
+				),
+			)
+
+			$mol_assert_equal( one.sent( file.link().str ), false )
+			$mol_assert_like( asked, [ land.link().str ] )
+
+		},
+
+		'without a master port nothing counts as sent'( $ ) {
+
+			const file = file_of( $ )
+			const land = file.land()
+
+			const one = assets_of( $, file, yard_of( $, ()=> mirror_of( land ), [] ) )
+
+			$mol_assert_equal( one.sent( file.link().str ), false )
+
+		},
+
+		'bytes that are not here yet leave the asset unready'( $ ) {
+
+			const empty = land( $ ).Pawn( $giper_baza_file ).Head( new $giper_baza_link( '33333333' ) )
+			const link = empty.link().str
+
+			const one = assets_of(
+				$, empty,
+				yard_of( $, ()=> mirror_of( empty.land() ), [ $mol_rest_port.make({}) ] ),
+			)
+
+			$mol_assert_equal( one.filled( link ), false )
+			$mol_assert_equal( one.sent( link ), true )
+			$mol_assert_equal( one.ready( link ), false )
 
 		},
 

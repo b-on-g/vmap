@@ -50,15 +50,55 @@ namespace $ {
 			return master ? master.replace( /\/$/, '' ) + '/' + file.uri() : ''
 		}
 
+		pawn( link: string ) {
+			return this.$.$giper_baza_glob.Pawn(
+				new $giper_baza_link( link ),
+				$giper_baza_file,
+			)
+		}
+
 		file( uri: string ) {
 
 			const link = $bog_vmap_asset_link( uri )
 			if( !link ) return null
 
-			return this.$.$giper_baza_glob.Pawn(
-				new $giper_baza_link( link ),
-				$giper_baza_file,
-			)
+			return this.pawn( link )
+		}
+
+		ports() {
+			return this.yard().masters()
+		}
+
+		filled( link: string ) {
+			return this.pawn( link ).filled()
+		}
+
+		sent( link: string ) {
+
+			const land = this.pawn( link ).land()
+			const yard = this.yard()
+
+			return this.ports().some( port => {
+
+				const mirror = yard.face_port_land([ port, land.link() ])
+				if( !mirror ) return false
+
+				for( const [ peer, face ] of land.faces ) {
+
+					const seen = mirror.get( peer )
+					if( !seen ) return false
+					if( seen.time_tick < face.time_tick ) return false
+					if( seen.summ < face.summ ) return false
+
+				}
+
+				return true
+			} )
+
+		}
+
+		ready( link: string ) {
+			return this.filled( link ) && this.sent( link )
 		}
 
 		bytes( uri: string ) {

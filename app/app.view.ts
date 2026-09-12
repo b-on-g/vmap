@@ -272,8 +272,29 @@ namespace $.$$ {
 
 		}
 
+		assets_pending() {
+			return this.store().assets_pending()
+		}
+
+		assets_note() {
+
+			try {
+				var pending = this.assets_pending().length
+			} catch( error: unknown ) {
+				if( this.$.$mol_promise_like( error ) ) return ''
+				return $mol_fail( error )
+			}
+
+			if( !pending ) return ''
+
+			const total = this.store().asset_links().length
+
+			return `ассеты ещё уходят на сервер: ${ total - pending } из ${ total }`
+		}
+
 		override export_ready() {
-			return Boolean( this.export_state().module )
+			if( !this.export_state().module ) return false
+			return !this.assets_pending().length
 		}
 
 		override export_title() {
@@ -292,6 +313,9 @@ namespace $.$$ {
 
 			const module = state.module
 			if( !module ) return 'Документ ещё загружается'
+
+			const note = this.assets_note()
+			if( note ) return `Выгрузка подождёт, ${ note }`
 
 			return `${ module.files.length } файлов модуля ${ module.path }.`
 				+ ` Распаковать в корень MAM и собрать «npx mam ${ module.path }»`
@@ -762,6 +786,10 @@ namespace $.$$ {
 		override status() {
 			const note = this.store_note()
 			if( note ) return note
+
+			const assets = this.assets_note()
+			if( assets ) return assets
+
 			if( this.stalled() ) return 'сцена не отвечает'
 			if( this.Pane().warmed() ) return 'сцена на связи'
 			return this.Pane().pack_note() || 'ожидание сцены…'

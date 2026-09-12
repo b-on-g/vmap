@@ -608,6 +608,68 @@ namespace $ {
 
 		},
 
+		'the download waits while the assets are still leaving'( $ ) {
+
+			const app = $bog_vmap_app.make({
+				$,
+				store: ()=> $bog_vmap_app_store.make({
+					$,
+					doc_land_config: ()=> null,
+					stage: ()=> 'ready',
+					asset_links: ()=> [ 'one', 'two', 'three' ],
+					assets_pending: ()=> [ 'three' ],
+				}),
+			}) as $$.$bog_vmap_app
+
+			$mol_assert_ok( app.export_state().module )
+			$mol_assert_equal( app.export_ready(), false )
+			$mol_assert_equal( app.status(), 'ассеты ещё уходят на сервер: 2 из 3' )
+			$mol_assert_equal(
+				app.export_hint(),
+				'Выгрузка подождёт, ассеты ещё уходят на сервер: 2 из 3',
+			)
+
+		},
+
+		'assets that reached the master hold the download up no more'( $ ) {
+
+			const app = $bog_vmap_app.make({
+				$,
+				store: ()=> $bog_vmap_app_store.make({
+					$,
+					doc_land_config: ()=> null,
+					stage: ()=> 'ready',
+					asset_links: ()=> [ 'one' ],
+					assets_pending: ()=> [],
+				}),
+			}) as $$.$bog_vmap_app
+
+			$mol_assert_equal( app.export_ready(), true )
+			$mol_assert_equal( app.assets_note(), '' )
+			$mol_assert_ok( app.export_hint().includes( 'npx mam my/site/page' ) )
+
+		},
+
+		'a document still on its way says nothing about its assets'( $ ) {
+
+			const waiting = new Promise( ()=> {} )
+
+			const app = $bog_vmap_app.make({
+				$,
+				store: ()=> $bog_vmap_app_store.make({
+					$,
+					doc_land_config: ()=> null,
+					stage: ()=> 'ready',
+					source: ()=> { throw waiting },
+					assets_pending: ()=> { throw waiting },
+				}),
+			}) as $$.$bog_vmap_app
+
+			$mol_assert_equal( app.assets_note(), '' )
+			$mol_assert_equal( app.export_ready(), false )
+
+		},
+
 		'a document still on its way holds nothing up'( $ ) {
 			const waiting = new Promise( ()=> {} )
 

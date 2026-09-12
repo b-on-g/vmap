@@ -276,6 +276,17 @@ namespace $ {
 			return $bog_vmap_asset_links( this.source() )
 		}
 
+		@ $mol_mem
+		assets_pending() {
+
+			const assets = this.assets()
+			const pending = this.asset_links().filter( link => !assets.ready( link ) )
+
+			if( pending.length ) this.$.$mol_state_time.now( 1000 )
+
+			return pending
+		}
+
 		spots( next?: $bog_vmap_app_store_spots ): $bog_vmap_app_store_spots {
 
 			const doc = this.doc_current()

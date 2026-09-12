@@ -918,6 +918,72 @@ namespace $ {
 
 		},
 
+		'the store lists the assets that have not reached the master'( $ ) {
+
+			let polled = 0
+
+			$.$mol_state_time = class extends $mol_state_time {
+				static override now() {
+					polled ++
+					return 0
+				}
+			}
+
+			const arrived = new Set< string >()
+
+			const assets = $bog_vmap_asset.make({
+				$,
+				master: ()=> 'https://baza.test/',
+				ready: ( link: string )=> arrived.has( link ),
+			})
+
+			const s = store( $ )
+			s.assets = ()=> assets
+
+			const land = $giper_baza_land.make({ $ })
+
+			const one = land.Pawn( $giper_baza_file ).Head( new $giper_baza_link( '11111111' ) )
+			one.name( 'one.png' )
+
+			const two = land.Pawn( $giper_baza_file ).Head( new $giper_baza_link( '22222222' ) )
+			two.name( 'two.png' )
+
+			s.source(
+				`${d}bog_vmap_app_store_test_page ${d}mol_view\n`
+					+ `\tLogo ${d}mol_image uri \\${ assets.uri( one ) }\n`
+					+ `\tHero ${d}mol_image uri \\${ assets.uri( two ) }\n`
+					+ `\tsub / <= Logo\n`
+			)
+
+			const links = s.asset_links()
+			$mol_assert_equal( links.length, 2 )
+
+			arrived.add( links[ 0 ] )
+
+			$mol_assert_like( s.assets_pending(), [ links[ 1 ] ] )
+			$mol_assert_ok( polled > 0 )
+
+		},
+
+		'a document without assets asks about nothing and polls nothing'( $ ) {
+
+			let polled = 0
+
+			$.$mol_state_time = class extends $mol_state_time {
+				static override now() {
+					polled ++
+					return 0
+				}
+			}
+
+			const s = store( $ )
+			s.source( src_hero )
+
+			$mol_assert_like( s.assets_pending(), [] )
+			$mol_assert_equal( polled, 0 )
+
+		},
+
 	})
 
 }
