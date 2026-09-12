@@ -124,7 +124,8 @@ $bog_vmap_app $mol_book2
 		prop <= code_prop \
 		hooks <= code_hooks /string
 		whole? <=> code_whole?
-		source? <=> node_source?
+		source? <=> code_source?
+		node_source? <=> node_source?
 		js? <=> code_js?
 		css? <=> code_css?
 		error <= code_error \
