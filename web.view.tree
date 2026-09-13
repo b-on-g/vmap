@@ -2557,6 +2557,7 @@ $bog_vmap_app_pane $mol_view
 	inside false
 	world_center /number
 	free_spot /number
+	part_size* null
 	camera_fit? null
 	camera_reset? null
 	zoom_out? null

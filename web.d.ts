@@ -45451,6 +45451,7 @@ declare namespace $ {
 		inside( ): boolean
 		world_center( ): readonly(number)[]
 		free_spot( ): readonly(number)[]
+		part_size( id: any): any
 		camera_fit( next?: any ): any
 		camera_reset( next?: any ): any
 		zoom_out( next?: any ): any

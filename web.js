@@ -34337,6 +34337,9 @@ var $;
 		free_spot(){
 			return [];
 		}
+		part_size(id){
+			return null;
+		}
 		camera_fit(next){
 			if(next !== undefined) return next;
 			return null;
