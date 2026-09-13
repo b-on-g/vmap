@@ -514,6 +514,30 @@ namespace $ {
 
 		},
 
+		'a read only scene shows the code and takes no typing'( $ ) {
+
+			const panel = $bog_vmap_app_code.make({
+				$,
+				klass: ()=> `${d}bog_vmap_app_code_read_page`,
+				prop: ()=> '',
+				hooks: ()=> [],
+				whole: ()=> true,
+				source: ()=> `${d}bog_vmap_app_code_read_page ${d}mol_view\n\tsub /\n`,
+				node_source: ()=> '',
+				js: ()=> 'greeting() {\n\treturn 1\n}\n',
+				css: ()=> '',
+				error: ()=> '',
+				editable: ()=> false,
+			}) as $$.$bog_vmap_app_code
+
+			for( const area of [ panel.Tree(), panel.Js(), panel.Css() ] ) {
+				$mol_assert_equal( ( area.Edit().dom_tree() as HTMLTextAreaElement ).disabled, true )
+			}
+
+			$mol_assert_ok( panel.Tree().value().includes( `${d}bog_vmap_app_code_read_page` ) )
+
+		},
+
 		'a press on the strip left of the field puts the caret in the field'( $ ) {
 
 			const dom = $.$mol_dom_context

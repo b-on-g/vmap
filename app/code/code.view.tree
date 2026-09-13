@@ -10,6 +10,7 @@ $bog_vmap_app_code $mol_page
 	whole? false
 	refusal? \
 	field_undo false
+	editable true
 	event *
 		^
 		focusout? <=> field_leave? null
@@ -33,6 +34,7 @@ $bog_vmap_app_code $mol_page
 		title \view.tree
 		hint \Имя_узла $mol_view
 		sidebar_showed true
+		enabled <= editable
 		value? <=> tree_text? \
 		event *
 			^
@@ -41,6 +43,7 @@ $bog_vmap_app_code $mol_page
 		title \JS
 		hint \
 		sidebar_showed true
+		enabled <= editable
 		value? <=> js_text? \
 		event *
 			^
@@ -52,6 +55,7 @@ $bog_vmap_app_code $mol_page
 		title \CSS
 		hint \
 		sidebar_showed true
+		enabled <= editable
 		value? <=> css_text? \
 		event *
 			^
