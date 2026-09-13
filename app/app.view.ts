@@ -1005,12 +1005,7 @@ namespace $.$$ {
 			} as { readonly [ key: string ]: string }
 		}
 
-		@ $mol_action
-		override board_draw( next?: $bog_vmap_bridge_rect | null ) {
-			if( !next ) return null
-
-			const size = next.width || next.height ? next : this.board_size()
-
+		board_new( size: { readonly width: number, readonly height: number } ) {
 			const node = this.node()
 			const name = this.name_free( 'Page' )
 			const tree = node.tree()
@@ -1024,13 +1019,75 @@ namespace $.$$ {
 			] ) )
 
 			node.sub_open( name )
-			node.sub_add( name )
+
+			return name
+		}
+
+		@ $mol_action
+		override board_draw( next?: $bog_vmap_bridge_rect | null ) {
+			if( !next ) return null
+
+			const size = next.width || next.height ? next : this.board_size()
+
+			const name = this.board_new( size )
+			this.node().sub_add( name )
 
 			this.spots({ ... this.spots(), [ name ]: { x: next.x, y: next.y } })
 
 			this.selected( name )
 
 			return next
+		}
+
+		@ $mol_action
+		override node_wrap() {
+			const picked = this.picked()
+			if( !picked.length ) return null
+
+			const node = this.node()
+			const pane = this.Pane()
+
+			const boxes = new Map< string, $bog_vmap_bridge_rect | null >(
+				picked.map( name => [ name, pane.part_size( name ) ] )
+			)
+			const place = ( name: string )=> boxes.get( name ) ?? { x: 0, y: 0 }
+
+			const tops = picked
+				.filter( name => !picked.some( up => up !== name && node.sub_within( up, name ) ) )
+				.sort( ( one, two )=> place( one ).y - place( two ).y || place( one ).x - place( two ).x )
+
+			const holders = new Set( tops.map( name => node.sub_holder( name ) ) )
+			const holder = holders.size === 1 ? [ ... holders ][ 0 ] ?? '' : ''
+			const kids = node.sub_names( holder ) ?? []
+			const index = Math.min( Infinity, ... tops.map( name => kids.indexOf( name ) ).filter( at => at >= 0 ) )
+
+			const found = tops.flatMap( name => boxes.get( name ) ?? [] )
+			const left = Math.min( ... found.map( box => box.x ) )
+			const upper = Math.min( ... found.map( box => box.y ) )
+			const width = Math.max( ... found.map( box => box.x + box.width ) ) - left
+			const height = Math.max( ... found.map( box => box.y + box.height ) ) - upper
+
+			const spots = { ... this.spots() }
+			const spot = found.length ? { x: left, y: upper } : spots[ tops[ 0 ] ]
+			const [ x, y ] = spot ? [ spot.x, spot.y ] : pane.free_spot()
+
+			const name = this.board_new( found.length
+				? { width: Math.round( width ), height: Math.round( height ) }
+				: this.board_size()
+			)
+
+			node.sub_insert( name, index, holder )
+			if( !holder ) spots[ name ] = { x: Math.round( x ), y: Math.round( y ) }
+
+			tops.forEach( ( kid, at )=> {
+				node.sub_move( kid, at, name )
+				delete spots[ kid ]
+			} )
+
+			this.spots( spots )
+			this.picked([ name ])
+
+			return null
 		}
 
 		@ $mol_action

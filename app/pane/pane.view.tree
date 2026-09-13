@@ -13,6 +13,7 @@ $bog_vmap_app_pane $mol_view
 	board_draw? null
 	node_delete? null
 	node_copy? null
+	node_wrap? null
 	leave? null
 	key_down* false
 	key_up* null
@@ -86,6 +87,7 @@ $bog_vmap_app_pane $mol_view
 			move? <=> node_move? null
 			release? <=> node_release? null
 			away? <=> node_away? null
+			context? <=> node_context? null
 		<= Wire $bog_vmap_app_wire
 			lines <= wire_lines /$bog_vmap_app_wire_line
 			dots <= wire_dots /$bog_vmap_app_wire_dot
@@ -112,6 +114,19 @@ $bog_vmap_app_pane $mol_view
 		style <= draft_style *
 	Guide* $mol_view
 		style <= guide_style* *
+	Menu* $bog_vmap_app_menu
+		showed? <=> menu_showed? false
+		left <= menu_left \
+		top <= menu_top \
+		on_node <= menu_on_node false
+		copy? <=> node_copy?
+		remove? <=> node_delete?
+		wrap? <=> node_wrap?
+		parent? <=> menu_parent? null
+		parent_enabled <= menu_parent_enabled false
+		enter? <=> menu_enter? null
+		board? <=> menu_board? null
+		fit? <=> camera_reset?
 	plugins /
 		^
 		<= Touch $mol_touch
@@ -128,12 +143,14 @@ $bog_vmap_app_pane_overlay $mol_view
 	move? null
 	release? null
 	away? null
+	context? null
 	event *
 		^
 		pointerdown? <=> press? null
 		pointermove? <=> move? null
 		pointerup? <=> release? null
 		pointerleave? <=> away? null
+		contextmenu? <=> context? null
 	Frame* $mol_view
 		style <= frame_style* *
 		sub /

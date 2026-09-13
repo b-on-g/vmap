@@ -55,6 +55,12 @@ namespace $.$$ {
 		readonly to: readonly [ number, number ]
 	}
 
+	export type $bog_vmap_app_pane_menu = {
+		readonly screen: readonly [ number, number ]
+		readonly world: readonly [ number, number ]
+		readonly name: string | null
+	}
+
 	export class $bog_vmap_app_pane extends $.$bog_vmap_app_pane {
 		override doc_js(): { readonly [ klass: string ]: string } {
 			return {}
@@ -95,7 +101,16 @@ namespace $.$$ {
 
 		@ $mol_action
 		override camera_fit( next?: readonly $bog_vmap_bridge_rect[] | null ) {
-			const box = this.box_union( next ?? [] )
+			return this.fit( next ?? [], 1 )
+		}
+
+		@ $mol_action
+		picked_fit() {
+			return this.fit( this.picked().flatMap( name => this.part_size( name ) ?? [] ), this.zoom_max() )
+		}
+
+		fit( boxes: readonly $bog_vmap_bridge_rect[], limit: number ) {
+			const box = this.box_union( boxes )
 			const rect = this.pane_rect()
 
 			if( !box || !rect.width || !rect.height ) return null
@@ -103,7 +118,7 @@ namespace $.$$ {
 			const gap = this.fit_gap()
 
 			const zoom = this.camera_zoom( Math.min(
-				1,
+				limit,
 				Math.max( rect.width - gap * 2, 1 ) / box.width,
 				Math.max( rect.height - gap * 2, 1 ) / box.height,
 			) )
@@ -139,8 +154,12 @@ namespace $.$$ {
 		}
 
 		zoom_by( mult: number ) {
+			this.zoom_to( this.camera_zoom() * mult )
+		}
+
+		zoom_to( next: number ) {
 			const zoom_prev = this.camera_zoom()
-			const zoom_next = this.camera_zoom( zoom_prev * mult )
+			const zoom_next = this.camera_zoom( next )
 			const real = zoom_next / zoom_prev
 
 			const rect = this.pane_rect()
@@ -237,6 +256,7 @@ namespace $.$$ {
 				... this.band() ? [ this.Band() ] : [],
 				... this.draft() ? [ this.Draft() ] : [],
 				... this.guide_views(),
+				... this.menu() ? [ this.menu_view() ] : [],
 			] as readonly $mol_view[]
 		}
 
@@ -593,6 +613,14 @@ namespace $.$$ {
 			return null
 		}
 
+		enter( name: string | null ) {
+			this.entered( name )
+
+			try {
+				( this.Scene( this.scene_key() ).dom_node() as HTMLElement ).focus()
+			} catch {}
+		}
+
 		override hand() {
 			return this.tool() === 'hand' || this.grip()
 		}
@@ -633,6 +661,14 @@ namespace $.$$ {
 			const field = this.key_field( stroke.target )
 			const command = stroke.metaKey || stroke.ctrlKey
 
+			if( this.menu() ) {
+				this.menu( null )
+				if( stroke.key === 'Escape' ) {
+					stroke.preventDefault()
+					return true
+				}
+			}
+
 			if( stroke.key === 'Escape' ) {
 				stroke.preventDefault()
 				if( field ) this.focused( true )
@@ -660,6 +696,37 @@ namespace $.$$ {
 				this.leave()
 				this.node_delete( null )
 				return true
+			}
+
+			if( stroke.code === 'KeyG' && command && stroke.altKey && !stroke.shiftKey ) {
+				if( !this.picked().length ) return false
+
+				stroke.preventDefault()
+				this.leave()
+				this.node_wrap( null )
+				return true
+			}
+
+			if( stroke.shiftKey && !command && !stroke.altKey ) {
+
+				if( stroke.code === 'Digit1' ) {
+					stroke.preventDefault()
+					this.camera_reset()
+					return true
+				}
+
+				if( stroke.code === 'Digit2' ) {
+					if( !this.picked_fit() ) return false
+					stroke.preventDefault()
+					return true
+				}
+
+				if( stroke.code === 'Digit0' ) {
+					stroke.preventDefault()
+					this.zoom_to( 1 )
+					return true
+				}
+
 			}
 
 			if( command || stroke.altKey || stroke.shiftKey ) return false
@@ -690,6 +757,103 @@ namespace $.$$ {
 			else if( this.inside() ) this.leave()
 			else if( this.tool() !== 'select' ) this.tool( 'select' )
 			else this.picked( [] )
+		}
+
+		@ $mol_mem
+		menu( next?: $bog_vmap_app_pane_menu | null ) {
+			return next ?? null
+		}
+
+		menu_key() {
+			return this.menu()?.screen.join( ':' ) ?? ''
+		}
+
+		menu_view() {
+			return this.Menu( this.menu_key() )
+		}
+
+		override menu_showed( next?: boolean ) {
+			if( next === false ) this.menu( null )
+			return Boolean( this.menu() )
+		}
+
+		override menu_left() {
+			return ( this.menu()?.screen[0] ?? 0 ) + 'px'
+		}
+
+		override menu_top() {
+			return ( this.menu()?.screen[1] ?? 0 ) + 'px'
+		}
+
+		override menu_on_node() {
+			return Boolean( this.menu()?.name )
+		}
+
+		override node_context( event?: MouseEvent ) {
+			if( !event ) return null
+			if( this.carrying() ) return null
+
+			const point = this.world_point( event )
+
+			const held = this.inside() ? this.part_size( this.primary() ?? '' ) : null
+			if( held
+				&& point[0] >= held.x && point[0] <= held.x + held.width
+				&& point[1] >= held.y && point[1] <= held.y + held.height
+			) return null
+
+			event.preventDefault()
+
+			const name = this.node_at( point )
+
+			this.leave()
+			if( name && !this.picked().includes( name ) ) this.picked([ name ])
+
+			this.menu({ screen: this.screen_point( event ), world: point, name })
+
+			return null
+		}
+
+		parents() {
+			const found = [] as string[]
+
+			for( const name of this.picked() ) {
+				const up = this.node_path( name ).at( -1 )
+				if( up && !found.includes( up ) ) found.push( up )
+			}
+
+			return found
+		}
+
+		override menu_parent_enabled() {
+			return this.parents().length > 0
+		}
+
+		@ $mol_action
+		override menu_parent() {
+			const parents = this.parents()
+			if( parents.length ) this.picked( parents )
+			return null
+		}
+
+		@ $mol_action
+		override menu_enter() {
+			const name = this.menu()?.name
+			if( !name ) return null
+
+			this.picked([ name ])
+			this.enter( name )
+
+			return null
+		}
+
+		@ $mol_action
+		override menu_board() {
+			const world = this.menu()?.world
+			if( !world ) return null
+
+			this.board_draw({ x: Math.round( world[0] ), y: Math.round( world[1] ), width: 0, height: 0 })
+
+			return null
 		}
 
 		copy_gap() {
@@ -1194,11 +1358,7 @@ namespace $.$$ {
 
 			if( !press.entering ) return
 
-			this.entered( this.primary() )
-
-			try {
-				( this.Scene( this.scene_key() ).dom_node() as HTMLElement ).focus()
-			} catch {}
+			this.enter( this.primary() )
 
 			this.click_send( press.world, event )
 

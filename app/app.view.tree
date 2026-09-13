@@ -71,7 +71,7 @@ $bog_vmap_app $mol_page
 			click? <=> zoom_out? null
 		<= Zoom_reset $mol_button_minor
 			title <= zoom_title \
-			hint \Сбросить вид
+			hint \Показать всё. Shift+1 — всё, Shift+2 — выделенное, Shift+0 — 100 %
 			click? <=> camera_reset? null
 		<= Zoom_in $mol_button_minor
 			title \+
@@ -152,6 +152,7 @@ $bog_vmap_app $mol_page
 				files_drop? <=> files_drop? null
 				node_delete? <=> node_delete?
 				node_copy? <=> node_copy? null
+				node_wrap? <=> node_wrap? null
 				board_draw? <=> board_draw? null
 				tool_select? => tool_select?
 				tool_board? => tool_board?

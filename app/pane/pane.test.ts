@@ -3399,3 +3399,474 @@ namespace $ {
 	})
 
 }
+
+namespace $ {
+	const d = '$'
+
+	const root = `${d}doc`
+
+	const box = ( x: number, y: number, width = 100, height = 50 ) => ({ x, y, width, height })
+
+	const menu_pane = ( $: $, over: Partial< $$.$bog_vmap_app_pane > = {} ) => {
+		const peer = { origin: 'null', postMessage() {} }
+
+		const pane = $$.$bog_vmap_app_pane.make({
+			$,
+			doc_root: ()=> root,
+			doc_names: ()=> {
+				const names = new Set< string >()
+				for( const key of Object.keys( pane.sizes() ) ) {
+					for( const step of key.split( '/' ).slice( 1 ) ) names.add( step )
+				}
+				return [ ... names ]
+			},
+			pane_rect: ()=> ({ left: 10, top: 20, width: 1000, height: 800 }),
+			scene_peer: ()=> peer,
+			... over,
+		})
+
+		pane.handshake( pane.scene_key(), 1 )
+
+		return pane
+	}
+
+	const right = ( clientX: number, clientY: number )=> {
+		let prevented = false
+
+		const event = {
+			button: 2,
+			buttons: 0,
+			clientX,
+			clientY,
+			altKey: false,
+			ctrlKey: false,
+			metaKey: false,
+			shiftKey: false,
+			preventDefault() { prevented = true },
+		} as unknown as MouseEvent
+
+		return { event, prevented: ()=> prevented }
+	}
+
+	const pointer = ( clientX: number, clientY: number, over: Partial< PointerEvent > = {} ) => ({
+		button: 0,
+		buttons: 1,
+		pointerId: 1,
+		clientX,
+		clientY,
+		altKey: false,
+		ctrlKey: false,
+		metaKey: false,
+		shiftKey: false,
+		preventDefault() {},
+		... over,
+	}) as unknown as PointerEvent
+
+	const tap = ( pane: $$.$bog_vmap_app_pane, x: number, y: number ) => {
+		pane.node_press( pointer( x, y ) )
+		pane.node_release( pointer( x, y, { buttons: 0 } ) )
+	}
+
+	const stroke = ( code: string, over: Partial< $$.$bog_vmap_app_pane_stroke > = {} ) => {
+		let prevented = false
+
+		return {
+			key: code.startsWith( 'Key' ) ? code.slice( 3 ).toLowerCase() : code,
+			code,
+			altKey: false,
+			ctrlKey: false,
+			metaKey: false,
+			shiftKey: false,
+			target: null as EventTarget | null,
+			get prevented() { return prevented },
+			preventDefault() { prevented = true },
+			... over,
+		}
+	}
+
+	const menus = ( pane: $$.$bog_vmap_app_pane )=> pane.sub().filter( view => view instanceof $bog_vmap_app_menu )
+
+	$mol_test({
+
+		'a right click on a node picks it alone, on a picked one keeps the set, on bare canvas keeps the pick'( $ ) {
+			const pane = menu_pane( $ )
+
+			pane.sizes({
+				[ `${ root }/A` ]: box( 0, 0 ),
+				[ `${ root }/B` ]: box( 300, 0 ),
+				[ `${ root }/C` ]: box( 600, 0 ),
+			})
+
+			pane.picked([ 'A', 'B' ])
+
+			const on_b = right( 360, 45 )
+			pane.node_context( on_b.event )
+			$mol_assert_equal( on_b.prevented(), true )
+			$mol_assert_like( pane.picked(), [ 'A', 'B' ] )
+			$mol_assert_equal( pane.menu()?.name, 'B' )
+			$mol_assert_equal( pane.menu_on_node(), true )
+
+			pane.node_context( right( 660, 45 ).event )
+			$mol_assert_like( pane.picked(), [ 'C' ] )
+			$mol_assert_equal( pane.menu()?.name, 'C' )
+
+			const bare = right( 510, 420 )
+			pane.node_context( bare.event )
+			$mol_assert_equal( bare.prevented(), true )
+			$mol_assert_like( pane.picked(), [ 'C' ] )
+			$mol_assert_equal( pane.menu()?.name, null )
+			$mol_assert_equal( pane.menu_on_node(), false )
+		},
+
+		'the menu stands at the click in the coordinates of the pane and is on the canvas only while open'( $ ) {
+			const pane = menu_pane( $ )
+
+			$mol_assert_equal( menus( pane ).length, 0 )
+
+			pane.node_context( right( 110, 70 ).event )
+
+			$mol_assert_equal( pane.menu_left(), '100px' )
+			$mol_assert_equal( pane.menu_top(), '50px' )
+			$mol_assert_equal( pane.menu_showed(), true )
+			$mol_assert_like( menus( pane ), [ pane.menu_view() ] )
+
+			pane.menu_view().close()
+
+			$mol_assert_equal( pane.menu(), null )
+			$mol_assert_equal( menus( pane ).length, 0 )
+		},
+
+		'a right click at another point gives a menu of its own'( $ ) {
+			const pane = menu_pane( $ )
+
+			pane.node_context( right( 110, 70 ).event )
+			const first = pane.menu_view()
+
+			pane.node_context( right( 210, 170 ).event )
+			const second = pane.menu_view()
+
+			$mol_assert_ok( first !== second )
+			$mol_assert_like( menus( pane ), [ second ] )
+			$mol_assert_equal( second.left(), '200px' )
+		},
+
+		'a right click inside the entered node is left to the component, around it the menu takes the pointer out'( $ ) {
+			const pane = menu_pane( $ )
+
+			pane.sizes({ [ `${ root }/A` ]: box( 0, 0 ) })
+
+			tap( pane, 60, 45 )
+			tap( pane, 60, 45 )
+			$mol_assert_equal( pane.inside(), true )
+
+			const inner = right( 60, 45 )
+			pane.node_context( inner.event )
+			$mol_assert_equal( inner.prevented(), false )
+			$mol_assert_equal( pane.menu(), null )
+			$mol_assert_equal( pane.inside(), true )
+
+			const ring = right( 114, 45 )
+			pane.node_context( ring.event )
+			$mol_assert_equal( ring.prevented(), true )
+			$mol_assert_equal( pane.menu()?.name, 'A' )
+			$mol_assert_equal( pane.inside(), false )
+			$mol_assert_like( pane.picked(), [ 'A' ] )
+		},
+
+		'nothing opens while a part is carried in from the shelf'( $ ) {
+			const pane = menu_pane( $, { carrying: ()=> true } )
+
+			const carried = right( 510, 420 )
+			pane.node_context( carried.event )
+
+			$mol_assert_equal( carried.prevented(), false )
+			$mol_assert_equal( pane.menu(), null )
+		},
+
+		'any key closes the menu, and Escape does nothing more'( $ ) {
+			const pane = menu_pane( $ )
+
+			pane.sizes({ [ `${ root }/A` ]: box( 0, 0 ) })
+
+			pane.node_context( right( 60, 45 ).event )
+			$mol_assert_like( pane.picked(), [ 'A' ] )
+
+			const escape = stroke( 'Escape', { key: 'Escape' } )
+			$mol_assert_equal( pane.key_down( escape ), true )
+			$mol_assert_equal( escape.prevented, true )
+			$mol_assert_equal( pane.menu(), null )
+			$mol_assert_like( pane.picked(), [ 'A' ] )
+
+			pane.node_context( right( 60, 45 ).event )
+			pane.key_down( stroke( 'KeyH' ) )
+			$mol_assert_equal( pane.menu(), null )
+			$mol_assert_equal( pane.tool(), 'hand' )
+		},
+
+		'copy, delete, wrap and the whole view of the menu are the ports of the pane'( $ ) {
+			const done = [] as string[]
+			const port = ( name: string )=> ( next?: unknown )=> {
+				if( next !== undefined ) done.push( name )
+				return null
+			}
+
+			const pane = menu_pane( $, {
+				node_copy: port( 'copy' ),
+				node_delete: port( 'delete' ),
+				node_wrap: port( 'wrap' ),
+				camera_reset: port( 'fit' ),
+			} )
+
+			pane.sizes({ [ `${ root }/A` ]: box( 0, 0 ) })
+			pane.node_context( right( 60, 45 ).event )
+
+			const menu = pane.menu_view()
+			const event = {} as Event
+
+			menu.copy( event )
+			menu.remove( event )
+			menu.wrap( event )
+			menu.fit( event )
+
+			$mol_assert_like( done, [ 'copy', 'delete', 'wrap', 'fit' ] )
+		},
+
+		'select parent picks the containers of the pick, and is off when every picked node is free'( $ ) {
+			const pane = menu_pane( $ )
+
+			pane.sizes({
+				[ `${ root }/Board` ]: box( 0, 0, 400, 300 ),
+				[ `${ root }/Board/A` ]: box( 0, 0 ),
+				[ `${ root }/Board/B` ]: box( 0, 50 ),
+				[ `${ root }/C` ]: box( 600, 0 ),
+			})
+
+			pane.picked([ 'C' ])
+			pane.node_context( right( 660, 45 ).event )
+			$mol_assert_equal( pane.menu_parent_enabled(), false )
+
+			pane.picked([ 'A', 'B', 'C' ])
+			pane.node_context( right( 60, 45 ).event )
+			$mol_assert_equal( pane.menu_parent_enabled(), true )
+
+			pane.menu_view().parent( {} as Event )
+			$mol_assert_like( pane.picked(), [ 'Board' ] )
+		},
+
+		'inside lets the pointer into the clicked node alone'( $ ) {
+			const pane = menu_pane( $ )
+
+			pane.sizes({ [ `${ root }/A` ]: box( 0, 0 ), [ `${ root }/B` ]: box( 300, 0 ) })
+			pane.picked([ 'A', 'B' ])
+
+			pane.node_context( right( 60, 45 ).event )
+			pane.menu_view().enter( {} as Event )
+
+			$mol_assert_like( pane.picked(), [ 'A' ] )
+			$mol_assert_equal( pane.entered(), 'A' )
+			$mol_assert_equal( pane.inside(), true )
+		},
+
+		'a board from the canvas menu is asked for at the world point of the click'( $ ) {
+			const boards = [] as ( $bog_vmap_bridge_rect | null | undefined )[]
+			const pane = menu_pane( $, {
+				board_draw: ( next?: $bog_vmap_bridge_rect | null )=> {
+					boards.push( next )
+					return next ?? null
+				},
+			} )
+
+			pane.camera_shift( new $mol_vector_2d( 100, 50 ) )
+			pane.camera_zoom( 2 )
+
+			pane.node_context( right( 10 + 301, 20 + 451 ).event )
+			pane.menu_view().board( {} as Event )
+
+			$mol_assert_like( boards, [ { x: 101, y: 201, width: 0, height: 0 } ] )
+		},
+
+		'Cmd+Alt+G and Ctrl+Alt+G ask for a wrap, only with a pick and never typed into a field'( $ ) {
+			let wrapped = 0
+			const pane = menu_pane( $, { node_wrap: ()=> { ++ wrapped; return null } } )
+
+			$mol_assert_equal( pane.key_down( stroke( 'KeyG', { metaKey: true, altKey: true } ) ), false )
+			$mol_assert_equal( wrapped, 0 )
+
+			pane.picked([ 'A' ])
+
+			const mac = stroke( 'KeyG', { metaKey: true, altKey: true, key: '©' } )
+			$mol_assert_equal( pane.key_down( mac ), true )
+			$mol_assert_equal( mac.prevented, true )
+
+			pane.key_down( stroke( 'KeyG', { ctrlKey: true, altKey: true } ) )
+			$mol_assert_equal( wrapped, 2 )
+
+			for( const key of [
+				stroke( 'KeyG' ),
+				stroke( 'KeyG', { metaKey: true } ),
+				stroke( 'KeyG', { altKey: true } ),
+				stroke( 'KeyG', { metaKey: true, altKey: true, shiftKey: true } ),
+				stroke( 'KeyG', { ctrlKey: true, altKey: true, target: $.$mol_dom_context.document.createElement( 'input' ) } ),
+			] ) {
+				$mol_assert_equal( pane.key_down( key ), false )
+				$mol_assert_equal( key.prevented, false )
+			}
+
+			$mol_assert_equal( wrapped, 2 )
+		},
+
+	})
+
+}
+
+namespace $ {
+	const d = '$'
+
+	const root = `${d}board`
+
+	const zoom_pane = ( $: $ )=> {
+		const peer = { origin: 'null', postMessage() {} }
+
+		const pane = $$.$bog_vmap_app_pane.make({
+			$,
+			doc_root: ()=> root,
+			doc_names: ()=> [ 'Near', 'Far', 'Tiny' ],
+			pane_rect: ()=> ({ left: 0, top: 0, width: 600, height: 500 }),
+			scene_peer: ()=> peer,
+		})
+
+		const inside = ( box: $bog_vmap_bridge_rect )=> {
+			const zoom = pane.camera_zoom()
+			const shift = pane.camera_shift()
+			return box.x * zoom + shift[0] >= 0 && box.y * zoom + shift[1] >= 0
+				&& ( box.x + box.width ) * zoom + shift[0] <= 600 && ( box.y + box.height ) * zoom + shift[1] <= 500
+		}
+
+		return { pane, inside }
+	}
+
+	const near = { x: -600, y: -400, width: 200, height: 100 }
+	const far = { x: 1800, y: 900, width: 200, height: 100 }
+	const tiny = { x: 40, y: 30, width: 10, height: 5 }
+
+	const stroke = ( code: string, over: Partial< $$.$bog_vmap_app_pane_stroke > = {} ) => {
+		let prevented = false
+
+		return {
+			key: code,
+			code,
+			altKey: false,
+			ctrlKey: false,
+			metaKey: false,
+			shiftKey: true,
+			target: null as EventTarget | null,
+			get prevented() { return prevented },
+			preventDefault() { prevented = true },
+			... over,
+		}
+	}
+
+	$mol_test({
+
+		'Shift+1 brings every free node into the frame and stays within life size'( $ ) {
+			const { pane, inside } = zoom_pane( $ )
+
+			pane.sizes({ [ `${ root }/Near` ]: near, [ `${ root }/Far` ]: far })
+			pane.camera_shift( new $mol_vector_2d( 700, 700 ) )
+			pane.camera_zoom( 4 )
+
+			const key = stroke( 'Digit1', { key: '!' } )
+			$mol_assert_equal( pane.key_down( key ), true )
+			$mol_assert_equal( key.prevented, true )
+
+			$mol_assert_equal( inside( near ), true )
+			$mol_assert_equal( inside( far ), true )
+
+			pane.sizes({ [ `${ root }/Tiny` ]: tiny })
+			pane.key_down( stroke( 'Digit1', { key: '!' } ) )
+
+			$mol_assert_equal( pane.camera_zoom(), 1 )
+			$mol_assert_equal( inside( tiny ), true )
+		},
+
+		'Shift+2 fills the frame with the pick, past life size up to the zoom limit, and with nothing picked it is not taken'( $ ) {
+			const { pane, inside } = zoom_pane( $ )
+
+			pane.sizes({ [ `${ root }/Near` ]: near, [ `${ root }/Far` ]: far, [ `${ root }/Tiny` ]: tiny })
+			pane.camera_zoom( 4 )
+
+			const idle = stroke( 'Digit2', { key: '@' } )
+			$mol_assert_equal( pane.key_down( idle ), false )
+			$mol_assert_equal( idle.prevented, false )
+			$mol_assert_equal( pane.camera_zoom(), 4 )
+
+			pane.picked([ 'Far' ])
+
+			const key = stroke( 'Digit2', { key: '@' } )
+			$mol_assert_equal( pane.key_down( key ), true )
+			$mol_assert_equal( key.prevented, true )
+
+			$mol_assert_equal( pane.camera_zoom(), ( 600 - 48 ) / 200 )
+			$mol_assert_equal( inside( far ), true )
+			$mol_assert_equal( inside( near ), false )
+
+			const zoom = pane.camera_zoom()
+			const shift = pane.camera_shift()
+			$mol_assert_equal( Math.round( ( far.x + far.width / 2 ) * zoom + shift[0] ), 300 )
+			$mol_assert_equal( Math.round( ( far.y + far.height / 2 ) * zoom + shift[1] ), 250 )
+
+			pane.picked([ 'Tiny' ])
+			pane.key_down( stroke( 'Digit2', { key: '@' } ) )
+
+			$mol_assert_equal( pane.camera_zoom(), pane.zoom_max() )
+			$mol_assert_equal( inside( tiny ), true )
+		},
+
+		'Shift+0 goes to life size and keeps the middle of the canvas where it was'( $ ) {
+			const { pane } = zoom_pane( $ )
+
+			pane.camera_shift( new $mol_vector_2d( 123, -45 ) )
+			pane.camera_zoom( .3 )
+
+			const [ x, y ] = pane.world_center()
+
+			const key = stroke( 'Digit0', { key: ')' } )
+			$mol_assert_equal( pane.key_down( key ), true )
+			$mol_assert_equal( key.prevented, true )
+
+			$mol_assert_equal( pane.camera_zoom(), 1 )
+
+			const [ x2, y2 ] = pane.world_center()
+			$mol_assert_equal( Math.round( x2 * 1000 ), Math.round( x * 1000 ) )
+			$mol_assert_equal( Math.round( y2 * 1000 ), Math.round( y * 1000 ) )
+		},
+
+		'a digit without the shift, with a command key, or typed into a field moves no camera'( $ ) {
+			const { pane } = zoom_pane( $ )
+			const dom = $.$mol_dom_context
+
+			pane.sizes({ [ `${ root }/Near` ]: near, [ `${ root }/Far` ]: far })
+			pane.picked([ 'Far' ])
+			pane.camera_shift( new $mol_vector_2d( 700, 700 ) )
+			pane.camera_zoom( 4 )
+
+			for( const key of [
+				stroke( 'Digit1', { shiftKey: false, key: '1' } ),
+				stroke( 'Digit0', { shiftKey: false, key: '0' } ),
+				stroke( 'Digit2', { metaKey: true } ),
+				stroke( 'Digit1', { ctrlKey: true } ),
+				stroke( 'Digit0', { altKey: true } ),
+				stroke( 'Digit1', { target: dom.document.createElement( 'input' ) } ),
+				stroke( 'Digit0', { target: dom.document.createElement( 'textarea' ) } ),
+			] ) {
+				$mol_assert_equal( pane.key_down( key ), false )
+				$mol_assert_equal( key.prevented, false )
+			}
+
+			$mol_assert_equal( pane.camera_zoom(), 4 )
+			$mol_assert_like( [ ... pane.camera_shift() ], [ 700, 700 ] )
+		},
+
+	})
+
+}
