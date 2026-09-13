@@ -1,0 +1,62 @@
+$bog_vmap_app_menu $mol_pop
+	showed? false
+	left \0px
+	top \0px
+	on_node false
+	apple false
+	copy? null
+	remove? null
+	wrap? null
+	parent? null
+	parent_enabled true
+	enter? null
+	board? null
+	fit? null
+	close? null
+	hold? null
+	style *
+		^
+		left <= left
+		top <= top
+	Anchor $mol_view
+	bubble_content /
+		<= List $mol_list
+			rows <= items /$mol_view
+			event *
+				^
+				pointerdown? <=> hold?
+				wheel? <=> hold?
+				contextmenu? <=> hold?
+	Copy $bog_vmap_app_menu_item
+		title \Копировать
+		keys <= copy_keys \
+		act? <=> copy?
+		done? <=> close?
+	Remove $bog_vmap_app_menu_item
+		title \Удалить
+		keys <= remove_keys \
+		act? <=> remove?
+		done? <=> close?
+	Wrap $bog_vmap_app_menu_item
+		title \Обернуть в артборд
+		keys <= wrap_keys \
+		act? <=> wrap?
+		done? <=> close?
+	Parent $bog_vmap_app_menu_item
+		title \Выделить родителя
+		enabled <= parent_enabled
+		act? <=> parent?
+		done? <=> close?
+	Enter $bog_vmap_app_menu_item
+		title \Внутрь
+		act? <=> enter?
+		done? <=> close?
+	Board $bog_vmap_app_menu_item
+		title \Артборд здесь
+		act? <=> board?
+		done? <=> close?
+	Fit $bog_vmap_app_menu_item
+		title \Показать всё
+		keys <= fit_keys \
+		act? <=> fit?
+		done? <=> close?

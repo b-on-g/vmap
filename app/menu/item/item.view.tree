@@ -1,0 +1,11 @@
+$bog_vmap_app_menu_item $mol_button_minor
+	keys \
+	act? null
+	done? null
+	sub /
+		<= Label $mol_view
+			sub /
+				<= title
+		<= Keys $mol_view
+			sub /
+				<= keys
