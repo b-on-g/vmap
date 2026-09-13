@@ -628,6 +628,7 @@ namespace $.$$ {
 
 		@ $mol_action
 		tool_take( next: $bog_vmap_app_pane_tool ) {
+			if( next === 'board' && !this.editable() ) return
 			if( next !== 'select' ) this.leave()
 			this.draft( null )
 			this.tool( next )
@@ -681,7 +682,7 @@ namespace $.$$ {
 
 			if( stroke.code === 'KeyD' ) {
 				if( !command || stroke.altKey || stroke.shiftKey ) return false
-				if( !this.picked().length ) return false
+				if( !this.editable() || !this.picked().length ) return false
 
 				stroke.preventDefault()
 				this.leave()
@@ -691,7 +692,7 @@ namespace $.$$ {
 
 			if( stroke.key === 'Delete' || stroke.key === 'Backspace' ) {
 				if( command || stroke.altKey ) return false
-				if( !this.picked().length ) return false
+				if( !this.editable() || !this.picked().length ) return false
 
 				stroke.preventDefault()
 				this.leave()
@@ -700,7 +701,7 @@ namespace $.$$ {
 			}
 
 			if( stroke.code === 'KeyG' && command && stroke.altKey && !stroke.shiftKey ) {
-				if( !this.picked().length ) return false
+				if( !this.editable() || !this.picked().length ) return false
 
 				stroke.preventDefault()
 				this.leave()
@@ -980,13 +981,14 @@ namespace $.$$ {
 		}
 
 		override file_over( next?: Event | null ) {
+			if( !this.editable() ) return null
 			next?.preventDefault()
 			return next ?? null
 		}
 
 		override file_take( next?: DragEvent | null ) {
 
-			if( !next ) return null
+			if( !next || !this.editable() ) return null
 
 			next.preventDefault()
 
@@ -1009,7 +1011,7 @@ namespace $.$$ {
 
 		@ $mol_action
 		override carry_at( next?: { readonly x: number, readonly y: number } | null ) {
-			if( !next ) return null
+			if( !next || !this.editable() ) return null
 
 			const slot = this.insert_slot([ next.x, next.y ])
 
@@ -1071,9 +1073,11 @@ namespace $.$$ {
 
 			const point = this.world_point( event )
 
-			if( this.tool() === 'board' ) return this.draft_press( point, event )
+			const editable = this.editable()
 
-			const dot = $bog_vmap_app_wire_dot_at( this.wire_dots(), this.screen_point( event ) )
+			if( editable && this.tool() === 'board' ) return this.draft_press( point, event )
+
+			const dot = editable ? $bog_vmap_app_wire_dot_at( this.wire_dots(), this.screen_point( event ) ) : null
 			if( dot ) return this.wire_press( dot, event )
 
 			if( this.band_wanted( event ) ) {
@@ -1102,6 +1106,8 @@ namespace $.$$ {
 			if( !name ) return
 
 			event.preventDefault()
+
+			if( !editable ) return
 
 			const spots = {} as { [ node: string ]: { readonly x: number, readonly y: number } }
 			for( const picked of this.picked() ) {

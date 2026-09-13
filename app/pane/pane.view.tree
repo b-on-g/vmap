@@ -10,6 +10,7 @@ $bog_vmap_app_pane $mol_view
 	tool_select? false
 	tool_board? false
 	tool_hand? false
+	editable true
 	board_draw? null
 	node_delete? null
 	node_copy? null
@@ -119,6 +120,7 @@ $bog_vmap_app_pane $mol_view
 		left <= menu_left \
 		top <= menu_top \
 		on_node <= menu_on_node false
+		editable <= editable
 		copy? <=> node_copy?
 		remove? <=> node_delete?
 		wrap? <=> node_wrap?
