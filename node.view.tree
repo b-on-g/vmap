@@ -1874,6 +1874,9 @@ $bog_vmap_app $mol_page
 	sub /
 		<= Head
 		<= Main $mol_view
+			attr *
+				^
+				inert <= doc_pending false
 			sub <= main /$mol_view
 		^ floats /$mol_view
 	head /
@@ -1882,6 +1885,9 @@ $bog_vmap_app $mol_page
 			hint \Левая колонка: сцены, слои и ассеты. Shift+\ прячет и возвращает обе колонки
 			checked? <=> left_showed?
 		<= Instruments $mol_bar
+			attr *
+				^
+				inert <= doc_pending
 			sub <= instruments /
 				<= Tool_select $mol_check_icon
 					Icon <= Tool_select_icon $mol_icon_cursor_default_outline
@@ -1901,6 +1907,9 @@ $bog_vmap_app $mol_page
 					enabled <= selection_showed false
 					click? <=> node_delete? null
 		<= Root_name $mol_string
+			attr *
+				^
+				inert <= doc_pending
 			hint \Имя корневого класса
 			value? <=> root_draft? \
 			submit? <=> root_submit? null
@@ -1926,6 +1935,9 @@ $bog_vmap_app $mol_page
 			hint \Версии: шаги этой сессии и снимки в ленде
 			checked? <=> history_showed?
 		<= Publish $bog_vmap_app_publish
+			attr *
+				^
+				inert <= doc_pending
 			part <= publish_part \
 			source <= node_source? \
 			js <= node_js \

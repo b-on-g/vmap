@@ -33630,11 +33630,15 @@ var $;
 			const obj = new this.$.$bog_tooltip_plugin();
 			return obj;
 		}
+		doc_pending(){
+			return false;
+		}
 		main(){
 			return [];
 		}
 		Main(){
 			const obj = new this.$.$mol_view();
+			(obj.attr) = () => ({...(this.$.$mol_view.prototype.attr.call(obj)), "inert": (this.doc_pending())});
 			(obj.sub) = () => ((this.main()));
 			return obj;
 		}
@@ -33713,6 +33717,7 @@ var $;
 		}
 		Instruments(){
 			const obj = new this.$.$mol_bar();
+			(obj.attr) = () => ({...(this.$.$mol_bar.prototype.attr.call(obj)), "inert": (this.doc_pending())});
 			(obj.sub) = () => ((this.instruments()));
 			return obj;
 		}
@@ -33726,6 +33731,7 @@ var $;
 		}
 		Root_name(){
 			const obj = new this.$.$mol_string();
+			(obj.attr) = () => ({...(this.$.$mol_string.prototype.attr.call(obj)), "inert": (this.doc_pending())});
 			(obj.hint) = () => ("Имя корневого класса");
 			(obj.value) = (next) => ((this.root_draft(next)));
 			(obj.submit) = (next) => ((this.root_submit(next)));
@@ -33791,6 +33797,7 @@ var $;
 		}
 		Publish(){
 			const obj = new this.$.$bog_vmap_app_publish();
+			(obj.attr) = () => ({...(this.$.$bog_vmap_app_publish.prototype.attr.call(obj)), "inert": (this.doc_pending())});
 			(obj.part) = () => ((this.publish_part()));
 			(obj.source) = () => ((this.node_source()));
 			(obj.js) = () => ((this.node_js()));
@@ -34822,9 +34829,20 @@ var $;
                     return $mol_fail_hidden(error);
                 }
             }
+            doc_pending() {
+                try {
+                    return this.store().stage() === 'making';
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return true;
+                    return $mol_fail_hidden(error);
+                }
+            }
             store_note() {
+                if (this.doc_pending())
+                    return 'Документ заводится…';
                 switch (this.store().stage()) {
-                    case 'making': return 'заводим сцену…';
                     case 'readonly': return 'чужая сцена: только просмотр, правки не сохраняются';
                     default: return '';
                 }
@@ -35746,15 +35764,17 @@ var $;
             key_press(event) {
                 if (!event)
                     return;
-                if (this.code_undo(event))
-                    return;
-                if (this.History().press(event))
-                    return;
                 if (this.columns_key(event)) {
                     event.preventDefault();
                     this.columns_toggle();
                     return;
                 }
+                if (this.doc_pending())
+                    return;
+                if (this.code_undo(event))
+                    return;
+                if (this.History().press(event))
+                    return;
                 this.Pane().key_down(event);
             }
             key_release(event) {
@@ -54148,6 +54168,58 @@ var $;
             $mol_assert_equal(app.export_notes().length, 0);
             $mol_assert_equal(app.export_rows().length, 0);
             $mol_assert_equal(app.export_hint(), 'Документ ещё загружается');
+        },
+        'the editor takes no edits while the document is being made or loaded'($) {
+            const waiting = new Promise(() => { });
+            for (const stage of [() => 'making', () => { throw waiting; }]) {
+                const app = $bog_vmap_app.make({
+                    $,
+                    store: () => $bog_vmap_app_store.make({ $, doc_land_config: () => null, stage }),
+                });
+                for (const view of [app.Main(), app.Instruments(), app.Root_name(), app.Publish()]) {
+                    $mol_assert_equal(view.dom_node_actual().hasAttribute('inert'), true);
+                }
+                $mol_assert_equal(app.status(), 'Документ заводится…');
+            }
+        },
+        'a ready or a foreign document leaves the editor open'($) {
+            for (const [stage, note] of [
+                ['ready', ''],
+                ['readonly', 'чужая сцена: только просмотр, правки не сохраняются'],
+            ]) {
+                const app = $bog_vmap_app.make({
+                    $,
+                    store: () => $bog_vmap_app_store.make({ $, doc_land_config: () => null, stage: () => stage }),
+                });
+                for (const view of [app.Main(), app.Instruments(), app.Root_name(), app.Publish()]) {
+                    $mol_assert_equal(view.dom_node_actual().hasAttribute('inert'), false);
+                }
+                $mol_assert_equal(app.store_note(), note);
+            }
+        },
+        'hotkeys wait for the document, the columns key does not'($) {
+            const make = (stage) => $bog_vmap_app.make({
+                $,
+                store: () => $bog_vmap_app_store.make({ $, doc_land_config: () => null, stage: () => stage }),
+            });
+            const stroke = (app, code, shiftKey = false) => app.key_press({
+                code,
+                key: code,
+                shiftKey,
+                metaKey: false,
+                ctrlKey: false,
+                altKey: false,
+                target: null,
+                preventDefault() { },
+            });
+            const making = make('making');
+            stroke(making, 'KeyF');
+            $mol_assert_equal(making.Pane().tool(), 'select');
+            stroke(making, 'Backslash', true);
+            $mol_assert_equal(making.left_showed(), false);
+            const ready = make('ready');
+            stroke(ready, 'KeyF');
+            $mol_assert_equal(ready.Pane().tool(), 'board');
         },
         'an untouched document downloads as the empty page'($) {
             const app = $bog_vmap_app.make({ $ });

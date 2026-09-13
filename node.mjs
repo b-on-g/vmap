@@ -33639,11 +33639,15 @@ var $;
 			const obj = new this.$.$bog_tooltip_plugin();
 			return obj;
 		}
+		doc_pending(){
+			return false;
+		}
 		main(){
 			return [];
 		}
 		Main(){
 			const obj = new this.$.$mol_view();
+			(obj.attr) = () => ({...(this.$.$mol_view.prototype.attr.call(obj)), "inert": (this.doc_pending())});
 			(obj.sub) = () => ((this.main()));
 			return obj;
 		}
@@ -33722,6 +33726,7 @@ var $;
 		}
 		Instruments(){
 			const obj = new this.$.$mol_bar();
+			(obj.attr) = () => ({...(this.$.$mol_bar.prototype.attr.call(obj)), "inert": (this.doc_pending())});
 			(obj.sub) = () => ((this.instruments()));
 			return obj;
 		}
@@ -33735,6 +33740,7 @@ var $;
 		}
 		Root_name(){
 			const obj = new this.$.$mol_string();
+			(obj.attr) = () => ({...(this.$.$mol_string.prototype.attr.call(obj)), "inert": (this.doc_pending())});
 			(obj.hint) = () => ("Имя корневого класса");
 			(obj.value) = (next) => ((this.root_draft(next)));
 			(obj.submit) = (next) => ((this.root_submit(next)));
@@ -33800,6 +33806,7 @@ var $;
 		}
 		Publish(){
 			const obj = new this.$.$bog_vmap_app_publish();
+			(obj.attr) = () => ({...(this.$.$bog_vmap_app_publish.prototype.attr.call(obj)), "inert": (this.doc_pending())});
 			(obj.part) = () => ((this.publish_part()));
 			(obj.source) = () => ((this.node_source()));
 			(obj.js) = () => ((this.node_js()));
@@ -34831,9 +34838,20 @@ var $;
                     return $mol_fail_hidden(error);
                 }
             }
+            doc_pending() {
+                try {
+                    return this.store().stage() === 'making';
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return true;
+                    return $mol_fail_hidden(error);
+                }
+            }
             store_note() {
+                if (this.doc_pending())
+                    return 'Документ заводится…';
                 switch (this.store().stage()) {
-                    case 'making': return 'заводим сцену…';
                     case 'readonly': return 'чужая сцена: только просмотр, правки не сохраняются';
                     default: return '';
                 }
@@ -35755,15 +35773,17 @@ var $;
             key_press(event) {
                 if (!event)
                     return;
-                if (this.code_undo(event))
-                    return;
-                if (this.History().press(event))
-                    return;
                 if (this.columns_key(event)) {
                     event.preventDefault();
                     this.columns_toggle();
                     return;
                 }
+                if (this.doc_pending())
+                    return;
+                if (this.code_undo(event))
+                    return;
+                if (this.History().press(event))
+                    return;
                 this.Pane().key_down(event);
             }
             key_release(event) {

@@ -18394,6 +18394,58 @@ var $;
             $mol_assert_equal(app.export_rows().length, 0);
             $mol_assert_equal(app.export_hint(), 'Документ ещё загружается');
         },
+        'the editor takes no edits while the document is being made or loaded'($) {
+            const waiting = new Promise(() => { });
+            for (const stage of [() => 'making', () => { throw waiting; }]) {
+                const app = $bog_vmap_app.make({
+                    $,
+                    store: () => $bog_vmap_app_store.make({ $, doc_land_config: () => null, stage }),
+                });
+                for (const view of [app.Main(), app.Instruments(), app.Root_name(), app.Publish()]) {
+                    $mol_assert_equal(view.dom_node_actual().hasAttribute('inert'), true);
+                }
+                $mol_assert_equal(app.status(), 'Документ заводится…');
+            }
+        },
+        'a ready or a foreign document leaves the editor open'($) {
+            for (const [stage, note] of [
+                ['ready', ''],
+                ['readonly', 'чужая сцена: только просмотр, правки не сохраняются'],
+            ]) {
+                const app = $bog_vmap_app.make({
+                    $,
+                    store: () => $bog_vmap_app_store.make({ $, doc_land_config: () => null, stage: () => stage }),
+                });
+                for (const view of [app.Main(), app.Instruments(), app.Root_name(), app.Publish()]) {
+                    $mol_assert_equal(view.dom_node_actual().hasAttribute('inert'), false);
+                }
+                $mol_assert_equal(app.store_note(), note);
+            }
+        },
+        'hotkeys wait for the document, the columns key does not'($) {
+            const make = (stage) => $bog_vmap_app.make({
+                $,
+                store: () => $bog_vmap_app_store.make({ $, doc_land_config: () => null, stage: () => stage }),
+            });
+            const stroke = (app, code, shiftKey = false) => app.key_press({
+                code,
+                key: code,
+                shiftKey,
+                metaKey: false,
+                ctrlKey: false,
+                altKey: false,
+                target: null,
+                preventDefault() { },
+            });
+            const making = make('making');
+            stroke(making, 'KeyF');
+            $mol_assert_equal(making.Pane().tool(), 'select');
+            stroke(making, 'Backslash', true);
+            $mol_assert_equal(making.left_showed(), false);
+            const ready = make('ready');
+            stroke(ready, 'KeyF');
+            $mol_assert_equal(ready.Pane().tool(), 'board');
+        },
         'an untouched document downloads as the empty page'($) {
             const app = $bog_vmap_app.make({ $ });
             const module = app.export_state().module;
