@@ -262,6 +262,73 @@ namespace $ {
 
 		},
 
+		async 'an own document still loading its land waits instead of turning read only'( $ ) {
+
+			const disk: $bog_vmap_app_store_test_disk = new Map
+			const mine = $bog_vmap_app_store_test_mine( disk )
+
+			let open = ()=> {}
+			const gate = new Promise< void >( done => { open = ()=> done() } )
+			let held = ''
+
+			const session = ()=> {
+
+				const ctx = Object.create( $ ) as typeof $
+
+				ctx.$giper_baza_land = class extends $$.$giper_baza_land {} as any
+				ctx.$giper_baza_mine = class extends mine {
+					override units_load() {
+						if( this.land().str === held ) return $mol_fail_hidden( gate )
+						return super.units_load()
+					}
+				} as any
+
+				const glob = class extends $.$giper_baza_glob {
+					static override lands_touched = new $mol_wire_set< string >()
+				}
+				glob.$ = ctx
+				ctx.$giper_baza_glob = glob as any
+
+				ctx.$mol_state_arg = class extends $.$mol_state_arg {} as any
+
+				ctx.$mol_storage = class extends $.$mol_storage {
+					static override total() { return 1e9 }
+					static override used() { return 0 }
+				} as any
+
+				return $bog_vmap_app_store.make({
+					$: ctx,
+					doc_land_config: ()=> [[ null, $giper_baza_rank_read ]] as $giper_baza_rank_preset,
+				})
+			}
+
+			const one = session()
+			const made = await $mol_wire_async( one ).doc_add( 'Сцена 1', src_page )
+
+			await $mol_wire_async( one.home().land() ).units_saving()
+			await $mol_wire_async( made.land() ).units_saving()
+
+			held = made.land().link().str
+
+			const two = session()
+			$mol_assert_equal( ( await $mol_wire_async( two ).doc_links() ).length, 1 )
+
+			let waiting = false
+			try {
+				two.stage()
+			} catch( error ) {
+				waiting = $mol_promise_like( error )
+			}
+
+			$mol_assert_equal( waiting, true )
+
+			held = ''
+			open()
+
+			$mol_assert_equal( await $mol_wire_async( two ).stage(), 'ready' )
+
+		},
+
 		async 'a document opened by a link survives a restart with the quota unknown'( $ ) {
 
 			const disk: $bog_vmap_app_store_test_disk = new Map
