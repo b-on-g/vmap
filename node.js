@@ -28289,6 +28289,7 @@ var $;
                     ...this.scene_shown() ? [this.Scene(this.scene_key())] : [],
                     this.Overlay(),
                     this.Wire(),
+                    this.Values(),
                     this.Marks(),
                     ...this.slot() ? [this.Insert()] : [],
                     ...this.band() ? [this.Band()] : [],
