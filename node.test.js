@@ -30258,6 +30258,957 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$mol_drop) = class $mol_drop extends ($.$mol_ghost) {
+		enter(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		move(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		leave(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		drop(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		status(next){
+			if(next !== undefined) return next;
+			return "ready";
+		}
+		enabled(next){
+			if(next !== undefined) return next;
+			return true;
+		}
+		event(){
+			return {
+				"dragenter": (next) => (this.enter(next)), 
+				"dragover": (next) => (this.move(next)), 
+				"dragleave": (next) => (this.leave(next)), 
+				"drop": (next) => (this.drop(next))
+			};
+		}
+		attr(){
+			return {"mol_drop_status": (this.status())};
+		}
+		adopt(next){
+			if(next !== undefined) return next;
+			return {};
+		}
+		receive(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		allow(){
+			return [
+				"copy", 
+				"move", 
+				"link"
+			];
+		}
+	};
+	($mol_mem(($.$mol_drop.prototype), "enter"));
+	($mol_mem(($.$mol_drop.prototype), "move"));
+	($mol_mem(($.$mol_drop.prototype), "leave"));
+	($mol_mem(($.$mol_drop.prototype), "drop"));
+	($mol_mem(($.$mol_drop.prototype), "status"));
+	($mol_mem(($.$mol_drop.prototype), "enabled"));
+	($mol_mem(($.$mol_drop.prototype), "adopt"));
+	($mol_mem(($.$mol_drop.prototype), "receive"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        class $mol_drop extends $.$mol_drop {
+            status(next = 'ready') { return next; }
+            _target = null;
+            enter(event) {
+                if (event.defaultPrevented)
+                    return;
+                if (!this.enabled())
+                    return;
+                // if( !this.adopt( event.dataTransfer! ) ) return
+                const action = this.decide_action(event);
+                event.dataTransfer.dropEffect = action;
+                if (action !== 'none')
+                    this.status('drag');
+                this._target = event.target;
+                event.preventDefault();
+            }
+            move(event) {
+                if (event.defaultPrevented)
+                    return;
+                if (!this.enabled())
+                    return;
+                // if( !this.adopt( event.dataTransfer! ) ) return
+                event.dataTransfer.dropEffect = this.decide_action(event);
+                event.preventDefault();
+            }
+            decide_action(event) {
+                const allow = this.allow();
+                if (allow.includes('move') && event.shiftKey)
+                    return 'move';
+                else if (allow.includes('copy') && event.ctrlKey)
+                    return 'copy';
+                else if (allow.includes('link') && event.altKey)
+                    return 'link';
+                else
+                    return allow[0];
+            }
+            leave(event) {
+                if (this._target === event.target) {
+                    this.status('ready');
+                }
+            }
+            receive(transfer) {
+                return transfer;
+            }
+            drop(event) {
+                if (event.defaultPrevented)
+                    return;
+                event.preventDefault();
+                setTimeout(() => this.status('ready'));
+                const obj = this.adopt(event.dataTransfer);
+                if (!obj)
+                    return;
+                this.receive(obj);
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_drop.prototype, "status", null);
+        $$.$mol_drop = $mol_drop;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$mol_drag) = class $mol_drag extends ($.$mol_ghost) {
+		start(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		drag_start(next){
+			return (this.start(next));
+		}
+		move(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		drag_move(next){
+			return (this.move(next));
+		}
+		end(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		drag_end(next){
+			return (this.end(next));
+		}
+		status(next){
+			if(next !== undefined) return next;
+			return "ready";
+		}
+		event(){
+			return {
+				"dragstart": (next) => (this.drag_start(next)), 
+				"drag": (next) => (this.drag_move(next)), 
+				"dragend": (next) => (this.drag_end(next))
+			};
+		}
+		attr(){
+			return {"draggable": true, "mol_drag_status": (this.status())};
+		}
+		transfer(){
+			return {
+				"text/plain": "", 
+				"text/html": "", 
+				"text/uri-list": ""
+			};
+		}
+		allow_copy(){
+			return true;
+		}
+		allow_link(){
+			return true;
+		}
+		allow_move(){
+			return true;
+		}
+		image(){
+			return (this.dom_node());
+		}
+	};
+	($mol_mem(($.$mol_drag.prototype), "start"));
+	($mol_mem(($.$mol_drag.prototype), "move"));
+	($mol_mem(($.$mol_drag.prototype), "end"));
+	($mol_mem(($.$mol_drag.prototype), "status"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_drag_demo
+         */
+        class $mol_drag extends $.$mol_drag {
+            status(next = 'ready') { return next; }
+            drag_start(event) {
+                setTimeout(() => this.status('drag'));
+                const transfer = this.transfer();
+                for (let type in transfer) {
+                    event.dataTransfer.setData(type, transfer[type]);
+                }
+                event.dataTransfer.setDragImage(this.image(), 0, -32);
+                const effects = [];
+                if (this.allow_copy())
+                    effects.push('Copy');
+                if (this.allow_link())
+                    effects.push('Link');
+                if (this.allow_move())
+                    effects.push('Move');
+                let effectAllowed = effects[0].toLowerCase() + effects.slice(1).join('');
+                if (effectAllowed === 'copyLinkMove')
+                    effectAllowed = 'all';
+                event.dataTransfer.effectAllowed = effectAllowed;
+                this.start(event);
+            }
+            drag_end(event) {
+                setTimeout(() => this.status('ready'));
+                this.end(event);
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_drag.prototype, "status", null);
+        $$.$mol_drag = $mol_drag;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$mol_icon_file) = class $mol_icon_file extends ($.$mol_icon) {
+		path(){
+			return "M13,9V3.5L18.5,9M6,2C4.89,2 4,2.89 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_file_document) = class $mol_icon_file_document extends ($.$mol_icon) {
+		path(){
+			return "M13,9H18.5L13,3.5V9M6,2H14L20,8V20A2,2 0 0,1 18,22H6C4.89,22 4,21.1 4,20V4C4,2.89 4.89,2 6,2M15,18V16H6V18H15M18,14V12H6V14H18Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_file_document_outline) = class $mol_icon_file_document_outline extends ($.$mol_icon) {
+		path(){
+			return "M6,2A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6M6,4H13V9H18V20H6V4M8,12V14H16V12H8M8,16V18H13V16H8Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_artboard) = class $mol_icon_artboard extends ($.$mol_icon) {
+		path(){
+			return "M17 9V15H7V9H17M19 3H17V6H19V3M7 3H5V6H7V3M23 7H20V9H23V7M19 7H5V17H19V7M4 7H1V9H4V7M23 15H20V17H23V15M4 15H1V17H4V15M19 18H17V21H19V18M7 18H5V21H7V18Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_image) = class $mol_icon_image extends ($.$mol_icon) {
+		path(){
+			return "M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_link) = class $mol_icon_link extends ($.$mol_icon) {
+		path(){
+			return "M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_button_cursor) = class $mol_icon_button_cursor extends ($.$mol_icon) {
+		path(){
+			return "M18.1 15.3C18 15.4 17.8 15.5 17.7 15.6L15.3 16L17 19.6C17.2 20 17 20.4 16.6 20.6L13.8 21.9C13.7 22 13.6 22 13.5 22C13.2 22 12.9 21.8 12.8 21.6L11.2 18L9.3 19.5C9.2 19.6 9 19.7 8.8 19.7C8.4 19.7 8 19.4 8 18.9V7.5C8 7 8.3 6.7 8.8 6.7C9 6.7 9.2 6.8 9.3 6.9L18 14.3C18.3 14.5 18.4 15 18.1 15.3M6 12H4V4H20V12H18.4L20.6 13.9C21.4 13.6 21.9 12.9 21.9 12V4C21.9 2.9 21 2 19.9 2H4C2.9 2 2 2.9 2 4V12C2 13.1 2.9 14 4 14H6V12Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_form_textbox) = class $mol_icon_form_textbox extends ($.$mol_icon) {
+		path(){
+			return "M17,7H22V17H17V19A1,1 0 0,0 18,20H20V22H17.5C16.95,22 16,21.55 16,21C16,21.55 15.05,22 14.5,22H12V20H14A1,1 0 0,0 15,19V5A1,1 0 0,0 14,4H12V2H14.5C15.05,2 16,2.45 16,3C16,2.45 16.95,2 17.5,2H20V4H18A1,1 0 0,0 17,5V7M2,7H13V9H4V15H13V17H2V7M20,15V9H17V15H20Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_format_text) = class $mol_icon_format_text extends ($.$mol_icon) {
+		path(){
+			return "M18.5,4L19.66,8.35L18.7,8.61C18.25,7.74 17.79,6.87 17.26,6.43C16.73,6 16.11,6 15.5,6H13V16.5C13,17 13,17.5 13.33,17.75C13.67,18 14.33,18 15,18V19H9V18C9.67,18 10.33,18 10.67,17.75C11,17.5 11,17 11,16.5V6H8.5C7.89,6 7.27,6 6.74,6.43C6.21,6.87 5.75,7.74 5.3,8.61L4.34,8.35L5.5,4H18.5Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_shape) = class $mol_icon_shape extends ($.$mol_icon) {
+		path(){
+			return "M11,13.5V21.5H3V13.5H11M12,2L17.5,11H6.5L12,2M17.5,13C20,13 22,15 22,17.5C22,20 20,22 17.5,22C15,22 13,20 13,17.5C13,15 15,13 17.5,13Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_shape_outline) = class $mol_icon_shape_outline extends ($.$mol_icon) {
+		path(){
+			return "M11,13.5V21.5H3V13.5H11M9,15.5H5V19.5H9V15.5M12,2L17.5,11H6.5L12,2M12,5.86L10.08,9H13.92L12,5.86M17.5,13C20,13 22,15 22,17.5C22,20 20,22 17.5,22C15,22 13,20 13,17.5C13,15 15,13 17.5,13M17.5,15A2.5,2.5 0 0,0 15,17.5A2.5,2.5 0 0,0 17.5,20A2.5,2.5 0 0,0 20,17.5A2.5,2.5 0 0,0 17.5,15Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$bog_vmap_app_layers) = class $bog_vmap_app_layers extends ($.$mol_scroll) {
+		rows(){
+			return [];
+		}
+		Rows(){
+			const obj = new this.$.$mol_list();
+			(obj.rows) = () => ((this.rows()));
+			return obj;
+		}
+		row_draggable(id){
+			return true;
+		}
+		row_name(id){
+			return "";
+		}
+		row_adopt(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		row_receive(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		row_zone(id, next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		row_over(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		row_content(id){
+			return [];
+		}
+		Line(id){
+			const obj = new this.$.$mol_view();
+			(obj.attr) = () => ({...(this.$.$mol_view.prototype.attr.call(obj)), "bog_vmap_app_layers_line_zone": (this.row_zone(id))});
+			(obj.event) = () => ({...(this.$.$mol_view.prototype.event.call(obj)), "dragover": (next) => (this.row_over(id, next))});
+			(obj.sub) = () => ((this.row_content(id)));
+			return obj;
+		}
+		Row_drop(id){
+			const obj = new this.$.$mol_drop();
+			(obj.allow) = () => (["move"]);
+			(obj.adopt) = (next) => ((this.row_adopt(next)));
+			(obj.receive) = (next) => ((this.row_receive(id, next)));
+			(obj.Sub) = () => ((this.Line(id)));
+			return obj;
+		}
+		row_level(id){
+			return 1;
+		}
+		row_expanded(id, next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		row_icon(id){
+			return null;
+		}
+		row_title(id){
+			return "";
+		}
+		row_hint(id){
+			return "";
+		}
+		row_picked(id){
+			return false;
+		}
+		row_pick(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		row_edit(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		row_draft(id, next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		row_submit(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		row_key(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		source(){
+			return "";
+		}
+		root(){
+			return "";
+		}
+		picked(next){
+			if(next !== undefined) return next;
+			return [];
+		}
+		node_title(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		node_title_note(){
+			return "";
+		}
+		tree_move(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Doc(){
+			const obj = new this.$.$bog_vmap_lang_doc();
+			(obj.source) = () => ((this.source()));
+			return obj;
+		}
+		sub(){
+			return [(this.Rows())];
+		}
+		Note(){
+			const obj = new this.$.$mol_status();
+			(obj.status) = () => ((this.node_title_note()));
+			return obj;
+		}
+		Row(id){
+			const obj = new this.$.$mol_drag();
+			(obj.allow_copy) = () => (false);
+			(obj.allow_link) = () => (false);
+			(obj.attr) = () => ({...(this.$.$mol_drag.prototype.attr.call(obj)), "draggable": (this.row_draggable(id))});
+			(obj.transfer) = () => ({...(this.$.$mol_drag.prototype.transfer.call(obj)), "text/plain": (this.row_name(id))});
+			(obj.Sub) = () => ((this.Row_drop(id)));
+			return obj;
+		}
+		Expand(id){
+			const obj = new this.$.$mol_check_expand();
+			(obj.level) = () => ((this.row_level(id)));
+			(obj.expanded) = (next) => ((this.row_expanded(id, next)));
+			return obj;
+		}
+		Pick(id){
+			const obj = new this.$.$mol_check();
+			(obj.Icon) = () => ((this.row_icon(id)));
+			(obj.title) = () => ((this.row_title(id)));
+			(obj.hint) = () => ((this.row_hint(id)));
+			(obj.checked) = () => ((this.row_picked(id)));
+			(obj.click) = (next) => ((this.row_pick(id, next)));
+			(obj.clicks) = (next) => ((this.row_edit(id, next)));
+			return obj;
+		}
+		Edit(id){
+			const obj = new this.$.$mol_string();
+			(obj.hint) = () => ("имя узла");
+			(obj.value) = (next) => ((this.row_draft(id, next)));
+			(obj.submit) = (next) => ((this.row_submit(id, next)));
+			(obj.event) = () => ({
+				...(this.$.$mol_string.prototype.event.call(obj)), 
+				"blur": (next) => (this.row_submit(id, next)), 
+				"keydown": (next) => (this.row_key(id, next))
+			});
+			return obj;
+		}
+		Root_icon(){
+			const obj = new this.$.$mol_icon_file_document_outline();
+			return obj;
+		}
+		Frame_icon(id){
+			const obj = new this.$.$mol_icon_artboard();
+			return obj;
+		}
+		Image_icon(id){
+			const obj = new this.$.$mol_icon_image();
+			return obj;
+		}
+		Link_icon(id){
+			const obj = new this.$.$mol_icon_link();
+			return obj;
+		}
+		Button_icon(id){
+			const obj = new this.$.$mol_icon_button_cursor();
+			return obj;
+		}
+		Field_icon(id){
+			const obj = new this.$.$mol_icon_form_textbox();
+			return obj;
+		}
+		Text_icon(id){
+			const obj = new this.$.$mol_icon_format_text();
+			return obj;
+		}
+		Part_icon(id){
+			const obj = new this.$.$mol_icon_shape_outline();
+			return obj;
+		}
+	};
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "Rows"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "row_adopt"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_receive"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_zone"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_over"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Line"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Row_drop"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_expanded"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_pick"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_edit"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_draft"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_submit"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_key"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "picked"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "node_title"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "tree_move"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "Doc"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "Note"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Row"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Expand"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Pick"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Edit"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "Root_icon"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Frame_icon"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Image_icon"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Link_icon"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Button_icon"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Field_icon"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Text_icon"));
+	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Part_icon"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        const kinds = {
+            image: 'image',
+            link: 'link',
+            button: 'button',
+            string: 'field',
+            number: 'field',
+            textarea: 'field',
+            select: 'field',
+            switch: 'field',
+            check: 'field',
+            search: 'field',
+            paragraph: 'text',
+            text: 'text',
+            status: 'text',
+            label: 'text',
+            title: 'text',
+        };
+        class $bog_vmap_app_layers extends $.$bog_vmap_app_layers {
+            root() {
+                return super.root() || this.Doc().names()[0] || '';
+            }
+            node() {
+                return this.Doc().node(this.root());
+            }
+            layers() {
+                const node = this.node();
+                const known = new Set(node.prop_names());
+                const found = new Map();
+                const walk = (name, owner, level) => {
+                    const list = node.sub_names(name);
+                    const kids = list && list.filter(kid => known.has(kid) && !found.has(kid));
+                    found.set(name, { owner, level, kids });
+                    for (const kid of kids ?? [])
+                        if (!found.has(kid))
+                            walk(kid, name, level + 1);
+                };
+                walk('', null, 1);
+                return found;
+            }
+            row_kids(name) {
+                return this.layers().get(name)?.kids ?? [];
+            }
+            row_holder(name) {
+                return this.layers().get(name)?.owner ?? null;
+            }
+            row_within(owner, name) {
+                for (let at = this.row_holder(name); at !== null; at = this.row_holder(at)) {
+                    if (at === owner)
+                        return true;
+                }
+                return false;
+            }
+            rows() {
+                const rows = [];
+                const add = (name) => {
+                    rows.push(this.Row(name));
+                    if (this.row_editing(name) && this.node_title_note())
+                        rows.push(this.Note());
+                    if (this.row_open(name))
+                        for (const kid of this.row_kids(name))
+                            add(kid);
+                };
+                add('');
+                return rows;
+            }
+            row_level(name) {
+                return this.layers().get(name)?.level ?? 1;
+            }
+            row_expanded(name, next) {
+                return this.row_open(name, next);
+            }
+            row_open(name, next) {
+                if (!this.row_kids(name).length)
+                    return null;
+                return this.expanded_at(name, next);
+            }
+            expanded_at(name, next) {
+                return next ?? true;
+            }
+            row_name(name) {
+                return name;
+            }
+            row_title(name) {
+                return name || this.root();
+            }
+            row_class(name) {
+                const value = name ? this.node().prop_decl(name)?.kids[0] : null;
+                return value && $mol_view_tree2_class_match(value) ? value.type : '';
+            }
+            row_hint(name) {
+                return this.row_class(name);
+            }
+            row_kind(name) {
+                if (!name)
+                    return 'root';
+                if (this.layers().get(name)?.kids)
+                    return 'frame';
+                const klass = this.row_class(name);
+                if (!klass)
+                    return 'text';
+                for (const word of klass.split('_').reverse()) {
+                    const kind = kinds[word];
+                    if (kind)
+                        return kind;
+                }
+                return 'part';
+            }
+            row_icon(name) {
+                switch (this.row_kind(name)) {
+                    case 'root': return this.Root_icon();
+                    case 'frame': return this.Frame_icon(name);
+                    case 'image': return this.Image_icon(name);
+                    case 'link': return this.Link_icon(name);
+                    case 'button': return this.Button_icon(name);
+                    case 'field': return this.Field_icon(name);
+                    case 'text': return this.Text_icon(name);
+                    default: return this.Part_icon(name);
+                }
+            }
+            selected() {
+                const picked = this.picked();
+                return picked.length ? picked[picked.length - 1] : null;
+            }
+            row_picked(name) {
+                const picked = this.picked();
+                if (picked.includes(name))
+                    return true;
+                if (this.row_open(name) !== false)
+                    return false;
+                return picked.some(one => this.row_within(name, one));
+            }
+            row_pick(name, event) {
+                if (!event)
+                    return null;
+                if (!name) {
+                    this.picked([]);
+                    return null;
+                }
+                const picked = this.picked();
+                if (event.metaKey || event.ctrlKey || event.shiftKey) {
+                    this.picked(picked.includes(name) ? picked.filter(one => one !== name) : [...picked, name]);
+                }
+                else {
+                    this.picked([name]);
+                }
+                return null;
+            }
+            editing(next) {
+                return next ?? null;
+            }
+            row_editing(name) {
+                return Boolean(name) && this.editing() === name && this.selected() === name;
+            }
+            row_draggable(name) {
+                return Boolean(name) && !this.row_editing(name);
+            }
+            row_content(name) {
+                return [
+                    this.Expand(name),
+                    this.row_editing(name) ? this.Edit(name) : this.Pick(name),
+                ];
+            }
+            row_edit(name, event) {
+                if (!name || !event)
+                    return null;
+                this.picked([name]);
+                this.row_draft(name, name);
+                this.editing(name);
+                const field = this.Edit(name);
+                field.selection([0, name.length]);
+                field.bring();
+                return null;
+            }
+            row_draft(name, next) {
+                return next ?? name;
+            }
+            row_submit(name, event) {
+                if (!this.row_editing(name))
+                    return null;
+                const draft = this.row_draft(name);
+                if (!draft || draft === name) {
+                    this.editing(null);
+                    return null;
+                }
+                if (this.node_title(draft) === draft)
+                    this.editing(null);
+                return null;
+            }
+            row_key(name, event) {
+                if (event?.key !== 'Escape')
+                    return null;
+                event.stopPropagation();
+                this.row_draft(name, name);
+                this.editing(null);
+                return null;
+            }
+            row_adopt(transfer) {
+                const name = transfer?.getData('text/plain') ?? '';
+                return name && this.layers().has(name) ? name : null;
+            }
+            row_over(name, event) {
+                if (!event)
+                    return null;
+                const box = event.currentTarget?.getBoundingClientRect();
+                const share = box?.height ? (event.clientY - box.top) / box.height : 0;
+                this.row_zone(name, this.zone_at(name, share));
+                return null;
+            }
+            zone_at(name, share) {
+                if (!name)
+                    return 'inside';
+                if (this.layers().get(name)?.kids && share >= .5)
+                    return 'inside';
+                return 'before';
+            }
+            row_receive(anchor, dropped) {
+                if (!dropped)
+                    return null;
+                const move = this.move_to(anchor, dropped, this.row_zone(anchor));
+                if (move)
+                    this.tree_move(move);
+                return null;
+            }
+            move_to(anchor, name, zone) {
+                if (!name || name === anchor)
+                    return null;
+                const into = !anchor || zone === 'inside';
+                const owner = into ? anchor : this.row_holder(anchor);
+                if (owner === null)
+                    return null;
+                if (owner && (owner === name || this.row_within(name, owner)))
+                    return null;
+                const list = this.node().sub_names(owner) ?? [];
+                const index = into ? list.length : list.indexOf(anchor);
+                if (index < 0)
+                    return null;
+                if (this.row_holder(name) === owner) {
+                    const at = list.indexOf(name);
+                    if (index === at || index === at + 1)
+                        return null;
+                }
+                return { name, owner, index };
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_layers.prototype, "layers", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_layers.prototype, "rows", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_layers.prototype, "expanded_at", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_layers.prototype, "row_pick", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_layers.prototype, "editing", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_layers.prototype, "row_edit", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_layers.prototype, "row_draft", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_layers.prototype, "row_submit", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_layers.prototype, "row_key", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_layers.prototype, "row_over", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_layers.prototype, "row_receive", null);
+        $$.$bog_vmap_app_layers = $bog_vmap_app_layers;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        const { px } = $mol_style_unit;
+        $mol_style_define($bog_vmap_app_layers, {
+            Pick: {
+                flex: {
+                    grow: 1,
+                    shrink: 1,
+                },
+                '@': {
+                    mol_check_checked: {
+                        true: {
+                            color: $mol_theme.current,
+                            textShadow: '0 0',
+                        },
+                    },
+                },
+            },
+            Line: {
+                '[mol_drop_status]': {
+                    drag: {
+                        '[bog_vmap_app_layers_line_zone]': {
+                            before: {
+                                box: {
+                                    shadow: [{
+                                            inset: true,
+                                            x: 0,
+                                            y: px(1),
+                                            blur: 0,
+                                            spread: 0,
+                                            color: $mol_theme.focus,
+                                        }],
+                                },
+                            },
+                            inside: {
+                                box: {
+                                    shadow: [{
+                                            inset: true,
+                                            x: 0,
+                                            y: 0,
+                                            blur: 0,
+                                            spread: px(1),
+                                            color: $mol_theme.focus,
+                                        }],
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
 "use strict";
 var $;
 (function ($) {
@@ -32193,7 +33144,7 @@ var $;
 		}
 		left_tab(next){
 			if(next !== undefined) return next;
-			return "assets";
+			return "layers";
 		}
 		right_tab(next){
 			if(next !== undefined) return next;
@@ -32304,8 +33255,13 @@ var $;
 			return obj;
 		}
 		Layers(){
-			const obj = new this.$.$mol_page();
-			(obj.title) = () => ("Слои");
+			const obj = new this.$.$bog_vmap_app_layers();
+			(obj.source) = () => ((this.doc_src()));
+			(obj.root) = () => ((this.doc_root()));
+			(obj.picked) = (next) => ((this.picked(next)));
+			(obj.node_title) = (next) => ((this.node_title(next)));
+			(obj.node_title_note) = () => ((this.node_title_note()));
+			(obj.tree_move) = (next) => ((this.tree_move(next)));
 			return obj;
 		}
 		Shelf(){
@@ -33147,7 +34103,7 @@ var $;
                 return this.$.$mol_state_session.value('vmap_right', next) ?? this.columns_wide();
             }
             left_tab(next) {
-                return this.$.$mol_state_session.value('vmap_left_tab', next || undefined) ?? 'assets';
+                return this.$.$mol_state_session.value('vmap_left_tab', next || undefined) ?? 'layers';
             }
             right_tab(next) {
                 return this.$.$mol_state_session.value('vmap_right_tab', next || undefined) ?? 'design';
@@ -33272,9 +34228,15 @@ var $;
             tree_move(next) {
                 if (!next)
                     return null;
+                const box = this.Pane().part_size(next.name);
                 this.node().sub_move(next.name, next.index, next.owner);
                 const spots = { ...this.spots() };
-                delete spots[next.name];
+                if (next.owner)
+                    delete spots[next.name];
+                else if (!spots[next.name]) {
+                    const [x, y] = box ? [box.x, box.y] : this.Pane().free_spot();
+                    spots[next.name] = { x, y };
+                }
                 this.spots(spots);
                 return next;
             }
@@ -51377,6 +52339,7 @@ var $;
             stage.click(stage.button('Артборд'));
             const page = stage.app.selected();
             $mol_assert_ok(page);
+            stage.assets();
             stage.click(stage.shelf_row('Блок'));
             const node = stage.app.node();
             const block = stage.app.selected();
@@ -51444,7 +52407,7 @@ var $;
             $mol_assert_equal(left.length, 3);
             $mol_assert_equal(left[0], app.Scenes());
             $mol_assert_equal(left[1], app.Left_tabs());
-            $mol_assert_equal(left[2], app.Shelf());
+            $mol_assert_equal(left[2], app.Layers());
             const right = app.Right().sub();
             $mol_assert_equal(right.length, 2);
             $mol_assert_equal(right[0], app.Right_tabs());
@@ -51495,13 +52458,15 @@ var $;
             const one = $bog_vmap_app.make({ $ });
             $mol_assert_equal(one.left_showed(), true);
             $mol_assert_equal(one.right_showed(), true);
-            $mol_assert_equal(one.left_tab(), 'assets');
+            $mol_assert_equal(one.left_tab(), 'layers');
             $mol_assert_equal(one.right_tab(), 'design');
             one.left_showed(false);
+            one.left_tab('assets');
             one.right_tab('code');
             const two = $bog_vmap_app.make({ $ });
             $mol_assert_equal(two.left_showed(), false);
             $mol_assert_equal(two.right_showed(), true);
+            $mol_assert_equal(two.left_tab(), 'assets');
             $mol_assert_equal(two.right_tab(), 'code');
             $mol_assert_equal(two.main().includes(two.Left()), false);
             $mol_assert_equal(two.Right().sub()[1], two.Code());
@@ -51532,8 +52497,8 @@ var $;
             $mol_assert_equal(app.right_tab(), 'code');
             $mol_assert_equal(app.Right().sub()[1], app.Code());
             const left = app.Left_tabs();
-            left.option_checked('assets', false);
-            $mol_assert_equal(app.left_tab(), 'assets');
+            left.option_checked('layers', false);
+            $mol_assert_equal(app.left_tab(), 'layers');
         },
         'a narrow window starts with the canvas alone, and a column opens over it on demand'($) {
             $.$mol_window = class extends $mol_window {
@@ -51913,7 +52878,11 @@ var $;
             class_row(klass) {
                 return found('[bog_vmap_app_palette_item]', `palette row ${klass}`, el => el.textContent === klass);
             },
+            assets() {
+                this.click(this.check('Ассеты'));
+            },
             classes_open() {
+                this.assets();
                 app.Shelf().classes_showed(true);
                 app.dom_tree();
                 scene.flush();
@@ -52025,6 +52994,7 @@ var $;
             $mol_assert_ok(text.includes('Свойства'));
             $mol_assert_ok(text.includes('100%'));
             $mol_assert_ok(text.includes('Выберите узел на холсте'));
+            stage.assets();
             const shelf = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_items] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
             $mol_assert_like(shelf.slice(0, 6), [
                 'Блок', 'Ячейка кода', 'График', 'Калькулятор', 'Карта', 'Калькулятор и карта',
@@ -52048,6 +53018,7 @@ var $;
         },
         'a ready made pair lands wired, by one click on the shelf'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.assets();
             stage.click(stage.shelf_row('Калькулятор и карта'));
             const node = stage.app.node();
             $mol_assert_like(node.sub_names(''), ['Pair']);
@@ -52061,6 +53032,7 @@ var $;
         },
         'an application added by its address puts its objects on the shelf'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.assets();
             stage.type(stage.field('Shelf().Links()'), $_2.$bog_vmap_app_flow_other);
             stage.scene.hello();
             const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
@@ -52226,6 +53198,7 @@ var $;
         },
         'a new pack gives a new frame, a new land keeps the old one'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.assets();
             const field = stage.field('Shelf().Links()');
             const before = stage.frame();
             stage.type(field, 'http://pack.test/, AbCdEfGh');
@@ -52263,6 +53236,7 @@ var $;
         },
         'the palette field takes a pack with lands and says why it refuses a second'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.assets();
             const field = stage.field('Shelf().Links()');
             stage.type(field, 'http://pack.test/, AbCdEfGh');
             $mol_assert_equal(stage.app.pack_link(), 'http://pack.test/');
@@ -52563,7 +53537,7 @@ var $;
                 kids.forEach((kid, index) => $mol_assert_ok(nodes[index] === kid.dom_node()));
             };
             holds(app.Main(), [app.Left(), app.Canvas(), app.Right()]);
-            holds(app.Left(), [app.Scenes(), app.Left_tabs(), app.Shelf()]);
+            holds(app.Left(), [app.Scenes(), app.Left_tabs(), app.Layers()]);
             holds(app.Right(), [app.Right_tabs(), app.Idle()]);
             $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_head]'), null);
             $mol_assert_equal(app.Canvas().dom_node().querySelector('[mol_page_head]'), null);
@@ -52593,17 +53567,17 @@ var $;
             const app = stage.app;
             const showed = (page) => stage.root.contains(page.dom_node());
             $mol_assert_ok(showed(app.Scenes()));
-            $mol_assert_ok(showed(app.Shelf()));
+            $mol_assert_ok(showed(app.Layers()));
             $mol_assert_ok(showed(app.Idle()));
-            $mol_assert_equal(showed(app.Layers()), false);
+            $mol_assert_equal(showed(app.Shelf()), false);
             $mol_assert_equal(showed(app.Code()), false);
             $mol_assert_equal(showed(app.History()), false);
-            stage.click(stage.check('Слои'));
-            $mol_assert_ok(showed(app.Layers()));
-            $mol_assert_equal(showed(app.Shelf()), false);
             stage.click(stage.check('Ассеты'));
             $mol_assert_ok(showed(app.Shelf()));
             $mol_assert_equal(showed(app.Layers()), false);
+            stage.click(stage.check('Слои'));
+            $mol_assert_ok(showed(app.Layers()));
+            $mol_assert_equal(showed(app.Shelf()), false);
             stage.click(stage.check('Код'));
             $mol_assert_ok(showed(app.Code()));
             $mol_assert_equal(showed(app.Idle()), false);
@@ -52619,20 +53593,21 @@ var $;
             $mol_assert_ok(showed(app.History()));
             stage.click(app.Left_check().dom_node());
             $mol_assert_equal(showed(app.Scenes()), false);
-            $mol_assert_equal(showed(app.Shelf()), false);
+            $mol_assert_equal(showed(app.Layers()), false);
             stage.click(app.Right_check().dom_node());
             $mol_assert_equal(showed(app.History()), false);
             $mol_assert_equal(app.Main().dom_node().childElementCount, 1);
             $mol_assert_ok(showed(app.Canvas()));
             stage.click(app.Left_check().dom_node());
             $mol_assert_ok(showed(app.Scenes()));
-            $mol_assert_ok(showed(app.Shelf()));
+            $mol_assert_ok(showed(app.Layers()));
         },
         'a panel under a tab keeps its tools, and a title that only repeats the tab is gone'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
             const app = stage.app;
             const title = (page) => page.dom_node().querySelector('[mol_page_title]');
             const tools = (page) => page.dom_node().querySelector('[mol_page_tools]');
+            stage.assets();
             $mol_assert_equal(title(app.Shelf()), null);
             $mol_assert_ok(tools(app.Shelf()).contains(app.Shelf().Filter().dom_node()));
             stage.click(stage.check('Версии'));
@@ -52656,15 +53631,16 @@ var $;
             $mol_assert_equal(count(), 3);
             stroke(dom.document);
             $mol_assert_equal(count(), 1);
-            $mol_assert_equal(stage.root.contains(app.Shelf().dom_node()), false);
+            $mol_assert_equal(stage.root.contains(app.Layers().dom_node()), false);
             stroke(stage.field('Root_name()'));
             $mol_assert_equal(count(), 1);
             stroke(dom.document);
             $mol_assert_equal(count(), 3);
-            $mol_assert_ok(stage.root.contains(app.Shelf().dom_node()));
+            $mol_assert_ok(stage.root.contains(app.Layers().dom_node()));
         },
         'the shelf offers the packs by name, and the current one is marked'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.assets();
             const offers = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_pack_row]')]
                 .map(el => el.textContent);
             $mol_assert_like(offers, ['Детали vmap', 'Builderui']);
@@ -52677,6 +53653,7 @@ var $;
         },
         'the pack chosen on the shelf is the one the scene is sent to load'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.assets();
             stage.click(stage.pack_row('Builderui'));
             stage.scene.hello();
             $mol_assert_equal(stage.app.links(), $_3.$bog_vmap_app_flow_ui);
@@ -52686,6 +53663,7 @@ var $;
         },
         'a class of the chosen pack lands on the canvas and gets measured'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.assets();
             stage.click(stage.pack_row('Builderui'));
             stage.scene.hello();
             stage.drop(card, stage.client([200, 150]));
@@ -52697,6 +53675,7 @@ var $;
         },
         'a pack taken back gives the editor its own parts again'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.assets();
             stage.click(stage.pack_row('Builderui'));
             stage.scene.hello();
             stage.click(stage.pack_row('Детали vmap'));
@@ -52812,6 +53791,297 @@ var $;
             $mol_assert_equal(bytes.length, 22);
             $mol_assert_equal(number_at(bytes, 0, 4), 0x06054b50);
             $mol_assert_equal(entries_of(bytes).length, 0);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    const d = '$';
+    const sample = [
+        `${d}layers_doc ${d}mol_view`,
+        `\tcaption \\Подпись`,
+        `\tTitle ${d}mol_paragraph title \\Привет`,
+        `\tPrice ${d}mol_paragraph title \\0`,
+        `\tCard ${d}mol_view`,
+        `\t\tsub /`,
+        `\t\t\t<= Price`,
+        `\t\t\t<= caption`,
+        `\tPage ${d}mol_view`,
+        `\t\tstyle * width \\1280px`,
+        `\t\tsub /`,
+        `\t\t\t<= Title`,
+        `\t\t\t<= Card`,
+        `\tPhoto ${d}mol_image uri \\photo.png`,
+        `\tGo ${d}mol_button_minor title \\Дальше`,
+        `\tName ${d}mol_string`,
+        `\tSite ${d}mol_link`,
+        `\tCalc ${d}bog_vmap_part_calc`,
+        `\tsub /`,
+        `\t\t<= Page`,
+        `\t\t<= Photo`,
+        `\t\t<= Go`,
+        `\t\t<= Name`,
+        `\t\t<= Site`,
+        `\t\t<= Calc`,
+        ``,
+    ].join('\n');
+    const icons = ['root', 'frame', 'image', 'link', 'button', 'field', 'text', 'part'];
+    function layers_stage($, over = {}) {
+        const stage = $bog_vmap_app_flow_stage($, over);
+        const app = stage.app;
+        const dom = $.$mol_dom_context;
+        app.doc_source(sample);
+        app.spots({ Page: { x: 0, y: 0 }, Photo: { x: 1400, y: 0 } });
+        stage.redraw();
+        const moves = [];
+        const move = app.tree_move.bind(app);
+        app.tree_move = (next) => {
+            if (next)
+                moves.push(next);
+            return move(next);
+        };
+        const layers = app.Layers();
+        const panel = layers.dom_node();
+        $mol_assert_ok(stage.root.contains(panel));
+        const redraw = () => stage.redraw();
+        const lines = () => {
+            redraw();
+            return [...panel.querySelectorAll('[bog_vmap_app_layers_line]')];
+        };
+        const title_of = (line) => line.querySelector('[bog_vmap_app_layers_pick]')?.textContent ?? '';
+        const line = (title) => {
+            const found = lines().find(el => title_of(el) === title);
+            if (!found)
+                $mol_fail(new Error(`no layer row ${title}`));
+            return found;
+        };
+        const pick = (title) => line(title).querySelector('[bog_vmap_app_layers_pick]');
+        const outline = () => lines().map(el => {
+            const expand = el.querySelector('[bog_vmap_app_layers_expand]');
+            const level = parseFloat(expand.style.paddingLeft || '0');
+            const icon = icons.find(kind => el.querySelector(`[bog_vmap_app_layers_${kind}_icon]`)) ?? '?';
+            return '  '.repeat(level) + title_of(el) + ' ' + icon;
+        });
+        const mouse = (el, type, over = {}) => {
+            el.dispatchEvent(new dom.MouseEvent(type, { bubbles: true, cancelable: true, ...over }));
+            redraw();
+        };
+        const field = () => panel.querySelector('[bog_vmap_app_layers_edit]');
+        const type = (value) => {
+            const el = field();
+            el.value = value;
+            el.dispatchEvent(new dom.Event('input', { bubbles: true }));
+            redraw();
+        };
+        const blur = () => {
+            field().dispatchEvent(new dom.Event('blur', { bubbles: true }));
+            redraw();
+        };
+        const key = (value) => {
+            field().dispatchEvent(new dom.KeyboardEvent('keydown', { key: value, bubbles: true, cancelable: true }));
+            redraw();
+        };
+        const drag = (name, onto, share) => {
+            const el = line(onto);
+            const top = 100;
+            const height = 20;
+            el.getBoundingClientRect = () => ({ top, height, left: 0, width: 200, right: 200, bottom: top + height });
+            const transfer = {
+                dropEffect: 'none',
+                getData: (kind) => kind === 'text/plain' ? name : '',
+            };
+            for (const kind of ['dragenter', 'dragover', 'drop']) {
+                const event = new dom.MouseEvent(kind, { bubbles: true, cancelable: true, clientY: top + height * share });
+                Object.defineProperty(event, 'dataTransfer', { value: transfer });
+                el.dispatchEvent(event);
+            }
+            redraw();
+        };
+        const history = app.History();
+        const stepped = async () => {
+            const source = app.doc_source();
+            const taken = () => history.ring(history.doc_key()).at(-1)?.source === source;
+            for (let i = 0; i < 10 && !taken(); ++i) {
+                stage.timers.filter(timer => timer.delay === history.step_delay()).at(-1)?.task();
+                await $bog_vmap_app_flow_settle(taken, 30);
+                redraw();
+            }
+            $mol_assert_equal(taken(), true);
+        };
+        return { stage, app, layers, panel, moves, lines, line, pick, outline, mouse, field, type, blur, key, drag, history, stepped, redraw };
+    }
+    $mol_test({
+        'the layers are the tree of the document by its sub lists'($) {
+            const { outline } = layers_stage($);
+            $mol_assert_like(outline(), [
+                `${d}layers_doc root`,
+                '  Page frame',
+                '    Title text',
+                '    Card frame',
+                '      Price text',
+                '      caption text',
+                '  Photo image',
+                '  Go button',
+                '  Name field',
+                '  Site link',
+                '  Calc part',
+            ]);
+        },
+        'a row names the class of its node and every row but the root is dragged'($) {
+            const { line, pick } = layers_stage($);
+            $mol_assert_equal(pick('Photo').getAttribute('title'), `${d}mol_image`);
+            $mol_assert_equal(pick('caption').getAttribute('title'), '');
+            $mol_assert_equal(line('Photo').getAttribute('draggable'), 'true');
+            $mol_assert_equal(line(`${d}layers_doc`).getAttribute('draggable'), null);
+        },
+        'a collapsed branch hides its rows and opens back'($) {
+            const { outline, line, mouse } = layers_stage($);
+            mouse(line('Card').querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            $mol_assert_like(outline().slice(0, 5), [
+                `${d}layers_doc root`,
+                '  Page frame',
+                '    Title text',
+                '    Card frame',
+                '  Photo image',
+            ]);
+            mouse(line('Card').querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            $mol_assert_equal(outline()[4], '      Price text');
+        },
+        'a click on a row picks its node at the host'($) {
+            const { app, pick, mouse } = layers_stage($);
+            mouse(pick('Title'), 'click');
+            $mol_assert_equal(app.selected(), 'Title');
+            mouse(pick('Photo'), 'click', { metaKey: true });
+            $mol_assert_like(app.picked(), ['Title', 'Photo']);
+            mouse(pick('Photo'), 'click', { metaKey: true });
+            $mol_assert_like(app.picked(), ['Title']);
+            mouse(pick(`${d}layers_doc`), 'click');
+            $mol_assert_like(app.picked(), []);
+        },
+        'the node picked at the host lights its row'($) {
+            const { app, pick, line, mouse, redraw } = layers_stage($);
+            const lit = (title) => pick(title).getAttribute('mol_check_checked') === 'true';
+            app.selected('Card');
+            redraw();
+            $mol_assert_equal(lit('Card'), true);
+            $mol_assert_equal(lit('Title'), false);
+            $mol_assert_equal(lit('Page'), false);
+            mouse(line('Page').querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            $mol_assert_equal(lit('Page'), true);
+        },
+        'a double click renames the node the way the design tab does'($) {
+            const { app, pick, mouse, field, type, blur, outline } = layers_stage($);
+            app.spots({ ...app.spots(), Title: { x: 5, y: 5 } });
+            mouse(pick('Title'), 'dblclick');
+            $mol_assert_ok(field());
+            $mol_assert_equal(field().closest('[bog_vmap_app_layers_line]').getAttribute('draggable'), null);
+            type('Heading');
+            blur();
+            $mol_assert_like(app.node().sub_names('Page'), ['Heading', 'Card']);
+            $mol_assert_equal(app.doc_source().includes('Title'), false);
+            $mol_assert_equal(app.selected(), 'Heading');
+            $mol_assert_like(app.spots().Heading, { x: 5, y: 5 });
+            $mol_assert_equal(field(), null);
+            $mol_assert_equal(outline()[2], '    Heading text');
+        },
+        'a name from a digit is refused in words and the source stays'($) {
+            const { app, pick, mouse, field, type, blur, panel } = layers_stage($);
+            const before = app.doc_source();
+            mouse(pick('Title'), 'dblclick');
+            type('2abc');
+            blur();
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_ok(panel.textContent.includes('не начинается с цифры'));
+            $mol_assert_ok(field());
+        },
+        'escape leaves the rename without a write and keeps the pick'($) {
+            const { app, pick, mouse, field, type, key } = layers_stage($);
+            const before = app.doc_source();
+            mouse(pick('Title'), 'dblclick');
+            type('Other');
+            key('Escape');
+            $mol_assert_equal(field(), null);
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(app.selected(), 'Title');
+        },
+        'a row dropped on the upper half of another lands before it'($) {
+            const { app, drag } = layers_stage($);
+            drag('Card', 'Title', .1);
+            $mol_assert_like(app.node().sub_names('Page'), ['Card', 'Title']);
+        },
+        'a row dropped on the lower half of a frame lands inside at the end'($) {
+            const { app, drag } = layers_stage($);
+            drag('Title', 'Card', .9);
+            $mol_assert_like(app.node().sub_names('Card'), ['Price', 'caption', 'Title']);
+            $mol_assert_like(app.node().sub_names('Page'), ['Card']);
+        },
+        'rows reordered at the root keep their places on the canvas'($) {
+            const { app, stage, drag } = layers_stage($);
+            stage.scene.flush();
+            $mol_assert_ok(stage.pane.part_size('Photo'));
+            drag('Photo', 'Page', .1);
+            $mol_assert_like(app.node().sub_names('').slice(0, 2), ['Photo', 'Page']);
+            $mol_assert_like(app.spots().Photo, { x: 1400, y: 0 });
+        },
+        'a row reordered at the root before the scene measured it keeps its place'($) {
+            const { app, stage, drag } = layers_stage($, { mute: true });
+            $mol_assert_equal(stage.pane.part_size('Photo'), null);
+            drag('Photo', 'Page', .1);
+            $mol_assert_like(app.node().sub_names('').slice(0, 2), ['Photo', 'Page']);
+            $mol_assert_like(app.spots().Photo, { x: 1400, y: 0 });
+        },
+        'a row taken out of a frame to the root stays where it was drawn'($) {
+            const { app, stage, drag, line } = layers_stage($);
+            app.spots({ ...app.spots(), Page: { x: 40, y: 60 } });
+            stage.redraw();
+            stage.scene.flush();
+            const drawn = stage.pane.part_size('Card');
+            drag('Card', `${d}layers_doc`, .5);
+            $mol_assert_like(app.node().sub_names('Page'), ['Title']);
+            $mol_assert_equal(app.node().sub_names('').at(-1), 'Card');
+            $mol_assert_like(app.spots().Card, { x: drawn.x, y: drawn.y });
+            $mol_assert_like([drawn.x, drawn.y], [140, 60]);
+            $mol_assert_ok(line('Card'));
+        },
+        'a frame dropped into its own insides asks the host for nothing'($) {
+            const { app, drag, moves } = layers_stage($);
+            const before = app.doc_source();
+            drag('Page', 'Card', .9);
+            drag('Page', 'Price', .1);
+            $mol_assert_equal(moves.length, 0);
+            $mol_assert_equal(app.doc_source(), before);
+        },
+        'a drop that changes nothing asks the host for nothing'($) {
+            const { app, drag, moves } = layers_stage($);
+            const before = app.doc_source();
+            drag('Title', 'Card', .1);
+            drag('Card', 'Page', .9);
+            drag('Nope', 'Title', .1);
+            $mol_assert_equal(moves.length, 0);
+            $mol_assert_equal(app.doc_source(), before);
+        },
+        async 'one undo takes back a rename from the layers'($) {
+            const { app, pick, mouse, type, blur, history, stepped } = layers_stage($);
+            await stepped();
+            const before = app.doc_source();
+            mouse(pick('Title'), 'dblclick');
+            type('Heading');
+            blur();
+            await stepped();
+            history.undo();
+            $mol_assert_equal(app.doc_source(), before);
+        },
+        async 'one undo takes back a move from the layers'($) {
+            const { app, drag, history, stepped } = layers_stage($);
+            await stepped();
+            const before = app.doc_source();
+            drag('Card', 'Title', .1);
+            await stepped();
+            history.undo();
+            $mol_assert_equal(app.doc_source(), before);
         },
     });
 })($ || ($ = {}));

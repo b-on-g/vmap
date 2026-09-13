@@ -2729,6 +2729,89 @@ $bog_vmap_app_scenes $mol_page
 		current <= scene_current* false
 		click? <=> scene_click*? null
 
+$mol_icon_file $mol_icon path \M13,9V3.5L18.5,9M6,2C4.89,2 4,2.89 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z
+
+$mol_icon_file_document $mol_icon path \M13,9H18.5L13,3.5V9M6,2H14L20,8V20A2,2 0 0,1 18,22H6C4.89,22 4,21.1 4,20V4C4,2.89 4.89,2 6,2M15,18V16H6V18H15M18,14V12H6V14H18Z
+
+$mol_icon_file_document_outline $mol_icon path \M6,2A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6M6,4H13V9H18V20H6V4M8,12V14H16V12H8M8,16V18H13V16H8Z
+
+$mol_icon_artboard $mol_icon path \M17 9V15H7V9H17M19 3H17V6H19V3M7 3H5V6H7V3M23 7H20V9H23V7M19 7H5V17H19V7M4 7H1V9H4V7M23 15H20V17H23V15M4 15H1V17H4V15M19 18H17V21H19V18M7 18H5V21H7V18Z
+
+$mol_icon_image $mol_icon path \M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z
+
+$mol_icon_button_cursor $mol_icon path \M18.1 15.3C18 15.4 17.8 15.5 17.7 15.6L15.3 16L17 19.6C17.2 20 17 20.4 16.6 20.6L13.8 21.9C13.7 22 13.6 22 13.5 22C13.2 22 12.9 21.8 12.8 21.6L11.2 18L9.3 19.5C9.2 19.6 9 19.7 8.8 19.7C8.4 19.7 8 19.4 8 18.9V7.5C8 7 8.3 6.7 8.8 6.7C9 6.7 9.2 6.8 9.3 6.9L18 14.3C18.3 14.5 18.4 15 18.1 15.3M6 12H4V4H20V12H18.4L20.6 13.9C21.4 13.6 21.9 12.9 21.9 12V4C21.9 2.9 21 2 19.9 2H4C2.9 2 2 2.9 2 4V12C2 13.1 2.9 14 4 14H6V12Z
+
+$mol_icon_form_textbox $mol_icon path \M17,7H22V17H17V19A1,1 0 0,0 18,20H20V22H17.5C16.95,22 16,21.55 16,21C16,21.55 15.05,22 14.5,22H12V20H14A1,1 0 0,0 15,19V5A1,1 0 0,0 14,4H12V2H14.5C15.05,2 16,2.45 16,3C16,2.45 16.95,2 17.5,2H20V4H18A1,1 0 0,0 17,5V7M2,7H13V9H4V15H13V17H2V7M20,15V9H17V15H20Z
+
+$mol_icon_format_text $mol_icon path \M18.5,4L19.66,8.35L18.7,8.61C18.25,7.74 17.79,6.87 17.26,6.43C16.73,6 16.11,6 15.5,6H13V16.5C13,17 13,17.5 13.33,17.75C13.67,18 14.33,18 15,18V19H9V18C9.67,18 10.33,18 10.67,17.75C11,17.5 11,17 11,16.5V6H8.5C7.89,6 7.27,6 6.74,6.43C6.21,6.87 5.75,7.74 5.3,8.61L4.34,8.35L5.5,4H18.5Z
+
+$mol_icon_shape $mol_icon path \M11,13.5V21.5H3V13.5H11M12,2L17.5,11H6.5L12,2M17.5,13C20,13 22,15 22,17.5C22,20 20,22 17.5,22C15,22 13,20 13,17.5C13,15 15,13 17.5,13Z
+
+$mol_icon_shape_outline $mol_icon path \M11,13.5V21.5H3V13.5H11M9,15.5H5V19.5H9V15.5M12,2L17.5,11H6.5L12,2M12,5.86L10.08,9H13.92L12,5.86M17.5,13C20,13 22,15 22,17.5C22,20 20,22 17.5,22C15,22 13,20 13,17.5C13,15 15,13 17.5,13M17.5,15A2.5,2.5 0 0,0 15,17.5A2.5,2.5 0 0,0 17.5,20A2.5,2.5 0 0,0 20,17.5A2.5,2.5 0 0,0 17.5,15Z
+
+$bog_vmap_app_layers $mol_scroll
+	source \
+	root \
+	picked? /string
+	node_title? \
+	node_title_note \
+	tree_move? null
+	Doc $bog_vmap_lang_doc
+		source <= source
+	sub /
+		<= Rows $mol_list
+			rows <= rows /$mol_view
+	Note $mol_status
+		status <= node_title_note
+	Row* $mol_drag
+		allow_copy false
+		allow_link false
+		attr *
+			^
+			draggable <= row_draggable* true
+		transfer *
+			^
+			text/plain <= row_name* \
+		Sub <= Row_drop* $mol_drop
+			allow /
+				\move
+			adopt? <=> row_adopt? null
+			receive? <=> row_receive*? null
+			Sub <= Line* $mol_view
+				attr *
+					^
+					bog_vmap_app_layers_line_zone <= row_zone*? \
+				event *
+					^
+					dragover? <=> row_over*? null
+				sub <= row_content* /$mol_view
+	Expand* $mol_check_expand
+		level <= row_level* 1
+		expanded? <=> row_expanded*? false
+	Pick* $mol_check
+		Icon <= row_icon* null
+		title <= row_title* \
+		hint <= row_hint* \
+		checked <= row_picked* false
+		click? <=> row_pick*? null
+		clicks? <=> row_edit*? null
+	Edit* $mol_string
+		hint \имя узла
+		value? <=> row_draft*? \
+		submit? <=> row_submit*? null
+		event *
+			^
+			blur? <=> row_submit*? null
+			keydown? <=> row_key*? null
+	Root_icon $mol_icon_file_document_outline
+	Frame_icon* $mol_icon_artboard
+	Image_icon* $mol_icon_image
+	Link_icon* $mol_icon_link
+	Button_icon* $mol_icon_button_cursor
+	Field_icon* $mol_icon_form_textbox
+	Text_icon* $mol_icon_format_text
+	Part_icon* $mol_icon_shape_outline
+
 $bog_vmap_app_shelf $mol_page
 	links? \
 	pack_link \
@@ -2874,7 +2957,7 @@ $bog_vmap_app $mol_page
 	links? \
 	left_showed? true
 	right_showed? true
-	left_tab? \assets
+	left_tab? \layers
 	right_tab? \design
 	code_showed? false
 	history_showed? false
@@ -3008,8 +3091,13 @@ $bog_vmap_app $mol_page
 		foot <= notes /$mol_view
 	Scenes $bog_vmap_app_scenes
 		store <= store
-	Layers $mol_page
-		title \Слои
+	Layers $bog_vmap_app_layers
+		source <= doc_src
+		root <= doc_root
+		picked? <=> picked?
+		node_title? <=> node_title?
+		node_title_note <= node_title_note
+		tree_move? <=> tree_move?
 	Shelf $bog_vmap_app_shelf
 		Title null
 		links? <=> links?
