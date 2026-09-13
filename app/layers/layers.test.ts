@@ -32,8 +32,8 @@ namespace $ {
 
 	const icons = [ 'root', 'frame', 'image', 'link', 'button', 'field', 'text', 'part' ]
 
-	function layers_stage( $: $ ) {
-		const stage = $bog_vmap_app_flow_stage( $ )
+	function layers_stage( $: $, over: $bog_vmap_app_flow_over = {} ) {
+		const stage = $bog_vmap_app_flow_stage( $, over )
 		const app = stage.app
 		const dom = $.$mol_dom_context
 
@@ -49,23 +49,12 @@ namespace $ {
 			return move( next )
 		}
 
-		const layers = $$.$bog_vmap_app_layers.make({
-			$,
-			source: ()=> app.doc_src(),
-			root: ()=> app.doc_root(),
-			picked: ( next?: readonly string[] )=> app.picked( next ),
-			node_title: ( next?: string )=> app.node_title( next ),
-			node_title_note: ()=> app.node_title_note(),
-			tree_move: ( next?: $$.$bog_vmap_app_pane_tree_move | null )=> app.tree_move( next ),
-		})
+		const layers = app.Layers() as $$.$bog_vmap_app_layers
+		const panel = layers.dom_node() as Element
 
-		const panel = layers.dom_tree()
-		stage.root.parentNode!.appendChild( panel )
+		$mol_assert_ok( stage.root.contains( panel ) )
 
-		const redraw = ()=> {
-			stage.redraw()
-			layers.dom_tree()
-		}
+		const redraw = ()=> stage.redraw()
 
 		const lines = ()=> {
 			redraw()
@@ -296,6 +285,47 @@ namespace $ {
 
 			$mol_assert_like( app.node().sub_names( 'Card' ), [ 'Price', 'caption', 'Title' ] )
 			$mol_assert_like( app.node().sub_names( 'Page' ), [ 'Card' ] )
+		},
+
+		'rows reordered at the root keep their places on the canvas'( $ ) {
+			const { app, stage, drag } = layers_stage( $ )
+
+			stage.scene.flush()
+			$mol_assert_ok( stage.pane.part_size( 'Photo' ) )
+
+			drag( 'Photo', 'Page', .1 )
+
+			$mol_assert_like( app.node().sub_names( '' )!.slice( 0, 2 ), [ 'Photo', 'Page' ] )
+			$mol_assert_like( app.spots().Photo, { x: 1400, y: 0 } )
+		},
+
+		'a row reordered at the root before the scene measured it keeps its place'( $ ) {
+			const { app, stage, drag } = layers_stage( $, { mute: true } )
+
+			$mol_assert_equal( stage.pane.part_size( 'Photo' ), null )
+
+			drag( 'Photo', 'Page', .1 )
+
+			$mol_assert_like( app.node().sub_names( '' )!.slice( 0, 2 ), [ 'Photo', 'Page' ] )
+			$mol_assert_like( app.spots().Photo, { x: 1400, y: 0 } )
+		},
+
+		'a row taken out of a frame to the root stays where it was drawn'( $ ) {
+			const { app, stage, drag, line } = layers_stage( $ )
+
+			app.spots({ ... app.spots(), Page: { x: 40, y: 60 } })
+			stage.redraw()
+			stage.scene.flush()
+
+			const drawn = stage.pane.part_size( 'Card' )!
+
+			drag( 'Card', `${d}layers_doc`, .5 )
+
+			$mol_assert_like( app.node().sub_names( 'Page' ), [ 'Title' ] )
+			$mol_assert_equal( app.node().sub_names( '' )!.at( -1 ), 'Card' )
+			$mol_assert_like( app.spots().Card, { x: drawn.x, y: drawn.y } )
+			$mol_assert_like( [ drawn.x, drawn.y ], [ 140, 60 ] )
+			$mol_assert_ok( line( 'Card' ) )
 		},
 
 		'a frame dropped into its own insides asks the host for nothing'( $ ) {

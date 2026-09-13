@@ -17,18 +17,21 @@ namespace $ {
 	export const $bog_vmap_probe_zones = [ 'head', 'tools', 'body', 'body_content', 'foot' ]
 
 	export const $bog_vmap_probe_frame = [
-		'head', 'root_name', 'main', 'left', 'left_tabs', 'right', 'right_tabs',
+		'head', 'root_name', 'main', 'left', 'left_tabs', 'layers', 'right', 'right_tabs',
 		'canvas', 'canvas_head', 'canvas_body', 'canvas_body_content', 'canvas_foot',
 		'pane', 'pane_scene',
 	]
 
 	export const $bog_vmap_probe_columns = [ 'left', 'canvas', 'right' ]
 
-	export type $bog_vmap_probe_mode = 'plain' | 'open' | 'long'
+	export const $bog_vmap_probe_left = [ 'scenes', 'left_tabs', 'layers', 'shelf' ]
+
+	export type $bog_vmap_probe_mode = 'plain' | 'open' | 'long' | 'assets'
 
 	export const $bog_vmap_probe_passes: readonly { readonly width: number, readonly mode: $bog_vmap_probe_mode, readonly note: string }[] = [
 		{ width: 1280, mode: 'plain', note: '' },
 		{ width: 1280, mode: 'long', note: ' с длинным списком сцен' },
+		{ width: 1280, mode: 'assets', note: ' на вкладке «Ассеты»' },
 		{ width: 400, mode: 'plain', note: '' },
 		{ width: 400, mode: 'open', note: ' с открытыми колонками' },
 	]
@@ -43,6 +46,7 @@ namespace $ {
 		readonly feet: { readonly [ name: string ]: number }
 		readonly lines: { readonly [ name: string ]: number }
 		readonly order: readonly string[]
+		readonly stack: readonly string[]
 	}
 
 	export function $bog_vmap_probe_ready() {
@@ -71,6 +75,7 @@ namespace $ {
 				app.left_showed( true )
 				app.right_showed( true )
 			}
+			if( mode === 'assets' ) app.left_tab( 'assets' )
 			if( mode === 'long' ) {
 				const style = document.createElement( 'style' )
 				style.textContent = '[bog_vmap_app_scenes_body_content] { min-height: 2000px }'
@@ -126,6 +131,10 @@ namespace $ {
 			const order = main ? [ ... main.children ].map(
 				kid => ${ JSON.stringify( $bog_vmap_probe_columns ) }.find( name => kid.hasAttribute( 'bog_vmap_app_' + name ) ) || '?'
 			) : []
+			const left = document.querySelector( '[bog_vmap_app_left]' )
+			const stack = left ? [ ... left.children ].map(
+				kid => ${ JSON.stringify( $bog_vmap_probe_left ) }.find( name => kid.hasAttribute( 'bog_vmap_app_' + name ) ) || '?'
+			) : []
 			return {
 				rects: base.rects,
 				viewport: base.viewport,
@@ -139,6 +148,7 @@ namespace $ {
 				feet,
 				lines,
 				order,
+				stack,
 			}
 		`
 	}
@@ -197,6 +207,8 @@ namespace $ {
 
 			const wide = width === 1280
 			const open = mode === 'open'
+			const lower = mode === 'assets' ? 'shelf' : 'layers'
+			const panels = $bog_vmap_probe_panels.filter( name => name !== 'shelf' || lower === 'shelf' )
 			const at = `${ width }${ note }:`
 			const rects = got.rects
 			const box = ( name: string )=> rects[ `[bog_vmap_app_${ name }]` ] ?? null
@@ -340,17 +352,22 @@ namespace $ {
 			if( !wide ) continue
 
 			const scenes = box( 'scenes' )
-			const shelf = box( 'shelf' )
+			const under = box( lower )
 
 			if( mode === 'long' ) want(
-				!!scenes && !!shelf && scenes.height <= left!.height * .4 + 1 && shelf.height >= left!.height / 2,
-				`${ at } длинный список сцен выжал Полку: Сцены ${ $bog_vmap_probe_show( scenes ) }, Полка ${ $bog_vmap_probe_show( shelf ) }, колонка ${ $bog_vmap_probe_show( left ) }`,
+				!!scenes && !!under && scenes.height <= left!.height * .4 + 1 && under.height >= left!.height / 2,
+				`${ at } длинный список сцен выжал ${ lower }: Сцены ${ $bog_vmap_probe_show( scenes ) }, ${ lower } ${ $bog_vmap_probe_show( under ) }, колонка ${ $bog_vmap_probe_show( left ) }`,
 			)
 
 			const stack: [ string, readonly string[] ][] = [
-				[ 'left', [ 'scenes', 'left_tabs', 'shelf' ] ],
+				[ 'left', [ 'scenes', 'left_tabs', lower ] ],
 				[ 'right', [ 'right_tabs', 'idle' ] ],
 			]
+
+			want(
+				got.stack.join() === stack[ 0 ][ 1 ].join(),
+				`${ at } в левой колонке ${ got.stack.join( ' | ' ) } вместо ${ stack[ 0 ][ 1 ].join( ' | ' ) }`,
+			)
 
 			for( const [ column, names ] of stack ) {
 
@@ -387,7 +404,7 @@ namespace $ {
 
 			}
 
-			for( const name of $bog_vmap_probe_panels ) {
+			for( const name of panels ) {
 
 				const page = box( name )
 				const zone = ( part: string )=> box( `${ name }_${ part }` )
@@ -425,17 +442,17 @@ namespace $ {
 			}
 
 			const head_of = ( name: string )=> Math.round( box( `${ name }_head` )?.height ?? -1 )
-			const heads = $bog_vmap_probe_panels.map( name => `${ name } ${ head_of( name ) }, строк ${ got.lines[ name ] }` ).join( '; ' )
-			const first = head_of( $bog_vmap_probe_panels[ 0 ] ?? '' )
+			const heads = panels.map( name => `${ name } ${ head_of( name ) }, строк ${ got.lines[ name ] }` ).join( '; ' )
+			const first = head_of( panels[ 0 ] ?? '' )
 
 			say( `${ at } шапки панелей ${ heads }` )
 
 			want(
-				$bog_vmap_probe_panels.every( name => got.lines[ name ] === 1 ),
+				panels.every( name => got.lines[ name ] === 1 ),
 				`${ at } шапка панели легла не в одну строку: ${ heads }`,
 			)
 			want(
-				$bog_vmap_probe_panels.every( name => $bog_vmap_probe_close( head_of( name ), first, 16 ) ),
+				panels.every( name => $bog_vmap_probe_close( head_of( name ), first, 16 ) ),
 				`${ at } шапки панелей разной высоты: ${ heads }`,
 			)
 

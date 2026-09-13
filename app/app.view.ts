@@ -528,7 +528,7 @@ namespace $.$$ {
 		}
 
 		override left_tab( next?: string ) {
-			return this.$.$mol_state_session.value( 'vmap_left_tab', next || undefined ) ?? 'assets'
+			return this.$.$mol_state_session.value( 'vmap_left_tab', next || undefined ) ?? 'layers'
 		}
 
 		override right_tab( next?: string ) {
@@ -694,10 +694,18 @@ namespace $.$$ {
 		override tree_move( next?: $bog_vmap_app_pane_tree_move | null ) {
 			if( !next ) return null
 
+			const box = ( this.Pane() as $bog_vmap_app_pane ).part_size( next.name )
+
 			this.node().sub_move( next.name, next.index, next.owner )
 
 			const spots = { ... this.spots() }
-			delete spots[ next.name ]
+
+			if( next.owner ) delete spots[ next.name ]
+			else if( !spots[ next.name ] ) {
+				const [ x, y ] = box ? [ box.x, box.y ] : this.Pane().free_spot()
+				spots[ next.name ] = { x, y }
+			}
+
 			this.spots( spots )
 
 			return next

@@ -1012,6 +1012,7 @@ namespace $ {
 			const page = stage.app.selected()!
 			$mol_assert_ok( page )
 
+			stage.assets()
 			stage.click( stage.shelf_row( 'Блок' ) )
 
 			const node = stage.app.node()
@@ -1113,7 +1114,7 @@ namespace $ {
 			$mol_assert_equal( left.length, 3 )
 			$mol_assert_equal( left[ 0 ], app.Scenes() )
 			$mol_assert_equal( left[ 1 ], app.Left_tabs() )
-			$mol_assert_equal( left[ 2 ], app.Shelf() )
+			$mol_assert_equal( left[ 2 ], app.Layers() )
 
 			const right = app.Right().sub()
 
@@ -1181,16 +1182,18 @@ namespace $ {
 
 			$mol_assert_equal( one.left_showed(), true )
 			$mol_assert_equal( one.right_showed(), true )
-			$mol_assert_equal( one.left_tab(), 'assets' )
+			$mol_assert_equal( one.left_tab(), 'layers' )
 			$mol_assert_equal( one.right_tab(), 'design' )
 
 			one.left_showed( false )
+			one.left_tab( 'assets' )
 			one.right_tab( 'code' )
 
 			const two = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
 			$mol_assert_equal( two.left_showed(), false )
 			$mol_assert_equal( two.right_showed(), true )
+			$mol_assert_equal( two.left_tab(), 'assets' )
 			$mol_assert_equal( two.right_tab(), 'code' )
 
 			$mol_assert_equal( two.main().includes( two.Left() ), false )
@@ -1238,8 +1241,8 @@ namespace $ {
 
 			const left = app.Left_tabs()
 
-			left.option_checked( 'assets', false )
-			$mol_assert_equal( app.left_tab(), 'assets' )
+			left.option_checked( 'layers', false )
+			$mol_assert_equal( app.left_tab(), 'layers' )
 
 		},
 

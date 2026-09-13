@@ -344,7 +344,12 @@ namespace $ {
 				return found( '[bog_vmap_app_palette_item]', `palette row ${ klass }`, el => el.textContent === klass )
 			},
 
+			assets() {
+				this.click( this.check( 'Ассеты' ) )
+			},
+
 			classes_open() {
+				this.assets()
 				app.Shelf().classes_showed( true )
 				app.dom_tree()
 				scene.flush()
@@ -490,6 +495,8 @@ namespace $ {
 			$mol_assert_ok( text.includes( '100%' ) )
 			$mol_assert_ok( text.includes( 'Выберите узел на холсте' ) )
 
+			stage.assets()
+
 			const shelf = [ ... stage.root.querySelectorAll(
 				'[bog_vmap_app_shelf_items] [bog_vmap_app_shelf_item_row]',
 			) ].map( el => el.textContent )
@@ -529,6 +536,7 @@ namespace $ {
 		'a ready made pair lands wired, by one click on the shelf'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 
+			stage.assets()
 			stage.click( stage.shelf_row( 'Калькулятор и карта' ) )
 
 			const node = stage.app.node()
@@ -553,6 +561,7 @@ namespace $ {
 		'an application added by its address puts its objects on the shelf'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 
+			stage.assets()
 			stage.type( stage.field( 'Shelf().Links()' ), $bog_vmap_app_flow_other )
 
 			stage.scene.hello()
@@ -806,6 +815,7 @@ namespace $ {
 
 		'a new pack gives a new frame, a new land keeps the old one'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
+			stage.assets()
 			const field = stage.field( 'Shelf().Links()' )
 
 			const before = stage.frame()
@@ -862,6 +872,7 @@ namespace $ {
 		'the palette field takes a pack with lands and says why it refuses a second'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 
+			stage.assets()
 			const field = stage.field( 'Shelf().Links()' )
 			stage.type( field, 'http://pack.test/, AbCdEfGh' )
 
@@ -1304,7 +1315,7 @@ namespace $ {
 			}
 
 			holds( app.Main(), [ app.Left(), app.Canvas(), app.Right() ] )
-			holds( app.Left(), [ app.Scenes(), app.Left_tabs(), app.Shelf() ] )
+			holds( app.Left(), [ app.Scenes(), app.Left_tabs(), app.Layers() ] )
 			holds( app.Right(), [ app.Right_tabs(), app.Idle() ] )
 
 			$mol_assert_equal( stage.root.querySelector( '[bog_vmap_app_canvas_head]' ), null )
@@ -1350,21 +1361,21 @@ namespace $ {
 			const showed = ( page: $mol_view )=> stage.root.contains( page.dom_node() )
 
 			$mol_assert_ok( showed( app.Scenes() ) )
-			$mol_assert_ok( showed( app.Shelf() ) )
+			$mol_assert_ok( showed( app.Layers() ) )
 			$mol_assert_ok( showed( app.Idle() ) )
-			$mol_assert_equal( showed( app.Layers() ), false )
+			$mol_assert_equal( showed( app.Shelf() ), false )
 			$mol_assert_equal( showed( app.Code() ), false )
 			$mol_assert_equal( showed( app.History() ), false )
-
-			stage.click( stage.check( 'Слои' ) )
-
-			$mol_assert_ok( showed( app.Layers() ) )
-			$mol_assert_equal( showed( app.Shelf() ), false )
 
 			stage.click( stage.check( 'Ассеты' ) )
 
 			$mol_assert_ok( showed( app.Shelf() ) )
 			$mol_assert_equal( showed( app.Layers() ), false )
+
+			stage.click( stage.check( 'Слои' ) )
+
+			$mol_assert_ok( showed( app.Layers() ) )
+			$mol_assert_equal( showed( app.Shelf() ), false )
 
 			stage.click( stage.check( 'Код' ) )
 
@@ -1392,7 +1403,7 @@ namespace $ {
 			stage.click( app.Left_check().dom_node() )
 
 			$mol_assert_equal( showed( app.Scenes() ), false )
-			$mol_assert_equal( showed( app.Shelf() ), false )
+			$mol_assert_equal( showed( app.Layers() ), false )
 
 			stage.click( app.Right_check().dom_node() )
 
@@ -1403,7 +1414,7 @@ namespace $ {
 			stage.click( app.Left_check().dom_node() )
 
 			$mol_assert_ok( showed( app.Scenes() ) )
-			$mol_assert_ok( showed( app.Shelf() ) )
+			$mol_assert_ok( showed( app.Layers() ) )
 
 		},
 
@@ -1413,6 +1424,8 @@ namespace $ {
 
 			const title = ( page: $mol_view )=> page.dom_node().querySelector( '[mol_page_title]' )
 			const tools = ( page: $mol_view )=> page.dom_node().querySelector( '[mol_page_tools]' )!
+
+			stage.assets()
 
 			$mol_assert_equal( title( app.Shelf() ), null )
 			$mol_assert_ok( tools( app.Shelf() ).contains( ( app.Shelf() as $$.$bog_vmap_app_shelf ).Filter().dom_node() ) )
@@ -1450,7 +1463,7 @@ namespace $ {
 			stroke( dom.document )
 
 			$mol_assert_equal( count(), 1 )
-			$mol_assert_equal( stage.root.contains( app.Shelf().dom_node() ), false )
+			$mol_assert_equal( stage.root.contains( app.Layers().dom_node() ), false )
 
 			stroke( stage.field( 'Root_name()' ) )
 
@@ -1459,12 +1472,14 @@ namespace $ {
 			stroke( dom.document )
 
 			$mol_assert_equal( count(), 3 )
-			$mol_assert_ok( stage.root.contains( app.Shelf().dom_node() ) )
+			$mol_assert_ok( stage.root.contains( app.Layers().dom_node() ) )
 
 		},
 
 		'the shelf offers the packs by name, and the current one is marked'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.assets()
 
 			const offers = [ ... stage.root.querySelectorAll( '[bog_vmap_app_shelf_pack_row]' ) ]
 				.map( el => el.textContent )
@@ -1486,6 +1501,7 @@ namespace $ {
 		'the pack chosen on the shelf is the one the scene is sent to load'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 
+			stage.assets()
 			stage.click( stage.pack_row( 'Builderui' ) )
 			stage.scene.hello()
 
@@ -1503,6 +1519,7 @@ namespace $ {
 		'a class of the chosen pack lands on the canvas and gets measured'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 
+			stage.assets()
 			stage.click( stage.pack_row( 'Builderui' ) )
 			stage.scene.hello()
 
@@ -1519,6 +1536,7 @@ namespace $ {
 		'a pack taken back gives the editor its own parts again'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 
+			stage.assets()
 			stage.click( stage.pack_row( 'Builderui' ) )
 			stage.scene.hello()
 

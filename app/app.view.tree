@@ -10,7 +10,7 @@ $bog_vmap_app $mol_page
 	links? \
 	left_showed? true
 	right_showed? true
-	left_tab? \assets
+	left_tab? \layers
 	right_tab? \design
 	code_showed? false
 	history_showed? false
@@ -144,8 +144,13 @@ $bog_vmap_app $mol_page
 		foot <= notes /$mol_view
 	Scenes $bog_vmap_app_scenes
 		store <= store
-	Layers $mol_page
-		title \Слои
+	Layers $bog_vmap_app_layers
+		source <= doc_src
+		root <= doc_root
+		picked? <=> picked?
+		node_title? <=> node_title?
+		node_title_note <= node_title_note
+		tree_move? <=> tree_move?
 	Shelf $bog_vmap_app_shelf
 		Title null
 		links? <=> links?
