@@ -24,7 +24,7 @@ $bog_vmap_app_shelf $mol_page
 		checked? <=> classes_showed?
 	Source $mol_expander
 		title \Пак компонентов
-		expanded? true
+		expanded? <=> source_expanded? true
 		content /
 			<= Pack_list $mol_list
 				rows <= pack_rows /
@@ -44,7 +44,7 @@ $bog_vmap_app_shelf $mol_page
 					files? <=> files?
 	Parts $mol_expander
 		title \Готовые детали
-		expanded? true
+		expanded? <=> parts_expanded? true
 		content /
 			<= Items $mol_list
 				rows <= item_rows /

@@ -10,6 +10,14 @@ namespace $.$$ {
 			) as readonly $mol_view[]
 		}
 
+		override source_expanded( next?: boolean ) {
+			return this.$.$mol_state_session.value( 'vmap_shelf_source', next ) ?? super.source_expanded()
+		}
+
+		override parts_expanded( next?: boolean ) {
+			return this.$.$mol_state_session.value( 'vmap_shelf_parts', next ) ?? super.parts_expanded()
+		}
+
 		packs() {
 			return this.$.$bog_vmap_app_shelf_packs()
 		}

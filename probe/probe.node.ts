@@ -182,6 +182,114 @@ namespace $ {
 		return Math.abs( a - b ) <= tolerance
 	}
 
+	export const $bog_vmap_probe_folds = [
+		{ name: 'source', title: 'Пак компонентов' },
+		{ name: 'parts', title: 'Готовые детали' },
+	]
+
+	export async function $bog_vmap_probe_fold(
+		root: string,
+		say: ( line: string )=> void,
+		want: ( ok: boolean, note: string )=> void,
+	) {
+
+		const bin = $bog_probe_chrome_bin()
+		if( !bin ) return
+
+		const site = await new $bog_probe_static( root ).open()
+		const profile = String( $node.fs.mkdtempSync( $node.path.join( $node.os.tmpdir(), 'vmap-fold-' ) ) )
+		const browser = new $bog_probe_browser( bin, profile )
+
+		const at = '1280, «Ассеты», клик мышью:'
+
+		const point = async ( find: string )=> await browser.evaluate( `
+			const node = ${ find }
+			if( !node ) return null
+			node.scrollIntoView({ block: 'nearest' })
+			const box = node.getBoundingClientRect()
+			const x = box.left + box.width / 2
+			const y = box.top + box.height / 2
+			return node.contains( document.elementFromPoint( x, y ) ) ? [ x, y ] : null
+		`, 15000 ) as [ number, number ] | null
+
+		const mouse = ( type: string, [ x, y ]: readonly [ number, number ] )=> browser.send( 'Input.dispatchMouseEvent', {
+			type, x, y,
+			button: type === 'mouseMoved' ? 'none' : 'left',
+			buttons: type === 'mousePressed' ? 1 : 0,
+			clickCount: type === 'mouseMoved' ? 0 : 1,
+		}, browser.page )
+
+		const click = async ( find: string, note: string )=> {
+			const spot = await point( find )
+			if( !spot ) return $mol_fail( new Error( `${ at } в центре ${ note } не она сама, клик уйдёт мимо` ) )
+			await mouse( 'mouseMoved', spot )
+			await mouse( 'mousePressed', spot )
+			await mouse( 'mouseReleased', spot )
+		}
+
+		const away = async ()=> {
+			const spot = await point( `document.querySelector( '[bog_vmap_app_canvas_foot]' )` )
+			if( !spot ) return $mol_fail( new Error( `${ at } подвал Холста перекрыт, указатель увести некуда` ) )
+			await mouse( 'mouseMoved', spot )
+		}
+
+		const trigger = ( name: string )=> `document.querySelector( '[bog_vmap_app_shelf_${ name }_trigger]' )`
+		const content = ( name: string )=> `!!document.querySelector( '[bog_vmap_app_shelf_${ name }_content]' )`
+		const paint = ( name: string )=> `(()=>{ const style = getComputedStyle( ${ trigger( name ) } ); return style.backgroundColor + ' / ' + style.boxShadow })()`
+		const painted = async ( name: string )=> String( await browser.evaluate( `return ${ paint( name ) }`, 15000 ) )
+
+		try {
+
+			await browser.open()
+			await browser.viewport( 1280, 800 )
+			await browser.open_page( site.uri( $bog_vmap_probe_page ), $bog_vmap_probe_ready(), 150000 )
+
+			await click(
+				`[ ... document.querySelectorAll( '[bog_vmap_app_left_tabs_option]' ) ].find( node => node.textContent.includes( 'Ассеты' ) )`,
+				'вкладки «Ассеты»',
+			)
+			if( await browser.until( `!!document.querySelector( '[bog_vmap_app_shelf]' )`, 15000 ) < 0 ) {
+				return $mol_fail( new Error( `${ at } вкладка «Ассеты» не открыла Полку` ) )
+			}
+
+			await away()
+
+			for( const { name, title } of $bog_vmap_probe_folds ) {
+
+				const start = await painted( name )
+				want( Boolean( await browser.evaluate( `return ${ content( name ) }`, 15000 ) ), `${ at } у «${ title }» нет содержимого до клика` )
+
+				await click( trigger( name ), `галки «${ title }»` )
+				const folded = await browser.until( `!${ content( name ) }`, 5000 )
+				const under = await painted( name )
+				await away()
+				const cleared = await browser.until( `${ paint( name ) } === ${ JSON.stringify( start ) }`, 3000 )
+				const after = await painted( name )
+
+				want( folded >= 0, `${ at } клик по галке «${ title }» не убрал содержимое за 5000 мс` )
+				want( under !== start, `${ at } под указателем фон галки «${ title }» тот же, что до клика (${ start }): замер фона ничего не видит` )
+				want( cleared >= 0, `${ at } фон галки «${ title }» после отпускания и ухода указателя ${ after }, до клика ${ start }` )
+
+				await click( trigger( name ), `галки «${ title }»` )
+				const unfolded = await browser.until( content( name ), 5000 )
+				await away()
+				const again = await browser.until( `${ paint( name ) } === ${ JSON.stringify( start ) }`, 3000 )
+
+				want( unfolded >= 0, `${ at } второй клик по галке «${ title }» не вернул содержимое за 5000 мс` )
+				want( again >= 0, `${ at } фон галки «${ title }» после второго клика ${ await painted( name ) }, до клика ${ start }` )
+
+				say( `${ at } «${ title }» свернулась за ${ folded } мс, развернулась за ${ unfolded } мс; фон галки до клика ${ start }, под указателем ${ under }, после ухода ${ after }` )
+
+			}
+
+		} finally {
+			browser.close()
+			site.close()
+			try { $node.fs.rmSync( profile, { recursive: true, force: true } ) } catch( error ) {}
+		}
+
+	}
+
 	export async function $bog_vmap_probe_check( root = $node.process.cwd() ) {
 
 		const lines = [] as string[]
@@ -457,6 +565,8 @@ namespace $ {
 			)
 
 		}
+
+		await $bog_vmap_probe_fold( root, say, want )
 
 		if( broken.length ) return $mol_fail( new Error(
 			`Проба ровности, поломок ${ broken.length }:\n` + broken.join( '\n' )

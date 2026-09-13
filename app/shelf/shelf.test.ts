@@ -524,6 +524,65 @@ namespace $ {
 
 		},
 
+		'each group folds on a click of its heading and unfolds on the second, the other one stays as it was'( $ ) {
+
+			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
+			const dom = $.$mol_dom_context
+
+			const group = ( name: string )=> shelf.dom_tree().querySelector( `[bog_vmap_app_shelf_${ name }]` )!
+			const click = ( name: string )=> group( name ).querySelector( `[bog_vmap_app_shelf_${ name }_trigger]` )!
+				.dispatchEvent( new dom.MouseEvent( 'click', { bubbles: true, cancelable: true } ) )
+			const packs = ()=> group( 'source' ).querySelectorAll( '[bog_vmap_app_shelf_pack_row]' ).length
+			const items = ()=> group( 'parts' ).querySelectorAll( '[bog_vmap_app_shelf_item_row]' ).length
+
+			const all = [ packs(), items() ]
+
+			$mol_assert_ok( all[ 0 ] > 0 )
+			$mol_assert_ok( all[ 1 ] > 0 )
+
+			click( 'source' )
+			$mol_assert_like( [ packs(), items() ], [ 0, all[ 1 ] ] )
+			$mol_assert_equal( group( 'source' ).querySelector( '[bog_vmap_app_shelf_source_content]' ), null )
+
+			click( 'parts' )
+			$mol_assert_like( [ packs(), items() ], [ 0, 0 ] )
+
+			click( 'source' )
+			$mol_assert_like( [ packs(), items() ], [ all[ 0 ], 0 ] )
+
+			click( 'parts' )
+			$mol_assert_like( [ packs(), items() ], all )
+
+		},
+
+		'folded groups stay folded after a trip to the layers and back'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			const group = ( name: string )=> stage.root.querySelector( `[bog_vmap_app_shelf_${ name }]` )
+			const rows = ( name: string, row: string )=> group( name )?.querySelectorAll( row ).length ?? -1
+			const packs = ()=> rows( 'source', '[bog_vmap_app_shelf_pack_row]' )
+			const items = ()=> rows( 'parts', '[bog_vmap_app_shelf_item_row]' )
+			const fold = ( name: string )=> stage.click( group( name )!.querySelector( `[bog_vmap_app_shelf_${ name }_trigger]` )! )
+
+			stage.assets()
+			$mol_assert_ok( packs() > 0 )
+			$mol_assert_ok( items() > 0 )
+
+			fold( 'source' )
+			fold( 'parts' )
+			$mol_assert_like( [ packs(), items() ], [ 0, 0 ] )
+
+			stage.click( stage.check( 'Слои' ) )
+			$mol_assert_like( [ packs(), items() ], [ -1, -1 ] )
+
+			$mol_wire_fiber.sync()
+
+			stage.assets()
+			$mol_assert_like( [ packs(), items() ], [ 0, 0 ] )
+
+		},
+
 	})
 
 }
