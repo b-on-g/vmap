@@ -21224,6 +21224,9 @@ var $;
 		lib_link(){
 			return "";
 		}
+		foreign(){
+			return false;
+		}
 		sub(){
 			return (this.content());
 		}
@@ -21477,9 +21480,10 @@ var $;
             }
             publish_hint() {
                 const klass = this.class_name();
-                return klass
-                    ? `Опубликовать ${this.part()} в библиотеку как ${klass}`
-                    : 'Выберите деталь на холсте, чтобы опубликовать её в библиотеку';
+                if (!klass)
+                    return 'Выберите деталь на холсте, чтобы опубликовать её в библиотеку';
+                const hint = `Опубликовать ${this.part()} в библиотеку как ${klass}`;
+                return this.foreign() ? `${hint}. Это копия в вашу библиотеку, чужая сцена не меняется` : hint;
             }
             lib_link() {
                 return this.store().link();
@@ -33113,6 +33117,46 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$mol_chip) = class $mol_chip extends ($.$mol_view) {
+		hint(){
+			return "";
+		}
+		minimal_height(){
+			return 40;
+		}
+		attr(){
+			return {...(super.attr()), "title": (this.hint())};
+		}
+		sub(){
+			return [(this.title())];
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        $mol_style_define($mol_chip, {
+            padding: $mol_gap.text,
+            border: {
+                radius: $mol_gap.round,
+            },
+            background: {
+                color: $mol_theme.card,
+            },
+            gap: $mol_gap.block,
+        });
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
 	($.$bog_vmap_app_history_snap) = class $bog_vmap_app_history_snap extends ($.$mol_button_minor) {
 		back(next){
 			if(next !== undefined) return next;
@@ -33796,11 +33840,15 @@ var $;
 			const obj = new this.$.$mol_icon_artboard();
 			return obj;
 		}
+		editable(){
+			return true;
+		}
 		Tool_board(){
 			const obj = new this.$.$mol_check_icon();
 			(obj.Icon) = () => ((this.Tool_board_icon()));
 			(obj.hint) = () => ("Артборд: клик по холсту ставит страницу 1280×720, тяга — страницу этого размера. Клавиша F");
 			(obj.checked) = (next) => ((this.tool_board(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Tool_hand_icon(){
@@ -33817,7 +33865,7 @@ var $;
 		delete_hint(){
 			return "";
 		}
-		selection_showed(){
+		delete_enabled(){
 			return false;
 		}
 		node_delete(next){
@@ -33828,7 +33876,7 @@ var $;
 			const obj = new this.$.$mol_button_minor();
 			(obj.title) = () => ("Удалить");
 			(obj.hint) = () => ((this.delete_hint()));
-			(obj.enabled) = () => ((this.selection_showed()));
+			(obj.enabled) = () => ((this.delete_enabled()));
 			(obj.click) = (next) => ((this.node_delete(next)));
 			return obj;
 		}
@@ -33846,6 +33894,9 @@ var $;
 			(obj.sub) = () => ((this.instruments()));
 			return obj;
 		}
+		readonly_badge(){
+			return null;
+		}
 		root_draft(next){
 			if(next !== undefined) return next;
 			return "";
@@ -33857,6 +33908,7 @@ var $;
 		Root_name(){
 			const obj = new this.$.$mol_string();
 			(obj.attr) = () => ({...(this.$.$mol_string.prototype.attr.call(obj)), "inert": (this.doc_pending())});
+			(obj.enabled) = () => ((this.editable()));
 			(obj.hint) = () => ("Имя корневого класса");
 			(obj.value) = (next) => ((this.root_draft(next)));
 			(obj.submit) = (next) => ((this.root_submit(next)));
@@ -33910,6 +33962,9 @@ var $;
 			(obj.checked) = (next) => ((this.history_showed(next)));
 			return obj;
 		}
+		doc_readonly(){
+			return false;
+		}
 		publish_part(){
 			return "";
 		}
@@ -33923,6 +33978,7 @@ var $;
 		Publish(){
 			const obj = new this.$.$bog_vmap_app_publish();
 			(obj.attr) = () => ({...(this.$.$bog_vmap_app_publish.prototype.attr.call(obj)), "inert": (this.doc_pending())});
+			(obj.foreign) = () => ((this.doc_readonly()));
 			(obj.part) = () => ((this.publish_part()));
 			(obj.source) = () => ((this.node_source()));
 			(obj.js) = () => ((this.node_js()));
@@ -34077,6 +34133,7 @@ var $;
 		}
 		Pane(){
 			const obj = new this.$.$bog_vmap_app_pane();
+			(obj.editable) = () => ((this.editable()));
 			(obj.scene_bundle) = () => ((this.scene_bundle()));
 			(obj.pack_uri) = () => ((this.pack_script()));
 			(obj.theme) = () => ((this.scene_theme()));
@@ -34305,6 +34362,7 @@ var $;
 			return [
 				(this.Left_check()), 
 				(this.Instruments()), 
+				(this.readonly_badge()), 
 				(this.Root_name()), 
 				(this.Tools())
 			];
@@ -34356,11 +34414,13 @@ var $;
 			(obj.node_title) = (next) => ((this.node_title(next)));
 			(obj.node_title_note) = () => ((this.node_title_note()));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		Shelf(){
 			const obj = new this.$.$bog_vmap_app_shelf();
 			(obj.Title) = () => (null);
+			(obj.editable) = () => ((this.editable()));
 			(obj.links) = (next) => ((this.links(next)));
 			(obj.pack_link) = () => ((this.pack_link()));
 			(obj.land_classes) = () => ((this.lib_classes()));
@@ -34375,6 +34435,7 @@ var $;
 			(obj.pack) = () => ((this.pack_link()));
 			(obj.class_title) = (next) => ((this.node_title(next)));
 			(obj.title_note) = () => ((this.node_title_note()));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		Idle(){
@@ -34394,6 +34455,13 @@ var $;
 			(obj.js) = (next) => ((this.code_js(next)));
 			(obj.css) = (next) => ((this.code_css(next)));
 			(obj.error) = () => ((this.code_error()));
+			(obj.editable) = () => ((this.editable()));
+			return obj;
+		}
+		Readonly(){
+			const obj = new this.$.$mol_chip();
+			(obj.title) = () => ("Только просмотр");
+			(obj.hint) = () => ("Чужая сцена: смотреть, выделять и читать свойства и код можно, правки выключены. «В библиотеку» делает копию детали в вашу библиотеку");
 			return obj;
 		}
 		History(){
@@ -34549,6 +34617,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Inspect"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Idle"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Code"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Readonly"));
 	($mol_mem(($.$bog_vmap_app.prototype), "History"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Lib"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Status"));
@@ -34954,23 +35023,36 @@ var $;
                     return $mol_fail_hidden(error);
                 }
             }
-            doc_pending() {
+            store_stage() {
                 try {
-                    return this.store().stage() === 'making';
+                    return this.store().stage();
                 }
                 catch (error) {
                     if ($mol_promise_like(error))
-                        return true;
+                        return 'loading';
                     return $mol_fail_hidden(error);
                 }
             }
+            doc_pending() {
+                const stage = this.store_stage();
+                return stage === 'loading' || stage === 'making';
+            }
+            doc_readonly() {
+                return this.store_stage() === 'readonly';
+            }
+            editable() {
+                return !this.doc_readonly();
+            }
+            readonly_badge() {
+                return this.doc_readonly() ? this.Readonly() : null;
+            }
+            head() {
+                return super.head().filter(Boolean);
+            }
             store_note() {
                 if (this.doc_pending())
-                    return 'Документ заводится…';
-                switch (this.store().stage()) {
-                    case 'readonly': return 'чужая сцена: только просмотр, правки не сохраняются';
-                    default: return '';
-                }
+                    return 'Документ загружается…';
+                return this.doc_readonly() ? 'чужая сцена: только просмотр, правки не сохраняются' : '';
             }
             store_boot() {
                 try {
@@ -35010,8 +35092,8 @@ var $;
                 const picked = this.picked();
                 return picked.length ? picked[picked.length - 1] : null;
             }
-            selection_showed() {
-                return Boolean(this.selected());
+            delete_enabled() {
+                return this.editable() && Boolean(this.selected());
             }
             publish_part() {
                 return this.selected() ?? '';
@@ -35447,7 +35529,7 @@ var $;
                 return this.carry_guess();
             }
             carry_drop(next) {
-                if (!next)
+                if (!next || !this.editable())
                     return null;
                 const source = this.dragged();
                 if (!source)
@@ -35458,7 +35540,7 @@ var $;
                 return next;
             }
             files_drop(next) {
-                if (!next)
+                if (!next || !this.editable())
                     return null;
                 next.files.forEach((file, i) => this.file_place(file, next.x + i * 24, next.y + i * 24, next.owner ? { owner: next.owner, index: next.index + i } : null));
                 return next;
@@ -35606,7 +35688,7 @@ var $;
                 this.Pane().carry_at({ x, y });
             }
             shelf_place(next) {
-                const source = next && this.Shelf().item_source(next);
+                const source = next && this.editable() && this.Shelf().item_source(next);
                 if (source)
                     this.preset_place(source);
                 return '';
@@ -35635,7 +35717,7 @@ var $;
                 return name;
             }
             board_draw(next) {
-                if (!next)
+                if (!next || !this.editable())
                     return null;
                 const size = next.width || next.height ? next : this.board_size();
                 const name = this.board_new(size);
@@ -35646,7 +35728,7 @@ var $;
             }
             node_wrap() {
                 const picked = this.picked();
-                if (!picked.length)
+                if (!picked.length || !this.editable())
                     return null;
                 const node = this.node();
                 const pane = this.Pane();
@@ -35683,7 +35765,7 @@ var $;
             }
             node_copy() {
                 const picked = this.picked();
-                if (!picked.length)
+                if (!picked.length || !this.editable())
                     return null;
                 const node = this.node();
                 const pane = this.Pane();
@@ -35706,7 +35788,7 @@ var $;
             }
             node_delete() {
                 const picked = this.picked();
-                if (!picked.length)
+                if (!picked.length || !this.editable())
                     return;
                 const node = this.node();
                 const doomed = [...picked];
@@ -35896,10 +35978,12 @@ var $;
                 }
                 if (this.doc_pending())
                     return;
-                if (this.code_undo(event))
-                    return;
-                if (this.History().press(event))
-                    return;
+                if (this.editable()) {
+                    if (this.code_undo(event))
+                        return;
+                    if (this.History().press(event))
+                        return;
+                }
                 this.Pane().key_down(event);
             }
             key_release(event) {

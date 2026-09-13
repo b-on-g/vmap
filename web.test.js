@@ -16329,6 +16329,20 @@ var $;
             $mol_assert_equal(v.publish(), null);
             $mol_assert_equal(s.shelf(), null);
         },
+        'in somebody else scene the hint says publishing is a copy'($) {
+            const s = store($);
+            const own = view($, s, 'Button_minor', src_button);
+            const theirs = $bog_vmap_app_publish.make({
+                $,
+                store: () => s,
+                part: () => 'Button_minor',
+                source: () => src_button,
+                foreign: () => true,
+            });
+            $mol_assert_equal(theirs.enabled(), true);
+            $mol_assert_equal(theirs.publish_hint(), `${own.publish_hint()}. Это копия в вашу библиотеку, чужая сцена не меняется`);
+            $mol_assert_equal(own.publish_hint().includes('копия'), false);
+        },
         async 'the click publishes the pick and shows the link'($) {
             const s = store($);
             const v = view($, s, 'Button_minor', src_button);
@@ -18593,7 +18607,7 @@ var $;
                 for (const view of [app.Main(), app.Instruments(), app.Root_name(), app.Publish()]) {
                     $mol_assert_equal(view.dom_node_actual().hasAttribute('inert'), true);
                 }
-                $mol_assert_equal(app.status(), 'Документ заводится…');
+                $mol_assert_equal(app.status(), 'Документ загружается…');
             }
         },
         'a ready or a foreign document leaves the editor open'($) {
@@ -18634,6 +18648,75 @@ var $;
             const ready = make('ready');
             stroke(ready, 'KeyF');
             $mol_assert_equal(ready.Pane().tool(), 'board');
+        },
+        'every panel hears whether the scene may change'($) {
+            for (const [stage, editable] of [['ready', true], ['readonly', false], ['making', true]]) {
+                const app = $bog_vmap_app.make({
+                    $,
+                    store: () => $bog_vmap_app_store.make({ $, doc_land_config: () => null, stage: () => stage }),
+                });
+                const heard = [app.Pane(), app.Layers(), app.Shelf(), app.Inspect(), app.Code()].map(panel => panel.editable());
+                $mol_assert_like(heard, [editable, editable, editable, editable, editable]);
+                $mol_assert_equal(app.Publish().foreign(), stage === 'readonly');
+            }
+        },
+        'a read only scene says so in the head and switches its edit controls off'($) {
+            const make = (stage) => $bog_vmap_app.make({
+                $,
+                picked: (next) => next ?? ['Page'],
+                store: () => $bog_vmap_app_store.make({ $, doc_land_config: () => null, stage: () => stage }),
+            });
+            const theirs = make('readonly');
+            $mol_assert_equal(theirs.head().includes(theirs.Readonly()), true);
+            $mol_assert_equal(theirs.Readonly().title(), 'Только просмотр');
+            $mol_assert_like([theirs.Tool_board().enabled(), theirs.Delete().enabled(), theirs.Root_name().enabled()], [false, false, false]);
+            $mol_assert_like([theirs.Tool_select().enabled(), theirs.Tool_hand().enabled(), theirs.Zoom_in().enabled()], [true, true, true]);
+            const mine = make('ready');
+            $mol_assert_equal(mine.head().includes(mine.Readonly()), false);
+            $mol_assert_like([mine.Tool_board().enabled(), mine.Delete().enabled(), mine.Root_name().enabled()], [true, true, true]);
+        },
+        'a read only scene draws, copies, wraps and deletes nothing and picks no phantom'($) {
+            const source = `${d}my_site_page ${d}mol_view\n\tPage ${d}mol_view\n\tsub /\n\t\t<= Page\n`;
+            let picked = [];
+            const app = $bog_vmap_app.make({
+                $,
+                picked: (next) => next ? picked = next : picked,
+                store: () => $bog_vmap_app_store.make({
+                    $,
+                    doc_land_config: () => null,
+                    stage: () => 'readonly',
+                    source: () => source,
+                    spots: () => ({ Page: { x: 0, y: 0 } }),
+                }),
+            });
+            $mol_assert_equal(app.Pane().tool_board(true), false);
+            $mol_assert_equal(app.board_draw({ x: 400, y: 300, width: 0, height: 0 }), null);
+            $mol_assert_like(picked, []);
+            picked = ['Page'];
+            app.node_copy();
+            app.node_wrap();
+            app.node_delete();
+            $mol_assert_like(picked, ['Page']);
+            $mol_assert_equal(app.doc_source(), source);
+            $mol_assert_equal(app.selection_alive(), true);
+        },
+        'undo keys stay silent in a read only scene'($) {
+            const pressed = [];
+            const make = (stage) => {
+                const app = $bog_vmap_app.make({
+                    $,
+                    store: () => $bog_vmap_app_store.make({ $, doc_land_config: () => null, stage: () => stage }),
+                });
+                app.History().press = () => { pressed.push(stage); return true; };
+                return app;
+            };
+            const undo = {
+                code: 'KeyZ', key: 'z', metaKey: true, ctrlKey: false, altKey: false, shiftKey: false,
+                target: null, preventDefault() { },
+            };
+            make('readonly').key_press(undo);
+            make('ready').key_press(undo);
+            $mol_assert_like(pressed, ['ready']);
         },
         'an untouched document downloads as the empty page'($) {
             const app = $bog_vmap_app.make({ $ });

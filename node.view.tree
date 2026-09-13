@@ -465,6 +465,7 @@ $bog_vmap_app_publish $mol_view
 	doc \
 	classes /string
 	lib_link \
+	foreign false
 	sub <= content /$mol_view
 	Publish $mol_button_minor
 		title \В библиотеку
@@ -1837,6 +1838,14 @@ $bog_vmap_app_shelf $mol_page
 		click? <=> item_click*? null
 		drag_start? <=> item_drag*? null
 
+$mol_chip $mol_view
+	minimal_height 40
+	attr *
+		^
+		title <= hint \
+	sub /
+		<= title
+
 $bog_vmap_app_history_snap $mol_button_minor
 	moment \
 	author \
@@ -1949,6 +1958,7 @@ $bog_vmap_app $mol_page
 					Icon <= Tool_board_icon $mol_icon_artboard
 					hint \Артборд: клик по холсту ставит страницу 1280×720, тяга — страницу этого размера. Клавиша F
 					checked? <=> tool_board?
+					enabled <= editable true
 				<= Tool_hand $mol_check_icon
 					Icon <= Tool_hand_icon $mol_icon_hand_back_right_outline
 					hint \Рука: тяга двигает холст, пробел с тягой — то же на время. Клавиша H
@@ -1956,12 +1966,14 @@ $bog_vmap_app $mol_page
 				<= Delete $mol_button_minor
 					title \Удалить
 					hint <= delete_hint \
-					enabled <= selection_showed false
+					enabled <= delete_enabled false
 					click? <=> node_delete? null
+		<= readonly_badge null
 		<= Root_name $mol_string
 			attr *
 				^
 				inert <= doc_pending
+			enabled <= editable
 			hint \Имя корневого класса
 			value? <=> root_draft? \
 			submit? <=> root_submit? null
@@ -1990,6 +2002,7 @@ $bog_vmap_app $mol_page
 			attr *
 				^
 				inert <= doc_pending
+			foreign <= doc_readonly false
 			part <= publish_part \
 			source <= node_source? \
 			js <= node_js \
@@ -2035,6 +2048,7 @@ $bog_vmap_app $mol_page
 			<= Canvas_foot
 		body /
 			<= Pane $bog_vmap_app_pane
+				editable <= editable
 				scene_bundle <= scene_bundle
 				pack_uri <= pack_script \
 				theme <= scene_theme \
@@ -2075,8 +2089,10 @@ $bog_vmap_app $mol_page
 		node_title? <=> node_title?
 		node_title_note <= node_title_note
 		tree_move? <=> tree_move?
+		editable <= editable
 	Shelf $bog_vmap_app_shelf
 		Title null
+		editable <= editable
 		links? <=> links?
 		pack_link <= pack_link
 		land_classes <= lib_classes /$mol_tree2
@@ -2088,6 +2104,7 @@ $bog_vmap_app $mol_page
 		pack <= pack_link \
 		class_title? <=> node_title? \
 		title_note <= node_title_note \
+		editable <= editable
 	Idle $mol_page
 		title \Свойства
 		body /
@@ -2103,6 +2120,10 @@ $bog_vmap_app $mol_page
 		js? <=> code_js?
 		css? <=> code_css?
 		error <= code_error \
+		editable <= editable
+	Readonly $mol_chip
+		title \Только просмотр
+		hint \Чужая сцена: смотреть, выделять и читать свойства и код можно, правки выключены. «В библиотеку» делает копию детали в вашу библиотеку
 	History $bog_vmap_app_history
 		Title null
 		store <= store

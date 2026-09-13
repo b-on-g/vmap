@@ -447,6 +447,7 @@
     "$bog_vmap_lib_links",
     "$mol_button_open",
     "$mol_icon_upload",
+    "$mol_chip",
     "$bog_vmap_app_history",
     "$bog_vmap_app_history_snap",
     "$bog_vmap_app_export_zip",
