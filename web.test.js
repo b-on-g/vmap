@@ -12367,6 +12367,62 @@ var $;
 var $;
 (function ($_1) {
     const box = (x, y, width, height) => ({ x, y, width, height });
+    $mol_test({
+        'an edge within the slack pulls the box onto the edge of its neighbour'($) {
+            const snap = $bog_vmap_app_pane_snap(box(103, 300, 100, 50), [box(100, 0, 200, 100)], 6);
+            $mol_assert_equal(snap.dx, -3);
+            $mol_assert_equal(snap.dy, 0);
+            $mol_assert_like(snap.lines, [
+                { axis: 'x', at: 100, from: 0, to: 350 },
+                { axis: 'x', at: 200, from: 0, to: 350 },
+            ]);
+        },
+        'the nearest pair wins on each axis, and the axes snap apart'($) {
+            const snap = $bog_vmap_app_pane_snap(box(52, 205, 40, 40), [box(0, 0, 50, 50), box(200, 200, 60, 60)], 6);
+            $mol_assert_equal(snap.dx, -2);
+            $mol_assert_equal(snap.dy, -5);
+            $mol_assert_like(snap.lines, [
+                { axis: 'x', at: 50, from: 0, to: 240 },
+                { axis: 'y', at: 200, from: 50, to: 260 },
+            ]);
+        },
+        'a centre meets a centre'($) {
+            const snap = $bog_vmap_app_pane_snap(box(3, 0, 100, 40), [box(20, 100, 60, 60)], 6);
+            $mol_assert_equal(snap.dx, -3);
+            $mol_assert_equal(snap.dy, 0);
+            $mol_assert_like(snap.lines, [{ axis: 'x', at: 50, from: 0, to: 160 }]);
+        },
+        'beyond the slack nothing moves and no line is drawn, at the slack it snaps'($) {
+            const far = $bog_vmap_app_pane_snap(box(110, 300, 100, 50), [box(100, 0, 200, 100)], 6);
+            $mol_assert_equal(far.dx, 0);
+            $mol_assert_equal(far.dy, 0);
+            $mol_assert_like(far.lines, []);
+            const edge = $bog_vmap_app_pane_snap(box(110, 300, 100, 50), [box(100, 0, 200, 100)], 10);
+            $mol_assert_equal(edge.dx, -10);
+            $mol_assert_equal(edge.lines.length, 2);
+        },
+        'lines on one coordinate merge into one from end to end'($) {
+            const snap = $bog_vmap_app_pane_snap(box(100, 150, 50, 50), [box(100, 0, 50, 50), box(100, 300, 50, 50)], 6);
+            $mol_assert_equal(snap.dx, 0);
+            $mol_assert_equal(snap.dy, 0);
+            $mol_assert_like(snap.lines, [
+                { axis: 'x', at: 100, from: 0, to: 350 },
+                { axis: 'x', at: 125, from: 0, to: 350 },
+                { axis: 'x', at: 150, from: 0, to: 350 },
+            ]);
+        },
+        'with no neighbours the box stays where the pointer put it'($) {
+            const snap = $bog_vmap_app_pane_snap(box(7, 9, 10, 10), [], 6);
+            $mol_assert_like(snap, { dx: 0, dy: 0, lines: [] });
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    const box = (x, y, width, height) => ({ x, y, width, height });
     const column = [box(0, 0, 400, 100), box(0, 100, 400, 100), box(0, 200, 400, 100)];
     const row = [box(0, 0, 100, 300), box(100, 0, 100, 300), box(200, 0, 100, 300)];
     const board = box(0, 0, 400, 300);
@@ -12510,7 +12566,7 @@ var $;
         'a dropped part is carried by a drag across its body'($) {
             const stage = $bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([200, 150]));
-            $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 } });
             $mol_assert_equal(stage.pane.overlay_style().clipPath, 'none');
             const overlay = stage.overlay();
             const from = stage.part_center('Calc');
@@ -12518,7 +12574,7 @@ var $;
             stage.move(overlay, [from[0] + 60, from[1] + 40]);
             stage.release(overlay, [from[0] + 60, from[1] + 40]);
             stage.redraw();
-            $mol_assert_like(stage.app.spots(), { Calc: { x: 260, y: 190 } });
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 164, y: 114 } });
         },
         'the second click lets the pointer inside the part, Escape takes it back out'($) {
             const stage = $bog_vmap_app_flow_stage($);
@@ -12532,7 +12588,7 @@ var $;
             $mol_assert_equal(stage.scene.sent('click_at').length, before);
             stage.tap(stage.part_center('Calc'));
             $mol_assert_equal(stage.pane.inside(), true);
-            $mol_assert_ok(stage.pane.overlay_style().clipPath.includes('200px 150px'));
+            $mol_assert_ok(stage.pane.overlay_style().clipPath.includes('104px 74px'));
             $mol_assert_equal(stage.scene.sent('click_at').length, before + 1);
             const dom = $.$mol_dom_context;
             dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
@@ -12591,8 +12647,8 @@ var $;
             stage.release(overlay, [from[0] + 40, from[1] + 30]);
             stage.redraw();
             $mol_assert_like(stage.app.spots(), {
-                Calc: { x: 140, y: 130 },
-                Map: { x: 340, y: 130 },
+                Calc: { x: 44, y: 54 },
+                Map: { x: 244, y: 54 },
             });
             stage.click(stage.button('Удалить'));
             const source = stage.app.doc_source();
@@ -12684,8 +12740,8 @@ var $;
             $mol_assert_equal(stage.app.selected(), 'Calc');
             stage.drop(map, stage.client([400, 300]));
             $mol_assert_like(stage.app.spots(), {
-                Calc: { x: 100, y: 100 },
-                Map: { x: 400, y: 300 },
+                Calc: { x: 4, y: 24 },
+                Map: { x: 304, y: 224 },
             });
         },
         'a part inside a page is carried to another position in its tree'($) {
@@ -14495,7 +14551,7 @@ var $;
             stage.release(overlay, [from[0] + 60, from[1] + 40]);
             stage.redraw();
             $mol_assert_like([...stage.pane.camera_shift()], [60, 40]);
-            $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 } });
             $mol_assert_like([...stage.app.picked()], ['Calc']);
         },
         'the space bar pans over a node, and a drag begun before it stays a drag'($) {
@@ -14510,7 +14566,7 @@ var $;
             stage.redraw();
             stage.pane.key_up(stroke('Space'));
             $mol_assert_like([...stage.pane.camera_shift()], [60, 40]);
-            $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 } });
             from = stage.part_center('Calc');
             stage.press(overlay, from);
             stage.move(overlay, [from[0] + 10, from[1]]);
@@ -14520,7 +14576,7 @@ var $;
             stage.redraw();
             stage.pane.key_up(stroke('Space'));
             $mol_assert_like([...stage.pane.camera_shift()], [60, 40]);
-            $mol_assert_like(stage.app.spots(), { Calc: { x: 230, y: 170 } });
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 134, y: 94 } });
         },
         'the held hand lifts the hole over the entered node, and lets it back'($) {
             const stage = $bog_vmap_app_flow_stage($);
@@ -14599,6 +14655,172 @@ var $;
             $mol_assert_equal(stage.app.selected(), 'Calc');
             stage.pane.key_down(stroke('Escape', { target: stage.pane.dom_node() }));
             $mol_assert_equal(stage.app.selected(), null);
+        },
+    });
+})($ || ($ = {}));
+(function ($_6) {
+    const d = '$';
+    const root = `${d}bog_vmap_app_snap`;
+    const calc = `${d}flow_calc`;
+    const map = `${d}flow_map`;
+    const box = (x, y, width = 100, height = 50) => ({ x, y, width, height });
+    const pane_make = ($, boxes, over = {}) => {
+        const peer = { origin: 'null', postMessage() { } };
+        const pane = $$.$bog_vmap_app_pane.make({
+            $,
+            doc_root: () => root,
+            doc_names: () => Object.keys(boxes),
+            pane_rect: () => ({ left: 0, top: 0, width: 1000, height: 800 }),
+            scene_peer: () => peer,
+            ...over,
+        });
+        const sizes = {};
+        const spots = {};
+        for (const name of Object.keys(boxes)) {
+            sizes[`${root}/${name}`] = boxes[name];
+            spots[name] = { x: boxes[name].x, y: boxes[name].y };
+        }
+        pane.sizes(sizes);
+        pane.spots(spots);
+        return pane;
+    };
+    const pointer = (clientX, clientY, over = {}) => ({
+        button: 0,
+        buttons: 1,
+        pointerId: 1,
+        clientX,
+        clientY,
+        altKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        shiftKey: false,
+        preventDefault() { },
+        ...over,
+    });
+    $mol_test({
+        'a dragged node snaps its edge onto its neighbour, the guides follow and go on release'($) {
+            const pane = pane_make($, { A: box(0, 0), B: box(300, 200) });
+            pane.node_press(pointer(50, 25));
+            pane.node_move(pointer(347, 129));
+            $mol_assert_like(pane.spots()['A'], { x: 300, y: 104 });
+            $mol_assert_like(pane.guides(), [
+                { axis: 'x', at: 300, from: 104, to: 250 },
+                { axis: 'x', at: 350, from: 104, to: 250 },
+                { axis: 'x', at: 400, from: 104, to: 250 },
+            ]);
+            pane.node_release(pointer(347, 129, { buttons: 0 }));
+            $mol_assert_like(pane.spots()['A'], { x: 300, y: 104 });
+            $mol_assert_like(pane.guides(), []);
+        },
+        'Cmd or Ctrl held during a drag lets the node free of its neighbours, Alt does not'($) {
+            const pane = pane_make($, { A: box(0, 0), B: box(300, 200) });
+            pane.node_press(pointer(50, 25));
+            pane.node_move(pointer(347, 129, { metaKey: true }));
+            $mol_assert_like(pane.spots()['A'], { x: 297, y: 104 });
+            $mol_assert_like(pane.guides(), []);
+            pane.node_move(pointer(347, 129, { altKey: true }));
+            $mol_assert_like(pane.spots()['A'], { x: 300, y: 104 });
+            $mol_assert_equal(pane.guides().length, 3);
+            pane.node_move(pointer(347, 129, { ctrlKey: true }));
+            $mol_assert_like(pane.spots()['A'], { x: 297, y: 104 });
+            $mol_assert_like(pane.guides(), []);
+            pane.node_move(pointer(347, 129));
+            $mol_assert_like(pane.spots()['A'], { x: 300, y: 104 });
+            $mol_assert_equal(pane.guides().length, 3);
+        },
+        'the slack is counted in pixels of the screen, not of the world'($) {
+            const near = pane_make($, { A: box(0, 0), B: box(300, 200) });
+            near.node_press(pointer(50, 25));
+            near.node_move(pointer(346, 129));
+            $mol_assert_like(near.spots()['A'], { x: 300, y: 104 });
+            const zoomed = pane_make($, { A: box(0, 0), B: box(300, 200) });
+            zoomed.camera_zoom(2);
+            zoomed.node_press(pointer(100, 50));
+            zoomed.node_move(pointer(692, 258));
+            $mol_assert_like(zoomed.spots()['A'], { x: 296, y: 104 });
+            $mol_assert_like(zoomed.guides(), []);
+            zoomed.node_move(pointer(698, 258));
+            $mol_assert_like(zoomed.spots()['A'], { x: 300, y: 104 });
+            $mol_assert_like(zoomed.guide_style(0), { left: '600px', top: '208px', width: '1px', height: '292px' });
+        },
+        'a neighbour off the screen does not pull'($) {
+            const pane = pane_make($, { A: box(0, 0), B: box(1200, 0) });
+            pane.node_press(pointer(50, 25));
+            pane.node_move(pointer(1147, 25));
+            $mol_assert_like(pane.spots()['A'], { x: 1097, y: 0 });
+            $mol_assert_like(pane.guides(), []);
+        },
+        'a picked set snaps as one box'($) {
+            const pane = pane_make($, { A: box(0, 0), B: box(0, 100, 160, 50), C: box(300, 400) });
+            pane.picked(['A', 'B']);
+            pane.node_press(pointer(50, 25));
+            pane.node_move(pointer(187, 25));
+            $mol_assert_like(pane.spots(), { A: { x: 140, y: 0 }, B: { x: 140, y: 100 }, C: { x: 300, y: 400 } });
+            $mol_assert_like(pane.guides(), [{ axis: 'x', at: 300, from: 0, to: 450 }]);
+        },
+        'over a container the guides give way to the insertion line'($) {
+            const pane = pane_make($, { A: box(0, 0), B: box(300, 200), P: box(500, 500, 300, 200) }, { containers: () => ['P'] });
+            pane.node_press(pointer(50, 25));
+            pane.node_move(pointer(347, 129));
+            $mol_assert_equal(pane.guides().length, 3);
+            pane.node_move(pointer(600, 600));
+            $mol_assert_ok(pane.slot() !== null);
+            $mol_assert_like(pane.guides(), []);
+        },
+        'the guides are drawn on the canvas while a part is dragged, and go on release'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const overlay = stage.overlay();
+            const guides = () => [...stage.root.querySelectorAll('[bog_vmap_app_pane_guide]')];
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([400, 300]));
+            stage.app.spots({ Calc: { x: 100, y: 100 }, Map: { x: 300, y: 300 } });
+            stage.redraw();
+            stage.scene.flush();
+            const from = stage.part_center('Calc');
+            stage.press(overlay, from);
+            stage.move(overlay, [from[0] + 203, from[1] + 50], { metaKey: true });
+            stage.redraw();
+            $mol_assert_like(stage.app.spots()['Calc'], { x: 303, y: 150 });
+            $mol_assert_equal(guides().length, 0);
+            stage.move(overlay, [from[0] + 203, from[1] + 50]);
+            stage.redraw();
+            $mol_assert_like(stage.app.spots()['Calc'], { x: 300, y: 150 });
+            $mol_assert_equal(guides().length, 3);
+            const line = guides()[0].style;
+            $mol_assert_like([line.left, line.top, line.width, line.height], ['300px', '150px', '1px', '200px']);
+            stage.release(overlay, [from[0] + 203, from[1] + 50]);
+            stage.redraw();
+            $mol_assert_like(stage.app.spots()['Calc'], { x: 300, y: 150 });
+            $mol_assert_equal(guides().length, 0);
+        },
+        'a part from the shelf lands centred by a guess, and exactly once its kind is measured'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 } });
+            stage.drop(calc, stage.client([400, 300]));
+            $mol_assert_like(stage.app.spots()['Calc_2'], { x: 350, y: 275 });
+            const box = stage.pane.part_box('Calc_2');
+            $mol_assert_like([box.left + box.width / 2, box.top + box.height / 2], [400, 300]);
+        },
+        'the measure is taken from the same declaration, not from the same class'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            const node = stage.app.node();
+            node.over_set('Calc', 'op', node.tree().struct('op', [node.tree().data('minus')]));
+            stage.redraw();
+            stage.scene.flush();
+            stage.drop(calc, stage.client([400, 300]));
+            $mol_assert_like(stage.app.spots()['Calc_2'], { x: 304, y: 224 });
+        },
+        'a part nested in a board gives no measure to a free one'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.app.board_draw({ x: 0, y: 0, width: 400, height: 300 });
+            stage.redraw();
+            stage.scene.flush();
+            stage.drop(calc, stage.client([100, 100]));
+            $mol_assert_like(stage.app.node().sub_names('Page'), ['Calc']);
+            stage.drop(calc, stage.client([500, 400]));
+            $mol_assert_like(stage.app.spots()['Calc_2'], { x: 404, y: 324 });
         },
     });
 })($ || ($ = {}));
@@ -17381,13 +17603,13 @@ var $;
             $mol_assert_equal(app.spots()['Button_minor'], undefined);
             app.part_drop(`${d}mol_string`, 2000, 100);
             $mol_assert_like(app.node().sub_names(), ['Page', 'String']);
-            $mol_assert_like(app.spots()['String'], { x: 2000, y: 100 });
+            $mol_assert_like(app.spots()['String'], { x: 1904, y: 24 });
         },
         'a part carried into an artboard leaves the placement'($) {
             const app = $bog_vmap_app.make({ $ });
             app.board_draw(clicked);
             app.part_drop(`${d}mol_button_minor`, 2000, 100);
-            $mol_assert_like(app.spots()['Button_minor'], { x: 2000, y: 100 });
+            $mol_assert_like(app.spots()['Button_minor'], { x: 1904, y: 24 });
             app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 });
             $mol_assert_like(app.node().sub_names('Page'), ['Button_minor']);
             $mol_assert_like(app.node().sub_names(), ['Page']);
@@ -17839,7 +18061,7 @@ var $;
             stage.tap(stage.part_center('Calc'));
             stage.tap(stage.part_center('Calc'));
             $mol_assert_equal(stage.pane.inside(), true);
-            $mol_assert_ok(stage.pane.overlay_style().clipPath.includes('200px 150px'));
+            $mol_assert_ok(stage.pane.overlay_style().clipPath.includes('104px 74px'));
             const first = stage.store.doc_current().link().str;
             stage.click(stage.button('Новая сцена'));
             await $bog_vmap_app_flow_settle(() => stage.store.doc_links().length > 1);
@@ -18581,7 +18803,7 @@ var $;
             const source = stage.app.doc_source();
             $mol_assert_ok(source.includes(`Calc ${calc}`));
             $mol_assert_ok(source.includes('<= Calc'));
-            $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 } });
             $mol_assert_equal(stage.scene.last('doc_set').src, source);
             $mol_assert_equal(stage.app.selected(), 'Calc');
             $mol_assert_ok(stage.root.querySelector('[bog_vmap_app_pane_handle]') !== null);
@@ -18589,8 +18811,8 @@ var $;
             stage.tap(stage.part_center('Calc'));
             $mol_assert_equal(stage.app.selected(), 'Calc');
             const click = stage.scene.last('click_at');
-            $mol_assert_equal(click.x, 250);
-            $mol_assert_equal(click.y, 175);
+            $mol_assert_equal(click.x, 154);
+            $mol_assert_equal(click.y, 99);
         },
         'a value typed into the inspector goes into the document and to the scene'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
@@ -18708,7 +18930,7 @@ var $;
             scenes.current(first);
             stage.redraw();
             $mol_assert_equal(stage.app.doc_source(), source);
-            $mol_assert_like(stage.app.spots(), { Calc: { x: 200, y: 150 } });
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 } });
         },
         'the frame is raised from markup and carries no address'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
@@ -18806,7 +19028,7 @@ var $;
             $mol_assert_ok(stage.text().includes('100%'));
             const size = $_2.$bog_vmap_app_flow_size;
             const shift = stage.pane.camera_shift();
-            $mol_assert_like([300 + size.width / 2 + shift[0], 100 + size.height / 2 + shift[1]], [$_2.$bog_vmap_app_flow_rect.width / 2, $_2.$bog_vmap_app_flow_rect.height / 2]);
+            $mol_assert_like([204 + size.width / 2 + shift[0], 24 + size.height / 2 + shift[1]], [$_2.$bog_vmap_app_flow_rect.width / 2, $_2.$bog_vmap_app_flow_rect.height / 2]);
             $mol_assert_equal(stage.app.doc_source(), source);
         },
         'a page takes the parts dropped into it and stacks them the way it is set'($) {
@@ -19206,9 +19428,9 @@ var $;
             stage.scene.hello();
             stage.drop(card, stage.client([200, 150]));
             $mol_assert_ok(stage.app.doc_source().includes(`Builderui_card ${card}`));
-            $mol_assert_like(stage.app.spots(), { Builderui_card: { x: 200, y: 150 } });
+            $mol_assert_like(stage.app.spots(), { Builderui_card: { x: 104, y: 74 } });
             $mol_assert_like(stage.pane.part_box('Builderui_card'), {
-                left: 200, top: 150, width: 100, height: 50,
+                left: 104, top: 74, width: 100, height: 50,
             });
         },
         'a pack taken back gives the editor its own parts again'($) {
@@ -19319,13 +19541,13 @@ var $;
             const copy = pressed($, stage, 'KeyD', { metaKey: true });
             $mol_assert_equal(copy.defaultPrevented, true);
             $mol_assert_ok(stage.app.doc_source().includes(`Calc_2 ${calc}`));
-            $mol_assert_like(stage.app.spots()['Calc_2'], { x: 324, y: 150 });
+            $mol_assert_like(stage.app.spots()['Calc_2'], { x: 228, y: 74 });
             $mol_assert_like([...stage.app.picked()], ['Calc_2']);
             $mol_assert_like(stage.app.node().sub_names(), ['Calc', 'Calc_2']);
             await stepped(stage);
             const once = stage.app.doc_source();
             pressed($, stage, 'KeyD', { ctrlKey: true });
-            $mol_assert_like(stage.app.spots()['Calc_3'], { x: 448, y: 150 });
+            $mol_assert_like(stage.app.spots()['Calc_3'], { x: 352, y: 74 });
             $mol_assert_like([...stage.app.picked()], ['Calc_3']);
             await stepped(stage);
             undone(stage);

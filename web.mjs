@@ -34165,6 +34165,9 @@ var $;
 		draft_style(){
 			return {};
 		}
+		guide_style(id){
+			return {};
+		}
 		Touch(){
 			const obj = new this.$.$mol_touch();
 			(obj.allow_draw) = () => (false);
@@ -34449,6 +34452,11 @@ var $;
 			(obj.style) = () => ((this.draft_style()));
 			return obj;
 		}
+		Guide(id){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.guide_style(id)));
+			return obj;
+		}
 		plugins(){
 			return [...(super.plugins()), (this.Touch())];
 		}
@@ -34502,6 +34510,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Insert"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Band"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Draft"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Guide"));
 	($.$bog_vmap_app_pane_overlay) = class $bog_vmap_app_pane_overlay extends ($.$mol_view) {
 		press(next){
 			if(next !== undefined) return next;
@@ -34662,6 +34671,64 @@ var $;
         };
     }
     $.$bog_vmap_app_pane_screen = $bog_vmap_app_pane_screen;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $bog_vmap_app_pane_snap_stops(box, axis) {
+        const start = axis === 'x' ? box.x : box.y;
+        const size = axis === 'x' ? box.width : box.height;
+        return [start, start + size / 2, start + size];
+    }
+    $.$bog_vmap_app_pane_snap_stops = $bog_vmap_app_pane_snap_stops;
+    function $bog_vmap_app_pane_snap_gap(mine, theirs, slack) {
+        let best = null;
+        for (const from of mine)
+            for (const to of theirs) {
+                const gap = to - from;
+                if (Math.abs(gap) > slack)
+                    continue;
+                if (best !== null && Math.abs(gap) >= Math.abs(best))
+                    continue;
+                best = gap;
+            }
+        return best ?? 0;
+    }
+    $.$bog_vmap_app_pane_snap_gap = $bog_vmap_app_pane_snap_gap;
+    function $bog_vmap_app_pane_snap(moving, others, slack) {
+        const stops = $bog_vmap_app_pane_snap_stops;
+        const dx = $bog_vmap_app_pane_snap_gap(stops(moving, 'x'), others.flatMap(box => stops(box, 'x')), slack);
+        const dy = $bog_vmap_app_pane_snap_gap(stops(moving, 'y'), others.flatMap(box => stops(box, 'y')), slack);
+        const placed = { x: moving.x + dx, y: moving.y + dy, width: moving.width, height: moving.height };
+        const lines = new Map();
+        const touch = (axis, at, from, to) => {
+            const key = axis + ' ' + at;
+            const was = lines.get(key);
+            lines.set(key, {
+                axis,
+                at,
+                from: Math.min(from, was?.from ?? from),
+                to: Math.max(to, was?.to ?? to),
+            });
+        };
+        const near = (a, b) => Math.abs(a - b) < 1e-6;
+        for (const other of others) {
+            for (const axis of ['x', 'y']) {
+                const cross = axis === 'x' ? 'y' : 'x';
+                const mine = stops(placed, axis);
+                for (const at of stops(other, axis)) {
+                    if (!mine.some(stop => near(stop, at)))
+                        continue;
+                    const span = [...stops(placed, cross), ...stops(other, cross)];
+                    touch(axis, at, Math.min(...span), Math.max(...span));
+                }
+            }
+        }
+        return { dx, dy, lines: [...lines.values()] };
+    }
+    $.$bog_vmap_app_pane_snap = $bog_vmap_app_pane_snap;
 })($ || ($ = {}));
 
 ;
@@ -34863,6 +34930,7 @@ var $;
                     ...this.slot() ? [this.Insert()] : [],
                     ...this.band() ? [this.Band()] : [],
                     ...this.draft() ? [this.Draft()] : [],
+                    ...this.guide_views(),
                 ];
             }
             scene_shown(next) {
@@ -35037,6 +35105,67 @@ var $;
             }
             drag(next) {
                 return next ?? null;
+            }
+            snap_slack() {
+                return 6;
+            }
+            snap_off(event) {
+                return Boolean(event.metaKey || event.ctrlKey);
+            }
+            spot_box(name) {
+                const size = this.part_size(name);
+                if (!size)
+                    return null;
+                const spot = this.spots()[name];
+                if (!spot)
+                    return size;
+                return { x: spot.x, y: spot.y, width: size.width, height: size.height };
+            }
+            snap_boxes(moving) {
+                const rect = this.pane_rect();
+                const zoom = this.camera_zoom();
+                const shift = this.camera_shift();
+                const boxes = [];
+                for (const name of this.free_names()) {
+                    if (name in moving)
+                        continue;
+                    const box = this.spot_box(name);
+                    if (!box || !(box.width > 0) || !(box.height > 0))
+                        continue;
+                    const screen = this.$.$bog_vmap_app_pane_screen(box, zoom, shift);
+                    if (screen.left + screen.width < 0 || screen.top + screen.height < 0)
+                        continue;
+                    if (screen.left > rect.width || screen.top > rect.height)
+                        continue;
+                    boxes.push(box);
+                }
+                return boxes;
+            }
+            snap_at(box, moving, shift) {
+                if (!box)
+                    return null;
+                return this.$.$bog_vmap_app_pane_snap({ x: box.x + shift[0], y: box.y + shift[1], width: box.width, height: box.height }, this.snap_boxes(moving), this.snap_slack() / this.camera_zoom());
+            }
+            guides(next) {
+                return next ?? [];
+            }
+            guide_views() {
+                return this.guides().map((line, index) => this.Guide(index));
+            }
+            guide_style(index) {
+                const line = this.guides()[index];
+                if (!line)
+                    return {};
+                const box = line.axis === 'x'
+                    ? { x: line.at, y: line.from, width: 0, height: line.to - line.from }
+                    : { x: line.from, y: line.at, width: line.to - line.from, height: 0 };
+                const rect = this.$.$bog_vmap_app_pane_screen(box, this.camera_zoom(), this.camera_shift());
+                return {
+                    left: rect.left + 'px',
+                    top: rect.top + 'px',
+                    width: Math.max(rect.width, 1) + 'px',
+                    height: Math.max(rect.height, 1) + 'px',
+                };
             }
             press(next) {
                 return next ?? null;
@@ -35367,6 +35496,7 @@ var $;
                     grab: point,
                     sizes: this.sizes(),
                     nested: this.node_path(name).length > 0,
+                    box: this.box_union(Object.keys(spots).flatMap(picked => this.spot_box(picked) ?? [])),
                 });
                 try {
                     this.Overlay().dom_node().setPointerCapture(event.pointerId);
@@ -35496,13 +35626,20 @@ var $;
                 const point = this.world_point(event);
                 const slot = this.insert_slot(point, drag.name);
                 this.slot(slot);
-                if (slot || drag.nested)
+                if (slot || drag.nested) {
+                    this.guides([]);
                     return;
+                }
+                const shift = [point[0] - drag.grab[0], point[1] - drag.grab[1]];
+                const snap = this.snap_off(event) ? null : this.snap_at(drag.box, drag.spots, shift);
+                this.guides(snap?.lines ?? []);
+                const dx = shift[0] + (snap?.dx ?? 0);
+                const dy = shift[1] + (snap?.dy ?? 0);
                 const next = { ...this.spots() };
                 for (const name of Object.keys(drag.spots)) {
                     next[name] = {
-                        x: drag.spots[name].x + point[0] - drag.grab[0],
-                        y: drag.spots[name].y + point[1] - drag.grab[1],
+                        x: drag.spots[name].x + dx,
+                        y: drag.spots[name].y + dy,
                     };
                 }
                 this.spots(next);
@@ -35541,6 +35678,7 @@ var $;
                     if (drag && slot)
                         this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index });
                     this.drag(null);
+                    this.guides([]);
                     try {
                         this.Overlay().dom_node().releasePointerCapture(event.pointerId);
                     }
@@ -36125,6 +36263,12 @@ var $;
         ], $bog_vmap_app_pane.prototype, "drag", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app_pane.prototype, "guides", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "guide_style", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_app_pane.prototype, "press", null);
         __decorate([
             $mol_action
@@ -36282,7 +36426,8 @@ var $;
             position: 'relative',
             flex: { grow: 1 },
             overflow: 'hidden',
-            background: { color: $mol_theme.back },
+            '--bog_vmap_board': `color-mix( in oklch, ${$mol_theme.back}, ${$mol_theme.shade} 25% )`,
+            background: { color: $mol_style_func.vary('--bog_vmap_board') },
             Scene: {
                 position: 'absolute',
                 top: 0,
@@ -36313,6 +36458,12 @@ var $;
             Draft: {
                 position: 'absolute',
                 outline: '1px solid ' + String($mol_theme.focus),
+                pointerEvents: 'none',
+                transition: 'none',
+            },
+            Guide: {
+                position: 'absolute',
+                background: { color: $mol_theme.special },
                 pointerEvents: 'none',
                 transition: 'none',
             },
@@ -41801,6 +41952,26 @@ var $;
                 this.spots(spots);
                 return next;
             }
+            carry_guess() {
+                return { width: 192, height: 152 };
+            }
+            carry_size(source) {
+                const preset = this.$.$bog_vmap_lang_node.make({ $: this.$, source: () => source });
+                const top = preset.sub_names('')?.find(Boolean);
+                const decl = top ? preset.prop_decl(top)?.kids[0]?.toString() : '';
+                const node = this.node();
+                if (decl)
+                    for (const name of node.sub_names('') ?? []) {
+                        if (!name)
+                            continue;
+                        if (node.prop_decl(name)?.kids[0]?.toString() !== decl)
+                            continue;
+                        const box = this.Pane().part_size(name);
+                        if (box)
+                            return box;
+                    }
+                return this.carry_guess();
+            }
             carry_drop(next) {
                 if (!next)
                     return null;
@@ -41808,7 +41979,8 @@ var $;
                 if (!source)
                     return null;
                 this.Shelf().dragged('');
-                this.preset_apply(source, next.x, next.y, next.owner ? { owner: next.owner, index: next.index } : null);
+                const size = next.owner ? null : this.carry_size(source);
+                this.preset_apply(source, next.x - (size?.width ?? 0) / 2, next.y - (size?.height ?? 0) / 2, next.owner ? { owner: next.owner, index: next.index } : null);
                 return next;
             }
             files_drop(next) {

@@ -45221,6 +45221,24 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    type $bog_vmap_app_pane_snap_axis = 'x' | 'y';
+    type $bog_vmap_app_pane_snap_line = {
+        readonly axis: $bog_vmap_app_pane_snap_axis;
+        readonly at: number;
+        readonly from: number;
+        readonly to: number;
+    };
+    type $bog_vmap_app_pane_snap = {
+        readonly dx: number;
+        readonly dy: number;
+        readonly lines: readonly $bog_vmap_app_pane_snap_line[];
+    };
+    function $bog_vmap_app_pane_snap_stops(box: $bog_vmap_bridge_rect, axis: $bog_vmap_app_pane_snap_axis): number[];
+    function $bog_vmap_app_pane_snap_gap(mine: readonly number[], theirs: readonly number[], slack: number): number;
+    function $bog_vmap_app_pane_snap(moving: $bog_vmap_bridge_rect, others: readonly $bog_vmap_bridge_rect[], slack: number): $bog_vmap_app_pane_snap;
+}
+
+declare namespace $ {
     type $bog_vmap_app_pane_slot = {
         readonly owner: string;
         readonly index: number;
@@ -45373,6 +45391,11 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['style'] >
 	>
+	type $mol_view__style_bog_vmap_app_pane_28 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['guide_style'] >
+		,
+		ReturnType< $mol_view['style'] >
+	>
 	export class $bog_vmap_app_pane extends $mol_view {
 		file_over( next?: any ): any
 		file_take( next?: any ): any
@@ -45399,6 +45422,7 @@ declare namespace $ {
 		insert_style( ): Record<string, any>
 		band_style( ): Record<string, any>
 		draft_style( ): Record<string, any>
+		guide_style( id: any): Record<string, any>
 		Touch( ): $mol_touch
 		attr( ): ({ 
 			'tabindex': string,
@@ -45478,6 +45502,7 @@ declare namespace $ {
 		Insert( ): $mol_view
 		Band( ): $mol_view
 		Draft( ): $mol_view
+		Guide( id: any): $mol_view
 		plugins( ): readonly(any)[]
 	}
 	
@@ -45707,6 +45732,7 @@ declare namespace $.$$ {
                 readonly [node: string]: $bog_vmap_bridge_rect;
             };
             nested: boolean;
+            box: $bog_vmap_bridge_rect | null;
         } | null): {
             name: string;
             spots: {
@@ -45720,7 +45746,22 @@ declare namespace $.$$ {
                 readonly [node: string]: $bog_vmap_bridge_rect;
             };
             nested: boolean;
+            box: $bog_vmap_bridge_rect | null;
         } | null;
+        snap_slack(): number;
+        snap_off(event: PointerEvent): boolean;
+        spot_box(name: string): $bog_vmap_bridge_rect | null;
+        snap_boxes(moving: {
+            readonly [name: string]: unknown;
+        }): $bog_vmap_bridge_rect[];
+        snap_at(box: $bog_vmap_bridge_rect | null, moving: {
+            readonly [name: string]: unknown;
+        }, shift: readonly [number, number]): $bog_vmap_app_pane_snap | null;
+        guides(next?: readonly $bog_vmap_app_pane_snap_line[]): readonly $bog_vmap_app_pane_snap_line[];
+        guide_views(): $mol_view[];
+        guide_style(index: number): {
+            readonly [prop: string]: string;
+        };
         press(next?: {
             screen: readonly [number, number];
             world: readonly [number, number];
@@ -55488,6 +55529,14 @@ declare namespace $.$$ {
         doc_containers(): string[];
         doc_axis(name: string): string;
         tree_move(next?: $bog_vmap_app_pane_tree_move | null): $bog_vmap_app_pane_tree_move | null;
+        carry_guess(): {
+            width: number;
+            height: number;
+        };
+        carry_size(source: string): {
+            readonly width: number;
+            readonly height: number;
+        };
         carry_drop(next?: $bog_vmap_app_pane_carry | null): $bog_vmap_app_pane_carry | null;
         files_drop(next?: $bog_vmap_app_pane_files | null): $bog_vmap_app_pane_files | null;
         file_place(file: File, x: number, y: number, slot: {
