@@ -6,6 +6,8 @@ namespace $.$$ {
 		readonly kids: readonly string[] | null
 	}
 
+	type flags = { readonly [ name: string ]: boolean }
+
 	const kinds: { readonly [ word: string ]: string } = {
 		image: 'image',
 		link: 'link',
@@ -114,9 +116,16 @@ namespace $.$$ {
 			return this.expanded_at( name, next )
 		}
 
-		@ $mol_mem_key
 		expanded_at( name: string, next?: boolean ) {
-			return next ?? true
+			const open: flags = this.$.$mol_state_session.value< flags | null >( 'vmap_layers_open' ) ?? {}
+			if( next === undefined ) return open[ name ] ?? true
+
+			this.$.$mol_state_session.value( 'vmap_layers_open', { ... open, [ name ]: next } )
+			return next
+		}
+
+		override outside_expanded( next?: boolean ) {
+			return this.$.$mol_state_session.value( 'vmap_layers_outside', next ) ?? super.outside_expanded()
 		}
 
 		override row_name( name: string ) {
@@ -283,8 +292,9 @@ namespace $.$$ {
 
 		zone_at( name: string, share: number ) {
 			if( !name ) return 'inside'
+			if( !this.row_within( '', name ) ) return ''
 			if( this.layers().get( name )?.kids && share >= .5 ) return 'inside'
-			return this.row_holder( name ) === null ? '' : 'before'
+			return 'before'
 		}
 
 		@ $mol_action
@@ -303,6 +313,7 @@ namespace $.$$ {
 			const into = !anchor || zone === 'inside'
 			const owner = into ? anchor : this.row_holder( anchor )
 			if( owner === null ) return null
+			if( owner && !this.row_within( '', owner ) ) return null
 
 			if( owner && ( owner === name || this.row_within( name, owner ) ) ) return null
 
