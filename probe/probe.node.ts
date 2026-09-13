@@ -51,7 +51,8 @@ namespace $ {
 
 	export function $bog_vmap_probe_ready() {
 		const d = '$'
-		return `typeof $ !== 'undefined' && $[ ${ JSON.stringify( d + 'bog_vmap_app' ) } ].Root( 0 ).Pane().warmed()`
+		const app = `$[ ${ JSON.stringify( d + 'bog_vmap_app' ) } ].Root( 0 )`
+		return `typeof $ !== 'undefined' && ${ app }.Pane().warmed() && ${ app }.doc_key() !== ''`
 	}
 
 	export function $bog_vmap_probe_selectors() {
@@ -281,7 +282,6 @@ namespace $ {
 			await browser.open()
 			await browser.viewport( 1280, 800 )
 			await browser.open_page( site.uri( $bog_vmap_probe_page ), $bog_vmap_probe_ready(), 150000 )
-			if( await browser.until( `${ app }.doc_key() !== ''`, 30000 ) < 0 ) return $mol_fail( new Error( 'цвет: документ не завёлся за 30000 мс после прогрева' ) )
 			const part_name = String( await browser.evaluate( `
 				const app = ${ app }
 				return await $[ ${ JSON.stringify( d + 'mol_wire_async' ) } ]( ()=> {
@@ -478,7 +478,6 @@ namespace $ {
 			await browser.open()
 			await browser.viewport( 1280, 800 )
 			await browser.open_page( site.uri( $bog_vmap_probe_page ), $bog_vmap_probe_ready(), 150000 )
-			if( await browser.until( `${ app }.doc_key() !== ''`, 30000 ) < 0 ) return $mol_fail( new Error( `${ at } документ не завёлся за 30000 мс после прогрева` ) )
 
 			const part_name = String( await browser.evaluate( `
 				const app = ${ app }
