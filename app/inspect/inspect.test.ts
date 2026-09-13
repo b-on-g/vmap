@@ -199,6 +199,39 @@ namespace $ {
 
 		},
 
+		'a read only scene shows every value and lets none be edited'( $ ) {
+
+			const source = [
+				`${ d }bog_vmap_app_inspect_test_view ${ d }mol_view`,
+				'	title \\Привет',
+				'	count 24',
+				'	shown true',
+				'	names /',
+				'		\\один',
+				'		\\два',
+				'	sub /',
+				'		<= title',
+				'',
+			].join( '\n' )
+
+			const fields = ( editable: boolean )=> {
+				const inspect = panel( $, source )
+				inspect.editable = ()=> editable
+				const root = inspect.dom_tree()
+				return [ ... root.querySelectorAll( 'input, textarea, [mol_button]' ) ]
+					.filter( field => !field.closest( '[mol_check_expand]' ) )
+			}
+
+			const open = fields( true )
+			const shut = fields( false )
+
+			$mol_assert_equal( open.length > 8, true )
+			$mol_assert_equal( shut.length, open.length )
+			$mol_assert_equal( open.filter( field => !field.hasAttribute( 'disabled' ) ).length > 8, true )
+			$mol_assert_like( shut.filter( field => !field.hasAttribute( 'disabled' ) ).map( field => field.id ), [] )
+
+		},
+
 		'the head of the panel is the head of a page'( $ ) {
 
 			const inspect = panel( $, [

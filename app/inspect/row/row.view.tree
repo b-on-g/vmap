@@ -8,6 +8,7 @@ $bog_vmap_app_inspect_row $mol_form_field
 	keyed? false
 	changeable? false
 	drop? null
+	editable true
 	name <= sign
 	bid <= owner
 	label /
@@ -18,15 +19,19 @@ $bog_vmap_app_inspect_row $mol_form_field
 		tree? <=> value?
 		binds <= binds
 		nodes <= nodes
+		editable <= editable
 	Key $mol_check
 		title \*
 		hint \Много значений по ключу
 		checked? <=> keyed?
+		enabled <= editable
 	Next $mol_check
 		title \?
 		hint \Изменяемое
 		checked? <=> changeable?
+		enabled <= editable
 	Drop $mol_button_minor
 		title \✕
 		hint \Убрать свойство из документа
 		click? <=> drop?
+		enabled <= editable

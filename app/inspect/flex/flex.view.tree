@@ -1,9 +1,11 @@
 $bog_vmap_app_inspect_flex $mol_list
 	value*? \
+	editable true
 	rows /
 		<= Width $mol_form_field
 			name \Ширина
 			control <= Width_pick $mol_switch
+				enabled <= editable
 				value? <=> width? \
 				options *
 					390px \мобильная
@@ -12,6 +14,7 @@ $bog_vmap_app_inspect_flex $mol_list
 		<= Direction $mol_form_field
 			name \Направление
 			control <= Direction_pick $mol_switch
+				enabled <= editable
 				value? <=> direction? \
 				options *
 					column \колонкой
@@ -19,6 +22,7 @@ $bog_vmap_app_inspect_flex $mol_list
 		<= Across $mol_form_field
 			name \Поперёк
 			control <= Across_pick $mol_switch
+				enabled <= editable
 				value? <=> across? \
 				options *
 					flex-start \к началу
@@ -28,6 +32,7 @@ $bog_vmap_app_inspect_flex $mol_list
 		<= Along $mol_form_field
 			name \Вдоль
 			control <= Along_pick $mol_switch
+				enabled <= editable
 				value? <=> along? \
 				options *
 					flex-start \к началу
@@ -39,8 +44,10 @@ $bog_vmap_app_inspect_flex $mol_list
 			control <= Gap_field $mol_string
 				hint \1rem
 				value? <=> gap? \
+				enabled <= editable
 		<= Grow $mol_form_field
 			name \Растяжение
 			control <= Grow_check $mol_check
 				title \занимать свободное место
 				checked? <=> grow? false
+				enabled <= editable

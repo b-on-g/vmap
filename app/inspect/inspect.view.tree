@@ -4,10 +4,12 @@ $bog_vmap_app_inspect $mol_page
 	pack? \https://mol.hyoo.ru
 	class_title? \
 	title_note \
+	editable true
 	title <= class_title
 	title_content /
 		<= Name $mol_string
 			hint \имя узла
+			enabled <= editable
 			value? <=> title_value? \
 			submit? <=> title_submit? null
 			event *
@@ -21,6 +23,7 @@ $bog_vmap_app_inspect $mol_page
 	body /$mol_view
 		<= Flex $bog_vmap_app_inspect_flex
 			value*? <=> flex_value*? \
+			editable <= editable
 		<= Rows $mol_list
 			rows <= rows /$mol_view
 		<= Inherited $mol_expander
@@ -44,6 +47,7 @@ $bog_vmap_app_inspect $mol_page
 		drop? <=> row_drop*? null
 		binds <= binds /string
 		nodes <= nodes *
+		editable <= editable
 
 $bog_vmap_app_inspect_demo $mol_book2
 	source? \
