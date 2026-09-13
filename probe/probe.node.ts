@@ -876,7 +876,7 @@ namespace $ {
 						before.inert.length === $bog_vmap_probe_early_blocked.length,
 						`${ at } пока документа нет, inert только у ${ before.inert.join( ', ' ) || 'никого' } из ${ $bog_vmap_probe_early_blocked.join( ', ' ) }`,
 					)
-					want( before.status === 'Документ заводится…', `${ at } пока документа нет, статус «${ before.status }»` )
+					want( before.status === 'Документ загружается…', `${ at } пока документа нет, статус «${ before.status }»` )
 					want(
 						hits.length === 2 && !hits.some( hit => $bog_vmap_probe_early_reached.includes( hit ) ),
 						`${ at } клик до документа дошёл до ${ hits.join( ', ' ) || 'никуда' }`,
@@ -919,6 +919,166 @@ namespace $ {
 		} finally {
 			site.close()
 		}
+
+	}
+
+	export function $bog_vmap_probe_foreign_script() {
+		const d = '$'
+		const take = ( name: string )=> `$[ ${ JSON.stringify( d + name ) } ]`
+		return `
+			const app = ${ take( 'bog_vmap_app' ) }.Root( 0 )
+			const store = app.store()
+			const fiber = task => ${ take( 'mol_wire_async' ) }( task )()
+			await fiber( ()=> app.board_draw( ${ JSON.stringify( $bog_vmap_probe_board ) } ) )
+			const source = await fiber( ()=> app.doc_source() )
+			const spots = await fiber( ()=> app.spots() )
+			const mate = await fiber( ()=> ${ take( 'giper_baza_auth' ) }.grab() )
+			const land = ${ take( 'giper_baza_land' ) }.make({ $, auth: ()=> mate })
+			const link = await fiber( ()=> {
+				const doc = land.Data( ${ take( 'bog_vmap_app_doc' ) } )
+				doc.title( 'Чужая сцена' )
+				store.doc_source( doc, source )
+				store.doc_spots( doc, spots )
+				const first = store.nodes( doc )[ 0 ]
+				if( first ) doc.Root( null ).val( first.link() )
+				return doc.link().str
+			} )
+			await fiber( ()=> ${ take( 'giper_baza_glob' ) }.Land( land.link() ).units_steal( land ) )
+			await fiber( ()=> store.doc_pick( new ( ${ take( 'giper_baza_link' ) } )( link ) ) )
+			return link
+		`
+	}
+
+	export async function $bog_vmap_probe_foreign(
+		root: string,
+		say: ( line: string )=> void,
+		want: ( ok: boolean, note: string )=> void,
+	) {
+
+		const d = '$'
+		const app = `$[ ${ JSON.stringify( d + 'bog_vmap_app' ) } ].Root( 0 )`
+		const at = '1280, чужая сцена:'
+
+		await $bog_vmap_probe_drive( root, at, async ( browser, { point, mouse } )=> {
+
+			await browser.evaluate( $bog_vmap_probe_foreign_script(), 30000 )
+
+			if( await browser.until( `${ app }.store().stage() === 'readonly' && !!${ app }.Pane().part_box( 'Page' )`, 15000 ) < 0 ) {
+				return $mol_fail( new Error( `${ at } чужая сцена не открылась только для чтения или артборд не измерен` ) )
+			}
+
+			const head = await browser.evaluate( `
+				const node = name => document.querySelector( '[bog_vmap_app_' + name + ']' )
+				return {
+					badge: node( 'readonly' )?.textContent ?? '',
+					board: node( 'tool_board' ).hasAttribute( 'disabled' ),
+					remove: node( 'delete' ).hasAttribute( 'disabled' ),
+					name: node( 'root_name' ).disabled,
+				}
+			`, 15000 ) as { badge: string, board: boolean, remove: boolean, name: boolean }
+
+			want( head.badge === 'Только просмотр', `${ at } в верхней панели нет плашки «Только просмотр»: «${ head.badge }»` )
+			want( head.board && head.remove && head.name, `${ at } органы правки верхней панели живы: «Артборд» ${ !head.board }, «Удалить» ${ !head.remove }, имя корня ${ !head.name }` )
+
+			const board = await browser.evaluate( `
+				const box = document.querySelector( '[bog_vmap_app_tool_board]' ).getBoundingClientRect()
+				return [ box.left + box.width / 2, box.top + box.height / 2 ]
+			`, 15000 ) as [ number, number ]
+			for( const type of [ 'mouseMoved', 'mousePressed', 'mouseReleased' ] ) await mouse( type, board )
+			const tool = String( await browser.evaluate( `return ${ app }.Pane().tool()`, 15000 ) )
+			want( tool === 'select', `${ at } клик по «Артборд» включил инструмент ${ tool }` )
+
+			const spots = await browser.evaluate( `
+				const pane = ${ app }.Pane()
+				const rect = pane.dom_node().getBoundingClientRect()
+				const box = pane.part_box( 'Page' )
+				return { empty: [ rect.right - 40, rect.bottom - 40 ], page: [ rect.left + box.left + box.width / 2, rect.top + box.top + box.height / 2 ] }
+			`, 15000 ) as { empty: [ number, number ], page: [ number, number ] }
+
+			for( const type of [ 'mouseMoved', 'mousePressed', 'mouseReleased' ] ) await mouse( type, spots.empty )
+			const phantom = await browser.evaluate( `return ${ app }.selected()`, 15000 )
+			want( phantom === null, `${ at } клик по пустому холсту выделил ${ JSON.stringify( phantom ) }` )
+
+			for( const type of [ 'mouseMoved', 'mousePressed', 'mouseReleased' ] ) await mouse( type, spots.page )
+			const picked = await browser.evaluate( `return ${ app }.selected()`, 15000 )
+			want( picked === 'Page', `${ at } клик по артборду не выделил его: ${ JSON.stringify( picked ) }` )
+
+			await browser.until( `!!document.querySelector( '[bog_vmap_app_inspect]' )`, 15000 )
+			const fields = await browser.evaluate( `
+				const inspect = document.querySelector( '[bog_vmap_app_inspect]' )
+				const all = inspect ? [ ... inspect.querySelectorAll( 'input, textarea, [mol_button]' ) ].filter( node => !node.closest( '[mol_check_expand]' ) ) : []
+				return { all: all.length, live: all.filter( node => !( node.disabled || node.hasAttribute( 'disabled' ) ) ).map( node => node.id.replace( /^.*Inspect\\(\\)\\./, '' ) ) }
+			`, 15000 ) as { all: number, live: string[] }
+
+			want( fields.all > 0 && !fields.live.length, `${ at } в Инспекторе живые поля: ${ fields.live.join( ', ' ) || 'полей нет вовсе' }` )
+
+			await browser.press( 'Delete', 46 )
+			await $bog_probe_pause( 500 )
+			const kept = await browser.evaluate( `return ${ app }.doc_source().includes( 'Page' ) && !!${ app }.spots().Page`, 15000 )
+			want( kept === true, `${ at } Delete удалил артборд из чужой сцены` )
+
+			const row = await point( `[ ... document.querySelectorAll( '[bog_vmap_app_layers_pick]' ) ].find( node => node.textContent === 'Page' )` )
+			if( !row ) return $mol_fail( new Error( `${ at } в «Слоях» нет строки Page` ) )
+			for( const count of [ 1, 2 ] ) for( const type of [ 'mousePressed', 'mouseReleased' ] ) await browser.send( 'Input.dispatchMouseEvent', {
+				type, x: row[ 0 ], y: row[ 1 ], button: 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: count,
+			}, browser.page )
+			const layers = await browser.evaluate( `
+				const line = [ ... document.querySelectorAll( '[bog_vmap_app_layers_line]' ) ].find( node => node.textContent.includes( 'Page' ) )
+				return { edit: !!document.querySelector( '[bog_vmap_app_layers_edit]' ), draggable: line ? line.closest( '[draggable]' ) !== null : null }
+			`, 15000 ) as { edit: boolean, draggable: boolean | null }
+
+			want( !layers.edit, `${ at } двойной клик в «Слоях» открыл поле имени` )
+			want( layers.draggable === false, `${ at } строка «Слоёв» тянется: draggable ${ layers.draggable }` )
+
+			say( `${ at } верхняя панель с плашкой «${ head.badge }», «Артборд», «Удалить» и имя корня выключены; клик «Артборд» оставил инструмент ${ tool }, клик по пустому холсту выделил ${ JSON.stringify( phantom ) }, клик по артборду выделил ${ picked }; в Инспекторе ${ fields.all } полей и кнопок, живых ${ fields.live.length }; Delete артборд не тронул; двойной клик в «Слоях» поля имени не открыл, строка не тянется` )
+
+		} )
+
+	}
+
+	export const $bog_vmap_probe_reload_rate = 4
+
+	export async function $bog_vmap_probe_reload(
+		root: string,
+		say: ( line: string )=> void,
+		want: ( ok: boolean, note: string )=> void,
+	) {
+
+		const d = '$'
+		const app = `$[ ${ JSON.stringify( d + 'bog_vmap_app' ) } ].Root( 0 )`
+		const at = `1280, перезагрузка своего документа, замедление ${ $bog_vmap_probe_reload_rate }:`
+
+		await $bog_vmap_probe_drive( root, at, async browser => {
+
+			await $bog_probe_pause( 1500 )
+			await browser.send( 'Emulation.setCPUThrottlingRate', { rate: $bog_vmap_probe_reload_rate }, browser.page )
+			await browser.send( 'Page.reload', {}, browser.page )
+
+			if( await browser.until( `!!document.querySelector( '[bog_vmap_app_pane_overlay]' )`, 60000, 10 ) < 0 ) {
+				return $mol_fail( new Error( `${ at } интерфейс не вернулся за 60000 мс` ) )
+			}
+
+			const seen = await browser.evaluate( `
+				const began = performance.now()
+				const seen = []
+				const stage = ()=> { try { return ${ app }.store().stage() } catch( error ) { return 'loading' } }
+				while( performance.now() - began < 5000 ) {
+					const now = stage()
+					if( seen.at( -1 ) !== now ) seen.push( now )
+					if( now === 'ready' ) break
+					await new Promise( done => setTimeout( done, 5 ) )
+				}
+				return seen
+			`, 20000 ) as string[]
+
+			await browser.send( 'Emulation.setCPUThrottlingRate', { rate: 1 }, browser.page )
+
+			want( !seen.includes( 'readonly' ), `${ at } свой документ побывал «только для чтения»: ${ seen.join( ' → ' ) }` )
+			want( seen.at( -1 ) === 'ready', `${ at } свой документ не стал готовым за 5 с: ${ seen.join( ' → ' ) }` )
+
+			say( `${ at } стадии ${ seen.join( ' → ' ) }` )
+
+		} )
 
 	}
 
@@ -1362,6 +1522,8 @@ namespace $ {
 		await $bog_vmap_probe_paint( root, say, want )
 		await $bog_vmap_probe_tips( root, say, want )
 		await $bog_vmap_probe_early( root, say, want )
+		await $bog_vmap_probe_foreign( root, say, want )
+		await $bog_vmap_probe_reload( root, say, want )
 
 		let widths = [ -1, -1 ]
 

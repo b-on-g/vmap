@@ -129,21 +129,39 @@ namespace $.$$ {
 			}
 		}
 
-		override doc_pending() {
+		store_stage() {
 			try {
-				return this.store().stage() === 'making'
+				return this.store().stage()
 			} catch( error ) {
-				if( $mol_promise_like( error ) ) return true
+				if( $mol_promise_like( error ) ) return 'loading'
 				return $mol_fail_hidden( error )
 			}
 		}
 
+		override doc_pending() {
+			const stage = this.store_stage()
+			return stage === 'loading' || stage === 'making'
+		}
+
+		override doc_readonly() {
+			return this.store_stage() === 'readonly'
+		}
+
+		override editable() {
+			return !this.doc_readonly()
+		}
+
+		override readonly_badge() {
+			return this.doc_readonly() ? this.Readonly() : null
+		}
+
+		override head() {
+			return super.head().filter( Boolean )
+		}
+
 		store_note() {
-			if( this.doc_pending() ) return 'Документ заводится…'
-			switch( this.store().stage() ) {
-				case 'readonly': return 'чужая сцена: только просмотр, правки не сохраняются'
-				default: return ''
-			}
+			if( this.doc_pending() ) return 'Документ загружается…'
+			return this.doc_readonly() ? 'чужая сцена: только просмотр, правки не сохраняются' : ''
 		}
 
 		store_boot() {
@@ -191,8 +209,8 @@ namespace $.$$ {
 			return picked.length ? picked[ picked.length - 1 ] : null
 		}
 
-		selection_showed() {
-			return Boolean( this.selected() )
+		override delete_enabled() {
+			return this.editable() && Boolean( this.selected() )
 		}
 
 		override publish_part() {
@@ -756,7 +774,7 @@ namespace $.$$ {
 		}
 
 		override carry_drop( next?: $bog_vmap_app_pane_carry | null ) {
-			if( !next ) return null
+			if( !next || !this.editable() ) return null
 
 			const source = this.dragged()
 			if( !source ) return null
@@ -777,7 +795,7 @@ namespace $.$$ {
 
 		override files_drop( next?: $bog_vmap_app_pane_files | null ) {
 
-			if( !next ) return null
+			if( !next || !this.editable() ) return null
 
 			next.files.forEach( ( file, i )=> this.file_place(
 				file,
@@ -993,7 +1011,7 @@ namespace $.$$ {
 		}
 
 		override shelf_place( next?: string ) {
-			const source = next && this.Shelf().item_source( next )
+			const source = next && this.editable() && this.Shelf().item_source( next )
 
 			if( source ) this.preset_place( source )
 
@@ -1034,7 +1052,7 @@ namespace $.$$ {
 
 		@ $mol_action
 		override board_draw( next?: $bog_vmap_bridge_rect | null ) {
-			if( !next ) return null
+			if( !next || !this.editable() ) return null
 
 			const size = next.width || next.height ? next : this.board_size()
 
@@ -1051,7 +1069,7 @@ namespace $.$$ {
 		@ $mol_action
 		override node_wrap() {
 			const picked = this.picked()
-			if( !picked.length ) return null
+			if( !picked.length || !this.editable() ) return null
 
 			const node = this.node()
 			const pane = this.Pane()
@@ -1102,7 +1120,7 @@ namespace $.$$ {
 		@ $mol_action
 		override node_copy() {
 			const picked = this.picked()
-			if( !picked.length ) return null
+			if( !picked.length || !this.editable() ) return null
 
 			const node = this.node()
 			const pane = this.Pane()
@@ -1131,7 +1149,7 @@ namespace $.$$ {
 		@ $mol_action
 		node_delete() {
 			const picked = this.picked()
-			if( !picked.length ) return
+			if( !picked.length || !this.editable() ) return
 
 			const node = this.node()
 
@@ -1362,9 +1380,10 @@ namespace $.$$ {
 
 			if( this.doc_pending() ) return
 
-			if( this.code_undo( event ) ) return
-
-			if( this.History().press( event ) ) return
+			if( this.editable() ) {
+				if( this.code_undo( event ) ) return
+				if( this.History().press( event ) ) return
+			}
 
 			this.Pane().key_down( event )
 
