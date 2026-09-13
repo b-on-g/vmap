@@ -30265,7 +30265,10 @@ var $;
         }
         doc_editable() {
             const doc = this.doc_current();
-            return doc ? doc.can_change() : true;
+            if (!doc)
+                return true;
+            doc.land().loading();
+            return doc.can_change();
         }
         stage() {
             if (!this.doc_current())
@@ -47580,6 +47583,58 @@ var $;
             const current = await read(three.store, 'doc_current');
             $mol_assert_equal(current.link().str, link);
             $mol_assert_equal(await read(three.store, 'source'), src_page);
+        },
+        async 'an own document still loading its land waits instead of turning read only'($) {
+            const disk = new Map;
+            const mine = $bog_vmap_app_store_test_mine(disk);
+            let open = () => { };
+            const gate = new Promise(done => { open = () => done(); });
+            let held = '';
+            const session = () => {
+                const ctx = Object.create($);
+                ctx.$giper_baza_land = class extends $$.$giper_baza_land {
+                };
+                ctx.$giper_baza_mine = class extends mine {
+                    units_load() {
+                        if (this.land().str === held)
+                            return $mol_fail_hidden(gate);
+                        return super.units_load();
+                    }
+                };
+                const glob = class extends $.$giper_baza_glob {
+                    static lands_touched = new $mol_wire_set();
+                };
+                glob.$ = ctx;
+                ctx.$giper_baza_glob = glob;
+                ctx.$mol_state_arg = class extends $.$mol_state_arg {
+                };
+                ctx.$mol_storage = class extends $.$mol_storage {
+                    static total() { return 1e9; }
+                    static used() { return 0; }
+                };
+                return $bog_vmap_app_store.make({
+                    $: ctx,
+                    doc_land_config: () => [[null, $giper_baza_rank_read]],
+                });
+            };
+            const one = session();
+            const made = await $mol_wire_async(one).doc_add('Сцена 1', src_page);
+            await $mol_wire_async(one.home().land()).units_saving();
+            await $mol_wire_async(made.land()).units_saving();
+            held = made.land().link().str;
+            const two = session();
+            $mol_assert_equal((await $mol_wire_async(two).doc_links()).length, 1);
+            let waiting = false;
+            try {
+                two.stage();
+            }
+            catch (error) {
+                waiting = $mol_promise_like(error);
+            }
+            $mol_assert_equal(waiting, true);
+            held = '';
+            open();
+            $mol_assert_equal(await $mol_wire_async(two).stage(), 'ready');
         },
         async 'a document opened by a link survives a restart with the quota unknown'($) {
             const disk = new Map;

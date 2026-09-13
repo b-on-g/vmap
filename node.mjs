@@ -30274,7 +30274,10 @@ var $;
         }
         doc_editable() {
             const doc = this.doc_current();
-            return doc ? doc.can_change() : true;
+            if (!doc)
+                return true;
+            doc.land().loading();
+            return doc.can_change();
         }
         stage() {
             if (!this.doc_current())
