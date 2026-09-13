@@ -129,9 +129,18 @@ namespace $.$$ {
 			}
 		}
 
+		override doc_pending() {
+			try {
+				return this.store().stage() === 'making'
+			} catch( error ) {
+				if( $mol_promise_like( error ) ) return true
+				return $mol_fail_hidden( error )
+			}
+		}
+
 		store_note() {
+			if( this.doc_pending() ) return 'Документ заводится…'
 			switch( this.store().stage() ) {
-				case 'making': return 'заводим сцену…'
 				case 'readonly': return 'чужая сцена: только просмотр, правки не сохраняются'
 				default: return ''
 			}
@@ -1345,15 +1354,17 @@ namespace $.$$ {
 		key_press( event?: KeyboardEvent ) {
 			if( !event ) return
 
-			if( this.code_undo( event ) ) return
-
-			if( this.History().press( event ) ) return
-
 			if( this.columns_key( event ) ) {
 				event.preventDefault()
 				this.columns_toggle()
 				return
 			}
+
+			if( this.doc_pending() ) return
+
+			if( this.code_undo( event ) ) return
+
+			if( this.History().press( event ) ) return
 
 			this.Pane().key_down( event )
 

@@ -649,6 +649,165 @@ namespace $ {
 
 	}
 
+	export const $bog_vmap_probe_early_rate = 20
+
+	export const $bog_vmap_probe_early_blocked = [ 'main', 'instruments', 'root_name', 'publish' ]
+
+	export const $bog_vmap_probe_early_reached = [ 'кнопка «Артборд»', 'строка колонок' ]
+
+	export type $bog_vmap_probe_early_look = {
+		readonly pending: boolean
+		readonly inert: readonly string[]
+		readonly tool: string
+		readonly spots: string
+		readonly status: string
+	}
+
+	export async function $bog_vmap_probe_early(
+		root: string,
+		say: ( line: string )=> void,
+		want: ( ok: boolean, note: string )=> void,
+	) {
+
+		const bin = $bog_probe_chrome_bin()
+		if( !bin ) return
+
+		const d = '$'
+		const app = `$[ ${ JSON.stringify( d + 'bog_vmap_app' ) } ].Root( 0 )`
+		const at = `1280, до документа, замедление ${ $bog_vmap_probe_early_rate }:`
+		const site = await new $bog_probe_static( root ).open()
+
+		const visible = `(()=>{
+			const overlay = document.querySelector( '[bog_vmap_app_pane_overlay]' )
+			const tool = document.querySelector( '[bog_vmap_app_tool_board]' )
+			return !!overlay && !!tool && overlay.getBoundingClientRect().width > 0
+		})()`
+
+		const look = `
+			const app = ${ app }
+			const read = ( get, busy )=> { try { return get() } catch( error ) { return busy } }
+			return {
+				pending: read( ()=> app.store().stage() === 'making', true ),
+				inert: ${ JSON.stringify( $bog_vmap_probe_early_blocked ) }.filter( name => document.querySelector( '[bog_vmap_app_' + name + ']' )?.hasAttribute( 'inert' ) ),
+				tool: app.Pane().tool(),
+				spots: read( ()=> Object.keys( app.spots() ).join(), 'ждёт' ),
+				status: read( ()=> app.status(), 'ждёт' ),
+			}
+		`
+
+		const hits_catch = `
+			window.vmap_early_hits = []
+			document.addEventListener( 'pointerdown', event => {
+				const target = event.target
+				window.vmap_early_hits.push(
+					target.closest( '[bog_vmap_app_tool_board]' ) ? ${ JSON.stringify( $bog_vmap_probe_early_reached[ 0 ] ) }
+					: target.closest( '[bog_vmap_app_main]' ) ? ${ JSON.stringify( $bog_vmap_probe_early_reached[ 1 ] ) }
+					: target.tagName.toLowerCase()
+				)
+			}, { capture: true } )
+			return true
+		`
+
+		const places = `
+			const tool = document.querySelector( '[bog_vmap_app_tool_board]' ).getBoundingClientRect()
+			const overlay = document.querySelector( '[bog_vmap_app_pane_overlay]' ).getBoundingClientRect()
+			return { tool: [ tool.left + tool.width / 2, tool.top + tool.height / 2 ], canvas: [ overlay.left + 200, overlay.top + 150 ] }
+		`
+
+		let tries = 0
+
+		try {
+
+			while( tries < 3 ) {
+
+				++ tries
+
+				const profile = String( $node.fs.mkdtempSync( $node.path.join( $node.os.tmpdir(), 'vmap-early-' ) ) )
+				const browser = new $bog_probe_browser( bin, profile )
+
+				const click = async ( [ x, y ]: readonly [ number, number ] )=> {
+					for( const type of [ 'mouseMoved', 'mousePressed', 'mouseReleased' ] ) await browser.send( 'Input.dispatchMouseEvent', {
+						type, x, y,
+						button: type === 'mouseMoved' ? 'none' : 'left',
+						buttons: type === 'mousePressed' ? 1 : 0,
+						clickCount: type === 'mouseMoved' ? 0 : 1,
+					}, browser.page )
+				}
+
+				try {
+
+					await browser.open()
+					await browser.viewport( 1280, 800 )
+					await browser.send( 'Emulation.setCPUThrottlingRate', { rate: $bog_vmap_probe_early_rate }, browser.page )
+
+					const began = Date.now()
+					await browser.send( 'Page.navigate', { url: site.uri( $bog_vmap_probe_page ) }, browser.page )
+					if( await browser.until( visible, 60000, 20 ) < 0 ) return $mol_fail( new Error( `${ at } интерфейс не появился за 60000 мс` ) )
+					const shown = Date.now() - began
+
+					const spots = await browser.evaluate( places, 15000 ) as { tool: [ number, number ], canvas: [ number, number ] }
+					const before = await browser.evaluate( look, 15000 ) as $bog_vmap_probe_early_look
+					await browser.evaluate( hits_catch, 15000 )
+					await click( spots.tool )
+					await click( spots.canvas )
+					const after = await browser.evaluate( look, 15000 ) as $bog_vmap_probe_early_look
+					const hits = await browser.evaluate( 'return window.vmap_early_hits.splice( 0 )', 15000 ) as string[]
+
+					if( !before.pending || !after.pending ) {
+						say( `${ at } попытка ${ tries }: клики не уложились в окно до документа, стадия ждала до кликов ${ before.pending }, после ${ after.pending }` )
+						continue
+					}
+
+					want(
+						before.inert.length === $bog_vmap_probe_early_blocked.length,
+						`${ at } пока документа нет, inert только у ${ before.inert.join( ', ' ) || 'никого' } из ${ $bog_vmap_probe_early_blocked.join( ', ' ) }`,
+					)
+					want( before.status === 'Документ заводится…', `${ at } пока документа нет, статус «${ before.status }»` )
+					want(
+						hits.length === 2 && !hits.some( hit => $bog_vmap_probe_early_reached.includes( hit ) ),
+						`${ at } клик до документа дошёл до ${ hits.join( ', ' ) || 'никуда' }`,
+					)
+
+					await browser.send( 'Emulation.setCPUThrottlingRate', { rate: 1 }, browser.page )
+					const waited = await browser.until( `${ app }.store().stage() === 'ready' && ${ app }.doc_key() !== ''`, 60000 )
+					if( waited < 0 ) return $mol_fail( new Error( `${ at } документ не завёлся за 60000 мс` ) )
+
+					const open = await browser.evaluate( look, 15000 ) as $bog_vmap_probe_early_look
+
+					want( !open.inert.length, `${ at } документ заведён, а inert остался у ${ open.inert.join( ', ' ) }` )
+					want( !open.spots, `${ at } клик до документа всё же завёл узел: места [${ open.spots }]` )
+
+					await click( spots.tool )
+					await click( spots.canvas )
+					const made = await browser.until( `Object.keys( ${ app }.spots() ).length > 0`, 15000 )
+					await $bog_probe_pause( 3000 )
+					const kept = await browser.evaluate( `return { spots: Object.keys( ${ app }.spots() ).join(), source: ${ app }.doc_source() }`, 15000 ) as { spots: string, source: string }
+					const name = kept.spots.split( ',' )[ 0 ] ?? ''
+
+					want(
+						made >= 0 && !!name && kept.source.includes( name ),
+						`${ at } клик после документа не завёл артборд или он пропал за 3 с: места [${ kept.spots }]`,
+					)
+
+					say( `${ at } интерфейс на ${ shown } мс, попытка ${ tries }; пока документа нет, колонки и кнопки правки inert (${ before.inert.join( ', ' ) }), статус «${ before.status }», клики по «Артборд» и по холсту пришли в ${ hits.join( ' и ' ) }, мимо кнопки и строки колонок; документ заведён через ${ waited } мс после снятия замедления, inert снят, тот же клик завёл ${ name }, через 3 с он в документе` )
+
+					return
+
+				} finally {
+					browser.close()
+					try { $node.fs.rmSync( profile, { recursive: true, force: true } ) } catch( error ) {}
+				}
+
+			}
+
+			want( false, `${ at } окно до документа не поймано за ${ tries } попытки: клики опоздали` )
+
+		} finally {
+			site.close()
+		}
+
+	}
+
 	export function $bog_vmap_probe_show( rect: $bog_probe_rect | null ) {
 		if( !rect ) return 'null'
 		return `${ Math.round( rect.width ) }×${ Math.round( rect.height ) } @${ Math.round( rect.left ) },${ Math.round( rect.top ) }`
@@ -1088,6 +1247,7 @@ namespace $ {
 
 		await $bog_vmap_probe_paint( root, say, want )
 		await $bog_vmap_probe_tips( root, say, want )
+		await $bog_vmap_probe_early( root, say, want )
 
 		let widths = [ -1, -1 ]
 

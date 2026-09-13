@@ -697,6 +697,81 @@ namespace $ {
 
 		},
 
+		'the editor takes no edits while the document is being made or loaded'( $ ) {
+			const waiting = new Promise( ()=> {} )
+
+			for( const stage of [ ()=> 'making' as const, ()=> { throw waiting } ] ) {
+
+				const app = $bog_vmap_app.make({
+					$,
+					store: ()=> $bog_vmap_app_store.make({ $, doc_land_config: ()=> null, stage }),
+				}) as $$.$bog_vmap_app
+
+				for( const view of [ app.Main(), app.Instruments(), app.Root_name(), app.Publish() ] ) {
+					$mol_assert_equal( view.dom_node_actual().hasAttribute( 'inert' ), true )
+				}
+
+				$mol_assert_equal( app.status(), 'Документ заводится…' )
+
+			}
+
+		},
+
+		'a ready or a foreign document leaves the editor open'( $ ) {
+
+			for( const [ stage, note ] of [
+				[ 'ready', '' ],
+				[ 'readonly', 'чужая сцена: только просмотр, правки не сохраняются' ],
+			] as const ) {
+
+				const app = $bog_vmap_app.make({
+					$,
+					store: ()=> $bog_vmap_app_store.make({ $, doc_land_config: ()=> null, stage: ()=> stage }),
+				}) as $$.$bog_vmap_app
+
+				for( const view of [ app.Main(), app.Instruments(), app.Root_name(), app.Publish() ] ) {
+					$mol_assert_equal( view.dom_node_actual().hasAttribute( 'inert' ), false )
+				}
+
+				$mol_assert_equal( app.store_note(), note )
+
+			}
+
+		},
+
+		'hotkeys wait for the document, the columns key does not'( $ ) {
+
+			const make = ( stage: 'making' | 'ready' )=> $bog_vmap_app.make({
+				$,
+				store: ()=> $bog_vmap_app_store.make({ $, doc_land_config: ()=> null, stage: ()=> stage }),
+			}) as $$.$bog_vmap_app
+
+			const stroke = ( app: $$.$bog_vmap_app, code: string, shiftKey = false )=> app.key_press({
+				code,
+				key: code,
+				shiftKey,
+				metaKey: false,
+				ctrlKey: false,
+				altKey: false,
+				target: null,
+				preventDefault() {},
+			} as unknown as KeyboardEvent )
+
+			const making = make( 'making' )
+
+			stroke( making, 'KeyF' )
+			$mol_assert_equal( making.Pane().tool(), 'select' )
+
+			stroke( making, 'Backslash', true )
+			$mol_assert_equal( making.left_showed(), false )
+
+			const ready = make( 'ready' )
+
+			stroke( ready, 'KeyF' )
+			$mol_assert_equal( ready.Pane().tool(), 'board' )
+
+		},
+
 		'an untouched document downloads as the empty page'( $ ) {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
