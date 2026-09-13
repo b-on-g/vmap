@@ -453,17 +453,12 @@ namespace $ {
 			return node.contains( document.elementFromPoint( x, y ) ) ? [ x, y ] : null
 		`, 15000 ) as [ number, number ] | null
 
-		const input = ( method: string, params: { readonly type: string, readonly [ field: string ]: unknown } )=> Promise.race([
-			browser.send( method, params, browser.page ),
-			$bog_probe_pause( 15000 ).then( ()=> $mol_fail( new Error( `${ at } Chrome не принял ${ params.type } за 15000 мс` ) ) ),
-		])
-
-		const mouse = ( type: string, [ x, y ]: readonly [ number, number ], held = false )=> input( 'Input.dispatchMouseEvent', {
+		const mouse = ( type: string, [ x, y ]: readonly [ number, number ], held = false )=> browser.send( 'Input.dispatchMouseEvent', {
 			type, x, y,
 			button: type === 'mouseMoved' && !held ? 'none' : 'left',
 			buttons: type === 'mousePressed' || held ? 1 : 0,
 			clickCount: type === 'mouseMoved' ? 0 : 1,
-		} )
+		}, browser.page )
 
 		const click = async ( find: string, note: string )=> {
 			const spot = await point( find )
@@ -484,7 +479,7 @@ namespace $ {
 			`вкладки «${ label }»`,
 		)
 
-		return { point, input, mouse, click, away, tab }
+		return { point, mouse, click, away, tab }
 	}
 
 	export async function $bog_vmap_probe_drive(
@@ -583,17 +578,10 @@ namespace $ {
 		const focus = `(()=>{ const node = document.activeElement; return !node || node === document.body ? 'body' : node.tagName.toLowerCase() + ( node.matches( ':focus-visible' ) ? ':focus-visible' : '' ) })()`
 		const tool = ( name: string )=> `document.querySelector( '[bog_vmap_app_tool_${ name }]' )`
 
-		await $bog_vmap_probe_drive( root, at, async ( browser, { point, input, mouse, click, away, tab } )=> {
+		await $bog_vmap_probe_drive( root, at, async ( browser, { point, mouse, click, away, tab } )=> {
 
 			const read = async ( code: string )=> String( await browser.evaluate( `return ${ code }`, 15000 ) )
 			const facts = [] as string[]
-
-			const stroke = async ( key: string, code: string, vk: number )=> {
-				for( const type of [ 'keyDown', 'keyUp' ] ) await input( 'Input.dispatchKeyEvent', {
-					type, key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk,
-					... type === 'keyDown' ? { text: key } : {},
-				} )
-			}
 
 			await browser.evaluate( `window.vmap_drags = 0; document.addEventListener( 'dragstart', ()=> ++ window.vmap_drags, true ); return 1`, 15000 )
 
@@ -609,7 +597,7 @@ namespace $ {
 			want( kept === 'hand', `${ at } Enter после клика по «Руке» нажал её снова: инструмент ${ kept }` )
 			facts.push( `после Shift клик по «Руке» оставил фокус ${ clicked }, Enter — инструмент ${ kept }` )
 
-			await stroke( 'v', 'KeyV', 86 )
+			await browser.press( 'v', 86 )
 			await tab( 'Ассеты' )
 
 			const trigger = `document.querySelector( '[bog_vmap_app_shelf_source_trigger]' )`
@@ -666,7 +654,7 @@ namespace $ {
 			const framed = await read( focus )
 			await click( `document.querySelector( '[bog_vmap_app_zoom_in]' )`, 'кнопки «+»' )
 			const freed = await read( focus )
-			await stroke( 'h', 'KeyH', 72 )
+			await browser.press( 'h', 72 )
 			const handed = await read( `${ app }.Pane().tool()` )
 
 			want( framed.startsWith( 'iframe' ), `${ at } клик в вырез не отдал фокус кадру сцены: ${ framed }` )
