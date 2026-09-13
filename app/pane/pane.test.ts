@@ -1069,8 +1069,9 @@ namespace $ {
 			$mol_assert_equal( pane.warmed(), false )
 			$mol_assert_equal( pane.sub()[0] !== frame_before, true )
 			$mol_assert_equal( pane.sub()[0], pane.Scene( pane.scene_key() ) )
-			$mol_assert_equal( pane.sub().length, 4 )
-			$mol_assert_equal( pane.sub()[3], pane.Marks() )
+			$mol_assert_equal( pane.sub().length, 5 )
+			$mol_assert_equal( pane.sub()[3], pane.Values() )
+			$mol_assert_equal( pane.sub()[4], pane.Marks() )
 
 			$mol_assert_equal( pane.watchdog(), null )
 			$mol_assert_equal( pane.heartbeat(), null )
@@ -1709,6 +1710,35 @@ namespace $ {
 
 			$mol_assert_like( pane.ports_visible(), [] )
 			$mol_assert_equal( pane.value_labels().length, 0 )
+
+		},
+
+		'the labels of live values are drawn on the canvas, one under each labelled part'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.drop( map, stage.client([ 400, 300 ]) )
+
+			stage.scene.values({ 'Calc.result': '42', 'Calc.op': 'plus', 'Map.marker': 'дом' })
+
+			const layer = stage.pane.dom_node().querySelector( '[bog_vmap_app_pane_values]' )
+			const drawn = [ ... layer?.querySelectorAll( '[bog_vmap_app_pane_label]' ) ?? [] ]
+				.map( label => label.textContent )
+				.sort()
+
+			$mol_assert_equal( stage.pane.value_labels().length, 2 )
+			$mol_assert_like( drawn, [ 'marker: дом', 'result: 42op: plus' ] )
+
+		},
+
+		'every layer the tree puts in sub is returned by the override of sub'( $ ) {
+			const { pane } = pane_make( $ )
+
+			const declared = Object.getPrototypeOf( $$.$bog_vmap_app_pane.prototype ).sub.call( pane ) as readonly $mol_view[]
+			const returned = pane.sub()
+
+			$mol_assert_ok( declared.length > 0 )
+			$mol_assert_like( declared.filter( view => !returned.includes( view ) ).map( String ), [] )
 
 		},
 
