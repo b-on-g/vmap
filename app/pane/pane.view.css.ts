@@ -3,7 +3,8 @@ namespace $.$$ {
 		position: 'relative',
 		flex: { grow: 1 },
 		overflow: 'hidden',
-		background: { color: $mol_theme.back },
+		'--bog_vmap_board': `color-mix( in oklch, ${ $mol_theme.back }, ${ $mol_theme.shade } 25% )`,
+		background: { color: $mol_style_func.vary( '--bog_vmap_board' ) },
 
 		Scene: {
 			position: 'absolute',

@@ -167,6 +167,260 @@ namespace $ {
 		return got as $bog_vmap_probe_result
 	}
 
+	export const $bog_vmap_probe_contrast_min = 1.2
+
+	export const $bog_vmap_probe_board = { x: 60, y: 60, width: 320, height: 200 }
+
+	export type $bog_vmap_probe_rgb = readonly [ number, number, number ]
+
+	export function $bog_vmap_probe_paeth( left: number, up: number, corner: number ) {
+		const guess = left + up - corner
+		const far_left = Math.abs( guess - left )
+		const far_up = Math.abs( guess - up )
+		const far_corner = Math.abs( guess - corner )
+		if( far_left <= far_up && far_left <= far_corner ) return left
+		return far_up <= far_corner ? up : corner
+	}
+
+	export function $bog_vmap_probe_png( png: Uint8Array ) {
+
+		const view = new DataView( png.buffer, png.byteOffset, png.byteLength )
+		const packed = [] as Uint8Array[]
+		let width = 0
+		let height = 0
+		let channels = 4
+
+		for( let at = 8; at < png.length; ) {
+			const size = view.getUint32( at )
+			const kind = String.fromCharCode( ... png.subarray( at + 4, at + 8 ) )
+			if( kind === 'IHDR' ) {
+				width = view.getUint32( at + 8 )
+				height = view.getUint32( at + 12 )
+				channels = png[ at + 17 ] === 6 ? 4 : 3
+			}
+			if( kind === 'IDAT' ) packed.push( png.subarray( at + 8, at + 8 + size ) )
+			at += size + 12
+		}
+
+		const raw = new Uint8Array( $node.zlib.inflateSync( Buffer.concat( packed ) ) )
+		const stride = width * channels
+		const out = new Uint8Array( stride * height )
+
+		for( let y = 0; y < height; ++ y ) {
+			const filter = raw[ y * ( stride + 1 ) ]
+			for( let x = 0; x < stride; ++ x ) {
+				const left = x < channels ? 0 : out[ y * stride + x - channels ]
+				const up = y ? out[ ( y - 1 ) * stride + x ] : 0
+				const corner = x < channels || !y ? 0 : out[ ( y - 1 ) * stride + x - channels ]
+				const guess = [ 0, left, up, ( left + up ) >> 1, $bog_vmap_probe_paeth( left, up, corner ) ][ filter ]
+				out[ y * stride + x ] = ( raw[ y * ( stride + 1 ) + 1 + x ] + guess ) & 255
+			}
+		}
+
+		const pixels = [] as $bog_vmap_probe_rgb[]
+		for( let at = 0; at < out.length; at += channels ) pixels.push([ out[ at ], out[ at + 1 ], out[ at + 2 ] ])
+		return pixels
+	}
+
+	export function $bog_vmap_probe_hex( rgb: $bog_vmap_probe_rgb ) {
+		return '#' + rgb.map( byte => byte.toString( 16 ).padStart( 2, '0' ) ).join( '' )
+	}
+
+	export function $bog_vmap_probe_luma( rgb: $bog_vmap_probe_rgb ) {
+		const [ red, green, blue ] = rgb.map( byte => {
+			const part = byte / 255
+			return part <= .04045 ? part / 12.92 : ( ( part + .055 ) / 1.055 ) ** 2.4
+		} )
+		return .2126 * red + .7152 * green + .0722 * blue
+	}
+
+	export function $bog_vmap_probe_contrast( one: $bog_vmap_probe_rgb, two: $bog_vmap_probe_rgb ) {
+		const [ dark, light ] = [ $bog_vmap_probe_luma( one ), $bog_vmap_probe_luma( two ) ].sort( ( a, b )=> a - b )
+		return ( light + .05 ) / ( dark + .05 )
+	}
+
+	export function $bog_vmap_probe_spot( pixels: readonly $bog_vmap_probe_rgb[] ) {
+		const count = new Map< string, { rgb: $bog_vmap_probe_rgb, times: number } >()
+		for( const rgb of pixels ) {
+			const hex = $bog_vmap_probe_hex( rgb )
+			count.set( hex, { rgb, times: ( count.get( hex )?.times ?? 0 ) + 1 } )
+		}
+		const [ hex, { rgb, times } ] = [ ... count ].sort( ( a, b )=> b[ 1 ].times - a[ 1 ].times )[ 0 ]
+		return { hex, rgb, share: times / pixels.length }
+	}
+
+	export async function $bog_vmap_probe_paint(
+		root: string,
+		say: ( line: string )=> void,
+		want: ( ok: boolean, note: string )=> void,
+	) {
+
+		const bin = $bog_probe_chrome_bin()
+		if( !bin ) return
+
+		const d = '$'
+		const app = `$[ ${ JSON.stringify( d + 'bog_vmap_app' ) } ].Root( 0 )`
+		const site = await new $bog_probe_static( root ).open()
+		const profile = String( $node.fs.mkdtempSync( $node.path.join( $node.os.tmpdir(), 'vmap-paint-' ) ) )
+		const browser = new $bog_probe_browser( bin, profile )
+		const repaint = 'await new Promise( done => requestAnimationFrame( ()=> requestAnimationFrame( done ) ) )'
+		const themes = new Set< string >()
+
+		const sample = async ( x: number, y: number )=> {
+			const shot = await browser.send( 'Page.captureScreenshot', {
+				format: 'png',
+				clip: { x: Math.round( x ) - 3, y: Math.round( y ) - 3, width: 7, height: 7, scale: 1 },
+			}, browser.page )
+			const data = $bog_probe_dig( shot, 'result', 'data' )
+			if( typeof data !== 'string' ) return $mol_fail( new Error( `цвет: скриншот не снялся, ${ JSON.stringify( $bog_probe_dig( shot, 'error' ) ) }` ) )
+			return $bog_vmap_probe_spot( $bog_vmap_probe_png( Buffer.from( data, 'base64' ) ) )
+		}
+
+		try {
+
+			await browser.open()
+			await browser.viewport( 1280, 800 )
+			await browser.open_page( site.uri( $bog_vmap_probe_page ), $bog_vmap_probe_ready(), 150000 )
+			const part_name = String( await browser.evaluate( `
+				const app = ${ app }
+				app.board_draw( ${ JSON.stringify( $bog_vmap_probe_board ) } )
+				const name = app.selected()
+				app.selected( null )
+				return name
+			`, 15000 ) )
+			const measured = await browser.until( `!!${ app }.Pane().part_box( ${ JSON.stringify( part_name ) } )`, 15000 )
+			if( measured < 0 ) return $mol_fail( new Error( `цвет: сцена не измерила артборд ${ part_name } за 15000 мс` ) )
+
+			let scene = ''
+			for( const session of browser.frames ) {
+				try {
+					if( await browser.evaluate( `return !!document.querySelector( '[bog_vmap_scene]' )`, 5000, session ) ) scene = session
+				} catch( error ) {}
+			}
+			if( !scene ) return $mol_fail( new Error( 'цвет: не нашёл сессию кадра сцены' ) )
+
+			for( const [ theme, light ] of [ [ 'тёмная', false ], [ 'светлая', true ] ] as const ) {
+
+				const at = `1280, ${ theme } тема:`
+
+				const host = await browser.evaluate( `
+					const app = ${ app }
+					const root = document.querySelector( '[bog_vmap_app]' )
+					app.lights( ${ light } )
+					for( let step = 0; step < 50 && root.getAttribute( 'mol_theme' ) !== app.theme_name(); ++ step ) {
+						await new Promise( done => setTimeout( done, 100 ) )
+					}
+					${ repaint }
+					const paint = name => getComputedStyle( document.querySelector( '[bog_vmap_app_' + name + ']' ) ).backgroundColor
+					const box = name => {
+						const rect = document.querySelector( '[bog_vmap_app_' + name + ']' ).getBoundingClientRect()
+						return { left: rect.left, top: rect.top, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom }
+					}
+					const pane = box( 'pane' )
+					const part = app.Pane().part_box( ${ JSON.stringify( part_name ) } )
+					const spot = side => {
+						const column = box( side )
+						const x = ( column.left + column.right ) / 2
+						const y = column.bottom - 16
+						const over = []
+						for( let node = document.elementFromPoint( x, y ); node && !node.hasAttribute( 'bog_vmap_app_' + side ); node = node.parentElement ) {
+							if( getComputedStyle( node ).backgroundColor !== 'rgba(0, 0, 0, 0)' ) over.push( node.tagName.toLowerCase() )
+						}
+						return { x, y, over: over.join( ' ' ) }
+					}
+					return {
+						theme: root.getAttribute( 'mol_theme' ),
+						wanted: app.theme_name(),
+						pane: paint( 'pane' ),
+						left: paint( 'left' ),
+						right: paint( 'right' ),
+						spots: { left: spot( 'left' ), right: spot( 'right' ) },
+						boxes: { pane, frame: box( 'pane_scene' ) },
+						board: part && { x: pane.left + part.left + part.width / 2, y: pane.top + part.top + part.height / 2 },
+					}
+				`, 15000 ) as {
+					theme: string, wanted: string, pane: string, left: string, right: string,
+					spots: { [ side in 'left' | 'right' ]: { x: number, y: number, over: string } },
+					boxes: { [ name in 'pane' | 'frame' ]: $bog_probe_rect },
+					board: { x: number, y: number } | null,
+				}
+
+				themes.add( host.theme )
+				want( host.theme === host.wanted, `${ at } корень редактора в теме ${ host.theme }, ждали ${ host.wanted }` )
+
+				const board = host.board
+				if( !board ) return $mol_fail( new Error( `${ at } артборд не заведён или не измерен` ) )
+
+				const look = `
+					${ repaint }
+					const scene = document.querySelector( '[bog_vmap_scene]' )
+					const board = document.elementFromPoint( ${ board.x - host.boxes.frame.left }, ${ board.y - host.boxes.frame.top } )
+					return {
+						theme: scene.getAttribute( 'mol_theme' ),
+						scene: getComputedStyle( scene ).backgroundColor,
+						board: board && board !== scene ? getComputedStyle( board ).backgroundColor : 'на месте артборда корень сцены',
+					}
+				`
+
+				const since = Date.now()
+				let frame = await browser.evaluate( look, 5000, scene ) as { theme: string, scene: string, board: string }
+				while( frame.theme !== host.theme && Date.now() - since < 10000 ) {
+					await $bog_probe_pause( 200 )
+					frame = await browser.evaluate( look, 5000, scene ) as typeof frame
+				}
+
+				want( frame.theme === host.theme, `${ at } тема кадра ${ frame.theme } не догнала тему хоста ${ host.theme } за ${ Date.now() - since } мс` )
+
+				await browser.evaluate( `${ repaint }; return true`, 5000 )
+
+				const canvas = await sample( host.boxes.pane.right - 16, host.boxes.pane.bottom - 16 )
+				const artboard = await sample( board.x, board.y )
+				const left = await sample( host.spots.left.x, host.spots.left.y )
+				const right = await sample( host.spots.right.x, host.spots.right.y )
+
+				for( const [ side, spot ] of [ [ 'левой', host.spots.left ], [ 'правой', host.spots.right ] ] as const ) want(
+					!spot.over,
+					`${ at } точку замера ${ side } колонки закрывает узел со своим фоном: ${ spot.over }`,
+				)
+
+				const pairs = [
+					[ 'артборд', 'с артбордом', artboard ],
+					[ 'левая колонка', 'с левой колонкой', left ],
+					[ 'правая колонка', 'с правой колонкой', right ],
+				] as const
+
+				const contrast = ( spot: { readonly rgb: $bog_vmap_probe_rgb } )=> $bog_vmap_probe_contrast( canvas.rgb, spot.rgb )
+				const shown = pairs.map( ( [ , versus, spot ] )=> `${ versus } ${ contrast( spot ).toFixed( 3 ) }` ).join( ', ' )
+
+				say( `${ at } холст ${ canvas.hex }, артборд ${ artboard.hex }, колонки ${ left.hex } и ${ right.hex }; контраст холста ${ shown }, порог ${ $bog_vmap_probe_contrast_min }; computed: холст в кадре ${ frame.scene }, в пейне ${ host.pane }, артборд ${ frame.board }, колонки ${ host.left } и ${ host.right }` )
+
+				for( const [ name, spot ] of [ [ 'холст', canvas ], [ 'артборд', artboard ], [ 'левая колонка', left ], [ 'правая колонка', right ] ] as const ) want(
+					spot.share >= .5,
+					`${ at } пятно «${ name }» пёстрое: ${ spot.hex } только на ${ Math.round( spot.share * 100 ) } % пикселей, замер попал не туда`,
+				)
+
+				for( const [ name, , spot ] of pairs ) want(
+					contrast( spot ) >= $bog_vmap_probe_contrast_min,
+					`${ at } холст ${ canvas.hex } и ${ name } ${ spot.hex } почти одного цвета: контраст ${ contrast( spot ).toFixed( 3 ) } меньше ${ $bog_vmap_probe_contrast_min }`,
+				)
+
+				want(
+					frame.scene === host.pane,
+					`${ at } холст в кадре ${ frame.scene } и в пейне ${ host.pane } разного цвета: до отрисовки кадра холст мигнёт`,
+				)
+
+			}
+
+			want( themes.size === 2, `цвет: оба захода прошли в теме ${ [ ... themes ].join( ' и ' ) }, свет не переключился` )
+
+		} finally {
+			browser.close()
+			site.close()
+			try { $node.fs.rmSync( profile, { recursive: true, force: true } ) } catch( error ) {}
+		}
+
+	}
+
 	export function $bog_vmap_probe_show( rect: $bog_probe_rect | null ) {
 		if( !rect ) return 'null'
 		return `${ Math.round( rect.width ) }×${ Math.round( rect.height ) } @${ Math.round( rect.left ) },${ Math.round( rect.top ) }`
@@ -304,6 +558,8 @@ namespace $ {
 		}
 
 		const began = Date.now()
+
+		await $bog_vmap_probe_paint( root, say, want )
 
 		let widths = [ -1, -1 ]
 
