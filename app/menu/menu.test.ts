@@ -99,6 +99,14 @@ namespace $ {
 			$mol_assert_like( canvas.titles(), [ 'Артборд здесь', 'Показать всё' ] )
 		},
 
+		'a read only scene keeps only the items that change nothing'( $ ) {
+			const node = menu_make( $, { on_node: ()=> true, editable: ()=> false } )
+			$mol_assert_like( node.titles(), [ 'Выделить родителя', 'Внутрь' ] )
+
+			const canvas = menu_make( $, { on_node: ()=> false, editable: ()=> false } )
+			$mol_assert_like( canvas.titles(), [ 'Показать всё' ] )
+		},
+
 		'each item carries its key after the title, the way the platform writes it'( $ ) {
 			const mac = menu_make( $, { on_node: ()=> true, apple: ()=> true } )
 			$mol_assert_like( mac.keys(), [ '⌘D', '⌫', '⌥⌘G', '', '' ] )

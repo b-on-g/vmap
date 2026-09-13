@@ -2,9 +2,10 @@ namespace $.$$ {
 	export class $bog_vmap_app_menu extends $.$bog_vmap_app_menu {
 
 		override items() {
+			const edits = this.editable()
 			return this.on_node()
-				? [ this.Copy(), this.Remove(), this.Wrap(), this.Parent(), this.Enter() ]
-				: [ this.Board(), this.Fit() ]
+				? [ ... edits ? [ this.Copy(), this.Remove(), this.Wrap() ] : [], this.Parent(), this.Enter() ]
+				: [ ... edits ? [ this.Board() ] : [], this.Fit() ]
 		}
 
 		override apple() {
