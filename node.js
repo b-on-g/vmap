@@ -20233,6 +20233,9 @@ var $;
 		field_undo(){
 			return false;
 		}
+		editable(){
+			return true;
+		}
 		event(){
 			return {...(super.event()), "focusout": (next) => (this.field_leave(next))};
 		}
@@ -20272,6 +20275,7 @@ var $;
 			(obj.title) = () => ("view.tree");
 			(obj.hint) = () => ("Имя_узла $mol_view");
 			(obj.sidebar_showed) = () => (true);
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.tree_text(next)));
 			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.tree_press(next))});
 			return obj;
@@ -20281,6 +20285,7 @@ var $;
 			(obj.title) = () => ("JS");
 			(obj.hint) = () => ("");
 			(obj.sidebar_showed) = () => (true);
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.js_text(next)));
 			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.js_press(next))});
 			return obj;
@@ -20296,6 +20301,7 @@ var $;
 			(obj.title) = () => ("CSS");
 			(obj.hint) = () => ("");
 			(obj.sidebar_showed) = () => (true);
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.css_text(next)));
 			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.css_press(next))});
 			return obj;
@@ -32391,6 +32397,7 @@ var $;
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("Адрес приложения, ленды через запятую");
 			(obj.value) = (next) => ((this.links(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Links_field(){
@@ -32418,6 +32425,13 @@ var $;
 			(obj.bids) = () => ([(this.import_note())]);
 			(obj.control) = () => ((this.Import_open()));
 			return obj;
+		}
+		source_content(){
+			return [
+				(this.Pack_list()), 
+				(this.Links_field()), 
+				(this.Import_field())
+			];
 		}
 		parts_expanded(next){
 			if(next !== undefined) return next;
@@ -32522,6 +32536,9 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		editable(){
+			return true;
+		}
 		title(){
 			return "Полка";
 		}
@@ -32539,11 +32556,7 @@ var $;
 			const obj = new this.$.$mol_expander();
 			(obj.title) = () => ("Пак компонентов");
 			(obj.expanded) = (next) => ((this.source_expanded(next)));
-			(obj.content) = () => ([
-				(this.Pack_list()), 
-				(this.Links_field()), 
-				(this.Import_field())
-			]);
+			(obj.content) = () => ((this.source_content()));
 			return obj;
 		}
 		Parts(){
@@ -32564,6 +32577,7 @@ var $;
 			const obj = new this.$.$mol_button_minor();
 			(obj.title) = () => ((this.pack_title(id)));
 			(obj.hint) = () => ((this.pack_hint(id)));
+			(obj.enabled) = () => ((this.editable()));
 			(obj.attr) = () => ({...(this.$.$mol_button_minor.prototype.attr.call(obj)), "bog_vmap_app_shelf_pack_current": (this.pack_current(id))});
 			(obj.click) = (next) => ((this.pack_click(id, next)));
 			return obj;
@@ -33041,7 +33055,17 @@ var $;
                 this.dragged(id);
             }
             item_click(id, event) {
-                this.place(id);
+                if (this.editable())
+                    this.place(id);
+            }
+            source_content() {
+                const content = super.source_content();
+                return this.editable() ? content : content.filter(view => view !== this.Import_field());
+            }
+            dragged(next) {
+                if (next && !this.editable())
+                    return super.dragged();
+                return super.dragged(next);
             }
         }
         __decorate([

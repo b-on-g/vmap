@@ -403,6 +403,7 @@ $bog_vmap_app_code $mol_page
 	whole? false
 	refusal? \
 	field_undo false
+	editable true
 	event *
 		^
 		focusout? <=> field_leave? null
@@ -426,6 +427,7 @@ $bog_vmap_app_code $mol_page
 		title \view.tree
 		hint \Имя_узла $mol_view
 		sidebar_showed true
+		enabled <= editable
 		value? <=> tree_text? \
 		event *
 			^
@@ -434,6 +436,7 @@ $bog_vmap_app_code $mol_page
 		title \JS
 		hint \
 		sidebar_showed true
+		enabled <= editable
 		value? <=> js_text? \
 		event *
 			^
@@ -445,6 +448,7 @@ $bog_vmap_app_code $mol_page
 		title \CSS
 		hint \
 		sidebar_showed true
+		enabled <= editable
 		value? <=> css_text? \
 		event *
 			^
@@ -1768,6 +1772,7 @@ $bog_vmap_app_shelf $mol_page
 	files? /File
 	classes_showed? false
 	filter? \
+	editable true
 	title \Полка
 	tools /
 		<= Filter $mol_search
@@ -1780,7 +1785,7 @@ $bog_vmap_app_shelf $mol_page
 	Source $mol_expander
 		title \Пак компонентов
 		expanded? <=> source_expanded? true
-		content /
+		content <= source_content /
 			<= Pack_list $mol_list
 				rows <= pack_rows /
 			<= Links_field $mol_form_field
@@ -1789,6 +1794,7 @@ $bog_vmap_app_shelf $mol_page
 				control <= Links $mol_string
 					hint \Адрес приложения, ленды через запятую
 					value? <=> links?
+					enabled <= editable
 			<= Import_field $mol_form_field
 				name \Файлы модуля
 				bids / <= import_note? \
@@ -1811,6 +1817,7 @@ $bog_vmap_app_shelf $mol_page
 	Pack_row* $mol_button_minor
 		title <= pack_title* \
 		hint <= pack_hint* \
+		enabled <= editable
 		attr *
 			^
 			bog_vmap_app_shelf_pack_current <= pack_current* false

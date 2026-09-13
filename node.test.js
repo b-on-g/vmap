@@ -20224,6 +20224,9 @@ var $;
 		field_undo(){
 			return false;
 		}
+		editable(){
+			return true;
+		}
 		event(){
 			return {...(super.event()), "focusout": (next) => (this.field_leave(next))};
 		}
@@ -20263,6 +20266,7 @@ var $;
 			(obj.title) = () => ("view.tree");
 			(obj.hint) = () => ("Имя_узла $mol_view");
 			(obj.sidebar_showed) = () => (true);
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.tree_text(next)));
 			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.tree_press(next))});
 			return obj;
@@ -20272,6 +20276,7 @@ var $;
 			(obj.title) = () => ("JS");
 			(obj.hint) = () => ("");
 			(obj.sidebar_showed) = () => (true);
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.js_text(next)));
 			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.js_press(next))});
 			return obj;
@@ -20287,6 +20292,7 @@ var $;
 			(obj.title) = () => ("CSS");
 			(obj.hint) = () => ("");
 			(obj.sidebar_showed) = () => (true);
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.css_text(next)));
 			(obj.event) = () => ({...(this.$.$mol_textarea.prototype.event.call(obj)), "pointerdown": (next) => (this.css_press(next))});
 			return obj;
@@ -32382,6 +32388,7 @@ var $;
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("Адрес приложения, ленды через запятую");
 			(obj.value) = (next) => ((this.links(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Links_field(){
@@ -32409,6 +32416,13 @@ var $;
 			(obj.bids) = () => ([(this.import_note())]);
 			(obj.control) = () => ((this.Import_open()));
 			return obj;
+		}
+		source_content(){
+			return [
+				(this.Pack_list()), 
+				(this.Links_field()), 
+				(this.Import_field())
+			];
 		}
 		parts_expanded(next){
 			if(next !== undefined) return next;
@@ -32513,6 +32527,9 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		editable(){
+			return true;
+		}
 		title(){
 			return "Полка";
 		}
@@ -32530,11 +32547,7 @@ var $;
 			const obj = new this.$.$mol_expander();
 			(obj.title) = () => ("Пак компонентов");
 			(obj.expanded) = (next) => ((this.source_expanded(next)));
-			(obj.content) = () => ([
-				(this.Pack_list()), 
-				(this.Links_field()), 
-				(this.Import_field())
-			]);
+			(obj.content) = () => ((this.source_content()));
 			return obj;
 		}
 		Parts(){
@@ -32555,6 +32568,7 @@ var $;
 			const obj = new this.$.$mol_button_minor();
 			(obj.title) = () => ((this.pack_title(id)));
 			(obj.hint) = () => ((this.pack_hint(id)));
+			(obj.enabled) = () => ((this.editable()));
 			(obj.attr) = () => ({...(this.$.$mol_button_minor.prototype.attr.call(obj)), "bog_vmap_app_shelf_pack_current": (this.pack_current(id))});
 			(obj.click) = (next) => ((this.pack_click(id, next)));
 			return obj;
@@ -33032,7 +33046,17 @@ var $;
                 this.dragged(id);
             }
             item_click(id, event) {
-                this.place(id);
+                if (this.editable())
+                    this.place(id);
+            }
+            source_content() {
+                const content = super.source_content();
+                return this.editable() ? content : content.filter(view => view !== this.Import_field());
+            }
+            dragged(next) {
+                if (next && !this.editable())
+                    return super.dragged();
+                return super.dragged(next);
             }
         }
         __decorate([
@@ -52242,6 +52266,22 @@ var $;
             $mol_assert_ok(shelf.items().length > 4);
             $mol_assert_ok(shelf.body().includes(shelf.Parts()));
         },
+        'a read only scene browses the shelf but places, drags and rewires nothing'($) {
+            const shelf = $bog_vmap_app_shelf.make({ $, editable: () => false });
+            const id = shelf.items()[0].id;
+            shelf.item_click(id, null);
+            $mol_assert_equal(shelf.place(), '');
+            shelf.item_drag(id, { clientX: 10, clientY: 20 });
+            $mol_assert_equal(shelf.dragged(), '');
+            shelf.dragged(`${'$'}mol_view`);
+            $mol_assert_equal(shelf.dragged(), '');
+            $mol_assert_equal(shelf.Links().dom_tree().disabled, true);
+            $mol_assert_equal(shelf.Pack_row(shelf.packs()[0].id).dom_node_actual().hasAttribute('disabled'), true);
+            $mol_assert_equal(shelf.source_content().includes(shelf.Import_field()), false);
+            $mol_assert_equal(shelf.source_content().includes(shelf.Links_field()), true);
+            shelf.filter(shelf.items()[0].title);
+            $mol_assert_equal(shelf.items_shown()[0].id, id);
+        },
         'nothing connected is a state and not a failure'($) {
             const shelf = $bog_vmap_app_shelf.make({ $ });
             $mol_assert_like(shelf.app_list(), []);
@@ -53326,6 +53366,25 @@ var $;
             const publish = app.Publish();
             $mol_assert_equal(publish.js(), `greeting() {\n\treturn 1\n}`);
             $mol_assert_equal(publish.css().includes('color: red'), true);
+        },
+        'a read only scene shows the code and takes no typing'($) {
+            const panel = $bog_vmap_app_code.make({
+                $,
+                klass: () => `${d}bog_vmap_app_code_read_page`,
+                prop: () => '',
+                hooks: () => [],
+                whole: () => true,
+                source: () => `${d}bog_vmap_app_code_read_page ${d}mol_view\n\tsub /\n`,
+                node_source: () => '',
+                js: () => 'greeting() {\n\treturn 1\n}\n',
+                css: () => '',
+                error: () => '',
+                editable: () => false,
+            });
+            for (const area of [panel.Tree(), panel.Js(), panel.Css()]) {
+                $mol_assert_equal(area.Edit().dom_tree().disabled, true);
+            }
+            $mol_assert_ok(panel.Tree().value().includes(`${d}bog_vmap_app_code_read_page`));
         },
         'a press on the strip left of the field puts the caret in the field'($) {
             const dom = $.$mol_dom_context;

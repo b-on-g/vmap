@@ -16410,6 +16410,22 @@ var $;
             $mol_assert_ok(shelf.items().length > 4);
             $mol_assert_ok(shelf.body().includes(shelf.Parts()));
         },
+        'a read only scene browses the shelf but places, drags and rewires nothing'($) {
+            const shelf = $bog_vmap_app_shelf.make({ $, editable: () => false });
+            const id = shelf.items()[0].id;
+            shelf.item_click(id, null);
+            $mol_assert_equal(shelf.place(), '');
+            shelf.item_drag(id, { clientX: 10, clientY: 20 });
+            $mol_assert_equal(shelf.dragged(), '');
+            shelf.dragged(`${'$'}mol_view`);
+            $mol_assert_equal(shelf.dragged(), '');
+            $mol_assert_equal(shelf.Links().dom_tree().disabled, true);
+            $mol_assert_equal(shelf.Pack_row(shelf.packs()[0].id).dom_node_actual().hasAttribute('disabled'), true);
+            $mol_assert_equal(shelf.source_content().includes(shelf.Import_field()), false);
+            $mol_assert_equal(shelf.source_content().includes(shelf.Links_field()), true);
+            shelf.filter(shelf.items()[0].title);
+            $mol_assert_equal(shelf.items_shown()[0].id, id);
+        },
         'nothing connected is a state and not a failure'($) {
             const shelf = $bog_vmap_app_shelf.make({ $ });
             $mol_assert_like(shelf.app_list(), []);
@@ -17459,6 +17475,25 @@ var $;
             const publish = app.Publish();
             $mol_assert_equal(publish.js(), `greeting() {\n\treturn 1\n}`);
             $mol_assert_equal(publish.css().includes('color: red'), true);
+        },
+        'a read only scene shows the code and takes no typing'($) {
+            const panel = $bog_vmap_app_code.make({
+                $,
+                klass: () => `${d}bog_vmap_app_code_read_page`,
+                prop: () => '',
+                hooks: () => [],
+                whole: () => true,
+                source: () => `${d}bog_vmap_app_code_read_page ${d}mol_view\n\tsub /\n`,
+                node_source: () => '',
+                js: () => 'greeting() {\n\treturn 1\n}\n',
+                css: () => '',
+                error: () => '',
+                editable: () => false,
+            });
+            for (const area of [panel.Tree(), panel.Js(), panel.Css()]) {
+                $mol_assert_equal(area.Edit().dom_tree().disabled, true);
+            }
+            $mol_assert_ok(panel.Tree().value().includes(`${d}bog_vmap_app_code_read_page`));
         },
         'a press on the strip left of the field puts the caret in the field'($) {
             const dom = $.$mol_dom_context;
