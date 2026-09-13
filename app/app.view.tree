@@ -39,10 +39,18 @@ $bog_vmap_app $mol_page
 			checked? <=> left_showed?
 		<= Instruments $mol_bar
 			sub <= instruments /
-				<= Board $mol_button_minor
-					title \Артборд
-					hint \Положить страницу: прямоугольник ширины макета, вёрстка внутри по дереву
-					click? <=> board_add? null
+				<= Tool_select $mol_check_icon
+					Icon <= Tool_select_icon $mol_icon_cursor_default_outline
+					hint \Выделение: клик выбирает узел, второй клик впускает внутрь. Клавиша V
+					checked? <=> tool_select?
+				<= Tool_board $mol_check_icon
+					Icon <= Tool_board_icon $mol_icon_artboard
+					hint \Артборд: клик по холсту ставит страницу 1280×720, тяга — страницу этого размера. Клавиша F
+					checked? <=> tool_board?
+				<= Tool_hand $mol_check_icon
+					Icon <= Tool_hand_icon $mol_icon_hand_back_right_outline
+					hint \Рука: тяга двигает холст, пробел с тягой — то же на время. Клавиша H
+					checked? <=> tool_hand?
 				<= Delete $mol_button_minor
 					title \Удалить
 					hint <= delete_hint \
@@ -141,6 +149,12 @@ $bog_vmap_app $mol_page
 				tree_move? <=> tree_move? null
 				carry_drop? <=> carry_drop? null
 				files_drop? <=> files_drop? null
+				node_delete? <=> node_delete?
+				node_copy? <=> node_copy? null
+				board_draw? <=> board_draw? null
+				tool_select? => tool_select?
+				tool_board? => tool_board?
+				tool_hand? => tool_hand?
 		foot <= notes /$mol_view
 	Scenes $bog_vmap_app_scenes
 		store <= store

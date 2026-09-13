@@ -147,7 +147,9 @@ namespace $.$$ {
 		}
 
 		override picked( next?: readonly string[] ): readonly string[] {
-			return this.picked_at( this.doc_key(), next )
+			const key = this.doc_key()
+			if( next !== undefined && !$mol_compare_deep( next, this.picked_at( key ) ) ) this.Pane().entered( null )
+			return this.picked_at( key, next )
 		}
 
 		doc_key() {
@@ -466,8 +468,8 @@ namespace $.$$ {
 		}
 
 		inside_note() {
-			const name = this.Pane().entered()
-			return name ? `Внутри ${ name }: клавиши уходят компоненту. Клик по холсту или Esc — выйти` : ''
+			const pane = this.Pane()
+			return pane.inside() ? `Внутри ${ pane.entered() }: клавиши уходят компоненту. Клик по холсту или Esc — выйти` : ''
 		}
 
 		@ $mol_mem
@@ -958,8 +960,7 @@ namespace $.$$ {
 			return { width: 1280, height: 720 }
 		}
 
-		board_style() {
-			const size = this.board_size()
+		board_style( size: { readonly width: number, readonly height: number } ) {
 			return {
 				width: `${ size.width }px`,
 				minHeight: `${ size.height }px`,
@@ -970,7 +971,11 @@ namespace $.$$ {
 		}
 
 		@ $mol_action
-		board_add() {
+		override board_draw( next?: $bog_vmap_bridge_rect | null ) {
+			if( !next ) return null
+
+			const size = next.width || next.height ? next : this.board_size()
+
 			const node = this.node()
 			const name = this.name_free( 'Page' )
 			const tree = node.tree()
@@ -978,7 +983,7 @@ namespace $.$$ {
 			node.part_add( name, '$mol_view' )
 
 			node.over_set( name, 'style', tree.struct( 'style', [
-				tree.struct( '*', Object.entries( this.board_style() ).map(
+				tree.struct( '*', Object.entries( this.board_style( size ) ).map(
 					( [ key, value ] )=> tree.struct( key, [ tree.data( value ) ] )
 				) ),
 			] ) )
@@ -986,17 +991,35 @@ namespace $.$$ {
 			node.sub_open( name )
 			node.sub_add( name )
 
-			const pane = this.Pane()
-			const size = this.board_size()
-			const spot = pane.free_spot()
-
-			const box = { x: spot[0] - size.width / 2, y: spot[1], ... size }
-			this.spots({ ... this.spots(), [ name ]: { x: box.x, y: box.y } })
+			this.spots({ ... this.spots(), [ name ]: { x: next.x, y: next.y } })
 
 			this.selected( name )
 
-			pane.camera_fit([ box ])
+			return next
+		}
 
+		@ $mol_action
+		override node_copy() {
+			const picked = this.picked()
+			if( !picked.length ) return null
+
+			const node = this.node()
+			const pane = this.Pane() as $bog_vmap_app_pane
+
+			const tops = picked.filter( name => !picked.some( up => up !== name && node.sub_within( up, name ) ) )
+			const spots = { ... this.spots() }
+
+			const made = tops.map( name => {
+				const copy = this.$.$bog_vmap_app_copy( node, name )
+				const spot = pane.copy_spot( name )
+				if( spot ) spots[ copy ] = spot
+				return copy
+			} )
+
+			this.spots( spots )
+			this.picked( made )
+
+			return null
 		}
 
 		override delete_hint() {
@@ -1187,11 +1210,13 @@ namespace $.$$ {
 
 		@ $mol_mem
 		hotkeys() {
-			return new this.$.$mol_dom_listener(
-				this.$.$mol_dom_context,
-				'keydown',
-				$mol_wire_async( this ).key_press,
-			)
+			const dom = this.$.$mol_dom_context
+
+			return [
+				new this.$.$mol_dom_listener( dom, 'keydown', $mol_wire_async( this ).key_press, { passive: false } ),
+				new this.$.$mol_dom_listener( dom, 'keyup', $mol_wire_async( this ).key_release ),
+				new this.$.$mol_dom_listener( dom, 'blur', $mol_wire_async( this ).key_lost ),
+			]
 		}
 
 		code_undo( event: KeyboardEvent ) {
@@ -1234,28 +1259,23 @@ namespace $.$$ {
 
 			if( this.History().press( event ) ) return
 
-			if( event.key === 'Escape' ) {
-				if( this.Pane().inside() ) this.Pane().leave()
-				else this.selected( null )
-				return
-			}
-
 			if( this.columns_key( event ) ) {
 				event.preventDefault()
 				this.columns_toggle()
 				return
 			}
 
-			if( event.key !== 'Delete' && event.key !== 'Backspace' ) return
-			if( event.metaKey || event.ctrlKey || event.altKey ) return
-			if( this.typing( event ) ) return
+			( this.Pane() as $bog_vmap_app_pane ).key_down( event )
 
-			if( !this.selected() ) return
+		}
 
-			event.preventDefault()
+		key_release( event?: KeyboardEvent ) {
+			if( !event ) return
+			( this.Pane() as $bog_vmap_app_pane ).key_up( event )
+		}
 
-			this.node_delete()
-
+		key_lost() {
+			this.Pane().grip( false )
 		}
 
 		override auto() {

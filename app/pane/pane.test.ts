@@ -345,8 +345,10 @@ namespace $ {
 
 		'a part inside a page is carried to another position in its tree'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
+			const dom = $.$mol_dom_context
 
-			stage.click( stage.button( 'Артборд' ) )
+			dom.document.dispatchEvent( new dom.KeyboardEvent( 'keydown', { code: 'KeyF', key: 'f', bubbles: true } ) )
+			stage.tap( stage.client([ 100, 100 ]) )
 
 			const page = stage.pane.part_box( 'Page' )!
 

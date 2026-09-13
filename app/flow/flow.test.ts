@@ -935,8 +935,10 @@ namespace $ {
 
 		'a page takes the parts dropped into it and stacks them the way it is set'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
+			const dom = $.$mol_dom_context
 
-			stage.click( stage.button( 'Артборд' ) )
+			dom.document.dispatchEvent( new dom.KeyboardEvent( 'keydown', { code: 'KeyF', key: 'f', bubbles: true } ) )
+			stage.tap( stage.client([ 100, 100 ]) )
 
 			$mol_assert_equal( stage.app.selected(), 'Page' )
 
@@ -1293,7 +1295,9 @@ namespace $ {
 
 			for( const view of [
 				app.Left_check(),
-				app.Board(),
+				app.Tool_select(),
+				app.Tool_board(),
+				app.Tool_hand(),
 				app.Delete(),
 				app.Root_name(),
 				app.Zoom_out(),
@@ -1553,6 +1557,346 @@ namespace $ {
 				'Button', 'Calc', 'Map',
 				'Vmap_part_cell', 'Vmap_part_plot', 'Vmap_part_calc', 'Vmap_part_map',
 			] )
+
+		},
+
+	})
+
+}
+
+namespace $ {
+	const d = '$'
+
+	const calc = `${d}flow_calc`
+	const map = `${d}flow_map`
+
+	type stage = ReturnType< typeof $bog_vmap_app_flow_stage >
+
+	const key_of = ( code: string )=> {
+		if( code === 'Space' ) return ' '
+		if( code.startsWith( 'Key' ) ) return code.slice( 3 ).toLowerCase()
+		return code
+	}
+
+	const pressed = ( $: $, stage: stage, code: string, over: KeyboardEventInit = {}, target?: EventTarget )=> {
+		const dom = $.$mol_dom_context
+		const event = new dom.KeyboardEvent( 'keydown', { code, key: key_of( code ), bubbles: true, cancelable: true, ... over } )
+		;( target ?? dom.document ).dispatchEvent( event )
+		stage.redraw()
+		stage.scene.flush()
+		return event
+	}
+
+	const stepped = async ( stage: stage )=> {
+		const history = stage.app.History() as $$.$bog_vmap_app_history
+		const source = stage.app.doc_source()
+		const taken = ()=> history.ring( history.doc_key() ).at( -1 )?.source === source
+
+		for( let i = 0; i < 10 && !taken(); ++i ) {
+			stage.timers.filter( timer => timer.delay === history.step_delay() ).at( -1 )?.task()
+			await $bog_vmap_app_flow_settle( taken, 30 )
+			stage.redraw()
+		}
+
+		$mol_assert_equal( taken(), true )
+	}
+
+	const undone = ( stage: stage )=> {
+		const history = stage.app.History() as $$.$bog_vmap_app_history
+		history.undo()
+		stage.redraw()
+		stage.scene.flush()
+	}
+
+	const styled = ( stage: stage, name: string, prop: string )=> {
+		const style = stage.app.node().over_tree( name, 'style' )?.kids[ 0 ] ?? null
+		return $bog_vmap_lang_dict_get( style, prop )?.value ?? null
+	}
+
+	const settle = async ()=> {
+		await Promise.resolve()
+		await Promise.resolve()
+	}
+
+	$mol_test({
+
+		'the window hands the tool keys to the canvas, and a field keeps them'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const dom = $.$mol_dom_context
+
+			const f = pressed( $, stage, 'KeyF' )
+			$mol_assert_equal( stage.pane.tool(), 'board' )
+			$mol_assert_equal( f.defaultPrevented, true )
+
+			pressed( $, stage, 'KeyH' )
+			$mol_assert_equal( stage.pane.tool(), 'hand' )
+
+			pressed( $, stage, 'KeyV' )
+			$mol_assert_equal( stage.pane.tool(), 'select' )
+
+			const field = stage.app.Root_name().dom_node()
+			const typed = pressed( $, stage, 'KeyF', {}, field )
+			$mol_assert_equal( stage.pane.tool(), 'select' )
+			$mol_assert_equal( typed.defaultPrevented, false )
+
+			pressed( $, stage, 'Space' )
+			$mol_assert_equal( stage.pane.grip(), true )
+
+			dom.document.dispatchEvent( new dom.KeyboardEvent( 'keyup', { code: 'Space', key: ' ', bubbles: true } ) )
+			$mol_assert_equal( stage.pane.grip(), false )
+
+			pressed( $, stage, 'Space' )
+			dom.dispatchEvent( new dom.FocusEvent( 'blur' ) )
+			$mol_assert_equal( stage.pane.grip(), false )
+
+		},
+
+		async 'Backspace from the window deletes the pick, a field keeps it, and one undo brings it back'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+
+			await stepped( stage )
+			const before = stage.app.doc_source()
+
+			pressed( $, stage, 'Backspace', {}, stage.app.Root_name().dom_node() )
+			$mol_assert_equal( stage.app.doc_source(), before )
+
+			const gone = pressed( $, stage, 'Backspace' )
+			$mol_assert_equal( gone.defaultPrevented, true )
+			$mol_assert_equal( stage.app.doc_source().includes( 'Calc' ), false )
+			$mol_assert_equal( stage.app.selected(), null )
+
+			await stepped( stage )
+			undone( stage )
+
+			$mol_assert_equal( stage.app.doc_source(), before )
+			$mol_assert_like( Object.keys( stage.app.spots() ), [ 'Calc' ] )
+
+		},
+
+		async 'Cmd+D puts a copy beside the pick under the next free number, and each undo takes one copy back'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			await stepped( stage )
+			const before = stage.app.doc_source()
+
+			const copy = pressed( $, stage, 'KeyD', { metaKey: true } )
+			$mol_assert_equal( copy.defaultPrevented, true )
+
+			$mol_assert_ok( stage.app.doc_source().includes( `Calc_2 ${ calc }` ) )
+			$mol_assert_like( stage.app.spots()[ 'Calc_2' ], { x: 324, y: 150 } )
+			$mol_assert_like( [ ... stage.app.picked() ], [ 'Calc_2' ] )
+			$mol_assert_like( stage.app.node().sub_names(), [ 'Calc', 'Calc_2' ] )
+
+			await stepped( stage )
+			const once = stage.app.doc_source()
+
+			pressed( $, stage, 'KeyD', { ctrlKey: true } )
+			$mol_assert_like( stage.app.spots()[ 'Calc_3' ], { x: 448, y: 150 } )
+			$mol_assert_like( [ ... stage.app.picked() ], [ 'Calc_3' ] )
+
+			await stepped( stage )
+
+			undone( stage )
+			$mol_assert_equal( stage.app.doc_source(), once )
+
+			undone( stage )
+			$mol_assert_equal( stage.app.doc_source(), before )
+			$mol_assert_like( Object.keys( stage.app.spots() ), [ 'Calc' ] )
+
+		},
+
+		async 'a copy of a board copies what is laid out in it, a nested copy goes after its original'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const node = stage.app.node()
+
+			pressed( $, stage, 'KeyF' )
+			stage.tap( stage.client([ 100, 100 ]) )
+
+			const page = stage.pane.part_box( 'Page' )!
+			stage.drop( calc, stage.client([ page.left + 200, page.top + 40 ]) )
+			$mol_assert_like( node.sub_names( 'Page' ), [ 'Calc' ] )
+
+			await stepped( stage )
+			const before = stage.app.doc_source()
+
+			stage.app.selected( 'Page' )
+			pressed( $, stage, 'KeyD', { metaKey: true } )
+
+			$mol_assert_like( node.sub_names(), [ 'Page', 'Page_2' ] )
+			$mol_assert_like( node.sub_names( 'Page' ), [ 'Calc' ] )
+			$mol_assert_like( node.sub_names( 'Page_2' ), [ 'Calc_2' ] )
+			$mol_assert_like( stage.app.spots()[ 'Page_2' ], { x: 524, y: 100 } )
+			$mol_assert_equal( styled( stage, 'Page_2', 'width' ), '1280px' )
+
+			await stepped( stage )
+			const once = stage.app.doc_source()
+
+			stage.app.selected( 'Calc' )
+			pressed( $, stage, 'KeyD', { metaKey: true } )
+
+			$mol_assert_like( node.sub_names( 'Page' ), [ 'Calc', 'Calc_3' ] )
+			$mol_assert_equal( stage.app.spots()[ 'Calc_3' ], undefined )
+			$mol_assert_like( [ ... stage.app.picked() ], [ 'Calc_3' ] )
+
+			await stepped( stage )
+
+			undone( stage )
+			$mol_assert_equal( stage.app.doc_source(), once )
+
+			undone( stage )
+			$mol_assert_equal( stage.app.doc_source(), before )
+			$mol_assert_like( Object.keys( stage.app.spots() ), [ 'Page' ] )
+
+		},
+
+		'a board picked together with what is inside it is copied once'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const node = stage.app.node()
+
+			pressed( $, stage, 'KeyF' )
+			stage.tap( stage.client([ 100, 100 ]) )
+
+			const page = stage.pane.part_box( 'Page' )!
+			stage.drop( calc, stage.client([ page.left + 200, page.top + 40 ]) )
+
+			stage.app.picked([ 'Page', 'Calc' ])
+			pressed( $, stage, 'KeyD', { metaKey: true } )
+
+			$mol_assert_like( node.sub_names(), [ 'Page', 'Page_2' ] )
+			$mol_assert_like( node.sub_names( 'Page' ), [ 'Calc' ] )
+			$mol_assert_like( node.sub_names( 'Page_2' ), [ 'Calc_2' ] )
+			$mol_assert_like( [ ... stage.app.picked() ], [ 'Page_2' ] )
+
+		},
+
+		async 'the board tool puts a board where it is clicked, and of the box it is dragged under the camera'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const overlay = stage.overlay()
+
+			pressed( $, stage, 'KeyF' )
+			stage.tap( stage.client([ 100, 100 ]) )
+
+			$mol_assert_equal( stage.app.selected(), 'Page' )
+			$mol_assert_like( stage.app.spots()[ 'Page' ], { x: 100, y: 100 } )
+			$mol_assert_equal( styled( stage, 'Page', 'width' ), '1280px' )
+			$mol_assert_equal( styled( stage, 'Page', 'minHeight' ), '720px' )
+			$mol_assert_equal( stage.pane.tool(), 'select' )
+
+			await stepped( stage )
+			const before = stage.app.doc_source()
+
+			stage.pane.camera_shift( new $mol_vector_2d( 100, 50 ) )
+			stage.pane.camera_zoom( 2 )
+
+			pressed( $, stage, 'KeyF' )
+			stage.press( overlay, stage.client([ 200, 150 ]) )
+			stage.move( overlay, stage.client([ 400, 350 ]) )
+			stage.release( overlay, stage.client([ 400, 350 ]) )
+			stage.redraw()
+			stage.scene.flush()
+
+			$mol_assert_equal( stage.app.selected(), 'Page_2' )
+			$mol_assert_like( stage.app.spots()[ 'Page_2' ], { x: 50, y: 50 } )
+			$mol_assert_equal( styled( stage, 'Page_2', 'width' ), '100px' )
+			$mol_assert_equal( styled( stage, 'Page_2', 'minHeight' ), '100px' )
+			$mol_assert_like( [ ... stage.pane.camera_shift() ], [ 100, 50 ] )
+			$mol_assert_equal( stage.pane.camera_zoom(), 2 )
+
+			await stepped( stage )
+			undone( stage )
+
+			$mol_assert_equal( stage.app.doc_source(), before )
+
+		},
+
+		'a pick moved off the canvas and back through the layers does not let the pointer in again'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.drop( map, stage.client([ 400, 150 ]) )
+
+			stage.tap( stage.part_center( 'Calc' ) )
+			stage.tap( stage.part_center( 'Calc' ) )
+			$mol_assert_equal( stage.pane.inside(), true )
+			$mol_assert_ok( stage.text().includes( 'Внутри Calc' ) )
+
+			stage.click( stage.check( 'Слои' ) )
+
+			const layer = ( name: string )=> [ ... stage.root.querySelectorAll( '[bog_vmap_app_layers_pick]' ) ]
+				.find( el => el.textContent === name )!
+
+			stage.click( layer( 'Map' ) )
+			$mol_assert_equal( stage.app.selected(), 'Map' )
+			$mol_assert_equal( stage.pane.inside(), false )
+			$mol_assert_equal( stage.text().includes( 'Внутри' ), false )
+
+			stage.click( layer( 'Calc' ) )
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+			$mol_assert_equal( stage.pane.inside(), false )
+			$mol_assert_equal( stage.pane.overlay_style().clipPath, 'none' )
+			$mol_assert_equal( stage.text().includes( 'Внутри' ), false )
+
+		},
+
+		async 'a new scene opened from inside a node says nothing about being inside'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.tap( stage.part_center( 'Calc' ) )
+			stage.tap( stage.part_center( 'Calc' ) )
+			$mol_assert_ok( stage.text().includes( 'Внутри Calc' ) )
+
+			stage.click( stage.button( 'Новая сцена' ) )
+			await $bog_vmap_app_flow_settle( ()=> stage.store.doc_links().length > 1 )
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.inside(), false )
+			$mol_assert_equal( stage.text().includes( 'Внутри' ), false )
+
+		},
+
+		'the tool buttons of the head are the tools'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			stage.click( app.Tool_board().dom_node() )
+			$mol_assert_equal( stage.pane.tool(), 'board' )
+			$mol_assert_equal( app.Tool_board().checked(), true )
+			$mol_assert_equal( app.Tool_select().checked(), false )
+
+			stage.click( app.Tool_board().dom_node() )
+			$mol_assert_equal( stage.pane.tool(), 'select' )
+
+			stage.click( app.Tool_hand().dom_node() )
+			$mol_assert_equal( stage.pane.tool(), 'hand' )
+
+			pressed( $, stage, 'KeyV' )
+			$mol_assert_equal( app.Tool_select().checked(), true )
+			$mol_assert_equal( app.Tool_hand().checked(), false )
+
+		},
+
+		async 'Escape from the window in a field only takes the focus off the field'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const dom = $.$mol_dom_context
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			const field = stage.app.Root_name().dom_node() as HTMLInputElement
+			field.focus()
+
+			pressed( $, stage, 'Escape', {}, field )
+			await settle()
+
+			$mol_assert_equal( dom.document.activeElement, stage.pane.dom_node() )
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+
+			pressed( $, stage, 'Escape' )
+			$mol_assert_equal( stage.app.selected(), null )
 
 		},
 

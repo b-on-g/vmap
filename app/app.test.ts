@@ -1,6 +1,8 @@
 namespace $ {
 	const d = '$'
 
+	const clicked = { x: 0, y: 0, width: 0, height: 0 }
+
 	const measured = ( $: $mol_ambient_context )=> {
 
 		const peer = { origin: 'null', postMessage() {} }
@@ -198,7 +200,7 @@ namespace $ {
 		'an artboard is an ordinary node with a sub and a width'( $ ) {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
-			app.board_add()
+			app.board_draw( clicked )
 
 			const source = app.doc_source()
 
@@ -213,7 +215,7 @@ namespace $ {
 
 			$mol_assert_ok( Boolean( app.spots()[ 'Page' ] ) )
 
-			app.board_add()
+			app.board_draw( clicked )
 			$mol_assert_like( app.doc_containers(), [ 'Page', 'Page_2' ] )
 
 		},
@@ -221,7 +223,7 @@ namespace $ {
 		'an artboard carried into the download takes a colour with its background'( $ ) {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
-			app.board_add()
+			app.board_draw( clicked )
 
 			const module = app.export_state().module!
 			const tree = module.files.find( file => file.name.endsWith( '.view.tree' ) )!.text
@@ -238,37 +240,41 @@ namespace $ {
 
 		},
 
-		'a new artboard lands where the camera shows the whole of it'( $ ) {
+		'a board drawn by a click takes the layout size at the point, a dragged one takes its box, and the camera stays'( $ ) {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 			const pane = app.Pane() as $$.$bog_vmap_app_pane
 
-			pane.view_rect = ()=> ({
-				left: 0, top: 0, width: 600, height: 500, right: 600, bottom: 500,
-			})
+			const styled = ( name: string, prop: string )=> {
+				const style = app.node().over_tree( name, 'style' )?.kids[ 0 ] ?? null
+				return $bog_vmap_lang_dict_get( style, prop )?.value ?? null
+			}
 
-			app.board_add()
+			app.board_draw({ x: 40, y: 30, width: 0, height: 0 })
 
-			const size = app.board_size()
-			const spot = app.spots()[ 'Page' ]
-			const zoom = pane.camera_zoom()
-			const shift = pane.camera_shift()
+			$mol_assert_equal( app.selected(), 'Page' )
+			$mol_assert_like( app.spots()[ 'Page' ], { x: 40, y: 30 } )
+			$mol_assert_equal( styled( 'Page', 'width' ), `${ app.board_size().width }px` )
+			$mol_assert_equal( styled( 'Page', 'minHeight' ), `${ app.board_size().height }px` )
 
-			$mol_assert_equal( zoom, ( 600 - 48 ) / size.width )
+			app.board_draw({ x: -10, y: 5, width: 300, height: 200 })
 
-			const left = spot.x * zoom + shift[0]
-			const top = spot.y * zoom + shift[1]
+			$mol_assert_equal( app.selected(), 'Page_2' )
+			$mol_assert_like( app.spots()[ 'Page_2' ], { x: -10, y: 5 } )
+			$mol_assert_equal( styled( 'Page_2', 'width' ), '300px' )
+			$mol_assert_equal( styled( 'Page_2', 'minHeight' ), '200px' )
 
-			$mol_assert_equal( Math.round( left ), 24 )
-			$mol_assert_equal( Math.round( left + size.width * zoom ), 576 )
-			$mol_assert_ok( top >= 0 )
-			$mol_assert_ok( top + size.height * zoom <= 500 )
+			$mol_assert_like( [ ... pane.camera_shift() ], [ 0, 0 ] )
+			$mol_assert_equal( pane.camera_zoom(), 1 )
+
+			$mol_assert_equal( app.board_draw( null ), null )
+			$mol_assert_like( app.doc_containers(), [ 'Page', 'Page_2' ] )
 
 		},
 
 		'the direction a container is set to comes off the document'( $ ) {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
-			app.board_add()
+			app.board_draw( clicked )
 			$mol_assert_equal( app.doc_axis( 'Page' ), 'column' )
 
 			app.part_drop( `${d}mol_button_minor`, 2000, 100 )
@@ -288,7 +294,7 @@ namespace $ {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 			const pane = app.Pane() as $$.$bog_vmap_app_pane
 
-			app.board_add()
+			app.board_draw( clicked )
 
 			pane.sizes({ [ `${ app.doc_root() }/Page` ]: { x: 0, y: 0, width: 1280, height: 720 } })
 
@@ -307,7 +313,7 @@ namespace $ {
 		'a part carried into an artboard leaves the placement'( $ ) {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
-			app.board_add()
+			app.board_draw( clicked )
 			app.part_drop( `${d}mol_button_minor`, 2000, 100 )
 
 			$mol_assert_like( app.spots()[ 'Button_minor' ], { x: 2000, y: 100 } )
@@ -323,7 +329,7 @@ namespace $ {
 		'deleting an artboard takes what is laid out inside it'( $ ) {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
-			app.board_add()
+			app.board_draw( clicked )
 			app.part_drop( `${d}mol_button_minor`, 2000, 100 )
 			app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 })
 
@@ -361,7 +367,7 @@ namespace $ {
 		'renaming a node on a board keeps it drawn'( $ ) {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
-			app.board_add()
+			app.board_draw( clicked )
 			app.part_drop( `${d}mol_button_minor`, 2000, 100 )
 			app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 })
 
@@ -1006,8 +1012,10 @@ namespace $ {
 
 		'a click puts a free part beside what covers the middle, never inside it'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
+			const dom = $.$mol_dom_context
 
-			stage.click( stage.button( 'Артборд' ) )
+			dom.document.dispatchEvent( new dom.KeyboardEvent( 'keydown', { code: 'KeyF', key: 'f', bubbles: true } ) )
+			stage.tap( stage.client([ 100, 100 ]) )
 
 			const page = stage.app.selected()!
 			$mol_assert_ok( page )
@@ -1130,8 +1138,13 @@ namespace $ {
 			$mol_assert_equal( head[ 2 ], app.Root_name() )
 			$mol_assert_equal( head[ 3 ], app.Tools() )
 
-			$mol_assert_ok( app.instruments().includes( app.Board() ) )
-			$mol_assert_ok( app.instruments().includes( app.Delete() ) )
+			const instruments = app.instruments()
+
+			$mol_assert_equal( instruments.length, 4 )
+			$mol_assert_equal( instruments[ 0 ], app.Tool_select() )
+			$mol_assert_equal( instruments[ 1 ], app.Tool_board() )
+			$mol_assert_equal( instruments[ 2 ], app.Tool_hand() )
+			$mol_assert_equal( instruments[ 3 ], app.Delete() )
 
 			const tools = app.tools()
 
