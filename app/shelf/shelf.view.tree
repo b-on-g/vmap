@@ -13,6 +13,7 @@ $bog_vmap_app_shelf $mol_page
 	files? /File
 	classes_showed? false
 	filter? \
+	editable true
 	title \Полка
 	tools /
 		<= Filter $mol_search
@@ -25,7 +26,7 @@ $bog_vmap_app_shelf $mol_page
 	Source $mol_expander
 		title \Пак компонентов
 		expanded? <=> source_expanded? true
-		content /
+		content <= source_content /
 			<= Pack_list $mol_list
 				rows <= pack_rows /
 			<= Links_field $mol_form_field
@@ -34,6 +35,7 @@ $bog_vmap_app_shelf $mol_page
 				control <= Links $mol_string
 					hint \Адрес приложения, ленды через запятую
 					value? <=> links?
+					enabled <= editable
 			<= Import_field $mol_form_field
 				name \Файлы модуля
 				bids / <= import_note? \
@@ -56,6 +58,7 @@ $bog_vmap_app_shelf $mol_page
 	Pack_row* $mol_button_minor
 		title <= pack_title* \
 		hint <= pack_hint* \
+		enabled <= editable
 		attr *
 			^
 			bog_vmap_app_shelf_pack_current <= pack_current* false

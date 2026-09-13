@@ -86,6 +86,30 @@ namespace $ {
 
 		},
 
+		'a read only scene browses the shelf but places, drags and rewires nothing'( $ ) {
+
+			const shelf = $bog_vmap_app_shelf.make({ $, editable: ()=> false }) as $$.$bog_vmap_app_shelf
+			const id = shelf.items()[ 0 ].id
+
+			shelf.item_click( id, null )
+			$mol_assert_equal( shelf.place(), '' )
+
+			shelf.item_drag( id, { clientX: 10, clientY: 20 } as PointerEvent )
+			$mol_assert_equal( shelf.dragged(), '' )
+
+			shelf.dragged( `${ '$' }mol_view` )
+			$mol_assert_equal( shelf.dragged(), '' )
+
+			$mol_assert_equal( ( shelf.Links().dom_tree() as HTMLInputElement ).disabled, true )
+			$mol_assert_equal( shelf.Pack_row( shelf.packs()[ 0 ].id ).dom_node_actual().hasAttribute( 'disabled' ), true )
+			$mol_assert_equal( shelf.source_content().includes( shelf.Import_field() ), false )
+			$mol_assert_equal( shelf.source_content().includes( shelf.Links_field() ), true )
+
+			shelf.filter( shelf.items()[ 0 ].title )
+			$mol_assert_equal( shelf.items_shown()[ 0 ].id, id )
+
+		},
+
 		'nothing connected is a state and not a failure'( $ ) {
 
 			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf

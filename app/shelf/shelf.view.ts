@@ -234,7 +234,17 @@ namespace $.$$ {
 
 		@ $mol_action
 		item_click( id: string, event?: Event | null ) {
-			this.place( id )
+			if( this.editable() ) this.place( id )
+		}
+
+		override source_content() {
+			const content = super.source_content()
+			return this.editable() ? content : content.filter( view => view !== this.Import_field() )
+		}
+
+		override dragged( next?: string ) {
+			if( next && !this.editable() ) return super.dragged()
+			return super.dragged( next )
 		}
 
 	}
