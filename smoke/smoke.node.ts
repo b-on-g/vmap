@@ -51,8 +51,8 @@ namespace $ {
 				30000,
 			)
 
-			const grew = await browser.until( `Object.keys( ${ pane }.sizes() ).length > ${ before }`, 30000 )
-			if( grew < 0 ) return $mol_fail( new Error( `после броска детали sizes остались на ${ before } узлах` ) )
+			const part = `${ pane }.sizes()[ ${ app }.doc_root() + '/' + ${ app }.selected() ]`
+			const measured = await browser.until( `${ part }.width > 0 && ${ part }.height > 0`, 30000 )
 
 			const after = Number( await browser.evaluate( `return Object.keys( ${ pane }.sizes() ).length`, 15000 ) )
 			const name = String( await browser.evaluate( `return ${ app }.selected() || ''`, 15000 ) )
@@ -61,16 +61,13 @@ namespace $ {
 			if( !name ) return $mol_fail( new Error( 'брошенная деталь не выделилась' ) )
 			if( !source.includes( 'bog_vmap_part_calc' ) ) return $mol_fail( new Error( 'деталь не попала в документ' ) )
 
-			const box = String( await browser.evaluate(
-				`return JSON.stringify( ${ pane }.sizes()[ ${ app }.doc_root() + '/' + ${ app }.selected() ] ?? null )`,
-				15000,
-			) )
+			const box = String( await browser.evaluate( `return JSON.stringify( ${ part } ?? null )`, 15000 ) )
 
 			const rect = JSON.parse( box ) as { readonly width?: number, readonly height?: number } | null
-			if( !rect || !Number( rect.width ) || !Number( rect.height ) )
-				return $mol_fail( new Error( `у брошенной детали нет размеров: ${ box }` ) )
+			if( measured < 0 || !rect || !Number( rect.width ) || !Number( rect.height ) )
+				return $mol_fail( new Error( `у брошенной детали нет размеров за 30000 мс: ${ box }, узлов ${ before } → ${ after }` ) )
 
-			say( `бросок детали: узлов ${ before } → ${ after } за ${ grew } мс, ${ name } ${ rect.width }×${ rect.height }` )
+			say( `бросок детали: узлов ${ before } → ${ after }, размер детали за ${ measured } мс, ${ name } ${ rect.width }×${ rect.height }` )
 
 			await browser.evaluate( `${ pane }.picked([ ${ JSON.stringify( name ) } ]); ${ pane }.entered( ${ JSON.stringify( name ) } ); return 1`, 15000 )
 
