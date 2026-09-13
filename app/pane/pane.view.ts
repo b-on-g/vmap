@@ -412,7 +412,7 @@ namespace $.$$ {
 			return nodes
 		}
 
-		part_size( name: string ) {
+		override part_size( name: string ) {
 			let found = null as $bog_vmap_bridge_rect | null
 
 			for( const node of this.nodes_measured() ) if( node.name === name ) found = node.box

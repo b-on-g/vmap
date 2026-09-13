@@ -696,7 +696,7 @@ namespace $.$$ {
 		override tree_move( next?: $bog_vmap_app_pane_tree_move | null ) {
 			if( !next ) return null
 
-			const box = ( this.Pane() as $bog_vmap_app_pane ).part_size( next.name )
+			const box = this.Pane().part_size( next.name )
 
 			this.node().sub_move( next.name, next.index, next.owner )
 
