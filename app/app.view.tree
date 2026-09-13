@@ -230,3 +230,6 @@ $bog_vmap_app $mol_page
 			top <= ghost_top \0px
 		sub /
 			<= ghost_title \
+	event *
+		^
+		click? <=> chrome_click? null

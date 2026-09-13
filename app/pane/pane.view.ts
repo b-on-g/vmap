@@ -623,7 +623,7 @@ namespace $.$$ {
 			return { KeyV: 'select', KeyF: 'board', KeyH: 'hand' }
 		}
 
-		key_field( target: EventTarget | null ) {
+		override key_field( target: EventTarget | null ) {
 			const element = target as { readonly tagName?: string, readonly isContentEditable?: boolean } | null
 			if( element?.isContentEditable ) return true
 			return /^(INPUT|TEXTAREA|SELECT)$/.test( element?.tagName ?? '' )

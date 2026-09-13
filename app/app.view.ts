@@ -1275,10 +1275,8 @@ namespace $.$$ {
 			return true
 		}
 
-		typing( event: KeyboardEvent ) {
-			const target = event.target as HTMLElement | null
-			if( target?.isContentEditable ) return true
-			return Boolean( target && /^(INPUT|TEXTAREA|SELECT)$/.test( target.tagName ) )
+		typing( event: Event ) {
+			return this.Pane().key_field( event.target )
 		}
 
 		columns_key( event: KeyboardEvent ) {
@@ -1311,6 +1309,24 @@ namespace $.$$ {
 
 		key_lost() {
 			this.Pane().grip( false )
+		}
+
+		override chrome_click( event?: MouseEvent ) {
+			if( !event?.detail ) return null
+			if( this.typing( event ) ) return null
+
+			const control = ( event.target as Element | null )?.closest( '[mol_button], a[href]' )
+			if( !control || control.closest( '[mol_pop]' ) ) return null
+
+			const active = this.$.$mol_dom_context.document.activeElement as HTMLElement | null
+			if( !active || !control.contains( active ) ) return null
+
+			active.blur()
+
+			const selection = this.$.$mol_view_selection
+			if( control.contains( selection.focused()[ 0 ] ?? null ) ) selection.focused( [], 'notify' )
+
+			return null
 		}
 
 		override auto() {

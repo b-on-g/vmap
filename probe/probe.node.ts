@@ -441,20 +441,7 @@ namespace $ {
 		{ name: 'parts', title: 'Готовые детали' },
 	]
 
-	export async function $bog_vmap_probe_fold(
-		root: string,
-		say: ( line: string )=> void,
-		want: ( ok: boolean, note: string )=> void,
-	) {
-
-		const bin = $bog_probe_chrome_bin()
-		if( !bin ) return
-
-		const site = await new $bog_probe_static( root ).open()
-		const profile = String( $node.fs.mkdtempSync( $node.path.join( $node.os.tmpdir(), 'vmap-fold-' ) ) )
-		const browser = new $bog_probe_browser( bin, profile )
-
-		const at = '1280, «Ассеты», клик мышью:'
+	export function $bog_vmap_probe_mouse( browser: $bog_probe_browser, at: string ) {
 
 		const point = async ( find: string )=> await browser.evaluate( `
 			const node = ${ find }
@@ -466,12 +453,17 @@ namespace $ {
 			return node.contains( document.elementFromPoint( x, y ) ) ? [ x, y ] : null
 		`, 15000 ) as [ number, number ] | null
 
-		const mouse = ( type: string, [ x, y ]: readonly [ number, number ] )=> browser.send( 'Input.dispatchMouseEvent', {
+		const input = ( method: string, params: { readonly type: string, readonly [ field: string ]: unknown } )=> Promise.race([
+			browser.send( method, params, browser.page ),
+			$bog_probe_pause( 15000 ).then( ()=> $mol_fail( new Error( `${ at } Chrome не принял ${ params.type } за 15000 мс` ) ) ),
+		])
+
+		const mouse = ( type: string, [ x, y ]: readonly [ number, number ], held = false )=> input( 'Input.dispatchMouseEvent', {
 			type, x, y,
-			button: type === 'mouseMoved' ? 'none' : 'left',
-			buttons: type === 'mousePressed' ? 1 : 0,
+			button: type === 'mouseMoved' && !held ? 'none' : 'left',
+			buttons: type === 'mousePressed' || held ? 1 : 0,
 			clickCount: type === 'mouseMoved' ? 0 : 1,
-		}, browser.page )
+		} )
 
 		const click = async ( find: string, note: string )=> {
 			const spot = await point( find )
@@ -487,10 +479,26 @@ namespace $ {
 			await mouse( 'mouseMoved', spot )
 		}
 
-		const trigger = ( name: string )=> `document.querySelector( '[bog_vmap_app_shelf_${ name }_trigger]' )`
-		const content = ( name: string )=> `!!document.querySelector( '[bog_vmap_app_shelf_${ name }_content]' )`
-		const paint = ( name: string )=> `(()=>{ const style = getComputedStyle( ${ trigger( name ) } ); return style.backgroundColor + ' / ' + style.boxShadow })()`
-		const painted = async ( name: string )=> String( await browser.evaluate( `return ${ paint( name ) }`, 15000 ) )
+		const tab = async ( label: string )=> await click(
+			`[ ... document.querySelectorAll( '[bog_vmap_app_left_tabs_option]' ) ].find( node => node.textContent.includes( ${ JSON.stringify( label ) } ) )`,
+			`вкладки «${ label }»`,
+		)
+
+		return { point, input, mouse, click, away, tab }
+	}
+
+	export async function $bog_vmap_probe_drive(
+		root: string,
+		at: string,
+		act: ( browser: $bog_probe_browser, hand: ReturnType< typeof $bog_vmap_probe_mouse > )=> Promise< unknown >,
+	) {
+
+		const bin = $bog_probe_chrome_bin()
+		if( !bin ) return
+
+		const site = await new $bog_probe_static( root ).open()
+		const profile = String( $node.fs.mkdtempSync( $node.path.join( $node.os.tmpdir(), 'vmap-drive-' ) ) )
+		const browser = new $bog_probe_browser( bin, profile )
 
 		try {
 
@@ -498,10 +506,33 @@ namespace $ {
 			await browser.viewport( 1280, 800 )
 			await browser.open_page( site.uri( $bog_vmap_probe_page ), $bog_vmap_probe_ready(), 150000 )
 
-			await click(
-				`[ ... document.querySelectorAll( '[bog_vmap_app_left_tabs_option]' ) ].find( node => node.textContent.includes( 'Ассеты' ) )`,
-				'вкладки «Ассеты»',
-			)
+			await act( browser, $bog_vmap_probe_mouse( browser, at ) )
+
+		} finally {
+			browser.close()
+			site.close()
+			try { $node.fs.rmSync( profile, { recursive: true, force: true } ) } catch( error ) {}
+		}
+
+	}
+
+	export async function $bog_vmap_probe_fold(
+		root: string,
+		say: ( line: string )=> void,
+		want: ( ok: boolean, note: string )=> void,
+	) {
+
+		const at = '1280, «Ассеты», клик мышью:'
+
+		const trigger = ( name: string )=> `document.querySelector( '[bog_vmap_app_shelf_${ name }_trigger]' )`
+		const content = ( name: string )=> `!!document.querySelector( '[bog_vmap_app_shelf_${ name }_content]' )`
+		const paint = ( name: string )=> `(()=>{ const style = getComputedStyle( ${ trigger( name ) } ); return style.backgroundColor + ' / ' + style.boxShadow })()`
+
+		await $bog_vmap_probe_drive( root, at, async ( browser, { click, away, tab } )=> {
+
+			const painted = async ( name: string )=> String( await browser.evaluate( `return ${ paint( name ) }`, 15000 ) )
+
+			await tab( 'Ассеты' )
 			if( await browser.until( `!!document.querySelector( '[bog_vmap_app_shelf]' )`, 15000 ) < 0 ) {
 				return $mol_fail( new Error( `${ at } вкладка «Ассеты» не открыла Полку` ) )
 			}
@@ -536,11 +567,143 @@ namespace $ {
 
 			}
 
-		} finally {
-			browser.close()
-			site.close()
-			try { $node.fs.rmSync( profile, { recursive: true, force: true } ) } catch( error ) {}
-		}
+		} )
+
+	}
+
+	export async function $bog_vmap_probe_focus(
+		root: string,
+		say: ( line: string )=> void,
+		want: ( ok: boolean, note: string )=> void,
+	) {
+
+		const d = '$'
+		const at = '1280, фокус, клик мышью:'
+		const app = `$[ ${ JSON.stringify( d + 'bog_vmap_app' ) } ].Root( 0 )`
+		const focus = `(()=>{ const node = document.activeElement; return !node || node === document.body ? 'body' : node.tagName.toLowerCase() + ( node.matches( ':focus-visible' ) ? ':focus-visible' : '' ) })()`
+		const tool = ( name: string )=> `document.querySelector( '[bog_vmap_app_tool_${ name }]' )`
+
+		await $bog_vmap_probe_drive( root, at, async ( browser, { point, input, mouse, click, away, tab } )=> {
+
+			const read = async ( code: string )=> String( await browser.evaluate( `return ${ code }`, 15000 ) )
+			const facts = [] as string[]
+
+			const stroke = async ( key: string, code: string, vk: number )=> {
+				for( const type of [ 'keyDown', 'keyUp' ] ) await input( 'Input.dispatchKeyEvent', {
+					type, key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk,
+					... type === 'keyDown' ? { text: key } : {},
+				} )
+			}
+
+			await browser.evaluate( `window.vmap_drags = 0; document.addEventListener( 'dragstart', ()=> ++ window.vmap_drags, true ); return 1`, 15000 )
+
+			await away()
+			await browser.press( 'Shift', 16 )
+			await click( tool( 'hand' ), 'кнопки «Рука»' )
+			await away()
+			const clicked = await read( focus )
+			await browser.press( 'Enter', 13 )
+			const kept = await read( `${ app }.Pane().tool()` )
+
+			want( clicked === 'body', `${ at } после Shift и клика по «Руке» фокус ${ clicked }, ждали body` )
+			want( kept === 'hand', `${ at } Enter после клика по «Руке» нажал её снова: инструмент ${ kept }` )
+			facts.push( `после Shift клик по «Руке» оставил фокус ${ clicked }, Enter — инструмент ${ kept }` )
+
+			await stroke( 'v', 'KeyV', 86 )
+			await tab( 'Ассеты' )
+
+			const trigger = `document.querySelector( '[bog_vmap_app_shelf_source_trigger]' )`
+			const shade = `getComputedStyle( ${ trigger } ).boxShadow`
+
+			await away()
+			const start = await read( shade )
+			await browser.press( 'Shift', 16 )
+			await click( trigger, 'галки «Пак компонентов»' )
+			await click( trigger, 'галки «Пак компонентов»' )
+			await away()
+			const cleared = await browser.until( `${ shade } === ${ JSON.stringify( start ) }`, 3000 )
+
+			want( cleared >= 0, `${ at } тень галки после Shift и клика ${ await read( shade ) }, до клика ${ start }` )
+			facts.push( `тень галки после Shift и клика ${ await read( shade ) }` )
+
+			await browser.press( 'Tab', 9 )
+			const tabbed = await read( `(()=>{ const node = document.activeElement; return !!node && node.matches( '[mol_button]:focus-visible' ) && getComputedStyle( node ).boxShadow !== 'none' })()` )
+
+			want( tabbed === 'true', `${ at } Tab не показал фокус кнопки с тенью: ${ await read( focus ) }` )
+			facts.push( `Tab дал ${ await read( focus ) }` )
+
+			await browser.evaluate( `${ app }.part_drop( ${ JSON.stringify( d + 'bog_vmap_part_calc' ) }, 320, 220 ); return 1`, 30000 )
+			const name = await read( `${ app }.selected() || ''` )
+			await tab( 'Слои' )
+
+			const row = await point( `[ ... document.querySelectorAll( '[bog_vmap_app_layers_row]' ) ].find( node => node.textContent.includes( ${ JSON.stringify( name ) } ) )` )
+			if( !row ) return $mol_fail( new Error( `${ at } в «Слоях» нет строки брошенной детали ${ name }` ) )
+
+			await mouse( 'mouseMoved', row )
+			await mouse( 'mousePressed', row )
+			for( let step = 1; step <= 8; ++ step ) await mouse( 'mouseMoved', [ row[ 0 ], row[ 1 ] + step * 6 ], true )
+			await mouse( 'mouseReleased', [ row[ 0 ], row[ 1 ] + 48 ] )
+			const drags = Number( await read( 'window.vmap_drags' ) )
+
+			want( drags > 0, `${ at } тяга строки «Слоёв» не началась: dragstart ${ drags }` )
+			facts.push( `тяга строки «Слоёв» дала dragstart ${ drags }` )
+
+			await browser.evaluate( `${ app }.Pane().picked([ ${ JSON.stringify( name ) } ]); ${ app }.Pane().entered( ${ JSON.stringify( name ) } ); return 1`, 15000 )
+			if( await browser.until( `${ app }.Pane().inside()`, 15000 ) < 0 ) return $mol_fail( new Error( `${ at } вход в деталь ${ name } не состоялся` ) )
+			if( await browser.until( `${ app }.Pane().frame_box()?.width > 0`, 15000 ) < 0 ) return $mol_fail( new Error( `${ at } у детали ${ name } за 15000 мс нет рамки: ${ await read( `JSON.stringify( ${ app }.Pane().frame_box() )` ) }` ) )
+
+			const hole = await browser.evaluate( `
+				const pane = ${ app }.Pane()
+				const box = pane.frame_box()
+				const rect = pane.dom_node().getBoundingClientRect()
+				return box ? [ rect.left + box.left + box.width / 2, rect.top + box.top + box.height / 2 ] : null
+			`, 15000 ) as [ number, number ] | null
+			if( !hole ) return $mol_fail( new Error( `${ at } над деталью ${ name } нет выреза` ) )
+
+			await mouse( 'mouseMoved', hole )
+			await mouse( 'mousePressed', hole )
+			await mouse( 'mouseReleased', hole )
+			const framed = await read( focus )
+			await click( `document.querySelector( '[bog_vmap_app_zoom_in]' )`, 'кнопки «+»' )
+			const freed = await read( focus )
+			await stroke( 'h', 'KeyH', 72 )
+			const handed = await read( `${ app }.Pane().tool()` )
+
+			want( framed.startsWith( 'iframe' ), `${ at } клик в вырез не отдал фокус кадру сцены: ${ framed }` )
+			want( freed === 'body', `${ at } клик по «+» не вывел фокус из кадра сцены: ${ freed }` )
+			want( handed === 'hand', `${ at } клавиша H после клика по «+» не дошла до оболочки: инструмент ${ handed }` )
+			facts.push( `кадр сцены: фокус ${ framed }, после «+» ${ freed }, H включила ${ handed }` )
+
+			await browser.evaluate( `
+				const select = $[ ${ JSON.stringify( d + 'mol_select' ) } ].make({ dictionary: ()=> ({ one: 'Один', two: 'Два' }) })
+				const node = select.dom_tree()
+				node.style.position = 'fixed'
+				node.style.left = '600px'
+				node.style.top = '300px'
+				document.body.appendChild( node )
+				window.vmap_select = select
+				return 1
+			`, 15000 )
+
+			const opened = `( window.vmap_select.dom_tree(), window.vmap_select.showed() )`
+			const pick = `window.vmap_select.Trigger().dom_node()`
+
+			await click( pick, 'выпадашки' )
+			const shown = await read( opened )
+			await click( `document.querySelector( '[bog_vmap_app_canvas_foot]' )`, 'подвала Холста' )
+			const missed = await read( opened )
+			await click( pick, 'выпадашки' )
+			await click( tool( 'board' ), 'кнопки «Артборд»' )
+			const switched = await read( opened )
+
+			want( shown === 'true', `${ at } выпадашка мола не открылась кликом` )
+			want( missed === 'false', `${ at } выпадашка мола не закрылась кликом мимо` )
+			want( switched === 'false', `${ at } выпадашка мола не закрылась кликом по «Артборду»` )
+			facts.push( `выпадашка открыта ${ shown }, после клика мимо ${ missed }, после «Артборда» ${ switched }` )
+
+			say( `${ at } ${ facts.join( '; ' ) }` )
+
+		} )
 
 	}
 
@@ -823,6 +986,7 @@ namespace $ {
 		}
 
 		await $bog_vmap_probe_fold( root, say, want )
+		await $bog_vmap_probe_focus( root, say, want )
 
 		if( broken.length ) return $mol_fail( new Error(
 			`Проба ровности, поломок ${ broken.length }:\n` + broken.join( '\n' )
