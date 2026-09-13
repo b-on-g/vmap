@@ -109,6 +109,8 @@ $bog_vmap_app_pane $mol_view
 		style <= band_style *
 	Draft $mol_view
 		style <= draft_style *
+	Guide* $mol_view
+		style <= guide_style* *
 	plugins /
 		^
 		<= Touch $mol_touch

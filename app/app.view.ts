@@ -724,6 +724,28 @@ namespace $.$$ {
 			return next
 		}
 
+		carry_guess() {
+			return { width: 192, height: 152 }
+		}
+
+		carry_size( source: string ): { readonly width: number, readonly height: number } {
+			const preset = this.$.$bog_vmap_lang_node.make({ $: this.$, source: ()=> source })
+			const top = preset.sub_names( '' )?.find( Boolean )
+			const decl = top ? preset.prop_decl( top )?.kids[ 0 ]?.toString() : ''
+
+			const node = this.node()
+
+			if( decl ) for( const name of node.sub_names( '' ) ?? [] ) {
+				if( !name ) continue
+				if( node.prop_decl( name )?.kids[ 0 ]?.toString() !== decl ) continue
+
+				const box = this.Pane().part_size( name )
+				if( box ) return box
+			}
+
+			return this.carry_guess()
+		}
+
 		override carry_drop( next?: $bog_vmap_app_pane_carry | null ) {
 			if( !next ) return null
 
@@ -732,10 +754,12 @@ namespace $.$$ {
 
 			this.Shelf().dragged( '' )
 
+			const size = next.owner ? null : this.carry_size( source )
+
 			this.preset_apply(
 				source,
-				next.x,
-				next.y,
+				next.x - ( size?.width ?? 0 ) / 2,
+				next.y - ( size?.height ?? 0 ) / 2,
 				next.owner ? { owner: next.owner, index: next.index } : null,
 			)
 

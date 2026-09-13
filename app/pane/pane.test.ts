@@ -83,7 +83,7 @@ namespace $ {
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.drop( calc, stage.client([ 200, 150 ]) )
-			$mol_assert_like( stage.app.spots(), { Calc: { x: 200, y: 150 } } )
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 104, y: 74 } } )
 
 			$mol_assert_equal( stage.pane.overlay_style().clipPath, 'none' )
 
@@ -95,7 +95,7 @@ namespace $ {
 			stage.release( overlay, [ from[0] + 60, from[1] + 40 ] )
 			stage.redraw()
 
-			$mol_assert_like( stage.app.spots(), { Calc: { x: 260, y: 190 } } )
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 164, y: 114 } } )
 
 		},
 
@@ -116,7 +116,7 @@ namespace $ {
 			stage.tap( stage.part_center( 'Calc' ) )
 
 			$mol_assert_equal( stage.pane.inside(), true )
-			$mol_assert_ok( stage.pane.overlay_style().clipPath.includes( '200px 150px' ) )
+			$mol_assert_ok( stage.pane.overlay_style().clipPath.includes( '104px 74px' ) )
 			$mol_assert_equal( stage.scene.sent( 'click_at' ).length, before + 1 )
 
 			const dom = $.$mol_dom_context
@@ -202,8 +202,8 @@ namespace $ {
 			stage.redraw()
 
 			$mol_assert_like( stage.app.spots(), {
-				Calc: { x: 140, y: 130 },
-				Map: { x: 340, y: 130 },
+				Calc: { x: 44, y: 54 },
+				Map: { x: 244, y: 54 },
 			} )
 
 			stage.click( stage.button( 'Удалить' ) )
@@ -337,8 +337,8 @@ namespace $ {
 			stage.drop( map, stage.client([ 400, 300 ]) )
 
 			$mol_assert_like( stage.app.spots(), {
-				Calc: { x: 100, y: 100 },
-				Map: { x: 400, y: 300 },
+				Calc: { x: 4, y: 24 },
+				Map: { x: 304, y: 224 },
 			} )
 
 		},
@@ -2986,7 +2986,7 @@ namespace $ {
 			stage.redraw()
 
 			$mol_assert_like( [ ... stage.pane.camera_shift() ], [ 60, 40 ] )
-			$mol_assert_like( stage.app.spots(), { Calc: { x: 200, y: 150 } } )
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 104, y: 74 } } )
 			$mol_assert_like( [ ... stage.app.picked() ], [ 'Calc' ] )
 
 		},
@@ -3008,7 +3008,7 @@ namespace $ {
 			stage.pane.key_up( stroke( 'Space' ) )
 
 			$mol_assert_like( [ ... stage.pane.camera_shift() ], [ 60, 40 ] )
-			$mol_assert_like( stage.app.spots(), { Calc: { x: 200, y: 150 } } )
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 104, y: 74 } } )
 
 			from = stage.part_center( 'Calc' )
 			stage.press( overlay, from )
@@ -3023,7 +3023,7 @@ namespace $ {
 			stage.pane.key_up( stroke( 'Space' ) )
 
 			$mol_assert_like( [ ... stage.pane.camera_shift() ], [ 60, 40 ] )
-			$mol_assert_like( stage.app.spots(), { Calc: { x: 230, y: 170 } } )
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 134, y: 94 } } )
 
 		},
 
@@ -3139,6 +3139,260 @@ namespace $ {
 			stage.pane.key_down( stroke( 'Escape', { target: stage.pane.dom_node() } ) )
 
 			$mol_assert_equal( stage.app.selected(), null )
+
+		},
+
+	})
+
+}
+
+namespace $ {
+	const d = '$'
+
+	const root = `${d}bog_vmap_app_snap`
+
+	const calc = `${d}flow_calc`
+	const map = `${d}flow_map`
+
+	const box = ( x: number, y: number, width = 100, height = 50 )=> ({ x, y, width, height })
+
+	const pane_make = (
+		$: $mol_ambient_context,
+		boxes: { readonly [ name: string ]: $bog_vmap_bridge_rect },
+		over: Partial< $$.$bog_vmap_app_pane > = {},
+	)=> {
+		const peer = { origin: 'null', postMessage() {} }
+
+		const pane = $$.$bog_vmap_app_pane.make({
+			$,
+			doc_root: ()=> root,
+			doc_names: ()=> Object.keys( boxes ),
+			pane_rect: ()=> ({ left: 0, top: 0, width: 1000, height: 800 }),
+			scene_peer: ()=> peer,
+			... over,
+		})
+
+		const sizes = {} as { [ key: string ]: $bog_vmap_bridge_rect }
+		const spots = {} as { [ name: string ]: { readonly x: number, readonly y: number } }
+
+		for( const name of Object.keys( boxes ) ) {
+			sizes[ `${ root }/${ name }` ] = boxes[ name ]
+			spots[ name ] = { x: boxes[ name ].x, y: boxes[ name ].y }
+		}
+
+		pane.sizes( sizes )
+		pane.spots( spots )
+
+		return pane
+	}
+
+	const pointer = ( clientX: number, clientY: number, over: Partial< PointerEvent > = {} )=> ({
+		button: 0,
+		buttons: 1,
+		pointerId: 1,
+		clientX,
+		clientY,
+		altKey: false,
+		ctrlKey: false,
+		metaKey: false,
+		shiftKey: false,
+		preventDefault() {},
+		... over,
+	}) as unknown as PointerEvent
+
+	$mol_test({
+		'a dragged node snaps its edge onto its neighbour, the guides follow and go on release'( $ ) {
+			const pane = pane_make( $, { A: box( 0, 0 ), B: box( 300, 200 ) } )
+
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_move( pointer( 347, 129 ) )
+
+			$mol_assert_like( pane.spots()[ 'A' ], { x: 300, y: 104 } )
+			$mol_assert_like( pane.guides(), [
+				{ axis: 'x', at: 300, from: 104, to: 250 },
+				{ axis: 'x', at: 350, from: 104, to: 250 },
+				{ axis: 'x', at: 400, from: 104, to: 250 },
+			] )
+
+			pane.node_release( pointer( 347, 129, { buttons: 0 } ) )
+
+			$mol_assert_like( pane.spots()[ 'A' ], { x: 300, y: 104 } )
+			$mol_assert_like( pane.guides(), [] )
+
+		},
+
+		'Cmd or Ctrl held during a drag lets the node free of its neighbours, Alt does not'( $ ) {
+			const pane = pane_make( $, { A: box( 0, 0 ), B: box( 300, 200 ) } )
+
+			pane.node_press( pointer( 50, 25 ) )
+
+			pane.node_move( pointer( 347, 129, { metaKey: true } ) )
+
+			$mol_assert_like( pane.spots()[ 'A' ], { x: 297, y: 104 } )
+			$mol_assert_like( pane.guides(), [] )
+
+			pane.node_move( pointer( 347, 129, { altKey: true } ) )
+
+			$mol_assert_like( pane.spots()[ 'A' ], { x: 300, y: 104 } )
+			$mol_assert_equal( pane.guides().length, 3 )
+
+			pane.node_move( pointer( 347, 129, { ctrlKey: true } ) )
+
+			$mol_assert_like( pane.spots()[ 'A' ], { x: 297, y: 104 } )
+			$mol_assert_like( pane.guides(), [] )
+
+			pane.node_move( pointer( 347, 129 ) )
+
+			$mol_assert_like( pane.spots()[ 'A' ], { x: 300, y: 104 } )
+			$mol_assert_equal( pane.guides().length, 3 )
+
+		},
+
+		'the slack is counted in pixels of the screen, not of the world'( $ ) {
+			const near = pane_make( $, { A: box( 0, 0 ), B: box( 300, 200 ) } )
+
+			near.node_press( pointer( 50, 25 ) )
+			near.node_move( pointer( 346, 129 ) )
+
+			$mol_assert_like( near.spots()[ 'A' ], { x: 300, y: 104 } )
+
+			const zoomed = pane_make( $, { A: box( 0, 0 ), B: box( 300, 200 ) } )
+			zoomed.camera_zoom( 2 )
+
+			zoomed.node_press( pointer( 100, 50 ) )
+			zoomed.node_move( pointer( 692, 258 ) )
+
+			$mol_assert_like( zoomed.spots()[ 'A' ], { x: 296, y: 104 } )
+			$mol_assert_like( zoomed.guides(), [] )
+
+			zoomed.node_move( pointer( 698, 258 ) )
+
+			$mol_assert_like( zoomed.spots()[ 'A' ], { x: 300, y: 104 } )
+			$mol_assert_like( zoomed.guide_style( 0 ), { left: '600px', top: '208px', width: '1px', height: '292px' } )
+
+		},
+
+		'a neighbour off the screen does not pull'( $ ) {
+			const pane = pane_make( $, { A: box( 0, 0 ), B: box( 1200, 0 ) } )
+
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_move( pointer( 1147, 25 ) )
+
+			$mol_assert_like( pane.spots()[ 'A' ], { x: 1097, y: 0 } )
+			$mol_assert_like( pane.guides(), [] )
+
+		},
+
+		'a picked set snaps as one box'( $ ) {
+			const pane = pane_make( $, { A: box( 0, 0 ), B: box( 0, 100, 160, 50 ), C: box( 300, 400 ) } )
+			pane.picked([ 'A', 'B' ])
+
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_move( pointer( 187, 25 ) )
+
+			$mol_assert_like( pane.spots(), { A: { x: 140, y: 0 }, B: { x: 140, y: 100 }, C: { x: 300, y: 400 } } )
+			$mol_assert_like( pane.guides(), [ { axis: 'x', at: 300, from: 0, to: 450 } ] )
+
+		},
+
+		'over a container the guides give way to the insertion line'( $ ) {
+			const pane = pane_make(
+				$,
+				{ A: box( 0, 0 ), B: box( 300, 200 ), P: box( 500, 500, 300, 200 ) },
+				{ containers: ()=> [ 'P' ] },
+			)
+
+			pane.node_press( pointer( 50, 25 ) )
+			pane.node_move( pointer( 347, 129 ) )
+
+			$mol_assert_equal( pane.guides().length, 3 )
+
+			pane.node_move( pointer( 600, 600 ) )
+
+			$mol_assert_ok( pane.slot() !== null )
+			$mol_assert_like( pane.guides(), [] )
+
+		},
+
+		'the guides are drawn on the canvas while a part is dragged, and go on release'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const overlay = stage.overlay()
+			const guides = ()=> [ ... stage.root.querySelectorAll( '[bog_vmap_app_pane_guide]' ) ] as HTMLElement[]
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.drop( map, stage.client([ 400, 300 ]) )
+
+			stage.app.spots({ Calc: { x: 100, y: 100 }, Map: { x: 300, y: 300 } })
+			stage.redraw()
+			stage.scene.flush()
+
+			const from = stage.part_center( 'Calc' )
+
+			stage.press( overlay, from )
+			stage.move( overlay, [ from[0] + 203, from[1] + 50 ], { metaKey: true } )
+			stage.redraw()
+
+			$mol_assert_like( stage.app.spots()[ 'Calc' ], { x: 303, y: 150 } )
+			$mol_assert_equal( guides().length, 0 )
+
+			stage.move( overlay, [ from[0] + 203, from[1] + 50 ] )
+			stage.redraw()
+
+			$mol_assert_like( stage.app.spots()[ 'Calc' ], { x: 300, y: 150 } )
+			$mol_assert_equal( guides().length, 3 )
+
+			const line = guides()[ 0 ].style
+			$mol_assert_like( [ line.left, line.top, line.width, line.height ], [ '300px', '150px', '1px', '200px' ] )
+
+			stage.release( overlay, [ from[0] + 203, from[1] + 50 ] )
+			stage.redraw()
+
+			$mol_assert_like( stage.app.spots()[ 'Calc' ], { x: 300, y: 150 } )
+			$mol_assert_equal( guides().length, 0 )
+
+		},
+
+		'a part from the shelf lands centred by a guess, and exactly once its kind is measured'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 104, y: 74 } } )
+
+			stage.drop( calc, stage.client([ 400, 300 ]) )
+			$mol_assert_like( stage.app.spots()[ 'Calc_2' ], { x: 350, y: 275 } )
+
+			const box = stage.pane.part_box( 'Calc_2' )!
+			$mol_assert_like( [ box.left + box.width / 2, box.top + box.height / 2 ], [ 400, 300 ] )
+
+		},
+
+		'the measure is taken from the same declaration, not from the same class'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			const node = stage.app.node()
+			node.over_set( 'Calc', 'op', node.tree().struct( 'op', [ node.tree().data( 'minus' ) ] ) )
+			stage.redraw()
+			stage.scene.flush()
+
+			stage.drop( calc, stage.client([ 400, 300 ]) )
+			$mol_assert_like( stage.app.spots()[ 'Calc_2' ], { x: 304, y: 224 } )
+
+		},
+
+		'a part nested in a board gives no measure to a free one'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.app.board_draw({ x: 0, y: 0, width: 400, height: 300 })
+			stage.redraw()
+			stage.scene.flush()
+
+			stage.drop( calc, stage.client([ 100, 100 ]) )
+			$mol_assert_like( stage.app.node().sub_names( 'Page' ), [ 'Calc' ] )
+
+			stage.drop( calc, stage.client([ 500, 400 ]) )
+			$mol_assert_like( stage.app.spots()[ 'Calc_2' ], { x: 404, y: 324 } )
 
 		},
 

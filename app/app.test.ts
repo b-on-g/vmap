@@ -306,7 +306,7 @@ namespace $ {
 			app.part_drop( `${d}mol_string`, 2000, 100 )
 
 			$mol_assert_like( app.node().sub_names(), [ 'Page', 'String' ] )
-			$mol_assert_like( app.spots()[ 'String' ], { x: 2000, y: 100 } )
+			$mol_assert_like( app.spots()[ 'String' ], { x: 1904, y: 24 } )
 
 		},
 
@@ -316,7 +316,7 @@ namespace $ {
 			app.board_draw( clicked )
 			app.part_drop( `${d}mol_button_minor`, 2000, 100 )
 
-			$mol_assert_like( app.spots()[ 'Button_minor' ], { x: 2000, y: 100 } )
+			$mol_assert_like( app.spots()[ 'Button_minor' ], { x: 1904, y: 24 } )
 
 			app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 })
 
@@ -1004,7 +1004,7 @@ namespace $ {
 			stage.tap( stage.part_center( 'Calc' ) )
 
 			$mol_assert_equal( stage.pane.inside(), true )
-			$mol_assert_ok( stage.pane.overlay_style().clipPath.includes( '200px 150px' ) )
+			$mol_assert_ok( stage.pane.overlay_style().clipPath.includes( '104px 74px' ) )
 
 			const first = stage.store.doc_current()!.link().str
 

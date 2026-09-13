@@ -236,6 +236,7 @@ namespace $.$$ {
 				... this.slot() ? [ this.Insert() ] : [],
 				... this.band() ? [ this.Band() ] : [],
 				... this.draft() ? [ this.Draft() ] : [],
+				... this.guide_views(),
 			] as readonly $mol_view[]
 		}
 
@@ -479,8 +480,88 @@ namespace $.$$ {
 			grab: readonly [ number, number ],
 			sizes: { readonly [ node: string ]: $bog_vmap_bridge_rect },
 			nested: boolean,
+			box: $bog_vmap_bridge_rect | null,
 		} | null ) {
 			return next ?? null
+		}
+
+		snap_slack() {
+			return 6
+		}
+
+		snap_off( event: PointerEvent ) {
+			return Boolean( event.metaKey || event.ctrlKey )
+		}
+
+		spot_box( name: string ): $bog_vmap_bridge_rect | null {
+			const size = this.part_size( name )
+			if( !size ) return null
+
+			const spot = this.spots()[ name ]
+			if( !spot ) return size
+
+			return { x: spot.x, y: spot.y, width: size.width, height: size.height }
+		}
+
+		snap_boxes( moving: { readonly [ name: string ]: unknown } ) {
+			const rect = this.pane_rect()
+			const zoom = this.camera_zoom()
+			const shift = this.camera_shift()
+
+			const boxes = [] as $bog_vmap_bridge_rect[]
+
+			for( const name of this.free_names() ) {
+				if( name in moving ) continue
+
+				const box = this.spot_box( name )
+				if( !box || !( box.width > 0 ) || !( box.height > 0 ) ) continue
+
+				const screen = this.$.$bog_vmap_app_pane_screen( box, zoom, shift )
+				if( screen.left + screen.width < 0 || screen.top + screen.height < 0 ) continue
+				if( screen.left > rect.width || screen.top > rect.height ) continue
+
+				boxes.push( box )
+			}
+
+			return boxes
+		}
+
+		snap_at( box: $bog_vmap_bridge_rect | null, moving: { readonly [ name: string ]: unknown }, shift: readonly [ number, number ] ) {
+			if( !box ) return null
+
+			return this.$.$bog_vmap_app_pane_snap(
+				{ x: box.x + shift[0], y: box.y + shift[1], width: box.width, height: box.height },
+				this.snap_boxes( moving ),
+				this.snap_slack() / this.camera_zoom(),
+			)
+		}
+
+		@ $mol_mem
+		guides( next?: readonly $bog_vmap_app_pane_snap_line[] ) {
+			return next ?? []
+		}
+
+		guide_views() {
+			return this.guides().map( ( line, index )=> this.Guide( index ) )
+		}
+
+		@ $mol_mem_key
+		override guide_style( index: number ): { readonly [ prop: string ]: string } {
+			const line = this.guides()[ index ]
+			if( !line ) return {}
+
+			const box = line.axis === 'x'
+				? { x: line.at, y: line.from, width: 0, height: line.to - line.from }
+				: { x: line.from, y: line.at, width: line.to - line.from, height: 0 }
+
+			const rect = this.$.$bog_vmap_app_pane_screen( box, this.camera_zoom(), this.camera_shift() )
+
+			return {
+				left: rect.left + 'px',
+				top: rect.top + 'px',
+				width: Math.max( rect.width, 1 ) + 'px',
+				height: Math.max( rect.height, 1 ) + 'px',
+			}
 		}
 
 		@ $mol_mem
@@ -869,6 +950,7 @@ namespace $.$$ {
 				grab: point,
 				sizes: this.sizes(),
 				nested: this.node_path( name ).length > 0,
+				box: this.box_union( Object.keys( spots ).flatMap( picked => this.spot_box( picked ) ?? [] ) ),
 			})
 
 			try {
@@ -1029,14 +1111,25 @@ namespace $.$$ {
 			const slot = this.insert_slot( point, drag.name )
 			this.slot( slot )
 
-			if( slot || drag.nested ) return
+			if( slot || drag.nested ) {
+				this.guides( [] )
+				return
+			}
+
+			const shift = [ point[0] - drag.grab[0], point[1] - drag.grab[1] ] as const
+			const snap = this.snap_off( event ) ? null : this.snap_at( drag.box, drag.spots, shift )
+
+			this.guides( snap?.lines ?? [] )
+
+			const dx = shift[0] + ( snap?.dx ?? 0 )
+			const dy = shift[1] + ( snap?.dy ?? 0 )
 
 			const next = { ... this.spots() }
 
 			for( const name of Object.keys( drag.spots ) ) {
 				next[ name ] = {
-					x: drag.spots[ name ].x + point[0] - drag.grab[0],
-					y: drag.spots[ name ].y + point[1] - drag.grab[1],
+					x: drag.spots[ name ].x + dx,
+					y: drag.spots[ name ].y + dy,
 				}
 			}
 
@@ -1085,6 +1178,7 @@ namespace $.$$ {
 				if( drag && slot ) this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index })
 
 				this.drag( null )
+				this.guides( [] )
 
 				try {
 					this.Overlay().dom_node().releasePointerCapture( event.pointerId )

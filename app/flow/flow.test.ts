@@ -587,7 +587,7 @@ namespace $ {
 			const source = stage.app.doc_source()
 			$mol_assert_ok( source.includes( `Calc ${ calc }` ) )
 			$mol_assert_ok( source.includes( '<= Calc' ) )
-			$mol_assert_like( stage.app.spots(), { Calc: { x: 200, y: 150 } } )
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 104, y: 74 } } )
 
 			$mol_assert_equal( stage.scene.last( 'doc_set' )!.src, source )
 
@@ -600,8 +600,8 @@ namespace $ {
 			$mol_assert_equal( stage.app.selected(), 'Calc' )
 
 			const click = stage.scene.last( 'click_at' )!
-			$mol_assert_equal( click.x, 250 )
-			$mol_assert_equal( click.y, 175 )
+			$mol_assert_equal( click.x, 154 )
+			$mol_assert_equal( click.y, 99 )
 
 		},
 
@@ -778,7 +778,7 @@ namespace $ {
 			stage.redraw()
 
 			$mol_assert_equal( stage.app.doc_source(), source )
-			$mol_assert_like( stage.app.spots(), { Calc: { x: 200, y: 150 } } )
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 104, y: 74 } } )
 
 		},
 
@@ -925,7 +925,7 @@ namespace $ {
 			const shift = stage.pane.camera_shift()
 
 			$mol_assert_like(
-				[ 300 + size.width / 2 + shift[0], 100 + size.height / 2 + shift[1] ],
+				[ 204 + size.width / 2 + shift[0], 24 + size.height / 2 + shift[1] ],
 				[ $bog_vmap_app_flow_rect.width / 2, $bog_vmap_app_flow_rect.height / 2 ],
 			)
 
@@ -1530,9 +1530,9 @@ namespace $ {
 			stage.drop( card, stage.client([ 200, 150 ]) )
 
 			$mol_assert_ok( stage.app.doc_source().includes( `Builderui_card ${ card }` ) )
-			$mol_assert_like( stage.app.spots(), { Builderui_card: { x: 200, y: 150 } } )
+			$mol_assert_like( stage.app.spots(), { Builderui_card: { x: 104, y: 74 } } )
 			$mol_assert_like( stage.pane.part_box( 'Builderui_card' ), {
-				left: 200, top: 150, width: 100, height: 50,
+				left: 104, top: 74, width: 100, height: 50,
 			} )
 
 		},
@@ -1687,7 +1687,7 @@ namespace $ {
 			$mol_assert_equal( copy.defaultPrevented, true )
 
 			$mol_assert_ok( stage.app.doc_source().includes( `Calc_2 ${ calc }` ) )
-			$mol_assert_like( stage.app.spots()[ 'Calc_2' ], { x: 324, y: 150 } )
+			$mol_assert_like( stage.app.spots()[ 'Calc_2' ], { x: 228, y: 74 } )
 			$mol_assert_like( [ ... stage.app.picked() ], [ 'Calc_2' ] )
 			$mol_assert_like( stage.app.node().sub_names(), [ 'Calc', 'Calc_2' ] )
 
@@ -1695,7 +1695,7 @@ namespace $ {
 			const once = stage.app.doc_source()
 
 			pressed( $, stage, 'KeyD', { ctrlKey: true } )
-			$mol_assert_like( stage.app.spots()[ 'Calc_3' ], { x: 448, y: 150 } )
+			$mol_assert_like( stage.app.spots()[ 'Calc_3' ], { x: 352, y: 74 } )
 			$mol_assert_like( [ ... stage.app.picked() ], [ 'Calc_3' ] )
 
 			await stepped( stage )

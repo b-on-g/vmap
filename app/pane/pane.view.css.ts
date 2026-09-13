@@ -43,6 +43,13 @@ namespace $.$$ {
 			transition: 'none',
 		},
 
+		Guide: {
+			position: 'absolute',
+			background: { color: $mol_theme.special },
+			pointerEvents: 'none',
+			transition: 'none',
+		},
+
 		'@': {
 			bog_vmap_app_pane_tool: {
 				board: { cursor: 'crosshair' },
