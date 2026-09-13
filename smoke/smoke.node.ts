@@ -34,20 +34,21 @@ namespace $ {
 		const app = `$[ ${ JSON.stringify( d + 'bog_vmap_app' ) } ].Root( 0 )`
 		const pane = `${ app }.Pane()`
 		const warmed = `(()=>{ try { return ${ pane }.warmed() } catch( error ) { return false } })()`
+		const ready = `(()=>{ try { return ${ pane }.warmed() && ${ app }.doc_key() !== '' } catch( error ) { return false } })()`
 
 		try {
 
 			await browser.open()
 
 			const began = Date.now()
-			const warm = await browser.open_page( site.uri( '/app/-/index.html' ), warmed, 120000 )
+			const warm = await browser.open_page( site.uri( '/app/-/index.html' ), ready, 120000 )
 
-			say( `прогрев ${ warm } мс, порт статики ${ site.port }` )
+			say( `прогрев и документ ${ warm } мс, порт статики ${ site.port }` )
 
 			const before = Number( await browser.evaluate( `return Object.keys( ${ pane }.sizes() ).length`, 15000 ) )
 
 			await browser.evaluate(
-				`${ app }.part_drop( ${ JSON.stringify( d + 'bog_vmap_part_calc' ) }, 320, 220 ); return 1`,
+				`await $[ ${ JSON.stringify( d + 'mol_wire_async' ) } ]( ${ app } ).part_drop( ${ JSON.stringify( d + 'bog_vmap_part_calc' ) }, 320, 220 ); return 1`,
 				30000,
 			)
 
