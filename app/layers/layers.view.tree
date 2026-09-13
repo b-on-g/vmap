@@ -12,6 +12,10 @@ $bog_vmap_app_layers $mol_scroll
 			rows <= rows /$mol_view
 	Note $mol_status
 		status <= node_title_note
+	Outside $mol_check_expand
+		level 1
+		title \Вне страницы
+		expanded? <=> outside_expanded? true
 	Row* $mol_drag
 		allow_copy false
 		allow_link false

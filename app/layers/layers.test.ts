@@ -30,15 +30,64 @@ namespace $ {
 		``,
 	].join( '\n' )
 
+	const sample_spots = { Page: { x: 0, y: 0 }, Photo: { x: 1400, y: 0 } }
+
+	const lost = [
+		`${d}layers_lost ${d}mol_view`,
+		`\tcaption \\Подпись`,
+		`\tnote \\Заметка`,
+		`\tTitle ${d}mol_paragraph title \\Привет`,
+		`\tCard ${d}mol_view`,
+		`\t\tsub /`,
+		`\t\t\t<= caption`,
+		`\tPage ${d}mol_view`,
+		`\t\tstyle * width \\1280px`,
+		`\t\tsub /`,
+		`\t\t\t<= Title`,
+		`\t\t\t<= Card`,
+		`\tLost ${d}mol_paragraph title \\Потерян`,
+		`\tDeep ${d}mol_paragraph title \\Глубоко`,
+		`\tBox ${d}mol_view`,
+		`\t\tsub /`,
+		`\t\t\t<= Deep`,
+		`\tNear ${d}mol_image uri \\photo.png`,
+		`\tlost_title = Lost title`,
+		`\tsub /`,
+		`\t\t<= Page`,
+		``,
+	].join( '\n' )
+
+	const lost_spots = { Page: { x: 0, y: 0 }, Near: { x: 600, y: 40 } }
+
+	const ring = [
+		`${d}layers_ring ${d}mol_view`,
+		`\tPage ${d}mol_view`,
+		`\t\tsub /`,
+		`\tRing ${d}mol_view`,
+		`\t\tsub /`,
+		`\t\t\t<= Loop`,
+		`\tLoop ${d}mol_view`,
+		`\t\tsub /`,
+		`\t\t\t<= Ring`,
+		`\tsub /`,
+		`\t\t<= Page`,
+		``,
+	].join( '\n' )
+
 	const icons = [ 'root', 'frame', 'image', 'link', 'button', 'field', 'text', 'part' ]
 
-	function layers_stage( $: $, over: $bog_vmap_app_flow_over = {} ) {
+	function layers_stage(
+		$: $,
+		over: $bog_vmap_app_flow_over = {},
+		source = sample,
+		spots: { readonly [ name: string ]: { readonly x: number, readonly y: number } } = sample_spots,
+	) {
 		const stage = $bog_vmap_app_flow_stage( $, over )
 		const app = stage.app
 		const dom = $.$mol_dom_context
 
-		app.doc_source( sample )
-		app.spots({ Page: { x: 0, y: 0 }, Photo: { x: 1400, y: 0 } })
+		app.doc_source( source )
+		app.spots( spots )
 		stage.redraw()
 
 		const moves = [] as $$.$bog_vmap_app_pane_tree_move[]
@@ -138,7 +187,26 @@ namespace $ {
 			$mol_assert_equal( taken(), true )
 		}
 
-		return { stage, app, layers, panel, moves, lines, line, pick, outline, mouse, field, type, blur, key, drag, history, stepped, redraw }
+		const group = ()=> {
+			redraw()
+			return panel.querySelector( '[bog_vmap_app_layers_outside]' )
+		}
+
+		const grouped = ()=> {
+			const head = group()
+			if( !head ) return []
+
+			return lines()
+				.filter( el => head.compareDocumentPosition( el ) & dom.Node.DOCUMENT_POSITION_FOLLOWING )
+				.map( title_of )
+		}
+
+		const press = ( title: string, value: string )=> {
+			pick( title ).dispatchEvent( new dom.KeyboardEvent( 'keydown', { key: value, bubbles: true, cancelable: true } ) )
+			redraw()
+		}
+
+		return { stage, app, layers, panel, moves, lines, line, pick, outline, mouse, field, type, blur, key, drag, history, stepped, redraw, group, grouped, press }
 	}
 
 	$mol_test({
@@ -381,6 +449,187 @@ namespace $ {
 			history.undo()
 
 			$mol_assert_equal( app.doc_source(), before )
+		},
+
+		'a document with every node on the page has no outside group'( $ ) {
+			const { group } = layers_stage( $ )
+
+			$mol_assert_equal( group(), null )
+		},
+
+		'nodes outside every sub list are a group at the end of the layers'( $ ) {
+			const { layers, panel, group, grouped, outline } = layers_stage( $, {}, lost, lost_spots )
+
+			$mol_assert_like( outline(), [
+				`${d}layers_lost root`,
+				'  Page frame',
+				'    Title text',
+				'    Card frame',
+				'      caption text',
+				'  Lost text',
+				'  Box frame',
+				'    Deep text',
+				'  Near image',
+			] )
+
+			const head = group()!
+			$mol_assert_equal( head.textContent, 'Вне страницы' )
+			$mol_assert_equal( head.parentElement, layers.Rows().dom_node() )
+			$mol_assert_equal( [ ... head.parentElement!.children ].indexOf( head ), 5 )
+			$mol_assert_like( grouped(), [ 'Lost', 'Box', 'Deep', 'Near' ] )
+			$mol_assert_equal( panel.textContent!.includes( 'note' ), false )
+			$mol_assert_equal( panel.textContent!.includes( 'lost_title' ), false )
+		},
+
+		'the outside group folds and opens back'( $ ) {
+			const { group, grouped, outline, mouse } = layers_stage( $, {}, lost, lost_spots )
+
+			mouse( group()!, 'click' )
+
+			$mol_assert_ok( group() )
+			$mol_assert_like( grouped(), [] )
+			$mol_assert_equal( outline().length, 5 )
+
+			mouse( group()!, 'click' )
+
+			$mol_assert_like( grouped(), [ 'Lost', 'Box', 'Deep', 'Near' ] )
+		},
+
+		'a click on an outside row picks its node, and the host pick lights it'( $ ) {
+			const { app, pick, line, mouse, redraw } = layers_stage( $, {}, lost, lost_spots )
+
+			const lit = ( title: string )=> pick( title ).getAttribute( 'mol_check_checked' ) === 'true'
+
+			mouse( pick( 'Lost' ), 'click' )
+			$mol_assert_like( app.picked(), [ 'Lost' ] )
+			$mol_assert_equal( lit( 'Lost' ), true )
+
+			app.selected( 'Deep' )
+			redraw()
+
+			$mol_assert_equal( lit( 'Deep' ), true )
+			$mol_assert_equal( lit( 'Lost' ), false )
+			$mol_assert_equal( lit( 'Box' ), false )
+
+			mouse( line( 'Box' ).querySelector( '[bog_vmap_app_layers_expand]' )!, 'click' )
+
+			$mol_assert_equal( lit( 'Box' ), true )
+		},
+
+		'a double click renames an outside node and its row stays in the group'( $ ) {
+			const { app, pick, mouse, field, type, blur, grouped } = layers_stage( $, {}, lost, lost_spots )
+
+			mouse( pick( 'Lost' ), 'dblclick' )
+			$mol_assert_ok( field() )
+
+			type( 'Gone' )
+			blur()
+
+			$mol_assert_equal( app.node().prop_names().includes( 'Gone' ), true )
+			$mol_assert_equal( app.node().prop_names().includes( 'Lost' ), false )
+			$mol_assert_equal( app.selected(), 'Gone' )
+			$mol_assert_equal( field(), null )
+			$mol_assert_like( grouped(), [ 'Gone', 'Box', 'Deep', 'Near' ] )
+		},
+
+		'the Delete key takes a picked outside node out with its insides'( $ ) {
+			const { app, pick, mouse, press, grouped, lines } = layers_stage( $, {}, lost, lost_spots )
+
+			mouse( pick( 'Box' ), 'click' )
+			press( 'Box', 'Delete' )
+
+			const names = app.node().prop_names()
+
+			$mol_assert_equal( names.includes( 'Box' ), false )
+			$mol_assert_equal( names.includes( 'Deep' ), false )
+			$mol_assert_equal( names.includes( 'Lost' ), true )
+			$mol_assert_equal( app.selected(), null )
+			$mol_assert_like( grouped(), [ 'Lost', 'Near' ] )
+			$mol_assert_equal( lines().length, 7 )
+		},
+
+		'an outside row dropped on the lower half of a frame lands inside and the canvas measures it'( $ ) {
+			const { app, stage, drag, grouped, moves } = layers_stage( $, {}, lost, lost_spots )
+
+			stage.scene.flush()
+			$mol_assert_equal( stage.pane.part_size( 'Lost' ), null )
+
+			drag( 'Lost', 'Card', .9 )
+
+			$mol_assert_like( moves, [ { name: 'Lost', owner: 'Card', index: 1 } ] )
+			$mol_assert_like( app.node().sub_names( 'Card' ), [ 'caption', 'Lost' ] )
+			$mol_assert_equal( app.spots().Lost, undefined )
+			$mol_assert_like( grouped(), [ 'Box', 'Deep', 'Near' ] )
+
+			stage.scene.flush()
+			$mol_assert_ok( stage.pane.part_size( 'Lost' ) )
+		},
+
+		'an outside row dropped on the upper half of a page row lands before it'( $ ) {
+			const { app, drag, grouped } = layers_stage( $, {}, lost, lost_spots )
+
+			drag( 'Box', 'Title', .1 )
+
+			$mol_assert_like( app.node().sub_names( 'Page' ), [ 'Box', 'Title', 'Card' ] )
+			$mol_assert_like( app.node().sub_names( 'Box' ), [ 'Deep' ] )
+			$mol_assert_like( grouped(), [ 'Lost', 'Near' ] )
+		},
+
+		'an outside node with a place dropped on the root stays where it was put'( $ ) {
+			const { app, drag, grouped } = layers_stage( $, {}, lost, lost_spots )
+
+			drag( 'Near', `${d}layers_lost`, .5 )
+
+			$mol_assert_like( app.node().sub_names( '' ), [ 'Page', 'Near' ] )
+			$mol_assert_like( app.spots().Near, { x: 600, y: 40 } )
+			$mol_assert_like( grouped(), [ 'Lost', 'Box', 'Deep' ] )
+		},
+
+		'nothing lands before a row at the top of the outside group'( $ ) {
+			const { app, drag, line, moves } = layers_stage( $, {}, lost, lost_spots )
+
+			const before = app.doc_source()
+
+			drag( 'Title', 'Lost', .1 )
+			drag( 'Title', 'Box', .1 )
+
+			$mol_assert_equal( line( 'Box' ).getAttribute( 'bog_vmap_app_layers_line_zone' ), '' )
+			$mol_assert_equal( moves.length, 0 )
+			$mol_assert_equal( app.doc_source(), before )
+
+			drag( 'Title', 'Deep', .1 )
+
+			$mol_assert_equal( line( 'Deep' ).getAttribute( 'bog_vmap_app_layers_line_zone' ), 'before' )
+			$mol_assert_like( app.node().sub_names( 'Box' ), [ 'Title', 'Deep' ] )
+		},
+
+		'nodes holding each other off the page are both in the group and come back together'( $ ) {
+			const { app, drag, grouped, outline } = layers_stage( $, {}, ring, { Page: { x: 0, y: 0 } } )
+
+			$mol_assert_like( grouped(), [ 'Ring', 'Loop' ] )
+			$mol_assert_like( outline().slice( -2 ), [ '  Ring frame', '    Loop frame' ] )
+
+			drag( 'Ring', 'Page', .9 )
+
+			$mol_assert_like( app.node().sub_names( 'Page' ), [ 'Ring' ] )
+			$mol_assert_like( app.node().sub_names( 'Ring' ), [ 'Loop' ] )
+			$mol_assert_like( app.node().sub_names( 'Loop' ), [] )
+			$mol_assert_like( grouped(), [] )
+		},
+
+		async 'one undo takes back a move out of the outside group'( $ ) {
+			const { app, drag, history, stepped, grouped } = layers_stage( $, {}, lost, lost_spots )
+
+			await stepped()
+			const before = app.doc_source()
+
+			drag( 'Lost', 'Card', .9 )
+
+			await stepped()
+			history.undo()
+
+			$mol_assert_equal( app.doc_source(), before )
+			$mol_assert_like( grouped(), [ 'Lost', 'Box', 'Deep', 'Near' ] )
 		},
 
 	})

@@ -51,7 +51,20 @@ namespace $.$$ {
 
 			walk( '', null, 1 )
 
+			const parts = node.part_names()
+			const held = new Set( [ '', ... parts ].flatMap( owner => node.sub_names( owner ) ?? [] ) )
+
+			for( const name of parts ) if( !found.has( name ) && !held.has( name ) ) walk( name, null, 2 )
+			for( const name of parts ) if( !found.has( name ) ) walk( name, null, 2 )
+
 			return found
+		}
+
+		@ $mol_mem
+		outside() {
+			return [ ... this.layers() ]
+				.filter( ([ name, layer ])=> name && layer.owner === null )
+				.map( ([ name ])=> name )
 		}
 
 		row_kids( name: string ) {
@@ -71,16 +84,20 @@ namespace $.$$ {
 
 		@ $mol_mem
 		override rows() {
-			const rows = [] as $mol_view[]
+			const outside = this.outside()
+			if( !outside.length ) return this.branch_rows( '' )
 
-			const add = ( name: string )=> {
-				rows.push( this.Row( name ) )
-				if( this.row_editing( name ) && this.node_title_note() ) rows.push( this.Note() )
-				if( this.row_open( name ) ) for( const kid of this.row_kids( name ) ) add( kid )
-			}
+			return [
+				... this.branch_rows( '' ),
+				this.Outside(),
+				... this.outside_expanded() ? outside.flatMap( name => this.branch_rows( name ) ) : [],
+			]
+		}
 
-			add( '' )
-
+		branch_rows( name: string ): $mol_view[] {
+			const rows = [ this.Row( name ) ] as $mol_view[]
+			if( this.row_editing( name ) && this.node_title_note() ) rows.push( this.Note() )
+			if( this.row_open( name ) ) for( const kid of this.row_kids( name ) ) rows.push( ... this.branch_rows( kid ) )
 			return rows
 		}
 
@@ -267,7 +284,7 @@ namespace $.$$ {
 		zone_at( name: string, share: number ) {
 			if( !name ) return 'inside'
 			if( this.layers().get( name )?.kids && share >= .5 ) return 'inside'
-			return 'before'
+			return this.row_holder( name ) === null ? '' : 'before'
 		}
 
 		@ $mol_action
