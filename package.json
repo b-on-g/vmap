@@ -154,6 +154,7 @@
     "$mol_charset_encode",
     "$mol_charset_buffer",
     "$mol_file_transaction",
+    "$bog_tooltip",
     "$mol_icon_dock_left",
     "$mol_icon_dock",
     "$mol_icon",

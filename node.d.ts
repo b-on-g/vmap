@@ -2220,6 +2220,17 @@ declare namespace $.$$ {
 
 declare namespace $ {
 
+	export class $bog_tooltip_plugin extends $mol_plugin {
+	}
+	
+}
+
+//# sourceMappingURL=tooltip.view.tree.d.ts.map
+declare namespace $.$$ {
+}
+
+declare namespace $ {
+
 	export class $mol_svg extends $mol_view {
 		dom_name( ): string
 		dom_name_space( ): string
@@ -51254,6 +51265,7 @@ declare namespace $ {
 	export class $bog_vmap_app extends $mol_page {
 		theme_name( ): string
 		Theme( ): $mol_theme_auto
+		Tooltip( ): $bog_tooltip_plugin
 		main( ): readonly($mol_view)[]
 		Main( ): $mol_view
 		floats( ): readonly($mol_view)[]
