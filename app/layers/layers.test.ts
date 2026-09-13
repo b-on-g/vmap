@@ -340,6 +340,36 @@ namespace $ {
 			$mol_assert_equal( app.selected(), 'Title' )
 		},
 
+		'a read only scene lets the rows be picked and opened, not renamed or moved'( $ ) {
+			const dom = $.$mol_dom_context
+			let picked = [] as readonly string[]
+
+			const layers = $$.$bog_vmap_app_layers.make({
+				$,
+				source: ()=> sample,
+				root: ()=> `${d}layers_doc`,
+				picked: ( next?: readonly string[] )=> next ? picked = next : picked,
+				editable: ()=> false,
+			})
+
+			const click = ( type: string )=> new dom.MouseEvent( type, { bubbles: true, cancelable: true } )
+
+			layers.row_pick( 'Title', click( 'click' ) )
+			$mol_assert_like( picked, [ 'Title' ] )
+
+			$mol_assert_equal( layers.row_expanded( 'Page', false ), false )
+
+			layers.row_edit( 'Photo', click( 'dblclick' ) )
+			$mol_assert_equal( layers.editing(), null )
+			$mol_assert_like( picked, [ 'Title' ] )
+
+			$mol_assert_equal( layers.row_draggable( 'Photo' ), false )
+			$mol_assert_equal( layers.Row( 'Photo' ).dom_node_actual().hasAttribute( 'draggable' ), false )
+
+			const transfer = { getData: ( kind: string )=> kind === 'text/plain' ? 'Photo' : '' } as unknown as DataTransfer
+			$mol_assert_equal( layers.row_adopt( transfer ), null )
+		},
+
 		'a row dropped on the upper half of another lands before it'( $ ) {
 			const { app, drag } = layers_stage( $ )
 

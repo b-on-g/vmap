@@ -215,7 +215,7 @@ namespace $.$$ {
 		}
 
 		override row_draggable( name: string ) {
-			return Boolean( name ) && !this.row_editing( name )
+			return this.editable() && Boolean( name ) && !this.row_editing( name )
 		}
 
 		override row_content( name: string ) {
@@ -227,7 +227,7 @@ namespace $.$$ {
 
 		@ $mol_action
 		override row_edit( name: string, event?: Event ) {
-			if( !name || !event ) return null
+			if( !name || !event || !this.editable() ) return null
 
 			this.picked( [ name ] )
 			this.row_draft( name, name )
@@ -274,6 +274,7 @@ namespace $.$$ {
 		}
 
 		override row_adopt( transfer?: DataTransfer ) {
+			if( !this.editable() ) return null
 			const name = transfer?.getData( 'text/plain' ) ?? ''
 			return name && this.layers().has( name ) ? name : null
 		}

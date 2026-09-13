@@ -5,6 +5,7 @@ $bog_vmap_app_layers $mol_scroll
 	node_title? \
 	node_title_note \
 	tree_move? null
+	editable true
 	Doc $bog_vmap_lang_doc
 		source <= source
 	sub /
