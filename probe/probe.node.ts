@@ -473,6 +473,34 @@ namespace $ {
 
 		const short = ( id: string )=> id.replace( /^.*Root\(0\)\./, '' ).replace( /\(\)$/, '' )
 
+		const tip_box = async ( id: string )=> {
+			const found = await browser.send( 'Runtime.evaluate', { expression: `document.getElementById( ${ JSON.stringify( id ) } )` }, browser.page )
+			const object = $bog_probe_dig( found, 'result', 'result', 'objectId' )
+			if( typeof object !== 'string' ) return null
+			const node = await browser.send( 'DOM.describeNode', { objectId: object }, browser.page )
+			const pseudos = ( $bog_probe_dig( node, 'result', 'node', 'pseudoElements' ) ?? [] ) as readonly { readonly pseudoType: string, readonly backendNodeId: number }[]
+			const pseudo = pseudos.find( one => one.pseudoType === 'after' )
+			if( !pseudo ) return null
+			const model = await browser.send( 'DOM.getBoxModel', { backendNodeId: pseudo.backendNodeId }, browser.page )
+			const quad = $bog_probe_dig( model, 'result', 'model', 'border' ) as readonly number[] | undefined
+			if( !quad || quad.length < 8 ) return null
+			const xs = [ quad[ 0 ], quad[ 2 ], quad[ 4 ], quad[ 6 ] ].map( Number )
+			const ys = [ quad[ 1 ], quad[ 3 ], quad[ 5 ], quad[ 7 ] ].map( Number )
+			return { left: Math.min( ... xs ), top: Math.min( ... ys ), right: Math.max( ... xs ), bottom: Math.max( ... ys ) }
+		}
+
+		const beyond = ( box: { left: number, top: number, right: number, bottom: number }, width: number, height: number )=> Math.round(
+			Math.max( 0, - box.left ) + Math.max( 0, box.right - width ) + Math.max( 0, - box.top ) + Math.max( 0, box.bottom - height )
+		)
+
+		const inner = ( box: { left: number, top: number, right: number, bottom: number }, width: number, height: number )=> {
+			const x = Math.max( 0, Math.round( box.left ) ) + 2
+			const y = Math.max( 0, Math.round( box.top ) ) + 2
+			const w = Math.min( width, Math.round( box.right ) ) - 2 - x
+			const h = Math.min( height, Math.round( box.bottom ) ) - 2 - y
+			return w > 0 && h > 0 ? { x, y, width: w, height: h } : null
+		}
+
 		try {
 
 			await browser.open()
@@ -563,10 +591,15 @@ namespace $ {
 
 			want( targets.some( target => target.id.includes( 'Mark(' ) ), `${ at } у метки ошибки нет подсказки` )
 
+			await mouse( ... away )
+			await $bog_probe_pause( 150 )
+			const wide = Number( await browser.evaluate( `return document.scrollingElement.scrollWidth`, 5000 ) )
+
 			const inks = [] as number[]
-			const cuts = [] as string[]
-			const spills = [] as string[]
+			const cuts = [] as number[]
+			const spills = [] as number[]
 			let scroll = 0
+			let wrapped = 0
 
 			for( const target of targets ) {
 
@@ -577,46 +610,54 @@ namespace $ {
 				await mouse( target.x, target.y )
 				await $bog_probe_pause( 250 )
 
+				const box = await tip_box( target.id )
+
 				const state = await browser.evaluate( `
 					const node = document.getElementById( ${ JSON.stringify( target.id ) } )
 					const tip = getComputedStyle( node, '::after' )
-					const host = node.getBoundingClientRect()
-					const px = value => parseFloat( value ) || 0
-					const width = px( tip.width ) + px( tip.paddingLeft ) + px( tip.paddingRight )
-					const height = px( tip.height ) + px( tip.paddingTop ) + px( tip.paddingBottom )
-					const left = host.left + px( tip.left ) - width / 2
-					const top = host.top + px( tip.top )
-					const pen = document.createElement( 'canvas' ).getContext( '2d' )
-					pen.font = tip.fontWeight + ' ' + tip.fontSize + ' ' + tip.fontFamily
-					const text = pen.measureText( node.getAttribute( 'data-mol-tip' ) || '' ).width
-					const inner = [ Math.max( 0, left ) + 2, Math.max( 0, top ) + 2, Math.min( innerWidth, left + width ) - 2, Math.min( innerHeight, top + height ) - 2 ].map( Math.round )
+					const copy = document.createElement( 'div' )
+					for( const name of tip ) copy.style.setProperty( name, tip.getPropertyValue( name ) )
+					copy.style.position = 'fixed'
+					copy.style.left = '-20000px'
+					copy.style.top = '0px'
+					copy.style.transform = 'none'
+					copy.style.animation = 'none'
+					copy.style.visibility = 'hidden'
+					copy.textContent = node.getAttribute( 'data-mol-tip' ) || ''
+					document.body.appendChild( copy )
+					const spill = copy.scrollWidth - copy.clientWidth
+					const lines = Math.round( ( copy.clientHeight - parseFloat( tip.paddingTop ) - parseFloat( tip.paddingBottom ) ) / ( parseFloat( tip.lineHeight ) || 1 ) )
+					copy.remove()
 					return {
 						title: node.getAttribute( 'title' ),
 						tip: node.getAttribute( 'data-mol-tip' ),
 						position: getComputedStyle( node ).position,
-						box: tip.content === 'none' || inner[ 2 ] <= inner[ 0 ] || inner[ 3 ] <= inner[ 1 ] ? null
-							: { x: inner[ 0 ], y: inner[ 1 ], width: inner[ 2 ] - inner[ 0 ], height: inner[ 3 ] - inner[ 1 ] },
-						cut: Math.round( Math.max( 0, - left - px( tip.paddingLeft ) ) + Math.max( 0, left + px( tip.paddingLeft ) + text - innerWidth ) ),
-						spill: Math.round( Math.max( 0, px( tip.paddingLeft ) + text - width ) ),
+						view: [ document.documentElement.clientWidth, document.documentElement.clientHeight ],
+						spill,
+						lines,
 						scroll: document.scrollingElement.scrollWidth,
 					}
 				`, 15000 ) as {
 					title: string | null, tip: string | null, position: string,
-					box: { x: number, y: number, width: number, height: number } | null,
-					cut: number, spill: number, scroll: number,
+					view: [ number, number ], spill: number, lines: number, scroll: number,
 				}
 
 				const name = short( target.id )
-				const tipped = state.box ? await shot( state.box ) : []
+				const [ view_width, view_height ] = state.view
+				const shown = box ? [ box.left, box.top, box.right, box.bottom ].map( Math.round ).join( ',' ) : 'не нарисована'
+				const cut = box ? beyond( box, view_width, view_height ) : 0
+				const clip = box ? inner( box, view_width, view_height ) : null
+				const tipped = clip ? await shot( clip ) : []
 				await mouse( ... away )
 				await $bog_probe_pause( 150 )
-				const plain = state.box ? await shot( state.box ) : []
+				const plain = clip ? await shot( clip ) : []
 				const ink = plain.length ? plain.filter( ( pixel, index )=> pixel !== tipped[ index ] ).length / plain.length : 0
 
 				inks.push( ink )
-				if( state.cut ) cuts.push( `${ name } ${ state.cut }` )
-				if( state.spill ) spills.push( `${ name } ${ state.spill }` )
+				cuts.push( cut )
+				spills.push( state.spill )
 				scroll = Math.max( scroll, state.scroll )
+				if( state.lines > 1 ) wrapped ++
 
 				want(
 					state.tip === target.title && state.title === null,
@@ -624,11 +665,23 @@ namespace $ {
 				)
 				want(
 					ink >= $bog_vmap_probe_tip_ink,
-					`${ at } подсказки ${ name } не видно: в её прямоугольнике ${ JSON.stringify( state.box ) } сменилось ${ Math.round( ink * 100 ) } % пикселей, ждали не меньше ${ $bog_vmap_probe_tip_ink * 100 } %`,
+					`${ at } подсказки ${ name } не видно: в её прямоугольнике ${ JSON.stringify( clip ) } сменилось ${ Math.round( ink * 100 ) } % пикселей, ждали не меньше ${ $bog_vmap_probe_tip_ink * 100 } %`,
 				)
 				want(
 					state.position === position,
 					`${ at } наведение сменило позиционирование ${ name }: ${ position } → ${ state.position }`,
+				)
+				want(
+					!!box && cut === 0,
+					`${ at } подсказка ${ name } вылезла за окно ${ view_width }×${ view_height } на ${ cut } px: ${ shown }`,
+				)
+				want(
+					state.spill <= 0,
+					`${ at } текст подсказки ${ name } вылез за подложку на ${ state.spill } px`,
+				)
+				want(
+					state.scroll <= wide,
+					`${ at } наведение на ${ name } раздуло документ до ${ state.scroll } px из ${ wide }`,
 				)
 
 			}
@@ -638,8 +691,69 @@ namespace $ {
 
 			want( !moved.length, `${ at } наведение сдвинуло абсолютные узлы: ${ moved.map( id => `${ short( id ) } ${ before[ id ] } → ${ after[ id ] }` ).join( '; ' ) }` )
 
+			await browser.evaluate( `
+				document.addEventListener( 'animationstart', ()=> {
+					for( const one of document.getAnimations() ) {
+						if( one.effect?.pseudoElement !== '::after' ) continue
+						one.pause()
+						one.currentTime = Number( one.effect.getComputedTiming().duration ) / 2
+					}
+				}, true )
+				return true
+			`, 5000 )
+
+			const halves = [] as number[]
+			let half_scroll = 0
+			let frozen = 0
+
+			for( const target of targets ) {
+
+				await mouse( ... away )
+				await $bog_probe_pause( 150 )
+				await mouse( target.x, target.y )
+				await $bog_probe_pause( 150 )
+
+				const box = await tip_box( target.id )
+
+				const state = await browser.evaluate( `
+					const node = document.getElementById( ${ JSON.stringify( target.id ) } )
+					const own = node.getAnimations( { subtree: true } ).filter( one => one.effect?.target === node && one.effect?.pseudoElement === '::after' )
+					return {
+						view: [ document.documentElement.clientWidth, document.documentElement.clientHeight ],
+						scroll: document.scrollingElement.scrollWidth,
+						named: getComputedStyle( node, '::after' ).animationName !== 'none',
+						paused: own.some( one => one.playState === 'paused' ),
+					}
+				`, 5000 ) as { view: [ number, number ], scroll: number, named: boolean, paused: boolean }
+
+				const name = short( target.id )
+				const [ view_width, view_height ] = state.view
+				const shown = box ? [ box.left, box.top, box.right, box.bottom ].map( Math.round ).join( ',' ) : 'не нарисована'
+				const cut = box ? beyond( box, view_width, view_height ) : 0
+
+				halves.push( cut )
+				half_scroll = Math.max( half_scroll, state.scroll )
+				if( state.paused ) frozen ++
+
+				want(
+					!state.named || state.paused,
+					`${ at } анимацию появления подсказки ${ name } не удалось остановить на середине: середина не проверена`,
+				)
+				want(
+					!!box && cut === 0,
+					`${ at } на середине анимации появления подсказка ${ name } вылезла за окно ${ view_width }×${ view_height } на ${ cut } px: ${ shown }`,
+				)
+				want(
+					state.scroll <= wide,
+					`${ at } на середине анимации появления наведение на ${ name } раздуло документ до ${ state.scroll } px из ${ wide }`,
+				)
+
+			}
+
+			await mouse( ... away )
+
 			say( `${ at } верхняя панель и метка ошибки — наведено на ${ targets.length }, в прямоугольнике подсказки сменилось от ${ Math.round( Math.min( ... inks ) * 100 ) } до ${ Math.round( Math.max( ... inks ) * 100 ) } % пикселей; абсолютных узлов ${ Object.keys( before ).length }, после наведения сдвинулось ${ moved.length }; стиль пака ${ order.pack }-й из ${ order.all } в head, первый стиль vmap ${ order.own }-й; медиа (hover: hover) and (pointer: fine) здесь ${ order.media ? 'истинна' : 'ложна' }, правила пака из-под неё продублированы без условия сразу за его стилем` )
-			say( `${ at } верхняя панель, чего пак не умеет, не утверждается: подсказка центрируется под узлом и за край окна уходит ${ cuts.join( ', ' ) || 'ничего' }; строки не переносятся, и текст вылез за подложку у ${ spills.join( ', ' ) || 'никого' }; ширина документа при наведении до ${ scroll } из 1280` )
+			say( `${ at } верхняя панель и метка ошибки — прямоугольник подсказки из отладчика: за краем окна до ${ Math.max( ... cuts ) } px, текст за подложкой до ${ Math.max( ... spills ) } px, ширина документа при наведении до ${ scroll } из ${ wide }, в несколько строк ${ wrapped } из ${ targets.length }; на середине анимации появления остановлено ${ frozen } из ${ targets.length }, за краем окна до ${ Math.max( ... halves ) } px, ширина документа до ${ half_scroll }` )
 
 		} finally {
 			browser.close()
