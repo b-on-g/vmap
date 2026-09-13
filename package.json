@@ -403,6 +403,8 @@
     "$mol_svg_circle",
     "$mol_touch",
     "$mol_vector",
+    "$bog_vmap_app_menu",
+    "$bog_vmap_app_menu_item",
     "$mol_frame",
     "$mol_embed_native",
     "$mol_embed",

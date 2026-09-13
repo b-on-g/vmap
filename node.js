@@ -26420,6 +26420,344 @@ var $;
 })($ || ($ = {}));
 
 ;
+	($.$bog_vmap_app_menu_item) = class $bog_vmap_app_menu_item extends ($.$mol_button_minor) {
+		Label(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.title())]);
+			return obj;
+		}
+		Keys(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.keys())]);
+			return obj;
+		}
+		keys(){
+			return "";
+		}
+		act(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		done(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		sub(){
+			return [(this.Label()), (this.Keys())];
+		}
+	};
+	($mol_mem(($.$bog_vmap_app_menu_item.prototype), "Label"));
+	($mol_mem(($.$bog_vmap_app_menu_item.prototype), "Keys"));
+	($mol_mem(($.$bog_vmap_app_menu_item.prototype), "act"));
+	($mol_mem(($.$bog_vmap_app_menu_item.prototype), "done"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        class $bog_vmap_app_menu_item extends $.$bog_vmap_app_menu_item {
+            click(event) {
+                this.act(event);
+                this.done(event);
+                return null;
+            }
+        }
+        $$.$bog_vmap_app_menu_item = $bog_vmap_app_menu_item;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        $mol_style_define($bog_vmap_app_menu_item, {
+            justify: { content: 'space-between' },
+            color: $mol_theme.text,
+            '@': {
+                disabled: {
+                    true: {
+                        color: $mol_theme.shade,
+                    },
+                },
+            },
+            Keys: {
+                color: $mol_theme.shade,
+                padding: { left: '2rem' },
+            },
+        });
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$bog_vmap_app_menu) = class $bog_vmap_app_menu extends ($.$mol_pop) {
+		items(){
+			return [];
+		}
+		List(){
+			const obj = new this.$.$mol_list();
+			(obj.rows) = () => ((this.items()));
+			(obj.event) = () => ({
+				...(this.$.$mol_list.prototype.event.call(obj)), 
+				"pointerdown": (next) => (this.hold(next)), 
+				"wheel": (next) => (this.hold(next)), 
+				"contextmenu": (next) => (this.hold(next))
+			});
+			return obj;
+		}
+		copy_keys(){
+			return "";
+		}
+		remove_keys(){
+			return "";
+		}
+		wrap_keys(){
+			return "";
+		}
+		fit_keys(){
+			return "";
+		}
+		showed(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		left(){
+			return "0px";
+		}
+		top(){
+			return "0px";
+		}
+		on_node(){
+			return false;
+		}
+		apple(){
+			return false;
+		}
+		copy(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		remove(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		wrap(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		parent(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		parent_enabled(){
+			return true;
+		}
+		enter(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		board(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		fit(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		close(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		hold(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		style(){
+			return {
+				...(super.style()), 
+				"left": (this.left()), 
+				"top": (this.top())
+			};
+		}
+		Anchor(){
+			const obj = new this.$.$mol_view();
+			return obj;
+		}
+		bubble_content(){
+			return [(this.List())];
+		}
+		Copy(){
+			const obj = new this.$.$bog_vmap_app_menu_item();
+			(obj.title) = () => ("Копировать");
+			(obj.keys) = () => ((this.copy_keys()));
+			(obj.act) = (next) => ((this.copy(next)));
+			(obj.done) = (next) => ((this.close(next)));
+			return obj;
+		}
+		Remove(){
+			const obj = new this.$.$bog_vmap_app_menu_item();
+			(obj.title) = () => ("Удалить");
+			(obj.keys) = () => ((this.remove_keys()));
+			(obj.act) = (next) => ((this.remove(next)));
+			(obj.done) = (next) => ((this.close(next)));
+			return obj;
+		}
+		Wrap(){
+			const obj = new this.$.$bog_vmap_app_menu_item();
+			(obj.title) = () => ("Обернуть в артборд");
+			(obj.keys) = () => ((this.wrap_keys()));
+			(obj.act) = (next) => ((this.wrap(next)));
+			(obj.done) = (next) => ((this.close(next)));
+			return obj;
+		}
+		Parent(){
+			const obj = new this.$.$bog_vmap_app_menu_item();
+			(obj.title) = () => ("Выделить родителя");
+			(obj.enabled) = () => ((this.parent_enabled()));
+			(obj.act) = (next) => ((this.parent(next)));
+			(obj.done) = (next) => ((this.close(next)));
+			return obj;
+		}
+		Enter(){
+			const obj = new this.$.$bog_vmap_app_menu_item();
+			(obj.title) = () => ("Внутрь");
+			(obj.act) = (next) => ((this.enter(next)));
+			(obj.done) = (next) => ((this.close(next)));
+			return obj;
+		}
+		Board(){
+			const obj = new this.$.$bog_vmap_app_menu_item();
+			(obj.title) = () => ("Артборд здесь");
+			(obj.act) = (next) => ((this.board(next)));
+			(obj.done) = (next) => ((this.close(next)));
+			return obj;
+		}
+		Fit(){
+			const obj = new this.$.$bog_vmap_app_menu_item();
+			(obj.title) = () => ("Показать всё");
+			(obj.keys) = () => ((this.fit_keys()));
+			(obj.act) = (next) => ((this.fit(next)));
+			(obj.done) = (next) => ((this.close(next)));
+			return obj;
+		}
+	};
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "List"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "showed"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "copy"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "remove"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "wrap"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "parent"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "enter"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "board"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "fit"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "close"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "hold"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "Anchor"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "Copy"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "Remove"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "Wrap"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "Parent"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "Enter"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "Board"));
+	($mol_mem(($.$bog_vmap_app_menu.prototype), "Fit"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        class $bog_vmap_app_menu extends $.$bog_vmap_app_menu {
+            items() {
+                return this.on_node()
+                    ? [this.Copy(), this.Remove(), this.Wrap(), this.Parent(), this.Enter()]
+                    : [this.Board(), this.Fit()];
+            }
+            apple() {
+                return /Mac|iPhone|iPad/.test(this.$.$mol_dom_context.navigator?.userAgent ?? '');
+            }
+            copy_keys() {
+                return this.apple() ? '⌘D' : 'Ctrl+D';
+            }
+            remove_keys() {
+                return this.apple() ? '⌫' : 'Del';
+            }
+            wrap_keys() {
+                return this.apple() ? '⌥⌘G' : 'Ctrl+Alt+G';
+            }
+            fit_keys() {
+                return this.apple() ? '⇧1' : 'Shift+1';
+            }
+            close() {
+                this.showed(false);
+                return null;
+            }
+            hold(event) {
+                event?.preventDefault();
+                return null;
+            }
+            outside(event) {
+                const target = event?.target;
+                const bubble = this.Bubble().dom_node();
+                if (target instanceof this.$.$mol_dom_context.Node && bubble.contains(target))
+                    return;
+                this.close();
+            }
+            listeners() {
+                if (!this.showed())
+                    return [];
+                const win = this.$.$mol_dom_context;
+                const outside = $mol_wire_async(this).outside;
+                return [
+                    new this.$.$mol_dom_listener(win, 'pointerdown', outside),
+                    new this.$.$mol_dom_listener(win, 'wheel', outside),
+                    new this.$.$mol_dom_listener(win, 'blur', $mol_wire_async(this).close),
+                ];
+            }
+            auto() {
+                return [
+                    ...super.auto(),
+                    this.listeners(),
+                ];
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_menu.prototype, "listeners", null);
+        $$.$bog_vmap_app_menu = $bog_vmap_app_menu;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        $mol_style_define($bog_vmap_app_menu, {
+            position: 'absolute',
+            List: {
+                minWidth: '14rem',
+                padding: { top: $mol_gap.space, bottom: $mol_gap.space },
+            },
+        });
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
 	($.$mol_link) = class $mol_link extends ($.$mol_view) {
 		uri_toggle(){
 			return "";
@@ -26974,6 +27312,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		node_context(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		Overlay(){
 			const obj = new this.$.$bog_vmap_app_pane_overlay();
 			(obj.style) = () => ((this.overlay_style()));
@@ -26983,6 +27325,7 @@ var $;
 			(obj.move) = (next) => ((this.node_move(next)));
 			(obj.release) = (next) => ((this.node_release(next)));
 			(obj.away) = (next) => ((this.node_away(next)));
+			(obj.context) = (next) => ((this.node_context(next)));
 			return obj;
 		}
 		wire_lines(){
@@ -27041,6 +27384,34 @@ var $;
 		guide_style(id){
 			return {};
 		}
+		menu_showed(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		menu_left(){
+			return "";
+		}
+		menu_top(){
+			return "";
+		}
+		menu_on_node(){
+			return false;
+		}
+		menu_parent(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		menu_parent_enabled(){
+			return false;
+		}
+		menu_enter(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		menu_board(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		Touch(){
 			const obj = new this.$.$mol_touch();
 			(obj.allow_draw) = () => (false);
@@ -27090,6 +27461,10 @@ var $;
 			return null;
 		}
 		node_copy(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		node_wrap(next){
 			if(next !== undefined) return next;
 			return null;
 		}
@@ -27333,6 +27708,22 @@ var $;
 			(obj.style) = () => ((this.guide_style(id)));
 			return obj;
 		}
+		Menu(id){
+			const obj = new this.$.$bog_vmap_app_menu();
+			(obj.showed) = (next) => ((this.menu_showed(next)));
+			(obj.left) = () => ((this.menu_left()));
+			(obj.top) = () => ((this.menu_top()));
+			(obj.on_node) = () => ((this.menu_on_node()));
+			(obj.copy) = (next) => ((this.node_copy(next)));
+			(obj.remove) = (next) => ((this.node_delete(next)));
+			(obj.wrap) = (next) => ((this.node_wrap(next)));
+			(obj.parent) = (next) => ((this.menu_parent(next)));
+			(obj.parent_enabled) = () => ((this.menu_parent_enabled()));
+			(obj.enter) = (next) => ((this.menu_enter(next)));
+			(obj.board) = (next) => ((this.menu_board(next)));
+			(obj.fit) = (next) => ((this.camera_reset(next)));
+			return obj;
+		}
 		plugins(){
 			return [...(super.plugins()), (this.Touch())];
 		}
@@ -27343,10 +27734,15 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_release"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_away"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_context"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Overlay"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Wire"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Values"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Marks"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_showed"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_parent"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_enter"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_board"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Touch"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "tool"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "grip"));
@@ -27356,6 +27752,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "board_draw"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_delete"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_copy"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_wrap"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "leave"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "spots"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "picked"));
@@ -27387,6 +27784,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Band"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Draft"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Guide"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Menu"));
 	($.$bog_vmap_app_pane_overlay) = class $bog_vmap_app_pane_overlay extends ($.$mol_view) {
 		press(next){
 			if(next !== undefined) return next;
@@ -27401,6 +27799,10 @@ var $;
 			return null;
 		}
 		away(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		context(next){
 			if(next !== undefined) return next;
 			return null;
 		}
@@ -27436,7 +27838,8 @@ var $;
 				"pointerdown": (next) => (this.press(next)), 
 				"pointermove": (next) => (this.move(next)), 
 				"pointerup": (next) => (this.release(next)), 
-				"pointerleave": (next) => (this.away(next))
+				"pointerleave": (next) => (this.away(next)), 
+				"contextmenu": (next) => (this.context(next))
 			};
 		}
 		Frame(id){
@@ -27455,6 +27858,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "move"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "release"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "away"));
+	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "context"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_nw"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_ne"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_sw"));
@@ -27706,12 +28110,18 @@ var $;
                 return { x: left, y: top, width: right - left, height: bottom - top };
             }
             camera_fit(next) {
-                const box = this.box_union(next ?? []);
+                return this.fit(next ?? [], 1);
+            }
+            picked_fit() {
+                return this.fit(this.picked().flatMap(name => this.part_size(name) ?? []), this.zoom_max());
+            }
+            fit(boxes, limit) {
+                const box = this.box_union(boxes);
                 const rect = this.pane_rect();
                 if (!box || !rect.width || !rect.height)
                     return null;
                 const gap = this.fit_gap();
-                const zoom = this.camera_zoom(Math.min(1, Math.max(rect.width - gap * 2, 1) / box.width, Math.max(rect.height - gap * 2, 1) / box.height));
+                const zoom = this.camera_zoom(Math.min(limit, Math.max(rect.width - gap * 2, 1) / box.width, Math.max(rect.height - gap * 2, 1) / box.height));
                 this.camera_shift(new this.$.$mol_vector_2d(rect.width / 2 - (box.x + box.width / 2) * zoom, rect.height / 2 - (box.y + box.height / 2) * zoom));
                 return box;
             }
@@ -27732,8 +28142,11 @@ var $;
                 this.zoom_by(1 / 1.25);
             }
             zoom_by(mult) {
+                this.zoom_to(this.camera_zoom() * mult);
+            }
+            zoom_to(next) {
                 const zoom_prev = this.camera_zoom();
-                const zoom_next = this.camera_zoom(zoom_prev * mult);
+                const zoom_next = this.camera_zoom(next);
                 const real = zoom_next / zoom_prev;
                 const rect = this.pane_rect();
                 const center = new this.$.$mol_vector_2d(rect.width / 2, rect.height / 2);
@@ -27807,6 +28220,7 @@ var $;
                     ...this.band() ? [this.Band()] : [],
                     ...this.draft() ? [this.Draft()] : [],
                     ...this.guide_views(),
+                    ...this.menu() ? [this.menu_view()] : [],
                 ];
             }
             scene_shown(next) {
@@ -28061,6 +28475,13 @@ var $;
                     this.focused(true);
                 return null;
             }
+            enter(name) {
+                this.entered(name);
+                try {
+                    this.Scene(this.scene_key()).dom_node().focus();
+                }
+                catch { }
+            }
             hand() {
                 return this.tool() === 'hand' || this.grip();
             }
@@ -28097,6 +28518,13 @@ var $;
             key_down(stroke) {
                 const field = this.key_field(stroke.target);
                 const command = stroke.metaKey || stroke.ctrlKey;
+                if (this.menu()) {
+                    this.menu(null);
+                    if (stroke.key === 'Escape') {
+                        stroke.preventDefault();
+                        return true;
+                    }
+                }
                 if (stroke.key === 'Escape') {
                     stroke.preventDefault();
                     if (field)
@@ -28127,6 +28555,32 @@ var $;
                     this.node_delete(null);
                     return true;
                 }
+                if (stroke.code === 'KeyG' && command && stroke.altKey && !stroke.shiftKey) {
+                    if (!this.picked().length)
+                        return false;
+                    stroke.preventDefault();
+                    this.leave();
+                    this.node_wrap(null);
+                    return true;
+                }
+                if (stroke.shiftKey && !command && !stroke.altKey) {
+                    if (stroke.code === 'Digit1') {
+                        stroke.preventDefault();
+                        this.camera_reset();
+                        return true;
+                    }
+                    if (stroke.code === 'Digit2') {
+                        if (!this.picked_fit())
+                            return false;
+                        stroke.preventDefault();
+                        return true;
+                    }
+                    if (stroke.code === 'Digit0') {
+                        stroke.preventDefault();
+                        this.zoom_to(1);
+                        return true;
+                    }
+                }
                 if (command || stroke.altKey || stroke.shiftKey)
                     return false;
                 const tool = this.key_tools()[stroke.code];
@@ -28155,6 +28609,81 @@ var $;
                     this.tool('select');
                 else
                     this.picked([]);
+            }
+            menu(next) {
+                return next ?? null;
+            }
+            menu_key() {
+                return this.menu()?.screen.join(':') ?? '';
+            }
+            menu_view() {
+                return this.Menu(this.menu_key());
+            }
+            menu_showed(next) {
+                if (next === false)
+                    this.menu(null);
+                return Boolean(this.menu());
+            }
+            menu_left() {
+                return (this.menu()?.screen[0] ?? 0) + 'px';
+            }
+            menu_top() {
+                return (this.menu()?.screen[1] ?? 0) + 'px';
+            }
+            menu_on_node() {
+                return Boolean(this.menu()?.name);
+            }
+            node_context(event) {
+                if (!event)
+                    return null;
+                if (this.carrying())
+                    return null;
+                const point = this.world_point(event);
+                const held = this.inside() ? this.part_size(this.primary() ?? '') : null;
+                if (held
+                    && point[0] >= held.x && point[0] <= held.x + held.width
+                    && point[1] >= held.y && point[1] <= held.y + held.height)
+                    return null;
+                event.preventDefault();
+                const name = this.node_at(point);
+                this.leave();
+                if (name && !this.picked().includes(name))
+                    this.picked([name]);
+                this.menu({ screen: this.screen_point(event), world: point, name });
+                return null;
+            }
+            parents() {
+                const found = [];
+                for (const name of this.picked()) {
+                    const up = this.node_path(name).at(-1);
+                    if (up && !found.includes(up))
+                        found.push(up);
+                }
+                return found;
+            }
+            menu_parent_enabled() {
+                return this.parents().length > 0;
+            }
+            menu_parent() {
+                const parents = this.parents();
+                if (parents.length)
+                    this.picked(parents);
+                return null;
+            }
+            menu_enter() {
+                const name = this.menu()?.name;
+                if (!name)
+                    return null;
+                this.picked([name]);
+                this.enter(name);
+                return null;
+            }
+            menu_board() {
+                const world = this.menu()?.world;
+                if (!world)
+                    return null;
+                this.board_draw({ x: Math.round(world[0]), y: Math.round(world[1]), width: 0, height: 0 });
+                return null;
             }
             copy_gap() {
                 return 24;
@@ -28570,11 +29099,7 @@ var $;
                     return this.picked([press.name]);
                 if (!press.entering)
                     return;
-                this.entered(this.primary());
-                try {
-                    this.Scene(this.scene_key()).dom_node().focus();
-                }
-                catch { }
+                this.enter(this.primary());
                 this.click_send(press.world, event);
             }
             click_send(point, event) {
@@ -29082,6 +29607,9 @@ var $;
         ], $bog_vmap_app_pane.prototype, "camera_fit", null);
         __decorate([
             $mol_action
+        ], $bog_vmap_app_pane.prototype, "picked_fit", null);
+        __decorate([
+            $mol_action
         ], $bog_vmap_app_pane.prototype, "camera_reset", null);
         __decorate([
             $mol_mem
@@ -29155,6 +29683,18 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "escape", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "menu", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "menu_parent", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "menu_enter", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "menu_board", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "slot", null);
@@ -33143,7 +33683,7 @@ var $;
 		Zoom_reset(){
 			const obj = new this.$.$mol_button_minor();
 			(obj.title) = () => ((this.zoom_title()));
-			(obj.hint) = () => ("Сбросить вид");
+			(obj.hint) = () => ("Показать всё. Shift+1 — всё, Shift+2 — выделенное, Shift+0 — 100 %");
 			(obj.click) = (next) => ((this.camera_reset(next)));
 			return obj;
 		}
@@ -33316,6 +33856,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		node_wrap(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		board_draw(next){
 			if(next !== undefined) return next;
 			return null;
@@ -33356,6 +33900,7 @@ var $;
 			(obj.files_drop) = (next) => ((this.files_drop(next)));
 			(obj.node_delete) = (next) => ((this.node_delete(next)));
 			(obj.node_copy) = (next) => ((this.node_copy(next)));
+			(obj.node_wrap) = (next) => ((this.node_wrap(next)));
 			(obj.board_draw) = (next) => ((this.board_draw(next)));
 			return obj;
 		}
@@ -33764,6 +34309,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "carry_drop"));
 	($mol_mem(($.$bog_vmap_app.prototype), "files_drop"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_copy"));
+	($mol_mem(($.$bog_vmap_app.prototype), "node_wrap"));
 	($mol_mem(($.$bog_vmap_app.prototype), "board_draw"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Pane"));
 	($mol_mem(($.$bog_vmap_app.prototype), "shelf_place"));
@@ -34863,10 +35409,7 @@ var $;
                     color: 'var(--mol_theme_text)',
                 };
             }
-            board_draw(next) {
-                if (!next)
-                    return null;
-                const size = next.width || next.height ? next : this.board_size();
+            board_new(size) {
                 const node = this.node();
                 const name = this.name_free('Page');
                 const tree = node.tree();
@@ -34875,10 +35418,54 @@ var $;
                     tree.struct('*', Object.entries(this.board_style(size)).map(([key, value]) => tree.struct(key, [tree.data(value)]))),
                 ]));
                 node.sub_open(name);
-                node.sub_add(name);
+                return name;
+            }
+            board_draw(next) {
+                if (!next)
+                    return null;
+                const size = next.width || next.height ? next : this.board_size();
+                const name = this.board_new(size);
+                this.node().sub_add(name);
                 this.spots({ ...this.spots(), [name]: { x: next.x, y: next.y } });
                 this.selected(name);
                 return next;
+            }
+            node_wrap() {
+                const picked = this.picked();
+                if (!picked.length)
+                    return null;
+                const node = this.node();
+                const pane = this.Pane();
+                const boxes = new Map(picked.map(name => [name, pane.part_size(name)]));
+                const place = (name) => boxes.get(name) ?? { x: 0, y: 0 };
+                const tops = picked
+                    .filter(name => !picked.some(up => up !== name && node.sub_within(up, name)))
+                    .sort((one, two) => place(one).y - place(two).y || place(one).x - place(two).x);
+                const holders = new Set(tops.map(name => node.sub_holder(name)));
+                const holder = holders.size === 1 ? [...holders][0] ?? '' : '';
+                const kids = node.sub_names(holder) ?? [];
+                const index = Math.min(Infinity, ...tops.map(name => kids.indexOf(name)).filter(at => at >= 0));
+                const found = tops.flatMap(name => boxes.get(name) ?? []);
+                const left = Math.min(...found.map(box => box.x));
+                const upper = Math.min(...found.map(box => box.y));
+                const width = Math.max(...found.map(box => box.x + box.width)) - left;
+                const height = Math.max(...found.map(box => box.y + box.height)) - upper;
+                const spots = { ...this.spots() };
+                const spot = found.length ? { x: left, y: upper } : spots[tops[0]];
+                const [x, y] = spot ? [spot.x, spot.y] : pane.free_spot();
+                const name = this.board_new(found.length
+                    ? { width: Math.round(width), height: Math.round(height) }
+                    : this.board_size());
+                node.sub_insert(name, index, holder);
+                if (!holder)
+                    spots[name] = { x: Math.round(x), y: Math.round(y) };
+                tops.forEach((kid, at) => {
+                    node.sub_move(kid, at, name);
+                    delete spots[kid];
+                });
+                this.spots(spots);
+                this.picked([name]);
+                return null;
             }
             node_copy() {
                 const picked = this.picked();
@@ -35215,6 +35802,9 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "board_draw", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "node_wrap", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "node_copy", null);

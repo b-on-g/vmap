@@ -1177,6 +1177,81 @@ $mol_touch $mol_plugin
 		pointerleave? <=> event_leave? null
 		wheel? <=> event_wheel? null
 
+$bog_vmap_app_menu_item $mol_button_minor
+	keys \
+	act? null
+	done? null
+	sub /
+		<= Label $mol_view
+			sub /
+				<= title
+		<= Keys $mol_view
+			sub /
+				<= keys
+
+$bog_vmap_app_menu $mol_pop
+	showed? false
+	left \0px
+	top \0px
+	on_node false
+	apple false
+	copy? null
+	remove? null
+	wrap? null
+	parent? null
+	parent_enabled true
+	enter? null
+	board? null
+	fit? null
+	close? null
+	hold? null
+	style *
+		^
+		left <= left
+		top <= top
+	Anchor $mol_view
+	bubble_content /
+		<= List $mol_list
+			rows <= items /$mol_view
+			event *
+				^
+				pointerdown? <=> hold?
+				wheel? <=> hold?
+				contextmenu? <=> hold?
+	Copy $bog_vmap_app_menu_item
+		title \Копировать
+		keys <= copy_keys \
+		act? <=> copy?
+		done? <=> close?
+	Remove $bog_vmap_app_menu_item
+		title \Удалить
+		keys <= remove_keys \
+		act? <=> remove?
+		done? <=> close?
+	Wrap $bog_vmap_app_menu_item
+		title \Обернуть в артборд
+		keys <= wrap_keys \
+		act? <=> wrap?
+		done? <=> close?
+	Parent $bog_vmap_app_menu_item
+		title \Выделить родителя
+		enabled <= parent_enabled
+		act? <=> parent?
+		done? <=> close?
+	Enter $bog_vmap_app_menu_item
+		title \Внутрь
+		act? <=> enter?
+		done? <=> close?
+	Board $bog_vmap_app_menu_item
+		title \Артборд здесь
+		act? <=> board?
+		done? <=> close?
+	Fit $bog_vmap_app_menu_item
+		title \Показать всё
+		keys <= fit_keys \
+		act? <=> fit?
+		done? <=> close?
+
 $mol_link $mol_view
 	uri \
 	dom_name \a
@@ -1242,6 +1317,7 @@ $bog_vmap_app_pane $mol_view
 	board_draw? null
 	node_delete? null
 	node_copy? null
+	node_wrap? null
 	leave? null
 	key_down* false
 	key_up* null
@@ -1315,6 +1391,7 @@ $bog_vmap_app_pane $mol_view
 			move? <=> node_move? null
 			release? <=> node_release? null
 			away? <=> node_away? null
+			context? <=> node_context? null
 		<= Wire $bog_vmap_app_wire
 			lines <= wire_lines /$bog_vmap_app_wire_line
 			dots <= wire_dots /$bog_vmap_app_wire_dot
@@ -1341,6 +1418,19 @@ $bog_vmap_app_pane $mol_view
 		style <= draft_style *
 	Guide* $mol_view
 		style <= guide_style* *
+	Menu* $bog_vmap_app_menu
+		showed? <=> menu_showed? false
+		left <= menu_left \
+		top <= menu_top \
+		on_node <= menu_on_node false
+		copy? <=> node_copy?
+		remove? <=> node_delete?
+		wrap? <=> node_wrap?
+		parent? <=> menu_parent? null
+		parent_enabled <= menu_parent_enabled false
+		enter? <=> menu_enter? null
+		board? <=> menu_board? null
+		fit? <=> camera_reset?
 	plugins /
 		^
 		<= Touch $mol_touch
@@ -1357,12 +1447,14 @@ $bog_vmap_app_pane_overlay $mol_view
 	move? null
 	release? null
 	away? null
+	context? null
 	event *
 		^
 		pointerdown? <=> press? null
 		pointermove? <=> move? null
 		pointerup? <=> release? null
 		pointerleave? <=> away? null
+		contextmenu? <=> context? null
 	Frame* $mol_view
 		style <= frame_style* *
 		sub /
@@ -1820,7 +1912,7 @@ $bog_vmap_app $mol_page
 			click? <=> zoom_out? null
 		<= Zoom_reset $mol_button_minor
 			title <= zoom_title \
-			hint \Сбросить вид
+			hint \Показать всё. Shift+1 — всё, Shift+2 — выделенное, Shift+0 — 100 %
 			click? <=> camera_reset? null
 		<= Zoom_in $mol_button_minor
 			title \+
@@ -1901,6 +1993,7 @@ $bog_vmap_app $mol_page
 				files_drop? <=> files_drop? null
 				node_delete? <=> node_delete?
 				node_copy? <=> node_copy? null
+				node_wrap? <=> node_wrap? null
 				board_draw? <=> board_draw? null
 				tool_select? => tool_select?
 				tool_board? => tool_board?
