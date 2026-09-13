@@ -142,6 +142,7 @@ jobs:
         file="bog/vmap/smoke/-/smoke.log"
         test -s "$file"
         grep -q 'перезапуск одним нажатием' "$file"
+        grep -E 'прогрев|бросок детали|зависание|документ цел' "$file" || true
         {
           echo '```'
           cat "$file"
