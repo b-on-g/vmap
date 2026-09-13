@@ -13,9 +13,9 @@ namespace $.$$ {
 
 		override publish_hint() {
 			const klass = this.class_name()
-			return klass
-				? `Опубликовать ${ this.part() } в библиотеку как ${ klass }`
-				: 'Выберите деталь на холсте, чтобы опубликовать её в библиотеку'
+			if( !klass ) return 'Выберите деталь на холсте, чтобы опубликовать её в библиотеку'
+			const hint = `Опубликовать ${ this.part() } в библиотеку как ${ klass }`
+			return this.foreign() ? `${ hint }. Это копия в вашу библиотеку, чужая сцена не меняется` : hint
 		}
 
 		override lib_link() {

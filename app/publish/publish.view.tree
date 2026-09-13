@@ -7,6 +7,7 @@ $bog_vmap_app_publish $mol_view
 	doc \
 	classes /string
 	lib_link \
+	foreign false
 	sub <= content /$mol_view
 	Publish $mol_button_minor
 		title \В библиотеку

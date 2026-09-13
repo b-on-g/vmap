@@ -642,6 +642,24 @@ namespace $ {
 
 		},
 
+		'in somebody else scene the hint says publishing is a copy'( $ ) {
+
+			const s = store( $ )
+			const own = view( $, s, 'Button_minor', src_button )
+			const theirs = $bog_vmap_app_publish.make({
+				$,
+				store: ()=> s,
+				part: ()=> 'Button_minor',
+				source: ()=> src_button,
+				foreign: ()=> true,
+			}) as $$.$bog_vmap_app_publish
+
+			$mol_assert_equal( theirs.enabled(), true )
+			$mol_assert_equal( theirs.publish_hint(), `${ own.publish_hint() }. Это копия в вашу библиотеку, чужая сцена не меняется` )
+			$mol_assert_equal( own.publish_hint().includes( 'копия' ), false )
+
+		},
+
 		async 'the click publishes the pick and shows the link'( $ ) {
 
 			const s = store( $ )
