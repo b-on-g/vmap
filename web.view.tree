@@ -2522,6 +2522,7 @@ $bog_vmap_app_menu $mol_pop
 	left \0px
 	top \0px
 	on_node false
+	editable true
 	apple false
 	copy? null
 	remove? null
