@@ -995,6 +995,35 @@ namespace $ {
 
 		},
 
+		async 'a scene change takes the pointer out of the node, and coming back keeps it out'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( `${d}flow_calc`, stage.client([ 200, 150 ]) )
+			stage.tap( stage.client([ 500, 400 ]) )
+			stage.tap( stage.part_center( 'Calc' ) )
+			stage.tap( stage.part_center( 'Calc' ) )
+
+			$mol_assert_equal( stage.pane.inside(), true )
+			$mol_assert_ok( stage.pane.overlay_style().clipPath.includes( '200px 150px' ) )
+
+			const first = stage.store.doc_current()!.link().str
+
+			stage.click( stage.button( 'Новая сцена' ) )
+
+			await $bog_vmap_app_flow_settle( ()=> stage.store.doc_links().length > 1 )
+			stage.redraw()
+
+			const scenes = stage.app.Scenes() as $$.$bog_vmap_app_scenes
+			scenes.current( first )
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.selected(), 'Calc' )
+			$mol_assert_equal( stage.pane.inside(), false )
+			$mol_assert_equal( stage.pane.overlay_style().clipPath, 'none' )
+			$mol_assert_equal( stage.text().includes( 'Внутри' ), false )
+
+		},
+
 		'a pick naming nothing in the document leaves the panel inviting'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 

@@ -494,11 +494,6 @@ namespace $.$$ {
 			return next ?? null
 		}
 
-		@ $mol_mem
-		override entered( next?: string | null ) {
-			return next ?? null
-		}
-
 		primary() {
 			const picked = this.picked()
 			return picked.length ? picked[ picked.length - 1 ] : null

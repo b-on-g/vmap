@@ -148,7 +148,7 @@ namespace $.$$ {
 
 		override picked( next?: readonly string[] ): readonly string[] {
 			const key = this.doc_key()
-			if( next !== undefined && !$mol_compare_deep( next, this.picked_at( key ) ) ) this.Pane().entered( null )
+			if( next !== undefined && !$mol_compare_deep( next, this.picked_at( key ) ) ) this.entered( null )
 			return this.picked_at( key, next )
 		}
 
@@ -159,6 +159,17 @@ namespace $.$$ {
 		@ $mol_mem_key
 		picked_at( key: string, next?: readonly string[] ): readonly string[] {
 			return next ?? []
+		}
+
+		override entered( next?: string | null ) {
+			const now = this.entered_in_doc()
+			return next === undefined ? now : this.entered_in_doc( next )
+		}
+
+		@ $mol_mem
+		entered_in_doc( next?: string | null ) {
+			this.doc_key()
+			return next ?? null
 		}
 
 		override selected( next?: string | null ): string | null {

@@ -134,6 +134,7 @@ $bog_vmap_app $mol_page
 				doc_css <= doc_css
 				spots? <=> spots?
 				picked? <=> picked?
+				entered? <=> entered? null
 				doc_js <= doc_js
 				doc_root <= doc_root
 				libs <= libs /$bog_vmap_bridge_part
