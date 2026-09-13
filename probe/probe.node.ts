@@ -281,12 +281,15 @@ namespace $ {
 			await browser.open()
 			await browser.viewport( 1280, 800 )
 			await browser.open_page( site.uri( $bog_vmap_probe_page ), $bog_vmap_probe_ready(), 150000 )
+			if( await browser.until( `${ app }.doc_key() !== ''`, 30000 ) < 0 ) return $mol_fail( new Error( 'цвет: документ не завёлся за 30000 мс после прогрева' ) )
 			const part_name = String( await browser.evaluate( `
 				const app = ${ app }
-				app.board_draw( ${ JSON.stringify( $bog_vmap_probe_board ) } )
-				const name = app.selected()
-				app.selected( null )
-				return name
+				return await $[ ${ JSON.stringify( d + 'mol_wire_async' ) } ]( ()=> {
+					app.board_draw( ${ JSON.stringify( $bog_vmap_probe_board ) } )
+					const name = app.selected()
+					app.selected( null )
+					return name
+				} )()
 			`, 15000 ) )
 			const measured = await browser.until( `!!${ app }.Pane().part_box( ${ JSON.stringify( part_name ) } )`, 15000 )
 			if( measured < 0 ) return $mol_fail( new Error( `цвет: сцена не измерила артборд ${ part_name } за 15000 мс` ) )
