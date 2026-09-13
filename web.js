@@ -30301,6 +30301,9 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		field_undo(){
+			return false;
+		}
 		event(){
 			return {...(super.event()), "focusout": (next) => (this.field_leave(next))};
 		}
@@ -34218,6 +34221,12 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		key_down(id){
+			return false;
+		}
+		key_up(id){
+			return null;
+		}
 		scene_bundle(){
 			return "";
 		}
@@ -34338,6 +34347,9 @@ var $;
 			return [];
 		}
 		part_size(id){
+			return null;
+		}
+		copy_spot(id){
 			return null;
 		}
 		camera_fit(next){

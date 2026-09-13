@@ -40026,6 +40026,7 @@ declare namespace $ {
 		error( ): string
 		whole( next?: boolean ): boolean
 		refusal( next?: string ): string
+		field_undo( ): boolean
 		event( ): ({ 
 			focusout( next?: ReturnType< $bog_vmap_app_code['field_leave'] > ): ReturnType< $bog_vmap_app_code['field_leave'] >,
 		})  & ReturnType< $mol_page['event'] >
@@ -44065,6 +44066,8 @@ declare namespace $ {
 		node_delete( next?: any ): any
 		node_copy( next?: any ): any
 		leave( next?: any ): any
+		key_down( id: any): boolean
+		key_up( id: any): any
 		scene_bundle( ): string
 		scene_html( ): string
 		pack_uri( ): string
@@ -44103,6 +44106,7 @@ declare namespace $ {
 		world_center( ): readonly(number)[]
 		free_spot( ): readonly(number)[]
 		part_size( id: any): any
+		copy_spot( id: any): any
 		camera_fit( next?: any ): any
 		camera_reset( next?: any ): any
 		zoom_out( next?: any ): any
