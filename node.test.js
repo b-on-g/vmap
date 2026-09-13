@@ -27905,9 +27905,6 @@ var $;
             press(next) {
                 return next ?? null;
             }
-            entered(next) {
-                return next ?? null;
-            }
             primary() {
                 const picked = this.picked();
                 return picked.length ? picked[picked.length - 1] : null;
@@ -28993,9 +28990,6 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "press", null);
-        __decorate([
-            $mol_mem
-        ], $bog_vmap_app_pane.prototype, "entered", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "leave", null);
@@ -33048,6 +33042,10 @@ var $;
 		scene_theme(){
 			return "";
 		}
+		entered(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		libs(){
 			return [];
 		}
@@ -33118,6 +33116,7 @@ var $;
 			(obj.doc_css) = () => ((this.doc_css()));
 			(obj.spots) = (next) => ((this.spots(next)));
 			(obj.picked) = (next) => ((this.picked(next)));
+			(obj.entered) = (next) => ((this.entered(next)));
 			(obj.doc_js) = () => ((this.doc_js()));
 			(obj.doc_root) = () => ((this.doc_root()));
 			(obj.libs) = () => ((this.libs()));
@@ -33529,6 +33528,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Right_check"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Left_tabs"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Right_tabs"));
+	($mol_mem(($.$bog_vmap_app.prototype), "entered"));
 	($mol_mem(($.$bog_vmap_app.prototype), "link_add"));
 	($mol_mem(($.$bog_vmap_app.prototype), "link_drop"));
 	($mol_mem(($.$bog_vmap_app.prototype), "tree_move"));
@@ -33995,7 +33995,7 @@ var $;
             picked(next) {
                 const key = this.doc_key();
                 if (next !== undefined && !$mol_compare_deep(next, this.picked_at(key)))
-                    this.Pane().entered(null);
+                    this.entered(null);
                 return this.picked_at(key, next);
             }
             doc_key() {
@@ -34003,6 +34003,14 @@ var $;
             }
             picked_at(key, next) {
                 return next ?? [];
+            }
+            entered(next) {
+                const now = this.entered_in_doc();
+                return next === undefined ? now : this.entered_in_doc(next);
+            }
+            entered_in_doc(next) {
+                this.doc_key();
+                return next ?? null;
             }
             selected(next) {
                 if (next !== undefined) {
@@ -34873,6 +34881,9 @@ var $;
         __decorate([
             $mol_mem_key
         ], $bog_vmap_app.prototype, "picked_at", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app.prototype, "entered_in_doc", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "doc_model", null);
@@ -52609,6 +52620,26 @@ var $;
             scenes.current(first);
             stage.redraw();
             $mol_assert_equal(stage.app.selected(), 'Calc');
+        },
+        async 'a scene change takes the pointer out of the node, and coming back keeps it out'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(`${d}flow_calc`, stage.client([200, 150]));
+            stage.tap(stage.client([500, 400]));
+            stage.tap(stage.part_center('Calc'));
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.pane.inside(), true);
+            $mol_assert_ok(stage.pane.overlay_style().clipPath.includes('200px 150px'));
+            const first = stage.store.doc_current().link().str;
+            stage.click(stage.button('Новая сцена'));
+            await $bog_vmap_app_flow_settle(() => stage.store.doc_links().length > 1);
+            stage.redraw();
+            const scenes = stage.app.Scenes();
+            scenes.current(first);
+            stage.redraw();
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            $mol_assert_equal(stage.pane.inside(), false);
+            $mol_assert_equal(stage.pane.overlay_style().clipPath, 'none');
+            $mol_assert_equal(stage.text().includes('Внутри'), false);
         },
         'a pick naming nothing in the document leaves the panel inviting'($) {
             const stage = $bog_vmap_app_flow_stage($);
