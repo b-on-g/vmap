@@ -9,6 +9,7 @@ $bog_vmap_app_code $mol_page
 	error \
 	whole? false
 	refusal? \
+	field_undo false
 	event *
 		^
 		focusout? <=> field_leave? null

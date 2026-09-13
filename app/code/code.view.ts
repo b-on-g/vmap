@@ -90,7 +90,7 @@ namespace $.$$ {
 		}
 
 		@ $mol_action
-		field_undo() {
+		override field_undo() {
 
 			if( !this.field_dirty() ) return false
 

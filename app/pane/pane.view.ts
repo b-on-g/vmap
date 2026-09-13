@@ -553,7 +553,7 @@ namespace $.$$ {
 			return /^(INPUT|TEXTAREA|SELECT)$/.test( element?.tagName ?? '' )
 		}
 
-		key_down( stroke: $bog_vmap_app_pane_stroke ) {
+		override key_down( stroke: $bog_vmap_app_pane_stroke ) {
 			const field = this.key_field( stroke.target )
 			const command = stroke.metaKey || stroke.ctrlKey
 
@@ -604,7 +604,7 @@ namespace $.$$ {
 			return false
 		}
 
-		key_up( stroke: Pick< $bog_vmap_app_pane_stroke, 'code' > ) {
+		override key_up( stroke: Pick< $bog_vmap_app_pane_stroke, 'code' > ) {
 			if( stroke.code === 'Space' ) this.grip( false )
 		}
 
@@ -620,7 +620,7 @@ namespace $.$$ {
 			return 24
 		}
 
-		copy_spot( name: string ) {
+		override copy_spot( name: string ) {
 			const spot = this.spots()[ name ]
 			if( !spot ) return null
 

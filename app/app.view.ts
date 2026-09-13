@@ -1004,7 +1004,7 @@ namespace $.$$ {
 			if( !picked.length ) return null
 
 			const node = this.node()
-			const pane = this.Pane() as $bog_vmap_app_pane
+			const pane = this.Pane()
 
 			const tops = picked.filter( name => !picked.some( up => up !== name && node.sub_within( up, name ) ) )
 			const spots = { ... this.spots() }
@@ -1232,7 +1232,7 @@ namespace $.$$ {
 
 			event.preventDefault()
 
-			if( !event.shiftKey && ( this.Code() as $bog_vmap_app_code ).field_undo() ) return true
+			if( !event.shiftKey && this.Code().field_undo() ) return true
 
 			if( event.shiftKey ) this.History().redo()
 			else this.History().undo()
@@ -1265,13 +1265,13 @@ namespace $.$$ {
 				return
 			}
 
-			( this.Pane() as $bog_vmap_app_pane ).key_down( event )
+			this.Pane().key_down( event )
 
 		}
 
 		key_release( event?: KeyboardEvent ) {
 			if( !event ) return
-			( this.Pane() as $bog_vmap_app_pane ).key_up( event )
+			this.Pane().key_up( event )
 		}
 
 		key_lost() {
