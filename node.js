@@ -31207,7 +31207,14 @@ var $;
                 return this.expanded_at(name, next);
             }
             expanded_at(name, next) {
-                return next ?? true;
+                const open = this.$.$mol_state_session.value('vmap_layers_open') ?? {};
+                if (next === undefined)
+                    return open[name] ?? true;
+                this.$.$mol_state_session.value('vmap_layers_open', { ...open, [name]: next });
+                return next;
+            }
+            outside_expanded(next) {
+                return this.$.$mol_state_session.value('vmap_layers_outside', next) ?? super.outside_expanded();
             }
             row_name(name) {
                 return name;
@@ -31341,9 +31348,11 @@ var $;
             zone_at(name, share) {
                 if (!name)
                     return 'inside';
+                if (!this.row_within('', name))
+                    return '';
                 if (this.layers().get(name)?.kids && share >= .5)
                     return 'inside';
-                return this.row_holder(name) === null ? '' : 'before';
+                return 'before';
             }
             row_receive(anchor, dropped) {
                 if (!dropped)
@@ -31359,6 +31368,8 @@ var $;
                 const into = !anchor || zone === 'inside';
                 const owner = into ? anchor : this.row_holder(anchor);
                 if (owner === null)
+                    return null;
+                if (owner && !this.row_within('', owner))
                     return null;
                 if (owner && (owner === name || this.row_within(name, owner)))
                     return null;
@@ -31383,9 +31394,6 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_layers.prototype, "rows", null);
-        __decorate([
-            $mol_mem_key
-        ], $bog_vmap_app_layers.prototype, "expanded_at", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_layers.prototype, "row_pick", null);

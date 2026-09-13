@@ -19892,9 +19892,10 @@ var $;
         const panel = layers.dom_node();
         $mol_assert_ok(stage.root.contains(panel));
         const redraw = () => stage.redraw();
+        const shown = () => app.Layers().dom_node();
         const lines = () => {
             redraw();
-            return [...panel.querySelectorAll('[bog_vmap_app_layers_line]')];
+            return [...shown().querySelectorAll('[bog_vmap_app_layers_line]')];
         };
         const title_of = (line) => line.querySelector('[bog_vmap_app_layers_pick]')?.textContent ?? '';
         const line = (title) => {
@@ -19958,7 +19959,7 @@ var $;
         };
         const group = () => {
             redraw();
-            return panel.querySelector('[bog_vmap_app_layers_outside]');
+            return shown().querySelector('[bog_vmap_app_layers_outside]');
         };
         const grouped = () => {
             const head = group();
@@ -20178,6 +20179,33 @@ var $;
             mouse(group(), 'click');
             $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep', 'Near']);
         },
+        'a folded branch and the folded outside group stay folded after a trip to the assets and back'($) {
+            const { stage, app, line, mouse, outline, group, grouped } = layers_stage($, {}, lost, lost_spots);
+            const folded = [
+                `${d}layers_lost root`,
+                '  Page frame',
+                '    Title text',
+                '    Card frame',
+                '  Lost text',
+                '  Box frame',
+                '  Near image',
+            ];
+            mouse(line('Card').querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            mouse(line('Box').querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            $mol_assert_like(outline(), folded);
+            stage.assets();
+            $mol_assert_equal(app.left_tab(), 'assets');
+            $mol_wire_fiber.sync();
+            stage.click(stage.check('Слои'));
+            $mol_assert_like(outline(), folded);
+            mouse(group(), 'click');
+            $mol_assert_like(grouped(), []);
+            stage.assets();
+            $mol_wire_fiber.sync();
+            stage.click(stage.check('Слои'));
+            $mol_assert_ok(group());
+            $mol_assert_like(grouped(), []);
+        },
         'a click on an outside row picks its node, and the host pick lights it'($) {
             const { app, pick, line, mouse, redraw } = layers_stage($, {}, lost, lost_spots);
             const lit = (title) => pick(title).getAttribute('mol_check_checked') === 'true';
@@ -20242,17 +20270,20 @@ var $;
             $mol_assert_like(app.spots().Near, { x: 600, y: 40 });
             $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep']);
         },
-        'nothing lands before a row at the top of the outside group'($) {
+        'nothing is dropped into the outside group, rows only leave it'($) {
             const { app, drag, line, moves } = layers_stage($, {}, lost, lost_spots);
             const before = app.doc_source();
+            const zone = (title) => line(title).getAttribute('bog_vmap_app_layers_line_zone');
             drag('Title', 'Lost', .1);
-            drag('Title', 'Box', .1);
-            $mol_assert_equal(line('Box').getAttribute('bog_vmap_app_layers_line_zone'), '');
+            $mol_assert_equal(zone('Lost'), '');
+            drag('Title', 'Box', .9);
+            $mol_assert_equal(zone('Box'), '');
+            drag('Title', 'Deep', .1);
+            $mol_assert_equal(zone('Deep'), '');
+            drag('Lost', 'Box', .9);
+            drag('Near', 'Deep', .1);
             $mol_assert_equal(moves.length, 0);
             $mol_assert_equal(app.doc_source(), before);
-            drag('Title', 'Deep', .1);
-            $mol_assert_equal(line('Deep').getAttribute('bog_vmap_app_layers_line_zone'), 'before');
-            $mol_assert_like(app.node().sub_names('Box'), ['Title', 'Deep']);
         },
         'nodes holding each other off the page are both in the group and come back together'($) {
             const { app, drag, grouped, outline } = layers_stage($, {}, ring, { Page: { x: 0, y: 0 } });

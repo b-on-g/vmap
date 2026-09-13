@@ -49405,6 +49405,7 @@ declare namespace $.$$ {
         row_expanded(name: string, next?: boolean): boolean;
         row_open(name: string, next?: boolean): boolean | null;
         expanded_at(name: string, next?: boolean): boolean;
+        outside_expanded(next?: boolean): boolean;
         row_name(name: string): string;
         row_title(name: string): string;
         row_class(name: string): string;
@@ -49424,7 +49425,7 @@ declare namespace $.$$ {
         row_key(name: string, event?: KeyboardEvent): null;
         row_adopt(transfer?: DataTransfer): string | null;
         row_over(name: string, event?: DragEvent): null;
-        zone_at(name: string, share: number): "" | "before" | "inside";
+        zone_at(name: string, share: number): "" | "inside" | "before";
         row_receive(anchor: string, dropped?: string | null): null;
         move_to(anchor: string, name: string, zone: string): $bog_vmap_app_pane_tree_move | null;
     }
