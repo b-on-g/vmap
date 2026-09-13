@@ -6490,6 +6490,78 @@ var $;
 
 
 ;
+	($.$mol_icon_cursor_default) = class $mol_icon_cursor_default extends ($.$mol_icon) {
+		path(){
+			return "M13.64,21.97C13.14,22.21 12.54,22 12.31,21.5L10.13,16.76L7.62,18.78C7.45,18.92 7.24,19 7,19A1,1 0 0,1 6,18V3A1,1 0 0,1 7,2C7.24,2 7.47,2.09 7.64,2.23L7.65,2.22L19.14,11.86C19.57,12.22 19.62,12.85 19.27,13.27C19.12,13.45 18.91,13.57 18.7,13.61L15.54,14.23L17.74,18.96C18,19.46 17.76,20.05 17.26,20.28L13.64,21.97Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_cursor_default_outline) = class $mol_icon_cursor_default_outline extends ($.$mol_icon) {
+		path(){
+			return "M10.07,14.27C10.57,14.03 11.16,14.25 11.4,14.75L13.7,19.74L15.5,18.89L13.19,13.91C12.95,13.41 13.17,12.81 13.67,12.58L13.95,12.5L16.25,12.05L8,5.12V15.9L9.82,14.43L10.07,14.27M13.64,21.97C13.14,22.21 12.54,22 12.31,21.5L10.13,16.76L7.62,18.78C7.45,18.92 7.24,19 7,19A1,1 0 0,1 6,18V3A1,1 0 0,1 7,2C7.24,2 7.47,2.09 7.64,2.23L7.65,2.22L19.14,11.86C19.57,12.22 19.62,12.85 19.27,13.27C19.12,13.45 18.91,13.57 18.7,13.61L15.54,14.23L17.74,18.96C18,19.46 17.76,20.05 17.26,20.28L13.64,21.97Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_artboard) = class $mol_icon_artboard extends ($.$mol_icon) {
+		path(){
+			return "M17 9V15H7V9H17M19 3H17V6H19V3M7 3H5V6H7V3M23 7H20V9H23V7M19 7H5V17H19V7M4 7H1V9H4V7M23 15H20V17H23V15M4 15H1V17H4V15M19 18H17V21H19V18M7 18H5V21H7V18Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_hand) = class $mol_icon_hand extends ($.$mol_icon) {
+		path(){
+			return "M6.58,19H14.58V22H6.58V19M19.74,11.6C19.55,11.4 19.29,11.28 19,11.28L18.78,11.31L15.58,13V11.83L16.09,2.9C16.12,2.35 15.7,1.87 15.15,1.84C14.6,1.81 14.12,2.23 14.09,2.78L13.82,7.47H13.58L12.54,7.58V2C12.54,1.45 12.09,1 11.54,1C11,1 10.54,1.45 10.54,2V8.41L9.72,8.78L9.03,3.32C8.96,2.77 8.46,2.38 7.91,2.45C7.36,2.5 6.97,3 7.04,3.57L7.81,9.63L7.43,9.8C7.3,9.85 7.18,9.93 7.07,10L5.97,6.11C5.81,5.54 5.25,5.2 4.71,5.34C4.18,5.5 3.88,6.08 4.04,6.65L6.61,15.77C6.61,15.8 6.63,15.84 6.64,15.87L6.67,16H6.68C6.9,16.57 7.47,17 8.08,17H14.58C14.97,17 15.32,16.84 15.58,16.57L20.5,12.37L19.74,11.6Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_hand_back_right) = class $mol_icon_hand_back_right extends ($.$mol_icon) {
+		path(){
+			return "M13 24C9.74 24 6.81 22 5.6 19L2.57 11.37C2.26 10.58 3 9.79 3.81 10.05L4.6 10.31C5.16 10.5 5.62 10.92 5.84 11.47L7.25 15H8V3.25C8 2.56 8.56 2 9.25 2S10.5 2.56 10.5 3.25V12H11.5V1.25C11.5 .56 12.06 0 12.75 0S14 .56 14 1.25V12H15V2.75C15 2.06 15.56 1.5 16.25 1.5C16.94 1.5 17.5 2.06 17.5 2.75V12H18.5V5.75C18.5 5.06 19.06 4.5 19.75 4.5S21 5.06 21 5.75V16C21 20.42 17.42 24 13 24Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_hand_back_right_outline) = class $mol_icon_hand_back_right_outline extends ($.$mol_icon) {
+		path(){
+			return "M21 7C21 5.62 19.88 4.5 18.5 4.5C18.33 4.5 18.16 4.5 18 4.55V4C18 2.62 16.88 1.5 15.5 1.5C15.27 1.5 15.04 1.53 14.83 1.59C14.46 .66 13.56 0 12.5 0C11.27 0 10.25 .89 10.04 2.06C9.87 2 9.69 2 9.5 2C8.12 2 7 3.12 7 4.5V10.39C6.66 10.08 6.24 9.85 5.78 9.73L5 9.5C4.18 9.29 3.31 9.61 2.82 10.35C2.44 10.92 2.42 11.66 2.67 12.3L5.23 18.73C6.5 21.91 9.57 24 13 24C17.42 24 21 20.42 21 16V7M19 16C19 19.31 16.31 22 13 22C10.39 22 8.05 20.41 7.09 18L4.5 11.45L5 11.59C5.5 11.71 5.85 12.05 6 12.5L7 15H9V4.5C9 4.22 9.22 4 9.5 4S10 4.22 10 4.5V12H12V2.5C12 2.22 12.22 2 12.5 2S13 2.22 13 2.5V12H15V4C15 3.72 15.22 3.5 15.5 3.5S16 3.72 16 4V12H18V7C18 6.72 18.22 6.5 18.5 6.5S19 6.72 19 7V16Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
 	($.$mol_bar) = class $mol_bar extends ($.$mol_view) {};
 
 
@@ -30539,18 +30611,6 @@ var $;
 
 
 ;
-	($.$mol_icon_artboard) = class $mol_icon_artboard extends ($.$mol_icon) {
-		path(){
-			return "M17 9V15H7V9H17M19 3H17V6H19V3M7 3H5V6H7V3M23 7H20V9H23V7M19 7H5V17H19V7M4 7H1V9H4V7M23 15H20V17H23V15M4 15H1V17H4V15M19 18H17V21H19V18M7 18H5V21H7V18Z";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
 	($.$mol_icon_image) = class $mol_icon_image extends ($.$mol_icon) {
 		path(){
 			return "M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z";
@@ -32751,15 +32811,37 @@ var $;
 			(obj.checked) = (next) => ((this.left_showed(next)));
 			return obj;
 		}
-		board_add(next){
-			if(next !== undefined) return next;
-			return null;
+		Tool_select_icon(){
+			const obj = new this.$.$mol_icon_cursor_default_outline();
+			return obj;
 		}
-		Board(){
-			const obj = new this.$.$mol_button_minor();
-			(obj.title) = () => ("Артборд");
-			(obj.hint) = () => ("Положить страницу: прямоугольник ширины макета, вёрстка внутри по дереву");
-			(obj.click) = (next) => ((this.board_add(next)));
+		Tool_select(){
+			const obj = new this.$.$mol_check_icon();
+			(obj.Icon) = () => ((this.Tool_select_icon()));
+			(obj.hint) = () => ("Выделение: клик выбирает узел, второй клик впускает внутрь. Клавиша V");
+			(obj.checked) = (next) => ((this.tool_select(next)));
+			return obj;
+		}
+		Tool_board_icon(){
+			const obj = new this.$.$mol_icon_artboard();
+			return obj;
+		}
+		Tool_board(){
+			const obj = new this.$.$mol_check_icon();
+			(obj.Icon) = () => ((this.Tool_board_icon()));
+			(obj.hint) = () => ("Артборд: клик по холсту ставит страницу 1280×720, тяга — страницу этого размера. Клавиша F");
+			(obj.checked) = (next) => ((this.tool_board(next)));
+			return obj;
+		}
+		Tool_hand_icon(){
+			const obj = new this.$.$mol_icon_hand_back_right_outline();
+			return obj;
+		}
+		Tool_hand(){
+			const obj = new this.$.$mol_check_icon();
+			(obj.Icon) = () => ((this.Tool_hand_icon()));
+			(obj.hint) = () => ("Рука: тяга двигает холст, пробел с тягой — то же на время. Клавиша H");
+			(obj.checked) = (next) => ((this.tool_hand(next)));
 			return obj;
 		}
 		delete_hint(){
@@ -32781,7 +32863,12 @@ var $;
 			return obj;
 		}
 		instruments(){
-			return [(this.Board()), (this.Delete())];
+			return [
+				(this.Tool_select()), 
+				(this.Tool_board()), 
+				(this.Tool_hand()), 
+				(this.Delete())
+			];
 		}
 		Instruments(){
 			const obj = new this.$.$mol_bar();
@@ -32990,6 +33077,23 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		node_copy(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		board_draw(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		tool_select(next){
+			return (this.Pane().tool_select(next));
+		}
+		tool_board(next){
+			return (this.Pane().tool_board(next));
+		}
+		tool_hand(next){
+			return (this.Pane().tool_hand(next));
+		}
 		Pane(){
 			const obj = new this.$.$bog_vmap_app_pane();
 			(obj.scene_bundle) = () => ((this.scene_bundle()));
@@ -33014,6 +33118,9 @@ var $;
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
 			(obj.carry_drop) = (next) => ((this.carry_drop(next)));
 			(obj.files_drop) = (next) => ((this.files_drop(next)));
+			(obj.node_delete) = (next) => ((this.node_delete(next)));
+			(obj.node_copy) = (next) => ((this.node_copy(next)));
+			(obj.board_draw) = (next) => ((this.board_draw(next)));
 			return obj;
 		}
 		notes(){
@@ -33378,8 +33485,12 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Main"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Left_icon"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Left_check"));
-	($mol_mem(($.$bog_vmap_app.prototype), "board_add"));
-	($mol_mem(($.$bog_vmap_app.prototype), "Board"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Tool_select_icon"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Tool_select"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Tool_board_icon"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Tool_board"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Tool_hand_icon"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Tool_hand"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_delete"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Delete"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Instruments"));
@@ -33408,6 +33519,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app.prototype), "carry_drop"));
 	($mol_mem(($.$bog_vmap_app.prototype), "files_drop"));
+	($mol_mem(($.$bog_vmap_app.prototype), "node_copy"));
+	($mol_mem(($.$bog_vmap_app.prototype), "board_draw"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Pane"));
 	($mol_mem(($.$bog_vmap_app.prototype), "shelf_place"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_title"));
@@ -33679,6 +33792,63 @@ var $;
 
 ;
 "use strict";
+var $;
+(function ($) {
+    function $bog_vmap_app_copy_name(name, taken) {
+        const head = name.replace(/_\d+$/, '');
+        for (let index = 2;; ++index) {
+            const next = `${head}_${index}`;
+            if (!taken.has(next))
+                return next;
+        }
+    }
+    $.$bog_vmap_app_copy_name = $bog_vmap_app_copy_name;
+    function $bog_vmap_app_copy_refs(tree, names) {
+        if (tree.type === '<=' || tree.type === '<=>') {
+            const ref = tree.kids[0];
+            const next = ref && !ref.kids.length ? names.get(ref.type) : undefined;
+            if (ref && next)
+                return tree.clone([ref.struct(next, [])]);
+        }
+        return tree.clone(tree.kids.map(kid => $bog_vmap_app_copy_refs(kid, names)));
+    }
+    $.$bog_vmap_app_copy_refs = $bog_vmap_app_copy_refs;
+    function $bog_vmap_app_copy(node, name) {
+        const taken = new Set(node.prop_names());
+        const names = new Map();
+        const walk = (at) => {
+            if (names.has(at))
+                return;
+            const next = $bog_vmap_app_copy_name(at, taken);
+            taken.add(next);
+            names.set(at, next);
+            for (const kid of node.sub_names(at) ?? [])
+                if (kid)
+                    walk(kid);
+        };
+        walk(name);
+        const copies = [...names].flatMap(([from, to]) => {
+            const decl = node.prop_decl(from);
+            if (!decl)
+                return [];
+            const sign = to + decl.type.slice(from.length);
+            return [decl.struct(sign, decl.kids.map(kid => $bog_vmap_app_copy_refs(kid, names)))];
+        });
+        for (const copy of copies)
+            node.tree(node.tree().insert(copy, null, copy.type));
+        const copied = names.get(name);
+        const owner = node.sub_holder(name);
+        if (owner !== null) {
+            const index = node.sub_names(owner).indexOf(name);
+            node.sub_insert(copied, index + 1, owner);
+        }
+        return copied;
+    }
+    $.$bog_vmap_app_copy = $bog_vmap_app_copy;
+})($ || ($ = {}));
+
+;
+"use strict";
 
 
 ;
@@ -33808,7 +33978,10 @@ var $;
                 }
             }
             picked(next) {
-                return this.picked_at(this.doc_key(), next);
+                const key = this.doc_key();
+                if (next !== undefined && !$mol_compare_deep(next, this.picked_at(key)))
+                    this.Pane().entered(null);
+                return this.picked_at(key, next);
             }
             doc_key() {
                 return this.store().doc_current()?.link().str ?? '';
@@ -34053,8 +34226,8 @@ var $;
                 return Boolean(this.dragged());
             }
             inside_note() {
-                const name = this.Pane().entered();
-                return name ? `Внутри ${name}: клавиши уходят компоненту. Клик по холсту или Esc — выйти` : '';
+                const pane = this.Pane();
+                return pane.inside() ? `Внутри ${pane.entered()}: клавиши уходят компоненту. Клик по холсту или Esc — выйти` : '';
             }
             notes() {
                 return [
@@ -34407,8 +34580,7 @@ var $;
             board_size() {
                 return { width: 1280, height: 720 };
             }
-            board_style() {
-                const size = this.board_size();
+            board_style(size) {
                 return {
                     width: `${size.width}px`,
                     minHeight: `${size.height}px`,
@@ -34417,23 +34589,41 @@ var $;
                     color: 'var(--mol_theme_text)',
                 };
             }
-            board_add() {
+            board_draw(next) {
+                if (!next)
+                    return null;
+                const size = next.width || next.height ? next : this.board_size();
                 const node = this.node();
                 const name = this.name_free('Page');
                 const tree = node.tree();
                 node.part_add(name, '$mol_view');
                 node.over_set(name, 'style', tree.struct('style', [
-                    tree.struct('*', Object.entries(this.board_style()).map(([key, value]) => tree.struct(key, [tree.data(value)]))),
+                    tree.struct('*', Object.entries(this.board_style(size)).map(([key, value]) => tree.struct(key, [tree.data(value)]))),
                 ]));
                 node.sub_open(name);
                 node.sub_add(name);
-                const pane = this.Pane();
-                const size = this.board_size();
-                const spot = pane.free_spot();
-                const box = { x: spot[0] - size.width / 2, y: spot[1], ...size };
-                this.spots({ ...this.spots(), [name]: { x: box.x, y: box.y } });
+                this.spots({ ...this.spots(), [name]: { x: next.x, y: next.y } });
                 this.selected(name);
-                pane.camera_fit([box]);
+                return next;
+            }
+            node_copy() {
+                const picked = this.picked();
+                if (!picked.length)
+                    return null;
+                const node = this.node();
+                const pane = this.Pane();
+                const tops = picked.filter(name => !picked.some(up => up !== name && node.sub_within(up, name)));
+                const spots = { ...this.spots() };
+                const made = tops.map(name => {
+                    const copy = this.$.$bog_vmap_app_copy(node, name);
+                    const spot = pane.copy_spot(name);
+                    if (spot)
+                        spots[copy] = spot;
+                    return copy;
+                });
+                this.spots(spots);
+                this.picked(made);
+                return null;
             }
             delete_hint() {
                 const name = this.selected();
@@ -34581,7 +34771,12 @@ var $;
                 return note ? `${note}. Корневой класс по-прежнему «${this.doc_root()}»` : '';
             }
             hotkeys() {
-                return new this.$.$mol_dom_listener(this.$.$mol_dom_context, 'keydown', $mol_wire_async(this).key_press);
+                const dom = this.$.$mol_dom_context;
+                return [
+                    new this.$.$mol_dom_listener(dom, 'keydown', $mol_wire_async(this).key_press, { passive: false }),
+                    new this.$.$mol_dom_listener(dom, 'keyup', $mol_wire_async(this).key_release),
+                    new this.$.$mol_dom_listener(dom, 'blur', $mol_wire_async(this).key_lost),
+                ];
             }
             code_undo(event) {
                 if (event.code !== 'KeyZ')
@@ -34626,28 +34821,20 @@ var $;
                     return;
                 if (this.History().press(event))
                     return;
-                if (event.key === 'Escape') {
-                    if (this.Pane().inside())
-                        this.Pane().leave();
-                    else
-                        this.selected(null);
-                    return;
-                }
                 if (this.columns_key(event)) {
                     event.preventDefault();
                     this.columns_toggle();
                     return;
                 }
-                if (event.key !== 'Delete' && event.key !== 'Backspace')
+                this.Pane().key_down(event);
+            }
+            key_release(event) {
+                if (!event)
                     return;
-                if (event.metaKey || event.ctrlKey || event.altKey)
-                    return;
-                if (this.typing(event))
-                    return;
-                if (!this.selected())
-                    return;
-                event.preventDefault();
-                this.node_delete();
+                this.Pane().key_up(event);
+            }
+            key_lost() {
+                this.Pane().grip(false);
             }
             auto() {
                 return [
@@ -34736,7 +34923,10 @@ var $;
         ], $bog_vmap_app.prototype, "part_drop", null);
         __decorate([
             $mol_action
-        ], $bog_vmap_app.prototype, "board_add", null);
+        ], $bog_vmap_app.prototype, "board_draw", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "node_copy", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "node_delete", null);
@@ -47268,7 +47458,9 @@ var $;
         },
         'a part inside a page is carried to another position in its tree'($) {
             const stage = $bog_vmap_app_flow_stage($);
-            stage.click(stage.button('Артборд'));
+            const dom = $.$mol_dom_context;
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { code: 'KeyF', key: 'f', bubbles: true }));
+            stage.tap(stage.client([100, 100]));
             const page = stage.pane.part_box('Page');
             const zoom = stage.pane.camera_zoom();
             const inside = (x, y) => stage.client([
@@ -51671,6 +51863,82 @@ var $;
 var $;
 (function ($_1) {
     const d = '$';
+    const source = [
+        `${d}doc ${d}mol_view`,
+        `\tCalc ${d}flow_calc`,
+        `\t\top \\minus`,
+        `\tcalc_result = Calc result`,
+        `\tMap ${d}flow_map`,
+        `\t\tzoom <= calc_result`,
+        `\tButton ${d}flow_button`,
+        `\t\ttitle \\Go`,
+        `\tPage ${d}mol_view`,
+        `\t\tsub /`,
+        `\t\t\t<= Button`,
+        `\tsub /`,
+        `\t\t<= Calc`,
+        `\t\t<= Map`,
+        `\t\t<= Page`,
+        ``,
+    ].join('\n');
+    const made = ($) => {
+        const node = $bog_vmap_lang_node.make({ $ });
+        node.source(source);
+        return node;
+    };
+    const said = (node, name, prop) => {
+        return node.over_tree(name, prop)?.kids[0]?.value ?? null;
+    };
+    $mol_test({
+        'a copy takes the next free number and never the bare name'($) {
+            $mol_assert_equal($bog_vmap_app_copy_name('Calc', new Set(['Calc'])), 'Calc_2');
+            $mol_assert_equal($bog_vmap_app_copy_name('Calc', new Set(['Calc', 'Calc_2'])), 'Calc_3');
+            $mol_assert_equal($bog_vmap_app_copy_name('Calc_2', new Set(['Calc', 'Calc_2'])), 'Calc_3');
+            $mol_assert_equal($bog_vmap_app_copy_name('Page_2', new Set(['Page_2'])), 'Page_3');
+            $mol_assert_equal($bog_vmap_app_copy_name('H1', new Set(['H1'])), 'H1_2');
+        },
+        'a copy of a free part stands right after it with the same settings'($) {
+            const node = made($);
+            $mol_assert_equal($bog_vmap_app_copy(node, 'Calc'), 'Calc_2');
+            $mol_assert_like(node.sub_names(), ['Calc', 'Calc_2', 'Map', 'Page']);
+            $mol_assert_equal(node.prop_decl('Calc_2')?.kids[0]?.type, `${d}flow_calc`);
+            $mol_assert_equal(said(node, 'Calc_2', 'op'), 'minus');
+            $mol_assert_equal(said(node, 'Calc', 'op'), 'minus');
+            $mol_assert_equal($bog_vmap_app_copy(node, 'Calc'), 'Calc_3');
+            $mol_assert_equal($bog_vmap_app_copy(node, 'Calc_2'), 'Calc_4');
+            $mol_assert_like(node.sub_names(), ['Calc', 'Calc_3', 'Calc_2', 'Calc_4', 'Map', 'Page']);
+        },
+        'a copy of a board takes copies of its insides, and the board keeps its own'($) {
+            const node = made($);
+            $mol_assert_equal($bog_vmap_app_copy(node, 'Page'), 'Page_2');
+            $mol_assert_like(node.sub_names(), ['Calc', 'Map', 'Page', 'Page_2']);
+            $mol_assert_like(node.sub_names('Page'), ['Button']);
+            $mol_assert_like(node.sub_names('Page_2'), ['Button_2']);
+            $mol_assert_equal(node.prop_decl('Button_2')?.kids[0]?.type, `${d}flow_button`);
+            $mol_assert_equal(said(node, 'Button_2', 'title'), 'Go');
+            $mol_assert_equal(node.sub_holder('Button_2'), 'Page_2');
+        },
+        'a copy of a nested part goes into its owner right after it'($) {
+            const node = made($);
+            $mol_assert_equal($bog_vmap_app_copy(node, 'Button'), 'Button_2');
+            $mol_assert_like(node.sub_names('Page'), ['Button', 'Button_2']);
+            $mol_assert_like(node.sub_names(), ['Calc', 'Map', 'Page']);
+        },
+        'a copy is fed by the same wire, and feeds nothing itself'($) {
+            const node = made($);
+            $bog_vmap_app_copy(node, 'Map');
+            $bog_vmap_app_copy(node, 'Calc');
+            $mol_assert_like(node.links().map(link => `${link.from}.${link.from_prop} > ${link.to}.${link.to_prop}`), ['Calc.result > Map.zoom', 'Calc.result > Map_2.zoom']);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    const d = '$';
+    const clicked = { x: 0, y: 0, width: 0, height: 0 };
     const measured = ($) => {
         const peer = { origin: 'null', postMessage() { } };
         const pane = $$.$bog_vmap_app_pane.make({
@@ -51805,7 +52073,7 @@ var $;
         },
         'an artboard is an ordinary node with a sub and a width'($) {
             const app = $bog_vmap_app.make({ $ });
-            app.board_add();
+            app.board_draw(clicked);
             const source = app.doc_source();
             $mol_assert_ok(source.includes(`Page ${d}mol_view`));
             $mol_assert_ok(source.includes('width \\1280px'));
@@ -51815,12 +52083,12 @@ var $;
             $mol_assert_like(app.doc_containers(), ['Page']);
             $mol_assert_equal(app.selected(), 'Page');
             $mol_assert_ok(Boolean(app.spots()['Page']));
-            app.board_add();
+            app.board_draw(clicked);
             $mol_assert_like(app.doc_containers(), ['Page', 'Page_2']);
         },
         'an artboard carried into the download takes a colour with its background'($) {
             const app = $bog_vmap_app.make({ $ });
-            app.board_add();
+            app.board_draw(clicked);
             const module = app.export_state().module;
             const tree = module.files.find(file => file.name.endsWith('.view.tree')).text;
             const styled = (prop) => tree.split('\n')
@@ -51831,28 +52099,31 @@ var $;
             $mol_assert_equal(styled('color'), 'var(--mol_theme_text)');
             $mol_assert_equal(/#[0-9a-f]{3,8}/i.test(tree), false);
         },
-        'a new artboard lands where the camera shows the whole of it'($) {
+        'a board drawn by a click takes the layout size at the point, a dragged one takes its box, and the camera stays'($) {
             const app = $bog_vmap_app.make({ $ });
             const pane = app.Pane();
-            pane.view_rect = () => ({
-                left: 0, top: 0, width: 600, height: 500, right: 600, bottom: 500,
-            });
-            app.board_add();
-            const size = app.board_size();
-            const spot = app.spots()['Page'];
-            const zoom = pane.camera_zoom();
-            const shift = pane.camera_shift();
-            $mol_assert_equal(zoom, (600 - 48) / size.width);
-            const left = spot.x * zoom + shift[0];
-            const top = spot.y * zoom + shift[1];
-            $mol_assert_equal(Math.round(left), 24);
-            $mol_assert_equal(Math.round(left + size.width * zoom), 576);
-            $mol_assert_ok(top >= 0);
-            $mol_assert_ok(top + size.height * zoom <= 500);
+            const styled = (name, prop) => {
+                const style = app.node().over_tree(name, 'style')?.kids[0] ?? null;
+                return $bog_vmap_lang_dict_get(style, prop)?.value ?? null;
+            };
+            app.board_draw({ x: 40, y: 30, width: 0, height: 0 });
+            $mol_assert_equal(app.selected(), 'Page');
+            $mol_assert_like(app.spots()['Page'], { x: 40, y: 30 });
+            $mol_assert_equal(styled('Page', 'width'), `${app.board_size().width}px`);
+            $mol_assert_equal(styled('Page', 'minHeight'), `${app.board_size().height}px`);
+            app.board_draw({ x: -10, y: 5, width: 300, height: 200 });
+            $mol_assert_equal(app.selected(), 'Page_2');
+            $mol_assert_like(app.spots()['Page_2'], { x: -10, y: 5 });
+            $mol_assert_equal(styled('Page_2', 'width'), '300px');
+            $mol_assert_equal(styled('Page_2', 'minHeight'), '200px');
+            $mol_assert_like([...pane.camera_shift()], [0, 0]);
+            $mol_assert_equal(pane.camera_zoom(), 1);
+            $mol_assert_equal(app.board_draw(null), null);
+            $mol_assert_like(app.doc_containers(), ['Page', 'Page_2']);
         },
         'the direction a container is set to comes off the document'($) {
             const app = $bog_vmap_app.make({ $ });
-            app.board_add();
+            app.board_draw(clicked);
             $mol_assert_equal(app.doc_axis('Page'), 'column');
             app.part_drop(`${d}mol_button_minor`, 2000, 100);
             $mol_assert_equal(app.doc_axis('Button_minor'), '');
@@ -51866,7 +52137,7 @@ var $;
         'a drop inside an artboard goes into its tree and gets no coordinate'($) {
             const app = $bog_vmap_app.make({ $ });
             const pane = app.Pane();
-            app.board_add();
+            app.board_draw(clicked);
             pane.sizes({ [`${app.doc_root()}/Page`]: { x: 0, y: 0, width: 1280, height: 720 } });
             app.part_drop(`${d}mol_button_minor`, 100, 100);
             $mol_assert_like(app.node().sub_names('Page'), ['Button_minor']);
@@ -51877,7 +52148,7 @@ var $;
         },
         'a part carried into an artboard leaves the placement'($) {
             const app = $bog_vmap_app.make({ $ });
-            app.board_add();
+            app.board_draw(clicked);
             app.part_drop(`${d}mol_button_minor`, 2000, 100);
             $mol_assert_like(app.spots()['Button_minor'], { x: 2000, y: 100 });
             app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 });
@@ -51887,7 +52158,7 @@ var $;
         },
         'deleting an artboard takes what is laid out inside it'($) {
             const app = $bog_vmap_app.make({ $ });
-            app.board_add();
+            app.board_draw(clicked);
             app.part_drop(`${d}mol_button_minor`, 2000, 100);
             app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 });
             app.selected('Page');
@@ -51912,7 +52183,7 @@ var $;
         },
         'renaming a node on a board keeps it drawn'($) {
             const app = $bog_vmap_app.make({ $ });
-            app.board_add();
+            app.board_draw(clicked);
             app.part_drop(`${d}mol_button_minor`, 2000, 100);
             app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 });
             app.node_rename('Button_minor', 'Send');
@@ -52336,7 +52607,9 @@ var $;
         },
         'a click puts a free part beside what covers the middle, never inside it'($) {
             const stage = $bog_vmap_app_flow_stage($);
-            stage.click(stage.button('Артборд'));
+            const dom = $.$mol_dom_context;
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { code: 'KeyF', key: 'f', bubbles: true }));
+            stage.tap(stage.client([100, 100]));
             const page = stage.app.selected();
             $mol_assert_ok(page);
             stage.assets();
@@ -52418,8 +52691,12 @@ var $;
             $mol_assert_equal(head[1], app.Instruments());
             $mol_assert_equal(head[2], app.Root_name());
             $mol_assert_equal(head[3], app.Tools());
-            $mol_assert_ok(app.instruments().includes(app.Board()));
-            $mol_assert_ok(app.instruments().includes(app.Delete()));
+            const instruments = app.instruments();
+            $mol_assert_equal(instruments.length, 4);
+            $mol_assert_equal(instruments[0], app.Tool_select());
+            $mol_assert_equal(instruments[1], app.Tool_board());
+            $mol_assert_equal(instruments[2], app.Tool_hand());
+            $mol_assert_equal(instruments[3], app.Delete());
             const tools = app.tools();
             for (const tool of [
                 app.Zoom_out(),
@@ -53277,7 +53554,9 @@ var $;
         },
         'a page takes the parts dropped into it and stacks them the way it is set'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.click(stage.button('Артборд'));
+            const dom = $.$mol_dom_context;
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { code: 'KeyF', key: 'f', bubbles: true }));
+            stage.tap(stage.client([100, 100]));
             $mol_assert_equal(stage.app.selected(), 'Page');
             const node = stage.app.node();
             $mol_assert_like(node.sub_names('Page'), []);
@@ -53517,7 +53796,9 @@ var $;
             const inside = (view) => head.contains(view.dom_node());
             for (const view of [
                 app.Left_check(),
-                app.Board(),
+                app.Tool_select(),
+                app.Tool_board(),
+                app.Tool_hand(),
                 app.Delete(),
                 app.Root_name(),
                 app.Zoom_out(),
@@ -53686,6 +53967,251 @@ var $;
                 'Button', 'Calc', 'Map',
                 'Vmap_part_cell', 'Vmap_part_plot', 'Vmap_part_calc', 'Vmap_part_map',
             ]);
+        },
+    });
+})($ || ($ = {}));
+(function ($_4) {
+    const d = '$';
+    const calc = `${d}flow_calc`;
+    const map = `${d}flow_map`;
+    const key_of = (code) => {
+        if (code === 'Space')
+            return ' ';
+        if (code.startsWith('Key'))
+            return code.slice(3).toLowerCase();
+        return code;
+    };
+    const pressed = ($, stage, code, over = {}, target) => {
+        const dom = $.$mol_dom_context;
+        const event = new dom.KeyboardEvent('keydown', { code, key: key_of(code), bubbles: true, cancelable: true, ...over });
+        (target ?? dom.document).dispatchEvent(event);
+        stage.redraw();
+        stage.scene.flush();
+        return event;
+    };
+    const stepped = async (stage) => {
+        const history = stage.app.History();
+        const source = stage.app.doc_source();
+        const taken = () => history.ring(history.doc_key()).at(-1)?.source === source;
+        for (let i = 0; i < 10 && !taken(); ++i) {
+            stage.timers.filter(timer => timer.delay === history.step_delay()).at(-1)?.task();
+            await $_4.$bog_vmap_app_flow_settle(taken, 30);
+            stage.redraw();
+        }
+        $mol_assert_equal(taken(), true);
+    };
+    const undone = (stage) => {
+        const history = stage.app.History();
+        history.undo();
+        stage.redraw();
+        stage.scene.flush();
+    };
+    const styled = (stage, name, prop) => {
+        const style = stage.app.node().over_tree(name, 'style')?.kids[0] ?? null;
+        return $bog_vmap_lang_dict_get(style, prop)?.value ?? null;
+    };
+    const settle = async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+    };
+    $mol_test({
+        'the window hands the tool keys to the canvas, and a field keeps them'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            const dom = $.$mol_dom_context;
+            const f = pressed($, stage, 'KeyF');
+            $mol_assert_equal(stage.pane.tool(), 'board');
+            $mol_assert_equal(f.defaultPrevented, true);
+            pressed($, stage, 'KeyH');
+            $mol_assert_equal(stage.pane.tool(), 'hand');
+            pressed($, stage, 'KeyV');
+            $mol_assert_equal(stage.pane.tool(), 'select');
+            const field = stage.app.Root_name().dom_node();
+            const typed = pressed($, stage, 'KeyF', {}, field);
+            $mol_assert_equal(stage.pane.tool(), 'select');
+            $mol_assert_equal(typed.defaultPrevented, false);
+            pressed($, stage, 'Space');
+            $mol_assert_equal(stage.pane.grip(), true);
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keyup', { code: 'Space', key: ' ', bubbles: true }));
+            $mol_assert_equal(stage.pane.grip(), false);
+            pressed($, stage, 'Space');
+            dom.dispatchEvent(new dom.FocusEvent('blur'));
+            $mol_assert_equal(stage.pane.grip(), false);
+        },
+        async 'Backspace from the window deletes the pick, a field keeps it, and one undo brings it back'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            await stepped(stage);
+            const before = stage.app.doc_source();
+            pressed($, stage, 'Backspace', {}, stage.app.Root_name().dom_node());
+            $mol_assert_equal(stage.app.doc_source(), before);
+            const gone = pressed($, stage, 'Backspace');
+            $mol_assert_equal(gone.defaultPrevented, true);
+            $mol_assert_equal(stage.app.doc_source().includes('Calc'), false);
+            $mol_assert_equal(stage.app.selected(), null);
+            await stepped(stage);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), before);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Calc']);
+        },
+        async 'Cmd+D puts a copy beside the pick under the next free number, and each undo takes one copy back'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            await stepped(stage);
+            const before = stage.app.doc_source();
+            const copy = pressed($, stage, 'KeyD', { metaKey: true });
+            $mol_assert_equal(copy.defaultPrevented, true);
+            $mol_assert_ok(stage.app.doc_source().includes(`Calc_2 ${calc}`));
+            $mol_assert_like(stage.app.spots()['Calc_2'], { x: 324, y: 150 });
+            $mol_assert_like([...stage.app.picked()], ['Calc_2']);
+            $mol_assert_like(stage.app.node().sub_names(), ['Calc', 'Calc_2']);
+            await stepped(stage);
+            const once = stage.app.doc_source();
+            pressed($, stage, 'KeyD', { ctrlKey: true });
+            $mol_assert_like(stage.app.spots()['Calc_3'], { x: 448, y: 150 });
+            $mol_assert_like([...stage.app.picked()], ['Calc_3']);
+            await stepped(stage);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), once);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), before);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Calc']);
+        },
+        async 'a copy of a board copies what is laid out in it, a nested copy goes after its original'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            pressed($, stage, 'KeyF');
+            stage.tap(stage.client([100, 100]));
+            const page = stage.pane.part_box('Page');
+            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
+            $mol_assert_like(node.sub_names('Page'), ['Calc']);
+            await stepped(stage);
+            const before = stage.app.doc_source();
+            stage.app.selected('Page');
+            pressed($, stage, 'KeyD', { metaKey: true });
+            $mol_assert_like(node.sub_names(), ['Page', 'Page_2']);
+            $mol_assert_like(node.sub_names('Page'), ['Calc']);
+            $mol_assert_like(node.sub_names('Page_2'), ['Calc_2']);
+            $mol_assert_like(stage.app.spots()['Page_2'], { x: 524, y: 100 });
+            $mol_assert_equal(styled(stage, 'Page_2', 'width'), '1280px');
+            await stepped(stage);
+            const once = stage.app.doc_source();
+            stage.app.selected('Calc');
+            pressed($, stage, 'KeyD', { metaKey: true });
+            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Calc_3']);
+            $mol_assert_equal(stage.app.spots()['Calc_3'], undefined);
+            $mol_assert_like([...stage.app.picked()], ['Calc_3']);
+            await stepped(stage);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), once);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), before);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Page']);
+        },
+        'a board picked together with what is inside it is copied once'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            pressed($, stage, 'KeyF');
+            stage.tap(stage.client([100, 100]));
+            const page = stage.pane.part_box('Page');
+            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
+            stage.app.picked(['Page', 'Calc']);
+            pressed($, stage, 'KeyD', { metaKey: true });
+            $mol_assert_like(node.sub_names(), ['Page', 'Page_2']);
+            $mol_assert_like(node.sub_names('Page'), ['Calc']);
+            $mol_assert_like(node.sub_names('Page_2'), ['Calc_2']);
+            $mol_assert_like([...stage.app.picked()], ['Page_2']);
+        },
+        async 'the board tool puts a board where it is clicked, and of the box it is dragged under the camera'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            const overlay = stage.overlay();
+            pressed($, stage, 'KeyF');
+            stage.tap(stage.client([100, 100]));
+            $mol_assert_equal(stage.app.selected(), 'Page');
+            $mol_assert_like(stage.app.spots()['Page'], { x: 100, y: 100 });
+            $mol_assert_equal(styled(stage, 'Page', 'width'), '1280px');
+            $mol_assert_equal(styled(stage, 'Page', 'minHeight'), '720px');
+            $mol_assert_equal(stage.pane.tool(), 'select');
+            await stepped(stage);
+            const before = stage.app.doc_source();
+            stage.pane.camera_shift(new $mol_vector_2d(100, 50));
+            stage.pane.camera_zoom(2);
+            pressed($, stage, 'KeyF');
+            stage.press(overlay, stage.client([200, 150]));
+            stage.move(overlay, stage.client([400, 350]));
+            stage.release(overlay, stage.client([400, 350]));
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_equal(stage.app.selected(), 'Page_2');
+            $mol_assert_like(stage.app.spots()['Page_2'], { x: 50, y: 50 });
+            $mol_assert_equal(styled(stage, 'Page_2', 'width'), '100px');
+            $mol_assert_equal(styled(stage, 'Page_2', 'minHeight'), '100px');
+            $mol_assert_like([...stage.pane.camera_shift()], [100, 50]);
+            $mol_assert_equal(stage.pane.camera_zoom(), 2);
+            await stepped(stage);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), before);
+        },
+        'a pick moved off the canvas and back through the layers does not let the pointer in again'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([400, 150]));
+            stage.tap(stage.part_center('Calc'));
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.pane.inside(), true);
+            $mol_assert_ok(stage.text().includes('Внутри Calc'));
+            stage.click(stage.check('Слои'));
+            const layer = (name) => [...stage.root.querySelectorAll('[bog_vmap_app_layers_pick]')]
+                .find(el => el.textContent === name);
+            stage.click(layer('Map'));
+            $mol_assert_equal(stage.app.selected(), 'Map');
+            $mol_assert_equal(stage.pane.inside(), false);
+            $mol_assert_equal(stage.text().includes('Внутри'), false);
+            stage.click(layer('Calc'));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            $mol_assert_equal(stage.pane.inside(), false);
+            $mol_assert_equal(stage.pane.overlay_style().clipPath, 'none');
+            $mol_assert_equal(stage.text().includes('Внутри'), false);
+        },
+        async 'a new scene opened from inside a node says nothing about being inside'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.tap(stage.part_center('Calc'));
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_ok(stage.text().includes('Внутри Calc'));
+            stage.click(stage.button('Новая сцена'));
+            await $_4.$bog_vmap_app_flow_settle(() => stage.store.doc_links().length > 1);
+            stage.redraw();
+            $mol_assert_equal(stage.pane.inside(), false);
+            $mol_assert_equal(stage.text().includes('Внутри'), false);
+        },
+        'the tool buttons of the head are the tools'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            stage.click(app.Tool_board().dom_node());
+            $mol_assert_equal(stage.pane.tool(), 'board');
+            $mol_assert_equal(app.Tool_board().checked(), true);
+            $mol_assert_equal(app.Tool_select().checked(), false);
+            stage.click(app.Tool_board().dom_node());
+            $mol_assert_equal(stage.pane.tool(), 'select');
+            stage.click(app.Tool_hand().dom_node());
+            $mol_assert_equal(stage.pane.tool(), 'hand');
+            pressed($, stage, 'KeyV');
+            $mol_assert_equal(app.Tool_select().checked(), true);
+            $mol_assert_equal(app.Tool_hand().checked(), false);
+        },
+        async 'Escape from the window in a field only takes the focus off the field'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            const dom = $.$mol_dom_context;
+            stage.drop(calc, stage.client([200, 150]));
+            const field = stage.app.Root_name().dom_node();
+            field.focus();
+            pressed($, stage, 'Escape', {}, field);
+            await settle();
+            $mol_assert_equal(dom.document.activeElement, stage.pane.dom_node());
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            pressed($, stage, 'Escape');
+            $mol_assert_equal(stage.app.selected(), null);
         },
     });
 })($ || ($ = {}));

@@ -170,6 +170,14 @@
     "$mol_keyboard",
     "$mol_button_typed",
     "$mol_dom_event",
+    "$mol_icon_cursor_default_outline",
+    "$mol_icon_cursor_default",
+    "$mol_icon_cursor",
+    "$mol_icon_artboard",
+    "$mol_icon_hand_back_right_outline",
+    "$mol_icon_hand_back_right",
+    "$mol_icon_hand_back",
+    "$mol_icon_hand",
     "$mol_bar",
     "$mol_string",
     "$mol_hotkey",
@@ -420,7 +428,6 @@
     "$mol_icon_file_document_outline",
     "$mol_icon_file_document",
     "$mol_icon_file",
-    "$mol_icon_artboard",
     "$mol_icon_image",
     "$mol_icon_link",
     "$mol_icon_button_cursor",
@@ -438,7 +445,8 @@
     "$bog_vmap_app_history",
     "$bog_vmap_app_history_snap",
     "$bog_vmap_app_export_zip",
-    "$mol_image"
+    "$mol_image",
+    "$bog_vmap_app_copy"
   ],
   "dependencies": {
     "autoinstall": "*",
