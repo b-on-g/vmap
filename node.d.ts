@@ -49186,91 +49186,106 @@ declare namespace $ {
 		,
 		ReturnType< $mol_status['status'] >
 	>
-	type $mol_drag__allow_copy_bog_vmap_app_layers_11 = $mol_type_enforce<
+	type $mol_check_expand__level_bog_vmap_app_layers_11 = $mol_type_enforce<
+		number
+		,
+		ReturnType< $mol_check_expand['level'] >
+	>
+	type $mol_check_expand__title_bog_vmap_app_layers_12 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_check_expand['title'] >
+	>
+	type $mol_check_expand__expanded_bog_vmap_app_layers_13 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_layers['outside_expanded'] >
+		,
+		ReturnType< $mol_check_expand['expanded'] >
+	>
+	type $mol_drag__allow_copy_bog_vmap_app_layers_14 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_drag['allow_copy'] >
 	>
-	type $mol_drag__allow_link_bog_vmap_app_layers_12 = $mol_type_enforce<
+	type $mol_drag__allow_link_bog_vmap_app_layers_15 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_drag['allow_link'] >
 	>
-	type $mol_drag__attr_bog_vmap_app_layers_13 = $mol_type_enforce<
+	type $mol_drag__attr_bog_vmap_app_layers_16 = $mol_type_enforce<
 		({ 
 			'draggable': ReturnType< $bog_vmap_app_layers['row_draggable'] >,
 		})  & ReturnType< $mol_drag['attr'] >
 		,
 		ReturnType< $mol_drag['attr'] >
 	>
-	type $mol_drag__transfer_bog_vmap_app_layers_14 = $mol_type_enforce<
+	type $mol_drag__transfer_bog_vmap_app_layers_17 = $mol_type_enforce<
 		({ 
 			'text/plain': ReturnType< $bog_vmap_app_layers['row_name'] >,
 		})  & ReturnType< $mol_drag['transfer'] >
 		,
 		ReturnType< $mol_drag['transfer'] >
 	>
-	type $mol_drag__Sub_bog_vmap_app_layers_15 = $mol_type_enforce<
+	type $mol_drag__Sub_bog_vmap_app_layers_18 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_layers['Row_drop'] >
 		,
 		ReturnType< $mol_drag['Sub'] >
 	>
-	type $mol_check_expand__level_bog_vmap_app_layers_16 = $mol_type_enforce<
+	type $mol_check_expand__level_bog_vmap_app_layers_19 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_layers['row_level'] >
 		,
 		ReturnType< $mol_check_expand['level'] >
 	>
-	type $mol_check_expand__expanded_bog_vmap_app_layers_17 = $mol_type_enforce<
+	type $mol_check_expand__expanded_bog_vmap_app_layers_20 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_layers['row_expanded'] >
 		,
 		ReturnType< $mol_check_expand['expanded'] >
 	>
-	type $mol_check__Icon_bog_vmap_app_layers_18 = $mol_type_enforce<
+	type $mol_check__Icon_bog_vmap_app_layers_21 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_layers['row_icon'] >
 		,
 		ReturnType< $mol_check['Icon'] >
 	>
-	type $mol_check__title_bog_vmap_app_layers_19 = $mol_type_enforce<
+	type $mol_check__title_bog_vmap_app_layers_22 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_layers['row_title'] >
 		,
 		ReturnType< $mol_check['title'] >
 	>
-	type $mol_check__hint_bog_vmap_app_layers_20 = $mol_type_enforce<
+	type $mol_check__hint_bog_vmap_app_layers_23 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_layers['row_hint'] >
 		,
 		ReturnType< $mol_check['hint'] >
 	>
-	type $mol_check__checked_bog_vmap_app_layers_21 = $mol_type_enforce<
+	type $mol_check__checked_bog_vmap_app_layers_24 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_layers['row_picked'] >
 		,
 		ReturnType< $mol_check['checked'] >
 	>
-	type $mol_check__click_bog_vmap_app_layers_22 = $mol_type_enforce<
+	type $mol_check__click_bog_vmap_app_layers_25 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_layers['row_pick'] >
 		,
 		ReturnType< $mol_check['click'] >
 	>
-	type $mol_check__clicks_bog_vmap_app_layers_23 = $mol_type_enforce<
+	type $mol_check__clicks_bog_vmap_app_layers_26 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_layers['row_edit'] >
 		,
 		ReturnType< $mol_check['clicks'] >
 	>
-	type $mol_string__hint_bog_vmap_app_layers_24 = $mol_type_enforce<
+	type $mol_string__hint_bog_vmap_app_layers_27 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_string['hint'] >
 	>
-	type $mol_string__value_bog_vmap_app_layers_25 = $mol_type_enforce<
+	type $mol_string__value_bog_vmap_app_layers_28 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_layers['row_draft'] >
 		,
 		ReturnType< $mol_string['value'] >
 	>
-	type $mol_string__submit_bog_vmap_app_layers_26 = $mol_type_enforce<
+	type $mol_string__submit_bog_vmap_app_layers_29 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_layers['row_submit'] >
 		,
 		ReturnType< $mol_string['submit'] >
 	>
-	type $mol_string__event_bog_vmap_app_layers_27 = $mol_type_enforce<
+	type $mol_string__event_bog_vmap_app_layers_30 = $mol_type_enforce<
 		({ 
 			blur( next?: ReturnType< $bog_vmap_app_layers['row_submit'] > ): ReturnType< $bog_vmap_app_layers['row_submit'] >,
 			keydown( next?: ReturnType< $bog_vmap_app_layers['row_key'] > ): ReturnType< $bog_vmap_app_layers['row_key'] >,
@@ -49281,6 +49296,7 @@ declare namespace $ {
 	export class $bog_vmap_app_layers extends $mol_scroll {
 		rows( ): readonly($mol_view)[]
 		Rows( ): $mol_list
+		outside_expanded( next?: boolean ): boolean
 		row_draggable( id: any): boolean
 		row_name( id: any): string
 		row_adopt( next?: any ): any
@@ -49310,6 +49326,7 @@ declare namespace $ {
 		Doc( ): $bog_vmap_lang_doc
 		sub( ): readonly(any)[]
 		Note( ): $mol_status
+		Outside( ): $mol_check_expand
 		Row( id: any): $mol_drag
 		Expand( id: any): $mol_check_expand
 		Pick( id: any): $mol_check
@@ -49337,10 +49354,12 @@ declare namespace $.$$ {
         root(): string;
         node(): $bog_vmap_lang_node;
         layers(): Map<string, layer>;
+        outside(): string[];
         row_kids(name: string): readonly string[];
         row_holder(name: string): string | null;
         row_within(owner: string, name: string): boolean;
         rows(): $mol_view[];
+        branch_rows(name: string): $mol_view[];
         row_level(name: string): number;
         row_expanded(name: string, next?: boolean): boolean;
         row_open(name: string, next?: boolean): boolean | null;
@@ -49364,7 +49383,7 @@ declare namespace $.$$ {
         row_key(name: string, event?: KeyboardEvent): null;
         row_adopt(transfer?: DataTransfer): string | null;
         row_over(name: string, event?: DragEvent): null;
-        zone_at(name: string, share: number): "inside" | "before";
+        zone_at(name: string, share: number): "" | "before" | "inside";
         row_receive(anchor: string, dropped?: string | null): null;
         move_to(anchor: string, name: string, zone: string): $bog_vmap_app_pane_tree_move | null;
     }
@@ -49617,7 +49636,7 @@ declare namespace $ {
 		ReturnType< $mol_expander['title'] >
 	>
 	type $mol_expander__expanded_bog_vmap_app_shelf_22 = $mol_type_enforce<
-		boolean
+		ReturnType< $bog_vmap_app_shelf['source_expanded'] >
 		,
 		ReturnType< $mol_expander['expanded'] >
 	>
@@ -49632,7 +49651,7 @@ declare namespace $ {
 		ReturnType< $mol_expander['title'] >
 	>
 	type $mol_expander__expanded_bog_vmap_app_shelf_25 = $mol_type_enforce<
-		boolean
+		ReturnType< $bog_vmap_app_shelf['parts_expanded'] >
 		,
 		ReturnType< $mol_expander['expanded'] >
 	>
@@ -49735,6 +49754,7 @@ declare namespace $ {
 	>
 	export class $bog_vmap_app_shelf extends $mol_page {
 		Filter( ): $mol_search
+		source_expanded( next?: boolean ): boolean
 		pack_rows( ): readonly(any)[]
 		Pack_list( ): $mol_list
 		rejected_note( ): string
@@ -49743,6 +49763,7 @@ declare namespace $ {
 		import_note( next?: string ): string
 		Import_open( ): $mol_button_open
 		Import_field( ): $mol_form_field
+		parts_expanded( next?: boolean ): boolean
 		item_rows( ): readonly(any)[]
 		Items( ): $mol_list
 		apps_title( ): string
@@ -49789,6 +49810,8 @@ declare namespace $ {
 declare namespace $.$$ {
     class $bog_vmap_app_shelf extends $.$bog_vmap_app_shelf {
         body(): readonly $mol_view[];
+        source_expanded(next?: boolean): boolean;
+        parts_expanded(next?: boolean): boolean;
         packs(): readonly $bog_vmap_app_shelf_pack_offer[];
         pack_offer(id: string): $bog_vmap_app_shelf_pack_offer | null;
         pack_rows(): $mol_button_minor[];

@@ -30722,6 +30722,10 @@ var $;
 			(obj.rows) = () => ((this.rows()));
 			return obj;
 		}
+		outside_expanded(next){
+			if(next !== undefined) return next;
+			return true;
+		}
 		row_draggable(id){
 			return true;
 		}
@@ -30835,6 +30839,13 @@ var $;
 			(obj.status) = () => ((this.node_title_note()));
 			return obj;
 		}
+		Outside(){
+			const obj = new this.$.$mol_check_expand();
+			(obj.level) = () => (1);
+			(obj.title) = () => ("Вне страницы");
+			(obj.expanded) = (next) => ((this.outside_expanded(next)));
+			return obj;
+		}
 		Row(id){
 			const obj = new this.$.$mol_drag();
 			(obj.allow_copy) = () => (false);
@@ -30906,6 +30917,7 @@ var $;
 		}
 	};
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "Rows"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "outside_expanded"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "row_adopt"));
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_receive"));
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_zone"));
@@ -30923,6 +30935,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "Doc"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "Note"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "Outside"));
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Row"));
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Expand"));
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Pick"));
@@ -30984,7 +30997,20 @@ var $;
                             walk(kid, name, level + 1);
                 };
                 walk('', null, 1);
+                const parts = node.part_names();
+                const held = new Set(['', ...parts].flatMap(owner => node.sub_names(owner) ?? []));
+                for (const name of parts)
+                    if (!found.has(name) && !held.has(name))
+                        walk(name, null, 2);
+                for (const name of parts)
+                    if (!found.has(name))
+                        walk(name, null, 2);
                 return found;
+            }
+            outside() {
+                return [...this.layers()]
+                    .filter(([name, layer]) => name && layer.owner === null)
+                    .map(([name]) => name);
             }
             row_kids(name) {
                 return this.layers().get(name)?.kids ?? [];
@@ -31000,16 +31026,22 @@ var $;
                 return false;
             }
             rows() {
-                const rows = [];
-                const add = (name) => {
-                    rows.push(this.Row(name));
-                    if (this.row_editing(name) && this.node_title_note())
-                        rows.push(this.Note());
-                    if (this.row_open(name))
-                        for (const kid of this.row_kids(name))
-                            add(kid);
-                };
-                add('');
+                const outside = this.outside();
+                if (!outside.length)
+                    return this.branch_rows('');
+                return [
+                    ...this.branch_rows(''),
+                    this.Outside(),
+                    ...this.outside_expanded() ? outside.flatMap(name => this.branch_rows(name)) : [],
+                ];
+            }
+            branch_rows(name) {
+                const rows = [this.Row(name)];
+                if (this.row_editing(name) && this.node_title_note())
+                    rows.push(this.Note());
+                if (this.row_open(name))
+                    for (const kid of this.row_kids(name))
+                        rows.push(...this.branch_rows(kid));
                 return rows;
             }
             row_level(name) {
@@ -31160,7 +31192,7 @@ var $;
                     return 'inside';
                 if (this.layers().get(name)?.kids && share >= .5)
                     return 'inside';
-                return 'before';
+                return this.row_holder(name) === null ? '' : 'before';
             }
             row_receive(anchor, dropped) {
                 if (!dropped)
@@ -31194,6 +31226,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_layers.prototype, "layers", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_layers.prototype, "outside", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_layers.prototype, "rows", null);
@@ -31468,6 +31503,10 @@ var $;
 			(obj.query) = (next) => ((this.filter(next)));
 			return obj;
 		}
+		source_expanded(next){
+			if(next !== undefined) return next;
+			return true;
+		}
 		pack_rows(){
 			return [];
 		}
@@ -31510,6 +31549,10 @@ var $;
 			(obj.bids) = () => ([(this.import_note())]);
 			(obj.control) = () => ((this.Import_open()));
 			return obj;
+		}
+		parts_expanded(next){
+			if(next !== undefined) return next;
+			return true;
 		}
 		item_rows(){
 			return [];
@@ -31626,7 +31669,7 @@ var $;
 		Source(){
 			const obj = new this.$.$mol_expander();
 			(obj.title) = () => ("Пак компонентов");
-			(obj.expanded) = (next) => (true);
+			(obj.expanded) = (next) => ((this.source_expanded(next)));
 			(obj.content) = () => ([
 				(this.Pack_list()), 
 				(this.Links_field()), 
@@ -31637,7 +31680,7 @@ var $;
 		Parts(){
 			const obj = new this.$.$mol_expander();
 			(obj.title) = () => ("Готовые детали");
-			(obj.expanded) = (next) => (true);
+			(obj.expanded) = (next) => ((this.parts_expanded(next)));
 			(obj.content) = () => ([(this.Items())]);
 			return obj;
 		}
@@ -31681,12 +31724,14 @@ var $;
 		}
 	};
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Filter"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "source_expanded"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Pack_list"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Links"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Links_field"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "import_note"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Import_open"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Import_field"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "parts_expanded"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Items"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "App_list"));
 	($mol_mem_key(($.$bog_vmap_app_shelf.prototype), "pack_click"));
@@ -31962,6 +32007,12 @@ var $;
                 return (this.classes_showed()
                     ? [this.Level(), this.Source(), this.Palette()]
                     : [this.Level(), this.Source(), this.Parts(), this.Apps()]);
+            }
+            source_expanded(next) {
+                return this.$.$mol_state_session.value('vmap_shelf_source', next) ?? super.source_expanded();
+            }
+            parts_expanded(next) {
+                return this.$.$mol_state_session.value('vmap_shelf_parts', next) ?? super.parts_expanded();
             }
             packs() {
                 return this.$.$bog_vmap_app_shelf_packs();

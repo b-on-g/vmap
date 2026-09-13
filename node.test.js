@@ -30713,6 +30713,10 @@ var $;
 			(obj.rows) = () => ((this.rows()));
 			return obj;
 		}
+		outside_expanded(next){
+			if(next !== undefined) return next;
+			return true;
+		}
 		row_draggable(id){
 			return true;
 		}
@@ -30826,6 +30830,13 @@ var $;
 			(obj.status) = () => ((this.node_title_note()));
 			return obj;
 		}
+		Outside(){
+			const obj = new this.$.$mol_check_expand();
+			(obj.level) = () => (1);
+			(obj.title) = () => ("Вне страницы");
+			(obj.expanded) = (next) => ((this.outside_expanded(next)));
+			return obj;
+		}
 		Row(id){
 			const obj = new this.$.$mol_drag();
 			(obj.allow_copy) = () => (false);
@@ -30897,6 +30908,7 @@ var $;
 		}
 	};
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "Rows"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "outside_expanded"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "row_adopt"));
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_receive"));
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_zone"));
@@ -30914,6 +30926,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "Doc"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "Note"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "Outside"));
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Row"));
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Expand"));
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "Pick"));
@@ -30975,7 +30988,20 @@ var $;
                             walk(kid, name, level + 1);
                 };
                 walk('', null, 1);
+                const parts = node.part_names();
+                const held = new Set(['', ...parts].flatMap(owner => node.sub_names(owner) ?? []));
+                for (const name of parts)
+                    if (!found.has(name) && !held.has(name))
+                        walk(name, null, 2);
+                for (const name of parts)
+                    if (!found.has(name))
+                        walk(name, null, 2);
                 return found;
+            }
+            outside() {
+                return [...this.layers()]
+                    .filter(([name, layer]) => name && layer.owner === null)
+                    .map(([name]) => name);
             }
             row_kids(name) {
                 return this.layers().get(name)?.kids ?? [];
@@ -30991,16 +31017,22 @@ var $;
                 return false;
             }
             rows() {
-                const rows = [];
-                const add = (name) => {
-                    rows.push(this.Row(name));
-                    if (this.row_editing(name) && this.node_title_note())
-                        rows.push(this.Note());
-                    if (this.row_open(name))
-                        for (const kid of this.row_kids(name))
-                            add(kid);
-                };
-                add('');
+                const outside = this.outside();
+                if (!outside.length)
+                    return this.branch_rows('');
+                return [
+                    ...this.branch_rows(''),
+                    this.Outside(),
+                    ...this.outside_expanded() ? outside.flatMap(name => this.branch_rows(name)) : [],
+                ];
+            }
+            branch_rows(name) {
+                const rows = [this.Row(name)];
+                if (this.row_editing(name) && this.node_title_note())
+                    rows.push(this.Note());
+                if (this.row_open(name))
+                    for (const kid of this.row_kids(name))
+                        rows.push(...this.branch_rows(kid));
                 return rows;
             }
             row_level(name) {
@@ -31151,7 +31183,7 @@ var $;
                     return 'inside';
                 if (this.layers().get(name)?.kids && share >= .5)
                     return 'inside';
-                return 'before';
+                return this.row_holder(name) === null ? '' : 'before';
             }
             row_receive(anchor, dropped) {
                 if (!dropped)
@@ -31185,6 +31217,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_layers.prototype, "layers", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_layers.prototype, "outside", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_layers.prototype, "rows", null);
@@ -31459,6 +31494,10 @@ var $;
 			(obj.query) = (next) => ((this.filter(next)));
 			return obj;
 		}
+		source_expanded(next){
+			if(next !== undefined) return next;
+			return true;
+		}
 		pack_rows(){
 			return [];
 		}
@@ -31501,6 +31540,10 @@ var $;
 			(obj.bids) = () => ([(this.import_note())]);
 			(obj.control) = () => ((this.Import_open()));
 			return obj;
+		}
+		parts_expanded(next){
+			if(next !== undefined) return next;
+			return true;
 		}
 		item_rows(){
 			return [];
@@ -31617,7 +31660,7 @@ var $;
 		Source(){
 			const obj = new this.$.$mol_expander();
 			(obj.title) = () => ("Пак компонентов");
-			(obj.expanded) = (next) => (true);
+			(obj.expanded) = (next) => ((this.source_expanded(next)));
 			(obj.content) = () => ([
 				(this.Pack_list()), 
 				(this.Links_field()), 
@@ -31628,7 +31671,7 @@ var $;
 		Parts(){
 			const obj = new this.$.$mol_expander();
 			(obj.title) = () => ("Готовые детали");
-			(obj.expanded) = (next) => (true);
+			(obj.expanded) = (next) => ((this.parts_expanded(next)));
 			(obj.content) = () => ([(this.Items())]);
 			return obj;
 		}
@@ -31672,12 +31715,14 @@ var $;
 		}
 	};
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Filter"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "source_expanded"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Pack_list"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Links"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Links_field"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "import_note"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Import_open"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Import_field"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "parts_expanded"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Items"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "App_list"));
 	($mol_mem_key(($.$bog_vmap_app_shelf.prototype), "pack_click"));
@@ -31953,6 +31998,12 @@ var $;
                 return (this.classes_showed()
                     ? [this.Level(), this.Source(), this.Palette()]
                     : [this.Level(), this.Source(), this.Parts(), this.Apps()]);
+            }
+            source_expanded(next) {
+                return this.$.$mol_state_session.value('vmap_shelf_source', next) ?? super.source_expanded();
+            }
+            parts_expanded(next) {
+                return this.$.$mol_state_session.value('vmap_shelf_parts', next) ?? super.parts_expanded();
             }
             packs() {
                 return this.$.$bog_vmap_app_shelf_packs();
@@ -50565,6 +50616,46 @@ var $;
                     $mol_assert_equal(offer.link.endsWith('/'), true);
             }
         },
+        'each group folds on a click of its heading and unfolds on the second, the other one stays as it was'($) {
+            const shelf = $bog_vmap_app_shelf.make({ $ });
+            const dom = $.$mol_dom_context;
+            const group = (name) => shelf.dom_tree().querySelector(`[bog_vmap_app_shelf_${name}]`);
+            const click = (name) => group(name).querySelector(`[bog_vmap_app_shelf_${name}_trigger]`)
+                .dispatchEvent(new dom.MouseEvent('click', { bubbles: true, cancelable: true }));
+            const packs = () => group('source').querySelectorAll('[bog_vmap_app_shelf_pack_row]').length;
+            const items = () => group('parts').querySelectorAll('[bog_vmap_app_shelf_item_row]').length;
+            const all = [packs(), items()];
+            $mol_assert_ok(all[0] > 0);
+            $mol_assert_ok(all[1] > 0);
+            click('source');
+            $mol_assert_like([packs(), items()], [0, all[1]]);
+            $mol_assert_equal(group('source').querySelector('[bog_vmap_app_shelf_source_content]'), null);
+            click('parts');
+            $mol_assert_like([packs(), items()], [0, 0]);
+            click('source');
+            $mol_assert_like([packs(), items()], [all[0], 0]);
+            click('parts');
+            $mol_assert_like([packs(), items()], all);
+        },
+        'folded groups stay folded after a trip to the layers and back'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const group = (name) => stage.root.querySelector(`[bog_vmap_app_shelf_${name}]`);
+            const rows = (name, row) => group(name)?.querySelectorAll(row).length ?? -1;
+            const packs = () => rows('source', '[bog_vmap_app_shelf_pack_row]');
+            const items = () => rows('parts', '[bog_vmap_app_shelf_item_row]');
+            const fold = (name) => stage.click(group(name).querySelector(`[bog_vmap_app_shelf_${name}_trigger]`));
+            stage.assets();
+            $mol_assert_ok(packs() > 0);
+            $mol_assert_ok(items() > 0);
+            fold('source');
+            fold('parts');
+            $mol_assert_like([packs(), items()], [0, 0]);
+            stage.click(stage.check('Слои'));
+            $mol_assert_like([packs(), items()], [-1, -1]);
+            $mol_wire_fiber.sync();
+            stage.assets();
+            $mol_assert_like([packs(), items()], [0, 0]);
+        },
     });
 })($ || ($ = {}));
 
@@ -54400,13 +54491,53 @@ var $;
         `\t\t<= Calc`,
         ``,
     ].join('\n');
+    const sample_spots = { Page: { x: 0, y: 0 }, Photo: { x: 1400, y: 0 } };
+    const lost = [
+        `${d}layers_lost ${d}mol_view`,
+        `\tcaption \\Подпись`,
+        `\tnote \\Заметка`,
+        `\tTitle ${d}mol_paragraph title \\Привет`,
+        `\tCard ${d}mol_view`,
+        `\t\tsub /`,
+        `\t\t\t<= caption`,
+        `\tPage ${d}mol_view`,
+        `\t\tstyle * width \\1280px`,
+        `\t\tsub /`,
+        `\t\t\t<= Title`,
+        `\t\t\t<= Card`,
+        `\tLost ${d}mol_paragraph title \\Потерян`,
+        `\tDeep ${d}mol_paragraph title \\Глубоко`,
+        `\tBox ${d}mol_view`,
+        `\t\tsub /`,
+        `\t\t\t<= Deep`,
+        `\tNear ${d}mol_image uri \\photo.png`,
+        `\tlost_title = Lost title`,
+        `\tsub /`,
+        `\t\t<= Page`,
+        ``,
+    ].join('\n');
+    const lost_spots = { Page: { x: 0, y: 0 }, Near: { x: 600, y: 40 } };
+    const ring = [
+        `${d}layers_ring ${d}mol_view`,
+        `\tPage ${d}mol_view`,
+        `\t\tsub /`,
+        `\tRing ${d}mol_view`,
+        `\t\tsub /`,
+        `\t\t\t<= Loop`,
+        `\tLoop ${d}mol_view`,
+        `\t\tsub /`,
+        `\t\t\t<= Ring`,
+        `\tsub /`,
+        `\t\t<= Page`,
+        ``,
+    ].join('\n');
     const icons = ['root', 'frame', 'image', 'link', 'button', 'field', 'text', 'part'];
-    function layers_stage($, over = {}) {
+    function layers_stage($, over = {}, source = sample, spots = sample_spots) {
         const stage = $bog_vmap_app_flow_stage($, over);
         const app = stage.app;
         const dom = $.$mol_dom_context;
-        app.doc_source(sample);
-        app.spots({ Page: { x: 0, y: 0 }, Photo: { x: 1400, y: 0 } });
+        app.doc_source(source);
+        app.spots(spots);
         stage.redraw();
         const moves = [];
         const move = app.tree_move.bind(app);
@@ -54483,7 +54614,23 @@ var $;
             }
             $mol_assert_equal(taken(), true);
         };
-        return { stage, app, layers, panel, moves, lines, line, pick, outline, mouse, field, type, blur, key, drag, history, stepped, redraw };
+        const group = () => {
+            redraw();
+            return panel.querySelector('[bog_vmap_app_layers_outside]');
+        };
+        const grouped = () => {
+            const head = group();
+            if (!head)
+                return [];
+            return lines()
+                .filter(el => head.compareDocumentPosition(el) & dom.Node.DOCUMENT_POSITION_FOLLOWING)
+                .map(title_of);
+        };
+        const press = (title, value) => {
+            pick(title).dispatchEvent(new dom.KeyboardEvent('keydown', { key: value, bubbles: true, cancelable: true }));
+            redraw();
+        };
+        return { stage, app, layers, panel, moves, lines, line, pick, outline, mouse, field, type, blur, key, drag, history, stepped, redraw, group, grouped, press };
     }
     $mol_test({
         'the layers are the tree of the document by its sub lists'($) {
@@ -54654,6 +54801,136 @@ var $;
             await stepped();
             history.undo();
             $mol_assert_equal(app.doc_source(), before);
+        },
+        'a document with every node on the page has no outside group'($) {
+            const { group } = layers_stage($);
+            $mol_assert_equal(group(), null);
+        },
+        'nodes outside every sub list are a group at the end of the layers'($) {
+            const { layers, panel, group, grouped, outline } = layers_stage($, {}, lost, lost_spots);
+            $mol_assert_like(outline(), [
+                `${d}layers_lost root`,
+                '  Page frame',
+                '    Title text',
+                '    Card frame',
+                '      caption text',
+                '  Lost text',
+                '  Box frame',
+                '    Deep text',
+                '  Near image',
+            ]);
+            const head = group();
+            $mol_assert_equal(head.textContent, 'Вне страницы');
+            $mol_assert_equal(head.parentElement, layers.Rows().dom_node());
+            $mol_assert_equal([...head.parentElement.children].indexOf(head), 5);
+            $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep', 'Near']);
+            $mol_assert_equal(panel.textContent.includes('note'), false);
+            $mol_assert_equal(panel.textContent.includes('lost_title'), false);
+        },
+        'the outside group folds and opens back'($) {
+            const { group, grouped, outline, mouse } = layers_stage($, {}, lost, lost_spots);
+            mouse(group(), 'click');
+            $mol_assert_ok(group());
+            $mol_assert_like(grouped(), []);
+            $mol_assert_equal(outline().length, 5);
+            mouse(group(), 'click');
+            $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep', 'Near']);
+        },
+        'a click on an outside row picks its node, and the host pick lights it'($) {
+            const { app, pick, line, mouse, redraw } = layers_stage($, {}, lost, lost_spots);
+            const lit = (title) => pick(title).getAttribute('mol_check_checked') === 'true';
+            mouse(pick('Lost'), 'click');
+            $mol_assert_like(app.picked(), ['Lost']);
+            $mol_assert_equal(lit('Lost'), true);
+            app.selected('Deep');
+            redraw();
+            $mol_assert_equal(lit('Deep'), true);
+            $mol_assert_equal(lit('Lost'), false);
+            $mol_assert_equal(lit('Box'), false);
+            mouse(line('Box').querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            $mol_assert_equal(lit('Box'), true);
+        },
+        'a double click renames an outside node and its row stays in the group'($) {
+            const { app, pick, mouse, field, type, blur, grouped } = layers_stage($, {}, lost, lost_spots);
+            mouse(pick('Lost'), 'dblclick');
+            $mol_assert_ok(field());
+            type('Gone');
+            blur();
+            $mol_assert_equal(app.node().prop_names().includes('Gone'), true);
+            $mol_assert_equal(app.node().prop_names().includes('Lost'), false);
+            $mol_assert_equal(app.selected(), 'Gone');
+            $mol_assert_equal(field(), null);
+            $mol_assert_like(grouped(), ['Gone', 'Box', 'Deep', 'Near']);
+        },
+        'the Delete key takes a picked outside node out with its insides'($) {
+            const { app, pick, mouse, press, grouped, lines } = layers_stage($, {}, lost, lost_spots);
+            mouse(pick('Box'), 'click');
+            press('Box', 'Delete');
+            const names = app.node().prop_names();
+            $mol_assert_equal(names.includes('Box'), false);
+            $mol_assert_equal(names.includes('Deep'), false);
+            $mol_assert_equal(names.includes('Lost'), true);
+            $mol_assert_equal(app.selected(), null);
+            $mol_assert_like(grouped(), ['Lost', 'Near']);
+            $mol_assert_equal(lines().length, 7);
+        },
+        'an outside row dropped on the lower half of a frame lands inside and the canvas measures it'($) {
+            const { app, stage, drag, grouped, moves } = layers_stage($, {}, lost, lost_spots);
+            stage.scene.flush();
+            $mol_assert_equal(stage.pane.part_size('Lost'), null);
+            drag('Lost', 'Card', .9);
+            $mol_assert_like(moves, [{ name: 'Lost', owner: 'Card', index: 1 }]);
+            $mol_assert_like(app.node().sub_names('Card'), ['caption', 'Lost']);
+            $mol_assert_equal(app.spots().Lost, undefined);
+            $mol_assert_like(grouped(), ['Box', 'Deep', 'Near']);
+            stage.scene.flush();
+            $mol_assert_ok(stage.pane.part_size('Lost'));
+        },
+        'an outside row dropped on the upper half of a page row lands before it'($) {
+            const { app, drag, grouped } = layers_stage($, {}, lost, lost_spots);
+            drag('Box', 'Title', .1);
+            $mol_assert_like(app.node().sub_names('Page'), ['Box', 'Title', 'Card']);
+            $mol_assert_like(app.node().sub_names('Box'), ['Deep']);
+            $mol_assert_like(grouped(), ['Lost', 'Near']);
+        },
+        'an outside node with a place dropped on the root stays where it was put'($) {
+            const { app, drag, grouped } = layers_stage($, {}, lost, lost_spots);
+            drag('Near', `${d}layers_lost`, .5);
+            $mol_assert_like(app.node().sub_names(''), ['Page', 'Near']);
+            $mol_assert_like(app.spots().Near, { x: 600, y: 40 });
+            $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep']);
+        },
+        'nothing lands before a row at the top of the outside group'($) {
+            const { app, drag, line, moves } = layers_stage($, {}, lost, lost_spots);
+            const before = app.doc_source();
+            drag('Title', 'Lost', .1);
+            drag('Title', 'Box', .1);
+            $mol_assert_equal(line('Box').getAttribute('bog_vmap_app_layers_line_zone'), '');
+            $mol_assert_equal(moves.length, 0);
+            $mol_assert_equal(app.doc_source(), before);
+            drag('Title', 'Deep', .1);
+            $mol_assert_equal(line('Deep').getAttribute('bog_vmap_app_layers_line_zone'), 'before');
+            $mol_assert_like(app.node().sub_names('Box'), ['Title', 'Deep']);
+        },
+        'nodes holding each other off the page are both in the group and come back together'($) {
+            const { app, drag, grouped, outline } = layers_stage($, {}, ring, { Page: { x: 0, y: 0 } });
+            $mol_assert_like(grouped(), ['Ring', 'Loop']);
+            $mol_assert_like(outline().slice(-2), ['  Ring frame', '    Loop frame']);
+            drag('Ring', 'Page', .9);
+            $mol_assert_like(app.node().sub_names('Page'), ['Ring']);
+            $mol_assert_like(app.node().sub_names('Ring'), ['Loop']);
+            $mol_assert_like(app.node().sub_names('Loop'), []);
+            $mol_assert_like(grouped(), []);
+        },
+        async 'one undo takes back a move out of the outside group'($) {
+            const { app, drag, history, stepped, grouped } = layers_stage($, {}, lost, lost_spots);
+            await stepped();
+            const before = app.doc_source();
+            drag('Lost', 'Card', .9);
+            await stepped();
+            history.undo();
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep', 'Near']);
         },
     });
 })($ || ($ = {}));
