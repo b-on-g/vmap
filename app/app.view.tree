@@ -27,6 +27,7 @@ $bog_vmap_app $mol_page
 	plugins /
 		<= Theme $mol_theme_auto
 			theme <= theme_name \$mol_theme_dark
+		<= Tooltip $bog_tooltip_plugin
 	sub /
 		<= Head
 		<= Main $mol_view

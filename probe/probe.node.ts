@@ -424,6 +424,232 @@ namespace $ {
 
 	}
 
+	export const $bog_vmap_probe_tip_ink = .8
+
+	export const $bog_vmap_probe_placed = [
+		'pane_label', 'pane_insert', 'pane_band', 'pane_draft', 'pane_values', 'pane_marks', 'pane_mark',
+		'pane_overlay', 'pane_overlay_frame', 'pane_handle', 'pane_scene', 'wire', 'ghost',
+	]
+
+	export async function $bog_vmap_probe_tips(
+		root: string,
+		say: ( line: string )=> void,
+		want: ( ok: boolean, note: string )=> void,
+	) {
+
+		const bin = $bog_probe_chrome_bin()
+		if( !bin ) return
+
+		const d = '$'
+		const app = `$[ ${ JSON.stringify( d + 'bog_vmap_app' ) } ].Root( 0 )`
+		const site = await new $bog_probe_static( root ).open()
+		const profile = String( $node.fs.mkdtempSync( $node.path.join( $node.os.tmpdir(), 'vmap-tips-' ) ) )
+		const browser = new $bog_probe_browser( bin, profile )
+		const at = '1280, подсказки:'
+
+		const mouse = ( x: number, y: number )=> browser.send( 'Input.dispatchMouseEvent', {
+			type: 'mouseMoved', x, y, button: 'none', buttons: 0,
+		}, browser.page )
+
+		const shot = async ( clip: { x: number, y: number, width: number, height: number } )=> {
+			const reply = await browser.send( 'Page.captureScreenshot', { format: 'png', clip: { ... clip, scale: 1 } }, browser.page )
+			const data = $bog_probe_dig( reply, 'result', 'data' )
+			if( typeof data !== 'string' ) return $mol_fail( new Error( `${ at } скриншот не снялся, ${ JSON.stringify( $bog_probe_dig( reply, 'error' ) ) }` ) )
+			return $bog_vmap_probe_png( Buffer.from( data, 'base64' ) ).map( pixel => $bog_vmap_probe_hex( pixel ) )
+		}
+
+		const placed = async ( ids: readonly string[] | null )=> await browser.evaluate( `
+			const ids = ${ JSON.stringify( ids ) }
+			const nodes = ids ? ids.map( id => document.getElementById( id ) ).filter( Boolean ) : [ ... document.querySelectorAll( '*' ) ].filter(
+				node => node.id && [ 'absolute', 'fixed', 'sticky' ].includes( getComputedStyle( node ).position )
+			)
+			const out = {}
+			for( const node of nodes ) {
+				const box = node.getBoundingClientRect()
+				out[ node.id ] = getComputedStyle( node ).position + ' ' + [ box.left, box.top, box.width, box.height ].map( Math.round ).join( ',' )
+			}
+			return out
+		`, 15000 ) as { [ id: string ]: string }
+
+		const short = ( id: string )=> id.replace( /^.*Root\(0\)\./, '' ).replace( /\(\)$/, '' )
+
+		try {
+
+			await browser.open()
+			await browser.viewport( 1280, 800 )
+			await browser.open_page( site.uri( $bog_vmap_probe_page ), $bog_vmap_probe_ready(), 150000 )
+			if( await browser.until( `${ app }.doc_key() !== ''`, 30000 ) < 0 ) return $mol_fail( new Error( `${ at } документ не завёлся за 30000 мс после прогрева` ) )
+
+			const part_name = String( await browser.evaluate( `
+				const app = ${ app }
+				return await $[ ${ JSON.stringify( d + 'mol_wire_async' ) } ]( ()=> {
+					app.board_draw( ${ JSON.stringify( $bog_vmap_probe_board ) } )
+					return app.selected()
+				} )()
+			`, 15000 ) )
+			if( await browser.until( `!!${ app }.Pane().part_box( ${ JSON.stringify( part_name ) } )`, 15000 ) < 0 ) {
+				return $mol_fail( new Error( `${ at } сцена не измерила артборд ${ part_name } за 15000 мс` ) )
+			}
+
+			const order = await browser.evaluate( `
+				const styles = [ ... document.head.querySelectorAll( 'style' ) ]
+				const ids = styles.map( style => style.id )
+				const pack = styles.find( style => style.id.endsWith( 'bog/tooltip/tooltip.view.css' ) )
+				if( pack ) {
+					const copy = document.createElement( 'style' )
+					copy.textContent = [ ... pack.sheet.cssRules ].flatMap( rule => rule.media ? [ ... rule.cssRules ].map( inner => inner.cssText ) : [] ).join( '\\n' )
+					pack.after( copy )
+				}
+				return {
+					pack: ids.findIndex( id => id.endsWith( 'bog/tooltip/tooltip.view.css' ) ),
+					own: ids.findIndex( id => id.includes( 'bog_vmap_' ) ),
+					all: ids.length,
+					media: matchMedia( '(hover: hover) and (pointer: fine)' ).matches,
+				}
+			`, 15000 ) as { pack: number, own: number, all: number, media: boolean }
+
+			want( order.pack >= 0, `${ at } стиля пака подсказок нет в head: плагин не подключён` )
+
+			const flips = await browser.evaluate( `
+				const pane = document.querySelector( '[bog_vmap_app_pane]' )
+				const nodes = ${ JSON.stringify( $bog_vmap_probe_placed ) }.map( name => {
+					const node = document.createElement( 'div' )
+					node.setAttribute( 'bog_vmap_app_' + name, '' )
+					pane.appendChild( node )
+					return node
+				} )
+				const real = [ ... document.querySelectorAll( '*' ) ].filter( node => [ 'absolute', 'fixed', 'sticky' ].includes( getComputedStyle( node ).position )
+					&& [ ... node.attributes ].some( attr => attr.name.startsWith( 'bog_vmap_' ) ) )
+				const out = []
+				for( const node of new Set([ ... nodes, ... real ]) ) {
+					const plain = getComputedStyle( node ).position
+					const had = node.getAttribute( 'data-mol-tip' )
+					node.setAttribute( 'data-mol-tip', 'проба' )
+					const tipped = getComputedStyle( node ).position
+					if( had === null ) node.removeAttribute( 'data-mol-tip' )
+					else node.setAttribute( 'data-mol-tip', had )
+					if( plain !== tipped && plain !== 'static' ) out.push( [ ... node.attributes ].map( attr => attr.name ).find( name => name.startsWith( 'bog_vmap_' ) ) + ' ' + plain + '→' + tipped )
+				}
+				for( const node of nodes ) node.remove()
+				return out
+			`, 15000 ) as string[]
+
+			want( !flips.length, `${ at } с атрибутом подсказки узел холста теряет своё позиционирование: ${ flips.join( ', ' ) }` )
+
+			await browser.evaluate( `
+				const pane = ${ app }.Pane()
+				return await $[ ${ JSON.stringify( d + 'mol_wire_async' ) } ]( ()=> {
+					pane.error_node( 'runtime', ${ JSON.stringify( part_name ) } )
+					pane.error_at( 'runtime', 'проба подсказок' )
+					return true
+				} )()
+			`, 15000 )
+			if( await browser.until( `!!document.querySelector( '[bog_vmap_app_pane_mark]' )`, 5000 ) < 0 ) {
+				return $mol_fail( new Error( `${ at } метка ошибки на ${ part_name } не поднялась` ) )
+			}
+
+			const before = await placed( null )
+
+			const away = await browser.evaluate( `
+				const box = document.querySelector( '[bog_vmap_app_pane]' ).getBoundingClientRect()
+				return [ box.right - 24, box.bottom - 24 ]
+			`, 15000 ) as [ number, number ]
+
+			const targets = await browser.evaluate( `
+				return [ ... document.querySelectorAll( '[bog_vmap_app_head] [title], [bog_vmap_app_pane_mark][title]' ) ].map( node => {
+					const box = node.getBoundingClientRect()
+					return { id: node.id, title: node.getAttribute( 'title' ), x: box.left + box.width / 2, y: box.top + box.height / 2 }
+				} )
+			`, 15000 ) as { id: string, title: string, x: number, y: number }[]
+
+			want( targets.some( target => target.id.includes( 'Mark(' ) ), `${ at } у метки ошибки нет подсказки` )
+
+			const inks = [] as number[]
+			const cuts = [] as string[]
+			const spills = [] as string[]
+			let scroll = 0
+
+			for( const target of targets ) {
+
+				await mouse( ... away )
+				await $bog_probe_pause( 150 )
+				const position = await browser.evaluate( `return getComputedStyle( document.getElementById( ${ JSON.stringify( target.id ) } ) ).position`, 5000 )
+
+				await mouse( target.x, target.y )
+				await $bog_probe_pause( 250 )
+
+				const state = await browser.evaluate( `
+					const node = document.getElementById( ${ JSON.stringify( target.id ) } )
+					const tip = getComputedStyle( node, '::after' )
+					const host = node.getBoundingClientRect()
+					const px = value => parseFloat( value ) || 0
+					const width = px( tip.width ) + px( tip.paddingLeft ) + px( tip.paddingRight )
+					const height = px( tip.height ) + px( tip.paddingTop ) + px( tip.paddingBottom )
+					const left = host.left + px( tip.left ) - width / 2
+					const top = host.top + px( tip.top )
+					const pen = document.createElement( 'canvas' ).getContext( '2d' )
+					pen.font = tip.fontWeight + ' ' + tip.fontSize + ' ' + tip.fontFamily
+					const text = pen.measureText( node.getAttribute( 'data-mol-tip' ) || '' ).width
+					const inner = [ Math.max( 0, left ) + 2, Math.max( 0, top ) + 2, Math.min( innerWidth, left + width ) - 2, Math.min( innerHeight, top + height ) - 2 ].map( Math.round )
+					return {
+						title: node.getAttribute( 'title' ),
+						tip: node.getAttribute( 'data-mol-tip' ),
+						position: getComputedStyle( node ).position,
+						box: tip.content === 'none' || inner[ 2 ] <= inner[ 0 ] || inner[ 3 ] <= inner[ 1 ] ? null
+							: { x: inner[ 0 ], y: inner[ 1 ], width: inner[ 2 ] - inner[ 0 ], height: inner[ 3 ] - inner[ 1 ] },
+						cut: Math.round( Math.max( 0, - left - px( tip.paddingLeft ) ) + Math.max( 0, left + px( tip.paddingLeft ) + text - innerWidth ) ),
+						spill: Math.round( Math.max( 0, px( tip.paddingLeft ) + text - width ) ),
+						scroll: document.scrollingElement.scrollWidth,
+					}
+				`, 15000 ) as {
+					title: string | null, tip: string | null, position: string,
+					box: { x: number, y: number, width: number, height: number } | null,
+					cut: number, spill: number, scroll: number,
+				}
+
+				const name = short( target.id )
+				const tipped = state.box ? await shot( state.box ) : []
+				await mouse( ... away )
+				await $bog_probe_pause( 150 )
+				const plain = state.box ? await shot( state.box ) : []
+				const ink = plain.length ? plain.filter( ( pixel, index )=> pixel !== tipped[ index ] ).length / plain.length : 0
+
+				inks.push( ink )
+				if( state.cut ) cuts.push( `${ name } ${ state.cut }` )
+				if( state.spill ) spills.push( `${ name } ${ state.spill }` )
+				scroll = Math.max( scroll, state.scroll )
+
+				want(
+					state.tip === target.title && state.title === null,
+					`${ at } у ${ name } подсказка не переехала из title: title ${ JSON.stringify( state.title ) }, data-mol-tip ${ JSON.stringify( state.tip ) }`,
+				)
+				want(
+					ink >= $bog_vmap_probe_tip_ink,
+					`${ at } подсказки ${ name } не видно: в её прямоугольнике ${ JSON.stringify( state.box ) } сменилось ${ Math.round( ink * 100 ) } % пикселей, ждали не меньше ${ $bog_vmap_probe_tip_ink * 100 } %`,
+				)
+				want(
+					state.position === position,
+					`${ at } наведение сменило позиционирование ${ name }: ${ position } → ${ state.position }`,
+				)
+
+			}
+
+			const after = await placed( Object.keys( before ) )
+			const moved = Object.keys( before ).filter( id => after[ id ] && after[ id ] !== before[ id ] )
+
+			want( !moved.length, `${ at } наведение сдвинуло абсолютные узлы: ${ moved.map( id => `${ short( id ) } ${ before[ id ] } → ${ after[ id ] }` ).join( '; ' ) }` )
+
+			say( `${ at } верхняя панель и метка ошибки — наведено на ${ targets.length }, в прямоугольнике подсказки сменилось от ${ Math.round( Math.min( ... inks ) * 100 ) } до ${ Math.round( Math.max( ... inks ) * 100 ) } % пикселей; абсолютных узлов ${ Object.keys( before ).length }, после наведения сдвинулось ${ moved.length }; стиль пака ${ order.pack }-й из ${ order.all } в head, первый стиль vmap ${ order.own }-й; медиа (hover: hover) and (pointer: fine) здесь ${ order.media ? 'истинна' : 'ложна' }, правила пака из-под неё продублированы без условия сразу за его стилем` )
+			say( `${ at } верхняя панель, чего пак не умеет, не утверждается: подсказка центрируется под узлом и за край окна уходит ${ cuts.join( ', ' ) || 'ничего' }; строки не переносятся, и текст вылез за подложку у ${ spills.join( ', ' ) || 'никого' }; ширина документа при наведении до ${ scroll } из 1280` )
+
+		} finally {
+			browser.close()
+			site.close()
+			try { $node.fs.rmSync( profile, { recursive: true, force: true } ) } catch( error ) {}
+		}
+
+	}
+
 	export function $bog_vmap_probe_show( rect: $bog_probe_rect | null ) {
 		if( !rect ) return 'null'
 		return `${ Math.round( rect.width ) }×${ Math.round( rect.height ) } @${ Math.round( rect.left ) },${ Math.round( rect.top ) }`
@@ -862,6 +1088,7 @@ namespace $ {
 		const began = Date.now()
 
 		await $bog_vmap_probe_paint( root, say, want )
+		await $bog_vmap_probe_tips( root, say, want )
 
 		let widths = [ -1, -1 ]
 
