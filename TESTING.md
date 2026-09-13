@@ -631,6 +631,16 @@ setTimeout( async ()=> {
 - **Chromium на Linux без мыши считает `(hover: hover)` и `(pointer: fine)` ложными**, всё под
   такой медиа в CI не рисуется; `Emulation.setEmulatedMedia` с этими признаками отвечает ok и
   ничего не меняет (замерено). macOS headless отвечает true — локально зелено, в CI красно.
+- **У `$mol_string` `disabled` — поле DOM (`field *`), а не атрибут** (14.09, `paint`, U29):
+  `dom_node_actual()` рисует только attr и style, «выключено ли поле» по нему всегда «нет» —
+  проверять `dom_tree()` и `.disabled`. У `$mol_button` `disabled` — атрибут. **Подмена плоского
+  метода на уже отрисованном экземпляре** (`view.editable = ()=> false`) в DOM не доходит —
+  атрибут мемоизирован на первой отрисовке; порт в тесте задавать в `make({ … })`. **У
+  выключенной кнопки мола `pointer-events: none`**, `elementFromPoint` в её центре отдаёт
+  родителя — клик по выключенному органу слать в центр прямоугольника напрямую.
+- **Фильтр-раннер без первого теста пака остаётся без глобалов jsdom** (`ShadowRoot is not
+  defined`, красный даже контроль): ставить `ShadowRoot`, `PointerEvent`, `MouseEvent` и прочие из
+  `$mol_dom_context` в `globalThis` до прогона — иначе негативы недействительны (14.09, `paint`).
 - **Прямоугольник `::after` — по CDP, не формулой** (14.09, `tip`): `DOM.describeNode` по
   `objectId` хозяина → `pseudoElements[].backendNodeId` → `DOM.getBoxModel`; `DOM.enable` не нужен.
   Формула «центр хозяина минус половина» предполагает `translateX(-50%)` и врёт при сдвиге.
