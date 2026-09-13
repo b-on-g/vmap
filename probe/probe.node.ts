@@ -695,6 +695,154 @@ namespace $ {
 
 	}
 
+	export type $bog_vmap_probe_bubble = {
+		readonly left: number
+		readonly top: number
+		readonly right: number
+		readonly bottom: number
+		readonly items: number
+		readonly keys: readonly number[]
+		readonly view: readonly [ number, number ]
+		readonly transform: string
+	}
+
+	export async function $bog_vmap_probe_menu(
+		root: string,
+		say: ( line: string )=> void,
+		want: ( ok: boolean, note: string )=> void,
+	) {
+
+		const bin = $bog_probe_chrome_bin()
+		if( !bin ) return
+
+		const d = '$'
+		const app = `$[ ${ JSON.stringify( d + 'bog_vmap_app' ) } ].Root( 0 )`
+		const site = await new $bog_probe_static( root ).open()
+		const profile = String( $node.fs.mkdtempSync( $node.path.join( $node.os.tmpdir(), 'vmap-menu-' ) ) )
+		const browser = new $bog_probe_browser( bin, profile )
+
+		const mouse = ( type: string, [ x, y ]: readonly [ number, number ] )=> browser.send( 'Input.dispatchMouseEvent', {
+			type, x, y,
+			button: type === 'mouseMoved' ? 'none' : 'right',
+			buttons: type === 'mousePressed' ? 2 : 0,
+			clickCount: type === 'mouseMoved' ? 0 : 1,
+		}, browser.page )
+
+		const shape = `(()=>{
+			const bubble = document.querySelector( '[bog_vmap_app_menu] [mol_pop_bubble]' )
+			if( !bubble ) return null
+			const box = bubble.getBoundingClientRect()
+			const items = [ ... bubble.querySelectorAll( '[bog_vmap_app_menu_item]' ) ]
+			const keys = items.flatMap( item => {
+				const label = item.querySelector( '[bog_vmap_app_menu_item_label]' ).getBoundingClientRect()
+				const key = item.querySelector( '[bog_vmap_app_menu_item_keys]' ).getBoundingClientRect()
+				return key.width ? [ key.left - label.right ] : []
+			} )
+			return {
+				left: box.left, top: box.top, right: box.right, bottom: box.bottom,
+				items: items.length, keys,
+				view: [ innerWidth, innerHeight ],
+				transform: getComputedStyle( bubble ).transform,
+			}
+		})()`
+
+		const settled = async ()=> {
+			let last = ''
+			for( let step = 0; step < 40; ++ step ) {
+				const now = await browser.evaluate( `
+					await new Promise( done => requestAnimationFrame( ()=> requestAnimationFrame( done ) ) )
+					return ${ shape }
+				`, 15000 ) as $bog_vmap_probe_bubble | null
+				const mark = JSON.stringify( now )
+				if( now && now.items && !now.transform.startsWith( 'matrix(0' ) && mark === last ) return now
+				last = mark
+			}
+			return null
+		}
+
+		const show = ( got: $bog_vmap_probe_bubble )=> `${ Math.round( got.right - got.left ) }×${ Math.round( got.bottom - got.top ) } @${ Math.round( got.left ) },${ Math.round( got.top ) }`
+
+		try {
+
+			await browser.open()
+
+			for( const width of [ 1280, 400 ] ) {
+
+				await browser.viewport( width, 800 )
+				await browser.open_page( site.uri( $bog_vmap_probe_page ), $bog_vmap_probe_ready(), 150000 )
+
+				const pane = await browser.evaluate( `
+					const box = document.querySelector( '[bog_vmap_app_pane]' ).getBoundingClientRect()
+					return [ box.left, box.top, box.right, box.bottom ]
+				`, 15000 ) as readonly [ number, number, number, number ]
+
+				const inset = 12
+
+				const corners = [
+					{ name: 'левый верхний', x: pane[0] + inset, y: pane[1] + inset },
+					{ name: 'правый верхний', x: pane[2] - inset, y: pane[1] + inset },
+					{ name: 'левый нижний', x: pane[0] + inset, y: pane[3] - inset },
+					{ name: 'правый нижний', x: pane[2] - inset, y: pane[3] - inset },
+				]
+
+				for( const { name, x, y } of corners ) {
+
+					const at = `${ width }, меню у угла холста ${ name } (${ Math.round( x ) },${ Math.round( y ) }):`
+
+					for( const node of [ false, true ] ) {
+
+						const kind = node ? 'узла' : 'холста'
+
+						if( node ) await browser.evaluate( `
+							const pane = ${ app }.Pane()
+							const rect = pane.dom_node().getBoundingClientRect()
+							pane.menu({ screen: [ ${ x } - rect.left, ${ y } - rect.top ], world: [ 0, 0 ], name: 'probe' })
+						`, 15000 )
+						else {
+							await mouse( 'mouseMoved', [ x, y ] )
+							await mouse( 'mousePressed', [ x, y ] )
+							await mouse( 'mouseReleased', [ x, y ] )
+						}
+
+						const got = await settled()
+
+						if( !got ) {
+							want( false, `${ at } меню ${ kind } не открылось или не устоялось` )
+							continue
+						}
+
+						const [ view_width, view_height ] = got.view
+						const inside = got.left >= 0 && got.top >= 0 && got.right <= view_width && got.bottom <= view_height
+						const right = x > view_width / 2
+						const low = y > view_height / 2
+						const away = ( right ? got.right <= x + 1 : got.left >= x - 1 )
+							&& ( low ? got.bottom <= y + 1 : got.top >= y - 1 )
+
+						say( `${ at } меню ${ kind }, пунктов ${ got.items }, пузырь ${ show( got ) } во вьюпорте ${ view_width }×${ view_height }; от подписи до клавиши ${ got.keys.map( Math.round ).join( ', ' ) || 'клавиш нет' }` )
+
+						want( got.items === ( node ? 5 : 2 ), `${ at } у меню ${ kind } ${ got.items } пунктов` )
+						want( inside, `${ at } меню ${ kind } вылезло за вьюпорт: ${ show( got ) } при ${ view_width }×${ view_height }` )
+						want( away, `${ at } меню ${ kind } не развернулось от края: ${ show( got ) } при точке ${ Math.round( x ) },${ Math.round( y ) }` )
+						want( got.keys.every( gap => gap >= 0 ), `${ at } клавиша наехала на подпись: ${ got.keys.join( ', ' ) }` )
+
+						await browser.press( 'Escape', 27 )
+						const closed = await browser.until( `!document.querySelector( '[bog_vmap_app_menu]' )`, 3000 )
+						want( closed >= 0, `${ at } Esc не закрыл меню ${ kind } за 3000 мс` )
+
+					}
+
+				}
+
+			}
+
+		} finally {
+			browser.close()
+			site.close()
+			try { $node.fs.rmSync( profile, { recursive: true, force: true } ) } catch( error ) {}
+		}
+
+	}
+
 	export async function $bog_vmap_probe_check( root = $node.process.cwd() ) {
 
 		const lines = [] as string[]
@@ -974,6 +1122,7 @@ namespace $ {
 		}
 
 		await $bog_vmap_probe_fold( root, say, want )
+		await $bog_vmap_probe_menu( root, say, want )
 		await $bog_vmap_probe_focus( root, say, want )
 
 		if( broken.length ) return $mol_fail( new Error(
