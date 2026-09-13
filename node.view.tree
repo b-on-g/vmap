@@ -664,17 +664,21 @@ $bog_vmap_app_inspect_value $mol_list
 	binds /string
 	nodes *
 	alarm? \
+	editable true
 	rows <= editors /$mol_view
 	Alarm $mol_status
 		status <= alarm
 	String $bog_vmap_app_inspect_value_string
 		tree? <=> tree?
+		editable <= editable
 	Num $mol_string
 		hint \число
 		value? <=> num? \
+		enabled <= editable
 	Flag $mol_check
 		title <= flag_title \
 		checked? <=> flag? false
+		enabled <= editable
 	Raw $mol_string
 		enabled false
 		value <= raw \
@@ -685,15 +689,18 @@ $bog_vmap_app_inspect_value $mol_list
 		binds <= binds
 		nodes <= nodes
 		alarm? <=> alarm?
+		editable <= editable
 	Bind $bog_vmap_app_inspect_value_bind
 		tree? <=> tree?
 		binds <= binds
 		nodes <= nodes
 		alarm? <=> alarm?
+		editable <= editable
 	Wire $bog_vmap_app_inspect_value_wire
 		tree? <=> tree?
 		nodes <= nodes
 		alarm? <=> alarm?
+		editable <= editable
 
 $bog_vmap_app_inspect_value_area $mol_string
 	dom_name \textarea
@@ -704,15 +711,18 @@ $bog_vmap_app_inspect_value_area $mol_string
 
 $bog_vmap_app_inspect_value_string $mol_bar
 	tree? $mol_tree2_empty
+	editable true
 	sub /
 		<= Text $bog_vmap_app_inspect_value_area
 			hint \текст
 			rows <= text_rows 1
 			value? <=> text? \
+			enabled <= editable
 		<= Locale $mol_check
 			title \@
 			hint \Многоязычное: текст уедет в таблицу локалей
 			checked? <=> locale? false
+			enabled <= editable
 
 $bog_vmap_app_inspect_value_seq $mol_list
 	tree? $mol_tree2_empty
@@ -721,16 +731,19 @@ $bog_vmap_app_inspect_value_seq $mol_list
 	alarm? \
 	keyed false
 	klass false
+	editable true
 	rows <= seq_sub /$mol_view
 	Class_name $mol_string
 		hint \класс
 		value? <=> class_name? \
+		enabled <= editable
 	Items $mol_list
 		rows <= items /$mol_view
 	Add $mol_button_minor
 		title <= add_title \
 		hint \Добавить
 		click? <=> item_add? null
+		enabled <= editable
 	Item* $bog_vmap_app_inspect_value_item
 		keyed <= keyed
 		marker <= item_marker* false
@@ -739,6 +752,7 @@ $bog_vmap_app_inspect_value_seq $mol_list
 		binds <= binds
 		nodes <= nodes
 		drop? <=> item_drop*? null
+		editable <= editable
 
 $bog_vmap_app_inspect_value_item $mol_bar
 	value? $mol_tree2_empty
@@ -747,33 +761,40 @@ $bog_vmap_app_inspect_value_item $mol_bar
 	keyed false
 	marker false
 	drop? null
+	editable true
 	sub <= item_sub /$mol_view
 	Key $mol_string
 		hint \ключ
 		value? <=> key? \
+		enabled <= editable
 	Value $bog_vmap_app_inspect_value
 		tree? <=> value?
 		binds <= binds
 		nodes <= nodes
+		editable <= editable
 	Drop $mol_button_minor
 		title \✕
 		hint \Убрать
 		click? <=> drop?
+		enabled <= editable
 
 $bog_vmap_app_inspect_value_bind $mol_bar
 	tree? $mol_tree2_empty
 	binds /string
 	nodes *
 	alarm? \
+	editable true
 	sub <= bind_sub /$mol_view_content
 	Target $mol_select
 		hint \свойство
 		value? <=> target? \
 		options <= binds
+		enabled <= editable
 	Default $bog_vmap_app_inspect_value
 		tree? <=> default_value? $mol_tree2_empty
 		binds <= binds
 		nodes <= nodes
+		editable <= editable
 
 $bog_vmap_app_inspect_value_wire $mol_list
 	tree? $mol_tree2_empty
@@ -781,6 +802,7 @@ $bog_vmap_app_inspect_value_wire $mol_list
 	alarm? \
 	wire_op \=
 	wire_dot \.
+	editable true
 	rows <= wire_sub /$mol_view
 	Row $mol_bar
 		sub <= wire_row /$mol_view_content
@@ -788,13 +810,16 @@ $bog_vmap_app_inspect_value_wire $mol_list
 		hint \узел
 		value? <=> origin? \
 		options <= node_names /string
+		enabled <= editable
 	Port_pick $mol_select
 		hint \порт
 		value? <=> port? \
 		options <= ports /string
+		enabled <= editable
 	Port_free $mol_string
 		hint \порт
 		value? <=> port? \
+		enabled <= editable
 	Note $mol_status
 		status <= note \
 
@@ -899,10 +924,12 @@ $mol_form $mol_list
 
 $bog_vmap_app_inspect_flex $mol_list
 	value*? \
+	editable true
 	rows /
 		<= Width $mol_form_field
 			name \Ширина
 			control <= Width_pick $mol_switch
+				enabled <= editable
 				value? <=> width? \
 				options *
 					390px \мобильная
@@ -911,6 +938,7 @@ $bog_vmap_app_inspect_flex $mol_list
 		<= Direction $mol_form_field
 			name \Направление
 			control <= Direction_pick $mol_switch
+				enabled <= editable
 				value? <=> direction? \
 				options *
 					column \колонкой
@@ -918,6 +946,7 @@ $bog_vmap_app_inspect_flex $mol_list
 		<= Across $mol_form_field
 			name \Поперёк
 			control <= Across_pick $mol_switch
+				enabled <= editable
 				value? <=> across? \
 				options *
 					flex-start \к началу
@@ -927,6 +956,7 @@ $bog_vmap_app_inspect_flex $mol_list
 		<= Along $mol_form_field
 			name \Вдоль
 			control <= Along_pick $mol_switch
+				enabled <= editable
 				value? <=> along? \
 				options *
 					flex-start \к началу
@@ -938,11 +968,13 @@ $bog_vmap_app_inspect_flex $mol_list
 			control <= Gap_field $mol_string
 				hint \1rem
 				value? <=> gap? \
+				enabled <= editable
 		<= Grow $mol_form_field
 			name \Растяжение
 			control <= Grow_check $mol_check
 				title \занимать свободное место
 				checked? <=> grow? false
+				enabled <= editable
 
 $mol_icon_chevron $mol_icon path \M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z
 
@@ -978,6 +1010,7 @@ $bog_vmap_app_inspect_row $mol_form_field
 	keyed? false
 	changeable? false
 	drop? null
+	editable true
 	name <= sign
 	bid <= owner
 	label /
@@ -988,18 +1021,22 @@ $bog_vmap_app_inspect_row $mol_form_field
 		tree? <=> value?
 		binds <= binds
 		nodes <= nodes
+		editable <= editable
 	Key $mol_check
 		title \*
 		hint \Много значений по ключу
 		checked? <=> keyed?
+		enabled <= editable
 	Next $mol_check
 		title \?
 		hint \Изменяемое
 		checked? <=> changeable?
+		enabled <= editable
 	Drop $mol_button_minor
 		title \✕
 		hint \Убрать свойство из документа
 		click? <=> drop?
+		enabled <= editable
 
 $mol_book2 $mol_scroll
 	menu_title \
@@ -1016,10 +1053,12 @@ $bog_vmap_app_inspect $mol_page
 	pack? \https://mol.hyoo.ru
 	class_title? \
 	title_note \
+	editable true
 	title <= class_title
 	title_content /
 		<= Name $mol_string
 			hint \имя узла
+			enabled <= editable
 			value? <=> title_value? \
 			submit? <=> title_submit? null
 			event *
@@ -1033,6 +1072,7 @@ $bog_vmap_app_inspect $mol_page
 	body /$mol_view
 		<= Flex $bog_vmap_app_inspect_flex
 			value*? <=> flex_value*? \
+			editable <= editable
 		<= Rows $mol_list
 			rows <= rows /$mol_view
 		<= Inherited $mol_expander
@@ -1056,6 +1096,7 @@ $bog_vmap_app_inspect $mol_page
 		drop? <=> row_drop*? null
 		binds <= binds /string
 		nodes <= nodes *
+		editable <= editable
 
 $bog_vmap_app_inspect_demo $mol_book2
 	source? \
@@ -1317,6 +1358,7 @@ $bog_vmap_app_pane $mol_view
 	tool_select? false
 	tool_board? false
 	tool_hand? false
+	editable true
 	board_draw? null
 	node_delete? null
 	node_copy? null
@@ -1426,6 +1468,7 @@ $bog_vmap_app_pane $mol_view
 		left <= menu_left \
 		top <= menu_top \
 		on_node <= menu_on_node false
+		editable <= editable
 		copy? <=> node_copy?
 		remove? <=> node_delete?
 		wrap? <=> node_wrap?
@@ -1629,6 +1672,7 @@ $bog_vmap_app_layers $mol_scroll
 	node_title? \
 	node_title_note \
 	tree_move? null
+	editable true
 	Doc $bog_vmap_lang_doc
 		source <= source
 	sub /

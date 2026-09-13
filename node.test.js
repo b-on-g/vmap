@@ -22903,6 +22903,9 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		editable(){
+			return true;
+		}
 		rows(){
 			return (this.editors());
 		}
@@ -22914,18 +22917,21 @@ var $;
 		String(){
 			const obj = new this.$.$bog_vmap_app_inspect_value_string();
 			(obj.tree) = (next) => ((this.tree(next)));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		Num(){
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("число");
 			(obj.value) = (next) => ((this.num(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Flag(){
 			const obj = new this.$.$mol_check();
 			(obj.title) = () => ((this.flag_title()));
 			(obj.checked) = (next) => ((this.flag(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Raw(){
@@ -22942,6 +22948,7 @@ var $;
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
 			(obj.alarm) = (next) => ((this.alarm(next)));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		Bind(){
@@ -22950,6 +22957,7 @@ var $;
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
 			(obj.alarm) = (next) => ((this.alarm(next)));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		Wire(){
@@ -22957,6 +22965,7 @@ var $;
 			(obj.tree) = (next) => ((this.tree(next)));
 			(obj.nodes) = () => ((this.nodes()));
 			(obj.alarm) = (next) => ((this.alarm(next)));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 	};
@@ -22999,6 +23008,7 @@ var $;
 			(obj.hint) = () => ("текст");
 			(obj.rows) = () => ((this.text_rows()));
 			(obj.value) = (next) => ((this.text(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		locale(next){
@@ -23010,12 +23020,16 @@ var $;
 			(obj.title) = () => ("@");
 			(obj.hint) = () => ("Многоязычное: текст уедет в таблицу локалей");
 			(obj.checked) = (next) => ((this.locale(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		tree(next){
 			if(next !== undefined) return next;
 			const obj = new this.$.$mol_tree2_empty();
 			return obj;
+		}
+		editable(){
+			return true;
 		}
 		sub(){
 			return [(this.Text()), (this.Locale())];
@@ -23081,6 +23095,9 @@ var $;
 		klass(){
 			return false;
 		}
+		editable(){
+			return true;
+		}
 		rows(){
 			return (this.seq_sub());
 		}
@@ -23088,6 +23105,7 @@ var $;
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("класс");
 			(obj.value) = (next) => ((this.class_name(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Items(){
@@ -23100,6 +23118,7 @@ var $;
 			(obj.title) = () => ((this.add_title()));
 			(obj.hint) = () => ("Добавить");
 			(obj.click) = (next) => ((this.item_add(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Item(id){
@@ -23111,6 +23130,7 @@ var $;
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
 			(obj.drop) = (next) => ((this.item_drop(id, next)));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 	};
@@ -23154,6 +23174,9 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		editable(){
+			return true;
+		}
 		sub(){
 			return (this.item_sub());
 		}
@@ -23161,6 +23184,7 @@ var $;
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("ключ");
 			(obj.value) = (next) => ((this.key(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Value(){
@@ -23168,6 +23192,7 @@ var $;
 			(obj.tree) = (next) => ((this.value(next)));
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		Drop(){
@@ -23175,6 +23200,7 @@ var $;
 			(obj.title) = () => ("✕");
 			(obj.hint) = () => ("Убрать");
 			(obj.click) = (next) => ((this.drop(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 	};
@@ -23212,6 +23238,9 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		editable(){
+			return true;
+		}
 		sub(){
 			return (this.bind_sub());
 		}
@@ -23220,6 +23249,7 @@ var $;
 			(obj.hint) = () => ("свойство");
 			(obj.value) = (next) => ((this.target(next)));
 			(obj.options) = () => ((this.binds()));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Default(){
@@ -23227,6 +23257,7 @@ var $;
 			(obj.tree) = (next) => ((this.default_value(next)));
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 	};
@@ -23278,6 +23309,9 @@ var $;
 		wire_dot(){
 			return ".";
 		}
+		editable(){
+			return true;
+		}
 		rows(){
 			return (this.wire_sub());
 		}
@@ -23291,6 +23325,7 @@ var $;
 			(obj.hint) = () => ("узел");
 			(obj.value) = (next) => ((this.origin(next)));
 			(obj.options) = () => ((this.node_names()));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Port_pick(){
@@ -23298,12 +23333,14 @@ var $;
 			(obj.hint) = () => ("порт");
 			(obj.value) = (next) => ((this.port(next)));
 			(obj.options) = () => ((this.ports()));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Port_free(){
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("порт");
 			(obj.value) = (next) => ((this.port(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Note(){
@@ -24223,6 +24260,7 @@ var $;
 		}
 		Width_pick(){
 			const obj = new this.$.$mol_switch();
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.width(next)));
 			(obj.options) = () => ({
 				"390px": "мобильная", 
@@ -24243,6 +24281,7 @@ var $;
 		}
 		Direction_pick(){
 			const obj = new this.$.$mol_switch();
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.direction(next)));
 			(obj.options) = () => ({"column": "колонкой", "row": "рядом"});
 			return obj;
@@ -24259,6 +24298,7 @@ var $;
 		}
 		Across_pick(){
 			const obj = new this.$.$mol_switch();
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.across(next)));
 			(obj.options) = () => ({
 				"flex-start": "к началу", 
@@ -24280,6 +24320,7 @@ var $;
 		}
 		Along_pick(){
 			const obj = new this.$.$mol_switch();
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.along(next)));
 			(obj.options) = () => ({
 				"flex-start": "к началу", 
@@ -24303,6 +24344,7 @@ var $;
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("1rem");
 			(obj.value) = (next) => ((this.gap(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Gap(){
@@ -24319,6 +24361,7 @@ var $;
 			const obj = new this.$.$mol_check();
 			(obj.title) = () => ("занимать свободное место");
 			(obj.checked) = (next) => ((this.grow(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Grow(){
@@ -24330,6 +24373,9 @@ var $;
 		value(id, next){
 			if(next !== undefined) return next;
 			return "";
+		}
+		editable(){
+			return true;
 		}
 		rows(){
 			return [
@@ -24577,6 +24623,7 @@ var $;
 			(obj.tree) = (next) => ((this.value(next)));
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		sign(){
@@ -24611,6 +24658,9 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		editable(){
+			return true;
+		}
 		name(){
 			return (this.sign());
 		}
@@ -24628,6 +24678,7 @@ var $;
 			(obj.title) = () => ("*");
 			(obj.hint) = () => ("Много значений по ключу");
 			(obj.checked) = (next) => ((this.keyed(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Next(){
@@ -24635,6 +24686,7 @@ var $;
 			(obj.title) = () => ("?");
 			(obj.hint) = () => ("Изменяемое");
 			(obj.checked) = (next) => ((this.changeable(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Drop(){
@@ -24642,6 +24694,7 @@ var $;
 			(obj.title) = () => ("✕");
 			(obj.hint) = () => ("Убрать свойство из документа");
 			(obj.click) = (next) => ((this.drop(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 	};
@@ -24826,6 +24879,7 @@ var $;
 		Name(){
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("имя узла");
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.title_value(next)));
 			(obj.submit) = (next) => ((this.title_submit(next)));
 			(obj.event) = () => ({...(this.$.$mol_string.prototype.event.call(obj)), "blur": (next) => (this.title_submit(next))});
@@ -24849,6 +24903,7 @@ var $;
 		Flex(){
 			const obj = new this.$.$bog_vmap_app_inspect_flex();
 			(obj.value) = (id, next) => ((this.flex_value(id, next)));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		rows(){
@@ -24929,6 +24984,9 @@ var $;
 		title_note(){
 			return "";
 		}
+		editable(){
+			return true;
+		}
 		title(){
 			return (this.class_title());
 		}
@@ -24976,6 +25034,7 @@ var $;
 			(obj.drop) = (next) => ((this.row_drop(id, next)));
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 	};
@@ -27531,6 +27590,9 @@ var $;
 			if(next !== undefined) return next;
 			return false;
 		}
+		editable(){
+			return true;
+		}
 		board_draw(next){
 			if(next !== undefined) return next;
 			return null;
@@ -27793,6 +27855,7 @@ var $;
 			(obj.left) = () => ((this.menu_left()));
 			(obj.top) = () => ((this.menu_top()));
 			(obj.on_node) = () => ((this.menu_on_node()));
+			(obj.editable) = () => ((this.editable()));
 			(obj.copy) = (next) => ((this.node_copy(next)));
 			(obj.remove) = (next) => ((this.node_delete(next)));
 			(obj.wrap) = (next) => ((this.node_wrap(next)));
@@ -28566,6 +28629,8 @@ var $;
                 return this.tool() === 'hand' || this.grip();
             }
             tool_take(next) {
+                if (next === 'board' && !this.editable())
+                    return;
                 if (next !== 'select')
                     this.leave();
                 this.draft(null);
@@ -28618,7 +28683,7 @@ var $;
                 if (stroke.code === 'KeyD') {
                     if (!command || stroke.altKey || stroke.shiftKey)
                         return false;
-                    if (!this.picked().length)
+                    if (!this.editable() || !this.picked().length)
                         return false;
                     stroke.preventDefault();
                     this.leave();
@@ -28628,7 +28693,7 @@ var $;
                 if (stroke.key === 'Delete' || stroke.key === 'Backspace') {
                     if (command || stroke.altKey)
                         return false;
-                    if (!this.picked().length)
+                    if (!this.editable() || !this.picked().length)
                         return false;
                     stroke.preventDefault();
                     this.leave();
@@ -28636,7 +28701,7 @@ var $;
                     return true;
                 }
                 if (stroke.code === 'KeyG' && command && stroke.altKey && !stroke.shiftKey) {
-                    if (!this.picked().length)
+                    if (!this.editable() || !this.picked().length)
                         return false;
                     stroke.preventDefault();
                     this.leave();
@@ -28863,11 +28928,13 @@ var $;
                 return next ?? null;
             }
             file_over(next) {
+                if (!this.editable())
+                    return null;
                 next?.preventDefault();
                 return next ?? null;
             }
             file_take(next) {
-                if (!next)
+                if (!next || !this.editable())
                     return null;
                 next.preventDefault();
                 const files = next.dataTransfer ? [...next.dataTransfer.files] : [];
@@ -28885,7 +28952,7 @@ var $;
                 return next;
             }
             carry_at(next) {
-                if (!next)
+                if (!next || !this.editable())
                     return null;
                 const slot = this.insert_slot([next.x, next.y]);
                 this.carry_drop({
@@ -28941,9 +29008,10 @@ var $;
                 if (this.hand())
                     return this.press(null);
                 const point = this.world_point(event);
-                if (this.tool() === 'board')
+                const editable = this.editable();
+                if (editable && this.tool() === 'board')
                     return this.draft_press(point, event);
-                const dot = $bog_vmap_app_wire_dot_at(this.wire_dots(), this.screen_point(event));
+                const dot = editable ? $bog_vmap_app_wire_dot_at(this.wire_dots(), this.screen_point(event)) : null;
                 if (dot)
                     return this.wire_press(dot, event);
                 if (this.band_wanted(event)) {
@@ -28969,6 +29037,8 @@ var $;
                 if (!name)
                     return;
                 event.preventDefault();
+                if (!editable)
+                    return;
                 const spots = {};
                 for (const picked of this.picked()) {
                     if (this.node_path(picked).length)
@@ -31603,6 +31673,9 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		editable(){
+			return true;
+		}
 		Doc(){
 			const obj = new this.$.$bog_vmap_lang_doc();
 			(obj.source) = () => ((this.source()));
@@ -31917,7 +31990,7 @@ var $;
                 return Boolean(name) && this.editing() === name && this.selected() === name;
             }
             row_draggable(name) {
-                return Boolean(name) && !this.row_editing(name);
+                return this.editable() && Boolean(name) && !this.row_editing(name);
             }
             row_content(name) {
                 return [
@@ -31926,7 +31999,7 @@ var $;
                 ];
             }
             row_edit(name, event) {
-                if (!name || !event)
+                if (!name || !event || !this.editable())
                     return null;
                 this.picked([name]);
                 this.row_draft(name, name);
@@ -31960,6 +32033,8 @@ var $;
                 return null;
             }
             row_adopt(transfer) {
+                if (!this.editable())
+                    return null;
                 const name = transfer?.getData('text/plain') ?? '';
                 return name && this.layers().has(name) ? name : null;
             }
@@ -43541,6 +43616,33 @@ var $;
             inspect.title_submit();
             $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_hero`);
         },
+        'a read only scene shows every value and lets none be edited'($) {
+            const source = [
+                `${d}bog_vmap_app_inspect_test_view ${d}mol_view`,
+                '	title \\Привет',
+                '	count 24',
+                '	shown true',
+                '	names /',
+                '		\\один',
+                '		\\два',
+                '	sub /',
+                '		<= title',
+                '',
+            ].join('\n');
+            const fields = (editable) => {
+                const inspect = panel($, source);
+                inspect.editable = () => editable;
+                const root = inspect.dom_tree();
+                return [...root.querySelectorAll('input, textarea, [mol_button]')]
+                    .filter(field => !field.closest('[mol_check_expand]'));
+            };
+            const open = fields(true);
+            const shut = fields(false);
+            $mol_assert_equal(open.length > 8, true);
+            $mol_assert_equal(shut.length, open.length);
+            $mol_assert_equal(open.filter(field => !field.hasAttribute('disabled')).length > 8, true);
+            $mol_assert_like(shut.filter(field => !field.hasAttribute('disabled')).map(field => field.id), []);
+        },
         'the head of the panel is the head of a page'($) {
             const inspect = panel($, [
                 `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
@@ -49316,6 +49418,60 @@ var $;
             answer({ kind: 'sizes', sizes: {} });
             $mol_assert_equal(pane.warmed(), true);
             $mol_assert_equal(pane.restart_tries(), 0);
+        },
+        'a read only pane selects and enters, but neither draws, drags, drops nor deletes'($) {
+            const done = [];
+            const deed = (name) => () => { done.push(name); return null; };
+            const { pane } = pane_make($, {}, {
+                editable: () => false,
+                node_delete: deed('delete'),
+                node_copy: deed('copy'),
+                node_wrap: deed('wrap'),
+                carry_drop: deed('carry'),
+                board_draw: deed('board'),
+            });
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
+            pane.spots({ A: { x: 0, y: 0 } });
+            $mol_assert_equal(pane.tool_board(true), false);
+            $mol_assert_equal(pane.tool(), 'select');
+            pane.node_press(pointer(50, 25));
+            $mol_assert_like(pane.picked(), ['A']);
+            $mol_assert_equal(pane.drag(), null);
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(55, 25, { buttons: 0 }));
+            $mol_assert_equal(pane.inside(), true);
+            pane.leave();
+            pane.picked(['A']);
+            const stroke = (over) => pane.key_down({
+                key: '', code: '', metaKey: false, ctrlKey: false, altKey: false, shiftKey: false,
+                target: null, preventDefault() { }, ...over,
+            });
+            $mol_assert_equal(stroke({ key: 'Delete' }), false);
+            $mol_assert_equal(stroke({ code: 'KeyD', metaKey: true }), false);
+            $mol_assert_equal(stroke({ code: 'KeyG', metaKey: true, altKey: true }), false);
+            stroke({ code: 'KeyF' });
+            $mol_assert_equal(pane.tool(), 'select');
+            $mol_assert_equal(pane.carry_at({ x: 10, y: 10 }), null);
+            let taken = false;
+            pane.file_over({ preventDefault() { taken = true; } });
+            $mol_assert_equal(taken, false);
+            $mol_assert_equal(pane.Menu(pane.menu_key()).editable(), false);
+            $mol_assert_like(done, []);
+        },
+        'a read only pane pulls no wire from a port'($) {
+            const { pane, node } = wired_make($);
+            pane.editable = () => false;
+            pane.camera_shift(new $mol_vector_2d(100, 50));
+            pane.camera_zoom(2);
+            pane.sizes({ [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) });
+            pane.picked(['Calc']);
+            const before = node.source();
+            pane.node_press(pointer(312, 57));
+            $mol_assert_equal(pane.wire_drag(), null);
+            pane.node_move(pointer(600, 100));
+            pane.node_release(pointer(600, 100, { buttons: 0 }));
+            $mol_assert_equal(node.source(), before);
         },
         'a drag from an output to a fitting input writes exactly two lines'($) {
             const { pane, node, posted } = wired_make($);
@@ -56842,6 +56998,28 @@ var $;
             $mol_assert_equal(field(), null);
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_equal(app.selected(), 'Title');
+        },
+        'a read only scene lets the rows be picked and opened, not renamed or moved'($) {
+            const dom = $.$mol_dom_context;
+            let picked = [];
+            const layers = $$.$bog_vmap_app_layers.make({
+                $,
+                source: () => sample,
+                root: () => `${d}layers_doc`,
+                picked: (next) => next ? picked = next : picked,
+                editable: () => false,
+            });
+            const click = (type) => new dom.MouseEvent(type, { bubbles: true, cancelable: true });
+            layers.row_pick('Title', click('click'));
+            $mol_assert_like(picked, ['Title']);
+            $mol_assert_equal(layers.row_expanded('Page', false), false);
+            layers.row_edit('Photo', click('dblclick'));
+            $mol_assert_equal(layers.editing(), null);
+            $mol_assert_like(picked, ['Title']);
+            $mol_assert_equal(layers.row_draggable('Photo'), false);
+            $mol_assert_equal(layers.Row('Photo').dom_node_actual().hasAttribute('draggable'), false);
+            const transfer = { getData: (kind) => kind === 'text/plain' ? 'Photo' : '' };
+            $mol_assert_equal(layers.row_adopt(transfer), null);
         },
         'a row dropped on the upper half of another lands before it'($) {
             const { app, drag } = layers_stage($);

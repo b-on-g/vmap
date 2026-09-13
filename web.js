@@ -31850,6 +31850,9 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		editable(){
+			return true;
+		}
 		rows(){
 			return (this.editors());
 		}
@@ -31861,18 +31864,21 @@ var $;
 		String(){
 			const obj = new this.$.$bog_vmap_app_inspect_value_string();
 			(obj.tree) = (next) => ((this.tree(next)));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		Num(){
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("число");
 			(obj.value) = (next) => ((this.num(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Flag(){
 			const obj = new this.$.$mol_check();
 			(obj.title) = () => ((this.flag_title()));
 			(obj.checked) = (next) => ((this.flag(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Raw(){
@@ -31889,6 +31895,7 @@ var $;
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
 			(obj.alarm) = (next) => ((this.alarm(next)));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		Bind(){
@@ -31897,6 +31904,7 @@ var $;
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
 			(obj.alarm) = (next) => ((this.alarm(next)));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		Wire(){
@@ -31904,6 +31912,7 @@ var $;
 			(obj.tree) = (next) => ((this.tree(next)));
 			(obj.nodes) = () => ((this.nodes()));
 			(obj.alarm) = (next) => ((this.alarm(next)));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 	};
@@ -31946,6 +31955,7 @@ var $;
 			(obj.hint) = () => ("текст");
 			(obj.rows) = () => ((this.text_rows()));
 			(obj.value) = (next) => ((this.text(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		locale(next){
@@ -31957,12 +31967,16 @@ var $;
 			(obj.title) = () => ("@");
 			(obj.hint) = () => ("Многоязычное: текст уедет в таблицу локалей");
 			(obj.checked) = (next) => ((this.locale(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		tree(next){
 			if(next !== undefined) return next;
 			const obj = new this.$.$mol_tree2_empty();
 			return obj;
+		}
+		editable(){
+			return true;
 		}
 		sub(){
 			return [(this.Text()), (this.Locale())];
@@ -32028,6 +32042,9 @@ var $;
 		klass(){
 			return false;
 		}
+		editable(){
+			return true;
+		}
 		rows(){
 			return (this.seq_sub());
 		}
@@ -32035,6 +32052,7 @@ var $;
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("класс");
 			(obj.value) = (next) => ((this.class_name(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Items(){
@@ -32047,6 +32065,7 @@ var $;
 			(obj.title) = () => ((this.add_title()));
 			(obj.hint) = () => ("Добавить");
 			(obj.click) = (next) => ((this.item_add(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Item(id){
@@ -32058,6 +32077,7 @@ var $;
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
 			(obj.drop) = (next) => ((this.item_drop(id, next)));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 	};
@@ -32101,6 +32121,9 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		editable(){
+			return true;
+		}
 		sub(){
 			return (this.item_sub());
 		}
@@ -32108,6 +32131,7 @@ var $;
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("ключ");
 			(obj.value) = (next) => ((this.key(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Value(){
@@ -32115,6 +32139,7 @@ var $;
 			(obj.tree) = (next) => ((this.value(next)));
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		Drop(){
@@ -32122,6 +32147,7 @@ var $;
 			(obj.title) = () => ("✕");
 			(obj.hint) = () => ("Убрать");
 			(obj.click) = (next) => ((this.drop(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 	};
@@ -32159,6 +32185,9 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		editable(){
+			return true;
+		}
 		sub(){
 			return (this.bind_sub());
 		}
@@ -32167,6 +32196,7 @@ var $;
 			(obj.hint) = () => ("свойство");
 			(obj.value) = (next) => ((this.target(next)));
 			(obj.options) = () => ((this.binds()));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Default(){
@@ -32174,6 +32204,7 @@ var $;
 			(obj.tree) = (next) => ((this.default_value(next)));
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 	};
@@ -32225,6 +32256,9 @@ var $;
 		wire_dot(){
 			return ".";
 		}
+		editable(){
+			return true;
+		}
 		rows(){
 			return (this.wire_sub());
 		}
@@ -32238,6 +32272,7 @@ var $;
 			(obj.hint) = () => ("узел");
 			(obj.value) = (next) => ((this.origin(next)));
 			(obj.options) = () => ((this.node_names()));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Port_pick(){
@@ -32245,12 +32280,14 @@ var $;
 			(obj.hint) = () => ("порт");
 			(obj.value) = (next) => ((this.port(next)));
 			(obj.options) = () => ((this.ports()));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Port_free(){
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("порт");
 			(obj.value) = (next) => ((this.port(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Note(){
@@ -33061,6 +33098,7 @@ var $;
 		}
 		Width_pick(){
 			const obj = new this.$.$mol_switch();
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.width(next)));
 			(obj.options) = () => ({
 				"390px": "мобильная", 
@@ -33081,6 +33119,7 @@ var $;
 		}
 		Direction_pick(){
 			const obj = new this.$.$mol_switch();
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.direction(next)));
 			(obj.options) = () => ({"column": "колонкой", "row": "рядом"});
 			return obj;
@@ -33097,6 +33136,7 @@ var $;
 		}
 		Across_pick(){
 			const obj = new this.$.$mol_switch();
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.across(next)));
 			(obj.options) = () => ({
 				"flex-start": "к началу", 
@@ -33118,6 +33158,7 @@ var $;
 		}
 		Along_pick(){
 			const obj = new this.$.$mol_switch();
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.along(next)));
 			(obj.options) = () => ({
 				"flex-start": "к началу", 
@@ -33141,6 +33182,7 @@ var $;
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("1rem");
 			(obj.value) = (next) => ((this.gap(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Gap(){
@@ -33157,6 +33199,7 @@ var $;
 			const obj = new this.$.$mol_check();
 			(obj.title) = () => ("занимать свободное место");
 			(obj.checked) = (next) => ((this.grow(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Grow(){
@@ -33168,6 +33211,9 @@ var $;
 		value(id, next){
 			if(next !== undefined) return next;
 			return "";
+		}
+		editable(){
+			return true;
 		}
 		rows(){
 			return [
@@ -33253,6 +33299,7 @@ var $;
 			(obj.tree) = (next) => ((this.value(next)));
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		sign(){
@@ -33287,6 +33334,9 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		editable(){
+			return true;
+		}
 		name(){
 			return (this.sign());
 		}
@@ -33304,6 +33354,7 @@ var $;
 			(obj.title) = () => ("*");
 			(obj.hint) = () => ("Много значений по ключу");
 			(obj.checked) = (next) => ((this.keyed(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Next(){
@@ -33311,6 +33362,7 @@ var $;
 			(obj.title) = () => ("?");
 			(obj.hint) = () => ("Изменяемое");
 			(obj.checked) = (next) => ((this.changeable(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 		Drop(){
@@ -33318,6 +33370,7 @@ var $;
 			(obj.title) = () => ("✕");
 			(obj.hint) = () => ("Убрать свойство из документа");
 			(obj.click) = (next) => ((this.drop(next)));
+			(obj.enabled) = () => ((this.editable()));
 			return obj;
 		}
 	};
@@ -33381,6 +33434,7 @@ var $;
 		Name(){
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("имя узла");
+			(obj.enabled) = () => ((this.editable()));
 			(obj.value) = (next) => ((this.title_value(next)));
 			(obj.submit) = (next) => ((this.title_submit(next)));
 			(obj.event) = () => ({...(this.$.$mol_string.prototype.event.call(obj)), "blur": (next) => (this.title_submit(next))});
@@ -33404,6 +33458,7 @@ var $;
 		Flex(){
 			const obj = new this.$.$bog_vmap_app_inspect_flex();
 			(obj.value) = (id, next) => ((this.flex_value(id, next)));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 		rows(){
@@ -33484,6 +33539,9 @@ var $;
 		title_note(){
 			return "";
 		}
+		editable(){
+			return true;
+		}
 		title(){
 			return (this.class_title());
 		}
@@ -33531,6 +33589,7 @@ var $;
 			(obj.drop) = (next) => ((this.row_drop(id, next)));
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
+			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
 	};
@@ -34667,6 +34726,9 @@ var $;
 			if(next !== undefined) return next;
 			return false;
 		}
+		editable(){
+			return true;
+		}
 		board_draw(next){
 			if(next !== undefined) return next;
 			return null;
@@ -34929,6 +34991,7 @@ var $;
 			(obj.left) = () => ((this.menu_left()));
 			(obj.top) = () => ((this.menu_top()));
 			(obj.on_node) = () => ((this.menu_on_node()));
+			(obj.editable) = () => ((this.editable()));
 			(obj.copy) = (next) => ((this.node_copy(next)));
 			(obj.remove) = (next) => ((this.node_delete(next)));
 			(obj.wrap) = (next) => ((this.node_wrap(next)));
@@ -35702,6 +35765,8 @@ var $;
                 return this.tool() === 'hand' || this.grip();
             }
             tool_take(next) {
+                if (next === 'board' && !this.editable())
+                    return;
                 if (next !== 'select')
                     this.leave();
                 this.draft(null);
@@ -35754,7 +35819,7 @@ var $;
                 if (stroke.code === 'KeyD') {
                     if (!command || stroke.altKey || stroke.shiftKey)
                         return false;
-                    if (!this.picked().length)
+                    if (!this.editable() || !this.picked().length)
                         return false;
                     stroke.preventDefault();
                     this.leave();
@@ -35764,7 +35829,7 @@ var $;
                 if (stroke.key === 'Delete' || stroke.key === 'Backspace') {
                     if (command || stroke.altKey)
                         return false;
-                    if (!this.picked().length)
+                    if (!this.editable() || !this.picked().length)
                         return false;
                     stroke.preventDefault();
                     this.leave();
@@ -35772,7 +35837,7 @@ var $;
                     return true;
                 }
                 if (stroke.code === 'KeyG' && command && stroke.altKey && !stroke.shiftKey) {
-                    if (!this.picked().length)
+                    if (!this.editable() || !this.picked().length)
                         return false;
                     stroke.preventDefault();
                     this.leave();
@@ -35999,11 +36064,13 @@ var $;
                 return next ?? null;
             }
             file_over(next) {
+                if (!this.editable())
+                    return null;
                 next?.preventDefault();
                 return next ?? null;
             }
             file_take(next) {
-                if (!next)
+                if (!next || !this.editable())
                     return null;
                 next.preventDefault();
                 const files = next.dataTransfer ? [...next.dataTransfer.files] : [];
@@ -36021,7 +36088,7 @@ var $;
                 return next;
             }
             carry_at(next) {
-                if (!next)
+                if (!next || !this.editable())
                     return null;
                 const slot = this.insert_slot([next.x, next.y]);
                 this.carry_drop({
@@ -36077,9 +36144,10 @@ var $;
                 if (this.hand())
                     return this.press(null);
                 const point = this.world_point(event);
-                if (this.tool() === 'board')
+                const editable = this.editable();
+                if (editable && this.tool() === 'board')
                     return this.draft_press(point, event);
-                const dot = $bog_vmap_app_wire_dot_at(this.wire_dots(), this.screen_point(event));
+                const dot = editable ? $bog_vmap_app_wire_dot_at(this.wire_dots(), this.screen_point(event)) : null;
                 if (dot)
                     return this.wire_press(dot, event);
                 if (this.band_wanted(event)) {
@@ -36105,6 +36173,8 @@ var $;
                 if (!name)
                     return;
                 event.preventDefault();
+                if (!editable)
+                    return;
                 const spots = {};
                 for (const picked of this.picked()) {
                     if (this.node_path(picked).length)
@@ -39046,6 +39116,9 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		editable(){
+			return true;
+		}
 		Doc(){
 			const obj = new this.$.$bog_vmap_lang_doc();
 			(obj.source) = () => ((this.source()));
@@ -39360,7 +39433,7 @@ var $;
                 return Boolean(name) && this.editing() === name && this.selected() === name;
             }
             row_draggable(name) {
-                return Boolean(name) && !this.row_editing(name);
+                return this.editable() && Boolean(name) && !this.row_editing(name);
             }
             row_content(name) {
                 return [
@@ -39369,7 +39442,7 @@ var $;
                 ];
             }
             row_edit(name, event) {
-                if (!name || !event)
+                if (!name || !event || !this.editable())
                     return null;
                 this.picked([name]);
                 this.row_draft(name, name);
@@ -39403,6 +39476,8 @@ var $;
                 return null;
             }
             row_adopt(transfer) {
+                if (!this.editable())
+                    return null;
                 const name = transfer?.getData('text/plain') ?? '';
                 return name && this.layers().has(name) ? name : null;
             }

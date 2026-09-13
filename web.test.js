@@ -7374,6 +7374,33 @@ var $;
             inspect.title_submit();
             $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_hero`);
         },
+        'a read only scene shows every value and lets none be edited'($) {
+            const source = [
+                `${d}bog_vmap_app_inspect_test_view ${d}mol_view`,
+                '	title \\Привет',
+                '	count 24',
+                '	shown true',
+                '	names /',
+                '		\\один',
+                '		\\два',
+                '	sub /',
+                '		<= title',
+                '',
+            ].join('\n');
+            const fields = (editable) => {
+                const inspect = panel($, source);
+                inspect.editable = () => editable;
+                const root = inspect.dom_tree();
+                return [...root.querySelectorAll('input, textarea, [mol_button]')]
+                    .filter(field => !field.closest('[mol_check_expand]'));
+            };
+            const open = fields(true);
+            const shut = fields(false);
+            $mol_assert_equal(open.length > 8, true);
+            $mol_assert_equal(shut.length, open.length);
+            $mol_assert_equal(open.filter(field => !field.hasAttribute('disabled')).length > 8, true);
+            $mol_assert_like(shut.filter(field => !field.hasAttribute('disabled')).map(field => field.id), []);
+        },
         'the head of the panel is the head of a page'($) {
             const inspect = panel($, [
                 `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
@@ -13559,6 +13586,60 @@ var $;
             answer({ kind: 'sizes', sizes: {} });
             $mol_assert_equal(pane.warmed(), true);
             $mol_assert_equal(pane.restart_tries(), 0);
+        },
+        'a read only pane selects and enters, but neither draws, drags, drops nor deletes'($) {
+            const done = [];
+            const deed = (name) => () => { done.push(name); return null; };
+            const { pane } = pane_make($, {}, {
+                editable: () => false,
+                node_delete: deed('delete'),
+                node_copy: deed('copy'),
+                node_wrap: deed('wrap'),
+                carry_drop: deed('carry'),
+                board_draw: deed('board'),
+            });
+            pane.sizes({ [`${root}/A`]: box(0, 0) });
+            pane.spots({ A: { x: 0, y: 0 } });
+            $mol_assert_equal(pane.tool_board(true), false);
+            $mol_assert_equal(pane.tool(), 'select');
+            pane.node_press(pointer(50, 25));
+            $mol_assert_like(pane.picked(), ['A']);
+            $mol_assert_equal(pane.drag(), null);
+            pane.node_release(pointer(50, 25, { buttons: 0 }));
+            pane.node_press(pointer(50, 25));
+            pane.node_release(pointer(55, 25, { buttons: 0 }));
+            $mol_assert_equal(pane.inside(), true);
+            pane.leave();
+            pane.picked(['A']);
+            const stroke = (over) => pane.key_down({
+                key: '', code: '', metaKey: false, ctrlKey: false, altKey: false, shiftKey: false,
+                target: null, preventDefault() { }, ...over,
+            });
+            $mol_assert_equal(stroke({ key: 'Delete' }), false);
+            $mol_assert_equal(stroke({ code: 'KeyD', metaKey: true }), false);
+            $mol_assert_equal(stroke({ code: 'KeyG', metaKey: true, altKey: true }), false);
+            stroke({ code: 'KeyF' });
+            $mol_assert_equal(pane.tool(), 'select');
+            $mol_assert_equal(pane.carry_at({ x: 10, y: 10 }), null);
+            let taken = false;
+            pane.file_over({ preventDefault() { taken = true; } });
+            $mol_assert_equal(taken, false);
+            $mol_assert_equal(pane.Menu(pane.menu_key()).editable(), false);
+            $mol_assert_like(done, []);
+        },
+        'a read only pane pulls no wire from a port'($) {
+            const { pane, node } = wired_make($);
+            pane.editable = () => false;
+            pane.camera_shift(new $mol_vector_2d(100, 50));
+            pane.camera_zoom(2);
+            pane.sizes({ [`${root}/Calc`]: box(0, 0), [`${root}/Map`]: box(300, 0) });
+            pane.picked(['Calc']);
+            const before = node.source();
+            pane.node_press(pointer(312, 57));
+            $mol_assert_equal(pane.wire_drag(), null);
+            pane.node_move(pointer(600, 100));
+            pane.node_release(pointer(600, 100, { buttons: 0 }));
+            $mol_assert_equal(node.source(), before);
         },
         'a drag from an output to a fitting input writes exactly two lines'($) {
             const { pane, node, posted } = wired_make($);
@@ -21050,6 +21131,28 @@ var $;
             $mol_assert_equal(field(), null);
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_equal(app.selected(), 'Title');
+        },
+        'a read only scene lets the rows be picked and opened, not renamed or moved'($) {
+            const dom = $.$mol_dom_context;
+            let picked = [];
+            const layers = $$.$bog_vmap_app_layers.make({
+                $,
+                source: () => sample,
+                root: () => `${d}layers_doc`,
+                picked: (next) => next ? picked = next : picked,
+                editable: () => false,
+            });
+            const click = (type) => new dom.MouseEvent(type, { bubbles: true, cancelable: true });
+            layers.row_pick('Title', click('click'));
+            $mol_assert_like(picked, ['Title']);
+            $mol_assert_equal(layers.row_expanded('Page', false), false);
+            layers.row_edit('Photo', click('dblclick'));
+            $mol_assert_equal(layers.editing(), null);
+            $mol_assert_like(picked, ['Title']);
+            $mol_assert_equal(layers.row_draggable('Photo'), false);
+            $mol_assert_equal(layers.Row('Photo').dom_node_actual().hasAttribute('draggable'), false);
+            const transfer = { getData: (kind) => kind === 'text/plain' ? 'Photo' : '' };
+            $mol_assert_equal(layers.row_adopt(transfer), null);
         },
         'a row dropped on the upper half of another lands before it'($) {
             const { app, drag } = layers_stage($);
