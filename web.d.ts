@@ -45478,6 +45478,7 @@ declare namespace $ {
 		inside( ): boolean
 		world_center( ): readonly(number)[]
 		free_spot( ): readonly(number)[]
+		key_field( id: any): boolean
 		part_size( id: any): any
 		copy_spot( id: any): any
 		camera_fit( next?: any ): any
@@ -55367,6 +55368,7 @@ declare namespace $ {
 		ghost_left( ): string
 		ghost_top( ): string
 		ghost_title( ): string
+		chrome_click( next?: any ): any
 		doc_src( ): string
 		doc_css( ): string
 		spots( next?: Record<string, any> ): Record<string, any>
@@ -55418,6 +55420,9 @@ declare namespace $ {
 		Stall_pack( ): $mol_button_minor
 		Stall_reload( ): $mol_button_minor
 		Ghost( ): $mol_view
+		event( ): ({ 
+			click( next?: ReturnType< $bog_vmap_app['chrome_click'] > ): ReturnType< $bog_vmap_app['chrome_click'] >,
+		})  & ReturnType< $mol_page['event'] >
 	}
 	
 }
@@ -55608,11 +55613,12 @@ declare namespace $.$$ {
         root_title_note(): string;
         hotkeys(): $mol_dom_listener[];
         code_undo(event: KeyboardEvent): boolean;
-        typing(event: KeyboardEvent): boolean;
+        typing(event: Event): boolean;
         columns_key(event: KeyboardEvent): boolean;
         key_press(event?: KeyboardEvent): void;
         key_release(event?: KeyboardEvent): void;
         key_lost(): void;
+        chrome_click(event?: MouseEvent): null;
         auto(): any[];
     }
 }

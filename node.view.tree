@@ -1284,6 +1284,7 @@ $bog_vmap_app_pane $mol_view
 	inside false
 	world_center /number
 	free_spot /number
+	key_field* false
 	part_size* null
 	copy_spot* null
 	camera_fit? null
@@ -1978,6 +1979,9 @@ $bog_vmap_app $mol_page
 			top <= ghost_top \0px
 		sub /
 			<= ghost_title \
+	event *
+		^
+		click? <=> chrome_click? null
 
 $mol_image $mol_view
 	dom_name \img

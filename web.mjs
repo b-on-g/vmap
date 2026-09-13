@@ -34349,6 +34349,9 @@ var $;
 		free_spot(){
 			return [];
 		}
+		key_field(id){
+			return false;
+		}
 		part_size(id){
 			return null;
 		}
@@ -40748,6 +40751,10 @@ var $;
 		ghost_title(){
 			return "";
 		}
+		chrome_click(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		doc_src(){
 			return "";
 		}
@@ -41018,6 +41025,9 @@ var $;
 			(obj.sub) = () => ([(this.ghost_title())]);
 			return obj;
 		}
+		event(){
+			return {...(super.event()), "click": (next) => (this.chrome_click(next))};
+		}
 	};
 	($mol_mem(($.$bog_vmap_app.prototype), "Theme"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Main"));
@@ -41066,6 +41076,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Idle_note"));
 	($mol_mem(($.$bog_vmap_app.prototype), "pack_default"));
 	($mol_mem(($.$bog_vmap_app.prototype), "scene_restart"));
+	($mol_mem(($.$bog_vmap_app.prototype), "chrome_click"));
 	($mol_mem(($.$bog_vmap_app.prototype), "spots"));
 	($mol_mem(($.$bog_vmap_app.prototype), "selected"));
 	($mol_mem(($.$bog_vmap_app.prototype), "picked"));
@@ -42370,10 +42381,7 @@ var $;
                 return true;
             }
             typing(event) {
-                const target = event.target;
-                if (target?.isContentEditable)
-                    return true;
-                return Boolean(target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
+                return this.Pane().key_field(event.target);
             }
             columns_key(event) {
                 if (event.code !== 'Backslash' || !event.shiftKey)
@@ -42403,6 +42411,23 @@ var $;
             }
             key_lost() {
                 this.Pane().grip(false);
+            }
+            chrome_click(event) {
+                if (!event?.detail)
+                    return null;
+                if (this.typing(event))
+                    return null;
+                const control = event.target?.closest('[mol_button], a[href]');
+                if (!control || control.closest('[mol_pop]'))
+                    return null;
+                const active = this.$.$mol_dom_context.document.activeElement;
+                if (!active || !control.contains(active))
+                    return null;
+                active.blur();
+                const selection = this.$.$mol_view_selection;
+                if (control.contains(selection.focused()[0] ?? null))
+                    selection.focused([], 'notify');
+                return null;
             }
             auto() {
                 return [

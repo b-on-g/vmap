@@ -18084,6 +18084,61 @@ var $;
             $mol_assert_equal(stage.app.selection_alive(), false);
             $mol_assert_ok(stage.text().includes('Выберите узел на холсте'));
         },
+        'a mouse click takes the focus off the button, so Enter does not press it again'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const dom = $.$mol_dom_context;
+            const pane = stage.app.Pane();
+            const hand = stage.root.querySelector('[bog_vmap_app_tool_hand]');
+            hand.focus();
+            hand.dispatchEvent(new dom.MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }));
+            stage.redraw();
+            $mol_assert_equal(pane.tool(), 'hand');
+            $mol_assert_equal(dom.document.activeElement, dom.document.body);
+            dom.document.activeElement.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true, cancelable: true }));
+            stage.redraw();
+            $mol_assert_equal(pane.tool(), 'hand');
+        },
+        async 'a button that hands the focus on keeps the hand-off after the click'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const dom = $.$mol_dom_context;
+            const pane = stage.app.Pane();
+            const name = stage.root.querySelector('[bog_vmap_app_root_name]');
+            const zoom = stage.root.querySelector('[bog_vmap_app_zoom_in]');
+            zoom.addEventListener('click', () => name.focus());
+            zoom.focus();
+            zoom.dispatchEvent(new dom.MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }));
+            $mol_assert_equal(dom.document.activeElement, name);
+            stage.drop(`${d}flow_calc`, stage.client([200, 150]));
+            pane.entered('Calc');
+            stage.redraw();
+            $mol_assert_equal(pane.inside(), true);
+            const hand = stage.root.querySelector('[bog_vmap_app_tool_hand]');
+            hand.focus();
+            hand.dispatchEvent(new dom.MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }));
+            await new Promise(done => setTimeout(done));
+            $mol_assert_equal(pane.inside(), false);
+            $mol_assert_equal(dom.document.activeElement, pane.dom_node());
+        },
+        'a click from the keyboard, on a field or inside a popup leaves the focus where it was'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const dom = $.$mol_dom_context;
+            const click = (el, detail) => {
+                el.focus();
+                el.dispatchEvent(new dom.MouseEvent('click', { bubbles: true, cancelable: true, detail }));
+                return dom.document.activeElement;
+            };
+            const hand = stage.root.querySelector('[bog_vmap_app_tool_hand]');
+            $mol_assert_equal(click(hand, 0), hand);
+            stage.assets();
+            const files = stage.root.querySelector('[bog_vmap_app_shelf_import_open_native]');
+            $mol_assert_ok(files.closest('[mol_button]'));
+            $mol_assert_equal(click(files, 1), files);
+            stage.app.Shelf().filter('блок');
+            stage.redraw();
+            const clear = stage.root.querySelector('[bog_vmap_app_shelf_filter_clear]');
+            $mol_assert_ok(clear.closest('[mol_pop]'));
+            $mol_assert_equal(click(clear, 1), clear);
+        },
         'a click puts a free part beside what covers the middle, never inside it'($) {
             const stage = $bog_vmap_app_flow_stage($);
             const dom = $.$mol_dom_context;
