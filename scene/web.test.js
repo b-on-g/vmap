@@ -7472,6 +7472,145 @@ var $;
             $mol_assert_equal(node.property('title').next(), true);
         },
     });
+    const field_src = [
+        `${d}bog_vmap_lang_test_field ${d}mol_view`,
+        `	Amount ${d}bog_vmap_lang_test_number`,
+        `	Total ${d}mol_view`,
+        `	sub /`,
+        `		<= Amount`,
+        `		<= Total`,
+        ``,
+    ].join('\n');
+    const num = (text) => $mol_tree2.struct(text);
+    const count = (text, line) => text.split('\n').filter(one => one.trim() === line).length;
+    $mol_test({
+        'a value of a writable port of a part is a cell of the root, not a constant'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'value?', num('6000000'));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), 'amount_value');
+            $mol_assert_equal(node.prop_decl('amount_value').toString(), 'amount_value? 6000000\n');
+            $mol_assert_equal(node.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
+            $mol_assert_equal(node.cell_value('Amount', 'value?').type, '6000000');
+            const js = js_of($, node);
+            $mol_assert_equal(js.includes('(obj.value) = (next) => ((this.amount_value(next)))'), true);
+            $mol_assert_equal(js.includes('(obj.value) = (next) => (6000000)'), false);
+        },
+        'a second value edits the cell where it stands and declares it once'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'value?', num('6000000'));
+            node.cell_value('Amount', 'value?', num('7000000'));
+            const source = node.source();
+            $mol_assert_equal(count(source, 'amount_value? 7000000'), 1);
+            $mol_assert_equal(source.includes('6000000'), false);
+            $mol_assert_equal(source.includes('amount_value_2'), false);
+            $mol_assert_equal(node.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
+            $mol_assert_like(node.prop_names().filter(name => name.startsWith('amount')), ['amount_value']);
+        },
+        'a constant left in a writable port gives way to the cell on the next edit'($) {
+            const node = doc(field_src.replace(`Amount ${d}bog_vmap_lang_test_number`, `Amount ${d}bog_vmap_lang_test_number value? 6000000`));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), '');
+            $mol_assert_equal(node.cell_value('Amount', 'value?'), null);
+            node.cell_value('Amount', 'value?', num('5000000'));
+            $mol_assert_equal(node.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
+            $mol_assert_equal(node.cell_value('Amount', 'value?').type, '5000000');
+            $mol_assert_equal(node.source().includes('6000000'), false);
+        },
+        'a hand written binding is read and edited through the cell it names'($) {
+            const node = doc(field_src
+                .replace(`	Amount ${d}bog_vmap_lang_test_number`, `	amount? 5\n	Amount ${d}bog_vmap_lang_test_number value? <=> amount?`));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), 'amount');
+            $mol_assert_equal(node.cell_value('Amount', 'value?').type, '5');
+            node.cell_value('Amount', 'value?', num('6'));
+            $mol_assert_equal(node.prop_decl('amount').toString(), 'amount? 6\n');
+            $mol_assert_equal(node.prop_names().includes('amount_value'), false);
+        },
+        'a port fed by a wire is not a cell and a value does not unplug it'($) {
+            const node = doc(field_src);
+            node.link_add({ from: 'Amount', from_prop: 'value', to: 'Total', to_prop: 'title', bidi: true });
+            const before = node.source();
+            $mol_assert_equal(node.cell_of('Total', 'title'), '');
+            $mol_assert_equal(node.cell_value('Total', 'title?'), null);
+            $mol_assert_fail(() => node.cell_value('Total', 'title?', $mol_tree2.data('Hi')), Error);
+            $mol_assert_equal(node.source(), before);
+        },
+        'a cell takes a free name when a wire of the same port holds the obvious one'($) {
+            const node = doc(field_src);
+            node.link_add({ from: 'Amount', from_prop: 'value', to: 'Total', to_prop: 'title', bidi: true });
+            node.cell_value('Amount', 'value?', num('6000000'));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), 'amount_value_2');
+            $mol_assert_equal(node.over_tree('Total', 'title').toString(), 'title? <=> amount_value?\n');
+            $mol_assert_like(node.links().map(link => link.name), ['amount_value']);
+            const js = js_of($, node);
+            $mol_assert_equal(js.includes('this.amount_value_2(next)'), true);
+            $mol_assert_equal(js.includes('this.Amount().value(next)'), true);
+        },
+        'a cell never takes a name that something already reads'($) {
+            const node = doc(field_src.replace(`	Total ${d}mol_view`, `	Total ${d}mol_view title <= amount_value`));
+            node.cell_value('Amount', 'value?', num('1'));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), 'amount_value_2');
+        },
+        'a keyed port takes a keyed cell'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'option*?', num('false'));
+            $mol_assert_equal(node.over_tree('Amount', 'option').toString(), 'option*? <=> amount_option*?\n');
+            $mol_assert_equal(node.prop_decl('amount_option').toString(), 'amount_option*? false\n');
+            $mol_assert_equal(js_of($, node).includes('this.amount_option(id, next)'), true);
+        },
+        'a port without the sign gets no cell and nothing is written'($) {
+            const node = doc(field_src);
+            $mol_assert_fail(() => node.cell_value('Amount', 'value', num('1')), Error);
+            $mol_assert_fail(() => node.cell_value('Nope', 'value?', num('1')), Error);
+            $mol_assert_equal(node.source(), field_src);
+        },
+        'renaming a part carries the cell named after it with the value'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'value?', num('6000000'));
+            node.property('Amount').title('Sum');
+            $mol_assert_equal(node.cell_of('Sum', 'value'), 'sum_value');
+            $mol_assert_equal(node.cell_value('Sum', 'value?').type, '6000000');
+            $mol_assert_equal(node.source().includes('amount'), false);
+        },
+        'renaming a part carries a cell that had to take a numbered name'($) {
+            const node = doc(field_src);
+            node.link_add({ from: 'Amount', from_prop: 'value', to: 'Total', to_prop: 'title', bidi: true });
+            node.cell_value('Amount', 'value?', num('6000000'));
+            node.property('Amount').title('Sum');
+            $mol_assert_equal(node.cell_of('Sum', 'value'), 'sum_value');
+            $mol_assert_equal(node.cell_value('Sum', 'value?').type, '6000000');
+            $mol_assert_like(node.links().map(link => [link.from, link.name]), [['Sum', 'amount_value']]);
+        },
+        'renaming a part carries its cell onto a free name and leaves a hand named one'($) {
+            const node = doc(field_src
+                .replace(`	Total ${d}mol_view`, `	sum_value \\taken\n	amount? 5\n	Total ${d}mol_view title? <=> amount?`));
+            node.cell_value('Amount', 'value?', num('6000000'));
+            node.property('Amount').title('Sum');
+            $mol_assert_equal(node.cell_of('Sum', 'value'), 'sum_value_2');
+            $mol_assert_equal(node.prop_decl('sum_value').toString(), 'sum_value \\taken\n');
+            $mol_assert_equal(node.cell_of('Total', 'title'), 'amount');
+        },
+        'dropping the value of a port takes its cell unless another reader holds it'($) {
+            const alone = doc(field_src);
+            alone.cell_value('Amount', 'value?', num('1'));
+            alone.cell_value('Amount', 'value?', null);
+            $mol_assert_equal(alone.over_tree('Amount', 'value'), null);
+            $mol_assert_equal(alone.source().includes('amount_value'), false);
+            const shared = doc(field_src);
+            shared.cell_value('Amount', 'value?', num('1'));
+            shared.over_set('Total', 'title', $mol_tree2.struct('title', [$mol_tree2.struct('<=', [$mol_tree2.struct('amount_value')])]));
+            shared.cell_value('Amount', 'value?', null);
+            $mol_assert_equal(shared.over_tree('Amount', 'value'), null);
+            $mol_assert_equal(shared.prop_decl('amount_value').toString(), 'amount_value? 1\n');
+        },
+        'deleting a part takes the cells nobody else reads'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'value?', num('1'));
+            node.cell_value('Amount', 'hint?', $mol_tree2.data('Сумма'));
+            node.over_set('Total', 'title', $mol_tree2.struct('title', [$mol_tree2.struct('<=', [$mol_tree2.struct('amount_hint')])]));
+            node.cells_drop('Amount');
+            $mol_assert_equal(node.prop_names().includes('amount_value'), false);
+            $mol_assert_equal(node.prop_names().includes('amount_hint'), true);
+        },
+    });
 })($ || ($ = {}));
 
 ;

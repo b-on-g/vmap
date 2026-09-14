@@ -5995,6 +5995,21 @@ var $;
     function $bog_vmap_lang_quoted(text) {
         return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
+    function sign_of(sign) {
+        const parts = [...sign.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
+        return {
+            name: parts?.name ?? sign,
+            key: parts?.key ? '*' : '',
+            next: parts?.next ? '?' : '',
+        };
+    }
+    function cell_plain(value) {
+        if (!value)
+            return false;
+        if (['=', '<=', '<=>', '=>', '^'].includes(value.type))
+            return false;
+        return !$mol_view_tree2_class_match(value);
+    }
     function $bog_vmap_lang_css_rename(css, from, to) {
         if (!css || from === to)
             return css;
@@ -6208,17 +6223,29 @@ var $;
             const base = self.kids[0];
             if (!base)
                 return;
+            const moves = this.part_names().includes(name) ? this.cell_moves(name, to) : new Map();
+            const moved = (sign) => {
+                const meta = sign_of(sign);
+                const target = moves.get(meta.name);
+                return target === undefined ? null : target + meta.key + meta.next;
+            };
             const refs = (tree) => {
                 const kids = tree.kids.map(refs);
                 const head = kids[0];
                 if (head?.type === name
                     && (tree.type === '<=' || tree.type === '<=>' || tree.type === '='))
                     return tree.clone([head.struct(to, head.kids), ...kids.slice(1)]);
+                const shifted = head && (tree.type === '<=' || tree.type === '<=>') ? moved(head.type) : null;
+                if (shifted)
+                    return tree.clone([head.struct(shifted, head.kids), ...kids.slice(1)]);
                 return tree.clone(kids);
             };
             const props = base.kids.map(prop => {
                 const meta = [...prop.type.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
-                return meta?.name === name ? prop.struct(next, prop.kids) : prop;
+                if (meta?.name === name)
+                    return prop.struct(next, prop.kids);
+                const shifted = moved(prop.type);
+                return shifted ? prop.struct(shifted, prop.kids) : prop;
             });
             this.tree(self.clone([base.clone(props.map(refs))]));
         }
@@ -6373,6 +6400,114 @@ var $;
                     continue;
                 this.prop_drop(wire.name);
             }
+        }
+        ref_names(skip = '') {
+            const names = [];
+            const walk = (tree) => {
+                const head = tree.kids[0];
+                if (head && (tree.type === '<=' || tree.type === '<=>'))
+                    names.push(sign_of(head.type).name);
+                for (const kid of tree.kids)
+                    walk(kid);
+            };
+            for (const prop of this.props_tree().kids) {
+                if (skip && sign_of(prop.type).name === skip)
+                    continue;
+                walk(prop);
+            }
+            return names;
+        }
+        cell_of(part, prop) {
+            const op = this.over_tree(part, prop)?.kids[0];
+            if (op?.type !== '<=>' || !op.kids[0])
+                return '';
+            const name = sign_of(op.kids[0].type).name;
+            return cell_plain(this.prop_decl(name)?.kids[0]) ? name : '';
+        }
+        cell_base(part, prop) {
+            return `${part.toLowerCase()}_${prop}`;
+        }
+        cell_name(part, prop, taken = new Set([...this.prop_names(), ...this.ref_names()])) {
+            const base = this.cell_base(part, prop);
+            for (let i = 1;; ++i) {
+                const name = i === 1 ? base : `${base}_${i}`;
+                if (!taken.has(name))
+                    return name;
+            }
+        }
+        cell_moves(part, to) {
+            const moves = new Map();
+            const klass = this.prop_decl(part)?.kids[0];
+            if (!klass || !$mol_view_tree2_class_match(klass))
+                return moves;
+            const taken = new Set([...this.prop_names(), ...this.ref_names()]);
+            for (const over of klass.kids) {
+                const port = sign_of(over.type).name;
+                const cell = this.cell_of(part, port);
+                if (!cell || moves.has(cell))
+                    continue;
+                const base = this.cell_base(part, port);
+                const tail = cell.startsWith(base + '_') ? cell.slice(base.length + 1) : '';
+                if (cell !== base && !/^[0-9]+$/.test(tail))
+                    continue;
+                taken.delete(cell);
+                const fresh = this.cell_name(to, port, taken);
+                taken.add(fresh);
+                moves.set(cell, fresh);
+            }
+            return moves;
+        }
+        cell_value(part, sign, next) {
+            const port = sign_of(sign).name;
+            const cell = this.cell_of(part, port);
+            if (next === undefined)
+                return cell ? this.prop_decl(cell)?.kids[0] ?? null : null;
+            if (next === null)
+                this.cell_drop(part, port);
+            else if (cell)
+                this.prop_tree(cell, this.prop_decl(cell).clone([next]));
+            else
+                this.cell_bind(part, sign, next);
+            return next;
+        }
+        cell_bind(part, sign, value) {
+            const meta = sign_of(sign);
+            const port = this.$.$bog_vmap_lang_token(meta.name, 'Port');
+            if (!meta.next)
+                this.$.$mol_fail(new Error(`Port ${JSON.stringify(sign)} takes no writes, a cell behind it would never change`));
+            if (!this.part_names().includes(part))
+                this.$.$mol_fail(new Error(`Part ${JSON.stringify(part)} is not declared in ${this.name()}`));
+            const held = this.over_tree(part, port)?.kids[0];
+            if (held && !cell_plain(held))
+                this.$.$mol_fail(new Error(`Port ${JSON.stringify(port)} of ${part} is bound already, a value would unplug it`));
+            const name = this.cell_name(part, port);
+            const tail = meta.key + '?';
+            const tree = this.tree();
+            this.over_set(part, port, tree.struct(port + tail, [
+                tree.struct('<=>', [tree.struct(name + tail, [value])]),
+            ]));
+        }
+        cell_drop(part, prop) {
+            const cell = this.cell_of(part, prop);
+            this.over_set(part, prop, null);
+            if (cell)
+                this.cell_tidy(cell);
+        }
+        cells_drop(part) {
+            const klass = this.prop_decl(part)?.kids[0];
+            if (!klass || !$mol_view_tree2_class_match(klass))
+                return;
+            const cells = klass.kids.map(over => this.cell_of(part, sign_of(over.type).name));
+            const others = this.ref_names(part);
+            for (const cell of new Set(cells)) {
+                if (cell && !others.includes(cell))
+                    this.prop_drop(cell);
+            }
+        }
+        cell_tidy(cell) {
+            if (this.ref_names().includes(cell))
+                return;
+            this.prop_drop(cell);
         }
         prop_decl(name) {
             const sign = this.prop_fullname(name);
@@ -6534,6 +6669,15 @@ var $;
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "links_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "cell_bind", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "cell_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "cells_drop", null);
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "sub_open", null);
@@ -17407,6 +17551,145 @@ var $;
             node.property('value').title('title');
             $mol_assert_equal(node.source(), `${d}bog_vmap_lang_test_sign ${d}mol_view title? null\n`);
             $mol_assert_equal(node.property('title').next(), true);
+        },
+    });
+    const field_src = [
+        `${d}bog_vmap_lang_test_field ${d}mol_view`,
+        `	Amount ${d}bog_vmap_lang_test_number`,
+        `	Total ${d}mol_view`,
+        `	sub /`,
+        `		<= Amount`,
+        `		<= Total`,
+        ``,
+    ].join('\n');
+    const num = (text) => $mol_tree2.struct(text);
+    const count = (text, line) => text.split('\n').filter(one => one.trim() === line).length;
+    $mol_test({
+        'a value of a writable port of a part is a cell of the root, not a constant'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'value?', num('6000000'));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), 'amount_value');
+            $mol_assert_equal(node.prop_decl('amount_value').toString(), 'amount_value? 6000000\n');
+            $mol_assert_equal(node.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
+            $mol_assert_equal(node.cell_value('Amount', 'value?').type, '6000000');
+            const js = js_of($, node);
+            $mol_assert_equal(js.includes('(obj.value) = (next) => ((this.amount_value(next)))'), true);
+            $mol_assert_equal(js.includes('(obj.value) = (next) => (6000000)'), false);
+        },
+        'a second value edits the cell where it stands and declares it once'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'value?', num('6000000'));
+            node.cell_value('Amount', 'value?', num('7000000'));
+            const source = node.source();
+            $mol_assert_equal(count(source, 'amount_value? 7000000'), 1);
+            $mol_assert_equal(source.includes('6000000'), false);
+            $mol_assert_equal(source.includes('amount_value_2'), false);
+            $mol_assert_equal(node.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
+            $mol_assert_like(node.prop_names().filter(name => name.startsWith('amount')), ['amount_value']);
+        },
+        'a constant left in a writable port gives way to the cell on the next edit'($) {
+            const node = doc(field_src.replace(`Amount ${d}bog_vmap_lang_test_number`, `Amount ${d}bog_vmap_lang_test_number value? 6000000`));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), '');
+            $mol_assert_equal(node.cell_value('Amount', 'value?'), null);
+            node.cell_value('Amount', 'value?', num('5000000'));
+            $mol_assert_equal(node.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
+            $mol_assert_equal(node.cell_value('Amount', 'value?').type, '5000000');
+            $mol_assert_equal(node.source().includes('6000000'), false);
+        },
+        'a hand written binding is read and edited through the cell it names'($) {
+            const node = doc(field_src
+                .replace(`	Amount ${d}bog_vmap_lang_test_number`, `	amount? 5\n	Amount ${d}bog_vmap_lang_test_number value? <=> amount?`));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), 'amount');
+            $mol_assert_equal(node.cell_value('Amount', 'value?').type, '5');
+            node.cell_value('Amount', 'value?', num('6'));
+            $mol_assert_equal(node.prop_decl('amount').toString(), 'amount? 6\n');
+            $mol_assert_equal(node.prop_names().includes('amount_value'), false);
+        },
+        'a port fed by a wire is not a cell and a value does not unplug it'($) {
+            const node = doc(field_src);
+            node.link_add({ from: 'Amount', from_prop: 'value', to: 'Total', to_prop: 'title', bidi: true });
+            const before = node.source();
+            $mol_assert_equal(node.cell_of('Total', 'title'), '');
+            $mol_assert_equal(node.cell_value('Total', 'title?'), null);
+            $mol_assert_fail(() => node.cell_value('Total', 'title?', $mol_tree2.data('Hi')), Error);
+            $mol_assert_equal(node.source(), before);
+        },
+        'a cell takes a free name when a wire of the same port holds the obvious one'($) {
+            const node = doc(field_src);
+            node.link_add({ from: 'Amount', from_prop: 'value', to: 'Total', to_prop: 'title', bidi: true });
+            node.cell_value('Amount', 'value?', num('6000000'));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), 'amount_value_2');
+            $mol_assert_equal(node.over_tree('Total', 'title').toString(), 'title? <=> amount_value?\n');
+            $mol_assert_like(node.links().map(link => link.name), ['amount_value']);
+            const js = js_of($, node);
+            $mol_assert_equal(js.includes('this.amount_value_2(next)'), true);
+            $mol_assert_equal(js.includes('this.Amount().value(next)'), true);
+        },
+        'a cell never takes a name that something already reads'($) {
+            const node = doc(field_src.replace(`	Total ${d}mol_view`, `	Total ${d}mol_view title <= amount_value`));
+            node.cell_value('Amount', 'value?', num('1'));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), 'amount_value_2');
+        },
+        'a keyed port takes a keyed cell'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'option*?', num('false'));
+            $mol_assert_equal(node.over_tree('Amount', 'option').toString(), 'option*? <=> amount_option*?\n');
+            $mol_assert_equal(node.prop_decl('amount_option').toString(), 'amount_option*? false\n');
+            $mol_assert_equal(js_of($, node).includes('this.amount_option(id, next)'), true);
+        },
+        'a port without the sign gets no cell and nothing is written'($) {
+            const node = doc(field_src);
+            $mol_assert_fail(() => node.cell_value('Amount', 'value', num('1')), Error);
+            $mol_assert_fail(() => node.cell_value('Nope', 'value?', num('1')), Error);
+            $mol_assert_equal(node.source(), field_src);
+        },
+        'renaming a part carries the cell named after it with the value'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'value?', num('6000000'));
+            node.property('Amount').title('Sum');
+            $mol_assert_equal(node.cell_of('Sum', 'value'), 'sum_value');
+            $mol_assert_equal(node.cell_value('Sum', 'value?').type, '6000000');
+            $mol_assert_equal(node.source().includes('amount'), false);
+        },
+        'renaming a part carries a cell that had to take a numbered name'($) {
+            const node = doc(field_src);
+            node.link_add({ from: 'Amount', from_prop: 'value', to: 'Total', to_prop: 'title', bidi: true });
+            node.cell_value('Amount', 'value?', num('6000000'));
+            node.property('Amount').title('Sum');
+            $mol_assert_equal(node.cell_of('Sum', 'value'), 'sum_value');
+            $mol_assert_equal(node.cell_value('Sum', 'value?').type, '6000000');
+            $mol_assert_like(node.links().map(link => [link.from, link.name]), [['Sum', 'amount_value']]);
+        },
+        'renaming a part carries its cell onto a free name and leaves a hand named one'($) {
+            const node = doc(field_src
+                .replace(`	Total ${d}mol_view`, `	sum_value \\taken\n	amount? 5\n	Total ${d}mol_view title? <=> amount?`));
+            node.cell_value('Amount', 'value?', num('6000000'));
+            node.property('Amount').title('Sum');
+            $mol_assert_equal(node.cell_of('Sum', 'value'), 'sum_value_2');
+            $mol_assert_equal(node.prop_decl('sum_value').toString(), 'sum_value \\taken\n');
+            $mol_assert_equal(node.cell_of('Total', 'title'), 'amount');
+        },
+        'dropping the value of a port takes its cell unless another reader holds it'($) {
+            const alone = doc(field_src);
+            alone.cell_value('Amount', 'value?', num('1'));
+            alone.cell_value('Amount', 'value?', null);
+            $mol_assert_equal(alone.over_tree('Amount', 'value'), null);
+            $mol_assert_equal(alone.source().includes('amount_value'), false);
+            const shared = doc(field_src);
+            shared.cell_value('Amount', 'value?', num('1'));
+            shared.over_set('Total', 'title', $mol_tree2.struct('title', [$mol_tree2.struct('<=', [$mol_tree2.struct('amount_value')])]));
+            shared.cell_value('Amount', 'value?', null);
+            $mol_assert_equal(shared.over_tree('Amount', 'value'), null);
+            $mol_assert_equal(shared.prop_decl('amount_value').toString(), 'amount_value? 1\n');
+        },
+        'deleting a part takes the cells nobody else reads'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'value?', num('1'));
+            node.cell_value('Amount', 'hint?', $mol_tree2.data('Сумма'));
+            node.over_set('Total', 'title', $mol_tree2.struct('title', [$mol_tree2.struct('<=', [$mol_tree2.struct('amount_hint')])]));
+            node.cells_drop('Amount');
+            $mol_assert_equal(node.prop_names().includes('amount_value'), false);
+            $mol_assert_equal(node.prop_names().includes('amount_hint'), true);
         },
     });
 })($ || ($ = {}));

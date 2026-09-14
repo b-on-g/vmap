@@ -2781,6 +2781,16 @@ declare namespace $ {
         link_target(to: string, to_prop: string, next: $mol_tree2 | null): void;
         link_drop(to: string, to_prop: string): void;
         links_drop(node: string): void;
+        ref_names(skip?: string): string[];
+        cell_of(part: string, prop: string): string;
+        cell_base(part: string, prop: string): string;
+        cell_name(part: string, prop: string, taken?: Set<string>): string;
+        cell_moves(part: string, to: string): Map<string, string>;
+        cell_value(part: string, sign: string, next?: $mol_tree2 | null): $mol_tree2 | null;
+        cell_bind(part: string, sign: string, value: $mol_tree2): void;
+        cell_drop(part: string, prop: string): void;
+        cells_drop(part: string): void;
+        cell_tidy(cell: string): void;
         prop_decl(name: string): $mol_tree2 | null;
         sub_list(owner?: string): $mol_tree2 | null;
         sub_names(owner?: string): readonly string[] | null;
