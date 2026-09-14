@@ -1804,6 +1804,37 @@ namespace $ {
 
 		},
 
+		'a board is labelled by none of the view machinery, a part beside it by its own values'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.pane.tool( 'board' )
+			stage.tap( stage.client([ 100, 100 ]) )
+			stage.drop( calc, stage.client([ 560, 450 ]) )
+
+			$mol_assert_like( stage.pane.parts_visible(), [ 'Page', 'Calc' ] )
+			$mol_assert_like( stage.pane.part_ports( 'Page' ).map( port => port.name ), [ 'dom_name', 'sub', 'title' ] )
+
+			const asked = stage.scene.last( 'values_want' )!.names as readonly string[]
+
+			$mol_assert_like( asked.filter( name => name.startsWith( 'Calc.' ) ), [ 'Calc.result', 'Calc.op' ] )
+			$mol_assert_like( asked.filter( name => name === 'Page.dom_name' || name === 'Page.sub' ), [] )
+
+			stage.scene.values({
+				'Calc.result': '42',
+				'Calc.op': 'plus',
+				'Page.dom_name': 'mol_view',
+				'Page.sub': '[{"dom_node()":"doc.Page()"}]',
+			})
+
+			const layer = stage.pane.dom_node().querySelector( '[bog_vmap_app_pane_values]' )
+			const drawn = [ ... layer?.querySelectorAll( '[bog_vmap_app_pane_label]' ) ?? [] ]
+				.map( label => label.textContent )
+
+			$mol_assert_like( stage.pane.label_lines( 'Page' ), [] )
+			$mol_assert_like( drawn, [ 'result: 42op: plus' ] )
+
+		},
+
 		'every layer the tree puts in sub is returned by the override of sub'( $ ) {
 			const { pane } = pane_make( $ )
 

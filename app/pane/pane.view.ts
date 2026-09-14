@@ -5,6 +5,8 @@ namespace $.$$ {
 
 	const scene_root = '$' + 'bog_vmap_scene'
 
+	const view_machinery = new Set([ 'dom_name', 'sub', 'attr', 'style', 'event', 'field' ])
+
 	export type $bog_vmap_app_pane_link_new =
 		Pick< $bog_vmap_lang_link, 'from' | 'from_prop' | 'to' | 'to_prop' >
 		& { readonly bidi?: boolean }
@@ -1747,7 +1749,9 @@ namespace $.$$ {
 				this.wires().filter( link => link.to === name ).map( link => link.to_prop )
 			)
 
-			return this.part_ports( name ).filter( port => port.own && !fed.has( port.name ) )
+			return this.part_ports( name ).filter(
+				port => port.own && !fed.has( port.name ) && !view_machinery.has( port.name )
+			)
 		}
 
 		part_shown( name: string ) {
