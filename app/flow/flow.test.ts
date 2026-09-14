@@ -146,6 +146,14 @@ namespace $ {
 		}
 		$.$mol_state_local = $mol_state_local_flow
 
+		class $mol_media_flow extends $mol_media {
+			static override match( query: string, next?: boolean ) {
+				if( query === '(prefers-color-scheme: light)' ) return false
+				return super.match( query, next )
+			}
+		}
+		$.$mol_media = $mol_media_flow
+
 		class $mol_fetch_flow extends $mol_fetch {
 			static override text( input: RequestInfo ) {
 				const uri = String( input )
@@ -161,6 +169,7 @@ namespace $ {
 		if( !over.store ) store.doc_add( 'Сцена 1' )
 
 		const app = $bog_vmap_app.make({ $, store: ()=> store }) as $$.$bog_vmap_app
+		app.page_uri = ()=> 'http://localhost/'
 		$bog_vmap_app_flow_last = app
 
 		const posted = [] as $bog_vmap_app_flow_sent[]

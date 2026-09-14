@@ -63,8 +63,8 @@ namespace $.$$ {
 
 		override auto() {
 			return [
-				... super.auto(),
 				this.listeners(),
+				... super.auto(),
 			]
 		}
 
