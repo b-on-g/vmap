@@ -30885,7 +30885,7 @@ var $;
                     + (router ? router_tree(router, entry) : ''),
             },
             ...body.includes('export class') ? [{ name: `${name}.view.ts`, text: body }] : [],
-            ...style ? [{ name: `${name}.view.css`, text: style }] : [],
+            { name: `${name}.view.css`, text: root_css(router || entry) + (style ? '\n' + style : '') },
             { name: `${name}.meta.tree`, text: 'include \\/mol/theme/auto\n' },
             { name: 'index.html', text: index_html(router || entry) },
             { name: 'README.md', text: readme_md(path, name) },
@@ -30985,6 +30985,15 @@ var $;
             out.push(css + '\n');
         }
         return out.join('\n');
+    }
+    function root_css(root) {
+        return [
+            `:where([mol_view_root])[${root.slice(1)}] {`,
+            '\toverflow: auto;',
+            '\talign-items: flex-start;',
+            '}',
+            '',
+        ].join('\n');
     }
     function index_html(root) {
         return [
@@ -35592,6 +35601,7 @@ var $;
         const grab_slack = 8;
         const click_slack = 4;
         const scene_root = '$' + 'bog_vmap_scene';
+        const view_machinery = new Set(['dom_name', 'sub', 'attr', 'style', 'event', 'field']);
         class $bog_vmap_app_pane extends $.$bog_vmap_app_pane {
             doc_js() {
                 return {};
@@ -36909,7 +36919,7 @@ var $;
             }
             part_outs(name) {
                 const fed = new Set(this.wires().filter(link => link.to === name).map(link => link.to_prop));
-                return this.part_ports(name).filter(port => port.own && !fed.has(port.name));
+                return this.part_ports(name).filter(port => port.own && !fed.has(port.name) && !view_machinery.has(port.name));
             }
             part_shown(name) {
                 const box = this.part_box(name);

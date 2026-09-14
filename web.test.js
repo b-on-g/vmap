@@ -14205,6 +14205,28 @@ var $;
             $mol_assert_equal(stage.pane.value_labels().length, 2);
             $mol_assert_like(drawn, ['marker: дом', 'result: 42op: plus']);
         },
+        'a board is labelled by none of the view machinery, a part beside it by its own values'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.pane.tool('board');
+            stage.tap(stage.client([100, 100]));
+            stage.drop(calc, stage.client([560, 450]));
+            $mol_assert_like(stage.pane.parts_visible(), ['Page', 'Calc']);
+            $mol_assert_like(stage.pane.part_ports('Page').map(port => port.name), ['dom_name', 'sub', 'title']);
+            const asked = stage.scene.last('values_want').names;
+            $mol_assert_like(asked.filter(name => name.startsWith('Calc.')), ['Calc.result', 'Calc.op']);
+            $mol_assert_like(asked.filter(name => name === 'Page.dom_name' || name === 'Page.sub'), []);
+            stage.scene.values({
+                'Calc.result': '42',
+                'Calc.op': 'plus',
+                'Page.dom_name': 'mol_view',
+                'Page.sub': '[{"dom_node()":"doc.Page()"}]',
+            });
+            const layer = stage.pane.dom_node().querySelector('[bog_vmap_app_pane_values]');
+            const drawn = [...layer?.querySelectorAll('[bog_vmap_app_pane_label]') ?? []]
+                .map(label => label.textContent);
+            $mol_assert_like(stage.pane.label_lines('Page'), []);
+            $mol_assert_like(drawn, ['result: 42op: plus']);
+        },
         'every layer the tree puts in sub is returned by the override of sub'($) {
             const { pane } = pane_make($);
             const declared = Object.getPrototypeOf($$.$bog_vmap_app_pane.prototype).sub.call(pane);
@@ -17938,6 +17960,9 @@ var $;
         return module.files.find(file => file.name.endsWith(suffix))?.text ?? '';
     }
     const theme = `\tplugins /\n\t\t<= Theme ${d}mol_theme_auto\n`;
+    function root_rule(attr) {
+        return `:where([mol_view_root])[${attr}] {\n\toverflow: auto;\n\talign-items: flex-start;\n}\n`;
+    }
     $mol_test({
         'module path comes from the class names'($) {
             $mol_assert_equal($.$bog_vmap_app_export_path([`${d}bog_site_page`, `${d}bog_site_hero`]), 'bog/site');
@@ -18003,19 +18028,37 @@ var $;
             const ts = file_of(module, '.view.ts');
             $mol_assert_equal(ts.includes(`;( ${d}mol_mem( ${d}bog_site_hero.prototype, "count" ) )`), true);
         },
-        'a class without a body gets no file of its own at all'($) {
+        'a class without a body gets no code file, and the stylesheet holds only the root rule'($) {
             const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
             $mol_assert_equal(module.files.some(file => file.name.endsWith('.view.ts')), false);
-            $mol_assert_equal(module.files.some(file => file.name.endsWith('.view.css')), false);
+            $mol_assert_equal(file_of(module, '.view.css'), root_rule('bog_site_page'));
         },
-        'a stylesheet is a stylesheet, verbatim'($) {
+        'a stylesheet is a stylesheet, verbatim, after the root rule'($) {
             const css = '[bog_site_hero]{ content: "` ' + '${x}' + '" }';
             const module = $.$bog_vmap_app_export_build([
                 { source: page },
                 { source: hero, css },
             ]);
-            $mol_assert_equal(file_of(module, '.view.css'), css + '\n');
+            $mol_assert_equal(file_of(module, '.view.css'), root_rule('bog_site_page') + '\n' + css + '\n');
             $mol_assert_equal(module.files.some(file => file.name.endsWith('.view.css.ts')), false);
+        },
+        'the exported root scrolls by itself and leaves the artboard its own height'($) {
+            const rule_of = (module) => {
+                const css = file_of(module, '.view.css');
+                return css.slice(0, css.indexOf('}') + 1);
+            };
+            const routed = $.$bog_vmap_app_export_build([{ source: pages }, { source: hero }]);
+            const single = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }]);
+            for (const module of [routed, single]) {
+                const rule = rule_of(module);
+                const attr = module.root.slice(1);
+                $mol_assert_ok(rule.startsWith(`:where([mol_view_root])[${attr}] {`));
+                $mol_assert_ok(rule.includes('\toverflow: auto;\n'));
+                $mol_assert_ok(rule.includes('\talign-items: flex-start;\n'));
+                $mol_assert_ok(file_of(module, 'index.html').includes(`mol_view_root="${module.root}"`));
+            }
+            $mol_assert_equal(routed.root, `${d}bog_site_app`);
+            $mol_assert_equal(single.root, `${d}bog_site_page`);
         },
         'index.html instantiates the root class'($) {
             const module = $.$bog_vmap_app_export_build([{ source: page }, { source: hero }], `${d}bog_site_page`);
@@ -18083,6 +18126,7 @@ var $;
             $mol_assert_equal(module.name, 'site');
             $mol_assert_like(module.files.map(file => file.name), [
                 'site.view.tree',
+                'site.view.css',
                 'site.meta.tree',
                 'index.html',
                 'README.md',
@@ -18167,6 +18211,7 @@ var $;
             $mol_assert_equal(module.root, `${d}bog_site_page`);
             $mol_assert_like(module.files.map(file => file.name), [
                 'page.view.tree',
+                'page.view.css',
                 'page.meta.tree',
                 'index.html',
                 'README.md',
@@ -18734,7 +18779,7 @@ var $;
             $mol_assert_equal(app.export_ready(), true);
             $mol_assert_equal(module.path, 'my/site/page');
             $mol_assert_equal(module.name, 'page');
-            $mol_assert_equal(module.files.map(file => file.name).join(' '), 'page.view.tree page.meta.tree index.html README.md'
+            $mol_assert_equal(module.files.map(file => file.name).join(' '), 'page.view.tree page.view.css page.meta.tree index.html README.md'
                 + ' .gitattributes .gitignore .github/workflows/deploy.yml');
             $mol_assert_equal(module.files[0].text, app.doc_source() + `\tplugins /\n\t\t<= Theme ${d}mol_theme_auto\n`);
             $mol_assert_equal(app.export_title(), 'Скачать my/site/page');
@@ -18985,6 +19030,7 @@ var $;
             $mol_assert_equal(module.path, 'my/site/page');
             $mol_assert_like(module.files.map(file => file.name), [
                 'page.view.tree',
+                'page.view.css',
                 'page.meta.tree',
                 'index.html',
                 'README.md',
