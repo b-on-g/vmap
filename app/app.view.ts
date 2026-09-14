@@ -179,7 +179,7 @@ namespace $.$$ {
 			return this.picked_at( key, next )
 		}
 
-		doc_key() {
+		override doc_key() {
 			return this.store().doc_current()?.link().str ?? ''
 		}
 

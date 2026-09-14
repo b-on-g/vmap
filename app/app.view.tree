@@ -182,6 +182,7 @@ $bog_vmap_app $mol_page
 	Layers $bog_vmap_app_layers
 		source <= doc_src
 		root <= doc_root
+		doc_key <= doc_key \
 		picked? <=> picked?
 		node_title? <=> node_title?
 		node_title_note <= node_title_note

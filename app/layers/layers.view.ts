@@ -117,15 +117,20 @@ namespace $.$$ {
 		}
 
 		expanded_at( name: string, next?: boolean ) {
-			const open: flags = this.$.$mol_state_session.value< flags | null >( 'vmap_layers_open' ) ?? {}
+			const key = this.fold_key( 'open' )
+			const open: flags = this.$.$mol_state_session.value< flags | null >( key ) ?? {}
 			if( next === undefined ) return open[ name ] ?? true
 
-			this.$.$mol_state_session.value( 'vmap_layers_open', { ... open, [ name ]: next } )
+			this.$.$mol_state_session.value( key, { ... open, [ name ]: next } )
 			return next
 		}
 
 		override outside_expanded( next?: boolean ) {
-			return this.$.$mol_state_session.value( 'vmap_layers_outside', next ) ?? super.outside_expanded()
+			return this.$.$mol_state_session.value( this.fold_key( 'outside' ), next ) ?? super.outside_expanded()
+		}
+
+		fold_key( kind: string ) {
+			return `vmap_layers_${ kind } ${ this.doc_key() }`
 		}
 
 		override row_name( name: string ) {
