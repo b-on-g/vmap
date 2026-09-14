@@ -27994,6 +27994,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		node_show(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		zoom_out(next){
 			if(next !== undefined) return next;
 			return null;
@@ -28150,6 +28154,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "entered"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_fit"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_reset"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_show"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "zoom_out"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "zoom_in"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_restart"));
@@ -28495,6 +28500,12 @@ var $;
             }
             picked_fit() {
                 return this.fit(this.picked().flatMap(name => this.part_size(name) ?? []), this.zoom_max());
+            }
+            node_show(name) {
+                const box = name ? this.part_size(name) : null;
+                if (box)
+                    this.fit([box], this.camera_zoom());
+                return null;
             }
             fit(boxes, limit) {
                 const box = this.box_union(boxes);
@@ -29997,6 +30008,9 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "picked_fit", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "node_show", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "camera_reset", null);
@@ -31912,6 +31926,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		node_show(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		editable(){
 			return true;
 		}
@@ -32022,6 +32040,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "picked"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "node_title"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "tree_move"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "node_show"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "Doc"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "Note"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "Outside"));
@@ -32220,6 +32239,8 @@ var $;
                 else {
                     this.picked([name]);
                 }
+                if (this.picked().includes(name))
+                    this.node_show(name);
                 return null;
             }
             editing(next) {
@@ -34351,6 +34372,9 @@ var $;
 		tool_hand(next){
 			return (this.Pane().tool_hand(next));
 		}
+		node_show(next){
+			return (this.Pane().node_show(next));
+		}
 		Pane(){
 			const obj = new this.$.$bog_vmap_app_pane();
 			(obj.editable) = () => ((this.editable()));
@@ -34638,6 +34662,7 @@ var $;
 			(obj.node_title) = (next) => ((this.node_title(next)));
 			(obj.node_title_note) = () => ((this.node_title_note()));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
+			(obj.node_show) = (next) => ((this.node_show(next)));
 			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}

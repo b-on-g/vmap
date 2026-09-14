@@ -27985,6 +27985,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		node_show(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		zoom_out(next){
 			if(next !== undefined) return next;
 			return null;
@@ -28141,6 +28145,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "entered"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_fit"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_reset"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_show"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "zoom_out"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "zoom_in"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_restart"));
@@ -28486,6 +28491,12 @@ var $;
             }
             picked_fit() {
                 return this.fit(this.picked().flatMap(name => this.part_size(name) ?? []), this.zoom_max());
+            }
+            node_show(name) {
+                const box = name ? this.part_size(name) : null;
+                if (box)
+                    this.fit([box], this.camera_zoom());
+                return null;
             }
             fit(boxes, limit) {
                 const box = this.box_union(boxes);
@@ -29988,6 +29999,9 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "picked_fit", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "node_show", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "camera_reset", null);
@@ -31903,6 +31917,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		node_show(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		editable(){
 			return true;
 		}
@@ -32013,6 +32031,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "picked"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "node_title"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "tree_move"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "node_show"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "Doc"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "Note"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "Outside"));
@@ -32211,6 +32230,8 @@ var $;
                 else {
                     this.picked([name]);
                 }
+                if (this.picked().includes(name))
+                    this.node_show(name);
                 return null;
             }
             editing(next) {
@@ -34342,6 +34363,9 @@ var $;
 		tool_hand(next){
 			return (this.Pane().tool_hand(next));
 		}
+		node_show(next){
+			return (this.Pane().node_show(next));
+		}
 		Pane(){
 			const obj = new this.$.$bog_vmap_app_pane();
 			(obj.editable) = () => ((this.editable()));
@@ -34629,6 +34653,7 @@ var $;
 			(obj.node_title) = (next) => ((this.node_title(next)));
 			(obj.node_title_note) = () => ((this.node_title_note()));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
+			(obj.node_show) = (next) => ((this.node_show(next)));
 			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
@@ -57722,6 +57747,51 @@ var $;
             $mol_assert_equal(lit('Page'), false);
             mouse(line('Page').querySelector('[bog_vmap_app_layers_expand]'), 'click');
             $mol_assert_equal(lit('Page'), true);
+        },
+        'a click on a row brings its node to the middle of the canvas at the same zoom'($) {
+            const { stage, pick, mouse } = layers_stage($);
+            const rect = $bog_vmap_app_flow_rect;
+            stage.scene.flush();
+            stage.pane.camera_zoom(2);
+            stage.pane.camera_shift(new $mol_vector_2d(40, 30));
+            mouse(pick('Photo'), 'click');
+            const box = stage.pane.part_box('Photo');
+            $mol_assert_equal(stage.pane.camera_zoom(), 2);
+            $mol_assert_equal(box.left + box.width / 2, rect.width / 2);
+            $mol_assert_equal(box.top + box.height / 2, rect.height / 2);
+        },
+        'a click on a row of a node larger than the canvas zooms out just to fit it'($) {
+            const { stage, pick, mouse } = layers_stage($);
+            const rect = $bog_vmap_app_flow_rect;
+            const gap = stage.pane.fit_gap();
+            stage.scene.flush();
+            stage.pane.camera_zoom(3);
+            mouse(pick('Page'), 'click');
+            const box = stage.pane.part_box('Page');
+            $mol_assert_equal(Math.round(box.width), rect.width - gap * 2);
+            $mol_assert_ok(box.height <= rect.height - gap * 2);
+            $mol_assert_equal(Math.round(box.left + box.width / 2), rect.width / 2);
+            $mol_assert_equal(Math.round(box.top + box.height / 2), rect.height / 2);
+        },
+        'a row taken out of the pick with a modifier leaves the camera where it was'($) {
+            const { app, stage, pick, mouse } = layers_stage($);
+            stage.scene.flush();
+            mouse(pick('Photo'), 'click');
+            stage.pane.camera_shift(new $mol_vector_2d(40, 30));
+            mouse(pick('Photo'), 'click', { metaKey: true });
+            $mol_assert_like(app.picked(), []);
+            $mol_assert_like([...stage.pane.camera_shift()], [40, 30]);
+        },
+        'a pick on the canvas leaves the camera where it was'($) {
+            const { app, stage } = layers_stage($);
+            stage.scene.flush();
+            stage.pane.camera_zoom(1);
+            stage.pane.camera_shift(new $mol_vector_2d(-1300, 100));
+            stage.redraw();
+            stage.tap(stage.part_center('Photo'));
+            $mol_assert_equal(app.selected(), 'Photo');
+            $mol_assert_equal(stage.pane.camera_zoom(), 1);
+            $mol_assert_like([...stage.pane.camera_shift()], [-1300, 100]);
         },
         'a double click renames the node the way the design tab does'($) {
             const { app, pick, mouse, field, type, blur, outline } = layers_stage($);
