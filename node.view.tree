@@ -1680,6 +1680,7 @@ $mol_icon_shape_outline $mol_icon path \M11,13.5V21.5H3V13.5H11M9,15.5H5V19.5H9V
 $bog_vmap_app_layers $mol_scroll
 	source \
 	root \
+	doc_key \
 	picked? /string
 	node_title? \
 	node_title_note \
@@ -2094,6 +2095,7 @@ $bog_vmap_app $mol_page
 	Layers $bog_vmap_app_layers
 		source <= doc_src
 		root <= doc_root
+		doc_key <= doc_key \
 		picked? <=> picked?
 		node_title? <=> node_title?
 		node_title_note <= node_title_note

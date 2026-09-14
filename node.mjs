@@ -31911,6 +31911,9 @@ var $;
 		root(){
 			return "";
 		}
+		doc_key(){
+			return "";
+		}
 		picked(next){
 			if(next !== undefined) return next;
 			return [];
@@ -32164,14 +32167,18 @@ var $;
                 return this.expanded_at(name, next);
             }
             expanded_at(name, next) {
-                const open = this.$.$mol_state_session.value('vmap_layers_open') ?? {};
+                const key = this.fold_key('open');
+                const open = this.$.$mol_state_session.value(key) ?? {};
                 if (next === undefined)
                     return open[name] ?? true;
-                this.$.$mol_state_session.value('vmap_layers_open', { ...open, [name]: next });
+                this.$.$mol_state_session.value(key, { ...open, [name]: next });
                 return next;
             }
             outside_expanded(next) {
-                return this.$.$mol_state_session.value('vmap_layers_outside', next) ?? super.outside_expanded();
+                return this.$.$mol_state_session.value(this.fold_key('outside'), next) ?? super.outside_expanded();
+            }
+            fold_key(kind) {
+                return `vmap_layers_${kind} ${this.doc_key()}`;
             }
             row_name(name) {
                 return name;
@@ -34410,6 +34417,9 @@ var $;
 		notes(){
 			return [];
 		}
+		doc_key(){
+			return "";
+		}
 		lib_classes(){
 			return [];
 		}
@@ -34658,6 +34668,7 @@ var $;
 			const obj = new this.$.$bog_vmap_app_layers();
 			(obj.source) = () => ((this.doc_src()));
 			(obj.root) = () => ((this.doc_root()));
+			(obj.doc_key) = () => ((this.doc_key()));
 			(obj.picked) = (next) => ((this.picked(next)));
 			(obj.node_title) = (next) => ((this.node_title(next)));
 			(obj.node_title_note) = () => ((this.node_title_note()));

@@ -31902,6 +31902,9 @@ var $;
 		root(){
 			return "";
 		}
+		doc_key(){
+			return "";
+		}
 		picked(next){
 			if(next !== undefined) return next;
 			return [];
@@ -32155,14 +32158,18 @@ var $;
                 return this.expanded_at(name, next);
             }
             expanded_at(name, next) {
-                const open = this.$.$mol_state_session.value('vmap_layers_open') ?? {};
+                const key = this.fold_key('open');
+                const open = this.$.$mol_state_session.value(key) ?? {};
                 if (next === undefined)
                     return open[name] ?? true;
-                this.$.$mol_state_session.value('vmap_layers_open', { ...open, [name]: next });
+                this.$.$mol_state_session.value(key, { ...open, [name]: next });
                 return next;
             }
             outside_expanded(next) {
-                return this.$.$mol_state_session.value('vmap_layers_outside', next) ?? super.outside_expanded();
+                return this.$.$mol_state_session.value(this.fold_key('outside'), next) ?? super.outside_expanded();
+            }
+            fold_key(kind) {
+                return `vmap_layers_${kind} ${this.doc_key()}`;
             }
             row_name(name) {
                 return name;
@@ -34401,6 +34408,9 @@ var $;
 		notes(){
 			return [];
 		}
+		doc_key(){
+			return "";
+		}
 		lib_classes(){
 			return [];
 		}
@@ -34649,6 +34659,7 @@ var $;
 			const obj = new this.$.$bog_vmap_app_layers();
 			(obj.source) = () => ((this.doc_src()));
 			(obj.root) = () => ((this.doc_root()));
+			(obj.doc_key) = () => ((this.doc_key()));
 			(obj.picked) = (next) => ((this.picked(next)));
 			(obj.node_title) = (next) => ((this.node_title(next)));
 			(obj.node_title_note) = () => ((this.node_title_note()));
@@ -57587,6 +57598,137 @@ var $;
         `\t\t<= Page`,
         ``,
     ].join('\n');
+    const mortgage = [
+        `${d}bog_mortgage ${d}mol_view`,
+        `\tmonths_2_op? \\mul`,
+        `\tmonths_2_right? 12`,
+        `\tmonthly_2_op? \\div`,
+        `\tmonthly_2_right? 1200`,
+        `\tyears_2_value? 20`,
+        `\trate_2_value? 6`,
+        `\tend_op? \\add`,
+        `\tyear_auto? true`,
+        `\tyear_code? \\return new Date().getFullYear()`,
+        `\tmonths_op? \\mul`,
+        `\tmonths_right? 12`,
+        `\tmonthly_op? \\div`,
+        `\tmonthly_right? 1200`,
+        `\tyears_value? 20`,
+        `\trate_value? 18`,
+        `\tamount_value? 6000000`,
+        `\tsub /`,
+        `\t\t<= Loan`,
+        `\t\t<= Compare`,
+        `\tLoan ${d}mol_view`,
+        `\t\tstyle *`,
+        `\t\t\twidth \\480px`,
+        `\t\t\tminHeight \\720px`,
+        `\t\t\tflexDirection \\column`,
+        `\t\t\tbackground \\var(--mol_theme_back)`,
+        `\t\t\tcolor \\var(--mol_theme_text)`,
+        `\t\tsub /`,
+        `\t\t\t<= Title`,
+        `\t\t\t<= Amount`,
+        `\t\t\t<= Rate`,
+        `\t\t\t<= Years`,
+        `\t\t\t<= Monthly`,
+        `\t\t\t<= Months`,
+        `\t\t\t<= Payment`,
+        `\t\t\t<= Overpay`,
+        `\t\t\t<= Debt`,
+        `\t\t\t<= Year`,
+        `\t\t\t<= End`,
+        `\t\t\t<= Next`,
+        `\tCompare ${d}mol_view`,
+        `\t\tstyle *`,
+        `\t\t\twidth \\480px`,
+        `\t\t\tminHeight \\720px`,
+        `\t\t\tflexDirection \\column`,
+        `\t\t\tbackground \\var(--mol_theme_back)`,
+        `\t\t\tcolor \\var(--mol_theme_text)`,
+        `\t\tsub /`,
+        `\t\t\t<= Title_2`,
+        `\t\t\t<= Amount_2`,
+        `\t\t\t<= Rate_2`,
+        `\t\t\t<= Years_2`,
+        `\t\t\t<= Monthly_2`,
+        `\t\t\t<= Months_2`,
+        `\t\t\t<= Verdict`,
+        `\t\t\t<= Debt_2`,
+        `\t\t\t<= Back`,
+        `\tTitle ${d}mol_paragraph title \\Ипотека: платёж и переплата`,
+        `\tAmount ${d}mol_number`,
+        `\t\thint \\Сумма кредита, ₽`,
+        `\t\tvalue? <=> amount_value?`,
+        `\tRate ${d}mol_number`,
+        `\t\thint \\Ставка, % годовых`,
+        `\t\tvalue? <=> rate_value?`,
+        `\tYears ${d}mol_number`,
+        `\t\thint \\Срок, лет`,
+        `\t\tvalue? <=> years_value?`,
+        `\tMonthly ${d}bog_vmap_part_calc`,
+        `\t\tright? <=> monthly_right?`,
+        `\t\top? <=> monthly_op?`,
+        `\t\tleft <= rate_value_2`,
+        `\tMonths ${d}bog_vmap_part_calc`,
+        `\t\tright? <=> months_right?`,
+        `\t\top? <=> months_op?`,
+        `\t\tleft? <=> years_value_2?`,
+        `\tPayment ${d}mol_paragraph title <= payment`,
+        `\tOverpay ${d}mol_paragraph title <= overpay`,
+        `\tDebt ${d}bog_vmap_part_plot`,
+        `\t\ttitle \\Остаток долга по годам, ₽`,
+        `\t\tvalues <= balance`,
+        `\tYear ${d}bog_vmap_part_cell`,
+        `\t\tcode? <=> year_code?`,
+        `\t\tauto? <=> year_auto?`,
+        `\tEnd ${d}bog_vmap_part_calc`,
+        `\t\top? <=> end_op?`,
+        `\t\tright <= years_value_3`,
+        `\t\tleft <= year_result_number`,
+        `\tNext ${d}mol_link`,
+        `\t\ttitle \\Сравнить с другим вариантом →`,
+        `\t\targ * page \\Compare`,
+        `\tTitle_2 ${d}mol_paragraph title \\Сравнение: другая ставка или срок`,
+        `\tAmount_2 ${d}mol_number`,
+        `\t\thint \\Сумма кредита, ₽`,
+        `\t\tvalue? <=> amount_value_2?`,
+        `\tRate_2 ${d}mol_number`,
+        `\t\thint \\Ставка, % годовых`,
+        `\t\tvalue? <=> rate_2_value?`,
+        `\tYears_2 ${d}mol_number`,
+        `\t\thint \\Срок, лет`,
+        `\t\tvalue? <=> years_2_value?`,
+        `\tMonthly_2 ${d}bog_vmap_part_calc`,
+        `\t\tright? <=> monthly_2_right?`,
+        `\t\top? <=> monthly_2_op?`,
+        `\t\tleft <= rate_2_value_2`,
+        `\tMonths_2 ${d}bog_vmap_part_calc`,
+        `\t\tright? <=> months_2_right?`,
+        `\t\top? <=> months_2_op?`,
+        `\t\tleft <= years_2_value_2`,
+        `\tVerdict ${d}mol_paragraph title <= verdict`,
+        `\tDebt_2 ${d}bog_vmap_part_plot`,
+        `\t\ttitle \\Остаток долга, второй вариант, ₽`,
+        `\t\tvalues <= balance_2`,
+        `\tBack ${d}mol_link`,
+        `\t\ttitle \\← К расчёту`,
+        `\t\targ * page \\Loan`,
+        `\trate_value_2 = Rate value`,
+        `\tyears_value_2? = Years value?`,
+        `\tyears_value_3 = Years value`,
+        `\tyear_result_number = Year result_number`,
+        `\trate_2_value_2 = Rate_2 value`,
+        `\tyears_2_value_2 = Years_2 value`,
+        `\tamount_value_2? = Amount value?`,
+        `\tpayment null`,
+        `\toverpay null`,
+        `\tbalance null`,
+        `\tverdict null`,
+        `\tbalance_2 null`,
+        ``,
+    ].join('\n');
+    const mortgage_spots = { Loan: { x: 40, y: 40 }, Compare: { x: 600, y: 40 } };
     const icons = ['root', 'frame', 'image', 'link', 'button', 'field', 'text', 'part'];
     function layers_stage($, over = {}, source = sample, spots = sample_spots) {
         const stage = $bog_vmap_app_flow_stage($, over);
@@ -57705,6 +57847,44 @@ var $;
                 '  Site link',
                 '  Calc part',
             ]);
+        },
+        'a root folded in one scene leaves the mortgage scene open with both pages and every part'($) {
+            const store = $bog_vmap_app_store.make({ $, doc_land_config: () => null });
+            const loan = store.doc_add('Ипотека', mortgage, mortgage_spots);
+            const other = store.doc_add('Сцена 2');
+            const { outline, line, mouse, redraw } = layers_stage($, { store });
+            mouse(line(`${d}layers_doc`).querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            $mol_assert_like(outline(), [`${d}layers_doc root`]);
+            store.doc_pick(loan.link());
+            redraw();
+            $mol_assert_like(outline(), [
+                `${d}bog_mortgage root`,
+                '  Loan frame',
+                '    Title text',
+                '    Amount field',
+                '    Rate field',
+                '    Years field',
+                '    Monthly part',
+                '    Months part',
+                '    Payment text',
+                '    Overpay text',
+                '    Debt part',
+                '    Year part',
+                '    End part',
+                '    Next link',
+                '  Compare frame',
+                '    Title_2 text',
+                '    Amount_2 field',
+                '    Rate_2 field',
+                '    Years_2 field',
+                '    Monthly_2 part',
+                '    Months_2 part',
+                '    Verdict text',
+                '    Debt_2 part',
+                '    Back link',
+            ]);
+            store.doc_pick(other.link());
+            $mol_assert_like(outline(), [`${d}layers_doc root`]);
         },
         'a row names the class of its node and every row but the root is dragged'($) {
             const { line, pick } = layers_stage($);
