@@ -9967,6 +9967,14 @@ var $;
         return $bog_vmap_scene_values_table(val, rows, limit) ?? $bog_vmap_scene_value_text(val, limit);
     }
     $.$bog_vmap_scene_values_show = $bog_vmap_scene_values_show;
+    function $bog_vmap_scene_values_view(val) {
+        if (Array.isArray(val))
+            return val.some(item => $bog_vmap_scene_values_view(item));
+        if (!val || typeof val !== 'object')
+            return false;
+        return typeof Reflect.get(val, 'dom_tree') === 'function';
+    }
+    $.$bog_vmap_scene_values_view = $bog_vmap_scene_values_view;
     function $bog_vmap_scene_values_pick(root, name) {
         let host = root;
         for (const step of name.split('.')) {
@@ -9985,7 +9993,10 @@ var $;
         const values = {};
         for (const name of names) {
             try {
-                values[name] = $bog_vmap_scene_values_show($bog_vmap_scene_values_pick(root, name), limit, rows);
+                const val = $bog_vmap_scene_values_pick(root, name);
+                if ($bog_vmap_scene_values_view(val))
+                    continue;
+                values[name] = $bog_vmap_scene_values_show(val, limit, rows);
             }
             catch (error) {
                 if (this.$mol_promise_like(error))

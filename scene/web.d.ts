@@ -3613,6 +3613,7 @@ declare namespace $ {
     function $bog_vmap_scene_values_columns(list: readonly object[]): string[];
     function $bog_vmap_scene_values_table(val: unknown, rows?: number, limit?: number): string | null;
     function $bog_vmap_scene_values_show(val: unknown, limit?: number, rows?: number): string;
+    function $bog_vmap_scene_values_view(val: unknown): boolean;
     function $bog_vmap_scene_values_pick(root: object, name: string): unknown;
     function $bog_vmap_scene_values(this: $, root: object, names: readonly string[], limit?: number, rows?: number): {
         readonly [name: string]: string;

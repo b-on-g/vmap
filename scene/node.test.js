@@ -9826,6 +9826,14 @@ var $;
         return $bog_vmap_scene_values_table(val, rows, limit) ?? $bog_vmap_scene_value_text(val, limit);
     }
     $.$bog_vmap_scene_values_show = $bog_vmap_scene_values_show;
+    function $bog_vmap_scene_values_view(val) {
+        if (Array.isArray(val))
+            return val.some(item => $bog_vmap_scene_values_view(item));
+        if (!val || typeof val !== 'object')
+            return false;
+        return typeof Reflect.get(val, 'dom_tree') === 'function';
+    }
+    $.$bog_vmap_scene_values_view = $bog_vmap_scene_values_view;
     function $bog_vmap_scene_values_pick(root, name) {
         let host = root;
         for (const step of name.split('.')) {
@@ -9844,7 +9852,10 @@ var $;
         const values = {};
         for (const name of names) {
             try {
-                values[name] = $bog_vmap_scene_values_show($bog_vmap_scene_values_pick(root, name), limit, rows);
+                const val = $bog_vmap_scene_values_pick(root, name);
+                if ($bog_vmap_scene_values_view(val))
+                    continue;
+                values[name] = $bog_vmap_scene_values_show(val, limit, rows);
             }
             catch (error) {
                 if (this.$mol_promise_like(error))
@@ -18853,6 +18864,24 @@ var $;
         'a function value is the name of its type, not its source'($) {
             const root = { hook() { return (a) => a + 1; } };
             $mol_assert_equal($.$bog_vmap_scene_values(root, ['hook']).hook, 'function');
+        },
+        'a view or a list with a view in it is not a value and is not sent'($) {
+            const view = $mol_view.make({ $ });
+            const board = {
+                sub() { return ['заголовок', view]; },
+                Head() { return view; },
+                rows() { return [[view]]; },
+                title() { return 'Ипотека'; },
+                result() { return 42; },
+                list() { return [1, 2]; },
+            };
+            const root = { Board() { return board; } };
+            const names = ['Board.sub', 'Board.Head', 'Board.rows', 'Board.title', 'Board.result', 'Board.list'];
+            $mol_assert_like($.$bog_vmap_scene_values(root, names), {
+                'Board.title': 'Ипотека',
+                'Board.result': '42',
+                'Board.list': '[1,2]',
+            });
         },
         'a view like value is its own id, not a JSON walk'($) {
             const root = {
