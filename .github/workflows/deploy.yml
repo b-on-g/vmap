@@ -87,7 +87,7 @@ jobs:
     - uses: hyoo-ru/mam_build@master2
       with:
         package: 'bog/vmap'
-        modules: 'app scene part demo pages spike/s5 probe border smoke'
+        modules: 'app scene part showcase demo pages spike/s5 probe border smoke'
 
     # `$mol_run.spawn` глотает stdout прогона тестов, и в логе от дымового теста остаётся
     # только строка запуска: по ней не отличить настоящий прогон от честного пропуска без
@@ -148,6 +148,54 @@ jobs:
           cat "$file"
           echo '```'
         } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Showcase report
+      run: |
+        set -euo pipefail
+        file="bog/vmap/showcase/-/showcase.log"
+        test -s "$file"
+        grep -q 'приложение собрано из блоков и выгружено' "$file"
+        grep -E 'жестом|портом|превью|архив' "$file" || true
+        {
+          echo '```'
+          cat "$file"
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Build the exported showcase
+      run: |
+        set -euo pipefail
+        rm -rf bog/mortgage
+        cp -R bog/vmap/showcase/-/bog/mortgage bog/mortgage
+        npx mam bog/mortgage
+        grep -q 'Audit passed' bog/mortgage/-/web.audit.js
+        grep -q 'Audit passed' bog/mortgage/-/node.audit.js
+        test -s bog/mortgage/-/index.html
+        test -s bog/mortgage/-/web.js
+
+    - name: Showcase site
+      run: |
+        set -euo pipefail
+        file="bog/vmap/showcase/-/site.log"
+        node -e 'require( process.cwd() + "/bog/vmap/showcase/-/node.js" ).$bog_vmap_showcase_site().then( ()=> process.exit( 0 ), error => { console.log( String( error && error.stack || error ) ); process.exit( 1 ) } )' | tee "$file"
+        grep -q 'собранное приложение считает и ходит по страницам' "$file"
+        {
+          echo '```'
+          cat "$file"
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: showcase-app
+        path: |
+          bog/vmap/showcase/-/mortgage.zip
+          bog/vmap/showcase/-/bog/
+          bog/vmap/showcase/-/showcase.log
+          bog/vmap/showcase/-/site.log
+        include-hidden-files: true
+        if-no-files-found: warn
 
     # GitHub Pages отдаёт web.js с `cache-control: max-age=600`, поэтому первые
     # десять минут после деплоя вернувшийся читатель получает старый бандл и
