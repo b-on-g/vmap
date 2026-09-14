@@ -274,6 +274,8 @@ namespace $ {
 			if( !laid ) $mol_fail( new Error( `провод ${ wire.from }.${ wire.from_prop } к ${ wire.to }.${ wire.to_prop } не лёг` ) )
 		}
 
+		await ask( ()=> app.camera_reset() )
+
 		const alarm = await ask( ()=> app.error() )
 		if( alarm ) $mol_fail( new Error( `сцена жалуется на документ: ${ alarm }` ) )
 
