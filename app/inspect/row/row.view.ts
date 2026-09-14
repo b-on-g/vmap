@@ -10,6 +10,13 @@ namespace $.$$ {
 			) as readonly $mol_view[]
 		}
 
+		override content() {
+			return [
+				this.control(),
+				... this.frozen() ? [ this.Frozen() ] : [],
+			] as readonly $mol_view_content[]
+		}
+
 	}
 
 }

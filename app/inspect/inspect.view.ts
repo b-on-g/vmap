@@ -172,6 +172,15 @@ namespace $.$$ {
 			return this.row_cell( name ) ? this.cell( this.row_sign( name ) ) : null
 		}
 
+		override row_frozen( name: string ) {
+
+			if( !this.editable() || !this.row_cell( name ) || this.row_inherited( name ) ) return ''
+
+			const value = this.port_node( name )?.kids[ 0 ] ?? null
+
+			return plain.includes( this.$.$bog_vmap_app_inspect_value_kind_of( value ) ) ? this.frozen_note() : ''
+		}
+
 		row_value( name: string, next?: $mol_tree2 ) {
 
 			const decl = this.port_node( name )!
