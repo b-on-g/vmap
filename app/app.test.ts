@@ -523,7 +523,7 @@ namespace $ {
 			$mol_assert_equal( module.name, 'page' )
 			$mol_assert_equal(
 				module.files.map( file => file.name ).join( ' ' ),
-				'page.view.tree page.meta.tree index.html README.md'
+				'page.view.tree page.view.css page.meta.tree index.html README.md'
 					+ ' .gitattributes .gitignore .github/workflows/deploy.yml',
 			)
 
@@ -898,6 +898,7 @@ namespace $ {
 				module.files.map( file => file.name ),
 				[
 					'page.view.tree',
+					'page.view.css',
 					'page.meta.tree',
 					'index.html',
 					'README.md',

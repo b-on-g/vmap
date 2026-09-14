@@ -31,6 +31,10 @@ namespace $ {
 
 	const theme = `\tplugins /\n\t\t<= Theme ${d}mol_theme_auto\n`
 
+	function root_rule( attr: string ) {
+		return `:where([mol_view_root])[${ attr }] {\n\toverflow: auto;\n\talign-items: flex-start;\n}\n`
+	}
+
 	$mol_test({
 
 		'module path comes from the class names'( $ ) {
@@ -166,16 +170,16 @@ namespace $ {
 
 		},
 
-		'a class without a body gets no file of its own at all'( $ ) {
+		'a class without a body gets no code file, and the stylesheet holds only the root rule'( $ ) {
 
 			const module = $.$bog_vmap_app_export_build([ { source: page }, { source: hero } ])
 
 			$mol_assert_equal( module.files.some( file => file.name.endsWith( '.view.ts' ) ), false )
-			$mol_assert_equal( module.files.some( file => file.name.endsWith( '.view.css' ) ), false )
+			$mol_assert_equal( file_of( module, '.view.css' ), root_rule( 'bog_site_page' ) )
 
 		},
 
-		'a stylesheet is a stylesheet, verbatim'( $ ) {
+		'a stylesheet is a stylesheet, verbatim, after the root rule'( $ ) {
 
 			const css = '[bog_site_hero]{ content: "` ' + '${x}' + '" }'
 
@@ -184,8 +188,36 @@ namespace $ {
 				{ source: hero, css },
 			])
 
-			$mol_assert_equal( file_of( module, '.view.css' ), css + '\n' )
+			$mol_assert_equal( file_of( module, '.view.css' ), root_rule( 'bog_site_page' ) + '\n' + css + '\n' )
 			$mol_assert_equal( module.files.some( file => file.name.endsWith( '.view.css.ts' ) ), false )
+
+		},
+
+		'the exported root scrolls by itself and leaves the artboard its own height'( $ ) {
+
+			const rule_of = ( module: $bog_vmap_app_export_module )=> {
+				const css = file_of( module, '.view.css' )
+				return css.slice( 0, css.indexOf( '}' ) + 1 )
+			}
+
+			const routed = $.$bog_vmap_app_export_build([ { source: pages }, { source: hero } ])
+			const single = $.$bog_vmap_app_export_build([ { source: page }, { source: hero } ])
+
+			for( const module of [ routed, single ] ) {
+
+				const rule = rule_of( module )
+				const attr = module.root.slice( 1 )
+
+				$mol_assert_ok( rule.startsWith( `:where([mol_view_root])[${ attr }] {` ) )
+				$mol_assert_ok( rule.includes( '\toverflow: auto;\n' ) )
+				$mol_assert_ok( rule.includes( '\talign-items: flex-start;\n' ) )
+
+				$mol_assert_ok( file_of( module, 'index.html' ).includes( `mol_view_root="${ module.root }"` ) )
+
+			}
+
+			$mol_assert_equal( routed.root, `${d}bog_site_app` )
+			$mol_assert_equal( single.root, `${d}bog_site_page` )
 
 		},
 
@@ -306,6 +338,7 @@ namespace $ {
 				module.files.map( file => file.name ),
 				[
 					'site.view.tree',
+					'site.view.css',
 					'site.meta.tree',
 					'index.html',
 					'README.md',
@@ -435,6 +468,7 @@ namespace $ {
 				module.files.map( file => file.name ),
 				[
 					'page.view.tree',
+					'page.view.css',
 					'page.meta.tree',
 					'index.html',
 					'README.md',

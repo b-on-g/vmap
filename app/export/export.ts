@@ -384,7 +384,7 @@ namespace $ {
 					+ ( router ? router_tree( router, entry ) : '' ),
 			},
 			... body.includes( 'export class' ) ? [ { name: `${ name }.view.ts`, text: body } ] : [],
-			... style ? [ { name: `${ name }.view.css`, text: style } ] : [],
+			{ name: `${ name }.view.css`, text: root_css( router || entry ) + ( style ? '\n' + style : '' ) },
 			{ name: `${ name }.meta.tree`, text: 'include \\/mol/theme/auto\n' },
 			{ name: 'index.html', text: index_html( router || entry ) },
 			{ name: 'README.md', text: readme_md( path, name ) },
@@ -536,6 +536,16 @@ namespace $ {
 		}
 
 		return out.join( '\n' )
+	}
+
+	function root_css( root: string ) {
+		return [
+			`:where([mol_view_root])[${ root.slice( 1 ) }] {`,
+			'\toverflow: auto;',
+			'\talign-items: flex-start;',
+			'}',
+			'',
+		].join( '\n' )
 	}
 
 	function index_html( root: string ) {
