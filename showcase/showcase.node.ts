@@ -57,12 +57,15 @@ namespace $ {
 		readonly gesture: boolean
 	}
 
+	export type $bog_vmap_showcase_value = string | number | boolean
+
 	export type $bog_vmap_showcase_block = {
 		readonly name: string
 		readonly board: string
 		readonly shelf: string
 		readonly klass: string
 		readonly props: readonly string[]
+		readonly cells: readonly ( readonly [ string, $bog_vmap_showcase_value ] )[]
 		readonly gesture: boolean
 	}
 
@@ -98,28 +101,29 @@ namespace $ {
 			name: string,
 			board: string,
 			props: readonly string[],
+			cells: readonly ( readonly [ string, $bog_vmap_showcase_value ] )[] = [],
 			gesture = false,
-		)=> ({ ... kind, name, board, props, gesture })
+		)=> ({ ... kind, name, board, props, cells, gesture })
 
 		return [
 			block( paragraph, 'Title', 'Loan', [ 'title \\Ипотека: платёж и переплата' ] ),
-			block( number, 'Amount', 'Loan', [ 'value? <=> amount? 6000000', 'hint \\Сумма кредита, ₽' ], true ),
-			block( number, 'Rate', 'Loan', [ 'value? <=> rate? 18', 'hint \\Ставка, % годовых' ] ),
-			block( number, 'Years', 'Loan', [ 'value? <=> years? 20', 'hint \\Срок, лет' ] ),
-			block( calc, 'Monthly', 'Loan', [ 'right? 1200', 'op? \\div' ] ),
-			block( calc, 'Months', 'Loan', [ 'right? 12', 'op? \\mul' ] ),
+			block( number, 'Amount', 'Loan', [ 'hint \\Сумма кредита, ₽' ], [ [ 'value?', 6000000 ] ], true ),
+			block( number, 'Rate', 'Loan', [ 'hint \\Ставка, % годовых' ], [ [ 'value?', 18 ] ] ),
+			block( number, 'Years', 'Loan', [ 'hint \\Срок, лет' ], [ [ 'value?', 20 ] ] ),
+			block( calc, 'Monthly', 'Loan', [], [ [ 'right?', 1200 ], [ 'op?', 'div' ] ] ),
+			block( calc, 'Months', 'Loan', [], [ [ 'right?', 12 ], [ 'op?', 'mul' ] ] ),
 			block( paragraph, 'Payment', 'Loan', [ 'title <= payment' ] ),
 			block( paragraph, 'Overpay', 'Loan', [ 'title <= overpay' ] ),
 			block( plot, 'Debt', 'Loan', [ 'title \\Остаток долга по годам, ₽', 'values <= balance' ] ),
-			block( cell, 'Year', 'Loan', [ 'code? \\return new Date().getFullYear()', 'auto? true' ] ),
-			block( calc, 'End', 'Loan', [ 'op? \\add' ] ),
+			block( cell, 'Year', 'Loan', [], [ [ 'code?', 'return new Date().getFullYear()' ], [ 'auto?', true ] ] ),
+			block( calc, 'End', 'Loan', [], [ [ 'op?', 'add' ] ] ),
 			block( link, 'Next', 'Loan', [ 'title \\Сравнить с другим вариантом →', 'arg *', '\tpage \\Compare' ] ),
 			block( paragraph, 'Title_2', 'Compare', [ 'title \\Сравнение: другая ставка или срок' ] ),
 			block( number, 'Amount_2', 'Compare', [ 'hint \\Сумма кредита, ₽' ] ),
-			block( number, 'Rate_2', 'Compare', [ 'value? <=> rate_2? 6', 'hint \\Ставка, % годовых' ] ),
-			block( number, 'Years_2', 'Compare', [ 'value? <=> years_2? 20', 'hint \\Срок, лет' ] ),
-			block( calc, 'Monthly_2', 'Compare', [ 'right? 1200', 'op? \\div' ] ),
-			block( calc, 'Months_2', 'Compare', [ 'right? 12', 'op? \\mul' ] ),
+			block( number, 'Rate_2', 'Compare', [ 'hint \\Ставка, % годовых' ], [ [ 'value?', 6 ] ] ),
+			block( number, 'Years_2', 'Compare', [ 'hint \\Срок, лет' ], [ [ 'value?', 20 ] ] ),
+			block( calc, 'Monthly_2', 'Compare', [], [ [ 'right?', 1200 ], [ 'op?', 'div' ] ] ),
+			block( calc, 'Months_2', 'Compare', [], [ [ 'right?', 12 ], [ 'op?', 'mul' ] ] ),
 			block( paragraph, 'Verdict', 'Compare', [ 'title <= verdict' ] ),
 			block( plot, 'Debt_2', 'Compare', [ 'title \\Остаток долга, второй вариант, ₽', 'values <= balance_2' ] ),
 			block( link, 'Back', 'Compare', [ 'title \\← К расчёту', 'arg *', '\tpage \\Loan' ] ),
@@ -216,9 +220,9 @@ namespace $ {
 		return sum * rate / ( 1 - Math.pow( 1 + rate, -months ) )
 	}
 
-	export function $bog_vmap_showcase_expect( sum: number ) {
+	export function $bog_vmap_showcase_expect( sum: number, divisor = 1200 ) {
 
-		const first_rate = 18 / 1200
+		const first_rate = 18 / divisor
 		const second_rate = 6 / 1200
 		const months = 20 * 12
 
@@ -379,16 +383,15 @@ namespace $ {
 		if( !bin ) { say( $bog_probe_skip ); return lines.join( '\n' ) }
 
 		const out = String( $node.path.join( root, $bog_vmap_showcase_out ) )
-		const zip = String( $node.path.join( out, $bog_vmap_showcase_zip ) )
-		const unpacked = String( $node.path.join( out, $bog_vmap_showcase_module ) )
-
-		$node.fs.mkdirSync( out, { recursive: true } )
-		$node.fs.rmSync( zip, { force: true } )
-		$node.fs.rmSync( String( $node.path.join( out, $bog_vmap_showcase_module.split( '/' )[ 0 ] ) ), { recursive: true, force: true } )
+		const top = $bog_vmap_showcase_module.split( '/' )[ 0 ]
 
 		const site = await new $bog_probe_static( root ).open()
 		const profile = String( $node.fs.mkdtempSync( $node.path.join( $node.os.tmpdir(), 'vmap-showcase-' ) ) )
+		const stage = String( $node.fs.mkdtempSync( $node.path.join( $node.os.tmpdir(), 'vmap-showcase-out-' ) ) )
 		const browser = new $bog_probe_browser( bin, profile )
+
+		const zip = String( $node.path.join( stage, $bog_vmap_showcase_zip ) )
+		const unpacked = String( $node.path.join( stage, $bog_vmap_showcase_module ) )
 
 		const app = `$[ ${ JSON.stringify( d + 'bog_vmap_app' ) } ].Root( 0 )`
 		const pane = `${ app }.Pane()`
@@ -521,10 +524,30 @@ namespace $ {
 			await act( `app.selected( null ); app.code_js( ${ JSON.stringify( $bog_vmap_showcase_js ) } ); app.code_css( ${ JSON.stringify( $bog_vmap_showcase_css ) } ); return 1` )
 
 			for( const block of blocks ) {
+				if( !block.props.length ) continue
 				await act( `app.selected( ${ JSON.stringify( block.name ) } ); app.node_source( ${ JSON.stringify( $bog_vmap_showcase_source( block ) ) } ); return 1` )
 			}
+
+			const tree2 = `$[ ${ JSON.stringify( d + 'mol_tree2' ) } ]`
+			const cells = [] as { readonly part: string, readonly port: string, readonly value: $bog_vmap_showcase_value, readonly cell: string }[]
+
+			for( const block of blocks ) {
+				for( const [ sign, value ] of block.cells ) {
+
+					const literal = typeof value === 'string' ? `${ tree2 }.data( ${ JSON.stringify( value ) } )` : `${ tree2 }.struct( ${ JSON.stringify( String( value ) ) } )`
+					await act( `app.selected( ${ JSON.stringify( block.name ) } ); app.node_cell( ${ JSON.stringify( sign ) }, ${ literal } ); return 1` )
+
+					const port = sign.replace( /\?$/, '' )
+					const cell = String( await ask( `app.node().cell_of( ${ JSON.stringify( block.name ) }, ${ JSON.stringify( port ) } )` ) )
+					if( !cell ) return $mol_fail( new Error( `node_cell не завёл ячейку корня за ${ block.name }.${ sign }: ${ await ask( `app.node_source()` ) }` ) )
+
+					cells.push({ part: block.name, port, value, cell })
+
+				}
+			}
+
 			await act( 'app.selected( null ); return 1' )
-			say( `портом панели кода: тело корня ${ $bog_vmap_showcase_js.split( '\n' ).length } строк, стили ${ $bog_vmap_showcase_css.split( '\n' ).length } строк; портом node_source: значения и хуки ${ blocks.length } деталей` )
+			say( `портом панели кода: тело корня ${ $bog_vmap_showcase_js.split( '\n' ).length } строк, стили ${ $bog_vmap_showcase_css.split( '\n' ).length } строк; портом node_source: подписи, ссылки и хуки ${ blocks.filter( block => block.props.length ).length } деталей; портом node_cell, как пишет инспектор: ячеек корня ${ cells.length } (${ cells.map( one => one.cell ).join( ', ' ) })` )
 
 			for( const wire of $bog_vmap_showcase_wires ) {
 
@@ -616,7 +639,7 @@ namespace $ {
 
 			await until( `${ app }.export_ready()`, 15000, 'кнопка «Скачать» не включилась' )
 
-			await browser.send( 'Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: out, eventsEnabled: true } )
+			await browser.send( 'Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: stage, eventsEnabled: true } )
 			await hand.click( `document.querySelector( '[bog_vmap_app_download]' )`, 'кнопка «Скачать»' )
 
 			const fetched = Date.now()
@@ -624,7 +647,7 @@ namespace $ {
 			if( !$node.fs.existsSync( zip ) ) return $mol_fail( new Error( `клик по «Скачать» не положил ${ zip } за 30000 мс` ) )
 
 			const bytes = $node.fs.statSync( zip ).size
-			say( `жестом: «Скачать» положил ${ zip }, ${ bytes } байт за ${ Date.now() - fetched } мс` )
+			say( `жестом: «Скачать» положил ${ $bog_vmap_showcase_zip } в каталог загрузок прогона, ${ bytes } байт за ${ Date.now() - fetched } мс` )
 
 			const module = JSON.parse( String( await ask( 'JSON.stringify( app.export_state().module )' ) ) ) as {
 				readonly path: string
@@ -633,7 +656,7 @@ namespace $ {
 
 			if( module.path !== $bog_vmap_showcase_module ) return $mol_fail( new Error( `модуль выгрузки ${ module.path }, а ждали ${ $bog_vmap_showcase_module }` ) )
 
-			const unzip = $node[ 'child_process' ].spawnSync( 'unzip', [ '-o', zip, '-d', out ], { encoding: 'utf8' } )
+			const unzip = $node[ 'child_process' ].spawnSync( 'unzip', [ '-o', zip, '-d', stage ], { encoding: 'utf8' } )
 			if( unzip.status !== 0 ) return $mol_fail( new Error( `unzip не открыл архив: ${ unzip.stderr || unzip.error }` ) )
 
 			const listed = [] as string[]
@@ -666,6 +689,8 @@ namespace $ {
 				[ tree, `Doc ${ root_class }` ],
 				... $bog_vmap_showcase_hooks.map( hook => [ tree, `\t${ hook } null\n` ] ),
 				... links.map( link => [ tree, link.bidi ? `${ link.to_prop }? <=> ${ link.name }?` : `${ link.to_prop } <= ${ link.name }` ] ),
+				... cells.map( one => [ tree, `\n\t${ one.cell }? ${ typeof one.value === 'string' ? '\\' + one.value : String( one.value ) }\n` ] ),
+				... cells.map( one => [ tree, `\t${ one.port }? <=> ${ one.cell }?\n` ] ),
 				[ code, `case "Compare": return [ doc.Compare() ]` ],
 				[ code, `default: return [ doc.Loan() ]` ],
 				[ page, `mol_view_root="${ router }"` ],
@@ -673,8 +698,19 @@ namespace $ {
 
 			if( missing.length ) return $mol_fail( new Error( `в выгрузке нет: ${ missing.join( ' | ' ) }` ) )
 
-			say( `архив цел: unzip открыл ${ listed.length } файлов в ${ unpacked }, байт в байт равны выгрузке оболочки; роутер ${ router }, хуков ${ $bog_vmap_showcase_hooks.length }, проводов ${ links.length }` )
-			say( `${ $bog_vmap_showcase_ok } за ${ Date.now() - began } мс; собрать: cp -R ${ unpacked } ${ $bog_vmap_showcase_module } && npx mam ${ $bog_vmap_showcase_module }` )
+			say( `архив цел: unzip открыл ${ listed.length } файлов, байт в байт равны выгрузке оболочки; роутер ${ router }, хуков ${ $bog_vmap_showcase_hooks.length }, проводов ${ links.length }, ячеек корня ${ cells.length }` )
+
+			const shelf_zip = String( $node.path.join( out, $bog_vmap_showcase_zip ) )
+			const shelf_module = String( $node.path.join( out, $bog_vmap_showcase_module ) )
+
+			$node.fs.mkdirSync( out, { recursive: true } )
+			$node.fs.rmSync( shelf_zip, { force: true } )
+			$node.fs.rmSync( String( $node.path.join( out, top ) ), { recursive: true, force: true } )
+			$node.fs.cpSync( zip, shelf_zip )
+			$node.fs.cpSync( String( $node.path.join( stage, top ) ), String( $node.path.join( out, top ) ), { recursive: true } )
+
+			say( `архив ${ shelf_zip }, модуль ${ shelf_module }` )
+			say( `${ $bog_vmap_showcase_ok } за ${ Date.now() - began } мс; собрать: cp -R ${ shelf_module } ${ $bog_vmap_showcase_module } && npx mam ${ $bog_vmap_showcase_module }` )
 
 			return lines.join( '\n' )
 
@@ -682,6 +718,7 @@ namespace $ {
 			browser.close()
 			site.close()
 			try { $node.fs.rmSync( profile, { recursive: true, force: true } ) } catch( error ) {}
+			try { $node.fs.rmSync( stage, { recursive: true, force: true } ) } catch( error ) {}
 		}
 
 	}
@@ -763,6 +800,11 @@ namespace $ {
 
 			await expect( { Amount: '4000000', payment: four.payment }, 'правка на второй странице не вернулась проводом ⇄ на первую' )
 			say( `правка 4000000 на Compare вернулась на Loan по проводу ⇄: «${ await phrase( 'Payment' ) }»` )
+
+			const halved = $bog_vmap_showcase_expect( 4000000, 600 )
+			await hand.type( `document.querySelector( ${ JSON.stringify( attr( 'Monthly' ) + ' [bog_vmap_part_calc_right] input' ) } )`, 'правое поле калькулятора ставки', '600' )
+			await expect( { monthly: '0.03', payment: halved.payment }, 'набор в правое поле калькулятора «ставка ÷ 1200» не пересчитал платёж' )
+			say( `набор 600 в правое поле калькулятора «ставка ÷ 1200» дал 0.03 в месяц и «${ await phrase( 'Payment' ) }»` )
 
 			say( `${ $bog_vmap_showcase_site_ok } за ${ Date.now() - began } мс` )
 
