@@ -4,6 +4,10 @@ namespace $ {
 
 	const scene_title = 'Ипотека'
 
+	const scene_building = 'Ипотека (собирается)'
+
+	const scene_limit = 60000
+
 	type value = string | number | boolean
 
 	type part = {
@@ -155,6 +159,13 @@ namespace $ {
 		return typeof one === 'string' ? $mol_tree2.data( one ) : $mol_tree2.struct( String( one ) )
 	}
 
+	function complete( text: string ) {
+		if( !text ) return false
+		const model = $bog_vmap_lang_node.make({ source: ()=> text })
+		return boards.every( board => model.sub_names()?.includes( board.name ) )
+			&& parts().every( one => model.sub_names( one.board )?.includes( one.name ) )
+	}
+
 	function ask< Result >( task: ()=> Result ) {
 		return $mol_wire_async( task )()
 	}
@@ -186,27 +197,37 @@ namespace $ {
 		const settle = async ()=> {
 			let last = ''
 			const started = Date.now()
-			while( Date.now() - started < 10000 ) {
+			while( Date.now() - started < scene_limit ) {
 				const now = JSON.stringify( await ask( ()=> pane.sizes() ) )
 				if( now === last ) return
 				last = now
 				await pause( 400 )
 			}
-			$mol_fail( new Error( 'размеры узлов сцены не устоялись за 10000 мс' ) )
+			$mol_fail( new Error( `размеры узлов сцены не устоялись за ${ scene_limit } мс` ) )
 		}
 
 		const measured = async ( name: string )=> {
-			await until( ()=> Boolean( pane.part_size( name ) ), 15000, `сцена не измерила ${ name }` )
+			await until( ()=> Boolean( pane.part_size( name ) ), scene_limit, `сцена не измерила ${ name }` )
 			return ( await ask( ()=> pane.part_size( name ) ) )!
 		}
 
 		await until( ()=> pane.warmed() && app.doc_key() !== '', 600000, 'сцена не прогрелась или документ не открылся' )
 
-		const titles = await ask( ()=> store.doc_links().map( link => store.doc( link ).title() ) )
-		if( titles.includes( scene_title ) ) return
+		const found = await ask( ()=> store.doc_links()
+			.filter( link => [ scene_title, scene_building ].includes( store.doc( link ).title() ) )
+			.map( link => ({
+				link,
+				whole: store.doc( link ).title() === scene_title && complete( store.doc_source( store.doc( link ) ) ),
+			}) )
+		)
 
-		await $mol_wire_async( store ).doc_add( scene_title )
-		await until( ()=> store.doc_current()?.title() === scene_title, 15000, `сцена «${ scene_title }» не стала текущей` )
+		const broken = found.filter( one => !one.whole ).map( one => one.link )
+		if( broken.length ) await ask( ()=> { for( const link of broken ) store.home().Docs( null )!.cut( link ) } )
+
+		if( found.some( one => one.whole ) ) return
+
+		const link = ( await $mol_wire_async( store ).doc_add( scene_building ) ).link()
+		await until( ()=> store.doc_current()?.title() === scene_building, scene_limit, `сцена «${ scene_building }» не стала текущей` )
 
 		const root = d + 'bog_mortgage'
 		await ask( ()=> { app.root_draft( root ); app.root_submit() } )
@@ -278,6 +299,8 @@ namespace $ {
 
 		const alarm = await ask( ()=> app.error() )
 		if( alarm ) $mol_fail( new Error( `сцена жалуется на документ: ${ alarm }` ) )
+
+		await ask( ()=> store.doc( link ).title( scene_title ) )
 
 	}
 
