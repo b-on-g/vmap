@@ -8,76 +8,138 @@ namespace $ {
 
 	const scene_limit = 60000
 
-	type value = string | number | boolean
+	const scene_root = d + 'bog_mortgage'
 
-	type part = {
-		readonly name: string
-		readonly board: string
-		readonly shelf: string
-		readonly klass: string
-		readonly props: readonly string[]
-		readonly cells: readonly ( readonly [ string, value ] )[]
-	}
-
-	const boards = [
-		{ name: 'Loan', x: 40, y: 40, width: 480, height: 720 },
-		{ name: 'Compare', x: 600, y: 40, width: 480, height: 720 },
-	]
-
-	function parts(): readonly part[] {
-
-		const mol = ( name: string )=> d + 'mol_' + name
-		const kit = ( name: string )=> d + 'bog_vmap_part_' + name
-
-		const number = { shelf: 'input_number', klass: mol( 'number' ) }
-		const paragraph = { shelf: 'input_paragraph', klass: mol( 'paragraph' ) }
-		const link = { shelf: mol( 'link' ), klass: mol( 'link' ) }
-		const calc = { shelf: 'calc', klass: kit( 'calc' ) }
-		const plot = { shelf: 'plot', klass: kit( 'plot' ) }
-		const cell = { shelf: 'cell', klass: kit( 'cell' ) }
-
-		const part = (
-			kind: { readonly shelf: string, readonly klass: string },
-			name: string,
-			board: string,
-			props: readonly string[],
-			cells: readonly ( readonly [ string, value ] )[] = [],
-		)=> ({ ... kind, name, board, props, cells })
-
-		return [
-			part(paragraph, 'Title', 'Loan', [ 'title \\Ипотека: платёж и переплата' ] ),
-			part(number, 'Amount', 'Loan', [ 'hint \\Сумма кредита, ₽' ], [ [ 'value?', 6000000 ] ] ),
-			part(number, 'Rate', 'Loan', [ 'hint \\Ставка, % годовых' ], [ [ 'value?', 18 ] ] ),
-			part(number, 'Years', 'Loan', [ 'hint \\Срок, лет' ], [ [ 'value?', 20 ] ] ),
-			part(calc, 'Monthly', 'Loan', [], [ [ 'right?', 1200 ], [ 'op?', 'div' ] ] ),
-			part(calc, 'Months', 'Loan', [], [ [ 'right?', 12 ], [ 'op?', 'mul' ] ] ),
-			part(paragraph, 'Payment', 'Loan', [ 'title <= payment' ] ),
-			part(paragraph, 'Overpay', 'Loan', [ 'title <= overpay' ] ),
-			part(plot, 'Debt', 'Loan', [ 'title \\Остаток долга по годам, ₽', 'values <= balance' ] ),
-			part(cell, 'Year', 'Loan', [], [ [ 'code?', 'return new Date().getFullYear()' ], [ 'auto?', true ] ] ),
-			part(calc, 'End', 'Loan', [], [ [ 'op?', 'add' ] ] ),
-			part(link, 'Next', 'Loan', [ 'title \\Сравнить с другим вариантом →', 'arg *', '\tpage \\Compare' ] ),
-			part(paragraph, 'Title_2', 'Compare', [ 'title \\Сравнение: другая ставка или срок' ] ),
-			part(number, 'Amount_2', 'Compare', [ 'hint \\Сумма кредита, ₽' ] ),
-			part(number, 'Rate_2', 'Compare', [ 'hint \\Ставка, % годовых' ], [ [ 'value?', 6 ] ] ),
-			part(number, 'Years_2', 'Compare', [ 'hint \\Срок, лет' ], [ [ 'value?', 20 ] ] ),
-			part(calc, 'Monthly_2', 'Compare', [], [ [ 'right?', 1200 ], [ 'op?', 'div' ] ] ),
-			part(calc, 'Months_2', 'Compare', [], [ [ 'right?', 12 ], [ 'op?', 'mul' ] ] ),
-			part(paragraph, 'Verdict', 'Compare', [ 'title <= verdict' ] ),
-			part(plot, 'Debt_2', 'Compare', [ 'title \\Остаток долга, второй вариант, ₽', 'values <= balance_2' ] ),
-			part(link, 'Back', 'Compare', [ 'title \\← К расчёту', 'arg *', '\tpage \\Loan' ] ),
-		]
-	}
-
-	const wires = [
-		{ from: 'Rate', from_prop: 'value', to: 'Monthly', to_prop: 'left', bidi: false },
-		{ from: 'Years', from_prop: 'value', to: 'Months', to_prop: 'left', bidi: true },
-		{ from: 'Years', from_prop: 'value', to: 'End', to_prop: 'right', bidi: false },
-		{ from: 'Year', from_prop: 'result_number', to: 'End', to_prop: 'left', bidi: false },
-		{ from: 'Rate_2', from_prop: 'value', to: 'Monthly_2', to_prop: 'left', bidi: false },
-		{ from: 'Years_2', from_prop: 'value', to: 'Months_2', to_prop: 'left', bidi: false },
-		{ from: 'Amount', from_prop: 'value', to: 'Amount_2', to_prop: 'value', bidi: true },
-	]
+	const scene_tree = [
+		`${d}bog_mortgage ${d}mol_view`,
+		`\tmonths_2_op? \\mul`,
+		`\tmonths_2_right? 12`,
+		`\tmonthly_2_op? \\div`,
+		`\tmonthly_2_right? 1200`,
+		`\tyears_2_value? 20`,
+		`\trate_2_value? 6`,
+		`\tend_op? \\add`,
+		`\tyear_auto? true`,
+		`\tyear_code? \\return new Date().getFullYear()`,
+		`\tmonths_op? \\mul`,
+		`\tmonths_right? 12`,
+		`\tmonthly_op? \\div`,
+		`\tmonthly_right? 1200`,
+		`\tyears_value? 20`,
+		`\trate_value? 18`,
+		`\tamount_value? 6000000`,
+		`\tsub /`,
+		`\t\t<= Loan`,
+		`\t\t<= Compare`,
+		`\tLoan ${d}mol_view`,
+		`\t\tstyle *`,
+		`\t\t\twidth \\480px`,
+		`\t\t\tminHeight \\720px`,
+		`\t\t\tflexDirection \\column`,
+		`\t\t\tbackground \\var(--mol_theme_back)`,
+		`\t\t\tcolor \\var(--mol_theme_text)`,
+		`\t\tsub /`,
+		`\t\t\t<= Title`,
+		`\t\t\t<= Amount`,
+		`\t\t\t<= Rate`,
+		`\t\t\t<= Years`,
+		`\t\t\t<= Monthly`,
+		`\t\t\t<= Months`,
+		`\t\t\t<= Payment`,
+		`\t\t\t<= Overpay`,
+		`\t\t\t<= Debt`,
+		`\t\t\t<= Year`,
+		`\t\t\t<= End`,
+		`\t\t\t<= Next`,
+		`\tCompare ${d}mol_view`,
+		`\t\tstyle *`,
+		`\t\t\twidth \\480px`,
+		`\t\t\tminHeight \\720px`,
+		`\t\t\tflexDirection \\column`,
+		`\t\t\tbackground \\var(--mol_theme_back)`,
+		`\t\t\tcolor \\var(--mol_theme_text)`,
+		`\t\tsub /`,
+		`\t\t\t<= Title_2`,
+		`\t\t\t<= Amount_2`,
+		`\t\t\t<= Rate_2`,
+		`\t\t\t<= Years_2`,
+		`\t\t\t<= Monthly_2`,
+		`\t\t\t<= Months_2`,
+		`\t\t\t<= Verdict`,
+		`\t\t\t<= Debt_2`,
+		`\t\t\t<= Back`,
+		`\tTitle ${d}mol_paragraph title \\Ипотека: платёж и переплата`,
+		`\tAmount ${d}mol_number`,
+		`\t\thint \\Сумма кредита, ₽`,
+		`\t\tvalue? <=> amount_value?`,
+		`\tRate ${d}mol_number`,
+		`\t\thint \\Ставка, % годовых`,
+		`\t\tvalue? <=> rate_value?`,
+		`\tYears ${d}mol_number`,
+		`\t\thint \\Срок, лет`,
+		`\t\tvalue? <=> years_value?`,
+		`\tMonthly ${d}bog_vmap_part_calc`,
+		`\t\tright? <=> monthly_right?`,
+		`\t\top? <=> monthly_op?`,
+		`\t\tleft <= rate_value_2`,
+		`\tMonths ${d}bog_vmap_part_calc`,
+		`\t\tright? <=> months_right?`,
+		`\t\top? <=> months_op?`,
+		`\t\tleft? <=> years_value_2?`,
+		`\tPayment ${d}mol_paragraph title <= payment`,
+		`\tOverpay ${d}mol_paragraph title <= overpay`,
+		`\tDebt ${d}bog_vmap_part_plot`,
+		`\t\ttitle \\Остаток долга по годам, ₽`,
+		`\t\tvalues <= balance`,
+		`\tYear ${d}bog_vmap_part_cell`,
+		`\t\tcode? <=> year_code?`,
+		`\t\tauto? <=> year_auto?`,
+		`\tEnd ${d}bog_vmap_part_calc`,
+		`\t\top? <=> end_op?`,
+		`\t\tright <= years_value_3`,
+		`\t\tleft <= year_result_number`,
+		`\tNext ${d}mol_link`,
+		`\t\ttitle \\Сравнить с другим вариантом →`,
+		`\t\targ * page \\Compare`,
+		`\tTitle_2 ${d}mol_paragraph title \\Сравнение: другая ставка или срок`,
+		`\tAmount_2 ${d}mol_number`,
+		`\t\thint \\Сумма кредита, ₽`,
+		`\t\tvalue? <=> amount_value_2?`,
+		`\tRate_2 ${d}mol_number`,
+		`\t\thint \\Ставка, % годовых`,
+		`\t\tvalue? <=> rate_2_value?`,
+		`\tYears_2 ${d}mol_number`,
+		`\t\thint \\Срок, лет`,
+		`\t\tvalue? <=> years_2_value?`,
+		`\tMonthly_2 ${d}bog_vmap_part_calc`,
+		`\t\tright? <=> monthly_2_right?`,
+		`\t\top? <=> monthly_2_op?`,
+		`\t\tleft <= rate_2_value_2`,
+		`\tMonths_2 ${d}bog_vmap_part_calc`,
+		`\t\tright? <=> months_2_right?`,
+		`\t\top? <=> months_2_op?`,
+		`\t\tleft <= years_2_value_2`,
+		`\tVerdict ${d}mol_paragraph title <= verdict`,
+		`\tDebt_2 ${d}bog_vmap_part_plot`,
+		`\t\ttitle \\Остаток долга, второй вариант, ₽`,
+		`\t\tvalues <= balance_2`,
+		`\tBack ${d}mol_link`,
+		`\t\ttitle \\← К расчёту`,
+		`\t\targ * page \\Loan`,
+		`\trate_value_2 = Rate value`,
+		`\tyears_value_2? = Years value?`,
+		`\tyears_value_3 = Years value`,
+		`\tyear_result_number = Year result_number`,
+		`\trate_2_value_2 = Rate_2 value`,
+		`\tyears_2_value_2 = Years_2 value`,
+		`\tamount_value_2? = Amount value?`,
+		`\tpayment null`,
+		`\toverpay null`,
+		`\tbalance null`,
+		`\tverdict null`,
+		`\tbalance_2 null`,
+		``,
+	].join( '\n' )
 
 	const body = [
 		'annuity( sum = 0, rate = 0, months = 0 ) {',
@@ -151,19 +213,15 @@ namespace $ {
 		'',
 	].join( '\n' )
 
-	function source( one: part ) {
-		return `${ one.name } ${ one.klass }\n` + one.props.map( line => `\t${ line }\n` ).join( '' )
-	}
-
-	function literal( one: value ) {
-		return typeof one === 'string' ? $mol_tree2.data( one ) : $mol_tree2.struct( String( one ) )
-	}
-
 	function complete( text: string ) {
 		if( !text ) return false
-		const model = $bog_vmap_lang_node.make({ source: ()=> text })
-		return boards.every( board => model.sub_names()?.includes( board.name ) )
-			&& parts().every( one => model.sub_names( one.board )?.includes( one.name ) )
+
+		const have = $bog_vmap_lang_node.make({ source: ()=> text })
+		const want = $bog_vmap_lang_node.make({ source: ()=> scene_tree })
+
+		return $mol_compare_deep( [ ... have.prop_names() ].sort(), [ ... want.prop_names() ].sort() )
+			&& [ '', ... want.sub_names() ?? [] ].every( owner => $mol_compare_deep( have.sub_names( owner ), want.sub_names( owner ) ) )
+			&& have.links().length === want.links().length
 	}
 
 	function ask< Result >( task: ()=> Result ) {
@@ -181,7 +239,6 @@ namespace $ {
 
 	async function mortgage( app: $$.$bog_vmap_app ) {
 
-		const pane = app.Pane() as $$.$bog_vmap_app_pane
 		const store = app.store()
 
 		const pause = ( ms: number )=> app.$.$mol_wait_timeout_async( ms )
@@ -194,24 +251,7 @@ namespace $ {
 			}
 		}
 
-		const settle = async ()=> {
-			let last = ''
-			const started = Date.now()
-			while( Date.now() - started < scene_limit ) {
-				const now = JSON.stringify( await ask( ()=> pane.sizes() ) )
-				if( now === last ) return
-				last = now
-				await pause( 400 )
-			}
-			$mol_fail( new Error( `размеры узлов сцены не устоялись за ${ scene_limit } мс` ) )
-		}
-
-		const measured = async ( name: string )=> {
-			await until( ()=> Boolean( pane.part_size( name ) ), scene_limit, `сцена не измерила ${ name }` )
-			return ( await ask( ()=> pane.part_size( name ) ) )!
-		}
-
-		await until( ()=> pane.warmed() && app.doc_key() !== '', 600000, 'сцена не прогрелась или документ не открылся' )
+		await until( ()=> app.doc_key() !== '', 600000, 'документ редактора не открылся' )
 
 		const found = await ask( ()=> store.doc_links()
 			.filter( link => [ scene_title, scene_building ].includes( store.doc( link ).title() ) )
@@ -229,84 +269,21 @@ namespace $ {
 		const link = ( await $mol_wire_async( store ).doc_add( scene_building ) ).link()
 		await until( ()=> store.doc_current()?.title() === scene_building, scene_limit, `сцена «${ scene_building }» не стала текущей` )
 
-		const root = d + 'bog_mortgage'
-		await ask( ()=> { app.root_draft( root ); app.root_submit() } )
-		if( await ask( ()=> app.doc_root() ) !== root ) $mol_fail( new Error( 'корень не принял имя модуля' ) )
+		const whole = await ask( ()=> app.code_whole() )
+		await ask( ()=> { app.selected( null ); app.code_whole( true ); app.code_source( scene_tree ) } )
+		await ask( ()=> { app.code_js( body ); app.code_css( style ); app.code_whole( whole ) } )
 
-		for( const board of boards ) {
-
-			const named = await ask( ()=> {
-				app.board_draw({ x: board.x, y: board.y, width: board.width, height: board.height })
-				return app.node_title( board.name )
-			} )
-			if( named !== board.name ) $mol_fail( new Error( `артборд не назвался ${ board.name }` ) )
-
-			const size = await measured( board.name )
-			if( size.width !== board.width || size.x !== board.x ) $mol_fail( new Error( `артборд ${ board.name } лёг ${ JSON.stringify( size ) }` ) )
-
-		}
-
-		for( const part of parts() ) {
-
-			await settle()
-
-			const board = await measured( part.board )
-
-			const named = await ask( ()=> {
-				const before = app.node().prop_names().length
-				app.part_drop( part.shelf, board.x + board.width / 2, board.y + board.height - 12 )
-				if( app.node().prop_names().length === before ) $mol_fail( new Error( `деталь ${ part.name } не легла в документ` ) )
-				return app.node_title( part.name )
-			} )
-			if( named !== part.name ) $mol_fail( new Error( `деталь не назвалась ${ part.name }` ) )
-
-			await measured( part.name )
-
-			const order = await ask( ()=> app.node().sub_names( part.board ) ?? [] )
-			if( order.at( -1 ) !== part.name ) $mol_fail( new Error( `деталь ${ part.name } легла не последней в ${ part.board }: ${ order.join( ', ' ) }` ) )
-
-		}
-
-		await ask( ()=> { app.selected( null ); app.code_js( body ); app.code_css( style ) } )
-
-		for( const part of parts() ) {
-			if( part.props.length ) await ask( ()=> { app.selected( part.name ); app.node_source( source( part ) ) } )
-		}
-
-		for( const part of parts() ) {
-			for( const [ sign, one ] of part.cells ) {
-				const port = sign.replace( /\?$/, '' )
-				const cell = await ask( ()=> {
-					app.selected( part.name )
-					app.node_cell( sign, literal( one ) )
-					return app.node().cell_of( part.name, port )
-				} )
-				if( !cell ) $mol_fail( new Error( `нет ячейки корня за ${ part.name }.${ port }` ) )
-			}
-		}
-
-		for( const wire of wires ) {
-			const laid = await ask( ()=> {
-				app.selected( null )
-				const count = app.doc_wires().length
-				app.link_add( wire )
-				return app.doc_wires().length > count
-			} )
-			if( !laid ) $mol_fail( new Error( `провод ${ wire.from }.${ wire.from_prop } к ${ wire.to }.${ wire.to_prop } не лёг` ) )
-		}
-
-		await ask( ()=> app.camera_reset() )
-
-		const alarm = await ask( ()=> app.error() )
-		if( alarm ) $mol_fail( new Error( `сцена жалуется на документ: ${ alarm }` ) )
+		if( await ask( ()=> app.doc_root() ) !== scene_root ) $mol_fail( new Error( 'корень не принял имя модуля' ) )
+		if( !await ask( ()=> complete( app.doc_src() ) ) ) $mol_fail( new Error( `документ сцены «${ scene_building }» записался не целиком` ) )
 
 		await ask( ()=> store.doc( link ).title( scene_title ) )
+		await ask( ()=> app.camera_reset() )
 
 	}
 
 	$mol_test({
 
-		'the editor on its own page lays out the mortgage scene from blocks, and only once'() {
+		'the editor on its own page writes the mortgage scene as one whole class, and only once'() {
 			const app = $mol_view.roots().find( ( view ): view is $$.$bog_vmap_app => view instanceof $$.$bog_vmap_app )
 			if( app ) mortgage( app ).catch( $mol_fail_log )
 		},
