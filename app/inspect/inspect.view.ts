@@ -5,6 +5,8 @@ namespace $.$$ {
 			?? { name: token, key: '', next: '' }
 	}
 
+	const plain = [ 'null', 'bool', 'number', 'string', 'locale', 'list', 'dict' ] as readonly string[]
+
 	export class $bog_vmap_app_inspect extends $.$bog_vmap_app_inspect {
 
 		override classes() {
@@ -153,11 +155,31 @@ namespace $.$$ {
 			return res
 		}
 
+		override cell( sign: string, next?: $mol_tree2 | null ): $mol_tree2 | null {
+			if( next === undefined ) return null
+			return this.$.$mol_fail( new Error( `Узел без корня: ячейку для ${ sign } завести негде` ) )
+		}
+
+		nested() {
+			return !this.Node().tree().type.startsWith( '$' )
+		}
+
+		row_cell( name: string ) {
+			return this.nested() && Boolean( sign_of( this.row_sign( name ) ).next )
+		}
+
+		row_held( name: string ) {
+			return this.row_cell( name ) ? this.cell( this.row_sign( name ) ) : null
+		}
+
 		row_value( name: string, next?: $mol_tree2 ) {
 
 			const decl = this.port_node( name )!
 
 			if( next === undefined ) {
+
+				const held = this.row_held( name )
+				if( held ) return held
 
 				const val = decl.kids[ 0 ] ?? decl
 
@@ -167,6 +189,11 @@ namespace $.$$ {
 
 				return val
 
+			}
+
+			if( this.row_cell( name ) && plain.includes( this.$.$bog_vmap_app_inspect_value_kind_of( next ) ) ) {
+				this.cell( this.row_sign( name ), next )
+				return next
 			}
 
 			const node = this.Node()
@@ -190,6 +217,29 @@ namespace $.$$ {
 
 			const node = this.Node()
 
+			if( this.nested() && !this.row_inherited( name ) ) {
+
+				const live = this.port_node( name )?.kids[ 0 ]?.type === '<=>'
+				if( next === undefined || next === live ) return live
+
+				const value = this.row_value( name )
+				const meta = sign_of( this.row_sign( name ) )
+				const bare = meta.name + ( meta.key ? '*' : '' )
+
+				if( next && plain.includes( this.$.$bog_vmap_app_inspect_value_kind_of( value ) ) ) {
+					this.cell( bare + '?', value )
+					return next
+				}
+
+				if( !next && this.row_held( name ) ) {
+					this.cell( this.row_sign( name ), null )
+					node.prop_add( bare )
+					node.prop_tree( name, value.struct( bare, [ value ] ) )
+					return next
+				}
+
+			}
+
 			if( next === undefined ) return Boolean( sign_of( this.row_sign( name ) ).next )
 
 			const value = this.port_node( name )?.kids[ 0 ] ?? null
@@ -212,7 +262,8 @@ namespace $.$$ {
 		}
 
 		row_drop( name: string ) {
-			this.Node().prop_drop( name )
+			if( this.row_held( name ) ) this.cell( this.row_sign( name ), null )
+			else this.Node().prop_drop( name )
 		}
 
 		style_dict() {

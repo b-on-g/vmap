@@ -484,7 +484,151 @@ namespace $ {
 		},
 	})
 
+	$mol_test({
+
+		'a value typed for a writable port of a node lands in a cell of the root'( $ ) {
+
+			const { root, inspect } = part_panel( $, root_src, 'Amount' )
+
+			field( inspect, 'value' ).num( '6000000' )
+
+			$mol_assert_equal( root.over_tree( 'Amount', 'value' )!.toString(), 'value? <=> amount_value?\n' )
+			$mol_assert_equal( root.prop_decl( 'amount_value' )!.toString(), 'amount_value? 6000000\n' )
+			$mol_assert_equal( field( inspect, 'value' ).num(), '6000000' )
+
+		},
+
+		'a second edit of the value edits the cell and leaves the node alone'( $ ) {
+
+			const { root, inspect } = part_panel( $, root_src, 'Amount' )
+
+			field( inspect, 'value' ).num( '6000000' )
+			const node = inspect.Node().source()
+
+			field( inspect, 'value' ).num( '7000000' )
+
+			$mol_assert_equal( root.prop_decl( 'amount_value' )!.toString(), 'amount_value? 7000000\n' )
+			$mol_assert_equal( root.source().split( '\n' ).filter( line => line.includes( 'amount_value' ) ).length, 2 )
+			$mol_assert_equal( inspect.Node().source(), node )
+			$mol_assert_equal( field( inspect, 'value' ).num(), '7000000' )
+
+		},
+
+		'a port that takes no writes keeps its constant in the node'( $ ) {
+
+			const { root, inspect } = part_panel( $, root_src, 'Amount' )
+
+			field( inspect, 'hint' ).String().text( 'Сумма' )
+
+			$mol_assert_equal( root.over_tree( 'Amount', 'hint' )!.toString(), 'hint \\Сумма\n' )
+			$mol_assert_equal( root.prop_names().includes( 'amount_hint' ), false )
+
+		},
+
+		'a class of its own keeps a constant even in a writable property'( $ ) {
+
+			const one = panel( $, `${ d }bog_vmap_app_inspect_test_card ${ d }mol_view\n\tcount? 24\n` )
+
+			field( one, 'count' ).num( '42' )
+
+			$mol_assert_ok( one.Node().source().includes( 'count? 42' ) )
+
+		},
+
+		'a node row shows the value of the cell it is bound to by hand'( $ ) {
+
+			const { root, inspect } = part_panel( $, root_src
+				.replace( `	Amount ${ d }bog_vmap_app_inspect_test_number`, `	amount? 5\n	Amount ${ d }bog_vmap_app_inspect_test_number value? <=> amount?` ), 'Amount' )
+
+			const value = field( inspect, 'value' )
+
+			$mol_assert_equal( value.Editor(), value.Num() )
+			$mol_assert_equal( value.num(), '5' )
+
+			value.num( '6' )
+
+			$mol_assert_equal( root.prop_decl( 'amount' )!.toString(), 'amount? 6\n' )
+
+		},
+
+		'the sign box of a node row says whether the field takes input'( $ ) {
+
+			const { root, inspect } = part_panel( $, root_src
+				.replace( `	Amount ${ d }bog_vmap_app_inspect_test_number`, `	Amount ${ d }bog_vmap_app_inspect_test_number value? 6000000` ), 'Amount' )
+
+			$mol_assert_equal( inspect.row_changeable( 'value' ), false )
+
+			inspect.row_changeable( 'value', true )
+
+			$mol_assert_equal( root.over_tree( 'Amount', 'value' )!.toString(), 'value? <=> amount_value?\n' )
+			$mol_assert_equal( inspect.row_changeable( 'value' ), true )
+
+			inspect.row_changeable( 'value', false )
+
+			$mol_assert_equal( root.over_tree( 'Amount', 'value' )!.toString(), 'value 6000000\n' )
+			$mol_assert_equal( root.prop_names().includes( 'amount_value' ), false )
+			$mol_assert_equal( inspect.row_changeable( 'value' ), false )
+
+		},
+
+		'dropping the row of a bound port takes its cell too'( $ ) {
+
+			const { root, inspect } = part_panel( $, root_src, 'Amount' )
+
+			field( inspect, 'value' ).num( '6000000' )
+			inspect.row_drop( 'value' )
+
+			$mol_assert_equal( root.over_tree( 'Amount', 'value' ), null )
+			$mol_assert_equal( root.source().includes( 'amount_value' ), false )
+
+		},
+
+	})
+
 	const d = '$'
+
+	const root_src = [
+		`${ d }bog_vmap_app_inspect_test_root ${ d }mol_view`,
+		`	Amount ${ d }bog_vmap_app_inspect_test_number`,
+		`	sub / <= Amount`,
+		``,
+	].join( '\n' )
+
+	const number_src = [
+		`${ d }bog_vmap_app_inspect_test_number ${ d }mol_view`,
+		`	value? 0`,
+		`	hint \\`,
+		``,
+	].join( '\n' )
+
+	function field( inspect: $$.$bog_vmap_app_inspect, name: string ) {
+		return inspect.Row( name ).Value() as $$.$bog_vmap_app_inspect_value
+	}
+
+	function part_panel( $: $mol_ambient_context, source: string, part: string ) {
+
+		browser_gaps( $ )
+
+		const root = $.$bog_vmap_lang_node.make({ $ })
+		root.source( source )
+
+		const base = $.$mol_tree2_from_string( number_src, 'number.view.tree' ).kids
+
+		const inspect = $.$bog_vmap_app_inspect.make({
+			$,
+			source: ( next?: string )=> {
+				const sign = root.prop_fullname( part )
+				if( next === undefined ) return root.props_tree().select( sign ).kids[ 0 ]?.toString() ?? ''
+				root.prop_tree( part, $.$mol_tree2_from_string( next.replace( /\n?$/, '\n' ), 'part.view.tree' ).kids[ 0 ] )
+				return next
+			},
+			peers: ()=> base,
+			pack: ()=> '',
+			cell: ( sign: string, next?: $mol_tree2 | null )=> root.cell_value( part, sign, next ),
+		}) as $$.$bog_vmap_app_inspect
+
+		return { root, inspect }
+	}
 
 	function browser_gaps( $: $mol_ambient_context ) {
 
