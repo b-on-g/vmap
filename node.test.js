@@ -17712,6 +17712,21 @@ var $;
     function $bog_vmap_lang_quoted(text) {
         return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
+    function sign_of(sign) {
+        const parts = [...sign.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
+        return {
+            name: parts?.name ?? sign,
+            key: parts?.key ? '*' : '',
+            next: parts?.next ? '?' : '',
+        };
+    }
+    function cell_plain(value) {
+        if (!value)
+            return false;
+        if (['=', '<=', '<=>', '=>', '^'].includes(value.type))
+            return false;
+        return !$mol_view_tree2_class_match(value);
+    }
     function $bog_vmap_lang_css_rename(css, from, to) {
         if (!css || from === to)
             return css;
@@ -17925,17 +17940,29 @@ var $;
             const base = self.kids[0];
             if (!base)
                 return;
+            const moves = this.part_names().includes(name) ? this.cell_moves(name, to) : new Map();
+            const moved = (sign) => {
+                const meta = sign_of(sign);
+                const target = moves.get(meta.name);
+                return target === undefined ? null : target + meta.key + meta.next;
+            };
             const refs = (tree) => {
                 const kids = tree.kids.map(refs);
                 const head = kids[0];
                 if (head?.type === name
                     && (tree.type === '<=' || tree.type === '<=>' || tree.type === '='))
                     return tree.clone([head.struct(to, head.kids), ...kids.slice(1)]);
+                const shifted = head && (tree.type === '<=' || tree.type === '<=>') ? moved(head.type) : null;
+                if (shifted)
+                    return tree.clone([head.struct(shifted, head.kids), ...kids.slice(1)]);
                 return tree.clone(kids);
             };
             const props = base.kids.map(prop => {
                 const meta = [...prop.type.matchAll($mol_view_tree2_prop_signature)][0]?.groups;
-                return meta?.name === name ? prop.struct(next, prop.kids) : prop;
+                if (meta?.name === name)
+                    return prop.struct(next, prop.kids);
+                const shifted = moved(prop.type);
+                return shifted ? prop.struct(shifted, prop.kids) : prop;
             });
             this.tree(self.clone([base.clone(props.map(refs))]));
         }
@@ -18090,6 +18117,114 @@ var $;
                     continue;
                 this.prop_drop(wire.name);
             }
+        }
+        ref_names(skip = '') {
+            const names = [];
+            const walk = (tree) => {
+                const head = tree.kids[0];
+                if (head && (tree.type === '<=' || tree.type === '<=>'))
+                    names.push(sign_of(head.type).name);
+                for (const kid of tree.kids)
+                    walk(kid);
+            };
+            for (const prop of this.props_tree().kids) {
+                if (skip && sign_of(prop.type).name === skip)
+                    continue;
+                walk(prop);
+            }
+            return names;
+        }
+        cell_of(part, prop) {
+            const op = this.over_tree(part, prop)?.kids[0];
+            if (op?.type !== '<=>' || !op.kids[0])
+                return '';
+            const name = sign_of(op.kids[0].type).name;
+            return cell_plain(this.prop_decl(name)?.kids[0]) ? name : '';
+        }
+        cell_base(part, prop) {
+            return `${part.toLowerCase()}_${prop}`;
+        }
+        cell_name(part, prop, taken = new Set([...this.prop_names(), ...this.ref_names()])) {
+            const base = this.cell_base(part, prop);
+            for (let i = 1;; ++i) {
+                const name = i === 1 ? base : `${base}_${i}`;
+                if (!taken.has(name))
+                    return name;
+            }
+        }
+        cell_moves(part, to) {
+            const moves = new Map();
+            const klass = this.prop_decl(part)?.kids[0];
+            if (!klass || !$mol_view_tree2_class_match(klass))
+                return moves;
+            const taken = new Set([...this.prop_names(), ...this.ref_names()]);
+            for (const over of klass.kids) {
+                const port = sign_of(over.type).name;
+                const cell = this.cell_of(part, port);
+                if (!cell || moves.has(cell))
+                    continue;
+                const base = this.cell_base(part, port);
+                const tail = cell.startsWith(base + '_') ? cell.slice(base.length + 1) : '';
+                if (cell !== base && !/^[0-9]+$/.test(tail))
+                    continue;
+                taken.delete(cell);
+                const fresh = this.cell_name(to, port, taken);
+                taken.add(fresh);
+                moves.set(cell, fresh);
+            }
+            return moves;
+        }
+        cell_value(part, sign, next) {
+            const port = sign_of(sign).name;
+            const cell = this.cell_of(part, port);
+            if (next === undefined)
+                return cell ? this.prop_decl(cell)?.kids[0] ?? null : null;
+            if (next === null)
+                this.cell_drop(part, port);
+            else if (cell)
+                this.prop_tree(cell, this.prop_decl(cell).clone([next]));
+            else
+                this.cell_bind(part, sign, next);
+            return next;
+        }
+        cell_bind(part, sign, value) {
+            const meta = sign_of(sign);
+            const port = this.$.$bog_vmap_lang_token(meta.name, 'Port');
+            if (!meta.next)
+                this.$.$mol_fail(new Error(`Port ${JSON.stringify(sign)} takes no writes, a cell behind it would never change`));
+            if (!this.part_names().includes(part))
+                this.$.$mol_fail(new Error(`Part ${JSON.stringify(part)} is not declared in ${this.name()}`));
+            const held = this.over_tree(part, port)?.kids[0];
+            if (held && !cell_plain(held))
+                this.$.$mol_fail(new Error(`Port ${JSON.stringify(port)} of ${part} is bound already, a value would unplug it`));
+            const name = this.cell_name(part, port);
+            const tail = meta.key + '?';
+            const tree = this.tree();
+            this.over_set(part, port, tree.struct(port + tail, [
+                tree.struct('<=>', [tree.struct(name + tail, [value])]),
+            ]));
+        }
+        cell_drop(part, prop) {
+            const cell = this.cell_of(part, prop);
+            this.over_set(part, prop, null);
+            if (cell)
+                this.cell_tidy(cell);
+        }
+        cells_drop(part) {
+            const klass = this.prop_decl(part)?.kids[0];
+            if (!klass || !$mol_view_tree2_class_match(klass))
+                return;
+            const cells = klass.kids.map(over => this.cell_of(part, sign_of(over.type).name));
+            const others = this.ref_names(part);
+            for (const cell of new Set(cells)) {
+                if (cell && !others.includes(cell))
+                    this.prop_drop(cell);
+            }
+        }
+        cell_tidy(cell) {
+            if (this.ref_names().includes(cell))
+                return;
+            this.prop_drop(cell);
         }
         prop_decl(name) {
             const sign = this.prop_fullname(name);
@@ -18251,6 +18386,15 @@ var $;
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "links_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "cell_bind", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "cell_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "cells_drop", null);
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "sub_open", null);
@@ -25017,6 +25161,10 @@ var $;
 				(this.Inherited())
 			];
 		}
+		cell(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		Empty(){
 			const obj = new this.$.$mol_status();
 			(obj.status) = () => ((this.empty_note()));
@@ -25064,6 +25212,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "source"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "pack"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "class_title"));
+	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "cell"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Empty"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Node"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Lib"));
@@ -25488,6 +25637,7 @@ var $;
             return [...token.matchAll($mol_view_tree2_prop_signature)][0]?.groups
                 ?? { name: token, key: '', next: '' };
         }
+        const plain = ['null', 'bool', 'number', 'string', 'locale', 'list', 'dict'];
         class $bog_vmap_app_inspect extends $.$bog_vmap_app_inspect {
             classes() {
                 const own = this.Node().tree();
@@ -25595,14 +25745,35 @@ var $;
                 }
                 return res;
             }
+            cell(sign, next) {
+                if (next === undefined)
+                    return null;
+                return this.$.$mol_fail(new Error(`Узел без корня: ячейку для ${sign} завести негде`));
+            }
+            nested() {
+                return !this.Node().tree().type.startsWith('$');
+            }
+            row_cell(name) {
+                return this.nested() && Boolean(sign_of(this.row_sign(name)).next);
+            }
+            row_held(name) {
+                return this.row_cell(name) ? this.cell(this.row_sign(name)) : null;
+            }
             row_value(name, next) {
                 const decl = this.port_node(name);
                 if (next === undefined) {
+                    const held = this.row_held(name);
+                    if (held)
+                        return held;
                     const val = decl.kids[0] ?? decl;
                     if (this.row_inherited(name) && val.type === '*') {
                         return val.clone([val.struct('^')]);
                     }
                     return val;
+                }
+                if (this.row_cell(name) && plain.includes(this.$.$bog_vmap_app_inspect_value_kind_of(next))) {
+                    this.cell(this.row_sign(name), next);
+                    return next;
                 }
                 const node = this.Node();
                 if (this.row_inherited(name))
@@ -25618,6 +25789,24 @@ var $;
             }
             row_changeable(name, next) {
                 const node = this.Node();
+                if (this.nested() && !this.row_inherited(name)) {
+                    const live = this.port_node(name)?.kids[0]?.type === '<=>';
+                    if (next === undefined || next === live)
+                        return live;
+                    const value = this.row_value(name);
+                    const meta = sign_of(this.row_sign(name));
+                    const bare = meta.name + (meta.key ? '*' : '');
+                    if (next && plain.includes(this.$.$bog_vmap_app_inspect_value_kind_of(value))) {
+                        this.cell(bare + '?', value);
+                        return next;
+                    }
+                    if (!next && this.row_held(name)) {
+                        this.cell(this.row_sign(name), null);
+                        node.prop_add(bare);
+                        node.prop_tree(name, value.struct(bare, [value]));
+                        return next;
+                    }
+                }
                 if (next === undefined)
                     return Boolean(sign_of(this.row_sign(name)).next);
                 const value = this.port_node(name)?.kids[0] ?? null;
@@ -25634,7 +25823,10 @@ var $;
                 return node.property(name).next(next);
             }
             row_drop(name) {
-                this.Node().prop_drop(name);
+                if (this.row_held(name))
+                    this.cell(this.row_sign(name), null);
+                else
+                    this.Node().prop_drop(name);
             }
             style_dict() {
                 const dict = this.Node().prop_decl('style')?.kids[0] ?? null;
@@ -34180,6 +34372,10 @@ var $;
 		node_title_note(){
 			return "";
 		}
+		node_cell(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		idle_note(){
 			return "Выберите узел на холсте, чтобы править его свойства";
 		}
@@ -34426,6 +34622,7 @@ var $;
 			(obj.pack) = () => ((this.pack_link()));
 			(obj.class_title) = (next) => ((this.node_title(next)));
 			(obj.title_note) = () => ((this.node_title_note()));
+			(obj.cell) = (id, next) => ((this.node_cell(id, next)));
 			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
@@ -34576,6 +34773,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Pane"));
 	($mol_mem(($.$bog_vmap_app.prototype), "shelf_place"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_title"));
+	($mol_mem_key(($.$bog_vmap_app.prototype), "node_cell"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Idle_note"));
 	($mol_mem(($.$bog_vmap_app.prototype), "pack_default"));
 	($mol_mem(($.$bog_vmap_app.prototype), "scene_restart"));
@@ -35447,6 +35645,12 @@ var $;
                     node.prop_tree(name, parsed);
                 return next;
             }
+            node_cell(sign, next) {
+                const name = this.selected();
+                if (!name)
+                    return null;
+                return this.node().cell_value(name, sign, next);
+            }
             node_peers() {
                 return [...this.lib_classes(), this.node().tree()];
             }
@@ -35791,6 +35995,7 @@ var $;
                 for (const dead of doomed)
                     node.links_drop(dead);
                 for (const dead of doomed) {
+                    node.cells_drop(dead);
                     node.sub_drop(dead);
                     node.prop_drop(dead);
                 }
@@ -43374,6 +43579,145 @@ var $;
             $mol_assert_equal(node.property('title').next(), true);
         },
     });
+    const field_src = [
+        `${d}bog_vmap_lang_test_field ${d}mol_view`,
+        `	Amount ${d}bog_vmap_lang_test_number`,
+        `	Total ${d}mol_view`,
+        `	sub /`,
+        `		<= Amount`,
+        `		<= Total`,
+        ``,
+    ].join('\n');
+    const num = (text) => $mol_tree2.struct(text);
+    const count = (text, line) => text.split('\n').filter(one => one.trim() === line).length;
+    $mol_test({
+        'a value of a writable port of a part is a cell of the root, not a constant'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'value?', num('6000000'));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), 'amount_value');
+            $mol_assert_equal(node.prop_decl('amount_value').toString(), 'amount_value? 6000000\n');
+            $mol_assert_equal(node.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
+            $mol_assert_equal(node.cell_value('Amount', 'value?').type, '6000000');
+            const js = js_of($, node);
+            $mol_assert_equal(js.includes('(obj.value) = (next) => ((this.amount_value(next)))'), true);
+            $mol_assert_equal(js.includes('(obj.value) = (next) => (6000000)'), false);
+        },
+        'a second value edits the cell where it stands and declares it once'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'value?', num('6000000'));
+            node.cell_value('Amount', 'value?', num('7000000'));
+            const source = node.source();
+            $mol_assert_equal(count(source, 'amount_value? 7000000'), 1);
+            $mol_assert_equal(source.includes('6000000'), false);
+            $mol_assert_equal(source.includes('amount_value_2'), false);
+            $mol_assert_equal(node.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
+            $mol_assert_like(node.prop_names().filter(name => name.startsWith('amount')), ['amount_value']);
+        },
+        'a constant left in a writable port gives way to the cell on the next edit'($) {
+            const node = doc(field_src.replace(`Amount ${d}bog_vmap_lang_test_number`, `Amount ${d}bog_vmap_lang_test_number value? 6000000`));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), '');
+            $mol_assert_equal(node.cell_value('Amount', 'value?'), null);
+            node.cell_value('Amount', 'value?', num('5000000'));
+            $mol_assert_equal(node.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
+            $mol_assert_equal(node.cell_value('Amount', 'value?').type, '5000000');
+            $mol_assert_equal(node.source().includes('6000000'), false);
+        },
+        'a hand written binding is read and edited through the cell it names'($) {
+            const node = doc(field_src
+                .replace(`	Amount ${d}bog_vmap_lang_test_number`, `	amount? 5\n	Amount ${d}bog_vmap_lang_test_number value? <=> amount?`));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), 'amount');
+            $mol_assert_equal(node.cell_value('Amount', 'value?').type, '5');
+            node.cell_value('Amount', 'value?', num('6'));
+            $mol_assert_equal(node.prop_decl('amount').toString(), 'amount? 6\n');
+            $mol_assert_equal(node.prop_names().includes('amount_value'), false);
+        },
+        'a port fed by a wire is not a cell and a value does not unplug it'($) {
+            const node = doc(field_src);
+            node.link_add({ from: 'Amount', from_prop: 'value', to: 'Total', to_prop: 'title', bidi: true });
+            const before = node.source();
+            $mol_assert_equal(node.cell_of('Total', 'title'), '');
+            $mol_assert_equal(node.cell_value('Total', 'title?'), null);
+            $mol_assert_fail(() => node.cell_value('Total', 'title?', $mol_tree2.data('Hi')), Error);
+            $mol_assert_equal(node.source(), before);
+        },
+        'a cell takes a free name when a wire of the same port holds the obvious one'($) {
+            const node = doc(field_src);
+            node.link_add({ from: 'Amount', from_prop: 'value', to: 'Total', to_prop: 'title', bidi: true });
+            node.cell_value('Amount', 'value?', num('6000000'));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), 'amount_value_2');
+            $mol_assert_equal(node.over_tree('Total', 'title').toString(), 'title? <=> amount_value?\n');
+            $mol_assert_like(node.links().map(link => link.name), ['amount_value']);
+            const js = js_of($, node);
+            $mol_assert_equal(js.includes('this.amount_value_2(next)'), true);
+            $mol_assert_equal(js.includes('this.Amount().value(next)'), true);
+        },
+        'a cell never takes a name that something already reads'($) {
+            const node = doc(field_src.replace(`	Total ${d}mol_view`, `	Total ${d}mol_view title <= amount_value`));
+            node.cell_value('Amount', 'value?', num('1'));
+            $mol_assert_equal(node.cell_of('Amount', 'value'), 'amount_value_2');
+        },
+        'a keyed port takes a keyed cell'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'option*?', num('false'));
+            $mol_assert_equal(node.over_tree('Amount', 'option').toString(), 'option*? <=> amount_option*?\n');
+            $mol_assert_equal(node.prop_decl('amount_option').toString(), 'amount_option*? false\n');
+            $mol_assert_equal(js_of($, node).includes('this.amount_option(id, next)'), true);
+        },
+        'a port without the sign gets no cell and nothing is written'($) {
+            const node = doc(field_src);
+            $mol_assert_fail(() => node.cell_value('Amount', 'value', num('1')), Error);
+            $mol_assert_fail(() => node.cell_value('Nope', 'value?', num('1')), Error);
+            $mol_assert_equal(node.source(), field_src);
+        },
+        'renaming a part carries the cell named after it with the value'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'value?', num('6000000'));
+            node.property('Amount').title('Sum');
+            $mol_assert_equal(node.cell_of('Sum', 'value'), 'sum_value');
+            $mol_assert_equal(node.cell_value('Sum', 'value?').type, '6000000');
+            $mol_assert_equal(node.source().includes('amount'), false);
+        },
+        'renaming a part carries a cell that had to take a numbered name'($) {
+            const node = doc(field_src);
+            node.link_add({ from: 'Amount', from_prop: 'value', to: 'Total', to_prop: 'title', bidi: true });
+            node.cell_value('Amount', 'value?', num('6000000'));
+            node.property('Amount').title('Sum');
+            $mol_assert_equal(node.cell_of('Sum', 'value'), 'sum_value');
+            $mol_assert_equal(node.cell_value('Sum', 'value?').type, '6000000');
+            $mol_assert_like(node.links().map(link => [link.from, link.name]), [['Sum', 'amount_value']]);
+        },
+        'renaming a part carries its cell onto a free name and leaves a hand named one'($) {
+            const node = doc(field_src
+                .replace(`	Total ${d}mol_view`, `	sum_value \\taken\n	amount? 5\n	Total ${d}mol_view title? <=> amount?`));
+            node.cell_value('Amount', 'value?', num('6000000'));
+            node.property('Amount').title('Sum');
+            $mol_assert_equal(node.cell_of('Sum', 'value'), 'sum_value_2');
+            $mol_assert_equal(node.prop_decl('sum_value').toString(), 'sum_value \\taken\n');
+            $mol_assert_equal(node.cell_of('Total', 'title'), 'amount');
+        },
+        'dropping the value of a port takes its cell unless another reader holds it'($) {
+            const alone = doc(field_src);
+            alone.cell_value('Amount', 'value?', num('1'));
+            alone.cell_value('Amount', 'value?', null);
+            $mol_assert_equal(alone.over_tree('Amount', 'value'), null);
+            $mol_assert_equal(alone.source().includes('amount_value'), false);
+            const shared = doc(field_src);
+            shared.cell_value('Amount', 'value?', num('1'));
+            shared.over_set('Total', 'title', $mol_tree2.struct('title', [$mol_tree2.struct('<=', [$mol_tree2.struct('amount_value')])]));
+            shared.cell_value('Amount', 'value?', null);
+            $mol_assert_equal(shared.over_tree('Amount', 'value'), null);
+            $mol_assert_equal(shared.prop_decl('amount_value').toString(), 'amount_value? 1\n');
+        },
+        'deleting a part takes the cells nobody else reads'($) {
+            const node = doc(field_src);
+            node.cell_value('Amount', 'value?', num('1'));
+            node.cell_value('Amount', 'hint?', $mol_tree2.data('Сумма'));
+            node.over_set('Total', 'title', $mol_tree2.struct('title', [$mol_tree2.struct('<=', [$mol_tree2.struct('amount_hint')])]));
+            node.cells_drop('Amount');
+            $mol_assert_equal(node.prop_names().includes('amount_value'), false);
+            $mol_assert_equal(node.prop_names().includes('amount_hint'), true);
+        },
+    });
 })($ || ($ = {}));
 
 ;
@@ -43914,7 +44258,100 @@ var $;
             $mol_assert_equal(one.Inherited().dom_node().querySelector('[mol_form_field]'), null);
         },
     });
+    $mol_test({
+        'a value typed for a writable port of a node lands in a cell of the root'($) {
+            const { root, inspect } = part_panel($, root_src, 'Amount');
+            field(inspect, 'value').num('6000000');
+            $mol_assert_equal(root.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
+            $mol_assert_equal(root.prop_decl('amount_value').toString(), 'amount_value? 6000000\n');
+            $mol_assert_equal(field(inspect, 'value').num(), '6000000');
+        },
+        'a second edit of the value edits the cell and leaves the node alone'($) {
+            const { root, inspect } = part_panel($, root_src, 'Amount');
+            field(inspect, 'value').num('6000000');
+            const node = inspect.Node().source();
+            field(inspect, 'value').num('7000000');
+            $mol_assert_equal(root.prop_decl('amount_value').toString(), 'amount_value? 7000000\n');
+            $mol_assert_equal(root.source().split('\n').filter(line => line.includes('amount_value')).length, 2);
+            $mol_assert_equal(inspect.Node().source(), node);
+            $mol_assert_equal(field(inspect, 'value').num(), '7000000');
+        },
+        'a port that takes no writes keeps its constant in the node'($) {
+            const { root, inspect } = part_panel($, root_src, 'Amount');
+            field(inspect, 'hint').String().text('Сумма');
+            $mol_assert_equal(root.over_tree('Amount', 'hint').toString(), 'hint \\Сумма\n');
+            $mol_assert_equal(root.prop_names().includes('amount_hint'), false);
+        },
+        'a class of its own keeps a constant even in a writable property'($) {
+            const one = panel($, `${d}bog_vmap_app_inspect_test_card ${d}mol_view\n\tcount? 24\n`);
+            field(one, 'count').num('42');
+            $mol_assert_ok(one.Node().source().includes('count? 42'));
+        },
+        'a node row shows the value of the cell it is bound to by hand'($) {
+            const { root, inspect } = part_panel($, root_src
+                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	amount? 5\n	Amount ${d}bog_vmap_app_inspect_test_number value? <=> amount?`), 'Amount');
+            const value = field(inspect, 'value');
+            $mol_assert_equal(value.Editor(), value.Num());
+            $mol_assert_equal(value.num(), '5');
+            value.num('6');
+            $mol_assert_equal(root.prop_decl('amount').toString(), 'amount? 6\n');
+        },
+        'the sign box of a node row says whether the field takes input'($) {
+            const { root, inspect } = part_panel($, root_src
+                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	Amount ${d}bog_vmap_app_inspect_test_number value? 6000000`), 'Amount');
+            $mol_assert_equal(inspect.row_changeable('value'), false);
+            inspect.row_changeable('value', true);
+            $mol_assert_equal(root.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
+            $mol_assert_equal(inspect.row_changeable('value'), true);
+            inspect.row_changeable('value', false);
+            $mol_assert_equal(root.over_tree('Amount', 'value').toString(), 'value 6000000\n');
+            $mol_assert_equal(root.prop_names().includes('amount_value'), false);
+            $mol_assert_equal(inspect.row_changeable('value'), false);
+        },
+        'dropping the row of a bound port takes its cell too'($) {
+            const { root, inspect } = part_panel($, root_src, 'Amount');
+            field(inspect, 'value').num('6000000');
+            inspect.row_drop('value');
+            $mol_assert_equal(root.over_tree('Amount', 'value'), null);
+            $mol_assert_equal(root.source().includes('amount_value'), false);
+        },
+    });
     const d = '$';
+    const root_src = [
+        `${d}bog_vmap_app_inspect_test_root ${d}mol_view`,
+        `	Amount ${d}bog_vmap_app_inspect_test_number`,
+        `	sub / <= Amount`,
+        ``,
+    ].join('\n');
+    const number_src = [
+        `${d}bog_vmap_app_inspect_test_number ${d}mol_view`,
+        `	value? 0`,
+        `	hint \\`,
+        ``,
+    ].join('\n');
+    function field(inspect, name) {
+        return inspect.Row(name).Value();
+    }
+    function part_panel($, source, part) {
+        browser_gaps($);
+        const root = $.$bog_vmap_lang_node.make({ $ });
+        root.source(source);
+        const base = $.$mol_tree2_from_string(number_src, 'number.view.tree').kids;
+        const inspect = $.$bog_vmap_app_inspect.make({
+            $,
+            source: (next) => {
+                const sign = root.prop_fullname(part);
+                if (next === undefined)
+                    return root.props_tree().select(sign).kids[0]?.toString() ?? '';
+                root.prop_tree(part, $.$mol_tree2_from_string(next.replace(/\n?$/, '\n'), 'part.view.tree').kids[0]);
+                return next;
+            },
+            peers: () => base,
+            pack: () => '',
+            cell: (sign, next) => root.cell_value(part, sign, next),
+        });
+        return { root, inspect };
+    }
     function browser_gaps($) {
         const dom = $.$mol_dom_context;
         Object.assign(globalThis, {
@@ -55715,6 +56152,39 @@ var $;
             $mol_assert_ok(source.includes('<= Calc'));
             $mol_assert_ok(stage.scene.sent('doc_set').length > before);
             $mol_assert_equal(stage.scene.last('doc_set').src, source);
+        },
+        'a value typed for a field is a cell of the root that follows the field through a rename and a delete'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            stage.drop(number, stage.client([200, 150]));
+            stage.tap(stage.part_center('Number'));
+            stage.type(stage.field("Row('value').Value().Num()"), '6000000');
+            $mol_assert_equal(app.node().over_tree('Number', 'value').toString(), 'value? <=> number_value?\n');
+            $mol_assert_equal(app.node().prop_decl('number_value').toString(), 'number_value? 6000000\n');
+            $mol_assert_equal(stage.scene.last('doc_set').src, app.doc_source());
+            stage.click(stage.check('Слои'));
+            const layers = app.Layers().dom_node().textContent ?? '';
+            $mol_assert_ok(stage.root.contains(app.Layers().dom_node()));
+            $mol_assert_ok(layers.includes('Number'));
+            $mol_assert_equal(layers.includes('number_value'), false);
+            $mol_assert_like(app.doc_wires(), []);
+            $mol_assert_like(stage.pane.wire_lines(), []);
+            stage.type(stage.field("Row('value').Value().Num()"), '7000000');
+            $mol_assert_equal(app.node().prop_decl('number_value').toString(), 'number_value? 7000000\n');
+            $mol_assert_equal(app.doc_source().includes('6000000'), false);
+            $mol_assert_equal(app.doc_source().split('\n').filter(line => line.includes('number_value')).length, 2);
+            $mol_assert_equal(stage.field("Row('value').Value().Num()").value, '7000000');
+            const name = stage.field('Inspect().Name()');
+            stage.type(name, 'Amount');
+            stage.blur(name);
+            $mol_assert_equal(app.selected(), 'Amount');
+            $mol_assert_equal(app.node().cell_of('Amount', 'value'), 'amount_value');
+            $mol_assert_equal(app.doc_source().includes('number_value'), false);
+            $mol_assert_equal(stage.field("Row('value').Value().Num()").value, '7000000');
+            $mol_assert_equal(stage.scene.last('doc_set').src, app.doc_source());
+            app.node_delete();
+            $mol_assert_equal(app.doc_source().includes('amount_value'), false);
+            $mol_assert_equal(app.doc_source().includes('Amount'), false);
         },
         'a wire drawn between two parts is written, labelled and unplugged'($) {
             const stage = $_2.$bog_vmap_app_flow_stage($);
