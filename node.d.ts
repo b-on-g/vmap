@@ -42852,62 +42852,67 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_inspect_value['editable'] >
 	>
-	type $mol_check__title_bog_vmap_app_inspect_row_6 = $mol_type_enforce<
+	type $mol_status__status_bog_vmap_app_inspect_row_6 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_row['frozen'] >
+		,
+		ReturnType< $mol_status['status'] >
+	>
+	type $mol_check__title_bog_vmap_app_inspect_row_7 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['title'] >
 	>
-	type $mol_check__hint_bog_vmap_app_inspect_row_7 = $mol_type_enforce<
+	type $mol_check__hint_bog_vmap_app_inspect_row_8 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['hint'] >
 	>
-	type $mol_check__checked_bog_vmap_app_inspect_row_8 = $mol_type_enforce<
+	type $mol_check__checked_bog_vmap_app_inspect_row_9 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['keyed'] >
 		,
 		ReturnType< $mol_check['checked'] >
 	>
-	type $mol_check__enabled_bog_vmap_app_inspect_row_9 = $mol_type_enforce<
+	type $mol_check__enabled_bog_vmap_app_inspect_row_10 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['editable'] >
 		,
 		ReturnType< $mol_check['enabled'] >
 	>
-	type $mol_check__title_bog_vmap_app_inspect_row_10 = $mol_type_enforce<
+	type $mol_check__title_bog_vmap_app_inspect_row_11 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['title'] >
 	>
-	type $mol_check__hint_bog_vmap_app_inspect_row_11 = $mol_type_enforce<
+	type $mol_check__hint_bog_vmap_app_inspect_row_12 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['hint'] >
 	>
-	type $mol_check__checked_bog_vmap_app_inspect_row_12 = $mol_type_enforce<
+	type $mol_check__checked_bog_vmap_app_inspect_row_13 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['changeable'] >
 		,
 		ReturnType< $mol_check['checked'] >
 	>
-	type $mol_check__enabled_bog_vmap_app_inspect_row_13 = $mol_type_enforce<
+	type $mol_check__enabled_bog_vmap_app_inspect_row_14 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['editable'] >
 		,
 		ReturnType< $mol_check['enabled'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_inspect_row_14 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_inspect_row_15 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_inspect_row_15 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_inspect_row_16 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_inspect_row_16 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_inspect_row_17 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['drop'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_button_minor__enabled_bog_vmap_app_inspect_row_17 = $mol_type_enforce<
+	type $mol_button_minor__enabled_bog_vmap_app_inspect_row_18 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['editable'] >
 		,
 		ReturnType< $mol_button_minor['enabled'] >
@@ -42926,10 +42931,12 @@ declare namespace $ {
 		changeable( next?: boolean ): boolean
 		drop( next?: any ): any
 		editable( ): boolean
+		frozen( ): string
 		name( ): ReturnType< $bog_vmap_app_inspect_row['sign'] >
 		bid( ): ReturnType< $bog_vmap_app_inspect_row['owner'] >
 		label( ): readonly(any)[]
 		control( ): ReturnType< $bog_vmap_app_inspect_row['Value'] >
+		Frozen( ): $mol_status
 		Key( ): $mol_check
 		Next( ): $mol_check
 		Drop( ): $mol_button_minor
@@ -42941,6 +42948,7 @@ declare namespace $ {
 declare namespace $.$$ {
     class $bog_vmap_app_inspect_row extends $.$bog_vmap_app_inspect_row {
         tools(): readonly $mol_view[];
+        content(): readonly $mol_view_content[];
     }
 }
 
@@ -43293,17 +43301,22 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_inspect_row['drop'] >
 	>
-	type $bog_vmap_app_inspect_row__binds_bog_vmap_app_inspect_24 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__frozen_bog_vmap_app_inspect_24 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['row_frozen'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_row['frozen'] >
+	>
+	type $bog_vmap_app_inspect_row__binds_bog_vmap_app_inspect_25 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['binds'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['binds'] >
 	>
-	type $bog_vmap_app_inspect_row__nodes_bog_vmap_app_inspect_25 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__nodes_bog_vmap_app_inspect_26 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['nodes'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['nodes'] >
 	>
-	type $bog_vmap_app_inspect_row__editable_bog_vmap_app_inspect_26 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__editable_bog_vmap_app_inspect_27 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['editable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['editable'] >
@@ -43331,6 +43344,7 @@ declare namespace $ {
 		row_keyed( id: any, next?: boolean ): boolean
 		row_changeable( id: any, next?: boolean ): boolean
 		row_drop( id: any, next?: any ): any
+		row_frozen( id: any): string
 		binds( ): readonly(string)[]
 		nodes( ): Record<string, any>
 		source( next?: string ): string
@@ -43344,6 +43358,7 @@ declare namespace $ {
 		tools( ): readonly($mol_view_content)[]
 		body( ): readonly($mol_view)[]
 		cell( id: any, next?: any ): any
+		frozen_note( ): string
 		Empty( ): $mol_status
 		Node( ): $bog_vmap_lang_node
 		Lib( ): $bog_vmap_lib
@@ -43454,6 +43469,7 @@ declare namespace $.$$ {
         nested(): boolean;
         row_cell(name: string): boolean;
         row_held(name: string): $mol_tree2 | null;
+        row_frozen(name: string): string;
         row_value(name: string, next?: $mol_tree2): $mol_tree2;
         row_keyed(name: string, next?: boolean): boolean;
         row_changeable(name: string, next?: boolean): boolean;

@@ -33491,6 +33491,9 @@ var $;
 		editable(){
 			return true;
 		}
+		frozen(){
+			return "";
+		}
 		name(){
 			return (this.sign());
 		}
@@ -33502,6 +33505,11 @@ var $;
 		}
 		control(){
 			return (this.Value());
+		}
+		Frozen(){
+			const obj = new this.$.$mol_status();
+			(obj.status) = () => ((this.frozen()));
+			return obj;
 		}
 		Key(){
 			const obj = new this.$.$mol_check();
@@ -33534,6 +33542,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "keyed"));
 	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "changeable"));
 	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "drop"));
+	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "Frozen"));
 	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "Key"));
 	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "Next"));
 	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "Drop"));
@@ -33554,6 +33563,12 @@ var $;
                 return (this.inherited()
                     ? []
                     : [this.Key(), this.Next(), this.Drop()]);
+            }
+            content() {
+                return [
+                    this.control(),
+                    ...this.frozen() ? [this.Frozen()] : [],
+                ];
             }
         }
         $$.$bog_vmap_app_inspect_row = $bog_vmap_app_inspect_row;
@@ -33669,6 +33684,9 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		row_frozen(id){
+			return "";
+		}
 		binds(){
 			return [];
 		}
@@ -33720,6 +33738,9 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		frozen_note(){
+			return "поле заморожено: правка значения сделает его изменяемым";
+		}
 		Empty(){
 			const obj = new this.$.$mol_status();
 			(obj.status) = () => ((this.empty_note()));
@@ -33745,6 +33766,7 @@ var $;
 			(obj.keyed) = (next) => ((this.row_keyed(id, next)));
 			(obj.changeable) = (next) => ((this.row_changeable(id, next)));
 			(obj.drop) = (next) => ((this.row_drop(id, next)));
+			(obj.frozen) = () => ((this.row_frozen(id)));
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
 			(obj.editable) = () => ((this.editable()));
@@ -33971,6 +33993,12 @@ var $;
             }
             row_held(name) {
                 return this.row_cell(name) ? this.cell(this.row_sign(name)) : null;
+            }
+            row_frozen(name) {
+                if (!this.editable() || !this.row_cell(name) || this.row_inherited(name))
+                    return '';
+                const value = this.port_node(name)?.kids[0] ?? null;
+                return plain.includes(this.$.$bog_vmap_app_inspect_value_kind_of(value)) ? this.frozen_note() : '';
             }
             row_value(name, next) {
                 const decl = this.port_node(name);

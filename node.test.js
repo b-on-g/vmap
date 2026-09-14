@@ -24815,6 +24815,9 @@ var $;
 		editable(){
 			return true;
 		}
+		frozen(){
+			return "";
+		}
 		name(){
 			return (this.sign());
 		}
@@ -24826,6 +24829,11 @@ var $;
 		}
 		control(){
 			return (this.Value());
+		}
+		Frozen(){
+			const obj = new this.$.$mol_status();
+			(obj.status) = () => ((this.frozen()));
+			return obj;
 		}
 		Key(){
 			const obj = new this.$.$mol_check();
@@ -24858,6 +24866,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "keyed"));
 	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "changeable"));
 	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "drop"));
+	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "Frozen"));
 	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "Key"));
 	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "Next"));
 	($mol_mem(($.$bog_vmap_app_inspect_row.prototype), "Drop"));
@@ -24878,6 +24887,12 @@ var $;
                 return (this.inherited()
                     ? []
                     : [this.Key(), this.Next(), this.Drop()]);
+            }
+            content() {
+                return [
+                    this.control(),
+                    ...this.frozen() ? [this.Frozen()] : [],
+                ];
             }
         }
         $$.$bog_vmap_app_inspect_row = $bog_vmap_app_inspect_row;
@@ -25114,6 +25129,9 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		row_frozen(id){
+			return "";
+		}
 		binds(){
 			return [];
 		}
@@ -25165,6 +25183,9 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		frozen_note(){
+			return "поле заморожено: правка значения сделает его изменяемым";
+		}
 		Empty(){
 			const obj = new this.$.$mol_status();
 			(obj.status) = () => ((this.empty_note()));
@@ -25190,6 +25211,7 @@ var $;
 			(obj.keyed) = (next) => ((this.row_keyed(id, next)));
 			(obj.changeable) = (next) => ((this.row_changeable(id, next)));
 			(obj.drop) = (next) => ((this.row_drop(id, next)));
+			(obj.frozen) = () => ((this.row_frozen(id)));
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
 			(obj.editable) = () => ((this.editable()));
@@ -25758,6 +25780,12 @@ var $;
             }
             row_held(name) {
                 return this.row_cell(name) ? this.cell(this.row_sign(name)) : null;
+            }
+            row_frozen(name) {
+                if (!this.editable() || !this.row_cell(name) || this.row_inherited(name))
+                    return '';
+                const value = this.port_node(name)?.kids[0] ?? null;
+                return plain.includes(this.$.$bog_vmap_app_inspect_value_kind_of(value)) ? this.frozen_note() : '';
             }
             row_value(name, next) {
                 const decl = this.port_node(name);
@@ -44307,6 +44335,32 @@ var $;
             $mol_assert_equal(root.over_tree('Amount', 'value').toString(), 'value 6000000\n');
             $mol_assert_equal(root.prop_names().includes('amount_value'), false);
             $mol_assert_equal(inspect.row_changeable('value'), false);
+        },
+        'an old constant in a writable port of a node is marked frozen until the next edit'($) {
+            const { inspect } = part_panel($, root_src
+                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	Amount ${d}bog_vmap_app_inspect_test_number value? 6000000`), 'Amount');
+            const row = inspect.Row('value');
+            inspect.dom_tree();
+            $mol_assert_equal(row.frozen(), 'поле заморожено: правка значения сделает его изменяемым');
+            $mol_assert_equal(row.dom_node().contains(row.Frozen().dom_node()), true);
+            $mol_assert_equal(row.Frozen().dom_node().textContent, 'поле заморожено: правка значения сделает его изменяемым');
+            field(inspect, 'value').num('5');
+            inspect.dom_tree();
+            $mol_assert_equal(row.frozen(), '');
+            $mol_assert_equal(row.dom_node().contains(row.Frozen().dom_node()), false);
+        },
+        'the frozen mark is only for a constant with the sign in a node the scene lets edit'($) {
+            const node = (over) => part_panel($, root_src
+                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	amount? 5\n	Amount ${d}bog_vmap_app_inspect_test_number ${over}`), 'Amount').inspect;
+            $mol_assert_equal(node('value? <=> amount?').row_frozen('value'), '');
+            $mol_assert_equal(node('value 5').row_frozen('value'), '');
+            $mol_assert_equal(node('hint \\Сумма').row_frozen('hint'), '');
+            $mol_assert_equal(node('hint \\Сумма').row_frozen('value'), '');
+            $mol_assert_equal(panel($, `${d}bog_vmap_app_inspect_test_card ${d}mol_view\n\tcount? 24\n`).row_frozen('count'), '');
+            const shut = node('value? 6000000');
+            $mol_assert_equal(shut.row_frozen('value'), shut.frozen_note());
+            shut.editable = () => false;
+            $mol_assert_equal(shut.row_frozen('value'), '');
         },
         'dropping the row of a bound port takes its cell too'($) {
             const { root, inspect } = part_panel($, root_src, 'Amount');

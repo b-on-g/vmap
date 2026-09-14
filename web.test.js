@@ -7753,6 +7753,32 @@ var $;
             $mol_assert_equal(root.prop_names().includes('amount_value'), false);
             $mol_assert_equal(inspect.row_changeable('value'), false);
         },
+        'an old constant in a writable port of a node is marked frozen until the next edit'($) {
+            const { inspect } = part_panel($, root_src
+                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	Amount ${d}bog_vmap_app_inspect_test_number value? 6000000`), 'Amount');
+            const row = inspect.Row('value');
+            inspect.dom_tree();
+            $mol_assert_equal(row.frozen(), 'поле заморожено: правка значения сделает его изменяемым');
+            $mol_assert_equal(row.dom_node().contains(row.Frozen().dom_node()), true);
+            $mol_assert_equal(row.Frozen().dom_node().textContent, 'поле заморожено: правка значения сделает его изменяемым');
+            field(inspect, 'value').num('5');
+            inspect.dom_tree();
+            $mol_assert_equal(row.frozen(), '');
+            $mol_assert_equal(row.dom_node().contains(row.Frozen().dom_node()), false);
+        },
+        'the frozen mark is only for a constant with the sign in a node the scene lets edit'($) {
+            const node = (over) => part_panel($, root_src
+                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	amount? 5\n	Amount ${d}bog_vmap_app_inspect_test_number ${over}`), 'Amount').inspect;
+            $mol_assert_equal(node('value? <=> amount?').row_frozen('value'), '');
+            $mol_assert_equal(node('value 5').row_frozen('value'), '');
+            $mol_assert_equal(node('hint \\Сумма').row_frozen('hint'), '');
+            $mol_assert_equal(node('hint \\Сумма').row_frozen('value'), '');
+            $mol_assert_equal(panel($, `${d}bog_vmap_app_inspect_test_card ${d}mol_view\n\tcount? 24\n`).row_frozen('count'), '');
+            const shut = node('value? 6000000');
+            $mol_assert_equal(shut.row_frozen('value'), shut.frozen_note());
+            shut.editable = () => false;
+            $mol_assert_equal(shut.row_frozen('value'), '');
+        },
         'dropping the row of a bound port takes its cell too'($) {
             const { root, inspect } = part_panel($, root_src, 'Amount');
             field(inspect, 'value').num('6000000');
