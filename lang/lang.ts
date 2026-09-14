@@ -48,6 +48,21 @@ namespace $ {
 		return text.replace( /[.*+?^${}()|[\]\\]/g, '\\$&' )
 	}
 
+	function sign_of( sign: string ) {
+		const parts = [ ... sign.matchAll( $mol_view_tree2_prop_signature ) ][ 0 ]?.groups
+		return {
+			name: parts?.name ?? sign,
+			key: parts?.key ? '*' : '',
+			next: parts?.next ? '?' : '',
+		}
+	}
+
+	function cell_plain( value?: $mol_tree2 | null ) {
+		if( !value ) return false
+		if( [ '=', '<=', '<=>', '=>', '^' ].includes( value.type ) ) return false
+		return !$mol_view_tree2_class_match( value )
+	}
+
 	export function $bog_vmap_lang_css_rename( css: string, from: string, to: string ) {
 
 		if( !css || from === to ) return css
@@ -380,6 +395,14 @@ namespace $ {
 			const base = self.kids[ 0 ]
 			if( !base ) return
 
+			const moves = this.part_names().includes( name ) ? this.cell_moves( name, to ) : new Map< string, string >()
+
+			const moved = ( sign: string )=> {
+				const meta = sign_of( sign )
+				const target = moves.get( meta.name )
+				return target === undefined ? null : target + meta.key + meta.next
+			}
+
 			const refs = ( tree: $mol_tree2 ): $mol_tree2 => {
 
 				const kids = tree.kids.map( refs )
@@ -390,12 +413,17 @@ namespace $ {
 					&& ( tree.type === '<=' || tree.type === '<=>' || tree.type === '=' )
 				) return tree.clone([ head.struct( to, head.kids ), ... kids.slice( 1 ) ])
 
+				const shifted = head && ( tree.type === '<=' || tree.type === '<=>' ) ? moved( head.type ) : null
+				if( shifted ) return tree.clone([ head!.struct( shifted, head!.kids ), ... kids.slice( 1 ) ])
+
 				return tree.clone( kids )
 			}
 
 			const props = base.kids.map( prop => {
 				const meta = [ ... prop.type.matchAll( $mol_view_tree2_prop_signature ) ][ 0 ]?.groups
-				return meta?.name === name ? prop.struct( next, prop.kids ) : prop
+				if( meta?.name === name ) return prop.struct( next, prop.kids )
+				const shifted = moved( prop.type )
+				return shifted ? prop.struct( shifted, prop.kids ) : prop
 			} )
 
 			this.tree( self.clone([ base.clone( props.map( refs ) ) ]) )
@@ -620,6 +648,150 @@ namespace $ {
 				this.prop_drop( wire.name )
 			}
 
+		}
+
+		ref_names( skip = '' ) {
+
+			const names = [] as string[]
+
+			const walk = ( tree: $mol_tree2 ): void => {
+				const head = tree.kids[ 0 ]
+				if( head && ( tree.type === '<=' || tree.type === '<=>' ) ) names.push( sign_of( head.type ).name )
+				for( const kid of tree.kids ) walk( kid )
+			}
+
+			for( const prop of this.props_tree().kids ) {
+				if( skip && sign_of( prop.type ).name === skip ) continue
+				walk( prop )
+			}
+
+			return names
+		}
+
+		cell_of( part: string, prop: string ) {
+
+			const op = this.over_tree( part, prop )?.kids[ 0 ]
+			if( op?.type !== '<=>' || !op.kids[ 0 ] ) return ''
+
+			const name = sign_of( op.kids[ 0 ].type ).name
+
+			return cell_plain( this.prop_decl( name )?.kids[ 0 ] ) ? name : ''
+		}
+
+		cell_base( part: string, prop: string ) {
+			return `${ part.toLowerCase() }_${ prop }`
+		}
+
+		cell_name( part: string, prop: string, taken = new Set([ ... this.prop_names(), ... this.ref_names() ]) ) {
+
+			const base = this.cell_base( part, prop )
+
+			for( let i = 1; ; ++i ) {
+				const name = i === 1 ? base : `${ base }_${ i }`
+				if( !taken.has( name ) ) return name
+			}
+
+		}
+
+		cell_moves( part: string, to: string ) {
+
+			const moves = new Map< string, string >()
+			const klass = this.prop_decl( part )?.kids[ 0 ]
+			if( !klass || !$mol_view_tree2_class_match( klass ) ) return moves
+
+			const taken = new Set([ ... this.prop_names(), ... this.ref_names() ])
+
+			for( const over of klass.kids ) {
+
+				const port = sign_of( over.type ).name
+				const cell = this.cell_of( part, port )
+				if( !cell || moves.has( cell ) ) continue
+
+				const base = this.cell_base( part, port )
+				const tail = cell.startsWith( base + '_' ) ? cell.slice( base.length + 1 ) : ''
+				if( cell !== base && !/^[0-9]+$/.test( tail ) ) continue
+
+				taken.delete( cell )
+				const fresh = this.cell_name( to, port, taken )
+				taken.add( fresh )
+				moves.set( cell, fresh )
+
+			}
+
+			return moves
+		}
+
+		cell_value( part: string, sign: string, next?: $mol_tree2 | null ) {
+
+			const port = sign_of( sign ).name
+			const cell = this.cell_of( part, port )
+
+			if( next === undefined ) return cell ? this.prop_decl( cell )?.kids[ 0 ] ?? null : null
+
+			if( next === null ) this.cell_drop( part, port )
+			else if( cell ) this.prop_tree( cell, this.prop_decl( cell )!.clone([ next ]) )
+			else this.cell_bind( part, sign, next )
+
+			return next
+		}
+
+		@ $mol_action
+		cell_bind( part: string, sign: string, value: $mol_tree2 ) {
+
+			const meta = sign_of( sign )
+			const port = this.$.$bog_vmap_lang_token( meta.name, 'Port' )
+
+			if( !meta.next ) this.$.$mol_fail(
+				new Error( `Port ${ JSON.stringify( sign ) } takes no writes, a cell behind it would never change` )
+			)
+
+			if( !this.part_names().includes( part ) ) this.$.$mol_fail(
+				new Error( `Part ${ JSON.stringify( part ) } is not declared in ${ this.name() }` )
+			)
+
+			const held = this.over_tree( part, port )?.kids[ 0 ]
+			if( held && !cell_plain( held ) ) this.$.$mol_fail(
+				new Error( `Port ${ JSON.stringify( port ) } of ${ part } is bound already, a value would unplug it` )
+			)
+
+			const name = this.cell_name( part, port )
+			const tail = meta.key + '?'
+			const tree = this.tree()
+
+			this.over_set( part, port, tree.struct( port + tail, [
+				tree.struct( '<=>', [ tree.struct( name + tail, [ value ] ) ] ),
+			] ) )
+
+		}
+
+		@ $mol_action
+		cell_drop( part: string, prop: string ) {
+
+			const cell = this.cell_of( part, prop )
+
+			this.over_set( part, prop, null )
+			if( cell ) this.cell_tidy( cell )
+
+		}
+
+		@ $mol_action
+		cells_drop( part: string ) {
+
+			const klass = this.prop_decl( part )?.kids[ 0 ]
+			if( !klass || !$mol_view_tree2_class_match( klass ) ) return
+
+			const cells = klass.kids.map( over => this.cell_of( part, sign_of( over.type ).name ) )
+			const others = this.ref_names( part )
+
+			for( const cell of new Set( cells ) ) {
+				if( cell && !others.includes( cell ) ) this.prop_drop( cell )
+			}
+
+		}
+
+		cell_tidy( cell: string ) {
+			if( this.ref_names().includes( cell ) ) return
+			this.prop_drop( cell )
 		}
 
 		prop_decl( name: string ) {
