@@ -292,6 +292,67 @@ namespace $ {
 			$mol_assert_equal( lit( 'Page' ), true )
 		},
 
+		'a click on a row brings its node to the middle of the canvas at the same zoom'( $ ) {
+			const { stage, pick, mouse } = layers_stage( $ )
+			const rect = $bog_vmap_app_flow_rect
+
+			stage.scene.flush()
+			stage.pane.camera_zoom( 2 )
+			stage.pane.camera_shift( new $mol_vector_2d( 40, 30 ) )
+
+			mouse( pick( 'Photo' ), 'click' )
+
+			const box = stage.pane.part_box( 'Photo' )!
+			$mol_assert_equal( stage.pane.camera_zoom(), 2 )
+			$mol_assert_equal( box.left + box.width / 2, rect.width / 2 )
+			$mol_assert_equal( box.top + box.height / 2, rect.height / 2 )
+		},
+
+		'a click on a row of a node larger than the canvas zooms out just to fit it'( $ ) {
+			const { stage, pick, mouse } = layers_stage( $ )
+			const rect = $bog_vmap_app_flow_rect
+			const gap = stage.pane.fit_gap()
+
+			stage.scene.flush()
+			stage.pane.camera_zoom( 3 )
+
+			mouse( pick( 'Page' ), 'click' )
+
+			const box = stage.pane.part_box( 'Page' )!
+			$mol_assert_equal( Math.round( box.width ), rect.width - gap * 2 )
+			$mol_assert_ok( box.height <= rect.height - gap * 2 )
+			$mol_assert_equal( Math.round( box.left + box.width / 2 ), rect.width / 2 )
+			$mol_assert_equal( Math.round( box.top + box.height / 2 ), rect.height / 2 )
+		},
+
+		'a row taken out of the pick with a modifier leaves the camera where it was'( $ ) {
+			const { app, stage, pick, mouse } = layers_stage( $ )
+
+			stage.scene.flush()
+			mouse( pick( 'Photo' ), 'click' )
+			stage.pane.camera_shift( new $mol_vector_2d( 40, 30 ) )
+
+			mouse( pick( 'Photo' ), 'click', { metaKey: true } )
+
+			$mol_assert_like( app.picked(), [] )
+			$mol_assert_like( [ ... stage.pane.camera_shift() ], [ 40, 30 ] )
+		},
+
+		'a pick on the canvas leaves the camera where it was'( $ ) {
+			const { app, stage } = layers_stage( $ )
+
+			stage.scene.flush()
+			stage.pane.camera_zoom( 1 )
+			stage.pane.camera_shift( new $mol_vector_2d( -1300, 100 ) )
+			stage.redraw()
+
+			stage.tap( stage.part_center( 'Photo' ) )
+
+			$mol_assert_equal( app.selected(), 'Photo' )
+			$mol_assert_equal( stage.pane.camera_zoom(), 1 )
+			$mol_assert_like( [ ... stage.pane.camera_shift() ], [ -1300, 100 ] )
+		},
+
 		'a double click renames the node the way the design tab does'( $ ) {
 			const { app, pick, mouse, field, type, blur, outline } = layers_stage( $ )
 

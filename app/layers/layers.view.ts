@@ -202,6 +202,8 @@ namespace $.$$ {
 				this.picked( [ name ] )
 			}
 
+			if( this.picked().includes( name ) ) this.node_show( name )
+
 			return null
 		}
 

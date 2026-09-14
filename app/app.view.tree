@@ -175,6 +175,7 @@ $bog_vmap_app $mol_page
 				tool_select? => tool_select?
 				tool_board? => tool_board?
 				tool_hand? => tool_hand?
+				node_show? => node_show?
 		foot <= notes /$mol_view
 	Scenes $bog_vmap_app_scenes
 		store <= store
@@ -185,6 +186,7 @@ $bog_vmap_app $mol_page
 		node_title? <=> node_title?
 		node_title_note <= node_title_note
 		tree_move? <=> tree_move?
+		node_show? <=> node_show?
 		editable <= editable
 	Shelf $bog_vmap_app_shelf
 		Title null

@@ -109,6 +109,13 @@ namespace $.$$ {
 			return this.fit( this.picked().flatMap( name => this.part_size( name ) ?? [] ), this.zoom_max() )
 		}
 
+		@ $mol_action
+		override node_show( name?: string | null ) {
+			const box = name ? this.part_size( name ) : null
+			if( box ) this.fit( [ box ], this.camera_zoom() )
+			return null
+		}
+
 		fit( boxes: readonly $bog_vmap_bridge_rect[], limit: number ) {
 			const box = this.box_union( boxes )
 			const rect = this.pane_rect()

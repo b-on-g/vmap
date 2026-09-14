@@ -62,6 +62,7 @@ $bog_vmap_app_pane $mol_view
 	copy_spot* null
 	camera_fit? null
 	camera_reset? null
+	node_show? null
 	zoom_out? null
 	zoom_in? null
 	zoom_title \
