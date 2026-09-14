@@ -625,6 +625,51 @@ namespace $ {
 
 		},
 
+		'a value typed for a field is a cell of the root that follows the field through a rename and a delete'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			stage.drop( number, stage.client([ 200, 150 ]) )
+			stage.tap( stage.part_center( 'Number' ) )
+
+			stage.type( stage.field( "Row('value').Value().Num()" ), '6000000' )
+
+			$mol_assert_equal( app.node().over_tree( 'Number', 'value' )!.toString(), 'value? <=> number_value?\n' )
+			$mol_assert_equal( app.node().prop_decl( 'number_value' )!.toString(), 'number_value? 6000000\n' )
+			$mol_assert_equal( stage.scene.last( 'doc_set' )!.src, app.doc_source() )
+
+			stage.click( stage.check( 'Слои' ) )
+			const layers = app.Layers().dom_node().textContent ?? ''
+			$mol_assert_ok( stage.root.contains( app.Layers().dom_node() ) )
+			$mol_assert_ok( layers.includes( 'Number' ) )
+			$mol_assert_equal( layers.includes( 'number_value' ), false )
+			$mol_assert_like( app.doc_wires(), [] )
+			$mol_assert_like( stage.pane.wire_lines(), [] )
+
+			stage.type( stage.field( "Row('value').Value().Num()" ), '7000000' )
+
+			$mol_assert_equal( app.node().prop_decl( 'number_value' )!.toString(), 'number_value? 7000000\n' )
+			$mol_assert_equal( app.doc_source().includes( '6000000' ), false )
+			$mol_assert_equal( app.doc_source().split( '\n' ).filter( line => line.includes( 'number_value' ) ).length, 2 )
+			$mol_assert_equal( stage.field( "Row('value').Value().Num()" ).value, '7000000' )
+
+			const name = stage.field( 'Inspect().Name()' )
+			stage.type( name, 'Amount' )
+			stage.blur( name )
+
+			$mol_assert_equal( app.selected(), 'Amount' )
+			$mol_assert_equal( app.node().cell_of( 'Amount', 'value' ), 'amount_value' )
+			$mol_assert_equal( app.doc_source().includes( 'number_value' ), false )
+			$mol_assert_equal( stage.field( "Row('value').Value().Num()" ).value, '7000000' )
+			$mol_assert_equal( stage.scene.last( 'doc_set' )!.src, app.doc_source() )
+
+			app.node_delete()
+
+			$mol_assert_equal( app.doc_source().includes( 'amount_value' ), false )
+			$mol_assert_equal( app.doc_source().includes( 'Amount' ), false )
+
+		},
+
 		'a wire drawn between two parts is written, labelled and unplugged'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 

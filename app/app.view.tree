@@ -200,6 +200,7 @@ $bog_vmap_app $mol_page
 		pack <= pack_link \
 		class_title? <=> node_title? \
 		title_note <= node_title_note \
+		cell*? <=> node_cell*? null
 		editable <= editable
 	Idle $mol_page
 		title \Свойства

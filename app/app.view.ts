@@ -676,6 +676,12 @@ namespace $.$$ {
 			return next
 		}
 
+		override node_cell( sign: string, next?: $mol_tree2 | null ): $mol_tree2 | null {
+			const name = this.selected()
+			if( !name ) return null
+			return this.node().cell_value( name, sign, next )
+		}
+
 		@ $mol_mem
 		node_peers(): readonly $mol_tree2[] {
 			return [ ... this.lib_classes(), this.node().tree() ]
@@ -1161,6 +1167,7 @@ namespace $.$$ {
 			for( const dead of doomed ) node.links_drop( dead )
 
 			for( const dead of doomed ) {
+				node.cells_drop( dead )
 				node.sub_drop( dead )
 				node.prop_drop( dead )
 			}
