@@ -61,6 +61,15 @@ namespace $ {
 		return $bog_vmap_scene_values_table( val, rows, limit ) ?? $bog_vmap_scene_value_text( val, limit )
 	}
 
+	export function $bog_vmap_scene_values_view( val: unknown ): boolean {
+
+		if( Array.isArray( val ) ) return val.some( item => $bog_vmap_scene_values_view( item ) )
+
+		if( !val || typeof val !== 'object' ) return false
+
+		return typeof Reflect.get( val, 'dom_tree' ) === 'function'
+	}
+
 	export function $bog_vmap_scene_values_pick( root: object, name: string ) {
 
 		let host = root as unknown
@@ -93,7 +102,9 @@ namespace $ {
 		for( const name of names ) {
 
 			try {
-				values[ name ] = $bog_vmap_scene_values_show( $bog_vmap_scene_values_pick( root, name ), limit, rows )
+				const val = $bog_vmap_scene_values_pick( root, name )
+				if( $bog_vmap_scene_values_view( val ) ) continue
+				values[ name ] = $bog_vmap_scene_values_show( val, limit, rows )
 			} catch( error: unknown ) {
 				if( this.$mol_promise_like( error ) ) return this.$mol_fail_hidden( error )
 				values[ name ] = '⚠ ' + $bog_vmap_scene_value_text(

@@ -250,6 +250,31 @@ namespace $ {
 
 		},
 
+		'a view or a list with a view in it is not a value and is not sent'( $ ) {
+
+			const view = $mol_view.make({ $ })
+
+			const board = {
+				sub() { return [ 'заголовок', view ] },
+				Head() { return view },
+				rows() { return [ [ view ] ] },
+				title() { return 'Ипотека' },
+				result() { return 42 },
+				list() { return [ 1, 2 ] },
+			}
+
+			const root = { Board() { return board } }
+
+			const names = [ 'Board.sub', 'Board.Head', 'Board.rows', 'Board.title', 'Board.result', 'Board.list' ]
+
+			$mol_assert_like( $.$bog_vmap_scene_values( root, names ), {
+				'Board.title': 'Ипотека',
+				'Board.result': '42',
+				'Board.list': '[1,2]',
+			} )
+
+		},
+
 		'a view like value is its own id, not a JSON walk'( $ ) {
 
 			const root = {
