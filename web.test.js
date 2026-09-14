@@ -19888,6 +19888,14 @@ var $;
             $mol_mem_key
         ], $mol_state_local_flow, "value", null);
         $.$mol_state_local = $mol_state_local_flow;
+        class $mol_media_flow extends $mol_media {
+            static match(query, next) {
+                if (query === '(prefers-color-scheme: light)')
+                    return false;
+                return super.match(query, next);
+            }
+        }
+        $.$mol_media = $mol_media_flow;
         class $mol_fetch_flow extends $mol_fetch {
             static text(input) {
                 const uri = String(input);
@@ -19905,6 +19913,7 @@ var $;
         if (!over.store)
             store.doc_add('Сцена 1');
         const app = $bog_vmap_app.make({ $, store: () => store });
+        app.page_uri = () => 'http://localhost/';
         $bog_vmap_app_flow_last = app;
         const posted = [];
         const queue = [];
