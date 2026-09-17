@@ -281,13 +281,51 @@ namespace $ {
 
 	}
 
-	$mol_test({
+	function editor() {
+		return $mol_view.roots().find( ( view ): view is $$.$bog_vmap_app => view instanceof $$.$bog_vmap_app ) ?? null
+	}
 
-		'the editor on its own page writes the mortgage scene as one whole class, and only once'() {
-			const app = $mol_view.roots().find( ( view ): view is $$.$bog_vmap_app => view instanceof $$.$bog_vmap_app )
-			if( app ) mortgage( app ).catch( $mol_fail_log )
-		},
+	async function built() {
 
-	})
+		for( let step = 0; step * 200 < scene_limit; ++ step ) {
+
+			const app = editor()
+			if( app ) return await mortgage( app )
+
+			await $$.$mol_wait_timeout_async( 200 )
+
+		}
+
+	}
+
+	function aborted() {
+
+		let running = ''
+
+		for( let at = 0; at < $mol_test_all.length; ++ at ) {
+
+			const test = $mol_test_all[ at ]
+			const named = ( context: $ )=> { running = test.name; return test( context ) }
+
+			Object.defineProperty( named, 'name', { value: test.name } )
+
+			$mol_test_all[ at ] = named
+
+		}
+
+		$mol_dom_context.addEventListener( 'unhandledrejection', event => {
+			const reason = ( event as PromiseRejectionEvent ).reason
+			console.error(
+				`Прогон тестов оборван на «${ running }», остальные не исполнялись:`,
+				( reason as Error )?.message ?? reason,
+			)
+		} )
+
+	}
+
+	if( typeof $mol_dom_context !== 'undefined' && $mol_dom_context.document ) {
+		$$.$mol_wait_timeout_async( 0 ).then( aborted )
+		built().catch( $mol_fail_log )
+	}
 
 }
