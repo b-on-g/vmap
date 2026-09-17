@@ -55989,6 +55989,12 @@ var $;
                 return found('[role=checkbox]', `check «${title}»`, el => el.textContent?.includes(title) ?? false);
             },
             class_row(klass) {
+                const palette = app.Shelf().Palette();
+                const row = palette.class_rows().find((row) => row.title() === klass);
+                if (row) {
+                    palette.Class_list().force_render(new Set([row]));
+                    app.dom_tree();
+                }
                 return found('[bog_vmap_app_palette_item]', `palette row ${klass}`, el => el.textContent === klass);
             },
             assets() {
