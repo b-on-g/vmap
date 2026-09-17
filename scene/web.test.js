@@ -8661,6 +8661,33 @@ var $;
             $mol_assert_equal(node.textContent, 'Платёж 92 599');
             $mol_assert_equal(aside.textContent, 'тронут рукой');
         },
+        async 'a tree that grew a child paints it without a new frame'($) {
+            const { made } = scene($);
+            const root = `${d}hot_grow_page`;
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n`);
+            first.dom_tree();
+            const node = first.dom_node();
+            $mol_assert_equal(node.children.length, 0);
+            made.doc_src(`${root} ${d}mol_view\n\tBoard ${d}mol_view\n\t\tsub /\n\t\t\t\\доска\n\tsub /\n\t\t<= Board\n`);
+            $mol_assert_equal(await settled(() => made.instance()), first);
+            first.dom_tree();
+            $mol_assert_equal(node.children.length, 1);
+            $mol_assert_equal(node.textContent, 'доска');
+            $mol_assert_equal(first.sub()[0].dom_node().isConnected, node.isConnected);
+        },
+        async 'a literal edited in place repaints nothing by force'($) {
+            const { made } = scene($);
+            const root = `${d}hot_word_page`;
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tBoard ${d}mol_view\n\t\tsub /\n\t\t\t\\доска\n\tsub /\n\t\t<= Board\n`);
+            first.dom_tree();
+            const was = made.forms()[root];
+            made.doc_src(`${root} ${d}mol_view\n\tBoard ${d}mol_view\n\t\tsub /\n\t\t\t\\полка\n\tsub /\n\t\t<= Board\n`);
+            $mol_assert_equal(await settled(() => made.instance()), first);
+            $mol_assert_equal(made.forms()[root], was);
+            $mol_assert_like(made.forms_fresh({ [root]: was }), new Set());
+            first.dom_tree();
+            $mol_assert_equal(first.dom_node().textContent, 'полка');
+        },
         async 'a pass over bodies that did not change marks nothing'($) {
             const { made } = scene($);
             const root = `${d}hot_idle_page`;

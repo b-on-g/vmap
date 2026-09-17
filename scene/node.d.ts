@@ -2836,6 +2836,10 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    function $mol_tree2_js_is_number(type: string): boolean | RegExpMatchArray;
+}
+
+declare namespace $ {
     function $mol_tree2_text_to_string(this: $, text: $mol_tree2): string;
 }
 
@@ -2875,10 +2879,6 @@ declare namespace $ {
     function $mol_tree2_text_to_string_mapped(this: $, text: $mol_tree2, type: 'js' | 'css'): string;
     function $mol_tree2_text_to_string_mapped_js(this: $, text: $mol_tree2): string;
     function $mol_tree2_text_to_string_mapped_css(this: $, text: $mol_tree2): string;
-}
-
-declare namespace $ {
-    function $mol_tree2_js_is_number(type: string): boolean | RegExpMatchArray;
 }
 
 declare namespace $ {
@@ -3328,6 +3328,9 @@ declare namespace $.$$ {
         readonly bodies: {
             readonly [klass: string]: string;
         };
+        readonly forms: {
+            readonly [klass: string]: string;
+        };
         readonly error: string;
         readonly klass: string;
     };
@@ -3395,6 +3398,13 @@ declare namespace $.$$ {
             readonly [klass: string]: string;
         };
         bodies_fresh(was: {
+            readonly [klass: string]: string;
+        }): Set<string>;
+        form_of(def: $mol_tree2): string;
+        forms(): {
+            readonly [klass: string]: string;
+        };
+        forms_fresh(was: {
             readonly [klass: string]: string;
         }): Set<string>;
         code_parts(): readonly {

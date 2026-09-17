@@ -6858,6 +6858,16 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    function $mol_tree2_js_is_number(type) {
+        return type.match(/[\+\-]*NaN/) || !Number.isNaN(Number(type));
+    }
+    $.$mol_tree2_js_is_number = $mol_tree2_js_is_number;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     function $mol_tree2_text_to_string(text) {
         let res = '';
         function visit(text, prefix, inline) {
@@ -7076,16 +7086,6 @@ var $;
         return this.$mol_tree2_text_to_string_mapped(text, 'css');
     }
     $.$mol_tree2_text_to_string_mapped_css = $mol_tree2_text_to_string_mapped_css;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_tree2_js_is_number(type) {
-        return type.match(/[\+\-]*NaN/) || !Number.isNaN(Number(type));
-    }
-    $.$mol_tree2_js_is_number = $mol_tree2_js_is_number;
 })($ || ($ = {}));
 
 ;
@@ -9189,7 +9189,9 @@ var $;
         const spot_name_ok = /^[a-zA-Z_]\w*$/;
         const cull_slack_min = 400;
         const class_name_ok = /^\$[a-zA-Z][\w$]*$/;
-        const unmounted = { made: null, pack: '', root: '', supers: {}, bodies: {}, error: '', klass: '' };
+        const unmounted = {
+            made: null, pack: '', root: '', supers: {}, bodies: {}, forms: {}, error: '', klass: '',
+        };
         class $bog_vmap_scene extends $.$bog_vmap_scene {
             error_sent(at, next) {
                 return next === undefined ? null : next;
@@ -9387,6 +9389,34 @@ var $;
                 }
                 return fresh;
             }
+            form_of(def) {
+                const out = [];
+                const walk = (tree) => {
+                    if (!tree.type || $mol_tree2_js_is_number(tree.type))
+                        return;
+                    out.push(tree.type);
+                    for (const kid of tree.kids)
+                        walk(kid);
+                    out.push('/');
+                };
+                walk(def);
+                return out.join(' ');
+            }
+            forms() {
+                const map = {};
+                for (const def of this.doc_tree().kids)
+                    map[def.type] = this.form_of(def);
+                return map;
+            }
+            forms_fresh(was) {
+                const now = this.forms();
+                const fresh = new Set();
+                for (const klass of Object.keys(now)) {
+                    if (was[klass] !== now[klass])
+                        fresh.add(klass);
+                }
+                return fresh;
+            }
             code_parts() {
                 const root = this.doc_root();
                 if (!class_name_ok.test(root))
@@ -9479,14 +9509,16 @@ var $;
                     const Root = this.build().Root;
                     const supers = this.supers();
                     const bodies = this.bodies();
+                    const forms = this.forms();
                     if (this.identity_kept(prev, pack, root, supers)) {
                         const fresh = this.bodies_fresh(prev.bodies);
-                        this.$.$bog_vmap_scene_swap(prev.made, name => Reflect.get(this.sandbox(), name), name => this.shapes()[name] ?? null, name => fresh.has(name));
-                        return { ...prev, supers: { ...prev.supers, ...supers }, bodies, error: '', klass: '' };
+                        const shaped = this.forms_fresh(prev.forms);
+                        this.$.$bog_vmap_scene_swap(prev.made, name => Reflect.get(this.sandbox(), name), name => this.shapes()[name] ?? null, name => fresh.has(name) || shaped.has(name));
+                        return { ...prev, supers: { ...prev.supers, ...supers }, bodies, forms, error: '', klass: '' };
                     }
                     const made = Root.make({ $: this.sandbox() });
                     this.cull_attach(made);
-                    return { made, pack, root, supers, bodies, error: '', klass: '' };
+                    return { made, pack, root, supers, bodies, forms, error: '', klass: '' };
                 }
                 catch (error) {
                     if (this.$.$mol_promise_like(error))
@@ -9883,6 +9915,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "bodies", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "forms", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "code_parts", null);
