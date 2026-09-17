@@ -257,6 +257,43 @@ namespace $ {
 
 		},
 
+		'labels land on the open slots in order, and a name that is no identifier is left out'( $ ) {
+
+			const ports = [
+				port( 'result', 'number' ),
+				{ ... port( 'in1', 'null' ) },
+				{ ... port( 'in2', 'null' ) },
+				{ ... port( 'in3', 'null' ) },
+				port( 'run', 'null', true ),
+			]
+
+			const named = $bog_vmap_app_wire_labelled( ports, [ 'price', '2bad', 'rate' ] )
+
+			$mol_assert_like(
+				named.map( known => known.label ?? '' ),
+				[ '', 'price', '', 'rate', '' ],
+			)
+
+			$mol_assert_like(
+				$bog_vmap_app_wire_labelled( ports, [] ).map( known => known.label ?? '' ),
+				[ '', '', '', '', '' ],
+			)
+
+		},
+
+		'a dot wears the label of its slot, and its own name without one'( $ ) {
+
+			const plain = dot({ x: 0, y: 0, port: port( 'in1', 'null' ) })
+
+			$mol_assert_equal( $bog_vmap_app_wire_name( plain ), 'in1' )
+
+			$mol_assert_equal(
+				$bog_vmap_app_wire_name({ ... plain, port: { ... plain.port, label: 'price' } }),
+				'price',
+			)
+
+		},
+
 		'the machinery a view declares for itself is no port of a part'( $ ) {
 			const ports = [
 				... [ ... $bog_vmap_app_wire_machinery ].map( name => port( name, 'string' ) ),

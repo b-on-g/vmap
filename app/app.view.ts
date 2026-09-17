@@ -826,11 +826,22 @@ namespace $.$$ {
 			const klass = node.props_tree().select( sign ).kids[ 0 ]?.kids[ 0 ]
 			if( !klass || !$mol_view_tree2_class_match( klass ) ) return []
 
-			return this.$.$bog_vmap_app_wire_ports(
+			const ports = this.$.$bog_vmap_app_wire_ports(
 				this.Lib().props_map( klass.type ),
 				this.Lib().props_owner( klass.type ),
 				klass.type,
 			)
+
+			return $bog_vmap_app_wire_labelled( ports, this.part_labels( name ) )
+		}
+
+		@ $mol_mem_key
+		part_labels( name: string ): readonly string[] {
+
+			const held = this.node().over_tree( name, $bog_vmap_app_wire_slots )?.kids[ 0 ] ?? null
+			if( !held || held.type !== '' ) return []
+
+			return held.value.split( ',' ).map( label => label.trim() )
 		}
 
 		@ $mol_mem_key

@@ -11,6 +11,7 @@ namespace $ {
 		readonly next: boolean
 		readonly own: boolean
 		readonly kind: $bog_vmap_app_inspect_value_kind
+		readonly label?: string
 	}
 
 	export type $bog_vmap_app_wire_side = 'in' | 'out'
@@ -66,6 +67,29 @@ namespace $ {
 		return port.kind === 'null' && !port.next
 	}
 
+	export const $bog_vmap_app_wire_slots = 'slots'
+
+	const label_ok = /^[A-Za-z_$][\w$]*$/
+
+	export function $bog_vmap_app_wire_labelled(
+		ports: readonly $bog_vmap_app_wire_port[],
+		labels: readonly string[],
+	): readonly $bog_vmap_app_wire_port[] {
+
+		if( !labels.length ) return ports
+
+		let at = 0
+
+		return ports.map( port => {
+
+			if( !$bog_vmap_app_wire_slot( port ) ) return port
+
+			const label = labels[ at ++ ] ?? ''
+
+			return label_ok.test( label ) ? { ... port, label } : port
+		} )
+	}
+
 	export function $bog_vmap_app_wire_ports(
 		this: $,
 		props: ReadonlyMap< string, $mol_tree2 >,
@@ -118,10 +142,10 @@ namespace $ {
 	}
 
 	export function $bog_vmap_app_wire_name( dot: {
-		readonly port: { readonly name: string, readonly next: boolean }
+		readonly port: { readonly name: string, readonly next: boolean, readonly label?: string }
 		readonly hint: string
 	} ) {
-		const name = dot.port.name + ( dot.port.next ? '?' : '' )
+		const name = ( dot.port.label || dot.port.name ) + ( dot.port.next ? '?' : '' )
 
 		return dot.hint ? `${ name } · ${ dot.hint }` : name
 	}

@@ -1980,6 +1980,35 @@ namespace $ {
 
 		},
 
+		'the names written on the node become the labels of its open slots'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const cell = `${d}bog_vmap_part_cell`
+
+			stage.drop( cell, stage.client([ 300, 200 ]) )
+
+			const node = stage.app.node()
+			const name = node.sub_names()!.find( known => known.startsWith( 'Vmap_part_cell' ) )!
+
+			const dots = ()=> stage.pane.part_dots( name )
+				.filter( port => $bog_vmap_app_wire_slot( port ) )
+				.map( port => port.label || port.name )
+
+			$mol_assert_like( dots(), [ 'in1' ] )
+
+			const tree = node.tree()
+			node.over_set( name, 'slots', tree.struct( 'slots', [ tree.data( 'price, 2bad, rate' ) ] ) )
+			stage.redraw()
+
+			$mol_assert_like( dots(), [ 'price' ] )
+
+			node.over_set( name, 'in1', tree.struct( 'in1', [ tree.struct( '<=', [ tree.struct( 'amount' ) ] ) ] ) )
+			stage.redraw()
+
+			$mol_assert_like( dots(), [ 'price', 'in2' ] )
+
+		},
+
 		'open input slots come one at a time, the taken ones stay and the rest wait'( $ ) {
 
 			const ports = [
