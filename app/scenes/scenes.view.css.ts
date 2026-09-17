@@ -1,6 +1,7 @@
 namespace $.$$ {
 
 	$mol_style_define( $bog_vmap_app_scenes, {
+		position: 'relative',
 
 		Tools: {
 			minWidth: 0,

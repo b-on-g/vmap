@@ -20,6 +20,13 @@ namespace $ {
 		return { store, view }
 	}
 
+	const right_click = ( $: $, x = 40, y = 80 ) => new $.$mol_dom_context.MouseEvent( 'contextmenu', {
+		bubbles: true,
+		cancelable: true,
+		clientX: x,
+		clientY: y,
+	} )
+
 	$mol_test({
 
 		'nothing to pick and nothing to name while there are no documents'( $ ) {
@@ -81,6 +88,98 @@ namespace $ {
 			view.current( first.link().str )
 			view.current( 'not a link' )
 			$mol_assert_equal( store.source(), src_hero )
+
+		},
+
+		'a scene leaves the list only after the question of the menu is answered'( $ ) {
+
+			const { store, view } = scenes( $ )
+
+			const first = store.doc_add( 'First', src_page )
+			const second = store.doc_add( 'Second', src_hero )
+
+			$mol_assert_like( view.menu_items(), [] )
+
+			view.scene_menu( first.link().str, right_click( $ ) )
+
+			$mol_assert_equal( view.menu_showed(), true )
+			$mol_assert_equal( view.menu_left(), '40px' )
+			$mol_assert_equal( view.menu_top(), '80px' )
+			$mol_assert_equal( view.menu_items().length, 1 )
+			$mol_assert_equal( view.menu_items()[ 0 ], view.Drop() )
+
+			view.drop_ask()
+
+			$mol_assert_equal( view.menu_items().length, 3 )
+			$mol_assert_equal( view.menu_items()[ 0 ], view.Drop_note() )
+			$mol_assert_ok( view.drop_note().startsWith( 'Удалить «First»?' ) )
+			$mol_assert_like( view.scene_links(), [ first.link().str, second.link().str ] )
+
+			view.drop()
+
+			$mol_assert_like( view.scene_links(), [ second.link().str ] )
+			$mol_assert_equal( store.doc( first.link() ).title(), 'First' )
+
+		},
+
+		'the question of the menu can be refused, and the list stays whole'( $ ) {
+
+			const { store, view } = scenes( $ )
+
+			const first = store.doc_add( 'First', src_page )
+			const second = store.doc_add( 'Second', src_hero )
+
+			view.scene_menu( first.link().str, right_click( $ ) )
+			view.drop_ask()
+			view.menu_close()
+
+			$mol_assert_equal( view.menu_showed(), false )
+			$mol_assert_equal( view.menu_asking(), false )
+			$mol_assert_like( view.menu_items(), [] )
+			$mol_assert_like( view.scene_links(), [ first.link().str, second.link().str ] )
+
+		},
+
+		'dropping the open scene opens the one beside it, not the last of the list'( $ ) {
+
+			const { store, view } = scenes( $ )
+
+			const first = store.doc_add( 'First', src_page )
+			const second = store.doc_add( 'Second', src_hero )
+			const third = store.doc_add( 'Third', src_page )
+
+			view.current( first.link().str )
+
+			view.scene_menu( first.link().str, right_click( $ ) )
+			view.drop_ask()
+			view.drop()
+
+			$mol_assert_equal( view.current(), second.link().str )
+			$mol_assert_equal( store.source(), src_hero )
+
+			view.current( third.link().str )
+
+			view.scene_menu( second.link().str, right_click( $ ) )
+			view.drop_ask()
+			view.drop()
+
+			$mol_assert_equal( view.current(), third.link().str )
+
+		},
+
+		'dropping the last scene leaves the editor with none open'( $ ) {
+
+			const { store, view } = scenes( $ )
+
+			const only = store.doc_add( 'Only', src_hero )
+
+			view.scene_menu( only.link().str, right_click( $ ) )
+			view.drop_ask()
+			view.drop()
+
+			$mol_assert_like( view.scene_links(), [] )
+			$mol_assert_equal( view.current(), '' )
+			$mol_assert_equal( view.current_exists(), false )
 
 		},
 
