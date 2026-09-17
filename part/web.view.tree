@@ -437,6 +437,13 @@ $mol_textarea_edit $mol_string
 $bog_vmap_part_cell $mol_view
 	code? \
 	auto? false
+	slots? \
+	in1 null
+	in2 null
+	in3 null
+	in4 null
+	in5 null
+	in6 null
 	result_text \
 	result_number +NaN
 	spent \
@@ -446,6 +453,11 @@ $bog_vmap_part_cell $mol_view
 		<= Code $mol_textarea
 			hint \return 2 + 2
 			value? <=> code?
+		<= Names $mol_string
+			hint \входы через запятую: price, rate
+			value? <=> slots?
+		<= Names_note $mol_view
+			sub / <= slots_note \
 		<= Bar $mol_view
 			sub /
 				<= Run $mol_button_minor

@@ -9744,6 +9744,20 @@ var $;
 			(obj.value) = (next) => ((this.code(next)));
 			return obj;
 		}
+		Names(){
+			const obj = new this.$.$mol_string();
+			(obj.hint) = () => ("входы через запятую: price, rate");
+			(obj.value) = (next) => ((this.slots(next)));
+			return obj;
+		}
+		slots_note(){
+			return "";
+		}
+		Names_note(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.slots_note())]);
+			return obj;
+		}
 		run(next){
 			if(next !== undefined) return next;
 			return null;
@@ -9794,6 +9808,28 @@ var $;
 			if(next !== undefined) return next;
 			return false;
 		}
+		slots(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		in1(){
+			return null;
+		}
+		in2(){
+			return null;
+		}
+		in3(){
+			return null;
+		}
+		in4(){
+			return null;
+		}
+		in5(){
+			return null;
+		}
+		in6(){
+			return null;
+		}
 		result_text(){
 			return "";
 		}
@@ -9809,6 +9845,8 @@ var $;
 		sub(){
 			return [
 				(this.Code()), 
+				(this.Names()), 
+				(this.Names_note()), 
 				(this.Bar()), 
 				(this.Result()), 
 				(this.Error())
@@ -9816,6 +9854,8 @@ var $;
 		}
 	};
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "Code"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "Names"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "Names_note"));
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "run"));
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "Run"));
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "Auto"));
@@ -9825,6 +9865,7 @@ var $;
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "Error"));
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "code"));
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "auto"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "slots"));
 
 
 ;
@@ -9837,6 +9878,7 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
+        const name_ok = /^[A-Za-z_$][\w$]*$/;
         class $bog_vmap_part_cell extends $.$bog_vmap_part_cell {
             code_ran(next) {
                 return next ?? '';
@@ -9845,13 +9887,44 @@ var $;
                 this.code_ran(this.code());
                 return null;
             }
+            ins() {
+                return [this.in1(), this.in2(), this.in3(), this.in4(), this.in5(), this.in6()];
+            }
+            ins_named() {
+                return this.slots().split(',').map(name => name.trim());
+            }
+            ins_refused() {
+                return this.ins_named().filter(name => name && !name_ok.test(name));
+            }
+            slots_note() {
+                const refused = this.ins_refused();
+                if (!refused.length)
+                    return '';
+                return `Имена ${refused.map(name => `«${name}»`).join(', ')}`
+                    + ` не годятся в имя аргумента, эти входы остались под номерами`;
+            }
+            body_call(code) {
+                const args = ['$'];
+                const vals = [this.$];
+                const ins = this.ins();
+                const take = (name, value) => {
+                    if (!name_ok.test(name) || args.includes(name))
+                        return;
+                    args.push(name);
+                    vals.push(value);
+                };
+                ins.forEach((value, at) => take(`in${at + 1}`, value));
+                this.ins_named().forEach((name, at) => take(name, ins[at] ?? null));
+                take('ins', ins);
+                return new Function(...args, code)(...vals);
+            }
             run_result() {
                 const code = this.auto() ? this.code() : this.code_ran();
                 if (!code.trim())
                     return { ran: false, value: null, spent: 0, error: '' };
                 const started = Date.now();
                 try {
-                    const value = new Function('$', code)(this.$);
+                    const value = this.body_call(code);
                     return { ran: true, value, spent: Date.now() - started, error: '' };
                 }
                 catch (error) {
@@ -19782,6 +19855,55 @@ var $;
             one.code('return { a: 1 }');
             $mol_assert_ok(one.result_text().includes('"a": 1'));
         },
+        'the body takes the inputs by number, by the name given to them and as a list'($) {
+            const one = cell($);
+            one.auto(true);
+            one.in1 = () => 3;
+            one.in2 = () => 4;
+            one.code('return in1 * in2');
+            $mol_assert_equal(one.result_number(), 12);
+            one.slots('width, height');
+            one.code('return width + height');
+            $mol_assert_equal(one.result_number(), 7);
+            one.code('return ins.length');
+            $mol_assert_equal(one.result_number(), 6);
+            one.code('return ins[ 2 ]');
+            $mol_assert_equal(one.result_text(), '');
+        },
+        'a name that is no identifier is left out and the body still runs'($) {
+            const one = cell($);
+            one.auto(true);
+            one.in1 = () => 5;
+            one.slots('2bad, good');
+            one.code('return in1 + in2');
+            $mol_assert_equal(one.error(), '');
+            $mol_assert_equal(one.result_number(), 5);
+            $mol_assert_ok(one.slots_note().includes('«2bad»'));
+            $mol_assert_ok(one.slots_note().includes('под номерами'));
+            $mol_assert_equal(one.slots_note().includes('good'), false);
+            one.slots('good');
+            $mol_assert_equal(one.slots_note(), '');
+        },
+        'a cell written before there were inputs runs as it did'($) {
+            const one = cell($);
+            one.code('return 2 + 2');
+            one.run(null);
+            $mol_assert_equal(one.result_number(), 4);
+            $mol_assert_equal(one.error(), '');
+            $mol_assert_like(one.ins(), [null, null, null, null, null, null]);
+        },
+        'an input that changes counts the cell again, even off the button'($) {
+            const one = cell($);
+            const width = $mol_wire_atom.solo({}, function width(next) {
+                return next ?? 2;
+            });
+            one.in1 = () => width.sync();
+            one.code('return in1 * 10');
+            one.run(null);
+            $mol_assert_equal(one.result_number(), 20);
+            width.put(3);
+            $mol_assert_equal(one.result_number(), 30);
+        },
         'a mistake is a line on the cell and not a failure of the page'($) {
             const one = cell($);
             one.auto(true);
@@ -19889,7 +20011,59 @@ var $;
         const base = ports($.$mol_view);
         return [...ports(Klass)].filter(name => !base.has(name)).sort();
     }
+    function floors($, view) {
+        const found = [];
+        const walk = (host, at, deep) => {
+            if (deep > 6)
+                return;
+            let kids = [];
+            try {
+                kids = host.sub() ?? [];
+            }
+            catch {
+                kids = [];
+            }
+            let index = 0;
+            for (const kid of kids) {
+                if (typeof kid?.dom_node !== 'function')
+                    continue;
+                const sub = kid;
+                const owner = $.$mol_owning_get(sub);
+                const name = owner?.task?.name?.trim() || String(index++);
+                const path = `${at}/${name}`;
+                found.push({ path, name, own: owner?.host === view });
+                walk(sub, path, deep + 1);
+            }
+        };
+        walk(view, '', 0);
+        return found;
+    }
     $mol_test({
+        'no layer of a part shares its name with a view of a nested component'($) {
+            const parts = [
+                $.$bog_vmap_part_calc.make({ $ }),
+                $.$bog_vmap_part_cell.make({ $ }),
+                $.$bog_vmap_part_map.make({ $ }),
+                $.$bog_vmap_part_plot.make({ $, values: () => [1, 2, 3], title: () => 'Долг' }),
+            ];
+            for (const part of parts) {
+                const found = floors($, part);
+                for (const one of found) {
+                    if (!one.own)
+                        continue;
+                    const twin = found.find(other => other.name === one.name && other.path !== one.path);
+                    if (!twin)
+                        continue;
+                    $mol_fail(new Error(`Деталь ${part.constructor.name}: её слой ${one.name} (${one.path})`
+                        + ` и одноимённый вид ${twin.path} живут в одном экземпляре.`
+                        + ' Редактор адресует внутренние слои цепочкой имён, а сцена называет сегменты'
+                        + ' пути методом-владельцем, поэтому у тёзок рамка на холсте и панель свойств'
+                        + ' молча возьмут не тот слой. Чинить одним из двух: переименовать порт детали'
+                        + ' либо научить сцену нести класс-объявитель на каждый сегмент замера —'
+                        + ' план лежит в PLAN, пункт про остаточную дыру подсветки внутренних слоёв.'));
+                }
+            }
+        },
         'the shelf of the pack is exactly the list of its components'($) {
             $mol_assert_equal(ports_own($, $.$bog_vmap_part).join(' '), [...shelf].sort().join(' '));
         },

@@ -4011,58 +4011,76 @@ declare namespace $ {
 		,
 		ReturnType< $mol_textarea['value'] >
 	>
-	type $mol_button_minor__title_bog_vmap_part_cell_3 = $mol_type_enforce<
+	type $mol_string__hint_bog_vmap_part_cell_3 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_string['hint'] >
+	>
+	type $mol_string__value_bog_vmap_part_cell_4 = $mol_type_enforce<
+		ReturnType< $bog_vmap_part_cell['slots'] >
+		,
+		ReturnType< $mol_string['value'] >
+	>
+	type $mol_view__sub_bog_vmap_part_cell_5 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_button_minor__title_bog_vmap_part_cell_6 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_part_cell_4 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_part_cell_7 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_part_cell_5 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_part_cell_8 = $mol_type_enforce<
 		ReturnType< $bog_vmap_part_cell['run'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_check__title_bog_vmap_part_cell_6 = $mol_type_enforce<
+	type $mol_check__title_bog_vmap_part_cell_9 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['title'] >
 	>
-	type $mol_check__hint_bog_vmap_part_cell_7 = $mol_type_enforce<
+	type $mol_check__hint_bog_vmap_part_cell_10 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['hint'] >
 	>
-	type $mol_check__checked_bog_vmap_part_cell_8 = $mol_type_enforce<
+	type $mol_check__checked_bog_vmap_part_cell_11 = $mol_type_enforce<
 		ReturnType< $bog_vmap_part_cell['auto'] >
 		,
 		ReturnType< $mol_check['checked'] >
-	>
-	type $mol_view__sub_bog_vmap_part_cell_9 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_part_cell_10 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
-	>
-	type $mol_view__sub_bog_vmap_part_cell_11 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_view__sub_bog_vmap_part_cell_12 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
+	type $mol_view__sub_bog_vmap_part_cell_13 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_part_cell_14 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_part_cell_15 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
 	export class $bog_vmap_part_cell extends $mol_view {
 		Code( ): $mol_textarea
+		Names( ): $mol_string
+		slots_note( ): string
+		Names_note( ): $mol_view
 		run( next?: any ): any
 		Run( ): $mol_button_minor
 		Auto( ): $mol_check
@@ -4072,6 +4090,13 @@ declare namespace $ {
 		Error( ): $mol_view
 		code( next?: string ): string
 		auto( next?: boolean ): boolean
+		slots( next?: string ): string
+		in1( ): any
+		in2( ): any
+		in3( ): any
+		in4( ): any
+		in5( ): any
+		in6( ): any
 		result_text( ): string
 		result_number( ): number
 		spent( ): string
@@ -4092,6 +4117,11 @@ declare namespace $.$$ {
     class $bog_vmap_part_cell extends $.$bog_vmap_part_cell {
         code_ran(next?: string): string;
         run(next?: Event | null): null;
+        ins(): readonly unknown[];
+        ins_named(): string[];
+        ins_refused(): string[];
+        slots_note(): string;
+        body_call(code: string): any;
         run_result(): $bog_vmap_part_cell_run;
         result_text(): string;
         result_number(): number;

@@ -9082,6 +9082,20 @@ var $;
 			(obj.value) = (next) => ((this.code(next)));
 			return obj;
 		}
+		Names(){
+			const obj = new this.$.$mol_string();
+			(obj.hint) = () => ("входы через запятую: price, rate");
+			(obj.value) = (next) => ((this.slots(next)));
+			return obj;
+		}
+		slots_note(){
+			return "";
+		}
+		Names_note(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.slots_note())]);
+			return obj;
+		}
 		run(next){
 			if(next !== undefined) return next;
 			return null;
@@ -9132,6 +9146,28 @@ var $;
 			if(next !== undefined) return next;
 			return false;
 		}
+		slots(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		in1(){
+			return null;
+		}
+		in2(){
+			return null;
+		}
+		in3(){
+			return null;
+		}
+		in4(){
+			return null;
+		}
+		in5(){
+			return null;
+		}
+		in6(){
+			return null;
+		}
 		result_text(){
 			return "";
 		}
@@ -9147,6 +9183,8 @@ var $;
 		sub(){
 			return [
 				(this.Code()), 
+				(this.Names()), 
+				(this.Names_note()), 
 				(this.Bar()), 
 				(this.Result()), 
 				(this.Error())
@@ -9154,6 +9192,8 @@ var $;
 		}
 	};
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "Code"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "Names"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "Names_note"));
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "run"));
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "Run"));
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "Auto"));
@@ -9163,6 +9203,7 @@ var $;
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "Error"));
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "code"));
 	($mol_mem(($.$bog_vmap_part_cell.prototype), "auto"));
+	($mol_mem(($.$bog_vmap_part_cell.prototype), "slots"));
 
 
 ;
@@ -9175,6 +9216,7 @@ var $;
 (function ($) {
     var $$;
     (function ($$) {
+        const name_ok = /^[A-Za-z_$][\w$]*$/;
         class $bog_vmap_part_cell extends $.$bog_vmap_part_cell {
             code_ran(next) {
                 return next ?? '';
@@ -9183,13 +9225,44 @@ var $;
                 this.code_ran(this.code());
                 return null;
             }
+            ins() {
+                return [this.in1(), this.in2(), this.in3(), this.in4(), this.in5(), this.in6()];
+            }
+            ins_named() {
+                return this.slots().split(',').map(name => name.trim());
+            }
+            ins_refused() {
+                return this.ins_named().filter(name => name && !name_ok.test(name));
+            }
+            slots_note() {
+                const refused = this.ins_refused();
+                if (!refused.length)
+                    return '';
+                return `Имена ${refused.map(name => `«${name}»`).join(', ')}`
+                    + ` не годятся в имя аргумента, эти входы остались под номерами`;
+            }
+            body_call(code) {
+                const args = ['$'];
+                const vals = [this.$];
+                const ins = this.ins();
+                const take = (name, value) => {
+                    if (!name_ok.test(name) || args.includes(name))
+                        return;
+                    args.push(name);
+                    vals.push(value);
+                };
+                ins.forEach((value, at) => take(`in${at + 1}`, value));
+                this.ins_named().forEach((name, at) => take(name, ins[at] ?? null));
+                take('ins', ins);
+                return new Function(...args, code)(...vals);
+            }
             run_result() {
                 const code = this.auto() ? this.code() : this.code_ran();
                 if (!code.trim())
                     return { ran: false, value: null, spent: 0, error: '' };
                 const started = Date.now();
                 try {
-                    const value = new Function('$', code)(this.$);
+                    const value = this.body_call(code);
                     return { ran: true, value, spent: Date.now() - started, error: '' };
                 }
                 catch (error) {
