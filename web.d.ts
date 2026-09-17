@@ -643,7 +643,7 @@ declare namespace $ {
      * Gap in CSS
      * @see https://page.hyoo.ru/#!=msdb74_bm7nsq
      */
-    let $mol_gap: Record<"space" | "text" | "blur" | "page" | "block" | "round" | "emoji", $mol_style_func<"var", unknown>>;
+    let $mol_gap: Record<"text" | "blur" | "page" | "block" | "space" | "round" | "emoji", $mol_style_func<"var", unknown>>;
 }
 
 declare namespace $ {
@@ -2295,11 +2295,30 @@ declare namespace $ {
 //# sourceMappingURL=bar.view.tree.d.ts.map
 declare namespace $ {
 
-	export class $mol_hotkey extends $mol_plugin {
+	export class $mol_hotkey2 extends $mol_plugin {
 		keydown( next?: any ): any
 		event( ): ({ 
-			keydown( next?: ReturnType< $mol_hotkey['keydown'] > ): ReturnType< $mol_hotkey['keydown'] >,
+			keydown( next?: ReturnType< $mol_hotkey2['keydown'] > ): ReturnType< $mol_hotkey2['keydown'] >,
 		})  & ReturnType< $mol_plugin['event'] >
+		action( ): Record<string, any>
+	}
+	
+}
+
+//# sourceMappingURL=hotkey2.view.tree.d.ts.map
+declare namespace $.$$ {
+    /**
+     * Plugin which adds handlers for keyboard keys.
+     * @see [mol_keyboard_code](../keyboard/code/code.ts)
+     */
+    class $mol_hotkey2 extends $.$mol_hotkey2 {
+        keydown(event?: KeyboardEvent): void;
+    }
+}
+
+declare namespace $ {
+
+	export class $mol_hotkey extends $mol_hotkey2 {
 		key( ): Record<string, any>
 		mod_ctrl( ): boolean
 		mod_alt( ): boolean
@@ -2312,11 +2331,13 @@ declare namespace $ {
 declare namespace $.$$ {
     /**
      * Plugin which adds handlers for keyboard keys.
+     * @deprecated Use $mol_hotkey2
      * @see [mol_keyboard_code](../keyboard/code/code.ts)
      */
     class $mol_hotkey extends $.$mol_hotkey {
-        key(): { [key in keyof typeof $mol_keyboard_code]?: (event: KeyboardEvent) => void; };
-        keydown(event?: KeyboardEvent): void;
+        action(): {
+            [k: string]: any;
+        };
     }
 }
 
@@ -2737,7 +2758,7 @@ declare namespace $ {
         static [Symbol.match](str: string): RegExpMatchArray | null;
         static [Symbol.matchAll](str: string): RegExpStringIterator<RegExpExecArray>;
         static hole: $giper_baza_link;
-        static check(val: string): string | null;
+        static check(val: string): $giper_baza_link | null;
         [$mol_key_handle](): string;
         toString(): string;
         toJSON(): string;
@@ -3863,7 +3884,7 @@ declare namespace $ {
         seal_item_del(lord: $giper_baza_link, hash: $giper_baza_link): void;
         seal_item_set(seal: $giper_baza_unit_seal, hash: $giper_baza_link): void;
         sand_get(head: $giper_baza_link, lord: $giper_baza_link, self: $giper_baza_link): $giper_baza_unit_sand | null;
-        _self_all: $mol_wire_dict<string, $giper_baza_unit_sand | null>;
+        _self_all: Map<string, boolean>;
         /** Generates unique local id base on optional idea number or random. */
         self_make(idea?: number): $giper_baza_link;
         /** Makes new Area based on Idea or random. Once transfers rights from this Land. */
@@ -4692,7 +4713,7 @@ declare namespace $ {
         static tag: keyof typeof $giper_baza_unit_sand_tag;
         /** All Vary in the list. */
         items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-        /** Replace sublist by  new one with reconciliation. */
+        /** Replace sublist by new one with reconciliation. */
         splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
         /** Unit by Vary. */
         find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -4839,7 +4860,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -4960,7 +4981,7 @@ declare namespace $ {
             items(next?: readonly Uint8Array<ArrayBuffer>[] | undefined): readonly Uint8Array<ArrayBuffer>[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -5195,7 +5216,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -5327,7 +5348,7 @@ declare namespace $ {
             items(next?: readonly boolean[] | undefined): readonly boolean[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -5500,7 +5521,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -5632,7 +5653,7 @@ declare namespace $ {
             items(next?: readonly bigint[] | undefined): readonly bigint[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -5805,7 +5826,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -5937,7 +5958,7 @@ declare namespace $ {
             items(next?: readonly number[] | undefined): readonly number[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -6110,7 +6131,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -6242,7 +6263,7 @@ declare namespace $ {
             items(next?: readonly string[] | undefined): readonly string[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -6415,7 +6436,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -6547,7 +6568,7 @@ declare namespace $ {
             items(next?: readonly $mol_time_moment[] | undefined): readonly $mol_time_moment[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -6782,7 +6803,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -6914,7 +6935,7 @@ declare namespace $ {
             items(next?: readonly $mol_time_duration[] | undefined): readonly $mol_time_duration[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -7149,7 +7170,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -7281,7 +7302,7 @@ declare namespace $ {
             items(next?: readonly $mol_time_interval[] | undefined): readonly $mol_time_interval[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -7516,7 +7537,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -7648,7 +7669,7 @@ declare namespace $ {
             items(next?: readonly Record<string, unknown>[] | undefined): readonly Record<string, unknown>[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -7883,7 +7904,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -8015,7 +8036,7 @@ declare namespace $ {
             items(next?: readonly (readonly unknown[])[] | undefined): readonly (readonly unknown[])[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -8250,7 +8271,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -8382,7 +8403,7 @@ declare namespace $ {
             items(next?: readonly Element[] | undefined): readonly Element[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -8620,7 +8641,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -8752,7 +8773,7 @@ declare namespace $ {
             items(next?: readonly $mol_tree2[] | undefined): readonly $mol_tree2[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -8987,7 +9008,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -9119,7 +9140,7 @@ declare namespace $ {
             items(next?: readonly $giper_baza_link[] | undefined): readonly $giper_baza_link[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -9354,7 +9375,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -9492,7 +9513,7 @@ declare namespace $ {
                 items(next?: readonly $giper_baza_link[] | undefined): readonly $giper_baza_link[];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -9728,7 +9749,7 @@ declare namespace $ {
                     })["default"][];
                     /** All Vary in the list. */
                     items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                    /** Replace sublist by  new one with reconciliation. */
+                    /** Replace sublist by new one with reconciliation. */
                     splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                     /** Unit by Vary. */
                     find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -9865,7 +9886,7 @@ declare namespace $ {
             items(next?: readonly $giper_baza_link[] | undefined): readonly $giper_baza_link[];
             /** All Vary in the list. */
             items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-            /** Replace sublist by  new one with reconciliation. */
+            /** Replace sublist by new one with reconciliation. */
             splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
             /** Unit by Vary. */
             find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -9918,7 +9939,7 @@ declare namespace $ {
                 items(next?: readonly $giper_baza_link[] | undefined): readonly $giper_baza_link[];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -10154,7 +10175,7 @@ declare namespace $ {
                     })["default"][];
                     /** All Vary in the list. */
                     items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                    /** Replace sublist by  new one with reconciliation. */
+                    /** Replace sublist by new one with reconciliation. */
                     splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                     /** Unit by Vary. */
                     find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -10472,7 +10493,7 @@ declare namespace $ {
                 })["default"][];
                 /** All Vary in the list. */
                 items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
-                /** Replace sublist by  new one with reconciliation. */
+                /** Replace sublist by new one with reconciliation. */
                 splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
                 /** Unit by Vary. */
                 find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
@@ -37398,32 +37419,39 @@ declare namespace $ {
 		,
 		ReturnType< $mol_textarea_edit['submit_with_ctrl'] >
 	>
-	type $mol_text_code__text_mol_textarea_9 = $mol_type_enforce<
+	type $mol_text_code__attr_mol_textarea_9 = $mol_type_enforce<
+		({ 
+			'inert': string,
+		})  & ReturnType< $mol_text_code['attr'] >
+		,
+		ReturnType< $mol_text_code['attr'] >
+	>
+	type $mol_text_code__text_mol_textarea_10 = $mol_type_enforce<
 		ReturnType< $mol_textarea['value'] >
 		,
 		ReturnType< $mol_text_code['text'] >
 	>
-	type $mol_text_code__render_visible_only_mol_textarea_10 = $mol_type_enforce<
+	type $mol_text_code__render_visible_only_mol_textarea_11 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_text_code['render_visible_only'] >
 	>
-	type $mol_text_code__row_numb_mol_textarea_11 = $mol_type_enforce<
+	type $mol_text_code__row_numb_mol_textarea_12 = $mol_type_enforce<
 		ReturnType< $mol_textarea['row_numb'] >
 		,
 		ReturnType< $mol_text_code['row_numb'] >
 	>
-	type $mol_text_code__sidebar_showed_mol_textarea_12 = $mol_type_enforce<
+	type $mol_text_code__sidebar_showed_mol_textarea_13 = $mol_type_enforce<
 		ReturnType< $mol_textarea['sidebar_showed'] >
 		,
 		ReturnType< $mol_text_code['sidebar_showed'] >
 	>
-	type $mol_text_code__highlight_mol_textarea_13 = $mol_type_enforce<
+	type $mol_text_code__highlight_mol_textarea_14 = $mol_type_enforce<
 		ReturnType< $mol_textarea['highlight'] >
 		,
 		ReturnType< $mol_text_code['highlight'] >
 	>
-	type $mol_text_code__syntax_mol_textarea_14 = $mol_type_enforce<
+	type $mol_text_code__syntax_mol_textarea_15 = $mol_type_enforce<
 		ReturnType< $mol_textarea['syntax'] >
 		,
 		ReturnType< $mol_text_code['syntax'] >
@@ -38105,6 +38133,50 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
+    let $giper_baza_text_tokens: $mol_regexp<{
+        [x: string]: string;
+        readonly token: string;
+        readonly space: string;
+        readonly emoji: string;
+        readonly 'line-break': string;
+        readonly indents: string;
+        readonly Word: string;
+        readonly word: string;
+        readonly spaces: string;
+        readonly others: string;
+        readonly link: string;
+        readonly win_end: string;
+        readonly mac_end: string;
+    }>;
+}
+
+declare namespace $ {
+    /** Mergeable text Pawn */
+    class $giper_baza_text extends $giper_baza_pawn {
+        static tag: keyof typeof $giper_baza_unit_sand_tag;
+        value(next?: string): string;
+        /** Text representation. Based on list of rows. */
+        text(next?: string): string;
+        /** Text representation. Based on list of tokens. */
+        str(next?: string): string;
+        write(next: string, str_from?: number, str_to?: number): this;
+        point_by_offset(offset: number): readonly [head: string, x: number, y: number];
+        offset_by_point([self, offset]: readonly [head: string, x: number, y: number]): readonly [head: string, pos: number];
+        selection(lord: $giper_baza_link, next?: readonly [begin: number, end: number]): readonly [begin: number, end: number];
+    }
+}
+
+/** @jsx $mol_jsx */
+/** @jsxFrag $mol_jsx_frag */
+declare namespace $ {
+    class $giper_baza_rich extends $giper_baza_pawn {
+        dom(next?: (Element | Attr | Text)[]): (Element | Attr | Text)[];
+        html(next?: string): string;
+        selection(lord: $giper_baza_link, next?: readonly [from: readonly [self: string, x: number, y: number], to: readonly [self: string, x: number, y: number]]): Exclude<typeof next, undefined>;
+    }
+}
+
+declare namespace $ {
 
 	export class $mol_icon_content_paste extends $mol_icon {
 		path( ): string
@@ -38170,36 +38242,558 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    let $giper_baza_text_tokens: $mol_regexp<{
-        [x: string]: string;
-        readonly token: string;
-        readonly link: string;
-        readonly emoji: string;
-        readonly 'line-break': string;
-        readonly indents: string;
-        readonly Word: string;
-        readonly word: string;
-        readonly spaces: string;
-        readonly others: string;
-        readonly space: string;
-        readonly win_end: string;
-        readonly mac_end: string;
-    }>;
+
+	export class $mol_icon_marker extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=marker.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_format_size extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=size.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_order_bool_ascending extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=ascending.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_order_numeric_ascending extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=ascending.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_comment extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=comment.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_comment_quote extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=quote.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_comment_quote_outline extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=outline.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_xml extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=xml.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_arrow_collapse extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=collapse.view.tree.d.ts.map
+declare namespace $ {
+
+	export class $mol_icon_arrow_collapse_left extends $mol_icon {
+		path( ): string
+	}
+	
+}
+
+//# sourceMappingURL=left.view.tree.d.ts.map
+declare namespace $ {
 }
 
 declare namespace $ {
-    /** Mergeable text Pawn */
-    class $giper_baza_text extends $giper_baza_pawn {
-        static tag: keyof typeof $giper_baza_unit_sand_tag;
-        value(next?: string): string;
-        /** Text representation. Based on list of rows. */
-        text(next?: string): string;
-        /** Text representation. Based on list of tokens. */
-        str(next?: string): string;
-        write(next: string, str_from?: number, str_to?: number): this;
-        point_by_offset(offset: number): readonly [head: string, x: number, y: number];
-        offset_by_point([self, offset]: readonly [head: string, x: number, y: number]): readonly [head: string, pos: number];
-        selection(lord: $giper_baza_link, next?: readonly [begin: number, end: number]): readonly [begin: number, end: number];
+
+	export class $mol_float extends $mol_view {
+		style( ): ({ 
+			'minHeight': string,
+		})  & ReturnType< $mol_view['style'] >
+	}
+	
+}
+
+//# sourceMappingURL=float.view.tree.d.ts.map
+declare namespace $ {
+    function $mol_jsx_attach<Result>(next: typeof $mol_jsx_document, action: () => Result): Result;
+}
+
+declare namespace $ {
+    class $mol_dom_point extends Object {
+        readonly node: Node;
+        readonly pos: number;
+        constructor(node: Node, pos: number);
+        /** Iterator for deep comparison. */
+        [Symbol.iterator](): ArrayIterator<number | Node>;
+        /** Point after start of the node. */
+        static head(node: Node): $mol_dom_point;
+        /** Point before end of the node. */
+        static foot(node: Node): $mol_dom_point;
+        /** Point after end of the node. */
+        static tail(node: Node): $mol_dom_point;
+        /** Is point after start of the node. */
+        is_head(): boolean;
+        /** Is point before end of the node. */
+        is_foot(): boolean;
+        /** Is point after end of the node. */
+        is_tail(): boolean;
+        /** Point after start of the node. */
+        head(): $mol_dom_point;
+        /** Point before end of the node. */
+        foot(): $mol_dom_point;
+        /** Point after end of the node. */
+        tail(): $mol_dom_point;
+        native(): readonly [Node, number];
+        /** Point near the node. -1: before, +1: after. */
+        static near(node: Node, axis: -1 | 1): $mol_dom_point | null;
+        /** Point near the node. -1: before, +1: after. */
+        jump(axis: -1 | 1): $mol_dom_point | null;
+        /** Point at one step in some direction. */
+        move_step(axis: -1 | 1): $mol_dom_point | null;
+        move_chars(root: Element, offset: number): $mol_dom_point;
+    }
+}
+
+declare namespace $ {
+    class $mol_dom_range extends Object {
+        readonly anchor: $mol_dom_point;
+        readonly extend: $mol_dom_point;
+        constructor(anchor: $mol_dom_point, extend: $mol_dom_point);
+        /** Iterator for deep comparison. */
+        [Symbol.iterator](): ArrayIterator<$mol_dom_point>;
+        /** Makes range from selection with direction storing. */
+        static from_selection(sel?: Selection): $mol_dom_range | null;
+        /** Converts from native Range. */
+        static from_native(range: Range): $mol_dom_range;
+        /** Surrounds whole node content. */
+        static inside(node: Node): $mol_dom_range;
+        /** Around node itself. */
+        static around(node: Node): $mol_dom_range;
+        /** Deeper Element which contain whole selection. */
+        container(): Node;
+        /** Has now content. */
+        is_empty(): boolean;
+        /** Swap start and end points. */
+        swap(): $mol_dom_range;
+        /** Returns new range expanded outside by one point steps. */
+        expand(): $mol_dom_range;
+        /** Returns fragment of cloned content. */
+        copy(): DocumentFragment;
+        /** Removes all content and returns new collapsed range. */
+        clear(): $mol_dom_range;
+        /** Removes all content and inserts given instead. */
+        paste(node: Node): $mol_dom_range;
+        /** Wraps content by given element. */
+        surround(el: Element): $mol_dom_range;
+        /**
+         * Returns position of point relate to this range.
+         * Before: -1
+         * Inside: 0
+         * After: +1
+         */
+        point_compare(point: $mol_dom_point): number;
+        /** Is given range inside this. */
+        range_contains(range: $mol_dom_range): boolean;
+        /**
+         * Returns point which bounded by this range.
+         * Actualy returns middle of three points: anchor, given point, extend.
+         */
+        point_bound(point: $mol_dom_point): $mol_dom_point;
+        /** Returns new range which bounded by giiven. */
+        range_bounds(range: $mol_dom_range): $mol_dom_range;
+        /** Aim selection to this range. */
+        select(): this;
+        /**
+         * Returns native DOM Range object.
+         * It's always forward direction.
+         */
+        native(): Range;
+    }
+}
+
+declare namespace $ {
+}
+
+declare namespace $ {
+
+	type $mol_hotkey2__action_giper_baza_rich_edit_1 = $mol_type_enforce<
+		({ 
+			alt_S( next?: ReturnType< $giper_baza_rich_edit['inline_toggle'] > ): ReturnType< $giper_baza_rich_edit['inline_toggle'] >,
+			alt_E( next?: ReturnType< $giper_baza_rich_edit['inline_toggle'] > ): ReturnType< $giper_baza_rich_edit['inline_toggle'] >,
+			alt_I( next?: ReturnType< $giper_baza_rich_edit['inline_toggle'] > ): ReturnType< $giper_baza_rich_edit['inline_toggle'] >,
+			alt_R( next?: ReturnType< $giper_baza_rich_edit['inline_toggle'] > ): ReturnType< $giper_baza_rich_edit['inline_toggle'] >,
+			alt_C( next?: ReturnType< $giper_baza_rich_edit['inline_toggle'] > ): ReturnType< $giper_baza_rich_edit['inline_toggle'] >,
+			alt_T( next?: ReturnType< $giper_baza_rich_edit['block_wrap'] > ): ReturnType< $giper_baza_rich_edit['block_wrap'] >,
+			alt_Q( next?: ReturnType< $giper_baza_rich_edit['block_wrap'] > ): ReturnType< $giper_baza_rich_edit['block_wrap'] >,
+			alt_U( next?: ReturnType< $giper_baza_rich_edit['block_wrap'] > ): ReturnType< $giper_baza_rich_edit['block_wrap'] >,
+			alt_O( next?: ReturnType< $giper_baza_rich_edit['block_wrap'] > ): ReturnType< $giper_baza_rich_edit['block_wrap'] >,
+			alt_P( next?: ReturnType< $giper_baza_rich_edit['block_wrap'] > ): ReturnType< $giper_baza_rich_edit['block_wrap'] >,
+			tab( next?: ReturnType< $giper_baza_rich_edit['block_rewrap'] > ): ReturnType< $giper_baza_rich_edit['block_rewrap'] >,
+			shift_tab( next?: ReturnType< $giper_baza_rich_edit['block_unwrap'] > ): ReturnType< $giper_baza_rich_edit['block_unwrap'] >,
+		}) 
+		,
+		ReturnType< $mol_hotkey2['action'] >
+	>
+	type $mol_button_minor__title_giper_baza_rich_edit_2 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_giper_baza_rich_edit_3 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_giper_baza_rich_edit_4 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['selected'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_giper_baza_rich_edit_5 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['inline_toggle'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__title_giper_baza_rich_edit_6 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_giper_baza_rich_edit_7 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_giper_baza_rich_edit_8 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['selected'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_giper_baza_rich_edit_9 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['inline_toggle'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__title_giper_baza_rich_edit_10 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_giper_baza_rich_edit_11 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_giper_baza_rich_edit_12 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['selected'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_giper_baza_rich_edit_13 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['inline_toggle'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__title_giper_baza_rich_edit_14 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_giper_baza_rich_edit_15 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_giper_baza_rich_edit_16 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['selected'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_giper_baza_rich_edit_17 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['inline_toggle'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__title_giper_baza_rich_edit_18 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_giper_baza_rich_edit_19 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_giper_baza_rich_edit_20 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['selected'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_giper_baza_rich_edit_21 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['inline_toggle'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_pick__hint_giper_baza_rich_edit_22 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_pick['hint'] >
+	>
+	type $mol_pick__trigger_content_giper_baza_rich_edit_23 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_pick['trigger_content'] >
+	>
+	type $mol_pick__bubble_content_giper_baza_rich_edit_24 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_pick['bubble_content'] >
+	>
+	type $mol_button_minor__hint_giper_baza_rich_edit_25 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_giper_baza_rich_edit_26 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['selected'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_giper_baza_rich_edit_27 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['block_wrap'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__sub_giper_baza_rich_edit_28 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_button_minor['sub'] >
+	>
+	type $mol_button_minor__hint_giper_baza_rich_edit_29 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_giper_baza_rich_edit_30 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['selected'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_giper_baza_rich_edit_31 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['block_wrap'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__sub_giper_baza_rich_edit_32 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_button_minor['sub'] >
+	>
+	type $mol_button_minor__hint_giper_baza_rich_edit_33 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_giper_baza_rich_edit_34 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['selected'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_giper_baza_rich_edit_35 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['block_wrap'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__sub_giper_baza_rich_edit_36 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_button_minor['sub'] >
+	>
+	type $mol_button_minor__hint_giper_baza_rich_edit_37 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_giper_baza_rich_edit_38 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['selected'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_giper_baza_rich_edit_39 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['block_wrap'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__sub_giper_baza_rich_edit_40 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_button_minor['sub'] >
+	>
+	type $mol_button_minor__hint_giper_baza_rich_edit_41 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_giper_baza_rich_edit_42 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['selected'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_giper_baza_rich_edit_43 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['block_wrap'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__sub_giper_baza_rich_edit_44 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_button_minor['sub'] >
+	>
+	type $mol_button_minor__hint_giper_baza_rich_edit_45 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__enabled_giper_baza_rich_edit_46 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['selected'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__click_giper_baza_rich_edit_47 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['block_unwrap'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__sub_giper_baza_rich_edit_48 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_button_minor['sub'] >
+	>
+	type $mol_float__sub_giper_baza_rich_edit_49 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_float['sub'] >
+	>
+	type $mol_view__attr_giper_baza_rich_edit_50 = $mol_type_enforce<
+		({ 
+			'contenteditable': ReturnType< $giper_baza_rich_edit['editable'] >,
+		}) 
+		,
+		ReturnType< $mol_view['attr'] >
+	>
+	type $mol_view__event_giper_baza_rich_edit_51 = $mol_type_enforce<
+		({ 
+			input( next?: ReturnType< $giper_baza_rich_edit['save'] > ): ReturnType< $giper_baza_rich_edit['save'] >,
+			paste( next?: ReturnType< $giper_baza_rich_edit['paste'] > ): ReturnType< $giper_baza_rich_edit['paste'] >,
+			pointermove( next?: ReturnType< $giper_baza_rich_edit['hover'] > ): ReturnType< $giper_baza_rich_edit['hover'] >,
+		}) 
+		,
+		ReturnType< $mol_view['event'] >
+	>
+	type $mol_view__sub_giper_baza_rich_edit_52 = $mol_type_enforce<
+		ReturnType< $giper_baza_rich_edit['content'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	export class $giper_baza_rich_edit extends $mol_view {
+		enabled( ): boolean
+		selection_load( ): any
+		selection_sync( ): any
+		inline_toggle( id: any, next?: any ): any
+		block_wrap( id: any, next?: any ): any
+		block_rewrap( next?: any ): any
+		block_unwrap( next?: any ): any
+		Hotkey( ): $mol_hotkey2
+		Inline_format_menu_icon( ): $mol_icon_marker
+		selected( next?: boolean ): boolean
+		Strong_button( ): $mol_button_minor
+		Em_button( ): $mol_button_minor
+		Ins_button( ): $mol_button_minor
+		Del_button( ): $mol_button_minor
+		Code_button( ): $mol_button_minor
+		Inline_format_menu( ): $mol_pick
+		Section_icon( ): $mol_icon_format_size
+		Section_button( ): $mol_button_minor
+		List_bullet_icon( ): $mol_icon_order_bool_ascending
+		List_bullet_button( ): $mol_button_minor
+		List_number_icon( ): $mol_icon_order_numeric_ascending
+		List_number_button( ): $mol_button_minor
+		Quote_icon( ): $mol_icon_comment_quote_outline
+		Quote_button( ): $mol_button_minor
+		Preformat_icon( ): $mol_icon_xml
+		Preformat_button( ): $mol_button_minor
+		Decrease_icon( ): $mol_icon_arrow_collapse_left
+		Unwrap_button( ): $mol_button_minor
+		Tools( ): $mol_float
+		editable( next?: string ): string
+		save( next?: any ): any
+		paste( next?: any ): any
+		hover( next?: any ): any
+		content( ): readonly(any)[]
+		Content( ): $mol_view
+		pawn( next?: $giper_baza_rich ): $giper_baza_rich
+		attr( ): ({ 
+			'giper_baza_rich_edit_enabled': ReturnType< $giper_baza_rich_edit['enabled'] >,
+		})  & ReturnType< $mol_view['attr'] >
+		hint( ): string
+		auto( ): readonly(any)[]
+		plugins( ): readonly(any)[]
+		sub( ): readonly(any)[]
+	}
+	
+}
+
+//# sourceMappingURL=edit.view.tree.d.ts.map
+/** @jsx $mol_jsx */
+/** @jsxFrag $mol_jsx_frag */
+declare namespace $.$$ {
+    class $giper_baza_rich_edit extends $.$giper_baza_rich_edit {
+        editable(next?: string | null): string;
+        sub(): $mol_view[];
+        content(): ChildNode[];
+        selection(next?: readonly [from: readonly [self: string, x: number, y: number], to: readonly [self: string, x: number, y: number]]): readonly [from: readonly [self: string, x: number, y: number], to: readonly [self: string, x: number, y: number]];
+        save(event?: Event): void;
+        selection_sync(): $mol_dom_listener;
+        selected(): boolean;
+        selection_save(): void;
+        selection_load(): void;
+        block_wrap(Type: string, event: KeyboardEvent): void;
+        block_unwrap(event: KeyboardEvent): void;
+        /** Wraps selecion to given element type. */
+        inline_toggle(Type: string, event: KeyboardEvent): void;
+        paste(event?: ClipboardEvent): void;
+        hover(event: PointerEvent): void;
     }
 }
 
@@ -38526,7 +39120,17 @@ declare namespace $ {
 		,
 		ReturnType< $mol_textarea['selection'] >
 	>
-	type $mol_list__rows_giper_baza_flex_field_59 = $mol_type_enforce<
+	type $giper_baza_rich_edit__enabled_giper_baza_flex_field_59 = $mol_type_enforce<
+		ReturnType< $giper_baza_flex_field['enabled'] >
+		,
+		ReturnType< $giper_baza_rich_edit['enabled'] >
+	>
+	type $giper_baza_rich_edit__pawn_giper_baza_flex_field_60 = $mol_type_enforce<
+		ReturnType< $giper_baza_flex_field['rich_pawn'] >
+		,
+		ReturnType< $giper_baza_rich_edit['pawn'] >
+	>
+	type $mol_list__rows_giper_baza_flex_field_61 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_list['rows'] >
@@ -38558,6 +39162,7 @@ declare namespace $ {
 		Dict_form( ): $giper_baza_flex_form
 		text( next?: string ): string
 		text_selection( next?: readonly(any)[] ): readonly(any)[]
+		rich_pawn( next?: $giper_baza_rich ): $giper_baza_rich
 		list_item_adopt( next?: any ): any
 		list_receive( next?: any ): any
 		list_pick( next?: any ): any
@@ -38593,6 +39198,7 @@ declare namespace $ {
 		Time( ): $mol_date
 		Dict( ): $mol_expander
 		Text( ): $mol_textarea
+		Rich( ): $giper_baza_rich_edit
 		List( ): $mol_list
 	}
 	
@@ -38603,7 +39209,7 @@ declare namespace $.$$ {
     class $giper_baza_flex_field extends $.$giper_baza_flex_field {
         dict_pawn(): $giper_baza_dict;
         schema(): "Bool" | "Bint" | "Real" | "Text" | null;
-        Sub(): $.$mol_list | $.$mol_select | $mol_bar | $.$mol_expander | $.$mol_textarea | $.$giper_baza_vary_edit;
+        Sub(): $.$mol_list | $.$mol_select | $mol_bar | $.$mol_expander | $.$mol_textarea | $.$giper_baza_vary_edit | $.$giper_baza_rich_edit;
         enum(next?: $giper_baza_vary_type): string | number | bigint | boolean | Element | $mol_tree2 | $giper_baza_link | Uint8Array<ArrayBuffer> | Uint16Array<ArrayBuffer> | Uint32Array<ArrayBuffer> | BigUint64Array<ArrayBuffer> | Int8Array<ArrayBuffer> | Int16Array<ArrayBuffer> | Int32Array<ArrayBuffer> | BigInt64Array<ArrayBuffer> | Float64Array<ArrayBuffer> | Float32Array<ArrayBuffer> | $mol_time_moment | $mol_time_duration | $mol_time_interval | readonly $giper_baza_vary_type[] | Readonly<{
             [x: string]: $giper_baza_vary_type;
         }> | null;
@@ -38624,6 +39230,7 @@ declare namespace $.$$ {
         link_new(rights?: string): null;
         text(next?: string): string;
         text_selection(next?: readonly [begin: number, end: number]): readonly [begin: number, end: number];
+        rich_pawn(next?: any): $giper_baza_rich;
         dict_title(): string;
         list_items(): $.$mol_drop[];
         list_tools(): ($mol_button_minor | $.$mol_select)[];
@@ -45201,6 +45808,10 @@ declare namespace $ {
     const $bog_vmap_app_wire_gap = 12;
     const $bog_vmap_app_wire_radius = 5;
     const $bog_vmap_app_wire_hit = 8;
+    const $bog_vmap_app_wire_machinery: Set<string>;
+    function $bog_vmap_app_wire_plain(port: {
+        readonly name: string;
+    }): boolean;
     function $bog_vmap_app_wire_ports(this: $, props: ReadonlyMap<string, $mol_tree2>, owners: ReadonlyMap<string, string>, base: string): readonly $bog_vmap_app_wire_port[];
     function $bog_vmap_app_wire_fits(out: $bog_vmap_app_inspect_value_kind, into: $bog_vmap_app_inspect_value_kind): boolean;
     function $bog_vmap_app_wire_takes(out: $bog_vmap_app_inspect_value_kind, into: $bog_vmap_app_wire_port, bidi: boolean): boolean;
@@ -45792,153 +46403,211 @@ declare namespace $ {
 		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_view__sub_bog_vmap_app_pane_13 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['name_views'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__sub_bog_vmap_app_pane_14 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['error_marks'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_touch__allow_draw_bog_vmap_app_pane_14 = $mol_type_enforce<
+	type $mol_touch__allow_draw_bog_vmap_app_pane_15 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_touch['allow_draw'] >
 	>
-	type $mol_touch__allow_pan_bog_vmap_app_pane_15 = $mol_type_enforce<
+	type $mol_touch__allow_pan_bog_vmap_app_pane_16 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_touch['allow_pan'] >
 	>
-	type $mol_touch__allow_zoom_bog_vmap_app_pane_16 = $mol_type_enforce<
+	type $mol_touch__allow_zoom_bog_vmap_app_pane_17 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $mol_touch['allow_zoom'] >
 	>
-	type $mol_touch__pan_bog_vmap_app_pane_17 = $mol_type_enforce<
+	type $mol_touch__pan_bog_vmap_app_pane_18 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['camera_shift'] >
 		,
 		ReturnType< $mol_touch['pan'] >
 	>
-	type $mol_touch__zoom_bog_vmap_app_pane_18 = $mol_type_enforce<
+	type $mol_touch__zoom_bog_vmap_app_pane_19 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['camera_zoom'] >
 		,
 		ReturnType< $mol_touch['zoom'] >
 	>
-	type $mol_vector_2d__bog_vmap_app_pane_19 = $mol_type_enforce<
+	type $mol_vector_2d__bog_vmap_app_pane_20 = $mol_type_enforce<
 		[ number, number ]
 		,
 		ConstructorParameters< typeof $mol_vector_2d<number> >
 	>
-	type $bog_vmap_app_pane_frame__html_bog_vmap_app_pane_20 = $mol_type_enforce<
+	type $bog_vmap_app_pane_frame__html_bog_vmap_app_pane_21 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['scene_html'] >
 		,
 		ReturnType< $bog_vmap_app_pane_frame['html'] >
 	>
-	type $bog_vmap_app_pane_label__style_bog_vmap_app_pane_21 = $mol_type_enforce<
+	type $bog_vmap_app_pane_label__style_bog_vmap_app_pane_22 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['label_style'] >
 		,
 		ReturnType< $bog_vmap_app_pane_label['style'] >
 	>
-	type $bog_vmap_app_pane_label__lines_bog_vmap_app_pane_22 = $mol_type_enforce<
+	type $bog_vmap_app_pane_label__lines_bog_vmap_app_pane_23 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['label_lines'] >
 		,
 		ReturnType< $bog_vmap_app_pane_label['lines'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_23 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_24 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['name_style'] >
+		,
+		ReturnType< $mol_view['style'] >
+	>
+	type $mol_view__attr_bog_vmap_app_pane_25 = $mol_type_enforce<
+		({ 
+			'bog_vmap_app_pane_name_picked': ReturnType< $bog_vmap_app_pane['name_picked'] >,
+		})  & ReturnType< $mol_view['attr'] >
+		,
+		ReturnType< $mol_view['attr'] >
+	>
+	type $mol_view__event_bog_vmap_app_pane_26 = $mol_type_enforce<
+		({ 
+			click( next?: ReturnType< $bog_vmap_app_pane['name_press'] > ): ReturnType< $bog_vmap_app_pane['name_press'] >,
+			dblclick( next?: ReturnType< $bog_vmap_app_pane['name_edit'] > ): ReturnType< $bog_vmap_app_pane['name_edit'] >,
+		})  & ReturnType< $mol_view['event'] >
+		,
+		ReturnType< $mol_view['event'] >
+	>
+	type $mol_view__sub_bog_vmap_app_pane_27 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_string__style_bog_vmap_app_pane_28 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['name_style'] >
+		,
+		ReturnType< $mol_string['style'] >
+	>
+	type $mol_string__hint_bog_vmap_app_pane_29 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_string['hint'] >
+	>
+	type $mol_string__value_bog_vmap_app_pane_30 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['name_draft'] >
+		,
+		ReturnType< $mol_string['value'] >
+	>
+	type $mol_string__submit_bog_vmap_app_pane_31 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['name_submit'] >
+		,
+		ReturnType< $mol_string['submit'] >
+	>
+	type $mol_string__event_bog_vmap_app_pane_32 = $mol_type_enforce<
+		({ 
+			blur( next?: ReturnType< $bog_vmap_app_pane['name_submit'] > ): ReturnType< $bog_vmap_app_pane['name_submit'] >,
+			keydown( next?: ReturnType< $bog_vmap_app_pane['name_key'] > ): ReturnType< $bog_vmap_app_pane['name_key'] >,
+		})  & ReturnType< $mol_string['event'] >
+		,
+		ReturnType< $mol_string['event'] >
+	>
+	type $mol_view__style_bog_vmap_app_pane_33 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['mark_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__attr_bog_vmap_app_pane_24 = $mol_type_enforce<
+	type $mol_view__attr_bog_vmap_app_pane_34 = $mol_type_enforce<
 		({ 
 			'title': ReturnType< $bog_vmap_app_pane['mark_hint'] >,
 		})  & ReturnType< $mol_view['attr'] >
 		,
 		ReturnType< $mol_view['attr'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_25 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_35 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_26 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_36 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['insert_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_27 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_37 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['band_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_28 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_38 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['draft_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_29 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_39 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['guide_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $bog_vmap_app_menu__showed_bog_vmap_app_pane_30 = $mol_type_enforce<
+	type $bog_vmap_app_menu__showed_bog_vmap_app_pane_40 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_showed'] >
 		,
 		ReturnType< $bog_vmap_app_menu['showed'] >
 	>
-	type $bog_vmap_app_menu__left_bog_vmap_app_pane_31 = $mol_type_enforce<
+	type $bog_vmap_app_menu__left_bog_vmap_app_pane_41 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_left'] >
 		,
 		ReturnType< $bog_vmap_app_menu['left'] >
 	>
-	type $bog_vmap_app_menu__top_bog_vmap_app_pane_32 = $mol_type_enforce<
+	type $bog_vmap_app_menu__top_bog_vmap_app_pane_42 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_top'] >
 		,
 		ReturnType< $bog_vmap_app_menu['top'] >
 	>
-	type $bog_vmap_app_menu__on_node_bog_vmap_app_pane_33 = $mol_type_enforce<
+	type $bog_vmap_app_menu__on_node_bog_vmap_app_pane_43 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_on_node'] >
 		,
 		ReturnType< $bog_vmap_app_menu['on_node'] >
 	>
-	type $bog_vmap_app_menu__editable_bog_vmap_app_pane_34 = $mol_type_enforce<
+	type $bog_vmap_app_menu__editable_bog_vmap_app_pane_44 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['editable'] >
 		,
 		ReturnType< $bog_vmap_app_menu['editable'] >
 	>
-	type $bog_vmap_app_menu__copy_bog_vmap_app_pane_35 = $mol_type_enforce<
+	type $bog_vmap_app_menu__copy_bog_vmap_app_pane_45 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_copy'] >
 		,
 		ReturnType< $bog_vmap_app_menu['copy'] >
 	>
-	type $bog_vmap_app_menu__remove_bog_vmap_app_pane_36 = $mol_type_enforce<
+	type $bog_vmap_app_menu__remove_bog_vmap_app_pane_46 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_delete'] >
 		,
 		ReturnType< $bog_vmap_app_menu['remove'] >
 	>
-	type $bog_vmap_app_menu__wrap_bog_vmap_app_pane_37 = $mol_type_enforce<
+	type $bog_vmap_app_menu__wrap_bog_vmap_app_pane_47 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_wrap'] >
 		,
 		ReturnType< $bog_vmap_app_menu['wrap'] >
 	>
-	type $bog_vmap_app_menu__parent_bog_vmap_app_pane_38 = $mol_type_enforce<
+	type $bog_vmap_app_menu__parent_bog_vmap_app_pane_48 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_parent'] >
 		,
 		ReturnType< $bog_vmap_app_menu['parent'] >
 	>
-	type $bog_vmap_app_menu__parent_enabled_bog_vmap_app_pane_39 = $mol_type_enforce<
+	type $bog_vmap_app_menu__parent_enabled_bog_vmap_app_pane_49 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_parent_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_menu['parent_enabled'] >
 	>
-	type $bog_vmap_app_menu__enter_bog_vmap_app_pane_40 = $mol_type_enforce<
+	type $bog_vmap_app_menu__enter_bog_vmap_app_pane_50 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_enter'] >
 		,
 		ReturnType< $bog_vmap_app_menu['enter'] >
 	>
-	type $bog_vmap_app_menu__board_bog_vmap_app_pane_41 = $mol_type_enforce<
+	type $bog_vmap_app_menu__board_bog_vmap_app_pane_51 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_board'] >
 		,
 		ReturnType< $bog_vmap_app_menu['board'] >
 	>
-	type $bog_vmap_app_menu__fit_bog_vmap_app_pane_42 = $mol_type_enforce<
+	type $bog_vmap_app_menu__fit_bog_vmap_app_pane_52 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['camera_reset'] >
 		,
 		ReturnType< $bog_vmap_app_menu['fit'] >
@@ -45961,10 +46630,20 @@ declare namespace $ {
 		Wire( ): $bog_vmap_app_wire
 		value_labels( ): readonly($mol_view)[]
 		Values( ): $mol_view
+		name_views( ): readonly($mol_view)[]
+		Names( ): $mol_view
 		error_marks( ): readonly($mol_view)[]
 		Marks( ): $mol_view
 		label_style( id: any): Record<string, any>
 		label_lines( id: any): readonly(string)[]
+		name_style( id: any): Record<string, any>
+		name_picked( id: any): boolean
+		name_press( id: any, next?: any ): any
+		name_edit( id: any, next?: any ): any
+		name_title( id: any): string
+		name_draft( id: any, next?: string ): string
+		name_submit( id: any, next?: any ): any
+		name_key( id: any, next?: any ): any
 		mark_style( id: any): Record<string, any>
 		mark_hint( id: any): string
 		insert_style( ): Record<string, any>
@@ -46018,6 +46697,7 @@ declare namespace $ {
 		link_drop( next?: any ): any
 		containers( ): readonly(string)[]
 		doc_names( ): readonly(string)[]
+		node_title( next?: string ): string
 		axis( id: any): string
 		tree_move( next?: any ): any
 		carry_at( next?: any ): any
@@ -46058,6 +46738,8 @@ declare namespace $ {
 		Scene( id: any): $bog_vmap_app_pane_frame
 		sub( ): readonly(any)[]
 		Label( id: any): $bog_vmap_app_pane_label
+		Name( id: any): $mol_view
+		Name_field( id: any): $mol_string
 		Mark( id: any): $mol_view
 		Insert( ): $mol_view
 		Band( ): $mol_view
@@ -46498,6 +47180,7 @@ declare namespace $.$$ {
         wire_press(dot: $bog_vmap_app_wire_dot, event: PointerEvent): void;
         wire_release(event: PointerEvent): void;
         wires_visible(): readonly string[];
+        board(name: string): boolean;
         part_outs(name: string): readonly $bog_vmap_app_wire_port[];
         part_shown(name: string): boolean;
         parts_visible(): readonly string[];
@@ -46507,6 +47190,19 @@ declare namespace $.$$ {
             readonly [prop: string]: string;
         };
         value_labels(): readonly $mol_view[];
+        name_views(): readonly $mol_view[];
+        name_style(name: string): {
+            readonly [prop: string]: string;
+        };
+        name_title(name: string): string;
+        name_picked(name: string): boolean;
+        name_edited(next?: string | null): string | null;
+        name_editing(name: string): boolean;
+        name_press(name: string, event?: Event): null;
+        name_edit(name: string, event?: Event): null;
+        name_draft(name: string, next?: string): string;
+        name_submit(name: string, event?: Event): null;
+        name_key(name: string, event?: KeyboardEvent): null;
         values_push(): string[];
         post(target: {
             postMessage(data: unknown, origin: string): void;
@@ -55616,362 +56312,367 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_pane['doc_names'] >
 	>
-	type $bog_vmap_app_pane__axis_bog_vmap_app_86 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_title_bog_vmap_app_86 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_title'] >
+		,
+		ReturnType< $bog_vmap_app_pane['node_title'] >
+	>
+	type $bog_vmap_app_pane__axis_bog_vmap_app_87 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_axis'] >
 		,
 		ReturnType< $bog_vmap_app_pane['axis'] >
 	>
-	type $bog_vmap_app_pane__tree_move_bog_vmap_app_87 = $mol_type_enforce<
+	type $bog_vmap_app_pane__tree_move_bog_vmap_app_88 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['tree_move'] >
 		,
 		ReturnType< $bog_vmap_app_pane['tree_move'] >
 	>
-	type $bog_vmap_app_pane__carry_drop_bog_vmap_app_88 = $mol_type_enforce<
+	type $bog_vmap_app_pane__carry_drop_bog_vmap_app_89 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['carry_drop'] >
 		,
 		ReturnType< $bog_vmap_app_pane['carry_drop'] >
 	>
-	type $bog_vmap_app_pane__files_drop_bog_vmap_app_89 = $mol_type_enforce<
+	type $bog_vmap_app_pane__files_drop_bog_vmap_app_90 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['files_drop'] >
 		,
 		ReturnType< $bog_vmap_app_pane['files_drop'] >
 	>
-	type $bog_vmap_app_pane__node_delete_bog_vmap_app_90 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_delete_bog_vmap_app_91 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_delete'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_delete'] >
 	>
-	type $bog_vmap_app_pane__node_copy_bog_vmap_app_91 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_copy_bog_vmap_app_92 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_copy'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_copy'] >
 	>
-	type $bog_vmap_app_pane__node_wrap_bog_vmap_app_92 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_wrap_bog_vmap_app_93 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_wrap'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_wrap'] >
 	>
-	type $bog_vmap_app_pane__board_draw_bog_vmap_app_93 = $mol_type_enforce<
+	type $bog_vmap_app_pane__board_draw_bog_vmap_app_94 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['board_draw'] >
 		,
 		ReturnType< $bog_vmap_app_pane['board_draw'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_94 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_95 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['idle_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
-	>
-	type $mol_view__sub_bog_vmap_app_95 = $mol_type_enforce<
-		readonly(any)[]
-		,
-		ReturnType< $mol_view['sub'] >
 	>
 	type $mol_view__sub_bog_vmap_app_96 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_page__title_bog_vmap_app_97 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_97 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_page__title_bog_vmap_app_98 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_page['title'] >
 	>
-	type $mol_page__sub_bog_vmap_app_98 = $mol_type_enforce<
+	type $mol_page__sub_bog_vmap_app_99 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_page['sub'] >
 	>
-	type $mol_page__body_bog_vmap_app_99 = $mol_type_enforce<
+	type $mol_page__body_bog_vmap_app_100 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_page['body'] >
 	>
-	type $mol_page__foot_bog_vmap_app_100 = $mol_type_enforce<
+	type $mol_page__foot_bog_vmap_app_101 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['notes'] >
 		,
 		ReturnType< $mol_page['foot'] >
 	>
-	type $bog_vmap_app_scenes__store_bog_vmap_app_101 = $mol_type_enforce<
+	type $bog_vmap_app_scenes__store_bog_vmap_app_102 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['store'] >
 		,
 		ReturnType< $bog_vmap_app_scenes['store'] >
 	>
-	type $bog_vmap_app_layers__source_bog_vmap_app_102 = $mol_type_enforce<
+	type $bog_vmap_app_layers__source_bog_vmap_app_103 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_src'] >
 		,
 		ReturnType< $bog_vmap_app_layers['source'] >
 	>
-	type $bog_vmap_app_layers__root_bog_vmap_app_103 = $mol_type_enforce<
+	type $bog_vmap_app_layers__root_bog_vmap_app_104 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_root'] >
 		,
 		ReturnType< $bog_vmap_app_layers['root'] >
 	>
-	type $bog_vmap_app_layers__doc_key_bog_vmap_app_104 = $mol_type_enforce<
+	type $bog_vmap_app_layers__doc_key_bog_vmap_app_105 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_key'] >
 		,
 		ReturnType< $bog_vmap_app_layers['doc_key'] >
 	>
-	type $bog_vmap_app_layers__picked_bog_vmap_app_105 = $mol_type_enforce<
+	type $bog_vmap_app_layers__picked_bog_vmap_app_106 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['picked'] >
 		,
 		ReturnType< $bog_vmap_app_layers['picked'] >
 	>
-	type $bog_vmap_app_layers__node_title_bog_vmap_app_106 = $mol_type_enforce<
+	type $bog_vmap_app_layers__node_title_bog_vmap_app_107 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_title'] >
 		,
 		ReturnType< $bog_vmap_app_layers['node_title'] >
 	>
-	type $bog_vmap_app_layers__node_title_note_bog_vmap_app_107 = $mol_type_enforce<
+	type $bog_vmap_app_layers__node_title_note_bog_vmap_app_108 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_title_note'] >
 		,
 		ReturnType< $bog_vmap_app_layers['node_title_note'] >
 	>
-	type $bog_vmap_app_layers__tree_move_bog_vmap_app_108 = $mol_type_enforce<
+	type $bog_vmap_app_layers__tree_move_bog_vmap_app_109 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['tree_move'] >
 		,
 		ReturnType< $bog_vmap_app_layers['tree_move'] >
 	>
-	type $bog_vmap_app_layers__node_show_bog_vmap_app_109 = $mol_type_enforce<
+	type $bog_vmap_app_layers__node_show_bog_vmap_app_110 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_show'] >
 		,
 		ReturnType< $bog_vmap_app_layers['node_show'] >
 	>
-	type $bog_vmap_app_layers__editable_bog_vmap_app_110 = $mol_type_enforce<
+	type $bog_vmap_app_layers__editable_bog_vmap_app_111 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['editable'] >
 		,
 		ReturnType< $bog_vmap_app_layers['editable'] >
 	>
-	type $bog_vmap_app_shelf__Title_bog_vmap_app_111 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__Title_bog_vmap_app_112 = $mol_type_enforce<
 		any
 		,
 		ReturnType< $bog_vmap_app_shelf['Title'] >
 	>
-	type $bog_vmap_app_shelf__editable_bog_vmap_app_112 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__editable_bog_vmap_app_113 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['editable'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['editable'] >
 	>
-	type $bog_vmap_app_shelf__links_bog_vmap_app_113 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__links_bog_vmap_app_114 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['links'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['links'] >
 	>
-	type $bog_vmap_app_shelf__pack_link_bog_vmap_app_114 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__pack_link_bog_vmap_app_115 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['pack_link'] >
 	>
-	type $bog_vmap_app_shelf__land_classes_bog_vmap_app_115 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__land_classes_bog_vmap_app_116 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lib_classes'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['land_classes'] >
 	>
-	type $bog_vmap_app_shelf__class_list_bog_vmap_app_116 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__class_list_bog_vmap_app_117 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lib_class_list'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['class_list'] >
 	>
-	type $bog_vmap_app_shelf__place_bog_vmap_app_117 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__place_bog_vmap_app_118 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['shelf_place'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['place'] >
 	>
-	type $bog_vmap_app_inspect__source_bog_vmap_app_118 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__source_bog_vmap_app_119 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_source'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['source'] >
 	>
-	type $bog_vmap_app_inspect__peers_bog_vmap_app_119 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__peers_bog_vmap_app_120 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_peers'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['peers'] >
 	>
-	type $bog_vmap_app_inspect__pack_bog_vmap_app_120 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__pack_bog_vmap_app_121 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['pack'] >
 	>
-	type $bog_vmap_app_inspect__class_title_bog_vmap_app_121 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__class_title_bog_vmap_app_122 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_title'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['class_title'] >
 	>
-	type $bog_vmap_app_inspect__title_note_bog_vmap_app_122 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__title_note_bog_vmap_app_123 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_title_note'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['title_note'] >
 	>
-	type $bog_vmap_app_inspect__cell_bog_vmap_app_123 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__cell_bog_vmap_app_124 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_cell'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['cell'] >
 	>
-	type $bog_vmap_app_inspect__editable_bog_vmap_app_124 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__editable_bog_vmap_app_125 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['editable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['editable'] >
 	>
-	type $mol_page__title_bog_vmap_app_125 = $mol_type_enforce<
+	type $mol_page__title_bog_vmap_app_126 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_page['title'] >
 	>
-	type $mol_page__body_bog_vmap_app_126 = $mol_type_enforce<
+	type $mol_page__body_bog_vmap_app_127 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_page['body'] >
 	>
-	type $bog_vmap_app_code__klass_bog_vmap_app_127 = $mol_type_enforce<
+	type $bog_vmap_app_code__klass_bog_vmap_app_128 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_klass'] >
 		,
 		ReturnType< $bog_vmap_app_code['klass'] >
 	>
-	type $bog_vmap_app_code__prop_bog_vmap_app_128 = $mol_type_enforce<
+	type $bog_vmap_app_code__prop_bog_vmap_app_129 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_prop'] >
 		,
 		ReturnType< $bog_vmap_app_code['prop'] >
 	>
-	type $bog_vmap_app_code__hooks_bog_vmap_app_129 = $mol_type_enforce<
+	type $bog_vmap_app_code__hooks_bog_vmap_app_130 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_hooks'] >
 		,
 		ReturnType< $bog_vmap_app_code['hooks'] >
 	>
-	type $bog_vmap_app_code__whole_bog_vmap_app_130 = $mol_type_enforce<
+	type $bog_vmap_app_code__whole_bog_vmap_app_131 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_whole'] >
 		,
 		ReturnType< $bog_vmap_app_code['whole'] >
 	>
-	type $bog_vmap_app_code__source_bog_vmap_app_131 = $mol_type_enforce<
+	type $bog_vmap_app_code__source_bog_vmap_app_132 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['source'] >
 	>
-	type $bog_vmap_app_code__node_source_bog_vmap_app_132 = $mol_type_enforce<
+	type $bog_vmap_app_code__node_source_bog_vmap_app_133 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['node_source'] >
 	>
-	type $bog_vmap_app_code__js_bog_vmap_app_133 = $mol_type_enforce<
+	type $bog_vmap_app_code__js_bog_vmap_app_134 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_js'] >
 		,
 		ReturnType< $bog_vmap_app_code['js'] >
 	>
-	type $bog_vmap_app_code__css_bog_vmap_app_134 = $mol_type_enforce<
+	type $bog_vmap_app_code__css_bog_vmap_app_135 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_css'] >
 		,
 		ReturnType< $bog_vmap_app_code['css'] >
 	>
-	type $bog_vmap_app_code__error_bog_vmap_app_135 = $mol_type_enforce<
+	type $bog_vmap_app_code__error_bog_vmap_app_136 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_error'] >
 		,
 		ReturnType< $bog_vmap_app_code['error'] >
 	>
-	type $bog_vmap_app_code__editable_bog_vmap_app_136 = $mol_type_enforce<
+	type $bog_vmap_app_code__editable_bog_vmap_app_137 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['editable'] >
 		,
 		ReturnType< $bog_vmap_app_code['editable'] >
 	>
-	type $mol_chip__title_bog_vmap_app_137 = $mol_type_enforce<
+	type $mol_chip__title_bog_vmap_app_138 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_chip['title'] >
 	>
-	type $mol_chip__hint_bog_vmap_app_138 = $mol_type_enforce<
+	type $mol_chip__hint_bog_vmap_app_139 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_chip['hint'] >
 	>
-	type $bog_vmap_app_history__Title_bog_vmap_app_139 = $mol_type_enforce<
+	type $bog_vmap_app_history__Title_bog_vmap_app_140 = $mol_type_enforce<
 		any
 		,
 		ReturnType< $bog_vmap_app_history['Title'] >
 	>
-	type $bog_vmap_app_history__store_bog_vmap_app_140 = $mol_type_enforce<
+	type $bog_vmap_app_history__store_bog_vmap_app_141 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['store'] >
 		,
 		ReturnType< $bog_vmap_app_history['store'] >
 	>
-	type $bog_vmap_app_history__state_bog_vmap_app_141 = $mol_type_enforce<
+	type $bog_vmap_app_history__state_bog_vmap_app_142 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['history_state'] >
 		,
 		ReturnType< $bog_vmap_app_history['state'] >
 	>
-	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_142 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_143 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['pack'] >
 	>
-	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_143 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_144 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lands'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['lands'] >
 	>
-	type $mol_status__status_bog_vmap_app_144 = $mol_type_enforce<
+	type $mol_status__status_bog_vmap_app_145 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['status'] >
 		,
 		ReturnType< $mol_status['status'] >
 	>
-	type $mol_status__status_bog_vmap_app_145 = $mol_type_enforce<
+	type $mol_status__status_bog_vmap_app_146 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['error'] >
 		,
 		ReturnType< $mol_status['status'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_146 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_147 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['inside_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_147 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_148 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['root_title_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_148 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_149 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_text'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_bar__sub_bog_vmap_app_149 = $mol_type_enforce<
+	type $mol_bar__sub_bog_vmap_app_150 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['stall_content'] >
 		,
 		ReturnType< $mol_bar['sub'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_150 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_151 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['stall_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_151 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_152 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_152 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_153 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_153 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_154 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_default'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_154 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_155 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_155 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_156 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_156 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_157 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_restart'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_view__style_bog_vmap_app_157 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_158 = $mol_type_enforce<
 		({ 
 			'left': ReturnType< $bog_vmap_app['ghost_left'] >,
 			'top': ReturnType< $bog_vmap_app['ghost_top'] >,
@@ -55979,7 +56680,7 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_158 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_159 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >

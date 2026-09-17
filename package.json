@@ -183,6 +183,7 @@
     "$mol_bar",
     "$mol_string",
     "$mol_hotkey",
+    "$mol_hotkey2",
     "$mol_icon_history",
     "$bog_vmap_app_publish",
     "$giper_baza_dict",

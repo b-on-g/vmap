@@ -5244,7 +5244,7 @@ var $;
 
 
 ;
-	($.$mol_hotkey) = class $mol_hotkey extends ($.$mol_plugin) {
+	($.$mol_hotkey2) = class $mol_hotkey2 extends ($.$mol_plugin) {
 		keydown(next){
 			if(next !== undefined) return next;
 			return null;
@@ -5252,20 +5252,11 @@ var $;
 		event(){
 			return {...(super.event()), "keydown": (next) => (this.keydown(next))};
 		}
-		key(){
+		action(){
 			return {};
 		}
-		mod_ctrl(){
-			return false;
-		}
-		mod_alt(){
-			return false;
-		}
-		mod_shift(){
-			return false;
-		}
 	};
-	($mol_mem(($.$mol_hotkey.prototype), "keydown"));
+	($mol_mem(($.$mol_hotkey2.prototype), "keydown"));
 
 
 ;
@@ -5282,27 +5273,71 @@ var $;
          * Plugin which adds handlers for keyboard keys.
          * @see [mol_keyboard_code](../keyboard/code/code.ts)
          */
-        class $mol_hotkey extends $.$mol_hotkey {
-            key() {
-                return super.key();
-            }
+        class $mol_hotkey2 extends $.$mol_hotkey2 {
             keydown(event) {
                 if (!event)
                     return;
                 if (event.defaultPrevented)
                     return;
-                let name = $mol_keyboard_code[event.keyCode];
-                if (this.mod_ctrl() !== (event.ctrlKey || event.metaKey))
-                    return;
-                if (this.mod_alt() !== event.altKey)
-                    return;
-                if (this.mod_shift() !== event.shiftKey)
-                    return;
-                const handle = this.key()[name];
-                if (handle)
-                    handle(event);
+                const key = [...new Set([
+                        ...(event.ctrlKey || event.metaKey) ? ['ctrl'] : [],
+                        ...event.altKey ? ['alt'] : [],
+                        ...event.shiftKey ? ['shift'] : [],
+                        $mol_keyboard_code[event.keyCode] ?? '?',
+                    ])].join('_');
+                this.action()[key]?.(event);
             }
         }
+        $$.$mol_hotkey2 = $mol_hotkey2;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$mol_hotkey) = class $mol_hotkey extends ($.$mol_hotkey2) {
+		key(){
+			return {};
+		}
+		mod_ctrl(){
+			return false;
+		}
+		mod_alt(){
+			return false;
+		}
+		mod_shift(){
+			return false;
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Plugin which adds handlers for keyboard keys.
+         * @deprecated Use $mol_hotkey2
+         * @see [mol_keyboard_code](../keyboard/code/code.ts)
+         */
+        class $mol_hotkey extends $.$mol_hotkey {
+            action() {
+                const prefix = [...new Set([
+                        ...this.mod_ctrl() ? ['ctrl_'] : [],
+                        ...this.mod_alt() ? ['alt_'] : [],
+                        ...this.mod_shift() ? ['shift_'] : [],
+                    ])].join('');
+                return Object.fromEntries(Object.entries(this.key())
+                    .map(([key, val]) => [prefix + key, val]));
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_hotkey.prototype, "action", null);
         $$.$mol_hotkey = $mol_hotkey;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
@@ -6300,8 +6335,7 @@ var $;
         static hole = new this('');
         static check(val) {
             try {
-                new this(val);
-                return val;
+                return new this(val);
             }
             catch {
                 return null;
@@ -10083,6 +10117,7 @@ var $;
                 this.sand_del(prev);
             this.faces.peer_summ_shift(peer.str, +1);
             sands.set(sand.self().str, sand);
+            this._self_all.set(sand.self().str, !sand.dead());
             this.faces.peer_time(peer.str, sand.time(), sand.tick());
             this.unit_seal_inc(sand);
         }
@@ -10173,7 +10208,7 @@ var $;
         sand_get(head, lord, self) {
             return this._sand.get(head.str)?.get(lord.str)?.get(self.str) ?? null;
         }
-        _self_all = new $mol_wire_dict();
+        _self_all = new Map();
         /** Generates unique local id base on optional idea number or random. */
         self_make(idea = Math.floor(Math.random() * 2 ** 48)) {
             const auth = this.auth();
@@ -10189,7 +10224,7 @@ var $;
                     continue;
                 if (this._self_all.has(idea_link.str))
                     continue;
-                this._self_all.set(idea_link.str, null);
+                this._self_all.set(idea_link.str, false);
                 return idea_link;
             }
             $mol_fail(new Error(`Too long self generation`));
@@ -13245,7 +13280,7 @@ var $;
             this.splice(next, 0, units.length, tag);
             return this.items_vary();
         }
-        /** Replace sublist by  new one with reconciliation. */
+        /** Replace sublist by new one with reconciliation. */
         splice(next, from = this.units().length, to = from, tag = 'term') {
             const land = this.land();
             $mol_reconcile({
@@ -16633,7 +16668,7 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    $mol_style_attach("mol/pop/pop.view.css", "@keyframes mol_pop_show {\n\tfrom {\n\t\topacity: 0;\n\t}\n}\n\n[mol_pop] {\n\tposition: relative;\n\tdisplay: inline-flex;\n}\n\n[mol_pop_bubble] {\n\tborder: none;\n\tpadding: 0;\n\tcolor: var(--mol_theme_text);\n\tbox-shadow: 0 0 1rem hsla(0,0%,0%,.5);\n\tborder-radius: var(--mol_gap_round);\n\tposition: fixed;\n\tz-index: var(--mol_layer_popup);\n\tbackground: var(--mol_theme_back);\n\tmax-width: none;\n\tmax-height: none;\n\t/* overflow: hidden;\n\toverflow-y: scroll;\n\toverflow-y: overlay; */\n\tword-break: normal;\n\twidth: max-content;\n\t/* height: max-content; */\n\tflex-direction: column;\n\tmax-width: calc( 100vw - var(--mol_gap_page) );\n\tmax-height: 80vw;\n\tcontain: paint;\n\ttransition-property: opacity;\n\t/* Safari ios layer fix, https://t.me/mam_mol/170017 */\n\ttransform: translateZ(0);\n\tanimation: mol_pop_show .1s ease-in;\n}\n\n:where( [mol_pop_bubble] > * ) {\n\tbackground: var(--mol_theme_card);\n}\n\n[mol_pop_bubble][mol_scroll] {\n\tbackground: var(--mol_theme_back);\n}\n\n[mol_pop_bubble]:focus {\n\toutline: none;\n}\n");
+    $mol_style_attach("mol/pop/pop.view.css", "@keyframes mol_pop_show {\n\tfrom {\n\t\topacity: 0;\n\t}\n}\n\n[mol_pop] {\n\tposition: relative;\n\tdisplay: inline-flex;\n}\n\n[mol_pop_bubble] {\n\tborder: none;\n\tpadding: 0;\n\tcolor: var(--mol_theme_text);\n\tbox-shadow: 0 0 1rem hsla(0,0%,0%,.5);\n\tborder-radius: var(--mol_gap_round);\n\tposition: fixed;\n\tz-index: var(--mol_layer_popup);\n\tbackground: var(--mol_theme_back);\n\tmax-width: none;\n\tmax-height: none;\n\t/* overflow: hidden;\n\toverflow-y: scroll;\n\toverflow-y: overlay; */\n\tword-break: normal;\n\twidth: max-content;\n\t/* height: max-content; */\n\tflex-direction: column;\n\tmax-width: 100vw;\n\tmax-height: 80vw;\n\tcontain: paint;\n\ttransition-property: opacity;\n\t/* Safari ios layer fix, https://t.me/mam_mol/170017 */\n\ttransform: translateZ(0);\n\tanimation: mol_pop_show .1s ease-in;\n}\n\n:where( [mol_pop_bubble] > * ) {\n\tbackground: var(--mol_theme_card);\n}\n\n[mol_pop_bubble][mol_scroll] {\n\tbackground: var(--mol_theme_back);\n}\n\n[mol_pop_bubble]:focus {\n\toutline: none;\n}\n");
 })($ || ($ = {}));
 
 ;
@@ -20312,7 +20347,7 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    $mol_style_attach("mol/calendar/calendar.view.css", "[mol_calendar] {\n\tdisplay: table;\n\tfont-family: monospace;\n}\n\n[mol_calendar_head] {\n\tdisplay: table-caption;\n\tbackground: inherit;\n}\n\n[mol_calendar_title] {\n\tjustify-content: center;\n}\n\n[mol_calendar_weekdays] ,\n[mol_calendar_week] {\n\tdisplay: table-row;\n\tpadding: 0;\n}\n\n[mol_calendar_day] {\n\tdisplay: table-cell;\n\tpadding: .25rem .5rem;\n\ttext-align: center;\n\tword-break: normal;\n\tbox-shadow: none;\n\tborder-radius: var(--mol_gap_round);\n}\n\n[mol_calendar_weekday] {\n\tcolor: var(--mol_theme_shade);\n\tborder-bottom: 1px solid var(--mol_theme_line);\n}\n\n[mol_calendar_holiday] {\n\tcolor: var(--mol_theme_special);\n}\n\n[mol_calendar_today] {\n\tfont-weight: bolder;\n}\n\n[mol_calendar_ghost] {\n\topacity: .2;\n}\n");
+    $mol_style_attach("mol/calendar/calendar.view.css", "[mol_calendar] {\n\tdisplay: table;\n\tfont-family: monospace;\n}\n\n[mol_calendar_head] {\n\tdisplay: table-caption;\n\tbackground: inherit;\n\twidth: max-content;\n}\n\n[mol_calendar_title] {\n\tjustify-content: center;\n}\n\n[mol_calendar_weekdays] ,\n[mol_calendar_week] {\n\tdisplay: table-row;\n\tpadding: 0;\n}\n\n[mol_calendar_day] {\n\tdisplay: table-cell;\n\tpadding: .25rem .5rem;\n\ttext-align: center;\n\tword-break: normal;\n\tbox-shadow: none;\n\tborder-radius: var(--mol_gap_round);\n}\n\n[mol_calendar_weekday] {\n\tcolor: var(--mol_theme_shade);\n\tborder-bottom: 1px solid var(--mol_theme_line);\n}\n\n[mol_calendar_holiday] {\n\tcolor: var(--mol_theme_special);\n}\n\n[mol_calendar_today] {\n\tfont-weight: bolder;\n}\n\n[mol_calendar_ghost] {\n\topacity: .2;\n}\n");
 })($ || ($ = {}));
 
 ;
@@ -21544,6 +21579,7 @@ var $;
 		}
 		View(){
 			const obj = new this.$.$mol_text_code();
+			(obj.attr) = () => ({...(this.$.$mol_text_code.prototype.attr.call(obj)), "inert": ""});
 			(obj.text) = () => ((this.value()));
 			(obj.render_visible_only) = () => (false);
 			(obj.row_numb) = (id) => ((this.row_numb(id)));
@@ -23018,462 +23054,6 @@ var $;
 })($ || ($ = {}));
 
 ;
-	($.$mol_icon_content_paste) = class $mol_icon_content_paste extends ($.$mol_icon) {
-		path(){
-			return "M19,20H5V4H7V7H17V4H19M12,2A1,1 0 0,1 13,3A1,1 0 0,1 12,4A1,1 0 0,1 11,3A1,1 0 0,1 12,2M19,2H14.82C14.4,0.84 13.3,0 12,0C10.7,0 9.6,0.84 9.18,2H5A2,2 0 0,0 3,4V20A2,2 0 0,0 5,22H19A2,2 0 0,0 21,20V4A2,2 0 0,0 19,2Z";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_expander) = class $mol_expander extends ($.$mol_list) {
-		expanded(next){
-			if(next !== undefined) return next;
-			return false;
-		}
-		expandable(){
-			return true;
-		}
-		label(){
-			return [(this.title())];
-		}
-		Trigger(){
-			const obj = new this.$.$mol_check_expand();
-			(obj.checked) = (next) => ((this.expanded(next)));
-			(obj.expandable) = () => ((this.expandable()));
-			(obj.label) = () => ((this.label()));
-			return obj;
-		}
-		Tools(){
-			return null;
-		}
-		Label(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.Trigger()), (this.Tools())]);
-			return obj;
-		}
-		content(){
-			return [];
-		}
-		Content(){
-			const obj = new this.$.$mol_list();
-			(obj.rows) = () => ((this.content()));
-			return obj;
-		}
-		rows(){
-			return [(this.Label()), (this.Content())];
-		}
-	};
-	($mol_mem(($.$mol_expander.prototype), "expanded"));
-	($mol_mem(($.$mol_expander.prototype), "Trigger"));
-	($mol_mem(($.$mol_expander.prototype), "Label"));
-	($mol_mem(($.$mol_expander.prototype), "Content"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Component which expands any content on title click.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_expander_demo
-         */
-        class $mol_expander extends $.$mol_expander {
-            rows() {
-                return [
-                    this.Label(),
-                    ...this.expanded() ? [this.Content()] : []
-                ];
-            }
-            expandable() {
-                return this.content().length > 0;
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_expander.prototype, "rows", null);
-        $$.$mol_expander = $mol_expander;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/expander/expander.view.css", "[mol_expander] {\n\tflex-direction: column;\n}\n\n[mol_expander_label] {\n\tdisplay: flex;\n\tflex-wrap: wrap;\n\tborder-radius: var(--mol_gap_round);\n}\n\n[mol_expander_trigger] {\n\tflex: auto;\n\tposition: relative;\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$giper_baza_flex_field) = class $giper_baza_flex_field extends ($.$mol_view) {
-		Sub(){
-			const obj = new this.$.$mol_view();
-			return obj;
-		}
-		enabled(){
-			return true;
-		}
-		enum(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		enum_options(){
-			return [];
-		}
-		enum_label(id){
-			return "";
-		}
-		atom_value(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		schema(){
-			return null;
-		}
-		atom_selection(next){
-			if(next !== undefined) return next;
-			return [];
-		}
-		link_value(){
-			return null;
-		}
-		Link_dump(){
-			const obj = new this.$.$giper_baza_unit_sand_dump();
-			(obj.land) = () => ((this.land()));
-			(obj.value) = () => ((this.link_value()));
-			return obj;
-		}
-		link(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		link_options(){
-			return [];
-		}
-		link_label(id){
-			return "";
-		}
-		Link_pick(){
-			const obj = new this.$.$mol_select();
-			(obj.enabled) = () => ((this.enabled()));
-			(obj.value) = (next) => ((this.link(next)));
-			(obj.options) = () => ((this.link_options()));
-			(obj.option_label) = (id) => ((this.link_label(id)));
-			return obj;
-		}
-		Link_new_icon(){
-			const obj = new this.$.$mol_icon_plus();
-			return obj;
-		}
-		link_new(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		Link_new(){
-			const obj = new this.$.$mol_select();
-			(obj.Filter) = () => (null);
-			(obj.trigger_content) = () => ([(this.Link_new_icon())]);
-			(obj.value) = (next) => ((this.link_new(next)));
-			(obj.dictionary) = () => ({
-				"local": (this.$.$mol_locale.text("$giper_baza_flex_field_Link_new_dictionary_local")), 
-				"pull": (this.$.$mol_locale.text("$giper_baza_flex_field_Link_new_dictionary_pull")), 
-				"post": (this.$.$mol_locale.text("$giper_baza_flex_field_Link_new_dictionary_post")), 
-				"read": (this.$.$mol_locale.text("$giper_baza_flex_field_Link_new_dictionary_read")), 
-				"deny": (this.$.$mol_locale.text("$giper_baza_flex_field_Link_new_dictionary_deny"))
-			});
-			return obj;
-		}
-		link_content(){
-			return [
-				(this.Link_dump()), 
-				(this.Link_pick()), 
-				(this.Link_new())
-			];
-		}
-		str(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		str_selection(next){
-			if(next !== undefined) return next;
-			return [];
-		}
-		time(next){
-			if(next !== undefined) return next;
-			const obj = new this.$.$mol_time_moment();
-			return obj;
-		}
-		dict_title(){
-			return "";
-		}
-		dict_pawn(){
-			const obj = new this.$.$giper_baza_dict();
-			return obj;
-		}
-		Dict_form(){
-			const obj = new this.$.$giper_baza_flex_form();
-			(obj.enabled) = () => ((this.enabled()));
-			(obj.pawn) = () => ((this.dict_pawn()));
-			return obj;
-		}
-		text(next){
-			if(next !== undefined) return next;
-			return "";
-		}
-		text_selection(next){
-			if(next !== undefined) return next;
-			return [];
-		}
-		list_item_adopt(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		list_receive(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		list_pick(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		List_pick(){
-			const obj = new this.$.$mol_select();
-			(obj.enabled) = () => ((this.enabled()));
-			(obj.value) = (next) => ((this.list_pick(next)));
-			(obj.options) = () => ((this.link_options()));
-			(obj.option_label) = (id) => ((this.link_label(id)));
-			return obj;
-		}
-		list_item_add(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		List_item_add(){
-			const obj = new this.$.$mol_button_minor();
-			(obj.enabled) = () => ((this.enabled()));
-			(obj.click) = (next) => ((this.list_item_add(next)));
-			(obj.title) = () => ("+");
-			return obj;
-		}
-		list_item_paste(next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		List_item_paste_icon(){
-			const obj = new this.$.$mol_icon_content_paste();
-			return obj;
-		}
-		List_item_paste(){
-			const obj = new this.$.$mol_button_minor();
-			(obj.enabled) = () => ((this.enabled()));
-			(obj.click) = (next) => ((this.list_item_paste(next)));
-			(obj.title) = () => ("Paste item");
-			(obj.sub) = () => ([(this.List_item_paste_icon())]);
-			return obj;
-		}
-		list_tools(){
-			return [
-				(this.List_pick()), 
-				(this.List_item_add()), 
-				(this.List_item_paste())
-			];
-		}
-		List_tools(){
-			const obj = new this.$.$mol_bar();
-			(obj.sub) = () => ((this.list_tools()));
-			return obj;
-		}
-		List_drop(){
-			const obj = new this.$.$mol_drop();
-			(obj.adopt) = (next) => ((this.list_item_adopt(next)));
-			(obj.receive) = (next) => ((this.list_receive(next)));
-			(obj.allow) = () => (["move", "copy"]);
-			(obj.Sub) = () => ((this.List_tools()));
-			return obj;
-		}
-		list_item_receive(id, next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		list_item_drag_end(id, next){
-			if(next !== undefined) return next;
-			return null;
-		}
-		list_item_text(id){
-			return "";
-		}
-		list_item_html(id){
-			return "";
-		}
-		list_item_uri(id){
-			return "";
-		}
-		list_item_sand(id){
-			const obj = new this.$.$giper_baza_unit_sand();
-			return obj;
-		}
-		List_item_dump(id){
-			const obj = new this.$.$giper_baza_unit_sand_dump();
-			(obj.land) = () => ((this.land()));
-			(obj.sand) = () => ((this.list_item_sand(id)));
-			(obj.enabled) = () => ((this.enabled()));
-			return obj;
-		}
-		List_item_drag(id){
-			const obj = new this.$.$mol_drag();
-			(obj.end) = (next) => ((this.list_item_drag_end(id, next)));
-			(obj.transfer) = () => ({
-				"text/plain": (this.list_item_text(id)), 
-				"text/html": (this.list_item_html(id)), 
-				"text/uri-list": (this.list_item_uri(id))
-			});
-			(obj.Sub) = () => ((this.List_item_dump(id)));
-			return obj;
-		}
-		List_item_drop(id){
-			const obj = new this.$.$mol_drop();
-			(obj.adopt) = (next) => ((this.list_item_adopt(next)));
-			(obj.receive) = (next) => ((this.list_item_receive(id, next)));
-			(obj.allow) = () => (["move", "copy"]);
-			(obj.Sub) = () => ((this.List_item_drag(id)));
-			return obj;
-		}
-		List_item(id){
-			return (this.List_item_drop(id));
-		}
-		list_items(){
-			return [(this.List_item("0"))];
-		}
-		List_items(){
-			const obj = new this.$.$mol_list();
-			(obj.rows) = () => ((this.list_items()));
-			return obj;
-		}
-		sub(){
-			return [(this.Sub())];
-		}
-		pawn(next){
-			if(next !== undefined) return next;
-			const obj = new this.$.$giper_baza_pawn();
-			return obj;
-		}
-		land(){
-			return (this.pawn().land());
-		}
-		prop(){
-			const obj = new this.$.$giper_baza_flex_prop();
-			return obj;
-		}
-		Enum(){
-			const obj = new this.$.$mol_select();
-			(obj.enabled) = () => ((this.enabled()));
-			(obj.value) = (next) => ((this.enum(next)));
-			(obj.options) = () => ((this.enum_options()));
-			(obj.option_label) = (id) => ((this.enum_label(id)));
-			return obj;
-		}
-		Atom(){
-			const obj = new this.$.$giper_baza_vary_edit();
-			(obj.enabled) = () => ((this.enabled()));
-			(obj.value) = (next) => ((this.atom_value(next)));
-			(obj.schema) = () => ((this.schema()));
-			(obj.selection) = (next) => ((this.atom_selection(next)));
-			return obj;
-		}
-		Ref(){
-			const obj = new this.$.$mol_bar();
-			(obj.sub) = () => ((this.link_content()));
-			return obj;
-		}
-		Str(){
-			const obj = new this.$.$mol_textarea();
-			(obj.enabled) = () => ((this.enabled()));
-			(obj.value) = (next) => ((this.str(next)));
-			(obj.selection) = (next) => ((this.str_selection(next)));
-			return obj;
-		}
-		Time(){
-			const obj = new this.$.$mol_date();
-			(obj.enabled) = () => ((this.enabled()));
-			(obj.value_moment) = (next) => ((this.time(next)));
-			return obj;
-		}
-		Dict(){
-			const obj = new this.$.$mol_expander();
-			(obj.title) = () => ((this.dict_title()));
-			(obj.content) = () => ([(this.Dict_form())]);
-			return obj;
-		}
-		Text(){
-			const obj = new this.$.$mol_textarea();
-			(obj.enabled) = () => ((this.enabled()));
-			(obj.value) = (next) => ((this.text(next)));
-			(obj.selection) = (next) => ((this.text_selection(next)));
-			return obj;
-		}
-		List(){
-			const obj = new this.$.$mol_list();
-			(obj.rows) = () => ([(this.List_drop()), (this.List_items())]);
-			return obj;
-		}
-	};
-	($mol_mem(($.$giper_baza_flex_field.prototype), "Sub"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "enum"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "atom_value"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "atom_selection"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "Link_dump"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "link"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "Link_pick"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "Link_new_icon"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "link_new"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "Link_new"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "str"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "str_selection"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "time"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "dict_pawn"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "Dict_form"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "text"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "text_selection"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "list_item_adopt"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "list_receive"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "list_pick"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "List_pick"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "list_item_add"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "List_item_add"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "list_item_paste"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "List_item_paste_icon"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "List_item_paste"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "List_tools"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "List_drop"));
-	($mol_mem_key(($.$giper_baza_flex_field.prototype), "list_item_receive"));
-	($mol_mem_key(($.$giper_baza_flex_field.prototype), "list_item_drag_end"));
-	($mol_mem_key(($.$giper_baza_flex_field.prototype), "list_item_sand"));
-	($mol_mem_key(($.$giper_baza_flex_field.prototype), "List_item_dump"));
-	($mol_mem_key(($.$giper_baza_flex_field.prototype), "List_item_drag"));
-	($mol_mem_key(($.$giper_baza_flex_field.prototype), "List_item_drop"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "List_items"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "pawn"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "prop"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "Enum"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "Atom"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "Ref"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "Str"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "Time"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "Dict"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "Text"));
-	($mol_mem(($.$giper_baza_flex_field.prototype), "List"));
-
-
-;
 "use strict";
 var $;
 (function ($) {
@@ -23706,6 +23286,1650 @@ var $;
 
 ;
 "use strict";
+/** @jsx $mol_jsx */
+/** @jsxFrag $mol_jsx_frag */
+var $;
+(function ($) {
+    class $giper_baza_rich extends $giper_baza_pawn {
+        dom(next) {
+            const land = this.land();
+            const doms = land.Pawn($giper_baza_rich);
+            const regs = land.Pawn($giper_baza_atom_text);
+            const used_ids = new Set;
+            const link_of = (el) => {
+                if (!(el instanceof this.$.$mol_dom_context.Element))
+                    return null;
+                if (!el.id)
+                    return null;
+                const link = $giper_baza_link.check(el.id);
+                if (link && !used_ids.has(link.str)) {
+                    used_ids.add(link.str);
+                    return link;
+                }
+                el.id = '';
+                return null;
+            };
+            if (next) {
+                const sample = [];
+                let texts = '';
+                function flush() {
+                    if (!texts.length)
+                        return;
+                    for (const token of texts.matchAll($giper_baza_text_tokens)) {
+                        sample.push(token[0]);
+                    }
+                    texts = '';
+                }
+                function collect(node) {
+                    switch (node.nodeType) {
+                        case (node.ELEMENT_NODE): {
+                            if (node.localName === 'span') {
+                                link_of(node);
+                                for (const kid of [...node.childNodes]) {
+                                    collect(kid);
+                                }
+                            }
+                            else {
+                                flush();
+                                sample.push(node);
+                            }
+                            return;
+                        }
+                        case (node.ATTRIBUTE_NODE): {
+                            if (node.nodeName === 'id')
+                                return;
+                            if (node.nodeName === 'xmlns')
+                                return;
+                            sample.push(node);
+                            return;
+                        }
+                        case (node.TEXT_NODE): {
+                            texts += node.nodeValue;
+                            return;
+                        }
+                    }
+                }
+                for (const node of next)
+                    collect(node);
+                flush();
+                function attr(el) {
+                    let res = {};
+                    for (const a of el.attributes) {
+                        if (a.name === 'id')
+                            continue;
+                        res[a.name] = a.value;
+                    }
+                    return res;
+                }
+                function val(el) {
+                    return typeof el === 'string'
+                        ? el
+                        : el.localName === 'span'
+                            ? el.textContent
+                            : el.localName;
+                }
+                function tag(el) {
+                    return typeof el === 'string'
+                        ? 'term'
+                        : el.nodeType === el.ATTRIBUTE_NODE
+                            ? 'solo'
+                            : el.localName === 'span'
+                                ? 'term'
+                                : 'vals';
+                }
+                let units = this.units();
+                $mol_reconcile({
+                    prev: units,
+                    from: 0,
+                    to: units.length,
+                    next: sample,
+                    equal: (next, prev) => {
+                        if (typeof next === 'string') {
+                            const p = $mol_schema_string.cast(land.sand_decode(prev));
+                            if (!p)
+                                return false;
+                            return p.startsWith(next) || next.startsWith(p);
+                        }
+                        else if (next.nodeType === next.ATTRIBUTE_NODE) {
+                            return land.sand_decode(prev) === next.nodeName;
+                        }
+                        else {
+                            return prev.self().str === link_of(next)?.str;
+                        }
+                    },
+                    drop: (prev, lead) => land.sand_wipe(prev),
+                    insert: (next, lead) => {
+                        const sand = land.post(lead?.self() ?? $giper_baza_link.hole, this.head(), link_of(next), val(next), tag(next));
+                        if (typeof next !== 'string' && next.nodeType === next.ELEMENT_NODE) {
+                            ;
+                            next.id = sand.self().str;
+                        }
+                        return sand;
+                    },
+                    update: (next, prev, lead) => (typeof next !== 'string' || next === land.sand_decode(prev))
+                        ? prev
+                        : land.post(lead?.self() ?? $giper_baza_link.hole, prev.head(), prev.self(), val(next), tag(next)),
+                    // replace: ( next, prev, lead )=> {
+                    // 	land.sand_wipe( prev )
+                    // 	return land.post(
+                    // 		lead?.self() ?? $giper_baza_link.hole,
+                    // 		prev.head(),
+                    // 		link_of( next ),
+                    // 		val( next ),
+                    // 		tag( next ),
+                    // 	)
+                    // },
+                });
+                units = this.units();
+                for (let i = 0; i < units.length; ++i) {
+                    const sam = sample[i];
+                    if (typeof sam === 'string')
+                        continue;
+                    if (sam.nodeType === sam.ATTRIBUTE_NODE) {
+                        regs.Head(units[i].self()).val(sam.nodeValue);
+                    }
+                    else if (sam.nodeName !== 'span') {
+                        doms.Head(units[i].self()).dom([
+                            ...sam.attributes,
+                            ...[...sam.childNodes],
+                        ]);
+                    }
+                }
+                return next;
+            }
+            else {
+                return this.units().flatMap(unit => {
+                    if (unit.tag() === 'solo')
+                        return [];
+                    const Tag = unit.tag() === 'term'
+                        ? 'span'
+                        : land.sand_decode(unit) ?? 'p';
+                    const attrs = unit.tag() === 'vals'
+                        ? Object.fromEntries(regs.Head(unit.self()).units()
+                            .filter(sand => sand.tag() === 'solo')
+                            .map(sand => [land.sand_decode(sand), regs.Head(sand.self()).val()]))
+                        : {};
+                    const content = unit.tag() === 'term'
+                        ? $mol_schema_string.cast(land.sand_decode(unit))
+                        : doms.Head(unit.self()).dom();
+                    return $mol_jsx(Tag, { ...attrs, id: unit.self().str }, content);
+                });
+            }
+        }
+        html(next) {
+            if (next === undefined) {
+                return $mol_dom_serialize($mol_jsx($mol_jsx_frag, null, this.dom()));
+            }
+            else {
+                this.dom([...$mol_dom_parse(`<body>${next}</body>`).documentElement.childNodes]);
+                return next;
+            }
+        }
+        selection(lord, next) {
+            const base = this.$.$giper_baza_glob.Land(lord).Data($giper_baza_flex_user);
+            if (next) {
+                base.caret(next);
+                return next;
+            }
+            else {
+                return base.caret() ?? [[this.head().str, 0, 0], [this.head().str, 0, 0]];
+            }
+        }
+    }
+    __decorate([
+        $mol_mem_key
+    ], $giper_baza_rich.prototype, "selection", null);
+    $.$giper_baza_rich = $giper_baza_rich;
+})($ || ($ = {}));
+
+;
+	($.$mol_icon_content_paste) = class $mol_icon_content_paste extends ($.$mol_icon) {
+		path(){
+			return "M19,20H5V4H7V7H17V4H19M12,2A1,1 0 0,1 13,3A1,1 0 0,1 12,4A1,1 0 0,1 11,3A1,1 0 0,1 12,2M19,2H14.82C14.4,0.84 13.3,0 12,0C10.7,0 9.6,0.84 9.18,2H5A2,2 0 0,0 3,4V20A2,2 0 0,0 5,22H19A2,2 0 0,0 21,20V4A2,2 0 0,0 19,2Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_expander) = class $mol_expander extends ($.$mol_list) {
+		expanded(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		expandable(){
+			return true;
+		}
+		label(){
+			return [(this.title())];
+		}
+		Trigger(){
+			const obj = new this.$.$mol_check_expand();
+			(obj.checked) = (next) => ((this.expanded(next)));
+			(obj.expandable) = () => ((this.expandable()));
+			(obj.label) = () => ((this.label()));
+			return obj;
+		}
+		Tools(){
+			return null;
+		}
+		Label(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.Trigger()), (this.Tools())]);
+			return obj;
+		}
+		content(){
+			return [];
+		}
+		Content(){
+			const obj = new this.$.$mol_list();
+			(obj.rows) = () => ((this.content()));
+			return obj;
+		}
+		rows(){
+			return [(this.Label()), (this.Content())];
+		}
+	};
+	($mol_mem(($.$mol_expander.prototype), "expanded"));
+	($mol_mem(($.$mol_expander.prototype), "Trigger"));
+	($mol_mem(($.$mol_expander.prototype), "Label"));
+	($mol_mem(($.$mol_expander.prototype), "Content"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Component which expands any content on title click.
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_expander_demo
+         */
+        class $mol_expander extends $.$mol_expander {
+            rows() {
+                return [
+                    this.Label(),
+                    ...this.expanded() ? [this.Content()] : []
+                ];
+            }
+            expandable() {
+                return this.content().length > 0;
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_expander.prototype, "rows", null);
+        $$.$mol_expander = $mol_expander;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/expander/expander.view.css", "[mol_expander] {\n\tflex-direction: column;\n}\n\n[mol_expander_label] {\n\tdisplay: flex;\n\tflex-wrap: wrap;\n\tborder-radius: var(--mol_gap_round);\n}\n\n[mol_expander_trigger] {\n\tflex: auto;\n\tposition: relative;\n}\n");
+})($ || ($ = {}));
+
+;
+	($.$mol_icon_marker) = class $mol_icon_marker extends ($.$mol_icon) {
+		path(){
+			return "M18.5,1.15C17.97,1.15 17.46,1.34 17.07,1.73L11.26,7.55L16.91,13.2L22.73,7.39C23.5,6.61 23.5,5.35 22.73,4.56L19.89,1.73C19.5,1.34 19,1.15 18.5,1.15M10.3,8.5L4.34,14.46C3.56,15.24 3.56,16.5 4.36,17.31C3.14,18.54 1.9,19.77 0.67,21H6.33L7.19,20.14C7.97,20.9 9.22,20.89 10,20.12L15.95,14.16";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_format_size) = class $mol_icon_format_size extends ($.$mol_icon) {
+		path(){
+			return "M2 4V7H7V19H10V7H15V4H2M21 9H12V12H15V19H18V12H21V9Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_order_bool_ascending) = class $mol_icon_order_bool_ascending extends ($.$mol_icon) {
+		path(){
+			return "M6 3C3.79 3 2 4.79 2 7S3.79 11 6 11 10 9.21 10 7 8.21 3 6 3M6 9C4.9 9 4 8.1 4 7S4.9 5 6 5 8 5.9 8 7 7.1 9 6 9M6 13C3.79 13 2 14.79 2 17S3.79 21 6 21 10 19.21 10 17 8.21 13 6 13M12 5H22V7H12V5M12 19V17H22V19H12M12 11H22V13H12V11Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_order_numeric_ascending) = class $mol_icon_order_numeric_ascending extends ($.$mol_icon) {
+		path(){
+			return "M7 21H3V19H7V18H5C3.9 18 3 17.11 3 16V15C3 13.9 3.9 13 5 13H7C8.11 13 9 13.9 9 15V19C9 20.11 8.11 21 7 21M7 15H5V16H7M5 3H7C8.11 3 9 3.9 9 5V9C9 10.11 8.11 11 7 11H5C3.9 11 3 10.11 3 9V5C3 3.9 3.9 3 5 3M5 9H7V5H5M12 5H22V7H12M12 19V17H22V19M12 11H22V13H12Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_comment) = class $mol_icon_comment extends ($.$mol_icon) {
+		path(){
+			return "M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22V22H9Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_comment_quote) = class $mol_icon_comment_quote extends ($.$mol_icon) {
+		path(){
+			return "M20 2H4C2.9 2 2 2.9 2 4V16C2 17.1 2.9 18 4 18H8V21C8 21.6 8.4 22 9 22H9.5C9.7 22 10 21.9 10.2 21.7L13.9 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2M11 13H7V8.8L8.3 6H10.3L8.9 9H11V13M17 13H13V8.8L14.3 6H16.3L14.9 9H17V13Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_comment_quote_outline) = class $mol_icon_comment_quote_outline extends ($.$mol_icon) {
+		path(){
+			return "M9 22C8.4 22 8 21.6 8 21V18H4C2.9 18 2 17.1 2 16V4C2 2.9 2.9 2 4 2H20C21.1 2 22 2.9 22 4V16C22 17.1 21.1 18 20 18H13.9L10.2 21.7C10 21.9 9.8 22 9.5 22H9M10 16V19.1L13.1 16H20V4H4V16H10M16.3 6L14.9 9H17V13H13V8.8L14.3 6H16.3M10.3 6L8.9 9H11V13H7V8.8L8.3 6H10.3Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_xml) = class $mol_icon_xml extends ($.$mol_icon) {
+		path(){
+			return "M12.89,3L14.85,3.4L11.11,21L9.15,20.6L12.89,3M19.59,12L16,8.41V5.58L22.42,12L16,18.41V15.58L19.59,12M1.58,12L8,5.58V8.41L4.41,12L8,15.58V18.41L1.58,12Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_arrow_collapse) = class $mol_icon_arrow_collapse extends ($.$mol_icon) {
+		path(){
+			return "M19.5,3.09L15,7.59V4H13V11H20V9H16.41L20.91,4.5L19.5,3.09M4,13V15H7.59L3.09,19.5L4.5,20.91L9,16.41V20H11V13H4Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_icon_arrow_collapse_left) = class $mol_icon_arrow_collapse_left extends ($.$mol_icon) {
+		path(){
+			return "M11.92,19.92L4,12L11.92,4.08L13.33,5.5L7.83,11H22V13H7.83L13.34,18.5L11.92,19.92M4,12V2H2V22H4V12Z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_float) = class $mol_float extends ($.$mol_view) {
+		style(){
+			return {...(super.style()), "minHeight": "auto"};
+		}
+	};
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/float/float.view.css", "[mol_float] {\n\tposition: sticky;\n\ttop: 0;\n\tleft: 0;\n\tz-index: var(--mol_layer_float);\n\topacity: 1;\n\ttransition: opacity .25s ease-in;\n\tdisplay: block;\n\tbackground: linear-gradient( var(--mol_theme_card), var(--mol_theme_card) ), var(--mol_theme_back);\n\tbox-shadow: 0 0 .5rem hsla(0,0%,0%,.25);\n}\n\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+
+
+;
+	($.$giper_baza_rich_edit) = class $giper_baza_rich_edit extends ($.$mol_view) {
+		enabled(){
+			return true;
+		}
+		selection_load(){
+			return null;
+		}
+		selection_sync(){
+			return null;
+		}
+		inline_toggle(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		block_wrap(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		block_rewrap(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		block_unwrap(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Hotkey(){
+			const obj = new this.$.$mol_hotkey2();
+			(obj.action) = () => ({
+				"alt_S": (next) => (this.inline_toggle("strong", next)), 
+				"alt_E": (next) => (this.inline_toggle("em", next)), 
+				"alt_I": (next) => (this.inline_toggle("ins", next)), 
+				"alt_R": (next) => (this.inline_toggle("del", next)), 
+				"alt_C": (next) => (this.inline_toggle("code", next)), 
+				"alt_T": (next) => (this.block_wrap("section", next)), 
+				"alt_Q": (next) => (this.block_wrap("blockquote", next)), 
+				"alt_U": (next) => (this.block_wrap("ul", next)), 
+				"alt_O": (next) => (this.block_wrap("ol", next)), 
+				"alt_P": (next) => (this.block_wrap("pre", next)), 
+				"tab": (next) => (this.block_rewrap(next)), 
+				"shift_tab": (next) => (this.block_unwrap(next))
+			});
+			return obj;
+		}
+		Inline_format_menu_icon(){
+			const obj = new this.$.$mol_icon_marker();
+			return obj;
+		}
+		selected(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		Strong_button(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ((this.$.$mol_locale.text("$giper_baza_rich_edit_Strong_button_title")));
+			(obj.hint) = () => ("Alt+S");
+			(obj.enabled) = (next) => ((this.selected(next)));
+			(obj.click) = (next) => ((this.inline_toggle("strong", next)));
+			return obj;
+		}
+		Em_button(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ((this.$.$mol_locale.text("$giper_baza_rich_edit_Em_button_title")));
+			(obj.hint) = () => ("Alt+E");
+			(obj.enabled) = (next) => ((this.selected(next)));
+			(obj.click) = (next) => ((this.inline_toggle("em", next)));
+			return obj;
+		}
+		Ins_button(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ((this.$.$mol_locale.text("$giper_baza_rich_edit_Ins_button_title")));
+			(obj.hint) = () => ("Alt+I");
+			(obj.enabled) = (next) => ((this.selected(next)));
+			(obj.click) = (next) => ((this.inline_toggle("ins", next)));
+			return obj;
+		}
+		Del_button(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ((this.$.$mol_locale.text("$giper_baza_rich_edit_Del_button_title")));
+			(obj.hint) = () => ("Alt+R");
+			(obj.enabled) = (next) => ((this.selected(next)));
+			(obj.click) = (next) => ((this.inline_toggle("del", next)));
+			return obj;
+		}
+		Code_button(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ((this.$.$mol_locale.text("$giper_baza_rich_edit_Code_button_title")));
+			(obj.hint) = () => ("Alt+C");
+			(obj.enabled) = (next) => ((this.selected(next)));
+			(obj.click) = (next) => ((this.inline_toggle("code", next)));
+			return obj;
+		}
+		Inline_format_menu(){
+			const obj = new this.$.$mol_pick();
+			(obj.hint) = () => ((this.$.$mol_locale.text("$giper_baza_rich_edit_Inline_format_menu_hint")));
+			(obj.trigger_content) = () => ([(this.Inline_format_menu_icon())]);
+			(obj.bubble_content) = () => ([
+				(this.Strong_button()), 
+				(this.Em_button()), 
+				(this.Ins_button()), 
+				(this.Del_button()), 
+				(this.Code_button())
+			]);
+			return obj;
+		}
+		Section_icon(){
+			const obj = new this.$.$mol_icon_format_size();
+			return obj;
+		}
+		Section_button(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.hint) = () => ((this.$.$mol_locale.text("$giper_baza_rich_edit_Section_button_hint")));
+			(obj.enabled) = (next) => ((this.selected(next)));
+			(obj.click) = (next) => ((this.block_wrap("section", next)));
+			(obj.sub) = () => ([(this.Section_icon())]);
+			return obj;
+		}
+		List_bullet_icon(){
+			const obj = new this.$.$mol_icon_order_bool_ascending();
+			return obj;
+		}
+		List_bullet_button(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.hint) = () => ((this.$.$mol_locale.text("$giper_baza_rich_edit_List_bullet_button_hint")));
+			(obj.enabled) = (next) => ((this.selected(next)));
+			(obj.click) = (next) => ((this.block_wrap("ul", next)));
+			(obj.sub) = () => ([(this.List_bullet_icon())]);
+			return obj;
+		}
+		List_number_icon(){
+			const obj = new this.$.$mol_icon_order_numeric_ascending();
+			return obj;
+		}
+		List_number_button(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.hint) = () => ((this.$.$mol_locale.text("$giper_baza_rich_edit_List_number_button_hint")));
+			(obj.enabled) = (next) => ((this.selected(next)));
+			(obj.click) = (next) => ((this.block_wrap("ol", next)));
+			(obj.sub) = () => ([(this.List_number_icon())]);
+			return obj;
+		}
+		Quote_icon(){
+			const obj = new this.$.$mol_icon_comment_quote_outline();
+			return obj;
+		}
+		Quote_button(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.hint) = () => ((this.$.$mol_locale.text("$giper_baza_rich_edit_Quote_button_hint")));
+			(obj.enabled) = (next) => ((this.selected(next)));
+			(obj.click) = (next) => ((this.block_wrap("blockquote", next)));
+			(obj.sub) = () => ([(this.Quote_icon())]);
+			return obj;
+		}
+		Preformat_icon(){
+			const obj = new this.$.$mol_icon_xml();
+			return obj;
+		}
+		Preformat_button(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.hint) = () => ((this.$.$mol_locale.text("$giper_baza_rich_edit_Preformat_button_hint")));
+			(obj.enabled) = (next) => ((this.selected(next)));
+			(obj.click) = (next) => ((this.block_wrap("pre", next)));
+			(obj.sub) = () => ([(this.Preformat_icon())]);
+			return obj;
+		}
+		Decrease_icon(){
+			const obj = new this.$.$mol_icon_arrow_collapse_left();
+			return obj;
+		}
+		Unwrap_button(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.hint) = () => ((this.$.$mol_locale.text("$giper_baza_rich_edit_Unwrap_button_hint")));
+			(obj.enabled) = (next) => ((this.selected(next)));
+			(obj.click) = (next) => ((this.block_unwrap(next)));
+			(obj.sub) = () => ([(this.Decrease_icon())]);
+			return obj;
+		}
+		Tools(){
+			const obj = new this.$.$mol_float();
+			(obj.sub) = () => ([
+				(this.Inline_format_menu()), 
+				(this.Section_button()), 
+				(this.List_bullet_button()), 
+				(this.List_number_button()), 
+				(this.Quote_button()), 
+				(this.Preformat_button()), 
+				(this.Unwrap_button())
+			]);
+			return obj;
+		}
+		editable(next){
+			if(next !== undefined) return next;
+			return "true";
+		}
+		save(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		paste(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		hover(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		content(){
+			return [];
+		}
+		Content(){
+			const obj = new this.$.$mol_view();
+			(obj.attr) = () => ({"contenteditable": (this.editable())});
+			(obj.event) = () => ({
+				"input": (next) => (this.save(next)), 
+				"paste": (next) => (this.paste(next)), 
+				"pointermove": (next) => (this.hover(next))
+			});
+			(obj.sub) = () => ((this.content()));
+			return obj;
+		}
+		pawn(next){
+			if(next !== undefined) return next;
+			const obj = new this.$.$giper_baza_rich();
+			return obj;
+		}
+		attr(){
+			return {...(super.attr()), "giper_baza_rich_edit_enabled": (this.enabled())};
+		}
+		hint(){
+			return "";
+		}
+		auto(){
+			return [(this.selection_load()), (this.selection_sync())];
+		}
+		plugins(){
+			return [(this.Hotkey())];
+		}
+		sub(){
+			return [(this.Tools()), (this.Content())];
+		}
+	};
+	($mol_mem_key(($.$giper_baza_rich_edit.prototype), "inline_toggle"));
+	($mol_mem_key(($.$giper_baza_rich_edit.prototype), "block_wrap"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "block_rewrap"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "block_unwrap"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Hotkey"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Inline_format_menu_icon"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "selected"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Strong_button"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Em_button"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Ins_button"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Del_button"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Code_button"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Inline_format_menu"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Section_icon"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Section_button"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "List_bullet_icon"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "List_bullet_button"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "List_number_icon"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "List_number_button"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Quote_icon"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Quote_button"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Preformat_icon"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Preformat_button"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Decrease_icon"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Unwrap_button"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Tools"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "editable"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "save"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "paste"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "hover"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "Content"));
+	($mol_mem(($.$giper_baza_rich_edit.prototype), "pawn"));
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_jsx_attach(next, action) {
+        const prev = $mol_jsx_document;
+        try {
+            $mol_jsx_document = next;
+            return action();
+        }
+        finally {
+            $mol_jsx_document = prev;
+        }
+    }
+    $.$mol_jsx_attach = $mol_jsx_attach;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    class $mol_dom_point extends Object {
+        node;
+        pos;
+        constructor(node, pos) {
+            super();
+            this.node = node;
+            this.pos = pos;
+            if (pos <= 0)
+                return;
+            if (node.nodeValue)
+                return;
+            this.node = this.node.childNodes[pos - 1];
+            if (!this.node)
+                $mol_fail(new Error('node is undefined'));
+            this.pos = -1;
+        }
+        /** Iterator for deep comparison. */
+        [Symbol.iterator]() {
+            return [this.node, this.pos].values();
+        }
+        /** Point after start of the node. */
+        static head(node) {
+            return new this(node, 0);
+        }
+        /** Point before end of the node. */
+        static foot(node) {
+            const length = node.nodeValue?.length ?? node.childNodes.length;
+            return new this(node, length);
+        }
+        /** Point after end of the node. */
+        static tail(node) {
+            return new this(node, -1);
+        }
+        /** Is point after start of the node. */
+        is_head() {
+            return this.pos === 0;
+        }
+        /** Is point before end of the node. */
+        is_foot() {
+            if (this.is_tail())
+                return !this.node.nextSibling;
+            else
+                return this.pos === (this.node.nodeValue?.length ?? this.node.childNodes.length);
+        }
+        /** Is point after end of the node. */
+        is_tail() {
+            return this.pos === -1;
+        }
+        /** Point after start of the node. */
+        head() {
+            return $mol_dom_point.head(this.node);
+        }
+        /** Point before end of the node. */
+        foot() {
+            if (this.is_tail())
+                return $mol_dom_point.foot(this.node.parentNode);
+            else
+                return $mol_dom_point.foot(this.node);
+        }
+        /** Point after end of the node. */
+        tail() {
+            return $mol_dom_point.tail(this.node);
+        }
+        native() {
+            if (this.is_tail())
+                return [
+                    this.node.parentNode,
+                    [...this.node.parentNode.childNodes].indexOf(this.node) + 1,
+                ];
+            return [this.node, this.pos];
+        }
+        /** Point near the node. -1: before, +1: after. */
+        static near(node, axis) {
+            const parent = node.parentElement;
+            if (!parent)
+                return null;
+            if (axis < 0)
+                return node.previousSibling
+                    ? $mol_dom_point.tail(node.previousSibling)
+                    : $mol_dom_point.head(parent);
+            return $mol_dom_point.tail(node);
+        }
+        /** Point near the node. -1: before, +1: after. */
+        jump(axis) {
+            if (this.is_tail()) {
+                return $mol_dom_point.near(this.node.parentNode, axis);
+            }
+            else {
+                return $mol_dom_point.near(this.node, axis);
+            }
+        }
+        /** Point at one step in some direction. */
+        move_step(axis) {
+            if (axis > 0) {
+                if (this.is_tail()) {
+                    const next = this.node.nextSibling;
+                    if (next)
+                        return $mol_dom_point.head(next);
+                    else
+                        return this.jump(+1);
+                }
+                else if (this.is_foot()) {
+                    return this.jump(+1);
+                }
+                else {
+                    const next = this.node.firstChild;
+                    if (next)
+                        return $mol_dom_point.head(next);
+                    return new $mol_dom_point(this.node, this.pos + 1);
+                }
+            }
+            else {
+                if (this.is_tail()) {
+                    const next = this.node.lastChild;
+                    if (next)
+                        return $mol_dom_point.tail(next);
+                    else
+                        return $mol_dom_point.head(this.node);
+                }
+                else if (this.is_head()) {
+                    return this.jump(-1);
+                }
+                else {
+                    return new $mol_dom_point(this.node, this.pos + 1);
+                }
+            }
+        }
+        move_chars(root, offset) {
+            if (offset === 0)
+                return this;
+            if (this.node === root && this.is_tail())
+                return $mol_dom_point.foot(root);
+            const axis = Math.sign(offset);
+            if (axis < 0)
+                $mol_fail(new Error('Unsupported yet'));
+            if (this.node.nodeValue && this.pos >= 0) {
+                const pos = this.pos + offset;
+                const len = this.node.nodeValue.length;
+                if (pos <= len)
+                    return new $mol_dom_point(this.node, pos);
+                else
+                    return $mol_dom_point.tail(this.node).move_chars(root, pos - len);
+            }
+            else {
+                return this.move_step(axis || 1)?.move_chars(root, offset)
+                    ?? $mol_dom_point.foot(root);
+            }
+        }
+    }
+    $.$mol_dom_point = $mol_dom_point;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    class $mol_dom_range extends Object {
+        anchor;
+        extend;
+        constructor(anchor, extend) {
+            super();
+            this.anchor = anchor;
+            this.extend = extend;
+        }
+        /** Iterator for deep comparison. */
+        [Symbol.iterator]() {
+            return [this.anchor, this.extend].values();
+        }
+        /** Makes range from selection with direction storing. */
+        static from_selection(sel = $mol_dom_context.getSelection()) {
+            if (sel.type === 'None')
+                return null;
+            const anchor = new $mol_dom_point(sel.anchorNode, sel.anchorOffset);
+            const extend = new $mol_dom_point(sel.focusNode, sel.focusOffset);
+            return new this(anchor, extend);
+        }
+        /** Converts from native Range. */
+        static from_native(range) {
+            return new this(new $mol_dom_point(range.startContainer, range.startOffset), new $mol_dom_point(range.endContainer, range.endOffset));
+        }
+        /** Surrounds whole node content. */
+        static inside(node) {
+            return new this($mol_dom_point.head(node), $mol_dom_point.foot(node));
+        }
+        /** Around node itself. */
+        static around(node) {
+            return $mol_dom_range.inside(node).expand();
+        }
+        /** Deeper Element which contain whole selection. */
+        container() {
+            return this.native().commonAncestorContainer;
+        }
+        /** Has now content. */
+        is_empty() {
+            return this.anchor.node === this.extend.node && this.anchor.pos === this.extend.pos;
+        }
+        /** Swap start and end points. */
+        swap() {
+            return new $mol_dom_range(this.extend, this.anchor);
+        }
+        /** Returns new range expanded outside by one point steps. */
+        expand() {
+            return new $mol_dom_range(this.anchor.jump(-1), this.extend.jump(+1));
+        }
+        /** Returns fragment of cloned content. */
+        copy() {
+            return this.native().cloneContents();
+        }
+        /** Removes all content and returns new collapsed range. */
+        clear() {
+            const range = this.native();
+            range.deleteContents();
+            return $mol_dom_range.from_native(range);
+        }
+        /** Removes all content and inserts given instead. */
+        paste(node) {
+            const range = this.clear().native();
+            range.insertNode(node);
+            return $mol_dom_range.from_native(range);
+        }
+        /** Wraps content by given element. */
+        surround(el) {
+            el.appendChild(this.copy());
+            return this.paste(el);
+        }
+        /**
+         * Returns position of point relate to this range.
+         * Before: -1
+         * Inside: 0
+         * After: +1
+         */
+        point_compare(point) {
+            return this.native().comparePoint(...point.native());
+        }
+        /** Is given range inside this. */
+        range_contains(range) {
+            return (this.point_compare(range.anchor) === 0) && (this.point_compare(range.extend) === 0);
+        }
+        /**
+         * Returns point which bounded by this range.
+         * Actualy returns middle of three points: anchor, given point, extend.
+         */
+        point_bound(point) {
+            const zone = this.point_compare(point);
+            return zone < 0 ? this.anchor : zone > 0 ? this.extend : point;
+        }
+        /** Returns new range which bounded by giiven. */
+        range_bounds(range) {
+            return new $mol_dom_range(this.point_bound(range.anchor), this.point_bound(range.extend));
+        }
+        /** Aim selection to this range. */
+        select() {
+            const [anchorNode, anchorOffset] = this.anchor.native();
+            const [focusNode, focusOffset] = this.extend.native();
+            const sel = $mol_dom_context.document.getSelection();
+            sel.setBaseAndExtent(anchorNode, anchorOffset, focusNode, focusOffset);
+            return this;
+        }
+        /**
+         * Returns native DOM Range object.
+         * It's always forward direction.
+         */
+        native() {
+            const range = $mol_dom_context.document.createRange();
+            if (this.anchor.is_tail())
+                range.setStartAfter(this.anchor.node);
+            else
+                range.setStart(this.anchor.node, this.anchor.pos);
+            if (this.extend.is_tail())
+                range.setEndAfter(this.extend.node);
+            else
+                range.setEnd(this.extend.node, this.extend.pos);
+            if (range.collapsed && !this.is_empty()) {
+                if (this.anchor.is_tail())
+                    range.setEndAfter(this.anchor.node);
+                else
+                    range.setEnd(this.anchor.node, this.anchor.pos);
+            }
+            return range;
+        }
+    }
+    $.$mol_dom_range = $mol_dom_range;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("giper/baza/rich/edit/edit.view.css", "[giper_baza_rich_edit] {\n\tflex-direction: column;\n\tflex: 1;\n\tborder-radius: var(--mol_gap_round);\n\tbackground-color: var(--mol_theme_field);\n}\n\n[giper_baza_rich_edit_enabled] {\n\toutline: 1px solid var(--mol_theme_line);\n}\n\n[giper_baza_rich_edit]:focus-within {\n\tz-index: var(--mol_layer_focus);\n\toutline: 1px solid var(--mol_theme_focus);\n}\n\n[giper_baza_rich_edit_tools] {\n\tborder-radius: var(--mol_gap_round);\n}\n\n[giper_baza_rich_edit_content] {\n\tflex-direction: column;\n\tflex: 1;\n\twhite-space: pre-wrap;\n\toutline: none;\n\tpadding: var(--mol_gap_block);\n}\n\n[giper_baza_rich_edit_content] a {\n\tcolor: var(--mol_theme_control);\n\ttext-decoration: none;\n\tborder-radius: var(--mol_gap_round);\n}\n\n[giper_baza_rich_edit_content] a:hover {\n\tbackground: var(--mol_theme_card);\n\tbox-shadow: 0 0 0 .25rem var(--mol_theme_card);\n}\n\n[giper_baza_rich_edit_content] p {\n\tmargin: 0;\n\tpadding: var(--mol_gap_text);\n}\n\n[giper_baza_rich_edit_content] ul {\n\tmargin: 0;\n\tpadding: 0 1.5rem;\n}\n\n[giper_baza_rich_edit_content] ul > p:before {\n\tcontent: '• ';\n\twidth: 0;\n    display: inline-flex;\n    white-space: pre;\n    flex-direction: row-reverse;\n}\n\n[giper_baza_rich_edit_content] ol {\n\tmargin: 0;\n\tpadding: 0 1.5rem;\n}\n\n[giper_baza_rich_edit_content] ol > p:before {\n\tcontent: counter(giper_baza_rich_edit_content_ol) \". \";\n\twidth: 0;\n    display: inline-flex;\n    white-space: pre;\n    flex-direction: row-reverse;\n}\n\n[giper_baza_rich_edit_content] blockquote {\n\tmargin: var(--mol_gap_block);\n\tpadding: var(--mol_gap_block);\n\tbackground: var(--mol_theme_card);\n\tborder-radius: var(--mol_gap_round);\n}\n\n[giper_baza_rich_edit_content] pre {\n\tmargin: 0 var(--mol_gap_block);\n\tpadding: 0 var(--mol_gap_block);\n\tborder-radius: var(--mol_gap_round);\n\toverflow-x: auto;\n}\n\n[giper_baza_rich_edit_content] img {\n\tmargin: var(--mol_gap_block);\n\tmax-width: calc( 100% - 2 * var(--mol_gap_block) );\n}\n\n[giper_baza_rich_edit_content] strong {\n\ttext-shadow: 0 0;\n\tfont-weight: normal;\n}\n\n[giper_baza_rich_edit_content] em {\n\tfont-style: italic;\n}\n\n[giper_baza_rich_edit_content] ins {\n\ttext-decoration: none;\n\tcolor: var(--mol_theme_special);\n}\n\n[giper_baza_rich_edit_content] del {\n\ttext-decoration: none;\n\tcolor: var(--mol_theme_shade);\n}\n\n[giper_baza_rich_edit_content] del {\n\tfont-family: monospace;\n}\n\n[giper_baza_rich_edit_content] hr {\n\tmargin: var(--mol_gap_block);\n\tborder: none;\n\tbox-shadow: 0 -1px 0 0px var(--mol_theme_line);\n    height: 1px;\n}\n\n[giper_baza_rich_edit_content] section > p:first-child {\n\tfont-size: 2rem;\n\tline-height: 3rem;\n\tfont-weight: normal;\n\tletter-spacing: 2px;\n\tmargin: var(--mol_gap_block) 0;\n\tpadding: var(--mol_gap_text);\n}\n\n[giper_baza_rich_edit_content] section section > p:first-child {\n\tfont-size: 1.75rem;\n\tline-height: 3rem;\n}\n\n[giper_baza_rich_edit_content] section section section > p:first-child {\n\tfont-size: 1.5rem;\n\tline-height: 3rem;\n}\n\n[giper_baza_rich_edit_content] section section section section > p:first-child {\n\tfont-size: 1.25rem;\n\tline-height: 3rem;\n}\n\n[giper_baza_rich_edit_content] section section section section section > p:first-child {\n\tfont-size: 1.25rem;\n\tline-height: 3rem;\n\tfont-style: italic;\n}\n\n[giper_baza_rich_edit_content] section:not(:last-child) {\n\tbox-shadow: 0 1px 0 0 var(--mol_theme_line);\n}\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+
+
+;
+"use strict";
+/** @jsx $mol_jsx */
+/** @jsxFrag $mol_jsx_frag */
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        class $giper_baza_rich_edit extends $.$giper_baza_rich_edit {
+            // dom_id() {
+            // 	return this.pawn()?.head().str ?? ''
+            // }
+            editable(next) {
+                return next ?? (this.enabled() ? 'true' : 'false');
+            }
+            sub() {
+                return [
+                    ...this.enabled() ? [this.Tools()] : [],
+                    this.Content(),
+                ];
+            }
+            content() {
+                // console.log('render')
+                let nodes = $mol_jsx_attach($mol_dom_context.document, () => this.pawn()?.dom() ?? []);
+                nodes = this.$.$mol_dom_safe(nodes);
+                this.selection_load();
+                return nodes.length ? nodes : [$mol_jsx("p", null,
+                        $mol_jsx("br", null))];
+            }
+            selection(next) {
+                return this.pawn()?.selection(this.$.$giper_baza_auth.current().pass().lord(), next) ?? [['', 0, 0], ['', 0, 0]];
+            }
+            save(event) {
+                const sel = $mol_dom_range.from_selection();
+                if (!sel)
+                    return;
+                const root = this.Content().dom_node();
+                if (!$mol_dom_range.inside(root).range_contains(sel))
+                    return;
+                let container = root; // sel.container() as Element
+                // while( container.parentNode && container !== root ) {
+                //     const element = container as Element
+                //     if( element.id ) break
+                //     container = container.parentNode as Element
+                // }
+                let dom = this.pawn(null);
+                // if( container.id ) dom = dom.land().Pawn( $giper_baza_rich ).Head( new $giper_baza_link( container.id ) )
+                let nodes = [...container.childNodes];
+                nodes = this.$.$mol_dom_safe(nodes);
+                // console.log( event, container, dom, nodes )
+                dom.dom(nodes);
+                this.selection_save();
+            }
+            selection_sync() {
+                return new this.$.$mol_dom_listener($mol_dom_context.document, 'selectionchange', event => this.selection_save());
+            }
+            selected() {
+                $mol_wire_watch();
+                const sel = $mol_dom_range.from_selection();
+                if (!sel)
+                    return false;
+                const root = this.Content().dom_node();
+                if (!$mol_dom_range.inside(root).range_contains(sel))
+                    return false;
+                return true;
+            }
+            selection_save() {
+                const sel = $mol_dom_range.from_selection();
+                if (!sel)
+                    return;
+                const root = this.Content().dom_node();
+                if (!$mol_dom_range.inside(root).range_contains(sel))
+                    return;
+                const point_by = (point) => {
+                    let base = (point.node.nodeType === point.node.ELEMENT_NODE ? point.node : point.node.parentNode);
+                    let link = null;
+                    while (true) {
+                        link = $giper_baza_link.check(base.id);
+                        if (link)
+                            break;
+                        base = base.parentElement;
+                    }
+                    const range = new $mol_dom_range($mol_dom_point.head(base), point);
+                    const len = range.native().toString().length;
+                    // console.log( range.native().toString() )
+                    return [link.str, len, 0];
+                };
+                const anchor = point_by(sel.anchor);
+                const extend = point_by(sel.extend);
+                // console.log( 'save', anchor, extend )
+                this.selection([anchor, extend]);
+            }
+            // @ $mol_mem
+            selection_load() {
+                if (!this.focused())
+                    return;
+                const [anchor, focus] = this.selection();
+                // console.log( 'load', anchor, focus )
+                const anchorNode = $mol_dom_context.document.getElementById(anchor[0]);
+                const extendNode = $mol_dom_context.document.getElementById(focus[0]);
+                if (!anchorNode)
+                    return;
+                if (!extendNode)
+                    return;
+                const root = this.Content().dom_node();
+                const range = new $mol_dom_range($mol_dom_point.head(anchorNode).move_chars(root, anchor[1]), $mol_dom_point.head(extendNode).move_chars(root, focus[1]));
+                // console.log(anchorNode,range)
+                range.select();
+            }
+            // @ $mol_mem
+            // saving() {
+            // 	const obs = new MutationObserver( $mol_wire_async( ()=> {
+            // 		console.log(1)
+            // 		this.pawn().dom( this.Body() )
+            // 	} ) )
+            // 	obs.observe( this.Body(), { attributes: true, childList: true, subtree: true, characterData: true } )
+            // }
+            block_wrap(Type, event) {
+                const sel = $mol_dom_range.from_selection();
+                if (!sel.is_empty())
+                    return;
+                let box = sel.container();
+                if (box.nodeType !== box.ELEMENT_NODE)
+                    box = box.parentNode;
+                while (box) {
+                    if (box === this.Content().dom_node()) {
+                        $mol_dom_range.inside(box).surround($mol_jsx("p", null)).surround($mol_jsx(Type, null));
+                        break;
+                    }
+                    if (box.localName === 'p') {
+                        $mol_dom_range.around(box).surround($mol_jsx(Type, null));
+                        break;
+                    }
+                    box = box.parentNode;
+                }
+                this.selection_load();
+                this.save();
+                event.preventDefault();
+            }
+            block_unwrap(event) {
+                const sel = $mol_dom_range.from_selection();
+                if (!sel.is_empty())
+                    return;
+                let box = sel.container();
+                if (box.nodeType !== box.ELEMENT_NODE)
+                    box = box.parentNode;
+                while (box) {
+                    if (box === this.Content().dom_node())
+                        return;
+                    if (box.localName === 'p') {
+                        const parent = box.parentNode;
+                        if (parent === this.Content().dom_node())
+                            return;
+                        // $mol_dom_range.around( box ).split() ???
+                        while (parent.firstChild)
+                            parent.parentNode.insertBefore(parent.firstChild, parent);
+                        parent.remove();
+                        break;
+                    }
+                    box = box.parentNode;
+                }
+                this.selection_load();
+                this.save();
+                event.preventDefault();
+            }
+            /** Wraps selecion to given element type. */
+            inline_toggle(Type, event) {
+                const sel = $mol_dom_range.from_selection();
+                if (sel.is_empty()) {
+                    let box = sel.container();
+                    if (box.nodeType !== box.ELEMENT_NODE)
+                        box = box.parentNode;
+                    while (box) {
+                        if (box === this.Content().dom_node()) {
+                            sel.expand().surround($mol_jsx(Type, null));
+                            break;
+                        }
+                        if (box.localName === Type) {
+                            while (box.firstChild)
+                                box.parentNode.insertBefore(box.firstChild, box);
+                            box.remove();
+                            break;
+                        }
+                        box = box.parentNode;
+                    }
+                }
+                else {
+                    sel.surround($mol_jsx(Type, null));
+                }
+                this.selection_load();
+                this.save();
+                event.preventDefault();
+            }
+            paste(event) {
+                const sel = $mol_dom_range.from_selection();
+                const html = event.clipboardData.getData('text/html');
+                const text = event.clipboardData.getData('text/plain');
+                let url = true;
+                try {
+                    new URL(text);
+                }
+                catch {
+                    url = false;
+                }
+                if (url) {
+                    if (sel.is_empty()) {
+                        sel.paste($mol_jsx("a", { href: text }, text));
+                    }
+                    else {
+                        sel.surround($mol_jsx("a", { href: text }));
+                    }
+                }
+                else {
+                    const data = html ? $mol_dom_range.inside($mol_dom_parse(html).documentElement).copy() : new Text(text);
+                    sel.paste(data);
+                }
+                this.selection_load();
+                this.save();
+                event?.preventDefault();
+            }
+            hover(event) {
+                this.editable(event.ctrlKey ? 'false' : null);
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $giper_baza_rich_edit.prototype, "editable", null);
+        __decorate([
+            $mol_mem
+        ], $giper_baza_rich_edit.prototype, "sub", null);
+        __decorate([
+            $mol_mem
+        ], $giper_baza_rich_edit.prototype, "content", null);
+        __decorate([
+            $mol_mem
+        ], $giper_baza_rich_edit.prototype, "selection", null);
+        __decorate([
+            $mol_mem
+        ], $giper_baza_rich_edit.prototype, "selection_sync", null);
+        __decorate([
+            $mol_mem
+        ], $giper_baza_rich_edit.prototype, "selected", null);
+        $$.$giper_baza_rich_edit = $giper_baza_rich_edit;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$giper_baza_flex_field) = class $giper_baza_flex_field extends ($.$mol_view) {
+		Sub(){
+			const obj = new this.$.$mol_view();
+			return obj;
+		}
+		enabled(){
+			return true;
+		}
+		enum(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		enum_options(){
+			return [];
+		}
+		enum_label(id){
+			return "";
+		}
+		atom_value(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		schema(){
+			return null;
+		}
+		atom_selection(next){
+			if(next !== undefined) return next;
+			return [];
+		}
+		link_value(){
+			return null;
+		}
+		Link_dump(){
+			const obj = new this.$.$giper_baza_unit_sand_dump();
+			(obj.land) = () => ((this.land()));
+			(obj.value) = () => ((this.link_value()));
+			return obj;
+		}
+		link(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		link_options(){
+			return [];
+		}
+		link_label(id){
+			return "";
+		}
+		Link_pick(){
+			const obj = new this.$.$mol_select();
+			(obj.enabled) = () => ((this.enabled()));
+			(obj.value) = (next) => ((this.link(next)));
+			(obj.options) = () => ((this.link_options()));
+			(obj.option_label) = (id) => ((this.link_label(id)));
+			return obj;
+		}
+		Link_new_icon(){
+			const obj = new this.$.$mol_icon_plus();
+			return obj;
+		}
+		link_new(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		Link_new(){
+			const obj = new this.$.$mol_select();
+			(obj.Filter) = () => (null);
+			(obj.trigger_content) = () => ([(this.Link_new_icon())]);
+			(obj.value) = (next) => ((this.link_new(next)));
+			(obj.dictionary) = () => ({
+				"local": (this.$.$mol_locale.text("$giper_baza_flex_field_Link_new_dictionary_local")), 
+				"pull": (this.$.$mol_locale.text("$giper_baza_flex_field_Link_new_dictionary_pull")), 
+				"post": (this.$.$mol_locale.text("$giper_baza_flex_field_Link_new_dictionary_post")), 
+				"read": (this.$.$mol_locale.text("$giper_baza_flex_field_Link_new_dictionary_read")), 
+				"deny": (this.$.$mol_locale.text("$giper_baza_flex_field_Link_new_dictionary_deny"))
+			});
+			return obj;
+		}
+		link_content(){
+			return [
+				(this.Link_dump()), 
+				(this.Link_pick()), 
+				(this.Link_new())
+			];
+		}
+		str(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		str_selection(next){
+			if(next !== undefined) return next;
+			return [];
+		}
+		time(next){
+			if(next !== undefined) return next;
+			const obj = new this.$.$mol_time_moment();
+			return obj;
+		}
+		dict_title(){
+			return "";
+		}
+		dict_pawn(){
+			const obj = new this.$.$giper_baza_dict();
+			return obj;
+		}
+		Dict_form(){
+			const obj = new this.$.$giper_baza_flex_form();
+			(obj.enabled) = () => ((this.enabled()));
+			(obj.pawn) = () => ((this.dict_pawn()));
+			return obj;
+		}
+		text(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		text_selection(next){
+			if(next !== undefined) return next;
+			return [];
+		}
+		rich_pawn(next){
+			if(next !== undefined) return next;
+			const obj = new this.$.$giper_baza_rich();
+			return obj;
+		}
+		list_item_adopt(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		list_receive(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		list_pick(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		List_pick(){
+			const obj = new this.$.$mol_select();
+			(obj.enabled) = () => ((this.enabled()));
+			(obj.value) = (next) => ((this.list_pick(next)));
+			(obj.options) = () => ((this.link_options()));
+			(obj.option_label) = (id) => ((this.link_label(id)));
+			return obj;
+		}
+		list_item_add(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		List_item_add(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.enabled) = () => ((this.enabled()));
+			(obj.click) = (next) => ((this.list_item_add(next)));
+			(obj.title) = () => ("+");
+			return obj;
+		}
+		list_item_paste(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		List_item_paste_icon(){
+			const obj = new this.$.$mol_icon_content_paste();
+			return obj;
+		}
+		List_item_paste(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.enabled) = () => ((this.enabled()));
+			(obj.click) = (next) => ((this.list_item_paste(next)));
+			(obj.title) = () => ("Paste item");
+			(obj.sub) = () => ([(this.List_item_paste_icon())]);
+			return obj;
+		}
+		list_tools(){
+			return [
+				(this.List_pick()), 
+				(this.List_item_add()), 
+				(this.List_item_paste())
+			];
+		}
+		List_tools(){
+			const obj = new this.$.$mol_bar();
+			(obj.sub) = () => ((this.list_tools()));
+			return obj;
+		}
+		List_drop(){
+			const obj = new this.$.$mol_drop();
+			(obj.adopt) = (next) => ((this.list_item_adopt(next)));
+			(obj.receive) = (next) => ((this.list_receive(next)));
+			(obj.allow) = () => (["move", "copy"]);
+			(obj.Sub) = () => ((this.List_tools()));
+			return obj;
+		}
+		list_item_receive(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		list_item_drag_end(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		list_item_text(id){
+			return "";
+		}
+		list_item_html(id){
+			return "";
+		}
+		list_item_uri(id){
+			return "";
+		}
+		list_item_sand(id){
+			const obj = new this.$.$giper_baza_unit_sand();
+			return obj;
+		}
+		List_item_dump(id){
+			const obj = new this.$.$giper_baza_unit_sand_dump();
+			(obj.land) = () => ((this.land()));
+			(obj.sand) = () => ((this.list_item_sand(id)));
+			(obj.enabled) = () => ((this.enabled()));
+			return obj;
+		}
+		List_item_drag(id){
+			const obj = new this.$.$mol_drag();
+			(obj.end) = (next) => ((this.list_item_drag_end(id, next)));
+			(obj.transfer) = () => ({
+				"text/plain": (this.list_item_text(id)), 
+				"text/html": (this.list_item_html(id)), 
+				"text/uri-list": (this.list_item_uri(id))
+			});
+			(obj.Sub) = () => ((this.List_item_dump(id)));
+			return obj;
+		}
+		List_item_drop(id){
+			const obj = new this.$.$mol_drop();
+			(obj.adopt) = (next) => ((this.list_item_adopt(next)));
+			(obj.receive) = (next) => ((this.list_item_receive(id, next)));
+			(obj.allow) = () => (["move", "copy"]);
+			(obj.Sub) = () => ((this.List_item_drag(id)));
+			return obj;
+		}
+		List_item(id){
+			return (this.List_item_drop(id));
+		}
+		list_items(){
+			return [(this.List_item("0"))];
+		}
+		List_items(){
+			const obj = new this.$.$mol_list();
+			(obj.rows) = () => ((this.list_items()));
+			return obj;
+		}
+		sub(){
+			return [(this.Sub())];
+		}
+		pawn(next){
+			if(next !== undefined) return next;
+			const obj = new this.$.$giper_baza_pawn();
+			return obj;
+		}
+		land(){
+			return (this.pawn().land());
+		}
+		prop(){
+			const obj = new this.$.$giper_baza_flex_prop();
+			return obj;
+		}
+		Enum(){
+			const obj = new this.$.$mol_select();
+			(obj.enabled) = () => ((this.enabled()));
+			(obj.value) = (next) => ((this.enum(next)));
+			(obj.options) = () => ((this.enum_options()));
+			(obj.option_label) = (id) => ((this.enum_label(id)));
+			return obj;
+		}
+		Atom(){
+			const obj = new this.$.$giper_baza_vary_edit();
+			(obj.enabled) = () => ((this.enabled()));
+			(obj.value) = (next) => ((this.atom_value(next)));
+			(obj.schema) = () => ((this.schema()));
+			(obj.selection) = (next) => ((this.atom_selection(next)));
+			return obj;
+		}
+		Ref(){
+			const obj = new this.$.$mol_bar();
+			(obj.sub) = () => ((this.link_content()));
+			return obj;
+		}
+		Str(){
+			const obj = new this.$.$mol_textarea();
+			(obj.enabled) = () => ((this.enabled()));
+			(obj.value) = (next) => ((this.str(next)));
+			(obj.selection) = (next) => ((this.str_selection(next)));
+			return obj;
+		}
+		Time(){
+			const obj = new this.$.$mol_date();
+			(obj.enabled) = () => ((this.enabled()));
+			(obj.value_moment) = (next) => ((this.time(next)));
+			return obj;
+		}
+		Dict(){
+			const obj = new this.$.$mol_expander();
+			(obj.title) = () => ((this.dict_title()));
+			(obj.content) = () => ([(this.Dict_form())]);
+			return obj;
+		}
+		Text(){
+			const obj = new this.$.$mol_textarea();
+			(obj.enabled) = () => ((this.enabled()));
+			(obj.value) = (next) => ((this.text(next)));
+			(obj.selection) = (next) => ((this.text_selection(next)));
+			return obj;
+		}
+		Rich(){
+			const obj = new this.$.$giper_baza_rich_edit();
+			(obj.enabled) = () => ((this.enabled()));
+			(obj.pawn) = (next) => ((this.rich_pawn(next)));
+			return obj;
+		}
+		List(){
+			const obj = new this.$.$mol_list();
+			(obj.rows) = () => ([(this.List_drop()), (this.List_items())]);
+			return obj;
+		}
+	};
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Sub"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "enum"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "atom_value"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "atom_selection"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Link_dump"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "link"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Link_pick"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Link_new_icon"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "link_new"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Link_new"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "str"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "str_selection"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "time"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "dict_pawn"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Dict_form"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "text"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "text_selection"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "rich_pawn"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "list_item_adopt"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "list_receive"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "list_pick"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "List_pick"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "list_item_add"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "List_item_add"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "list_item_paste"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "List_item_paste_icon"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "List_item_paste"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "List_tools"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "List_drop"));
+	($mol_mem_key(($.$giper_baza_flex_field.prototype), "list_item_receive"));
+	($mol_mem_key(($.$giper_baza_flex_field.prototype), "list_item_drag_end"));
+	($mol_mem_key(($.$giper_baza_flex_field.prototype), "list_item_sand"));
+	($mol_mem_key(($.$giper_baza_flex_field.prototype), "List_item_dump"));
+	($mol_mem_key(($.$giper_baza_flex_field.prototype), "List_item_drag"));
+	($mol_mem_key(($.$giper_baza_flex_field.prototype), "List_item_drop"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "List_items"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "pawn"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "prop"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Enum"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Atom"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Ref"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Str"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Time"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Dict"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Text"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "Rich"));
+	($mol_mem(($.$giper_baza_flex_field.prototype), "List"));
+
+
+;
+"use strict";
 var $;
 (function ($) {
     /** Entity dictionary Model with Title property included by default */
@@ -23750,6 +24974,7 @@ var $;
                     case 'time': return null;
                     case 'dict': return null;
                     case 'text': return null;
+                    case 'rich': return null;
                     case 'list': return null;
                     default: return null;
                 }
@@ -23767,6 +24992,7 @@ var $;
                     case 'time': return this.Atom();
                     case 'dict': return this.Dict();
                     case 'text': return this.Text();
+                    case 'rich': return this.Rich();
                     case 'list': return this.List();
                     default: return $mol_fail(new Error(`Unsuported Pawn type (${type})`));
                 }
@@ -23858,8 +25084,11 @@ var $;
             text_selection(next) {
                 return this.pawn(next)?.cast($giper_baza_text).selection(this.land().auth().pass().lord(), next);
             }
+            rich_pawn(next) {
+                return this.pawn(next)?.cast($giper_baza_rich) ?? null;
+            }
             dict_title() {
-                return this.pawn().cast($giper_baza_entity).Title()?.val() || this.pawn().link().str;
+                return this.pawn()?.cast($giper_baza_entity).Title()?.val() || this.pawn().link().str;
             }
             list_items() {
                 return this.pawn()?.units().map((_, index) => this.List_item(index)) ?? [];
@@ -23947,6 +25176,9 @@ var $;
         __decorate([
             $mol_action
         ], $giper_baza_flex_field.prototype, "link_new", null);
+        __decorate([
+            $mol_mem
+        ], $giper_baza_flex_field.prototype, "rich_pawn", null);
         __decorate([
             $mol_mem
         ], $giper_baza_flex_field.prototype, "dict_title", null);
@@ -34197,6 +35429,13 @@ var $;
     const wirable = new Set([
         'string', 'number', 'bool', 'null', 'locale', 'list', 'get', 'bind',
     ]);
+    $.$bog_vmap_app_wire_machinery = new Set([
+        'dom_name', 'sub', 'attr', 'style', 'event', 'field',
+    ]);
+    function $bog_vmap_app_wire_plain(port) {
+        return !$.$bog_vmap_app_wire_machinery.has(port.name);
+    }
+    $.$bog_vmap_app_wire_plain = $bog_vmap_app_wire_plain;
     function $bog_vmap_app_wire_ports(props, owners, base) {
         const ports = [];
         for (const [name, prop] of props) {
@@ -34865,6 +36104,14 @@ var $;
 			(obj.sub) = () => ((this.value_labels()));
 			return obj;
 		}
+		name_views(){
+			return [];
+		}
+		Names(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.name_views()));
+			return obj;
+		}
 		error_marks(){
 			return [];
 		}
@@ -34878,6 +36125,35 @@ var $;
 		}
 		label_lines(id){
 			return [];
+		}
+		name_style(id){
+			return {};
+		}
+		name_picked(id){
+			return false;
+		}
+		name_press(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		name_edit(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		name_title(id){
+			return "";
+		}
+		name_draft(id, next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		name_submit(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		name_key(id, next){
+			if(next !== undefined) return next;
+			return null;
 		}
 		mark_style(id){
 			return {};
@@ -35055,6 +36331,10 @@ var $;
 		doc_names(){
 			return [];
 		}
+		node_title(next){
+			if(next !== undefined) return next;
+			return "";
+		}
 		axis(id){
 			return "";
 		}
@@ -35192,6 +36472,7 @@ var $;
 				(this.Overlay()), 
 				(this.Wire()), 
 				(this.Values()), 
+				(this.Names()), 
 				(this.Marks())
 			];
 		}
@@ -35199,6 +36480,31 @@ var $;
 			const obj = new this.$.$bog_vmap_app_pane_label();
 			(obj.style) = () => ((this.label_style(id)));
 			(obj.lines) = () => ((this.label_lines(id)));
+			return obj;
+		}
+		Name(id){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.name_style(id)));
+			(obj.attr) = () => ({...(this.$.$mol_view.prototype.attr.call(obj)), "bog_vmap_app_pane_name_picked": (this.name_picked(id))});
+			(obj.event) = () => ({
+				...(this.$.$mol_view.prototype.event.call(obj)), 
+				"click": (next) => (this.name_press(id, next)), 
+				"dblclick": (next) => (this.name_edit(id, next))
+			});
+			(obj.sub) = () => ([(this.name_title(id))]);
+			return obj;
+		}
+		Name_field(id){
+			const obj = new this.$.$mol_string();
+			(obj.style) = () => ((this.name_style(id)));
+			(obj.hint) = () => ("имя узла");
+			(obj.value) = (next) => ((this.name_draft(id, next)));
+			(obj.submit) = (next) => ((this.name_submit(id, next)));
+			(obj.event) = () => ({
+				...(this.$.$mol_string.prototype.event.call(obj)), 
+				"blur": (next) => (this.name_submit(id, next)), 
+				"keydown": (next) => (this.name_key(id, next))
+			});
 			return obj;
 		}
 		Mark(id){
@@ -35259,7 +36565,13 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Overlay"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Wire"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Values"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Names"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Marks"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_press"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_edit"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_draft"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_submit"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_key"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_showed"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_parent"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_enter"));
@@ -35279,6 +36591,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "picked"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_add"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_drop"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_title"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "carry_at"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "carry_drop"));
@@ -35301,6 +36614,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_generation"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Scene"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Label"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Name"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Name_field"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Mark"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Insert"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Band"));
@@ -35601,7 +36916,6 @@ var $;
         const grab_slack = 8;
         const click_slack = 4;
         const scene_root = '$' + 'bog_vmap_scene';
-        const view_machinery = new Set(['dom_name', 'sub', 'attr', 'style', 'event', 'field']);
         class $bog_vmap_app_pane extends $.$bog_vmap_app_pane {
             doc_js() {
                 return {};
@@ -35745,6 +37059,7 @@ var $;
                     this.Overlay(),
                     this.Wire(),
                     this.Values(),
+                    this.Names(),
                     this.Marks(),
                     ...this.slot() ? [this.Insert()] : [],
                     ...this.band() ? [this.Band()] : [],
@@ -36752,7 +38067,7 @@ var $;
             }
             part_dots(name) {
                 const written = new Set(this.part_overs(name));
-                return this.part_ports(name).filter(port => port.own || written.has(port.name));
+                return this.part_ports(name).filter(port => (port.own || written.has(port.name)) && $bog_vmap_app_wire_plain(port));
             }
             wire_over() {
                 if (!this.wire_drag())
@@ -36917,9 +38232,16 @@ var $;
                 }
                 return [...names];
             }
+            board(name) {
+                return this.free_names().includes(name) && this.containers().includes(name);
+            }
             part_outs(name) {
                 const fed = new Set(this.wires().filter(link => link.to === name).map(link => link.to_prop));
-                return this.part_ports(name).filter(port => port.own && !fed.has(port.name) && !view_machinery.has(port.name));
+                const named = this.board(name);
+                return this.part_ports(name).filter(port => port.own
+                    && !fed.has(port.name)
+                    && $bog_vmap_app_wire_plain(port)
+                    && !(named && port.name === 'title'));
             }
             part_shown(name) {
                 const box = this.part_box(name);
@@ -36974,6 +38296,71 @@ var $;
                 return this.parts_visible()
                     .filter(name => this.label_lines(name).length)
                     .map(name => this.Label(name));
+            }
+            name_views() {
+                return this.parts_visible()
+                    .filter(name => this.board(name))
+                    .map(name => this.name_editing(name) ? this.Name_field(name) : this.Name(name));
+            }
+            name_style(name) {
+                const box = this.part_box(name);
+                if (!box)
+                    return {};
+                return {
+                    left: box.left + 'px',
+                    top: box.top + 'px',
+                };
+            }
+            name_title(name) {
+                return name;
+            }
+            name_picked(name) {
+                return this.picked().includes(name);
+            }
+            name_edited(next) {
+                return next ?? null;
+            }
+            name_editing(name) {
+                return Boolean(name) && this.name_edited() === name;
+            }
+            name_press(name, event) {
+                if (!event)
+                    return null;
+                this.leave();
+                this.picked([name]);
+                return null;
+            }
+            name_edit(name, event) {
+                if (!event || !this.editable())
+                    return null;
+                this.picked([name]);
+                this.name_draft(name, name);
+                this.name_edited(name);
+                this.Name_field(name).selection([0, name.length]);
+                return null;
+            }
+            name_draft(name, next) {
+                return next ?? name;
+            }
+            name_submit(name, event) {
+                if (!this.name_editing(name))
+                    return null;
+                const draft = this.name_draft(name);
+                if (!draft || draft === name) {
+                    this.name_edited(null);
+                    return null;
+                }
+                if (this.node_title(draft) === draft)
+                    this.name_edited(null);
+                return null;
+            }
+            name_key(name, event) {
+                if (event?.key !== 'Escape')
+                    return null;
+                event.stopPropagation();
+                this.name_draft(name, name);
+                this.name_edited(null);
+                return null;
             }
             values_push() {
                 const target = this.target();
@@ -37312,6 +38699,30 @@ var $;
         ], $bog_vmap_app_pane.prototype, "value_labels", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app_pane.prototype, "name_views", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "name_style", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "name_edited", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "name_press", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "name_edit", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "name_draft", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "name_submit", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "name_key", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_app_pane.prototype, "values_push", null);
         __decorate([
             $mol_mem
@@ -37438,6 +38849,41 @@ var $;
                 width: '100%',
                 height: '100%',
                 pointerEvents: 'none',
+            },
+            Names: {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+            },
+            Name: {
+                position: 'absolute',
+                transform: 'translateY(-100%)',
+                transition: 'none',
+                maxWidth: '20rem',
+                padding: { bottom: '.125rem', right: '.5rem' },
+                color: $mol_theme.shade,
+                font: { size: '.75rem' },
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                cursor: 'default',
+                pointerEvents: 'auto',
+                '@': {
+                    bog_vmap_app_pane_name_picked: {
+                        true: { color: $mol_theme.focus },
+                    },
+                },
+            },
+            Name_field: {
+                position: 'absolute',
+                transform: 'translateY(-100%)',
+                transition: 'none',
+                width: '10rem',
+                font: { size: '.75rem' },
+                pointerEvents: 'auto',
             },
             Marks: {
                 position: 'absolute',
@@ -38194,7 +39640,7 @@ var $;
         catch {
             return null;
         }
-        return id ? $giper_baza_link.check(id) : null;
+        return id ? $giper_baza_link.check(id)?.str ?? null : null;
     }
     $.$bog_vmap_asset_link = $bog_vmap_asset_link;
     function $bog_vmap_asset_links(source) {
@@ -38306,7 +39752,7 @@ var $;
             const arg = this.doc_arg();
             const checked = arg ? $giper_baza_link.check(arg) : null;
             if (checked)
-                return this.doc(new $giper_baza_link(checked));
+                return this.doc(checked);
             const last = this.doc_links().at(-1);
             return last ? this.doc(last) : null;
         }
@@ -39100,7 +40546,7 @@ var $;
                 const store = this.store();
                 if (next !== undefined) {
                     const checked = next ? $giper_baza_link.check(next) : null;
-                    store.doc_pick(checked ? new $giper_baza_link(checked) : null);
+                    store.doc_pick(checked);
                 }
                 return store.doc_current()?.link().str ?? '';
             }
@@ -41679,6 +43125,7 @@ var $;
 			(obj.link_drop) = (next) => ((this.link_drop(next)));
 			(obj.containers) = () => ((this.doc_containers()));
 			(obj.doc_names) = () => ((this.doc_names()));
+			(obj.node_title) = (next) => ((this.node_title(next)));
 			(obj.axis) = (id) => ((this.doc_axis(id)));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
 			(obj.carry_drop) = (next) => ((this.carry_drop(next)));

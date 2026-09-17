@@ -6661,7 +6661,7 @@ var $;
 
 
 ;
-	($.$mol_hotkey) = class $mol_hotkey extends ($.$mol_plugin) {
+	($.$mol_hotkey2) = class $mol_hotkey2 extends ($.$mol_plugin) {
 		keydown(next){
 			if(next !== undefined) return next;
 			return null;
@@ -6669,20 +6669,11 @@ var $;
 		event(){
 			return {...(super.event()), "keydown": (next) => (this.keydown(next))};
 		}
-		key(){
+		action(){
 			return {};
 		}
-		mod_ctrl(){
-			return false;
-		}
-		mod_alt(){
-			return false;
-		}
-		mod_shift(){
-			return false;
-		}
 	};
-	($mol_mem(($.$mol_hotkey.prototype), "keydown"));
+	($mol_mem(($.$mol_hotkey2.prototype), "keydown"));
 
 
 ;
@@ -6699,27 +6690,71 @@ var $;
          * Plugin which adds handlers for keyboard keys.
          * @see [mol_keyboard_code](../keyboard/code/code.ts)
          */
-        class $mol_hotkey extends $.$mol_hotkey {
-            key() {
-                return super.key();
-            }
+        class $mol_hotkey2 extends $.$mol_hotkey2 {
             keydown(event) {
                 if (!event)
                     return;
                 if (event.defaultPrevented)
                     return;
-                let name = $mol_keyboard_code[event.keyCode];
-                if (this.mod_ctrl() !== (event.ctrlKey || event.metaKey))
-                    return;
-                if (this.mod_alt() !== event.altKey)
-                    return;
-                if (this.mod_shift() !== event.shiftKey)
-                    return;
-                const handle = this.key()[name];
-                if (handle)
-                    handle(event);
+                const key = [...new Set([
+                        ...(event.ctrlKey || event.metaKey) ? ['ctrl'] : [],
+                        ...event.altKey ? ['alt'] : [],
+                        ...event.shiftKey ? ['shift'] : [],
+                        $mol_keyboard_code[event.keyCode] ?? '?',
+                    ])].join('_');
+                this.action()[key]?.(event);
             }
         }
+        $$.$mol_hotkey2 = $mol_hotkey2;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$mol_hotkey) = class $mol_hotkey extends ($.$mol_hotkey2) {
+		key(){
+			return {};
+		}
+		mod_ctrl(){
+			return false;
+		}
+		mod_alt(){
+			return false;
+		}
+		mod_shift(){
+			return false;
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Plugin which adds handlers for keyboard keys.
+         * @deprecated Use $mol_hotkey2
+         * @see [mol_keyboard_code](../keyboard/code/code.ts)
+         */
+        class $mol_hotkey extends $.$mol_hotkey {
+            action() {
+                const prefix = [...new Set([
+                        ...this.mod_ctrl() ? ['ctrl_'] : [],
+                        ...this.mod_alt() ? ['alt_'] : [],
+                        ...this.mod_shift() ? ['shift_'] : [],
+                    ])].join('');
+                return Object.fromEntries(Object.entries(this.key())
+                    .map(([key, val]) => [prefix + key, val]));
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_hotkey.prototype, "action", null);
         $$.$mol_hotkey = $mol_hotkey;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
@@ -7647,8 +7682,7 @@ var $;
         static hole = new this('');
         static check(val) {
             try {
-                new this(val);
-                return val;
+                return new this(val);
             }
             catch {
                 return null;
@@ -10881,6 +10915,7 @@ var $;
                 this.sand_del(prev);
             this.faces.peer_summ_shift(peer.str, +1);
             sands.set(sand.self().str, sand);
+            this._self_all.set(sand.self().str, !sand.dead());
             this.faces.peer_time(peer.str, sand.time(), sand.tick());
             this.unit_seal_inc(sand);
         }
@@ -10971,7 +11006,7 @@ var $;
         sand_get(head, lord, self) {
             return this._sand.get(head.str)?.get(lord.str)?.get(self.str) ?? null;
         }
-        _self_all = new $mol_wire_dict();
+        _self_all = new Map();
         /** Generates unique local id base on optional idea number or random. */
         self_make(idea = Math.floor(Math.random() * 2 ** 48)) {
             const auth = this.auth();
@@ -10987,7 +11022,7 @@ var $;
                     continue;
                 if (this._self_all.has(idea_link.str))
                     continue;
-                this._self_all.set(idea_link.str, null);
+                this._self_all.set(idea_link.str, false);
                 return idea_link;
             }
             $mol_fail(new Error(`Too long self generation`));
@@ -14235,7 +14270,7 @@ var $;
             this.splice(next, 0, units.length, tag);
             return this.items_vary();
         }
-        /** Replace sublist by  new one with reconciliation. */
+        /** Replace sublist by new one with reconciliation. */
         splice(next, from = this.units().length, to = from, tag = 'term') {
             const land = this.land();
             $mol_reconcile({
@@ -19808,6 +19843,7 @@ var $;
 		}
 		View(){
 			const obj = new this.$.$mol_text_code();
+			(obj.attr) = () => ({...(this.$.$mol_text_code.prototype.attr.call(obj)), "inert": ""});
 			(obj.text) = () => ((this.value()));
 			(obj.render_visible_only) = () => (false);
 			(obj.row_numb) = (id) => ((this.row_numb(id)));
@@ -22252,7 +22288,7 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    $mol_style_attach("mol/pop/pop.view.css", "@keyframes mol_pop_show {\n\tfrom {\n\t\topacity: 0;\n\t}\n}\n\n[mol_pop] {\n\tposition: relative;\n\tdisplay: inline-flex;\n}\n\n[mol_pop_bubble] {\n\tborder: none;\n\tpadding: 0;\n\tcolor: var(--mol_theme_text);\n\tbox-shadow: 0 0 1rem hsla(0,0%,0%,.5);\n\tborder-radius: var(--mol_gap_round);\n\tposition: fixed;\n\tz-index: var(--mol_layer_popup);\n\tbackground: var(--mol_theme_back);\n\tmax-width: none;\n\tmax-height: none;\n\t/* overflow: hidden;\n\toverflow-y: scroll;\n\toverflow-y: overlay; */\n\tword-break: normal;\n\twidth: max-content;\n\t/* height: max-content; */\n\tflex-direction: column;\n\tmax-width: calc( 100vw - var(--mol_gap_page) );\n\tmax-height: 80vw;\n\tcontain: paint;\n\ttransition-property: opacity;\n\t/* Safari ios layer fix, https://t.me/mam_mol/170017 */\n\ttransform: translateZ(0);\n\tanimation: mol_pop_show .1s ease-in;\n}\n\n:where( [mol_pop_bubble] > * ) {\n\tbackground: var(--mol_theme_card);\n}\n\n[mol_pop_bubble][mol_scroll] {\n\tbackground: var(--mol_theme_back);\n}\n\n[mol_pop_bubble]:focus {\n\toutline: none;\n}\n");
+    $mol_style_attach("mol/pop/pop.view.css", "@keyframes mol_pop_show {\n\tfrom {\n\t\topacity: 0;\n\t}\n}\n\n[mol_pop] {\n\tposition: relative;\n\tdisplay: inline-flex;\n}\n\n[mol_pop_bubble] {\n\tborder: none;\n\tpadding: 0;\n\tcolor: var(--mol_theme_text);\n\tbox-shadow: 0 0 1rem hsla(0,0%,0%,.5);\n\tborder-radius: var(--mol_gap_round);\n\tposition: fixed;\n\tz-index: var(--mol_layer_popup);\n\tbackground: var(--mol_theme_back);\n\tmax-width: none;\n\tmax-height: none;\n\t/* overflow: hidden;\n\toverflow-y: scroll;\n\toverflow-y: overlay; */\n\tword-break: normal;\n\twidth: max-content;\n\t/* height: max-content; */\n\tflex-direction: column;\n\tmax-width: 100vw;\n\tmax-height: 80vw;\n\tcontain: paint;\n\ttransition-property: opacity;\n\t/* Safari ios layer fix, https://t.me/mam_mol/170017 */\n\ttransform: translateZ(0);\n\tanimation: mol_pop_show .1s ease-in;\n}\n\n:where( [mol_pop_bubble] > * ) {\n\tbackground: var(--mol_theme_card);\n}\n\n[mol_pop_bubble][mol_scroll] {\n\tbackground: var(--mol_theme_back);\n}\n\n[mol_pop_bubble]:focus {\n\toutline: none;\n}\n");
 })($ || ($ = {}));
 
 ;
@@ -25984,6 +26020,13 @@ var $;
     const wirable = new Set([
         'string', 'number', 'bool', 'null', 'locale', 'list', 'get', 'bind',
     ]);
+    $.$bog_vmap_app_wire_machinery = new Set([
+        'dom_name', 'sub', 'attr', 'style', 'event', 'field',
+    ]);
+    function $bog_vmap_app_wire_plain(port) {
+        return !$.$bog_vmap_app_wire_machinery.has(port.name);
+    }
+    $.$bog_vmap_app_wire_plain = $bog_vmap_app_wire_plain;
     function $bog_vmap_app_wire_ports(props, owners, base) {
         const ports = [];
         for (const [name, prop] of props) {
@@ -27729,6 +27772,14 @@ var $;
 			(obj.sub) = () => ((this.value_labels()));
 			return obj;
 		}
+		name_views(){
+			return [];
+		}
+		Names(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.name_views()));
+			return obj;
+		}
 		error_marks(){
 			return [];
 		}
@@ -27742,6 +27793,35 @@ var $;
 		}
 		label_lines(id){
 			return [];
+		}
+		name_style(id){
+			return {};
+		}
+		name_picked(id){
+			return false;
+		}
+		name_press(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		name_edit(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		name_title(id){
+			return "";
+		}
+		name_draft(id, next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		name_submit(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		name_key(id, next){
+			if(next !== undefined) return next;
+			return null;
 		}
 		mark_style(id){
 			return {};
@@ -27919,6 +27999,10 @@ var $;
 		doc_names(){
 			return [];
 		}
+		node_title(next){
+			if(next !== undefined) return next;
+			return "";
+		}
 		axis(id){
 			return "";
 		}
@@ -28056,6 +28140,7 @@ var $;
 				(this.Overlay()), 
 				(this.Wire()), 
 				(this.Values()), 
+				(this.Names()), 
 				(this.Marks())
 			];
 		}
@@ -28063,6 +28148,31 @@ var $;
 			const obj = new this.$.$bog_vmap_app_pane_label();
 			(obj.style) = () => ((this.label_style(id)));
 			(obj.lines) = () => ((this.label_lines(id)));
+			return obj;
+		}
+		Name(id){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.name_style(id)));
+			(obj.attr) = () => ({...(this.$.$mol_view.prototype.attr.call(obj)), "bog_vmap_app_pane_name_picked": (this.name_picked(id))});
+			(obj.event) = () => ({
+				...(this.$.$mol_view.prototype.event.call(obj)), 
+				"click": (next) => (this.name_press(id, next)), 
+				"dblclick": (next) => (this.name_edit(id, next))
+			});
+			(obj.sub) = () => ([(this.name_title(id))]);
+			return obj;
+		}
+		Name_field(id){
+			const obj = new this.$.$mol_string();
+			(obj.style) = () => ((this.name_style(id)));
+			(obj.hint) = () => ("имя узла");
+			(obj.value) = (next) => ((this.name_draft(id, next)));
+			(obj.submit) = (next) => ((this.name_submit(id, next)));
+			(obj.event) = () => ({
+				...(this.$.$mol_string.prototype.event.call(obj)), 
+				"blur": (next) => (this.name_submit(id, next)), 
+				"keydown": (next) => (this.name_key(id, next))
+			});
 			return obj;
 		}
 		Mark(id){
@@ -28123,7 +28233,13 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Overlay"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Wire"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Values"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Names"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Marks"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_press"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_edit"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_draft"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_submit"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_key"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_showed"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_parent"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_enter"));
@@ -28143,6 +28259,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "picked"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_add"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_drop"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_title"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "carry_at"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "carry_drop"));
@@ -28165,6 +28282,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_generation"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Scene"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Label"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Name"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Name_field"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Mark"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Insert"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Band"));
@@ -28465,7 +28584,6 @@ var $;
         const grab_slack = 8;
         const click_slack = 4;
         const scene_root = '$' + 'bog_vmap_scene';
-        const view_machinery = new Set(['dom_name', 'sub', 'attr', 'style', 'event', 'field']);
         class $bog_vmap_app_pane extends $.$bog_vmap_app_pane {
             doc_js() {
                 return {};
@@ -28609,6 +28727,7 @@ var $;
                     this.Overlay(),
                     this.Wire(),
                     this.Values(),
+                    this.Names(),
                     this.Marks(),
                     ...this.slot() ? [this.Insert()] : [],
                     ...this.band() ? [this.Band()] : [],
@@ -29616,7 +29735,7 @@ var $;
             }
             part_dots(name) {
                 const written = new Set(this.part_overs(name));
-                return this.part_ports(name).filter(port => port.own || written.has(port.name));
+                return this.part_ports(name).filter(port => (port.own || written.has(port.name)) && $bog_vmap_app_wire_plain(port));
             }
             wire_over() {
                 if (!this.wire_drag())
@@ -29781,9 +29900,16 @@ var $;
                 }
                 return [...names];
             }
+            board(name) {
+                return this.free_names().includes(name) && this.containers().includes(name);
+            }
             part_outs(name) {
                 const fed = new Set(this.wires().filter(link => link.to === name).map(link => link.to_prop));
-                return this.part_ports(name).filter(port => port.own && !fed.has(port.name) && !view_machinery.has(port.name));
+                const named = this.board(name);
+                return this.part_ports(name).filter(port => port.own
+                    && !fed.has(port.name)
+                    && $bog_vmap_app_wire_plain(port)
+                    && !(named && port.name === 'title'));
             }
             part_shown(name) {
                 const box = this.part_box(name);
@@ -29838,6 +29964,71 @@ var $;
                 return this.parts_visible()
                     .filter(name => this.label_lines(name).length)
                     .map(name => this.Label(name));
+            }
+            name_views() {
+                return this.parts_visible()
+                    .filter(name => this.board(name))
+                    .map(name => this.name_editing(name) ? this.Name_field(name) : this.Name(name));
+            }
+            name_style(name) {
+                const box = this.part_box(name);
+                if (!box)
+                    return {};
+                return {
+                    left: box.left + 'px',
+                    top: box.top + 'px',
+                };
+            }
+            name_title(name) {
+                return name;
+            }
+            name_picked(name) {
+                return this.picked().includes(name);
+            }
+            name_edited(next) {
+                return next ?? null;
+            }
+            name_editing(name) {
+                return Boolean(name) && this.name_edited() === name;
+            }
+            name_press(name, event) {
+                if (!event)
+                    return null;
+                this.leave();
+                this.picked([name]);
+                return null;
+            }
+            name_edit(name, event) {
+                if (!event || !this.editable())
+                    return null;
+                this.picked([name]);
+                this.name_draft(name, name);
+                this.name_edited(name);
+                this.Name_field(name).selection([0, name.length]);
+                return null;
+            }
+            name_draft(name, next) {
+                return next ?? name;
+            }
+            name_submit(name, event) {
+                if (!this.name_editing(name))
+                    return null;
+                const draft = this.name_draft(name);
+                if (!draft || draft === name) {
+                    this.name_edited(null);
+                    return null;
+                }
+                if (this.node_title(draft) === draft)
+                    this.name_edited(null);
+                return null;
+            }
+            name_key(name, event) {
+                if (event?.key !== 'Escape')
+                    return null;
+                event.stopPropagation();
+                this.name_draft(name, name);
+                this.name_edited(null);
+                return null;
             }
             values_push() {
                 const target = this.target();
@@ -30176,6 +30367,30 @@ var $;
         ], $bog_vmap_app_pane.prototype, "value_labels", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app_pane.prototype, "name_views", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "name_style", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "name_edited", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "name_press", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "name_edit", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "name_draft", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "name_submit", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "name_key", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_app_pane.prototype, "values_push", null);
         __decorate([
             $mol_mem
@@ -30302,6 +30517,41 @@ var $;
                 width: '100%',
                 height: '100%',
                 pointerEvents: 'none',
+            },
+            Names: {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+            },
+            Name: {
+                position: 'absolute',
+                transform: 'translateY(-100%)',
+                transition: 'none',
+                maxWidth: '20rem',
+                padding: { bottom: '.125rem', right: '.5rem' },
+                color: $mol_theme.shade,
+                font: { size: '.75rem' },
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                cursor: 'default',
+                pointerEvents: 'auto',
+                '@': {
+                    bog_vmap_app_pane_name_picked: {
+                        true: { color: $mol_theme.focus },
+                    },
+                },
+            },
+            Name_field: {
+                position: 'absolute',
+                transform: 'translateY(-100%)',
+                transition: 'none',
+                width: '10rem',
+                font: { size: '.75rem' },
+                pointerEvents: 'auto',
             },
             Marks: {
                 position: 'absolute',
@@ -30482,7 +30732,7 @@ var $;
         catch {
             return null;
         }
-        return id ? $giper_baza_link.check(id) : null;
+        return id ? $giper_baza_link.check(id)?.str ?? null : null;
     }
     $.$bog_vmap_asset_link = $bog_vmap_asset_link;
     function $bog_vmap_asset_links(source) {
@@ -30594,7 +30844,7 @@ var $;
             const arg = this.doc_arg();
             const checked = arg ? $giper_baza_link.check(arg) : null;
             if (checked)
-                return this.doc(new $giper_baza_link(checked));
+                return this.doc(checked);
             const last = this.doc_links().at(-1);
             return last ? this.doc(last) : null;
         }
@@ -31400,7 +31650,7 @@ var $;
                 const store = this.store();
                 if (next !== undefined) {
                     const checked = next ? $giper_baza_link.check(next) : null;
-                    store.doc_pick(checked ? new $giper_baza_link(checked) : null);
+                    store.doc_pick(checked);
                 }
                 return store.doc_current()?.link().str ?? '';
             }
@@ -34405,6 +34655,7 @@ var $;
 			(obj.link_drop) = (next) => ((this.link_drop(next)));
 			(obj.containers) = () => ((this.doc_containers()));
 			(obj.doc_names) = () => ((this.doc_names()));
+			(obj.node_title) = (next) => ((this.node_title(next)));
 			(obj.axis) = (id) => ((this.doc_axis(id)));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
 			(obj.carry_drop) = (next) => ((this.carry_drop(next)));
@@ -44655,6 +44906,16 @@ var $;
             const ports = $.$bog_vmap_app_wire_ports(props, owners, `${d}my_part`);
             $mol_assert_like(ports.map(port => `${port.name}:${port.own}`), ['title:false', 'count:true']);
         },
+        'the machinery a view declares for itself is no port of a part'($) {
+            const ports = [
+                ...[...$bog_vmap_app_wire_machinery].map(name => port(name, 'string')),
+                port('title', 'string'),
+                port('sub_title', 'string'),
+                port('fields', 'list'),
+            ];
+            $mol_assert_like(ports.filter(known => $bog_vmap_app_wire_plain(known)).map(known => known.name), ['title', 'sub_title', 'fields']);
+            $mol_assert_like([...$bog_vmap_app_wire_machinery], ['dom_name', 'sub', 'attr', 'style', 'event', 'field']);
+        },
     });
 })($ || ($ = {}));
 
@@ -49948,9 +50209,10 @@ var $;
             $mol_assert_equal(pane.warmed(), false);
             $mol_assert_equal(pane.sub()[0] !== frame_before, true);
             $mol_assert_equal(pane.sub()[0], pane.Scene(pane.scene_key()));
-            $mol_assert_equal(pane.sub().length, 5);
+            $mol_assert_equal(pane.sub().length, 6);
             $mol_assert_equal(pane.sub()[3], pane.Values());
-            $mol_assert_equal(pane.sub()[4], pane.Marks());
+            $mol_assert_equal(pane.sub()[4], pane.Names());
+            $mol_assert_equal(pane.sub()[5], pane.Marks());
             $mol_assert_equal(pane.watchdog(), null);
             $mol_assert_equal(pane.heartbeat(), null);
             $mol_assert_equal(posted.length, 0);
@@ -50445,6 +50707,104 @@ var $;
                 .map(label => label.textContent);
             $mol_assert_like(stage.pane.label_lines('Page'), []);
             $mol_assert_like(drawn, ['result: 42op: plus']);
+        },
+        'no dot of a board offers the machinery of a view, at rest or as a target of a drag'($) {
+            const ports = [
+                { name: 'dom_name', next: false, own: true, kind: 'string' },
+                { name: 'sub', next: false, own: true, kind: 'list' },
+                { name: 'title', next: false, own: true, kind: 'string' },
+            ];
+            const { pane } = pane_make($, {}, {
+                doc_names: () => ['Page', 'Calc'],
+                containers: () => ['Page'],
+                part_ports: () => ports,
+                wires: () => [],
+            });
+            pane.sizes({
+                [`${root}/Page`]: box(0, 0, 400, 300),
+                [`${root}/Calc`]: box(600, 0),
+            });
+            pane.picked(['Page']);
+            $mol_assert_like(pane.part_ports('Page').map(port => port.name), ['dom_name', 'sub', 'title']);
+            $mol_assert_like(pane.part_dots('Page').map(port => port.name), ['title']);
+            $mol_assert_like([...new Set(pane.wire_dots().filter(dot => dot.node === 'Page').map(dot => dot.port.name))], ['title']);
+            pane.wire_drag({ from: 'Calc', from_prop: 'result', kind: 'string' });
+            pane.wire_point([0, 0]);
+            $mol_assert_like(pane.wire_dots().filter(dot => dot.node === 'Page').map(dot => dot.port.name), ['title']);
+        },
+        'a board wears its own name above the frame and no value label under it'($) {
+            const ports = [
+                { name: 'dom_name', next: false, own: true, kind: 'string' },
+                { name: 'sub', next: false, own: true, kind: 'list' },
+                { name: 'title', next: false, own: true, kind: 'string' },
+            ];
+            const { pane } = pane_make($, {}, {
+                doc_names: () => ['Page', 'Send'],
+                containers: () => ['Page'],
+                part_ports: () => ports,
+                wires: () => [],
+            });
+            pane.sizes({
+                [`${root}/Page`]: box(40, 60, 400, 300),
+                [`${root}/Send`]: box(600, 0),
+            });
+            pane.warmed(true);
+            pane.values({ 'Page.title': 'Loan', 'Send.title': 'Отправить' });
+            pane.dom_tree();
+            $mol_assert_like(pane.ports_visible(), ['Send.title']);
+            $mol_assert_like(pane.label_lines('Page'), []);
+            $mol_assert_like(pane.label_lines('Send'), ['title: Отправить']);
+            $mol_assert_equal(pane.value_labels().length, 1);
+            $mol_assert_equal(pane.value_labels()[0], pane.Label('Send'));
+            const frame = pane.part_box('Page');
+            $mol_assert_like(pane.name_style('Page'), { left: frame.left + 'px', top: frame.top + 'px' });
+            $mol_assert_equal(pane.name_views().length, 1);
+            $mol_assert_equal(pane.name_views()[0], pane.Name('Page'));
+            $mol_assert_like(pane.Name('Page').sub(), ['Page']);
+            const layer = pane.dom_node().querySelector('[bog_vmap_app_pane_names]');
+            const drawn = [...layer?.querySelectorAll('[bog_vmap_app_pane_name]') ?? []]
+                .map(name => name.textContent);
+            $mol_assert_like(drawn, ['Page']);
+        },
+        'a click on the name picks the board, a double click renames it in place'($) {
+            let title = 'Page';
+            const { pane } = pane_make($, {}, {
+                doc_names: () => ['Page'],
+                containers: () => ['Page'],
+                part_ports: () => [],
+                wires: () => [],
+                node_title: (next) => {
+                    if (next === undefined)
+                        return title;
+                    if (/^[0-9]/.test(next))
+                        return title;
+                    return title = next;
+                },
+            });
+            pane.sizes({ [`${root}/Page`]: box(0, 0, 400, 300) });
+            const dom = $.$mol_dom_context;
+            const mouse = (kind) => new dom.MouseEvent(kind, { bubbles: true, cancelable: true });
+            pane.name_press('Page', mouse('click'));
+            $mol_assert_like([...pane.picked()], ['Page']);
+            $mol_assert_equal(pane.name_editing('Page'), false);
+            pane.name_edit('Page', mouse('dblclick'));
+            $mol_assert_equal(pane.name_editing('Page'), true);
+            $mol_assert_equal(pane.name_views()[0], pane.Name_field('Page'));
+            $mol_assert_like(pane.Name_field('Page').selection(), [0, 4]);
+            pane.name_draft('Page', 'Other');
+            pane.name_key('Page', { key: 'Escape', stopPropagation() { } });
+            $mol_assert_equal(pane.name_editing('Page'), false);
+            $mol_assert_equal(pane.name_draft('Page'), 'Page');
+            $mol_assert_equal(title, 'Page');
+            pane.name_edit('Page', mouse('dblclick'));
+            pane.name_draft('Page', '9bad');
+            pane.name_submit('Page', mouse('blur'));
+            $mol_assert_equal(title, 'Page');
+            $mol_assert_equal(pane.name_editing('Page'), true);
+            pane.name_draft('Page', 'Loan');
+            pane.name_submit('Page', mouse('blur'));
+            $mol_assert_equal(title, 'Loan');
+            $mol_assert_equal(pane.name_editing('Page'), false);
         },
         'every layer the tree puts in sub is returned by the override of sub'($) {
             const { pane } = pane_make($);
