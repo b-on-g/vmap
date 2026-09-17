@@ -18,11 +18,14 @@ namespace $.$$ {
 		readonly root: string
 		readonly supers: { readonly [ klass: string ]: string }
 		readonly bodies: { readonly [ klass: string ]: string }
+		readonly forms: { readonly [ klass: string ]: string }
 		readonly error: string
 		readonly klass: string
 	}
 
-	const unmounted: mounted = { made: null, pack: '', root: '', supers: {}, bodies: {}, error: '', klass: '' }
+	const unmounted: mounted = {
+		made: null, pack: '', root: '', supers: {}, bodies: {}, forms: {}, error: '', klass: '',
+	}
 
 	export class $bog_vmap_scene extends $.$bog_vmap_scene {
 
@@ -308,6 +311,46 @@ namespace $.$$ {
 			return fresh
 		}
 
+		form_of( def: $mol_tree2 ) {
+
+			const out = [] as string[]
+
+			const walk = ( tree: $mol_tree2 )=> {
+
+				if( !tree.type || $mol_tree2_js_is_number( tree.type ) ) return
+
+				out.push( tree.type )
+				for( const kid of tree.kids ) walk( kid )
+				out.push( '/' )
+
+			}
+
+			walk( def )
+
+			return out.join( ' ' )
+		}
+
+		@ $mol_mem
+		forms(): { readonly [ klass: string ]: string } {
+
+			const map = {} as { [ klass: string ]: string }
+			for( const def of this.doc_tree().kids ) map[ def.type ] = this.form_of( def )
+
+			return map
+		}
+
+		forms_fresh( was: { readonly [ klass: string ]: string } ) {
+
+			const now = this.forms()
+			const fresh = new Set< string >()
+
+			for( const klass of Object.keys( now ) ) {
+				if( was[ klass ] !== now[ klass ] ) fresh.add( klass )
+			}
+
+			return fresh
+		}
+
 		@ $mol_mem
 		code_parts() {
 
@@ -448,26 +491,28 @@ namespace $.$$ {
 				const supers = this.supers()
 
 				const bodies = this.bodies()
+				const forms = this.forms()
 
 				if( this.identity_kept( prev, pack, root, supers ) ) {
 
 					const fresh = this.bodies_fresh( prev.bodies )
+					const shaped = this.forms_fresh( prev.forms )
 
 					this.$.$bog_vmap_scene_swap(
 						prev.made!,
 						name => Reflect.get( this.sandbox(), name ),
 						name => this.shapes()[ name ] ?? null,
-						name => fresh.has( name ),
+						name => fresh.has( name ) || shaped.has( name ),
 					)
 
-					return { ... prev, supers: { ... prev.supers, ... supers }, bodies, error: '', klass: '' }
+					return { ... prev, supers: { ... prev.supers, ... supers }, bodies, forms, error: '', klass: '' }
 				}
 
 				const made = Root.make({ $: this.sandbox() })
 
 				this.cull_attach( made )
 
-				return { made, pack, root, supers, bodies, error: '', klass: '' }
+				return { made, pack, root, supers, bodies, forms, error: '', klass: '' }
 
 			} catch( error: unknown ) {
 
