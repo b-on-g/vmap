@@ -200,7 +200,7 @@ namespace $.$$ {
 
 		inner_prop() {
 			const inner = this.inner()
-			return inner.slice( inner.indexOf( '/' ) + 1 )
+			return inner.slice( inner.lastIndexOf( '/' ) + 1 )
 		}
 
 		node_class( name: string ) {

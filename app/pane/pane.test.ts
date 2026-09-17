@@ -2327,44 +2327,65 @@ namespace $ {
 		[ `${root}/Debt/Chart/Plot/Line` ]: box( 20, 90, 360, 180 ),
 	}
 
-	const inner_pane = ( $: $mol_ambient_context, inner = '' )=> {
+	const twin_sizes = {
+		[ `${root}/Debt` ]: box( 0, 0, 400, 300 ),
+		[ `${root}/Debt/Title` ]: box( 10, 20, 200, 40 ),
+		[ `${root}/Debt/Chart` ]: box( 10, 80, 380, 200 ),
+		[ `${root}/Debt/Chart/Legend/Title` ]: box( 300, 90, 80, 16 ),
+	}
+
+	const inner_pane = (
+		$: $mol_ambient_context,
+		inner = '',
+		sizes: { readonly [ node: string ]: $bog_vmap_bridge_rect } = inner_sizes,
+	)=> {
 
 		const { pane } = pane_make( $, {}, {
 			doc_names: ()=> [ 'Debt' ],
 			inner: ()=> inner,
 		} )
 
-		pane.sizes( inner_sizes )
+		pane.sizes( sizes )
 
 		return pane
 	}
 
 	$mol_test({
 
-		'a layer inside a part is addressed by node and port, however deep the scene renders it'( $ ) {
+		'a layer inside a part is addressed by the chain of its layers, however deep the scene renders it'( $ ) {
 
 			const pane = inner_pane( $ )
 
 			$mol_assert_like( pane.part_size( 'Debt/Title' ), box( 10, 20, 200, 40 ) )
-			$mol_assert_like( pane.part_size( 'Debt/Line' ), box( 20, 90, 360, 180 ) )
+			$mol_assert_like( pane.part_size( 'Debt/Chart/Line' ), box( 20, 90, 360, 180 ) )
 			$mol_assert_like( pane.part_size( 'Debt' ), box( 0, 0, 400, 300 ) )
 
-			$mol_assert_equal( pane.part_size( 'Debt/Nobody' ), null )
+			$mol_assert_equal( pane.part_size( 'Debt/Chart/Nobody' ), null )
 			$mol_assert_equal( pane.part_size( 'Title' ), null )
 
 		},
 
-		'the shallowest path wins when a nested class repeats a port name'( $ ) {
+		'a namesake above does not steal the frame from the layer the chain names'( $ ) {
 
-			const { pane } = pane_make( $, {}, { doc_names: ()=> [ 'Debt' ] } )
+			const above = inner_pane( $, '', twin_sizes )
+			$mol_assert_like( above.part_size( 'Debt/Title' ), box( 10, 20, 200, 40 ) )
 
-			pane.sizes({
-				[ `${root}/Debt` ]: box( 0, 0, 400, 300 ),
-				[ `${root}/Debt/Chart/Legend` ]: box( 200, 10, 100, 20 ),
-				[ `${root}/Debt/Legend` ]: box( 10, 10, 100, 20 ),
-			})
+			const below = inner_pane( $, '', twin_sizes )
+			$mol_assert_like( below.part_size( 'Debt/Chart/Title' ), box( 300, 90, 80, 16 ) )
 
-			$mol_assert_like( pane.part_size( 'Debt/Legend' ), box( 10, 10, 100, 20 ) )
+			const framed = inner_pane( $, 'Debt/Chart/Title', twin_sizes )
+			$mol_assert_like(
+				framed.inner_style(),
+				{ left: '300px', top: '90px', width: '80px', height: '16px' },
+			)
+
+		},
+
+		'a chain the scene never rendered falls back on the shortest path under the node'( $ ) {
+
+			const pane = inner_pane( $, '', twin_sizes )
+
+			$mol_assert_like( pane.part_size( 'Debt/Nowhere/Title' ), box( 10, 20, 200, 40 ) )
 
 		},
 
@@ -2400,6 +2421,21 @@ namespace $ {
 			$mol_assert_equal( pane.inner_shown(), '' )
 			$mol_assert_like( pane.inner_style(), {} )
 			$mol_assert_equal( pane.Overlay().sub().length, 0 )
+
+		},
+
+		'the frame of an inner layer leaves the pointer to the canvas under it'( $ ) {
+
+			const bare = inner_pane( $ )
+			const framed = inner_pane( $, 'Debt/Title' )
+
+			$mol_assert_equal( bare.node_at( [ 50, 30 ] ), 'Debt' )
+			$mol_assert_equal( framed.node_at( [ 50, 30 ] ), 'Debt' )
+
+			framed.node_press( pointer( 50, 30 ) )
+			framed.node_release( pointer( 50, 30, { buttons: 0 } ) )
+
+			$mol_assert_like( [ ... framed.picked() ], [ 'Debt' ] )
 
 		},
 

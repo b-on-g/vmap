@@ -1688,6 +1688,38 @@ namespace $ {
 			$mol_assert_ok( source.includes( 'title \\notes.pdf' ) )
 
 		},
+
+		'a layer picked inside a part reaches the canvas by the address the panel made'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+			const dom = $.$mol_dom_context
+
+			app.doc_source( [
+				`${d}flow_inner ${d}mol_view`,
+				`	Cell ${d}bog_vmap_part_cell`,
+				`	sub / <= Cell`,
+				``,
+			].join( '\n' ) )
+
+			app.picked([ 'Cell' ])
+			stage.redraw()
+
+			const layers = app.Layers() as $$.$bog_vmap_app_layers
+
+			$mol_assert_like( layers.row_kids( 'Cell' ), [ 'Cell/Code', 'Cell/Draft', 'Cell/Note' ] )
+
+			layers.row_pick(
+				'Cell/Note',
+				new dom.MouseEvent( 'click', { bubbles: true, cancelable: true } ),
+			)
+			stage.redraw()
+
+			$mol_assert_equal( app.inner(), 'Cell/Note' )
+			$mol_assert_equal( stage.pane.inner(), 'Cell/Note' )
+			$mol_assert_like( [ ... app.picked() ], [ 'Cell' ] )
+
+		},
 	})
 
 }

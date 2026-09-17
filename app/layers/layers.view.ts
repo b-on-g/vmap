@@ -74,7 +74,7 @@ namespace $.$$ {
 		}
 
 		inner_prop( name: string ) {
-			return name.slice( name.indexOf( '/' ) + 1 )
+			return name.slice( name.lastIndexOf( '/' ) + 1 )
 		}
 
 		inner_key( name: string ) {
@@ -89,27 +89,29 @@ namespace $.$$ {
 			if( !klass ) return found
 
 			const level = this.row_level( part )
+			const taken = new Set< string >()
 
-			const walk = ( key: string, owner: string | null, deep: number ): readonly string[] => {
+			const walk = ( key: string, owner: string | null, deep: number, at: string ): readonly string[] => {
 
 				const born = [] as string[]
 
 				for( const kid of this.inner_kids( key ) ) {
-					const path = `${ part }/${ kid }`
-					if( found.has( path ) ) continue
+					if( taken.has( kid ) ) continue
+					taken.add( kid )
+					const path = `${ at }/${ kid }`
 					found.set( path, { owner, level: deep, kids: [] } )
 					born.push( path )
 				}
 
 				for( const path of born ) {
-					const kids = walk( `${ klass }/${ this.inner_prop( path ) }`, path, deep + 1 )
+					const kids = walk( `${ klass }/${ this.inner_prop( path ) }`, path, deep + 1, path )
 					found.set( path, { owner, level: deep, kids } )
 				}
 
 				return born
 			}
 
-			walk( klass, null, level + 1 )
+			walk( klass, null, level + 1, part )
 
 			return found
 		}

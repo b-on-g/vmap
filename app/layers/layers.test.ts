@@ -1033,11 +1033,11 @@ namespace $ {
 			layers.row_expanded( 'Debt/Chart', true )
 
 			$mol_assert_like( layers.row_kids( 'Debt' ), [ 'Debt/Title', 'Debt/Chart' ] )
-			$mol_assert_like( layers.row_kids( 'Debt/Chart' ), [ 'Debt/Line' ] )
+			$mol_assert_like( layers.row_kids( 'Debt/Chart' ), [ 'Debt/Chart/Line' ] )
 			$mol_assert_like( layers.row_kids( 'Debt/Title' ), [] )
 
 			$mol_assert_like(
-				outline([ '', 'Page', 'Debt', 'Debt/Title', 'Debt/Chart', 'Debt/Line' ]),
+				outline([ '', 'Page', 'Debt', 'Debt/Title', 'Debt/Chart', 'Debt/Chart/Line' ]),
 				[
 					`${d}layers_inner root`,
 					'  Page frame',
@@ -1048,9 +1048,9 @@ namespace $ {
 				],
 			)
 
-			$mol_assert_equal( layers.row_title( 'Debt/Line' ), 'Line' )
-			$mol_assert_equal( layers.row_hint( 'Debt/Line' ), `${d}mol_plot_line` )
-			$mol_assert_equal( layers.row_level( 'Debt/Line' ), layers.row_level( 'Debt' ) + 2 )
+			$mol_assert_equal( layers.row_title( 'Debt/Chart/Line' ), 'Line' )
+			$mol_assert_equal( layers.row_hint( 'Debt/Chart/Line' ), `${d}mol_plot_line` )
+			$mol_assert_equal( layers.row_level( 'Debt/Chart/Line' ), layers.row_level( 'Debt' ) + 2 )
 
 		},
 

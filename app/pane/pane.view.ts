@@ -5,6 +5,18 @@ namespace $.$$ {
 
 	const scene_root = '$' + 'bog_vmap_scene'
 
+	const inner_chained = ( path: readonly string[], chain: readonly string[] )=> {
+
+		let at = 0
+
+		for( const step of path ) {
+			if( step === chain[ at ] ) at ++
+			if( at === chain.length ) return true
+		}
+
+		return at === chain.length
+	}
+
 	export type $bog_vmap_app_pane_link_new =
 		Pick< $bog_vmap_lang_link, 'from' | 'from_prop' | 'to' | 'to_prop' >
 		& { readonly bidi?: boolean }
@@ -506,7 +518,10 @@ namespace $.$$ {
 
 			const prefix = this.doc_root() + '/'
 			const known = new Set( this.doc_names() )
-			const found = new Map< string, { readonly depth: number, readonly box: $bog_vmap_bridge_rect } >()
+			const found = [] as {
+				readonly path: readonly string[]
+				readonly box: $bog_vmap_bridge_rect
+			}[]
 
 			for( const key of Object.keys( this.sizes() ) ) {
 				if( !key.startsWith( prefix ) ) continue
@@ -514,18 +529,27 @@ namespace $.$$ {
 				const path = key.slice( prefix.length ).split( '/' )
 				if( path.length < 2 || !known.has( path[ 0 ] ) ) continue
 
-				const address = `${ path[ 0 ] }/${ path[ path.length - 1 ] }`
-				const held = found.get( address )
-				if( held && held.depth <= path.length ) continue
-
-				found.set( address, { depth: path.length, box: this.sizes()[ key ] } )
+				found.push({ path, box: this.sizes()[ key ] })
 			}
 
 			return found
 		}
 
 		inner_size( address: string ) {
-			return this.inner_measured().get( address )?.box ?? null
+
+			const chain = address.split( '/' )
+			const last = chain[ chain.length - 1 ]
+
+			const ends = this.inner_measured().filter( one =>
+				one.path[ 0 ] === chain[ 0 ] && one.path[ one.path.length - 1 ] === last
+			)
+
+			if( !ends.length ) return null
+
+			const chained = ends.filter( one => inner_chained( one.path, chain ) )
+			const kept = chained.length ? chained : ends
+
+			return kept.reduce( ( one, other )=> other.path.length < one.path.length ? other : one ).box
 		}
 
 		override part_size( name: string ) {
