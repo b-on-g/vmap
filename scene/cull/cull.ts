@@ -1,5 +1,7 @@
 namespace $ {
 
+	/** Живёт в пространстве, которое поднимает $mol_ambient: тесты и сцена берут эти функции через `this.$`. */
+
 	export type $bog_vmap_scene_cull_box = {
 		readonly x: number
 		readonly y: number
