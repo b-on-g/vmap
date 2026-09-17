@@ -47,6 +47,24 @@ namespace $ {
 			this.doc_arg( link?.str ?? null )
 		}
 
+		@ $mol_action
+		doc_drop( link: $giper_baza_link ) {
+
+			const links = this.doc_links()
+			const at = links.findIndex( item => item.str === link.str )
+			if( at < 0 ) return null
+
+			const open = this.doc_current()?.link().str ?? ''
+
+			this.home().Docs( null )!.cut( link )
+
+			if( open !== link.str ) return null
+
+			this.doc_pick( links[ at + 1 ] ?? links[ at - 1 ] ?? null )
+
+			return null
+		}
+
 		doc_editable() {
 			const doc = this.doc_current()
 			if( !doc ) return true
