@@ -5,8 +5,6 @@ namespace $.$$ {
 
 	const scene_root = '$' + 'bog_vmap_scene'
 
-	const view_machinery = new Set([ 'dom_name', 'sub', 'attr', 'style', 'event', 'field' ])
-
 	export type $bog_vmap_app_pane_link_new =
 		Pick< $bog_vmap_lang_link, 'from' | 'from_prop' | 'to' | 'to_prop' >
 		& { readonly bidi?: boolean }
@@ -261,6 +259,7 @@ namespace $.$$ {
 				this.Overlay(),
 				this.Wire(),
 				this.Values(),
+				this.Names(),
 				this.Marks(),
 				... this.slot() ? [ this.Insert() ] : [],
 				... this.band() ? [ this.Band() ] : [],
@@ -1537,7 +1536,10 @@ namespace $.$$ {
 		@ $mol_mem_key
 		part_dots( name: string ): readonly $bog_vmap_app_wire_port[] {
 			const written = new Set( this.part_overs( name ) )
-			return this.part_ports( name ).filter( port => port.own || written.has( port.name ) )
+
+			return this.part_ports( name ).filter(
+				port => ( port.own || written.has( port.name ) ) && $bog_vmap_app_wire_plain( port )
+			)
 		}
 
 		wire_over() {
@@ -1743,14 +1745,23 @@ namespace $.$$ {
 			return [ ... names ]
 		}
 
+		board( name: string ) {
+			return this.free_names().includes( name ) && this.containers().includes( name )
+		}
+
 		@ $mol_mem_key
 		part_outs( name: string ): readonly $bog_vmap_app_wire_port[] {
 			const fed = new Set(
 				this.wires().filter( link => link.to === name ).map( link => link.to_prop )
 			)
 
+			const named = this.board( name )
+
 			return this.part_ports( name ).filter(
-				port => port.own && !fed.has( port.name ) && !view_machinery.has( port.name )
+				port => port.own
+					&& !fed.has( port.name )
+					&& $bog_vmap_app_wire_plain( port )
+					&& !( named && port.name === 'title' )
 			)
 		}
 
@@ -1823,6 +1834,97 @@ namespace $.$$ {
 			return this.parts_visible()
 				.filter( name => this.label_lines( name ).length )
 				.map( name => this.Label( name ) )
+		}
+
+		@ $mol_mem
+		override name_views(): readonly $mol_view[] {
+			return this.parts_visible()
+				.filter( name => this.board( name ) )
+				.map( name => this.name_editing( name ) ? this.Name_field( name ) : this.Name( name ) )
+		}
+
+		@ $mol_mem_key
+		override name_style( name: string ): { readonly [ prop: string ]: string } {
+			const box = this.part_box( name )
+			if( !box ) return {}
+
+			return {
+				left: box.left + 'px',
+				top: box.top + 'px',
+			}
+		}
+
+		override name_title( name: string ) {
+			return name
+		}
+
+		override name_picked( name: string ) {
+			return this.picked().includes( name )
+		}
+
+		@ $mol_mem
+		name_edited( next?: string | null ) {
+			return next ?? null
+		}
+
+		name_editing( name: string ) {
+			return Boolean( name ) && this.name_edited() === name
+		}
+
+		@ $mol_action
+		override name_press( name: string, event?: Event ) {
+			if( !event ) return null
+
+			this.leave()
+			this.picked([ name ])
+
+			return null
+		}
+
+		@ $mol_action
+		override name_edit( name: string, event?: Event ) {
+			if( !event || !this.editable() ) return null
+
+			this.picked([ name ])
+			this.name_draft( name, name )
+			this.name_edited( name )
+
+			this.Name_field( name ).selection([ 0, name.length ])
+
+			return null
+		}
+
+		@ $mol_mem_key
+		override name_draft( name: string, next?: string ) {
+			return next ?? name
+		}
+
+		@ $mol_action
+		override name_submit( name: string, event?: Event ) {
+			if( !this.name_editing( name ) ) return null
+
+			const draft = this.name_draft( name )
+
+			if( !draft || draft === name ) {
+				this.name_edited( null )
+				return null
+			}
+
+			if( this.node_title( draft ) === draft ) this.name_edited( null )
+
+			return null
+		}
+
+		@ $mol_action
+		override name_key( name: string, event?: KeyboardEvent ) {
+			if( event?.key !== 'Escape' ) return null
+
+			event.stopPropagation()
+
+			this.name_draft( name, name )
+			this.name_edited( null )
+
+			return null
 		}
 
 		@ $mol_mem

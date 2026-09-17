@@ -164,6 +164,7 @@ $bog_vmap_app $mol_page
 				link_drop? <=> link_drop? null
 				containers <= doc_containers /string
 				doc_names <= doc_names /string
+				node_title? <=> node_title?
 				axis* <= doc_axis* \
 				tree_move? <=> tree_move? null
 				carry_drop? <=> carry_drop? null

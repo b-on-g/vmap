@@ -1069,9 +1069,10 @@ namespace $ {
 			$mol_assert_equal( pane.warmed(), false )
 			$mol_assert_equal( pane.sub()[0] !== frame_before, true )
 			$mol_assert_equal( pane.sub()[0], pane.Scene( pane.scene_key() ) )
-			$mol_assert_equal( pane.sub().length, 5 )
+			$mol_assert_equal( pane.sub().length, 6 )
 			$mol_assert_equal( pane.sub()[3], pane.Values() )
-			$mol_assert_equal( pane.sub()[4], pane.Marks() )
+			$mol_assert_equal( pane.sub()[4], pane.Names() )
+			$mol_assert_equal( pane.sub()[5], pane.Marks() )
 
 			$mol_assert_equal( pane.watchdog(), null )
 			$mol_assert_equal( pane.heartbeat(), null )
@@ -1832,6 +1833,143 @@ namespace $ {
 
 			$mol_assert_like( stage.pane.label_lines( 'Page' ), [] )
 			$mol_assert_like( drawn, [ 'result: 42op: plus' ] )
+
+		},
+
+		'no dot of a board offers the machinery of a view, at rest or as a target of a drag'( $ ) {
+			const ports = [
+				{ name: 'dom_name', next: false, own: true, kind: 'string' as const },
+				{ name: 'sub', next: false, own: true, kind: 'list' as const },
+				{ name: 'title', next: false, own: true, kind: 'string' as const },
+			]
+
+			const { pane } = pane_make( $, {}, {
+				doc_names: ()=> [ 'Page', 'Calc' ],
+				containers: ()=> [ 'Page' ],
+				part_ports: ()=> ports,
+				wires: ()=> [],
+			} )
+
+			pane.sizes({
+				[ `${root}/Page` ]: box( 0, 0, 400, 300 ),
+				[ `${root}/Calc` ]: box( 600, 0 ),
+			})
+
+			pane.picked([ 'Page' ])
+
+			$mol_assert_like( pane.part_ports( 'Page' ).map( port => port.name ), [ 'dom_name', 'sub', 'title' ] )
+			$mol_assert_like( pane.part_dots( 'Page' ).map( port => port.name ), [ 'title' ] )
+
+			$mol_assert_like(
+				[ ... new Set( pane.wire_dots().filter( dot => dot.node === 'Page' ).map( dot => dot.port.name ) ) ],
+				[ 'title' ],
+			)
+
+			pane.wire_drag({ from: 'Calc', from_prop: 'result', kind: 'string' })
+			pane.wire_point([ 0, 0 ])
+
+			$mol_assert_like(
+				pane.wire_dots().filter( dot => dot.node === 'Page' ).map( dot => dot.port.name ),
+				[ 'title' ],
+			)
+
+		},
+
+		'a board wears its own name above the frame and no value label under it'( $ ) {
+			const ports = [
+				{ name: 'dom_name', next: false, own: true, kind: 'string' as const },
+				{ name: 'sub', next: false, own: true, kind: 'list' as const },
+				{ name: 'title', next: false, own: true, kind: 'string' as const },
+			]
+
+			const { pane } = pane_make( $, {}, {
+				doc_names: ()=> [ 'Page', 'Send' ],
+				containers: ()=> [ 'Page' ],
+				part_ports: ()=> ports,
+				wires: ()=> [],
+			} )
+
+			pane.sizes({
+				[ `${root}/Page` ]: box( 40, 60, 400, 300 ),
+				[ `${root}/Send` ]: box( 600, 0 ),
+			})
+
+			pane.warmed( true )
+			pane.values({ 'Page.title': 'Loan', 'Send.title': 'Отправить' })
+			pane.dom_tree()
+
+			$mol_assert_like( pane.ports_visible(), [ 'Send.title' ] )
+			$mol_assert_like( pane.label_lines( 'Page' ), [] )
+			$mol_assert_like( pane.label_lines( 'Send' ), [ 'title: Отправить' ] )
+
+			$mol_assert_equal( pane.value_labels().length, 1 )
+			$mol_assert_equal( pane.value_labels()[ 0 ], pane.Label( 'Send' ) )
+
+			const frame = pane.part_box( 'Page' )!
+
+			$mol_assert_like( pane.name_style( 'Page' ), { left: frame.left + 'px', top: frame.top + 'px' } )
+			$mol_assert_equal( pane.name_views().length, 1 )
+			$mol_assert_equal( pane.name_views()[ 0 ], pane.Name( 'Page' ) )
+			$mol_assert_like( pane.Name( 'Page' ).sub(), [ 'Page' ] )
+
+			const layer = pane.dom_node().querySelector( '[bog_vmap_app_pane_names]' )
+			const drawn = [ ... layer?.querySelectorAll( '[bog_vmap_app_pane_name]' ) ?? [] ]
+				.map( name => name.textContent )
+
+			$mol_assert_like( drawn, [ 'Page' ] )
+
+		},
+
+		'a click on the name picks the board, a double click renames it in place'( $ ) {
+			let title = 'Page'
+
+			const { pane } = pane_make( $, {}, {
+				doc_names: ()=> [ 'Page' ],
+				containers: ()=> [ 'Page' ],
+				part_ports: ()=> [],
+				wires: ()=> [],
+				node_title: ( next?: string )=> {
+					if( next === undefined ) return title
+					if( /^[0-9]/.test( next ) ) return title
+					return title = next
+				},
+			} )
+
+			pane.sizes({ [ `${root}/Page` ]: box( 0, 0, 400, 300 ) })
+
+			const dom = $.$mol_dom_context
+			const mouse = ( kind: string )=> new dom.MouseEvent( kind, { bubbles: true, cancelable: true } )
+
+			pane.name_press( 'Page', mouse( 'click' ) )
+
+			$mol_assert_like( [ ... pane.picked() ], [ 'Page' ] )
+			$mol_assert_equal( pane.name_editing( 'Page' ), false )
+
+			pane.name_edit( 'Page', mouse( 'dblclick' ) )
+
+			$mol_assert_equal( pane.name_editing( 'Page' ), true )
+			$mol_assert_equal( pane.name_views()[ 0 ], pane.Name_field( 'Page' ) )
+			$mol_assert_like( pane.Name_field( 'Page' ).selection(), [ 0, 4 ] )
+
+			pane.name_draft( 'Page', 'Other' )
+			pane.name_key( 'Page', { key: 'Escape', stopPropagation() {} } as KeyboardEvent )
+
+			$mol_assert_equal( pane.name_editing( 'Page' ), false )
+			$mol_assert_equal( pane.name_draft( 'Page' ), 'Page' )
+			$mol_assert_equal( title, 'Page' )
+
+			pane.name_edit( 'Page', mouse( 'dblclick' ) )
+			pane.name_draft( 'Page', '9bad' )
+			pane.name_submit( 'Page', mouse( 'blur' ) )
+
+			$mol_assert_equal( title, 'Page' )
+			$mol_assert_equal( pane.name_editing( 'Page' ), true )
+
+			pane.name_draft( 'Page', 'Loan' )
+			pane.name_submit( 'Page', mouse( 'blur' ) )
+
+			$mol_assert_equal( title, 'Loan' )
+			$mol_assert_equal( pane.name_editing( 'Page' ), false )
 
 		},
 

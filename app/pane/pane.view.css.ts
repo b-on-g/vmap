@@ -69,6 +69,46 @@ namespace $.$$ {
 			pointerEvents: 'none',
 		},
 
+		Names: {
+			position: 'absolute',
+			top: 0,
+			left: 0,
+			width: '100%',
+			height: '100%',
+			pointerEvents: 'none',
+		},
+
+		Name: {
+			position: 'absolute',
+			transform: 'translateY(-100%)',
+			transition: 'none',
+			maxWidth: '20rem',
+			padding: { bottom: '.125rem', right: '.5rem' },
+			color: $mol_theme.shade,
+			font: { size: '.75rem' },
+			whiteSpace: 'nowrap',
+			overflow: 'hidden',
+			textOverflow: 'ellipsis',
+			cursor: 'default',
+			pointerEvents: 'auto',
+
+			'@': {
+				bog_vmap_app_pane_name_picked: {
+					true: { color: $mol_theme.focus },
+				},
+			},
+
+		},
+
+		Name_field: {
+			position: 'absolute',
+			transform: 'translateY(-100%)',
+			transition: 'none',
+			width: '10rem',
+			font: { size: '.75rem' },
+			pointerEvents: 'auto',
+		},
+
 		Marks: {
 			position: 'absolute',
 			top: 0,

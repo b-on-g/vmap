@@ -37,6 +37,7 @@ $bog_vmap_app_pane $mol_view
 	link_drop? null
 	containers /string
 	doc_names /string
+	node_title? \
 	axis* \
 	tree_move? null
 	carry_at? null
@@ -96,11 +97,33 @@ $bog_vmap_app_pane $mol_view
 			drag_geometry <= wire_drag_geometry \
 		<= Values $mol_view
 			sub <= value_labels /$mol_view
+		<= Names $mol_view
+			sub <= name_views /$mol_view
 		<= Marks $mol_view
 			sub <= error_marks /$mol_view
 	Label* $bog_vmap_app_pane_label
 		style <= label_style* *
 		lines <= label_lines* /string
+	Name* $mol_view
+		style <= name_style* *
+		attr *
+			^
+			bog_vmap_app_pane_name_picked <= name_picked* false
+		event *
+			^
+			click? <=> name_press*? null
+			dblclick? <=> name_edit*? null
+		sub /
+			<= name_title* \
+	Name_field* $mol_string
+		style <= name_style* *
+		hint \имя узла
+		value? <=> name_draft*? \
+		submit? <=> name_submit*? null
+		event *
+			^
+			blur? <=> name_submit*? null
+			keydown? <=> name_key*? null
 	Mark* $mol_view
 		style <= mark_style* *
 		attr *
