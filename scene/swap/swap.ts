@@ -11,6 +11,7 @@ namespace $ {
 		stale: number
 		dropped: number
 		failed: number
+		repainted: number
 	}
 
 	type Atom = $mol_wire_atom< unknown, readonly unknown[], unknown >
@@ -30,9 +31,10 @@ namespace $ {
 		root: object,
 		klass_of: ( name: string )=> unknown,
 		shape_of: ( name: string )=> $bog_vmap_scene_swap_shape | null,
+		body_fresh: ( name: string )=> boolean = ()=> false,
 	): $bog_vmap_scene_swap_report {
 
-		const report = { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0 }
+		const report = { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0, repainted: 0 }
 
 		const seen = new Set< object >()
 		const queue = [ root ]
@@ -45,6 +47,7 @@ namespace $ {
 
 			const name = ( inst.constructor as { name?: string } )?.name ?? ''
 			const shape = name ? shape_of( name ) : null
+			const painted = Boolean( name ) && body_fresh( name )
 
 			if( shape ) {
 
@@ -75,6 +78,16 @@ namespace $ {
 					Reflect.set( atom, 'cursor', $mol_wire_cursor.stale )
 					atom.emit()
 					report.failed += 1
+
+				}
+
+				if( painted && prop === 'render' ) {
+
+					for( const atom of atoms ) {
+						Reflect.set( atom, 'cursor', $mol_wire_cursor.stale )
+						atom.emit()
+						report.repainted += 1
+					}
 
 				}
 

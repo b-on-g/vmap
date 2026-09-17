@@ -17,11 +17,12 @@ namespace $.$$ {
 		readonly pack: string
 		readonly root: string
 		readonly supers: { readonly [ klass: string ]: string }
+		readonly bodies: { readonly [ klass: string ]: string }
 		readonly error: string
 		readonly klass: string
 	}
 
-	const unmounted: mounted = { made: null, pack: '', root: '', supers: {}, error: '', klass: '' }
+	const unmounted: mounted = { made: null, pack: '', root: '', supers: {}, bodies: {}, error: '', klass: '' }
 
 	export class $bog_vmap_scene extends $.$bog_vmap_scene {
 
@@ -291,6 +292,23 @@ namespace $.$$ {
 		}
 
 		@ $mol_mem
+		bodies(): { readonly [ klass: string ]: string } {
+			return { ... this.libs_parsed().js, ... this.doc_js() }
+		}
+
+		bodies_fresh( was: { readonly [ klass: string ]: string } ) {
+
+			const now = this.bodies()
+			const fresh = new Set< string >()
+
+			for( const klass of Object.keys( now ) ) {
+				if( was[ klass ] !== now[ klass ] ) fresh.add( klass )
+			}
+
+			return fresh
+		}
+
+		@ $mol_mem
 		code_parts() {
 
 			const root = this.doc_root()
@@ -304,7 +322,7 @@ namespace $.$$ {
 				new Error( `Class ${ root } is not declared by the document` )
 			)
 
-			const bodies = { ... this.libs_parsed().js, ... this.doc_js() }
+			const bodies = this.bodies()
 			const parts = [] as { readonly klass: string, readonly js: string }[]
 
 			for( const def of tree.kids ) {
@@ -429,22 +447,27 @@ namespace $.$$ {
 				const Root = this.build().Root
 				const supers = this.supers()
 
+				const bodies = this.bodies()
+
 				if( this.identity_kept( prev, pack, root, supers ) ) {
+
+					const fresh = this.bodies_fresh( prev.bodies )
 
 					this.$.$bog_vmap_scene_swap(
 						prev.made!,
 						name => Reflect.get( this.sandbox(), name ),
 						name => this.shapes()[ name ] ?? null,
+						name => fresh.has( name ),
 					)
 
-					return { ... prev, supers: { ... prev.supers, ... supers }, error: '', klass: '' }
+					return { ... prev, supers: { ... prev.supers, ... supers }, bodies, error: '', klass: '' }
 				}
 
 				const made = Root.make({ $: this.sandbox() })
 
 				this.cull_attach( made )
 
-				return { made, pack, root, supers, error: '', klass: '' }
+				return { made, pack, root, supers, bodies, error: '', klass: '' }
 
 			} catch( error: unknown ) {
 

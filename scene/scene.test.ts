@@ -689,6 +689,91 @@ namespace $ {
 
 		},
 
+		async 'a node drawn before the body of its class paints itself when the body lands'( $ ) {
+
+			const { made } = scene( $ )
+			const root = `${d}hot_late_page`
+			const kid = `${d}hot_late_kid`
+
+			const first = await grown(
+				made, root,
+				`${root} ${d}mol_view\n\tsub /\n\t\t<= Knopka ${kid}\n`
+				+ `${kid} ${d}mol_view\n\tpayment null\n\tsub /\n\t\t<= payment\n`,
+			)
+
+			first.dom_tree()
+
+			const node = first.Knopka().dom_node() as Element
+			$mol_assert_equal( node.textContent, '' )
+
+			made.doc_js({ [ kid ]: 'payment() { return "Платёж 92 599" }' })
+			$mol_assert_equal( await settled( ()=> made.instance() ), first )
+
+			first.dom_tree()
+
+			$mol_assert_equal( node.textContent, 'Платёж 92 599' )
+
+		},
+
+		async 'a body that lands repaints the nodes of its own class only'( $ ) {
+
+			const { made } = scene( $ )
+			const root = `${d}hot_aim_page`
+			const kid = `${d}hot_aim_kid`
+			const tail = `${d}hot_aim_tail`
+
+			const first = await grown(
+				made, root,
+				`${root} ${d}mol_view\n\tsub /\n\t\t<= Knopka ${kid}\n\t\t<= Tail ${tail}\n`
+				+ `${kid} ${d}mol_view\n\tpayment null\n\tsub /\n\t\t<= payment\n`
+				+ `${tail} ${d}mol_view\n\tsub /\n\t\t\\хвост\n`,
+			)
+
+			first.dom_tree()
+
+			const node = first.Knopka().dom_node() as Element
+			const aside = first.Tail().dom_node() as Element
+
+			$mol_assert_equal( aside.textContent, 'хвост' )
+
+			aside.textContent = 'тронут рукой'
+
+			made.doc_js({ [ kid ]: 'payment() { return "Платёж 92 599" }' })
+			$mol_assert_equal( await settled( ()=> made.instance() ), first )
+
+			first.dom_tree()
+
+			$mol_assert_equal( node.textContent, 'Платёж 92 599' )
+			$mol_assert_equal( aside.textContent, 'тронут рукой' )
+
+		},
+
+		async 'a pass over bodies that did not change marks nothing'( $ ) {
+
+			const { made } = scene( $ )
+			const root = `${d}hot_idle_page`
+			const kid = `${d}hot_idle_kid`
+
+			made.doc_js({ [ kid ]: 'payment() { return "Платёж 92 599" }' })
+
+			const first = await grown(
+				made, root,
+				`${root} ${d}mol_view\n\tsub /\n\t\t<= Knopka ${kid}\n`
+				+ `${kid} ${d}mol_view\n\tpayment null\n\tsub /\n\t\t<= payment\n`,
+			)
+
+			first.dom_tree()
+
+			const report = $.$bog_vmap_scene_swap(
+				first,
+				name => Reflect.get( made.sandbox(), name ),
+				name => made.shapes()[ name ] ?? null,
+			)
+
+			$mol_assert_like( report, { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0, repainted: 0 } )
+
+		},
+
 		async 'a method that appears heals the node that failed for want of it'( $ ) {
 
 			const { made } = scene( $ )
