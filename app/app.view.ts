@@ -228,16 +228,53 @@ namespace $.$$ {
 			}
 		}
 
+		@ $mol_mem_key
+		override inner_alien( key: string ) {
+			try {
+				return this.Lib().inner_alien( key )
+			} catch( error ) {
+				if( !$mol_promise_like( error ) ) $mol_fail_log( error )
+				return false
+			}
+		}
+
+		inner_route() {
+			const chain = this.inner().split( '/' )
+			return [ this.node_class( chain[ 0 ] ), ... chain.slice( 1 ) ].join( '/' )
+		}
+
+		inner_foreign() {
+			return Boolean( this.inner() ) && this.inner_alien( this.inner_route() )
+		}
+
+		inner_step() {
+			return this.Lib().inner_step( this.inner_route() )
+		}
+
 		inner_decl() {
 
-			const klass = this.node_class( this.inner_node() )
-			const decl = klass ? this.Lib().props_map( klass ).get( this.inner_prop() ) ?? null : null
+			const step = this.inner_step()
+			const decl = step ? this.Lib().props_map( step.declared ).get( step.prop ) ?? null : null
 
 			if( !decl ) return this.$.$mol_fail(
 				new Error( `Внутренний слой ${ this.inner() } не найден в классе детали` )
 			)
 
 			return decl
+		}
+
+		node_editable() {
+			return this.editable() && !this.inner_foreign()
+		}
+
+		inner_foreign_note() {
+
+			const step = this.inner_step()
+			if( !step ) return ''
+
+			return `Слой ${ step.prop } пришёл из вложенного компонента ${ step.declared }.`
+				+ ` Отсюда он только виден: правится он у своего класса, а деталь его не объявляет,`
+				+ ` поэтому переопределить его из документа нельзя.`
 		}
 
 		inner_name() {
@@ -254,6 +291,11 @@ namespace $.$$ {
 		}
 
 		inner_source( next?: string ): string {
+
+			if( this.inner_foreign() ) {
+				if( next !== undefined ) return this.$.$mol_fail( new Error( this.inner_foreign_note() ) )
+				return this.inner_decl().toString()
+			}
 
 			const node = this.node()
 			const held = node.inner_ref( this.inner_node(), this.inner_prop() )
@@ -486,6 +528,7 @@ namespace $.$$ {
 		}
 
 		code_prop() {
+			if( this.inner_foreign() ) return this.inner_prop()
 			if( this.inner() ) return this.inner_name()
 			return this.selected() ?? ''
 		}
@@ -494,6 +537,8 @@ namespace $.$$ {
 
 			const inner = this.inner()
 			if( !inner ) return ''
+
+			if( this.inner_foreign() ) return this.inner_foreign_note()
 
 			if( this.node().inner_ref( this.inner_node(), this.inner_prop() ) ) return ''
 
@@ -789,6 +834,11 @@ namespace $.$$ {
 		}
 
 		override node_cell( sign: string, next?: $mol_tree2 | null ): $mol_tree2 | null {
+
+			if( this.inner_foreign() ) {
+				if( next === undefined ) return null
+				return this.$.$mol_fail( new Error( this.inner_foreign_note() ) )
+			}
 
 			if( this.inner() ) {
 				const node = this.node()
@@ -1336,6 +1386,7 @@ namespace $.$$ {
 		}
 
 		node_title( next?: string ) {
+			if( this.inner_foreign() ) return this.inner_prop()
 			if( this.inner() ) return this.inner_name()
 
 			const name = this.selected()
@@ -1379,6 +1430,9 @@ namespace $.$$ {
 		}
 
 		node_title_note() {
+
+			if( this.inner_foreign() ) return this.inner_foreign_note()
+
 			const name = this.selected() ?? ''
 			const note = this.node_title_note_at( name )
 

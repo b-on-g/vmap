@@ -6,6 +6,14 @@ namespace $.$$ {
 		readonly kids: readonly string[] | null
 	}
 
+	type inner = {
+		readonly owner: string | null
+		readonly level: number
+		readonly kids: readonly string[]
+		readonly klass: string
+		readonly alien: boolean
+	}
+
 	type flags = { readonly [ name: string ]: boolean }
 
 	const kinds: { readonly [ word: string ]: string } = {
@@ -65,7 +73,7 @@ namespace $.$$ {
 			return found
 		}
 
-		override row_inner( name: string ) {
+		row_inner( name: string ) {
 			return name.includes( '/' )
 		}
 
@@ -77,41 +85,60 @@ namespace $.$$ {
 			return name.slice( name.lastIndexOf( '/' ) + 1 )
 		}
 
-		inner_key( name: string ) {
-			return `${ this.row_class( this.inner_owner( name ) ) }/${ this.inner_prop( name ) }`
+		inner_deep_max() {
+			return 8
 		}
 
 		@ $mol_mem_key
 		inner_layers( part: string ) {
 
-			const found = new Map< string, layer >()
-			const klass = this.row_class( part )
-			if( !klass ) return found
+			const found = new Map< string, inner >()
+			const root = this.row_class( part )
+			if( !root ) return found
 
 			const level = this.row_level( part )
-			const taken = new Set< string >()
 
-			const walk = ( key: string, owner: string | null, deep: number, at: string ): readonly string[] => {
+			const walk = (
+				at: string,
+				key: string,
+				owner: string | null,
+				deep: number,
+				seen: ReadonlySet< string >,
+			): readonly string[] => {
+
+				if( deep > level + this.inner_deep_max() ) return []
 
 				const born = [] as string[]
 
 				for( const kid of this.inner_kids( key ) ) {
-					if( taken.has( kid ) ) continue
-					taken.add( kid )
+
+					const route = `${ key }/${ kid }`
+					if( seen.has( route ) ) continue
+
 					const path = `${ at }/${ kid }`
-					found.set( path, { owner, level: deep, kids: [] } )
+					if( found.has( path ) ) continue
+
+					found.set( path, {
+						owner,
+						level: deep,
+						kids: [],
+						klass: this.inner_class( route ),
+						alien: this.inner_alien( route ),
+					} )
+
 					born.push( path )
 				}
 
 				for( const path of born ) {
-					const kids = walk( `${ klass }/${ this.inner_prop( path ) }`, path, deep + 1, path )
-					found.set( path, { owner, level: deep, kids } )
+					const route = `${ key }/${ this.inner_prop( path ) }`
+					const kids = walk( path, route, path, deep + 1, new Set([ ... seen, route ]) )
+					found.set( path, { ... found.get( path )!, kids } )
 				}
 
 				return born
 			}
 
-			walk( klass, null, level + 1, part )
+			walk( part, root, null, level + 1, new Set() )
 
 			return found
 		}
@@ -224,10 +251,22 @@ namespace $.$$ {
 
 		row_class( name: string ): string {
 
-			if( this.row_inner( name ) ) return this.inner_class( this.inner_key( name ) )
+			if( this.row_inner( name ) ) {
+				return this.inner_layers( this.inner_owner( name ) ).get( name )?.klass ?? ''
+			}
 
 			const value = name ? this.node().prop_decl( name )?.kids[ 0 ] : null
 			return value && $mol_view_tree2_class_match( value ) ? value.type : ''
+		}
+
+		row_alien( name: string ) {
+			if( !this.row_inner( name ) ) return false
+			return this.inner_layers( this.inner_owner( name ) ).get( name )?.alien ?? false
+		}
+
+		override row_shade( name: string ) {
+			if( !this.row_inner( name ) ) return ''
+			return this.row_alien( name ) ? 'alien' : 'inner'
 		}
 
 		override row_hint( name: string ) {

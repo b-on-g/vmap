@@ -169,6 +169,75 @@ namespace $ {
 		return value && $mol_view_tree2_class_match( value ) ? value.type : ''
 	}
 
+	export type $bog_vmap_lib_inner_step = {
+
+		/** Class whose declaration brought this layer in. */
+		readonly declared: string
+
+		/** Property that names this layer inside `declared`. */
+		readonly prop: string
+
+		/** Class of the layer itself. */
+		readonly klass: string
+
+		/** True once the route left the class the route started from. */
+		readonly alien: boolean
+
+	}
+
+	export function $bog_vmap_lib_inner_step(
+		this: $,
+		props_of: ( klass: string )=> Map< string, $mol_tree2 >,
+		step: $bog_vmap_lib_inner_step,
+		kid: string,
+	): $bog_vmap_lib_inner_step | null {
+
+		const here = $bog_vmap_lib_inner_kids.call( this, props_of( step.declared ), step.prop )
+
+		if( here.includes( kid ) ) return {
+			declared: step.declared,
+			prop: kid,
+			klass: $bog_vmap_lib_inner_class( props_of( step.declared ), kid ),
+			alien: step.alien,
+		}
+
+		if( !step.klass || step.klass === step.declared ) return null
+
+		const inside = $bog_vmap_lib_inner_kids.call( this, props_of( step.klass ), 'sub' )
+
+		if( inside.includes( kid ) ) return {
+			declared: step.klass,
+			prop: kid,
+			klass: $bog_vmap_lib_inner_class( props_of( step.klass ), kid ),
+			alien: true,
+		}
+
+		return null
+	}
+
+	export function $bog_vmap_lib_inner_route(
+		this: $,
+		props_of: ( klass: string )=> Map< string, $mol_tree2 >,
+		route: readonly string[],
+	) {
+
+		const root = route[ 0 ] ?? ''
+
+		let step = {
+			declared: root,
+			prop: 'sub',
+			klass: root,
+			alien: false,
+		} as $bog_vmap_lib_inner_step | null
+
+		for( const kid of route.slice( 1 ) ) {
+			if( !step ) return null
+			step = $bog_vmap_lib_inner_step.call( this, props_of, step, kid )
+		}
+
+		return step
+	}
+
 	export class $bog_vmap_lib_any extends $mol_object {
 
 		@ $mol_mem
@@ -227,23 +296,38 @@ namespace $ {
 		}
 
 		@ $mol_mem_key
-		inner_kids( key: string ) {
-			const cut = key.indexOf( '/' )
-			const klass = cut < 0 ? key : key.slice( 0, cut )
-			return this.$.$bog_vmap_lib_inner_kids(
-				this.props_map( klass ),
-				cut < 0 ? 'sub' : key.slice( cut + 1 ),
+		inner_step( key: string ) {
+			return this.$.$bog_vmap_lib_inner_route(
+				( klass: string )=> this.props_map( klass ),
+				key.split( '/' ),
 			)
 		}
 
 		@ $mol_mem_key
+		inner_kids( key: string ): readonly string[] {
+
+			const step = this.inner_step( key )
+			if( !step ) return []
+
+			const props = ( klass: string )=> this.props_map( klass )
+
+			const here = this.$.$bog_vmap_lib_inner_kids( props( step.declared ), step.prop )
+
+			if( !step.klass || step.klass === step.declared ) return here
+
+			const inside = this.$.$bog_vmap_lib_inner_kids( props( step.klass ), 'sub' )
+
+			return [ ... here, ... inside.filter( name => !here.includes( name ) ) ]
+		}
+
+		@ $mol_mem_key
 		inner_class( key: string ) {
-			const cut = key.indexOf( '/' )
-			if( cut < 0 ) return ''
-			return this.$.$bog_vmap_lib_inner_class(
-				this.props_map( key.slice( 0, cut ) ),
-				key.slice( cut + 1 ),
-			)
+			return this.inner_step( key )?.klass ?? ''
+		}
+
+		@ $mol_mem_key
+		inner_alien( key: string ) {
+			return this.inner_step( key )?.alien ?? false
 		}
 
 	}

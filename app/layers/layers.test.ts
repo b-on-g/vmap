@@ -239,13 +239,18 @@ namespace $ {
 
 	const inner_kids: { readonly [ key: string ]: readonly string[] } = {
 		[ `${d}bog_vmap_part_plot` ]: [ 'Title', 'Chart' ],
-		[ `${d}bog_vmap_part_plot/Chart` ]: [ 'Line' ],
+		[ `${d}bog_vmap_part_plot/Chart` ]: [ 'Line', 'Legend' ],
 	}
 
 	const inner_classes: { readonly [ key: string ]: string } = {
 		[ `${d}bog_vmap_part_plot/Title` ]: `${d}mol_paragraph`,
 		[ `${d}bog_vmap_part_plot/Chart` ]: `${d}mol_chart`,
-		[ `${d}bog_vmap_part_plot/Line` ]: `${d}mol_plot_line`,
+		[ `${d}bog_vmap_part_plot/Chart/Line` ]: `${d}mol_plot_line`,
+		[ `${d}bog_vmap_part_plot/Chart/Legend` ]: `${d}mol_chart_legend`,
+	}
+
+	const inner_aliens: { readonly [ key: string ]: boolean } = {
+		[ `${d}bog_vmap_part_plot/Chart/Legend` ]: true,
 	}
 
 	function inner_stage( $: $, key: string, source = inner_doc ) {
@@ -265,6 +270,7 @@ namespace $ {
 			inner: ( next?: string )=> next === undefined ? inner : ( inner = next ),
 			inner_kids: ( key: string )=> inner_kids[ key ] ?? [],
 			inner_class: ( key: string )=> inner_classes[ key ] ?? '',
+			inner_alien: ( key: string )=> inner_aliens[ key ] ?? false,
 			node_show: ( next?: string | null )=> {
 				if( next !== undefined ) shown.push( next )
 				return null
@@ -1033,11 +1039,13 @@ namespace $ {
 			layers.row_expanded( 'Debt/Chart', true )
 
 			$mol_assert_like( layers.row_kids( 'Debt' ), [ 'Debt/Title', 'Debt/Chart' ] )
-			$mol_assert_like( layers.row_kids( 'Debt/Chart' ), [ 'Debt/Chart/Line' ] )
+			$mol_assert_like( layers.row_kids( 'Debt/Chart' ), [ 'Debt/Chart/Line', 'Debt/Chart/Legend' ] )
 			$mol_assert_like( layers.row_kids( 'Debt/Title' ), [] )
 
 			$mol_assert_like(
-				outline([ '', 'Page', 'Debt', 'Debt/Title', 'Debt/Chart', 'Debt/Chart/Line' ]),
+				outline([
+					'', 'Page', 'Debt', 'Debt/Title', 'Debt/Chart', 'Debt/Chart/Line', 'Debt/Chart/Legend',
+				]),
 				[
 					`${d}layers_inner root`,
 					'  Page frame',
@@ -1045,6 +1053,7 @@ namespace $ {
 					'      Title text',
 					'      Chart frame',
 					'        Line part',
+					'        Legend part',
 				],
 			)
 
@@ -1054,17 +1063,44 @@ namespace $ {
 
 		},
 
-		'inner rows are dimmed and the rows of the document are not'( $ ) {
+		'a row of the document, a layer of the part and a layer of a nested class are shaded apart'( $ ) {
 
 			const { layers } = inner_stage( $, 'inner_dim' )
 
 			layers.row_expanded( 'Debt', true )
+			layers.row_expanded( 'Debt/Chart', true )
 
 			const dim = ( name: string )=> layers.Line( name ).dom_node_actual()
-				.getAttribute( 'bog_vmap_app_layers_line_inner' )
+				.getAttribute( 'bog_vmap_app_layers_line_shade' )
 
-			$mol_assert_equal( dim( 'Debt/Title' ), 'true' )
-			$mol_assert_equal( dim( 'Debt' ), null )
+			$mol_assert_equal( dim( 'Debt' ), '' )
+			$mol_assert_equal( dim( 'Debt/Title' ), 'inner' )
+			$mol_assert_equal( dim( 'Debt/Chart/Legend' ), 'alien' )
+
+			$mol_assert_equal( layers.row_alien( 'Debt/Chart/Line' ), false )
+			$mol_assert_equal( layers.row_alien( 'Debt/Chart/Legend' ), true )
+			$mol_assert_equal( layers.row_alien( 'Debt' ), false )
+
+		},
+
+		'a layer of a nested class is picked like any other and is dragged like none'( $ ) {
+
+			const { layers, picked, inner, click, shown } = inner_stage( $, 'inner_alien' )
+
+			layers.row_expanded( 'Debt', true )
+			layers.row_expanded( 'Debt/Chart', true )
+
+			layers.row_pick( 'Debt/Chart/Legend', click() )
+
+			$mol_assert_like( picked(), [ 'Debt' ] )
+			$mol_assert_equal( inner(), 'Debt/Chart/Legend' )
+			$mol_assert_like( shown(), [ 'Debt/Chart/Legend' ] )
+
+			$mol_assert_equal( layers.row_draggable( 'Debt/Chart/Legend' ), false )
+			$mol_assert_equal( layers.zone_at( 'Debt/Chart/Legend', .9 ), '' )
+
+			layers.row_edit( 'Debt/Chart/Legend', click( 'dblclick' ) )
+			$mol_assert_equal( layers.editing(), null )
 
 		},
 

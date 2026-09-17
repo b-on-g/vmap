@@ -22,11 +22,14 @@ namespace $ {
 	const inner_src = [
 		`${d}bog_vmap_lib_test_graph ${d}mol_view`,
 		`	series /number`,
+		`${d}bog_vmap_lib_test_legend ${d}mol_view`,
+		`	sub /`,
+		`		<= Mark ${d}mol_view`,
+		`			title \\`,
 		`${d}bog_vmap_lib_test_chart ${d}mol_view`,
 		`	graphs /${d}bog_vmap_lib_test_graph`,
 		`	sub /`,
-		`		<= Legend ${d}mol_view`,
-		`			title \\`,
+		`		<= Legend ${d}bog_vmap_lib_test_legend`,
 		`${d}bog_vmap_lib_test_plot ${d}mol_view`,
 		`	values /number`,
 		`	title \\`,
@@ -409,23 +412,47 @@ namespace $ {
 			})
 
 			$mol_assert_like( lib.inner_kids( `${d}bog_vmap_lib_test_plot` ), [ 'Title', 'Chart' ] )
-			$mol_assert_like( lib.inner_kids( `${d}bog_vmap_lib_test_plot/Chart` ), [ 'Line' ] )
+			$mol_assert_like( lib.inner_kids( `${d}bog_vmap_lib_test_plot/Chart` ), [ 'Line', 'Legend' ] )
 			$mol_assert_like( lib.inner_kids( `${d}bog_vmap_lib_test_plot/Title` ), [] )
 
-			$mol_assert_equal( lib.inner_class( `${d}bog_vmap_lib_test_plot/Line` ), `${d}bog_vmap_lib_test_graph` )
+			$mol_assert_equal( lib.inner_class( `${d}bog_vmap_lib_test_plot/Chart/Line` ), `${d}bog_vmap_lib_test_graph` )
 			$mol_assert_equal( lib.inner_class( `${d}bog_vmap_lib_test_plot/title` ), '' )
 
 		},
 
-		'a view of a nested class is no inner layer of the outer one'( $ ) {
+		'a view of a nested class stands under its owner and is marked as taken from it'( $ ) {
 
 			const lib = $.$bog_vmap_lib_any.make({
 				$,
 				tree: ()=> $.$bog_vmap_lib_parse( inner_src ),
 			})
 
-			$mol_assert_like( lib.inner_kids( `${d}bog_vmap_lib_test_chart` ), [ 'Legend' ] )
-			$mol_assert_equal( lib.inner_kids( `${d}bog_vmap_lib_test_plot` ).includes( 'Legend' ), false )
+			const chart = `${d}bog_vmap_lib_test_plot/Chart`
+
+			$mol_assert_equal( lib.inner_alien( `${d}bog_vmap_lib_test_plot/Title` ), false )
+			$mol_assert_equal( lib.inner_alien( `${ chart }/Line` ), false )
+			$mol_assert_equal( lib.inner_alien( `${ chart }/Legend` ), true )
+
+			$mol_assert_equal( lib.inner_step( `${ chart }/Legend` )?.declared, `${d}bog_vmap_lib_test_chart` )
+			$mol_assert_equal( lib.inner_step( `${ chart }/Line` )?.declared, `${d}bog_vmap_lib_test_plot` )
+
+			$mol_assert_equal( lib.inner_class( `${ chart }/Legend` ), `${d}bog_vmap_lib_test_legend` )
+
+		},
+
+		'a route that leaves the class it started from stays foreign all the way down'( $ ) {
+
+			const lib = $.$bog_vmap_lib_any.make({
+				$,
+				tree: ()=> $.$bog_vmap_lib_parse( inner_src ),
+			})
+
+			const deep = `${d}bog_vmap_lib_test_plot/Chart/Legend/Mark`
+
+			$mol_assert_like( lib.inner_kids( `${d}bog_vmap_lib_test_plot/Chart/Legend` ), [ 'Mark' ] )
+			$mol_assert_equal( lib.inner_alien( deep ), true )
+			$mol_assert_equal( lib.inner_step( deep )?.declared, `${d}bog_vmap_lib_test_legend` )
+			$mol_assert_equal( lib.inner_step( `${d}bog_vmap_lib_test_plot/Nobody` ), null )
 
 		},
 

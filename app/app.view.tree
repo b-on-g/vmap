@@ -191,6 +191,7 @@ $bog_vmap_app $mol_page
 		inner? <=> inner?
 		inner_kids* <= inner_kids* /string
 		inner_class* <= inner_class* \
+		inner_alien* <= inner_alien* false
 		node_title? <=> node_title?
 		node_title_note <= node_title_note
 		tree_move? <=> tree_move?
@@ -212,7 +213,7 @@ $bog_vmap_app $mol_page
 		title_note <= node_title_note \
 		renamable <= node_renamable true
 		cell*? <=> node_cell*? null
-		editable <= editable
+		editable <= node_editable true
 	Idle $mol_page
 		title \Свойства
 		body /
@@ -229,7 +230,7 @@ $bog_vmap_app $mol_page
 		css? <=> code_css?
 		error <= code_error \
 		node_note <= code_node_note \
-		editable <= editable
+		editable <= node_editable
 	Readonly $mol_chip
 		title \Только просмотр
 		hint \Чужая сцена: смотреть, выделять и читать свойства и код можно, правки выключены. «В библиотеку» делает копию детали в вашу библиотеку

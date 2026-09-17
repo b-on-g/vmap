@@ -187,7 +187,10 @@ namespace $ {
 		app.doc_source( [
 			`${d}flow_inner ${d}mol_view`,
 			`	Cell ${d}bog_vmap_part_cell`,
-			`	sub / <= Cell`,
+			`	Calc ${d}bog_vmap_part_calc`,
+			`	sub /`,
+			`		<= Cell`,
+			`		<= Calc`,
 			``,
 		].join( '\n' ) )
 
@@ -846,6 +849,20 @@ namespace $ {
 			code.Sources().current( '0' )
 			$mol_assert_equal( code.note().includes( 'оживёт вместе со слоем' ), false )
 			$mol_assert_ok( code.note().includes( 'в документе его ещё нет' ) )
+
+		},
+
+		'a layer of a nested class is shown in the code and taken out of editing'( $ ) {
+
+			const { app, code } = inner_editor( $ )
+
+			app.inner( 'Calc/Left/String' )
+
+			$mol_assert_equal( code.scope_note(), 'Узел String' )
+			$mol_assert_equal( code.tree_text(), `String ${d}mol_string\n` )
+			$mol_assert_equal( code.editable(), false )
+			$mol_assert_equal( code.Tree().enabled(), false )
+			$mol_assert_ok( code.note().includes( 'переопределить его из документа нельзя' ) )
 
 		},
 

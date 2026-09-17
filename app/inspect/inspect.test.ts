@@ -686,7 +686,10 @@ namespace $ {
 				[
 					`${ d }flow_inner ${ d }mol_view`,
 					`	Cell ${ d }bog_vmap_part_cell Note <= Cell_Note`,
-					`	sub / <= Cell`,
+					`	Calc ${ d }bog_vmap_part_calc`,
+					`	sub /`,
+					`		<= Cell`,
+					`		<= Calc`,
 					`	Cell_Note ${ d }mol_paragraph title \\Считать`,
 					``,
 				].join( '\n' ),
@@ -708,11 +711,41 @@ namespace $ {
 					`${ d }flow_inner ${ d }mol_view`,
 					`	cell_draft_value? \\Черновик`,
 					`	Cell ${ d }bog_vmap_part_cell Draft <= Cell_Draft`,
-					`	sub / <= Cell`,
+					`	Calc ${ d }bog_vmap_part_calc`,
+					`	sub /`,
+					`		<= Cell`,
+					`		<= Calc`,
 					`	Cell_Draft ${ d }mol_string value? <=> cell_draft_value?`,
 					``,
 				].join( '\n' ),
 			)
+
+		},
+
+		'a layer of a nested class shows its ports and says why none of them can be edited'( $ ) {
+
+			const { app, inspect } = inner_stage( $, 'Calc/Left/String' )
+
+			$mol_assert_equal( app.inner_foreign(), true )
+			$mol_assert_equal( inspect.class_title(), 'String' )
+			$mol_assert_equal( app.node_source(), `String ${ d }mol_string\n` )
+
+			$mol_assert_equal( inspect.editable(), false )
+			$mol_assert_ok( inspect.title_note().includes( `${ d }mol_number` ) )
+			$mol_assert_ok( inspect.title_note().includes( 'переопределить его из документа нельзя' ) )
+			$mol_assert_equal( inspect.tools().includes( inspect.Note() ), true )
+
+			$mol_assert_equal( app.node_cell( 'value?' ), null )
+
+		},
+
+		'a layer of the part next to it stays editable'( $ ) {
+
+			const { app, inspect } = inner_stage( $, 'Calc/Left' )
+
+			$mol_assert_equal( app.inner_foreign(), false )
+			$mol_assert_equal( inspect.editable(), true )
+			$mol_assert_equal( inspect.title_note(), '' )
 
 		},
 
@@ -766,7 +799,10 @@ namespace $ {
 		app.doc_source( [
 			`${ d }flow_inner ${ d }mol_view`,
 			`	Cell ${ d }bog_vmap_part_cell`,
-			`	sub / <= Cell`,
+			`	Calc ${ d }bog_vmap_part_calc`,
+			`	sub /`,
+			`		<= Cell`,
+			`		<= Calc`,
 			``,
 		].join( '\n' ) )
 

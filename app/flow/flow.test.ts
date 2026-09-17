@@ -6,6 +6,8 @@ namespace $ {
 		`\tvalue? \\`,
 		`${d}mol_number ${d}mol_view`,
 		`\tvalue? 0`,
+		`\tsub /`,
+		`\t\t<= String ${d}mol_string`,
 		`${d}mol_select ${d}mol_view`,
 		`\tvalue? \\`,
 		`${d}mol_switch ${d}mol_view`,
@@ -31,6 +33,9 @@ namespace $ {
 		`\tseries /`,
 		`${d}bog_vmap_part_calc ${d}mol_view`,
 		`\tresult 0`,
+		`\tsub /`,
+		`\t\t<= Left ${d}mol_number`,
+		`\t\t<= Right ${d}mol_number`,
 		`${d}bog_vmap_part_map ${d}mol_view`,
 		`\tzoom 0`,
 	]

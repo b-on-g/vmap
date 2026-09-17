@@ -21,9 +21,12 @@ namespace $.$$ {
 
 		Line: {
 			'@': {
-				bog_vmap_app_layers_line_inner: {
-					true: {
+				bog_vmap_app_layers_line_shade: {
+					inner: {
 						opacity: .6,
+					},
+					alien: {
+						opacity: .35,
 					},
 				},
 			},
