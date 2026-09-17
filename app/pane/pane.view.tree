@@ -15,6 +15,7 @@ $bog_vmap_app_pane $mol_view
 	node_delete? null
 	node_copy? null
 	node_wrap? null
+	node_clone? null
 	leave? null
 	key_down* false
 	key_up* null

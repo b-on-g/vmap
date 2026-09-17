@@ -125,6 +125,125 @@ namespace $ {
 
 		},
 
+		'a drag with Alt leaves the original where it was and drops a copy under the pointer'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			const overlay = stage.overlay()
+			const from = stage.part_center( 'Calc' )
+			const to = [ from[0] + 60, from[1] + 40 ] as const
+
+			stage.press( overlay, from, { altKey: true } )
+			stage.move( overlay, to, { altKey: true } )
+			stage.release( overlay, to, { altKey: true } )
+			stage.redraw()
+
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 104, y: 74 }, Calc_2: { x: 164, y: 114 } } )
+			$mol_assert_like( [ ... stage.app.picked() ], [ 'Calc_2' ] )
+			$mol_assert_ok( stage.app.doc_source().includes( `Calc_2 ${ calc }` ) )
+
+		},
+
+		'Alt taken up in the middle of a drag still drops a copy, Alt let go moves the original'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			const overlay = stage.overlay()
+			const first = stage.part_center( 'Calc' )
+			const away = [ first[0] + 60, first[1] + 40 ] as const
+
+			stage.press( overlay, first )
+			stage.move( overlay, away )
+			stage.release( overlay, away, { altKey: true } )
+			stage.redraw()
+			stage.scene.flush()
+
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 104, y: 74 }, Calc_2: { x: 164, y: 114 } } )
+
+			const second = stage.part_center( 'Calc_2' )
+			const back = [ second[0] - 30, second[1] - 20 ] as const
+
+			stage.press( overlay, second, { altKey: true } )
+			stage.move( overlay, back, { altKey: true, metaKey: true } )
+			stage.release( overlay, back, { metaKey: true } )
+			stage.redraw()
+
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 104, y: 74 }, Calc_2: { x: 134, y: 94 } } )
+
+		},
+
+		'a copy dragged out with Alt carries the overrides and the wire of the original'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( map, stage.client([ 160, 120 ]) )
+			stage.drop( calc, stage.client([ 420, 120 ]) )
+
+			const node = stage.app.node()
+			const tree = node.tree()
+
+			node.over_set( 'Calc', 'title', tree.struct( 'title', [ tree.data( 'Итог' ) ] ) )
+			stage.app.link_add({ from: 'Map', from_prop: 'marker', to: 'Calc', to_prop: 'op' })
+			stage.redraw()
+
+			const wired = stage.app.node().over_tree( 'Calc', 'op' )!.toString()
+
+			const overlay = stage.overlay()
+			const from = stage.part_center( 'Calc' )
+			const to = [ from[0] + 40, from[1] + 30 ] as const
+
+			stage.press( overlay, from, { altKey: true } )
+			stage.move( overlay, to, { altKey: true } )
+			stage.release( overlay, to, { altKey: true } )
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.node().over_tree( 'Calc_2', 'title' )!.toString(), 'title \\Итог\n' )
+			$mol_assert_equal( stage.app.node().over_tree( 'Calc_2', 'op' )!.toString(), wired )
+			$mol_assert_equal( stage.app.node().over_tree( 'Calc', 'title' )!.toString(), 'title \\Итог\n' )
+
+		},
+
+		'a nested node dragged with Alt is moved, not copied'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.pane.tool( 'board' )
+			stage.tap( stage.client([ 60, 60 ]) )
+			stage.drop( calc, stage.client([ 120, 120 ]) )
+			stage.drop( map, stage.client([ 560, 420 ]) )
+
+			const node = stage.app.node()
+
+			stage.app.tree_move({ name: 'Calc', owner: 'Page', index: 0 })
+			stage.redraw()
+			stage.scene.flush()
+
+			$mol_assert_like( node.sub_names( 'Page' ), [ 'Calc' ] )
+
+			stage.app.picked([ 'Map', 'Calc' ])
+			stage.redraw()
+
+			const overlay = stage.overlay()
+			const from = stage.part_center( 'Calc' )
+			const to = stage.client([ 550, 460 ])
+
+			stage.press( overlay, from, { altKey: true } )
+			stage.move( overlay, to, { altKey: true } )
+			stage.release( overlay, to, { altKey: true } )
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.slot(), null )
+			$mol_assert_like(
+				stage.app.node().prop_names().filter( name => name.endsWith( '_2' ) ),
+				[],
+			)
+
+		},
+
 		'the second click lets the pointer inside the part, Escape takes it back out'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 

@@ -176,6 +176,7 @@ $bog_vmap_app $mol_page
 				node_delete? <=> node_delete?
 				node_copy? <=> node_copy? null
 				node_wrap? <=> node_wrap? null
+				node_clone? <=> node_clone? null
 				board_draw? <=> board_draw? null
 				tool_select? => tool_select?
 				tool_board? => tool_board?

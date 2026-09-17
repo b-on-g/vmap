@@ -1364,6 +1364,39 @@ namespace $.$$ {
 			return null
 		}
 
+		@ $mol_action
+		override node_clone( next?: { readonly [ name: string ]: { readonly x: number, readonly y: number } } | null ) {
+
+			if( !next || !this.editable() ) return null
+
+			const node = this.node()
+			const names = Object.keys( next )
+			if( !names.length ) return null
+
+			const tops = names.filter( name => !names.some( up => up !== name && node.sub_within( up, name ) ) )
+
+			const spots = { ... this.spots() }
+			const made = [] as string[]
+
+			for( const name of tops ) {
+
+				const copy = this.$.$bog_vmap_app_copy( node, name )
+
+				spots[ copy ] = {
+					x: Math.round( next[ name ].x ),
+					y: Math.round( next[ name ].y ),
+				}
+
+				made.push( copy )
+
+			}
+
+			this.spots( spots )
+			this.picked( made )
+
+			return null
+		}
+
 		override delete_hint() {
 			const name = this.selected()
 			return name ? `Удалить ${ name } (Del)` : 'Удалить выделенный узел (Del)'

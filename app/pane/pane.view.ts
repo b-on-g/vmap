@@ -1499,6 +1499,7 @@ namespace $.$$ {
 				this.slot( null )
 
 				if( drag && slot ) this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index })
+				else if( drag && event.altKey && !drag.nested ) this.drag_clone( drag )
 
 				this.drag( null )
 				this.guides( [] )
@@ -1648,6 +1649,25 @@ namespace $.$$ {
 		override overlay_style(): { readonly [ prop: string ]: string } {
 			const rect = !this.carrying() && !this.hand() && this.inside() ? this.frame_box() : null
 			return { clipPath: this.$.$bog_vmap_app_pane_hole( rect ) }
+		}
+
+		@ $mol_action
+		drag_clone( drag: { readonly spots: { readonly [ name: string ]: { readonly x: number, readonly y: number } } } ) {
+
+			const dropped = this.spots()
+			const points = {} as { [ name: string ]: { readonly x: number, readonly y: number } }
+
+			for( const name of Object.keys( drag.spots ) ) {
+				const spot = dropped[ name ]
+				if( spot ) points[ name ] = spot
+			}
+
+			if( !Object.keys( points ).length ) return null
+
+			this.spots({ ... dropped, ... drag.spots })
+			this.node_clone( points )
+
+			return null
 		}
 
 		override link_add( next?: $bog_vmap_app_pane_link_new | null ) {
