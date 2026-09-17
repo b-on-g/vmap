@@ -29,7 +29,88 @@ namespace $ {
 		return [ ... ports( Klass ) ].filter( name => !base.has( name ) ).sort()
 	}
 
+	type floor = {
+		readonly path: string
+		readonly name: string
+		readonly own: boolean
+	}
+
+	function floors( $: $, view: $mol_view ) {
+
+		const found = [] as floor[]
+
+		const walk = ( host: $mol_view, at: string, deep: number )=> {
+
+			if( deep > 6 ) return
+
+			let kids = [] as readonly unknown[]
+			try { kids = host.sub() ?? [] } catch { kids = [] }
+
+			let index = 0
+
+			for( const kid of kids ) {
+
+				if( typeof ( kid as { dom_node?: unknown } | null )?.dom_node !== 'function' ) continue
+
+				const sub = kid as $mol_view
+				const owner = $.$mol_owning_get( sub ) as {
+					readonly host?: unknown
+					readonly task?: { readonly name?: string }
+				} | null
+
+				const name = owner?.task?.name?.trim() || String( index ++ )
+				const path = `${ at }/${ name }`
+
+				found.push({ path, name, own: owner?.host === view })
+
+				walk( sub, path, deep + 1 )
+
+			}
+
+		}
+
+		walk( view, '', 0 )
+
+		return found
+	}
+
 	$mol_test({
+
+		'no layer of a part shares its name with a view of a nested component'( $ ) {
+
+			const parts = [
+				$.$bog_vmap_part_calc.make({ $ }),
+				$.$bog_vmap_part_cell.make({ $ }),
+				$.$bog_vmap_part_map.make({ $ }),
+				$.$bog_vmap_part_plot.make({ $, values: ()=> [ 1, 2, 3 ], title: ()=> 'Долг' }),
+			] as $mol_view[]
+
+			for( const part of parts ) {
+
+				const found = floors( $, part )
+
+				for( const one of found ) {
+
+					if( !one.own ) continue
+
+					const twin = found.find( other => other.name === one.name && other.path !== one.path )
+					if( !twin ) continue
+
+					$mol_fail( new Error(
+						`Деталь ${ part.constructor.name }: её слой ${ one.name } (${ one.path })`
+						+ ` и одноимённый вид ${ twin.path } живут в одном экземпляре.`
+						+ ' Редактор адресует внутренние слои цепочкой имён, а сцена называет сегменты'
+						+ ' пути методом-владельцем, поэтому у тёзок рамка на холсте и панель свойств'
+						+ ' молча возьмут не тот слой. Чинить одним из двух: переименовать порт детали'
+						+ ' либо научить сцену нести класс-объявитель на каждый сегмент замера —'
+						+ ' план лежит в PLAN, пункт про остаточную дыру подсветки внутренних слоёв.'
+					) )
+
+				}
+
+			}
+
+		},
 
 		'the shelf of the pack is exactly the list of its components'( $ ) {
 
