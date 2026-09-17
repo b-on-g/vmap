@@ -406,6 +406,7 @@ $bog_vmap_app_code $mol_page
 	js? \
 	css? \
 	error \
+	node_note \
 	whole? false
 	refusal? \
 	field_undo false
@@ -1068,11 +1069,12 @@ $bog_vmap_app_inspect $mol_page
 	class_title? \
 	title_note \
 	editable true
+	renamable <= editable
 	title <= class_title
 	title_content /
 		<= Name $mol_string
 			hint \имя узла
-			enabled <= editable
+			enabled <= renamable
 			value? <=> title_value? \
 			submit? <=> title_submit? null
 			event *
@@ -1380,6 +1382,7 @@ $bog_vmap_app_pane $mol_view
 	node_delete? null
 	node_copy? null
 	node_wrap? null
+	node_clone? null
 	leave? null
 	key_down* false
 	key_up* null
@@ -1391,6 +1394,7 @@ $bog_vmap_app_pane $mol_view
 	doc_css \
 	spots? *
 	picked? /string
+	inner \
 	doc_js *
 	doc_root \
 	libs /$bog_vmap_bridge_part
@@ -1402,6 +1406,8 @@ $bog_vmap_app_pane $mol_view
 	link_drop? null
 	containers /string
 	doc_names /string
+	doc_paths /string
+	doc_key \
 	node_title? \
 	axis* \
 	tree_move? null
@@ -1451,6 +1457,8 @@ $bog_vmap_app_pane $mol_view
 			style <= overlay_style *
 			frames <= frames /string
 			frame_style* <= frame_style* *
+			inner <= inner_shown \
+			inner_style <= inner_style *
 			press? <=> node_press? null
 			move? <=> node_move? null
 			release? <=> node_release? null
@@ -1504,6 +1512,8 @@ $bog_vmap_app_pane $mol_view
 		style <= draft_style *
 	Guide* $mol_view
 		style <= guide_style* *
+	Ghost* $mol_view
+		style <= ghost_style* *
 	Menu* $bog_vmap_app_menu
 		showed? <=> menu_showed? false
 		left <= menu_left \
@@ -1530,6 +1540,8 @@ $bog_vmap_app_pane $mol_view
 $bog_vmap_app_pane_overlay $mol_view
 	frames /string
 	frame_style* *
+	inner \
+	inner_style *
 	press? null
 	move? null
 	release? null
@@ -1549,6 +1561,8 @@ $bog_vmap_app_pane_overlay $mol_view
 			<= Handle_ne $bog_vmap_app_pane_handle corner \ne
 			<= Handle_sw $bog_vmap_app_pane_handle corner \sw
 			<= Handle_se $bog_vmap_app_pane_handle corner \se
+	Inner $mol_view
+		style <= inner_style *
 
 $bog_vmap_app_pane_label $mol_view
 	lines /string
@@ -1648,11 +1662,32 @@ $bog_vmap_app_scenes $mol_page
 	body /
 		<= List $mol_list
 			rows <= scene_rows /
+	Menu $bog_vmap_app_menu
+		showed? <=> menu_showed? false
+		left <= menu_left \
+		top <= menu_top \
+		items <= menu_items /$mol_view
+		close? <=> menu_close? null
 	Scene_row* $bog_vmap_app_palette_item
 		title <= scene_title* \
 		hint <= scene_title* \
 		current <= scene_current* false
 		click? <=> scene_click*? null
+		event *
+			^
+			contextmenu? <=> scene_menu*? null
+	Drop $bog_vmap_app_menu_item
+		title \Удалить сцену
+		act? <=> drop_ask? null
+	Drop_note $mol_paragraph
+		title <= drop_note \
+	Drop_yes $bog_vmap_app_menu_item
+		title \Удалить
+		act? <=> drop? null
+		done? <=> menu_close?
+	Drop_no $bog_vmap_app_menu_item
+		title \Отмена
+		act? <=> menu_close?
 
 $mol_drop $mol_ghost
 	enabled? true
@@ -1711,6 +1746,10 @@ $bog_vmap_app_layers $mol_scroll
 	root \
 	doc_key \
 	picked? /string
+	inner? \
+	inner_kids* /string
+	inner_class* \
+	inner_alien* false
 	node_title? \
 	node_title_note \
 	tree_move? null
@@ -1745,6 +1784,7 @@ $bog_vmap_app_layers $mol_scroll
 				attr *
 					^
 					bog_vmap_app_layers_line_zone <= row_zone*? \
+					bog_vmap_app_layers_line_shade <= row_shade* \
 				event *
 					^
 					dragover? <=> row_over*? null
@@ -1946,6 +1986,7 @@ $bog_vmap_app $mol_page
 	spots? *
 	selected? null
 	picked? /string
+	inner? \
 	doc_js *
 	doc_root \
 	scene_bundle \
@@ -2094,6 +2135,7 @@ $bog_vmap_app $mol_page
 				doc_css <= doc_css
 				spots? <=> spots?
 				picked? <=> picked?
+				inner <= inner
 				entered? <=> entered? null
 				doc_js <= doc_js
 				doc_root <= doc_root
@@ -2106,6 +2148,8 @@ $bog_vmap_app $mol_page
 				link_drop? <=> link_drop? null
 				containers <= doc_containers /string
 				doc_names <= doc_names /string
+				doc_paths <= doc_paths /string
+				doc_key <= doc_key \
 				node_title? <=> node_title?
 				axis* <= doc_axis* \
 				tree_move? <=> tree_move? null
@@ -2114,6 +2158,7 @@ $bog_vmap_app $mol_page
 				node_delete? <=> node_delete?
 				node_copy? <=> node_copy? null
 				node_wrap? <=> node_wrap? null
+				node_clone? <=> node_clone? null
 				board_draw? <=> board_draw? null
 				tool_select? => tool_select?
 				tool_board? => tool_board?
@@ -2127,6 +2172,10 @@ $bog_vmap_app $mol_page
 		root <= doc_root
 		doc_key <= doc_key \
 		picked? <=> picked?
+		inner? <=> inner?
+		inner_kids* <= inner_kids* /string
+		inner_class* <= inner_class* \
+		inner_alien* <= inner_alien* false
 		node_title? <=> node_title?
 		node_title_note <= node_title_note
 		tree_move? <=> tree_move?
@@ -2146,8 +2195,9 @@ $bog_vmap_app $mol_page
 		pack <= pack_link \
 		class_title? <=> node_title? \
 		title_note <= node_title_note \
+		renamable <= node_renamable true
 		cell*? <=> node_cell*? null
-		editable <= editable
+		editable <= node_editable true
 	Idle $mol_page
 		title \Свойства
 		body /
@@ -2163,7 +2213,8 @@ $bog_vmap_app $mol_page
 		js? <=> code_js?
 		css? <=> code_css?
 		error <= code_error \
-		editable <= editable
+		node_note <= code_node_note \
+		editable <= node_editable
 	Readonly $mol_chip
 		title \Только просмотр
 		hint \Чужая сцена: смотреть, выделять и читать свойства и код можно, правки выключены. «В библиотеку» делает копию детали в вашу библиотеку

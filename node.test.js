@@ -15020,6 +15020,133 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    const class_regex = /^[$A-Z][$\w<>\[\]()"'?|,]+$/;
+    function $mol_view_tree2_class_match(klass) {
+        if (!klass?.type)
+            return false;
+        if (klass.type === 'NaN' || klass.type === 'Infinity')
+            return false;
+        return class_regex.test(klass.type);
+    }
+    $.$mol_view_tree2_class_match = $mol_view_tree2_class_match;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const err = $mol_view_tree2_error_str;
+    function $mol_view_tree2_class_super(klass) {
+        if (!$mol_view_tree2_class_match(klass))
+            return this.$mol_fail(err `Wrong class name at ${klass.span}`);
+        const superclass = klass.kids.length === 1 ? klass.kids[0] : undefined;
+        if (!superclass)
+            return this.$mol_fail(err `No super class at ${klass.span}`);
+        if (!$mol_view_tree2_class_match(superclass))
+            return this.$mol_fail(err `Wrong super class name ${JSON.stringify(superclass.type).replace(/(^"|"$)/g, "")} at ${superclass.span}`);
+        return superclass;
+    }
+    $.$mol_view_tree2_class_super = $mol_view_tree2_class_super;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const err = $mol_view_tree2_error_str;
+    const is_writable = (input) => input.type.includes('?');
+    function $mol_view_tree2_class_props(klass) {
+        let props = this.$mol_view_tree2_class_super(klass);
+        // ! syntax to * and ?val syntax to ?
+        props = props.clone(props.hack({
+            '': (node, belt) => {
+                const next = node.type.indexOf('?');
+                const id = node.type.indexOf('!');
+                let normal = node.type;
+                const ch = node.type[id + 1];
+                if (id !== -1 && ch?.toUpperCase() !== ch?.toLowerCase())
+                    normal = `${normal.substring(0, id)}*${next === -1 ? '' : '?'}`;
+                else if (next !== -1)
+                    normal = normal.substring(0, next + 1);
+                if (node.type === normal)
+                    return [node.clone(node.hack(belt))];
+                console.warn(`Syntax ${node.type} at ${node.span} is deprecated. Use ${normal} instead`);
+                return [node.struct(normal, node.hack(belt))];
+            }
+        }));
+        const props_inner = {};
+        const add_inner = (prop) => {
+            const { name } = this.$mol_view_tree2_prop_parts(prop);
+            const prev = props_inner[name];
+            if (prev && prev.kids[0]?.toString() !== prop.kids[0]?.toString()) {
+                this.$mol_fail(err `Need an equal default values at ${prev.span} vs ${prop.span}`);
+            }
+            props_inner[name] = prop;
+        };
+        const upper = (operator, belt, context) => {
+            const prop = this.$mol_view_tree2_child(operator);
+            const defs = prop.hack(belt, { factory: prop });
+            if (defs.length)
+                add_inner(prop.clone(defs));
+            return [operator.clone([prop.clone([])])];
+        };
+        const props_root = props.hack({
+            '<=': upper,
+            '<=>': upper,
+            '^': (operator, belt, context) => {
+                if (operator.kids.length === 0)
+                    return [operator];
+                return upper(operator, belt, context);
+            },
+            '': (left, belt, context) => {
+                let right;
+                const operator = left.kids[0];
+                if (operator?.type === '=>' && context.factory) {
+                    right = operator.kids[0];
+                    if (!right)
+                        this.$mol_fail(err `Need a child ${operator.span}`);
+                    if (!context.factory)
+                        this.$mol_fail(err `Need a parent ${left.span}`);
+                    if (is_writable(left) !== is_writable(right))
+                        this.$mol_fail(err `Left and right operands are not compatible at ${operator.span}`);
+                    add_inner(right.clone([
+                        right.struct('=', [
+                            context.factory.struct(context.factory.type.replace(/\*.*/, '*'), [left.clone([])]),
+                        ]),
+                    ]));
+                }
+                else if (operator?.type === "<=>") {
+                    const right = operator.kids[0];
+                    if (!right)
+                        this.$mol_fail(err `Need a child ${operator.span}`);
+                    if (!is_writable(left))
+                        this.$mol_fail(err `Expected writable at ${left.span}`);
+                    if (!is_writable(right))
+                        this.$mol_fail(err `Expected writable at ${right.span}`);
+                }
+                else if (context.factory && operator?.type === "<=" && is_writable(left)) {
+                    this.$mol_fail(err `Expected readonly at ${left.span}`);
+                }
+                if (right)
+                    context = { factory: right.clone([]) };
+                else if (operator && !context.factory && $mol_view_tree2_class_match(operator)) {
+                    context = { factory: left.clone([]) };
+                }
+                const hacked = left.clone(left.hack(belt, context));
+                return [hacked];
+            }
+        }, { factory: undefined });
+        for (const prop of props_root)
+            add_inner(prop);
+        return Object.values(props_inner);
+    }
+    $.$mol_view_tree2_class_props = $mol_view_tree2_class_props;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     function $mol_match_text(query, values) {
         const tags = query.toLowerCase().trim().split(/\s+/).filter(tag => tag);
         if (tags.length === 0)
@@ -15223,133 +15350,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    const class_regex = /^[$A-Z][$\w<>\[\]()"'?|,]+$/;
-    function $mol_view_tree2_class_match(klass) {
-        if (!klass?.type)
-            return false;
-        if (klass.type === 'NaN' || klass.type === 'Infinity')
-            return false;
-        return class_regex.test(klass.type);
-    }
-    $.$mol_view_tree2_class_match = $mol_view_tree2_class_match;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const err = $mol_view_tree2_error_str;
-    function $mol_view_tree2_class_super(klass) {
-        if (!$mol_view_tree2_class_match(klass))
-            return this.$mol_fail(err `Wrong class name at ${klass.span}`);
-        const superclass = klass.kids.length === 1 ? klass.kids[0] : undefined;
-        if (!superclass)
-            return this.$mol_fail(err `No super class at ${klass.span}`);
-        if (!$mol_view_tree2_class_match(superclass))
-            return this.$mol_fail(err `Wrong super class name ${JSON.stringify(superclass.type).replace(/(^"|"$)/g, "")} at ${superclass.span}`);
-        return superclass;
-    }
-    $.$mol_view_tree2_class_super = $mol_view_tree2_class_super;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const err = $mol_view_tree2_error_str;
-    const is_writable = (input) => input.type.includes('?');
-    function $mol_view_tree2_class_props(klass) {
-        let props = this.$mol_view_tree2_class_super(klass);
-        // ! syntax to * and ?val syntax to ?
-        props = props.clone(props.hack({
-            '': (node, belt) => {
-                const next = node.type.indexOf('?');
-                const id = node.type.indexOf('!');
-                let normal = node.type;
-                const ch = node.type[id + 1];
-                if (id !== -1 && ch?.toUpperCase() !== ch?.toLowerCase())
-                    normal = `${normal.substring(0, id)}*${next === -1 ? '' : '?'}`;
-                else if (next !== -1)
-                    normal = normal.substring(0, next + 1);
-                if (node.type === normal)
-                    return [node.clone(node.hack(belt))];
-                console.warn(`Syntax ${node.type} at ${node.span} is deprecated. Use ${normal} instead`);
-                return [node.struct(normal, node.hack(belt))];
-            }
-        }));
-        const props_inner = {};
-        const add_inner = (prop) => {
-            const { name } = this.$mol_view_tree2_prop_parts(prop);
-            const prev = props_inner[name];
-            if (prev && prev.kids[0]?.toString() !== prop.kids[0]?.toString()) {
-                this.$mol_fail(err `Need an equal default values at ${prev.span} vs ${prop.span}`);
-            }
-            props_inner[name] = prop;
-        };
-        const upper = (operator, belt, context) => {
-            const prop = this.$mol_view_tree2_child(operator);
-            const defs = prop.hack(belt, { factory: prop });
-            if (defs.length)
-                add_inner(prop.clone(defs));
-            return [operator.clone([prop.clone([])])];
-        };
-        const props_root = props.hack({
-            '<=': upper,
-            '<=>': upper,
-            '^': (operator, belt, context) => {
-                if (operator.kids.length === 0)
-                    return [operator];
-                return upper(operator, belt, context);
-            },
-            '': (left, belt, context) => {
-                let right;
-                const operator = left.kids[0];
-                if (operator?.type === '=>' && context.factory) {
-                    right = operator.kids[0];
-                    if (!right)
-                        this.$mol_fail(err `Need a child ${operator.span}`);
-                    if (!context.factory)
-                        this.$mol_fail(err `Need a parent ${left.span}`);
-                    if (is_writable(left) !== is_writable(right))
-                        this.$mol_fail(err `Left and right operands are not compatible at ${operator.span}`);
-                    add_inner(right.clone([
-                        right.struct('=', [
-                            context.factory.struct(context.factory.type.replace(/\*.*/, '*'), [left.clone([])]),
-                        ]),
-                    ]));
-                }
-                else if (operator?.type === "<=>") {
-                    const right = operator.kids[0];
-                    if (!right)
-                        this.$mol_fail(err `Need a child ${operator.span}`);
-                    if (!is_writable(left))
-                        this.$mol_fail(err `Expected writable at ${left.span}`);
-                    if (!is_writable(right))
-                        this.$mol_fail(err `Expected writable at ${right.span}`);
-                }
-                else if (context.factory && operator?.type === "<=" && is_writable(left)) {
-                    this.$mol_fail(err `Expected readonly at ${left.span}`);
-                }
-                if (right)
-                    context = { factory: right.clone([]) };
-                else if (operator && !context.factory && $mol_view_tree2_class_match(operator)) {
-                    context = { factory: left.clone([]) };
-                }
-                const hacked = left.clone(left.hack(belt, context));
-                return [hacked];
-            }
-        }, { factory: undefined });
-        for (const prop of props_root)
-            add_inner(prop);
-        return Object.values(props_inner);
-    }
-    $.$mol_view_tree2_class_props = $mol_view_tree2_class_props;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
     $.$bog_vmap_lib_predef = '$mol_view $mol_object\n\tdom_name \\\n\tstyle *\n\tevent *\n\tfield *\n\tattr *\n\tsub /\n\ttitle \\\n';
     function $bog_vmap_lib_parse(src, uri = 'web.view.tree') {
         const predef = this.$mol_tree2_from_string($.$bog_vmap_lib_predef, '$bog_vmap_lib_predef');
@@ -15442,6 +15442,69 @@ var $;
         return owner;
     }
     $.$bog_vmap_lib_props_owner = $bog_vmap_lib_props_owner;
+    function $bog_vmap_lib_inner_kids(props, prop) {
+        const decl = props.get(prop);
+        if (!decl)
+            return [];
+        const kids = [];
+        const walk = (tree) => {
+            const ref = tree.kids[0];
+            if (ref && !ref.kids.length && (tree.type === '<=' || tree.type === '<=>')) {
+                const name = this.$mol_view_tree2_prop_parts(ref).name;
+                const value = props.get(name)?.kids[0];
+                if (value && $mol_view_tree2_class_match(value) && !kids.includes(name))
+                    kids.push(name);
+            }
+            for (const kid of tree.kids)
+                walk(kid);
+        };
+        walk(decl);
+        return kids;
+    }
+    $.$bog_vmap_lib_inner_kids = $bog_vmap_lib_inner_kids;
+    function $bog_vmap_lib_inner_class(props, prop) {
+        const value = props.get(prop)?.kids[0];
+        return value && $mol_view_tree2_class_match(value) ? value.type : '';
+    }
+    $.$bog_vmap_lib_inner_class = $bog_vmap_lib_inner_class;
+    function $bog_vmap_lib_inner_step(props_of, step, kid) {
+        const here = $bog_vmap_lib_inner_kids.call(this, props_of(step.declared), step.prop);
+        if (here.includes(kid))
+            return {
+                declared: step.declared,
+                prop: kid,
+                klass: $bog_vmap_lib_inner_class(props_of(step.declared), kid),
+                alien: step.alien,
+            };
+        if (!step.klass || step.klass === step.declared)
+            return null;
+        const inside = $bog_vmap_lib_inner_kids.call(this, props_of(step.klass), 'sub');
+        if (inside.includes(kid))
+            return {
+                declared: step.klass,
+                prop: kid,
+                klass: $bog_vmap_lib_inner_class(props_of(step.klass), kid),
+                alien: true,
+            };
+        return null;
+    }
+    $.$bog_vmap_lib_inner_step = $bog_vmap_lib_inner_step;
+    function $bog_vmap_lib_inner_route(props_of, route) {
+        const root = route[0] ?? '';
+        let step = {
+            declared: root,
+            prop: 'sub',
+            klass: root,
+            alien: false,
+        };
+        for (const kid of route.slice(1)) {
+            if (!step)
+                return null;
+            step = $bog_vmap_lib_inner_step.call(this, props_of, step, kid);
+        }
+        return step;
+    }
+    $.$bog_vmap_lib_inner_route = $bog_vmap_lib_inner_route;
     class $bog_vmap_lib_any extends $mol_object {
         tree() {
             return this.$.$bog_vmap_lib_parse('');
@@ -15476,6 +15539,26 @@ var $;
         props_of(base) {
             return this.united().list([...this.props_map(base).values()].reverse());
         }
+        inner_step(key) {
+            return this.$.$bog_vmap_lib_inner_route((klass) => this.props_map(klass), key.split('/'));
+        }
+        inner_kids(key) {
+            const step = this.inner_step(key);
+            if (!step)
+                return [];
+            const props = (klass) => this.props_map(klass);
+            const here = this.$.$bog_vmap_lib_inner_kids(props(step.declared), step.prop);
+            if (!step.klass || step.klass === step.declared)
+                return here;
+            const inside = this.$.$bog_vmap_lib_inner_kids(props(step.klass), 'sub');
+            return [...here, ...inside.filter(name => !here.includes(name))];
+        }
+        inner_class(key) {
+            return this.inner_step(key)?.klass ?? '';
+        }
+        inner_alien(key) {
+            return this.inner_step(key)?.alien ?? false;
+        }
     }
     __decorate([
         $mol_mem
@@ -15504,6 +15587,18 @@ var $;
     __decorate([
         $mol_mem_key
     ], $bog_vmap_lib_any.prototype, "props_of", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lib_any.prototype, "inner_step", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lib_any.prototype, "inner_kids", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lib_any.prototype, "inner_class", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lib_any.prototype, "inner_alien", null);
     $.$bog_vmap_lib_any = $bog_vmap_lib_any;
     class $bog_vmap_lib extends $bog_vmap_lib_any {
         pack(next) {
@@ -17797,6 +17892,31 @@ var $;
         ]);
     }
     $.$bog_vmap_lang_ref_tree = $bog_vmap_lang_ref_tree;
+    function $bog_vmap_lang_inner_movable(decl) {
+        let movable = true;
+        const walk = (tree) => {
+            if (tree.type !== '*' && tree.type.includes('*'))
+                movable = false;
+            for (const kid of tree.kids)
+                walk(kid);
+        };
+        walk(decl);
+        return movable;
+    }
+    $.$bog_vmap_lang_inner_movable = $bog_vmap_lang_inner_movable;
+    function $bog_vmap_lang_inner_tree(node, name, decl) {
+        if (!$bog_vmap_lang_inner_movable(decl))
+            this.$mol_fail(new Error(`Inner layer ${JSON.stringify(decl.type)} is keyed, it cannot be moved out of the class`));
+        const walk = (tree) => {
+            const ref = tree.kids[0];
+            if (ref && !ref.kids.length && (tree.type === '<=' || tree.type === '<=>')) {
+                return tree.struct('=', [ref.struct(node, [ref.clone([])])]);
+            }
+            return tree.clone(tree.kids.map(walk));
+        };
+        return decl.struct(name, decl.kids.map(walk));
+    }
+    $.$bog_vmap_lang_inner_tree = $bog_vmap_lang_inner_tree;
     function $bog_vmap_lang_part_tree(name, klass) {
         const base = $mol_tree2.struct(klass);
         if (!$mol_view_tree2_class_match(base))
@@ -18261,6 +18381,48 @@ var $;
                 return;
             this.prop_drop(cell);
         }
+        inner_ref(part, prop) {
+            const op = this.over_tree(part, prop)?.kids[0];
+            if (op?.type !== '<=')
+                return '';
+            const ref = op.kids[0];
+            if (!ref || ref.kids.length)
+                return '';
+            return sign_of(ref.type).name;
+        }
+        inner_refs(part) {
+            const klass = this.prop_decl(part)?.kids[0];
+            if (!klass || !$mol_view_tree2_class_match(klass))
+                return [];
+            return klass.kids
+                .map(over => this.inner_ref(part, sign_of(over.type).name))
+                .filter(name => Boolean(name));
+        }
+        inner_name(part, prop) {
+            const base = `${part}_${prop}`;
+            const taken = new Set([...this.prop_names(), ...this.ref_names()]);
+            for (let i = 1;; ++i) {
+                const name = i === 1 ? base : `${base}_${i}`;
+                if (!taken.has(name))
+                    return name;
+            }
+        }
+        inner_bind(part, prop, decl) {
+            const held = this.inner_ref(part, prop);
+            if (held)
+                return held;
+            if (!this.part_names().includes(part))
+                this.$.$mol_fail(new Error(`Part ${JSON.stringify(part)} is not declared in ${this.name()}`));
+            const over = this.over_tree(part, prop);
+            if (over)
+                this.$.$mol_fail(new Error(`Port ${JSON.stringify(prop)} of ${part} is bound already, an inner layer would unplug it`));
+            const name = this.inner_name(part, prop);
+            this.prop_add(name);
+            this.prop_tree(name, this.$.$bog_vmap_lang_inner_tree(part, name, decl));
+            const tree = this.tree();
+            this.over_set(part, prop, tree.struct(prop, [this.$.$bog_vmap_lang_ref_tree(name)]));
+            return name;
+        }
         prop_decl(name) {
             const sign = this.prop_fullname(name);
             return sign ? this.props_tree().select(sign).kids[0] ?? null : null;
@@ -18430,6 +18592,9 @@ var $;
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "cells_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "inner_bind", null);
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "sub_open", null);
@@ -20393,6 +20558,9 @@ var $;
 		error(){
 			return "";
 		}
+		node_note(){
+			return "";
+		}
 		whole(next){
 			if(next !== undefined) return next;
 			return false;
@@ -21299,7 +21467,16 @@ var $;
                 if (this.sliced() && !this.sliceable()) {
                     return 'Тексты класса не разобрать по свойствам: скобки не сбалансированы. Включите «Весь класс»';
                 }
-                return '';
+                if (!this.sliced())
+                    return '';
+                const note = this.node_note();
+                if (!note)
+                    return note;
+                return this.slot_open() === 'css' ? `${note} ${this.css_idle_note()}` : note;
+            }
+            css_idle_note() {
+                return 'Стиль запишется сразу, а на холсте оживёт вместе со слоем:'
+                    + ' селектор ждёт узел, который заводит первая правка дерева.';
             }
         }
         __decorate([
@@ -25093,7 +25270,7 @@ var $;
 		Name(){
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("имя узла");
-			(obj.enabled) = () => ((this.editable()));
+			(obj.enabled) = () => ((this.renamable()));
 			(obj.value) = (next) => ((this.title_value(next)));
 			(obj.submit) = (next) => ((this.title_submit(next)));
 			(obj.event) = () => ({...(this.$.$mol_string.prototype.event.call(obj)), "blur": (next) => (this.title_submit(next))});
@@ -25203,6 +25380,9 @@ var $;
 		}
 		editable(){
 			return true;
+		}
+		renamable(){
+			return (this.editable());
 		}
 		title(){
 			return (this.class_title());
@@ -25883,7 +26063,20 @@ var $;
                 if (next === undefined)
                     return Boolean(sign_of(this.row_sign(name)).next);
                 const value = this.port_node(name)?.kids[0] ?? null;
-                if (this.$.$bog_vmap_app_inspect_value_kind_of(value) === 'wire') {
+                const kind = this.$.$bog_vmap_app_inspect_value_kind_of(value);
+                if (kind === 'bind' || kind === 'get') {
+                    const prop = node.property(name);
+                    const own = prop.tree();
+                    const port = sign_of(own.type);
+                    const ref = value.kids[0] ?? null;
+                    const cell = sign_of(ref?.type ?? '');
+                    const tail = next ? '?' : '';
+                    prop.tree(own.struct(port.name + port.key + tail, [
+                        value.struct(next ? '<=>' : '<=', ref ? [ref.struct(cell.name + cell.key + tail, ref.kids)] : []),
+                    ]));
+                    return next;
+                }
+                if (kind === 'wire') {
                     const origin = value.kids[0];
                     node.wire_add({
                         name,
@@ -26027,6 +26220,24 @@ var $;
         return !$.$bog_vmap_app_wire_machinery.has(port.name);
     }
     $.$bog_vmap_app_wire_plain = $bog_vmap_app_wire_plain;
+    function $bog_vmap_app_wire_slot(port) {
+        return port.kind === 'null' && !port.next;
+    }
+    $.$bog_vmap_app_wire_slot = $bog_vmap_app_wire_slot;
+    $.$bog_vmap_app_wire_slots = 'slots';
+    const label_ok = /^[A-Za-z_$][\w$]*$/;
+    function $bog_vmap_app_wire_labelled(ports, labels) {
+        if (!labels.length)
+            return ports;
+        let at = 0;
+        return ports.map(port => {
+            if (!$bog_vmap_app_wire_slot(port))
+                return port;
+            const label = labels[at++] ?? '';
+            return label_ok.test(label) ? { ...port, label } : port;
+        });
+    }
+    $.$bog_vmap_app_wire_labelled = $bog_vmap_app_wire_labelled;
     function $bog_vmap_app_wire_ports(props, owners, base) {
         const ports = [];
         for (const [name, prop] of props) {
@@ -26060,33 +26271,58 @@ var $;
     }
     $.$bog_vmap_app_wire_label = $bog_vmap_app_wire_label;
     function $bog_vmap_app_wire_name(dot) {
-        const name = dot.port.name + (dot.port.next ? '?' : '');
+        const name = (dot.port.label || dot.port.name) + (dot.port.next ? '?' : '');
         return dot.hint ? `${name} · ${dot.hint}` : name;
     }
     $.$bog_vmap_app_wire_name = $bog_vmap_app_wire_name;
-    function $bog_vmap_app_wire_port_point(box, side, index) {
+    function $bog_vmap_app_wire_port_point(box, side, index, lift = 0) {
         const x = side === 'in'
             ? box.left - $.$bog_vmap_app_wire_gap
             : box.left + box.width + $.$bog_vmap_app_wire_gap;
-        const y = box.top + $.$bog_vmap_app_wire_row / 2 + index * $.$bog_vmap_app_wire_row;
+        const y = box.top - lift + $.$bog_vmap_app_wire_row / 2 + index * $.$bog_vmap_app_wire_row;
         return [x, y];
     }
     $.$bog_vmap_app_wire_port_point = $bog_vmap_app_wire_port_point;
+    function $bog_vmap_app_wire_off(box, point, count = 1, lift = 0) {
+        const dx = Math.min(Math.abs(point[0] - (box.left - $.$bog_vmap_app_wire_gap)), Math.abs(point[0] - (box.left + box.width + $.$bog_vmap_app_wire_gap)));
+        const first = box.top - lift + $.$bog_vmap_app_wire_row / 2;
+        const index = Math.round((point[1] - first) / $.$bog_vmap_app_wire_row);
+        const held = Math.max(0, Math.min(count - 1, index));
+        return Math.hypot(dx, point[1] - (first + held * $.$bog_vmap_app_wire_row));
+    }
+    $.$bog_vmap_app_wire_off = $bog_vmap_app_wire_off;
+    function $bog_vmap_app_wire_lift(box, count, height) {
+        const over = box.top + count * $.$bog_vmap_app_wire_row - height;
+        if (over <= 0)
+            return 0;
+        return Math.min(over, Math.max(box.top, 0));
+    }
+    $.$bog_vmap_app_wire_lift = $bog_vmap_app_wire_lift;
     function $bog_vmap_app_wire_side_point(box, side) {
         return $bog_vmap_app_wire_port_point(box, side, 0);
     }
     $.$bog_vmap_app_wire_side_point = $bog_vmap_app_wire_side_point;
-    function $bog_vmap_app_wire_over(box, point) {
+    function $bog_vmap_app_wire_over(box, point, count = 1, lift = 0) {
         const reach = $.$bog_vmap_app_wire_gap + $.$bog_vmap_app_wire_hit;
-        if (point[0] < box.left - reach)
+        const top = Math.min(box.top, box.top - lift);
+        const bottom = Math.max(box.top + box.height, top + count * $.$bog_vmap_app_wire_row);
+        if (point[1] < top)
             return false;
-        if (point[0] > box.left + box.width + reach)
+        if (point[1] > bottom)
             return false;
-        if (point[1] < box.top)
-            return false;
-        if (point[1] > box.top + box.height)
-            return false;
-        return true;
+        if (point[1] >= box.top && point[1] <= box.top + box.height) {
+            if (point[0] < box.left - reach)
+                return false;
+            if (point[0] > box.left + box.width + reach)
+                return false;
+            return true;
+        }
+        const strip = $.$bog_vmap_app_wire_hit + $.$bog_vmap_app_wire_radius;
+        if (Math.abs(point[0] - (box.left - $.$bog_vmap_app_wire_gap)) <= strip)
+            return true;
+        if (Math.abs(point[0] - (box.left + box.width + $.$bog_vmap_app_wire_gap)) <= strip)
+            return true;
+        return false;
     }
     $.$bog_vmap_app_wire_over = $bog_vmap_app_wire_over;
     function wire_reach(span) {
@@ -27716,6 +27952,12 @@ var $;
 		frame_style(id){
 			return {};
 		}
+		inner_shown(){
+			return "";
+		}
+		inner_style(){
+			return {};
+		}
 		node_press(next){
 			if(next !== undefined) return next;
 			return null;
@@ -27741,6 +27983,8 @@ var $;
 			(obj.style) = () => ((this.overlay_style()));
 			(obj.frames) = () => ((this.frames()));
 			(obj.frame_style) = (id) => ((this.frame_style(id)));
+			(obj.inner) = () => ((this.inner_shown()));
+			(obj.inner_style) = () => ((this.inner_style()));
 			(obj.press) = (next) => ((this.node_press(next)));
 			(obj.move) = (next) => ((this.node_move(next)));
 			(obj.release) = (next) => ((this.node_release(next)));
@@ -27841,6 +28085,9 @@ var $;
 		guide_style(id){
 			return {};
 		}
+		ghost_style(id){
+			return {};
+		}
 		menu_showed(next){
 			if(next !== undefined) return next;
 			return false;
@@ -27928,6 +28175,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		node_clone(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		leave(next){
 			if(next !== undefined) return next;
 			return null;
@@ -27964,6 +28215,9 @@ var $;
 			if(next !== undefined) return next;
 			return [];
 		}
+		inner(){
+			return "";
+		}
 		doc_js(){
 			return {};
 		}
@@ -27998,6 +28252,12 @@ var $;
 		}
 		doc_names(){
 			return [];
+		}
+		doc_paths(){
+			return [];
+		}
+		doc_key(){
+			return "";
 		}
 		node_title(next){
 			if(next !== undefined) return next;
@@ -28202,6 +28462,11 @@ var $;
 			(obj.style) = () => ((this.guide_style(id)));
 			return obj;
 		}
+		Ghost(id){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.ghost_style(id)));
+			return obj;
+		}
 		Menu(id){
 			const obj = new this.$.$bog_vmap_app_menu();
 			(obj.showed) = (next) => ((this.menu_showed(next)));
@@ -28254,6 +28519,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_delete"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_copy"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_wrap"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_clone"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "leave"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "spots"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "picked"));
@@ -28289,6 +28555,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Band"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Draft"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Guide"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Ghost"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Menu"));
 	($.$bog_vmap_app_pane_overlay) = class $bog_vmap_app_pane_overlay extends ($.$mol_view) {
 		press(next){
@@ -28334,8 +28601,14 @@ var $;
 			(obj.corner) = () => ("se");
 			return obj;
 		}
+		inner_style(){
+			return {};
+		}
 		frames(){
 			return [];
+		}
+		inner(){
+			return "";
 		}
 		event(){
 			return {
@@ -28358,6 +28631,11 @@ var $;
 			]);
 			return obj;
 		}
+		Inner(){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.inner_style()));
+			return obj;
+		}
 	};
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "press"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "move"));
@@ -28369,6 +28647,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_sw"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_se"));
 	($mol_mem_key(($.$bog_vmap_app_pane_overlay.prototype), "Frame"));
+	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Inner"));
 	($.$bog_vmap_app_pane_label) = class $bog_vmap_app_pane_label extends ($.$mol_view) {
 		rows(){
 			return [];
@@ -28584,6 +28863,16 @@ var $;
         const grab_slack = 8;
         const click_slack = 4;
         const scene_root = '$' + 'bog_vmap_scene';
+        const inner_chained = (path, chain) => {
+            let at = 0;
+            for (const step of path) {
+                if (step === chain[at])
+                    at++;
+                if (at === chain.length)
+                    return true;
+            }
+            return at === chain.length;
+        };
         class $bog_vmap_app_pane extends $.$bog_vmap_app_pane {
             doc_js() {
                 return {};
@@ -28641,6 +28930,44 @@ var $;
                     return null;
                 this.camera_zoom(1);
                 this.camera_shift(new this.$.$mol_vector_2d(0, 0));
+                return null;
+            }
+            camera_key() {
+                const key = this.doc_key();
+                return key ? `vmap_camera ${key}` : '';
+            }
+            camera_kept(next) {
+                const key = this.camera_key();
+                if (!key)
+                    return null;
+                return this.$.$mol_state_session.value(key, next) ?? null;
+            }
+            camera_doc(next) {
+                return next ?? '';
+            }
+            camera_settle() {
+                const key = this.camera_key();
+                if (!key || key === this.camera_doc())
+                    return null;
+                const kept = this.camera_kept();
+                if (kept) {
+                    this.camera_doc(key);
+                    this.camera_zoom(kept.zoom);
+                    this.camera_shift(new this.$.$mol_vector_2d(kept.x, kept.y));
+                    return null;
+                }
+                if (!this.free_boxes().length)
+                    return null;
+                this.camera_doc(key);
+                this.camera_reset();
+                return null;
+            }
+            camera_keep() {
+                const key = this.camera_key();
+                if (!key || this.camera_doc() !== key)
+                    return null;
+                const shift = this.camera_shift();
+                this.camera_kept({ x: shift[0], y: shift[1], zoom: this.camera_zoom() });
                 return null;
             }
             zoom_title() {
@@ -28733,6 +29060,7 @@ var $;
                     ...this.band() ? [this.Band()] : [],
                     ...this.draft() ? [this.Draft()] : [],
                     ...this.guide_views(),
+                    ...this.ghost_views(),
                     ...this.menu() ? [this.menu_view()] : [],
                 ];
             }
@@ -28834,13 +29162,42 @@ var $;
             sizes_merged(fresh) {
                 const prefix = this.doc_root() + '/';
                 const leaf = (key) => key.slice(prefix.length).split('/').pop() ?? '';
+                const live = new Set(this.doc_paths());
                 const moved = new Set(Object.keys(fresh).map(leaf));
+                const under = new Set();
+                for (const key of Object.keys(fresh)) {
+                    if (!key.startsWith(prefix))
+                        continue;
+                    const steps = key.slice(prefix.length).split('/');
+                    for (let at = 1; at < steps.length; ++at)
+                        under.add(steps.slice(0, at).join('/'));
+                }
+                const held = (key) => {
+                    if (key in fresh)
+                        return true;
+                    if (!live.size)
+                        return !moved.has(leaf(key));
+                    if (!key.startsWith(prefix))
+                        return true;
+                    const steps = key.slice(prefix.length).split('/');
+                    let part = '';
+                    for (let at = 1; at <= steps.length; ++at) {
+                        const path = steps.slice(0, at).join('/');
+                        if (!live.has(path))
+                            break;
+                        part = path;
+                    }
+                    if (!part)
+                        return false;
+                    if (part === steps.join('/'))
+                        return true;
+                    return !under.has(part);
+                };
                 const kept = {};
                 const sizes = this.sizes();
                 for (const key of Object.keys(sizes)) {
-                    if (!(key in fresh) && moved.has(leaf(key)))
-                        continue;
-                    kept[key] = sizes[key];
+                    if (held(key))
+                        kept[key] = sizes[key];
                 }
                 return { ...kept, ...fresh };
             }
@@ -28858,7 +29215,33 @@ var $;
                 }
                 return nodes;
             }
+            inner_measured() {
+                const prefix = this.doc_root() + '/';
+                const known = new Set(this.doc_names());
+                const found = [];
+                for (const key of Object.keys(this.sizes())) {
+                    if (!key.startsWith(prefix))
+                        continue;
+                    const path = key.slice(prefix.length).split('/');
+                    if (path.length < 2 || !known.has(path[0]))
+                        continue;
+                    found.push({ path, box: this.sizes()[key] });
+                }
+                return found;
+            }
+            inner_size(address) {
+                const chain = address.split('/');
+                const last = chain[chain.length - 1];
+                const ends = this.inner_measured().filter(one => one.path[0] === chain[0] && one.path[one.path.length - 1] === last);
+                if (!ends.length)
+                    return null;
+                const chained = ends.filter(one => inner_chained(one.path, chain));
+                const kept = chained.length ? chained : ends;
+                return kept.reduce((one, other) => other.path.length < one.path.length ? other : one).box;
+            }
             part_size(name) {
+                if (name.includes('/'))
+                    return this.inner_size(name);
                 let found = null;
                 for (const node of this.nodes_measured())
                     if (node.name === name)
@@ -29115,8 +29498,21 @@ var $;
                 if (stroke.code === 'Space')
                     this.grip(false);
             }
+            drag_cancel() {
+                const drag = this.drag();
+                if (!drag)
+                    return null;
+                this.spots({ ...this.spots(), ...drag.spots });
+                this.drag(null);
+                this.drag_alt(false);
+                this.slot(null);
+                this.guides([]);
+                return null;
+            }
             escape() {
-                if (this.draft())
+                if (this.drag())
+                    this.drag_cancel();
+                else if (this.draft())
                     this.draft(null);
                 else if (this.inside())
                     this.leave();
@@ -29549,6 +29945,7 @@ var $;
                     return this.node_release(event);
                 event.preventDefault();
                 const point = this.world_point(event);
+                this.drag_alt(Boolean(event.altKey));
                 const slot = this.insert_slot(point, drag.name);
                 this.slot(slot);
                 if (slot || drag.nested) {
@@ -29602,7 +29999,10 @@ var $;
                     this.slot(null);
                     if (drag && slot)
                         this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index });
+                    else if (drag && event.altKey && !drag.nested)
+                        this.drag_clone(drag);
                     this.drag(null);
+                    this.drag_alt(false);
                     this.guides([]);
                     try {
                         this.Overlay().dom_node().releasePointerCapture(event.pointerId);
@@ -29684,6 +30084,21 @@ var $;
                     height: rect.height + 'px',
                 };
             }
+            inner_shown() {
+                const inner = this.inner();
+                return inner && this.part_box(inner) ? inner : '';
+            }
+            inner_style() {
+                const rect = this.part_box(this.inner());
+                if (!rect)
+                    return {};
+                return {
+                    left: rect.left + 'px',
+                    top: rect.top + 'px',
+                    width: rect.width + 'px',
+                    height: rect.height + 'px',
+                };
+            }
             frame_style(name) {
                 const rect = this.part_box(name);
                 if (!rect)
@@ -29698,6 +30113,45 @@ var $;
             overlay_style() {
                 const rect = !this.carrying() && !this.hand() && this.inside() ? this.frame_box() : null;
                 return { clipPath: this.$.$bog_vmap_app_pane_hole(rect) };
+            }
+            drag_alt(next) {
+                return next ?? false;
+            }
+            ghost_names() {
+                const drag = this.drag();
+                if (!drag || !this.drag_alt())
+                    return [];
+                return Object.keys(drag.spots);
+            }
+            ghost_views() {
+                return this.ghost_names().map(name => this.Ghost(name));
+            }
+            ghost_style(name) {
+                const spot = this.drag()?.spots[name];
+                const size = this.part_size(name);
+                if (!spot || !size)
+                    return {};
+                const rect = this.$.$bog_vmap_app_pane_screen({ x: spot.x, y: spot.y, width: size.width, height: size.height }, this.camera_zoom(), this.camera_shift());
+                return {
+                    left: rect.left + 'px',
+                    top: rect.top + 'px',
+                    width: rect.width + 'px',
+                    height: rect.height + 'px',
+                };
+            }
+            drag_clone(drag) {
+                const dropped = this.spots();
+                const points = {};
+                for (const name of Object.keys(drag.spots)) {
+                    const spot = dropped[name];
+                    if (spot)
+                        points[name] = spot;
+                }
+                if (!Object.keys(points).length)
+                    return null;
+                this.spots({ ...dropped, ...drag.spots });
+                this.node_clone(points);
+                return null;
             }
             link_add(next) {
                 return next ?? null;
@@ -29735,22 +30189,53 @@ var $;
             }
             part_dots(name) {
                 const written = new Set(this.part_overs(name));
-                return this.part_ports(name).filter(port => (port.own || written.has(port.name)) && $bog_vmap_app_wire_plain(port));
+                for (const link of this.wires()) {
+                    if (link.to === name)
+                        written.add(link.to_prop);
+                }
+                const ports = this.part_ports(name).filter(port => (port.own || written.has(port.name)) && $bog_vmap_app_wire_plain(port));
+                let spare = false;
+                return ports.filter(port => {
+                    if (!$bog_vmap_app_wire_slot(port) || written.has(port.name))
+                        return true;
+                    if (spare)
+                        return false;
+                    spare = true;
+                    return true;
+                });
+            }
+            part_lift(name) {
+                const box = this.part_box(name);
+                if (!box)
+                    return 0;
+                return $bog_vmap_app_wire_lift(box, this.part_dots(name).length, this.pane_rect().height);
             }
             wire_over() {
                 if (!this.wire_drag())
                     return null;
                 const point = this.wire_point();
-                let found = null;
+                let own = null;
+                let near = null;
+                let best = Infinity;
                 for (const name of this.part_names()) {
                     const box = this.part_box(name);
                     if (!box)
                         continue;
-                    if (!$bog_vmap_app_wire_over(box, point))
+                    if ($bog_vmap_app_wire_over(box, point)) {
+                        own = name;
                         continue;
-                    found = name;
+                    }
+                    const count = this.part_dots(name).length;
+                    const lift = this.part_lift(name);
+                    if (!$bog_vmap_app_wire_over(box, point, count, lift))
+                        continue;
+                    const off = $bog_vmap_app_wire_off(box, point, count, lift);
+                    if (off > best)
+                        continue;
+                    best = off;
+                    near = name;
                 }
-                return found;
+                return own ?? near;
             }
             part_spread(name) {
                 return name === this.primary() || name === this.hovered() || name === this.wire_over();
@@ -29763,7 +30248,7 @@ var $;
                 if (!box)
                     return null;
                 return this.part_spread(name)
-                    ? $bog_vmap_app_wire_port_point(box, side, this.port_index(name, port))
+                    ? $bog_vmap_app_wire_port_point(box, side, this.port_index(name, port), this.part_lift(name))
                     : $bog_vmap_app_wire_side_point(box, side);
             }
             wire_lines() {
@@ -29801,8 +30286,9 @@ var $;
                         linked: side === 'in' && linked.has(`${node}.${port.name}`),
                     });
                     if (this.part_spread(node)) {
+                        const lift = this.part_lift(node);
                         ports.forEach((port, index) => {
-                            const [x, y] = $bog_vmap_app_wire_port_point(box, side, index);
+                            const [x, y] = $bog_vmap_app_wire_port_point(box, side, index, lift);
                             mark(port, x, y);
                         });
                         return;
@@ -30167,6 +30653,7 @@ var $;
                     this.sizes(this.sizes_merged(message.sizes));
                     this.warmed(true);
                     this.restart_tries(0);
+                    this.camera_settle();
                     return;
                 }
             }
@@ -30185,6 +30672,7 @@ var $;
                     this.libs_push(),
                     this.spots_push(),
                     this.camera_push(),
+                    this.camera_keep(),
                     this.values_push(),
                     this.heartbeat(),
                     this.watchdog(),
@@ -30206,6 +30694,15 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "camera_reset", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "camera_doc", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "camera_settle", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "camera_keep", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "errors", null);
@@ -30259,6 +30756,9 @@ var $;
         ], $bog_vmap_app_pane.prototype, "nodes_measured", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app_pane.prototype, "inner_measured", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_app_pane.prototype, "drag", null);
         __decorate([
             $mol_mem
@@ -30276,8 +30776,9 @@ var $;
             $mol_action
         ], $bog_vmap_app_pane.prototype, "tool_take", null);
         __decorate([
+            $mol_action,
             $mol_action
-        ], $bog_vmap_app_pane.prototype, "escape", null);
+        ], $bog_vmap_app_pane.prototype, "drag_cancel", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "menu", null);
@@ -30321,11 +30822,23 @@ var $;
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "band_style", null);
         __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "inner_style", null);
+        __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "frame_style", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "overlay_style", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "drag_alt", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "ghost_style", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "drag_clone", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "wire_drag", null);
@@ -30444,7 +30957,10 @@ var $;
         $$.$bog_vmap_app_pane_label = $bog_vmap_app_pane_label;
         class $bog_vmap_app_pane_overlay extends $.$bog_vmap_app_pane_overlay {
             sub() {
-                return this.frames().map(name => this.Frame(name));
+                return [
+                    ...this.frames().map(name => this.Frame(name)),
+                    ...this.inner() ? [this.Inner()] : [],
+                ];
             }
         }
         $$.$bog_vmap_app_pane_overlay = $bog_vmap_app_pane_overlay;
@@ -30499,6 +31015,14 @@ var $;
             Guide: {
                 position: 'absolute',
                 background: { color: $mol_theme.special },
+                pointerEvents: 'none',
+                transition: 'none',
+            },
+            Ghost: {
+                position: 'absolute',
+                outline: '1px dashed ' + String($mol_theme.focus),
+                outlineOffset: '1px',
+                background: { color: $mol_theme.hover },
                 pointerEvents: 'none',
                 transition: 'none',
             },
@@ -30603,6 +31127,13 @@ var $;
             Frame: {
                 position: 'absolute',
                 outline: '1px solid ' + String($mol_theme.focus),
+                outlineOffset: '1px',
+                pointerEvents: 'none',
+                transition: 'none',
+            },
+            Inner: {
+                position: 'absolute',
+                outline: '1px dashed ' + String($mol_theme.focus),
                 outlineOffset: '1px',
                 pointerEvents: 'none',
                 transition: 'none',
@@ -30850,6 +31381,18 @@ var $;
         }
         doc_pick(link) {
             this.doc_arg(link?.str ?? null);
+        }
+        doc_drop(link) {
+            const links = this.doc_links();
+            const at = links.findIndex(item => item.str === link.str);
+            if (at < 0)
+                return null;
+            const open = this.doc_current()?.link().str ?? '';
+            this.home().Docs(null).cut(link);
+            if (open !== link.str)
+                return null;
+            this.doc_pick(links[at + 1] ?? links[at - 1] ?? null);
+            return null;
         }
         doc_editable() {
             const doc = this.doc_current();
@@ -31120,6 +31663,9 @@ var $;
             list.items(links.slice(extra));
         }
     }
+    __decorate([
+        $mol_action
+    ], $bog_vmap_app_store.prototype, "doc_drop", null);
     __decorate([
         $mol_mem
     ], $bog_vmap_app_store.prototype, "doc_first_task", null);
@@ -31561,6 +32107,23 @@ var $;
 			(obj.rows) = () => ((this.scene_rows()));
 			return obj;
 		}
+		menu_showed(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		menu_left(){
+			return "";
+		}
+		menu_top(){
+			return "";
+		}
+		menu_items(){
+			return [];
+		}
+		menu_close(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		scene_title(id){
 			return "";
 		}
@@ -31568,6 +32131,21 @@ var $;
 			return false;
 		}
 		scene_click(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		scene_menu(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		drop_ask(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		drop_note(){
+			return "";
+		}
+		drop(next){
 			if(next !== undefined) return next;
 			return null;
 		}
@@ -31595,12 +32173,46 @@ var $;
 		body(){
 			return [(this.List())];
 		}
+		Menu(){
+			const obj = new this.$.$bog_vmap_app_menu();
+			(obj.showed) = (next) => ((this.menu_showed(next)));
+			(obj.left) = () => ((this.menu_left()));
+			(obj.top) = () => ((this.menu_top()));
+			(obj.items) = () => ((this.menu_items()));
+			(obj.close) = (next) => ((this.menu_close(next)));
+			return obj;
+		}
 		Scene_row(id){
 			const obj = new this.$.$bog_vmap_app_palette_item();
 			(obj.title) = () => ((this.scene_title(id)));
 			(obj.hint) = () => ((this.scene_title(id)));
 			(obj.current) = () => ((this.scene_current(id)));
 			(obj.click) = (next) => ((this.scene_click(id, next)));
+			(obj.event) = () => ({...(this.$.$bog_vmap_app_palette_item.prototype.event.call(obj)), "contextmenu": (next) => (this.scene_menu(id, next))});
+			return obj;
+		}
+		Drop(){
+			const obj = new this.$.$bog_vmap_app_menu_item();
+			(obj.title) = () => ("Удалить сцену");
+			(obj.act) = (next) => ((this.drop_ask(next)));
+			return obj;
+		}
+		Drop_note(){
+			const obj = new this.$.$mol_paragraph();
+			(obj.title) = () => ((this.drop_note()));
+			return obj;
+		}
+		Drop_yes(){
+			const obj = new this.$.$bog_vmap_app_menu_item();
+			(obj.title) = () => ("Удалить");
+			(obj.act) = (next) => ((this.drop(next)));
+			(obj.done) = (next) => ((this.menu_close(next)));
+			return obj;
+		}
+		Drop_no(){
+			const obj = new this.$.$bog_vmap_app_menu_item();
+			(obj.title) = () => ("Отмена");
+			(obj.act) = (next) => ((this.menu_close(next)));
 			return obj;
 		}
 	};
@@ -31609,11 +32221,21 @@ var $;
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Add_icon"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Add"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "List"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "menu_showed"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "menu_close"));
 	($mol_mem_key(($.$bog_vmap_app_scenes.prototype), "scene_click"));
+	($mol_mem_key(($.$bog_vmap_app_scenes.prototype), "scene_menu"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "drop_ask"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "drop"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "store"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "current"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "doc_title"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Menu"));
 	($mol_mem_key(($.$bog_vmap_app_scenes.prototype), "Scene_row"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Drop"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Drop_note"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Drop_yes"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Drop_no"));
 
 
 ;
@@ -31646,6 +32268,67 @@ var $;
             scene_click(link, event) {
                 this.current(link);
             }
+            menu(next) {
+                return next ?? null;
+            }
+            sub() {
+                return [...super.sub(), ...this.menu() ? [this.Menu()] : []];
+            }
+            menu_asking(next) {
+                return next ?? false;
+            }
+            menu_link() {
+                return this.menu()?.link ?? '';
+            }
+            menu_showed(next) {
+                if (next === false)
+                    this.menu(null);
+                return Boolean(this.menu());
+            }
+            menu_left() {
+                return (this.menu()?.spot[0] ?? 0) + 'px';
+            }
+            menu_top() {
+                return (this.menu()?.spot[1] ?? 0) + 'px';
+            }
+            menu_items() {
+                if (!this.menu())
+                    return [];
+                return this.menu_asking()
+                    ? [this.Drop_note(), this.Drop_yes(), this.Drop_no()]
+                    : [this.Drop()];
+            }
+            drop_note() {
+                return `Удалить «${this.scene_title(this.menu_link())}»? Ссылка на сцену продолжит работать`;
+            }
+            menu_close() {
+                this.menu_asking(false);
+                this.menu(null);
+                return null;
+            }
+            scene_menu(link, event) {
+                const mouse = event;
+                if (!mouse)
+                    return null;
+                mouse.preventDefault();
+                const rect = this.view_rect();
+                this.menu_asking(false);
+                this.menu({
+                    link,
+                    spot: [mouse.clientX - (rect?.left ?? 0), mouse.clientY - (rect?.top ?? 0)],
+                });
+                return null;
+            }
+            drop_ask() {
+                this.menu_asking(true);
+                return null;
+            }
+            drop() {
+                const link = this.scene_link(this.menu_link());
+                if (link)
+                    this.store().doc_drop(link);
+                return null;
+            }
             current(next) {
                 const store = this.store();
                 if (next !== undefined) {
@@ -31675,6 +32358,27 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app_scenes.prototype, "scene_click", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_scenes.prototype, "menu", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_scenes.prototype, "sub", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_scenes.prototype, "menu_asking", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_scenes.prototype, "menu_close", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_scenes.prototype, "scene_menu", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_scenes.prototype, "drop_ask", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_scenes.prototype, "drop", null);
         $$.$bog_vmap_app_scenes = $bog_vmap_app_scenes;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
@@ -31686,6 +32390,7 @@ var $;
     var $$;
     (function ($$) {
         $mol_style_define($bog_vmap_app_scenes, {
+            position: 'relative',
             Tools: {
                 minWidth: 0,
                 flex: { grow: 1, shrink: 1, basis: '6rem' },
@@ -32095,6 +32800,9 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		row_shade(id){
+			return "";
+		}
 		row_over(id, next){
 			if(next !== undefined) return next;
 			return null;
@@ -32104,7 +32812,11 @@ var $;
 		}
 		Line(id){
 			const obj = new this.$.$mol_view();
-			(obj.attr) = () => ({...(this.$.$mol_view.prototype.attr.call(obj)), "bog_vmap_app_layers_line_zone": (this.row_zone(id))});
+			(obj.attr) = () => ({
+				...(this.$.$mol_view.prototype.attr.call(obj)), 
+				"bog_vmap_app_layers_line_zone": (this.row_zone(id)), 
+				"bog_vmap_app_layers_line_shade": (this.row_shade(id))
+			});
 			(obj.event) = () => ({...(this.$.$mol_view.prototype.event.call(obj)), "dragover": (next) => (this.row_over(id, next))});
 			(obj.sub) = () => ((this.row_content(id)));
 			return obj;
@@ -32168,6 +32880,19 @@ var $;
 		picked(next){
 			if(next !== undefined) return next;
 			return [];
+		}
+		inner(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		inner_kids(id){
+			return [];
+		}
+		inner_class(id){
+			return "";
+		}
+		inner_alien(id){
+			return false;
 		}
 		node_title(next){
 			if(next !== undefined) return next;
@@ -32292,6 +33017,7 @@ var $;
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_submit"));
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_key"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "picked"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "inner"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "node_title"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "node_show"));
@@ -32361,13 +33087,68 @@ var $;
                 walk('', null, 1);
                 const parts = node.part_names();
                 const held = new Set(['', ...parts].flatMap(owner => node.sub_names(owner) ?? []));
-                for (const name of parts)
-                    if (!found.has(name) && !held.has(name))
+                const inner = new Set(parts.flatMap(part => node.inner_refs(part)));
+                for (const name of parts) {
+                    if (!found.has(name) && !held.has(name) && !inner.has(name))
                         walk(name, null, 2);
+                }
                 for (const name of parts)
-                    if (!found.has(name))
+                    if (!found.has(name) && !inner.has(name))
                         walk(name, null, 2);
                 return found;
+            }
+            row_inner(name) {
+                return name.includes('/');
+            }
+            inner_owner(name) {
+                return name.slice(0, name.indexOf('/'));
+            }
+            inner_prop(name) {
+                return name.slice(name.lastIndexOf('/') + 1);
+            }
+            inner_deep_max() {
+                return 8;
+            }
+            inner_layers(part) {
+                const found = new Map();
+                const root = this.row_class(part);
+                if (!root)
+                    return found;
+                const level = this.row_level(part);
+                const walk = (at, key, owner, deep, seen) => {
+                    if (deep > level + this.inner_deep_max())
+                        return [];
+                    const born = [];
+                    for (const kid of this.inner_kids(key)) {
+                        const route = `${key}/${kid}`;
+                        if (seen.has(route))
+                            continue;
+                        const path = `${at}/${kid}`;
+                        if (found.has(path))
+                            continue;
+                        found.set(path, {
+                            owner,
+                            level: deep,
+                            kids: [],
+                            klass: this.inner_class(route),
+                            alien: this.inner_alien(route),
+                        });
+                        born.push(path);
+                    }
+                    for (const path of born) {
+                        const route = `${key}/${this.inner_prop(path)}`;
+                        const kids = walk(path, route, path, deep + 1, new Set([...seen, route]));
+                        found.set(path, { ...found.get(path), kids });
+                    }
+                    return born;
+                };
+                walk(part, root, null, level + 1, new Set());
+                return found;
+            }
+            inner_roots(part) {
+                return [...this.inner_layers(part)]
+                    .filter(([, layer]) => layer.owner === null)
+                    .map(([path]) => path);
             }
             outside() {
                 return [...this.layers()]
@@ -32375,9 +33156,19 @@ var $;
                     .map(([name]) => name);
             }
             row_kids(name) {
-                return this.layers().get(name)?.kids ?? [];
+                if (this.row_inner(name)) {
+                    return this.inner_layers(this.inner_owner(name)).get(name)?.kids ?? [];
+                }
+                const kids = this.layers().get(name)?.kids ?? [];
+                if (kids.length)
+                    return kids;
+                return this.inner_roots(name);
             }
             row_holder(name) {
+                if (this.row_inner(name)) {
+                    const owner = this.inner_layers(this.inner_owner(name)).get(name)?.owner;
+                    return owner === undefined ? null : owner ?? this.inner_owner(name);
+                }
                 return this.layers().get(name)?.owner ?? null;
             }
             row_within(owner, name) {
@@ -32407,21 +33198,25 @@ var $;
                 return rows;
             }
             row_level(name) {
+                if (this.row_inner(name)) {
+                    return this.inner_layers(this.inner_owner(name)).get(name)?.level ?? 1;
+                }
                 return this.layers().get(name)?.level ?? 1;
             }
             row_expanded(name, next) {
                 return this.row_open(name, next);
             }
             row_open(name, next) {
-                if (!this.row_kids(name).length)
+                const kids = this.row_kids(name);
+                if (!kids.length)
                     return null;
-                return this.expanded_at(name, next);
+                return this.expanded_at(name, next, !kids.some(kid => this.row_inner(kid)));
             }
-            expanded_at(name, next) {
+            expanded_at(name, next, fallback = true) {
                 const key = this.fold_key('open');
                 const open = this.$.$mol_state_session.value(key) ?? {};
                 if (next === undefined)
-                    return open[name] ?? true;
+                    return open[name] ?? fallback;
                 this.$.$mol_state_session.value(key, { ...open, [name]: next });
                 return next;
             }
@@ -32435,11 +33230,26 @@ var $;
                 return name;
             }
             row_title(name) {
+                if (this.row_inner(name))
+                    return this.inner_prop(name);
                 return name || this.root();
             }
             row_class(name) {
+                if (this.row_inner(name)) {
+                    return this.inner_layers(this.inner_owner(name)).get(name)?.klass ?? '';
+                }
                 const value = name ? this.node().prop_decl(name)?.kids[0] : null;
                 return value && $mol_view_tree2_class_match(value) ? value.type : '';
+            }
+            row_alien(name) {
+                if (!this.row_inner(name))
+                    return false;
+                return this.inner_layers(this.inner_owner(name)).get(name)?.alien ?? false;
+            }
+            row_shade(name) {
+                if (!this.row_inner(name))
+                    return '';
+                return this.row_alien(name) ? 'alien' : 'inner';
             }
             row_hint(name) {
                 return this.row_class(name);
@@ -32447,8 +33257,13 @@ var $;
             row_kind(name) {
                 if (!name)
                     return 'root';
+                if (this.row_inner(name))
+                    return this.row_kids(name).length ? 'frame' : this.class_kind(name);
                 if (this.layers().get(name)?.kids)
                     return 'frame';
+                return this.class_kind(name);
+            }
+            class_kind(name) {
                 const klass = this.row_class(name);
                 if (!klass)
                     return 'text';
@@ -32476,6 +33291,8 @@ var $;
                 return picked.length ? picked[picked.length - 1] : null;
             }
             row_picked(name) {
+                if (this.row_inner(name))
+                    return this.inner() === name;
                 const picked = this.picked();
                 if (picked.includes(name))
                     return true;
@@ -32486,6 +33303,13 @@ var $;
             row_pick(name, event) {
                 if (!event)
                     return null;
+                if (this.row_inner(name)) {
+                    this.picked([this.inner_owner(name)]);
+                    this.inner(name);
+                    this.node_show(name);
+                    return null;
+                }
+                this.inner('');
                 if (!name) {
                     this.picked([]);
                     return null;
@@ -32508,6 +33332,8 @@ var $;
                 return Boolean(name) && this.editing() === name && this.selected() === name;
             }
             row_draggable(name) {
+                if (this.row_inner(name))
+                    return false;
                 return this.editable() && Boolean(name) && !this.row_editing(name);
             }
             row_content(name) {
@@ -32517,7 +33343,7 @@ var $;
                 ];
             }
             row_edit(name, event) {
-                if (!name || !event || !this.editable())
+                if (!name || !event || !this.editable() || this.row_inner(name))
                     return null;
                 this.picked([name]);
                 this.row_draft(name, name);
@@ -32565,6 +33391,8 @@ var $;
                 return null;
             }
             zone_at(name, share) {
+                if (this.row_inner(name))
+                    return '';
                 if (!name)
                     return 'inside';
                 if (!this.row_within('', name))
@@ -32583,6 +33411,8 @@ var $;
             }
             move_to(anchor, name, zone) {
                 if (!name || name === anchor)
+                    return null;
+                if (this.row_inner(name) || this.row_inner(anchor))
                     return null;
                 const into = !anchor || zone === 'inside';
                 const owner = into ? anchor : this.row_holder(anchor);
@@ -32607,6 +33437,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_layers.prototype, "layers", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_layers.prototype, "inner_layers", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_layers.prototype, "outside", null);
@@ -32664,6 +33497,16 @@ var $;
                 },
             },
             Line: {
+                '@': {
+                    bog_vmap_app_layers_line_shade: {
+                        inner: {
+                            opacity: .6,
+                        },
+                        alien: {
+                            opacity: .35,
+                        },
+                    },
+                },
                 '[mol_drop_status]': {
                     drag: {
                         '[bog_vmap_app_layers_line_zone]': {
@@ -34594,6 +35437,12 @@ var $;
 		doc_names(){
 			return [];
 		}
+		doc_paths(){
+			return [];
+		}
+		doc_key(){
+			return "";
+		}
 		doc_axis(id){
 			return "";
 		}
@@ -34614,6 +35463,10 @@ var $;
 			return null;
 		}
 		node_wrap(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		node_clone(next){
 			if(next !== undefined) return next;
 			return null;
 		}
@@ -34643,6 +35496,7 @@ var $;
 			(obj.doc_css) = () => ((this.doc_css()));
 			(obj.spots) = (next) => ((this.spots(next)));
 			(obj.picked) = (next) => ((this.picked(next)));
+			(obj.inner) = () => ((this.inner()));
 			(obj.entered) = (next) => ((this.entered(next)));
 			(obj.doc_js) = () => ((this.doc_js()));
 			(obj.doc_root) = () => ((this.doc_root()));
@@ -34655,6 +35509,8 @@ var $;
 			(obj.link_drop) = (next) => ((this.link_drop(next)));
 			(obj.containers) = () => ((this.doc_containers()));
 			(obj.doc_names) = () => ((this.doc_names()));
+			(obj.doc_paths) = () => ((this.doc_paths()));
+			(obj.doc_key) = () => ((this.doc_key()));
 			(obj.node_title) = (next) => ((this.node_title(next)));
 			(obj.axis) = (id) => ((this.doc_axis(id)));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
@@ -34663,14 +35519,21 @@ var $;
 			(obj.node_delete) = (next) => ((this.node_delete(next)));
 			(obj.node_copy) = (next) => ((this.node_copy(next)));
 			(obj.node_wrap) = (next) => ((this.node_wrap(next)));
+			(obj.node_clone) = (next) => ((this.node_clone(next)));
 			(obj.board_draw) = (next) => ((this.board_draw(next)));
 			return obj;
 		}
 		notes(){
 			return [];
 		}
-		doc_key(){
+		inner_kids(id){
+			return [];
+		}
+		inner_class(id){
 			return "";
+		}
+		inner_alien(id){
+			return false;
 		}
 		lib_classes(){
 			return [];
@@ -34695,9 +35558,15 @@ var $;
 		node_title_note(){
 			return "";
 		}
+		node_renamable(){
+			return true;
+		}
 		node_cell(id, next){
 			if(next !== undefined) return next;
 			return null;
+		}
+		node_editable(){
+			return true;
 		}
 		idle_note(){
 			return "Выберите узел на холсте, чтобы править его свойства";
@@ -34717,6 +35586,9 @@ var $;
 			return [];
 		}
 		code_error(){
+			return "";
+		}
+		code_node_note(){
 			return "";
 		}
 		lands(){
@@ -34781,6 +35653,10 @@ var $;
 		picked(next){
 			if(next !== undefined) return next;
 			return [];
+		}
+		inner(next){
+			if(next !== undefined) return next;
+			return "";
 		}
 		doc_js(){
 			return {};
@@ -34922,6 +35798,10 @@ var $;
 			(obj.root) = () => ((this.doc_root()));
 			(obj.doc_key) = () => ((this.doc_key()));
 			(obj.picked) = (next) => ((this.picked(next)));
+			(obj.inner) = (next) => ((this.inner(next)));
+			(obj.inner_kids) = (id) => ((this.inner_kids(id)));
+			(obj.inner_class) = (id) => ((this.inner_class(id)));
+			(obj.inner_alien) = (id) => ((this.inner_alien(id)));
 			(obj.node_title) = (next) => ((this.node_title(next)));
 			(obj.node_title_note) = () => ((this.node_title_note()));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
@@ -34947,8 +35827,9 @@ var $;
 			(obj.pack) = () => ((this.pack_link()));
 			(obj.class_title) = (next) => ((this.node_title(next)));
 			(obj.title_note) = () => ((this.node_title_note()));
+			(obj.renamable) = () => ((this.node_renamable()));
 			(obj.cell) = (id, next) => ((this.node_cell(id, next)));
-			(obj.editable) = () => ((this.editable()));
+			(obj.editable) = () => ((this.node_editable()));
 			return obj;
 		}
 		Idle(){
@@ -34968,7 +35849,8 @@ var $;
 			(obj.js) = (next) => ((this.code_js(next)));
 			(obj.css) = (next) => ((this.code_css(next)));
 			(obj.error) = () => ((this.code_error()));
-			(obj.editable) = () => ((this.editable()));
+			(obj.node_note) = () => ((this.code_node_note()));
+			(obj.editable) = () => ((this.node_editable()));
 			return obj;
 		}
 		Readonly(){
@@ -35094,6 +35976,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "files_drop"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_copy"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_wrap"));
+	($mol_mem(($.$bog_vmap_app.prototype), "node_clone"));
 	($mol_mem(($.$bog_vmap_app.prototype), "board_draw"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Pane"));
 	($mol_mem(($.$bog_vmap_app.prototype), "shelf_place"));
@@ -35106,6 +35989,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "spots"));
 	($mol_mem(($.$bog_vmap_app.prototype), "selected"));
 	($mol_mem(($.$bog_vmap_app.prototype), "picked"));
+	($mol_mem(($.$bog_vmap_app.prototype), "inner"));
 	($mol_mem(($.$bog_vmap_app.prototype), "links"));
 	($mol_mem(($.$bog_vmap_app.prototype), "left_showed"));
 	($mol_mem(($.$bog_vmap_app.prototype), "right_showed"));
@@ -35580,9 +36464,117 @@ var $;
             }
             picked(next) {
                 const key = this.doc_key();
-                if (next !== undefined && !$mol_compare_deep(next, this.picked_at(key)))
+                if (next !== undefined && !$mol_compare_deep(next, this.picked_at(key))) {
                     this.entered(null);
+                    this.inner('');
+                }
                 return this.picked_at(key, next);
+            }
+            inner(next) {
+                const now = this.inner_in_doc();
+                return next === undefined ? now : this.inner_in_doc(next);
+            }
+            inner_in_doc(next) {
+                this.doc_key();
+                return next ?? '';
+            }
+            inner_node() {
+                const inner = this.inner();
+                return inner.slice(0, inner.indexOf('/'));
+            }
+            inner_prop() {
+                const inner = this.inner();
+                return inner.slice(inner.lastIndexOf('/') + 1);
+            }
+            node_class(name) {
+                const value = name ? this.node().prop_decl(name)?.kids[0] : null;
+                return value && $mol_view_tree2_class_match(value) ? value.type : '';
+            }
+            inner_kids(key) {
+                try {
+                    return this.Lib().inner_kids(key);
+                }
+                catch (error) {
+                    if (!$mol_promise_like(error))
+                        $mol_fail_log(error);
+                    return [];
+                }
+            }
+            inner_class(key) {
+                try {
+                    return this.Lib().inner_class(key);
+                }
+                catch (error) {
+                    if (!$mol_promise_like(error))
+                        $mol_fail_log(error);
+                    return '';
+                }
+            }
+            inner_alien(key) {
+                try {
+                    return this.Lib().inner_alien(key);
+                }
+                catch (error) {
+                    if (!$mol_promise_like(error))
+                        $mol_fail_log(error);
+                    return false;
+                }
+            }
+            inner_route() {
+                const chain = this.inner().split('/');
+                return [this.node_class(chain[0]), ...chain.slice(1)].join('/');
+            }
+            inner_foreign() {
+                return Boolean(this.inner()) && this.inner_alien(this.inner_route());
+            }
+            inner_step() {
+                return this.Lib().inner_step(this.inner_route());
+            }
+            inner_decl() {
+                const step = this.inner_step();
+                const decl = step ? this.Lib().props_map(step.declared).get(step.prop) ?? null : null;
+                if (!decl)
+                    return this.$.$mol_fail(new Error(`Внутренний слой ${this.inner()} не найден в классе детали`));
+                return decl;
+            }
+            node_editable() {
+                return this.editable() && !this.inner_foreign();
+            }
+            inner_foreign_note() {
+                const step = this.inner_step();
+                if (!step)
+                    return '';
+                return `Слой ${step.prop} пришёл из вложенного компонента ${step.declared}.`
+                    + ` Отсюда он только виден: правится он у своего класса, а деталь его не объявляет,`
+                    + ` поэтому переопределить его из документа нельзя.`;
+            }
+            inner_name() {
+                const node = this.node();
+                return node.inner_ref(this.inner_node(), this.inner_prop())
+                    || node.inner_name(this.inner_node(), this.inner_prop());
+            }
+            inner_held() {
+                const node = this.node();
+                return node.inner_ref(this.inner_node(), this.inner_prop())
+                    || node.inner_bind(this.inner_node(), this.inner_prop(), this.inner_decl());
+            }
+            inner_source(next) {
+                if (this.inner_foreign()) {
+                    if (next !== undefined)
+                        return this.$.$mol_fail(new Error(this.inner_foreign_note()));
+                    return this.inner_decl().toString();
+                }
+                const node = this.node();
+                const held = node.inner_ref(this.inner_node(), this.inner_prop());
+                if (next === undefined) {
+                    if (!held)
+                        return this.$.$bog_vmap_lang_inner_tree(this.inner_node(), this.inner_name(), this.inner_decl()).toString();
+                    return node.props_tree().select(node.prop_fullname(held)).kids[0]?.toString() ?? '';
+                }
+                const parsed = this.$.$mol_tree2_from_string(next.replace(/\n?$/, '\n'), 'vmap.view.tree').kids[0];
+                if (parsed)
+                    node.prop_tree(this.inner_held(), parsed);
+                return next;
             }
             doc_key() {
                 return this.store().doc_current()?.link().str ?? '';
@@ -35607,7 +36599,7 @@ var $;
                 return picked.length ? picked[picked.length - 1] : null;
             }
             delete_enabled() {
-                return this.editable() && Boolean(this.selected());
+                return this.editable() && !this.inner() && Boolean(this.selected());
             }
             publish_part() {
                 return this.selected() ?? '';
@@ -35742,7 +36734,23 @@ var $;
                 return this.export_notes()[index] ?? '';
             }
             code_prop() {
+                if (this.inner_foreign())
+                    return this.inner_prop();
+                if (this.inner())
+                    return this.inner_name();
                 return this.selected() ?? '';
+            }
+            code_node_note() {
+                const inner = this.inner();
+                if (!inner)
+                    return '';
+                if (this.inner_foreign())
+                    return this.inner_foreign_note();
+                if (this.node().inner_ref(this.inner_node(), this.inner_prop()))
+                    return '';
+                return `Слой ${this.inner_prop()} взят из класса детали ${this.inner_node()},`
+                    + ` в документе его ещё нет. Правка заведёт узел ${this.inner_name()}`
+                    + ` и сошлётся на него из блока детали; класс детали останется как был.`;
             }
             code_whole(next) {
                 return next ?? false;
@@ -35790,7 +36798,7 @@ var $;
                 return this.class_css(this.code_klass(), next);
             }
             code_hooks() {
-                const name = this.selected();
+                const name = this.code_prop();
                 if (!name)
                     return [];
                 const node = this.node();
@@ -35955,6 +36963,8 @@ var $;
                 }
             }
             node_source(next) {
+                if (this.inner())
+                    return this.inner_source(next);
                 const name = this.selected();
                 if (!name)
                     return '';
@@ -35971,10 +36981,25 @@ var $;
                 return next;
             }
             node_cell(sign, next) {
+                if (this.inner_foreign()) {
+                    if (next === undefined)
+                        return null;
+                    return this.$.$mol_fail(new Error(this.inner_foreign_note()));
+                }
+                if (this.inner()) {
+                    const node = this.node();
+                    const held = next === undefined
+                        ? node.inner_ref(this.inner_node(), this.inner_prop())
+                        : this.inner_held();
+                    return held ? node.cell_value(held, sign, next) : null;
+                }
                 const name = this.selected();
                 if (!name)
                     return null;
                 return this.node().cell_value(name, sign, next);
+            }
+            node_renamable() {
+                return this.editable() && !this.inner();
             }
             node_peers() {
                 return [...this.lib_classes(), this.node().tree()];
@@ -35990,7 +37015,33 @@ var $;
                 const klass = node.props_tree().select(sign).kids[0]?.kids[0];
                 if (!klass || !$mol_view_tree2_class_match(klass))
                     return [];
-                return this.$.$bog_vmap_app_wire_ports(this.Lib().props_map(klass.type), this.Lib().props_owner(klass.type), klass.type);
+                const ports = this.$.$bog_vmap_app_wire_ports(this.Lib().props_map(klass.type), this.Lib().props_owner(klass.type), klass.type);
+                return $bog_vmap_app_wire_labelled(ports, this.part_labels(name));
+            }
+            doc_paths() {
+                const node = this.node();
+                const paths = [];
+                const seen = new Set();
+                const walk = (owner, path) => {
+                    if (seen.has(owner))
+                        return;
+                    seen.add(owner);
+                    for (const kid of node.sub_names(owner) ?? []) {
+                        if (!kid)
+                            continue;
+                        const next = path ? path + '/' + kid : kid;
+                        paths.push(next);
+                        walk(kid, next);
+                    }
+                };
+                walk('', '');
+                return paths;
+            }
+            part_labels(name) {
+                const held = this.node().over_tree(name, $bog_vmap_app_wire_slots)?.kids[0] ?? null;
+                if (!held || held.type !== '')
+                    return [];
+                return held.value.split(',').map(label => label.trim());
             }
             part_overs(name) {
                 const node = this.node();
@@ -36302,6 +37353,28 @@ var $;
                 this.picked(made);
                 return null;
             }
+            node_clone(next) {
+                if (!next || !this.editable())
+                    return null;
+                const node = this.node();
+                const names = Object.keys(next);
+                if (!names.length)
+                    return null;
+                const tops = names.filter(name => !names.some(up => up !== name && node.sub_within(up, name)));
+                const spots = { ...this.spots() };
+                const made = [];
+                for (const name of tops) {
+                    const copy = this.$.$bog_vmap_app_copy(node, name);
+                    spots[copy] = {
+                        x: Math.round(next[name].x),
+                        y: Math.round(next[name].y),
+                    };
+                    made.push(copy);
+                }
+                this.spots(spots);
+                this.picked(made);
+                return null;
+            }
             delete_hint() {
                 const name = this.selected();
                 return name ? `Удалить ${name} (Del)` : 'Удалить выделенный узел (Del)';
@@ -36344,6 +37417,10 @@ var $;
                     this.selected(next);
             }
             node_title(next) {
+                if (this.inner_foreign())
+                    return this.inner_prop();
+                if (this.inner())
+                    return this.inner_name();
                 const name = this.selected();
                 if (next === undefined)
                     return name ?? '';
@@ -36379,6 +37456,8 @@ var $;
                 return next ?? '';
             }
             node_title_note() {
+                if (this.inner_foreign())
+                    return this.inner_foreign_note();
                 const name = this.selected() ?? '';
                 const note = this.node_title_note_at(name);
                 return note ? `${note}. Узел по-прежнему называется «${name}»` : '';
@@ -36552,6 +37631,21 @@ var $;
             $mol_mem
         ], $bog_vmap_app.prototype, "store", null);
         __decorate([
+            $mol_mem
+        ], $bog_vmap_app.prototype, "inner_in_doc", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "inner_kids", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "inner_class", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "inner_alien", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "inner_held", null);
+        __decorate([
             $mol_mem_key
         ], $bog_vmap_app.prototype, "picked_at", null);
         __decorate([
@@ -36594,6 +37688,12 @@ var $;
             $mol_mem_key
         ], $bog_vmap_app.prototype, "part_ports", null);
         __decorate([
+            $mol_mem
+        ], $bog_vmap_app.prototype, "doc_paths", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "part_labels", null);
+        __decorate([
             $mol_mem_key
         ], $bog_vmap_app.prototype, "part_overs", null);
         __decorate([
@@ -36629,6 +37729,9 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "node_copy", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "node_clone", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "node_delete", null);
@@ -38506,441 +39609,6 @@ var $;
 
 ;
 "use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'Vector limiting'() {
-            let point = new $mol_vector_3d(7, 10, 13);
-            const res = point.limited([[1, 5], [15, 20], [5, 10]]);
-            $mol_assert_equal(res.x, 5);
-            $mol_assert_equal(res.y, 15);
-            $mol_assert_equal(res.z, 10);
-        },
-        'Vector adding scalar'() {
-            let point = new $mol_vector_3d(1, 2, 3);
-            let res = point.added0(5);
-            $mol_assert_equal(res.x, 6);
-            $mol_assert_equal(res.y, 7);
-            $mol_assert_equal(res.z, 8);
-        },
-        'Vector adding vector'() {
-            let point = new $mol_vector_3d(1, 2, 3);
-            let res = point.added1([5, 10, 15]);
-            $mol_assert_equal(res.x, 6);
-            $mol_assert_equal(res.y, 12);
-            $mol_assert_equal(res.z, 18);
-        },
-        'Vector multiplying scalar'() {
-            let point = new $mol_vector_3d(2, 3, 4);
-            let res = point.multed0(-1);
-            $mol_assert_equal(res.x, -2);
-            $mol_assert_equal(res.y, -3);
-            $mol_assert_equal(res.z, -4);
-        },
-        'Vector multiplying vector'() {
-            let point = new $mol_vector_3d(2, 3, 4);
-            let res = point.multed1([5, 2, -2]);
-            $mol_assert_equal(res.x, 10);
-            $mol_assert_equal(res.y, 6);
-            $mol_assert_equal(res.z, -8);
-        },
-        'Matrix adding matrix'() {
-            let matrix = new $mol_vector_matrix(...[[1, 2], [3, 4], [5, 6]]);
-            let res = matrix.added2([[10, 20], [30, 40], [50, 60]]);
-            $mol_assert_equal(res[0][0], 11);
-            $mol_assert_equal(res[0][1], 22);
-            $mol_assert_equal(res[1][0], 33);
-            $mol_assert_equal(res[1][1], 44);
-            $mol_assert_equal(res[2][0], 55);
-            $mol_assert_equal(res[2][1], 66);
-        },
-        'Matrix multiplying matrix'() {
-            let matrix = new $mol_vector_matrix(...[[2, 3], [4, 5], [6, 7]]);
-            let res = matrix.multed2([[2, 3], [4, 5], [6, 7]]);
-            $mol_assert_equal(res[0][0], 4);
-            $mol_assert_equal(res[0][1], 9);
-            $mol_assert_equal(res[1][0], 16);
-            $mol_assert_equal(res[1][1], 25);
-            $mol_assert_equal(res[2][0], 36);
-            $mol_assert_equal(res[2][1], 49);
-        },
-        'Range expanding'() {
-            let range = $mol_vector_range_full.inversed;
-            const expanded = range.expanded0(10).expanded0(5);
-            $mol_assert_like([...expanded], [5, 10]);
-        },
-        'Vector of range expanding by vector'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = dimensions.expanded1([1, 7]).expanded1([3, 5]);
-            $mol_assert_like([...expanded.x], [1, 3]);
-            $mol_assert_like([...expanded.y], [5, 7]);
-        },
-        'Vector of range expanding by vector of range'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = dimensions
-                .expanded2([[1, 3], [7, 9]])
-                .expanded2([[2, 4], [6, 8]]);
-            $mol_assert_like([...expanded.x], [1, 4]);
-            $mol_assert_like([...expanded.y], [6, 9]);
-        },
-        'Vector of infinity range expanding by vector of range'() {
-            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const next = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
-            const expanded = next
-                .expanded2(dimensions);
-            $mol_assert_like([...expanded.x], [Infinity, -Infinity]);
-            $mol_assert_like([...expanded.y], [Infinity, -Infinity]);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'escape'() {
-            const specials = $mol_regexp.from('.*+?^${}()|[]\\');
-            $mol_assert_equal(specials.source, '\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\');
-        },
-        'char code'() {
-            const space = $mol_regexp.from(32);
-            $mol_assert_like(' '.match(space), [' ']);
-        },
-        'repeat fixed'() {
-            const { repeat, decimal_only: digit } = $mol_regexp;
-            const year = repeat(digit, 4, 4);
-            $mol_assert_like('#2020#'.match(year), ['2020']);
-        },
-        'greedy repeat'() {
-            const { repeat, repeat_greedy, latin_only: letter } = $mol_regexp;
-            $mol_assert_like('abc'.match(repeat(letter, 1, 2)), ['a', 'b', 'c']);
-            $mol_assert_like('abc'.match(repeat_greedy(letter, 1, 2)), ['ab', 'c']);
-        },
-        'repeat range'() {
-            const { repeat_greedy, decimal_only: digit } = $mol_regexp;
-            const year = repeat_greedy(digit, 2, 4);
-            $mol_assert_like('#2#'.match(year), null);
-            $mol_assert_like('#20#'.match(year), ['20']);
-            $mol_assert_like('#2020#'.match(year), ['2020']);
-            $mol_assert_like('#20201#'.match(year), ['2020']);
-        },
-        'repeat from'() {
-            const { repeat_greedy, latin_only: letter } = $mol_regexp;
-            const name = repeat_greedy(letter, 2);
-            $mol_assert_like('##'.match(name), null);
-            $mol_assert_like('#a#'.match(name), null);
-            $mol_assert_like('#ab#'.match(name), ['ab']);
-            $mol_assert_like('#abc#'.match(name), ['abc']);
-        },
-        'from string'() {
-            const regexp = $mol_regexp.from('[\\d]');
-            $mol_assert_equal(regexp.source, '\\[\\\\d\\]');
-            $mol_assert_equal(regexp.flags, 'gsu');
-        },
-        'from regexp'() {
-            const regexp = $mol_regexp.from(/[\d]/i);
-            $mol_assert_equal(regexp.source, '[\\d]');
-            $mol_assert_equal(regexp.flags, 'i');
-        },
-        'split'() {
-            const regexp = $mol_regexp.from(';');
-            $mol_assert_like('aaa;bbb;ccc'.split(regexp), ['aaa', ';', 'bbb', ';', 'ccc']);
-            $mol_assert_like('aaa;;ccc'.split(regexp), ['aaa', ';', '', ';', 'ccc']);
-            $mol_assert_like('aaa'.split(regexp), ['aaa']);
-            $mol_assert_like(''.split(regexp), ['']);
-        },
-        'test for matching'() {
-            const regexp = $mol_regexp.from('foo');
-            $mol_assert_like(regexp.test(''), false);
-            $mol_assert_like(regexp.test('fo'), false);
-            $mol_assert_like(regexp.test('foo'), true);
-            $mol_assert_like(regexp.test('foobar'), true);
-            $mol_assert_like(regexp.test('barfoo'), true);
-        },
-        'case ignoring'() {
-            const xxx = $mol_regexp.from('x', { ignoreCase: true });
-            $mol_assert_like(xxx.flags, 'gisu');
-            $mol_assert_like(xxx.exec('xx')[0], 'x');
-            $mol_assert_like(xxx.exec('XX')[0], 'X');
-        },
-        'multiline mode'() {
-            const { end, from } = $mol_regexp;
-            const xxx = from(['x', end], { multiline: true });
-            $mol_assert_like(xxx.exec('x\ny')[0], 'x');
-            $mol_assert_like(xxx.flags, 'gmsu');
-        },
-        'flags override'() {
-            const triplet = $mol_regexp.from($mol_regexp.from(/.../, { ignoreCase: true }), { multiline: true });
-            $mol_assert_like(triplet.toString(), '/.../gmsu');
-        },
-        'sequence'() {
-            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
-            const year = repeat(digit, 4, 4);
-            const dash = '-';
-            const month = repeat(digit, 2, 2);
-            const day = repeat(digit, 2, 2);
-            const date = from([begin, year, dash, month, dash, day, end]);
-            $mol_assert_like(date.exec('2020-01-02')[0], '2020-01-02');
-        },
-        'optional'() {
-            const name = $mol_regexp.from(['A', ['4']]);
-            $mol_assert_equal('AB'.match(name)[0], 'A');
-            $mol_assert_equal('A4'.match(name)[0], 'A4');
-        },
-        'anon variants'() {
-            const name = $mol_regexp.from(['A', $mol_regexp.vary(['4', '5'])]);
-            $mol_assert_equal('AB'.match(name), null);
-            $mol_assert_equal('A4'.match(name)[0], 'A4');
-            $mol_assert_equal('A5'.match(name)[0], 'A5');
-        },
-        'only groups'() {
-            const regexp = $mol_regexp.from({ dog: '@' });
-            $mol_assert_like([...'#'.matchAll(regexp)][0].groups, undefined);
-            $mol_assert_like([...'@'.matchAll(regexp)][0].groups, { dog: '@' });
-        },
-        'catch skipped'() {
-            const regexp = $mol_regexp.from(/(@)(\d?)/g);
-            $mol_assert_like([...'[[@]]'.matchAll(regexp)].map(f => [...f]), [
-                ['[['],
-                ['@', '@', ''],
-                [']]'],
-            ]);
-        },
-        'enum variants'() {
-            let Sex;
-            (function (Sex) {
-                Sex["male"] = "male";
-                Sex["female"] = "female";
-            })(Sex || (Sex = {}));
-            const sexism = $mol_regexp.from(Sex);
-            $mol_assert_like([...''.matchAll(sexism)].length, 0);
-            $mol_assert_like([...'trans'.matchAll(sexism)][0].groups, undefined);
-            $mol_assert_like([...'male'.matchAll(sexism)][0].groups, { male: 'male', female: '' });
-            $mol_assert_like([...'female'.matchAll(sexism)][0].groups, { male: '', female: 'female' });
-        },
-        'recursive only groups'() {
-            let Sex;
-            (function (Sex) {
-                Sex["male"] = "male";
-                Sex["female"] = "female";
-            })(Sex || (Sex = {}));
-            const sexism = $mol_regexp.from({ Sex });
-            $mol_assert_like([...''.matchAll(sexism)].length, 0);
-            $mol_assert_like([...'male'.matchAll(sexism)][0].groups, { Sex: 'male', male: 'male', female: '' });
-            $mol_assert_like([...'female'.matchAll(sexism)][0].groups, { Sex: 'female', male: '', female: 'female' });
-        },
-        'sequence with groups'() {
-            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
-            const year = repeat(digit, 4, 4);
-            const dash = '-';
-            const month = repeat(digit, 2, 2);
-            const day = repeat(digit, 2, 2);
-            const regexp = from([begin, { year }, dash, { month }, dash, { day }, end]);
-            const found = [...'2020-01-02'.matchAll(regexp)];
-            $mol_assert_like(found[0].groups, {
-                year: '2020',
-                month: '01',
-                day: '02',
-            });
-        },
-        'sequence with groups of mixed type'() {
-            const prefix = '/';
-            const postfix = '/';
-            const regexp = $mol_regexp.from([{ prefix }, /(\w+)/, { postfix }, /([gumi]*)/]);
-            $mol_assert_like([...'/foo/mi'.matchAll(regexp)], [
-                Object.assign(["/foo/mi", "/", "foo", "/", "mi"], {
-                    groups: {
-                        prefix: '/',
-                        postfix: '/',
-                    },
-                    index: 0,
-                    input: "/",
-                }),
-            ]);
-        },
-        'recursive sequence with groups'() {
-            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
-            const year = repeat(digit, 4, 4);
-            const dash = '-';
-            const month = repeat(digit, 2, 2);
-            const day = repeat(digit, 2, 2);
-            const regexp = from([
-                begin, { date: [{ year }, dash, { month }] }, dash, { day }, end
-            ]);
-            const found = [...'2020-01-02'.matchAll(regexp)];
-            $mol_assert_like(found[0].groups, {
-                date: '2020-01',
-                year: '2020',
-                month: '01',
-                day: '02',
-            });
-        },
-        'parse multiple'() {
-            const { decimal_only: digit, from } = $mol_regexp;
-            const regexp = from({ digit });
-            $mol_assert_like([...'123'.matchAll(regexp)].map(f => f.groups), [
-                { digit: '1' },
-                { digit: '2' },
-                { digit: '3' },
-            ]);
-        },
-        'named variants'() {
-            const { begin, or, end, from } = $mol_regexp;
-            const sexism = from([
-                begin, 'sex = ', { sex: ['male', or, 'female'] }, end
-            ]);
-            $mol_assert_like([...'sex = male'.matchAll(sexism)][0].groups, { sex: 'male' });
-            $mol_assert_like([...'sex = female'.matchAll(sexism)][0].groups, { sex: 'female' });
-            $mol_assert_like([...'sex = malefemale'.matchAll(sexism)][0].groups, undefined);
-        },
-        'force after'() {
-            const { latin_only: letter, force_after, from } = $mol_regexp;
-            const regexp = from([letter, force_after('.')]);
-            $mol_assert_like('x.'.match(regexp), ['x']);
-            $mol_assert_like('x,'.match(regexp), null);
-        },
-        'forbid after'() {
-            const { latin_only: letter, forbid_after, from } = $mol_regexp;
-            const regexp = from([letter, forbid_after('.')]);
-            $mol_assert_like('x.'.match(regexp), null);
-            $mol_assert_like('x,'.match(regexp), ['x']);
-        },
-        'char except'() {
-            const { char_except, latin_only, tab } = $mol_regexp;
-            const name = char_except(latin_only, tab);
-            $mol_assert_like('a'.match(name), null);
-            $mol_assert_like('\t'.match(name), null);
-            $mol_assert_like('('.match(name), ['(']);
-        },
-        'unicode only'() {
-            const { unicode_only, from } = $mol_regexp;
-            const name = from([
-                unicode_only('Script', 'Cyrillic'),
-                unicode_only('Hex_Digit'),
-            ]);
-            $mol_assert_like('FF'.match(name), null);
-            $mol_assert_like('ФG'.match(name), null);
-            $mol_assert_like('ФF'.match(name), ['ФF']);
-        },
-        'generate by optional with inner group'() {
-            const { begin, end, from } = $mol_regexp;
-            const animals = from([begin, '#', ['^', { dog: '@' }], end]);
-            $mol_assert_equal(animals.generate({}), '#');
-            $mol_assert_equal(animals.generate({ dog: false }), '#');
-            $mol_assert_equal(animals.generate({ dog: true }), '#^@');
-            $mol_assert_fail(() => animals.generate({ dog: '$' }), 'Wrong param: dog=$');
-        },
-        'generate by optional with inner group with variants'() {
-            const { begin, end, from } = $mol_regexp;
-            const animals = from([begin, '#', ['^', { animal: { dog: '@', fox: '&' } }], end]);
-            $mol_assert_equal(animals.generate({}), '#');
-            $mol_assert_equal(animals.generate({ dog: true }), '#^@');
-            $mol_assert_equal(animals.generate({ fox: true }), '#^&');
-            $mol_assert_fail(() => animals.generate({ dog: '$' }), 'Wrong param: dog=$');
-        },
-        'complex example'() {
-            const { begin, end, char_only, char_range, latin_only, slash_back, repeat_greedy, from, } = $mol_regexp;
-            const atom_char = char_only(latin_only, "!#$%&'*+/=?^`{|}~-");
-            const atom = repeat_greedy(atom_char, 1);
-            const dot_atom = from([atom, repeat_greedy(['.', atom])]);
-            const name_letter = char_only(char_range(0x01, 0x08), 0x0b, 0x0c, char_range(0x0e, 0x1f), 0x21, char_range(0x23, 0x5b), char_range(0x5d, 0x7f));
-            const quoted_pair = from([
-                slash_back,
-                char_only(char_range(0x01, 0x09), 0x0b, 0x0c, char_range(0x0e, 0x7f))
-            ]);
-            const name = repeat_greedy({ name_letter, quoted_pair });
-            const quoted_name = from(['"', { name }, '"']);
-            const local_part = from({ dot_atom, quoted_name });
-            const domain = dot_atom;
-            const mail = from([begin, local_part, '@', { domain }, end]);
-            $mol_assert_equal('foo..bar@example.org'.match(mail), null);
-            $mol_assert_equal('foo..bar"@example.org'.match(mail), null);
-            $mol_assert_like([...'foo.bar@example.org'.matchAll(mail)][0].groups, {
-                dot_atom: "foo.bar",
-                quoted_name: "",
-                name: "",
-                name_letter: "",
-                quoted_pair: "",
-                domain: "example.org",
-            });
-            $mol_assert_like([...'"foo..bar"@example.org'.matchAll(mail)][0].groups, {
-                dot_atom: "",
-                quoted_name: '"foo..bar"',
-                name: "foo..bar",
-                name_letter: "r",
-                quoted_pair: "",
-                domain: "example.org",
-            });
-            $mol_assert_equal(mail.generate({ dot_atom: 'foo.bar', domain: 'example.org' }), 'foo.bar@example.org');
-            $mol_assert_equal(mail.generate({ name: 'foo..bar', domain: 'example.org' }), '"foo..bar"@example.org');
-            $mol_assert_fail(() => mail.generate({ dot_atom: 'foo..bar', domain: 'example.org' }), 'Wrong param: dot_atom=foo..bar');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    function get_parts(str) {
-        return $$.$mol_view_tree2_prop_parts($mol_tree2.struct(str));
-    }
-    $mol_test({
-        'wrong order'($) {
-            $mol_assert_fail(() => {
-                get_parts('some_bla?*');
-            }, 'Required prop like some*? at `?#1:1/0`');
-        },
-        'empty'($) {
-            $mol_assert_fail(() => {
-                get_parts('');
-            }, 'Required prop like some*? at `?#1:1/0`');
-        },
-        'prop in upper case'($) {
-            const parts = get_parts('Close_icon');
-            $mol_assert_equal(parts.name, 'Close_icon');
-            $mol_assert_equal(parts.key, '');
-            $mol_assert_equal(parts.next, '');
-        },
-        'prop with index'($) {
-            const parts = get_parts('some_bla*');
-            $mol_assert_equal(parts.name, 'some_bla');
-            $mol_assert_equal(parts.key, '*');
-            $mol_assert_equal(parts.next, '');
-        },
-        'prop with index and value'($) {
-            const parts = get_parts('some_bla*?');
-            $mol_assert_equal(parts.name, 'some_bla');
-            $mol_assert_equal(parts.key, '*');
-            $mol_assert_equal(parts.next, '?');
-        },
-        'legacy indexed'($) {
-            const parts = get_parts('Some*default');
-            $mol_assert_equal(parts.name, 'Some');
-            $mol_assert_equal(parts.key, '*default');
-            $mol_assert_equal(parts.next, '');
-        },
-        'legacy indexed value'($) {
-            const parts = get_parts('Some*k?v');
-            $mol_assert_equal(parts.name, 'Some');
-            $mol_assert_equal(parts.key, '*k');
-            $mol_assert_equal(parts.next, '?');
-        }
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
 
 ;
 "use strict";
@@ -39618,149 +40286,6 @@ var $;
 
 ;
 "use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'run callback'() {
-            class Plus1 extends $mol_wrapper {
-                static wrap(task) {
-                    return function (...args) {
-                        return task.call(this, ...args) + 1;
-                    };
-                }
-            }
-            $mol_assert_equal(Plus1.run(() => 2), 3);
-        },
-        'wrap function'() {
-            class Plus1 extends $mol_wrapper {
-                static wrap(task) {
-                    return function (...args) {
-                        return task.call(this, ...args) + 1;
-                    };
-                }
-            }
-            const obj = {
-                level: 2,
-                pow: Plus1.func(function (a) {
-                    return a ** this.level;
-                })
-            };
-            $mol_assert_equal(obj.pow(2), 5);
-        },
-        'decorate field getter'() {
-            class Plus1 extends $mol_wrapper {
-                static last = 0;
-                static wrap(task) {
-                    return function (...args) {
-                        return Plus1.last = (task.call(this, ...args) || 0) + 1;
-                    };
-                }
-            }
-            class Foo {
-                static get two() {
-                    return 1;
-                }
-                static set two(next) { }
-            }
-            __decorate([
-                Plus1.field
-            ], Foo, "two", null);
-            $mol_assert_equal(Foo.two, 2);
-            Foo.two = 3;
-            $mol_assert_equal(Plus1.last, 2);
-            $mol_assert_equal(Foo.two, 2);
-        },
-        'decorate instance method'() {
-            class Plus1 extends $mol_wrapper {
-                static wrap(task) {
-                    return function (...args) {
-                        return task.call(this, ...args) + 1;
-                    };
-                }
-            }
-            class Foo1 {
-                level = 2;
-                pow(a) {
-                    return a ** this.level;
-                }
-            }
-            __decorate([
-                Plus1.method
-            ], Foo1.prototype, "pow", null);
-            const Foo2 = Foo1;
-            const foo = new Foo2;
-            $mol_assert_equal(foo.pow(2), 5);
-        },
-        'decorate static method'() {
-            class Plus1 extends $mol_wrapper {
-                static wrap(task) {
-                    return function (...args) {
-                        return task.call(this, ...args) + 1;
-                    };
-                }
-            }
-            class Foo {
-                static level = 2;
-                static pow(a) {
-                    return a ** this.level;
-                }
-            }
-            __decorate([
-                Plus1.method
-            ], Foo, "pow", null);
-            $mol_assert_equal(Foo.pow(2), 5);
-        },
-        'decorate class'() {
-            class BarInc extends $mol_wrapper {
-                static wrap(task) {
-                    return function (...args) {
-                        const foo = task.call(this, ...args);
-                        foo.bar++;
-                        return foo;
-                    };
-                }
-            }
-            let Foo = class Foo {
-                bar;
-                constructor(bar) {
-                    this.bar = bar;
-                }
-            };
-            Foo = __decorate([
-                BarInc.class
-            ], Foo);
-            $mol_assert_equal(new Foo(2).bar, 3);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'memoize field'() {
-            class Foo {
-                static one = 1;
-                static get two() {
-                    return ++this.one;
-                }
-                static set two(next) { }
-            }
-            __decorate([
-                $mol_memo.field
-            ], Foo, "two", null);
-            $mol_assert_equal(Foo.two, 2);
-            $mol_assert_equal(Foo.two, 2);
-            Foo.two = 3;
-            $mol_assert_equal(Foo.two, 3);
-            $mol_assert_equal(Foo.two, 3);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
 /** @jsx $mol_jsx */
 var $;
 (function ($) {
@@ -39911,6 +40436,603 @@ var $;
 var $;
 (function ($) {
     $mol_wire_log.active();
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'null by default'() {
+            const key = String(Math.random());
+            $mol_assert_equal($mol_state_session.value(key), null);
+        },
+        'storing'() {
+            const key = String(Math.random());
+            $mol_state_session.value(key, '$mol_state_session_test');
+            $mol_assert_equal($mol_state_session.value(key), '$mol_state_session_test');
+            $mol_state_session.value(key, null);
+            $mol_assert_equal($mol_state_session.value(key), null);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'Vector limiting'() {
+            let point = new $mol_vector_3d(7, 10, 13);
+            const res = point.limited([[1, 5], [15, 20], [5, 10]]);
+            $mol_assert_equal(res.x, 5);
+            $mol_assert_equal(res.y, 15);
+            $mol_assert_equal(res.z, 10);
+        },
+        'Vector adding scalar'() {
+            let point = new $mol_vector_3d(1, 2, 3);
+            let res = point.added0(5);
+            $mol_assert_equal(res.x, 6);
+            $mol_assert_equal(res.y, 7);
+            $mol_assert_equal(res.z, 8);
+        },
+        'Vector adding vector'() {
+            let point = new $mol_vector_3d(1, 2, 3);
+            let res = point.added1([5, 10, 15]);
+            $mol_assert_equal(res.x, 6);
+            $mol_assert_equal(res.y, 12);
+            $mol_assert_equal(res.z, 18);
+        },
+        'Vector multiplying scalar'() {
+            let point = new $mol_vector_3d(2, 3, 4);
+            let res = point.multed0(-1);
+            $mol_assert_equal(res.x, -2);
+            $mol_assert_equal(res.y, -3);
+            $mol_assert_equal(res.z, -4);
+        },
+        'Vector multiplying vector'() {
+            let point = new $mol_vector_3d(2, 3, 4);
+            let res = point.multed1([5, 2, -2]);
+            $mol_assert_equal(res.x, 10);
+            $mol_assert_equal(res.y, 6);
+            $mol_assert_equal(res.z, -8);
+        },
+        'Matrix adding matrix'() {
+            let matrix = new $mol_vector_matrix(...[[1, 2], [3, 4], [5, 6]]);
+            let res = matrix.added2([[10, 20], [30, 40], [50, 60]]);
+            $mol_assert_equal(res[0][0], 11);
+            $mol_assert_equal(res[0][1], 22);
+            $mol_assert_equal(res[1][0], 33);
+            $mol_assert_equal(res[1][1], 44);
+            $mol_assert_equal(res[2][0], 55);
+            $mol_assert_equal(res[2][1], 66);
+        },
+        'Matrix multiplying matrix'() {
+            let matrix = new $mol_vector_matrix(...[[2, 3], [4, 5], [6, 7]]);
+            let res = matrix.multed2([[2, 3], [4, 5], [6, 7]]);
+            $mol_assert_equal(res[0][0], 4);
+            $mol_assert_equal(res[0][1], 9);
+            $mol_assert_equal(res[1][0], 16);
+            $mol_assert_equal(res[1][1], 25);
+            $mol_assert_equal(res[2][0], 36);
+            $mol_assert_equal(res[2][1], 49);
+        },
+        'Range expanding'() {
+            let range = $mol_vector_range_full.inversed;
+            const expanded = range.expanded0(10).expanded0(5);
+            $mol_assert_like([...expanded], [5, 10]);
+        },
+        'Vector of range expanding by vector'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = dimensions.expanded1([1, 7]).expanded1([3, 5]);
+            $mol_assert_like([...expanded.x], [1, 3]);
+            $mol_assert_like([...expanded.y], [5, 7]);
+        },
+        'Vector of range expanding by vector of range'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = dimensions
+                .expanded2([[1, 3], [7, 9]])
+                .expanded2([[2, 4], [6, 8]]);
+            $mol_assert_like([...expanded.x], [1, 4]);
+            $mol_assert_like([...expanded.y], [6, 9]);
+        },
+        'Vector of infinity range expanding by vector of range'() {
+            let dimensions = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const next = new $mol_vector_2d($mol_vector_range_full.inversed, $mol_vector_range_full.inversed);
+            const expanded = next
+                .expanded2(dimensions);
+            $mol_assert_like([...expanded.x], [Infinity, -Infinity]);
+            $mol_assert_like([...expanded.y], [Infinity, -Infinity]);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'escape'() {
+            const specials = $mol_regexp.from('.*+?^${}()|[]\\');
+            $mol_assert_equal(specials.source, '\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\');
+        },
+        'char code'() {
+            const space = $mol_regexp.from(32);
+            $mol_assert_like(' '.match(space), [' ']);
+        },
+        'repeat fixed'() {
+            const { repeat, decimal_only: digit } = $mol_regexp;
+            const year = repeat(digit, 4, 4);
+            $mol_assert_like('#2020#'.match(year), ['2020']);
+        },
+        'greedy repeat'() {
+            const { repeat, repeat_greedy, latin_only: letter } = $mol_regexp;
+            $mol_assert_like('abc'.match(repeat(letter, 1, 2)), ['a', 'b', 'c']);
+            $mol_assert_like('abc'.match(repeat_greedy(letter, 1, 2)), ['ab', 'c']);
+        },
+        'repeat range'() {
+            const { repeat_greedy, decimal_only: digit } = $mol_regexp;
+            const year = repeat_greedy(digit, 2, 4);
+            $mol_assert_like('#2#'.match(year), null);
+            $mol_assert_like('#20#'.match(year), ['20']);
+            $mol_assert_like('#2020#'.match(year), ['2020']);
+            $mol_assert_like('#20201#'.match(year), ['2020']);
+        },
+        'repeat from'() {
+            const { repeat_greedy, latin_only: letter } = $mol_regexp;
+            const name = repeat_greedy(letter, 2);
+            $mol_assert_like('##'.match(name), null);
+            $mol_assert_like('#a#'.match(name), null);
+            $mol_assert_like('#ab#'.match(name), ['ab']);
+            $mol_assert_like('#abc#'.match(name), ['abc']);
+        },
+        'from string'() {
+            const regexp = $mol_regexp.from('[\\d]');
+            $mol_assert_equal(regexp.source, '\\[\\\\d\\]');
+            $mol_assert_equal(regexp.flags, 'gsu');
+        },
+        'from regexp'() {
+            const regexp = $mol_regexp.from(/[\d]/i);
+            $mol_assert_equal(regexp.source, '[\\d]');
+            $mol_assert_equal(regexp.flags, 'i');
+        },
+        'split'() {
+            const regexp = $mol_regexp.from(';');
+            $mol_assert_like('aaa;bbb;ccc'.split(regexp), ['aaa', ';', 'bbb', ';', 'ccc']);
+            $mol_assert_like('aaa;;ccc'.split(regexp), ['aaa', ';', '', ';', 'ccc']);
+            $mol_assert_like('aaa'.split(regexp), ['aaa']);
+            $mol_assert_like(''.split(regexp), ['']);
+        },
+        'test for matching'() {
+            const regexp = $mol_regexp.from('foo');
+            $mol_assert_like(regexp.test(''), false);
+            $mol_assert_like(regexp.test('fo'), false);
+            $mol_assert_like(regexp.test('foo'), true);
+            $mol_assert_like(regexp.test('foobar'), true);
+            $mol_assert_like(regexp.test('barfoo'), true);
+        },
+        'case ignoring'() {
+            const xxx = $mol_regexp.from('x', { ignoreCase: true });
+            $mol_assert_like(xxx.flags, 'gisu');
+            $mol_assert_like(xxx.exec('xx')[0], 'x');
+            $mol_assert_like(xxx.exec('XX')[0], 'X');
+        },
+        'multiline mode'() {
+            const { end, from } = $mol_regexp;
+            const xxx = from(['x', end], { multiline: true });
+            $mol_assert_like(xxx.exec('x\ny')[0], 'x');
+            $mol_assert_like(xxx.flags, 'gmsu');
+        },
+        'flags override'() {
+            const triplet = $mol_regexp.from($mol_regexp.from(/.../, { ignoreCase: true }), { multiline: true });
+            $mol_assert_like(triplet.toString(), '/.../gmsu');
+        },
+        'sequence'() {
+            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
+            const year = repeat(digit, 4, 4);
+            const dash = '-';
+            const month = repeat(digit, 2, 2);
+            const day = repeat(digit, 2, 2);
+            const date = from([begin, year, dash, month, dash, day, end]);
+            $mol_assert_like(date.exec('2020-01-02')[0], '2020-01-02');
+        },
+        'optional'() {
+            const name = $mol_regexp.from(['A', ['4']]);
+            $mol_assert_equal('AB'.match(name)[0], 'A');
+            $mol_assert_equal('A4'.match(name)[0], 'A4');
+        },
+        'anon variants'() {
+            const name = $mol_regexp.from(['A', $mol_regexp.vary(['4', '5'])]);
+            $mol_assert_equal('AB'.match(name), null);
+            $mol_assert_equal('A4'.match(name)[0], 'A4');
+            $mol_assert_equal('A5'.match(name)[0], 'A5');
+        },
+        'only groups'() {
+            const regexp = $mol_regexp.from({ dog: '@' });
+            $mol_assert_like([...'#'.matchAll(regexp)][0].groups, undefined);
+            $mol_assert_like([...'@'.matchAll(regexp)][0].groups, { dog: '@' });
+        },
+        'catch skipped'() {
+            const regexp = $mol_regexp.from(/(@)(\d?)/g);
+            $mol_assert_like([...'[[@]]'.matchAll(regexp)].map(f => [...f]), [
+                ['[['],
+                ['@', '@', ''],
+                [']]'],
+            ]);
+        },
+        'enum variants'() {
+            let Sex;
+            (function (Sex) {
+                Sex["male"] = "male";
+                Sex["female"] = "female";
+            })(Sex || (Sex = {}));
+            const sexism = $mol_regexp.from(Sex);
+            $mol_assert_like([...''.matchAll(sexism)].length, 0);
+            $mol_assert_like([...'trans'.matchAll(sexism)][0].groups, undefined);
+            $mol_assert_like([...'male'.matchAll(sexism)][0].groups, { male: 'male', female: '' });
+            $mol_assert_like([...'female'.matchAll(sexism)][0].groups, { male: '', female: 'female' });
+        },
+        'recursive only groups'() {
+            let Sex;
+            (function (Sex) {
+                Sex["male"] = "male";
+                Sex["female"] = "female";
+            })(Sex || (Sex = {}));
+            const sexism = $mol_regexp.from({ Sex });
+            $mol_assert_like([...''.matchAll(sexism)].length, 0);
+            $mol_assert_like([...'male'.matchAll(sexism)][0].groups, { Sex: 'male', male: 'male', female: '' });
+            $mol_assert_like([...'female'.matchAll(sexism)][0].groups, { Sex: 'female', male: '', female: 'female' });
+        },
+        'sequence with groups'() {
+            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
+            const year = repeat(digit, 4, 4);
+            const dash = '-';
+            const month = repeat(digit, 2, 2);
+            const day = repeat(digit, 2, 2);
+            const regexp = from([begin, { year }, dash, { month }, dash, { day }, end]);
+            const found = [...'2020-01-02'.matchAll(regexp)];
+            $mol_assert_like(found[0].groups, {
+                year: '2020',
+                month: '01',
+                day: '02',
+            });
+        },
+        'sequence with groups of mixed type'() {
+            const prefix = '/';
+            const postfix = '/';
+            const regexp = $mol_regexp.from([{ prefix }, /(\w+)/, { postfix }, /([gumi]*)/]);
+            $mol_assert_like([...'/foo/mi'.matchAll(regexp)], [
+                Object.assign(["/foo/mi", "/", "foo", "/", "mi"], {
+                    groups: {
+                        prefix: '/',
+                        postfix: '/',
+                    },
+                    index: 0,
+                    input: "/",
+                }),
+            ]);
+        },
+        'recursive sequence with groups'() {
+            const { begin, end, decimal_only: digit, repeat, from } = $mol_regexp;
+            const year = repeat(digit, 4, 4);
+            const dash = '-';
+            const month = repeat(digit, 2, 2);
+            const day = repeat(digit, 2, 2);
+            const regexp = from([
+                begin, { date: [{ year }, dash, { month }] }, dash, { day }, end
+            ]);
+            const found = [...'2020-01-02'.matchAll(regexp)];
+            $mol_assert_like(found[0].groups, {
+                date: '2020-01',
+                year: '2020',
+                month: '01',
+                day: '02',
+            });
+        },
+        'parse multiple'() {
+            const { decimal_only: digit, from } = $mol_regexp;
+            const regexp = from({ digit });
+            $mol_assert_like([...'123'.matchAll(regexp)].map(f => f.groups), [
+                { digit: '1' },
+                { digit: '2' },
+                { digit: '3' },
+            ]);
+        },
+        'named variants'() {
+            const { begin, or, end, from } = $mol_regexp;
+            const sexism = from([
+                begin, 'sex = ', { sex: ['male', or, 'female'] }, end
+            ]);
+            $mol_assert_like([...'sex = male'.matchAll(sexism)][0].groups, { sex: 'male' });
+            $mol_assert_like([...'sex = female'.matchAll(sexism)][0].groups, { sex: 'female' });
+            $mol_assert_like([...'sex = malefemale'.matchAll(sexism)][0].groups, undefined);
+        },
+        'force after'() {
+            const { latin_only: letter, force_after, from } = $mol_regexp;
+            const regexp = from([letter, force_after('.')]);
+            $mol_assert_like('x.'.match(regexp), ['x']);
+            $mol_assert_like('x,'.match(regexp), null);
+        },
+        'forbid after'() {
+            const { latin_only: letter, forbid_after, from } = $mol_regexp;
+            const regexp = from([letter, forbid_after('.')]);
+            $mol_assert_like('x.'.match(regexp), null);
+            $mol_assert_like('x,'.match(regexp), ['x']);
+        },
+        'char except'() {
+            const { char_except, latin_only, tab } = $mol_regexp;
+            const name = char_except(latin_only, tab);
+            $mol_assert_like('a'.match(name), null);
+            $mol_assert_like('\t'.match(name), null);
+            $mol_assert_like('('.match(name), ['(']);
+        },
+        'unicode only'() {
+            const { unicode_only, from } = $mol_regexp;
+            const name = from([
+                unicode_only('Script', 'Cyrillic'),
+                unicode_only('Hex_Digit'),
+            ]);
+            $mol_assert_like('FF'.match(name), null);
+            $mol_assert_like('ФG'.match(name), null);
+            $mol_assert_like('ФF'.match(name), ['ФF']);
+        },
+        'generate by optional with inner group'() {
+            const { begin, end, from } = $mol_regexp;
+            const animals = from([begin, '#', ['^', { dog: '@' }], end]);
+            $mol_assert_equal(animals.generate({}), '#');
+            $mol_assert_equal(animals.generate({ dog: false }), '#');
+            $mol_assert_equal(animals.generate({ dog: true }), '#^@');
+            $mol_assert_fail(() => animals.generate({ dog: '$' }), 'Wrong param: dog=$');
+        },
+        'generate by optional with inner group with variants'() {
+            const { begin, end, from } = $mol_regexp;
+            const animals = from([begin, '#', ['^', { animal: { dog: '@', fox: '&' } }], end]);
+            $mol_assert_equal(animals.generate({}), '#');
+            $mol_assert_equal(animals.generate({ dog: true }), '#^@');
+            $mol_assert_equal(animals.generate({ fox: true }), '#^&');
+            $mol_assert_fail(() => animals.generate({ dog: '$' }), 'Wrong param: dog=$');
+        },
+        'complex example'() {
+            const { begin, end, char_only, char_range, latin_only, slash_back, repeat_greedy, from, } = $mol_regexp;
+            const atom_char = char_only(latin_only, "!#$%&'*+/=?^`{|}~-");
+            const atom = repeat_greedy(atom_char, 1);
+            const dot_atom = from([atom, repeat_greedy(['.', atom])]);
+            const name_letter = char_only(char_range(0x01, 0x08), 0x0b, 0x0c, char_range(0x0e, 0x1f), 0x21, char_range(0x23, 0x5b), char_range(0x5d, 0x7f));
+            const quoted_pair = from([
+                slash_back,
+                char_only(char_range(0x01, 0x09), 0x0b, 0x0c, char_range(0x0e, 0x7f))
+            ]);
+            const name = repeat_greedy({ name_letter, quoted_pair });
+            const quoted_name = from(['"', { name }, '"']);
+            const local_part = from({ dot_atom, quoted_name });
+            const domain = dot_atom;
+            const mail = from([begin, local_part, '@', { domain }, end]);
+            $mol_assert_equal('foo..bar@example.org'.match(mail), null);
+            $mol_assert_equal('foo..bar"@example.org'.match(mail), null);
+            $mol_assert_like([...'foo.bar@example.org'.matchAll(mail)][0].groups, {
+                dot_atom: "foo.bar",
+                quoted_name: "",
+                name: "",
+                name_letter: "",
+                quoted_pair: "",
+                domain: "example.org",
+            });
+            $mol_assert_like([...'"foo..bar"@example.org'.matchAll(mail)][0].groups, {
+                dot_atom: "",
+                quoted_name: '"foo..bar"',
+                name: "foo..bar",
+                name_letter: "r",
+                quoted_pair: "",
+                domain: "example.org",
+            });
+            $mol_assert_equal(mail.generate({ dot_atom: 'foo.bar', domain: 'example.org' }), 'foo.bar@example.org');
+            $mol_assert_equal(mail.generate({ name: 'foo..bar', domain: 'example.org' }), '"foo..bar"@example.org');
+            $mol_assert_fail(() => mail.generate({ dot_atom: 'foo..bar', domain: 'example.org' }), 'Wrong param: dot_atom=foo..bar');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    function get_parts(str) {
+        return $$.$mol_view_tree2_prop_parts($mol_tree2.struct(str));
+    }
+    $mol_test({
+        'wrong order'($) {
+            $mol_assert_fail(() => {
+                get_parts('some_bla?*');
+            }, 'Required prop like some*? at `?#1:1/0`');
+        },
+        'empty'($) {
+            $mol_assert_fail(() => {
+                get_parts('');
+            }, 'Required prop like some*? at `?#1:1/0`');
+        },
+        'prop in upper case'($) {
+            const parts = get_parts('Close_icon');
+            $mol_assert_equal(parts.name, 'Close_icon');
+            $mol_assert_equal(parts.key, '');
+            $mol_assert_equal(parts.next, '');
+        },
+        'prop with index'($) {
+            const parts = get_parts('some_bla*');
+            $mol_assert_equal(parts.name, 'some_bla');
+            $mol_assert_equal(parts.key, '*');
+            $mol_assert_equal(parts.next, '');
+        },
+        'prop with index and value'($) {
+            const parts = get_parts('some_bla*?');
+            $mol_assert_equal(parts.name, 'some_bla');
+            $mol_assert_equal(parts.key, '*');
+            $mol_assert_equal(parts.next, '?');
+        },
+        'legacy indexed'($) {
+            const parts = get_parts('Some*default');
+            $mol_assert_equal(parts.name, 'Some');
+            $mol_assert_equal(parts.key, '*default');
+            $mol_assert_equal(parts.next, '');
+        },
+        'legacy indexed value'($) {
+            const parts = get_parts('Some*k?v');
+            $mol_assert_equal(parts.name, 'Some');
+            $mol_assert_equal(parts.key, '*k');
+            $mol_assert_equal(parts.next, '?');
+        }
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'run callback'() {
+            class Plus1 extends $mol_wrapper {
+                static wrap(task) {
+                    return function (...args) {
+                        return task.call(this, ...args) + 1;
+                    };
+                }
+            }
+            $mol_assert_equal(Plus1.run(() => 2), 3);
+        },
+        'wrap function'() {
+            class Plus1 extends $mol_wrapper {
+                static wrap(task) {
+                    return function (...args) {
+                        return task.call(this, ...args) + 1;
+                    };
+                }
+            }
+            const obj = {
+                level: 2,
+                pow: Plus1.func(function (a) {
+                    return a ** this.level;
+                })
+            };
+            $mol_assert_equal(obj.pow(2), 5);
+        },
+        'decorate field getter'() {
+            class Plus1 extends $mol_wrapper {
+                static last = 0;
+                static wrap(task) {
+                    return function (...args) {
+                        return Plus1.last = (task.call(this, ...args) || 0) + 1;
+                    };
+                }
+            }
+            class Foo {
+                static get two() {
+                    return 1;
+                }
+                static set two(next) { }
+            }
+            __decorate([
+                Plus1.field
+            ], Foo, "two", null);
+            $mol_assert_equal(Foo.two, 2);
+            Foo.two = 3;
+            $mol_assert_equal(Plus1.last, 2);
+            $mol_assert_equal(Foo.two, 2);
+        },
+        'decorate instance method'() {
+            class Plus1 extends $mol_wrapper {
+                static wrap(task) {
+                    return function (...args) {
+                        return task.call(this, ...args) + 1;
+                    };
+                }
+            }
+            class Foo1 {
+                level = 2;
+                pow(a) {
+                    return a ** this.level;
+                }
+            }
+            __decorate([
+                Plus1.method
+            ], Foo1.prototype, "pow", null);
+            const Foo2 = Foo1;
+            const foo = new Foo2;
+            $mol_assert_equal(foo.pow(2), 5);
+        },
+        'decorate static method'() {
+            class Plus1 extends $mol_wrapper {
+                static wrap(task) {
+                    return function (...args) {
+                        return task.call(this, ...args) + 1;
+                    };
+                }
+            }
+            class Foo {
+                static level = 2;
+                static pow(a) {
+                    return a ** this.level;
+                }
+            }
+            __decorate([
+                Plus1.method
+            ], Foo, "pow", null);
+            $mol_assert_equal(Foo.pow(2), 5);
+        },
+        'decorate class'() {
+            class BarInc extends $mol_wrapper {
+                static wrap(task) {
+                    return function (...args) {
+                        const foo = task.call(this, ...args);
+                        foo.bar++;
+                        return foo;
+                    };
+                }
+            }
+            let Foo = class Foo {
+                bar;
+                constructor(bar) {
+                    this.bar = bar;
+                }
+            };
+            Foo = __decorate([
+                BarInc.class
+            ], Foo);
+            $mol_assert_equal(new Foo(2).bar, 3);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'memoize field'() {
+            class Foo {
+                static one = 1;
+                static get two() {
+                    return ++this.one;
+                }
+                static set two(next) { }
+            }
+            __decorate([
+                $mol_memo.field
+            ], Foo, "two", null);
+            $mol_assert_equal(Foo.two, 2);
+            $mol_assert_equal(Foo.two, 2);
+            Foo.two = 3;
+            $mol_assert_equal(Foo.two, 3);
+            $mol_assert_equal(Foo.two, 3);
+        },
+    });
 })($ || ($ = {}));
 
 ;
@@ -43914,6 +45036,22 @@ var $;
         ``,
     ].join('\n');
     const num = (text) => $mol_tree2.struct(text);
+    const inner_src = [
+        `${d}bog_vmap_lang_test_inner ${d}mol_view`,
+        `	Debt ${d}bog_vmap_lang_test_plot`,
+        `		title \\Долг`,
+        `	sub /`,
+        `		<= Debt`,
+        ``,
+    ].join('\n');
+    const inner_decl = ($) => $.$mol_tree2_from_string([
+        `Line ${d}bog_vmap_lang_test_graph`,
+        `	series_y <= values`,
+        `	value? <=> value?`,
+        `	color \\red`,
+        `	sub / <= Title`,
+        ``,
+    ].join('\n'), 'test.view.tree').kids[0];
     const count = (text, line) => text.split('\n').filter(one => one.trim() === line).length;
     $mol_test({
         'a value of a writable port of a part is a cell of the root, not a constant'($) {
@@ -44042,698 +45180,89 @@ var $;
             $mol_assert_equal(node.prop_names().includes('amount_value'), false);
             $mol_assert_equal(node.prop_names().includes('amount_hint'), true);
         },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'null by default'() {
-            const key = String(Math.random());
-            $mol_assert_equal($mol_state_session.value(key), null);
-        },
-        'storing'() {
-            const key = String(Math.random());
-            $mol_state_session.value(key, '$mol_state_session_test');
-            $mol_assert_equal($mol_state_session.value(key), '$mol_state_session_test');
-            $mol_state_session.value(key, null);
-            $mol_assert_equal($mol_state_session.value(key), null);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    var $$;
-    (function ($$) {
-        $mol_test({
-            async "Get and parse"($) {
-                $mol_assert_equal(await $mol_wire_async($mol_fetch).text('data:text/plain,foo'), 'foo');
-            },
-        });
-    })($$ = $_1.$$ || ($_1.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    const d = '$';
-    const lib_src = [
-        `${d}bog_vmap_lib_test_a ${d}mol_view`,
-        `	title \\A`,
-        `	count 0`,
-        ``,
-        `${d}bog_vmap_lib_test_b ${d}bog_vmap_lib_test_a`,
-        `	count 1`,
-        `	extra \\x`,
-        ``,
-    ].join('\n');
-    const doc_src = [
-        `${d}bog_vmap_lib_test_doc ${d}bog_vmap_lib_test_b`,
-        `	own \\z`,
-        ``,
-    ].join('\n');
-    $mol_test({
-        'predef gives $mol_view its own ports'($) {
-            const tree = $.$bog_vmap_lib_parse('');
-            const index = $.$bog_vmap_lib_index(tree);
-            $mol_assert_equal(index.has(`${d}mol_view`), true);
-            const props = $.$bog_vmap_lib_props_map(index, `${d}mol_view`);
-            $mol_assert_equal([...props.keys()].join(' '), 'dom_name style event field attr sub title');
-        },
-        'pack classes land next to the stub'($) {
-            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
-            $mol_assert_equal([...index.keys()].join(' '), `${d}mol_view ${d}bog_vmap_lib_test_a ${d}bog_vmap_lib_test_b`);
-            $mol_assert_equal(index.get(`${d}bog_vmap_lib_test_b`).type, `${d}bog_vmap_lib_test_a`);
-        },
-        'inheritance chain ends at the first undeclared name'($) {
-            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
-            $mol_assert_equal($.$bog_vmap_lib_chain(index, `${d}bog_vmap_lib_test_b`).join(' '), `${d}bog_vmap_lib_test_b ${d}bog_vmap_lib_test_a ${d}mol_view ${d}mol_object`);
-            $mol_assert_equal($.$bog_vmap_lib_chain(index, `${d}nowhere`).join(' '), `${d}nowhere`);
-        },
-        'props_map carries inherited ports and the most derived value'($) {
-            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
-            const props = $.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_b`);
-            $mol_assert_equal([...props.keys()].join(' '), 'dom_name style event field attr sub title count extra');
-            $mol_assert_equal(props.get('count').kids[0].type, '1');
-            $mol_assert_equal(props.get('title').kids[0].value, 'A');
-        },
-        'a malformed pack points at the row of the pack, not of the stub'($) {
-            const error = $mol_assert_fail(() => $.$bog_vmap_lib_parse(`${d}q ${d}w\n\t\t\toops \\\n`, 'pack.view.tree'), SyntaxError);
-            $mol_assert_equal(String(error.span), 'pack.view.tree#2:1/3');
-        },
-        'a redeclared port keeps the position of its first declaration'($) {
-            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
-            const keys = [...$.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_b`).keys()];
-            $mol_assert_equal(keys.indexOf('title'), 6);
-        },
-        'every port names the class it came from'($) {
-            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
-            const owner = $.$bog_vmap_lib_props_owner(index, `${d}bog_vmap_lib_test_b`);
-            $mol_assert_equal([...owner.keys()].join(' '), [...$.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_b`).keys()].join(' '));
-            $mol_assert_equal(owner.get('sub'), `${d}mol_view`);
-            $mol_assert_equal(owner.get('extra'), `${d}bog_vmap_lib_test_b`);
-            $mol_assert_equal(owner.get('title'), `${d}bog_vmap_lib_test_a`);
-            $mol_assert_equal(owner.get('count'), `${d}bog_vmap_lib_test_b`);
-        },
-        'a cycle in the namespace does not hang'($) {
-            const src = [
-                `${d}bog_vmap_lib_test_x ${d}bog_vmap_lib_test_y`,
-                `	left \\`,
+        'an inner layer taken out of a class reads its ports through the node it came from'($) {
+            $mol_assert_equal($.$bog_vmap_lang_inner_tree('Debt', 'Debt_Line', inner_decl($)).toString(), [
+                `Debt_Line ${d}bog_vmap_lang_test_graph`,
+                `	series_y = Debt values`,
+                `	value? = Debt value?`,
+                `	color \\red`,
+                `	sub / = Debt Title`,
                 ``,
-                `${d}bog_vmap_lib_test_y ${d}bog_vmap_lib_test_x`,
-                `	right \\`,
+            ].join('\n'));
+        },
+        'a keyed inner layer stays in its class'($) {
+            const keyed = $.$mol_tree2_from_string([
+                `Row ${d}bog_vmap_lang_test_graph`,
+                `	title <= row_title*`,
                 ``,
-            ].join('\n');
-            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(src));
-            $mol_assert_equal($.$bog_vmap_lib_chain(index, `${d}bog_vmap_lib_test_x`).join(' '), `${d}bog_vmap_lib_test_x ${d}bog_vmap_lib_test_y`);
-            $mol_assert_equal([...$.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_x`).keys()].join(' '), 'right left');
-        },
-        'united resolves document classes against the library'($) {
-            const lib = $.$bog_vmap_lib_parse(lib_src);
-            const doc = $.$bog_vmap_lib_parse(doc_src);
-            const doc_kids = doc.kids.filter(cl => cl.type !== `${d}mol_view`);
-            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_united(lib, doc_kids));
-            const props = $.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_doc`);
-            $mol_assert_equal([...props.keys()].join(' '), 'dom_name style event field attr sub title count extra own');
-        },
-        'a document class shadows a library class of the same name'($) {
-            const lib = $.$bog_vmap_lib_parse(lib_src);
-            const own = $.$bog_vmap_lib_parse([
-                `${d}bog_vmap_lib_test_a ${d}mol_view`,
-                `	mine \\`,
-                ``,
-            ].join('\n')).kids.filter(cl => cl.type !== `${d}mol_view`);
-            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_united(lib, own));
-            const props = $.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_a`);
-            $mol_assert_equal(props.has('mine'), true);
-            $mol_assert_equal(props.has('count'), false);
-        },
-        'united of nothing is the library itself'($) {
-            const lib = $.$bog_vmap_lib_parse(lib_src);
-            $mol_assert_equal($.$bog_vmap_lib_united(lib, []), lib);
-        },
-        'lists and search over a namespace'($) {
-            const lib = $.$bog_vmap_lib.make({
-                $,
-                tree: () => $.$bog_vmap_lib_parse(lib_src),
-            });
-            $mol_assert_equal(lib.class_list().join(' '), `${d}mol_view ${d}bog_vmap_lib_test_a ${d}bog_vmap_lib_test_b`);
-            $mol_assert_equal(lib.base_options().join(' '), `${d}bog_vmap_lib_test_b ${d}bog_vmap_lib_test_a ${d}mol_view`);
-            $mol_assert_equal(lib.class_search('test_b').join(' '), `${d}bog_vmap_lib_test_b`);
-            $mol_assert_equal(lib.class_search('').length, 3);
-            $mol_assert_equal(lib.inherit_chain(`${d}bog_vmap_lib_test_a`).length, 3);
-            $mol_assert_equal(lib.props_map(`${d}bog_vmap_lib_test_a`).size, 8);
-            $mol_assert_equal(lib.props_of(`${d}bog_vmap_lib_test_b`).kids[0].type, 'extra');
-        },
-        'the pack address drives both links'($) {
-            const lib = $.$bog_vmap_lib.make({ $ });
-            $mol_assert_equal(lib.tree_link(), 'https://mol.hyoo.ru/web.view.tree');
-            $mol_assert_equal(lib.script_link(), 'https://mol.hyoo.ru/web.js');
-            lib.pack('https://example.org/app/');
-            $mol_assert_equal(lib.tree_link(), 'https://example.org/app/web.view.tree');
-            $mol_assert_equal(lib.script_link(), 'https://example.org/app/web.js');
-        },
-        'a pack address without a trailing slash keeps its last segment'($) {
-            const lib = $.$bog_vmap_lib.make({ $ });
-            lib.pack('https://b-on-g.github.io/gram');
-            $mol_assert_equal(lib.tree_link(), 'https://b-on-g.github.io/gram/web.view.tree');
-            $mol_assert_equal(lib.script_link(), 'https://b-on-g.github.io/gram/web.js');
-            $mol_assert_equal(lib.pack(), 'https://b-on-g.github.io/gram');
-            $mol_assert_equal(lib.pack_base(), 'https://b-on-g.github.io/gram/');
-            lib.pack('https://b-on-g.github.io/gram/');
-            $mol_assert_equal(lib.tree_link(), 'https://b-on-g.github.io/gram/web.view.tree');
-        },
-        'a sibling module on the dev server keeps the build folder'($) {
-            const page = 'http://localhost:9080/bog/vmap/app/-/test.html';
-            $mol_assert_equal($bog_vmap_lib_sibling(page, 'scene'), 'http://localhost:9080/bog/vmap/scene/-/');
-            $mol_assert_equal($bog_vmap_lib_sibling(page, 'part'), 'http://localhost:9080/bog/vmap/part/-/');
-            $mol_assert_equal($bog_vmap_lib_sibling('http://localhost:9080/bog/vmap/app/-/index.html', 'scene'), 'http://localhost:9080/bog/vmap/scene/-/');
-        },
-        'a sibling module on a deploy is a folder under the editor'($) {
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/', 'part'), 'https://b-on-g.github.io/vmap/part/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/index.html', 'part'), 'https://b-on-g.github.io/vmap/part/');
-        },
-        'a page address without a trailing slash reads as a folder'($) {
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap', 'part'), 'https://b-on-g.github.io/vmap/part/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap?x=1#y', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
-        },
-        'a dot in a folder name is not a page file'($) {
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/', 'part'), 'https://b-on-g.github.io/vmap/v1.2/part/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/index.html', 'scene'), 'https://b-on-g.github.io/vmap/v1.2/scene/');
-        },
-        'an editor served from the root of a site keeps its siblings under it'($) {
-            $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/', 'part'), 'https://vmap.example/part/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/index.html', 'scene'), 'https://vmap.example/scene/');
-            $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example', 'part'), 'https://vmap.example/part/');
-        },
-        async 'a pack is fetched and parsed'($) {
-            const lib = $.$bog_vmap_lib.make({
-                $,
-                tree_link: () => 'data:text/plain,' + encodeURIComponent(lib_src),
-            });
-            $mol_assert_equal((await $.$mol_wire_async(lib).class_list()).join(' '), `${d}mol_view ${d}bog_vmap_lib_test_a ${d}bog_vmap_lib_test_b`);
-        },
-        async 'an unreachable pack fails instead of emptying the palette'($) {
-            const lib = $.$bog_vmap_lib.make({ $, tree_link: () => 'data:' });
+            ].join('\n'), 'test.view.tree').kids[0];
+            $mol_assert_equal($.$bog_vmap_lang_inner_movable(inner_decl($)), true);
+            $mol_assert_equal($.$bog_vmap_lang_inner_movable(keyed), false);
             let failed = '';
             try {
-                await $.$mol_wire_async(lib).class_list();
+                $.$bog_vmap_lang_inner_tree('Debt', 'Debt_Row', keyed);
             }
             catch (error) {
-                failed = error.constructor.name;
+                failed = error.message;
             }
-            $mol_assert_equal(failed, '$mol_error_mix');
+            $mol_assert_ok(failed.includes('keyed'));
         },
-        'a dead pack is worded with the address that was fetched'($) {
-            const note = $.$bog_vmap_lib_pack_note('https://dead.test/web.view.tree', new Error('Not Found'));
-            $mol_assert_ok(note.includes('Not Found'));
-            $mol_assert_ok(note.includes('https://dead.test/web.view.tree'));
-            const bare = $.$bog_vmap_lib_pack_note('', new Error('Failed to fetch'));
-            $mol_assert_equal(bare, 'Пак не отвечает: Failed to fetch');
+        'an override of an inner layer is a node of the document held by a reference'($) {
+            const node = doc(inner_src);
+            $mol_assert_equal(node.inner_ref('Debt', 'Line'), '');
+            const name = node.inner_bind('Debt', 'Line', inner_decl($));
+            $mol_assert_equal(name, 'Debt_Line');
+            $mol_assert_equal(node.inner_ref('Debt', 'Line'), 'Debt_Line');
+            $mol_assert_like(node.inner_refs('Debt'), ['Debt_Line']);
+            $mol_assert_equal(node.source(), [
+                `${d}bog_vmap_lang_test_inner ${d}mol_view`,
+                `	Debt ${d}bog_vmap_lang_test_plot`,
+                `		title \\Долг`,
+                `		Line <= Debt_Line`,
+                `	sub / <= Debt`,
+                `	Debt_Line ${d}bog_vmap_lang_test_graph`,
+                `		series_y = Debt values`,
+                `		value? = Debt value?`,
+                `		color \\red`,
+                `		sub / = Debt Title`,
+                ``,
+            ].join('\n'));
+        },
+        'a second edit of the same inner layer keeps the node it already has'($) {
+            const node = doc(inner_src);
+            node.inner_bind('Debt', 'Line', inner_decl($));
+            node.cell_value('Debt_Line', 'color?', $mol_tree2.data('blue'));
+            $mol_assert_equal(node.inner_bind('Debt', 'Line', inner_decl($)), 'Debt_Line');
+            $mol_assert_equal(count(node.source(), `Line <= Debt_Line`), 1);
+            $mol_assert_equal(node.cell_of('Debt_Line', 'color'), 'debt_line_color');
+            $mol_assert_equal(node.prop_decl('debt_line_color').toString(), 'debt_line_color? \\blue\n');
+        },
+        'a port of an inner layer that the class feeds keeps its feed and refuses a value'($) {
+            const node = doc(inner_src);
+            node.inner_bind('Debt', 'Line', inner_decl($));
+            let failed = '';
+            try {
+                node.cell_value('Debt_Line', 'value?', $mol_tree2.data('Свежо'));
+            }
+            catch (error) {
+                failed = error.message;
+            }
+            $mol_assert_ok(failed.includes('bound already'));
+            $mol_assert_equal(node.over_tree('Debt_Line', 'value').toString(), 'value? = Debt value?\n');
+        },
+        'an inner layer does not take a port the document already bound'($) {
+            const node = doc(inner_src);
+            node.over_set('Debt', 'Line', $mol_tree2.struct('Line', [$mol_tree2.struct('null')]));
+            let failed = '';
+            try {
+                node.inner_bind('Debt', 'Line', inner_decl($));
+            }
+            catch (error) {
+                failed = error.message;
+            }
+            $mol_assert_ok(failed.includes('bound already'));
         },
     });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    $mol_test({
-        'the stand hands the inspector one class of a multi class document'($) {
-            const stand = $.$bog_vmap_app_inspect_demo.make({ $ });
-            const names = stand.names();
-            $mol_assert_equal(names.length, 2);
-            $mol_assert_ok(stand.class_source().startsWith(names[0]));
-        },
-        'picking a class switches what the stand hands over'($) {
-            const stand = $.$bog_vmap_app_inspect_demo.make({ $ });
-            const names = stand.names();
-            stand.klass(names[1]);
-            $mol_assert_ok(stand.class_source().startsWith(names[1]));
-        },
-        'an edit through the stand leaves the other class byte for byte'($) {
-            const stand = $.$bog_vmap_app_inspect_demo.make({ $ });
-            const other = stand.names()[1];
-            const before = stand.Doc().class_source(other);
-            stand.class_source(stand.class_source().replace('count 24', 'count 42'));
-            $mol_assert_equal(stand.Doc().class_source(other), before);
-            $mol_assert_ok(stand.class_source().includes('count 42'));
-        },
-        'the inspected class is not duplicated by its own peers'($) {
-            const stand = $.$bog_vmap_app_inspect_demo.make({ $ });
-            const types = stand.Inspect().classes().map(tree => tree.type);
-            $mol_assert_like(types, stand.names());
-        },
-        'layout properties land in the style of the node and read back'($) {
-            const inspect = panel($, [
-                `${d}bog_vmap_app_inspect_test_page ${d}mol_view`,
-                '	sub /',
-                '',
-            ].join('\n'));
-            $mol_assert_equal(inspect.Flex().direction(), '');
-            inspect.Flex().direction('column');
-            inspect.Flex().gap('1rem');
-            $mol_assert_equal(inspect.Flex().direction(), 'column');
-            $mol_assert_equal(inspect.Flex().gap(), '1rem');
-            $mol_assert_equal(inspect.Node().source(), [
-                `${d}bog_vmap_app_inspect_test_page ${d}mol_view`,
-                '	sub /',
-                '	style *',
-                '		^',
-                '		flexDirection \\column',
-                '		gap \\1rem',
-                '',
-            ].join('\n'));
-            inspect.Flex().gap('');
-            $mol_assert_equal(inspect.Flex().gap(), '');
-            $mol_assert_equal(inspect.Node().source().includes('gap'), false);
-            $mol_assert_equal(inspect.Flex().direction(), 'column');
-        },
-        'the inherited head of the style dictionary is kept'($) {
-            const inspect = panel($, [
-                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
-                '	style *',
-                '		^',
-                '		padding \\4px',
-                '',
-            ].join('\n'));
-            inspect.Flex().across('center');
-            $mol_assert_like(inspect.style_dict().kids.map(kid => kid.type), ['^', 'padding', 'alignItems']);
-        },
-        'stretching is written as text, because a number would get px'($) {
-            const inspect = panel($, [
-                `${d}bog_vmap_app_inspect_test_cell ${d}mol_view`,
-                '	sub /',
-                '',
-            ].join('\n'));
-            inspect.Flex().grow(true);
-            $mol_assert_equal(inspect.Flex().grow(), true);
-            $mol_assert_ok(inspect.Node().source().includes('flexGrow \\1'));
-            inspect.Flex().grow(false);
-            $mol_assert_equal(inspect.Flex().grow(), false);
-            $mol_assert_equal(inspect.Node().source().includes('flexGrow'), false);
-        },
-        'the width switch sets the width of the artboard'($) {
-            const inspect = panel($, [
-                `${d}bog_vmap_app_inspect_test_board ${d}mol_view`,
-                '	style * width \\1280px',
-                '	sub /',
-                '',
-            ].join('\n'));
-            $mol_assert_equal(inspect.Flex().width(), '1280px');
-            inspect.Flex().width('390px');
-            $mol_assert_equal(inspect.Flex().width(), '390px');
-            $mol_assert_ok(inspect.Node().source().includes('width \\390px'));
-        },
-        'every layout row is a form field with a stock control'($) {
-            const inspect = panel($, [
-                `${d}bog_vmap_app_inspect_test_board ${d}mol_view`,
-                '	sub /',
-                '',
-            ].join('\n'));
-            const flex = inspect.Flex();
-            flex.dom_tree();
-            $mol_assert_equal(flex.Width().dom_node().hasAttribute('mol_form_field'), true);
-            $mol_assert_equal(flex.Width().name(), 'Ширина');
-            $mol_assert_equal(flex.Width().control(), flex.Width_pick());
-            $mol_assert_equal(flex.Gap().control(), flex.Gap_field());
-            $mol_assert_ok(flex.Width_pick().dom_node().hasAttribute('mol_switch'));
-            $mol_assert_ok(flex.Gap_field().dom_node().hasAttribute('mol_string'));
-        },
-        'the name field renames on submit and not on a keystroke'($) {
-            const inspect = panel($, [
-                `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
-                '	sub /',
-                '',
-            ].join('\n'));
-            $mol_assert_equal(inspect.title_value(), `${d}bog_vmap_app_inspect_test_name`);
-            inspect.title_value(`${d}bog_vmap_app_inspect_test_hero`);
-            $mol_assert_equal(inspect.title_value(), `${d}bog_vmap_app_inspect_test_hero`);
-            $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_name`);
-            inspect.title_submit();
-            $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_hero`);
-            $mol_assert_ok(inspect.Node().source().startsWith(`${d}bog_vmap_app_inspect_test_hero `));
-        },
-        'the field follows the name once the rename lands'($) {
-            const inspect = panel($, [
-                `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
-                '	sub /',
-                '',
-            ].join('\n'));
-            inspect.title_value(`${d}bog_vmap_app_inspect_test_hero`);
-            inspect.title_submit();
-            $mol_assert_equal(inspect.title_value(), `${d}bog_vmap_app_inspect_test_hero`);
-            inspect.title_submit();
-            $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_hero`);
-        },
-        'a read only scene shows every value and lets none be edited'($) {
-            const source = [
-                `${d}bog_vmap_app_inspect_test_view ${d}mol_view`,
-                '	title \\Привет',
-                '	count 24',
-                '	shown true',
-                '	names /',
-                '		\\один',
-                '		\\два',
-                '	sub /',
-                '		<= title',
-                '',
-            ].join('\n');
-            const fields = (editable) => {
-                const inspect = panel($, source);
-                inspect.editable = () => editable;
-                const root = inspect.dom_tree();
-                return [...root.querySelectorAll('input, textarea, [mol_button]')]
-                    .filter(field => !field.closest('[mol_check_expand]'));
-            };
-            const open = fields(true);
-            const shut = fields(false);
-            $mol_assert_equal(open.length > 8, true);
-            $mol_assert_equal(shut.length, open.length);
-            $mol_assert_equal(open.filter(field => !field.hasAttribute('disabled')).length > 8, true);
-            $mol_assert_like(shut.filter(field => !field.hasAttribute('disabled')).map(field => field.id), []);
-        },
-        'the head of the panel is the head of a page'($) {
-            const inspect = panel($, [
-                `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
-                '	sub /',
-                '',
-            ].join('\n'));
-            const root = inspect.dom_tree();
-            $mol_assert_ok(root.querySelector('[mol_page_head]'));
-            $mol_assert_equal(inspect.Name().dom_node().hasAttribute('mol_string'), true);
-            $mol_assert_equal(root.contains(inspect.Name().dom_node()), true);
-            $mol_assert_equal(inspect.Name().value(), `${d}bog_vmap_app_inspect_test_name`);
-            $mol_assert_equal(inspect.Name().dom_node().getAttribute('id').endsWith('Name()'), true);
-        },
-        'the refusal strip is there only while there is a refusal'($) {
-            const inspect = panel($, [
-                `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
-                '	sub /',
-                '',
-            ].join('\n'));
-            $mol_assert_equal(inspect.tools().includes(inspect.Note()), false);
-            const refused = $.$bog_vmap_app_inspect.make({
-                $,
-                source: () => `${d}bog_vmap_app_inspect_test_name ${d}mol_view\n\tsub /\n`,
-                pack: () => '',
-                title_note: () => 'Имя занято',
-            });
-            $mol_assert_equal(refused.tools().includes(refused.Note()), true);
-            $mol_assert_equal(refused.Note().message(), 'Имя занято');
-        },
-        'a source naming no class leaves an invitation, not twenty failures'($) {
-            const one = panel($, '');
-            $mol_assert_equal(one.class_ready(), false);
-            $mol_assert_equal(one.body().length, 1);
-            $mol_assert_equal(one.body()[0], one.Empty());
-            const two = panel($, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n`);
-            $mol_assert_equal(two.class_ready(), true);
-            $mol_assert_ok(two.body().length > 1);
-        },
-        'everything that can grow is inside the one scroll of the page'($) {
-            const one = panel($, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n`);
-            $mol_assert_equal(one.Body() instanceof $mol_scroll, true);
-            $mol_assert_equal(one.body_content().length, 1);
-            $mol_assert_equal(one.body_content()[0], one.Body_content());
-            const body = one.body();
-            $mol_assert_equal(body.includes(one.Flex()), true);
-            $mol_assert_equal(body.includes(one.Rows()), true);
-            $mol_assert_equal(body.includes(one.Inherited()), true);
-        },
-        'every property row is a form field labelled by the signature'($) {
-            const one = panel($, [
-                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
-                '	title \\Hi',
-                '	count 24',
-                '',
-            ].join('\n'));
-            one.dom_tree();
-            const row = one.Row('title');
-            $mol_assert_equal(row.dom_node().hasAttribute('mol_form_field'), true);
-            $mol_assert_equal(row.name(), 'title');
-            $mol_assert_equal(one.Rows().dom_node().contains(row.dom_node()), true);
-            $mol_assert_equal(row.control(), row.Value());
-        },
-        'the field of a row is the stock one for the kind of the value'($) {
-            const one = panel($, [
-                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
-                '	title \\Hi',
-                '	count 24',
-                '	dense false',
-                '	style * padding \\4px',
-                '	sub / <= Hero',
-                `	Hero ${d}mol_view`,
-                '	calc = Hero title',
-                '',
-            ].join('\n'));
-            one.dom_tree();
-            const value = (name) => one.Row(name).Value();
-            $mol_assert_equal(value('title').Editor(), value('title').String());
-            $mol_assert_equal(value('count').Editor(), value('count').Num());
-            $mol_assert_equal(value('dense').Editor(), value('dense').Flag());
-            $mol_assert_equal(value('style').Editor(), value('style').Seq());
-            $mol_assert_equal(value('sub').Editor(), value('sub').Seq());
-            $mol_assert_equal(value('calc').Editor(), value('calc').Wire());
-            $mol_assert_equal(value('title').String().Text().dom_node().hasAttribute('mol_string'), true);
-            $mol_assert_equal(value('count').Num().dom_node().hasAttribute('mol_string'), true);
-            $mol_assert_equal(value('dense').Flag().dom_node().hasAttribute('mol_check'), true);
-            $mol_assert_equal(value('style').Seq().dom_node().hasAttribute('mol_list'), true);
-            $mol_assert_equal(value('calc').Wire().Origin().dom_node().hasAttribute('mol_select'), true);
-        },
-        'an edit in the field of a row reaches the document'($) {
-            const one = panel($, [
-                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
-                '	title \\Hi',
-                '',
-            ].join('\n'));
-            one.dom_tree();
-            const field = one.Row('title').Value()
-                .String().Text();
-            $mol_assert_equal(field.value(), 'Hi');
-            field.value('Hey');
-            $mol_assert_equal(one.row_value('title').text(), 'Hey');
-            $mol_assert_ok(one.Node().source().includes('title \\Hey'));
-        },
-        'a number keeps the literal the document holds'($) {
-            const one = panel($, [
-                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
-                '	ratio 1e3',
-                '',
-            ].join('\n'));
-            one.dom_tree();
-            const value = one.Row('ratio').Value();
-            $mol_assert_equal(value.Editor(), value.Num());
-            $mol_assert_equal(value.num(), '1e3');
-            value.num('2e4');
-            $mol_assert_ok(one.Node().source().includes('ratio 2e4'));
-        },
-        'inherited rows live in the expander and own rows do not'($) {
-            const one = pair($, [
-                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
-                '	caption \\Карточка',
-                `${d}bog_vmap_app_inspect_test_hero ${d}bog_vmap_app_inspect_test_card`,
-                '	title \\Hi',
-                '',
-            ].join('\n'), `${d}bog_vmap_app_inspect_test_hero`);
-            $mol_assert_equal(one.row_inherited('caption'), true);
-            $mol_assert_equal(one.row_inherited('title'), false);
-            $mol_assert_like(one.own_ports(), ['title']);
-            $mol_assert_ok(one.inherited_ports().includes('caption'));
-            $mol_assert_equal(one.inherited_ports().includes('title'), false);
-            $mol_assert_equal(one.Inherited().expanded(), true);
-            one.dom_tree();
-            $mol_assert_equal(one.Inherited().dom_node().hasAttribute('mol_expander'), true);
-            $mol_assert_equal(one.Inherited().dom_node().contains(one.Row('caption').dom_node()), true);
-            $mol_assert_equal(one.Inherited().dom_node().contains(one.Row('title').dom_node()), false);
-            $mol_assert_equal(one.Rows().dom_node().contains(one.Row('title').dom_node()), true);
-        },
-        'an inherited row offers no tools'($) {
-            const one = pair($, [
-                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
-                '	caption \\Карточка',
-                `${d}bog_vmap_app_inspect_test_hero ${d}bog_vmap_app_inspect_test_card`,
-                '	title \\Hi',
-                '',
-            ].join('\n'), `${d}bog_vmap_app_inspect_test_hero`);
-            $mol_assert_equal(one.Row('caption').tools().length, 0);
-            $mol_assert_equal(one.Row('title').tools().length, 3);
-            $mol_assert_equal(one.Row('caption').bid(), `${d}bog_vmap_app_inspect_test_card`);
-        },
-        'the inherited group opens by default and closing it hides the rows'($) {
-            const one = pair($, [
-                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
-                '	caption \\Карточка',
-                `${d}bog_vmap_app_inspect_test_hero ${d}bog_vmap_app_inspect_test_card`,
-                '	title \\Hi',
-                '',
-            ].join('\n'), `${d}bog_vmap_app_inspect_test_hero`);
-            $mol_assert_equal(one.inherited_shown(), true);
-            one.dom_tree();
-            $mol_assert_ok(one.Inherited().dom_node().querySelector('[mol_form_field]'));
-            one.inherited_shown(false);
-            one.dom_tree();
-            $mol_assert_equal(one.Inherited().dom_node().querySelector('[mol_form_field]'), null);
-        },
-    });
-    $mol_test({
-        'a value typed for a writable port of a node lands in a cell of the root'($) {
-            const { root, inspect } = part_panel($, root_src, 'Amount');
-            field(inspect, 'value').num('6000000');
-            $mol_assert_equal(root.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
-            $mol_assert_equal(root.prop_decl('amount_value').toString(), 'amount_value? 6000000\n');
-            $mol_assert_equal(field(inspect, 'value').num(), '6000000');
-        },
-        'a second edit of the value edits the cell and leaves the node alone'($) {
-            const { root, inspect } = part_panel($, root_src, 'Amount');
-            field(inspect, 'value').num('6000000');
-            const node = inspect.Node().source();
-            field(inspect, 'value').num('7000000');
-            $mol_assert_equal(root.prop_decl('amount_value').toString(), 'amount_value? 7000000\n');
-            $mol_assert_equal(root.source().split('\n').filter(line => line.includes('amount_value')).length, 2);
-            $mol_assert_equal(inspect.Node().source(), node);
-            $mol_assert_equal(field(inspect, 'value').num(), '7000000');
-        },
-        'a port that takes no writes keeps its constant in the node'($) {
-            const { root, inspect } = part_panel($, root_src, 'Amount');
-            field(inspect, 'hint').String().text('Сумма');
-            $mol_assert_equal(root.over_tree('Amount', 'hint').toString(), 'hint \\Сумма\n');
-            $mol_assert_equal(root.prop_names().includes('amount_hint'), false);
-        },
-        'a class of its own keeps a constant even in a writable property'($) {
-            const one = panel($, `${d}bog_vmap_app_inspect_test_card ${d}mol_view\n\tcount? 24\n`);
-            field(one, 'count').num('42');
-            $mol_assert_ok(one.Node().source().includes('count? 42'));
-        },
-        'a node row shows the value of the cell it is bound to by hand'($) {
-            const { root, inspect } = part_panel($, root_src
-                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	amount? 5\n	Amount ${d}bog_vmap_app_inspect_test_number value? <=> amount?`), 'Amount');
-            const value = field(inspect, 'value');
-            $mol_assert_equal(value.Editor(), value.Num());
-            $mol_assert_equal(value.num(), '5');
-            value.num('6');
-            $mol_assert_equal(root.prop_decl('amount').toString(), 'amount? 6\n');
-        },
-        'the sign box of a node row says whether the field takes input'($) {
-            const { root, inspect } = part_panel($, root_src
-                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	Amount ${d}bog_vmap_app_inspect_test_number value? 6000000`), 'Amount');
-            $mol_assert_equal(inspect.row_changeable('value'), false);
-            inspect.row_changeable('value', true);
-            $mol_assert_equal(root.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
-            $mol_assert_equal(inspect.row_changeable('value'), true);
-            inspect.row_changeable('value', false);
-            $mol_assert_equal(root.over_tree('Amount', 'value').toString(), 'value 6000000\n');
-            $mol_assert_equal(root.prop_names().includes('amount_value'), false);
-            $mol_assert_equal(inspect.row_changeable('value'), false);
-        },
-        'an old constant in a writable port of a node is marked frozen until the next edit'($) {
-            const { inspect } = part_panel($, root_src
-                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	Amount ${d}bog_vmap_app_inspect_test_number value? 6000000`), 'Amount');
-            const row = inspect.Row('value');
-            inspect.dom_tree();
-            $mol_assert_equal(row.frozen(), 'поле заморожено: правка значения сделает его изменяемым');
-            $mol_assert_equal(row.dom_node().contains(row.Frozen().dom_node()), true);
-            $mol_assert_equal(row.Frozen().dom_node().textContent, 'поле заморожено: правка значения сделает его изменяемым');
-            field(inspect, 'value').num('5');
-            inspect.dom_tree();
-            $mol_assert_equal(row.frozen(), '');
-            $mol_assert_equal(row.dom_node().contains(row.Frozen().dom_node()), false);
-        },
-        'the frozen mark is only for a constant with the sign in a node the scene lets edit'($) {
-            const node = (over) => part_panel($, root_src
-                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	amount? 5\n	Amount ${d}bog_vmap_app_inspect_test_number ${over}`), 'Amount').inspect;
-            $mol_assert_equal(node('value? <=> amount?').row_frozen('value'), '');
-            $mol_assert_equal(node('value 5').row_frozen('value'), '');
-            $mol_assert_equal(node('hint \\Сумма').row_frozen('hint'), '');
-            $mol_assert_equal(node('hint \\Сумма').row_frozen('value'), '');
-            $mol_assert_equal(panel($, `${d}bog_vmap_app_inspect_test_card ${d}mol_view\n\tcount? 24\n`).row_frozen('count'), '');
-            const shut = node('value? 6000000');
-            $mol_assert_equal(shut.row_frozen('value'), shut.frozen_note());
-            shut.editable = () => false;
-            $mol_assert_equal(shut.row_frozen('value'), '');
-        },
-        'dropping the row of a bound port takes its cell too'($) {
-            const { root, inspect } = part_panel($, root_src, 'Amount');
-            field(inspect, 'value').num('6000000');
-            inspect.row_drop('value');
-            $mol_assert_equal(root.over_tree('Amount', 'value'), null);
-            $mol_assert_equal(root.source().includes('amount_value'), false);
-        },
-    });
-    const d = '$';
-    const root_src = [
-        `${d}bog_vmap_app_inspect_test_root ${d}mol_view`,
-        `	Amount ${d}bog_vmap_app_inspect_test_number`,
-        `	sub / <= Amount`,
-        ``,
-    ].join('\n');
-    const number_src = [
-        `${d}bog_vmap_app_inspect_test_number ${d}mol_view`,
-        `	value? 0`,
-        `	hint \\`,
-        ``,
-    ].join('\n');
-    function field(inspect, name) {
-        return inspect.Row(name).Value();
-    }
-    function part_panel($, source, part) {
-        browser_gaps($);
-        const root = $.$bog_vmap_lang_node.make({ $ });
-        root.source(source);
-        const base = $.$mol_tree2_from_string(number_src, 'number.view.tree').kids;
-        const inspect = $.$bog_vmap_app_inspect.make({
-            $,
-            source: (next) => {
-                const sign = root.prop_fullname(part);
-                if (next === undefined)
-                    return root.props_tree().select(sign).kids[0]?.toString() ?? '';
-                root.prop_tree(part, $.$mol_tree2_from_string(next.replace(/\n?$/, '\n'), 'part.view.tree').kids[0]);
-                return next;
-            },
-            peers: () => base,
-            pack: () => '',
-            cell: (sign, next) => root.cell_value(part, sign, next),
-        });
-        return { root, inspect };
-    }
-    function browser_gaps($) {
-        const dom = $.$mol_dom_context;
-        Object.assign(globalThis, {
-            ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
-            PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
-        });
-    }
-    function panel($, source, peers = []) {
-        browser_gaps($);
-        let text = source;
-        return $.$bog_vmap_app_inspect.make({
-            $,
-            source: (next) => next === undefined ? text : (text = next),
-            peers: () => peers,
-            pack: () => '',
-        });
-    }
-    function pair($, source, klass) {
-        browser_gaps($);
-        let text = source;
-        const doc = $.$bog_vmap_lang_doc.make({
-            $,
-            source: (next) => next === undefined ? text : (text = next),
-        });
-        return $.$bog_vmap_app_inspect.make({
-            $,
-            source: (next) => doc.class_source(klass, next),
-            peers: () => doc.trees(),
-            pack: () => '',
-        });
-    }
 })($ || ($ = {}));
 
 ;
@@ -44833,6 +45362,24 @@ var $;
             $mol_assert_equal($bog_vmap_app_wire_over(b, [x, b.top - 1]), false);
             $mol_assert_equal($bog_vmap_app_wire_over(b, [x - $bog_vmap_app_wire_hit - 1, y]), false);
         },
+        'a point on the open column counts as over the part, the body of a neighbour does not'($) {
+            const b = box(100, 200, 60, 30);
+            const deep = $bog_vmap_app_wire_port_point(b, 'in', 19);
+            $mol_assert_equal($bog_vmap_app_wire_over(b, deep), false);
+            $mol_assert_equal($bog_vmap_app_wire_over(b, deep, 22), true);
+            $mol_assert_equal($bog_vmap_app_wire_over(b, [b.left + 10, deep[1]], 22), false);
+            const out = $bog_vmap_app_wire_port_point(b, 'out', 19);
+            $mol_assert_equal($bog_vmap_app_wire_over(b, out, 22), true);
+        },
+        'a column that would run past the floor is lifted just enough to fit'($) {
+            const low = box(0, 700, 120, 40);
+            $mol_assert_equal($bog_vmap_app_wire_lift(low, 22, 800), 208);
+            $mol_assert_equal($bog_vmap_app_wire_lift(low, 2, 800), 0);
+            const lifted = $bog_vmap_app_wire_port_point(low, 'in', 21, 208);
+            $mol_assert_equal(lifted[1] <= 800, true);
+            $mol_assert_equal($bog_vmap_app_wire_port_point(low, 'in', 0, 208)[1] >= 0, true);
+            $mol_assert_equal($bog_vmap_app_wire_lift(box(0, 40, 120, 40), 60, 200), 40);
+        },
         'compatibility by shape'($) {
             $mol_assert_equal($bog_vmap_app_wire_fits('number', 'number'), true);
             $mol_assert_equal($bog_vmap_app_wire_fits('string', 'locale'), true);
@@ -44905,6 +45452,23 @@ var $;
             ]);
             const ports = $.$bog_vmap_app_wire_ports(props, owners, `${d}my_part`);
             $mol_assert_like(ports.map(port => `${port.name}:${port.own}`), ['title:false', 'count:true']);
+        },
+        'labels land on the open slots in order, and a name that is no identifier is left out'($) {
+            const ports = [
+                port('result', 'number'),
+                { ...port('in1', 'null') },
+                { ...port('in2', 'null') },
+                { ...port('in3', 'null') },
+                port('run', 'null', true),
+            ];
+            const named = $bog_vmap_app_wire_labelled(ports, ['price', '2bad', 'rate']);
+            $mol_assert_like(named.map(known => known.label ?? ''), ['', 'price', '', 'rate', '']);
+            $mol_assert_like($bog_vmap_app_wire_labelled(ports, []).map(known => known.label ?? ''), ['', '', '', '', '']);
+        },
+        'a dot wears the label of its slot, and its own name without one'($) {
+            const plain = dot({ x: 0, y: 0, port: port('in1', 'null') });
+            $mol_assert_equal($bog_vmap_app_wire_name(plain), 'in1');
+            $mol_assert_equal($bog_vmap_app_wire_name({ ...plain, port: { ...plain.port, label: 'price' } }), 'price');
         },
         'the machinery a view declares for itself is no port of a part'($) {
             const ports = [
@@ -49527,6 +50091,28 @@ var $;
         ...over,
     });
     const clicks = (posted) => posted.filter(m => m.kind === 'click_at');
+    const session_fake = ($) => {
+        const kept = {};
+        class $mol_state_session_fake extends $mol_state_session {
+            static value(key, next) {
+                if (next === undefined)
+                    return JSON.parse(kept[key] ?? 'null');
+                if (next === null)
+                    delete kept[key];
+                else
+                    kept[key] = JSON.stringify(next);
+                return next;
+            }
+        }
+        __decorate([
+            $mol_mem_key
+        ], $mol_state_session_fake, "value", null);
+        $.$mol_state_session = $mol_state_session_fake;
+        return kept;
+    };
+    const doc_opened = ($) => {
+        return (next) => $.$mol_state_session.value('doc_opened', next) ?? 'one';
+    };
     const timers_fake = ($) => {
         const made = [];
         $.$mol_after_timeout = class extends $mol_after_timeout {
@@ -49551,6 +50137,203 @@ var $;
             stage.release(overlay, [from[0] + 60, from[1] + 40]);
             stage.redraw();
             $mol_assert_like(stage.app.spots(), { Calc: { x: 164, y: 114 } });
+        },
+        'a drag with Alt leaves the original where it was and drops a copy under the pointer'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            const to = [from[0] + 60, from[1] + 40];
+            stage.press(overlay, from, { altKey: true });
+            stage.move(overlay, to, { altKey: true });
+            stage.release(overlay, to, { altKey: true });
+            stage.redraw();
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 }, Calc_2: { x: 164, y: 114 } });
+            $mol_assert_like([...stage.app.picked()], ['Calc_2']);
+            $mol_assert_ok(stage.app.doc_source().includes(`Calc_2 ${calc}`));
+        },
+        'Alt taken up in the middle of a drag still drops a copy, Alt let go moves the original'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            const overlay = stage.overlay();
+            const first = stage.part_center('Calc');
+            const away = [first[0] + 60, first[1] + 40];
+            stage.press(overlay, first);
+            stage.move(overlay, away);
+            stage.release(overlay, away, { altKey: true });
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 }, Calc_2: { x: 164, y: 114 } });
+            const second = stage.part_center('Calc_2');
+            const back = [second[0] - 30, second[1] - 20];
+            stage.press(overlay, second, { altKey: true });
+            stage.move(overlay, back, { altKey: true, metaKey: true });
+            stage.release(overlay, back, { metaKey: true });
+            stage.redraw();
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 }, Calc_2: { x: 134, y: 94 } });
+        },
+        'Escape closes the menu of the canvas'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const dom = $.$mol_dom_context;
+            stage.overlay().dispatchEvent(new dom.MouseEvent('contextmenu', {
+                bubbles: true,
+                cancelable: true,
+                clientX: stage.client([480, 380])[0],
+                clientY: stage.client([480, 380])[1],
+            }));
+            stage.redraw();
+            $mol_assert_equal(stage.pane.menu_showed(), true);
+            $mol_assert_equal(stage.pane.menu_on_node(), false);
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            stage.redraw();
+            $mol_assert_equal(stage.pane.menu_showed(), false);
+        },
+        'Escape closes the menu of a node'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const dom = $.$mol_dom_context;
+            stage.drop(calc, stage.client([200, 150]));
+            const at = stage.part_center('Calc');
+            stage.overlay().dispatchEvent(new dom.MouseEvent('contextmenu', {
+                bubbles: true,
+                cancelable: true,
+                clientX: at[0],
+                clientY: at[1],
+            }));
+            stage.redraw();
+            $mol_assert_equal(stage.pane.menu_showed(), true);
+            $mol_assert_equal(stage.pane.menu_on_node(), true);
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            stage.redraw();
+            $mol_assert_equal(stage.pane.menu_showed(), false);
+        },
+        'while Alt is held the place of the original is marked, and the mark goes on release'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            const to = [from[0] + 60, from[1] + 40];
+            const marks = () => stage.pane.ghost_views().length;
+            $mol_assert_equal(marks(), 0);
+            stage.press(overlay, from, { altKey: true });
+            stage.move(overlay, to, { altKey: true });
+            stage.redraw();
+            $mol_assert_equal(marks(), 1);
+            $mol_assert_like(stage.pane.ghost_style('Calc'), {
+                left: '104px',
+                top: '74px',
+                width: '100px',
+                height: '50px',
+            });
+            stage.release(overlay, to, { altKey: true });
+            stage.redraw();
+            $mol_assert_equal(marks(), 0);
+            stage.press(overlay, stage.part_center('Calc'));
+            $mol_assert_equal(marks(), 0);
+            stage.release(overlay, stage.part_center('Calc'));
+        },
+        'Alt let go in the middle of a drag takes the mark away'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            stage.press(overlay, from, { altKey: true });
+            stage.move(overlay, [from[0] + 30, from[1]], { altKey: true });
+            $mol_assert_equal(stage.pane.ghost_views().length, 1);
+            stage.move(overlay, [from[0] + 60, from[1]]);
+            $mol_assert_equal(stage.pane.ghost_views().length, 0);
+            stage.release(overlay, [from[0] + 60, from[1]]);
+            stage.redraw();
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 164, y: 74 } });
+        },
+        'Escape in the middle of a drag puts the node back and takes the mark away'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            const to = [from[0] + 60, from[1] + 40];
+            stage.press(overlay, from, { altKey: true });
+            stage.move(overlay, to, { altKey: true });
+            $mol_assert_equal(stage.pane.ghost_views().length, 1);
+            stage.pane.key_down({
+                key: 'Escape',
+                code: 'Escape',
+                altKey: true,
+                ctrlKey: false,
+                metaKey: false,
+                shiftKey: false,
+                target: null,
+                preventDefault() { },
+            });
+            stage.redraw();
+            $mol_assert_equal(stage.pane.ghost_views().length, 0);
+            $mol_assert_equal(stage.pane.drag(), null);
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 } });
+            stage.release(overlay, to, { altKey: true });
+            stage.redraw();
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 } });
+            $mol_assert_equal(stage.app.doc_source().includes('Calc_2'), false);
+        },
+        'the mark is no node: nothing stands at its place and nothing drops into it'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            const to = [from[0] + 300, from[1] + 200];
+            stage.press(overlay, from, { altKey: true });
+            stage.move(overlay, to, { altKey: true });
+            stage.redraw();
+            $mol_assert_equal(stage.pane.ghost_views().length, 1);
+            const place = [104 + 50, 74 + 25];
+            $mol_assert_equal(stage.pane.insert_slot(place), null);
+            $mol_assert_like([...stage.pane.part_names()], ['Calc']);
+            $mol_assert_equal(Object.keys(stage.pane.sizes()).length, 1);
+            const ghost = stage.pane.Ghost('Calc').dom_node();
+            $mol_assert_equal(stage.pane.dom_node().contains(ghost), true);
+            $mol_assert_equal(ghost.getAttribute('id').includes('Ghost'), true);
+        },
+        'a copy dragged out with Alt carries the overrides and the wire of the original'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(map, stage.client([160, 120]));
+            stage.drop(calc, stage.client([420, 120]));
+            const node = stage.app.node();
+            const tree = node.tree();
+            node.over_set('Calc', 'title', tree.struct('title', [tree.data('Итог')]));
+            stage.app.link_add({ from: 'Map', from_prop: 'marker', to: 'Calc', to_prop: 'op' });
+            stage.redraw();
+            const wired = stage.app.node().over_tree('Calc', 'op').toString();
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            const to = [from[0] + 40, from[1] + 30];
+            stage.press(overlay, from, { altKey: true });
+            stage.move(overlay, to, { altKey: true });
+            stage.release(overlay, to, { altKey: true });
+            stage.redraw();
+            $mol_assert_equal(stage.app.node().over_tree('Calc_2', 'title').toString(), 'title \\Итог\n');
+            $mol_assert_equal(stage.app.node().over_tree('Calc_2', 'op').toString(), wired);
+            $mol_assert_equal(stage.app.node().over_tree('Calc', 'title').toString(), 'title \\Итог\n');
+        },
+        'a nested node dragged with Alt is moved, not copied'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.pane.tool('board');
+            stage.tap(stage.client([60, 60]));
+            stage.drop(calc, stage.client([120, 120]));
+            stage.drop(map, stage.client([560, 420]));
+            const node = stage.app.node();
+            stage.app.tree_move({ name: 'Calc', owner: 'Page', index: 0 });
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like(node.sub_names('Page'), ['Calc']);
+            stage.app.picked(['Map', 'Calc']);
+            stage.redraw();
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            const to = stage.client([550, 460]);
+            stage.press(overlay, from, { altKey: true });
+            stage.move(overlay, to, { altKey: true });
+            stage.release(overlay, to, { altKey: true });
+            stage.redraw();
+            $mol_assert_equal(stage.pane.slot(), null);
+            $mol_assert_like(stage.app.node().prop_names().filter(name => name.endsWith('_2')), []);
         },
         'the second click lets the pointer inside the part, Escape takes it back out'($) {
             const stage = $bog_vmap_app_flow_stage($);
@@ -50766,6 +51549,221 @@ var $;
                 .map(name => name.textContent);
             $mol_assert_like(drawn, ['Page']);
         },
+        'every scene keeps its own camera, and a scene without a kept one is shown whole'($) {
+            const kept = session_fake($);
+            const opened = doc_opened($);
+            const { pane, answer } = pane_make($, {}, { doc_key: () => opened() });
+            const sizes = { [`${root}/A`]: box(100, 100, 400, 300) };
+            answer({ kind: 'sizes', sizes });
+            pane.dom_tree();
+            pane.camera_zoom(2);
+            pane.camera_shift(new $mol_vector_2d(30, 40));
+            pane.dom_tree();
+            $mol_assert_like(JSON.parse(kept['vmap_camera one']), { x: 30, y: 40, zoom: 2 });
+            opened('two');
+            answer({ kind: 'sizes', sizes });
+            pane.dom_tree();
+            $mol_assert_equal(pane.camera_zoom(), 1);
+            $mol_assert_like([...pane.camera_shift()], [200, 150]);
+            opened('one');
+            answer({ kind: 'sizes', sizes });
+            pane.dom_tree();
+            $mol_assert_equal(pane.camera_zoom(), 2);
+            $mol_assert_like([...pane.camera_shift()], [30, 40]);
+        },
+        'the size left by a renamed node is swept, and that name starts unmeasured again'($) {
+            const paths = $mol_wire_atom.solo({}, function paths(next) {
+                return next ?? ['Calc', 'Map'];
+            });
+            const { pane, answer } = pane_make($, {}, { doc_paths: () => paths.sync() });
+            answer({ kind: 'sizes', sizes: {
+                    [`${root}/Calc`]: box(0, 0),
+                    [`${root}/Map`]: box(200, 0),
+                } });
+            $mol_assert_like(Object.keys(pane.sizes()).sort(), [`${root}/Calc`, `${root}/Map`]);
+            $mol_assert_like(pane.part_size('Calc'), box(0, 0));
+            paths.put(['Summa', 'Map']);
+            answer({ kind: 'sizes', sizes: {
+                    [`${root}/Summa`]: box(0, 0),
+                    [`${root}/Map`]: box(200, 0),
+                } });
+            $mol_assert_like(Object.keys(pane.sizes()).sort(), [`${root}/Map`, `${root}/Summa`]);
+            paths.put(['Summa', 'Map', 'Calc']);
+            $mol_assert_equal(pane.part_size('Calc'), null);
+        },
+        'a nested node renamed inside a board leaves no size behind'($) {
+            const paths = $mol_wire_atom.solo({}, function paths(next) {
+                return next ?? ['Page', 'Page/Amount'];
+            });
+            const { pane, answer } = pane_make($, {}, { doc_paths: () => paths.sync() });
+            answer({ kind: 'sizes', sizes: {
+                    [`${root}/Page`]: box(0, 0, 400, 300),
+                    [`${root}/Page/Amount`]: box(10, 10),
+                } });
+            paths.put(['Page', 'Page/Summa']);
+            answer({ kind: 'sizes', sizes: {
+                    [`${root}/Page`]: box(0, 0, 400, 300),
+                    [`${root}/Page/Summa`]: box(10, 10),
+                } });
+            $mol_assert_like(Object.keys(pane.sizes()).sort(), [`${root}/Page`, `${root}/Page/Summa`]);
+        },
+        'a part the scene never reported keeps its size while it lives in the document'($) {
+            const { pane, answer } = pane_make($, {}, { doc_paths: () => ['Near', 'Far'] });
+            answer({ kind: 'sizes', sizes: {
+                    [`${root}/Near`]: box(0, 0),
+                    [`${root}/Far`]: box(9000, 9000),
+                } });
+            answer({ kind: 'sizes', sizes: { [`${root}/Near`]: box(0, 0) } });
+            $mol_assert_like(Object.keys(pane.sizes()).sort(), [`${root}/Far`, `${root}/Near`]);
+            $mol_assert_like(pane.part_size('Far'), box(9000, 9000));
+        },
+        'a node the document still holds is never swept, whatever the message brings'($) {
+            const { pane, answer } = pane_make($, {}, { doc_paths: () => ['Page', 'Page/Amount'] });
+            answer({ kind: 'sizes', sizes: {
+                    [`${root}/Page`]: box(0, 0, 400, 300),
+                    [`${root}/Page/Amount`]: box(10, 10),
+                } });
+            answer({ kind: 'sizes', sizes: { [`${root}/Page/Amount`]: box(20, 20) } });
+            $mol_assert_like(Object.keys(pane.sizes()).sort(), [`${root}/Page`, `${root}/Page/Amount`]);
+            $mol_assert_like(pane.sizes()[`${root}/Page`], box(0, 0, 400, 300));
+        },
+        'the sweep leaves the inner layers of a part alone until the part is measured anew'($) {
+            const { pane, answer } = pane_make($, {}, { doc_paths: () => ['Debt'] });
+            answer({ kind: 'sizes', sizes: {
+                    [`${root}/Debt`]: box(0, 0, 300, 200),
+                    [`${root}/Debt/Title`]: box(10, 10),
+                } });
+            answer({ kind: 'sizes', sizes: { [`${root}/Debt`]: box(0, 0, 300, 200) } });
+            $mol_assert_like(Object.keys(pane.sizes()).sort(), [`${root}/Debt`, `${root}/Debt/Title`]);
+            answer({ kind: 'sizes', sizes: {
+                    [`${root}/Debt`]: box(0, 0, 300, 200),
+                    [`${root}/Debt/Line`]: box(20, 20),
+                } });
+            $mol_assert_like(Object.keys(pane.sizes()).sort(), [`${root}/Debt`, `${root}/Debt/Line`]);
+        },
+        'the column stays open while the pointer walks down it to a deep port'($) {
+            const ports = [];
+            for (let i = 0; i < 22; ++i)
+                ports.push({ name: 'p' + i, next: false, own: true, kind: 'number' });
+            const { pane } = pane_make($, {}, {
+                doc_names: () => ['Num', 'Source'],
+                part_ports: () => ports,
+                wires: () => [],
+            });
+            pane.sizes({
+                [`${root}/Num`]: box(400, 0, 120, 40),
+                [`${root}/Source`]: box(0, 400, 120, 40),
+            });
+            pane.wire_drag({ from: 'Source', from_prop: 'p0', kind: 'number' });
+            const deep = $bog_vmap_app_wire_port_point(pane.part_box('Num'), 'in', 19);
+            pane.wire_point(deep);
+            $mol_assert_equal(pane.wire_over(), 'Num');
+            $mol_assert_equal(pane.wire_dots().filter(dot => dot.node === 'Num').length, 22);
+            $mol_assert_equal($bog_vmap_app_wire_dot_at(pane.wire_dots(), deep)?.port.name, 'p19');
+        },
+        'a part under the column keeps its own dots, the column above does not take them'($) {
+            const ports = [];
+            for (let i = 0; i < 22; ++i)
+                ports.push({ name: 'p' + i, next: false, own: true, kind: 'number' });
+            const { pane } = pane_make($, {}, {
+                doc_names: () => ['Num', 'Under', 'Source'],
+                part_ports: () => ports,
+                wires: () => [],
+            });
+            pane.sizes({
+                [`${root}/Num`]: box(400, 0, 120, 40),
+                [`${root}/Under`]: box(400, 200, 120, 40),
+                [`${root}/Source`]: box(0, 600, 120, 40),
+            });
+            pane.wire_drag({ from: 'Source', from_prop: 'p0', kind: 'number' });
+            const inside = [460, 220];
+            pane.wire_point(inside);
+            $mol_assert_equal(pane.wire_over(), 'Under');
+            const deep = $bog_vmap_app_wire_port_point(pane.part_box('Num'), 'in', 19);
+            pane.wire_point(deep);
+            $mol_assert_equal(pane.wire_over(), 'Num');
+        },
+        'the names written on the node become the labels of its open slots'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const cell = `${d}bog_vmap_part_cell`;
+            stage.drop(cell, stage.client([300, 200]));
+            const node = stage.app.node();
+            const name = node.sub_names().find(known => known.startsWith('Vmap_part_cell'));
+            const dots = () => stage.pane.part_dots(name)
+                .filter(port => $bog_vmap_app_wire_slot(port))
+                .map(port => port.label || port.name);
+            $mol_assert_like(dots(), ['in1']);
+            const tree = node.tree();
+            node.over_set(name, 'slots', tree.struct('slots', [tree.data('price, 2bad, rate')]));
+            stage.redraw();
+            $mol_assert_like(dots(), ['price']);
+            node.over_set(name, 'in1', tree.struct('in1', [tree.struct('<=', [tree.struct('amount')])]));
+            stage.redraw();
+            $mol_assert_like(dots(), ['price', 'in2']);
+        },
+        'open input slots come one at a time, the taken ones stay and the rest wait'($) {
+            const ports = [
+                { name: 'result', next: false, own: true, kind: 'number' },
+                { name: 'in1', next: false, own: true, kind: 'null' },
+                { name: 'in2', next: false, own: true, kind: 'null' },
+                { name: 'in3', next: false, own: true, kind: 'null' },
+                { name: 'run', next: true, own: true, kind: 'null' },
+            ];
+            const taken = $mol_wire_atom.solo({}, function taken(next) {
+                return next ?? [];
+            });
+            const { pane } = pane_make($, {}, {
+                doc_names: () => ['Cell'],
+                part_ports: () => ports,
+                part_overs: () => taken.sync(),
+                wires: () => [],
+            });
+            pane.sizes({ [`${root}/Cell`]: box(0, 0, 200, 100) });
+            $mol_assert_like(pane.part_dots('Cell').map(port => port.name), ['result', 'in1', 'run']);
+            taken.put(['in1']);
+            $mol_assert_like(pane.part_dots('Cell').map(port => port.name), ['result', 'in1', 'in2', 'run']);
+            taken.put(['in1', 'in2']);
+            $mol_assert_like(pane.part_dots('Cell').map(port => port.name), ['result', 'in1', 'in2', 'in3', 'run']);
+        },
+        'a scene opened for the first time is shown whole once it is measured'($) {
+            const kept = session_fake($);
+            const opened = doc_opened($);
+            const { pane, answer } = pane_make($, {}, { doc_key: () => opened() });
+            answer({ kind: 'sizes', sizes: {} });
+            pane.dom_tree();
+            $mol_assert_equal(pane.camera_doc(), '');
+            $mol_assert_equal(kept['vmap_camera one'], undefined);
+            answer({ kind: 'sizes', sizes: { [`${root}/A`]: box(100, 100, 400, 300) } });
+            pane.dom_tree();
+            $mol_assert_equal(pane.camera_doc(), 'vmap_camera one');
+            $mol_assert_like([...pane.camera_shift()], [200, 150]);
+            $mol_assert_like(JSON.parse(kept['vmap_camera one']), { x: 200, y: 150, zoom: 1 });
+        },
+        'the editor left to its own camera brings the measured part onto the screen'($) {
+            const stage = $bog_vmap_app_flow_stage($, { camera: 'own' });
+            stage.drop(calc, stage.client([560, 450]));
+            const rect = $bog_vmap_app_flow_rect;
+            const box = stage.pane.part_box('Calc');
+            $mol_assert_ok(box);
+            $mol_assert_equal(box.left >= 0, true);
+            $mol_assert_equal(box.top >= 0, true);
+            $mol_assert_equal(box.left + box.width <= rect.width, true);
+            $mol_assert_equal(box.top + box.height <= rect.height, true);
+        },
+        'the camera of the scene left behind is not written under the scene opened'($) {
+            const kept = session_fake($);
+            const opened = doc_opened($);
+            const { pane, answer } = pane_make($, {}, { doc_key: () => opened() });
+            const sizes = { [`${root}/A`]: box(100, 100, 400, 300) };
+            answer({ kind: 'sizes', sizes });
+            pane.camera_zoom(2);
+            pane.camera_shift(new $mol_vector_2d(30, 40));
+            pane.dom_tree();
+            opened('two');
+            pane.dom_tree();
+            $mol_assert_equal(kept['vmap_camera two'], undefined);
+            $mol_assert_like(JSON.parse(kept['vmap_camera one']), { x: 30, y: 40, zoom: 2 });
+        },
         'a click on the name picks the board, a double click renames it in place'($) {
             let title = 'Page';
             const { pane } = pane_make($, {}, {
@@ -50978,6 +51976,83 @@ var $;
         });
         return { ...made, node };
     }
+    const inner_sizes = {
+        [`${root}/Debt`]: box(0, 0, 400, 300),
+        [`${root}/Debt/Title`]: box(10, 20, 200, 40),
+        [`${root}/Debt/Chart`]: box(10, 80, 380, 200),
+        [`${root}/Debt/Chart/Plot/Line`]: box(20, 90, 360, 180),
+    };
+    const twin_sizes = {
+        [`${root}/Debt`]: box(0, 0, 400, 300),
+        [`${root}/Debt/Title`]: box(10, 20, 200, 40),
+        [`${root}/Debt/Chart`]: box(10, 80, 380, 200),
+        [`${root}/Debt/Chart/Legend/Title`]: box(300, 90, 80, 16),
+    };
+    const inner_pane = ($, inner = '', sizes = inner_sizes) => {
+        const { pane } = pane_make($, {}, {
+            doc_names: () => ['Debt'],
+            inner: () => inner,
+        });
+        pane.sizes(sizes);
+        return pane;
+    };
+    $mol_test({
+        'a layer inside a part is addressed by the chain of its layers, however deep the scene renders it'($) {
+            const pane = inner_pane($);
+            $mol_assert_like(pane.part_size('Debt/Title'), box(10, 20, 200, 40));
+            $mol_assert_like(pane.part_size('Debt/Chart/Line'), box(20, 90, 360, 180));
+            $mol_assert_like(pane.part_size('Debt'), box(0, 0, 400, 300));
+            $mol_assert_equal(pane.part_size('Debt/Chart/Nobody'), null);
+            $mol_assert_equal(pane.part_size('Title'), null);
+        },
+        'a namesake above does not steal the frame from the layer the chain names'($) {
+            const above = inner_pane($, '', twin_sizes);
+            $mol_assert_like(above.part_size('Debt/Title'), box(10, 20, 200, 40));
+            const below = inner_pane($, '', twin_sizes);
+            $mol_assert_like(below.part_size('Debt/Chart/Title'), box(300, 90, 80, 16));
+            const framed = inner_pane($, 'Debt/Chart/Title', twin_sizes);
+            $mol_assert_like(framed.inner_style(), { left: '300px', top: '90px', width: '80px', height: '16px' });
+        },
+        'a chain the scene never rendered falls back on the shortest path under the node'($) {
+            const pane = inner_pane($, '', twin_sizes);
+            $mol_assert_like(pane.part_size('Debt/Nowhere/Title'), box(10, 20, 200, 40));
+        },
+        'an inner layer is framed apart from the node, with no handles of its own'($) {
+            const bare = inner_pane($);
+            $mol_assert_equal(bare.inner_shown(), '');
+            $mol_assert_like(bare.inner_style(), {});
+            $mol_assert_equal(bare.Overlay().sub().includes(bare.Overlay().Inner()), false);
+            const pane = inner_pane($, 'Debt/Title');
+            pane.picked(['Debt']);
+            $mol_assert_equal(pane.inner_shown(), 'Debt/Title');
+            $mol_assert_like(pane.inner_style(), { left: '10px', top: '20px', width: '200px', height: '40px' });
+            const overlay = pane.Overlay();
+            $mol_assert_equal(overlay.sub().includes(overlay.Inner()), true);
+            $mol_assert_equal(overlay.Inner().sub().length, 0);
+            $mol_assert_equal(overlay.Frame('Debt').sub().length, 4);
+        },
+        'an inner layer the scene never measured gets no frame'($) {
+            const pane = inner_pane($, 'Debt/Nobody');
+            $mol_assert_equal(pane.inner_shown(), '');
+            $mol_assert_like(pane.inner_style(), {});
+            $mol_assert_equal(pane.Overlay().sub().length, 0);
+        },
+        'the frame of an inner layer leaves the pointer to the canvas under it'($) {
+            const bare = inner_pane($);
+            const framed = inner_pane($, 'Debt/Title');
+            $mol_assert_equal(bare.node_at([50, 30]), 'Debt');
+            $mol_assert_equal(framed.node_at([50, 30]), 'Debt');
+            framed.node_press(pointer(50, 30));
+            framed.node_release(pointer(50, 30, { buttons: 0 }));
+            $mol_assert_like([...framed.picked()], ['Debt']);
+        },
+        'the camera goes to an inner layer the same way it goes to a node'($) {
+            const pane = inner_pane($, 'Debt/Title');
+            pane.node_show('Debt/Title');
+            $mol_assert_like([...pane.camera_shift()], [390, 360]);
+            $mol_assert_equal(pane.camera_zoom(), 1);
+        },
+    });
 })($ || ($ = {}));
 (function ($_2) {
     const d = '$';
@@ -52363,6 +53438,270 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
+    var $$;
+    (function ($$) {
+        $mol_test({
+            async "Get and parse"($) {
+                $mol_assert_equal(await $mol_wire_async($mol_fetch).text('data:text/plain,foo'), 'foo');
+            },
+        });
+    })($$ = $_1.$$ || ($_1.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    const d = '$';
+    const lib_src = [
+        `${d}bog_vmap_lib_test_a ${d}mol_view`,
+        `	title \\A`,
+        `	count 0`,
+        ``,
+        `${d}bog_vmap_lib_test_b ${d}bog_vmap_lib_test_a`,
+        `	count 1`,
+        `	extra \\x`,
+        ``,
+    ].join('\n');
+    const doc_src = [
+        `${d}bog_vmap_lib_test_doc ${d}bog_vmap_lib_test_b`,
+        `	own \\z`,
+        ``,
+    ].join('\n');
+    const inner_src = [
+        `${d}bog_vmap_lib_test_graph ${d}mol_view`,
+        `	series /number`,
+        `${d}bog_vmap_lib_test_legend ${d}mol_view`,
+        `	sub /`,
+        `		<= Mark ${d}mol_view`,
+        `			title \\`,
+        `${d}bog_vmap_lib_test_chart ${d}mol_view`,
+        `	graphs /${d}bog_vmap_lib_test_graph`,
+        `	sub /`,
+        `		<= Legend ${d}bog_vmap_lib_test_legend`,
+        `${d}bog_vmap_lib_test_plot ${d}mol_view`,
+        `	values /number`,
+        `	title \\`,
+        `	sub /`,
+        `		<= Title ${d}mol_view`,
+        `			sub / <= title`,
+        `		<= Chart ${d}bog_vmap_lib_test_chart`,
+        `			graphs /${d}bog_vmap_lib_test_graph`,
+        `				<= Line ${d}bog_vmap_lib_test_graph`,
+        `					series <= values`,
+        `${d}bog_vmap_lib_test_plot_dark ${d}bog_vmap_lib_test_plot`,
+        `	title \\dark`,
+        ``,
+    ].join('\n');
+    $mol_test({
+        'predef gives $mol_view its own ports'($) {
+            const tree = $.$bog_vmap_lib_parse('');
+            const index = $.$bog_vmap_lib_index(tree);
+            $mol_assert_equal(index.has(`${d}mol_view`), true);
+            const props = $.$bog_vmap_lib_props_map(index, `${d}mol_view`);
+            $mol_assert_equal([...props.keys()].join(' '), 'dom_name style event field attr sub title');
+        },
+        'pack classes land next to the stub'($) {
+            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
+            $mol_assert_equal([...index.keys()].join(' '), `${d}mol_view ${d}bog_vmap_lib_test_a ${d}bog_vmap_lib_test_b`);
+            $mol_assert_equal(index.get(`${d}bog_vmap_lib_test_b`).type, `${d}bog_vmap_lib_test_a`);
+        },
+        'inheritance chain ends at the first undeclared name'($) {
+            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
+            $mol_assert_equal($.$bog_vmap_lib_chain(index, `${d}bog_vmap_lib_test_b`).join(' '), `${d}bog_vmap_lib_test_b ${d}bog_vmap_lib_test_a ${d}mol_view ${d}mol_object`);
+            $mol_assert_equal($.$bog_vmap_lib_chain(index, `${d}nowhere`).join(' '), `${d}nowhere`);
+        },
+        'props_map carries inherited ports and the most derived value'($) {
+            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
+            const props = $.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_b`);
+            $mol_assert_equal([...props.keys()].join(' '), 'dom_name style event field attr sub title count extra');
+            $mol_assert_equal(props.get('count').kids[0].type, '1');
+            $mol_assert_equal(props.get('title').kids[0].value, 'A');
+        },
+        'a malformed pack points at the row of the pack, not of the stub'($) {
+            const error = $mol_assert_fail(() => $.$bog_vmap_lib_parse(`${d}q ${d}w\n\t\t\toops \\\n`, 'pack.view.tree'), SyntaxError);
+            $mol_assert_equal(String(error.span), 'pack.view.tree#2:1/3');
+        },
+        'a redeclared port keeps the position of its first declaration'($) {
+            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
+            const keys = [...$.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_b`).keys()];
+            $mol_assert_equal(keys.indexOf('title'), 6);
+        },
+        'every port names the class it came from'($) {
+            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(lib_src));
+            const owner = $.$bog_vmap_lib_props_owner(index, `${d}bog_vmap_lib_test_b`);
+            $mol_assert_equal([...owner.keys()].join(' '), [...$.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_b`).keys()].join(' '));
+            $mol_assert_equal(owner.get('sub'), `${d}mol_view`);
+            $mol_assert_equal(owner.get('extra'), `${d}bog_vmap_lib_test_b`);
+            $mol_assert_equal(owner.get('title'), `${d}bog_vmap_lib_test_a`);
+            $mol_assert_equal(owner.get('count'), `${d}bog_vmap_lib_test_b`);
+        },
+        'a cycle in the namespace does not hang'($) {
+            const src = [
+                `${d}bog_vmap_lib_test_x ${d}bog_vmap_lib_test_y`,
+                `	left \\`,
+                ``,
+                `${d}bog_vmap_lib_test_y ${d}bog_vmap_lib_test_x`,
+                `	right \\`,
+                ``,
+            ].join('\n');
+            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_parse(src));
+            $mol_assert_equal($.$bog_vmap_lib_chain(index, `${d}bog_vmap_lib_test_x`).join(' '), `${d}bog_vmap_lib_test_x ${d}bog_vmap_lib_test_y`);
+            $mol_assert_equal([...$.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_x`).keys()].join(' '), 'right left');
+        },
+        'united resolves document classes against the library'($) {
+            const lib = $.$bog_vmap_lib_parse(lib_src);
+            const doc = $.$bog_vmap_lib_parse(doc_src);
+            const doc_kids = doc.kids.filter(cl => cl.type !== `${d}mol_view`);
+            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_united(lib, doc_kids));
+            const props = $.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_doc`);
+            $mol_assert_equal([...props.keys()].join(' '), 'dom_name style event field attr sub title count extra own');
+        },
+        'a document class shadows a library class of the same name'($) {
+            const lib = $.$bog_vmap_lib_parse(lib_src);
+            const own = $.$bog_vmap_lib_parse([
+                `${d}bog_vmap_lib_test_a ${d}mol_view`,
+                `	mine \\`,
+                ``,
+            ].join('\n')).kids.filter(cl => cl.type !== `${d}mol_view`);
+            const index = $.$bog_vmap_lib_index($.$bog_vmap_lib_united(lib, own));
+            const props = $.$bog_vmap_lib_props_map(index, `${d}bog_vmap_lib_test_a`);
+            $mol_assert_equal(props.has('mine'), true);
+            $mol_assert_equal(props.has('count'), false);
+        },
+        'united of nothing is the library itself'($) {
+            const lib = $.$bog_vmap_lib_parse(lib_src);
+            $mol_assert_equal($.$bog_vmap_lib_united(lib, []), lib);
+        },
+        'lists and search over a namespace'($) {
+            const lib = $.$bog_vmap_lib.make({
+                $,
+                tree: () => $.$bog_vmap_lib_parse(lib_src),
+            });
+            $mol_assert_equal(lib.class_list().join(' '), `${d}mol_view ${d}bog_vmap_lib_test_a ${d}bog_vmap_lib_test_b`);
+            $mol_assert_equal(lib.base_options().join(' '), `${d}bog_vmap_lib_test_b ${d}bog_vmap_lib_test_a ${d}mol_view`);
+            $mol_assert_equal(lib.class_search('test_b').join(' '), `${d}bog_vmap_lib_test_b`);
+            $mol_assert_equal(lib.class_search('').length, 3);
+            $mol_assert_equal(lib.inherit_chain(`${d}bog_vmap_lib_test_a`).length, 3);
+            $mol_assert_equal(lib.props_map(`${d}bog_vmap_lib_test_a`).size, 8);
+            $mol_assert_equal(lib.props_of(`${d}bog_vmap_lib_test_b`).kids[0].type, 'extra');
+        },
+        'the pack address drives both links'($) {
+            const lib = $.$bog_vmap_lib.make({ $ });
+            $mol_assert_equal(lib.tree_link(), 'https://mol.hyoo.ru/web.view.tree');
+            $mol_assert_equal(lib.script_link(), 'https://mol.hyoo.ru/web.js');
+            lib.pack('https://example.org/app/');
+            $mol_assert_equal(lib.tree_link(), 'https://example.org/app/web.view.tree');
+            $mol_assert_equal(lib.script_link(), 'https://example.org/app/web.js');
+        },
+        'a pack address without a trailing slash keeps its last segment'($) {
+            const lib = $.$bog_vmap_lib.make({ $ });
+            lib.pack('https://b-on-g.github.io/gram');
+            $mol_assert_equal(lib.tree_link(), 'https://b-on-g.github.io/gram/web.view.tree');
+            $mol_assert_equal(lib.script_link(), 'https://b-on-g.github.io/gram/web.js');
+            $mol_assert_equal(lib.pack(), 'https://b-on-g.github.io/gram');
+            $mol_assert_equal(lib.pack_base(), 'https://b-on-g.github.io/gram/');
+            lib.pack('https://b-on-g.github.io/gram/');
+            $mol_assert_equal(lib.tree_link(), 'https://b-on-g.github.io/gram/web.view.tree');
+        },
+        'a sibling module on the dev server keeps the build folder'($) {
+            const page = 'http://localhost:9080/bog/vmap/app/-/test.html';
+            $mol_assert_equal($bog_vmap_lib_sibling(page, 'scene'), 'http://localhost:9080/bog/vmap/scene/-/');
+            $mol_assert_equal($bog_vmap_lib_sibling(page, 'part'), 'http://localhost:9080/bog/vmap/part/-/');
+            $mol_assert_equal($bog_vmap_lib_sibling('http://localhost:9080/bog/vmap/app/-/index.html', 'scene'), 'http://localhost:9080/bog/vmap/scene/-/');
+        },
+        'a sibling module on a deploy is a folder under the editor'($) {
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/', 'part'), 'https://b-on-g.github.io/vmap/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/index.html', 'part'), 'https://b-on-g.github.io/vmap/part/');
+        },
+        'a page address without a trailing slash reads as a folder'($) {
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap', 'part'), 'https://b-on-g.github.io/vmap/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap?x=1#y', 'scene'), 'https://b-on-g.github.io/vmap/scene/');
+        },
+        'a dot in a folder name is not a page file'($) {
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/', 'part'), 'https://b-on-g.github.io/vmap/v1.2/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://b-on-g.github.io/vmap/v1.2/index.html', 'scene'), 'https://b-on-g.github.io/vmap/v1.2/scene/');
+        },
+        'an editor served from the root of a site keeps its siblings under it'($) {
+            $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/', 'part'), 'https://vmap.example/part/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example/index.html', 'scene'), 'https://vmap.example/scene/');
+            $mol_assert_equal($bog_vmap_lib_sibling('https://vmap.example', 'part'), 'https://vmap.example/part/');
+        },
+        async 'a pack is fetched and parsed'($) {
+            const lib = $.$bog_vmap_lib.make({
+                $,
+                tree_link: () => 'data:text/plain,' + encodeURIComponent(lib_src),
+            });
+            $mol_assert_equal((await $.$mol_wire_async(lib).class_list()).join(' '), `${d}mol_view ${d}bog_vmap_lib_test_a ${d}bog_vmap_lib_test_b`);
+        },
+        async 'an unreachable pack fails instead of emptying the palette'($) {
+            const lib = $.$bog_vmap_lib.make({ $, tree_link: () => 'data:' });
+            let failed = '';
+            try {
+                await $.$mol_wire_async(lib).class_list();
+            }
+            catch (error) {
+                failed = error.constructor.name;
+            }
+            $mol_assert_equal(failed, '$mol_error_mix');
+        },
+        'a dead pack is worded with the address that was fetched'($) {
+            const note = $.$bog_vmap_lib_pack_note('https://dead.test/web.view.tree', new Error('Not Found'));
+            $mol_assert_ok(note.includes('Not Found'));
+            $mol_assert_ok(note.includes('https://dead.test/web.view.tree'));
+            const bare = $.$bog_vmap_lib_pack_note('', new Error('Failed to fetch'));
+            $mol_assert_equal(bare, 'Пак не отвечает: Failed to fetch');
+        },
+        'inner layers of a class come from its own sub and from the lists of its own views'($) {
+            const lib = $.$bog_vmap_lib_any.make({
+                $,
+                tree: () => $.$bog_vmap_lib_parse(inner_src),
+            });
+            $mol_assert_like(lib.inner_kids(`${d}bog_vmap_lib_test_plot`), ['Title', 'Chart']);
+            $mol_assert_like(lib.inner_kids(`${d}bog_vmap_lib_test_plot/Chart`), ['Line', 'Legend']);
+            $mol_assert_like(lib.inner_kids(`${d}bog_vmap_lib_test_plot/Title`), []);
+            $mol_assert_equal(lib.inner_class(`${d}bog_vmap_lib_test_plot/Chart/Line`), `${d}bog_vmap_lib_test_graph`);
+            $mol_assert_equal(lib.inner_class(`${d}bog_vmap_lib_test_plot/title`), '');
+        },
+        'a view of a nested class stands under its owner and is marked as taken from it'($) {
+            const lib = $.$bog_vmap_lib_any.make({
+                $,
+                tree: () => $.$bog_vmap_lib_parse(inner_src),
+            });
+            const chart = `${d}bog_vmap_lib_test_plot/Chart`;
+            $mol_assert_equal(lib.inner_alien(`${d}bog_vmap_lib_test_plot/Title`), false);
+            $mol_assert_equal(lib.inner_alien(`${chart}/Line`), false);
+            $mol_assert_equal(lib.inner_alien(`${chart}/Legend`), true);
+            $mol_assert_equal(lib.inner_step(`${chart}/Legend`)?.declared, `${d}bog_vmap_lib_test_chart`);
+            $mol_assert_equal(lib.inner_step(`${chart}/Line`)?.declared, `${d}bog_vmap_lib_test_plot`);
+            $mol_assert_equal(lib.inner_class(`${chart}/Legend`), `${d}bog_vmap_lib_test_legend`);
+        },
+        'a route that leaves the class it started from stays foreign all the way down'($) {
+            const lib = $.$bog_vmap_lib_any.make({
+                $,
+                tree: () => $.$bog_vmap_lib_parse(inner_src),
+            });
+            const deep = `${d}bog_vmap_lib_test_plot/Chart/Legend/Mark`;
+            $mol_assert_like(lib.inner_kids(`${d}bog_vmap_lib_test_plot/Chart/Legend`), ['Mark']);
+            $mol_assert_equal(lib.inner_alien(deep), true);
+            $mol_assert_equal(lib.inner_step(deep)?.declared, `${d}bog_vmap_lib_test_legend`);
+            $mol_assert_equal(lib.inner_step(`${d}bog_vmap_lib_test_plot/Nobody`), null);
+        },
+        'inner layers are taken along the whole chain of inheritance'($) {
+            const lib = $.$bog_vmap_lib_any.make({
+                $,
+                tree: () => $.$bog_vmap_lib_parse(inner_src),
+            });
+            $mol_assert_like(lib.inner_kids(`${d}bog_vmap_lib_test_plot_dark`), ['Title', 'Chart']);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
     const d = '$';
     const land_a = 'AbCdEfGh_12345678_ZyXwVuTs';
     const land_b = 'QwErTyUi_09876543_MnBvCxZl';
@@ -52710,6 +54049,12 @@ var $;
         });
         return { store, view };
     }
+    const right_click = ($, x = 40, y = 80) => new $.$mol_dom_context.MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+    });
     $mol_test({
         'nothing to pick and nothing to name while there are no documents'($) {
             const { view } = scenes($);
@@ -52744,6 +54089,75 @@ var $;
             view.current('not a link');
             $mol_assert_equal(store.source(), src_hero);
         },
+        'a scene leaves the list only after the question of the menu is answered'($) {
+            const { store, view } = scenes($);
+            const first = store.doc_add('First', src_page);
+            const second = store.doc_add('Second', src_hero);
+            $mol_assert_like(view.menu_items(), []);
+            view.scene_menu(first.link().str, right_click($));
+            $mol_assert_equal(view.menu_showed(), true);
+            $mol_assert_equal(view.menu_left(), '40px');
+            $mol_assert_equal(view.menu_top(), '80px');
+            $mol_assert_equal(view.menu_items().length, 1);
+            $mol_assert_equal(view.menu_items()[0], view.Drop());
+            view.drop_ask();
+            $mol_assert_equal(view.menu_items().length, 3);
+            $mol_assert_equal(view.menu_items()[0], view.Drop_note());
+            $mol_assert_ok(view.drop_note().startsWith('Удалить «First»?'));
+            $mol_assert_like(view.scene_links(), [first.link().str, second.link().str]);
+            view.drop();
+            $mol_assert_like(view.scene_links(), [second.link().str]);
+            $mol_assert_equal(store.doc(first.link()).title(), 'First');
+        },
+        'a closed menu keeps no node in the page'($) {
+            const { store, view } = scenes($);
+            const first = store.doc_add('First', src_page);
+            const held = () => [...view.dom_tree().querySelectorAll('[bog_vmap_app_menu]')].length;
+            $mol_assert_equal(held(), 0);
+            view.scene_menu(first.link().str, right_click($));
+            $mol_assert_equal(held(), 1);
+            view.menu_close();
+            $mol_assert_equal(held(), 0);
+        },
+        'the question of the menu can be refused, and the list stays whole'($) {
+            const { store, view } = scenes($);
+            const first = store.doc_add('First', src_page);
+            const second = store.doc_add('Second', src_hero);
+            view.scene_menu(first.link().str, right_click($));
+            view.drop_ask();
+            view.menu_close();
+            $mol_assert_equal(view.menu_showed(), false);
+            $mol_assert_equal(view.menu_asking(), false);
+            $mol_assert_like(view.menu_items(), []);
+            $mol_assert_like(view.scene_links(), [first.link().str, second.link().str]);
+        },
+        'dropping the open scene opens the one beside it, not the last of the list'($) {
+            const { store, view } = scenes($);
+            const first = store.doc_add('First', src_page);
+            const second = store.doc_add('Second', src_hero);
+            const third = store.doc_add('Third', src_page);
+            view.current(first.link().str);
+            view.scene_menu(first.link().str, right_click($));
+            view.drop_ask();
+            view.drop();
+            $mol_assert_equal(view.current(), second.link().str);
+            $mol_assert_equal(store.source(), src_hero);
+            view.current(third.link().str);
+            view.scene_menu(second.link().str, right_click($));
+            view.drop_ask();
+            view.drop();
+            $mol_assert_equal(view.current(), third.link().str);
+        },
+        'dropping the last scene leaves the editor with none open'($) {
+            const { store, view } = scenes($);
+            const only = store.doc_add('Only', src_hero);
+            view.scene_menu(only.link().str, right_click($));
+            view.drop_ask();
+            view.drop();
+            $mol_assert_like(view.scene_links(), []);
+            $mol_assert_equal(view.current(), '');
+            $mol_assert_equal(view.current_exists(), false);
+        },
         'renaming writes the title of the open document and shows in the list'($) {
             const { store, view } = scenes($);
             const first = store.doc_add('First', src_page);
@@ -52770,21 +54184,6 @@ var $;
             $mol_assert_equal(add.textContent, '');
             $mol_assert_ok(add.contains(view.Add_icon().dom_node()));
             $mol_assert_ok(add.getAttribute('title').startsWith('Новая сцена'));
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_test({
-        'room is counted from the host center to both edges of the view'() {
-            $mol_assert_like($bog_tooltip_room({ left: 12, width: 40 }, 1280), { left: 32, right: 1248 });
-            $mol_assert_like($bog_tooltip_room({ left: 1228, width: 40 }, 1280), { left: 1248, right: 32 });
-        },
-        'host past the right edge leaves negative room on that side'() {
-            $mol_assert_like($bog_tooltip_room({ left: 1270, width: 40 }, 1280), { left: 1290, right: -10 });
         },
     });
 })($ || ($ = {}));
@@ -53246,9 +54645,17 @@ var $;
     function preset(id) {
         return $bog_vmap_app_shelf_presets().find(item => item.id === id).source;
     }
+    function shelf_make($, over = {}) {
+        const dom = $.$mol_dom_context;
+        Object.assign(globalThis, {
+            ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
+            PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
+        });
+        return $bog_vmap_app_shelf.make({ $, ...over });
+    }
     $mol_test({
         'the field is stored as typed and what was refused is said under it'($) {
-            const shelf = $bog_vmap_app_shelf.make({ $ });
+            const shelf = shelf_make($);
             shelf.links('https://mol.hyoo.ru, https://b-on-g.github.io/gram/');
             $mol_assert_equal(shelf.links(), 'https://mol.hyoo.ru, https://b-on-g.github.io/gram/');
             $mol_assert_equal(shelf.rejected_note(), 'https://b-on-g.github.io/gram/: ' + $bog_vmap_lib_links_reason.pack_second);
@@ -53257,8 +54664,7 @@ var $;
         },
         'the objects of the application are its own classes, mol left out'($) {
             const d = '$';
-            const shelf = $bog_vmap_app_shelf.make({
-                $,
+            const shelf = shelf_make($, {
                 class_list: () => [`${d}mol_view`, `${d}mol_button_minor`, `${d}bog_gram`, `${d}bog_gram_chat`],
             });
             $mol_assert_like(shelf.app_list(), [`${d}bog_gram`, `${d}bog_gram_chat`]);
@@ -53267,8 +54673,7 @@ var $;
             $mol_assert_ok(shelf.item(`${d}bog_gram_chat`).source.includes(`${d}bog_gram_chat`));
         },
         'a dead address takes down its own list and says why'($) {
-            const shelf = $bog_vmap_app_shelf.make({
-                $,
+            const shelf = shelf_make($, {
                 pack_link: () => 'http://dead.test/',
                 class_list: () => $mol_fail(new Error('Not Found')),
             });
@@ -53284,7 +54689,7 @@ var $;
             $mol_assert_ok(shelf.body().includes(shelf.Parts()));
         },
         'a read only scene browses the shelf but places, drags and rewires nothing'($) {
-            const shelf = $bog_vmap_app_shelf.make({ $, editable: () => false });
+            const shelf = shelf_make($, { editable: () => false });
             const id = shelf.items()[0].id;
             shelf.item_click(id, null);
             $mol_assert_equal(shelf.place(), '');
@@ -53300,13 +54705,13 @@ var $;
             $mol_assert_equal(shelf.items_shown()[0].id, id);
         },
         'nothing connected is a state and not a failure'($) {
-            const shelf = $bog_vmap_app_shelf.make({ $ });
+            const shelf = shelf_make($);
             $mol_assert_like(shelf.app_list(), []);
             $mol_assert_equal(shelf.apps_title(), 'Приложение не подключено');
             $mol_assert_ok(shelf.items().length > 4);
         },
         'the shelf is a page: heading and filter pinned, groups scroll in its body'($) {
-            const shelf = $bog_vmap_app_shelf.make({ $ });
+            const shelf = shelf_make($);
             const body = shelf.body();
             $mol_assert_equal(body.length, 4);
             $mol_assert_equal(body[0] === shelf.Level(), true);
@@ -53326,7 +54731,7 @@ var $;
             $mol_assert_ok(page.querySelector('[bog_vmap_app_shelf_pack_row]'));
         },
         'the pack, its address and its files sit in one expander, refusal under the field'($) {
-            const shelf = $bog_vmap_app_shelf.make({ $ });
+            const shelf = shelf_make($);
             shelf.links('https://mol.hyoo.ru, https://b-on-g.github.io/gram/');
             const dom = shelf.dom_tree();
             const source = dom.querySelector('[bog_vmap_app_shelf_source]');
@@ -53340,8 +54745,7 @@ var $;
                 .textContent.includes($bog_vmap_lib_links_reason.pack_second));
         },
         'the filter narrows both the parts and the objects of the application'($) {
-            const shelf = $bog_vmap_app_shelf.make({
-                $,
+            const shelf = shelf_make($, {
                 class_list: () => [`${d}bog_gram`, `${d}bog_gram_chat`, `${d}bog_other`],
             });
             const parts = () => shelf.items_shown().map(item => item.id);
@@ -53361,8 +54765,7 @@ var $;
             $mol_assert_equal(apps().length, 3);
         },
         'the shelf is cut down to what the pack at hand can build'($) {
-            const shelf = (classes) => $$.$bog_vmap_app_shelf.make({
-                $,
+            const shelf = (classes) => shelf_make($, {
                 pack_link: () => 'https://pack.test/',
                 pack_classes: () => classes,
             });
@@ -53382,8 +54785,7 @@ var $;
             $mol_assert_equal(poor.includes('input_string'), true);
         },
         'until the pack answers the shelf keeps offering everything'($) {
-            const shelf = $$.$bog_vmap_app_shelf.make({
-                $,
+            const shelf = shelf_make($, {
                 pack_link: () => 'https://pack.test/',
                 pack_classes: () => $mol_fail(new Error('Not Found')),
             });
@@ -53443,8 +54845,7 @@ var $;
             $mol_assert_ok(shelf.parts()[0].tree().includes('price 42'));
         },
         async 'files brought to the panel end up in the library, whose link joins the field'($) {
-            const shelf = $bog_vmap_app_shelf.make({
-                $,
+            const shelf = shelf_make($, {
                 Store: () => $bog_vmap_app_publish_store.make({
                     $,
                     shelf_land_config: () => $.$giper_baza_glob.home().land(),
@@ -53539,7 +54940,7 @@ var $;
             $mol_assert_equal(zoom?.kids[0]?.kids[0]?.type, node.wires()[0].name);
         },
         'the second level replaces the shelf instead of stacking under it'($) {
-            const shelf = $bog_vmap_app_shelf.make({ $ });
+            const shelf = shelf_make($);
             $mol_assert_equal(shelf.classes_showed(), false);
             $mol_assert_equal(shelf.body().includes(shelf.Parts()), true);
             $mol_assert_equal(shelf.body().includes(shelf.Apps()), true);
@@ -53573,7 +54974,7 @@ var $;
             }
         },
         'each group folds on a click of its heading and unfolds on the second, the other one stays as it was'($) {
-            const shelf = $bog_vmap_app_shelf.make({ $ });
+            const shelf = shelf_make($);
             const dom = $.$mol_dom_context;
             const group = (name) => shelf.dom_tree().querySelector(`[bog_vmap_app_shelf_${name}]`);
             const click = (name) => group(name).querySelector(`[bog_vmap_app_shelf_${name}_trigger]`)
@@ -54103,6 +55504,3208 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
+    const d = '$';
+    $_1.$bog_vmap_app_flow_parts = [
+        `${d}mol_string ${d}mol_view`,
+        `\tvalue? \\`,
+        `${d}mol_number ${d}mol_view`,
+        `\tvalue? 0`,
+        `\tsub /`,
+        `\t\t<= String ${d}mol_string`,
+        `${d}mol_select ${d}mol_view`,
+        `\tvalue? \\`,
+        `${d}mol_switch ${d}mol_view`,
+        `\tvalue? \\`,
+        `${d}mol_check_box ${d}mol_view`,
+        `\tchecked? false`,
+        `${d}mol_paragraph ${d}mol_view`,
+        `\ttitle \\`,
+        `${d}bog_vmap_part_cell ${d}mol_view`,
+        `\tresult \\`,
+        `\tcode? \\`,
+        `\tslots? \\`,
+        `\tin1 null`,
+        `\tin2 null`,
+        `\tin3 null`,
+        `\tsub /`,
+        `\t\t<= Code ${d}mol_string`,
+        `\t\t\tvalue? <=> code?`,
+        `\t\t<= Draft ${d}mol_string`,
+        `\t\t<= Note ${d}mol_paragraph`,
+        `\t\t\ttitle \\Выполнить`,
+        `${d}bog_vmap_part_plot ${d}mol_view`,
+        `\tseries /`,
+        `${d}bog_vmap_part_calc ${d}mol_view`,
+        `\tresult 0`,
+        `\tsub /`,
+        `\t\t<= Left ${d}mol_number`,
+        `\t\t<= Right ${d}mol_number`,
+        `${d}bog_vmap_part_map ${d}mol_view`,
+        `\tzoom 0`,
+    ];
+    $_1.$bog_vmap_app_flow_pack = [
+        `${d}flow_button ${d}mol_view`,
+        `\ttitle \\`,
+        `\tenabled true`,
+        `${d}flow_calc ${d}mol_view`,
+        `\tresult 0`,
+        `\top \\plus`,
+        `${d}flow_map ${d}mol_view`,
+        `\tzoom 0`,
+        `\tmarker \\`,
+        ...$_1.$bog_vmap_app_flow_parts,
+        ``,
+    ].join('\n');
+    $_1.$bog_vmap_app_flow_other = 'http://other.pack/';
+    $_1.$bog_vmap_app_flow_other_pack = [
+        `${d}shop_basket ${d}mol_view`,
+        `\ttitle \\`,
+        ``,
+    ].join('\n');
+    $_1.$bog_vmap_app_flow_ui = $bog_vmap_app_shelf_packs().find(offer => offer.id === 'builderui').link;
+    $_1.$bog_vmap_app_flow_ui_pack = [
+        `${d}bog_builderui_card ${d}mol_view`,
+        `\ttitle \\`,
+        ``,
+    ].join('\n');
+    $_1.$bog_vmap_app_flow_rect = {
+        left: 200, top: 50, width: 600, height: 500, right: 800, bottom: 550,
+    };
+    $_1.$bog_vmap_app_flow_size = { width: 100, height: 50 };
+    $_1.$bog_vmap_app_flow_board = { width: 400, height: 300 };
+    function browser_gaps($) {
+        const dom = $.$mol_dom_context;
+        Object.assign(globalThis, {
+            ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
+            PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
+        });
+        const proto = dom.Element.prototype;
+        if (!proto.setPointerCapture)
+            Object.assign(proto, {
+                setPointerCapture() { },
+                releasePointerCapture() { },
+                hasPointerCapture() { return false; },
+            });
+    }
+    let $bog_vmap_app_flow_last = null;
+    let $bog_vmap_app_flow_host = null;
+    async function $bog_vmap_app_flow_settle(done, limit = 300) {
+        const till = Date.now() + limit;
+        while (!done() && Date.now() < till) {
+            await new Promise(next => setTimeout(next, 2));
+        }
+        return done();
+    }
+    $_1.$bog_vmap_app_flow_settle = $bog_vmap_app_flow_settle;
+    function $bog_vmap_app_flow_stage($, over = {}) {
+        browser_gaps($);
+        const dom = $.$mol_dom_context;
+        $bog_vmap_app_flow_last?.destructor();
+        $bog_vmap_app_flow_host?.remove();
+        const host = dom.document.createElement('div');
+        host.setAttribute('bog_vmap_app_flow_host', '');
+        host.style.position = 'fixed';
+        host.style.left = '-20000px';
+        host.style.top = '0';
+        dom.document.body.appendChild(host);
+        $bog_vmap_app_flow_host = host;
+        const timers = [];
+        class $mol_after_timeout_flow extends $mol_after_timeout {
+            constructor(delay, task) {
+                super(delay, task);
+                clearTimeout(this.id);
+                timers.push(this);
+            }
+        }
+        $.$mol_after_timeout = $mol_after_timeout_flow;
+        const kept = {};
+        class $mol_state_local_flow extends $mol_state_local {
+            static value(key, next) {
+                if (next === undefined)
+                    return JSON.parse(kept[key] ?? 'null');
+                if (next === null)
+                    delete kept[key];
+                else
+                    kept[key] = JSON.stringify(next);
+                return next;
+            }
+        }
+        __decorate([
+            $mol_mem_key
+        ], $mol_state_local_flow, "value", null);
+        $.$mol_state_local = $mol_state_local_flow;
+        const session = {};
+        class $mol_state_session_flow extends $mol_state_session {
+            static value(key, next) {
+                if (next === undefined)
+                    return JSON.parse(session[key] ?? 'null');
+                if (next === null)
+                    delete session[key];
+                else
+                    session[key] = JSON.stringify(next);
+                return next;
+            }
+        }
+        __decorate([
+            $mol_mem_key
+        ], $mol_state_session_flow, "value", null);
+        $.$mol_state_session = $mol_state_session_flow;
+        class $mol_media_flow extends $mol_media {
+            static match(query, next) {
+                if (query === '(prefers-color-scheme: light)')
+                    return false;
+                return super.match(query, next);
+            }
+        }
+        $.$mol_media = $mol_media_flow;
+        class $mol_fetch_flow extends $mol_fetch {
+            static text(input) {
+                const uri = String(input);
+                if (uri === $_1.$bog_vmap_app_flow_other + 'web.view.tree')
+                    return $_1.$bog_vmap_app_flow_other_pack;
+                if (uri === $_1.$bog_vmap_app_flow_ui + 'web.view.tree')
+                    return $_1.$bog_vmap_app_flow_ui_pack;
+                if (uri.endsWith('web.view.tree'))
+                    return $_1.$bog_vmap_app_flow_pack;
+                return $mol_fail(new Error('network in a test: ' + uri));
+            }
+        }
+        $.$mol_fetch = $mol_fetch_flow;
+        const store = over.store ?? $bog_vmap_app_store.make({ $, doc_land_config: () => null });
+        if (!over.store)
+            store.doc_add('Сцена 1');
+        const app = $bog_vmap_app.make({ $, store: () => store });
+        app.page_uri = () => 'http://localhost/';
+        $bog_vmap_app_flow_last = app;
+        const posted = [];
+        const queue = [];
+        const direction = (name) => {
+            const style = app.node().over_tree(name, 'style')?.kids[0] ?? null;
+            return $bog_vmap_lang_dict_get(style, 'flexDirection')?.value
+                ?? 'row'; // what `[mol_view]` is with no direction written
+        };
+        const sizes = () => {
+            const res = {};
+            const node = app.node();
+            const place = (name, path, x, y) => {
+                const kids = node.sub_names(name);
+                const box = { x, y, ...kids ? $_1.$bog_vmap_app_flow_board : $_1.$bog_vmap_app_flow_size };
+                res[path] = box;
+                if (!kids)
+                    return box;
+                const row = direction(name) === 'row';
+                let at = 0;
+                for (const kid of kids) {
+                    if (!kid)
+                        continue;
+                    const inner = place(kid, path + '/' + kid, row ? x + at : x, row ? y : y + at);
+                    at += row ? inner.width : inner.height;
+                }
+                return box;
+            };
+            const spots = app.spots();
+            for (const name of Object.keys(spots)) {
+                place(name, app.doc_root() + '/' + name, spots[name].x, spots[name].y);
+            }
+            return res;
+        };
+        let silent = false;
+        let exposed = false;
+        const peer = {
+            get origin() {
+                if (exposed)
+                    return 'http://localhost';
+                return $mol_fail(new Error('SecurityError: cross-origin frame'));
+            },
+            postMessage(data) {
+                const message = data;
+                posted.push(message);
+                if (silent)
+                    return;
+                if (message.kind === 'ping')
+                    queue.push({ kind: 'pong', nonce: message.nonce });
+                else if (message.kind !== 'values_want')
+                    queue.push({ kind: 'sizes', sizes: sizes() });
+            },
+        };
+        const deliver = (data) => {
+            const event = new dom.MessageEvent('message', { data: { ns: $bog_vmap_bridge_ns, ...data } });
+            Object.defineProperty(event, 'source', { value: peer });
+            dom.dispatchEvent(event);
+        };
+        const scene = {
+            posted,
+            sent(kind) {
+                return posted.filter(message => message.kind === kind);
+            },
+            last(kind) {
+                return this.sent(kind).at(-1);
+            },
+            flush() {
+                while (queue.length)
+                    deliver(queue.shift());
+                app.dom_tree();
+            },
+            values(values) {
+                deliver({ kind: 'values', values });
+                app.dom_tree();
+            },
+            silence() {
+                silent = true;
+                queue.length = 0;
+            },
+            pack_note(message) {
+                deliver({ kind: 'error', at: 'pack', message });
+                app.dom_tree();
+            },
+            hello() {
+                deliver({ kind: 'ready' });
+                app.dom_tree();
+                this.flush();
+            },
+            expose() {
+                exposed = true;
+                app.dom_tree();
+            },
+        };
+        const pane = app.Pane();
+        pane.scene_peer = () => peer;
+        const root = app.dom_tree();
+        host.appendChild(root);
+        const rect = $_1.$bog_vmap_app_flow_rect;
+        pane.dom_node().getBoundingClientRect = () => rect;
+        pane.view_rect = () => rect;
+        pane.Touch().view_rect = () => rect;
+        if (over.mute) {
+            deliver({ kind: 'ready' });
+            silent = true;
+            queue.length = 0;
+            app.dom_tree();
+        }
+        else {
+            deliver({ kind: 'ready' });
+            app.dom_tree();
+            scene.flush();
+        }
+        const camera_pin = () => {
+            pane.camera_doc(pane.camera_key());
+            pane.camera_zoom(1);
+            pane.camera_shift(new $mol_vector_2d(0, 0));
+            app.dom_tree();
+        };
+        if (over.camera !== 'own')
+            camera_pin();
+        const found = (selector, note, match) => {
+            const el = [...root.querySelectorAll(selector)].find(match);
+            if (!el)
+                $mol_fail(new Error(`nothing on screen: ${note}`));
+            return el;
+        };
+        const pointer = (type, point, over = {}) => {
+            return new dom.PointerEvent(type, {
+                bubbles: true,
+                cancelable: true,
+                clientX: point[0],
+                clientY: point[1],
+                button: 0,
+                buttons: type === 'pointerup' ? 0 : 1,
+                pointerId: 1,
+                ...over,
+            });
+        };
+        return {
+            app, pane, store, scene, root, timers, kept,
+            client(point) {
+                return [rect.left + point[0], rect.top + point[1]];
+            },
+            text() {
+                return root.textContent ?? '';
+            },
+            broken() {
+                return [...root.querySelectorAll('[mol_view_error]')].map(el => el.getAttribute('id'));
+            },
+            button(title) {
+                const named = [...root.querySelectorAll('[role=button]')].find(el => el.textContent?.startsWith(title));
+                return named ?? found('[role=button]', `button «${title}»`, el => el.getAttribute('title')?.startsWith(title) ?? false);
+            },
+            check(title) {
+                return found('[role=checkbox]', `check «${title}»`, el => el.textContent?.includes(title) ?? false);
+            },
+            class_row(klass) {
+                return found('[bog_vmap_app_palette_item]', `palette row ${klass}`, el => el.textContent === klass);
+            },
+            assets() {
+                this.click(this.check('Ассеты'));
+            },
+            classes_open() {
+                this.assets();
+                app.Shelf().classes_showed(true);
+                app.dom_tree();
+                scene.flush();
+            },
+            scene_row(title) {
+                return found('[bog_vmap_app_scenes_scene_row]', `scene row ${title}`, el => el.textContent === title);
+            },
+            shelf_row(title) {
+                return found('[bog_vmap_app_shelf_item_row]', `shelf row ${title}`, el => el.textContent === title);
+            },
+            pack_row(title) {
+                return found('[bog_vmap_app_shelf_pack_row]', `pack row ${title}`, el => el.textContent === title);
+            },
+            lights_toggle() {
+                return found('[bog_vmap_app_lights]', 'lights toggle', () => true);
+            },
+            theme_worn() {
+                return root.getAttribute('mol_theme');
+            },
+            field(tail) {
+                return found('input, textarea', `field ${tail}`, el => el.getAttribute('id')?.endsWith(tail) ?? false);
+            },
+            overlay() {
+                return root.querySelector('[bog_vmap_app_pane_overlay]');
+            },
+            frame() {
+                return root.querySelector('iframe');
+            },
+            type(el, value) {
+                el.value = value;
+                el.dispatchEvent(new dom.Event('input', { bubbles: true }));
+                app.dom_tree();
+                scene.flush();
+            },
+            blur(el) {
+                el.dispatchEvent(new dom.Event('blur', { bubbles: true }));
+                app.dom_tree();
+                scene.flush();
+            },
+            click(el) {
+                el.dispatchEvent(new dom.MouseEvent('click', { bubbles: true, cancelable: true }));
+                app.dom_tree();
+                scene.flush();
+            },
+            press(el, point, over = {}) {
+                el.dispatchEvent(pointer('pointerdown', point, over));
+            },
+            move(el, point, over = {}) {
+                el.dispatchEvent(pointer('pointermove', point, over));
+            },
+            release(el, point, over = {}) {
+                el.dispatchEvent(pointer('pointerup', point, over));
+            },
+            drop(klass, point) {
+                this.classes_open();
+                this.press(this.class_row(klass), [10, 300]);
+                dom.dispatchEvent(pointer('pointermove', point));
+                this.release(this.overlay(), point);
+                app.dom_tree();
+                scene.flush();
+            },
+            tap(point, over = {}) {
+                this.press(this.overlay(), point, over);
+                this.release(this.overlay(), point, over);
+                app.dom_tree();
+                scene.flush();
+            },
+            part_center(name) {
+                const box = pane.part_box(name);
+                if (!box)
+                    $mol_fail(new Error(`part ${name} is not measured`));
+                return this.client([box.left + box.width / 2, box.top + box.height / 2]);
+            },
+            port_dot(name, port, side) {
+                const box = pane.part_box(name);
+                const index = pane.part_dots(name).findIndex(known => known.name === port);
+                if (!box || index < 0)
+                    $mol_fail(new Error(`no port ${name}.${port} on screen`));
+                return this.client($bog_vmap_app_wire_port_point(box, side, index));
+            },
+            redraw() {
+                app.dom_tree();
+            },
+        };
+    }
+    $_1.$bog_vmap_app_flow_stage = $bog_vmap_app_flow_stage;
+})($ || ($ = {}));
+(function ($_2) {
+    const d = '$';
+    const calc = `${d}flow_calc`;
+    const map = `${d}flow_map`;
+    const button = `${d}flow_button`;
+    const number = `${d}mol_number`;
+    $mol_test({
+        'the editor opens with the head of its canvas, its palette and its canvas'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.button('Новая сцена');
+            stage.button('Удалить');
+            stage.button('В библиотеку');
+            const canvas = stage.pane.dom_node();
+            const tools = stage.root.querySelector('[bog_vmap_app_tools]');
+            for (const title of ['−', '100%', '+']) {
+                $mol_assert_equal(tools.contains(stage.button(title)), true);
+                $mol_assert_equal(canvas.contains(stage.button(title)), false);
+            }
+            $mol_assert_equal(canvas.querySelector('[role=button]'), null);
+            const text = stage.text();
+            $mol_assert_ok(text.includes('Ассеты'));
+            $mol_assert_ok(text.includes('Свойства'));
+            $mol_assert_ok(text.includes('100%'));
+            $mol_assert_ok(text.includes('Выберите узел на холсте'));
+            stage.assets();
+            const shelf = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_items] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
+            $mol_assert_like(shelf.slice(0, 6), [
+                'Блок', 'Ячейка кода', 'График', 'Калькулятор', 'Карта', 'Калькулятор и карта',
+            ]);
+            $mol_assert_ok(shelf.includes('Поле'));
+            $mol_assert_ok(shelf.includes('Выбор'));
+            const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
+            $mol_assert_like(apps, [
+                'Button', 'Calc', 'Map',
+                'Vmap_part_cell', 'Vmap_part_plot', 'Vmap_part_calc', 'Vmap_part_map',
+            ]);
+            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_palette_class_row]'), null);
+            stage.classes_open();
+            const rows = [...stage.root.querySelectorAll('[bog_vmap_app_palette_class_row]')]
+                .map(el => el.textContent);
+            $mol_assert_like(rows, [
+                `${d}mol_view`, button, calc, map,
+                ...$_2.$bog_vmap_app_flow_parts.filter(line => line[0] === '$').map(line => line.split(' ')[0]),
+            ]);
+            $mol_assert_like(stage.broken(), [stage.pane.Scene(stage.pane.scene_key()).dom_id()]);
+        },
+        'a ready made pair lands wired, by one click on the shelf'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.assets();
+            stage.click(stage.shelf_row('Калькулятор и карта'));
+            const node = stage.app.node();
+            $mol_assert_like(node.sub_names(''), ['Pair']);
+            $mol_assert_like(node.sub_names('Pair'), ['Calc', 'Map']);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Pair']);
+            const links = node.links();
+            $mol_assert_equal(links.length, 1);
+            $mol_assert_like([links[0].from, links[0].from_prop, links[0].to, links[0].to_prop], ['Calc', 'result', 'Map', 'zoom']);
+            $mol_assert_equal(stage.scene.last('doc_set').src, stage.app.doc_source());
+            $mol_assert_equal(stage.app.selected(), 'Pair');
+        },
+        'an application added by its address puts its objects on the shelf'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.assets();
+            stage.type(stage.field('Shelf().Links()'), $_2.$bog_vmap_app_flow_other);
+            stage.scene.hello();
+            const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
+            $mol_assert_like(apps, ['Basket']);
+            stage.click(stage.shelf_row('Basket'));
+            $mol_assert_ok(stage.app.doc_source().includes(`Basket ${d}shop_basket`));
+            $mol_assert_equal(stage.app.selected(), 'Basket');
+        },
+        'a class carried from the palette becomes a part, picked and ready to press'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            const source = stage.app.doc_source();
+            $mol_assert_ok(source.includes(`Calc ${calc}`));
+            $mol_assert_ok(source.includes('<= Calc'));
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 } });
+            $mol_assert_equal(stage.scene.last('doc_set').src, source);
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            $mol_assert_ok(stage.root.querySelector('[bog_vmap_app_pane_handle]') !== null);
+            stage.field("Row('result').Value().Num()");
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            const click = stage.scene.last('click_at');
+            $mol_assert_equal(click.x, 154);
+            $mol_assert_equal(click.y, 99);
+        },
+        'a value typed into the inspector goes into the document and to the scene'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.tap(stage.part_center('Calc'));
+            const before = stage.scene.sent('doc_set').length;
+            stage.type(stage.field("Row('result').Value().Num()"), '42');
+            const source = stage.app.doc_source();
+            $mol_assert_ok(source.includes(`Calc ${calc} result 42`));
+            $mol_assert_ok(source.includes('<= Calc'));
+            $mol_assert_ok(stage.scene.sent('doc_set').length > before);
+            $mol_assert_equal(stage.scene.last('doc_set').src, source);
+        },
+        'a value typed for a field is a cell of the root that follows the field through a rename and a delete'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            stage.drop(number, stage.client([200, 150]));
+            stage.tap(stage.part_center('Number'));
+            stage.type(stage.field("Row('value').Value().Num()"), '6000000');
+            $mol_assert_equal(app.node().over_tree('Number', 'value').toString(), 'value? <=> number_value?\n');
+            $mol_assert_equal(app.node().prop_decl('number_value').toString(), 'number_value? 6000000\n');
+            $mol_assert_equal(stage.scene.last('doc_set').src, app.doc_source());
+            stage.click(stage.check('Слои'));
+            const layers = app.Layers().dom_node().textContent ?? '';
+            $mol_assert_ok(stage.root.contains(app.Layers().dom_node()));
+            $mol_assert_ok(layers.includes('Number'));
+            $mol_assert_equal(layers.includes('number_value'), false);
+            $mol_assert_like(app.doc_wires(), []);
+            $mol_assert_like(stage.pane.wire_lines(), []);
+            stage.type(stage.field("Row('value').Value().Num()"), '7000000');
+            $mol_assert_equal(app.node().prop_decl('number_value').toString(), 'number_value? 7000000\n');
+            $mol_assert_equal(app.doc_source().includes('6000000'), false);
+            $mol_assert_equal(app.doc_source().split('\n').filter(line => line.includes('number_value')).length, 2);
+            $mol_assert_equal(stage.field("Row('value').Value().Num()").value, '7000000');
+            const name = stage.field('Inspect().Name()');
+            stage.type(name, 'Amount');
+            stage.blur(name);
+            $mol_assert_equal(app.selected(), 'Amount');
+            $mol_assert_equal(app.node().cell_of('Amount', 'value'), 'amount_value');
+            $mol_assert_equal(app.doc_source().includes('number_value'), false);
+            $mol_assert_equal(stage.field("Row('value').Value().Num()").value, '7000000');
+            $mol_assert_equal(stage.scene.last('doc_set').src, app.doc_source());
+            app.node_delete();
+            $mol_assert_equal(app.doc_source().includes('amount_value'), false);
+            $mol_assert_equal(app.doc_source().includes('Amount'), false);
+        },
+        'a wire drawn between two parts is written, labelled and unplugged'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([400, 100]));
+            stage.tap(stage.part_center('Calc'));
+            const overlay = stage.overlay();
+            const out = stage.port_dot('Calc', 'result', 'out');
+            const into = stage.port_dot('Map', 'zoom', 'in');
+            stage.press(overlay, out);
+            stage.move(overlay, into);
+            stage.release(overlay, into);
+            stage.redraw();
+            const source = stage.app.doc_source();
+            $mol_assert_ok(source.includes('\tcalc_result = Calc result\n'));
+            $mol_assert_ok(source.includes('zoom <= calc_result'));
+            stage.scene.flush();
+            $mol_assert_like(stage.scene.last('values_want').names, ['calc_result', 'Calc.result', 'Calc.op', 'Map.marker']);
+            stage.scene.values({ calc_result: '42', 'Calc.result': '42', 'Calc.op': 'plus' });
+            $mol_assert_like(stage.pane.wire_lines().map(line => [line.key, line.label]), [['Map.zoom', '42']]);
+            $mol_assert_like(stage.pane.label_lines('Calc'), ['result: 42', 'op: plus']);
+            stage.tap(stage.part_center('Map'));
+            stage.press(overlay, stage.port_dot('Map', 'zoom', 'in'));
+            stage.release(overlay, stage.client([550, 450]));
+            stage.redraw();
+            const after = stage.app.doc_source();
+            $mol_assert_equal(after.includes('calc_result'), false);
+            $mol_assert_like(stage.app.doc_wires(), []);
+        },
+        async 'a drag with the shift held writes a two way wire, and one undo takes it back'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const history = stage.app.History();
+            const stepped = async () => {
+                const source = stage.app.doc_source();
+                const taken = () => history.ring(history.doc_key()).at(-1)?.source === source;
+                for (let i = 0; i < 10 && !taken(); ++i) {
+                    stage.timers.filter(timer => timer.delay === history.step_delay()).at(-1)?.task();
+                    await $_2.$bog_vmap_app_flow_settle(taken, 30);
+                    stage.redraw();
+                }
+                $mol_assert_equal(taken(), true);
+            };
+            stage.drop(number, stage.client([100, 100]));
+            stage.drop(number, stage.client([400, 100]));
+            stage.tap(stage.part_center('Number'));
+            await stepped();
+            const before = stage.app.doc_source();
+            const overlay = stage.overlay();
+            const out = stage.port_dot('Number', 'value', 'out');
+            const into = stage.port_dot('Number_2', 'value', 'in');
+            stage.press(overlay, out, { shiftKey: true });
+            stage.move(overlay, into, { shiftKey: true });
+            stage.release(overlay, into, { shiftKey: true });
+            stage.redraw();
+            const source = stage.app.doc_source();
+            $mol_assert_ok(source.includes('\tnumber_value? = Number value?\n'));
+            $mol_assert_ok(source.includes('value? <=> number_value?\n'));
+            $mol_assert_equal(stage.app.doc_wires()[0].bidi, true);
+            $mol_assert_equal(stage.pane.Wire().label_text('Number_2.value'), '⇄');
+            stage.scene.values({ number_value: '7' });
+            $mol_assert_equal(stage.pane.Wire().label_text('Number_2.value'), '⇄ 7');
+            await stepped();
+            history.undo();
+            stage.redraw();
+            $mol_assert_equal(stage.app.doc_source(), before);
+            $mol_assert_like(stage.app.doc_wires(), []);
+        },
+        async 'a published part comes back through the palette field'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const library = $bog_vmap_app_publish_store.make({
+                $,
+                shelf_land_config: () => $.$giper_baza_glob.home().land(),
+            });
+            stage.app.Publish().store = () => library;
+            stage.drop(button, stage.client([200, 150]));
+            stage.tap(stage.part_center('Button'));
+            stage.click(stage.button('В библиотеку'));
+            const link = await $_2.$bog_vmap_app_flow_settle(() => library.link());
+            stage.redraw();
+            $mol_assert_ok(link);
+            $mol_assert_ok(stage.text().includes('опубликовано'));
+            $mol_assert_ok(stage.text().includes(link));
+            stage.type(stage.field('Shelf().Links()'), link);
+            $mol_assert_like(stage.app.lands(), [link]);
+            $mol_assert_like(stage.app.lib_classes().map(tree => tree.type), [`${d}bog_vmap_pub_button`]);
+            stage.drop(`${d}bog_vmap_pub_button`, stage.client([400, 300]));
+            $mol_assert_ok(stage.app.doc_source().includes(` ${d}bog_vmap_pub_button\n`));
+            $mol_assert_equal(Object.keys(stage.app.spots()).length, 2);
+        },
+        async 'a second scene is a document of its own and the first one comes back'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            const first = stage.store.doc_current().link().str;
+            const source = stage.app.doc_source();
+            stage.click(stage.button('Новая сцена'));
+            await $_2.$bog_vmap_app_flow_settle(() => stage.store.doc_links().length > 1);
+            stage.redraw();
+            $mol_assert_equal(stage.store.doc_links().length, 2);
+            $mol_assert_ok(stage.store.doc_current().link().str !== first);
+            $mol_assert_equal(stage.app.doc_source(), `${stage.app.doc_root()} ${d}mol_view\n\tsub /\n`);
+            $mol_assert_like(stage.app.spots(), {});
+            const scenes = stage.app.Scenes();
+            scenes.current(first);
+            stage.redraw();
+            $mol_assert_equal(stage.app.doc_source(), source);
+            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 } });
+        },
+        'the frame is raised from markup and carries no address'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const frame = stage.frame();
+            $mol_assert_equal(frame.getAttribute('sandbox'), 'allow-scripts');
+            $mol_assert_equal(frame.hasAttribute('src'), false);
+            const html = frame.getAttribute('srcdoc') ?? '';
+            const bundle = stage.app.scene_bundle();
+            $mol_assert_ok(bundle.endsWith('/scene/web.js'));
+            $mol_assert_ok(html.includes(`src="${bundle}"`));
+            $mol_assert_ok(html.includes('color-scheme:dark'));
+        },
+        'the pack goes down the wire before the document and the libraries'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const kinds = stage.scene.posted.map(message => message.kind);
+            const pack = kinds.indexOf('pack_set');
+            $mol_assert_ok(pack >= 0);
+            $mol_assert_ok(pack < kinds.indexOf('doc_set'));
+            $mol_assert_ok(pack < kinds.indexOf('libs_set'));
+            $mol_assert_equal(stage.scene.last('pack_set')?.uri, stage.app.pack_script());
+        },
+        'a new pack gives a new frame, a new land keeps the old one'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.assets();
+            const field = stage.field('Shelf().Links()');
+            const before = stage.frame();
+            stage.type(field, 'http://pack.test/, AbCdEfGh');
+            $mol_assert_ok(stage.frame() !== before);
+            $mol_assert_like(stage.app.lands(), ['AbCdEfGh']);
+            $mol_assert_equal(stage.pane.ready(), false);
+            const seen = stage.scene.posted.length;
+            stage.scene.hello();
+            $mol_assert_equal(stage.pane.ready(), true);
+            $mol_assert_equal(stage.scene.posted[seen]?.kind, 'pack_set');
+            $mol_assert_equal(stage.scene.last('pack_set')?.uri, 'http://pack.test/web.js');
+            const kept = stage.frame();
+            stage.type(field, 'http://pack.test/, AbCdEfGh, ZyXwVuTs');
+            $mol_assert_equal(stage.frame(), kept);
+            $mol_assert_like(stage.app.lands(), ['AbCdEfGh', 'ZyXwVuTs']);
+        },
+        'a change of pack raises no false alarm about the scene'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const watch = () => stage.timers.filter(timer => timer.delay === stage.pane.answer_limit()).length;
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_equal(stage.pane.warmed(), true);
+            const sent = stage.scene.posted.length;
+            const armed = watch();
+            stage.type(stage.field('Shelf().Links()'), 'http://pack.test/');
+            $mol_assert_equal(stage.pane.ready(), false);
+            $mol_assert_equal(stage.scene.posted.length, sent);
+            $mol_assert_equal(stage.pane.watchdog(), null);
+            $mol_assert_equal(watch(), armed);
+            $mol_assert_equal(stage.pane.stalled(), false);
+            $mol_assert_equal(stage.text().includes('Сцена не отвечает'), false);
+            stage.scene.hello();
+            $mol_assert_equal(stage.pane.ready(), true);
+            $mol_assert_equal(stage.scene.posted[sent]?.kind, 'pack_set');
+            $mol_assert_equal(stage.scene.posted[sent]?.uri, 'http://pack.test/web.js');
+        },
+        'the palette field takes a pack with lands and says why it refuses a second'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.assets();
+            const field = stage.field('Shelf().Links()');
+            stage.type(field, 'http://pack.test/, AbCdEfGh');
+            $mol_assert_equal(stage.app.pack_link(), 'http://pack.test/');
+            $mol_assert_like(stage.app.lands(), ['AbCdEfGh']);
+            const key = stage.pane.scene_key();
+            $mol_assert_equal(stage.pane.pack_uri(), 'http://pack.test/web.js');
+            stage.type(field, 'http://pack.test/, AbCdEfGh, http://other.test/');
+            $mol_assert_ok(stage.text().includes($bog_vmap_lib_links_reason.pack_second));
+            $mol_assert_ok(stage.text().includes('http://other.test/'));
+            $mol_assert_equal(stage.pane.scene_key(), key);
+            $mol_assert_equal(stage.field('Shelf().Links()').value, 'http://pack.test/, AbCdEfGh, http://other.test/');
+        },
+        'delete takes the part out, and the camera leaves the document alone'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([300, 100]));
+            stage.tap(stage.part_center('Calc'));
+            stage.click(stage.button('Удалить'));
+            const source = stage.app.doc_source();
+            $mol_assert_equal(source.includes('Calc'), false);
+            $mol_assert_ok(source.includes(`Map ${map}`));
+            $mol_assert_equal(stage.app.selected(), null);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Map']);
+            const overlay = stage.overlay();
+            stage.press(overlay, stage.client([450, 400]));
+            stage.move(overlay, stage.client([500, 430]));
+            stage.release(overlay, stage.client([500, 430]));
+            stage.redraw();
+            $mol_assert_like([...stage.pane.camera_shift()], [50, 30]);
+            stage.click(stage.button('+'));
+            $mol_assert_ok(stage.text().includes('125%'));
+            stage.click(stage.button('125%'));
+            $mol_assert_ok(stage.text().includes('100%'));
+            const size = $_2.$bog_vmap_app_flow_size;
+            const shift = stage.pane.camera_shift();
+            $mol_assert_like([204 + size.width / 2 + shift[0], 24 + size.height / 2 + shift[1]], [$_2.$bog_vmap_app_flow_rect.width / 2, $_2.$bog_vmap_app_flow_rect.height / 2]);
+            $mol_assert_equal(stage.app.doc_source(), source);
+        },
+        'a page takes the parts dropped into it and stacks them the way it is set'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const dom = $.$mol_dom_context;
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { code: 'KeyF', key: 'f', bubbles: true }));
+            stage.tap(stage.client([100, 100]));
+            $mol_assert_equal(stage.app.selected(), 'Page');
+            const node = stage.app.node();
+            $mol_assert_like(node.sub_names('Page'), []);
+            const page = stage.pane.part_box('Page');
+            $mol_assert_ok(page);
+            const zoom = stage.pane.camera_zoom();
+            const inside = (x, y) => stage.client([
+                page.left + x * zoom,
+                page.top + y * zoom,
+            ]);
+            stage.drop(calc, inside(200, 40));
+            stage.drop(map, inside(200, 250));
+            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Page']);
+            $mol_assert_equal(stage.app.doc_source().includes('\t\tsub /\n\t\t\t<= Calc\n\t\t\t<= Map\n'), true);
+            stage.tap(inside(200, 250));
+            $mol_assert_equal(stage.app.selected(), 'Page');
+            stage.click(stage.check('рядом'));
+            $mol_assert_ok(stage.app.doc_source().includes('flexDirection \\row'));
+            $mol_assert_equal(stage.scene.last('doc_set').src, stage.app.doc_source());
+            const first = stage.pane.part_box('Calc');
+            const second = stage.pane.part_box('Map');
+            $mol_assert_equal(first.top, second.top);
+            $mol_assert_ok(second.left > first.left);
+            stage.drop(button, inside(20, 20));
+            $mol_assert_like(node.sub_names('Page'), ['Button', 'Calc', 'Map']);
+        },
+        'the sandbox comes up while the document of the address is still on its way'($) {
+            const waiting = new Promise(() => { });
+            const store = $bog_vmap_app_store.make({
+                $,
+                doc_land_config: () => null,
+                source: () => { throw waiting; },
+                spots: () => { throw waiting; },
+                pack: () => { throw waiting; },
+            });
+            const stage = $_2.$bog_vmap_app_flow_stage($, { store });
+            $mol_assert_ok(stage.frame().getAttribute('srcdoc'));
+            $mol_assert_equal(stage.pane.ready(), true);
+            $mol_assert_equal(stage.text().includes('сцена на связи'), false);
+            $mol_assert_equal(stage.app.links(), '');
+            stage.classes_open();
+            stage.class_row(calc);
+        },
+        'a silent scene raises the strip and the button gives a fresh frame'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_equal(stage.pane.stalled(), false);
+            const frame = stage.frame();
+            stage.scene.silence();
+            stage.click(stage.button('+'));
+            const watch = stage.timers.filter(timer => timer.delay === stage.pane.answer_limit()).at(-1);
+            $mol_assert_ok(watch);
+            watch.task();
+            stage.redraw();
+            $mol_assert_equal(stage.pane.stalled(), true);
+            $mol_assert_ok(stage.text().includes('Сцена не отвечает'));
+            stage.click(stage.button('Перезагрузить сцену'));
+            $mol_assert_equal(stage.pane.stalled(), false);
+            $mol_assert_equal(stage.pane.ready(), false);
+            $mol_assert_equal(stage.text().includes('Сцена не отвечает'), false);
+            $mol_assert_ok(stage.frame() !== frame);
+        },
+        'the stand keeps to its own corner and leaves the page it was opened on alone'($) {
+            const dom = $.$mol_dom_context;
+            const live = dom.document.createElement('div');
+            live.setAttribute('id', 'flow_live_mark');
+            dom.document.body.appendChild(live);
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_equal(live.isConnected, true);
+            $mol_assert_equal(stage.root.isConnected, true);
+            $mol_assert_equal(stage.root.parentElement === dom.document.body, false);
+            $_2.$bog_vmap_app_flow_stage($);
+            $mol_assert_equal(live.isConnected, true);
+            $mol_assert_equal(stage.root.isConnected, false);
+            live.remove();
+        },
+        'a pack that never answers names itself in the header instead of a green lie'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const note = 'Загрузка библиотеки компонентов… http://localhost:9080/bog/vmap/part/-/web.js';
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_ok(stage.text().includes('сцена на связи'));
+            stage.scene.silence();
+            stage.pane.warmed(false);
+            stage.scene.pack_note(note);
+            stage.redraw();
+            $mol_assert_equal(stage.pane.pack_note(), note);
+            $mol_assert_ok(stage.text().includes(note));
+            $mol_assert_equal(stage.text().includes('сцена на связи'), false);
+        },
+        'a dead pack skips the pointless relaunch and the plate hands the default pack back'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const dead = 'https://dead.test/';
+            stage.drop(calc, stage.client([200, 150]));
+            stage.app.links(dead);
+            stage.scene.silence();
+            stage.pane.warmed(false);
+            stage.scene.pack_note('Загрузка библиотеки компонентов… ' + dead + 'web.js');
+            stage.redraw();
+            const generation = stage.pane.scene_generation();
+            $mol_assert_ok(stage.pane.watchdog() !== null);
+            const watch = stage.timers.filter(timer => timer.delay === stage.pane.cold_limit()).at(-1);
+            $mol_assert_ok(watch);
+            watch.task();
+            stage.redraw();
+            $mol_assert_equal(stage.pane.stalled(), true);
+            $mol_assert_equal(stage.pane.restart_tries(), 0);
+            $mol_assert_equal(stage.pane.scene_generation(), generation);
+            $mol_assert_ok(stage.text().includes('верните пак по умолчанию'));
+            stage.click(stage.button('Вернуть пак по умолчанию'));
+            stage.redraw();
+            $mol_assert_equal(stage.app.links(), '');
+            $mol_assert_equal(stage.app.links_parsed().pack, null);
+            $mol_assert_equal(stage.pane.scene_generation(), generation + 1);
+            $mol_assert_equal(stage.pane.stalled(), false);
+        },
+        'the default pack comes back without taking the lands of the shelf with it'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            const land = 'AbCdEfGh';
+            stage.app.links('https://dead.test/, ' + land);
+            $mol_assert_like(stage.app.links_parsed().lands, [land]);
+            stage.app.pack_default();
+            $mol_assert_equal(stage.app.links(), land);
+            $mol_assert_equal(stage.app.links_parsed().pack, null);
+            $mol_assert_like(stage.app.links_parsed().lands, [land]);
+        },
+        'deleting a wired part leaves no wire to a node that is gone'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([400, 100]));
+            stage.tap(stage.part_center('Calc'));
+            const overlay = stage.overlay();
+            stage.press(overlay, stage.port_dot('Calc', 'result', 'out'));
+            stage.move(overlay, stage.port_dot('Map', 'zoom', 'in'));
+            stage.release(overlay, stage.port_dot('Map', 'zoom', 'in'));
+            stage.redraw();
+            $mol_assert_equal(stage.app.doc_wires().length, 1);
+            stage.tap(stage.part_center('Calc'));
+            stage.click(stage.button('Удалить'));
+            $mol_assert_equal(stage.app.doc_source().includes('calc_result'), false);
+            $mol_assert_like(stage.app.doc_wires(), []);
+            $mol_assert_ok(stage.app.doc_source().includes(`Map ${map}`));
+            stage.drop(calc, stage.client([100, 300]));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            stage.press(overlay, stage.port_dot('Calc', 'result', 'out'));
+            stage.move(overlay, stage.port_dot('Map', 'zoom', 'in'));
+            stage.release(overlay, stage.port_dot('Map', 'zoom', 'in'));
+            stage.redraw();
+            $mol_assert_equal(stage.app.doc_wires().length, 1);
+            stage.tap(stage.part_center('Map'));
+            stage.click(stage.button('Удалить'));
+            $mol_assert_like(stage.app.doc_wires(), []);
+            $mol_assert_equal(stage.app.doc_source().includes('calc_result'), false);
+            $mol_assert_ok(stage.app.doc_source().includes(`Calc ${calc}`));
+            $mol_assert_equal(stage.app.doc_source().includes(`Map ${map}`), false);
+        },
+        'a file dropped on the canvas reaches the scene and the export by one address'($) {
+            const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png';
+            const store = $bog_vmap_app_store.make({
+                $,
+                doc_land_config: () => null,
+                asset_put: () => uri,
+            });
+            store.doc_add('Сцена 1');
+            const stage = $_2.$bog_vmap_app_flow_stage($, { store });
+            const dom = $.$mol_dom_context;
+            const point = stage.client([300, 200]);
+            const drop = new dom.Event('drop', { bubbles: true, cancelable: true });
+            Object.defineProperty(drop, 'clientX', { value: point[0] });
+            Object.defineProperty(drop, 'clientY', { value: point[1] });
+            Object.defineProperty(drop, 'dataTransfer', {
+                value: {
+                    files: [new dom.File([new Uint8Array([137, 80, 78, 71])], 'logo.png', { type: 'image/png' })],
+                },
+            });
+            stage.overlay().dispatchEvent(drop);
+            stage.redraw();
+            const source = stage.app.doc_source();
+            $mol_assert_ok(source.includes(`uri \\${uri}`));
+            $mol_assert_like(stage.app.spots(), { Image: { x: 300, y: 200 } });
+            $mol_assert_equal(stage.app.selected(), 'Image');
+            $mol_assert_equal(stage.scene.last('doc_set').src, source);
+            const module = stage.app.export_state().module;
+            const tree = module.files.find(file => file.name.endsWith('.view.tree')).text;
+            $mol_assert_ok(tree.includes(`uri \\${uri}`));
+        },
+        'entering a node does not move the canvas down by a row'($) {
+            const stage = $_2.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            const column = stage.app.Canvas().body();
+            stage.tap(stage.part_center('Calc'));
+            stage.tap(stage.part_center('Calc'));
+            stage.redraw();
+            $mol_assert_ok(stage.app.inside_note());
+            $mol_assert_equal(stage.pane.inside(), true);
+            const after = stage.app.Canvas().body();
+            $mol_assert_equal(after.length, column.length);
+            for (let i = 0; i < column.length; ++i)
+                $mol_assert_equal(after[i], column[i]);
+            const note = stage.app.Inside_note().dom_node();
+            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_foot]').contains(note), true);
+            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_body]').contains(note), false);
+        },
+    });
+})($ || ($ = {}));
+(function ($_3) {
+    const d = '$';
+    const card = `${d}bog_builderui_card`;
+    $mol_test({
+        'the light switch is worn by the editor and told to the scene'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            $mol_assert_equal(stage.theme_worn(), '$mol_theme_dark');
+            stage.click(stage.lights_toggle());
+            $mol_assert_equal(stage.theme_worn(), '$mol_theme_light');
+            $mol_assert_equal(stage.scene.last('theme_set').theme, '$mol_theme_light');
+            stage.click(stage.lights_toggle());
+            $mol_assert_equal(stage.theme_worn(), '$mol_theme_dark');
+            $mol_assert_equal(stage.scene.last('theme_set').theme, '$mol_theme_dark');
+        },
+        'the light choice is kept under a key of this app, not one shared by the origin'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.click(stage.lights_toggle());
+            const keys = Object.keys(stage.kept);
+            $mol_assert_equal(keys.length, 1);
+            $mol_assert_ok(keys[0].startsWith('$bog_vmap_app'));
+            $mol_assert_equal(stage.kept[keys[0]], 'true');
+        },
+        'the shell is a head bar over three columns and the canvas has no head of its own'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            $mol_assert_ok(stage.root.hasAttribute('mol_page'));
+            $mol_assert_equal(stage.root.hasAttribute('mol_book2'), false);
+            const head = stage.root.querySelector('[bog_vmap_app_head]');
+            $mol_assert_ok(head.hasAttribute('mol_page_head'));
+            $mol_assert_equal(head.parentElement, stage.root);
+            const inside = (view) => head.contains(view.dom_node());
+            for (const view of [
+                app.Left_check(),
+                app.Tool_select(),
+                app.Tool_board(),
+                app.Tool_hand(),
+                app.Delete(),
+                app.Root_name(),
+                app.Zoom_out(),
+                app.Zoom_reset(),
+                app.Zoom_in(),
+                app.History_check(),
+                app.Publish(),
+                app.Download(),
+                app.Lights(),
+                app.Right_check(),
+            ])
+                $mol_assert_ok(inside(view));
+            $mol_assert_equal(inside(app.Status()), false);
+            const holds = (parent, kids) => {
+                const nodes = [...parent.dom_node().children];
+                $mol_assert_equal(nodes.length, kids.length);
+                kids.forEach((kid, index) => $mol_assert_ok(nodes[index] === kid.dom_node()));
+            };
+            holds(app.Main(), [app.Left(), app.Canvas(), app.Right()]);
+            holds(app.Left(), [app.Scenes(), app.Left_tabs(), app.Layers()]);
+            holds(app.Right(), [app.Right_tabs(), app.Idle()]);
+            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_head]'), null);
+            $mol_assert_equal(app.Canvas().dom_node().querySelector('[mol_page_head]'), null);
+            $mol_assert_equal(app.Canvas().title(), 'Холст');
+            const foot = stage.root.querySelector('[bog_vmap_app_canvas_foot]');
+            $mol_assert_ok(app.Canvas().body().includes(app.Pane()));
+            $mol_assert_equal(foot.childElementCount, 1);
+            $mol_assert_ok(foot.contains(app.Status().dom_node()));
+        },
+        'the percent in the canvas tools zooms and gives the view back'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.pane.camera_shift(new $mol_vector_2d(700, 700));
+            stage.redraw();
+            stage.click(stage.button('+'));
+            $mol_assert_equal(stage.pane.camera_zoom(), 1.25);
+            $mol_assert_ok(stage.button('125%'));
+            stage.click(stage.button('−'));
+            $mol_assert_equal(stage.pane.camera_zoom(), 1);
+            stage.click(stage.button('+'));
+            stage.click(stage.button('125%'));
+            $mol_assert_equal(stage.pane.camera_zoom(), 1);
+            $mol_assert_like([...stage.pane.camera_shift()], [0, 0]);
+            $mol_assert_ok(stage.button('100%'));
+        },
+        'the column checks and the tabs put panels on screen and take them off'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            const showed = (page) => stage.root.contains(page.dom_node());
+            $mol_assert_ok(showed(app.Scenes()));
+            $mol_assert_ok(showed(app.Layers()));
+            $mol_assert_ok(showed(app.Idle()));
+            $mol_assert_equal(showed(app.Shelf()), false);
+            $mol_assert_equal(showed(app.Code()), false);
+            $mol_assert_equal(showed(app.History()), false);
+            stage.click(stage.check('Ассеты'));
+            $mol_assert_ok(showed(app.Shelf()));
+            $mol_assert_equal(showed(app.Layers()), false);
+            stage.click(stage.check('Слои'));
+            $mol_assert_ok(showed(app.Layers()));
+            $mol_assert_equal(showed(app.Shelf()), false);
+            stage.click(stage.check('Код'));
+            $mol_assert_ok(showed(app.Code()));
+            $mol_assert_equal(showed(app.Idle()), false);
+            stage.click(stage.check('Код'));
+            $mol_assert_ok(showed(app.Code()));
+            stage.click(stage.check('Версии'));
+            $mol_assert_ok(showed(app.History()));
+            $mol_assert_equal(showed(app.Code()), false);
+            stage.click(app.History_check().dom_node());
+            $mol_assert_ok(showed(app.Idle()));
+            $mol_assert_equal(showed(app.History()), false);
+            stage.click(app.History_check().dom_node());
+            $mol_assert_ok(showed(app.History()));
+            stage.click(app.Left_check().dom_node());
+            $mol_assert_equal(showed(app.Scenes()), false);
+            $mol_assert_equal(showed(app.Layers()), false);
+            stage.click(app.Right_check().dom_node());
+            $mol_assert_equal(showed(app.History()), false);
+            $mol_assert_equal(app.Main().dom_node().childElementCount, 1);
+            $mol_assert_ok(showed(app.Canvas()));
+            stage.click(app.Left_check().dom_node());
+            $mol_assert_ok(showed(app.Scenes()));
+            $mol_assert_ok(showed(app.Layers()));
+        },
+        'a panel under a tab keeps its tools, and a title that only repeats the tab is gone'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            const title = (page) => page.dom_node().querySelector('[mol_page_title]');
+            const tools = (page) => page.dom_node().querySelector('[mol_page_tools]');
+            stage.assets();
+            $mol_assert_equal(title(app.Shelf()), null);
+            $mol_assert_ok(tools(app.Shelf()).contains(app.Shelf().Filter().dom_node()));
+            stage.click(stage.check('Версии'));
+            $mol_assert_equal(title(app.History()), null);
+            $mol_assert_ok(tools(app.History()).contains(stage.button('Отменить')));
+            stage.click(stage.check('Код'));
+            $mol_assert_ok(title(app.Code()));
+            stage.click(stage.check('Дизайн'));
+            stage.drop(`${d}flow_calc`, stage.client([200, 150]));
+            $mol_assert_ok(title(app.Inspect()).contains(app.Inspect().Name().dom_node()));
+        },
+        'shift and backslash on the page fold both columns away, and typed into a field it stays a letter'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            const dom = $.$mol_dom_context;
+            const stroke = (target) => {
+                target.dispatchEvent(new dom.KeyboardEvent('keydown', { code: 'Backslash', key: '|', shiftKey: true, bubbles: true }));
+                stage.redraw();
+            };
+            const count = () => app.Main().dom_node().childElementCount;
+            $mol_assert_equal(count(), 3);
+            stroke(dom.document);
+            $mol_assert_equal(count(), 1);
+            $mol_assert_equal(stage.root.contains(app.Layers().dom_node()), false);
+            stroke(stage.field('Root_name()'));
+            $mol_assert_equal(count(), 1);
+            stroke(dom.document);
+            $mol_assert_equal(count(), 3);
+            $mol_assert_ok(stage.root.contains(app.Layers().dom_node()));
+        },
+        'the shelf offers the packs by name, and the current one is marked'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.assets();
+            const offers = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_pack_row]')]
+                .map(el => el.textContent);
+            $mol_assert_like(offers, ['Детали vmap', 'Builderui']);
+            const marked = () => [...stage.root.querySelectorAll('[bog_vmap_app_shelf_pack_current]')]
+                .map(el => el.textContent);
+            $mol_assert_like(marked(), ['Детали vmap']);
+            stage.click(stage.pack_row('Builderui'));
+            stage.scene.hello();
+            $mol_assert_like(marked(), ['Builderui']);
+        },
+        'the pack chosen on the shelf is the one the scene is sent to load'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.assets();
+            stage.click(stage.pack_row('Builderui'));
+            stage.scene.hello();
+            $mol_assert_equal(stage.app.links(), $_3.$bog_vmap_app_flow_ui);
+            $mol_assert_equal(stage.scene.last('pack_set').uri, $_3.$bog_vmap_app_flow_ui + 'web.js');
+            const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
+            $mol_assert_like(apps, ['Builderui_card']);
+        },
+        'a class of the chosen pack lands on the canvas and gets measured'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.assets();
+            stage.click(stage.pack_row('Builderui'));
+            stage.scene.hello();
+            stage.drop(card, stage.client([200, 150]));
+            $mol_assert_ok(stage.app.doc_source().includes(`Builderui_card ${card}`));
+            $mol_assert_like(stage.app.spots(), { Builderui_card: { x: 104, y: 74 } });
+            $mol_assert_like(stage.pane.part_box('Builderui_card'), {
+                left: 104, top: 74, width: 100, height: 50,
+            });
+        },
+        'a pack taken back gives the editor its own parts again'($) {
+            const stage = $_3.$bog_vmap_app_flow_stage($);
+            stage.assets();
+            stage.click(stage.pack_row('Builderui'));
+            stage.scene.hello();
+            stage.click(stage.pack_row('Детали vmap'));
+            stage.scene.hello();
+            $mol_assert_equal(stage.app.links(), '');
+            const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
+            $mol_assert_like(apps, [
+                'Button', 'Calc', 'Map',
+                'Vmap_part_cell', 'Vmap_part_plot', 'Vmap_part_calc', 'Vmap_part_map',
+            ]);
+        },
+    });
+})($ || ($ = {}));
+(function ($_4) {
+    const d = '$';
+    const calc = `${d}flow_calc`;
+    const map = `${d}flow_map`;
+    const key_of = (code) => {
+        if (code === 'Space')
+            return ' ';
+        if (code.startsWith('Key'))
+            return code.slice(3).toLowerCase();
+        return code;
+    };
+    const pressed = ($, stage, code, over = {}, target) => {
+        const dom = $.$mol_dom_context;
+        const event = new dom.KeyboardEvent('keydown', { code, key: key_of(code), bubbles: true, cancelable: true, ...over });
+        (target ?? dom.document).dispatchEvent(event);
+        stage.redraw();
+        stage.scene.flush();
+        return event;
+    };
+    const stepped = async (stage) => {
+        const history = stage.app.History();
+        const source = stage.app.doc_source();
+        const taken = () => history.ring(history.doc_key()).at(-1)?.source === source;
+        for (let i = 0; i < 10 && !taken(); ++i) {
+            stage.timers.filter(timer => timer.delay === history.step_delay()).at(-1)?.task();
+            await $_4.$bog_vmap_app_flow_settle(taken, 30);
+            stage.redraw();
+        }
+        $mol_assert_equal(taken(), true);
+    };
+    const undone = (stage) => {
+        const history = stage.app.History();
+        history.undo();
+        stage.redraw();
+        stage.scene.flush();
+    };
+    const styled = (stage, name, prop) => {
+        const style = stage.app.node().over_tree(name, 'style')?.kids[0] ?? null;
+        return $bog_vmap_lang_dict_get(style, prop)?.value ?? null;
+    };
+    const settle = async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+    };
+    $mol_test({
+        'the window hands the tool keys to the canvas, and a field keeps them'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            const dom = $.$mol_dom_context;
+            const f = pressed($, stage, 'KeyF');
+            $mol_assert_equal(stage.pane.tool(), 'board');
+            $mol_assert_equal(f.defaultPrevented, true);
+            pressed($, stage, 'KeyH');
+            $mol_assert_equal(stage.pane.tool(), 'hand');
+            pressed($, stage, 'KeyV');
+            $mol_assert_equal(stage.pane.tool(), 'select');
+            const field = stage.app.Root_name().dom_node();
+            const typed = pressed($, stage, 'KeyF', {}, field);
+            $mol_assert_equal(stage.pane.tool(), 'select');
+            $mol_assert_equal(typed.defaultPrevented, false);
+            pressed($, stage, 'Space');
+            $mol_assert_equal(stage.pane.grip(), true);
+            dom.document.dispatchEvent(new dom.KeyboardEvent('keyup', { code: 'Space', key: ' ', bubbles: true }));
+            $mol_assert_equal(stage.pane.grip(), false);
+            pressed($, stage, 'Space');
+            dom.dispatchEvent(new dom.FocusEvent('blur'));
+            $mol_assert_equal(stage.pane.grip(), false);
+        },
+        async 'Backspace from the window deletes the pick, a field keeps it, and one undo brings it back'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            await stepped(stage);
+            const before = stage.app.doc_source();
+            pressed($, stage, 'Backspace', {}, stage.app.Root_name().dom_node());
+            $mol_assert_equal(stage.app.doc_source(), before);
+            const gone = pressed($, stage, 'Backspace');
+            $mol_assert_equal(gone.defaultPrevented, true);
+            $mol_assert_equal(stage.app.doc_source().includes('Calc'), false);
+            $mol_assert_equal(stage.app.selected(), null);
+            await stepped(stage);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), before);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Calc']);
+        },
+        async 'Cmd+D puts a copy beside the pick under the next free number, and each undo takes one copy back'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            await stepped(stage);
+            const before = stage.app.doc_source();
+            const copy = pressed($, stage, 'KeyD', { metaKey: true });
+            $mol_assert_equal(copy.defaultPrevented, true);
+            $mol_assert_ok(stage.app.doc_source().includes(`Calc_2 ${calc}`));
+            $mol_assert_like(stage.app.spots()['Calc_2'], { x: 228, y: 74 });
+            $mol_assert_like([...stage.app.picked()], ['Calc_2']);
+            $mol_assert_like(stage.app.node().sub_names(), ['Calc', 'Calc_2']);
+            await stepped(stage);
+            const once = stage.app.doc_source();
+            pressed($, stage, 'KeyD', { ctrlKey: true });
+            $mol_assert_like(stage.app.spots()['Calc_3'], { x: 352, y: 74 });
+            $mol_assert_like([...stage.app.picked()], ['Calc_3']);
+            await stepped(stage);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), once);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), before);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Calc']);
+        },
+        async 'a copy of a board copies what is laid out in it, a nested copy goes after its original'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            pressed($, stage, 'KeyF');
+            stage.tap(stage.client([100, 100]));
+            const page = stage.pane.part_box('Page');
+            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
+            $mol_assert_like(node.sub_names('Page'), ['Calc']);
+            await stepped(stage);
+            const before = stage.app.doc_source();
+            stage.app.selected('Page');
+            pressed($, stage, 'KeyD', { metaKey: true });
+            $mol_assert_like(node.sub_names(), ['Page', 'Page_2']);
+            $mol_assert_like(node.sub_names('Page'), ['Calc']);
+            $mol_assert_like(node.sub_names('Page_2'), ['Calc_2']);
+            $mol_assert_like(stage.app.spots()['Page_2'], { x: 524, y: 100 });
+            $mol_assert_equal(styled(stage, 'Page_2', 'width'), '1280px');
+            await stepped(stage);
+            const once = stage.app.doc_source();
+            stage.app.selected('Calc');
+            pressed($, stage, 'KeyD', { metaKey: true });
+            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Calc_3']);
+            $mol_assert_equal(stage.app.spots()['Calc_3'], undefined);
+            $mol_assert_like([...stage.app.picked()], ['Calc_3']);
+            await stepped(stage);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), once);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), before);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Page']);
+        },
+        'a board picked together with what is inside it is copied once'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            pressed($, stage, 'KeyF');
+            stage.tap(stage.client([100, 100]));
+            const page = stage.pane.part_box('Page');
+            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
+            stage.app.picked(['Page', 'Calc']);
+            pressed($, stage, 'KeyD', { metaKey: true });
+            $mol_assert_like(node.sub_names(), ['Page', 'Page_2']);
+            $mol_assert_like(node.sub_names('Page'), ['Calc']);
+            $mol_assert_like(node.sub_names('Page_2'), ['Calc_2']);
+            $mol_assert_like([...stage.app.picked()], ['Page_2']);
+        },
+        async 'the board tool puts a board where it is clicked, and of the box it is dragged under the camera'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            const overlay = stage.overlay();
+            pressed($, stage, 'KeyF');
+            stage.tap(stage.client([100, 100]));
+            $mol_assert_equal(stage.app.selected(), 'Page');
+            $mol_assert_like(stage.app.spots()['Page'], { x: 100, y: 100 });
+            $mol_assert_equal(styled(stage, 'Page', 'width'), '1280px');
+            $mol_assert_equal(styled(stage, 'Page', 'minHeight'), '720px');
+            $mol_assert_equal(stage.pane.tool(), 'select');
+            await stepped(stage);
+            const before = stage.app.doc_source();
+            stage.pane.camera_shift(new $mol_vector_2d(100, 50));
+            stage.pane.camera_zoom(2);
+            pressed($, stage, 'KeyF');
+            stage.press(overlay, stage.client([200, 150]));
+            stage.move(overlay, stage.client([400, 350]));
+            stage.release(overlay, stage.client([400, 350]));
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_equal(stage.app.selected(), 'Page_2');
+            $mol_assert_like(stage.app.spots()['Page_2'], { x: 50, y: 50 });
+            $mol_assert_equal(styled(stage, 'Page_2', 'width'), '100px');
+            $mol_assert_equal(styled(stage, 'Page_2', 'minHeight'), '100px');
+            $mol_assert_like([...stage.pane.camera_shift()], [100, 50]);
+            $mol_assert_equal(stage.pane.camera_zoom(), 2);
+            await stepped(stage);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), before);
+        },
+        'a pick moved off the canvas and back through the layers does not let the pointer in again'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([400, 150]));
+            stage.tap(stage.part_center('Calc'));
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.pane.inside(), true);
+            $mol_assert_ok(stage.text().includes('Внутри Calc'));
+            stage.click(stage.check('Слои'));
+            const layer = (name) => [...stage.root.querySelectorAll('[bog_vmap_app_layers_pick]')]
+                .find(el => el.textContent === name);
+            stage.click(layer('Map'));
+            $mol_assert_equal(stage.app.selected(), 'Map');
+            $mol_assert_equal(stage.pane.inside(), false);
+            $mol_assert_equal(stage.text().includes('Внутри'), false);
+            stage.click(layer('Calc'));
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            $mol_assert_equal(stage.pane.inside(), false);
+            $mol_assert_equal(stage.pane.overlay_style().clipPath, 'none');
+            $mol_assert_equal(stage.text().includes('Внутри'), false);
+        },
+        async 'a new scene opened from inside a node says nothing about being inside'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.tap(stage.part_center('Calc'));
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_ok(stage.text().includes('Внутри Calc'));
+            stage.click(stage.button('Новая сцена'));
+            await $_4.$bog_vmap_app_flow_settle(() => stage.store.doc_links().length > 1);
+            stage.redraw();
+            $mol_assert_equal(stage.pane.inside(), false);
+            $mol_assert_equal(stage.text().includes('Внутри'), false);
+        },
+        'the tool buttons of the head are the tools'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            stage.click(app.Tool_board().dom_node());
+            $mol_assert_equal(stage.pane.tool(), 'board');
+            $mol_assert_equal(app.Tool_board().checked(), true);
+            $mol_assert_equal(app.Tool_select().checked(), false);
+            stage.click(app.Tool_board().dom_node());
+            $mol_assert_equal(stage.pane.tool(), 'select');
+            stage.click(app.Tool_hand().dom_node());
+            $mol_assert_equal(stage.pane.tool(), 'hand');
+            pressed($, stage, 'KeyV');
+            $mol_assert_equal(app.Tool_select().checked(), true);
+            $mol_assert_equal(app.Tool_hand().checked(), false);
+        },
+        async 'Escape from the window in a field only takes the focus off the field'($) {
+            const stage = $_4.$bog_vmap_app_flow_stage($);
+            const dom = $.$mol_dom_context;
+            stage.drop(calc, stage.client([200, 150]));
+            const field = stage.app.Root_name().dom_node();
+            field.focus();
+            pressed($, stage, 'Escape', {}, field);
+            await settle();
+            $mol_assert_equal(dom.document.activeElement, stage.pane.dom_node());
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            pressed($, stage, 'Escape');
+            $mol_assert_equal(stage.app.selected(), null);
+        },
+    });
+})($ || ($ = {}));
+(function ($_5) {
+    const d = '$';
+    const calc = `${d}flow_calc`;
+    const map = `${d}flow_map`;
+    const context = ($, stage, point) => {
+        const dom = $.$mol_dom_context;
+        const event = new dom.MouseEvent('contextmenu', {
+            bubbles: true,
+            cancelable: true,
+            button: 2,
+            clientX: point[0],
+            clientY: point[1],
+        });
+        stage.overlay().dispatchEvent(event);
+        stage.redraw();
+        stage.scene.flush();
+        return event;
+    };
+    const items = (stage) => [...stage.root.querySelectorAll('[bog_vmap_app_menu_item]')];
+    const label = (el) => el.querySelector('[bog_vmap_app_menu_item_label]')?.textContent ?? '';
+    const titles = (stage) => items(stage).map(label);
+    const chosen = (stage, title) => {
+        const item = items(stage).find(el => label(el) === title);
+        if (!item)
+            return $mol_fail(new Error(`no item «${title}» in the menu`));
+        stage.click(item);
+    };
+    const pressed = ($, stage, code, over = {}, target) => {
+        const dom = $.$mol_dom_context;
+        const event = new dom.KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true, ...over });
+        (target ?? dom.document).dispatchEvent(event);
+        stage.redraw();
+        stage.scene.flush();
+        return event;
+    };
+    const stepped = async (stage) => {
+        const history = stage.app.History();
+        const source = stage.app.doc_source();
+        const taken = () => history.ring(history.doc_key()).at(-1)?.source === source;
+        for (let i = 0; i < 10 && !taken(); ++i) {
+            stage.timers.filter(timer => timer.delay === history.step_delay()).at(-1)?.task();
+            await $_5.$bog_vmap_app_flow_settle(taken, 30);
+            stage.redraw();
+        }
+        $mol_assert_equal(taken(), true);
+    };
+    const undone = (stage) => {
+        const history = stage.app.History();
+        history.undo();
+        stage.redraw();
+        stage.scene.flush();
+    };
+    const styled = (stage, name, prop) => {
+        const style = stage.app.node().over_tree(name, 'style')?.kids[0] ?? null;
+        return $bog_vmap_lang_dict_get(style, prop)?.value ?? null;
+    };
+    const shown = (stage, name) => {
+        const box = stage.pane.part_box(name);
+        const rect = $_5.$bog_vmap_app_flow_rect;
+        return Boolean(box) && box.left >= 0 && box.top >= 0
+            && box.left + box.width <= rect.width && box.top + box.height <= rect.height;
+    };
+    const settle = async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+    };
+    $mol_test({
+        async 'a right click on a part opens its menu at the pointer, and Copy puts a copy beside it'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            await stepped(stage);
+            const before = stage.app.doc_source();
+            const at = stage.part_center('Calc');
+            const event = context($, stage, at);
+            $mol_assert_equal(event.defaultPrevented, true);
+            $mol_assert_like(titles(stage), ['Копировать', 'Удалить', 'Обернуть в артборд', 'Выделить родителя', 'Внутрь']);
+            const style = stage.pane.menu_view().dom_node().style;
+            $mol_assert_equal(style.left, (at[0] - $_5.$bog_vmap_app_flow_rect.left) + 'px');
+            $mol_assert_equal(style.top, (at[1] - $_5.$bog_vmap_app_flow_rect.top) + 'px');
+            const spot = stage.app.spots()['Calc'];
+            chosen(stage, 'Копировать');
+            $mol_assert_ok(stage.app.doc_source().includes(`Calc_2 ${calc}`));
+            $mol_assert_like(stage.app.spots()['Calc_2'], { x: spot.x + 100 + 24, y: spot.y });
+            $mol_assert_like([...stage.app.picked()], ['Calc_2']);
+            $mol_assert_equal(items(stage).length, 0);
+            await stepped(stage);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), before);
+        },
+        'Delete from the menu takes the picked part out'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([400, 150]));
+            context($, stage, stage.part_center('Calc'));
+            $mol_assert_like([...stage.app.picked()], ['Calc']);
+            chosen(stage, 'Удалить');
+            $mol_assert_equal(stage.app.doc_source().includes('Calc'), false);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Map']);
+            $mol_assert_equal(items(stage).length, 0);
+        },
+        async 'Wrap from the menu puts a free part into a board of its box, one undo takes it back out, and Cmd+Alt+G does the same'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            stage.drop(calc, stage.client([200, 150]));
+            await stepped(stage);
+            const before = stage.app.doc_source();
+            const spot = stage.app.spots()['Calc'];
+            context($, stage, stage.part_center('Calc'));
+            chosen(stage, 'Обернуть в артборд');
+            $mol_assert_like(node.sub_names(), ['Page']);
+            $mol_assert_like(node.sub_names('Page'), ['Calc']);
+            $mol_assert_like(stage.app.spots(), { Page: spot });
+            $mol_assert_equal(styled(stage, 'Page', 'width'), '100px');
+            $mol_assert_equal(styled(stage, 'Page', 'minHeight'), '50px');
+            $mol_assert_like([...stage.app.picked()], ['Page']);
+            await stepped(stage);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), before);
+            $mol_assert_like(Object.keys(stage.app.spots()), ['Calc']);
+            stage.app.picked(['Calc']);
+            const key = pressed($, stage, 'KeyG', { key: '©', metaKey: true, altKey: true });
+            $mol_assert_equal(key.defaultPrevented, true);
+            $mol_assert_like(node.sub_names(), ['Page']);
+            $mol_assert_like(node.sub_names('Page'), ['Calc']);
+        },
+        'Wrap from the menu gives a part laid out in a board a board of its own at the same place'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            pressed($, stage, 'KeyF', { key: 'f' });
+            stage.tap(stage.client([100, 100]));
+            const page = stage.pane.part_box('Page');
+            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
+            stage.drop(map, stage.client([page.left + 200, page.top + 120]));
+            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
+            context($, stage, stage.part_center('Calc'));
+            chosen(stage, 'Обернуть в артборд');
+            $mol_assert_like(node.sub_names(), ['Page']);
+            $mol_assert_like(node.sub_names('Page'), ['Page_2', 'Map']);
+            $mol_assert_like(node.sub_names('Page_2'), ['Calc']);
+            $mol_assert_equal(stage.app.spots()['Page_2'], undefined);
+            $mol_assert_equal(styled(stage, 'Page_2', 'width'), '100px');
+            $mol_assert_like([...stage.app.picked()], ['Page_2']);
+        },
+        'Wrap from the menu takes a picked set into one board around them, top to bottom and left to right'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            stage.drop(map, stage.client([400, 150]));
+            stage.drop(calc, stage.client([200, 150]));
+            const spots = stage.app.spots();
+            $mol_assert_equal(spots['Map'].y, spots['Calc'].y);
+            $mol_assert_equal(spots['Map'].x - spots['Calc'].x, 200);
+            stage.app.picked(['Map', 'Calc']);
+            context($, stage, stage.part_center('Map'));
+            $mol_assert_like([...stage.app.picked()], ['Map', 'Calc']);
+            chosen(stage, 'Обернуть в артборд');
+            $mol_assert_like(node.sub_names(), ['Page']);
+            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
+            $mol_assert_like(stage.app.spots(), { Page: spots['Calc'] });
+            $mol_assert_equal(styled(stage, 'Page', 'width'), '300px');
+            $mol_assert_equal(styled(stage, 'Page', 'minHeight'), '50px');
+        },
+        'Select parent from the menu picks the board around the part, and is off for a free part'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            pressed($, stage, 'KeyF', { key: 'f' });
+            stage.tap(stage.client([100, 100]));
+            const page = stage.pane.part_box('Page');
+            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
+            stage.drop(map, stage.client([700, 520]));
+            context($, stage, stage.part_center('Map'));
+            const parent = items(stage).find(el => label(el) === 'Выделить родителя');
+            $mol_assert_equal(parent.getAttribute('disabled'), 'true');
+            context($, stage, stage.part_center('Calc'));
+            chosen(stage, 'Выделить родителя');
+            $mol_assert_like([...stage.app.picked()], ['Page']);
+            $mol_assert_equal(items(stage).length, 0);
+        },
+        async 'Inside from the menu lets the pointer into the part and hands it the keyboard'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const dom = $.$mol_dom_context;
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([400, 150]));
+            stage.app.picked(['Calc', 'Map']);
+            context($, stage, stage.part_center('Calc'));
+            chosen(stage, 'Внутрь');
+            await settle();
+            $mol_assert_like([...stage.app.picked()], ['Calc']);
+            $mol_assert_equal(stage.pane.inside(), true);
+            $mol_assert_equal(dom.document.activeElement, stage.frame());
+            $mol_assert_ok(stage.text().includes('Внутри Calc'));
+            $mol_assert_equal(stage.scene.sent('click_at').length, 0);
+        },
+        'a right click on bare canvas offers a board there and the whole view'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.app.picked(['Calc']);
+            stage.pane.camera_shift(new $mol_vector_2d(100, 50));
+            stage.pane.camera_zoom(2);
+            const event = context($, stage, stage.client([300, 450]));
+            $mol_assert_equal(event.defaultPrevented, true);
+            $mol_assert_like(titles(stage), ['Артборд здесь', 'Показать всё']);
+            $mol_assert_like([...stage.app.picked()], ['Calc']);
+            chosen(stage, 'Артборд здесь');
+            $mol_assert_like(stage.app.spots()['Page'], { x: 100, y: 200 });
+            $mol_assert_equal(styled(stage, 'Page', 'width'), '1280px');
+            $mol_assert_equal(stage.pane.tool(), 'select');
+            $mol_assert_equal(items(stage).length, 0);
+            stage.pane.camera_shift(new $mol_vector_2d(3000, 3000));
+            stage.redraw();
+            $mol_assert_equal(shown(stage, 'Calc'), false);
+            context($, stage, stage.client([30, 30]));
+            chosen(stage, 'Показать всё');
+            $mol_assert_equal(shown(stage, 'Calc'), true);
+            $mol_assert_equal(shown(stage, 'Page'), true);
+        },
+        'the menu goes away on Escape and on a press elsewhere, and a right click inside the entered part is left to it'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            context($, stage, stage.part_center('Calc'));
+            $mol_assert_equal(items(stage).length, 5);
+            const escape = pressed($, stage, 'Escape');
+            $mol_assert_equal(escape.defaultPrevented, true);
+            $mol_assert_equal(items(stage).length, 0);
+            $mol_assert_equal(stage.app.selected(), 'Calc');
+            context($, stage, stage.client([500, 450]));
+            $mol_assert_equal(items(stage).length, 2);
+            stage.press(stage.root, stage.client([20, 20]));
+            stage.redraw();
+            $mol_assert_equal(items(stage).length, 0);
+            stage.tap(stage.part_center('Calc'));
+            stage.tap(stage.part_center('Calc'));
+            $mol_assert_equal(stage.pane.inside(), true);
+            const inner = context($, stage, stage.part_center('Calc'));
+            $mol_assert_equal(inner.defaultPrevented, false);
+            $mol_assert_equal(items(stage).length, 0);
+            $mol_assert_equal(stage.pane.inside(), true);
+        },
+        'Shift+1, Shift+2 and Shift+0 from the window show everything, the pick and life size, and in a field they are letters'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([600, 500]));
+            pane.camera_shift(new $mol_vector_2d(4000, 4000));
+            pane.camera_zoom(3);
+            stage.redraw();
+            const field = stage.app.Root_name().dom_node();
+            const typed = pressed($, stage, 'Digit1', { key: '!', shiftKey: true }, field);
+            $mol_assert_equal(typed.defaultPrevented, false);
+            $mol_assert_equal(pane.camera_zoom(), 3);
+            const all = pressed($, stage, 'Digit1', { key: '!', shiftKey: true });
+            $mol_assert_equal(all.defaultPrevented, true);
+            $mol_assert_equal(shown(stage, 'Calc'), true);
+            $mol_assert_equal(shown(stage, 'Map'), true);
+            $mol_assert_ok(pane.camera_zoom() <= 1);
+            stage.app.picked(['Map']);
+            pressed($, stage, 'Digit2', { key: '@', shiftKey: true });
+            const map_box = pane.part_box('Map');
+            $mol_assert_ok(pane.camera_zoom() > 1);
+            $mol_assert_equal(shown(stage, 'Map'), true);
+            $mol_assert_equal(Math.round(map_box.left + map_box.width / 2), $_5.$bog_vmap_app_flow_rect.width / 2);
+            $mol_assert_equal(Math.round(map_box.top + map_box.height / 2), $_5.$bog_vmap_app_flow_rect.height / 2);
+            pane.camera_zoom(.3);
+            pressed($, stage, 'Digit0', { key: ')', shiftKey: true });
+            $mol_assert_equal(pane.zoom_title(), '100%');
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test({
+        'the stand hands the inspector one class of a multi class document'($) {
+            const stand = $.$bog_vmap_app_inspect_demo.make({ $ });
+            const names = stand.names();
+            $mol_assert_equal(names.length, 2);
+            $mol_assert_ok(stand.class_source().startsWith(names[0]));
+        },
+        'picking a class switches what the stand hands over'($) {
+            const stand = $.$bog_vmap_app_inspect_demo.make({ $ });
+            const names = stand.names();
+            stand.klass(names[1]);
+            $mol_assert_ok(stand.class_source().startsWith(names[1]));
+        },
+        'an edit through the stand leaves the other class byte for byte'($) {
+            const stand = $.$bog_vmap_app_inspect_demo.make({ $ });
+            const other = stand.names()[1];
+            const before = stand.Doc().class_source(other);
+            stand.class_source(stand.class_source().replace('count 24', 'count 42'));
+            $mol_assert_equal(stand.Doc().class_source(other), before);
+            $mol_assert_ok(stand.class_source().includes('count 42'));
+        },
+        'the inspected class is not duplicated by its own peers'($) {
+            const stand = $.$bog_vmap_app_inspect_demo.make({ $ });
+            const types = stand.Inspect().classes().map(tree => tree.type);
+            $mol_assert_like(types, stand.names());
+        },
+        'layout properties land in the style of the node and read back'($) {
+            const inspect = panel($, [
+                `${d}bog_vmap_app_inspect_test_page ${d}mol_view`,
+                '	sub /',
+                '',
+            ].join('\n'));
+            $mol_assert_equal(inspect.Flex().direction(), '');
+            inspect.Flex().direction('column');
+            inspect.Flex().gap('1rem');
+            $mol_assert_equal(inspect.Flex().direction(), 'column');
+            $mol_assert_equal(inspect.Flex().gap(), '1rem');
+            $mol_assert_equal(inspect.Node().source(), [
+                `${d}bog_vmap_app_inspect_test_page ${d}mol_view`,
+                '	sub /',
+                '	style *',
+                '		^',
+                '		flexDirection \\column',
+                '		gap \\1rem',
+                '',
+            ].join('\n'));
+            inspect.Flex().gap('');
+            $mol_assert_equal(inspect.Flex().gap(), '');
+            $mol_assert_equal(inspect.Node().source().includes('gap'), false);
+            $mol_assert_equal(inspect.Flex().direction(), 'column');
+        },
+        'the inherited head of the style dictionary is kept'($) {
+            const inspect = panel($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	style *',
+                '		^',
+                '		padding \\4px',
+                '',
+            ].join('\n'));
+            inspect.Flex().across('center');
+            $mol_assert_like(inspect.style_dict().kids.map(kid => kid.type), ['^', 'padding', 'alignItems']);
+        },
+        'stretching is written as text, because a number would get px'($) {
+            const inspect = panel($, [
+                `${d}bog_vmap_app_inspect_test_cell ${d}mol_view`,
+                '	sub /',
+                '',
+            ].join('\n'));
+            inspect.Flex().grow(true);
+            $mol_assert_equal(inspect.Flex().grow(), true);
+            $mol_assert_ok(inspect.Node().source().includes('flexGrow \\1'));
+            inspect.Flex().grow(false);
+            $mol_assert_equal(inspect.Flex().grow(), false);
+            $mol_assert_equal(inspect.Node().source().includes('flexGrow'), false);
+        },
+        'the width switch sets the width of the artboard'($) {
+            const inspect = panel($, [
+                `${d}bog_vmap_app_inspect_test_board ${d}mol_view`,
+                '	style * width \\1280px',
+                '	sub /',
+                '',
+            ].join('\n'));
+            $mol_assert_equal(inspect.Flex().width(), '1280px');
+            inspect.Flex().width('390px');
+            $mol_assert_equal(inspect.Flex().width(), '390px');
+            $mol_assert_ok(inspect.Node().source().includes('width \\390px'));
+        },
+        'every layout row is a form field with a stock control'($) {
+            const inspect = panel($, [
+                `${d}bog_vmap_app_inspect_test_board ${d}mol_view`,
+                '	sub /',
+                '',
+            ].join('\n'));
+            const flex = inspect.Flex();
+            flex.dom_tree();
+            $mol_assert_equal(flex.Width().dom_node().hasAttribute('mol_form_field'), true);
+            $mol_assert_equal(flex.Width().name(), 'Ширина');
+            $mol_assert_equal(flex.Width().control(), flex.Width_pick());
+            $mol_assert_equal(flex.Gap().control(), flex.Gap_field());
+            $mol_assert_ok(flex.Width_pick().dom_node().hasAttribute('mol_switch'));
+            $mol_assert_ok(flex.Gap_field().dom_node().hasAttribute('mol_string'));
+        },
+        'the name field renames on submit and not on a keystroke'($) {
+            const inspect = panel($, [
+                `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
+                '	sub /',
+                '',
+            ].join('\n'));
+            $mol_assert_equal(inspect.title_value(), `${d}bog_vmap_app_inspect_test_name`);
+            inspect.title_value(`${d}bog_vmap_app_inspect_test_hero`);
+            $mol_assert_equal(inspect.title_value(), `${d}bog_vmap_app_inspect_test_hero`);
+            $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_name`);
+            inspect.title_submit();
+            $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_hero`);
+            $mol_assert_ok(inspect.Node().source().startsWith(`${d}bog_vmap_app_inspect_test_hero `));
+        },
+        'the field follows the name once the rename lands'($) {
+            const inspect = panel($, [
+                `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
+                '	sub /',
+                '',
+            ].join('\n'));
+            inspect.title_value(`${d}bog_vmap_app_inspect_test_hero`);
+            inspect.title_submit();
+            $mol_assert_equal(inspect.title_value(), `${d}bog_vmap_app_inspect_test_hero`);
+            inspect.title_submit();
+            $mol_assert_equal(inspect.class_title(), `${d}bog_vmap_app_inspect_test_hero`);
+        },
+        'a read only scene shows every value and lets none be edited'($) {
+            const source = [
+                `${d}bog_vmap_app_inspect_test_view ${d}mol_view`,
+                '	title \\Привет',
+                '	count 24',
+                '	shown true',
+                '	names /',
+                '		\\один',
+                '		\\два',
+                '	sub /',
+                '		<= title',
+                '',
+            ].join('\n');
+            const fields = (editable) => {
+                const inspect = panel($, source);
+                inspect.editable = () => editable;
+                const root = inspect.dom_tree();
+                return [...root.querySelectorAll('input, textarea, [mol_button]')]
+                    .filter(field => !field.closest('[mol_check_expand]'));
+            };
+            const open = fields(true);
+            const shut = fields(false);
+            $mol_assert_equal(open.length > 8, true);
+            $mol_assert_equal(shut.length, open.length);
+            $mol_assert_equal(open.filter(field => !field.hasAttribute('disabled')).length > 8, true);
+            $mol_assert_like(shut.filter(field => !field.hasAttribute('disabled')).map(field => field.id), []);
+        },
+        'the head of the panel is the head of a page'($) {
+            const inspect = panel($, [
+                `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
+                '	sub /',
+                '',
+            ].join('\n'));
+            const root = inspect.dom_tree();
+            $mol_assert_ok(root.querySelector('[mol_page_head]'));
+            $mol_assert_equal(inspect.Name().dom_node().hasAttribute('mol_string'), true);
+            $mol_assert_equal(root.contains(inspect.Name().dom_node()), true);
+            $mol_assert_equal(inspect.Name().value(), `${d}bog_vmap_app_inspect_test_name`);
+            $mol_assert_equal(inspect.Name().dom_node().getAttribute('id').endsWith('Name()'), true);
+        },
+        'the refusal strip is there only while there is a refusal'($) {
+            const inspect = panel($, [
+                `${d}bog_vmap_app_inspect_test_name ${d}mol_view`,
+                '	sub /',
+                '',
+            ].join('\n'));
+            $mol_assert_equal(inspect.tools().includes(inspect.Note()), false);
+            const refused = $.$bog_vmap_app_inspect.make({
+                $,
+                source: () => `${d}bog_vmap_app_inspect_test_name ${d}mol_view\n\tsub /\n`,
+                pack: () => '',
+                title_note: () => 'Имя занято',
+            });
+            $mol_assert_equal(refused.tools().includes(refused.Note()), true);
+            $mol_assert_equal(refused.Note().message(), 'Имя занято');
+        },
+        'a source naming no class leaves an invitation, not twenty failures'($) {
+            const one = panel($, '');
+            $mol_assert_equal(one.class_ready(), false);
+            $mol_assert_equal(one.body().length, 1);
+            $mol_assert_equal(one.body()[0], one.Empty());
+            const two = panel($, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n`);
+            $mol_assert_equal(two.class_ready(), true);
+            $mol_assert_ok(two.body().length > 1);
+        },
+        'everything that can grow is inside the one scroll of the page'($) {
+            const one = panel($, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n`);
+            $mol_assert_equal(one.Body() instanceof $mol_scroll, true);
+            $mol_assert_equal(one.body_content().length, 1);
+            $mol_assert_equal(one.body_content()[0], one.Body_content());
+            const body = one.body();
+            $mol_assert_equal(body.includes(one.Flex()), true);
+            $mol_assert_equal(body.includes(one.Rows()), true);
+            $mol_assert_equal(body.includes(one.Inherited()), true);
+        },
+        'every property row is a form field labelled by the signature'($) {
+            const one = panel($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	title \\Hi',
+                '	count 24',
+                '',
+            ].join('\n'));
+            one.dom_tree();
+            const row = one.Row('title');
+            $mol_assert_equal(row.dom_node().hasAttribute('mol_form_field'), true);
+            $mol_assert_equal(row.name(), 'title');
+            $mol_assert_equal(one.Rows().dom_node().contains(row.dom_node()), true);
+            $mol_assert_equal(row.control(), row.Value());
+        },
+        'the field of a row is the stock one for the kind of the value'($) {
+            const one = panel($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	title \\Hi',
+                '	count 24',
+                '	dense false',
+                '	style * padding \\4px',
+                '	sub / <= Hero',
+                `	Hero ${d}mol_view`,
+                '	calc = Hero title',
+                '',
+            ].join('\n'));
+            one.dom_tree();
+            const value = (name) => one.Row(name).Value();
+            $mol_assert_equal(value('title').Editor(), value('title').String());
+            $mol_assert_equal(value('count').Editor(), value('count').Num());
+            $mol_assert_equal(value('dense').Editor(), value('dense').Flag());
+            $mol_assert_equal(value('style').Editor(), value('style').Seq());
+            $mol_assert_equal(value('sub').Editor(), value('sub').Seq());
+            $mol_assert_equal(value('calc').Editor(), value('calc').Wire());
+            $mol_assert_equal(value('title').String().Text().dom_node().hasAttribute('mol_string'), true);
+            $mol_assert_equal(value('count').Num().dom_node().hasAttribute('mol_string'), true);
+            $mol_assert_equal(value('dense').Flag().dom_node().hasAttribute('mol_check'), true);
+            $mol_assert_equal(value('style').Seq().dom_node().hasAttribute('mol_list'), true);
+            $mol_assert_equal(value('calc').Wire().Origin().dom_node().hasAttribute('mol_select'), true);
+        },
+        'an edit in the field of a row reaches the document'($) {
+            const one = panel($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	title \\Hi',
+                '',
+            ].join('\n'));
+            one.dom_tree();
+            const field = one.Row('title').Value()
+                .String().Text();
+            $mol_assert_equal(field.value(), 'Hi');
+            field.value('Hey');
+            $mol_assert_equal(one.row_value('title').text(), 'Hey');
+            $mol_assert_ok(one.Node().source().includes('title \\Hey'));
+        },
+        'a number keeps the literal the document holds'($) {
+            const one = panel($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	ratio 1e3',
+                '',
+            ].join('\n'));
+            one.dom_tree();
+            const value = one.Row('ratio').Value();
+            $mol_assert_equal(value.Editor(), value.Num());
+            $mol_assert_equal(value.num(), '1e3');
+            value.num('2e4');
+            $mol_assert_ok(one.Node().source().includes('ratio 2e4'));
+        },
+        'inherited rows live in the expander and own rows do not'($) {
+            const one = pair($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	caption \\Карточка',
+                `${d}bog_vmap_app_inspect_test_hero ${d}bog_vmap_app_inspect_test_card`,
+                '	title \\Hi',
+                '',
+            ].join('\n'), `${d}bog_vmap_app_inspect_test_hero`);
+            $mol_assert_equal(one.row_inherited('caption'), true);
+            $mol_assert_equal(one.row_inherited('title'), false);
+            $mol_assert_like(one.own_ports(), ['title']);
+            $mol_assert_ok(one.inherited_ports().includes('caption'));
+            $mol_assert_equal(one.inherited_ports().includes('title'), false);
+            $mol_assert_equal(one.Inherited().expanded(), true);
+            one.dom_tree();
+            $mol_assert_equal(one.Inherited().dom_node().hasAttribute('mol_expander'), true);
+            $mol_assert_equal(one.Inherited().dom_node().contains(one.Row('caption').dom_node()), true);
+            $mol_assert_equal(one.Inherited().dom_node().contains(one.Row('title').dom_node()), false);
+            $mol_assert_equal(one.Rows().dom_node().contains(one.Row('title').dom_node()), true);
+        },
+        'an inherited row offers no tools'($) {
+            const one = pair($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	caption \\Карточка',
+                `${d}bog_vmap_app_inspect_test_hero ${d}bog_vmap_app_inspect_test_card`,
+                '	title \\Hi',
+                '',
+            ].join('\n'), `${d}bog_vmap_app_inspect_test_hero`);
+            $mol_assert_equal(one.Row('caption').tools().length, 0);
+            $mol_assert_equal(one.Row('title').tools().length, 3);
+            $mol_assert_equal(one.Row('caption').bid(), `${d}bog_vmap_app_inspect_test_card`);
+        },
+        'the inherited group opens by default and closing it hides the rows'($) {
+            const one = pair($, [
+                `${d}bog_vmap_app_inspect_test_card ${d}mol_view`,
+                '	caption \\Карточка',
+                `${d}bog_vmap_app_inspect_test_hero ${d}bog_vmap_app_inspect_test_card`,
+                '	title \\Hi',
+                '',
+            ].join('\n'), `${d}bog_vmap_app_inspect_test_hero`);
+            $mol_assert_equal(one.inherited_shown(), true);
+            one.dom_tree();
+            $mol_assert_ok(one.Inherited().dom_node().querySelector('[mol_form_field]'));
+            one.inherited_shown(false);
+            one.dom_tree();
+            $mol_assert_equal(one.Inherited().dom_node().querySelector('[mol_form_field]'), null);
+        },
+    });
+    $mol_test({
+        'a value typed for a writable port of a node lands in a cell of the root'($) {
+            const { root, inspect } = part_panel($, root_src, 'Amount');
+            field(inspect, 'value').num('6000000');
+            $mol_assert_equal(root.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
+            $mol_assert_equal(root.prop_decl('amount_value').toString(), 'amount_value? 6000000\n');
+            $mol_assert_equal(field(inspect, 'value').num(), '6000000');
+        },
+        'a second edit of the value edits the cell and leaves the node alone'($) {
+            const { root, inspect } = part_panel($, root_src, 'Amount');
+            field(inspect, 'value').num('6000000');
+            const node = inspect.Node().source();
+            field(inspect, 'value').num('7000000');
+            $mol_assert_equal(root.prop_decl('amount_value').toString(), 'amount_value? 7000000\n');
+            $mol_assert_equal(root.source().split('\n').filter(line => line.includes('amount_value')).length, 2);
+            $mol_assert_equal(inspect.Node().source(), node);
+            $mol_assert_equal(field(inspect, 'value').num(), '7000000');
+        },
+        'a port that takes no writes keeps its constant in the node'($) {
+            const { root, inspect } = part_panel($, root_src, 'Amount');
+            field(inspect, 'hint').String().text('Сумма');
+            $mol_assert_equal(root.over_tree('Amount', 'hint').toString(), 'hint \\Сумма\n');
+            $mol_assert_equal(root.prop_names().includes('amount_hint'), false);
+        },
+        'a class of its own keeps a constant even in a writable property'($) {
+            const one = panel($, `${d}bog_vmap_app_inspect_test_card ${d}mol_view\n\tcount? 24\n`);
+            field(one, 'count').num('42');
+            $mol_assert_ok(one.Node().source().includes('count? 42'));
+        },
+        'a node row shows the value of the cell it is bound to by hand'($) {
+            const { root, inspect } = part_panel($, root_src
+                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	amount? 5\n	Amount ${d}bog_vmap_app_inspect_test_number value? <=> amount?`), 'Amount');
+            const value = field(inspect, 'value');
+            $mol_assert_equal(value.Editor(), value.Num());
+            $mol_assert_equal(value.num(), '5');
+            value.num('6');
+            $mol_assert_equal(root.prop_decl('amount').toString(), 'amount? 6\n');
+        },
+        'the sign box over a port bound to a wire turns the binding one way and back'($) {
+            const num = `${d}bog_vmap_app_inspect_test_number`;
+            const { root, inspect } = part_panel($, root_src
+                .replace(`	Amount ${num}`, `	Years ${num}\n`
+                + `	years_value = Years value\n`
+                + `	Amount ${num} value? <=> years_value?`), 'Amount');
+            const compiles = () => {
+                const tree = $.$mol_tree2_from_string(root.source(), 'bound.view.tree');
+                for (const klass of tree.kids)
+                    $.$mol_view_tree2_class_props(klass);
+                return true;
+            };
+            $mol_assert_equal(inspect.row_changeable('value'), true);
+            $mol_assert_ok(compiles());
+            inspect.row_changeable('value', false);
+            $mol_assert_equal(root.over_tree('Amount', 'value').toString(), 'value <= years_value\n');
+            $mol_assert_equal(inspect.row_changeable('value'), false);
+            $mol_assert_ok(compiles());
+            inspect.row_changeable('value', true);
+            $mol_assert_equal(root.over_tree('Amount', 'value').toString(), 'value? <=> years_value?\n');
+            $mol_assert_equal(inspect.row_changeable('value'), true);
+            $mol_assert_ok(compiles());
+            $mol_assert_ok(root.source().includes('years_value = Years value'));
+        },
+        'the sign box of a node row says whether the field takes input'($) {
+            const { root, inspect } = part_panel($, root_src
+                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	Amount ${d}bog_vmap_app_inspect_test_number value? 6000000`), 'Amount');
+            $mol_assert_equal(inspect.row_changeable('value'), false);
+            inspect.row_changeable('value', true);
+            $mol_assert_equal(root.over_tree('Amount', 'value').toString(), 'value? <=> amount_value?\n');
+            $mol_assert_equal(inspect.row_changeable('value'), true);
+            inspect.row_changeable('value', false);
+            $mol_assert_equal(root.over_tree('Amount', 'value').toString(), 'value 6000000\n');
+            $mol_assert_equal(root.prop_names().includes('amount_value'), false);
+            $mol_assert_equal(inspect.row_changeable('value'), false);
+        },
+        'an old constant in a writable port of a node is marked frozen until the next edit'($) {
+            const { inspect } = part_panel($, root_src
+                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	Amount ${d}bog_vmap_app_inspect_test_number value? 6000000`), 'Amount');
+            const row = inspect.Row('value');
+            inspect.dom_tree();
+            $mol_assert_equal(row.frozen(), 'поле заморожено: правка значения сделает его изменяемым');
+            $mol_assert_equal(row.dom_node().contains(row.Frozen().dom_node()), true);
+            $mol_assert_equal(row.Frozen().dom_node().textContent, 'поле заморожено: правка значения сделает его изменяемым');
+            field(inspect, 'value').num('5');
+            inspect.dom_tree();
+            $mol_assert_equal(row.frozen(), '');
+            $mol_assert_equal(row.dom_node().contains(row.Frozen().dom_node()), false);
+        },
+        'the frozen mark is only for a constant with the sign in a node the scene lets edit'($) {
+            const node = (over) => part_panel($, root_src
+                .replace(`	Amount ${d}bog_vmap_app_inspect_test_number`, `	amount? 5\n	Amount ${d}bog_vmap_app_inspect_test_number ${over}`), 'Amount').inspect;
+            $mol_assert_equal(node('value? <=> amount?').row_frozen('value'), '');
+            $mol_assert_equal(node('value 5').row_frozen('value'), '');
+            $mol_assert_equal(node('hint \\Сумма').row_frozen('hint'), '');
+            $mol_assert_equal(node('hint \\Сумма').row_frozen('value'), '');
+            $mol_assert_equal(panel($, `${d}bog_vmap_app_inspect_test_card ${d}mol_view\n\tcount? 24\n`).row_frozen('count'), '');
+            const shut = node('value? 6000000');
+            $mol_assert_equal(shut.row_frozen('value'), shut.frozen_note());
+            shut.editable = () => false;
+            $mol_assert_equal(shut.row_frozen('value'), '');
+        },
+        'dropping the row of a bound port takes its cell too'($) {
+            const { root, inspect } = part_panel($, root_src, 'Amount');
+            field(inspect, 'value').num('6000000');
+            inspect.row_drop('value');
+            $mol_assert_equal(root.over_tree('Amount', 'value'), null);
+            $mol_assert_equal(root.source().includes('amount_value'), false);
+        },
+        'an inner layer of a part shows the ports of its own class and the values of the part class'($) {
+            const { app, inspect } = inner_stage($, 'Cell/Note');
+            $mol_assert_equal(app.node_source(), `Cell_Note ${d}mol_paragraph title \\Выполнить\n`);
+            $mol_assert_equal(inspect.class_title(), 'Cell_Note');
+            $mol_assert_equal(inspect.base_title(), `${d}mol_paragraph`);
+            $mol_assert_equal(inspect.row_value('title').toString(), '\\Выполнить\n');
+            $mol_assert_equal(inspect.renamable(), false);
+            $mol_assert_equal(app.delete_enabled(), false);
+        },
+        'the first edit of an inner layer writes the override inside the node block'($) {
+            const { app, inspect } = inner_stage($, 'Cell/Note');
+            inspect.row_value('title', $mol_tree2.data('Считать'));
+            $mol_assert_equal(app.doc_source(), [
+                `${d}flow_inner ${d}mol_view`,
+                `	Cell ${d}bog_vmap_part_cell Note <= Cell_Note`,
+                `	Calc ${d}bog_vmap_part_calc`,
+                `	sub /`,
+                `		<= Cell`,
+                `		<= Calc`,
+                `	Cell_Note ${d}mol_paragraph title \\Считать`,
+                ``,
+            ].join('\n'));
+            $mol_assert_equal(app.inner(), 'Cell/Note');
+        },
+        'a writable port of an inner layer takes a cell of the root, as any node does'($) {
+            const { app, inspect } = inner_stage($, 'Cell/Draft');
+            inspect.row_value('value', $mol_tree2.data('Черновик'));
+            $mol_assert_equal(app.doc_source(), [
+                `${d}flow_inner ${d}mol_view`,
+                `	cell_draft_value? \\Черновик`,
+                `	Cell ${d}bog_vmap_part_cell Draft <= Cell_Draft`,
+                `	Calc ${d}bog_vmap_part_calc`,
+                `	sub /`,
+                `		<= Cell`,
+                `		<= Calc`,
+                `	Cell_Draft ${d}mol_string value? <=> cell_draft_value?`,
+                ``,
+            ].join('\n'));
+        },
+        'a layer of a nested class shows its ports and says why none of them can be edited'($) {
+            const { app, inspect } = inner_stage($, 'Calc/Left/String');
+            $mol_assert_equal(app.inner_foreign(), true);
+            $mol_assert_equal(inspect.class_title(), 'String');
+            $mol_assert_equal(app.node_source(), `String ${d}mol_string\n`);
+            $mol_assert_equal(inspect.editable(), false);
+            $mol_assert_ok(inspect.title_note().includes(`${d}mol_number`));
+            $mol_assert_ok(inspect.title_note().includes('переопределить его из документа нельзя'));
+            $mol_assert_equal(inspect.tools().includes(inspect.Note()), true);
+            $mol_assert_equal(app.node_cell('value?'), null);
+        },
+        'a layer of the part next to it stays editable'($) {
+            const { app, inspect } = inner_stage($, 'Calc/Left');
+            $mol_assert_equal(app.inner_foreign(), false);
+            $mol_assert_equal(inspect.editable(), true);
+            $mol_assert_equal(inspect.title_note(), '');
+        },
+        'a port of an inner layer that the part class feeds is not unplugged by an edit'($) {
+            const { app, inspect } = inner_stage($, 'Cell/Code');
+            $mol_assert_equal(app.node_source(), `Cell_Code ${d}mol_string value? = Cell code?\n`);
+            let failed = '';
+            try {
+                inspect.row_value('value', $mol_tree2.data('Свежо'));
+            }
+            catch (error) {
+                failed = error.message;
+            }
+            $mol_assert_ok(failed.includes('bound already'));
+        },
+    });
+    const d = '$';
+    const root_src = [
+        `${d}bog_vmap_app_inspect_test_root ${d}mol_view`,
+        `	Amount ${d}bog_vmap_app_inspect_test_number`,
+        `	sub / <= Amount`,
+        ``,
+    ].join('\n');
+    const number_src = [
+        `${d}bog_vmap_app_inspect_test_number ${d}mol_view`,
+        `	value? 0`,
+        `	hint \\`,
+        ``,
+    ].join('\n');
+    function field(inspect, name) {
+        return inspect.Row(name).Value();
+    }
+    function inner_stage($, inner) {
+        const stage = $bog_vmap_app_flow_stage($);
+        const app = stage.app;
+        app.doc_source([
+            `${d}flow_inner ${d}mol_view`,
+            `	Cell ${d}bog_vmap_part_cell`,
+            `	Calc ${d}bog_vmap_part_calc`,
+            `	sub /`,
+            `		<= Cell`,
+            `		<= Calc`,
+            ``,
+        ].join('\n'));
+        app.picked([inner.slice(0, inner.indexOf('/'))]);
+        app.inner(inner);
+        stage.redraw();
+        return { stage, app, inspect: app.Inspect() };
+    }
+    function part_panel($, source, part) {
+        browser_gaps($);
+        const root = $.$bog_vmap_lang_node.make({ $ });
+        root.source(source);
+        const base = $.$mol_tree2_from_string(number_src, 'number.view.tree').kids;
+        const inspect = $.$bog_vmap_app_inspect.make({
+            $,
+            source: (next) => {
+                const sign = root.prop_fullname(part);
+                if (next === undefined)
+                    return root.props_tree().select(sign).kids[0]?.toString() ?? '';
+                root.prop_tree(part, $.$mol_tree2_from_string(next.replace(/\n?$/, '\n'), 'part.view.tree').kids[0]);
+                return next;
+            },
+            peers: () => base,
+            pack: () => '',
+            cell: (sign, next) => root.cell_value(part, sign, next),
+        });
+        return { root, inspect };
+    }
+    function browser_gaps($) {
+        const dom = $.$mol_dom_context;
+        Object.assign(globalThis, {
+            ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
+            PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
+        });
+    }
+    function panel($, source, peers = []) {
+        browser_gaps($);
+        let text = source;
+        return $.$bog_vmap_app_inspect.make({
+            $,
+            source: (next) => next === undefined ? text : (text = next),
+            peers: () => peers,
+            pack: () => '',
+        });
+    }
+    function pair($, source, klass) {
+        browser_gaps($);
+        let text = source;
+        const doc = $.$bog_vmap_lang_doc.make({
+            $,
+            source: (next) => next === undefined ? text : (text = next),
+        });
+        return $.$bog_vmap_app_inspect.make({
+            $,
+            source: (next) => doc.class_source(klass, next),
+            peers: () => doc.trees(),
+            pack: () => '',
+        });
+    }
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    const d = '$';
+    const sample = [
+        `${d}layers_doc ${d}mol_view`,
+        `\tcaption \\Подпись`,
+        `\tTitle ${d}mol_paragraph title \\Привет`,
+        `\tPrice ${d}mol_paragraph title \\0`,
+        `\tCard ${d}mol_view`,
+        `\t\tsub /`,
+        `\t\t\t<= Price`,
+        `\t\t\t<= caption`,
+        `\tPage ${d}mol_view`,
+        `\t\tstyle * width \\1280px`,
+        `\t\tsub /`,
+        `\t\t\t<= Title`,
+        `\t\t\t<= Card`,
+        `\tPhoto ${d}mol_image uri \\photo.png`,
+        `\tGo ${d}mol_button_minor title \\Дальше`,
+        `\tName ${d}mol_string`,
+        `\tSite ${d}mol_link`,
+        `\tCalc ${d}bog_vmap_part_calc`,
+        `\tsub /`,
+        `\t\t<= Page`,
+        `\t\t<= Photo`,
+        `\t\t<= Go`,
+        `\t\t<= Name`,
+        `\t\t<= Site`,
+        `\t\t<= Calc`,
+        ``,
+    ].join('\n');
+    const sample_spots = { Page: { x: 0, y: 0 }, Photo: { x: 1400, y: 0 } };
+    const lost = [
+        `${d}layers_lost ${d}mol_view`,
+        `\tcaption \\Подпись`,
+        `\tnote \\Заметка`,
+        `\tTitle ${d}mol_paragraph title \\Привет`,
+        `\tCard ${d}mol_view`,
+        `\t\tsub /`,
+        `\t\t\t<= caption`,
+        `\tPage ${d}mol_view`,
+        `\t\tstyle * width \\1280px`,
+        `\t\tsub /`,
+        `\t\t\t<= Title`,
+        `\t\t\t<= Card`,
+        `\tLost ${d}mol_paragraph title \\Потерян`,
+        `\tDeep ${d}mol_paragraph title \\Глубоко`,
+        `\tBox ${d}mol_view`,
+        `\t\tsub /`,
+        `\t\t\t<= Deep`,
+        `\tNear ${d}mol_image uri \\photo.png`,
+        `\tlost_title = Lost title`,
+        `\tsub /`,
+        `\t\t<= Page`,
+        ``,
+    ].join('\n');
+    const lost_spots = { Page: { x: 0, y: 0 }, Near: { x: 600, y: 40 } };
+    const ring = [
+        `${d}layers_ring ${d}mol_view`,
+        `\tPage ${d}mol_view`,
+        `\t\tsub /`,
+        `\tRing ${d}mol_view`,
+        `\t\tsub /`,
+        `\t\t\t<= Loop`,
+        `\tLoop ${d}mol_view`,
+        `\t\tsub /`,
+        `\t\t\t<= Ring`,
+        `\tsub /`,
+        `\t\t<= Page`,
+        ``,
+    ].join('\n');
+    const mortgage = [
+        `${d}bog_mortgage ${d}mol_view`,
+        `\tmonths_2_op? \\mul`,
+        `\tmonths_2_right? 12`,
+        `\tmonthly_2_op? \\div`,
+        `\tmonthly_2_right? 1200`,
+        `\tyears_2_value? 20`,
+        `\trate_2_value? 6`,
+        `\tend_op? \\add`,
+        `\tyear_auto? true`,
+        `\tyear_code? \\return new Date().getFullYear()`,
+        `\tmonths_op? \\mul`,
+        `\tmonths_right? 12`,
+        `\tmonthly_op? \\div`,
+        `\tmonthly_right? 1200`,
+        `\tyears_value? 20`,
+        `\trate_value? 18`,
+        `\tamount_value? 6000000`,
+        `\tsub /`,
+        `\t\t<= Loan`,
+        `\t\t<= Compare`,
+        `\tLoan ${d}mol_view`,
+        `\t\tstyle *`,
+        `\t\t\twidth \\480px`,
+        `\t\t\tminHeight \\720px`,
+        `\t\t\tflexDirection \\column`,
+        `\t\t\tbackground \\var(--mol_theme_back)`,
+        `\t\t\tcolor \\var(--mol_theme_text)`,
+        `\t\tsub /`,
+        `\t\t\t<= Title`,
+        `\t\t\t<= Amount`,
+        `\t\t\t<= Rate`,
+        `\t\t\t<= Years`,
+        `\t\t\t<= Monthly`,
+        `\t\t\t<= Months`,
+        `\t\t\t<= Payment`,
+        `\t\t\t<= Overpay`,
+        `\t\t\t<= Debt`,
+        `\t\t\t<= Year`,
+        `\t\t\t<= End`,
+        `\t\t\t<= Next`,
+        `\tCompare ${d}mol_view`,
+        `\t\tstyle *`,
+        `\t\t\twidth \\480px`,
+        `\t\t\tminHeight \\720px`,
+        `\t\t\tflexDirection \\column`,
+        `\t\t\tbackground \\var(--mol_theme_back)`,
+        `\t\t\tcolor \\var(--mol_theme_text)`,
+        `\t\tsub /`,
+        `\t\t\t<= Title_2`,
+        `\t\t\t<= Amount_2`,
+        `\t\t\t<= Rate_2`,
+        `\t\t\t<= Years_2`,
+        `\t\t\t<= Monthly_2`,
+        `\t\t\t<= Months_2`,
+        `\t\t\t<= Verdict`,
+        `\t\t\t<= Debt_2`,
+        `\t\t\t<= Back`,
+        `\tTitle ${d}mol_paragraph title \\Ипотека: платёж и переплата`,
+        `\tAmount ${d}mol_number`,
+        `\t\thint \\Сумма кредита, ₽`,
+        `\t\tvalue? <=> amount_value?`,
+        `\tRate ${d}mol_number`,
+        `\t\thint \\Ставка, % годовых`,
+        `\t\tvalue? <=> rate_value?`,
+        `\tYears ${d}mol_number`,
+        `\t\thint \\Срок, лет`,
+        `\t\tvalue? <=> years_value?`,
+        `\tMonthly ${d}bog_vmap_part_calc`,
+        `\t\tright? <=> monthly_right?`,
+        `\t\top? <=> monthly_op?`,
+        `\t\tleft <= rate_value_2`,
+        `\tMonths ${d}bog_vmap_part_calc`,
+        `\t\tright? <=> months_right?`,
+        `\t\top? <=> months_op?`,
+        `\t\tleft? <=> years_value_2?`,
+        `\tPayment ${d}mol_paragraph title <= payment`,
+        `\tOverpay ${d}mol_paragraph title <= overpay`,
+        `\tDebt ${d}bog_vmap_part_plot`,
+        `\t\ttitle \\Остаток долга по годам, ₽`,
+        `\t\tvalues <= balance`,
+        `\tYear ${d}bog_vmap_part_cell`,
+        `\t\tcode? <=> year_code?`,
+        `\t\tauto? <=> year_auto?`,
+        `\tEnd ${d}bog_vmap_part_calc`,
+        `\t\top? <=> end_op?`,
+        `\t\tright <= years_value_3`,
+        `\t\tleft <= year_result_number`,
+        `\tNext ${d}mol_link`,
+        `\t\ttitle \\Сравнить с другим вариантом →`,
+        `\t\targ * page \\Compare`,
+        `\tTitle_2 ${d}mol_paragraph title \\Сравнение: другая ставка или срок`,
+        `\tAmount_2 ${d}mol_number`,
+        `\t\thint \\Сумма кредита, ₽`,
+        `\t\tvalue? <=> amount_value_2?`,
+        `\tRate_2 ${d}mol_number`,
+        `\t\thint \\Ставка, % годовых`,
+        `\t\tvalue? <=> rate_2_value?`,
+        `\tYears_2 ${d}mol_number`,
+        `\t\thint \\Срок, лет`,
+        `\t\tvalue? <=> years_2_value?`,
+        `\tMonthly_2 ${d}bog_vmap_part_calc`,
+        `\t\tright? <=> monthly_2_right?`,
+        `\t\top? <=> monthly_2_op?`,
+        `\t\tleft <= rate_2_value_2`,
+        `\tMonths_2 ${d}bog_vmap_part_calc`,
+        `\t\tright? <=> months_2_right?`,
+        `\t\top? <=> months_2_op?`,
+        `\t\tleft <= years_2_value_2`,
+        `\tVerdict ${d}mol_paragraph title <= verdict`,
+        `\tDebt_2 ${d}bog_vmap_part_plot`,
+        `\t\ttitle \\Остаток долга, второй вариант, ₽`,
+        `\t\tvalues <= balance_2`,
+        `\tBack ${d}mol_link`,
+        `\t\ttitle \\← К расчёту`,
+        `\t\targ * page \\Loan`,
+        `\trate_value_2 = Rate value`,
+        `\tyears_value_2? = Years value?`,
+        `\tyears_value_3 = Years value`,
+        `\tyear_result_number = Year result_number`,
+        `\trate_2_value_2 = Rate_2 value`,
+        `\tyears_2_value_2 = Years_2 value`,
+        `\tamount_value_2? = Amount value?`,
+        `\tpayment null`,
+        `\toverpay null`,
+        `\tbalance null`,
+        `\tverdict null`,
+        `\tbalance_2 null`,
+        ``,
+    ].join('\n');
+    const mortgage_spots = { Loan: { x: 40, y: 40 }, Compare: { x: 600, y: 40 } };
+    const icons = ['root', 'frame', 'image', 'link', 'button', 'field', 'text', 'part'];
+    const inner_doc = [
+        `${d}layers_inner ${d}mol_view`,
+        `	Page ${d}mol_view`,
+        `		sub /`,
+        `			<= Debt`,
+        `	Debt ${d}bog_vmap_part_plot`,
+        `		title \\Долг`,
+        `	sub /`,
+        `		<= Page`,
+        ``,
+    ].join('\n');
+    const inner_over = [
+        `${d}layers_inner ${d}mol_view`,
+        `	Page ${d}mol_view`,
+        `		sub /`,
+        `			<= Debt`,
+        `	Debt ${d}bog_vmap_part_plot`,
+        `		title \\Долг`,
+        `		Line <= Debt_Line`,
+        `	Debt_Line ${d}mol_plot_line`,
+        `		series_y = Debt values`,
+        `		color \\red`,
+        `	sub /`,
+        `		<= Page`,
+        ``,
+    ].join('\n');
+    const inner_kids = {
+        [`${d}bog_vmap_part_plot`]: ['Title', 'Chart'],
+        [`${d}bog_vmap_part_plot/Chart`]: ['Line', 'Legend'],
+    };
+    const inner_classes = {
+        [`${d}bog_vmap_part_plot/Title`]: `${d}mol_paragraph`,
+        [`${d}bog_vmap_part_plot/Chart`]: `${d}mol_chart`,
+        [`${d}bog_vmap_part_plot/Chart/Line`]: `${d}mol_plot_line`,
+        [`${d}bog_vmap_part_plot/Chart/Legend`]: `${d}mol_chart_legend`,
+    };
+    const inner_aliens = {
+        [`${d}bog_vmap_part_plot/Chart/Legend`]: true,
+    };
+    function inner_stage($, key, source = inner_doc) {
+        const dom = $.$mol_dom_context;
+        let picked = [];
+        let inner = '';
+        const shown = [];
+        const layers = $$.$bog_vmap_app_layers.make({
+            $,
+            source: () => source,
+            root: () => `${d}layers_inner`,
+            doc_key: () => key,
+            picked: (next) => next === undefined ? picked : (picked = next),
+            inner: (next) => next === undefined ? inner : (inner = next),
+            inner_kids: (key) => inner_kids[key] ?? [],
+            inner_class: (key) => inner_classes[key] ?? '',
+            inner_alien: (key) => inner_aliens[key] ?? false,
+            node_show: (next) => {
+                if (next !== undefined)
+                    shown.push(next);
+                return null;
+            },
+        });
+        return {
+            layers,
+            picked: () => picked,
+            inner: () => inner,
+            shown: () => shown,
+            click: (type = 'click') => new dom.MouseEvent(type, { bubbles: true, cancelable: true }),
+            outline: (names) => {
+                $mol_assert_equal(layers.rows().length, names.length);
+                return names.map((name, at) => {
+                    $mol_assert_equal(layers.rows()[at], layers.Row(name));
+                    return '  '.repeat(layers.row_level(name) - 1)
+                        + layers.row_title(name) + ' ' + layers.row_kind(name);
+                });
+            },
+        };
+    }
+    function layers_stage($, over = {}, source = sample, spots = sample_spots) {
+        const stage = $bog_vmap_app_flow_stage($, over);
+        const app = stage.app;
+        const dom = $.$mol_dom_context;
+        app.doc_source(source);
+        app.spots(spots);
+        stage.redraw();
+        const moves = [];
+        const move = app.tree_move.bind(app);
+        app.tree_move = (next) => {
+            if (next)
+                moves.push(next);
+            return move(next);
+        };
+        const layers = app.Layers();
+        const panel = layers.dom_node();
+        $mol_assert_ok(stage.root.contains(panel));
+        const redraw = () => stage.redraw();
+        const shown = () => app.Layers().dom_node();
+        const lines = () => {
+            redraw();
+            return [...shown().querySelectorAll('[bog_vmap_app_layers_line]')];
+        };
+        const title_of = (line) => line.querySelector('[bog_vmap_app_layers_pick]')?.textContent ?? '';
+        const line = (title) => {
+            const found = lines().find(el => title_of(el) === title);
+            if (!found)
+                $mol_fail(new Error(`no layer row ${title}`));
+            return found;
+        };
+        const pick = (title) => line(title).querySelector('[bog_vmap_app_layers_pick]');
+        const outline = () => lines().map(el => {
+            const expand = el.querySelector('[bog_vmap_app_layers_expand]');
+            const level = parseFloat(expand.style.paddingLeft || '0');
+            const icon = icons.find(kind => el.querySelector(`[bog_vmap_app_layers_${kind}_icon]`)) ?? '?';
+            return '  '.repeat(level) + title_of(el) + ' ' + icon;
+        });
+        const mouse = (el, type, over = {}) => {
+            el.dispatchEvent(new dom.MouseEvent(type, { bubbles: true, cancelable: true, ...over }));
+            redraw();
+        };
+        const field = () => panel.querySelector('[bog_vmap_app_layers_edit]');
+        const type = (value) => {
+            const el = field();
+            el.value = value;
+            el.dispatchEvent(new dom.Event('input', { bubbles: true }));
+            redraw();
+        };
+        const blur = () => {
+            field().dispatchEvent(new dom.Event('blur', { bubbles: true }));
+            redraw();
+        };
+        const key = (value) => {
+            field().dispatchEvent(new dom.KeyboardEvent('keydown', { key: value, bubbles: true, cancelable: true }));
+            redraw();
+        };
+        const drag = (name, onto, share) => {
+            const el = line(onto);
+            const top = 100;
+            const height = 20;
+            el.getBoundingClientRect = () => ({ top, height, left: 0, width: 200, right: 200, bottom: top + height });
+            const transfer = {
+                dropEffect: 'none',
+                getData: (kind) => kind === 'text/plain' ? name : '',
+            };
+            for (const kind of ['dragenter', 'dragover', 'drop']) {
+                const event = new dom.MouseEvent(kind, { bubbles: true, cancelable: true, clientY: top + height * share });
+                Object.defineProperty(event, 'dataTransfer', { value: transfer });
+                el.dispatchEvent(event);
+            }
+            redraw();
+        };
+        const history = app.History();
+        const stepped = async () => {
+            const source = app.doc_source();
+            const taken = () => history.ring(history.doc_key()).at(-1)?.source === source;
+            for (let i = 0; i < 10 && !taken(); ++i) {
+                stage.timers.filter(timer => timer.delay === history.step_delay()).at(-1)?.task();
+                await $bog_vmap_app_flow_settle(taken, 30);
+                redraw();
+            }
+            $mol_assert_equal(taken(), true);
+        };
+        const group = () => {
+            redraw();
+            return shown().querySelector('[bog_vmap_app_layers_outside]');
+        };
+        const grouped = () => {
+            const head = group();
+            if (!head)
+                return [];
+            return lines()
+                .filter(el => head.compareDocumentPosition(el) & dom.Node.DOCUMENT_POSITION_FOLLOWING)
+                .map(title_of);
+        };
+        const press = (title, value) => {
+            pick(title).dispatchEvent(new dom.KeyboardEvent('keydown', { key: value, bubbles: true, cancelable: true }));
+            redraw();
+        };
+        return { stage, app, layers, panel, moves, lines, line, pick, outline, mouse, field, type, blur, key, drag, history, stepped, redraw, group, grouped, press };
+    }
+    $mol_test({
+        'the layers are the tree of the document by its sub lists'($) {
+            const { outline } = layers_stage($);
+            $mol_assert_like(outline(), [
+                `${d}layers_doc root`,
+                '  Page frame',
+                '    Title text',
+                '    Card frame',
+                '      Price text',
+                '      caption text',
+                '  Photo image',
+                '  Go button',
+                '  Name field',
+                '  Site link',
+                '  Calc part',
+            ]);
+        },
+        'a root folded in one scene leaves the mortgage scene open with both pages and every part'($) {
+            const store = $bog_vmap_app_store.make({ $, doc_land_config: () => null });
+            const loan = store.doc_add('Ипотека', mortgage, mortgage_spots);
+            const other = store.doc_add('Сцена 2');
+            const { outline, line, mouse, redraw } = layers_stage($, { store });
+            mouse(line(`${d}layers_doc`).querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            $mol_assert_like(outline(), [`${d}layers_doc root`]);
+            store.doc_pick(loan.link());
+            redraw();
+            $mol_assert_like(outline(), [
+                `${d}bog_mortgage root`,
+                '  Loan frame',
+                '    Title text',
+                '    Amount field',
+                '    Rate field',
+                '    Years field',
+                '    Monthly part',
+                '    Months part',
+                '    Payment text',
+                '    Overpay text',
+                '    Debt part',
+                '    Year part',
+                '    End part',
+                '    Next link',
+                '  Compare frame',
+                '    Title_2 text',
+                '    Amount_2 field',
+                '    Rate_2 field',
+                '    Years_2 field',
+                '    Monthly_2 part',
+                '    Months_2 part',
+                '    Verdict text',
+                '    Debt_2 part',
+                '    Back link',
+            ]);
+            store.doc_pick(other.link());
+            $mol_assert_like(outline(), [`${d}layers_doc root`]);
+        },
+        'a row names the class of its node and every row but the root is dragged'($) {
+            const { line, pick } = layers_stage($);
+            $mol_assert_equal(pick('Photo').getAttribute('title'), `${d}mol_image`);
+            $mol_assert_equal(pick('caption').getAttribute('title'), '');
+            $mol_assert_equal(line('Photo').getAttribute('draggable'), 'true');
+            $mol_assert_equal(line(`${d}layers_doc`).getAttribute('draggable'), null);
+        },
+        'a collapsed branch hides its rows and opens back'($) {
+            const { outline, line, mouse } = layers_stage($);
+            mouse(line('Card').querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            $mol_assert_like(outline().slice(0, 5), [
+                `${d}layers_doc root`,
+                '  Page frame',
+                '    Title text',
+                '    Card frame',
+                '  Photo image',
+            ]);
+            mouse(line('Card').querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            $mol_assert_equal(outline()[4], '      Price text');
+        },
+        'a click on a row picks its node at the host'($) {
+            const { app, pick, mouse } = layers_stage($);
+            mouse(pick('Title'), 'click');
+            $mol_assert_equal(app.selected(), 'Title');
+            mouse(pick('Photo'), 'click', { metaKey: true });
+            $mol_assert_like(app.picked(), ['Title', 'Photo']);
+            mouse(pick('Photo'), 'click', { metaKey: true });
+            $mol_assert_like(app.picked(), ['Title']);
+            mouse(pick(`${d}layers_doc`), 'click');
+            $mol_assert_like(app.picked(), []);
+        },
+        'the node picked at the host lights its row'($) {
+            const { app, pick, line, mouse, redraw } = layers_stage($);
+            const lit = (title) => pick(title).getAttribute('mol_check_checked') === 'true';
+            app.selected('Card');
+            redraw();
+            $mol_assert_equal(lit('Card'), true);
+            $mol_assert_equal(lit('Title'), false);
+            $mol_assert_equal(lit('Page'), false);
+            mouse(line('Page').querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            $mol_assert_equal(lit('Page'), true);
+        },
+        'a click on a row brings its node to the middle of the canvas at the same zoom'($) {
+            const { stage, pick, mouse } = layers_stage($);
+            const rect = $bog_vmap_app_flow_rect;
+            stage.scene.flush();
+            stage.pane.camera_zoom(2);
+            stage.pane.camera_shift(new $mol_vector_2d(40, 30));
+            mouse(pick('Photo'), 'click');
+            const box = stage.pane.part_box('Photo');
+            $mol_assert_equal(stage.pane.camera_zoom(), 2);
+            $mol_assert_equal(box.left + box.width / 2, rect.width / 2);
+            $mol_assert_equal(box.top + box.height / 2, rect.height / 2);
+        },
+        'a click on a row of a node larger than the canvas zooms out just to fit it'($) {
+            const { stage, pick, mouse } = layers_stage($);
+            const rect = $bog_vmap_app_flow_rect;
+            const gap = stage.pane.fit_gap();
+            stage.scene.flush();
+            stage.pane.camera_zoom(3);
+            mouse(pick('Page'), 'click');
+            const box = stage.pane.part_box('Page');
+            $mol_assert_equal(Math.round(box.width), rect.width - gap * 2);
+            $mol_assert_ok(box.height <= rect.height - gap * 2);
+            $mol_assert_equal(Math.round(box.left + box.width / 2), rect.width / 2);
+            $mol_assert_equal(Math.round(box.top + box.height / 2), rect.height / 2);
+        },
+        'a row taken out of the pick with a modifier leaves the camera where it was'($) {
+            const { app, stage, pick, mouse } = layers_stage($);
+            stage.scene.flush();
+            mouse(pick('Photo'), 'click');
+            stage.pane.camera_shift(new $mol_vector_2d(40, 30));
+            mouse(pick('Photo'), 'click', { metaKey: true });
+            $mol_assert_like(app.picked(), []);
+            $mol_assert_like([...stage.pane.camera_shift()], [40, 30]);
+        },
+        'a pick on the canvas leaves the camera where it was'($) {
+            const { app, stage } = layers_stage($);
+            stage.scene.flush();
+            stage.pane.camera_zoom(1);
+            stage.pane.camera_shift(new $mol_vector_2d(-1300, 100));
+            stage.redraw();
+            stage.tap(stage.part_center('Photo'));
+            $mol_assert_equal(app.selected(), 'Photo');
+            $mol_assert_equal(stage.pane.camera_zoom(), 1);
+            $mol_assert_like([...stage.pane.camera_shift()], [-1300, 100]);
+        },
+        'a double click renames the node the way the design tab does'($) {
+            const { app, pick, mouse, field, type, blur, outline } = layers_stage($);
+            app.spots({ ...app.spots(), Title: { x: 5, y: 5 } });
+            mouse(pick('Title'), 'dblclick');
+            $mol_assert_ok(field());
+            $mol_assert_equal(field().closest('[bog_vmap_app_layers_line]').getAttribute('draggable'), null);
+            type('Heading');
+            blur();
+            $mol_assert_like(app.node().sub_names('Page'), ['Heading', 'Card']);
+            $mol_assert_equal(app.doc_source().includes('Title'), false);
+            $mol_assert_equal(app.selected(), 'Heading');
+            $mol_assert_like(app.spots().Heading, { x: 5, y: 5 });
+            $mol_assert_equal(field(), null);
+            $mol_assert_equal(outline()[2], '    Heading text');
+        },
+        'a name from a digit is refused in words and the source stays'($) {
+            const { app, pick, mouse, field, type, blur, panel } = layers_stage($);
+            const before = app.doc_source();
+            mouse(pick('Title'), 'dblclick');
+            type('2abc');
+            blur();
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_ok(panel.textContent.includes('не начинается с цифры'));
+            $mol_assert_ok(field());
+        },
+        'escape leaves the rename without a write and keeps the pick'($) {
+            const { app, pick, mouse, field, type, key } = layers_stage($);
+            const before = app.doc_source();
+            mouse(pick('Title'), 'dblclick');
+            type('Other');
+            key('Escape');
+            $mol_assert_equal(field(), null);
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(app.selected(), 'Title');
+        },
+        'a read only scene lets the rows be picked and opened, not renamed or moved'($) {
+            const dom = $.$mol_dom_context;
+            let picked = [];
+            const layers = $$.$bog_vmap_app_layers.make({
+                $,
+                source: () => sample,
+                root: () => `${d}layers_doc`,
+                picked: (next) => next ? picked = next : picked,
+                editable: () => false,
+            });
+            const click = (type) => new dom.MouseEvent(type, { bubbles: true, cancelable: true });
+            layers.row_pick('Title', click('click'));
+            $mol_assert_like(picked, ['Title']);
+            $mol_assert_equal(layers.row_expanded('Page', false), false);
+            layers.row_edit('Photo', click('dblclick'));
+            $mol_assert_equal(layers.editing(), null);
+            $mol_assert_like(picked, ['Title']);
+            $mol_assert_equal(layers.row_draggable('Photo'), false);
+            $mol_assert_equal(layers.Row('Photo').dom_node_actual().hasAttribute('draggable'), false);
+            const transfer = { getData: (kind) => kind === 'text/plain' ? 'Photo' : '' };
+            $mol_assert_equal(layers.row_adopt(transfer), null);
+        },
+        'a row dropped on the upper half of another lands before it'($) {
+            const { app, drag } = layers_stage($);
+            drag('Card', 'Title', .1);
+            $mol_assert_like(app.node().sub_names('Page'), ['Card', 'Title']);
+        },
+        'a row dropped on the lower half of a frame lands inside at the end'($) {
+            const { app, drag } = layers_stage($);
+            drag('Title', 'Card', .9);
+            $mol_assert_like(app.node().sub_names('Card'), ['Price', 'caption', 'Title']);
+            $mol_assert_like(app.node().sub_names('Page'), ['Card']);
+        },
+        'rows reordered at the root keep their places on the canvas'($) {
+            const { app, stage, drag } = layers_stage($);
+            stage.scene.flush();
+            $mol_assert_ok(stage.pane.part_size('Photo'));
+            drag('Photo', 'Page', .1);
+            $mol_assert_like(app.node().sub_names('').slice(0, 2), ['Photo', 'Page']);
+            $mol_assert_like(app.spots().Photo, { x: 1400, y: 0 });
+        },
+        'a row reordered at the root before the scene measured it keeps its place'($) {
+            const { app, stage, drag } = layers_stage($, { mute: true });
+            $mol_assert_equal(stage.pane.part_size('Photo'), null);
+            drag('Photo', 'Page', .1);
+            $mol_assert_like(app.node().sub_names('').slice(0, 2), ['Photo', 'Page']);
+            $mol_assert_like(app.spots().Photo, { x: 1400, y: 0 });
+        },
+        'a row taken out of a frame to the root stays where it was drawn'($) {
+            const { app, stage, drag, line } = layers_stage($);
+            app.spots({ ...app.spots(), Page: { x: 40, y: 60 } });
+            stage.redraw();
+            stage.scene.flush();
+            const drawn = stage.pane.part_size('Card');
+            drag('Card', `${d}layers_doc`, .5);
+            $mol_assert_like(app.node().sub_names('Page'), ['Title']);
+            $mol_assert_equal(app.node().sub_names('').at(-1), 'Card');
+            $mol_assert_like(app.spots().Card, { x: drawn.x, y: drawn.y });
+            $mol_assert_like([drawn.x, drawn.y], [140, 60]);
+            $mol_assert_ok(line('Card'));
+        },
+        'a frame dropped into its own insides asks the host for nothing'($) {
+            const { app, drag, moves } = layers_stage($);
+            const before = app.doc_source();
+            drag('Page', 'Card', .9);
+            drag('Page', 'Price', .1);
+            $mol_assert_equal(moves.length, 0);
+            $mol_assert_equal(app.doc_source(), before);
+        },
+        'a drop that changes nothing asks the host for nothing'($) {
+            const { app, drag, moves } = layers_stage($);
+            const before = app.doc_source();
+            drag('Title', 'Card', .1);
+            drag('Card', 'Page', .9);
+            drag('Nope', 'Title', .1);
+            $mol_assert_equal(moves.length, 0);
+            $mol_assert_equal(app.doc_source(), before);
+        },
+        async 'one undo takes back a rename from the layers'($) {
+            const { app, pick, mouse, type, blur, history, stepped } = layers_stage($);
+            await stepped();
+            const before = app.doc_source();
+            mouse(pick('Title'), 'dblclick');
+            type('Heading');
+            blur();
+            await stepped();
+            history.undo();
+            $mol_assert_equal(app.doc_source(), before);
+        },
+        async 'one undo takes back a move from the layers'($) {
+            const { app, drag, history, stepped } = layers_stage($);
+            await stepped();
+            const before = app.doc_source();
+            drag('Card', 'Title', .1);
+            await stepped();
+            history.undo();
+            $mol_assert_equal(app.doc_source(), before);
+        },
+        'a document with every node on the page has no outside group'($) {
+            const { group } = layers_stage($);
+            $mol_assert_equal(group(), null);
+        },
+        'nodes outside every sub list are a group at the end of the layers'($) {
+            const { layers, panel, group, grouped, outline } = layers_stage($, {}, lost, lost_spots);
+            $mol_assert_like(outline(), [
+                `${d}layers_lost root`,
+                '  Page frame',
+                '    Title text',
+                '    Card frame',
+                '      caption text',
+                '  Lost text',
+                '  Box frame',
+                '    Deep text',
+                '  Near image',
+            ]);
+            const head = group();
+            $mol_assert_equal(head.textContent, 'Вне страницы');
+            $mol_assert_equal(head.parentElement, layers.Rows().dom_node());
+            $mol_assert_equal([...head.parentElement.children].indexOf(head), 5);
+            $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep', 'Near']);
+            $mol_assert_equal(panel.textContent.includes('note'), false);
+            $mol_assert_equal(panel.textContent.includes('lost_title'), false);
+        },
+        'the outside group folds and opens back'($) {
+            const { group, grouped, outline, mouse } = layers_stage($, {}, lost, lost_spots);
+            mouse(group(), 'click');
+            $mol_assert_ok(group());
+            $mol_assert_like(grouped(), []);
+            $mol_assert_equal(outline().length, 5);
+            mouse(group(), 'click');
+            $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep', 'Near']);
+        },
+        'a folded branch and the folded outside group stay folded after a trip to the assets and back'($) {
+            const { stage, app, line, mouse, outline, group, grouped } = layers_stage($, {}, lost, lost_spots);
+            const folded = [
+                `${d}layers_lost root`,
+                '  Page frame',
+                '    Title text',
+                '    Card frame',
+                '  Lost text',
+                '  Box frame',
+                '  Near image',
+            ];
+            mouse(line('Card').querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            mouse(line('Box').querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            $mol_assert_like(outline(), folded);
+            stage.assets();
+            $mol_assert_equal(app.left_tab(), 'assets');
+            $mol_wire_fiber.sync();
+            stage.click(stage.check('Слои'));
+            $mol_assert_like(outline(), folded);
+            mouse(group(), 'click');
+            $mol_assert_like(grouped(), []);
+            stage.assets();
+            $mol_wire_fiber.sync();
+            stage.click(stage.check('Слои'));
+            $mol_assert_ok(group());
+            $mol_assert_like(grouped(), []);
+        },
+        'a click on an outside row picks its node, and the host pick lights it'($) {
+            const { app, pick, line, mouse, redraw } = layers_stage($, {}, lost, lost_spots);
+            const lit = (title) => pick(title).getAttribute('mol_check_checked') === 'true';
+            mouse(pick('Lost'), 'click');
+            $mol_assert_like(app.picked(), ['Lost']);
+            $mol_assert_equal(lit('Lost'), true);
+            app.selected('Deep');
+            redraw();
+            $mol_assert_equal(lit('Deep'), true);
+            $mol_assert_equal(lit('Lost'), false);
+            $mol_assert_equal(lit('Box'), false);
+            mouse(line('Box').querySelector('[bog_vmap_app_layers_expand]'), 'click');
+            $mol_assert_equal(lit('Box'), true);
+        },
+        'a double click renames an outside node and its row stays in the group'($) {
+            const { app, pick, mouse, field, type, blur, grouped } = layers_stage($, {}, lost, lost_spots);
+            mouse(pick('Lost'), 'dblclick');
+            $mol_assert_ok(field());
+            type('Gone');
+            blur();
+            $mol_assert_equal(app.node().prop_names().includes('Gone'), true);
+            $mol_assert_equal(app.node().prop_names().includes('Lost'), false);
+            $mol_assert_equal(app.selected(), 'Gone');
+            $mol_assert_equal(field(), null);
+            $mol_assert_like(grouped(), ['Gone', 'Box', 'Deep', 'Near']);
+        },
+        'the Delete key takes a picked outside node out with its insides'($) {
+            const { app, pick, mouse, press, grouped, lines } = layers_stage($, {}, lost, lost_spots);
+            mouse(pick('Box'), 'click');
+            press('Box', 'Delete');
+            const names = app.node().prop_names();
+            $mol_assert_equal(names.includes('Box'), false);
+            $mol_assert_equal(names.includes('Deep'), false);
+            $mol_assert_equal(names.includes('Lost'), true);
+            $mol_assert_equal(app.selected(), null);
+            $mol_assert_like(grouped(), ['Lost', 'Near']);
+            $mol_assert_equal(lines().length, 7);
+        },
+        'an outside row dropped on the lower half of a frame lands inside and the canvas measures it'($) {
+            const { app, stage, drag, grouped, moves } = layers_stage($, {}, lost, lost_spots);
+            stage.scene.flush();
+            $mol_assert_equal(stage.pane.part_size('Lost'), null);
+            drag('Lost', 'Card', .9);
+            $mol_assert_like(moves, [{ name: 'Lost', owner: 'Card', index: 1 }]);
+            $mol_assert_like(app.node().sub_names('Card'), ['caption', 'Lost']);
+            $mol_assert_equal(app.spots().Lost, undefined);
+            $mol_assert_like(grouped(), ['Box', 'Deep', 'Near']);
+            stage.scene.flush();
+            $mol_assert_ok(stage.pane.part_size('Lost'));
+        },
+        'an outside row dropped on the upper half of a page row lands before it'($) {
+            const { app, drag, grouped } = layers_stage($, {}, lost, lost_spots);
+            drag('Box', 'Title', .1);
+            $mol_assert_like(app.node().sub_names('Page'), ['Box', 'Title', 'Card']);
+            $mol_assert_like(app.node().sub_names('Box'), ['Deep']);
+            $mol_assert_like(grouped(), ['Lost', 'Near']);
+        },
+        'an outside node with a place dropped on the root stays where it was put'($) {
+            const { app, drag, grouped } = layers_stage($, {}, lost, lost_spots);
+            drag('Near', `${d}layers_lost`, .5);
+            $mol_assert_like(app.node().sub_names(''), ['Page', 'Near']);
+            $mol_assert_like(app.spots().Near, { x: 600, y: 40 });
+            $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep']);
+        },
+        'nothing is dropped into the outside group, rows only leave it'($) {
+            const { app, drag, line, moves } = layers_stage($, {}, lost, lost_spots);
+            const before = app.doc_source();
+            const zone = (title) => line(title).getAttribute('bog_vmap_app_layers_line_zone');
+            drag('Title', 'Lost', .1);
+            $mol_assert_equal(zone('Lost'), '');
+            drag('Title', 'Box', .9);
+            $mol_assert_equal(zone('Box'), '');
+            drag('Title', 'Deep', .1);
+            $mol_assert_equal(zone('Deep'), '');
+            drag('Lost', 'Box', .9);
+            drag('Near', 'Deep', .1);
+            $mol_assert_equal(moves.length, 0);
+            $mol_assert_equal(app.doc_source(), before);
+        },
+        'nodes holding each other off the page are both in the group and come back together'($) {
+            const { app, drag, grouped, outline } = layers_stage($, {}, ring, { Page: { x: 0, y: 0 } });
+            $mol_assert_like(grouped(), ['Ring', 'Loop']);
+            $mol_assert_like(outline().slice(-2), ['  Ring frame', '    Loop frame']);
+            drag('Ring', 'Page', .9);
+            $mol_assert_like(app.node().sub_names('Page'), ['Ring']);
+            $mol_assert_like(app.node().sub_names('Ring'), ['Loop']);
+            $mol_assert_like(app.node().sub_names('Loop'), []);
+            $mol_assert_like(grouped(), []);
+        },
+        async 'one undo takes back a move out of the outside group'($) {
+            const { app, drag, history, stepped, grouped } = layers_stage($, {}, lost, lost_spots);
+            await stepped();
+            const before = app.doc_source();
+            drag('Lost', 'Card', .9);
+            await stepped();
+            history.undo();
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep', 'Near']);
+        },
+        'a part shows the inner layers of its class, one namespace deep as the class nests them'($) {
+            const { layers, outline } = inner_stage($, 'inner_shown');
+            $mol_assert_equal(layers.row_open('Debt'), false);
+            layers.row_expanded('Debt', true);
+            layers.row_expanded('Debt/Chart', true);
+            $mol_assert_like(layers.row_kids('Debt'), ['Debt/Title', 'Debt/Chart']);
+            $mol_assert_like(layers.row_kids('Debt/Chart'), ['Debt/Chart/Line', 'Debt/Chart/Legend']);
+            $mol_assert_like(layers.row_kids('Debt/Title'), []);
+            $mol_assert_like(outline([
+                '', 'Page', 'Debt', 'Debt/Title', 'Debt/Chart', 'Debt/Chart/Line', 'Debt/Chart/Legend',
+            ]), [
+                `${d}layers_inner root`,
+                '  Page frame',
+                '    Debt part',
+                '      Title text',
+                '      Chart frame',
+                '        Line part',
+                '        Legend part',
+            ]);
+            $mol_assert_equal(layers.row_title('Debt/Chart/Line'), 'Line');
+            $mol_assert_equal(layers.row_hint('Debt/Chart/Line'), `${d}mol_plot_line`);
+            $mol_assert_equal(layers.row_level('Debt/Chart/Line'), layers.row_level('Debt') + 2);
+        },
+        'a row of the document, a layer of the part and a layer of a nested class are shaded apart'($) {
+            const { layers } = inner_stage($, 'inner_dim');
+            layers.row_expanded('Debt', true);
+            layers.row_expanded('Debt/Chart', true);
+            const dim = (name) => layers.Line(name).dom_node_actual()
+                .getAttribute('bog_vmap_app_layers_line_shade');
+            $mol_assert_equal(dim('Debt'), '');
+            $mol_assert_equal(dim('Debt/Title'), 'inner');
+            $mol_assert_equal(dim('Debt/Chart/Legend'), 'alien');
+            $mol_assert_equal(layers.row_alien('Debt/Chart/Line'), false);
+            $mol_assert_equal(layers.row_alien('Debt/Chart/Legend'), true);
+            $mol_assert_equal(layers.row_alien('Debt'), false);
+        },
+        'a layer of a nested class is picked like any other and is dragged like none'($) {
+            const { layers, picked, inner, click, shown } = inner_stage($, 'inner_alien');
+            layers.row_expanded('Debt', true);
+            layers.row_expanded('Debt/Chart', true);
+            layers.row_pick('Debt/Chart/Legend', click());
+            $mol_assert_like(picked(), ['Debt']);
+            $mol_assert_equal(inner(), 'Debt/Chart/Legend');
+            $mol_assert_like(shown(), ['Debt/Chart/Legend']);
+            $mol_assert_equal(layers.row_draggable('Debt/Chart/Legend'), false);
+            $mol_assert_equal(layers.zone_at('Debt/Chart/Legend', .9), '');
+            layers.row_edit('Debt/Chart/Legend', click('dblclick'));
+            $mol_assert_equal(layers.editing(), null);
+        },
+        'a click on an inner layer picks it and keeps the part selected'($) {
+            const { layers, picked, inner, click, shown } = inner_stage($, 'inner_pick');
+            layers.row_expanded('Debt', true);
+            layers.row_pick('Debt/Title', click());
+            $mol_assert_like(picked(), ['Debt']);
+            $mol_assert_equal(inner(), 'Debt/Title');
+            $mol_assert_like(shown(), ['Debt/Title']);
+            $mol_assert_equal(layers.row_picked('Debt/Title'), true);
+            $mol_assert_equal(layers.row_picked('Debt/Chart'), false);
+            layers.row_pick('Page', click());
+            $mol_assert_like(picked(), ['Page']);
+            $mol_assert_equal(inner(), '');
+        },
+        'the make up of a part is read only: no drag, no drop, no rename'($) {
+            const { layers, click } = inner_stage($, 'inner_ban');
+            layers.row_expanded('Debt', true);
+            $mol_assert_equal(layers.row_draggable('Debt/Title'), false);
+            $mol_assert_equal(layers.Row('Debt/Title').dom_node_actual().hasAttribute('draggable'), false);
+            layers.row_edit('Debt/Title', click('dblclick'));
+            $mol_assert_equal(layers.editing(), null);
+            $mol_assert_equal(layers.zone_at('Debt/Title', .9), '');
+            $mol_assert_equal(layers.move_to('Debt/Title', 'Page', 'inside'), null);
+            $mol_assert_equal(layers.move_to('Page', 'Debt/Title', 'before'), null);
+            const transfer = {
+                getData: (kind) => kind === 'text/plain' ? 'Debt/Title' : '',
+            };
+            $mol_assert_equal(layers.row_adopt(transfer), null);
+        },
+        'an overridden inner layer keeps its place under the part instead of the outside group'($) {
+            const { layers, outline } = inner_stage($, 'inner_over', inner_over);
+            layers.row_expanded('Debt', true);
+            $mol_assert_like(layers.outside(), []);
+            $mol_assert_like(outline(['', 'Page', 'Debt', 'Debt/Title', 'Debt/Chart']), [
+                `${d}layers_inner root`,
+                '  Page frame',
+                '    Debt part',
+                '      Title text',
+                '      Chart frame',
+            ]);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_test({
+        'room is counted from the host center to both edges of the view'() {
+            $mol_assert_like($bog_tooltip_room({ left: 12, width: 40 }, 1280), { left: 32, right: 1248 });
+            $mol_assert_like($bog_tooltip_room({ left: 1228, width: 40 }, 1280), { left: 1248, right: 32 });
+        },
+        'host past the right edge leaves negative room on that side'() {
+            $mol_assert_like($bog_tooltip_room({ left: 1270, width: 40 }, 1280), { left: 1290, right: -10 });
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
     const klass = 'bog_vmap_app_page';
     const body = [
         'title() {',
@@ -54196,6 +58799,23 @@ var $;
         app.part_drop(klass, 100, 200);
         const code = app.Code();
         return { app, code, name: app.selected() };
+    };
+    const inner_editor = ($) => {
+        const stage = $bog_vmap_app_flow_stage($);
+        const app = stage.app;
+        app.doc_source([
+            `${d}flow_inner ${d}mol_view`,
+            `	Cell ${d}bog_vmap_part_cell`,
+            `	Calc ${d}bog_vmap_part_calc`,
+            `	sub /`,
+            `		<= Cell`,
+            `		<= Calc`,
+            ``,
+        ].join('\n'));
+        app.picked(['Cell']);
+        app.right_tab('code');
+        stage.redraw();
+        return { stage, app, code: app.Code() };
     };
     const stroke = (code) => ({
         code: 'KeyZ',
@@ -54541,6 +59161,54 @@ var $;
                 code.Sources().current(tab);
                 $mol_assert_equal(code.dom_tree().querySelectorAll('[mol_textarea]').length, 1);
             }
+        },
+        'an inner layer names its own node in the head and in the styles'($) {
+            const { app, code } = inner_editor($);
+            $mol_assert_equal(code.scope_note(), 'Узел Cell');
+            $mol_assert_equal(code.css_text(), '[flow_inner_cell] {\n\t\n}');
+            app.inner('Cell/Note');
+            $mol_assert_equal(code.scope_note(), 'Узел Cell_Note');
+            $mol_assert_equal(code.tree_text(), `Cell_Note ${d}mol_paragraph title \\Выполнить\n`);
+            $mol_assert_equal(code.css_text(), '[flow_inner_cell_note] {\n\t\n}');
+        },
+        'a layer that the document does not hold yet says so instead of going blank'($) {
+            const { app, code } = inner_editor($);
+            app.inner('Cell/Note');
+            $mol_assert_ok(code.note().includes('в документе его ещё нет'));
+            $mol_assert_ok(code.note().includes('Cell_Note'));
+            $mol_assert_equal(code.body().includes(code.Refusal()), true);
+            code.tree_text(`Cell_Note ${d}mol_paragraph title \\Считать\n`);
+            $mol_assert_equal(code.note(), '');
+            $mol_assert_equal(code.body().includes(code.Refusal()), false);
+            $mol_assert_ok(app.doc_source().includes('Note <= Cell_Note'));
+            $mol_assert_ok(app.doc_source().includes(`Cell_Note ${d}mol_paragraph title \\Считать`));
+        },
+        'the styles tab warns that a style waits for the layer to reach the document'($) {
+            const { app, code } = inner_editor($);
+            app.inner('Cell/Note');
+            code.Sources().current('2');
+            $mol_assert_ok(code.note().includes('оживёт вместе со слоем'));
+            code.css_text('[flow_inner_cell_note] { color: red }');
+            $mol_assert_ok(app.doc_css().includes('flow_inner_cell_note'));
+            $mol_assert_equal(app.doc_source().includes('Cell_Note'), false);
+            code.Sources().current('0');
+            $mol_assert_equal(code.note().includes('оживёт вместе со слоем'), false);
+            $mol_assert_ok(code.note().includes('в документе его ещё нет'));
+        },
+        'a layer of a nested class is shown in the code and taken out of editing'($) {
+            const { app, code } = inner_editor($);
+            app.inner('Calc/Left/String');
+            $mol_assert_equal(code.scope_note(), 'Узел String');
+            $mol_assert_equal(code.tree_text(), `String ${d}mol_string\n`);
+            $mol_assert_equal(code.editable(), false);
+            $mol_assert_equal(code.Tree().enabled(), false);
+            $mol_assert_ok(code.note().includes('переопределить его из документа нельзя'));
+        },
+        'a refusal outranks the word about a layer the document does not hold'($) {
+            const { app, code } = inner_editor($);
+            app.inner('Cell/Note');
+            code.tree_text('');
+            $mol_assert_ok(code.note().includes($bog_vmap_app_code_blank));
         },
     });
 })($ || ($ = {}));
@@ -56179,1659 +60847,25 @@ var $;
             $mol_assert_ok(source.includes(`uri \\${uri}`));
             $mol_assert_ok(source.includes('title \\notes.pdf'));
         },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    const d = '$';
-    $_1.$bog_vmap_app_flow_parts = [
-        `${d}mol_string ${d}mol_view`,
-        `\tvalue? \\`,
-        `${d}mol_number ${d}mol_view`,
-        `\tvalue? 0`,
-        `${d}mol_select ${d}mol_view`,
-        `\tvalue? \\`,
-        `${d}mol_switch ${d}mol_view`,
-        `\tvalue? \\`,
-        `${d}mol_check_box ${d}mol_view`,
-        `\tchecked? false`,
-        `${d}mol_paragraph ${d}mol_view`,
-        `\ttitle \\`,
-        `${d}bog_vmap_part_cell ${d}mol_view`,
-        `\tresult \\`,
-        `${d}bog_vmap_part_plot ${d}mol_view`,
-        `\tseries /`,
-        `${d}bog_vmap_part_calc ${d}mol_view`,
-        `\tresult 0`,
-        `${d}bog_vmap_part_map ${d}mol_view`,
-        `\tzoom 0`,
-    ];
-    $_1.$bog_vmap_app_flow_pack = [
-        `${d}flow_button ${d}mol_view`,
-        `\ttitle \\`,
-        `\tenabled true`,
-        `${d}flow_calc ${d}mol_view`,
-        `\tresult 0`,
-        `\top \\plus`,
-        `${d}flow_map ${d}mol_view`,
-        `\tzoom 0`,
-        `\tmarker \\`,
-        ...$_1.$bog_vmap_app_flow_parts,
-        ``,
-    ].join('\n');
-    $_1.$bog_vmap_app_flow_other = 'http://other.pack/';
-    $_1.$bog_vmap_app_flow_other_pack = [
-        `${d}shop_basket ${d}mol_view`,
-        `\ttitle \\`,
-        ``,
-    ].join('\n');
-    $_1.$bog_vmap_app_flow_ui = $bog_vmap_app_shelf_packs().find(offer => offer.id === 'builderui').link;
-    $_1.$bog_vmap_app_flow_ui_pack = [
-        `${d}bog_builderui_card ${d}mol_view`,
-        `\ttitle \\`,
-        ``,
-    ].join('\n');
-    $_1.$bog_vmap_app_flow_rect = {
-        left: 200, top: 50, width: 600, height: 500, right: 800, bottom: 550,
-    };
-    $_1.$bog_vmap_app_flow_size = { width: 100, height: 50 };
-    $_1.$bog_vmap_app_flow_board = { width: 400, height: 300 };
-    function browser_gaps($) {
-        const dom = $.$mol_dom_context;
-        Object.assign(globalThis, {
-            ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
-            PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
-        });
-        const proto = dom.Element.prototype;
-        if (!proto.setPointerCapture)
-            Object.assign(proto, {
-                setPointerCapture() { },
-                releasePointerCapture() { },
-                hasPointerCapture() { return false; },
-            });
-    }
-    let $bog_vmap_app_flow_last = null;
-    let $bog_vmap_app_flow_host = null;
-    async function $bog_vmap_app_flow_settle(done, limit = 300) {
-        const till = Date.now() + limit;
-        while (!done() && Date.now() < till) {
-            await new Promise(next => setTimeout(next, 2));
-        }
-        return done();
-    }
-    $_1.$bog_vmap_app_flow_settle = $bog_vmap_app_flow_settle;
-    function $bog_vmap_app_flow_stage($, over = {}) {
-        browser_gaps($);
-        const dom = $.$mol_dom_context;
-        $bog_vmap_app_flow_last?.destructor();
-        $bog_vmap_app_flow_host?.remove();
-        const host = dom.document.createElement('div');
-        host.setAttribute('bog_vmap_app_flow_host', '');
-        host.style.position = 'fixed';
-        host.style.left = '-20000px';
-        host.style.top = '0';
-        dom.document.body.appendChild(host);
-        $bog_vmap_app_flow_host = host;
-        const timers = [];
-        class $mol_after_timeout_flow extends $mol_after_timeout {
-            constructor(delay, task) {
-                super(delay, task);
-                clearTimeout(this.id);
-                timers.push(this);
-            }
-        }
-        $.$mol_after_timeout = $mol_after_timeout_flow;
-        const kept = {};
-        class $mol_state_local_flow extends $mol_state_local {
-            static value(key, next) {
-                if (next === undefined)
-                    return JSON.parse(kept[key] ?? 'null');
-                if (next === null)
-                    delete kept[key];
-                else
-                    kept[key] = JSON.stringify(next);
-                return next;
-            }
-        }
-        __decorate([
-            $mol_mem_key
-        ], $mol_state_local_flow, "value", null);
-        $.$mol_state_local = $mol_state_local_flow;
-        class $mol_media_flow extends $mol_media {
-            static match(query, next) {
-                if (query === '(prefers-color-scheme: light)')
-                    return false;
-                return super.match(query, next);
-            }
-        }
-        $.$mol_media = $mol_media_flow;
-        class $mol_fetch_flow extends $mol_fetch {
-            static text(input) {
-                const uri = String(input);
-                if (uri === $_1.$bog_vmap_app_flow_other + 'web.view.tree')
-                    return $_1.$bog_vmap_app_flow_other_pack;
-                if (uri === $_1.$bog_vmap_app_flow_ui + 'web.view.tree')
-                    return $_1.$bog_vmap_app_flow_ui_pack;
-                if (uri.endsWith('web.view.tree'))
-                    return $_1.$bog_vmap_app_flow_pack;
-                return $mol_fail(new Error('network in a test: ' + uri));
-            }
-        }
-        $.$mol_fetch = $mol_fetch_flow;
-        const store = over.store ?? $bog_vmap_app_store.make({ $, doc_land_config: () => null });
-        if (!over.store)
-            store.doc_add('Сцена 1');
-        const app = $bog_vmap_app.make({ $, store: () => store });
-        app.page_uri = () => 'http://localhost/';
-        $bog_vmap_app_flow_last = app;
-        const posted = [];
-        const queue = [];
-        const direction = (name) => {
-            const style = app.node().over_tree(name, 'style')?.kids[0] ?? null;
-            return $bog_vmap_lang_dict_get(style, 'flexDirection')?.value
-                ?? 'row'; // what `[mol_view]` is with no direction written
-        };
-        const sizes = () => {
-            const res = {};
-            const node = app.node();
-            const place = (name, path, x, y) => {
-                const kids = node.sub_names(name);
-                const box = { x, y, ...kids ? $_1.$bog_vmap_app_flow_board : $_1.$bog_vmap_app_flow_size };
-                res[path] = box;
-                if (!kids)
-                    return box;
-                const row = direction(name) === 'row';
-                let at = 0;
-                for (const kid of kids) {
-                    if (!kid)
-                        continue;
-                    const inner = place(kid, path + '/' + kid, row ? x + at : x, row ? y : y + at);
-                    at += row ? inner.width : inner.height;
-                }
-                return box;
-            };
-            const spots = app.spots();
-            for (const name of Object.keys(spots)) {
-                place(name, app.doc_root() + '/' + name, spots[name].x, spots[name].y);
-            }
-            return res;
-        };
-        let silent = false;
-        let exposed = false;
-        const peer = {
-            get origin() {
-                if (exposed)
-                    return 'http://localhost';
-                return $mol_fail(new Error('SecurityError: cross-origin frame'));
-            },
-            postMessage(data) {
-                const message = data;
-                posted.push(message);
-                if (silent)
-                    return;
-                if (message.kind === 'ping')
-                    queue.push({ kind: 'pong', nonce: message.nonce });
-                else if (message.kind !== 'values_want')
-                    queue.push({ kind: 'sizes', sizes: sizes() });
-            },
-        };
-        const deliver = (data) => {
-            const event = new dom.MessageEvent('message', { data: { ns: $bog_vmap_bridge_ns, ...data } });
-            Object.defineProperty(event, 'source', { value: peer });
-            dom.dispatchEvent(event);
-        };
-        const scene = {
-            posted,
-            sent(kind) {
-                return posted.filter(message => message.kind === kind);
-            },
-            last(kind) {
-                return this.sent(kind).at(-1);
-            },
-            flush() {
-                while (queue.length)
-                    deliver(queue.shift());
-                app.dom_tree();
-            },
-            values(values) {
-                deliver({ kind: 'values', values });
-                app.dom_tree();
-            },
-            silence() {
-                silent = true;
-                queue.length = 0;
-            },
-            pack_note(message) {
-                deliver({ kind: 'error', at: 'pack', message });
-                app.dom_tree();
-            },
-            hello() {
-                deliver({ kind: 'ready' });
-                app.dom_tree();
-                this.flush();
-            },
-            expose() {
-                exposed = true;
-                app.dom_tree();
-            },
-        };
-        const pane = app.Pane();
-        pane.scene_peer = () => peer;
-        const root = app.dom_tree();
-        host.appendChild(root);
-        const rect = $_1.$bog_vmap_app_flow_rect;
-        pane.dom_node().getBoundingClientRect = () => rect;
-        pane.view_rect = () => rect;
-        pane.Touch().view_rect = () => rect;
-        if (over.mute) {
-            deliver({ kind: 'ready' });
-            silent = true;
-            queue.length = 0;
-            app.dom_tree();
-        }
-        else {
-            deliver({ kind: 'ready' });
-            app.dom_tree();
-            scene.flush();
-        }
-        const found = (selector, note, match) => {
-            const el = [...root.querySelectorAll(selector)].find(match);
-            if (!el)
-                $mol_fail(new Error(`nothing on screen: ${note}`));
-            return el;
-        };
-        const pointer = (type, point, over = {}) => {
-            return new dom.PointerEvent(type, {
-                bubbles: true,
-                cancelable: true,
-                clientX: point[0],
-                clientY: point[1],
-                button: 0,
-                buttons: type === 'pointerup' ? 0 : 1,
-                pointerId: 1,
-                ...over,
-            });
-        };
-        return {
-            app, pane, store, scene, root, timers, kept,
-            client(point) {
-                return [rect.left + point[0], rect.top + point[1]];
-            },
-            text() {
-                return root.textContent ?? '';
-            },
-            broken() {
-                return [...root.querySelectorAll('[mol_view_error]')].map(el => el.getAttribute('id'));
-            },
-            button(title) {
-                const named = [...root.querySelectorAll('[role=button]')].find(el => el.textContent?.startsWith(title));
-                return named ?? found('[role=button]', `button «${title}»`, el => el.getAttribute('title')?.startsWith(title) ?? false);
-            },
-            check(title) {
-                return found('[role=checkbox]', `check «${title}»`, el => el.textContent?.includes(title) ?? false);
-            },
-            class_row(klass) {
-                return found('[bog_vmap_app_palette_item]', `palette row ${klass}`, el => el.textContent === klass);
-            },
-            assets() {
-                this.click(this.check('Ассеты'));
-            },
-            classes_open() {
-                this.assets();
-                app.Shelf().classes_showed(true);
-                app.dom_tree();
-                scene.flush();
-            },
-            scene_row(title) {
-                return found('[bog_vmap_app_scenes_scene_row]', `scene row ${title}`, el => el.textContent === title);
-            },
-            shelf_row(title) {
-                return found('[bog_vmap_app_shelf_item_row]', `shelf row ${title}`, el => el.textContent === title);
-            },
-            pack_row(title) {
-                return found('[bog_vmap_app_shelf_pack_row]', `pack row ${title}`, el => el.textContent === title);
-            },
-            lights_toggle() {
-                return found('[bog_vmap_app_lights]', 'lights toggle', () => true);
-            },
-            theme_worn() {
-                return root.getAttribute('mol_theme');
-            },
-            field(tail) {
-                return found('input, textarea', `field ${tail}`, el => el.getAttribute('id')?.endsWith(tail) ?? false);
-            },
-            overlay() {
-                return root.querySelector('[bog_vmap_app_pane_overlay]');
-            },
-            frame() {
-                return root.querySelector('iframe');
-            },
-            type(el, value) {
-                el.value = value;
-                el.dispatchEvent(new dom.Event('input', { bubbles: true }));
-                app.dom_tree();
-                scene.flush();
-            },
-            blur(el) {
-                el.dispatchEvent(new dom.Event('blur', { bubbles: true }));
-                app.dom_tree();
-                scene.flush();
-            },
-            click(el) {
-                el.dispatchEvent(new dom.MouseEvent('click', { bubbles: true, cancelable: true }));
-                app.dom_tree();
-                scene.flush();
-            },
-            press(el, point, over = {}) {
-                el.dispatchEvent(pointer('pointerdown', point, over));
-            },
-            move(el, point, over = {}) {
-                el.dispatchEvent(pointer('pointermove', point, over));
-            },
-            release(el, point, over = {}) {
-                el.dispatchEvent(pointer('pointerup', point, over));
-            },
-            drop(klass, point) {
-                this.classes_open();
-                this.press(this.class_row(klass), [10, 300]);
-                dom.dispatchEvent(pointer('pointermove', point));
-                this.release(this.overlay(), point);
-                app.dom_tree();
-                scene.flush();
-            },
-            tap(point, over = {}) {
-                this.press(this.overlay(), point, over);
-                this.release(this.overlay(), point, over);
-                app.dom_tree();
-                scene.flush();
-            },
-            part_center(name) {
-                const box = pane.part_box(name);
-                if (!box)
-                    $mol_fail(new Error(`part ${name} is not measured`));
-                return this.client([box.left + box.width / 2, box.top + box.height / 2]);
-            },
-            port_dot(name, port, side) {
-                const box = pane.part_box(name);
-                const index = pane.part_dots(name).findIndex(known => known.name === port);
-                if (!box || index < 0)
-                    $mol_fail(new Error(`no port ${name}.${port} on screen`));
-                return this.client($bog_vmap_app_wire_port_point(box, side, index));
-            },
-            redraw() {
-                app.dom_tree();
-            },
-        };
-    }
-    $_1.$bog_vmap_app_flow_stage = $bog_vmap_app_flow_stage;
-})($ || ($ = {}));
-(function ($_2) {
-    const d = '$';
-    const calc = `${d}flow_calc`;
-    const map = `${d}flow_map`;
-    const button = `${d}flow_button`;
-    const number = `${d}mol_number`;
-    $mol_test({
-        'the editor opens with the head of its canvas, its palette and its canvas'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.button('Новая сцена');
-            stage.button('Удалить');
-            stage.button('В библиотеку');
-            const canvas = stage.pane.dom_node();
-            const tools = stage.root.querySelector('[bog_vmap_app_tools]');
-            for (const title of ['−', '100%', '+']) {
-                $mol_assert_equal(tools.contains(stage.button(title)), true);
-                $mol_assert_equal(canvas.contains(stage.button(title)), false);
-            }
-            $mol_assert_equal(canvas.querySelector('[role=button]'), null);
-            const text = stage.text();
-            $mol_assert_ok(text.includes('Ассеты'));
-            $mol_assert_ok(text.includes('Свойства'));
-            $mol_assert_ok(text.includes('100%'));
-            $mol_assert_ok(text.includes('Выберите узел на холсте'));
-            stage.assets();
-            const shelf = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_items] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
-            $mol_assert_like(shelf.slice(0, 6), [
-                'Блок', 'Ячейка кода', 'График', 'Калькулятор', 'Карта', 'Калькулятор и карта',
-            ]);
-            $mol_assert_ok(shelf.includes('Поле'));
-            $mol_assert_ok(shelf.includes('Выбор'));
-            const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
-            $mol_assert_like(apps, [
-                'Button', 'Calc', 'Map',
-                'Vmap_part_cell', 'Vmap_part_plot', 'Vmap_part_calc', 'Vmap_part_map',
-            ]);
-            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_palette_class_row]'), null);
-            stage.classes_open();
-            const rows = [...stage.root.querySelectorAll('[bog_vmap_app_palette_class_row]')]
-                .map(el => el.textContent);
-            $mol_assert_like(rows, [
-                `${d}mol_view`, button, calc, map,
-                ...$_2.$bog_vmap_app_flow_parts.filter(line => line[0] === '$').map(line => line.split(' ')[0]),
-            ]);
-            $mol_assert_like(stage.broken(), [stage.pane.Scene(stage.pane.scene_key()).dom_id()]);
-        },
-        'a ready made pair lands wired, by one click on the shelf'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.assets();
-            stage.click(stage.shelf_row('Калькулятор и карта'));
-            const node = stage.app.node();
-            $mol_assert_like(node.sub_names(''), ['Pair']);
-            $mol_assert_like(node.sub_names('Pair'), ['Calc', 'Map']);
-            $mol_assert_like(Object.keys(stage.app.spots()), ['Pair']);
-            const links = node.links();
-            $mol_assert_equal(links.length, 1);
-            $mol_assert_like([links[0].from, links[0].from_prop, links[0].to, links[0].to_prop], ['Calc', 'result', 'Map', 'zoom']);
-            $mol_assert_equal(stage.scene.last('doc_set').src, stage.app.doc_source());
-            $mol_assert_equal(stage.app.selected(), 'Pair');
-        },
-        'an application added by its address puts its objects on the shelf'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.assets();
-            stage.type(stage.field('Shelf().Links()'), $_2.$bog_vmap_app_flow_other);
-            stage.scene.hello();
-            const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
-            $mol_assert_like(apps, ['Basket']);
-            stage.click(stage.shelf_row('Basket'));
-            $mol_assert_ok(stage.app.doc_source().includes(`Basket ${d}shop_basket`));
-            $mol_assert_equal(stage.app.selected(), 'Basket');
-        },
-        'a class carried from the palette becomes a part, picked and ready to press'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            const source = stage.app.doc_source();
-            $mol_assert_ok(source.includes(`Calc ${calc}`));
-            $mol_assert_ok(source.includes('<= Calc'));
-            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 } });
-            $mol_assert_equal(stage.scene.last('doc_set').src, source);
-            $mol_assert_equal(stage.app.selected(), 'Calc');
-            $mol_assert_ok(stage.root.querySelector('[bog_vmap_app_pane_handle]') !== null);
-            stage.field("Row('result').Value().Num()");
-            stage.tap(stage.part_center('Calc'));
-            $mol_assert_equal(stage.app.selected(), 'Calc');
-            const click = stage.scene.last('click_at');
-            $mol_assert_equal(click.x, 154);
-            $mol_assert_equal(click.y, 99);
-        },
-        'a value typed into the inspector goes into the document and to the scene'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            stage.tap(stage.part_center('Calc'));
-            const before = stage.scene.sent('doc_set').length;
-            stage.type(stage.field("Row('result').Value().Num()"), '42');
-            const source = stage.app.doc_source();
-            $mol_assert_ok(source.includes(`Calc ${calc} result 42`));
-            $mol_assert_ok(source.includes('<= Calc'));
-            $mol_assert_ok(stage.scene.sent('doc_set').length > before);
-            $mol_assert_equal(stage.scene.last('doc_set').src, source);
-        },
-        'a value typed for a field is a cell of the root that follows the field through a rename and a delete'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            const app = stage.app;
-            stage.drop(number, stage.client([200, 150]));
-            stage.tap(stage.part_center('Number'));
-            stage.type(stage.field("Row('value').Value().Num()"), '6000000');
-            $mol_assert_equal(app.node().over_tree('Number', 'value').toString(), 'value? <=> number_value?\n');
-            $mol_assert_equal(app.node().prop_decl('number_value').toString(), 'number_value? 6000000\n');
-            $mol_assert_equal(stage.scene.last('doc_set').src, app.doc_source());
-            stage.click(stage.check('Слои'));
-            const layers = app.Layers().dom_node().textContent ?? '';
-            $mol_assert_ok(stage.root.contains(app.Layers().dom_node()));
-            $mol_assert_ok(layers.includes('Number'));
-            $mol_assert_equal(layers.includes('number_value'), false);
-            $mol_assert_like(app.doc_wires(), []);
-            $mol_assert_like(stage.pane.wire_lines(), []);
-            stage.type(stage.field("Row('value').Value().Num()"), '7000000');
-            $mol_assert_equal(app.node().prop_decl('number_value').toString(), 'number_value? 7000000\n');
-            $mol_assert_equal(app.doc_source().includes('6000000'), false);
-            $mol_assert_equal(app.doc_source().split('\n').filter(line => line.includes('number_value')).length, 2);
-            $mol_assert_equal(stage.field("Row('value').Value().Num()").value, '7000000');
-            const name = stage.field('Inspect().Name()');
-            stage.type(name, 'Amount');
-            stage.blur(name);
-            $mol_assert_equal(app.selected(), 'Amount');
-            $mol_assert_equal(app.node().cell_of('Amount', 'value'), 'amount_value');
-            $mol_assert_equal(app.doc_source().includes('number_value'), false);
-            $mol_assert_equal(stage.field("Row('value').Value().Num()").value, '7000000');
-            $mol_assert_equal(stage.scene.last('doc_set').src, app.doc_source());
-            app.node_delete();
-            $mol_assert_equal(app.doc_source().includes('amount_value'), false);
-            $mol_assert_equal(app.doc_source().includes('Amount'), false);
-        },
-        'a wire drawn between two parts is written, labelled and unplugged'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([100, 100]));
-            stage.drop(map, stage.client([400, 100]));
-            stage.tap(stage.part_center('Calc'));
-            const overlay = stage.overlay();
-            const out = stage.port_dot('Calc', 'result', 'out');
-            const into = stage.port_dot('Map', 'zoom', 'in');
-            stage.press(overlay, out);
-            stage.move(overlay, into);
-            stage.release(overlay, into);
-            stage.redraw();
-            const source = stage.app.doc_source();
-            $mol_assert_ok(source.includes('\tcalc_result = Calc result\n'));
-            $mol_assert_ok(source.includes('zoom <= calc_result'));
-            stage.scene.flush();
-            $mol_assert_like(stage.scene.last('values_want').names, ['calc_result', 'Calc.result', 'Calc.op', 'Map.marker']);
-            stage.scene.values({ calc_result: '42', 'Calc.result': '42', 'Calc.op': 'plus' });
-            $mol_assert_like(stage.pane.wire_lines().map(line => [line.key, line.label]), [['Map.zoom', '42']]);
-            $mol_assert_like(stage.pane.label_lines('Calc'), ['result: 42', 'op: plus']);
-            stage.tap(stage.part_center('Map'));
-            stage.press(overlay, stage.port_dot('Map', 'zoom', 'in'));
-            stage.release(overlay, stage.client([550, 450]));
-            stage.redraw();
-            const after = stage.app.doc_source();
-            $mol_assert_equal(after.includes('calc_result'), false);
-            $mol_assert_like(stage.app.doc_wires(), []);
-        },
-        async 'a drag with the shift held writes a two way wire, and one undo takes it back'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            const history = stage.app.History();
-            const stepped = async () => {
-                const source = stage.app.doc_source();
-                const taken = () => history.ring(history.doc_key()).at(-1)?.source === source;
-                for (let i = 0; i < 10 && !taken(); ++i) {
-                    stage.timers.filter(timer => timer.delay === history.step_delay()).at(-1)?.task();
-                    await $_2.$bog_vmap_app_flow_settle(taken, 30);
-                    stage.redraw();
-                }
-                $mol_assert_equal(taken(), true);
-            };
-            stage.drop(number, stage.client([100, 100]));
-            stage.drop(number, stage.client([400, 100]));
-            stage.tap(stage.part_center('Number'));
-            await stepped();
-            const before = stage.app.doc_source();
-            const overlay = stage.overlay();
-            const out = stage.port_dot('Number', 'value', 'out');
-            const into = stage.port_dot('Number_2', 'value', 'in');
-            stage.press(overlay, out, { shiftKey: true });
-            stage.move(overlay, into, { shiftKey: true });
-            stage.release(overlay, into, { shiftKey: true });
-            stage.redraw();
-            const source = stage.app.doc_source();
-            $mol_assert_ok(source.includes('\tnumber_value? = Number value?\n'));
-            $mol_assert_ok(source.includes('value? <=> number_value?\n'));
-            $mol_assert_equal(stage.app.doc_wires()[0].bidi, true);
-            $mol_assert_equal(stage.pane.Wire().label_text('Number_2.value'), '⇄');
-            stage.scene.values({ number_value: '7' });
-            $mol_assert_equal(stage.pane.Wire().label_text('Number_2.value'), '⇄ 7');
-            await stepped();
-            history.undo();
-            stage.redraw();
-            $mol_assert_equal(stage.app.doc_source(), before);
-            $mol_assert_like(stage.app.doc_wires(), []);
-        },
-        async 'a published part comes back through the palette field'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            const library = $bog_vmap_app_publish_store.make({
-                $,
-                shelf_land_config: () => $.$giper_baza_glob.home().land(),
-            });
-            stage.app.Publish().store = () => library;
-            stage.drop(button, stage.client([200, 150]));
-            stage.tap(stage.part_center('Button'));
-            stage.click(stage.button('В библиотеку'));
-            const link = await $_2.$bog_vmap_app_flow_settle(() => library.link());
-            stage.redraw();
-            $mol_assert_ok(link);
-            $mol_assert_ok(stage.text().includes('опубликовано'));
-            $mol_assert_ok(stage.text().includes(link));
-            stage.type(stage.field('Shelf().Links()'), link);
-            $mol_assert_like(stage.app.lands(), [link]);
-            $mol_assert_like(stage.app.lib_classes().map(tree => tree.type), [`${d}bog_vmap_pub_button`]);
-            stage.drop(`${d}bog_vmap_pub_button`, stage.client([400, 300]));
-            $mol_assert_ok(stage.app.doc_source().includes(` ${d}bog_vmap_pub_button\n`));
-            $mol_assert_equal(Object.keys(stage.app.spots()).length, 2);
-        },
-        async 'a second scene is a document of its own and the first one comes back'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            const first = stage.store.doc_current().link().str;
-            const source = stage.app.doc_source();
-            stage.click(stage.button('Новая сцена'));
-            await $_2.$bog_vmap_app_flow_settle(() => stage.store.doc_links().length > 1);
-            stage.redraw();
-            $mol_assert_equal(stage.store.doc_links().length, 2);
-            $mol_assert_ok(stage.store.doc_current().link().str !== first);
-            $mol_assert_equal(stage.app.doc_source(), `${stage.app.doc_root()} ${d}mol_view\n\tsub /\n`);
-            $mol_assert_like(stage.app.spots(), {});
-            const scenes = stage.app.Scenes();
-            scenes.current(first);
-            stage.redraw();
-            $mol_assert_equal(stage.app.doc_source(), source);
-            $mol_assert_like(stage.app.spots(), { Calc: { x: 104, y: 74 } });
-        },
-        'the frame is raised from markup and carries no address'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            const frame = stage.frame();
-            $mol_assert_equal(frame.getAttribute('sandbox'), 'allow-scripts');
-            $mol_assert_equal(frame.hasAttribute('src'), false);
-            const html = frame.getAttribute('srcdoc') ?? '';
-            const bundle = stage.app.scene_bundle();
-            $mol_assert_ok(bundle.endsWith('/scene/web.js'));
-            $mol_assert_ok(html.includes(`src="${bundle}"`));
-            $mol_assert_ok(html.includes('color-scheme:dark'));
-        },
-        'the pack goes down the wire before the document and the libraries'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            const kinds = stage.scene.posted.map(message => message.kind);
-            const pack = kinds.indexOf('pack_set');
-            $mol_assert_ok(pack >= 0);
-            $mol_assert_ok(pack < kinds.indexOf('doc_set'));
-            $mol_assert_ok(pack < kinds.indexOf('libs_set'));
-            $mol_assert_equal(stage.scene.last('pack_set')?.uri, stage.app.pack_script());
-        },
-        'a new pack gives a new frame, a new land keeps the old one'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.assets();
-            const field = stage.field('Shelf().Links()');
-            const before = stage.frame();
-            stage.type(field, 'http://pack.test/, AbCdEfGh');
-            $mol_assert_ok(stage.frame() !== before);
-            $mol_assert_like(stage.app.lands(), ['AbCdEfGh']);
-            $mol_assert_equal(stage.pane.ready(), false);
-            const seen = stage.scene.posted.length;
-            stage.scene.hello();
-            $mol_assert_equal(stage.pane.ready(), true);
-            $mol_assert_equal(stage.scene.posted[seen]?.kind, 'pack_set');
-            $mol_assert_equal(stage.scene.last('pack_set')?.uri, 'http://pack.test/web.js');
-            const kept = stage.frame();
-            stage.type(field, 'http://pack.test/, AbCdEfGh, ZyXwVuTs');
-            $mol_assert_equal(stage.frame(), kept);
-            $mol_assert_like(stage.app.lands(), ['AbCdEfGh', 'ZyXwVuTs']);
-        },
-        'a change of pack raises no false alarm about the scene'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            const watch = () => stage.timers.filter(timer => timer.delay === stage.pane.answer_limit()).length;
-            stage.drop(calc, stage.client([200, 150]));
-            $mol_assert_equal(stage.pane.warmed(), true);
-            const sent = stage.scene.posted.length;
-            const armed = watch();
-            stage.type(stage.field('Shelf().Links()'), 'http://pack.test/');
-            $mol_assert_equal(stage.pane.ready(), false);
-            $mol_assert_equal(stage.scene.posted.length, sent);
-            $mol_assert_equal(stage.pane.watchdog(), null);
-            $mol_assert_equal(watch(), armed);
-            $mol_assert_equal(stage.pane.stalled(), false);
-            $mol_assert_equal(stage.text().includes('Сцена не отвечает'), false);
-            stage.scene.hello();
-            $mol_assert_equal(stage.pane.ready(), true);
-            $mol_assert_equal(stage.scene.posted[sent]?.kind, 'pack_set');
-            $mol_assert_equal(stage.scene.posted[sent]?.uri, 'http://pack.test/web.js');
-        },
-        'the palette field takes a pack with lands and says why it refuses a second'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.assets();
-            const field = stage.field('Shelf().Links()');
-            stage.type(field, 'http://pack.test/, AbCdEfGh');
-            $mol_assert_equal(stage.app.pack_link(), 'http://pack.test/');
-            $mol_assert_like(stage.app.lands(), ['AbCdEfGh']);
-            const key = stage.pane.scene_key();
-            $mol_assert_equal(stage.pane.pack_uri(), 'http://pack.test/web.js');
-            stage.type(field, 'http://pack.test/, AbCdEfGh, http://other.test/');
-            $mol_assert_ok(stage.text().includes($bog_vmap_lib_links_reason.pack_second));
-            $mol_assert_ok(stage.text().includes('http://other.test/'));
-            $mol_assert_equal(stage.pane.scene_key(), key);
-            $mol_assert_equal(stage.field('Shelf().Links()').value, 'http://pack.test/, AbCdEfGh, http://other.test/');
-        },
-        'delete takes the part out, and the camera leaves the document alone'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([100, 100]));
-            stage.drop(map, stage.client([300, 100]));
-            stage.tap(stage.part_center('Calc'));
-            stage.click(stage.button('Удалить'));
-            const source = stage.app.doc_source();
-            $mol_assert_equal(source.includes('Calc'), false);
-            $mol_assert_ok(source.includes(`Map ${map}`));
-            $mol_assert_equal(stage.app.selected(), null);
-            $mol_assert_like(Object.keys(stage.app.spots()), ['Map']);
-            const overlay = stage.overlay();
-            stage.press(overlay, stage.client([450, 400]));
-            stage.move(overlay, stage.client([500, 430]));
-            stage.release(overlay, stage.client([500, 430]));
-            stage.redraw();
-            $mol_assert_like([...stage.pane.camera_shift()], [50, 30]);
-            stage.click(stage.button('+'));
-            $mol_assert_ok(stage.text().includes('125%'));
-            stage.click(stage.button('125%'));
-            $mol_assert_ok(stage.text().includes('100%'));
-            const size = $_2.$bog_vmap_app_flow_size;
-            const shift = stage.pane.camera_shift();
-            $mol_assert_like([204 + size.width / 2 + shift[0], 24 + size.height / 2 + shift[1]], [$_2.$bog_vmap_app_flow_rect.width / 2, $_2.$bog_vmap_app_flow_rect.height / 2]);
-            $mol_assert_equal(stage.app.doc_source(), source);
-        },
-        'a page takes the parts dropped into it and stacks them the way it is set'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            const dom = $.$mol_dom_context;
-            dom.document.dispatchEvent(new dom.KeyboardEvent('keydown', { code: 'KeyF', key: 'f', bubbles: true }));
-            stage.tap(stage.client([100, 100]));
-            $mol_assert_equal(stage.app.selected(), 'Page');
-            const node = stage.app.node();
-            $mol_assert_like(node.sub_names('Page'), []);
-            const page = stage.pane.part_box('Page');
-            $mol_assert_ok(page);
-            const zoom = stage.pane.camera_zoom();
-            const inside = (x, y) => stage.client([
-                page.left + x * zoom,
-                page.top + y * zoom,
-            ]);
-            stage.drop(calc, inside(200, 40));
-            stage.drop(map, inside(200, 250));
-            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
-            $mol_assert_like(Object.keys(stage.app.spots()), ['Page']);
-            $mol_assert_equal(stage.app.doc_source().includes('\t\tsub /\n\t\t\t<= Calc\n\t\t\t<= Map\n'), true);
-            stage.tap(inside(200, 250));
-            $mol_assert_equal(stage.app.selected(), 'Page');
-            stage.click(stage.check('рядом'));
-            $mol_assert_ok(stage.app.doc_source().includes('flexDirection \\row'));
-            $mol_assert_equal(stage.scene.last('doc_set').src, stage.app.doc_source());
-            const first = stage.pane.part_box('Calc');
-            const second = stage.pane.part_box('Map');
-            $mol_assert_equal(first.top, second.top);
-            $mol_assert_ok(second.left > first.left);
-            stage.drop(button, inside(20, 20));
-            $mol_assert_like(node.sub_names('Page'), ['Button', 'Calc', 'Map']);
-        },
-        'the sandbox comes up while the document of the address is still on its way'($) {
-            const waiting = new Promise(() => { });
-            const store = $bog_vmap_app_store.make({
-                $,
-                doc_land_config: () => null,
-                source: () => { throw waiting; },
-                spots: () => { throw waiting; },
-                pack: () => { throw waiting; },
-            });
-            const stage = $_2.$bog_vmap_app_flow_stage($, { store });
-            $mol_assert_ok(stage.frame().getAttribute('srcdoc'));
-            $mol_assert_equal(stage.pane.ready(), true);
-            $mol_assert_equal(stage.text().includes('сцена на связи'), false);
-            $mol_assert_equal(stage.app.links(), '');
-            stage.classes_open();
-            stage.class_row(calc);
-        },
-        'a silent scene raises the strip and the button gives a fresh frame'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            $mol_assert_equal(stage.pane.stalled(), false);
-            const frame = stage.frame();
-            stage.scene.silence();
-            stage.click(stage.button('+'));
-            const watch = stage.timers.filter(timer => timer.delay === stage.pane.answer_limit()).at(-1);
-            $mol_assert_ok(watch);
-            watch.task();
-            stage.redraw();
-            $mol_assert_equal(stage.pane.stalled(), true);
-            $mol_assert_ok(stage.text().includes('Сцена не отвечает'));
-            stage.click(stage.button('Перезагрузить сцену'));
-            $mol_assert_equal(stage.pane.stalled(), false);
-            $mol_assert_equal(stage.pane.ready(), false);
-            $mol_assert_equal(stage.text().includes('Сцена не отвечает'), false);
-            $mol_assert_ok(stage.frame() !== frame);
-        },
-        'the stand keeps to its own corner and leaves the page it was opened on alone'($) {
-            const dom = $.$mol_dom_context;
-            const live = dom.document.createElement('div');
-            live.setAttribute('id', 'flow_live_mark');
-            dom.document.body.appendChild(live);
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            $mol_assert_equal(live.isConnected, true);
-            $mol_assert_equal(stage.root.isConnected, true);
-            $mol_assert_equal(stage.root.parentElement === dom.document.body, false);
-            $_2.$bog_vmap_app_flow_stage($);
-            $mol_assert_equal(live.isConnected, true);
-            $mol_assert_equal(stage.root.isConnected, false);
-            live.remove();
-        },
-        'a pack that never answers names itself in the header instead of a green lie'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            const note = 'Загрузка библиотеки компонентов… http://localhost:9080/bog/vmap/part/-/web.js';
-            stage.drop(calc, stage.client([200, 150]));
-            $mol_assert_ok(stage.text().includes('сцена на связи'));
-            stage.scene.silence();
-            stage.pane.warmed(false);
-            stage.scene.pack_note(note);
-            stage.redraw();
-            $mol_assert_equal(stage.pane.pack_note(), note);
-            $mol_assert_ok(stage.text().includes(note));
-            $mol_assert_equal(stage.text().includes('сцена на связи'), false);
-        },
-        'a dead pack skips the pointless relaunch and the plate hands the default pack back'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            const dead = 'https://dead.test/';
-            stage.drop(calc, stage.client([200, 150]));
-            stage.app.links(dead);
-            stage.scene.silence();
-            stage.pane.warmed(false);
-            stage.scene.pack_note('Загрузка библиотеки компонентов… ' + dead + 'web.js');
-            stage.redraw();
-            const generation = stage.pane.scene_generation();
-            $mol_assert_ok(stage.pane.watchdog() !== null);
-            const watch = stage.timers.filter(timer => timer.delay === stage.pane.cold_limit()).at(-1);
-            $mol_assert_ok(watch);
-            watch.task();
-            stage.redraw();
-            $mol_assert_equal(stage.pane.stalled(), true);
-            $mol_assert_equal(stage.pane.restart_tries(), 0);
-            $mol_assert_equal(stage.pane.scene_generation(), generation);
-            $mol_assert_ok(stage.text().includes('верните пак по умолчанию'));
-            stage.click(stage.button('Вернуть пак по умолчанию'));
-            stage.redraw();
-            $mol_assert_equal(stage.app.links(), '');
-            $mol_assert_equal(stage.app.links_parsed().pack, null);
-            $mol_assert_equal(stage.pane.scene_generation(), generation + 1);
-            $mol_assert_equal(stage.pane.stalled(), false);
-        },
-        'the default pack comes back without taking the lands of the shelf with it'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            const land = 'AbCdEfGh';
-            stage.app.links('https://dead.test/, ' + land);
-            $mol_assert_like(stage.app.links_parsed().lands, [land]);
-            stage.app.pack_default();
-            $mol_assert_equal(stage.app.links(), land);
-            $mol_assert_equal(stage.app.links_parsed().pack, null);
-            $mol_assert_like(stage.app.links_parsed().lands, [land]);
-        },
-        'deleting a wired part leaves no wire to a node that is gone'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([100, 100]));
-            stage.drop(map, stage.client([400, 100]));
-            stage.tap(stage.part_center('Calc'));
-            const overlay = stage.overlay();
-            stage.press(overlay, stage.port_dot('Calc', 'result', 'out'));
-            stage.move(overlay, stage.port_dot('Map', 'zoom', 'in'));
-            stage.release(overlay, stage.port_dot('Map', 'zoom', 'in'));
-            stage.redraw();
-            $mol_assert_equal(stage.app.doc_wires().length, 1);
-            stage.tap(stage.part_center('Calc'));
-            stage.click(stage.button('Удалить'));
-            $mol_assert_equal(stage.app.doc_source().includes('calc_result'), false);
-            $mol_assert_like(stage.app.doc_wires(), []);
-            $mol_assert_ok(stage.app.doc_source().includes(`Map ${map}`));
-            stage.drop(calc, stage.client([100, 300]));
-            $mol_assert_equal(stage.app.selected(), 'Calc');
-            stage.press(overlay, stage.port_dot('Calc', 'result', 'out'));
-            stage.move(overlay, stage.port_dot('Map', 'zoom', 'in'));
-            stage.release(overlay, stage.port_dot('Map', 'zoom', 'in'));
-            stage.redraw();
-            $mol_assert_equal(stage.app.doc_wires().length, 1);
-            stage.tap(stage.part_center('Map'));
-            stage.click(stage.button('Удалить'));
-            $mol_assert_like(stage.app.doc_wires(), []);
-            $mol_assert_equal(stage.app.doc_source().includes('calc_result'), false);
-            $mol_assert_ok(stage.app.doc_source().includes(`Calc ${calc}`));
-            $mol_assert_equal(stage.app.doc_source().includes(`Map ${map}`), false);
-        },
-        'a file dropped on the canvas reaches the scene and the export by one address'($) {
-            const uri = 'https://baza.test/?BAZA:file=TQzejQsT_m3PFV7J3;name=logo.png';
-            const store = $bog_vmap_app_store.make({
-                $,
-                doc_land_config: () => null,
-                asset_put: () => uri,
-            });
-            store.doc_add('Сцена 1');
-            const stage = $_2.$bog_vmap_app_flow_stage($, { store });
-            const dom = $.$mol_dom_context;
-            const point = stage.client([300, 200]);
-            const drop = new dom.Event('drop', { bubbles: true, cancelable: true });
-            Object.defineProperty(drop, 'clientX', { value: point[0] });
-            Object.defineProperty(drop, 'clientY', { value: point[1] });
-            Object.defineProperty(drop, 'dataTransfer', {
-                value: {
-                    files: [new dom.File([new Uint8Array([137, 80, 78, 71])], 'logo.png', { type: 'image/png' })],
-                },
-            });
-            stage.overlay().dispatchEvent(drop);
-            stage.redraw();
-            const source = stage.app.doc_source();
-            $mol_assert_ok(source.includes(`uri \\${uri}`));
-            $mol_assert_like(stage.app.spots(), { Image: { x: 300, y: 200 } });
-            $mol_assert_equal(stage.app.selected(), 'Image');
-            $mol_assert_equal(stage.scene.last('doc_set').src, source);
-            const module = stage.app.export_state().module;
-            const tree = module.files.find(file => file.name.endsWith('.view.tree')).text;
-            $mol_assert_ok(tree.includes(`uri \\${uri}`));
-        },
-        'entering a node does not move the canvas down by a row'($) {
-            const stage = $_2.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            const column = stage.app.Canvas().body();
-            stage.tap(stage.part_center('Calc'));
-            stage.tap(stage.part_center('Calc'));
-            stage.redraw();
-            $mol_assert_ok(stage.app.inside_note());
-            $mol_assert_equal(stage.pane.inside(), true);
-            const after = stage.app.Canvas().body();
-            $mol_assert_equal(after.length, column.length);
-            for (let i = 0; i < column.length; ++i)
-                $mol_assert_equal(after[i], column[i]);
-            const note = stage.app.Inside_note().dom_node();
-            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_foot]').contains(note), true);
-            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_body]').contains(note), false);
-        },
-    });
-})($ || ($ = {}));
-(function ($_3) {
-    const d = '$';
-    const card = `${d}bog_builderui_card`;
-    $mol_test({
-        'the light switch is worn by the editor and told to the scene'($) {
-            const stage = $_3.$bog_vmap_app_flow_stage($);
-            $mol_assert_equal(stage.theme_worn(), '$mol_theme_dark');
-            stage.click(stage.lights_toggle());
-            $mol_assert_equal(stage.theme_worn(), '$mol_theme_light');
-            $mol_assert_equal(stage.scene.last('theme_set').theme, '$mol_theme_light');
-            stage.click(stage.lights_toggle());
-            $mol_assert_equal(stage.theme_worn(), '$mol_theme_dark');
-            $mol_assert_equal(stage.scene.last('theme_set').theme, '$mol_theme_dark');
-        },
-        'the light choice is kept under a key of this app, not one shared by the origin'($) {
-            const stage = $_3.$bog_vmap_app_flow_stage($);
-            stage.click(stage.lights_toggle());
-            const keys = Object.keys(stage.kept);
-            $mol_assert_equal(keys.length, 1);
-            $mol_assert_ok(keys[0].startsWith('$bog_vmap_app'));
-            $mol_assert_equal(stage.kept[keys[0]], 'true');
-        },
-        'the shell is a head bar over three columns and the canvas has no head of its own'($) {
-            const stage = $_3.$bog_vmap_app_flow_stage($);
-            const app = stage.app;
-            $mol_assert_ok(stage.root.hasAttribute('mol_page'));
-            $mol_assert_equal(stage.root.hasAttribute('mol_book2'), false);
-            const head = stage.root.querySelector('[bog_vmap_app_head]');
-            $mol_assert_ok(head.hasAttribute('mol_page_head'));
-            $mol_assert_equal(head.parentElement, stage.root);
-            const inside = (view) => head.contains(view.dom_node());
-            for (const view of [
-                app.Left_check(),
-                app.Tool_select(),
-                app.Tool_board(),
-                app.Tool_hand(),
-                app.Delete(),
-                app.Root_name(),
-                app.Zoom_out(),
-                app.Zoom_reset(),
-                app.Zoom_in(),
-                app.History_check(),
-                app.Publish(),
-                app.Download(),
-                app.Lights(),
-                app.Right_check(),
-            ])
-                $mol_assert_ok(inside(view));
-            $mol_assert_equal(inside(app.Status()), false);
-            const holds = (parent, kids) => {
-                const nodes = [...parent.dom_node().children];
-                $mol_assert_equal(nodes.length, kids.length);
-                kids.forEach((kid, index) => $mol_assert_ok(nodes[index] === kid.dom_node()));
-            };
-            holds(app.Main(), [app.Left(), app.Canvas(), app.Right()]);
-            holds(app.Left(), [app.Scenes(), app.Left_tabs(), app.Layers()]);
-            holds(app.Right(), [app.Right_tabs(), app.Idle()]);
-            $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_canvas_head]'), null);
-            $mol_assert_equal(app.Canvas().dom_node().querySelector('[mol_page_head]'), null);
-            $mol_assert_equal(app.Canvas().title(), 'Холст');
-            const foot = stage.root.querySelector('[bog_vmap_app_canvas_foot]');
-            $mol_assert_ok(app.Canvas().body().includes(app.Pane()));
-            $mol_assert_equal(foot.childElementCount, 1);
-            $mol_assert_ok(foot.contains(app.Status().dom_node()));
-        },
-        'the percent in the canvas tools zooms and gives the view back'($) {
-            const stage = $_3.$bog_vmap_app_flow_stage($);
-            stage.pane.camera_shift(new $mol_vector_2d(700, 700));
-            stage.redraw();
-            stage.click(stage.button('+'));
-            $mol_assert_equal(stage.pane.camera_zoom(), 1.25);
-            $mol_assert_ok(stage.button('125%'));
-            stage.click(stage.button('−'));
-            $mol_assert_equal(stage.pane.camera_zoom(), 1);
-            stage.click(stage.button('+'));
-            stage.click(stage.button('125%'));
-            $mol_assert_equal(stage.pane.camera_zoom(), 1);
-            $mol_assert_like([...stage.pane.camera_shift()], [0, 0]);
-            $mol_assert_ok(stage.button('100%'));
-        },
-        'the column checks and the tabs put panels on screen and take them off'($) {
-            const stage = $_3.$bog_vmap_app_flow_stage($);
-            const app = stage.app;
-            const showed = (page) => stage.root.contains(page.dom_node());
-            $mol_assert_ok(showed(app.Scenes()));
-            $mol_assert_ok(showed(app.Layers()));
-            $mol_assert_ok(showed(app.Idle()));
-            $mol_assert_equal(showed(app.Shelf()), false);
-            $mol_assert_equal(showed(app.Code()), false);
-            $mol_assert_equal(showed(app.History()), false);
-            stage.click(stage.check('Ассеты'));
-            $mol_assert_ok(showed(app.Shelf()));
-            $mol_assert_equal(showed(app.Layers()), false);
-            stage.click(stage.check('Слои'));
-            $mol_assert_ok(showed(app.Layers()));
-            $mol_assert_equal(showed(app.Shelf()), false);
-            stage.click(stage.check('Код'));
-            $mol_assert_ok(showed(app.Code()));
-            $mol_assert_equal(showed(app.Idle()), false);
-            stage.click(stage.check('Код'));
-            $mol_assert_ok(showed(app.Code()));
-            stage.click(stage.check('Версии'));
-            $mol_assert_ok(showed(app.History()));
-            $mol_assert_equal(showed(app.Code()), false);
-            stage.click(app.History_check().dom_node());
-            $mol_assert_ok(showed(app.Idle()));
-            $mol_assert_equal(showed(app.History()), false);
-            stage.click(app.History_check().dom_node());
-            $mol_assert_ok(showed(app.History()));
-            stage.click(app.Left_check().dom_node());
-            $mol_assert_equal(showed(app.Scenes()), false);
-            $mol_assert_equal(showed(app.Layers()), false);
-            stage.click(app.Right_check().dom_node());
-            $mol_assert_equal(showed(app.History()), false);
-            $mol_assert_equal(app.Main().dom_node().childElementCount, 1);
-            $mol_assert_ok(showed(app.Canvas()));
-            stage.click(app.Left_check().dom_node());
-            $mol_assert_ok(showed(app.Scenes()));
-            $mol_assert_ok(showed(app.Layers()));
-        },
-        'a panel under a tab keeps its tools, and a title that only repeats the tab is gone'($) {
-            const stage = $_3.$bog_vmap_app_flow_stage($);
-            const app = stage.app;
-            const title = (page) => page.dom_node().querySelector('[mol_page_title]');
-            const tools = (page) => page.dom_node().querySelector('[mol_page_tools]');
-            stage.assets();
-            $mol_assert_equal(title(app.Shelf()), null);
-            $mol_assert_ok(tools(app.Shelf()).contains(app.Shelf().Filter().dom_node()));
-            stage.click(stage.check('Версии'));
-            $mol_assert_equal(title(app.History()), null);
-            $mol_assert_ok(tools(app.History()).contains(stage.button('Отменить')));
-            stage.click(stage.check('Код'));
-            $mol_assert_ok(title(app.Code()));
-            stage.click(stage.check('Дизайн'));
-            stage.drop(`${d}flow_calc`, stage.client([200, 150]));
-            $mol_assert_ok(title(app.Inspect()).contains(app.Inspect().Name().dom_node()));
-        },
-        'shift and backslash on the page fold both columns away, and typed into a field it stays a letter'($) {
-            const stage = $_3.$bog_vmap_app_flow_stage($);
+        'a layer picked inside a part reaches the canvas by the address the panel made'($) {
+            const stage = $bog_vmap_app_flow_stage($);
             const app = stage.app;
             const dom = $.$mol_dom_context;
-            const stroke = (target) => {
-                target.dispatchEvent(new dom.KeyboardEvent('keydown', { code: 'Backslash', key: '|', shiftKey: true, bubbles: true }));
-                stage.redraw();
-            };
-            const count = () => app.Main().dom_node().childElementCount;
-            $mol_assert_equal(count(), 3);
-            stroke(dom.document);
-            $mol_assert_equal(count(), 1);
-            $mol_assert_equal(stage.root.contains(app.Layers().dom_node()), false);
-            stroke(stage.field('Root_name()'));
-            $mol_assert_equal(count(), 1);
-            stroke(dom.document);
-            $mol_assert_equal(count(), 3);
-            $mol_assert_ok(stage.root.contains(app.Layers().dom_node()));
-        },
-        'the shelf offers the packs by name, and the current one is marked'($) {
-            const stage = $_3.$bog_vmap_app_flow_stage($);
-            stage.assets();
-            const offers = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_pack_row]')]
-                .map(el => el.textContent);
-            $mol_assert_like(offers, ['Детали vmap', 'Builderui']);
-            const marked = () => [...stage.root.querySelectorAll('[bog_vmap_app_shelf_pack_current]')]
-                .map(el => el.textContent);
-            $mol_assert_like(marked(), ['Детали vmap']);
-            stage.click(stage.pack_row('Builderui'));
-            stage.scene.hello();
-            $mol_assert_like(marked(), ['Builderui']);
-        },
-        'the pack chosen on the shelf is the one the scene is sent to load'($) {
-            const stage = $_3.$bog_vmap_app_flow_stage($);
-            stage.assets();
-            stage.click(stage.pack_row('Builderui'));
-            stage.scene.hello();
-            $mol_assert_equal(stage.app.links(), $_3.$bog_vmap_app_flow_ui);
-            $mol_assert_equal(stage.scene.last('pack_set').uri, $_3.$bog_vmap_app_flow_ui + 'web.js');
-            const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
-            $mol_assert_like(apps, ['Builderui_card']);
-        },
-        'a class of the chosen pack lands on the canvas and gets measured'($) {
-            const stage = $_3.$bog_vmap_app_flow_stage($);
-            stage.assets();
-            stage.click(stage.pack_row('Builderui'));
-            stage.scene.hello();
-            stage.drop(card, stage.client([200, 150]));
-            $mol_assert_ok(stage.app.doc_source().includes(`Builderui_card ${card}`));
-            $mol_assert_like(stage.app.spots(), { Builderui_card: { x: 104, y: 74 } });
-            $mol_assert_like(stage.pane.part_box('Builderui_card'), {
-                left: 104, top: 74, width: 100, height: 50,
-            });
-        },
-        'a pack taken back gives the editor its own parts again'($) {
-            const stage = $_3.$bog_vmap_app_flow_stage($);
-            stage.assets();
-            stage.click(stage.pack_row('Builderui'));
-            stage.scene.hello();
-            stage.click(stage.pack_row('Детали vmap'));
-            stage.scene.hello();
-            $mol_assert_equal(stage.app.links(), '');
-            const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
-            $mol_assert_like(apps, [
-                'Button', 'Calc', 'Map',
-                'Vmap_part_cell', 'Vmap_part_plot', 'Vmap_part_calc', 'Vmap_part_map',
-            ]);
-        },
-    });
-})($ || ($ = {}));
-(function ($_4) {
-    const d = '$';
-    const calc = `${d}flow_calc`;
-    const map = `${d}flow_map`;
-    const key_of = (code) => {
-        if (code === 'Space')
-            return ' ';
-        if (code.startsWith('Key'))
-            return code.slice(3).toLowerCase();
-        return code;
-    };
-    const pressed = ($, stage, code, over = {}, target) => {
-        const dom = $.$mol_dom_context;
-        const event = new dom.KeyboardEvent('keydown', { code, key: key_of(code), bubbles: true, cancelable: true, ...over });
-        (target ?? dom.document).dispatchEvent(event);
-        stage.redraw();
-        stage.scene.flush();
-        return event;
-    };
-    const stepped = async (stage) => {
-        const history = stage.app.History();
-        const source = stage.app.doc_source();
-        const taken = () => history.ring(history.doc_key()).at(-1)?.source === source;
-        for (let i = 0; i < 10 && !taken(); ++i) {
-            stage.timers.filter(timer => timer.delay === history.step_delay()).at(-1)?.task();
-            await $_4.$bog_vmap_app_flow_settle(taken, 30);
+            app.doc_source([
+                `${d}flow_inner ${d}mol_view`,
+                `	Cell ${d}bog_vmap_part_cell`,
+                `	sub / <= Cell`,
+                ``,
+            ].join('\n'));
+            app.picked(['Cell']);
             stage.redraw();
-        }
-        $mol_assert_equal(taken(), true);
-    };
-    const undone = (stage) => {
-        const history = stage.app.History();
-        history.undo();
-        stage.redraw();
-        stage.scene.flush();
-    };
-    const styled = (stage, name, prop) => {
-        const style = stage.app.node().over_tree(name, 'style')?.kids[0] ?? null;
-        return $bog_vmap_lang_dict_get(style, prop)?.value ?? null;
-    };
-    const settle = async () => {
-        await Promise.resolve();
-        await Promise.resolve();
-    };
-    $mol_test({
-        'the window hands the tool keys to the canvas, and a field keeps them'($) {
-            const stage = $_4.$bog_vmap_app_flow_stage($);
-            const dom = $.$mol_dom_context;
-            const f = pressed($, stage, 'KeyF');
-            $mol_assert_equal(stage.pane.tool(), 'board');
-            $mol_assert_equal(f.defaultPrevented, true);
-            pressed($, stage, 'KeyH');
-            $mol_assert_equal(stage.pane.tool(), 'hand');
-            pressed($, stage, 'KeyV');
-            $mol_assert_equal(stage.pane.tool(), 'select');
-            const field = stage.app.Root_name().dom_node();
-            const typed = pressed($, stage, 'KeyF', {}, field);
-            $mol_assert_equal(stage.pane.tool(), 'select');
-            $mol_assert_equal(typed.defaultPrevented, false);
-            pressed($, stage, 'Space');
-            $mol_assert_equal(stage.pane.grip(), true);
-            dom.document.dispatchEvent(new dom.KeyboardEvent('keyup', { code: 'Space', key: ' ', bubbles: true }));
-            $mol_assert_equal(stage.pane.grip(), false);
-            pressed($, stage, 'Space');
-            dom.dispatchEvent(new dom.FocusEvent('blur'));
-            $mol_assert_equal(stage.pane.grip(), false);
-        },
-        async 'Backspace from the window deletes the pick, a field keeps it, and one undo brings it back'($) {
-            const stage = $_4.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            $mol_assert_equal(stage.app.selected(), 'Calc');
-            await stepped(stage);
-            const before = stage.app.doc_source();
-            pressed($, stage, 'Backspace', {}, stage.app.Root_name().dom_node());
-            $mol_assert_equal(stage.app.doc_source(), before);
-            const gone = pressed($, stage, 'Backspace');
-            $mol_assert_equal(gone.defaultPrevented, true);
-            $mol_assert_equal(stage.app.doc_source().includes('Calc'), false);
-            $mol_assert_equal(stage.app.selected(), null);
-            await stepped(stage);
-            undone(stage);
-            $mol_assert_equal(stage.app.doc_source(), before);
-            $mol_assert_like(Object.keys(stage.app.spots()), ['Calc']);
-        },
-        async 'Cmd+D puts a copy beside the pick under the next free number, and each undo takes one copy back'($) {
-            const stage = $_4.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            await stepped(stage);
-            const before = stage.app.doc_source();
-            const copy = pressed($, stage, 'KeyD', { metaKey: true });
-            $mol_assert_equal(copy.defaultPrevented, true);
-            $mol_assert_ok(stage.app.doc_source().includes(`Calc_2 ${calc}`));
-            $mol_assert_like(stage.app.spots()['Calc_2'], { x: 228, y: 74 });
-            $mol_assert_like([...stage.app.picked()], ['Calc_2']);
-            $mol_assert_like(stage.app.node().sub_names(), ['Calc', 'Calc_2']);
-            await stepped(stage);
-            const once = stage.app.doc_source();
-            pressed($, stage, 'KeyD', { ctrlKey: true });
-            $mol_assert_like(stage.app.spots()['Calc_3'], { x: 352, y: 74 });
-            $mol_assert_like([...stage.app.picked()], ['Calc_3']);
-            await stepped(stage);
-            undone(stage);
-            $mol_assert_equal(stage.app.doc_source(), once);
-            undone(stage);
-            $mol_assert_equal(stage.app.doc_source(), before);
-            $mol_assert_like(Object.keys(stage.app.spots()), ['Calc']);
-        },
-        async 'a copy of a board copies what is laid out in it, a nested copy goes after its original'($) {
-            const stage = $_4.$bog_vmap_app_flow_stage($);
-            const node = stage.app.node();
-            pressed($, stage, 'KeyF');
-            stage.tap(stage.client([100, 100]));
-            const page = stage.pane.part_box('Page');
-            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
-            $mol_assert_like(node.sub_names('Page'), ['Calc']);
-            await stepped(stage);
-            const before = stage.app.doc_source();
-            stage.app.selected('Page');
-            pressed($, stage, 'KeyD', { metaKey: true });
-            $mol_assert_like(node.sub_names(), ['Page', 'Page_2']);
-            $mol_assert_like(node.sub_names('Page'), ['Calc']);
-            $mol_assert_like(node.sub_names('Page_2'), ['Calc_2']);
-            $mol_assert_like(stage.app.spots()['Page_2'], { x: 524, y: 100 });
-            $mol_assert_equal(styled(stage, 'Page_2', 'width'), '1280px');
-            await stepped(stage);
-            const once = stage.app.doc_source();
-            stage.app.selected('Calc');
-            pressed($, stage, 'KeyD', { metaKey: true });
-            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Calc_3']);
-            $mol_assert_equal(stage.app.spots()['Calc_3'], undefined);
-            $mol_assert_like([...stage.app.picked()], ['Calc_3']);
-            await stepped(stage);
-            undone(stage);
-            $mol_assert_equal(stage.app.doc_source(), once);
-            undone(stage);
-            $mol_assert_equal(stage.app.doc_source(), before);
-            $mol_assert_like(Object.keys(stage.app.spots()), ['Page']);
-        },
-        'a board picked together with what is inside it is copied once'($) {
-            const stage = $_4.$bog_vmap_app_flow_stage($);
-            const node = stage.app.node();
-            pressed($, stage, 'KeyF');
-            stage.tap(stage.client([100, 100]));
-            const page = stage.pane.part_box('Page');
-            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
-            stage.app.picked(['Page', 'Calc']);
-            pressed($, stage, 'KeyD', { metaKey: true });
-            $mol_assert_like(node.sub_names(), ['Page', 'Page_2']);
-            $mol_assert_like(node.sub_names('Page'), ['Calc']);
-            $mol_assert_like(node.sub_names('Page_2'), ['Calc_2']);
-            $mol_assert_like([...stage.app.picked()], ['Page_2']);
-        },
-        async 'the board tool puts a board where it is clicked, and of the box it is dragged under the camera'($) {
-            const stage = $_4.$bog_vmap_app_flow_stage($);
-            const overlay = stage.overlay();
-            pressed($, stage, 'KeyF');
-            stage.tap(stage.client([100, 100]));
-            $mol_assert_equal(stage.app.selected(), 'Page');
-            $mol_assert_like(stage.app.spots()['Page'], { x: 100, y: 100 });
-            $mol_assert_equal(styled(stage, 'Page', 'width'), '1280px');
-            $mol_assert_equal(styled(stage, 'Page', 'minHeight'), '720px');
-            $mol_assert_equal(stage.pane.tool(), 'select');
-            await stepped(stage);
-            const before = stage.app.doc_source();
-            stage.pane.camera_shift(new $mol_vector_2d(100, 50));
-            stage.pane.camera_zoom(2);
-            pressed($, stage, 'KeyF');
-            stage.press(overlay, stage.client([200, 150]));
-            stage.move(overlay, stage.client([400, 350]));
-            stage.release(overlay, stage.client([400, 350]));
+            const layers = app.Layers();
+            $mol_assert_like(layers.row_kids('Cell'), ['Cell/Code', 'Cell/Draft', 'Cell/Note']);
+            layers.row_pick('Cell/Note', new dom.MouseEvent('click', { bubbles: true, cancelable: true }));
             stage.redraw();
-            stage.scene.flush();
-            $mol_assert_equal(stage.app.selected(), 'Page_2');
-            $mol_assert_like(stage.app.spots()['Page_2'], { x: 50, y: 50 });
-            $mol_assert_equal(styled(stage, 'Page_2', 'width'), '100px');
-            $mol_assert_equal(styled(stage, 'Page_2', 'minHeight'), '100px');
-            $mol_assert_like([...stage.pane.camera_shift()], [100, 50]);
-            $mol_assert_equal(stage.pane.camera_zoom(), 2);
-            await stepped(stage);
-            undone(stage);
-            $mol_assert_equal(stage.app.doc_source(), before);
-        },
-        'a pick moved off the canvas and back through the layers does not let the pointer in again'($) {
-            const stage = $_4.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            stage.drop(map, stage.client([400, 150]));
-            stage.tap(stage.part_center('Calc'));
-            stage.tap(stage.part_center('Calc'));
-            $mol_assert_equal(stage.pane.inside(), true);
-            $mol_assert_ok(stage.text().includes('Внутри Calc'));
-            stage.click(stage.check('Слои'));
-            const layer = (name) => [...stage.root.querySelectorAll('[bog_vmap_app_layers_pick]')]
-                .find(el => el.textContent === name);
-            stage.click(layer('Map'));
-            $mol_assert_equal(stage.app.selected(), 'Map');
-            $mol_assert_equal(stage.pane.inside(), false);
-            $mol_assert_equal(stage.text().includes('Внутри'), false);
-            stage.click(layer('Calc'));
-            $mol_assert_equal(stage.app.selected(), 'Calc');
-            $mol_assert_equal(stage.pane.inside(), false);
-            $mol_assert_equal(stage.pane.overlay_style().clipPath, 'none');
-            $mol_assert_equal(stage.text().includes('Внутри'), false);
-        },
-        async 'a new scene opened from inside a node says nothing about being inside'($) {
-            const stage = $_4.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            stage.tap(stage.part_center('Calc'));
-            stage.tap(stage.part_center('Calc'));
-            $mol_assert_ok(stage.text().includes('Внутри Calc'));
-            stage.click(stage.button('Новая сцена'));
-            await $_4.$bog_vmap_app_flow_settle(() => stage.store.doc_links().length > 1);
-            stage.redraw();
-            $mol_assert_equal(stage.pane.inside(), false);
-            $mol_assert_equal(stage.text().includes('Внутри'), false);
-        },
-        'the tool buttons of the head are the tools'($) {
-            const stage = $_4.$bog_vmap_app_flow_stage($);
-            const app = stage.app;
-            stage.click(app.Tool_board().dom_node());
-            $mol_assert_equal(stage.pane.tool(), 'board');
-            $mol_assert_equal(app.Tool_board().checked(), true);
-            $mol_assert_equal(app.Tool_select().checked(), false);
-            stage.click(app.Tool_board().dom_node());
-            $mol_assert_equal(stage.pane.tool(), 'select');
-            stage.click(app.Tool_hand().dom_node());
-            $mol_assert_equal(stage.pane.tool(), 'hand');
-            pressed($, stage, 'KeyV');
-            $mol_assert_equal(app.Tool_select().checked(), true);
-            $mol_assert_equal(app.Tool_hand().checked(), false);
-        },
-        async 'Escape from the window in a field only takes the focus off the field'($) {
-            const stage = $_4.$bog_vmap_app_flow_stage($);
-            const dom = $.$mol_dom_context;
-            stage.drop(calc, stage.client([200, 150]));
-            const field = stage.app.Root_name().dom_node();
-            field.focus();
-            pressed($, stage, 'Escape', {}, field);
-            await settle();
-            $mol_assert_equal(dom.document.activeElement, stage.pane.dom_node());
-            $mol_assert_equal(stage.app.selected(), 'Calc');
-            pressed($, stage, 'Escape');
-            $mol_assert_equal(stage.app.selected(), null);
-        },
-    });
-})($ || ($ = {}));
-(function ($_5) {
-    const d = '$';
-    const calc = `${d}flow_calc`;
-    const map = `${d}flow_map`;
-    const context = ($, stage, point) => {
-        const dom = $.$mol_dom_context;
-        const event = new dom.MouseEvent('contextmenu', {
-            bubbles: true,
-            cancelable: true,
-            button: 2,
-            clientX: point[0],
-            clientY: point[1],
-        });
-        stage.overlay().dispatchEvent(event);
-        stage.redraw();
-        stage.scene.flush();
-        return event;
-    };
-    const items = (stage) => [...stage.root.querySelectorAll('[bog_vmap_app_menu_item]')];
-    const label = (el) => el.querySelector('[bog_vmap_app_menu_item_label]')?.textContent ?? '';
-    const titles = (stage) => items(stage).map(label);
-    const chosen = (stage, title) => {
-        const item = items(stage).find(el => label(el) === title);
-        if (!item)
-            return $mol_fail(new Error(`no item «${title}» in the menu`));
-        stage.click(item);
-    };
-    const pressed = ($, stage, code, over = {}, target) => {
-        const dom = $.$mol_dom_context;
-        const event = new dom.KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true, ...over });
-        (target ?? dom.document).dispatchEvent(event);
-        stage.redraw();
-        stage.scene.flush();
-        return event;
-    };
-    const stepped = async (stage) => {
-        const history = stage.app.History();
-        const source = stage.app.doc_source();
-        const taken = () => history.ring(history.doc_key()).at(-1)?.source === source;
-        for (let i = 0; i < 10 && !taken(); ++i) {
-            stage.timers.filter(timer => timer.delay === history.step_delay()).at(-1)?.task();
-            await $_5.$bog_vmap_app_flow_settle(taken, 30);
-            stage.redraw();
-        }
-        $mol_assert_equal(taken(), true);
-    };
-    const undone = (stage) => {
-        const history = stage.app.History();
-        history.undo();
-        stage.redraw();
-        stage.scene.flush();
-    };
-    const styled = (stage, name, prop) => {
-        const style = stage.app.node().over_tree(name, 'style')?.kids[0] ?? null;
-        return $bog_vmap_lang_dict_get(style, prop)?.value ?? null;
-    };
-    const shown = (stage, name) => {
-        const box = stage.pane.part_box(name);
-        const rect = $_5.$bog_vmap_app_flow_rect;
-        return Boolean(box) && box.left >= 0 && box.top >= 0
-            && box.left + box.width <= rect.width && box.top + box.height <= rect.height;
-    };
-    const settle = async () => {
-        await Promise.resolve();
-        await Promise.resolve();
-    };
-    $mol_test({
-        async 'a right click on a part opens its menu at the pointer, and Copy puts a copy beside it'($) {
-            const stage = $_5.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            await stepped(stage);
-            const before = stage.app.doc_source();
-            const at = stage.part_center('Calc');
-            const event = context($, stage, at);
-            $mol_assert_equal(event.defaultPrevented, true);
-            $mol_assert_like(titles(stage), ['Копировать', 'Удалить', 'Обернуть в артборд', 'Выделить родителя', 'Внутрь']);
-            const style = stage.pane.menu_view().dom_node().style;
-            $mol_assert_equal(style.left, (at[0] - $_5.$bog_vmap_app_flow_rect.left) + 'px');
-            $mol_assert_equal(style.top, (at[1] - $_5.$bog_vmap_app_flow_rect.top) + 'px');
-            const spot = stage.app.spots()['Calc'];
-            chosen(stage, 'Копировать');
-            $mol_assert_ok(stage.app.doc_source().includes(`Calc_2 ${calc}`));
-            $mol_assert_like(stage.app.spots()['Calc_2'], { x: spot.x + 100 + 24, y: spot.y });
-            $mol_assert_like([...stage.app.picked()], ['Calc_2']);
-            $mol_assert_equal(items(stage).length, 0);
-            await stepped(stage);
-            undone(stage);
-            $mol_assert_equal(stage.app.doc_source(), before);
-        },
-        'Delete from the menu takes the picked part out'($) {
-            const stage = $_5.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            stage.drop(map, stage.client([400, 150]));
-            context($, stage, stage.part_center('Calc'));
-            $mol_assert_like([...stage.app.picked()], ['Calc']);
-            chosen(stage, 'Удалить');
-            $mol_assert_equal(stage.app.doc_source().includes('Calc'), false);
-            $mol_assert_like(Object.keys(stage.app.spots()), ['Map']);
-            $mol_assert_equal(items(stage).length, 0);
-        },
-        async 'Wrap from the menu puts a free part into a board of its box, one undo takes it back out, and Cmd+Alt+G does the same'($) {
-            const stage = $_5.$bog_vmap_app_flow_stage($);
-            const node = stage.app.node();
-            stage.drop(calc, stage.client([200, 150]));
-            await stepped(stage);
-            const before = stage.app.doc_source();
-            const spot = stage.app.spots()['Calc'];
-            context($, stage, stage.part_center('Calc'));
-            chosen(stage, 'Обернуть в артборд');
-            $mol_assert_like(node.sub_names(), ['Page']);
-            $mol_assert_like(node.sub_names('Page'), ['Calc']);
-            $mol_assert_like(stage.app.spots(), { Page: spot });
-            $mol_assert_equal(styled(stage, 'Page', 'width'), '100px');
-            $mol_assert_equal(styled(stage, 'Page', 'minHeight'), '50px');
-            $mol_assert_like([...stage.app.picked()], ['Page']);
-            await stepped(stage);
-            undone(stage);
-            $mol_assert_equal(stage.app.doc_source(), before);
-            $mol_assert_like(Object.keys(stage.app.spots()), ['Calc']);
-            stage.app.picked(['Calc']);
-            const key = pressed($, stage, 'KeyG', { key: '©', metaKey: true, altKey: true });
-            $mol_assert_equal(key.defaultPrevented, true);
-            $mol_assert_like(node.sub_names(), ['Page']);
-            $mol_assert_like(node.sub_names('Page'), ['Calc']);
-        },
-        'Wrap from the menu gives a part laid out in a board a board of its own at the same place'($) {
-            const stage = $_5.$bog_vmap_app_flow_stage($);
-            const node = stage.app.node();
-            pressed($, stage, 'KeyF', { key: 'f' });
-            stage.tap(stage.client([100, 100]));
-            const page = stage.pane.part_box('Page');
-            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
-            stage.drop(map, stage.client([page.left + 200, page.top + 120]));
-            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
-            context($, stage, stage.part_center('Calc'));
-            chosen(stage, 'Обернуть в артборд');
-            $mol_assert_like(node.sub_names(), ['Page']);
-            $mol_assert_like(node.sub_names('Page'), ['Page_2', 'Map']);
-            $mol_assert_like(node.sub_names('Page_2'), ['Calc']);
-            $mol_assert_equal(stage.app.spots()['Page_2'], undefined);
-            $mol_assert_equal(styled(stage, 'Page_2', 'width'), '100px');
-            $mol_assert_like([...stage.app.picked()], ['Page_2']);
-        },
-        'Wrap from the menu takes a picked set into one board around them, top to bottom and left to right'($) {
-            const stage = $_5.$bog_vmap_app_flow_stage($);
-            const node = stage.app.node();
-            stage.drop(map, stage.client([400, 150]));
-            stage.drop(calc, stage.client([200, 150]));
-            const spots = stage.app.spots();
-            $mol_assert_equal(spots['Map'].y, spots['Calc'].y);
-            $mol_assert_equal(spots['Map'].x - spots['Calc'].x, 200);
-            stage.app.picked(['Map', 'Calc']);
-            context($, stage, stage.part_center('Map'));
-            $mol_assert_like([...stage.app.picked()], ['Map', 'Calc']);
-            chosen(stage, 'Обернуть в артборд');
-            $mol_assert_like(node.sub_names(), ['Page']);
-            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map']);
-            $mol_assert_like(stage.app.spots(), { Page: spots['Calc'] });
-            $mol_assert_equal(styled(stage, 'Page', 'width'), '300px');
-            $mol_assert_equal(styled(stage, 'Page', 'minHeight'), '50px');
-        },
-        'Select parent from the menu picks the board around the part, and is off for a free part'($) {
-            const stage = $_5.$bog_vmap_app_flow_stage($);
-            pressed($, stage, 'KeyF', { key: 'f' });
-            stage.tap(stage.client([100, 100]));
-            const page = stage.pane.part_box('Page');
-            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
-            stage.drop(map, stage.client([700, 520]));
-            context($, stage, stage.part_center('Map'));
-            const parent = items(stage).find(el => label(el) === 'Выделить родителя');
-            $mol_assert_equal(parent.getAttribute('disabled'), 'true');
-            context($, stage, stage.part_center('Calc'));
-            chosen(stage, 'Выделить родителя');
-            $mol_assert_like([...stage.app.picked()], ['Page']);
-            $mol_assert_equal(items(stage).length, 0);
-        },
-        async 'Inside from the menu lets the pointer into the part and hands it the keyboard'($) {
-            const stage = $_5.$bog_vmap_app_flow_stage($);
-            const dom = $.$mol_dom_context;
-            stage.drop(calc, stage.client([200, 150]));
-            stage.drop(map, stage.client([400, 150]));
-            stage.app.picked(['Calc', 'Map']);
-            context($, stage, stage.part_center('Calc'));
-            chosen(stage, 'Внутрь');
-            await settle();
-            $mol_assert_like([...stage.app.picked()], ['Calc']);
-            $mol_assert_equal(stage.pane.inside(), true);
-            $mol_assert_equal(dom.document.activeElement, stage.frame());
-            $mol_assert_ok(stage.text().includes('Внутри Calc'));
-            $mol_assert_equal(stage.scene.sent('click_at').length, 0);
-        },
-        'a right click on bare canvas offers a board there and the whole view'($) {
-            const stage = $_5.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            stage.app.picked(['Calc']);
-            stage.pane.camera_shift(new $mol_vector_2d(100, 50));
-            stage.pane.camera_zoom(2);
-            const event = context($, stage, stage.client([300, 450]));
-            $mol_assert_equal(event.defaultPrevented, true);
-            $mol_assert_like(titles(stage), ['Артборд здесь', 'Показать всё']);
-            $mol_assert_like([...stage.app.picked()], ['Calc']);
-            chosen(stage, 'Артборд здесь');
-            $mol_assert_like(stage.app.spots()['Page'], { x: 100, y: 200 });
-            $mol_assert_equal(styled(stage, 'Page', 'width'), '1280px');
-            $mol_assert_equal(stage.pane.tool(), 'select');
-            $mol_assert_equal(items(stage).length, 0);
-            stage.pane.camera_shift(new $mol_vector_2d(3000, 3000));
-            stage.redraw();
-            $mol_assert_equal(shown(stage, 'Calc'), false);
-            context($, stage, stage.client([30, 30]));
-            chosen(stage, 'Показать всё');
-            $mol_assert_equal(shown(stage, 'Calc'), true);
-            $mol_assert_equal(shown(stage, 'Page'), true);
-        },
-        'the menu goes away on Escape and on a press elsewhere, and a right click inside the entered part is left to it'($) {
-            const stage = $_5.$bog_vmap_app_flow_stage($);
-            stage.drop(calc, stage.client([200, 150]));
-            context($, stage, stage.part_center('Calc'));
-            $mol_assert_equal(items(stage).length, 5);
-            const escape = pressed($, stage, 'Escape');
-            $mol_assert_equal(escape.defaultPrevented, true);
-            $mol_assert_equal(items(stage).length, 0);
-            $mol_assert_equal(stage.app.selected(), 'Calc');
-            context($, stage, stage.client([500, 450]));
-            $mol_assert_equal(items(stage).length, 2);
-            stage.press(stage.root, stage.client([20, 20]));
-            stage.redraw();
-            $mol_assert_equal(items(stage).length, 0);
-            stage.tap(stage.part_center('Calc'));
-            stage.tap(stage.part_center('Calc'));
-            $mol_assert_equal(stage.pane.inside(), true);
-            const inner = context($, stage, stage.part_center('Calc'));
-            $mol_assert_equal(inner.defaultPrevented, false);
-            $mol_assert_equal(items(stage).length, 0);
-            $mol_assert_equal(stage.pane.inside(), true);
-        },
-        'Shift+1, Shift+2 and Shift+0 from the window show everything, the pick and life size, and in a field they are letters'($) {
-            const stage = $_5.$bog_vmap_app_flow_stage($);
-            const pane = stage.pane;
-            stage.drop(calc, stage.client([200, 150]));
-            stage.drop(map, stage.client([600, 500]));
-            pane.camera_shift(new $mol_vector_2d(4000, 4000));
-            pane.camera_zoom(3);
-            stage.redraw();
-            const field = stage.app.Root_name().dom_node();
-            const typed = pressed($, stage, 'Digit1', { key: '!', shiftKey: true }, field);
-            $mol_assert_equal(typed.defaultPrevented, false);
-            $mol_assert_equal(pane.camera_zoom(), 3);
-            const all = pressed($, stage, 'Digit1', { key: '!', shiftKey: true });
-            $mol_assert_equal(all.defaultPrevented, true);
-            $mol_assert_equal(shown(stage, 'Calc'), true);
-            $mol_assert_equal(shown(stage, 'Map'), true);
-            $mol_assert_ok(pane.camera_zoom() <= 1);
-            stage.app.picked(['Map']);
-            pressed($, stage, 'Digit2', { key: '@', shiftKey: true });
-            const map_box = pane.part_box('Map');
-            $mol_assert_ok(pane.camera_zoom() > 1);
-            $mol_assert_equal(shown(stage, 'Map'), true);
-            $mol_assert_equal(Math.round(map_box.left + map_box.width / 2), $_5.$bog_vmap_app_flow_rect.width / 2);
-            $mol_assert_equal(Math.round(map_box.top + map_box.height / 2), $_5.$bog_vmap_app_flow_rect.height / 2);
-            pane.camera_zoom(.3);
-            pressed($, stage, 'Digit0', { key: ')', shiftKey: true });
-            $mol_assert_equal(pane.zoom_title(), '100%');
+            $mol_assert_equal(app.inner(), 'Cell/Note');
+            $mol_assert_equal(stage.pane.inner(), 'Cell/Note');
+            $mol_assert_like([...app.picked()], ['Cell']);
         },
     });
 })($ || ($ = {}));
@@ -57937,750 +60971,6 @@ var $;
             $mol_assert_equal(bytes.length, 22);
             $mol_assert_equal(number_at(bytes, 0, 4), 0x06054b50);
             $mol_assert_equal(entries_of(bytes).length, 0);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    const d = '$';
-    const sample = [
-        `${d}layers_doc ${d}mol_view`,
-        `\tcaption \\Подпись`,
-        `\tTitle ${d}mol_paragraph title \\Привет`,
-        `\tPrice ${d}mol_paragraph title \\0`,
-        `\tCard ${d}mol_view`,
-        `\t\tsub /`,
-        `\t\t\t<= Price`,
-        `\t\t\t<= caption`,
-        `\tPage ${d}mol_view`,
-        `\t\tstyle * width \\1280px`,
-        `\t\tsub /`,
-        `\t\t\t<= Title`,
-        `\t\t\t<= Card`,
-        `\tPhoto ${d}mol_image uri \\photo.png`,
-        `\tGo ${d}mol_button_minor title \\Дальше`,
-        `\tName ${d}mol_string`,
-        `\tSite ${d}mol_link`,
-        `\tCalc ${d}bog_vmap_part_calc`,
-        `\tsub /`,
-        `\t\t<= Page`,
-        `\t\t<= Photo`,
-        `\t\t<= Go`,
-        `\t\t<= Name`,
-        `\t\t<= Site`,
-        `\t\t<= Calc`,
-        ``,
-    ].join('\n');
-    const sample_spots = { Page: { x: 0, y: 0 }, Photo: { x: 1400, y: 0 } };
-    const lost = [
-        `${d}layers_lost ${d}mol_view`,
-        `\tcaption \\Подпись`,
-        `\tnote \\Заметка`,
-        `\tTitle ${d}mol_paragraph title \\Привет`,
-        `\tCard ${d}mol_view`,
-        `\t\tsub /`,
-        `\t\t\t<= caption`,
-        `\tPage ${d}mol_view`,
-        `\t\tstyle * width \\1280px`,
-        `\t\tsub /`,
-        `\t\t\t<= Title`,
-        `\t\t\t<= Card`,
-        `\tLost ${d}mol_paragraph title \\Потерян`,
-        `\tDeep ${d}mol_paragraph title \\Глубоко`,
-        `\tBox ${d}mol_view`,
-        `\t\tsub /`,
-        `\t\t\t<= Deep`,
-        `\tNear ${d}mol_image uri \\photo.png`,
-        `\tlost_title = Lost title`,
-        `\tsub /`,
-        `\t\t<= Page`,
-        ``,
-    ].join('\n');
-    const lost_spots = { Page: { x: 0, y: 0 }, Near: { x: 600, y: 40 } };
-    const ring = [
-        `${d}layers_ring ${d}mol_view`,
-        `\tPage ${d}mol_view`,
-        `\t\tsub /`,
-        `\tRing ${d}mol_view`,
-        `\t\tsub /`,
-        `\t\t\t<= Loop`,
-        `\tLoop ${d}mol_view`,
-        `\t\tsub /`,
-        `\t\t\t<= Ring`,
-        `\tsub /`,
-        `\t\t<= Page`,
-        ``,
-    ].join('\n');
-    const mortgage = [
-        `${d}bog_mortgage ${d}mol_view`,
-        `\tmonths_2_op? \\mul`,
-        `\tmonths_2_right? 12`,
-        `\tmonthly_2_op? \\div`,
-        `\tmonthly_2_right? 1200`,
-        `\tyears_2_value? 20`,
-        `\trate_2_value? 6`,
-        `\tend_op? \\add`,
-        `\tyear_auto? true`,
-        `\tyear_code? \\return new Date().getFullYear()`,
-        `\tmonths_op? \\mul`,
-        `\tmonths_right? 12`,
-        `\tmonthly_op? \\div`,
-        `\tmonthly_right? 1200`,
-        `\tyears_value? 20`,
-        `\trate_value? 18`,
-        `\tamount_value? 6000000`,
-        `\tsub /`,
-        `\t\t<= Loan`,
-        `\t\t<= Compare`,
-        `\tLoan ${d}mol_view`,
-        `\t\tstyle *`,
-        `\t\t\twidth \\480px`,
-        `\t\t\tminHeight \\720px`,
-        `\t\t\tflexDirection \\column`,
-        `\t\t\tbackground \\var(--mol_theme_back)`,
-        `\t\t\tcolor \\var(--mol_theme_text)`,
-        `\t\tsub /`,
-        `\t\t\t<= Title`,
-        `\t\t\t<= Amount`,
-        `\t\t\t<= Rate`,
-        `\t\t\t<= Years`,
-        `\t\t\t<= Monthly`,
-        `\t\t\t<= Months`,
-        `\t\t\t<= Payment`,
-        `\t\t\t<= Overpay`,
-        `\t\t\t<= Debt`,
-        `\t\t\t<= Year`,
-        `\t\t\t<= End`,
-        `\t\t\t<= Next`,
-        `\tCompare ${d}mol_view`,
-        `\t\tstyle *`,
-        `\t\t\twidth \\480px`,
-        `\t\t\tminHeight \\720px`,
-        `\t\t\tflexDirection \\column`,
-        `\t\t\tbackground \\var(--mol_theme_back)`,
-        `\t\t\tcolor \\var(--mol_theme_text)`,
-        `\t\tsub /`,
-        `\t\t\t<= Title_2`,
-        `\t\t\t<= Amount_2`,
-        `\t\t\t<= Rate_2`,
-        `\t\t\t<= Years_2`,
-        `\t\t\t<= Monthly_2`,
-        `\t\t\t<= Months_2`,
-        `\t\t\t<= Verdict`,
-        `\t\t\t<= Debt_2`,
-        `\t\t\t<= Back`,
-        `\tTitle ${d}mol_paragraph title \\Ипотека: платёж и переплата`,
-        `\tAmount ${d}mol_number`,
-        `\t\thint \\Сумма кредита, ₽`,
-        `\t\tvalue? <=> amount_value?`,
-        `\tRate ${d}mol_number`,
-        `\t\thint \\Ставка, % годовых`,
-        `\t\tvalue? <=> rate_value?`,
-        `\tYears ${d}mol_number`,
-        `\t\thint \\Срок, лет`,
-        `\t\tvalue? <=> years_value?`,
-        `\tMonthly ${d}bog_vmap_part_calc`,
-        `\t\tright? <=> monthly_right?`,
-        `\t\top? <=> monthly_op?`,
-        `\t\tleft <= rate_value_2`,
-        `\tMonths ${d}bog_vmap_part_calc`,
-        `\t\tright? <=> months_right?`,
-        `\t\top? <=> months_op?`,
-        `\t\tleft? <=> years_value_2?`,
-        `\tPayment ${d}mol_paragraph title <= payment`,
-        `\tOverpay ${d}mol_paragraph title <= overpay`,
-        `\tDebt ${d}bog_vmap_part_plot`,
-        `\t\ttitle \\Остаток долга по годам, ₽`,
-        `\t\tvalues <= balance`,
-        `\tYear ${d}bog_vmap_part_cell`,
-        `\t\tcode? <=> year_code?`,
-        `\t\tauto? <=> year_auto?`,
-        `\tEnd ${d}bog_vmap_part_calc`,
-        `\t\top? <=> end_op?`,
-        `\t\tright <= years_value_3`,
-        `\t\tleft <= year_result_number`,
-        `\tNext ${d}mol_link`,
-        `\t\ttitle \\Сравнить с другим вариантом →`,
-        `\t\targ * page \\Compare`,
-        `\tTitle_2 ${d}mol_paragraph title \\Сравнение: другая ставка или срок`,
-        `\tAmount_2 ${d}mol_number`,
-        `\t\thint \\Сумма кредита, ₽`,
-        `\t\tvalue? <=> amount_value_2?`,
-        `\tRate_2 ${d}mol_number`,
-        `\t\thint \\Ставка, % годовых`,
-        `\t\tvalue? <=> rate_2_value?`,
-        `\tYears_2 ${d}mol_number`,
-        `\t\thint \\Срок, лет`,
-        `\t\tvalue? <=> years_2_value?`,
-        `\tMonthly_2 ${d}bog_vmap_part_calc`,
-        `\t\tright? <=> monthly_2_right?`,
-        `\t\top? <=> monthly_2_op?`,
-        `\t\tleft <= rate_2_value_2`,
-        `\tMonths_2 ${d}bog_vmap_part_calc`,
-        `\t\tright? <=> months_2_right?`,
-        `\t\top? <=> months_2_op?`,
-        `\t\tleft <= years_2_value_2`,
-        `\tVerdict ${d}mol_paragraph title <= verdict`,
-        `\tDebt_2 ${d}bog_vmap_part_plot`,
-        `\t\ttitle \\Остаток долга, второй вариант, ₽`,
-        `\t\tvalues <= balance_2`,
-        `\tBack ${d}mol_link`,
-        `\t\ttitle \\← К расчёту`,
-        `\t\targ * page \\Loan`,
-        `\trate_value_2 = Rate value`,
-        `\tyears_value_2? = Years value?`,
-        `\tyears_value_3 = Years value`,
-        `\tyear_result_number = Year result_number`,
-        `\trate_2_value_2 = Rate_2 value`,
-        `\tyears_2_value_2 = Years_2 value`,
-        `\tamount_value_2? = Amount value?`,
-        `\tpayment null`,
-        `\toverpay null`,
-        `\tbalance null`,
-        `\tverdict null`,
-        `\tbalance_2 null`,
-        ``,
-    ].join('\n');
-    const mortgage_spots = { Loan: { x: 40, y: 40 }, Compare: { x: 600, y: 40 } };
-    const icons = ['root', 'frame', 'image', 'link', 'button', 'field', 'text', 'part'];
-    function layers_stage($, over = {}, source = sample, spots = sample_spots) {
-        const stage = $bog_vmap_app_flow_stage($, over);
-        const app = stage.app;
-        const dom = $.$mol_dom_context;
-        app.doc_source(source);
-        app.spots(spots);
-        stage.redraw();
-        const moves = [];
-        const move = app.tree_move.bind(app);
-        app.tree_move = (next) => {
-            if (next)
-                moves.push(next);
-            return move(next);
-        };
-        const layers = app.Layers();
-        const panel = layers.dom_node();
-        $mol_assert_ok(stage.root.contains(panel));
-        const redraw = () => stage.redraw();
-        const shown = () => app.Layers().dom_node();
-        const lines = () => {
-            redraw();
-            return [...shown().querySelectorAll('[bog_vmap_app_layers_line]')];
-        };
-        const title_of = (line) => line.querySelector('[bog_vmap_app_layers_pick]')?.textContent ?? '';
-        const line = (title) => {
-            const found = lines().find(el => title_of(el) === title);
-            if (!found)
-                $mol_fail(new Error(`no layer row ${title}`));
-            return found;
-        };
-        const pick = (title) => line(title).querySelector('[bog_vmap_app_layers_pick]');
-        const outline = () => lines().map(el => {
-            const expand = el.querySelector('[bog_vmap_app_layers_expand]');
-            const level = parseFloat(expand.style.paddingLeft || '0');
-            const icon = icons.find(kind => el.querySelector(`[bog_vmap_app_layers_${kind}_icon]`)) ?? '?';
-            return '  '.repeat(level) + title_of(el) + ' ' + icon;
-        });
-        const mouse = (el, type, over = {}) => {
-            el.dispatchEvent(new dom.MouseEvent(type, { bubbles: true, cancelable: true, ...over }));
-            redraw();
-        };
-        const field = () => panel.querySelector('[bog_vmap_app_layers_edit]');
-        const type = (value) => {
-            const el = field();
-            el.value = value;
-            el.dispatchEvent(new dom.Event('input', { bubbles: true }));
-            redraw();
-        };
-        const blur = () => {
-            field().dispatchEvent(new dom.Event('blur', { bubbles: true }));
-            redraw();
-        };
-        const key = (value) => {
-            field().dispatchEvent(new dom.KeyboardEvent('keydown', { key: value, bubbles: true, cancelable: true }));
-            redraw();
-        };
-        const drag = (name, onto, share) => {
-            const el = line(onto);
-            const top = 100;
-            const height = 20;
-            el.getBoundingClientRect = () => ({ top, height, left: 0, width: 200, right: 200, bottom: top + height });
-            const transfer = {
-                dropEffect: 'none',
-                getData: (kind) => kind === 'text/plain' ? name : '',
-            };
-            for (const kind of ['dragenter', 'dragover', 'drop']) {
-                const event = new dom.MouseEvent(kind, { bubbles: true, cancelable: true, clientY: top + height * share });
-                Object.defineProperty(event, 'dataTransfer', { value: transfer });
-                el.dispatchEvent(event);
-            }
-            redraw();
-        };
-        const history = app.History();
-        const stepped = async () => {
-            const source = app.doc_source();
-            const taken = () => history.ring(history.doc_key()).at(-1)?.source === source;
-            for (let i = 0; i < 10 && !taken(); ++i) {
-                stage.timers.filter(timer => timer.delay === history.step_delay()).at(-1)?.task();
-                await $bog_vmap_app_flow_settle(taken, 30);
-                redraw();
-            }
-            $mol_assert_equal(taken(), true);
-        };
-        const group = () => {
-            redraw();
-            return shown().querySelector('[bog_vmap_app_layers_outside]');
-        };
-        const grouped = () => {
-            const head = group();
-            if (!head)
-                return [];
-            return lines()
-                .filter(el => head.compareDocumentPosition(el) & dom.Node.DOCUMENT_POSITION_FOLLOWING)
-                .map(title_of);
-        };
-        const press = (title, value) => {
-            pick(title).dispatchEvent(new dom.KeyboardEvent('keydown', { key: value, bubbles: true, cancelable: true }));
-            redraw();
-        };
-        return { stage, app, layers, panel, moves, lines, line, pick, outline, mouse, field, type, blur, key, drag, history, stepped, redraw, group, grouped, press };
-    }
-    $mol_test({
-        'the layers are the tree of the document by its sub lists'($) {
-            const { outline } = layers_stage($);
-            $mol_assert_like(outline(), [
-                `${d}layers_doc root`,
-                '  Page frame',
-                '    Title text',
-                '    Card frame',
-                '      Price text',
-                '      caption text',
-                '  Photo image',
-                '  Go button',
-                '  Name field',
-                '  Site link',
-                '  Calc part',
-            ]);
-        },
-        'a root folded in one scene leaves the mortgage scene open with both pages and every part'($) {
-            const store = $bog_vmap_app_store.make({ $, doc_land_config: () => null });
-            const loan = store.doc_add('Ипотека', mortgage, mortgage_spots);
-            const other = store.doc_add('Сцена 2');
-            const { outline, line, mouse, redraw } = layers_stage($, { store });
-            mouse(line(`${d}layers_doc`).querySelector('[bog_vmap_app_layers_expand]'), 'click');
-            $mol_assert_like(outline(), [`${d}layers_doc root`]);
-            store.doc_pick(loan.link());
-            redraw();
-            $mol_assert_like(outline(), [
-                `${d}bog_mortgage root`,
-                '  Loan frame',
-                '    Title text',
-                '    Amount field',
-                '    Rate field',
-                '    Years field',
-                '    Monthly part',
-                '    Months part',
-                '    Payment text',
-                '    Overpay text',
-                '    Debt part',
-                '    Year part',
-                '    End part',
-                '    Next link',
-                '  Compare frame',
-                '    Title_2 text',
-                '    Amount_2 field',
-                '    Rate_2 field',
-                '    Years_2 field',
-                '    Monthly_2 part',
-                '    Months_2 part',
-                '    Verdict text',
-                '    Debt_2 part',
-                '    Back link',
-            ]);
-            store.doc_pick(other.link());
-            $mol_assert_like(outline(), [`${d}layers_doc root`]);
-        },
-        'a row names the class of its node and every row but the root is dragged'($) {
-            const { line, pick } = layers_stage($);
-            $mol_assert_equal(pick('Photo').getAttribute('title'), `${d}mol_image`);
-            $mol_assert_equal(pick('caption').getAttribute('title'), '');
-            $mol_assert_equal(line('Photo').getAttribute('draggable'), 'true');
-            $mol_assert_equal(line(`${d}layers_doc`).getAttribute('draggable'), null);
-        },
-        'a collapsed branch hides its rows and opens back'($) {
-            const { outline, line, mouse } = layers_stage($);
-            mouse(line('Card').querySelector('[bog_vmap_app_layers_expand]'), 'click');
-            $mol_assert_like(outline().slice(0, 5), [
-                `${d}layers_doc root`,
-                '  Page frame',
-                '    Title text',
-                '    Card frame',
-                '  Photo image',
-            ]);
-            mouse(line('Card').querySelector('[bog_vmap_app_layers_expand]'), 'click');
-            $mol_assert_equal(outline()[4], '      Price text');
-        },
-        'a click on a row picks its node at the host'($) {
-            const { app, pick, mouse } = layers_stage($);
-            mouse(pick('Title'), 'click');
-            $mol_assert_equal(app.selected(), 'Title');
-            mouse(pick('Photo'), 'click', { metaKey: true });
-            $mol_assert_like(app.picked(), ['Title', 'Photo']);
-            mouse(pick('Photo'), 'click', { metaKey: true });
-            $mol_assert_like(app.picked(), ['Title']);
-            mouse(pick(`${d}layers_doc`), 'click');
-            $mol_assert_like(app.picked(), []);
-        },
-        'the node picked at the host lights its row'($) {
-            const { app, pick, line, mouse, redraw } = layers_stage($);
-            const lit = (title) => pick(title).getAttribute('mol_check_checked') === 'true';
-            app.selected('Card');
-            redraw();
-            $mol_assert_equal(lit('Card'), true);
-            $mol_assert_equal(lit('Title'), false);
-            $mol_assert_equal(lit('Page'), false);
-            mouse(line('Page').querySelector('[bog_vmap_app_layers_expand]'), 'click');
-            $mol_assert_equal(lit('Page'), true);
-        },
-        'a click on a row brings its node to the middle of the canvas at the same zoom'($) {
-            const { stage, pick, mouse } = layers_stage($);
-            const rect = $bog_vmap_app_flow_rect;
-            stage.scene.flush();
-            stage.pane.camera_zoom(2);
-            stage.pane.camera_shift(new $mol_vector_2d(40, 30));
-            mouse(pick('Photo'), 'click');
-            const box = stage.pane.part_box('Photo');
-            $mol_assert_equal(stage.pane.camera_zoom(), 2);
-            $mol_assert_equal(box.left + box.width / 2, rect.width / 2);
-            $mol_assert_equal(box.top + box.height / 2, rect.height / 2);
-        },
-        'a click on a row of a node larger than the canvas zooms out just to fit it'($) {
-            const { stage, pick, mouse } = layers_stage($);
-            const rect = $bog_vmap_app_flow_rect;
-            const gap = stage.pane.fit_gap();
-            stage.scene.flush();
-            stage.pane.camera_zoom(3);
-            mouse(pick('Page'), 'click');
-            const box = stage.pane.part_box('Page');
-            $mol_assert_equal(Math.round(box.width), rect.width - gap * 2);
-            $mol_assert_ok(box.height <= rect.height - gap * 2);
-            $mol_assert_equal(Math.round(box.left + box.width / 2), rect.width / 2);
-            $mol_assert_equal(Math.round(box.top + box.height / 2), rect.height / 2);
-        },
-        'a row taken out of the pick with a modifier leaves the camera where it was'($) {
-            const { app, stage, pick, mouse } = layers_stage($);
-            stage.scene.flush();
-            mouse(pick('Photo'), 'click');
-            stage.pane.camera_shift(new $mol_vector_2d(40, 30));
-            mouse(pick('Photo'), 'click', { metaKey: true });
-            $mol_assert_like(app.picked(), []);
-            $mol_assert_like([...stage.pane.camera_shift()], [40, 30]);
-        },
-        'a pick on the canvas leaves the camera where it was'($) {
-            const { app, stage } = layers_stage($);
-            stage.scene.flush();
-            stage.pane.camera_zoom(1);
-            stage.pane.camera_shift(new $mol_vector_2d(-1300, 100));
-            stage.redraw();
-            stage.tap(stage.part_center('Photo'));
-            $mol_assert_equal(app.selected(), 'Photo');
-            $mol_assert_equal(stage.pane.camera_zoom(), 1);
-            $mol_assert_like([...stage.pane.camera_shift()], [-1300, 100]);
-        },
-        'a double click renames the node the way the design tab does'($) {
-            const { app, pick, mouse, field, type, blur, outline } = layers_stage($);
-            app.spots({ ...app.spots(), Title: { x: 5, y: 5 } });
-            mouse(pick('Title'), 'dblclick');
-            $mol_assert_ok(field());
-            $mol_assert_equal(field().closest('[bog_vmap_app_layers_line]').getAttribute('draggable'), null);
-            type('Heading');
-            blur();
-            $mol_assert_like(app.node().sub_names('Page'), ['Heading', 'Card']);
-            $mol_assert_equal(app.doc_source().includes('Title'), false);
-            $mol_assert_equal(app.selected(), 'Heading');
-            $mol_assert_like(app.spots().Heading, { x: 5, y: 5 });
-            $mol_assert_equal(field(), null);
-            $mol_assert_equal(outline()[2], '    Heading text');
-        },
-        'a name from a digit is refused in words and the source stays'($) {
-            const { app, pick, mouse, field, type, blur, panel } = layers_stage($);
-            const before = app.doc_source();
-            mouse(pick('Title'), 'dblclick');
-            type('2abc');
-            blur();
-            $mol_assert_equal(app.doc_source(), before);
-            $mol_assert_ok(panel.textContent.includes('не начинается с цифры'));
-            $mol_assert_ok(field());
-        },
-        'escape leaves the rename without a write and keeps the pick'($) {
-            const { app, pick, mouse, field, type, key } = layers_stage($);
-            const before = app.doc_source();
-            mouse(pick('Title'), 'dblclick');
-            type('Other');
-            key('Escape');
-            $mol_assert_equal(field(), null);
-            $mol_assert_equal(app.doc_source(), before);
-            $mol_assert_equal(app.selected(), 'Title');
-        },
-        'a read only scene lets the rows be picked and opened, not renamed or moved'($) {
-            const dom = $.$mol_dom_context;
-            let picked = [];
-            const layers = $$.$bog_vmap_app_layers.make({
-                $,
-                source: () => sample,
-                root: () => `${d}layers_doc`,
-                picked: (next) => next ? picked = next : picked,
-                editable: () => false,
-            });
-            const click = (type) => new dom.MouseEvent(type, { bubbles: true, cancelable: true });
-            layers.row_pick('Title', click('click'));
-            $mol_assert_like(picked, ['Title']);
-            $mol_assert_equal(layers.row_expanded('Page', false), false);
-            layers.row_edit('Photo', click('dblclick'));
-            $mol_assert_equal(layers.editing(), null);
-            $mol_assert_like(picked, ['Title']);
-            $mol_assert_equal(layers.row_draggable('Photo'), false);
-            $mol_assert_equal(layers.Row('Photo').dom_node_actual().hasAttribute('draggable'), false);
-            const transfer = { getData: (kind) => kind === 'text/plain' ? 'Photo' : '' };
-            $mol_assert_equal(layers.row_adopt(transfer), null);
-        },
-        'a row dropped on the upper half of another lands before it'($) {
-            const { app, drag } = layers_stage($);
-            drag('Card', 'Title', .1);
-            $mol_assert_like(app.node().sub_names('Page'), ['Card', 'Title']);
-        },
-        'a row dropped on the lower half of a frame lands inside at the end'($) {
-            const { app, drag } = layers_stage($);
-            drag('Title', 'Card', .9);
-            $mol_assert_like(app.node().sub_names('Card'), ['Price', 'caption', 'Title']);
-            $mol_assert_like(app.node().sub_names('Page'), ['Card']);
-        },
-        'rows reordered at the root keep their places on the canvas'($) {
-            const { app, stage, drag } = layers_stage($);
-            stage.scene.flush();
-            $mol_assert_ok(stage.pane.part_size('Photo'));
-            drag('Photo', 'Page', .1);
-            $mol_assert_like(app.node().sub_names('').slice(0, 2), ['Photo', 'Page']);
-            $mol_assert_like(app.spots().Photo, { x: 1400, y: 0 });
-        },
-        'a row reordered at the root before the scene measured it keeps its place'($) {
-            const { app, stage, drag } = layers_stage($, { mute: true });
-            $mol_assert_equal(stage.pane.part_size('Photo'), null);
-            drag('Photo', 'Page', .1);
-            $mol_assert_like(app.node().sub_names('').slice(0, 2), ['Photo', 'Page']);
-            $mol_assert_like(app.spots().Photo, { x: 1400, y: 0 });
-        },
-        'a row taken out of a frame to the root stays where it was drawn'($) {
-            const { app, stage, drag, line } = layers_stage($);
-            app.spots({ ...app.spots(), Page: { x: 40, y: 60 } });
-            stage.redraw();
-            stage.scene.flush();
-            const drawn = stage.pane.part_size('Card');
-            drag('Card', `${d}layers_doc`, .5);
-            $mol_assert_like(app.node().sub_names('Page'), ['Title']);
-            $mol_assert_equal(app.node().sub_names('').at(-1), 'Card');
-            $mol_assert_like(app.spots().Card, { x: drawn.x, y: drawn.y });
-            $mol_assert_like([drawn.x, drawn.y], [140, 60]);
-            $mol_assert_ok(line('Card'));
-        },
-        'a frame dropped into its own insides asks the host for nothing'($) {
-            const { app, drag, moves } = layers_stage($);
-            const before = app.doc_source();
-            drag('Page', 'Card', .9);
-            drag('Page', 'Price', .1);
-            $mol_assert_equal(moves.length, 0);
-            $mol_assert_equal(app.doc_source(), before);
-        },
-        'a drop that changes nothing asks the host for nothing'($) {
-            const { app, drag, moves } = layers_stage($);
-            const before = app.doc_source();
-            drag('Title', 'Card', .1);
-            drag('Card', 'Page', .9);
-            drag('Nope', 'Title', .1);
-            $mol_assert_equal(moves.length, 0);
-            $mol_assert_equal(app.doc_source(), before);
-        },
-        async 'one undo takes back a rename from the layers'($) {
-            const { app, pick, mouse, type, blur, history, stepped } = layers_stage($);
-            await stepped();
-            const before = app.doc_source();
-            mouse(pick('Title'), 'dblclick');
-            type('Heading');
-            blur();
-            await stepped();
-            history.undo();
-            $mol_assert_equal(app.doc_source(), before);
-        },
-        async 'one undo takes back a move from the layers'($) {
-            const { app, drag, history, stepped } = layers_stage($);
-            await stepped();
-            const before = app.doc_source();
-            drag('Card', 'Title', .1);
-            await stepped();
-            history.undo();
-            $mol_assert_equal(app.doc_source(), before);
-        },
-        'a document with every node on the page has no outside group'($) {
-            const { group } = layers_stage($);
-            $mol_assert_equal(group(), null);
-        },
-        'nodes outside every sub list are a group at the end of the layers'($) {
-            const { layers, panel, group, grouped, outline } = layers_stage($, {}, lost, lost_spots);
-            $mol_assert_like(outline(), [
-                `${d}layers_lost root`,
-                '  Page frame',
-                '    Title text',
-                '    Card frame',
-                '      caption text',
-                '  Lost text',
-                '  Box frame',
-                '    Deep text',
-                '  Near image',
-            ]);
-            const head = group();
-            $mol_assert_equal(head.textContent, 'Вне страницы');
-            $mol_assert_equal(head.parentElement, layers.Rows().dom_node());
-            $mol_assert_equal([...head.parentElement.children].indexOf(head), 5);
-            $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep', 'Near']);
-            $mol_assert_equal(panel.textContent.includes('note'), false);
-            $mol_assert_equal(panel.textContent.includes('lost_title'), false);
-        },
-        'the outside group folds and opens back'($) {
-            const { group, grouped, outline, mouse } = layers_stage($, {}, lost, lost_spots);
-            mouse(group(), 'click');
-            $mol_assert_ok(group());
-            $mol_assert_like(grouped(), []);
-            $mol_assert_equal(outline().length, 5);
-            mouse(group(), 'click');
-            $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep', 'Near']);
-        },
-        'a folded branch and the folded outside group stay folded after a trip to the assets and back'($) {
-            const { stage, app, line, mouse, outline, group, grouped } = layers_stage($, {}, lost, lost_spots);
-            const folded = [
-                `${d}layers_lost root`,
-                '  Page frame',
-                '    Title text',
-                '    Card frame',
-                '  Lost text',
-                '  Box frame',
-                '  Near image',
-            ];
-            mouse(line('Card').querySelector('[bog_vmap_app_layers_expand]'), 'click');
-            mouse(line('Box').querySelector('[bog_vmap_app_layers_expand]'), 'click');
-            $mol_assert_like(outline(), folded);
-            stage.assets();
-            $mol_assert_equal(app.left_tab(), 'assets');
-            $mol_wire_fiber.sync();
-            stage.click(stage.check('Слои'));
-            $mol_assert_like(outline(), folded);
-            mouse(group(), 'click');
-            $mol_assert_like(grouped(), []);
-            stage.assets();
-            $mol_wire_fiber.sync();
-            stage.click(stage.check('Слои'));
-            $mol_assert_ok(group());
-            $mol_assert_like(grouped(), []);
-        },
-        'a click on an outside row picks its node, and the host pick lights it'($) {
-            const { app, pick, line, mouse, redraw } = layers_stage($, {}, lost, lost_spots);
-            const lit = (title) => pick(title).getAttribute('mol_check_checked') === 'true';
-            mouse(pick('Lost'), 'click');
-            $mol_assert_like(app.picked(), ['Lost']);
-            $mol_assert_equal(lit('Lost'), true);
-            app.selected('Deep');
-            redraw();
-            $mol_assert_equal(lit('Deep'), true);
-            $mol_assert_equal(lit('Lost'), false);
-            $mol_assert_equal(lit('Box'), false);
-            mouse(line('Box').querySelector('[bog_vmap_app_layers_expand]'), 'click');
-            $mol_assert_equal(lit('Box'), true);
-        },
-        'a double click renames an outside node and its row stays in the group'($) {
-            const { app, pick, mouse, field, type, blur, grouped } = layers_stage($, {}, lost, lost_spots);
-            mouse(pick('Lost'), 'dblclick');
-            $mol_assert_ok(field());
-            type('Gone');
-            blur();
-            $mol_assert_equal(app.node().prop_names().includes('Gone'), true);
-            $mol_assert_equal(app.node().prop_names().includes('Lost'), false);
-            $mol_assert_equal(app.selected(), 'Gone');
-            $mol_assert_equal(field(), null);
-            $mol_assert_like(grouped(), ['Gone', 'Box', 'Deep', 'Near']);
-        },
-        'the Delete key takes a picked outside node out with its insides'($) {
-            const { app, pick, mouse, press, grouped, lines } = layers_stage($, {}, lost, lost_spots);
-            mouse(pick('Box'), 'click');
-            press('Box', 'Delete');
-            const names = app.node().prop_names();
-            $mol_assert_equal(names.includes('Box'), false);
-            $mol_assert_equal(names.includes('Deep'), false);
-            $mol_assert_equal(names.includes('Lost'), true);
-            $mol_assert_equal(app.selected(), null);
-            $mol_assert_like(grouped(), ['Lost', 'Near']);
-            $mol_assert_equal(lines().length, 7);
-        },
-        'an outside row dropped on the lower half of a frame lands inside and the canvas measures it'($) {
-            const { app, stage, drag, grouped, moves } = layers_stage($, {}, lost, lost_spots);
-            stage.scene.flush();
-            $mol_assert_equal(stage.pane.part_size('Lost'), null);
-            drag('Lost', 'Card', .9);
-            $mol_assert_like(moves, [{ name: 'Lost', owner: 'Card', index: 1 }]);
-            $mol_assert_like(app.node().sub_names('Card'), ['caption', 'Lost']);
-            $mol_assert_equal(app.spots().Lost, undefined);
-            $mol_assert_like(grouped(), ['Box', 'Deep', 'Near']);
-            stage.scene.flush();
-            $mol_assert_ok(stage.pane.part_size('Lost'));
-        },
-        'an outside row dropped on the upper half of a page row lands before it'($) {
-            const { app, drag, grouped } = layers_stage($, {}, lost, lost_spots);
-            drag('Box', 'Title', .1);
-            $mol_assert_like(app.node().sub_names('Page'), ['Box', 'Title', 'Card']);
-            $mol_assert_like(app.node().sub_names('Box'), ['Deep']);
-            $mol_assert_like(grouped(), ['Lost', 'Near']);
-        },
-        'an outside node with a place dropped on the root stays where it was put'($) {
-            const { app, drag, grouped } = layers_stage($, {}, lost, lost_spots);
-            drag('Near', `${d}layers_lost`, .5);
-            $mol_assert_like(app.node().sub_names(''), ['Page', 'Near']);
-            $mol_assert_like(app.spots().Near, { x: 600, y: 40 });
-            $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep']);
-        },
-        'nothing is dropped into the outside group, rows only leave it'($) {
-            const { app, drag, line, moves } = layers_stage($, {}, lost, lost_spots);
-            const before = app.doc_source();
-            const zone = (title) => line(title).getAttribute('bog_vmap_app_layers_line_zone');
-            drag('Title', 'Lost', .1);
-            $mol_assert_equal(zone('Lost'), '');
-            drag('Title', 'Box', .9);
-            $mol_assert_equal(zone('Box'), '');
-            drag('Title', 'Deep', .1);
-            $mol_assert_equal(zone('Deep'), '');
-            drag('Lost', 'Box', .9);
-            drag('Near', 'Deep', .1);
-            $mol_assert_equal(moves.length, 0);
-            $mol_assert_equal(app.doc_source(), before);
-        },
-        'nodes holding each other off the page are both in the group and come back together'($) {
-            const { app, drag, grouped, outline } = layers_stage($, {}, ring, { Page: { x: 0, y: 0 } });
-            $mol_assert_like(grouped(), ['Ring', 'Loop']);
-            $mol_assert_like(outline().slice(-2), ['  Ring frame', '    Loop frame']);
-            drag('Ring', 'Page', .9);
-            $mol_assert_like(app.node().sub_names('Page'), ['Ring']);
-            $mol_assert_like(app.node().sub_names('Ring'), ['Loop']);
-            $mol_assert_like(app.node().sub_names('Loop'), []);
-            $mol_assert_like(grouped(), []);
-        },
-        async 'one undo takes back a move out of the outside group'($) {
-            const { app, drag, history, stepped, grouped } = layers_stage($, {}, lost, lost_spots);
-            await stepped();
-            const before = app.doc_source();
-            drag('Lost', 'Card', .9);
-            await stepped();
-            history.undo();
-            $mol_assert_equal(app.doc_source(), before);
-            $mol_assert_like(grouped(), ['Lost', 'Box', 'Deep', 'Near']);
         },
     });
 })($ || ($ = {}));

@@ -14030,6 +14030,133 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    const class_regex = /^[$A-Z][$\w<>\[\]()"'?|,]+$/;
+    function $mol_view_tree2_class_match(klass) {
+        if (!klass?.type)
+            return false;
+        if (klass.type === 'NaN' || klass.type === 'Infinity')
+            return false;
+        return class_regex.test(klass.type);
+    }
+    $.$mol_view_tree2_class_match = $mol_view_tree2_class_match;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const err = $mol_view_tree2_error_str;
+    function $mol_view_tree2_class_super(klass) {
+        if (!$mol_view_tree2_class_match(klass))
+            return this.$mol_fail(err `Wrong class name at ${klass.span}`);
+        const superclass = klass.kids.length === 1 ? klass.kids[0] : undefined;
+        if (!superclass)
+            return this.$mol_fail(err `No super class at ${klass.span}`);
+        if (!$mol_view_tree2_class_match(superclass))
+            return this.$mol_fail(err `Wrong super class name ${JSON.stringify(superclass.type).replace(/(^"|"$)/g, "")} at ${superclass.span}`);
+        return superclass;
+    }
+    $.$mol_view_tree2_class_super = $mol_view_tree2_class_super;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const err = $mol_view_tree2_error_str;
+    const is_writable = (input) => input.type.includes('?');
+    function $mol_view_tree2_class_props(klass) {
+        let props = this.$mol_view_tree2_class_super(klass);
+        // ! syntax to * and ?val syntax to ?
+        props = props.clone(props.hack({
+            '': (node, belt) => {
+                const next = node.type.indexOf('?');
+                const id = node.type.indexOf('!');
+                let normal = node.type;
+                const ch = node.type[id + 1];
+                if (id !== -1 && ch?.toUpperCase() !== ch?.toLowerCase())
+                    normal = `${normal.substring(0, id)}*${next === -1 ? '' : '?'}`;
+                else if (next !== -1)
+                    normal = normal.substring(0, next + 1);
+                if (node.type === normal)
+                    return [node.clone(node.hack(belt))];
+                console.warn(`Syntax ${node.type} at ${node.span} is deprecated. Use ${normal} instead`);
+                return [node.struct(normal, node.hack(belt))];
+            }
+        }));
+        const props_inner = {};
+        const add_inner = (prop) => {
+            const { name } = this.$mol_view_tree2_prop_parts(prop);
+            const prev = props_inner[name];
+            if (prev && prev.kids[0]?.toString() !== prop.kids[0]?.toString()) {
+                this.$mol_fail(err `Need an equal default values at ${prev.span} vs ${prop.span}`);
+            }
+            props_inner[name] = prop;
+        };
+        const upper = (operator, belt, context) => {
+            const prop = this.$mol_view_tree2_child(operator);
+            const defs = prop.hack(belt, { factory: prop });
+            if (defs.length)
+                add_inner(prop.clone(defs));
+            return [operator.clone([prop.clone([])])];
+        };
+        const props_root = props.hack({
+            '<=': upper,
+            '<=>': upper,
+            '^': (operator, belt, context) => {
+                if (operator.kids.length === 0)
+                    return [operator];
+                return upper(operator, belt, context);
+            },
+            '': (left, belt, context) => {
+                let right;
+                const operator = left.kids[0];
+                if (operator?.type === '=>' && context.factory) {
+                    right = operator.kids[0];
+                    if (!right)
+                        this.$mol_fail(err `Need a child ${operator.span}`);
+                    if (!context.factory)
+                        this.$mol_fail(err `Need a parent ${left.span}`);
+                    if (is_writable(left) !== is_writable(right))
+                        this.$mol_fail(err `Left and right operands are not compatible at ${operator.span}`);
+                    add_inner(right.clone([
+                        right.struct('=', [
+                            context.factory.struct(context.factory.type.replace(/\*.*/, '*'), [left.clone([])]),
+                        ]),
+                    ]));
+                }
+                else if (operator?.type === "<=>") {
+                    const right = operator.kids[0];
+                    if (!right)
+                        this.$mol_fail(err `Need a child ${operator.span}`);
+                    if (!is_writable(left))
+                        this.$mol_fail(err `Expected writable at ${left.span}`);
+                    if (!is_writable(right))
+                        this.$mol_fail(err `Expected writable at ${right.span}`);
+                }
+                else if (context.factory && operator?.type === "<=" && is_writable(left)) {
+                    this.$mol_fail(err `Expected readonly at ${left.span}`);
+                }
+                if (right)
+                    context = { factory: right.clone([]) };
+                else if (operator && !context.factory && $mol_view_tree2_class_match(operator)) {
+                    context = { factory: left.clone([]) };
+                }
+                const hacked = left.clone(left.hack(belt, context));
+                return [hacked];
+            }
+        }, { factory: undefined });
+        for (const prop of props_root)
+            add_inner(prop);
+        return Object.values(props_inner);
+    }
+    $.$mol_view_tree2_class_props = $mol_view_tree2_class_props;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     function $mol_match_text(query, values) {
         const tags = query.toLowerCase().trim().split(/\s+/).filter(tag => tag);
         if (tags.length === 0)
@@ -14233,133 +14360,6 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    const class_regex = /^[$A-Z][$\w<>\[\]()"'?|,]+$/;
-    function $mol_view_tree2_class_match(klass) {
-        if (!klass?.type)
-            return false;
-        if (klass.type === 'NaN' || klass.type === 'Infinity')
-            return false;
-        return class_regex.test(klass.type);
-    }
-    $.$mol_view_tree2_class_match = $mol_view_tree2_class_match;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const err = $mol_view_tree2_error_str;
-    function $mol_view_tree2_class_super(klass) {
-        if (!$mol_view_tree2_class_match(klass))
-            return this.$mol_fail(err `Wrong class name at ${klass.span}`);
-        const superclass = klass.kids.length === 1 ? klass.kids[0] : undefined;
-        if (!superclass)
-            return this.$mol_fail(err `No super class at ${klass.span}`);
-        if (!$mol_view_tree2_class_match(superclass))
-            return this.$mol_fail(err `Wrong super class name ${JSON.stringify(superclass.type).replace(/(^"|"$)/g, "")} at ${superclass.span}`);
-        return superclass;
-    }
-    $.$mol_view_tree2_class_super = $mol_view_tree2_class_super;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    const err = $mol_view_tree2_error_str;
-    const is_writable = (input) => input.type.includes('?');
-    function $mol_view_tree2_class_props(klass) {
-        let props = this.$mol_view_tree2_class_super(klass);
-        // ! syntax to * and ?val syntax to ?
-        props = props.clone(props.hack({
-            '': (node, belt) => {
-                const next = node.type.indexOf('?');
-                const id = node.type.indexOf('!');
-                let normal = node.type;
-                const ch = node.type[id + 1];
-                if (id !== -1 && ch?.toUpperCase() !== ch?.toLowerCase())
-                    normal = `${normal.substring(0, id)}*${next === -1 ? '' : '?'}`;
-                else if (next !== -1)
-                    normal = normal.substring(0, next + 1);
-                if (node.type === normal)
-                    return [node.clone(node.hack(belt))];
-                console.warn(`Syntax ${node.type} at ${node.span} is deprecated. Use ${normal} instead`);
-                return [node.struct(normal, node.hack(belt))];
-            }
-        }));
-        const props_inner = {};
-        const add_inner = (prop) => {
-            const { name } = this.$mol_view_tree2_prop_parts(prop);
-            const prev = props_inner[name];
-            if (prev && prev.kids[0]?.toString() !== prop.kids[0]?.toString()) {
-                this.$mol_fail(err `Need an equal default values at ${prev.span} vs ${prop.span}`);
-            }
-            props_inner[name] = prop;
-        };
-        const upper = (operator, belt, context) => {
-            const prop = this.$mol_view_tree2_child(operator);
-            const defs = prop.hack(belt, { factory: prop });
-            if (defs.length)
-                add_inner(prop.clone(defs));
-            return [operator.clone([prop.clone([])])];
-        };
-        const props_root = props.hack({
-            '<=': upper,
-            '<=>': upper,
-            '^': (operator, belt, context) => {
-                if (operator.kids.length === 0)
-                    return [operator];
-                return upper(operator, belt, context);
-            },
-            '': (left, belt, context) => {
-                let right;
-                const operator = left.kids[0];
-                if (operator?.type === '=>' && context.factory) {
-                    right = operator.kids[0];
-                    if (!right)
-                        this.$mol_fail(err `Need a child ${operator.span}`);
-                    if (!context.factory)
-                        this.$mol_fail(err `Need a parent ${left.span}`);
-                    if (is_writable(left) !== is_writable(right))
-                        this.$mol_fail(err `Left and right operands are not compatible at ${operator.span}`);
-                    add_inner(right.clone([
-                        right.struct('=', [
-                            context.factory.struct(context.factory.type.replace(/\*.*/, '*'), [left.clone([])]),
-                        ]),
-                    ]));
-                }
-                else if (operator?.type === "<=>") {
-                    const right = operator.kids[0];
-                    if (!right)
-                        this.$mol_fail(err `Need a child ${operator.span}`);
-                    if (!is_writable(left))
-                        this.$mol_fail(err `Expected writable at ${left.span}`);
-                    if (!is_writable(right))
-                        this.$mol_fail(err `Expected writable at ${right.span}`);
-                }
-                else if (context.factory && operator?.type === "<=" && is_writable(left)) {
-                    this.$mol_fail(err `Expected readonly at ${left.span}`);
-                }
-                if (right)
-                    context = { factory: right.clone([]) };
-                else if (operator && !context.factory && $mol_view_tree2_class_match(operator)) {
-                    context = { factory: left.clone([]) };
-                }
-                const hacked = left.clone(left.hack(belt, context));
-                return [hacked];
-            }
-        }, { factory: undefined });
-        for (const prop of props_root)
-            add_inner(prop);
-        return Object.values(props_inner);
-    }
-    $.$mol_view_tree2_class_props = $mol_view_tree2_class_props;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
     $.$bog_vmap_lib_predef = '$mol_view $mol_object\n\tdom_name \\\n\tstyle *\n\tevent *\n\tfield *\n\tattr *\n\tsub /\n\ttitle \\\n';
     function $bog_vmap_lib_parse(src, uri = 'web.view.tree') {
         const predef = this.$mol_tree2_from_string($.$bog_vmap_lib_predef, '$bog_vmap_lib_predef');
@@ -14452,6 +14452,69 @@ var $;
         return owner;
     }
     $.$bog_vmap_lib_props_owner = $bog_vmap_lib_props_owner;
+    function $bog_vmap_lib_inner_kids(props, prop) {
+        const decl = props.get(prop);
+        if (!decl)
+            return [];
+        const kids = [];
+        const walk = (tree) => {
+            const ref = tree.kids[0];
+            if (ref && !ref.kids.length && (tree.type === '<=' || tree.type === '<=>')) {
+                const name = this.$mol_view_tree2_prop_parts(ref).name;
+                const value = props.get(name)?.kids[0];
+                if (value && $mol_view_tree2_class_match(value) && !kids.includes(name))
+                    kids.push(name);
+            }
+            for (const kid of tree.kids)
+                walk(kid);
+        };
+        walk(decl);
+        return kids;
+    }
+    $.$bog_vmap_lib_inner_kids = $bog_vmap_lib_inner_kids;
+    function $bog_vmap_lib_inner_class(props, prop) {
+        const value = props.get(prop)?.kids[0];
+        return value && $mol_view_tree2_class_match(value) ? value.type : '';
+    }
+    $.$bog_vmap_lib_inner_class = $bog_vmap_lib_inner_class;
+    function $bog_vmap_lib_inner_step(props_of, step, kid) {
+        const here = $bog_vmap_lib_inner_kids.call(this, props_of(step.declared), step.prop);
+        if (here.includes(kid))
+            return {
+                declared: step.declared,
+                prop: kid,
+                klass: $bog_vmap_lib_inner_class(props_of(step.declared), kid),
+                alien: step.alien,
+            };
+        if (!step.klass || step.klass === step.declared)
+            return null;
+        const inside = $bog_vmap_lib_inner_kids.call(this, props_of(step.klass), 'sub');
+        if (inside.includes(kid))
+            return {
+                declared: step.klass,
+                prop: kid,
+                klass: $bog_vmap_lib_inner_class(props_of(step.klass), kid),
+                alien: true,
+            };
+        return null;
+    }
+    $.$bog_vmap_lib_inner_step = $bog_vmap_lib_inner_step;
+    function $bog_vmap_lib_inner_route(props_of, route) {
+        const root = route[0] ?? '';
+        let step = {
+            declared: root,
+            prop: 'sub',
+            klass: root,
+            alien: false,
+        };
+        for (const kid of route.slice(1)) {
+            if (!step)
+                return null;
+            step = $bog_vmap_lib_inner_step.call(this, props_of, step, kid);
+        }
+        return step;
+    }
+    $.$bog_vmap_lib_inner_route = $bog_vmap_lib_inner_route;
     class $bog_vmap_lib_any extends $mol_object {
         tree() {
             return this.$.$bog_vmap_lib_parse('');
@@ -14486,6 +14549,26 @@ var $;
         props_of(base) {
             return this.united().list([...this.props_map(base).values()].reverse());
         }
+        inner_step(key) {
+            return this.$.$bog_vmap_lib_inner_route((klass) => this.props_map(klass), key.split('/'));
+        }
+        inner_kids(key) {
+            const step = this.inner_step(key);
+            if (!step)
+                return [];
+            const props = (klass) => this.props_map(klass);
+            const here = this.$.$bog_vmap_lib_inner_kids(props(step.declared), step.prop);
+            if (!step.klass || step.klass === step.declared)
+                return here;
+            const inside = this.$.$bog_vmap_lib_inner_kids(props(step.klass), 'sub');
+            return [...here, ...inside.filter(name => !here.includes(name))];
+        }
+        inner_class(key) {
+            return this.inner_step(key)?.klass ?? '';
+        }
+        inner_alien(key) {
+            return this.inner_step(key)?.alien ?? false;
+        }
     }
     __decorate([
         $mol_mem
@@ -14514,6 +14597,18 @@ var $;
     __decorate([
         $mol_mem_key
     ], $bog_vmap_lib_any.prototype, "props_of", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lib_any.prototype, "inner_step", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lib_any.prototype, "inner_kids", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lib_any.prototype, "inner_class", null);
+    __decorate([
+        $mol_mem_key
+    ], $bog_vmap_lib_any.prototype, "inner_alien", null);
     $.$bog_vmap_lib_any = $bog_vmap_lib_any;
     class $bog_vmap_lib extends $bog_vmap_lib_any {
         pack(next) {
@@ -30709,6 +30804,31 @@ var $;
         ]);
     }
     $.$bog_vmap_lang_ref_tree = $bog_vmap_lang_ref_tree;
+    function $bog_vmap_lang_inner_movable(decl) {
+        let movable = true;
+        const walk = (tree) => {
+            if (tree.type !== '*' && tree.type.includes('*'))
+                movable = false;
+            for (const kid of tree.kids)
+                walk(kid);
+        };
+        walk(decl);
+        return movable;
+    }
+    $.$bog_vmap_lang_inner_movable = $bog_vmap_lang_inner_movable;
+    function $bog_vmap_lang_inner_tree(node, name, decl) {
+        if (!$bog_vmap_lang_inner_movable(decl))
+            this.$mol_fail(new Error(`Inner layer ${JSON.stringify(decl.type)} is keyed, it cannot be moved out of the class`));
+        const walk = (tree) => {
+            const ref = tree.kids[0];
+            if (ref && !ref.kids.length && (tree.type === '<=' || tree.type === '<=>')) {
+                return tree.struct('=', [ref.struct(node, [ref.clone([])])]);
+            }
+            return tree.clone(tree.kids.map(walk));
+        };
+        return decl.struct(name, decl.kids.map(walk));
+    }
+    $.$bog_vmap_lang_inner_tree = $bog_vmap_lang_inner_tree;
     function $bog_vmap_lang_part_tree(name, klass) {
         const base = $mol_tree2.struct(klass);
         if (!$mol_view_tree2_class_match(base))
@@ -31173,6 +31293,48 @@ var $;
                 return;
             this.prop_drop(cell);
         }
+        inner_ref(part, prop) {
+            const op = this.over_tree(part, prop)?.kids[0];
+            if (op?.type !== '<=')
+                return '';
+            const ref = op.kids[0];
+            if (!ref || ref.kids.length)
+                return '';
+            return sign_of(ref.type).name;
+        }
+        inner_refs(part) {
+            const klass = this.prop_decl(part)?.kids[0];
+            if (!klass || !$mol_view_tree2_class_match(klass))
+                return [];
+            return klass.kids
+                .map(over => this.inner_ref(part, sign_of(over.type).name))
+                .filter(name => Boolean(name));
+        }
+        inner_name(part, prop) {
+            const base = `${part}_${prop}`;
+            const taken = new Set([...this.prop_names(), ...this.ref_names()]);
+            for (let i = 1;; ++i) {
+                const name = i === 1 ? base : `${base}_${i}`;
+                if (!taken.has(name))
+                    return name;
+            }
+        }
+        inner_bind(part, prop, decl) {
+            const held = this.inner_ref(part, prop);
+            if (held)
+                return held;
+            if (!this.part_names().includes(part))
+                this.$.$mol_fail(new Error(`Part ${JSON.stringify(part)} is not declared in ${this.name()}`));
+            const over = this.over_tree(part, prop);
+            if (over)
+                this.$.$mol_fail(new Error(`Port ${JSON.stringify(prop)} of ${part} is bound already, an inner layer would unplug it`));
+            const name = this.inner_name(part, prop);
+            this.prop_add(name);
+            this.prop_tree(name, this.$.$bog_vmap_lang_inner_tree(part, name, decl));
+            const tree = this.tree();
+            this.over_set(part, prop, tree.struct(prop, [this.$.$bog_vmap_lang_ref_tree(name)]));
+            return name;
+        }
         prop_decl(name) {
             const sign = this.prop_fullname(name);
             return sign ? this.props_tree().select(sign).kids[0] ?? null : null;
@@ -31342,6 +31504,9 @@ var $;
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "cells_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "inner_bind", null);
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "sub_open", null);
@@ -31751,6 +31916,9 @@ var $;
 			return "";
 		}
 		error(){
+			return "";
+		}
+		node_note(){
 			return "";
 		}
 		whole(next){
@@ -32659,7 +32827,16 @@ var $;
                 if (this.sliced() && !this.sliceable()) {
                     return 'Тексты класса не разобрать по свойствам: скобки не сбалансированы. Включите «Весь класс»';
                 }
-                return '';
+                if (!this.sliced())
+                    return '';
+                const note = this.node_note();
+                if (!note)
+                    return note;
+                return this.slot_open() === 'css' ? `${note} ${this.css_idle_note()}` : note;
+            }
+            css_idle_note() {
+                return 'Стиль запишется сразу, а на холсте оживёт вместе со слоем:'
+                    + ' селектор ждёт узел, который заводит первая правка дерева.';
             }
         }
         __decorate([
@@ -34844,7 +35021,7 @@ var $;
 		Name(){
 			const obj = new this.$.$mol_string();
 			(obj.hint) = () => ("имя узла");
-			(obj.enabled) = () => ((this.editable()));
+			(obj.enabled) = () => ((this.renamable()));
 			(obj.value) = (next) => ((this.title_value(next)));
 			(obj.submit) = (next) => ((this.title_submit(next)));
 			(obj.event) = () => ({...(this.$.$mol_string.prototype.event.call(obj)), "blur": (next) => (this.title_submit(next))});
@@ -34954,6 +35131,9 @@ var $;
 		}
 		editable(){
 			return true;
+		}
+		renamable(){
+			return (this.editable());
 		}
 		title(){
 			return (this.class_title());
@@ -35292,7 +35472,20 @@ var $;
                 if (next === undefined)
                     return Boolean(sign_of(this.row_sign(name)).next);
                 const value = this.port_node(name)?.kids[0] ?? null;
-                if (this.$.$bog_vmap_app_inspect_value_kind_of(value) === 'wire') {
+                const kind = this.$.$bog_vmap_app_inspect_value_kind_of(value);
+                if (kind === 'bind' || kind === 'get') {
+                    const prop = node.property(name);
+                    const own = prop.tree();
+                    const port = sign_of(own.type);
+                    const ref = value.kids[0] ?? null;
+                    const cell = sign_of(ref?.type ?? '');
+                    const tail = next ? '?' : '';
+                    prop.tree(own.struct(port.name + port.key + tail, [
+                        value.struct(next ? '<=>' : '<=', ref ? [ref.struct(cell.name + cell.key + tail, ref.kids)] : []),
+                    ]));
+                    return next;
+                }
+                if (kind === 'wire') {
                     const origin = value.kids[0];
                     node.wire_add({
                         name,
@@ -35436,6 +35629,24 @@ var $;
         return !$.$bog_vmap_app_wire_machinery.has(port.name);
     }
     $.$bog_vmap_app_wire_plain = $bog_vmap_app_wire_plain;
+    function $bog_vmap_app_wire_slot(port) {
+        return port.kind === 'null' && !port.next;
+    }
+    $.$bog_vmap_app_wire_slot = $bog_vmap_app_wire_slot;
+    $.$bog_vmap_app_wire_slots = 'slots';
+    const label_ok = /^[A-Za-z_$][\w$]*$/;
+    function $bog_vmap_app_wire_labelled(ports, labels) {
+        if (!labels.length)
+            return ports;
+        let at = 0;
+        return ports.map(port => {
+            if (!$bog_vmap_app_wire_slot(port))
+                return port;
+            const label = labels[at++] ?? '';
+            return label_ok.test(label) ? { ...port, label } : port;
+        });
+    }
+    $.$bog_vmap_app_wire_labelled = $bog_vmap_app_wire_labelled;
     function $bog_vmap_app_wire_ports(props, owners, base) {
         const ports = [];
         for (const [name, prop] of props) {
@@ -35469,33 +35680,58 @@ var $;
     }
     $.$bog_vmap_app_wire_label = $bog_vmap_app_wire_label;
     function $bog_vmap_app_wire_name(dot) {
-        const name = dot.port.name + (dot.port.next ? '?' : '');
+        const name = (dot.port.label || dot.port.name) + (dot.port.next ? '?' : '');
         return dot.hint ? `${name} · ${dot.hint}` : name;
     }
     $.$bog_vmap_app_wire_name = $bog_vmap_app_wire_name;
-    function $bog_vmap_app_wire_port_point(box, side, index) {
+    function $bog_vmap_app_wire_port_point(box, side, index, lift = 0) {
         const x = side === 'in'
             ? box.left - $.$bog_vmap_app_wire_gap
             : box.left + box.width + $.$bog_vmap_app_wire_gap;
-        const y = box.top + $.$bog_vmap_app_wire_row / 2 + index * $.$bog_vmap_app_wire_row;
+        const y = box.top - lift + $.$bog_vmap_app_wire_row / 2 + index * $.$bog_vmap_app_wire_row;
         return [x, y];
     }
     $.$bog_vmap_app_wire_port_point = $bog_vmap_app_wire_port_point;
+    function $bog_vmap_app_wire_off(box, point, count = 1, lift = 0) {
+        const dx = Math.min(Math.abs(point[0] - (box.left - $.$bog_vmap_app_wire_gap)), Math.abs(point[0] - (box.left + box.width + $.$bog_vmap_app_wire_gap)));
+        const first = box.top - lift + $.$bog_vmap_app_wire_row / 2;
+        const index = Math.round((point[1] - first) / $.$bog_vmap_app_wire_row);
+        const held = Math.max(0, Math.min(count - 1, index));
+        return Math.hypot(dx, point[1] - (first + held * $.$bog_vmap_app_wire_row));
+    }
+    $.$bog_vmap_app_wire_off = $bog_vmap_app_wire_off;
+    function $bog_vmap_app_wire_lift(box, count, height) {
+        const over = box.top + count * $.$bog_vmap_app_wire_row - height;
+        if (over <= 0)
+            return 0;
+        return Math.min(over, Math.max(box.top, 0));
+    }
+    $.$bog_vmap_app_wire_lift = $bog_vmap_app_wire_lift;
     function $bog_vmap_app_wire_side_point(box, side) {
         return $bog_vmap_app_wire_port_point(box, side, 0);
     }
     $.$bog_vmap_app_wire_side_point = $bog_vmap_app_wire_side_point;
-    function $bog_vmap_app_wire_over(box, point) {
+    function $bog_vmap_app_wire_over(box, point, count = 1, lift = 0) {
         const reach = $.$bog_vmap_app_wire_gap + $.$bog_vmap_app_wire_hit;
-        if (point[0] < box.left - reach)
+        const top = Math.min(box.top, box.top - lift);
+        const bottom = Math.max(box.top + box.height, top + count * $.$bog_vmap_app_wire_row);
+        if (point[1] < top)
             return false;
-        if (point[0] > box.left + box.width + reach)
+        if (point[1] > bottom)
             return false;
-        if (point[1] < box.top)
-            return false;
-        if (point[1] > box.top + box.height)
-            return false;
-        return true;
+        if (point[1] >= box.top && point[1] <= box.top + box.height) {
+            if (point[0] < box.left - reach)
+                return false;
+            if (point[0] > box.left + box.width + reach)
+                return false;
+            return true;
+        }
+        const strip = $.$bog_vmap_app_wire_hit + $.$bog_vmap_app_wire_radius;
+        if (Math.abs(point[0] - (box.left - $.$bog_vmap_app_wire_gap)) <= strip)
+            return true;
+        if (Math.abs(point[0] - (box.left + box.width + $.$bog_vmap_app_wire_gap)) <= strip)
+            return true;
+        return false;
     }
     $.$bog_vmap_app_wire_over = $bog_vmap_app_wire_over;
     function wire_reach(span) {
@@ -36048,6 +36284,12 @@ var $;
 		frame_style(id){
 			return {};
 		}
+		inner_shown(){
+			return "";
+		}
+		inner_style(){
+			return {};
+		}
 		node_press(next){
 			if(next !== undefined) return next;
 			return null;
@@ -36073,6 +36315,8 @@ var $;
 			(obj.style) = () => ((this.overlay_style()));
 			(obj.frames) = () => ((this.frames()));
 			(obj.frame_style) = (id) => ((this.frame_style(id)));
+			(obj.inner) = () => ((this.inner_shown()));
+			(obj.inner_style) = () => ((this.inner_style()));
 			(obj.press) = (next) => ((this.node_press(next)));
 			(obj.move) = (next) => ((this.node_move(next)));
 			(obj.release) = (next) => ((this.node_release(next)));
@@ -36173,6 +36417,9 @@ var $;
 		guide_style(id){
 			return {};
 		}
+		ghost_style(id){
+			return {};
+		}
 		menu_showed(next){
 			if(next !== undefined) return next;
 			return false;
@@ -36260,6 +36507,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		node_clone(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		leave(next){
 			if(next !== undefined) return next;
 			return null;
@@ -36296,6 +36547,9 @@ var $;
 			if(next !== undefined) return next;
 			return [];
 		}
+		inner(){
+			return "";
+		}
 		doc_js(){
 			return {};
 		}
@@ -36330,6 +36584,12 @@ var $;
 		}
 		doc_names(){
 			return [];
+		}
+		doc_paths(){
+			return [];
+		}
+		doc_key(){
+			return "";
 		}
 		node_title(next){
 			if(next !== undefined) return next;
@@ -36534,6 +36794,11 @@ var $;
 			(obj.style) = () => ((this.guide_style(id)));
 			return obj;
 		}
+		Ghost(id){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.ghost_style(id)));
+			return obj;
+		}
 		Menu(id){
 			const obj = new this.$.$bog_vmap_app_menu();
 			(obj.showed) = (next) => ((this.menu_showed(next)));
@@ -36586,6 +36851,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_delete"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_copy"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_wrap"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_clone"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "leave"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "spots"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "picked"));
@@ -36621,6 +36887,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Band"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Draft"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Guide"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Ghost"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Menu"));
 	($.$bog_vmap_app_pane_overlay) = class $bog_vmap_app_pane_overlay extends ($.$mol_view) {
 		press(next){
@@ -36666,8 +36933,14 @@ var $;
 			(obj.corner) = () => ("se");
 			return obj;
 		}
+		inner_style(){
+			return {};
+		}
 		frames(){
 			return [];
+		}
+		inner(){
+			return "";
 		}
 		event(){
 			return {
@@ -36690,6 +36963,11 @@ var $;
 			]);
 			return obj;
 		}
+		Inner(){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.inner_style()));
+			return obj;
+		}
 	};
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "press"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "move"));
@@ -36701,6 +36979,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_sw"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_se"));
 	($mol_mem_key(($.$bog_vmap_app_pane_overlay.prototype), "Frame"));
+	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Inner"));
 	($.$bog_vmap_app_pane_label) = class $bog_vmap_app_pane_label extends ($.$mol_view) {
 		rows(){
 			return [];
@@ -36916,6 +37195,16 @@ var $;
         const grab_slack = 8;
         const click_slack = 4;
         const scene_root = '$' + 'bog_vmap_scene';
+        const inner_chained = (path, chain) => {
+            let at = 0;
+            for (const step of path) {
+                if (step === chain[at])
+                    at++;
+                if (at === chain.length)
+                    return true;
+            }
+            return at === chain.length;
+        };
         class $bog_vmap_app_pane extends $.$bog_vmap_app_pane {
             doc_js() {
                 return {};
@@ -36973,6 +37262,44 @@ var $;
                     return null;
                 this.camera_zoom(1);
                 this.camera_shift(new this.$.$mol_vector_2d(0, 0));
+                return null;
+            }
+            camera_key() {
+                const key = this.doc_key();
+                return key ? `vmap_camera ${key}` : '';
+            }
+            camera_kept(next) {
+                const key = this.camera_key();
+                if (!key)
+                    return null;
+                return this.$.$mol_state_session.value(key, next) ?? null;
+            }
+            camera_doc(next) {
+                return next ?? '';
+            }
+            camera_settle() {
+                const key = this.camera_key();
+                if (!key || key === this.camera_doc())
+                    return null;
+                const kept = this.camera_kept();
+                if (kept) {
+                    this.camera_doc(key);
+                    this.camera_zoom(kept.zoom);
+                    this.camera_shift(new this.$.$mol_vector_2d(kept.x, kept.y));
+                    return null;
+                }
+                if (!this.free_boxes().length)
+                    return null;
+                this.camera_doc(key);
+                this.camera_reset();
+                return null;
+            }
+            camera_keep() {
+                const key = this.camera_key();
+                if (!key || this.camera_doc() !== key)
+                    return null;
+                const shift = this.camera_shift();
+                this.camera_kept({ x: shift[0], y: shift[1], zoom: this.camera_zoom() });
                 return null;
             }
             zoom_title() {
@@ -37065,6 +37392,7 @@ var $;
                     ...this.band() ? [this.Band()] : [],
                     ...this.draft() ? [this.Draft()] : [],
                     ...this.guide_views(),
+                    ...this.ghost_views(),
                     ...this.menu() ? [this.menu_view()] : [],
                 ];
             }
@@ -37166,13 +37494,42 @@ var $;
             sizes_merged(fresh) {
                 const prefix = this.doc_root() + '/';
                 const leaf = (key) => key.slice(prefix.length).split('/').pop() ?? '';
+                const live = new Set(this.doc_paths());
                 const moved = new Set(Object.keys(fresh).map(leaf));
+                const under = new Set();
+                for (const key of Object.keys(fresh)) {
+                    if (!key.startsWith(prefix))
+                        continue;
+                    const steps = key.slice(prefix.length).split('/');
+                    for (let at = 1; at < steps.length; ++at)
+                        under.add(steps.slice(0, at).join('/'));
+                }
+                const held = (key) => {
+                    if (key in fresh)
+                        return true;
+                    if (!live.size)
+                        return !moved.has(leaf(key));
+                    if (!key.startsWith(prefix))
+                        return true;
+                    const steps = key.slice(prefix.length).split('/');
+                    let part = '';
+                    for (let at = 1; at <= steps.length; ++at) {
+                        const path = steps.slice(0, at).join('/');
+                        if (!live.has(path))
+                            break;
+                        part = path;
+                    }
+                    if (!part)
+                        return false;
+                    if (part === steps.join('/'))
+                        return true;
+                    return !under.has(part);
+                };
                 const kept = {};
                 const sizes = this.sizes();
                 for (const key of Object.keys(sizes)) {
-                    if (!(key in fresh) && moved.has(leaf(key)))
-                        continue;
-                    kept[key] = sizes[key];
+                    if (held(key))
+                        kept[key] = sizes[key];
                 }
                 return { ...kept, ...fresh };
             }
@@ -37190,7 +37547,33 @@ var $;
                 }
                 return nodes;
             }
+            inner_measured() {
+                const prefix = this.doc_root() + '/';
+                const known = new Set(this.doc_names());
+                const found = [];
+                for (const key of Object.keys(this.sizes())) {
+                    if (!key.startsWith(prefix))
+                        continue;
+                    const path = key.slice(prefix.length).split('/');
+                    if (path.length < 2 || !known.has(path[0]))
+                        continue;
+                    found.push({ path, box: this.sizes()[key] });
+                }
+                return found;
+            }
+            inner_size(address) {
+                const chain = address.split('/');
+                const last = chain[chain.length - 1];
+                const ends = this.inner_measured().filter(one => one.path[0] === chain[0] && one.path[one.path.length - 1] === last);
+                if (!ends.length)
+                    return null;
+                const chained = ends.filter(one => inner_chained(one.path, chain));
+                const kept = chained.length ? chained : ends;
+                return kept.reduce((one, other) => other.path.length < one.path.length ? other : one).box;
+            }
             part_size(name) {
+                if (name.includes('/'))
+                    return this.inner_size(name);
                 let found = null;
                 for (const node of this.nodes_measured())
                     if (node.name === name)
@@ -37447,8 +37830,21 @@ var $;
                 if (stroke.code === 'Space')
                     this.grip(false);
             }
+            drag_cancel() {
+                const drag = this.drag();
+                if (!drag)
+                    return null;
+                this.spots({ ...this.spots(), ...drag.spots });
+                this.drag(null);
+                this.drag_alt(false);
+                this.slot(null);
+                this.guides([]);
+                return null;
+            }
             escape() {
-                if (this.draft())
+                if (this.drag())
+                    this.drag_cancel();
+                else if (this.draft())
                     this.draft(null);
                 else if (this.inside())
                     this.leave();
@@ -37881,6 +38277,7 @@ var $;
                     return this.node_release(event);
                 event.preventDefault();
                 const point = this.world_point(event);
+                this.drag_alt(Boolean(event.altKey));
                 const slot = this.insert_slot(point, drag.name);
                 this.slot(slot);
                 if (slot || drag.nested) {
@@ -37934,7 +38331,10 @@ var $;
                     this.slot(null);
                     if (drag && slot)
                         this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index });
+                    else if (drag && event.altKey && !drag.nested)
+                        this.drag_clone(drag);
                     this.drag(null);
+                    this.drag_alt(false);
                     this.guides([]);
                     try {
                         this.Overlay().dom_node().releasePointerCapture(event.pointerId);
@@ -38016,6 +38416,21 @@ var $;
                     height: rect.height + 'px',
                 };
             }
+            inner_shown() {
+                const inner = this.inner();
+                return inner && this.part_box(inner) ? inner : '';
+            }
+            inner_style() {
+                const rect = this.part_box(this.inner());
+                if (!rect)
+                    return {};
+                return {
+                    left: rect.left + 'px',
+                    top: rect.top + 'px',
+                    width: rect.width + 'px',
+                    height: rect.height + 'px',
+                };
+            }
             frame_style(name) {
                 const rect = this.part_box(name);
                 if (!rect)
@@ -38030,6 +38445,45 @@ var $;
             overlay_style() {
                 const rect = !this.carrying() && !this.hand() && this.inside() ? this.frame_box() : null;
                 return { clipPath: this.$.$bog_vmap_app_pane_hole(rect) };
+            }
+            drag_alt(next) {
+                return next ?? false;
+            }
+            ghost_names() {
+                const drag = this.drag();
+                if (!drag || !this.drag_alt())
+                    return [];
+                return Object.keys(drag.spots);
+            }
+            ghost_views() {
+                return this.ghost_names().map(name => this.Ghost(name));
+            }
+            ghost_style(name) {
+                const spot = this.drag()?.spots[name];
+                const size = this.part_size(name);
+                if (!spot || !size)
+                    return {};
+                const rect = this.$.$bog_vmap_app_pane_screen({ x: spot.x, y: spot.y, width: size.width, height: size.height }, this.camera_zoom(), this.camera_shift());
+                return {
+                    left: rect.left + 'px',
+                    top: rect.top + 'px',
+                    width: rect.width + 'px',
+                    height: rect.height + 'px',
+                };
+            }
+            drag_clone(drag) {
+                const dropped = this.spots();
+                const points = {};
+                for (const name of Object.keys(drag.spots)) {
+                    const spot = dropped[name];
+                    if (spot)
+                        points[name] = spot;
+                }
+                if (!Object.keys(points).length)
+                    return null;
+                this.spots({ ...dropped, ...drag.spots });
+                this.node_clone(points);
+                return null;
             }
             link_add(next) {
                 return next ?? null;
@@ -38067,22 +38521,53 @@ var $;
             }
             part_dots(name) {
                 const written = new Set(this.part_overs(name));
-                return this.part_ports(name).filter(port => (port.own || written.has(port.name)) && $bog_vmap_app_wire_plain(port));
+                for (const link of this.wires()) {
+                    if (link.to === name)
+                        written.add(link.to_prop);
+                }
+                const ports = this.part_ports(name).filter(port => (port.own || written.has(port.name)) && $bog_vmap_app_wire_plain(port));
+                let spare = false;
+                return ports.filter(port => {
+                    if (!$bog_vmap_app_wire_slot(port) || written.has(port.name))
+                        return true;
+                    if (spare)
+                        return false;
+                    spare = true;
+                    return true;
+                });
+            }
+            part_lift(name) {
+                const box = this.part_box(name);
+                if (!box)
+                    return 0;
+                return $bog_vmap_app_wire_lift(box, this.part_dots(name).length, this.pane_rect().height);
             }
             wire_over() {
                 if (!this.wire_drag())
                     return null;
                 const point = this.wire_point();
-                let found = null;
+                let own = null;
+                let near = null;
+                let best = Infinity;
                 for (const name of this.part_names()) {
                     const box = this.part_box(name);
                     if (!box)
                         continue;
-                    if (!$bog_vmap_app_wire_over(box, point))
+                    if ($bog_vmap_app_wire_over(box, point)) {
+                        own = name;
                         continue;
-                    found = name;
+                    }
+                    const count = this.part_dots(name).length;
+                    const lift = this.part_lift(name);
+                    if (!$bog_vmap_app_wire_over(box, point, count, lift))
+                        continue;
+                    const off = $bog_vmap_app_wire_off(box, point, count, lift);
+                    if (off > best)
+                        continue;
+                    best = off;
+                    near = name;
                 }
-                return found;
+                return own ?? near;
             }
             part_spread(name) {
                 return name === this.primary() || name === this.hovered() || name === this.wire_over();
@@ -38095,7 +38580,7 @@ var $;
                 if (!box)
                     return null;
                 return this.part_spread(name)
-                    ? $bog_vmap_app_wire_port_point(box, side, this.port_index(name, port))
+                    ? $bog_vmap_app_wire_port_point(box, side, this.port_index(name, port), this.part_lift(name))
                     : $bog_vmap_app_wire_side_point(box, side);
             }
             wire_lines() {
@@ -38133,8 +38618,9 @@ var $;
                         linked: side === 'in' && linked.has(`${node}.${port.name}`),
                     });
                     if (this.part_spread(node)) {
+                        const lift = this.part_lift(node);
                         ports.forEach((port, index) => {
-                            const [x, y] = $bog_vmap_app_wire_port_point(box, side, index);
+                            const [x, y] = $bog_vmap_app_wire_port_point(box, side, index, lift);
                             mark(port, x, y);
                         });
                         return;
@@ -38499,6 +38985,7 @@ var $;
                     this.sizes(this.sizes_merged(message.sizes));
                     this.warmed(true);
                     this.restart_tries(0);
+                    this.camera_settle();
                     return;
                 }
             }
@@ -38517,6 +39004,7 @@ var $;
                     this.libs_push(),
                     this.spots_push(),
                     this.camera_push(),
+                    this.camera_keep(),
                     this.values_push(),
                     this.heartbeat(),
                     this.watchdog(),
@@ -38538,6 +39026,15 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app_pane.prototype, "camera_reset", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "camera_doc", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "camera_settle", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "camera_keep", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "errors", null);
@@ -38591,6 +39088,9 @@ var $;
         ], $bog_vmap_app_pane.prototype, "nodes_measured", null);
         __decorate([
             $mol_mem
+        ], $bog_vmap_app_pane.prototype, "inner_measured", null);
+        __decorate([
+            $mol_mem
         ], $bog_vmap_app_pane.prototype, "drag", null);
         __decorate([
             $mol_mem
@@ -38608,8 +39108,9 @@ var $;
             $mol_action
         ], $bog_vmap_app_pane.prototype, "tool_take", null);
         __decorate([
+            $mol_action,
             $mol_action
-        ], $bog_vmap_app_pane.prototype, "escape", null);
+        ], $bog_vmap_app_pane.prototype, "drag_cancel", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "menu", null);
@@ -38653,11 +39154,23 @@ var $;
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "band_style", null);
         __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "inner_style", null);
+        __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "frame_style", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "overlay_style", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "drag_alt", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "ghost_style", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "drag_clone", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "wire_drag", null);
@@ -38776,7 +39289,10 @@ var $;
         $$.$bog_vmap_app_pane_label = $bog_vmap_app_pane_label;
         class $bog_vmap_app_pane_overlay extends $.$bog_vmap_app_pane_overlay {
             sub() {
-                return this.frames().map(name => this.Frame(name));
+                return [
+                    ...this.frames().map(name => this.Frame(name)),
+                    ...this.inner() ? [this.Inner()] : [],
+                ];
             }
         }
         $$.$bog_vmap_app_pane_overlay = $bog_vmap_app_pane_overlay;
@@ -38831,6 +39347,14 @@ var $;
             Guide: {
                 position: 'absolute',
                 background: { color: $mol_theme.special },
+                pointerEvents: 'none',
+                transition: 'none',
+            },
+            Ghost: {
+                position: 'absolute',
+                outline: '1px dashed ' + String($mol_theme.focus),
+                outlineOffset: '1px',
+                background: { color: $mol_theme.hover },
                 pointerEvents: 'none',
                 transition: 'none',
             },
@@ -38935,6 +39459,13 @@ var $;
             Frame: {
                 position: 'absolute',
                 outline: '1px solid ' + String($mol_theme.focus),
+                outlineOffset: '1px',
+                pointerEvents: 'none',
+                transition: 'none',
+            },
+            Inner: {
+                position: 'absolute',
+                outline: '1px dashed ' + String($mol_theme.focus),
                 outlineOffset: '1px',
                 pointerEvents: 'none',
                 transition: 'none',
@@ -39759,6 +40290,18 @@ var $;
         doc_pick(link) {
             this.doc_arg(link?.str ?? null);
         }
+        doc_drop(link) {
+            const links = this.doc_links();
+            const at = links.findIndex(item => item.str === link.str);
+            if (at < 0)
+                return null;
+            const open = this.doc_current()?.link().str ?? '';
+            this.home().Docs(null).cut(link);
+            if (open !== link.str)
+                return null;
+            this.doc_pick(links[at + 1] ?? links[at - 1] ?? null);
+            return null;
+        }
         doc_editable() {
             const doc = this.doc_current();
             if (!doc)
@@ -40028,6 +40571,9 @@ var $;
             list.items(links.slice(extra));
         }
     }
+    __decorate([
+        $mol_action
+    ], $bog_vmap_app_store.prototype, "doc_drop", null);
     __decorate([
         $mol_mem
     ], $bog_vmap_app_store.prototype, "doc_first_task", null);
@@ -40457,6 +41003,23 @@ var $;
 			(obj.rows) = () => ((this.scene_rows()));
 			return obj;
 		}
+		menu_showed(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		menu_left(){
+			return "";
+		}
+		menu_top(){
+			return "";
+		}
+		menu_items(){
+			return [];
+		}
+		menu_close(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		scene_title(id){
 			return "";
 		}
@@ -40464,6 +41027,21 @@ var $;
 			return false;
 		}
 		scene_click(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		scene_menu(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		drop_ask(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		drop_note(){
+			return "";
+		}
+		drop(next){
 			if(next !== undefined) return next;
 			return null;
 		}
@@ -40491,12 +41069,46 @@ var $;
 		body(){
 			return [(this.List())];
 		}
+		Menu(){
+			const obj = new this.$.$bog_vmap_app_menu();
+			(obj.showed) = (next) => ((this.menu_showed(next)));
+			(obj.left) = () => ((this.menu_left()));
+			(obj.top) = () => ((this.menu_top()));
+			(obj.items) = () => ((this.menu_items()));
+			(obj.close) = (next) => ((this.menu_close(next)));
+			return obj;
+		}
 		Scene_row(id){
 			const obj = new this.$.$bog_vmap_app_palette_item();
 			(obj.title) = () => ((this.scene_title(id)));
 			(obj.hint) = () => ((this.scene_title(id)));
 			(obj.current) = () => ((this.scene_current(id)));
 			(obj.click) = (next) => ((this.scene_click(id, next)));
+			(obj.event) = () => ({...(this.$.$bog_vmap_app_palette_item.prototype.event.call(obj)), "contextmenu": (next) => (this.scene_menu(id, next))});
+			return obj;
+		}
+		Drop(){
+			const obj = new this.$.$bog_vmap_app_menu_item();
+			(obj.title) = () => ("Удалить сцену");
+			(obj.act) = (next) => ((this.drop_ask(next)));
+			return obj;
+		}
+		Drop_note(){
+			const obj = new this.$.$mol_paragraph();
+			(obj.title) = () => ((this.drop_note()));
+			return obj;
+		}
+		Drop_yes(){
+			const obj = new this.$.$bog_vmap_app_menu_item();
+			(obj.title) = () => ("Удалить");
+			(obj.act) = (next) => ((this.drop(next)));
+			(obj.done) = (next) => ((this.menu_close(next)));
+			return obj;
+		}
+		Drop_no(){
+			const obj = new this.$.$bog_vmap_app_menu_item();
+			(obj.title) = () => ("Отмена");
+			(obj.act) = (next) => ((this.menu_close(next)));
 			return obj;
 		}
 	};
@@ -40505,11 +41117,21 @@ var $;
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Add_icon"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Add"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "List"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "menu_showed"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "menu_close"));
 	($mol_mem_key(($.$bog_vmap_app_scenes.prototype), "scene_click"));
+	($mol_mem_key(($.$bog_vmap_app_scenes.prototype), "scene_menu"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "drop_ask"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "drop"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "store"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "current"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "doc_title"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Menu"));
 	($mol_mem_key(($.$bog_vmap_app_scenes.prototype), "Scene_row"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Drop"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Drop_note"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Drop_yes"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Drop_no"));
 
 
 ;
@@ -40542,6 +41164,67 @@ var $;
             scene_click(link, event) {
                 this.current(link);
             }
+            menu(next) {
+                return next ?? null;
+            }
+            sub() {
+                return [...super.sub(), ...this.menu() ? [this.Menu()] : []];
+            }
+            menu_asking(next) {
+                return next ?? false;
+            }
+            menu_link() {
+                return this.menu()?.link ?? '';
+            }
+            menu_showed(next) {
+                if (next === false)
+                    this.menu(null);
+                return Boolean(this.menu());
+            }
+            menu_left() {
+                return (this.menu()?.spot[0] ?? 0) + 'px';
+            }
+            menu_top() {
+                return (this.menu()?.spot[1] ?? 0) + 'px';
+            }
+            menu_items() {
+                if (!this.menu())
+                    return [];
+                return this.menu_asking()
+                    ? [this.Drop_note(), this.Drop_yes(), this.Drop_no()]
+                    : [this.Drop()];
+            }
+            drop_note() {
+                return `Удалить «${this.scene_title(this.menu_link())}»? Ссылка на сцену продолжит работать`;
+            }
+            menu_close() {
+                this.menu_asking(false);
+                this.menu(null);
+                return null;
+            }
+            scene_menu(link, event) {
+                const mouse = event;
+                if (!mouse)
+                    return null;
+                mouse.preventDefault();
+                const rect = this.view_rect();
+                this.menu_asking(false);
+                this.menu({
+                    link,
+                    spot: [mouse.clientX - (rect?.left ?? 0), mouse.clientY - (rect?.top ?? 0)],
+                });
+                return null;
+            }
+            drop_ask() {
+                this.menu_asking(true);
+                return null;
+            }
+            drop() {
+                const link = this.scene_link(this.menu_link());
+                if (link)
+                    this.store().doc_drop(link);
+                return null;
+            }
             current(next) {
                 const store = this.store();
                 if (next !== undefined) {
@@ -40571,6 +41254,27 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app_scenes.prototype, "scene_click", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_scenes.prototype, "menu", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_scenes.prototype, "sub", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_scenes.prototype, "menu_asking", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_scenes.prototype, "menu_close", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_scenes.prototype, "scene_menu", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_scenes.prototype, "drop_ask", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_scenes.prototype, "drop", null);
         $$.$bog_vmap_app_scenes = $bog_vmap_app_scenes;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
@@ -40582,6 +41286,7 @@ var $;
     var $$;
     (function ($$) {
         $mol_style_define($bog_vmap_app_scenes, {
+            position: 'relative',
             Tools: {
                 minWidth: 0,
                 flex: { grow: 1, shrink: 1, basis: '6rem' },
@@ -40734,6 +41439,9 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		row_shade(id){
+			return "";
+		}
 		row_over(id, next){
 			if(next !== undefined) return next;
 			return null;
@@ -40743,7 +41451,11 @@ var $;
 		}
 		Line(id){
 			const obj = new this.$.$mol_view();
-			(obj.attr) = () => ({...(this.$.$mol_view.prototype.attr.call(obj)), "bog_vmap_app_layers_line_zone": (this.row_zone(id))});
+			(obj.attr) = () => ({
+				...(this.$.$mol_view.prototype.attr.call(obj)), 
+				"bog_vmap_app_layers_line_zone": (this.row_zone(id)), 
+				"bog_vmap_app_layers_line_shade": (this.row_shade(id))
+			});
 			(obj.event) = () => ({...(this.$.$mol_view.prototype.event.call(obj)), "dragover": (next) => (this.row_over(id, next))});
 			(obj.sub) = () => ((this.row_content(id)));
 			return obj;
@@ -40807,6 +41519,19 @@ var $;
 		picked(next){
 			if(next !== undefined) return next;
 			return [];
+		}
+		inner(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		inner_kids(id){
+			return [];
+		}
+		inner_class(id){
+			return "";
+		}
+		inner_alien(id){
+			return false;
 		}
 		node_title(next){
 			if(next !== undefined) return next;
@@ -40931,6 +41656,7 @@ var $;
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_submit"));
 	($mol_mem_key(($.$bog_vmap_app_layers.prototype), "row_key"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "picked"));
+	($mol_mem(($.$bog_vmap_app_layers.prototype), "inner"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "node_title"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "tree_move"));
 	($mol_mem(($.$bog_vmap_app_layers.prototype), "node_show"));
@@ -41000,13 +41726,68 @@ var $;
                 walk('', null, 1);
                 const parts = node.part_names();
                 const held = new Set(['', ...parts].flatMap(owner => node.sub_names(owner) ?? []));
-                for (const name of parts)
-                    if (!found.has(name) && !held.has(name))
+                const inner = new Set(parts.flatMap(part => node.inner_refs(part)));
+                for (const name of parts) {
+                    if (!found.has(name) && !held.has(name) && !inner.has(name))
                         walk(name, null, 2);
+                }
                 for (const name of parts)
-                    if (!found.has(name))
+                    if (!found.has(name) && !inner.has(name))
                         walk(name, null, 2);
                 return found;
+            }
+            row_inner(name) {
+                return name.includes('/');
+            }
+            inner_owner(name) {
+                return name.slice(0, name.indexOf('/'));
+            }
+            inner_prop(name) {
+                return name.slice(name.lastIndexOf('/') + 1);
+            }
+            inner_deep_max() {
+                return 8;
+            }
+            inner_layers(part) {
+                const found = new Map();
+                const root = this.row_class(part);
+                if (!root)
+                    return found;
+                const level = this.row_level(part);
+                const walk = (at, key, owner, deep, seen) => {
+                    if (deep > level + this.inner_deep_max())
+                        return [];
+                    const born = [];
+                    for (const kid of this.inner_kids(key)) {
+                        const route = `${key}/${kid}`;
+                        if (seen.has(route))
+                            continue;
+                        const path = `${at}/${kid}`;
+                        if (found.has(path))
+                            continue;
+                        found.set(path, {
+                            owner,
+                            level: deep,
+                            kids: [],
+                            klass: this.inner_class(route),
+                            alien: this.inner_alien(route),
+                        });
+                        born.push(path);
+                    }
+                    for (const path of born) {
+                        const route = `${key}/${this.inner_prop(path)}`;
+                        const kids = walk(path, route, path, deep + 1, new Set([...seen, route]));
+                        found.set(path, { ...found.get(path), kids });
+                    }
+                    return born;
+                };
+                walk(part, root, null, level + 1, new Set());
+                return found;
+            }
+            inner_roots(part) {
+                return [...this.inner_layers(part)]
+                    .filter(([, layer]) => layer.owner === null)
+                    .map(([path]) => path);
             }
             outside() {
                 return [...this.layers()]
@@ -41014,9 +41795,19 @@ var $;
                     .map(([name]) => name);
             }
             row_kids(name) {
-                return this.layers().get(name)?.kids ?? [];
+                if (this.row_inner(name)) {
+                    return this.inner_layers(this.inner_owner(name)).get(name)?.kids ?? [];
+                }
+                const kids = this.layers().get(name)?.kids ?? [];
+                if (kids.length)
+                    return kids;
+                return this.inner_roots(name);
             }
             row_holder(name) {
+                if (this.row_inner(name)) {
+                    const owner = this.inner_layers(this.inner_owner(name)).get(name)?.owner;
+                    return owner === undefined ? null : owner ?? this.inner_owner(name);
+                }
                 return this.layers().get(name)?.owner ?? null;
             }
             row_within(owner, name) {
@@ -41046,21 +41837,25 @@ var $;
                 return rows;
             }
             row_level(name) {
+                if (this.row_inner(name)) {
+                    return this.inner_layers(this.inner_owner(name)).get(name)?.level ?? 1;
+                }
                 return this.layers().get(name)?.level ?? 1;
             }
             row_expanded(name, next) {
                 return this.row_open(name, next);
             }
             row_open(name, next) {
-                if (!this.row_kids(name).length)
+                const kids = this.row_kids(name);
+                if (!kids.length)
                     return null;
-                return this.expanded_at(name, next);
+                return this.expanded_at(name, next, !kids.some(kid => this.row_inner(kid)));
             }
-            expanded_at(name, next) {
+            expanded_at(name, next, fallback = true) {
                 const key = this.fold_key('open');
                 const open = this.$.$mol_state_session.value(key) ?? {};
                 if (next === undefined)
-                    return open[name] ?? true;
+                    return open[name] ?? fallback;
                 this.$.$mol_state_session.value(key, { ...open, [name]: next });
                 return next;
             }
@@ -41074,11 +41869,26 @@ var $;
                 return name;
             }
             row_title(name) {
+                if (this.row_inner(name))
+                    return this.inner_prop(name);
                 return name || this.root();
             }
             row_class(name) {
+                if (this.row_inner(name)) {
+                    return this.inner_layers(this.inner_owner(name)).get(name)?.klass ?? '';
+                }
                 const value = name ? this.node().prop_decl(name)?.kids[0] : null;
                 return value && $mol_view_tree2_class_match(value) ? value.type : '';
+            }
+            row_alien(name) {
+                if (!this.row_inner(name))
+                    return false;
+                return this.inner_layers(this.inner_owner(name)).get(name)?.alien ?? false;
+            }
+            row_shade(name) {
+                if (!this.row_inner(name))
+                    return '';
+                return this.row_alien(name) ? 'alien' : 'inner';
             }
             row_hint(name) {
                 return this.row_class(name);
@@ -41086,8 +41896,13 @@ var $;
             row_kind(name) {
                 if (!name)
                     return 'root';
+                if (this.row_inner(name))
+                    return this.row_kids(name).length ? 'frame' : this.class_kind(name);
                 if (this.layers().get(name)?.kids)
                     return 'frame';
+                return this.class_kind(name);
+            }
+            class_kind(name) {
                 const klass = this.row_class(name);
                 if (!klass)
                     return 'text';
@@ -41115,6 +41930,8 @@ var $;
                 return picked.length ? picked[picked.length - 1] : null;
             }
             row_picked(name) {
+                if (this.row_inner(name))
+                    return this.inner() === name;
                 const picked = this.picked();
                 if (picked.includes(name))
                     return true;
@@ -41125,6 +41942,13 @@ var $;
             row_pick(name, event) {
                 if (!event)
                     return null;
+                if (this.row_inner(name)) {
+                    this.picked([this.inner_owner(name)]);
+                    this.inner(name);
+                    this.node_show(name);
+                    return null;
+                }
+                this.inner('');
                 if (!name) {
                     this.picked([]);
                     return null;
@@ -41147,6 +41971,8 @@ var $;
                 return Boolean(name) && this.editing() === name && this.selected() === name;
             }
             row_draggable(name) {
+                if (this.row_inner(name))
+                    return false;
                 return this.editable() && Boolean(name) && !this.row_editing(name);
             }
             row_content(name) {
@@ -41156,7 +41982,7 @@ var $;
                 ];
             }
             row_edit(name, event) {
-                if (!name || !event || !this.editable())
+                if (!name || !event || !this.editable() || this.row_inner(name))
                     return null;
                 this.picked([name]);
                 this.row_draft(name, name);
@@ -41204,6 +42030,8 @@ var $;
                 return null;
             }
             zone_at(name, share) {
+                if (this.row_inner(name))
+                    return '';
                 if (!name)
                     return 'inside';
                 if (!this.row_within('', name))
@@ -41222,6 +42050,8 @@ var $;
             }
             move_to(anchor, name, zone) {
                 if (!name || name === anchor)
+                    return null;
+                if (this.row_inner(name) || this.row_inner(anchor))
                     return null;
                 const into = !anchor || zone === 'inside';
                 const owner = into ? anchor : this.row_holder(anchor);
@@ -41246,6 +42076,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app_layers.prototype, "layers", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_layers.prototype, "inner_layers", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_layers.prototype, "outside", null);
@@ -41303,6 +42136,16 @@ var $;
                 },
             },
             Line: {
+                '@': {
+                    bog_vmap_app_layers_line_shade: {
+                        inner: {
+                            opacity: .6,
+                        },
+                        alien: {
+                            opacity: .35,
+                        },
+                    },
+                },
                 '[mol_drop_status]': {
                     drag: {
                         '[bog_vmap_app_layers_line_zone]': {
@@ -43064,6 +43907,12 @@ var $;
 		doc_names(){
 			return [];
 		}
+		doc_paths(){
+			return [];
+		}
+		doc_key(){
+			return "";
+		}
 		doc_axis(id){
 			return "";
 		}
@@ -43084,6 +43933,10 @@ var $;
 			return null;
 		}
 		node_wrap(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		node_clone(next){
 			if(next !== undefined) return next;
 			return null;
 		}
@@ -43113,6 +43966,7 @@ var $;
 			(obj.doc_css) = () => ((this.doc_css()));
 			(obj.spots) = (next) => ((this.spots(next)));
 			(obj.picked) = (next) => ((this.picked(next)));
+			(obj.inner) = () => ((this.inner()));
 			(obj.entered) = (next) => ((this.entered(next)));
 			(obj.doc_js) = () => ((this.doc_js()));
 			(obj.doc_root) = () => ((this.doc_root()));
@@ -43125,6 +43979,8 @@ var $;
 			(obj.link_drop) = (next) => ((this.link_drop(next)));
 			(obj.containers) = () => ((this.doc_containers()));
 			(obj.doc_names) = () => ((this.doc_names()));
+			(obj.doc_paths) = () => ((this.doc_paths()));
+			(obj.doc_key) = () => ((this.doc_key()));
 			(obj.node_title) = (next) => ((this.node_title(next)));
 			(obj.axis) = (id) => ((this.doc_axis(id)));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
@@ -43133,14 +43989,21 @@ var $;
 			(obj.node_delete) = (next) => ((this.node_delete(next)));
 			(obj.node_copy) = (next) => ((this.node_copy(next)));
 			(obj.node_wrap) = (next) => ((this.node_wrap(next)));
+			(obj.node_clone) = (next) => ((this.node_clone(next)));
 			(obj.board_draw) = (next) => ((this.board_draw(next)));
 			return obj;
 		}
 		notes(){
 			return [];
 		}
-		doc_key(){
+		inner_kids(id){
+			return [];
+		}
+		inner_class(id){
 			return "";
+		}
+		inner_alien(id){
+			return false;
 		}
 		lib_classes(){
 			return [];
@@ -43165,9 +44028,15 @@ var $;
 		node_title_note(){
 			return "";
 		}
+		node_renamable(){
+			return true;
+		}
 		node_cell(id, next){
 			if(next !== undefined) return next;
 			return null;
+		}
+		node_editable(){
+			return true;
 		}
 		idle_note(){
 			return "Выберите узел на холсте, чтобы править его свойства";
@@ -43187,6 +44056,9 @@ var $;
 			return [];
 		}
 		code_error(){
+			return "";
+		}
+		code_node_note(){
 			return "";
 		}
 		lands(){
@@ -43251,6 +44123,10 @@ var $;
 		picked(next){
 			if(next !== undefined) return next;
 			return [];
+		}
+		inner(next){
+			if(next !== undefined) return next;
+			return "";
 		}
 		doc_js(){
 			return {};
@@ -43392,6 +44268,10 @@ var $;
 			(obj.root) = () => ((this.doc_root()));
 			(obj.doc_key) = () => ((this.doc_key()));
 			(obj.picked) = (next) => ((this.picked(next)));
+			(obj.inner) = (next) => ((this.inner(next)));
+			(obj.inner_kids) = (id) => ((this.inner_kids(id)));
+			(obj.inner_class) = (id) => ((this.inner_class(id)));
+			(obj.inner_alien) = (id) => ((this.inner_alien(id)));
 			(obj.node_title) = (next) => ((this.node_title(next)));
 			(obj.node_title_note) = () => ((this.node_title_note()));
 			(obj.tree_move) = (next) => ((this.tree_move(next)));
@@ -43417,8 +44297,9 @@ var $;
 			(obj.pack) = () => ((this.pack_link()));
 			(obj.class_title) = (next) => ((this.node_title(next)));
 			(obj.title_note) = () => ((this.node_title_note()));
+			(obj.renamable) = () => ((this.node_renamable()));
 			(obj.cell) = (id, next) => ((this.node_cell(id, next)));
-			(obj.editable) = () => ((this.editable()));
+			(obj.editable) = () => ((this.node_editable()));
 			return obj;
 		}
 		Idle(){
@@ -43438,7 +44319,8 @@ var $;
 			(obj.js) = (next) => ((this.code_js(next)));
 			(obj.css) = (next) => ((this.code_css(next)));
 			(obj.error) = () => ((this.code_error()));
-			(obj.editable) = () => ((this.editable()));
+			(obj.node_note) = () => ((this.code_node_note()));
+			(obj.editable) = () => ((this.node_editable()));
 			return obj;
 		}
 		Readonly(){
@@ -43564,6 +44446,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "files_drop"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_copy"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_wrap"));
+	($mol_mem(($.$bog_vmap_app.prototype), "node_clone"));
 	($mol_mem(($.$bog_vmap_app.prototype), "board_draw"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Pane"));
 	($mol_mem(($.$bog_vmap_app.prototype), "shelf_place"));
@@ -43576,6 +44459,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "spots"));
 	($mol_mem(($.$bog_vmap_app.prototype), "selected"));
 	($mol_mem(($.$bog_vmap_app.prototype), "picked"));
+	($mol_mem(($.$bog_vmap_app.prototype), "inner"));
 	($mol_mem(($.$bog_vmap_app.prototype), "links"));
 	($mol_mem(($.$bog_vmap_app.prototype), "left_showed"));
 	($mol_mem(($.$bog_vmap_app.prototype), "right_showed"));
@@ -44050,9 +44934,117 @@ var $;
             }
             picked(next) {
                 const key = this.doc_key();
-                if (next !== undefined && !$mol_compare_deep(next, this.picked_at(key)))
+                if (next !== undefined && !$mol_compare_deep(next, this.picked_at(key))) {
                     this.entered(null);
+                    this.inner('');
+                }
                 return this.picked_at(key, next);
+            }
+            inner(next) {
+                const now = this.inner_in_doc();
+                return next === undefined ? now : this.inner_in_doc(next);
+            }
+            inner_in_doc(next) {
+                this.doc_key();
+                return next ?? '';
+            }
+            inner_node() {
+                const inner = this.inner();
+                return inner.slice(0, inner.indexOf('/'));
+            }
+            inner_prop() {
+                const inner = this.inner();
+                return inner.slice(inner.lastIndexOf('/') + 1);
+            }
+            node_class(name) {
+                const value = name ? this.node().prop_decl(name)?.kids[0] : null;
+                return value && $mol_view_tree2_class_match(value) ? value.type : '';
+            }
+            inner_kids(key) {
+                try {
+                    return this.Lib().inner_kids(key);
+                }
+                catch (error) {
+                    if (!$mol_promise_like(error))
+                        $mol_fail_log(error);
+                    return [];
+                }
+            }
+            inner_class(key) {
+                try {
+                    return this.Lib().inner_class(key);
+                }
+                catch (error) {
+                    if (!$mol_promise_like(error))
+                        $mol_fail_log(error);
+                    return '';
+                }
+            }
+            inner_alien(key) {
+                try {
+                    return this.Lib().inner_alien(key);
+                }
+                catch (error) {
+                    if (!$mol_promise_like(error))
+                        $mol_fail_log(error);
+                    return false;
+                }
+            }
+            inner_route() {
+                const chain = this.inner().split('/');
+                return [this.node_class(chain[0]), ...chain.slice(1)].join('/');
+            }
+            inner_foreign() {
+                return Boolean(this.inner()) && this.inner_alien(this.inner_route());
+            }
+            inner_step() {
+                return this.Lib().inner_step(this.inner_route());
+            }
+            inner_decl() {
+                const step = this.inner_step();
+                const decl = step ? this.Lib().props_map(step.declared).get(step.prop) ?? null : null;
+                if (!decl)
+                    return this.$.$mol_fail(new Error(`Внутренний слой ${this.inner()} не найден в классе детали`));
+                return decl;
+            }
+            node_editable() {
+                return this.editable() && !this.inner_foreign();
+            }
+            inner_foreign_note() {
+                const step = this.inner_step();
+                if (!step)
+                    return '';
+                return `Слой ${step.prop} пришёл из вложенного компонента ${step.declared}.`
+                    + ` Отсюда он только виден: правится он у своего класса, а деталь его не объявляет,`
+                    + ` поэтому переопределить его из документа нельзя.`;
+            }
+            inner_name() {
+                const node = this.node();
+                return node.inner_ref(this.inner_node(), this.inner_prop())
+                    || node.inner_name(this.inner_node(), this.inner_prop());
+            }
+            inner_held() {
+                const node = this.node();
+                return node.inner_ref(this.inner_node(), this.inner_prop())
+                    || node.inner_bind(this.inner_node(), this.inner_prop(), this.inner_decl());
+            }
+            inner_source(next) {
+                if (this.inner_foreign()) {
+                    if (next !== undefined)
+                        return this.$.$mol_fail(new Error(this.inner_foreign_note()));
+                    return this.inner_decl().toString();
+                }
+                const node = this.node();
+                const held = node.inner_ref(this.inner_node(), this.inner_prop());
+                if (next === undefined) {
+                    if (!held)
+                        return this.$.$bog_vmap_lang_inner_tree(this.inner_node(), this.inner_name(), this.inner_decl()).toString();
+                    return node.props_tree().select(node.prop_fullname(held)).kids[0]?.toString() ?? '';
+                }
+                const parsed = this.$.$mol_tree2_from_string(next.replace(/\n?$/, '\n'), 'vmap.view.tree').kids[0];
+                if (parsed)
+                    node.prop_tree(this.inner_held(), parsed);
+                return next;
             }
             doc_key() {
                 return this.store().doc_current()?.link().str ?? '';
@@ -44077,7 +45069,7 @@ var $;
                 return picked.length ? picked[picked.length - 1] : null;
             }
             delete_enabled() {
-                return this.editable() && Boolean(this.selected());
+                return this.editable() && !this.inner() && Boolean(this.selected());
             }
             publish_part() {
                 return this.selected() ?? '';
@@ -44212,7 +45204,23 @@ var $;
                 return this.export_notes()[index] ?? '';
             }
             code_prop() {
+                if (this.inner_foreign())
+                    return this.inner_prop();
+                if (this.inner())
+                    return this.inner_name();
                 return this.selected() ?? '';
+            }
+            code_node_note() {
+                const inner = this.inner();
+                if (!inner)
+                    return '';
+                if (this.inner_foreign())
+                    return this.inner_foreign_note();
+                if (this.node().inner_ref(this.inner_node(), this.inner_prop()))
+                    return '';
+                return `Слой ${this.inner_prop()} взят из класса детали ${this.inner_node()},`
+                    + ` в документе его ещё нет. Правка заведёт узел ${this.inner_name()}`
+                    + ` и сошлётся на него из блока детали; класс детали останется как был.`;
             }
             code_whole(next) {
                 return next ?? false;
@@ -44260,7 +45268,7 @@ var $;
                 return this.class_css(this.code_klass(), next);
             }
             code_hooks() {
-                const name = this.selected();
+                const name = this.code_prop();
                 if (!name)
                     return [];
                 const node = this.node();
@@ -44425,6 +45433,8 @@ var $;
                 }
             }
             node_source(next) {
+                if (this.inner())
+                    return this.inner_source(next);
                 const name = this.selected();
                 if (!name)
                     return '';
@@ -44441,10 +45451,25 @@ var $;
                 return next;
             }
             node_cell(sign, next) {
+                if (this.inner_foreign()) {
+                    if (next === undefined)
+                        return null;
+                    return this.$.$mol_fail(new Error(this.inner_foreign_note()));
+                }
+                if (this.inner()) {
+                    const node = this.node();
+                    const held = next === undefined
+                        ? node.inner_ref(this.inner_node(), this.inner_prop())
+                        : this.inner_held();
+                    return held ? node.cell_value(held, sign, next) : null;
+                }
                 const name = this.selected();
                 if (!name)
                     return null;
                 return this.node().cell_value(name, sign, next);
+            }
+            node_renamable() {
+                return this.editable() && !this.inner();
             }
             node_peers() {
                 return [...this.lib_classes(), this.node().tree()];
@@ -44460,7 +45485,33 @@ var $;
                 const klass = node.props_tree().select(sign).kids[0]?.kids[0];
                 if (!klass || !$mol_view_tree2_class_match(klass))
                     return [];
-                return this.$.$bog_vmap_app_wire_ports(this.Lib().props_map(klass.type), this.Lib().props_owner(klass.type), klass.type);
+                const ports = this.$.$bog_vmap_app_wire_ports(this.Lib().props_map(klass.type), this.Lib().props_owner(klass.type), klass.type);
+                return $bog_vmap_app_wire_labelled(ports, this.part_labels(name));
+            }
+            doc_paths() {
+                const node = this.node();
+                const paths = [];
+                const seen = new Set();
+                const walk = (owner, path) => {
+                    if (seen.has(owner))
+                        return;
+                    seen.add(owner);
+                    for (const kid of node.sub_names(owner) ?? []) {
+                        if (!kid)
+                            continue;
+                        const next = path ? path + '/' + kid : kid;
+                        paths.push(next);
+                        walk(kid, next);
+                    }
+                };
+                walk('', '');
+                return paths;
+            }
+            part_labels(name) {
+                const held = this.node().over_tree(name, $bog_vmap_app_wire_slots)?.kids[0] ?? null;
+                if (!held || held.type !== '')
+                    return [];
+                return held.value.split(',').map(label => label.trim());
             }
             part_overs(name) {
                 const node = this.node();
@@ -44772,6 +45823,28 @@ var $;
                 this.picked(made);
                 return null;
             }
+            node_clone(next) {
+                if (!next || !this.editable())
+                    return null;
+                const node = this.node();
+                const names = Object.keys(next);
+                if (!names.length)
+                    return null;
+                const tops = names.filter(name => !names.some(up => up !== name && node.sub_within(up, name)));
+                const spots = { ...this.spots() };
+                const made = [];
+                for (const name of tops) {
+                    const copy = this.$.$bog_vmap_app_copy(node, name);
+                    spots[copy] = {
+                        x: Math.round(next[name].x),
+                        y: Math.round(next[name].y),
+                    };
+                    made.push(copy);
+                }
+                this.spots(spots);
+                this.picked(made);
+                return null;
+            }
             delete_hint() {
                 const name = this.selected();
                 return name ? `Удалить ${name} (Del)` : 'Удалить выделенный узел (Del)';
@@ -44814,6 +45887,10 @@ var $;
                     this.selected(next);
             }
             node_title(next) {
+                if (this.inner_foreign())
+                    return this.inner_prop();
+                if (this.inner())
+                    return this.inner_name();
                 const name = this.selected();
                 if (next === undefined)
                     return name ?? '';
@@ -44849,6 +45926,8 @@ var $;
                 return next ?? '';
             }
             node_title_note() {
+                if (this.inner_foreign())
+                    return this.inner_foreign_note();
                 const name = this.selected() ?? '';
                 const note = this.node_title_note_at(name);
                 return note ? `${note}. Узел по-прежнему называется «${name}»` : '';
@@ -45022,6 +46101,21 @@ var $;
             $mol_mem
         ], $bog_vmap_app.prototype, "store", null);
         __decorate([
+            $mol_mem
+        ], $bog_vmap_app.prototype, "inner_in_doc", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "inner_kids", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "inner_class", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "inner_alien", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "inner_held", null);
+        __decorate([
             $mol_mem_key
         ], $bog_vmap_app.prototype, "picked_at", null);
         __decorate([
@@ -45064,6 +46158,12 @@ var $;
             $mol_mem_key
         ], $bog_vmap_app.prototype, "part_ports", null);
         __decorate([
+            $mol_mem
+        ], $bog_vmap_app.prototype, "doc_paths", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "part_labels", null);
+        __decorate([
             $mol_mem_key
         ], $bog_vmap_app.prototype, "part_overs", null);
         __decorate([
@@ -45099,6 +46199,9 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "node_copy", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "node_clone", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "node_delete", null);
