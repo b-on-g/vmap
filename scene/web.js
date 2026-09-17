@@ -4657,6 +4657,7 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    /** Живёт в пространстве, которое поднимает $mol_ambient: тесты и сцена берут эти функции через `this.$`. */
     function $bog_vmap_scene_cull(spots, sizes, view, slack, names) {
         const left = view.x - slack;
         const top = view.y - slack;
@@ -5936,6 +5937,31 @@ var $;
         ]);
     }
     $.$bog_vmap_lang_ref_tree = $bog_vmap_lang_ref_tree;
+    function $bog_vmap_lang_inner_movable(decl) {
+        let movable = true;
+        const walk = (tree) => {
+            if (tree.type !== '*' && tree.type.includes('*'))
+                movable = false;
+            for (const kid of tree.kids)
+                walk(kid);
+        };
+        walk(decl);
+        return movable;
+    }
+    $.$bog_vmap_lang_inner_movable = $bog_vmap_lang_inner_movable;
+    function $bog_vmap_lang_inner_tree(node, name, decl) {
+        if (!$bog_vmap_lang_inner_movable(decl))
+            this.$mol_fail(new Error(`Inner layer ${JSON.stringify(decl.type)} is keyed, it cannot be moved out of the class`));
+        const walk = (tree) => {
+            const ref = tree.kids[0];
+            if (ref && !ref.kids.length && (tree.type === '<=' || tree.type === '<=>')) {
+                return tree.struct('=', [ref.struct(node, [ref.clone([])])]);
+            }
+            return tree.clone(tree.kids.map(walk));
+        };
+        return decl.struct(name, decl.kids.map(walk));
+    }
+    $.$bog_vmap_lang_inner_tree = $bog_vmap_lang_inner_tree;
     function $bog_vmap_lang_part_tree(name, klass) {
         const base = $mol_tree2.struct(klass);
         if (!$mol_view_tree2_class_match(base))
@@ -6400,6 +6426,48 @@ var $;
                 return;
             this.prop_drop(cell);
         }
+        inner_ref(part, prop) {
+            const op = this.over_tree(part, prop)?.kids[0];
+            if (op?.type !== '<=')
+                return '';
+            const ref = op.kids[0];
+            if (!ref || ref.kids.length)
+                return '';
+            return sign_of(ref.type).name;
+        }
+        inner_refs(part) {
+            const klass = this.prop_decl(part)?.kids[0];
+            if (!klass || !$mol_view_tree2_class_match(klass))
+                return [];
+            return klass.kids
+                .map(over => this.inner_ref(part, sign_of(over.type).name))
+                .filter(name => Boolean(name));
+        }
+        inner_name(part, prop) {
+            const base = `${part}_${prop}`;
+            const taken = new Set([...this.prop_names(), ...this.ref_names()]);
+            for (let i = 1;; ++i) {
+                const name = i === 1 ? base : `${base}_${i}`;
+                if (!taken.has(name))
+                    return name;
+            }
+        }
+        inner_bind(part, prop, decl) {
+            const held = this.inner_ref(part, prop);
+            if (held)
+                return held;
+            if (!this.part_names().includes(part))
+                this.$.$mol_fail(new Error(`Part ${JSON.stringify(part)} is not declared in ${this.name()}`));
+            const over = this.over_tree(part, prop);
+            if (over)
+                this.$.$mol_fail(new Error(`Port ${JSON.stringify(prop)} of ${part} is bound already, an inner layer would unplug it`));
+            const name = this.inner_name(part, prop);
+            this.prop_add(name);
+            this.prop_tree(name, this.$.$bog_vmap_lang_inner_tree(part, name, decl));
+            const tree = this.tree();
+            this.over_set(part, prop, tree.struct(prop, [this.$.$bog_vmap_lang_ref_tree(name)]));
+            return name;
+        }
         prop_decl(name) {
             const sign = this.prop_fullname(name);
             return sign ? this.props_tree().select(sign).kids[0] ?? null : null;
@@ -6571,6 +6639,9 @@ var $;
     ], $bog_vmap_lang_node.prototype, "cells_drop", null);
     __decorate([
         $mol_action
+    ], $bog_vmap_lang_node.prototype, "inner_bind", null);
+    __decorate([
+        $mol_action
     ], $bog_vmap_lang_node.prototype, "sub_open", null);
     __decorate([
         $mol_action
@@ -6658,8 +6729,8 @@ var $;
     function view_like(value) {
         return typeof value?.dom_node === 'function';
     }
-    function $bog_vmap_scene_swap(root, klass_of, shape_of) {
-        const report = { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0 };
+    function $bog_vmap_scene_swap(root, klass_of, shape_of, body_fresh = () => false) {
+        const report = { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0, repainted: 0 };
         const seen = new Set();
         const queue = [root];
         while (queue.length) {
@@ -6669,6 +6740,7 @@ var $;
             seen.add(inst);
             const name = inst.constructor?.name ?? '';
             const shape = name ? shape_of(name) : null;
+            const painted = Boolean(name) && body_fresh(name);
             if (shape) {
                 const klass = klass_of(name);
                 if (typeof klass === 'function' && klass.prototype !== Object.getPrototypeOf(inst)) {
@@ -6692,6 +6764,13 @@ var $;
                     Reflect.set(atom, 'cursor', $mol_wire_cursor.stale);
                     atom.emit();
                     report.failed += 1;
+                }
+                if (painted && prop === 'render') {
+                    for (const atom of atoms) {
+                        Reflect.set(atom, 'cursor', $mol_wire_cursor.stale);
+                        atom.emit();
+                        report.repainted += 1;
+                    }
                 }
                 if (!shape)
                     continue;
@@ -9110,7 +9189,7 @@ var $;
         const spot_name_ok = /^[a-zA-Z_]\w*$/;
         const cull_slack_min = 400;
         const class_name_ok = /^\$[a-zA-Z][\w$]*$/;
-        const unmounted = { made: null, pack: '', root: '', supers: {}, error: '', klass: '' };
+        const unmounted = { made: null, pack: '', root: '', supers: {}, bodies: {}, error: '', klass: '' };
         class $bog_vmap_scene extends $.$bog_vmap_scene {
             error_sent(at, next) {
                 return next === undefined ? null : next;
@@ -9296,6 +9375,18 @@ var $;
                 }
                 return `$.$bog_vmap_scene_cells( $[ ${JSON.stringify(self.type)} ], ${JSON.stringify(keyed)}, ${JSON.stringify(changeable)} );`;
             }
+            bodies() {
+                return { ...this.libs_parsed().js, ...this.doc_js() };
+            }
+            bodies_fresh(was) {
+                const now = this.bodies();
+                const fresh = new Set();
+                for (const klass of Object.keys(now)) {
+                    if (was[klass] !== now[klass])
+                        fresh.add(klass);
+                }
+                return fresh;
+            }
             code_parts() {
                 const root = this.doc_root();
                 if (!class_name_ok.test(root))
@@ -9303,7 +9394,7 @@ var $;
                 const tree = this.doc_tree();
                 if (!tree.kids.some(def => def.type === root))
                     this.$.$mol_fail(new Error(`Class ${root} is not declared by the document`));
-                const bodies = { ...this.libs_parsed().js, ...this.doc_js() };
+                const bodies = this.bodies();
                 const parts = [];
                 for (const def of tree.kids) {
                     const name = def.type;
@@ -9387,13 +9478,15 @@ var $;
                     this.pack_ready();
                     const Root = this.build().Root;
                     const supers = this.supers();
+                    const bodies = this.bodies();
                     if (this.identity_kept(prev, pack, root, supers)) {
-                        this.$.$bog_vmap_scene_swap(prev.made, name => Reflect.get(this.sandbox(), name), name => this.shapes()[name] ?? null);
-                        return { ...prev, supers: { ...prev.supers, ...supers }, error: '', klass: '' };
+                        const fresh = this.bodies_fresh(prev.bodies);
+                        this.$.$bog_vmap_scene_swap(prev.made, name => Reflect.get(this.sandbox(), name), name => this.shapes()[name] ?? null, name => fresh.has(name));
+                        return { ...prev, supers: { ...prev.supers, ...supers }, bodies, error: '', klass: '' };
                     }
                     const made = Root.make({ $: this.sandbox() });
                     this.cull_attach(made);
-                    return { made, pack, root, supers, error: '', klass: '' };
+                    return { made, pack, root, supers, bodies, error: '', klass: '' };
                 }
                 catch (error) {
                     if (this.$.$mol_promise_like(error))
@@ -9787,6 +9880,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "shapes", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "bodies", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "code_parts", null);

@@ -2205,6 +2205,7 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    /** Живёт в пространстве, которое поднимает $mol_ambient: тесты и сцена берут эти функции через `this.$`. */
     type $bog_vmap_scene_cull_box = {
         readonly x: number;
         readonly y: number;
@@ -2739,6 +2740,8 @@ declare namespace $ {
     function $bog_vmap_lang_js_rename(js: string, from: string, to: string): string;
     function $bog_vmap_lang_wire_tree(this: $, wire: $bog_vmap_lang_wire): $mol_tree2;
     function $bog_vmap_lang_ref_tree(this: $, name: string): $mol_tree2;
+    function $bog_vmap_lang_inner_movable(decl: $mol_tree2): boolean;
+    function $bog_vmap_lang_inner_tree(this: $, node: string, name: string, decl: $mol_tree2): $mol_tree2;
     function $bog_vmap_lang_part_tree(this: $, name: string, klass: string): $mol_tree2;
     function $bog_vmap_lang_dict_get(dict: $mol_tree2 | null, key: string): $mol_tree2 | null;
     function $bog_vmap_lang_dict_set(this: $, dict: $mol_tree2, key: string, value: $mol_tree2 | null): $mol_tree2;
@@ -2791,6 +2794,10 @@ declare namespace $ {
         cell_drop(part: string, prop: string): void;
         cells_drop(part: string): void;
         cell_tidy(cell: string): void;
+        inner_ref(part: string, prop: string): string;
+        inner_refs(part: string): readonly string[];
+        inner_name(part: string, prop: string): string;
+        inner_bind(part: string, prop: string, decl: $mol_tree2): string;
         prop_decl(name: string): $mol_tree2 | null;
         sub_list(owner?: string): $mol_tree2 | null;
         sub_names(owner?: string): readonly string[] | null;
@@ -2843,8 +2850,9 @@ declare namespace $ {
         stale: number;
         dropped: number;
         failed: number;
+        repainted: number;
     };
-    function $bog_vmap_scene_swap(this: $, root: object, klass_of: (name: string) => unknown, shape_of: (name: string) => $bog_vmap_scene_swap_shape | null): $bog_vmap_scene_swap_report;
+    function $bog_vmap_scene_swap(this: $, root: object, klass_of: (name: string) => unknown, shape_of: (name: string) => $bog_vmap_scene_swap_shape | null, body_fresh?: (name: string) => boolean): $bog_vmap_scene_swap_report;
 }
 
 declare namespace $ {
@@ -3466,6 +3474,9 @@ declare namespace $.$$ {
         readonly supers: {
             readonly [klass: string]: string;
         };
+        readonly bodies: {
+            readonly [klass: string]: string;
+        };
         readonly error: string;
         readonly klass: string;
     };
@@ -3529,6 +3540,12 @@ declare namespace $.$$ {
             readonly [klass: string]: $bog_vmap_scene_swap_shape;
         };
         cells_code(self: $mol_tree2): string;
+        bodies(): {
+            readonly [klass: string]: string;
+        };
+        bodies_fresh(was: {
+            readonly [klass: string]: string;
+        }): Set<string>;
         code_parts(): readonly {
             readonly klass: string;
             readonly js: string;

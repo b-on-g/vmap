@@ -5260,6 +5260,7 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    /** Живёт в пространстве, которое поднимает $mol_ambient: тесты и сцена берут эти функции через `this.$`. */
     function $bog_vmap_scene_cull(spots, sizes, view, slack, names) {
         const left = view.x - slack;
         const top = view.y - slack;
@@ -6045,6 +6046,31 @@ var $;
         ]);
     }
     $.$bog_vmap_lang_ref_tree = $bog_vmap_lang_ref_tree;
+    function $bog_vmap_lang_inner_movable(decl) {
+        let movable = true;
+        const walk = (tree) => {
+            if (tree.type !== '*' && tree.type.includes('*'))
+                movable = false;
+            for (const kid of tree.kids)
+                walk(kid);
+        };
+        walk(decl);
+        return movable;
+    }
+    $.$bog_vmap_lang_inner_movable = $bog_vmap_lang_inner_movable;
+    function $bog_vmap_lang_inner_tree(node, name, decl) {
+        if (!$bog_vmap_lang_inner_movable(decl))
+            this.$mol_fail(new Error(`Inner layer ${JSON.stringify(decl.type)} is keyed, it cannot be moved out of the class`));
+        const walk = (tree) => {
+            const ref = tree.kids[0];
+            if (ref && !ref.kids.length && (tree.type === '<=' || tree.type === '<=>')) {
+                return tree.struct('=', [ref.struct(node, [ref.clone([])])]);
+            }
+            return tree.clone(tree.kids.map(walk));
+        };
+        return decl.struct(name, decl.kids.map(walk));
+    }
+    $.$bog_vmap_lang_inner_tree = $bog_vmap_lang_inner_tree;
     function $bog_vmap_lang_part_tree(name, klass) {
         const base = $mol_tree2.struct(klass);
         if (!$mol_view_tree2_class_match(base))
@@ -6509,6 +6535,48 @@ var $;
                 return;
             this.prop_drop(cell);
         }
+        inner_ref(part, prop) {
+            const op = this.over_tree(part, prop)?.kids[0];
+            if (op?.type !== '<=')
+                return '';
+            const ref = op.kids[0];
+            if (!ref || ref.kids.length)
+                return '';
+            return sign_of(ref.type).name;
+        }
+        inner_refs(part) {
+            const klass = this.prop_decl(part)?.kids[0];
+            if (!klass || !$mol_view_tree2_class_match(klass))
+                return [];
+            return klass.kids
+                .map(over => this.inner_ref(part, sign_of(over.type).name))
+                .filter(name => Boolean(name));
+        }
+        inner_name(part, prop) {
+            const base = `${part}_${prop}`;
+            const taken = new Set([...this.prop_names(), ...this.ref_names()]);
+            for (let i = 1;; ++i) {
+                const name = i === 1 ? base : `${base}_${i}`;
+                if (!taken.has(name))
+                    return name;
+            }
+        }
+        inner_bind(part, prop, decl) {
+            const held = this.inner_ref(part, prop);
+            if (held)
+                return held;
+            if (!this.part_names().includes(part))
+                this.$.$mol_fail(new Error(`Part ${JSON.stringify(part)} is not declared in ${this.name()}`));
+            const over = this.over_tree(part, prop);
+            if (over)
+                this.$.$mol_fail(new Error(`Port ${JSON.stringify(prop)} of ${part} is bound already, an inner layer would unplug it`));
+            const name = this.inner_name(part, prop);
+            this.prop_add(name);
+            this.prop_tree(name, this.$.$bog_vmap_lang_inner_tree(part, name, decl));
+            const tree = this.tree();
+            this.over_set(part, prop, tree.struct(prop, [this.$.$bog_vmap_lang_ref_tree(name)]));
+            return name;
+        }
         prop_decl(name) {
             const sign = this.prop_fullname(name);
             return sign ? this.props_tree().select(sign).kids[0] ?? null : null;
@@ -6680,6 +6748,9 @@ var $;
     ], $bog_vmap_lang_node.prototype, "cells_drop", null);
     __decorate([
         $mol_action
+    ], $bog_vmap_lang_node.prototype, "inner_bind", null);
+    __decorate([
+        $mol_action
     ], $bog_vmap_lang_node.prototype, "sub_open", null);
     __decorate([
         $mol_action
@@ -6767,8 +6838,8 @@ var $;
     function view_like(value) {
         return typeof value?.dom_node === 'function';
     }
-    function $bog_vmap_scene_swap(root, klass_of, shape_of) {
-        const report = { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0 };
+    function $bog_vmap_scene_swap(root, klass_of, shape_of, body_fresh = () => false) {
+        const report = { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0, repainted: 0 };
         const seen = new Set();
         const queue = [root];
         while (queue.length) {
@@ -6778,6 +6849,7 @@ var $;
             seen.add(inst);
             const name = inst.constructor?.name ?? '';
             const shape = name ? shape_of(name) : null;
+            const painted = Boolean(name) && body_fresh(name);
             if (shape) {
                 const klass = klass_of(name);
                 if (typeof klass === 'function' && klass.prototype !== Object.getPrototypeOf(inst)) {
@@ -6801,6 +6873,13 @@ var $;
                     Reflect.set(atom, 'cursor', $mol_wire_cursor.stale);
                     atom.emit();
                     report.failed += 1;
+                }
+                if (painted && prop === 'render') {
+                    for (const atom of atoms) {
+                        Reflect.set(atom, 'cursor', $mol_wire_cursor.stale);
+                        atom.emit();
+                        report.repainted += 1;
+                    }
                 }
                 if (!shape)
                     continue;
@@ -8969,7 +9048,7 @@ var $;
         const spot_name_ok = /^[a-zA-Z_]\w*$/;
         const cull_slack_min = 400;
         const class_name_ok = /^\$[a-zA-Z][\w$]*$/;
-        const unmounted = { made: null, pack: '', root: '', supers: {}, error: '', klass: '' };
+        const unmounted = { made: null, pack: '', root: '', supers: {}, bodies: {}, error: '', klass: '' };
         class $bog_vmap_scene extends $.$bog_vmap_scene {
             error_sent(at, next) {
                 return next === undefined ? null : next;
@@ -9155,6 +9234,18 @@ var $;
                 }
                 return `$.$bog_vmap_scene_cells( $[ ${JSON.stringify(self.type)} ], ${JSON.stringify(keyed)}, ${JSON.stringify(changeable)} );`;
             }
+            bodies() {
+                return { ...this.libs_parsed().js, ...this.doc_js() };
+            }
+            bodies_fresh(was) {
+                const now = this.bodies();
+                const fresh = new Set();
+                for (const klass of Object.keys(now)) {
+                    if (was[klass] !== now[klass])
+                        fresh.add(klass);
+                }
+                return fresh;
+            }
             code_parts() {
                 const root = this.doc_root();
                 if (!class_name_ok.test(root))
@@ -9162,7 +9253,7 @@ var $;
                 const tree = this.doc_tree();
                 if (!tree.kids.some(def => def.type === root))
                     this.$.$mol_fail(new Error(`Class ${root} is not declared by the document`));
-                const bodies = { ...this.libs_parsed().js, ...this.doc_js() };
+                const bodies = this.bodies();
                 const parts = [];
                 for (const def of tree.kids) {
                     const name = def.type;
@@ -9246,13 +9337,15 @@ var $;
                     this.pack_ready();
                     const Root = this.build().Root;
                     const supers = this.supers();
+                    const bodies = this.bodies();
                     if (this.identity_kept(prev, pack, root, supers)) {
-                        this.$.$bog_vmap_scene_swap(prev.made, name => Reflect.get(this.sandbox(), name), name => this.shapes()[name] ?? null);
-                        return { ...prev, supers: { ...prev.supers, ...supers }, error: '', klass: '' };
+                        const fresh = this.bodies_fresh(prev.bodies);
+                        this.$.$bog_vmap_scene_swap(prev.made, name => Reflect.get(this.sandbox(), name), name => this.shapes()[name] ?? null, name => fresh.has(name));
+                        return { ...prev, supers: { ...prev.supers, ...supers }, bodies, error: '', klass: '' };
                     }
                     const made = Root.make({ $: this.sandbox() });
                     this.cull_attach(made);
-                    return { made, pack, root, supers, error: '', klass: '' };
+                    return { made, pack, root, supers, bodies, error: '', klass: '' };
                 }
                 catch (error) {
                     if (this.$.$mol_promise_like(error))
@@ -9646,6 +9739,9 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "shapes", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_scene.prototype, "bodies", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_scene.prototype, "code_parts", null);
@@ -17609,6 +17705,22 @@ var $;
         ``,
     ].join('\n');
     const num = (text) => $mol_tree2.struct(text);
+    const inner_src = [
+        `${d}bog_vmap_lang_test_inner ${d}mol_view`,
+        `	Debt ${d}bog_vmap_lang_test_plot`,
+        `		title \\Долг`,
+        `	sub /`,
+        `		<= Debt`,
+        ``,
+    ].join('\n');
+    const inner_decl = ($) => $.$mol_tree2_from_string([
+        `Line ${d}bog_vmap_lang_test_graph`,
+        `	series_y <= values`,
+        `	value? <=> value?`,
+        `	color \\red`,
+        `	sub / <= Title`,
+        ``,
+    ].join('\n'), 'test.view.tree').kids[0];
     const count = (text, line) => text.split('\n').filter(one => one.trim() === line).length;
     $mol_test({
         'a value of a writable port of a part is a cell of the root, not a constant'($) {
@@ -17736,6 +17848,88 @@ var $;
             node.cells_drop('Amount');
             $mol_assert_equal(node.prop_names().includes('amount_value'), false);
             $mol_assert_equal(node.prop_names().includes('amount_hint'), true);
+        },
+        'an inner layer taken out of a class reads its ports through the node it came from'($) {
+            $mol_assert_equal($.$bog_vmap_lang_inner_tree('Debt', 'Debt_Line', inner_decl($)).toString(), [
+                `Debt_Line ${d}bog_vmap_lang_test_graph`,
+                `	series_y = Debt values`,
+                `	value? = Debt value?`,
+                `	color \\red`,
+                `	sub / = Debt Title`,
+                ``,
+            ].join('\n'));
+        },
+        'a keyed inner layer stays in its class'($) {
+            const keyed = $.$mol_tree2_from_string([
+                `Row ${d}bog_vmap_lang_test_graph`,
+                `	title <= row_title*`,
+                ``,
+            ].join('\n'), 'test.view.tree').kids[0];
+            $mol_assert_equal($.$bog_vmap_lang_inner_movable(inner_decl($)), true);
+            $mol_assert_equal($.$bog_vmap_lang_inner_movable(keyed), false);
+            let failed = '';
+            try {
+                $.$bog_vmap_lang_inner_tree('Debt', 'Debt_Row', keyed);
+            }
+            catch (error) {
+                failed = error.message;
+            }
+            $mol_assert_ok(failed.includes('keyed'));
+        },
+        'an override of an inner layer is a node of the document held by a reference'($) {
+            const node = doc(inner_src);
+            $mol_assert_equal(node.inner_ref('Debt', 'Line'), '');
+            const name = node.inner_bind('Debt', 'Line', inner_decl($));
+            $mol_assert_equal(name, 'Debt_Line');
+            $mol_assert_equal(node.inner_ref('Debt', 'Line'), 'Debt_Line');
+            $mol_assert_like(node.inner_refs('Debt'), ['Debt_Line']);
+            $mol_assert_equal(node.source(), [
+                `${d}bog_vmap_lang_test_inner ${d}mol_view`,
+                `	Debt ${d}bog_vmap_lang_test_plot`,
+                `		title \\Долг`,
+                `		Line <= Debt_Line`,
+                `	sub / <= Debt`,
+                `	Debt_Line ${d}bog_vmap_lang_test_graph`,
+                `		series_y = Debt values`,
+                `		value? = Debt value?`,
+                `		color \\red`,
+                `		sub / = Debt Title`,
+                ``,
+            ].join('\n'));
+        },
+        'a second edit of the same inner layer keeps the node it already has'($) {
+            const node = doc(inner_src);
+            node.inner_bind('Debt', 'Line', inner_decl($));
+            node.cell_value('Debt_Line', 'color?', $mol_tree2.data('blue'));
+            $mol_assert_equal(node.inner_bind('Debt', 'Line', inner_decl($)), 'Debt_Line');
+            $mol_assert_equal(count(node.source(), `Line <= Debt_Line`), 1);
+            $mol_assert_equal(node.cell_of('Debt_Line', 'color'), 'debt_line_color');
+            $mol_assert_equal(node.prop_decl('debt_line_color').toString(), 'debt_line_color? \\blue\n');
+        },
+        'a port of an inner layer that the class feeds keeps its feed and refuses a value'($) {
+            const node = doc(inner_src);
+            node.inner_bind('Debt', 'Line', inner_decl($));
+            let failed = '';
+            try {
+                node.cell_value('Debt_Line', 'value?', $mol_tree2.data('Свежо'));
+            }
+            catch (error) {
+                failed = error.message;
+            }
+            $mol_assert_ok(failed.includes('bound already'));
+            $mol_assert_equal(node.over_tree('Debt_Line', 'value').toString(), 'value? = Debt value?\n');
+        },
+        'an inner layer does not take a port the document already bound'($) {
+            const node = doc(inner_src);
+            node.over_set('Debt', 'Line', $mol_tree2.struct('Line', [$mol_tree2.struct('null')]));
+            let failed = '';
+            try {
+                node.inner_bind('Debt', 'Line', inner_decl($));
+            }
+            catch (error) {
+                failed = error.message;
+            }
+            $mol_assert_ok(failed.includes('bound already'));
         },
     });
 })($ || ($ = {}));
@@ -18621,6 +18815,50 @@ var $;
             $mol_assert_equal(await settled(() => made.instance()), first);
             first.dom_tree();
             $mol_assert_equal(first.Knopka().dom_node().textContent, 'Ожила');
+        },
+        async 'a node drawn before the body of its class paints itself when the body lands'($) {
+            const { made } = scene($);
+            const root = `${d}hot_late_page`;
+            const kid = `${d}hot_late_kid`;
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Knopka ${kid}\n`
+                + `${kid} ${d}mol_view\n\tpayment null\n\tsub /\n\t\t<= payment\n`);
+            first.dom_tree();
+            const node = first.Knopka().dom_node();
+            $mol_assert_equal(node.textContent, '');
+            made.doc_js({ [kid]: 'payment() { return "Платёж 92 599" }' });
+            $mol_assert_equal(await settled(() => made.instance()), first);
+            first.dom_tree();
+            $mol_assert_equal(node.textContent, 'Платёж 92 599');
+        },
+        async 'a body that lands repaints the nodes of its own class only'($) {
+            const { made } = scene($);
+            const root = `${d}hot_aim_page`;
+            const kid = `${d}hot_aim_kid`;
+            const tail = `${d}hot_aim_tail`;
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Knopka ${kid}\n\t\t<= Tail ${tail}\n`
+                + `${kid} ${d}mol_view\n\tpayment null\n\tsub /\n\t\t<= payment\n`
+                + `${tail} ${d}mol_view\n\tsub /\n\t\t\\хвост\n`);
+            first.dom_tree();
+            const node = first.Knopka().dom_node();
+            const aside = first.Tail().dom_node();
+            $mol_assert_equal(aside.textContent, 'хвост');
+            aside.textContent = 'тронут рукой';
+            made.doc_js({ [kid]: 'payment() { return "Платёж 92 599" }' });
+            $mol_assert_equal(await settled(() => made.instance()), first);
+            first.dom_tree();
+            $mol_assert_equal(node.textContent, 'Платёж 92 599');
+            $mol_assert_equal(aside.textContent, 'тронут рукой');
+        },
+        async 'a pass over bodies that did not change marks nothing'($) {
+            const { made } = scene($);
+            const root = `${d}hot_idle_page`;
+            const kid = `${d}hot_idle_kid`;
+            made.doc_js({ [kid]: 'payment() { return "Платёж 92 599" }' });
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Knopka ${kid}\n`
+                + `${kid} ${d}mol_view\n\tpayment null\n\tsub /\n\t\t<= payment\n`);
+            first.dom_tree();
+            const report = $.$bog_vmap_scene_swap(first, name => Reflect.get(made.sandbox(), name), name => made.shapes()[name] ?? null);
+            $mol_assert_like(report, { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0, repainted: 0 });
         },
         async 'a method that appears heals the node that failed for want of it'($) {
             const { made } = scene($);

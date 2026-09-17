@@ -7517,6 +7517,22 @@ var $;
         ``,
     ].join('\n');
     const num = (text) => $mol_tree2.struct(text);
+    const inner_src = [
+        `${d}bog_vmap_lang_test_inner ${d}mol_view`,
+        `	Debt ${d}bog_vmap_lang_test_plot`,
+        `		title \\Долг`,
+        `	sub /`,
+        `		<= Debt`,
+        ``,
+    ].join('\n');
+    const inner_decl = ($) => $.$mol_tree2_from_string([
+        `Line ${d}bog_vmap_lang_test_graph`,
+        `	series_y <= values`,
+        `	value? <=> value?`,
+        `	color \\red`,
+        `	sub / <= Title`,
+        ``,
+    ].join('\n'), 'test.view.tree').kids[0];
     const count = (text, line) => text.split('\n').filter(one => one.trim() === line).length;
     $mol_test({
         'a value of a writable port of a part is a cell of the root, not a constant'($) {
@@ -7644,6 +7660,88 @@ var $;
             node.cells_drop('Amount');
             $mol_assert_equal(node.prop_names().includes('amount_value'), false);
             $mol_assert_equal(node.prop_names().includes('amount_hint'), true);
+        },
+        'an inner layer taken out of a class reads its ports through the node it came from'($) {
+            $mol_assert_equal($.$bog_vmap_lang_inner_tree('Debt', 'Debt_Line', inner_decl($)).toString(), [
+                `Debt_Line ${d}bog_vmap_lang_test_graph`,
+                `	series_y = Debt values`,
+                `	value? = Debt value?`,
+                `	color \\red`,
+                `	sub / = Debt Title`,
+                ``,
+            ].join('\n'));
+        },
+        'a keyed inner layer stays in its class'($) {
+            const keyed = $.$mol_tree2_from_string([
+                `Row ${d}bog_vmap_lang_test_graph`,
+                `	title <= row_title*`,
+                ``,
+            ].join('\n'), 'test.view.tree').kids[0];
+            $mol_assert_equal($.$bog_vmap_lang_inner_movable(inner_decl($)), true);
+            $mol_assert_equal($.$bog_vmap_lang_inner_movable(keyed), false);
+            let failed = '';
+            try {
+                $.$bog_vmap_lang_inner_tree('Debt', 'Debt_Row', keyed);
+            }
+            catch (error) {
+                failed = error.message;
+            }
+            $mol_assert_ok(failed.includes('keyed'));
+        },
+        'an override of an inner layer is a node of the document held by a reference'($) {
+            const node = doc(inner_src);
+            $mol_assert_equal(node.inner_ref('Debt', 'Line'), '');
+            const name = node.inner_bind('Debt', 'Line', inner_decl($));
+            $mol_assert_equal(name, 'Debt_Line');
+            $mol_assert_equal(node.inner_ref('Debt', 'Line'), 'Debt_Line');
+            $mol_assert_like(node.inner_refs('Debt'), ['Debt_Line']);
+            $mol_assert_equal(node.source(), [
+                `${d}bog_vmap_lang_test_inner ${d}mol_view`,
+                `	Debt ${d}bog_vmap_lang_test_plot`,
+                `		title \\Долг`,
+                `		Line <= Debt_Line`,
+                `	sub / <= Debt`,
+                `	Debt_Line ${d}bog_vmap_lang_test_graph`,
+                `		series_y = Debt values`,
+                `		value? = Debt value?`,
+                `		color \\red`,
+                `		sub / = Debt Title`,
+                ``,
+            ].join('\n'));
+        },
+        'a second edit of the same inner layer keeps the node it already has'($) {
+            const node = doc(inner_src);
+            node.inner_bind('Debt', 'Line', inner_decl($));
+            node.cell_value('Debt_Line', 'color?', $mol_tree2.data('blue'));
+            $mol_assert_equal(node.inner_bind('Debt', 'Line', inner_decl($)), 'Debt_Line');
+            $mol_assert_equal(count(node.source(), `Line <= Debt_Line`), 1);
+            $mol_assert_equal(node.cell_of('Debt_Line', 'color'), 'debt_line_color');
+            $mol_assert_equal(node.prop_decl('debt_line_color').toString(), 'debt_line_color? \\blue\n');
+        },
+        'a port of an inner layer that the class feeds keeps its feed and refuses a value'($) {
+            const node = doc(inner_src);
+            node.inner_bind('Debt', 'Line', inner_decl($));
+            let failed = '';
+            try {
+                node.cell_value('Debt_Line', 'value?', $mol_tree2.data('Свежо'));
+            }
+            catch (error) {
+                failed = error.message;
+            }
+            $mol_assert_ok(failed.includes('bound already'));
+            $mol_assert_equal(node.over_tree('Debt_Line', 'value').toString(), 'value? = Debt value?\n');
+        },
+        'an inner layer does not take a port the document already bound'($) {
+            const node = doc(inner_src);
+            node.over_set('Debt', 'Line', $mol_tree2.struct('Line', [$mol_tree2.struct('null')]));
+            let failed = '';
+            try {
+                node.inner_bind('Debt', 'Line', inner_decl($));
+            }
+            catch (error) {
+                failed = error.message;
+            }
+            $mol_assert_ok(failed.includes('bound already'));
         },
     });
 })($ || ($ = {}));
@@ -8529,6 +8627,50 @@ var $;
             $mol_assert_equal(await settled(() => made.instance()), first);
             first.dom_tree();
             $mol_assert_equal(first.Knopka().dom_node().textContent, 'Ожила');
+        },
+        async 'a node drawn before the body of its class paints itself when the body lands'($) {
+            const { made } = scene($);
+            const root = `${d}hot_late_page`;
+            const kid = `${d}hot_late_kid`;
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Knopka ${kid}\n`
+                + `${kid} ${d}mol_view\n\tpayment null\n\tsub /\n\t\t<= payment\n`);
+            first.dom_tree();
+            const node = first.Knopka().dom_node();
+            $mol_assert_equal(node.textContent, '');
+            made.doc_js({ [kid]: 'payment() { return "Платёж 92 599" }' });
+            $mol_assert_equal(await settled(() => made.instance()), first);
+            first.dom_tree();
+            $mol_assert_equal(node.textContent, 'Платёж 92 599');
+        },
+        async 'a body that lands repaints the nodes of its own class only'($) {
+            const { made } = scene($);
+            const root = `${d}hot_aim_page`;
+            const kid = `${d}hot_aim_kid`;
+            const tail = `${d}hot_aim_tail`;
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Knopka ${kid}\n\t\t<= Tail ${tail}\n`
+                + `${kid} ${d}mol_view\n\tpayment null\n\tsub /\n\t\t<= payment\n`
+                + `${tail} ${d}mol_view\n\tsub /\n\t\t\\хвост\n`);
+            first.dom_tree();
+            const node = first.Knopka().dom_node();
+            const aside = first.Tail().dom_node();
+            $mol_assert_equal(aside.textContent, 'хвост');
+            aside.textContent = 'тронут рукой';
+            made.doc_js({ [kid]: 'payment() { return "Платёж 92 599" }' });
+            $mol_assert_equal(await settled(() => made.instance()), first);
+            first.dom_tree();
+            $mol_assert_equal(node.textContent, 'Платёж 92 599');
+            $mol_assert_equal(aside.textContent, 'тронут рукой');
+        },
+        async 'a pass over bodies that did not change marks nothing'($) {
+            const { made } = scene($);
+            const root = `${d}hot_idle_page`;
+            const kid = `${d}hot_idle_kid`;
+            made.doc_js({ [kid]: 'payment() { return "Платёж 92 599" }' });
+            const first = await grown(made, root, `${root} ${d}mol_view\n\tsub /\n\t\t<= Knopka ${kid}\n`
+                + `${kid} ${d}mol_view\n\tpayment null\n\tsub /\n\t\t<= payment\n`);
+            first.dom_tree();
+            const report = $.$bog_vmap_scene_swap(first, name => Reflect.get(made.sandbox(), name), name => made.shapes()[name] ?? null);
+            $mol_assert_like(report, { swapped: 0, moved: 0, stale: 0, dropped: 0, failed: 0, repainted: 0 });
         },
         async 'a method that appears heals the node that failed for want of it'($) {
             const { made } = scene($);
