@@ -393,6 +393,13 @@ namespace $ {
 			},
 
 			class_row( klass: string ) {
+				const palette = app.Shelf().Palette()
+				const row = palette.class_rows().find( ( row: $mol_view )=> row.title() === klass )
+				if( row ) {
+					palette.Class_list().force_render( new Set< $mol_view >([ row ]) )
+					app.dom_tree()
+				}
+
 				return found( '[bog_vmap_app_palette_item]', `palette row ${ klass }`, el => el.textContent === klass )
 			},
 
