@@ -12937,7 +12937,94 @@ var $;
             $mol_assert_equal(stage.app.node().over_tree('Calc_2', 'op').toString(), wired);
             $mol_assert_equal(stage.app.node().over_tree('Calc', 'title').toString(), 'title \\Итог\n');
         },
-        'a nested node dragged with Alt is moved, not copied'($) {
+        'a drag with Alt into a board leaves the original outside and drops the copy inside'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.pane.tool('board');
+            stage.tap(stage.client([40, 40]));
+            stage.drop(calc, stage.client([520, 430]));
+            const node = stage.app.node();
+            $mol_assert_like(node.sub_names('Page'), []);
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            const into = stage.client([120, 120]);
+            stage.press(overlay, from, { altKey: true });
+            stage.move(overlay, stage.client([480, 300]), { altKey: true });
+            $mol_assert_equal(stage.pane.slot(), null);
+            $mol_assert_like(stage.app.spots()['Calc'], { x: 430, y: 275 });
+            stage.move(overlay, into, { altKey: true });
+            $mol_assert_ok(stage.pane.slot());
+            $mol_assert_equal(stage.pane.ghost_views().length, 1);
+            stage.release(overlay, into, { altKey: true });
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like(stage.app.node().sub_names('Page'), ['Calc_2']);
+            $mol_assert_like(stage.app.node().sub_names(), ['Page', 'Calc']);
+            $mol_assert_like(stage.app.spots()['Calc'], { x: 424, y: 354 });
+            $mol_assert_equal(stage.app.spots()['Calc_2'], undefined);
+            $mol_assert_equal(stage.pane.ghost_views().length, 0);
+        },
+        'a nested node dragged with Alt is copied beside itself, inside its own board'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.pane.tool('board');
+            stage.tap(stage.client([40, 40]));
+            stage.drop(calc, stage.client([520, 430]));
+            stage.drop(map, stage.client([560, 200]));
+            stage.app.tree_move({ name: 'Calc', owner: 'Page', index: 0 });
+            stage.app.tree_move({ name: 'Map', owner: 'Page', index: 1 });
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like(stage.app.node().sub_names('Page'), ['Calc', 'Map']);
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            const near = [from[0] + 8, from[1] + 8];
+            stage.press(overlay, from, { altKey: true });
+            stage.move(overlay, near, { altKey: true });
+            stage.release(overlay, near, { altKey: true });
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like(stage.app.node().sub_names('Page'), ['Calc', 'Calc_2', 'Map']);
+            $mol_assert_equal(stage.app.spots()['Calc_2'], undefined);
+            $mol_assert_like([...stage.app.picked()], ['Calc_2']);
+        },
+        'a drop into a board without Alt still moves the part, copies nothing'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.pane.tool('board');
+            stage.tap(stage.client([40, 40]));
+            stage.drop(calc, stage.client([520, 430]));
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            const into = stage.client([120, 120]);
+            stage.press(overlay, from);
+            stage.move(overlay, into);
+            stage.release(overlay, into);
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like(stage.app.node().sub_names('Page'), ['Calc']);
+            $mol_assert_equal(stage.app.doc_source().includes('Calc_2'), false);
+            $mol_assert_equal(stage.app.spots()['Calc'], undefined);
+        },
+        'a picked set dragged into a board with Alt copies the dragged node only'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.pane.tool('board');
+            stage.tap(stage.client([40, 40]));
+            stage.drop(calc, stage.client([520, 430]));
+            stage.drop(map, stage.client([560, 200]));
+            stage.app.picked(['Map', 'Calc']);
+            stage.redraw();
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            const into = stage.client([120, 120]);
+            stage.press(overlay, from, { altKey: true });
+            stage.move(overlay, into, { altKey: true });
+            stage.release(overlay, into, { altKey: true });
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like(stage.app.node().sub_names('Page'), ['Calc_2']);
+            $mol_assert_like(stage.app.node().sub_names(), ['Page', 'Calc', 'Map']);
+            $mol_assert_like(stage.app.spots()['Map'], { x: 464, y: 124 });
+            $mol_assert_like(stage.app.spots()['Calc'], { x: 424, y: 354 });
+        },
+        'a nested node dragged with Alt out of every container is copied beside itself'($) {
             const stage = $bog_vmap_app_flow_stage($);
             stage.pane.tool('board');
             stage.tap(stage.client([60, 60]));
@@ -12957,8 +13044,12 @@ var $;
             stage.move(overlay, to, { altKey: true });
             stage.release(overlay, to, { altKey: true });
             stage.redraw();
+            stage.scene.flush();
             $mol_assert_equal(stage.pane.slot(), null);
-            $mol_assert_like(stage.app.node().prop_names().filter(name => name.endsWith('_2')), []);
+            $mol_assert_like(stage.app.node().sub_names('Page'), ['Calc', 'Calc_2']);
+            $mol_assert_like([...stage.app.picked()], ['Calc_2']);
+            $mol_assert_equal(stage.app.spots()['Calc_2'], undefined);
+            $mol_assert_equal(stage.app.doc_source().includes('Map_2'), false);
         },
         'the second click lets the pointer inside the part, Escape takes it back out'($) {
             const stage = $bog_vmap_app_flow_stage($);

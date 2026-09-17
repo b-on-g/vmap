@@ -30057,10 +30057,10 @@ var $;
                     const drag = this.drag();
                     const slot = this.slot();
                     this.slot(null);
-                    if (drag && slot)
+                    if (drag && event.altKey)
+                        this.drag_clone(drag, slot);
+                    else if (drag && slot)
                         this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index });
-                    else if (drag && event.altKey && !drag.nested)
-                        this.drag_clone(drag);
                     this.drag(null);
                     this.drag_alt(false);
                     this.guides([]);
@@ -30199,8 +30199,17 @@ var $;
                     height: rect.height + 'px',
                 };
             }
-            drag_clone(drag) {
+            drag_clone(drag, slot) {
                 const dropped = this.spots();
+                if (slot) {
+                    this.spots({ ...dropped, ...drag.spots });
+                    this.node_clone({ names: [drag.name], owner: slot.owner, index: slot.index });
+                    return null;
+                }
+                if (drag.nested) {
+                    this.node_clone({ names: [drag.name] });
+                    return null;
+                }
                 const points = {};
                 for (const name of Object.keys(drag.spots)) {
                     const spot = dropped[name];
@@ -30210,7 +30219,7 @@ var $;
                 if (!Object.keys(points).length)
                     return null;
                 this.spots({ ...dropped, ...drag.spots });
-                this.node_clone(points);
+                this.node_clone({ names: Object.keys(points), spots: points });
                 return null;
             }
             link_add(next) {
@@ -37417,7 +37426,7 @@ var $;
                 if (!next || !this.editable())
                     return null;
                 const node = this.node();
-                const names = Object.keys(next);
+                const names = next.names;
                 if (!names.length)
                     return null;
                 const tops = names.filter(name => !names.some(up => up !== name && node.sub_within(up, name)));
@@ -37425,11 +37434,17 @@ var $;
                 const made = [];
                 for (const name of tops) {
                     const copy = this.$.$bog_vmap_app_copy(node, name);
-                    spots[copy] = {
-                        x: Math.round(next[name].x),
-                        y: Math.round(next[name].y),
-                    };
                     made.push(copy);
+                    if (next.owner !== undefined) {
+                        node.sub_move(copy, next.index ?? 0, next.owner);
+                        delete spots[copy];
+                        continue;
+                    }
+                    const spot = next.spots?.[name];
+                    if (spot)
+                        spots[copy] = { x: Math.round(spot.x), y: Math.round(spot.y) };
+                    else
+                        delete spots[copy];
                 }
                 this.spots(spots);
                 this.picked(made);

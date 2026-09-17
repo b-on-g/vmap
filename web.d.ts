@@ -46930,6 +46930,17 @@ declare namespace $.$$ {
         readonly owner: string;
         readonly index: number;
     };
+    type $bog_vmap_app_pane_clone = {
+        readonly names: readonly string[];
+        readonly spots?: {
+            readonly [name: string]: {
+                readonly x: number;
+                readonly y: number;
+            };
+        };
+        readonly owner?: string;
+        readonly index?: number;
+    };
     type $bog_vmap_app_pane_carry = {
         readonly x: number;
         readonly y: number;
@@ -47262,13 +47273,15 @@ declare namespace $.$$ {
             readonly [prop: string]: string;
         };
         drag_clone(drag: {
+            readonly name: string;
+            readonly nested: boolean;
             readonly spots: {
                 readonly [name: string]: {
                     readonly x: number;
                     readonly y: number;
                 };
             };
-        }): null;
+        }, slot: $bog_vmap_app_pane_slot | null): null;
         link_add(next?: $bog_vmap_app_pane_link_new | null): $bog_vmap_app_pane_link_new | null;
         link_drop(next?: $bog_vmap_app_pane_link_end | null): $bog_vmap_app_pane_link_end | null;
         wire_drag(next?: {
@@ -57352,12 +57365,7 @@ declare namespace $.$$ {
         board_draw(next?: $bog_vmap_bridge_rect | null): $bog_vmap_bridge_rect | null;
         node_wrap(): null;
         node_copy(): null;
-        node_clone(next?: {
-            readonly [name: string]: {
-                readonly x: number;
-                readonly y: number;
-            };
-        } | null): null;
+        node_clone(next?: $bog_vmap_app_pane_clone | null): null;
         delete_hint(): string;
         node_delete(): void;
         node_rename(name: string, next: string): void;
