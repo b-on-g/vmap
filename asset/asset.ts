@@ -13,7 +13,7 @@ namespace $ {
 			return null
 		}
 
-		return id ? $giper_baza_link.check( id ) : null
+		return id ? $giper_baza_link.check( id )?.str ?? null : null
 	}
 
 	export function $bog_vmap_asset_links( source: string ) {
