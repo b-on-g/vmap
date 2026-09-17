@@ -155,6 +155,7 @@
     "$mol_charset_buffer",
     "$mol_file_transaction",
     "$bog_tooltip",
+    "$bog_tooltip_hush",
     "$bog_tooltip_room",
     "$mol_icon_dock_left",
     "$mol_icon_dock",

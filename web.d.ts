@@ -1954,10 +1954,24 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
-    function $bog_tooltip_room(box: {
+    const $bog_tooltip_hush_mark = "data-mol-tip-off";
+    const $bog_tooltip_hush_tip = "data-mol-tip";
+    function $bog_tooltip_hush(node: Element | null): string;
+    function $bog_tooltip_hush_off(root: ParentNode | null): number;
+}
+
+declare namespace $ {
+    const $bog_tooltip_room_gap = 8;
+    const $bog_tooltip_room_need = 45;
+    type $bog_tooltip_room_box = {
         readonly left: number;
         readonly width: number;
-    }, view: number): {
+        readonly bottom?: number;
+        readonly height?: number;
+    };
+    function $bog_tooltip_room(box: $bog_tooltip_room_box, view: number, view_height?: number): {
+        flip: boolean;
+        lift: number;
         left: number;
         right: number;
     };

@@ -5846,9 +5846,44 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    function $bog_tooltip_room(box, view) {
+    $.$bog_tooltip_hush_mark = 'data-mol-tip-off';
+    $.$bog_tooltip_hush_tip = 'data-mol-tip';
+    function $bog_tooltip_hush(node) {
+        const host = node?.closest(`[${$.$bog_tooltip_hush_tip}]`) ?? null;
+        if (!host)
+            return '';
+        host.setAttribute($.$bog_tooltip_hush_mark, '');
+        return host.getAttribute($.$bog_tooltip_hush_tip) ?? '';
+    }
+    $.$bog_tooltip_hush = $bog_tooltip_hush;
+    function $bog_tooltip_hush_off(root) {
+        const held = [...root?.querySelectorAll(`[${$.$bog_tooltip_hush_mark}]`) ?? []];
+        for (const host of held)
+            host.removeAttribute($.$bog_tooltip_hush_mark);
+        return held.length;
+    }
+    $.$bog_tooltip_hush_off = $bog_tooltip_hush_off;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $.$bog_tooltip_room_gap = 8;
+    $.$bog_tooltip_room_need = 45;
+    function $bog_tooltip_room(box, view, view_height = 0) {
         const center = box.left + box.width / 2;
-        return { left: center, right: view - center };
+        const side = { left: center, right: view - center };
+        if (!view_height || box.bottom === undefined || box.height === undefined) {
+            return { ...side, flip: false, lift: 0 };
+        }
+        const below = view_height - box.bottom;
+        const above = box.bottom - box.height;
+        if (below >= $.$bog_tooltip_room_need)
+            return { ...side, flip: false, lift: 0 };
+        if (above <= below)
+            return { ...side, flip: false, lift: 0 };
+        return { ...side, flip: true, lift: box.height + $.$bog_tooltip_room_gap };
     }
     $.$bog_tooltip_room = $bog_tooltip_room;
 })($ || ($ = {}));
@@ -5866,6 +5901,7 @@ var $;
         if (typeof $mol_dom_context !== 'undefined' && $mol_dom_context.document) {
             const doc = $mol_dom_context.document;
             const capture = (event) => {
+                $bog_tooltip_hush_off(doc);
                 const tips = [];
                 let node = event.target instanceof $mol_dom_context.Element ? event.target : null;
                 for (; node; node = node.parentElement) {
@@ -5878,42 +5914,57 @@ var $;
                         tips.push(node);
                 }
                 const view = doc.documentElement.clientWidth;
-                const placed = tips.map(tip => [tip, $bog_tooltip_room(tip.getBoundingClientRect(), view)]);
+                const view_height = doc.documentElement.clientHeight;
+                const placed = tips.map(tip => [tip, $bog_tooltip_room(tip.getBoundingClientRect(), view, view_height)]);
                 for (const [tip, room] of placed) {
                     tip.style.setProperty('--bog_tooltip_left', `${room.left}px`);
                     tip.style.setProperty('--bog_tooltip_right', `${room.right}px`);
+                    tip.style.setProperty('--bog_tooltip_up', room.flip ? `calc( -100% - ${room.lift}px )` : '0px');
                 }
+            };
+            const hush = (event) => {
+                if (event.key !== 'Escape')
+                    return;
+                $bog_tooltip_hush(doc.activeElement);
             };
             doc.addEventListener('mouseover', capture, true);
             doc.addEventListener('focusin', capture, true);
+            doc.addEventListener('keydown', hush, true);
         }
+        const shown = (selector) => `
+		${selector}::after {
+			content: attr(data-mol-tip);
+			position: absolute;
+			z-index: 1000;
+			top: calc(100% + 4px);
+			left: 50%;
+			width: max-content;
+			max-width: min(80vw, 24rem);
+			white-space: normal;
+			overflow-wrap: anywhere;
+			transform: translate(
+				clamp(calc(8px - var(--bog_tooltip_left, 100vw)), -50%, calc(var(--bog_tooltip_right, 100vw) - 8px - 100%)),
+				var(--bog_tooltip_up, 0px)
+			);
+			background: var(--mol_theme_card);
+			color: var(--mol_theme_text);
+			padding: 0.25rem 0.5rem;
+			border-radius: 0.25rem;
+			font-size: 0.75rem;
+			line-height: 1.2;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+			pointer-events: none;
+			animation: bog-tooltip-in 0.08s ease-out;
+		}
+	`;
         $mol_style_attach('bog/tooltip/tooltip.view.css', `
 		[data-mol-tip] {
 			position: relative;
 		}
 		@media (hover: hover) and (pointer: fine) {
-			[data-mol-tip]:hover::after {
-				content: attr(data-mol-tip);
-				position: absolute;
-				z-index: 1000;
-				top: calc(100% + 4px);
-				left: 50%;
-				width: max-content;
-				max-width: min(80vw, 24rem);
-				white-space: normal;
-				overflow-wrap: anywhere;
-				transform: translateX(clamp(calc(8px - var(--bog_tooltip_left, 100vw)), -50%, calc(var(--bog_tooltip_right, 100vw) - 8px - 100%)));
-				background: var(--mol_theme_card);
-				color: var(--mol_theme_text);
-				padding: 0.25rem 0.5rem;
-				border-radius: 0.25rem;
-				font-size: 0.75rem;
-				line-height: 1.2;
-				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-				pointer-events: none;
-				animation: bog-tooltip-in 0.08s ease-out;
-			}
+			${shown('[data-mol-tip]:hover')}
 		}
+		${shown('[data-mol-tip]:focus-visible:not([data-mol-tip-off])')}
 		@keyframes bog-tooltip-in {
 			from { opacity: 0; translate: 0 -2px; }
 			to   { opacity: 1; translate: 0 0; }
@@ -58690,14 +58741,74 @@ var $;
 ;
 "use strict";
 var $;
+(function ($_1) {
+    function page($) {
+        const dom = $.$mol_dom_context;
+        const root = dom.document.createElement('div');
+        root.innerHTML = `
+			<button ${$bog_tooltip_hush_tip}="Первая"><span id="deep">жми</span></button>
+			<button ${$bog_tooltip_hush_tip}="Вторая"></button>
+			<button id="bare"></button>
+		`;
+        return root;
+    }
+    $mol_test({
+        'the hush marks the host of the node it was given, tip and all'($) {
+            const root = page($);
+            const deep = root.querySelector('#deep');
+            $mol_assert_equal($bog_tooltip_hush(deep), 'Первая');
+            $mol_assert_equal(root.querySelectorAll(`[${$bog_tooltip_hush_mark}]`).length, 1);
+        },
+        'a node with no host above it is left alone'($) {
+            const root = page($);
+            $mol_assert_equal($bog_tooltip_hush(root.querySelector('#bare')), '');
+            $mol_assert_equal($bog_tooltip_hush(null), '');
+            $mol_assert_equal(root.querySelectorAll(`[${$bog_tooltip_hush_mark}]`).length, 0);
+        },
+        'the next focus takes every mark away'($) {
+            const root = page($);
+            $bog_tooltip_hush(root.querySelector('#deep'));
+            $bog_tooltip_hush(root.querySelectorAll('button')[1]);
+            $mol_assert_equal(root.querySelectorAll(`[${$bog_tooltip_hush_mark}]`).length, 2);
+            $mol_assert_equal($bog_tooltip_hush_off(root), 2);
+            $mol_assert_equal(root.querySelectorAll(`[${$bog_tooltip_hush_mark}]`).length, 0);
+            $mol_assert_equal($bog_tooltip_hush_off(root), 0);
+            $mol_assert_equal($bog_tooltip_hush_off(null), 0);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
 (function ($) {
     $mol_test({
         'room is counted from the host center to both edges of the view'() {
-            $mol_assert_like($bog_tooltip_room({ left: 12, width: 40 }, 1280), { left: 32, right: 1248 });
-            $mol_assert_like($bog_tooltip_room({ left: 1228, width: 40 }, 1280), { left: 1248, right: 32 });
+            $mol_assert_like($bog_tooltip_room({ left: 12, width: 40 }, 1280), { left: 32, right: 1248, flip: false, lift: 0 });
+            $mol_assert_like($bog_tooltip_room({ left: 1228, width: 40 }, 1280), { left: 1248, right: 32, flip: false, lift: 0 });
         },
         'host past the right edge leaves negative room on that side'() {
-            $mol_assert_like($bog_tooltip_room({ left: 1270, width: 40 }, 1280), { left: 1290, right: -10 });
+            $mol_assert_like($bog_tooltip_room({ left: 1270, width: 40 }, 1280), { left: 1290, right: -10, flip: false, lift: 0 });
+        },
+        'a host with room below keeps the tip below it'() {
+            const room = $bog_tooltip_room({ left: 100, width: 40, bottom: 200, height: 40 }, 1280, 800);
+            $mol_assert_equal(room.flip, false);
+            $mol_assert_equal(room.lift, 0);
+        },
+        'a host at the floor flips the tip up over its own height and the gap'() {
+            const room = $bog_tooltip_room({ left: 100, width: 40, bottom: 790, height: 40 }, 1280, 800);
+            $mol_assert_equal(room.flip, true);
+            $mol_assert_equal(room.lift, 40 + $bog_tooltip_room_gap);
+        },
+        'a host with no room on either side keeps the tip below'() {
+            const room = $bog_tooltip_room({ left: 100, width: 40, bottom: 30, height: 30 }, 1280, 40);
+            $mol_assert_equal(room.flip, false);
+        },
+        'the room below is counted up to the need, not to the last pixel'() {
+            const tight = $bog_tooltip_room({ left: 100, width: 40, bottom: 800 - $bog_tooltip_room_need + 1, height: 40 }, 1280, 800);
+            const enough = $bog_tooltip_room({ left: 100, width: 40, bottom: 800 - $bog_tooltip_room_need, height: 40 }, 1280, 800);
+            $mol_assert_equal(tight.flip, true);
+            $mol_assert_equal(enough.flip, false);
         },
     });
 })($ || ($ = {}));
