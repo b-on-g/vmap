@@ -51,6 +51,14 @@ namespace $ {
 		'string', 'number', 'bool', 'null', 'locale', 'list', 'get', 'bind',
 	])
 
+	export const $bog_vmap_app_wire_machinery = new Set([
+		'dom_name', 'sub', 'attr', 'style', 'event', 'field',
+	])
+
+	export function $bog_vmap_app_wire_plain( port: { readonly name: string } ) {
+		return !$bog_vmap_app_wire_machinery.has( port.name )
+	}
+
 	export function $bog_vmap_app_wire_ports(
 		this: $,
 		props: ReadonlyMap< string, $mol_tree2 >,

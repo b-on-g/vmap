@@ -257,6 +257,26 @@ namespace $ {
 
 		},
 
+		'the machinery a view declares for itself is no port of a part'( $ ) {
+			const ports = [
+				... [ ... $bog_vmap_app_wire_machinery ].map( name => port( name, 'string' ) ),
+				port( 'title', 'string' ),
+				port( 'sub_title', 'string' ),
+				port( 'fields', 'list' ),
+			]
+
+			$mol_assert_like(
+				ports.filter( known => $bog_vmap_app_wire_plain( known ) ).map( known => known.name ),
+				[ 'title', 'sub_title', 'fields' ],
+			)
+
+			$mol_assert_like(
+				[ ... $bog_vmap_app_wire_machinery ],
+				[ 'dom_name', 'sub', 'attr', 'style', 'event', 'field' ],
+			)
+
+		},
+
 	})
 
 }
