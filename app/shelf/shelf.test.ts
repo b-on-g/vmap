@@ -25,11 +25,23 @@ namespace $ {
 		return $bog_vmap_app_shelf_presets().find( item => item.id === id )!.source
 	}
 
+	function shelf_make( $: $, over: Partial< $$.$bog_vmap_app_shelf > = {} ) {
+
+		const dom = $.$mol_dom_context
+
+		Object.assign( globalThis, {
+			ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
+			PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
+		} )
+
+		return $bog_vmap_app_shelf.make({ $, ... over }) as $$.$bog_vmap_app_shelf
+	}
+
 	$mol_test({
 
 		'the field is stored as typed and what was refused is said under it'( $ ) {
 
-			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
+			const shelf = shelf_make( $ )
 
 			shelf.links( 'https://mol.hyoo.ru, https://b-on-g.github.io/gram/' )
 
@@ -49,10 +61,9 @@ namespace $ {
 
 			const d = '$'
 
-			const shelf = $bog_vmap_app_shelf.make({
-				$,
+			const shelf = shelf_make( $, {
 				class_list: ()=> [ `${d}mol_view`, `${d}mol_button_minor`, `${d}bog_gram`, `${d}bog_gram_chat` ],
-			}) as $$.$bog_vmap_app_shelf
+			} )
 
 			$mol_assert_like( shelf.app_list(), [ `${d}bog_gram`, `${d}bog_gram_chat` ] )
 			$mol_assert_equal( shelf.apps_title(), 'Объекты приложения' )
@@ -64,11 +75,10 @@ namespace $ {
 
 		'a dead address takes down its own list and says why'( $ ) {
 
-			const shelf = $bog_vmap_app_shelf.make({
-				$,
+			const shelf = shelf_make( $, {
 				pack_link: ()=> 'http://dead.test/',
 				class_list: ()=> $mol_fail( new Error( 'Not Found' ) ),
-			}) as $$.$bog_vmap_app_shelf
+			} )
 
 			$mol_assert_like( shelf.app_list(), [] )
 			$mol_assert_equal( shelf.apps_title(), 'Приложение не отвечает' )
@@ -88,7 +98,7 @@ namespace $ {
 
 		'a read only scene browses the shelf but places, drags and rewires nothing'( $ ) {
 
-			const shelf = $bog_vmap_app_shelf.make({ $, editable: ()=> false }) as $$.$bog_vmap_app_shelf
+			const shelf = shelf_make( $, { editable: ()=> false } )
 			const id = shelf.items()[ 0 ].id
 
 			shelf.item_click( id, null )
@@ -112,7 +122,7 @@ namespace $ {
 
 		'nothing connected is a state and not a failure'( $ ) {
 
-			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
+			const shelf = shelf_make( $ )
 
 			$mol_assert_like( shelf.app_list(), [] )
 			$mol_assert_equal( shelf.apps_title(), 'Приложение не подключено' )
@@ -123,7 +133,7 @@ namespace $ {
 
 		'the shelf is a page: heading and filter pinned, groups scroll in its body'( $ ) {
 
-			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
+			const shelf = shelf_make( $ )
 
 			const body = shelf.body()
 
@@ -154,7 +164,7 @@ namespace $ {
 
 		'the pack, its address and its files sit in one expander, refusal under the field'( $ ) {
 
-			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
+			const shelf = shelf_make( $ )
 
 			shelf.links( 'https://mol.hyoo.ru, https://b-on-g.github.io/gram/' )
 
@@ -179,10 +189,9 @@ namespace $ {
 
 		'the filter narrows both the parts and the objects of the application'( $ ) {
 
-			const shelf = $bog_vmap_app_shelf.make({
-				$,
+			const shelf = shelf_make( $, {
 				class_list: ()=> [ `${d}bog_gram`, `${d}bog_gram_chat`, `${d}bog_other` ],
-			}) as $$.$bog_vmap_app_shelf
+			} )
 
 			const parts = ()=> shelf.items_shown().map( item => item.id )
 			const apps = ()=> shelf.shown( shelf.app_list() )
@@ -215,8 +224,7 @@ namespace $ {
 
 		'the shelf is cut down to what the pack at hand can build'( $ ) {
 
-			const shelf = ( classes: readonly string[] )=> $$.$bog_vmap_app_shelf.make({
-				$,
+			const shelf = ( classes: readonly string[] )=> shelf_make( $, {
 				pack_link: ()=> 'https://pack.test/',
 				pack_classes: ()=> classes,
 			})
@@ -245,8 +253,7 @@ namespace $ {
 
 		'until the pack answers the shelf keeps offering everything'( $ ) {
 
-			const shelf = $$.$bog_vmap_app_shelf.make({
-				$,
+			const shelf = shelf_make( $, {
 				pack_link: ()=> 'https://pack.test/',
 				pack_classes: ()=> $mol_fail( new Error( 'Not Found' ) ),
 			})
@@ -340,13 +347,12 @@ namespace $ {
 
 		async 'files brought to the panel end up in the library, whose link joins the field'( $ ) {
 
-			const shelf = $bog_vmap_app_shelf.make({
-				$,
+			const shelf = shelf_make( $, {
 				Store: ()=> $bog_vmap_app_publish_store.make({
 					$,
 					shelf_land_config: ()=> $.$giper_baza_glob.home().land(),
 				}),
-			}) as $$.$bog_vmap_app_shelf
+			} )
 
 			const source = `${d}my_card ${d}mol_view\n\tprice 0\n`
 
@@ -502,7 +508,7 @@ namespace $ {
 
 		'the second level replaces the shelf instead of stacking under it'( $ ) {
 
-			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
+			const shelf = shelf_make( $ )
 
 			$mol_assert_equal( shelf.classes_showed(), false )
 			$mol_assert_equal( shelf.body().includes( shelf.Parts() ), true )
@@ -550,7 +556,7 @@ namespace $ {
 
 		'each group folds on a click of its heading and unfolds on the second, the other one stays as it was'( $ ) {
 
-			const shelf = $bog_vmap_app_shelf.make({ $ }) as $$.$bog_vmap_app_shelf
+			const shelf = shelf_make( $ )
 			const dom = $.$mol_dom_context
 
 			const group = ( name: string )=> shelf.dom_tree().querySelector( `[bog_vmap_app_shelf_${ name }]` )!
