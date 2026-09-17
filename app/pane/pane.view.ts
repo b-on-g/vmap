@@ -336,6 +336,7 @@ namespace $.$$ {
 				... this.band() ? [ this.Band() ] : [],
 				... this.draft() ? [ this.Draft() ] : [],
 				... this.guide_views(),
+				... this.ghost_views(),
 				... this.menu() ? [ this.menu_view() ] : [],
 			] as readonly $mol_view[]
 		}
@@ -906,8 +907,25 @@ namespace $.$$ {
 		}
 
 		@ $mol_action
+		@ $mol_action
+		drag_cancel() {
+
+			const drag = this.drag()
+			if( !drag ) return null
+
+			this.spots({ ... this.spots(), ... drag.spots })
+
+			this.drag( null )
+			this.drag_alt( false )
+			this.slot( null )
+			this.guides( [] )
+
+			return null
+		}
+
 		escape() {
-			if( this.draft() ) this.draft( null )
+			if( this.drag() ) this.drag_cancel()
+			else if( this.draft() ) this.draft( null )
 			else if( this.inside() ) this.leave()
 			else if( this.tool() !== 'select' ) this.tool( 'select' )
 			else this.picked( [] )
@@ -1431,6 +1449,8 @@ namespace $.$$ {
 
 			const point = this.world_point( event )
 
+			this.drag_alt( Boolean( event.altKey ) )
+
 			const slot = this.insert_slot( point, drag.name )
 			this.slot( slot )
 
@@ -1502,6 +1522,7 @@ namespace $.$$ {
 				else if( drag && event.altKey && !drag.nested ) this.drag_clone( drag )
 
 				this.drag( null )
+				this.drag_alt( false )
 				this.guides( [] )
 
 				try {
@@ -1649,6 +1670,45 @@ namespace $.$$ {
 		override overlay_style(): { readonly [ prop: string ]: string } {
 			const rect = !this.carrying() && !this.hand() && this.inside() ? this.frame_box() : null
 			return { clipPath: this.$.$bog_vmap_app_pane_hole( rect ) }
+		}
+
+		@ $mol_mem
+		drag_alt( next?: boolean ) {
+			return next ?? false
+		}
+
+		ghost_names() {
+
+			const drag = this.drag()
+			if( !drag || !this.drag_alt() ) return []
+
+			return Object.keys( drag.spots )
+		}
+
+		ghost_views() {
+			return this.ghost_names().map( name => this.Ghost( name ) )
+		}
+
+		@ $mol_mem_key
+		override ghost_style( name: string ): { readonly [ prop: string ]: string } {
+
+			const spot = this.drag()?.spots[ name ]
+			const size = this.part_size( name )
+
+			if( !spot || !size ) return {}
+
+			const rect = this.$.$bog_vmap_app_pane_screen(
+				{ x: spot.x, y: spot.y, width: size.width, height: size.height },
+				this.camera_zoom(),
+				this.camera_shift(),
+			)
+
+			return {
+				left: rect.left + 'px',
+				top: rect.top + 'px',
+				width: rect.width + 'px',
+				height: rect.height + 'px',
+			}
 		}
 
 		@ $mol_action

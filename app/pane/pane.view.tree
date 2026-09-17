@@ -145,6 +145,8 @@ $bog_vmap_app_pane $mol_view
 		style <= draft_style *
 	Guide* $mol_view
 		style <= guide_style* *
+	Ghost* $mol_view
+		style <= ghost_style* *
 	Menu* $bog_vmap_app_menu
 		showed? <=> menu_showed? false
 		left <= menu_left \

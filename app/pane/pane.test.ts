@@ -176,6 +176,139 @@ namespace $ {
 
 		},
 
+		'while Alt is held the place of the original is marked, and the mark goes on release'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			const overlay = stage.overlay()
+			const from = stage.part_center( 'Calc' )
+			const to = [ from[0] + 60, from[1] + 40 ] as const
+
+			const marks = ()=> stage.pane.ghost_views().length
+
+			$mol_assert_equal( marks(), 0 )
+
+			stage.press( overlay, from, { altKey: true } )
+			stage.move( overlay, to, { altKey: true } )
+			stage.redraw()
+
+			$mol_assert_equal( marks(), 1 )
+			$mol_assert_like( stage.pane.ghost_style( 'Calc' ), {
+				left: '104px',
+				top: '74px',
+				width: '100px',
+				height: '50px',
+			} )
+
+			stage.release( overlay, to, { altKey: true } )
+			stage.redraw()
+
+			$mol_assert_equal( marks(), 0 )
+
+			stage.press( overlay, stage.part_center( 'Calc' ) )
+
+			$mol_assert_equal( marks(), 0 )
+
+			stage.release( overlay, stage.part_center( 'Calc' ) )
+
+		},
+
+		'Alt let go in the middle of a drag takes the mark away'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			const overlay = stage.overlay()
+			const from = stage.part_center( 'Calc' )
+
+			stage.press( overlay, from, { altKey: true } )
+			stage.move( overlay, [ from[0] + 30, from[1] ], { altKey: true } )
+
+			$mol_assert_equal( stage.pane.ghost_views().length, 1 )
+
+			stage.move( overlay, [ from[0] + 60, from[1] ] )
+
+			$mol_assert_equal( stage.pane.ghost_views().length, 0 )
+
+			stage.release( overlay, [ from[0] + 60, from[1] ] )
+			stage.redraw()
+
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 164, y: 74 } } )
+
+		},
+
+		'Escape in the middle of a drag puts the node back and takes the mark away'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			const overlay = stage.overlay()
+			const from = stage.part_center( 'Calc' )
+			const to = [ from[0] + 60, from[1] + 40 ] as const
+
+			stage.press( overlay, from, { altKey: true } )
+			stage.move( overlay, to, { altKey: true } )
+
+			$mol_assert_equal( stage.pane.ghost_views().length, 1 )
+
+			stage.pane.key_down({
+				key: 'Escape',
+				code: 'Escape',
+				altKey: true,
+				ctrlKey: false,
+				metaKey: false,
+				shiftKey: false,
+				target: null,
+				preventDefault() {},
+			})
+
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.ghost_views().length, 0 )
+			$mol_assert_equal( stage.pane.drag(), null )
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 104, y: 74 } } )
+
+			stage.release( overlay, to, { altKey: true } )
+			stage.redraw()
+
+			$mol_assert_like( stage.app.spots(), { Calc: { x: 104, y: 74 } } )
+			$mol_assert_equal( stage.app.doc_source().includes( 'Calc_2' ), false )
+
+		},
+
+		'the mark is no node: nothing stands at its place and nothing drops into it'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			const overlay = stage.overlay()
+			const from = stage.part_center( 'Calc' )
+			const to = [ from[0] + 300, from[1] + 200 ] as const
+
+			stage.press( overlay, from, { altKey: true } )
+			stage.move( overlay, to, { altKey: true } )
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.ghost_views().length, 1 )
+
+			const place = [ 104 + 50, 74 + 25 ] as const
+
+			$mol_assert_equal( stage.pane.insert_slot( place ), null )
+			$mol_assert_like( [ ... stage.pane.part_names() ], [ 'Calc' ] )
+			$mol_assert_equal( Object.keys( stage.pane.sizes() ).length, 1 )
+
+			const ghost = stage.pane.Ghost( 'Calc' ).dom_node()
+
+			$mol_assert_equal( stage.pane.dom_node().contains( ghost ), true )
+			$mol_assert_equal( ghost.getAttribute( 'id' )!.includes( 'Ghost' ), true )
+
+		},
+
 		'a copy dragged out with Alt carries the overrides and the wire of the original'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )

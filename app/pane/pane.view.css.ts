@@ -51,6 +51,15 @@ namespace $.$$ {
 			transition: 'none',
 		},
 
+		Ghost: {
+			position: 'absolute',
+			outline: '1px dashed ' + String( $mol_theme.focus ),
+			outlineOffset: '1px',
+			background: { color: $mol_theme.hover },
+			pointerEvents: 'none',
+			transition: 'none',
+		},
+
 		'@': {
 			bog_vmap_app_pane_tool: {
 				board: { cursor: 'crosshair' },
