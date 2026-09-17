@@ -35,7 +35,7 @@ namespace $.$$ {
 
 			if( next !== undefined ) {
 				const checked = next ? $giper_baza_link.check( next ) : null
-				store.doc_pick( checked ? new $giper_baza_link( checked ) : null )
+				store.doc_pick( checked )
 			}
 
 			return store.doc_current()?.link().str ?? ''
