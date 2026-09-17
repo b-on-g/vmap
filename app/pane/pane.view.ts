@@ -478,17 +478,49 @@ namespace $.$$ {
 		}
 
 		sizes_merged( fresh: { readonly [ node: string ]: $bog_vmap_bridge_rect } ) {
+
 			const prefix = this.doc_root() + '/'
 			const leaf = ( key: string )=> key.slice( prefix.length ).split( '/' ).pop() ?? ''
 
+			const live = new Set( this.doc_paths() )
 			const moved = new Set( Object.keys( fresh ).map( leaf ) )
-			const kept = {} as { [ node: string ]: $bog_vmap_bridge_rect }
 
+			const under = new Set< string >()
+
+			for( const key of Object.keys( fresh ) ) {
+				if( !key.startsWith( prefix ) ) continue
+
+				const steps = key.slice( prefix.length ).split( '/' )
+				for( let at = 1; at < steps.length; ++ at ) under.add( steps.slice( 0, at ).join( '/' ) )
+			}
+
+			const held = ( key: string )=> {
+
+				if( key in fresh ) return true
+				if( !live.size ) return !moved.has( leaf( key ) )
+				if( !key.startsWith( prefix ) ) return true
+
+				const steps = key.slice( prefix.length ).split( '/' )
+
+				let part = ''
+
+				for( let at = 1; at <= steps.length; ++ at ) {
+					const path = steps.slice( 0, at ).join( '/' )
+					if( !live.has( path ) ) break
+					part = path
+				}
+
+				if( !part ) return false
+				if( part === steps.join( '/' ) ) return true
+
+				return !under.has( part )
+			}
+
+			const kept = {} as { [ node: string ]: $bog_vmap_bridge_rect }
 			const sizes = this.sizes()
 
 			for( const key of Object.keys( sizes ) ) {
-				if( !( key in fresh ) && moved.has( leaf( key ) ) ) continue
-				kept[ key ] = sizes[ key ]
+				if( held( key ) ) kept[ key ] = sizes[ key ]
 			}
 
 			return { ... kept, ... fresh }

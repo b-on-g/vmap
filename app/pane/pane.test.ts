@@ -1980,6 +1980,128 @@ namespace $ {
 
 		},
 
+		'the size left by a renamed node is swept, and that name starts unmeasured again'( $ ) {
+
+			const paths = $mol_wire_atom.solo( {}, function paths( next?: readonly string[] ): readonly string[] {
+				return next ?? [ 'Calc', 'Map' ]
+			} )
+
+			const { pane, answer } = pane_make( $, {}, { doc_paths: ()=> paths.sync() } )
+
+			answer({ kind: 'sizes', sizes: {
+				[ `${root}/Calc` ]: box( 0, 0 ),
+				[ `${root}/Map` ]: box( 200, 0 ),
+			} })
+
+			$mol_assert_like( Object.keys( pane.sizes() ).sort(), [ `${root}/Calc`, `${root}/Map` ] )
+			$mol_assert_like( pane.part_size( 'Calc' ), box( 0, 0 ) )
+
+			paths.put([ 'Summa', 'Map' ])
+
+			answer({ kind: 'sizes', sizes: {
+				[ `${root}/Summa` ]: box( 0, 0 ),
+				[ `${root}/Map` ]: box( 200, 0 ),
+			} })
+
+			$mol_assert_like( Object.keys( pane.sizes() ).sort(), [ `${root}/Map`, `${root}/Summa` ] )
+
+			paths.put([ 'Summa', 'Map', 'Calc' ])
+
+			$mol_assert_equal( pane.part_size( 'Calc' ), null )
+
+		},
+
+		'a nested node renamed inside a board leaves no size behind'( $ ) {
+
+			const paths = $mol_wire_atom.solo( {}, function paths( next?: readonly string[] ): readonly string[] {
+				return next ?? [ 'Page', 'Page/Amount' ]
+			} )
+
+			const { pane, answer } = pane_make( $, {}, { doc_paths: ()=> paths.sync() } )
+
+			answer({ kind: 'sizes', sizes: {
+				[ `${root}/Page` ]: box( 0, 0, 400, 300 ),
+				[ `${root}/Page/Amount` ]: box( 10, 10 ),
+			} })
+
+			paths.put([ 'Page', 'Page/Summa' ])
+
+			answer({ kind: 'sizes', sizes: {
+				[ `${root}/Page` ]: box( 0, 0, 400, 300 ),
+				[ `${root}/Page/Summa` ]: box( 10, 10 ),
+			} })
+
+			$mol_assert_like(
+				Object.keys( pane.sizes() ).sort(),
+				[ `${root}/Page`, `${root}/Page/Summa` ],
+			)
+
+		},
+
+		'a part the scene never reported keeps its size while it lives in the document'( $ ) {
+
+			const { pane, answer } = pane_make( $, {}, { doc_paths: ()=> [ 'Near', 'Far' ] } )
+
+			answer({ kind: 'sizes', sizes: {
+				[ `${root}/Near` ]: box( 0, 0 ),
+				[ `${root}/Far` ]: box( 9000, 9000 ),
+			} })
+
+			answer({ kind: 'sizes', sizes: { [ `${root}/Near` ]: box( 0, 0 ) } })
+
+			$mol_assert_like( Object.keys( pane.sizes() ).sort(), [ `${root}/Far`, `${root}/Near` ] )
+			$mol_assert_like( pane.part_size( 'Far' ), box( 9000, 9000 ) )
+
+		},
+
+		'a node the document still holds is never swept, whatever the message brings'( $ ) {
+
+			const { pane, answer } = pane_make( $, {}, { doc_paths: ()=> [ 'Page', 'Page/Amount' ] } )
+
+			answer({ kind: 'sizes', sizes: {
+				[ `${root}/Page` ]: box( 0, 0, 400, 300 ),
+				[ `${root}/Page/Amount` ]: box( 10, 10 ),
+			} })
+
+			answer({ kind: 'sizes', sizes: { [ `${root}/Page/Amount` ]: box( 20, 20 ) } })
+
+			$mol_assert_like(
+				Object.keys( pane.sizes() ).sort(),
+				[ `${root}/Page`, `${root}/Page/Amount` ],
+			)
+
+			$mol_assert_like( pane.sizes()[ `${root}/Page` ], box( 0, 0, 400, 300 ) )
+
+		},
+
+		'the sweep leaves the inner layers of a part alone until the part is measured anew'( $ ) {
+
+			const { pane, answer } = pane_make( $, {}, { doc_paths: ()=> [ 'Debt' ] } )
+
+			answer({ kind: 'sizes', sizes: {
+				[ `${root}/Debt` ]: box( 0, 0, 300, 200 ),
+				[ `${root}/Debt/Title` ]: box( 10, 10 ),
+			} })
+
+			answer({ kind: 'sizes', sizes: { [ `${root}/Debt` ]: box( 0, 0, 300, 200 ) } })
+
+			$mol_assert_like(
+				Object.keys( pane.sizes() ).sort(),
+				[ `${root}/Debt`, `${root}/Debt/Title` ],
+			)
+
+			answer({ kind: 'sizes', sizes: {
+				[ `${root}/Debt` ]: box( 0, 0, 300, 200 ),
+				[ `${root}/Debt/Line` ]: box( 20, 20 ),
+			} })
+
+			$mol_assert_like(
+				Object.keys( pane.sizes() ).sort(),
+				[ `${root}/Debt`, `${root}/Debt/Line` ],
+			)
+
+		},
+
 		'the column stays open while the pointer walks down it to a deep port'( $ ) {
 
 			const ports = [] as { name: string, next: boolean, own: boolean, kind: 'number' }[]

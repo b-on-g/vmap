@@ -885,6 +885,36 @@ namespace $.$$ {
 			return $bog_vmap_app_wire_labelled( ports, this.part_labels( name ) )
 		}
 
+		@ $mol_mem
+		override doc_paths(): readonly string[] {
+
+			const node = this.node()
+			const paths = [] as string[]
+			const seen = new Set< string >()
+
+			const walk = ( owner: string, path: string )=> {
+
+				if( seen.has( owner ) ) return
+				seen.add( owner )
+
+				for( const kid of node.sub_names( owner ) ?? [] ) {
+
+					if( !kid ) continue
+
+					const next = path ? path + '/' + kid : kid
+
+					paths.push( next )
+					walk( kid, next )
+
+				}
+
+			}
+
+			walk( '', '' )
+
+			return paths
+		}
+
 		@ $mol_mem_key
 		part_labels( name: string ): readonly string[] {
 
@@ -1629,3 +1659,4 @@ namespace $.$$ {
 	}
 
 }
+
