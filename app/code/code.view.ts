@@ -305,7 +305,17 @@ namespace $.$$ {
 				return 'Тексты класса не разобрать по свойствам: скобки не сбалансированы. Включите «Весь класс»'
 			}
 
-			return this.sliced() ? this.node_note() : ''
+			if( !this.sliced() ) return ''
+
+			const note = this.node_note()
+			if( !note ) return note
+
+			return this.slot_open() === 'css' ? `${ note } ${ this.css_idle_note() }` : note
+		}
+
+		css_idle_note() {
+			return 'Стиль запишется сразу, а на холсте оживёт вместе со слоем:'
+				+ ' селектор ждёт узел, который заводит первая правка дерева.'
 		}
 
 	}

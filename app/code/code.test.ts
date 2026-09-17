@@ -829,6 +829,26 @@ namespace $ {
 
 		},
 
+		'the styles tab warns that a style waits for the layer to reach the document'( $ ) {
+
+			const { app, code } = inner_editor( $ )
+
+			app.inner( 'Cell/Note' )
+			code.Sources().current( '2' )
+
+			$mol_assert_ok( code.note().includes( 'оживёт вместе со слоем' ) )
+
+			code.css_text( '[flow_inner_cell_note] { color: red }' )
+
+			$mol_assert_ok( app.doc_css().includes( 'flow_inner_cell_note' ) )
+			$mol_assert_equal( app.doc_source().includes( 'Cell_Note' ), false )
+
+			code.Sources().current( '0' )
+			$mol_assert_equal( code.note().includes( 'оживёт вместе со слоем' ), false )
+			$mol_assert_ok( code.note().includes( 'в документе его ещё нет' ) )
+
+		},
+
 		'a refusal outranks the word about a layer the document does not hold'( $ ) {
 
 			const { app, code } = inner_editor( $ )
