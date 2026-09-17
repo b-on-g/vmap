@@ -1365,12 +1365,12 @@ namespace $.$$ {
 		}
 
 		@ $mol_action
-		override node_clone( next?: { readonly [ name: string ]: { readonly x: number, readonly y: number } } | null ) {
+		override node_clone( next?: $bog_vmap_app_pane_clone | null ) {
 
 			if( !next || !this.editable() ) return null
 
 			const node = this.node()
-			const names = Object.keys( next )
+			const names = next.names
 			if( !names.length ) return null
 
 			const tops = names.filter( name => !names.some( up => up !== name && node.sub_within( up, name ) ) )
@@ -1381,13 +1381,18 @@ namespace $.$$ {
 			for( const name of tops ) {
 
 				const copy = this.$.$bog_vmap_app_copy( node, name )
+				made.push( copy )
 
-				spots[ copy ] = {
-					x: Math.round( next[ name ].x ),
-					y: Math.round( next[ name ].y ),
+				if( next.owner !== undefined ) {
+					node.sub_move( copy, next.index ?? 0, next.owner )
+					delete spots[ copy ]
+					continue
 				}
 
-				made.push( copy )
+				const spot = next.spots?.[ name ]
+
+				if( spot ) spots[ copy ] = { x: Math.round( spot.x ), y: Math.round( spot.y ) }
+				else delete spots[ copy ]
 
 			}
 

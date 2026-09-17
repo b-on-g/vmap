@@ -1,4 +1,5 @@
 namespace $.$$ {
+
 	const grab_slack = 8
 
 	const click_slack = 4
@@ -27,6 +28,13 @@ namespace $.$$ {
 		readonly name: string
 		readonly owner: string
 		readonly index: number
+	}
+
+	export type $bog_vmap_app_pane_clone = {
+		readonly names: readonly string[]
+		readonly spots?: { readonly [ name: string ]: { readonly x: number, readonly y: number } }
+		readonly owner?: string
+		readonly index?: number
 	}
 
 	export type $bog_vmap_app_pane_carry = {
@@ -1518,8 +1526,8 @@ namespace $.$$ {
 
 				this.slot( null )
 
-				if( drag && slot ) this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index })
-				else if( drag && event.altKey && !drag.nested ) this.drag_clone( drag )
+				if( drag && event.altKey ) this.drag_clone( drag, slot )
+				else if( drag && slot ) this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index })
 
 				this.drag( null )
 				this.drag_alt( false )
@@ -1712,9 +1720,28 @@ namespace $.$$ {
 		}
 
 		@ $mol_action
-		drag_clone( drag: { readonly spots: { readonly [ name: string ]: { readonly x: number, readonly y: number } } } ) {
+		drag_clone(
+			drag: {
+				readonly name: string
+				readonly nested: boolean
+				readonly spots: { readonly [ name: string ]: { readonly x: number, readonly y: number } }
+			},
+			slot: $bog_vmap_app_pane_slot | null,
+		) {
 
 			const dropped = this.spots()
+
+			if( slot ) {
+				this.spots({ ... dropped, ... drag.spots })
+				this.node_clone({ names: [ drag.name ], owner: slot.owner, index: slot.index })
+				return null
+			}
+
+			if( drag.nested ) {
+				this.node_clone({ names: [ drag.name ] })
+				return null
+			}
+
 			const points = {} as { [ name: string ]: { readonly x: number, readonly y: number } }
 
 			for( const name of Object.keys( drag.spots ) ) {
@@ -1725,7 +1752,7 @@ namespace $.$$ {
 			if( !Object.keys( points ).length ) return null
 
 			this.spots({ ... dropped, ... drag.spots })
-			this.node_clone( points )
+			this.node_clone({ names: Object.keys( points ), spots: points })
 
 			return null
 		}
