@@ -132,6 +132,43 @@ namespace $ {
 		return owner
 	}
 
+	export function $bog_vmap_lib_inner_kids(
+		this: $,
+		props: Map< string, $mol_tree2 >,
+		prop: string,
+	) {
+
+		const decl = props.get( prop )
+		if( !decl ) return [] as readonly string[]
+
+		const kids = [] as string[]
+
+		const walk = ( tree: $mol_tree2 ): void => {
+
+			const ref = tree.kids[ 0 ]
+
+			if( ref && !ref.kids.length && ( tree.type === '<=' || tree.type === '<=>' ) ) {
+				const name = this.$mol_view_tree2_prop_parts( ref ).name
+				const value = props.get( name )?.kids[ 0 ]
+				if( value && $mol_view_tree2_class_match( value ) && !kids.includes( name ) ) kids.push( name )
+			}
+
+			for( const kid of tree.kids ) walk( kid )
+		}
+
+		walk( decl )
+
+		return kids as readonly string[]
+	}
+
+	export function $bog_vmap_lib_inner_class(
+		props: Map< string, $mol_tree2 >,
+		prop: string,
+	) {
+		const value = props.get( prop )?.kids[ 0 ]
+		return value && $mol_view_tree2_class_match( value ) ? value.type : ''
+	}
+
 	export class $bog_vmap_lib_any extends $mol_object {
 
 		@ $mol_mem
@@ -187,6 +224,26 @@ namespace $ {
 		@ $mol_mem_key
 		props_of( base: string ) {
 			return this.united().list( [ ... this.props_map( base ).values() ].reverse() )
+		}
+
+		@ $mol_mem_key
+		inner_kids( key: string ) {
+			const cut = key.indexOf( '/' )
+			const klass = cut < 0 ? key : key.slice( 0, cut )
+			return this.$.$bog_vmap_lib_inner_kids(
+				this.props_map( klass ),
+				cut < 0 ? 'sub' : key.slice( cut + 1 ),
+			)
+		}
+
+		@ $mol_mem_key
+		inner_class( key: string ) {
+			const cut = key.indexOf( '/' )
+			if( cut < 0 ) return ''
+			return this.$.$bog_vmap_lib_inner_class(
+				this.props_map( key.slice( 0, cut ) ),
+				key.slice( cut + 1 ),
+			)
 		}
 
 	}

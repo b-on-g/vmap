@@ -1162,6 +1162,24 @@ namespace $ {
 
 	const num = ( text: string )=> $mol_tree2.struct( text )
 
+	const inner_src = [
+		`${d}bog_vmap_lang_test_inner ${d}mol_view`,
+		`	Debt ${d}bog_vmap_lang_test_plot`,
+		`		title \\Долг`,
+		`	sub /`,
+		`		<= Debt`,
+		``,
+	].join( '\n' )
+
+	const inner_decl = ( $: $ )=> $.$mol_tree2_from_string( [
+		`Line ${d}bog_vmap_lang_test_graph`,
+		`	series_y <= values`,
+		`	value? <=> value?`,
+		`	color \\red`,
+		`	sub / <= Title`,
+		``,
+	].join( '\n' ), 'test.view.tree' ).kids[ 0 ]
+
 	const count = ( text: string, line: string )=> text.split( '\n' ).filter( one => one.trim() === line ).length
 
 	$mol_test({
@@ -1364,6 +1382,122 @@ namespace $ {
 
 			$mol_assert_equal( node.prop_names().includes( 'amount_value' ), false )
 			$mol_assert_equal( node.prop_names().includes( 'amount_hint' ), true )
+
+		},
+
+		'an inner layer taken out of a class reads its ports through the node it came from'( $ ) {
+
+			$mol_assert_equal(
+				$.$bog_vmap_lang_inner_tree( 'Debt', 'Debt_Line', inner_decl( $ ) ).toString(),
+				[
+					`Debt_Line ${d}bog_vmap_lang_test_graph`,
+					`	series_y = Debt values`,
+					`	value? = Debt value?`,
+					`	color \\red`,
+					`	sub / = Debt Title`,
+					``,
+				].join( '\n' ),
+			)
+
+		},
+
+		'a keyed inner layer stays in its class'( $ ) {
+
+			const keyed = $.$mol_tree2_from_string( [
+				`Row ${d}bog_vmap_lang_test_graph`,
+				`	title <= row_title*`,
+				``,
+			].join( '\n' ), 'test.view.tree' ).kids[ 0 ]
+
+			$mol_assert_equal( $.$bog_vmap_lang_inner_movable( inner_decl( $ ) ), true )
+			$mol_assert_equal( $.$bog_vmap_lang_inner_movable( keyed ), false )
+
+			let failed = ''
+			try {
+				$.$bog_vmap_lang_inner_tree( 'Debt', 'Debt_Row', keyed )
+			} catch( error: any ) {
+				failed = error.message
+			}
+
+			$mol_assert_ok( failed.includes( 'keyed' ) )
+
+		},
+
+		'an override of an inner layer is a node of the document held by a reference'( $ ) {
+
+			const node = doc( inner_src )
+
+			$mol_assert_equal( node.inner_ref( 'Debt', 'Line' ), '' )
+
+			const name = node.inner_bind( 'Debt', 'Line', inner_decl( $ ) )
+
+			$mol_assert_equal( name, 'Debt_Line' )
+			$mol_assert_equal( node.inner_ref( 'Debt', 'Line' ), 'Debt_Line' )
+			$mol_assert_like( node.inner_refs( 'Debt' ), [ 'Debt_Line' ] )
+
+			$mol_assert_equal(
+				node.source(),
+				[
+					`${d}bog_vmap_lang_test_inner ${d}mol_view`,
+					`	Debt ${d}bog_vmap_lang_test_plot`,
+					`		title \\Долг`,
+					`		Line <= Debt_Line`,
+					`	sub / <= Debt`,
+					`	Debt_Line ${d}bog_vmap_lang_test_graph`,
+					`		series_y = Debt values`,
+					`		value? = Debt value?`,
+					`		color \\red`,
+					`		sub / = Debt Title`,
+					``,
+				].join( '\n' ),
+			)
+
+		},
+
+		'a second edit of the same inner layer keeps the node it already has'( $ ) {
+
+			const node = doc( inner_src )
+
+			node.inner_bind( 'Debt', 'Line', inner_decl( $ ) )
+			node.cell_value( 'Debt_Line', 'color?', $mol_tree2.data( 'blue' ) )
+
+			$mol_assert_equal( node.inner_bind( 'Debt', 'Line', inner_decl( $ ) ), 'Debt_Line' )
+			$mol_assert_equal( count( node.source(), `Line <= Debt_Line` ), 1 )
+			$mol_assert_equal( node.cell_of( 'Debt_Line', 'color' ), 'debt_line_color' )
+			$mol_assert_equal( node.prop_decl( 'debt_line_color' )!.toString(), 'debt_line_color? \\blue\n' )
+
+		},
+
+		'a port of an inner layer that the class feeds keeps its feed and refuses a value'( $ ) {
+
+			const node = doc( inner_src )
+			node.inner_bind( 'Debt', 'Line', inner_decl( $ ) )
+
+			let failed = ''
+			try {
+				node.cell_value( 'Debt_Line', 'value?', $mol_tree2.data( 'Свежо' ) )
+			} catch( error: any ) {
+				failed = error.message
+			}
+
+			$mol_assert_ok( failed.includes( 'bound already' ) )
+			$mol_assert_equal( node.over_tree( 'Debt_Line', 'value' )!.toString(), 'value? = Debt value?\n' )
+
+		},
+
+		'an inner layer does not take a port the document already bound'( $ ) {
+
+			const node = doc( inner_src )
+			node.over_set( 'Debt', 'Line', $mol_tree2.struct( 'Line', [ $mol_tree2.struct( 'null' ) ] ) )
+
+			let failed = ''
+			try {
+				node.inner_bind( 'Debt', 'Line', inner_decl( $ ) )
+			} catch( error: any ) {
+				failed = error.message
+			}
+
+			$mol_assert_ok( failed.includes( 'bound already' ) )
 
 		},
 

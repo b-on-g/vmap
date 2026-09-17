@@ -55,11 +55,69 @@ namespace $.$$ {
 
 			const parts = node.part_names()
 			const held = new Set( [ '', ... parts ].flatMap( owner => node.sub_names( owner ) ?? [] ) )
+			const inner = new Set( parts.flatMap( part => node.inner_refs( part ) ) )
 
-			for( const name of parts ) if( !found.has( name ) && !held.has( name ) ) walk( name, null, 2 )
-			for( const name of parts ) if( !found.has( name ) ) walk( name, null, 2 )
+			for( const name of parts ) {
+				if( !found.has( name ) && !held.has( name ) && !inner.has( name ) ) walk( name, null, 2 )
+			}
+			for( const name of parts ) if( !found.has( name ) && !inner.has( name ) ) walk( name, null, 2 )
 
 			return found
+		}
+
+		override row_inner( name: string ) {
+			return name.includes( '/' )
+		}
+
+		inner_owner( name: string ) {
+			return name.slice( 0, name.indexOf( '/' ) )
+		}
+
+		inner_prop( name: string ) {
+			return name.slice( name.indexOf( '/' ) + 1 )
+		}
+
+		inner_key( name: string ) {
+			return `${ this.row_class( this.inner_owner( name ) ) }/${ this.inner_prop( name ) }`
+		}
+
+		@ $mol_mem_key
+		inner_layers( part: string ) {
+
+			const found = new Map< string, layer >()
+			const klass = this.row_class( part )
+			if( !klass ) return found
+
+			const level = this.row_level( part )
+
+			const walk = ( key: string, owner: string | null, deep: number ): readonly string[] => {
+
+				const born = [] as string[]
+
+				for( const kid of this.inner_kids( key ) ) {
+					const path = `${ part }/${ kid }`
+					if( found.has( path ) ) continue
+					found.set( path, { owner, level: deep, kids: [] } )
+					born.push( path )
+				}
+
+				for( const path of born ) {
+					const kids = walk( `${ klass }/${ this.inner_prop( path ) }`, path, deep + 1 )
+					found.set( path, { owner, level: deep, kids } )
+				}
+
+				return born
+			}
+
+			walk( klass, null, level + 1 )
+
+			return found
+		}
+
+		inner_roots( part: string ) {
+			return [ ... this.inner_layers( part ) ]
+				.filter( ([ , layer ])=> layer.owner === null )
+				.map( ([ path ])=> path )
 		}
 
 		@ $mol_mem
@@ -69,11 +127,25 @@ namespace $.$$ {
 				.map( ([ name ])=> name )
 		}
 
-		row_kids( name: string ) {
-			return this.layers().get( name )?.kids ?? []
+		row_kids( name: string ): readonly string[] {
+
+			if( this.row_inner( name ) ) {
+				return this.inner_layers( this.inner_owner( name ) ).get( name )?.kids ?? []
+			}
+
+			const kids = this.layers().get( name )?.kids ?? []
+			if( kids.length ) return kids
+
+			return this.inner_roots( name )
 		}
 
-		row_holder( name: string ) {
+		row_holder( name: string ): string | null {
+
+			if( this.row_inner( name ) ) {
+				const owner = this.inner_layers( this.inner_owner( name ) ).get( name )?.owner
+				return owner === undefined ? null : owner ?? this.inner_owner( name )
+			}
+
 			return this.layers().get( name )?.owner ?? null
 		}
 
@@ -103,7 +175,12 @@ namespace $.$$ {
 			return rows
 		}
 
-		override row_level( name: string ) {
+		override row_level( name: string ): number {
+
+			if( this.row_inner( name ) ) {
+				return this.inner_layers( this.inner_owner( name ) ).get( name )?.level ?? 1
+			}
+
 			return this.layers().get( name )?.level ?? 1
 		}
 
@@ -112,14 +189,15 @@ namespace $.$$ {
 		}
 
 		row_open( name: string, next?: boolean ) {
-			if( !this.row_kids( name ).length ) return null
-			return this.expanded_at( name, next )
+			const kids = this.row_kids( name )
+			if( !kids.length ) return null
+			return this.expanded_at( name, next, !kids.some( kid => this.row_inner( kid ) ) )
 		}
 
-		expanded_at( name: string, next?: boolean ) {
+		expanded_at( name: string, next?: boolean, fallback = true ) {
 			const key = this.fold_key( 'open' )
 			const open: flags = this.$.$mol_state_session.value< flags | null >( key ) ?? {}
-			if( next === undefined ) return open[ name ] ?? true
+			if( next === undefined ) return open[ name ] ?? fallback
 
 			this.$.$mol_state_session.value( key, { ... open, [ name ]: next } )
 			return next
@@ -138,10 +216,14 @@ namespace $.$$ {
 		}
 
 		override row_title( name: string ) {
+			if( this.row_inner( name ) ) return this.inner_prop( name )
 			return name || this.root()
 		}
 
-		row_class( name: string ) {
+		row_class( name: string ): string {
+
+			if( this.row_inner( name ) ) return this.inner_class( this.inner_key( name ) )
+
 			const value = name ? this.node().prop_decl( name )?.kids[ 0 ] : null
 			return value && $mol_view_tree2_class_match( value ) ? value.type : ''
 		}
@@ -152,7 +234,13 @@ namespace $.$$ {
 
 		row_kind( name: string ) {
 			if( !name ) return 'root'
+			if( this.row_inner( name ) ) return this.row_kids( name ).length ? 'frame' : this.class_kind( name )
 			if( this.layers().get( name )?.kids ) return 'frame'
+
+			return this.class_kind( name )
+		}
+
+		class_kind( name: string ) {
 
 			const klass = this.row_class( name )
 			if( !klass ) return 'text'
@@ -184,6 +272,9 @@ namespace $.$$ {
 		}
 
 		override row_picked( name: string ) {
+
+			if( this.row_inner( name ) ) return this.inner() === name
+
 			const picked = this.picked()
 			if( picked.includes( name ) ) return true
 			if( this.row_open( name ) !== false ) return false
@@ -193,6 +284,14 @@ namespace $.$$ {
 		@ $mol_action
 		override row_pick( name: string, event?: MouseEvent ) {
 			if( !event ) return null
+
+			if( this.row_inner( name ) ) {
+				this.picked([ this.inner_owner( name ) ])
+				this.inner( name )
+				return null
+			}
+
+			this.inner( '' )
 
 			if( !name ) {
 				this.picked( [] )
@@ -222,6 +321,7 @@ namespace $.$$ {
 		}
 
 		override row_draggable( name: string ) {
+			if( this.row_inner( name ) ) return false
 			return this.editable() && Boolean( name ) && !this.row_editing( name )
 		}
 
@@ -234,7 +334,7 @@ namespace $.$$ {
 
 		@ $mol_action
 		override row_edit( name: string, event?: Event ) {
-			if( !name || !event || !this.editable() ) return null
+			if( !name || !event || !this.editable() || this.row_inner( name ) ) return null
 
 			this.picked( [ name ] )
 			this.row_draft( name, name )
@@ -299,6 +399,7 @@ namespace $.$$ {
 		}
 
 		zone_at( name: string, share: number ) {
+			if( this.row_inner( name ) ) return ''
 			if( !name ) return 'inside'
 			if( !this.row_within( '', name ) ) return ''
 			if( this.layers().get( name )?.kids && share >= .5 ) return 'inside'
@@ -317,6 +418,7 @@ namespace $.$$ {
 
 		move_to( anchor: string, name: string, zone: string ): $bog_vmap_app_pane_tree_move | null {
 			if( !name || name === anchor ) return null
+			if( this.row_inner( name ) || this.row_inner( anchor ) ) return null
 
 			const into = !anchor || zone === 'inside'
 			const owner = into ? anchor : this.row_holder( anchor )

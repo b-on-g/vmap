@@ -4,6 +4,7 @@ $bog_vmap_app $mol_page
 	spots? *
 	selected? null
 	picked? /string
+	inner? \
 	doc_js *
 	doc_root \
 	scene_bundle \
@@ -185,6 +186,9 @@ $bog_vmap_app $mol_page
 		root <= doc_root
 		doc_key <= doc_key \
 		picked? <=> picked?
+		inner? <=> inner?
+		inner_kids* <= inner_kids* /string
+		inner_class* <= inner_class* \
 		node_title? <=> node_title?
 		node_title_note <= node_title_note
 		tree_move? <=> tree_move?
@@ -204,6 +208,7 @@ $bog_vmap_app $mol_page
 		pack <= pack_link \
 		class_title? <=> node_title? \
 		title_note <= node_title_note \
+		renamable <= node_renamable true
 		cell*? <=> node_cell*? null
 		editable <= editable
 	Idle $mol_page

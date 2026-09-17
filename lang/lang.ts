@@ -117,6 +117,45 @@ namespace $ {
 		] )
 	}
 
+	export function $bog_vmap_lang_inner_movable( decl: $mol_tree2 ) {
+
+		let movable = true
+
+		const walk = ( tree: $mol_tree2 ): void => {
+			if( tree.type !== '*' && tree.type.includes( '*' ) ) movable = false
+			for( const kid of tree.kids ) walk( kid )
+		}
+
+		walk( decl )
+
+		return movable
+	}
+
+	export function $bog_vmap_lang_inner_tree(
+		this: $,
+		node: string,
+		name: string,
+		decl: $mol_tree2,
+	) {
+
+		if( ! $bog_vmap_lang_inner_movable( decl ) ) this.$mol_fail(
+			new Error( `Inner layer ${ JSON.stringify( decl.type ) } is keyed, it cannot be moved out of the class` )
+		)
+
+		const walk = ( tree: $mol_tree2 ): $mol_tree2 => {
+
+			const ref = tree.kids[ 0 ]
+
+			if( ref && !ref.kids.length && ( tree.type === '<=' || tree.type === '<=>' ) ) {
+				return tree.struct( '=', [ ref.struct( node, [ ref.clone([]) ] ) ] )
+			}
+
+			return tree.clone( tree.kids.map( walk ) )
+		}
+
+		return decl.struct( name, decl.kids.map( walk ) )
+	}
+
 	export function $bog_vmap_lang_part_tree(
 		this: $,
 		name: string,
@@ -792,6 +831,65 @@ namespace $ {
 		cell_tidy( cell: string ) {
 			if( this.ref_names().includes( cell ) ) return
 			this.prop_drop( cell )
+		}
+
+		inner_ref( part: string, prop: string ) {
+
+			const op = this.over_tree( part, prop )?.kids[ 0 ]
+			if( op?.type !== '<=' ) return ''
+
+			const ref = op.kids[ 0 ]
+			if( !ref || ref.kids.length ) return ''
+
+			return sign_of( ref.type ).name
+		}
+
+		inner_refs( part: string ) {
+
+			const klass = this.prop_decl( part )?.kids[ 0 ]
+			if( !klass || !$mol_view_tree2_class_match( klass ) ) return [] as readonly string[]
+
+			return klass.kids
+				.map( over => this.inner_ref( part, sign_of( over.type ).name ) )
+				.filter( name => Boolean( name ) )
+		}
+
+		inner_name( part: string, prop: string ) {
+
+			const base = `${ part }_${ prop }`
+			const taken = new Set([ ... this.prop_names(), ... this.ref_names() ])
+
+			for( let i = 1; ; ++i ) {
+				const name = i === 1 ? base : `${ base }_${ i }`
+				if( !taken.has( name ) ) return name
+			}
+
+		}
+
+		@ $mol_action
+		inner_bind( part: string, prop: string, decl: $mol_tree2 ) {
+
+			const held = this.inner_ref( part, prop )
+			if( held ) return held
+
+			if( !this.part_names().includes( part ) ) this.$.$mol_fail(
+				new Error( `Part ${ JSON.stringify( part ) } is not declared in ${ this.name() }` )
+			)
+
+			const over = this.over_tree( part, prop )
+			if( over ) this.$.$mol_fail(
+				new Error( `Port ${ JSON.stringify( prop ) } of ${ part } is bound already, an inner layer would unplug it` )
+			)
+
+			const name = this.inner_name( part, prop )
+
+			this.prop_add( name )
+			this.prop_tree( name, this.$.$bog_vmap_lang_inner_tree( part, name, decl ) )
+
+			const tree = this.tree()
+			this.over_set( part, prop, tree.struct( prop, [ this.$.$bog_vmap_lang_ref_tree( name ) ] ) )
+
+			return name
 		}
 
 		prop_decl( name: string ) {

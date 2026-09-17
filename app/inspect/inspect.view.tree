@@ -5,11 +5,12 @@ $bog_vmap_app_inspect $mol_page
 	class_title? \
 	title_note \
 	editable true
+	renamable <= editable
 	title <= class_title
 	title_content /
 		<= Name $mol_string
 			hint \имя узла
-			enabled <= editable
+			enabled <= renamable
 			value? <=> title_value? \
 			submit? <=> title_submit? null
 			event *

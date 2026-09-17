@@ -175,8 +175,105 @@ namespace $.$$ {
 
 		override picked( next?: readonly string[] ): readonly string[] {
 			const key = this.doc_key()
-			if( next !== undefined && !$mol_compare_deep( next, this.picked_at( key ) ) ) this.entered( null )
+			if( next !== undefined && !$mol_compare_deep( next, this.picked_at( key ) ) ) {
+				this.entered( null )
+				this.inner( '' )
+			}
 			return this.picked_at( key, next )
+		}
+
+		override inner( next?: string ): string {
+			const now = this.inner_in_doc()
+			return next === undefined ? now : this.inner_in_doc( next )
+		}
+
+		@ $mol_mem
+		inner_in_doc( next?: string ) {
+			this.doc_key()
+			return next ?? ''
+		}
+
+		inner_node() {
+			const inner = this.inner()
+			return inner.slice( 0, inner.indexOf( '/' ) )
+		}
+
+		inner_prop() {
+			const inner = this.inner()
+			return inner.slice( inner.indexOf( '/' ) + 1 )
+		}
+
+		node_class( name: string ) {
+			const value = name ? this.node().prop_decl( name )?.kids[ 0 ] : null
+			return value && $mol_view_tree2_class_match( value ) ? value.type : ''
+		}
+
+		@ $mol_mem_key
+		override inner_kids( key: string ): readonly string[] {
+			try {
+				return this.Lib().inner_kids( key )
+			} catch( error ) {
+				if( !$mol_promise_like( error ) ) $mol_fail_log( error )
+				return []
+			}
+		}
+
+		@ $mol_mem_key
+		override inner_class( key: string ) {
+			try {
+				return this.Lib().inner_class( key )
+			} catch( error ) {
+				if( !$mol_promise_like( error ) ) $mol_fail_log( error )
+				return ''
+			}
+		}
+
+		inner_decl() {
+
+			const klass = this.node_class( this.inner_node() )
+			const decl = klass ? this.Lib().props_map( klass ).get( this.inner_prop() ) ?? null : null
+
+			if( !decl ) return this.$.$mol_fail(
+				new Error( `Внутренний слой ${ this.inner() } не найден в классе детали` )
+			)
+
+			return decl
+		}
+
+		inner_name() {
+			const node = this.node()
+			return node.inner_ref( this.inner_node(), this.inner_prop() )
+				|| node.inner_name( this.inner_node(), this.inner_prop() )
+		}
+
+		@ $mol_action
+		inner_held() {
+			const node = this.node()
+			return node.inner_ref( this.inner_node(), this.inner_prop() )
+				|| node.inner_bind( this.inner_node(), this.inner_prop(), this.inner_decl() )
+		}
+
+		inner_source( next?: string ): string {
+
+			const node = this.node()
+			const held = node.inner_ref( this.inner_node(), this.inner_prop() )
+
+			if( next === undefined ) {
+
+				if( !held ) return this.$.$bog_vmap_lang_inner_tree(
+					this.inner_node(), this.inner_name(), this.inner_decl(),
+				).toString()
+
+				return node.props_tree().select( node.prop_fullname( held ) ).kids[ 0 ]?.toString() ?? ''
+			}
+
+			const parsed = this.$.$mol_tree2_from_string(
+				next.replace( /\n?$/, '\n' ), 'vmap.view.tree',
+			).kids[ 0 ]
+
+			if( parsed ) node.prop_tree( this.inner_held(), parsed )
+
+			return next
 		}
 
 		override doc_key() {
@@ -210,7 +307,7 @@ namespace $.$$ {
 		}
 
 		override delete_enabled() {
-			return this.editable() && Boolean( this.selected() )
+			return this.editable() && !this.inner() && Boolean( this.selected() )
 		}
 
 		override publish_part() {
@@ -656,6 +753,8 @@ namespace $.$$ {
 		}
 
 		node_source( next?: string ): string {
+			if( this.inner() ) return this.inner_source( next )
+
 			const name = this.selected()
 			if( !name ) return ''
 
@@ -677,9 +776,23 @@ namespace $.$$ {
 		}
 
 		override node_cell( sign: string, next?: $mol_tree2 | null ): $mol_tree2 | null {
+
+			if( this.inner() ) {
+				const node = this.node()
+				const held = next === undefined
+					? node.inner_ref( this.inner_node(), this.inner_prop() )
+					: this.inner_held()
+
+				return held ? node.cell_value( held, sign, next ) : null
+			}
+
 			const name = this.selected()
 			if( !name ) return null
 			return this.node().cell_value( name, sign, next )
+		}
+
+		node_renamable() {
+			return this.editable() && !this.inner()
 		}
 
 		@ $mol_mem
@@ -1199,6 +1312,8 @@ namespace $.$$ {
 		}
 
 		node_title( next?: string ) {
+			if( this.inner() ) return this.inner_name()
+
 			const name = this.selected()
 
 			if( next === undefined ) return name ?? ''

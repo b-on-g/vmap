@@ -3,6 +3,9 @@ $bog_vmap_app_layers $mol_scroll
 	root \
 	doc_key \
 	picked? /string
+	inner? \
+	inner_kids* /string
+	inner_class* \
 	node_title? \
 	node_title_note \
 	tree_move? null
@@ -37,6 +40,7 @@ $bog_vmap_app_layers $mol_scroll
 				attr *
 					^
 					bog_vmap_app_layers_line_zone <= row_zone*? \
+					bog_vmap_app_layers_line_inner <= row_inner* false
 				event *
 					^
 					dragover? <=> row_over*? null

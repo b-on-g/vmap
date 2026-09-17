@@ -621,6 +621,84 @@ namespace $ {
 
 		},
 
+		'an inner layer of a part shows the ports of its own class and the values of the part class'( $ ) {
+
+			const { app, inspect } = inner_stage( $, 'Cell/Note' )
+
+			$mol_assert_equal(
+				app.node_source(),
+				`Cell_Note ${ d }mol_paragraph title \\Выполнить\n`,
+			)
+
+			$mol_assert_equal( inspect.class_title(), 'Cell_Note' )
+			$mol_assert_equal( inspect.base_title(), `${ d }mol_paragraph` )
+			$mol_assert_equal( inspect.row_value( 'title' ).toString(), '\\Выполнить\n' )
+			$mol_assert_equal( inspect.renamable(), false )
+			$mol_assert_equal( app.delete_enabled(), false )
+
+		},
+
+		'the first edit of an inner layer writes the override inside the node block'( $ ) {
+
+			const { app, inspect } = inner_stage( $, 'Cell/Note' )
+
+			inspect.row_value( 'title', $mol_tree2.data( 'Считать' ) )
+
+			$mol_assert_equal(
+				app.doc_source(),
+				[
+					`${ d }flow_inner ${ d }mol_view`,
+					`	Cell ${ d }bog_vmap_part_cell Note <= Cell_Note`,
+					`	sub / <= Cell`,
+					`	Cell_Note ${ d }mol_paragraph title \\Считать`,
+					``,
+				].join( '\n' ),
+			)
+
+			$mol_assert_equal( app.inner(), 'Cell/Note' )
+
+		},
+
+		'a writable port of an inner layer takes a cell of the root, as any node does'( $ ) {
+
+			const { app, inspect } = inner_stage( $, 'Cell/Draft' )
+
+			inspect.row_value( 'value', $mol_tree2.data( 'Черновик' ) )
+
+			$mol_assert_equal(
+				app.doc_source(),
+				[
+					`${ d }flow_inner ${ d }mol_view`,
+					`	cell_draft_value? \\Черновик`,
+					`	Cell ${ d }bog_vmap_part_cell Draft <= Cell_Draft`,
+					`	sub / <= Cell`,
+					`	Cell_Draft ${ d }mol_string value? <=> cell_draft_value?`,
+					``,
+				].join( '\n' ),
+			)
+
+		},
+
+		'a port of an inner layer that the part class feeds is not unplugged by an edit'( $ ) {
+
+			const { app, inspect } = inner_stage( $, 'Cell/Code' )
+
+			$mol_assert_equal(
+				app.node_source(),
+				`Cell_Code ${ d }mol_string value? = Cell code?\n`,
+			)
+
+			let failed = ''
+			try {
+				inspect.row_value( 'value', $mol_tree2.data( 'Свежо' ) )
+			} catch( error: any ) {
+				failed = error.message
+			}
+
+			$mol_assert_ok( failed.includes( 'bound already' ) )
+
+		},
+
 	})
 
 	const d = '$'
@@ -641,6 +719,25 @@ namespace $ {
 
 	function field( inspect: $$.$bog_vmap_app_inspect, name: string ) {
 		return inspect.Row( name ).Value() as $$.$bog_vmap_app_inspect_value
+	}
+
+	function inner_stage( $: $, inner: string ) {
+
+		const stage = $bog_vmap_app_flow_stage( $ )
+		const app = stage.app
+
+		app.doc_source( [
+			`${ d }flow_inner ${ d }mol_view`,
+			`	Cell ${ d }bog_vmap_part_cell`,
+			`	sub / <= Cell`,
+			``,
+		].join( '\n' ) )
+
+		app.picked([ inner.slice( 0, inner.indexOf( '/' ) ) ])
+		app.inner( inner )
+		stage.redraw()
+
+		return { stage, app, inspect: app.Inspect() as $$.$bog_vmap_app_inspect }
 	}
 
 	function part_panel( $: $mol_ambient_context, source: string, part: string ) {

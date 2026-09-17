@@ -20,6 +20,13 @@ namespace $.$$ {
 		},
 
 		Line: {
+			'@': {
+				bog_vmap_app_layers_line_inner: {
+					true: {
+						opacity: .6,
+					},
+				},
+			},
 			'[mol_drop_status]': {
 				drag: {
 					'[bog_vmap_app_layers_line_zone]': {

@@ -19,6 +19,29 @@ namespace $ {
 		``,
 	].join( '\n' )
 
+	const inner_src = [
+		`${d}bog_vmap_lib_test_graph ${d}mol_view`,
+		`	series /number`,
+		`${d}bog_vmap_lib_test_chart ${d}mol_view`,
+		`	graphs /${d}bog_vmap_lib_test_graph`,
+		`	sub /`,
+		`		<= Legend ${d}mol_view`,
+		`			title \\`,
+		`${d}bog_vmap_lib_test_plot ${d}mol_view`,
+		`	values /number`,
+		`	title \\`,
+		`	sub /`,
+		`		<= Title ${d}mol_view`,
+		`			sub / <= title`,
+		`		<= Chart ${d}bog_vmap_lib_test_chart`,
+		`			graphs /${d}bog_vmap_lib_test_graph`,
+		`				<= Line ${d}bog_vmap_lib_test_graph`,
+		`					series <= values`,
+		`${d}bog_vmap_lib_test_plot_dark ${d}bog_vmap_lib_test_plot`,
+		`	title \\dark`,
+		``,
+	].join( '\n' )
+
 	$mol_test({
 
 		'predef gives $mol_view its own ports'( $ ) {
@@ -375,6 +398,45 @@ namespace $ {
 			const bare = $.$bog_vmap_lib_pack_note( '', new Error( 'Failed to fetch' ) )
 
 			$mol_assert_equal( bare, 'Пак не отвечает: Failed to fetch' )
+
+		},
+
+		'inner layers of a class come from its own sub and from the lists of its own views'( $ ) {
+
+			const lib = $.$bog_vmap_lib_any.make({
+				$,
+				tree: ()=> $.$bog_vmap_lib_parse( inner_src ),
+			})
+
+			$mol_assert_like( lib.inner_kids( `${d}bog_vmap_lib_test_plot` ), [ 'Title', 'Chart' ] )
+			$mol_assert_like( lib.inner_kids( `${d}bog_vmap_lib_test_plot/Chart` ), [ 'Line' ] )
+			$mol_assert_like( lib.inner_kids( `${d}bog_vmap_lib_test_plot/Title` ), [] )
+
+			$mol_assert_equal( lib.inner_class( `${d}bog_vmap_lib_test_plot/Line` ), `${d}bog_vmap_lib_test_graph` )
+			$mol_assert_equal( lib.inner_class( `${d}bog_vmap_lib_test_plot/title` ), '' )
+
+		},
+
+		'a view of a nested class is no inner layer of the outer one'( $ ) {
+
+			const lib = $.$bog_vmap_lib_any.make({
+				$,
+				tree: ()=> $.$bog_vmap_lib_parse( inner_src ),
+			})
+
+			$mol_assert_like( lib.inner_kids( `${d}bog_vmap_lib_test_chart` ), [ 'Legend' ] )
+			$mol_assert_equal( lib.inner_kids( `${d}bog_vmap_lib_test_plot` ).includes( 'Legend' ), false )
+
+		},
+
+		'inner layers are taken along the whole chain of inheritance'( $ ) {
+
+			const lib = $.$bog_vmap_lib_any.make({
+				$,
+				tree: ()=> $.$bog_vmap_lib_parse( inner_src ),
+			})
+
+			$mol_assert_like( lib.inner_kids( `${d}bog_vmap_lib_test_plot_dark` ), [ 'Title', 'Chart' ] )
 
 		},
 

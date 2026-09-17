@@ -209,6 +209,81 @@ namespace $ {
 
 	const icons = [ 'root', 'frame', 'image', 'link', 'button', 'field', 'text', 'part' ]
 
+	const inner_doc = [
+		`${d}layers_inner ${d}mol_view`,
+		`	Page ${d}mol_view`,
+		`		sub /`,
+		`			<= Debt`,
+		`	Debt ${d}bog_vmap_part_plot`,
+		`		title \\Долг`,
+		`	sub /`,
+		`		<= Page`,
+		``,
+	].join( '\n' )
+
+	const inner_over = [
+		`${d}layers_inner ${d}mol_view`,
+		`	Page ${d}mol_view`,
+		`		sub /`,
+		`			<= Debt`,
+		`	Debt ${d}bog_vmap_part_plot`,
+		`		title \\Долг`,
+		`		Line <= Debt_Line`,
+		`	Debt_Line ${d}mol_plot_line`,
+		`		series_y = Debt values`,
+		`		color \\red`,
+		`	sub /`,
+		`		<= Page`,
+		``,
+	].join( '\n' )
+
+	const inner_kids: { readonly [ key: string ]: readonly string[] } = {
+		[ `${d}bog_vmap_part_plot` ]: [ 'Title', 'Chart' ],
+		[ `${d}bog_vmap_part_plot/Chart` ]: [ 'Line' ],
+	}
+
+	const inner_classes: { readonly [ key: string ]: string } = {
+		[ `${d}bog_vmap_part_plot/Title` ]: `${d}mol_paragraph`,
+		[ `${d}bog_vmap_part_plot/Chart` ]: `${d}mol_chart`,
+		[ `${d}bog_vmap_part_plot/Line` ]: `${d}mol_plot_line`,
+	}
+
+	function inner_stage( $: $, key: string, source = inner_doc ) {
+
+		const dom = $.$mol_dom_context
+
+		let picked = [] as readonly string[]
+		let inner = ''
+
+		const layers = $$.$bog_vmap_app_layers.make({
+			$,
+			source: ()=> source,
+			root: ()=> `${d}layers_inner`,
+			doc_key: ()=> key,
+			picked: ( next?: readonly string[] )=> next === undefined ? picked : ( picked = next ),
+			inner: ( next?: string )=> next === undefined ? inner : ( inner = next ),
+			inner_kids: ( key: string )=> inner_kids[ key ] ?? [],
+			inner_class: ( key: string )=> inner_classes[ key ] ?? '',
+		})
+
+		return {
+			layers,
+			picked: ()=> picked,
+			inner: ()=> inner,
+			click: ( type = 'click' )=> new dom.MouseEvent( type, { bubbles: true, cancelable: true } ),
+			outline: ( names: readonly string[] )=> {
+
+				$mol_assert_equal( layers.rows().length, names.length )
+
+				return names.map( ( name, at )=> {
+					$mol_assert_equal( layers.rows()[ at ], layers.Row( name ) )
+					return '  '.repeat( layers.row_level( name ) - 1 )
+						+ layers.row_title( name ) + ' ' + layers.row_kind( name )
+				} )
+			},
+		}
+	}
+
 	function layers_stage(
 		$: $,
 		over: $bog_vmap_app_flow_over = {},
@@ -940,6 +1015,117 @@ namespace $ {
 
 			$mol_assert_equal( app.doc_source(), before )
 			$mol_assert_like( grouped(), [ 'Lost', 'Box', 'Deep', 'Near' ] )
+		},
+
+		'a part shows the inner layers of its class, one namespace deep as the class nests them'( $ ) {
+
+			const { layers, outline } = inner_stage( $, 'inner_shown' )
+
+			$mol_assert_equal( layers.row_open( 'Debt' ), false )
+
+			layers.row_expanded( 'Debt', true )
+			layers.row_expanded( 'Debt/Chart', true )
+
+			$mol_assert_like( layers.row_kids( 'Debt' ), [ 'Debt/Title', 'Debt/Chart' ] )
+			$mol_assert_like( layers.row_kids( 'Debt/Chart' ), [ 'Debt/Line' ] )
+			$mol_assert_like( layers.row_kids( 'Debt/Title' ), [] )
+
+			$mol_assert_like(
+				outline([ '', 'Page', 'Debt', 'Debt/Title', 'Debt/Chart', 'Debt/Line' ]),
+				[
+					`${d}layers_inner root`,
+					'  Page frame',
+					'    Debt part',
+					'      Title text',
+					'      Chart frame',
+					'        Line part',
+				],
+			)
+
+			$mol_assert_equal( layers.row_title( 'Debt/Line' ), 'Line' )
+			$mol_assert_equal( layers.row_hint( 'Debt/Line' ), `${d}mol_plot_line` )
+			$mol_assert_equal( layers.row_level( 'Debt/Line' ), layers.row_level( 'Debt' ) + 2 )
+
+		},
+
+		'inner rows are dimmed and the rows of the document are not'( $ ) {
+
+			const { layers } = inner_stage( $, 'inner_dim' )
+
+			layers.row_expanded( 'Debt', true )
+
+			const dim = ( name: string )=> layers.Line( name ).dom_node_actual()
+				.getAttribute( 'bog_vmap_app_layers_line_inner' )
+
+			$mol_assert_equal( dim( 'Debt/Title' ), 'true' )
+			$mol_assert_equal( dim( 'Debt' ), null )
+
+		},
+
+		'a click on an inner layer picks it and keeps the part selected'( $ ) {
+
+			const { layers, picked, inner, click } = inner_stage( $, 'inner_pick' )
+
+			layers.row_expanded( 'Debt', true )
+			layers.row_pick( 'Debt/Title', click() )
+
+			$mol_assert_like( picked(), [ 'Debt' ] )
+			$mol_assert_equal( inner(), 'Debt/Title' )
+			$mol_assert_equal( layers.row_picked( 'Debt/Title' ), true )
+			$mol_assert_equal( layers.row_picked( 'Debt/Chart' ), false )
+
+			layers.row_pick( 'Page', click() )
+
+			$mol_assert_like( picked(), [ 'Page' ] )
+			$mol_assert_equal( inner(), '' )
+
+		},
+
+		'the make up of a part is read only: no drag, no drop, no rename'( $ ) {
+
+			const { layers, click } = inner_stage( $, 'inner_ban' )
+
+			layers.row_expanded( 'Debt', true )
+
+			$mol_assert_equal( layers.row_draggable( 'Debt/Title' ), false )
+			$mol_assert_equal(
+				layers.Row( 'Debt/Title' ).dom_node_actual().hasAttribute( 'draggable' ),
+				false,
+			)
+
+			layers.row_edit( 'Debt/Title', click( 'dblclick' ) )
+			$mol_assert_equal( layers.editing(), null )
+
+			$mol_assert_equal( layers.zone_at( 'Debt/Title', .9 ), '' )
+			$mol_assert_equal( layers.move_to( 'Debt/Title', 'Page', 'inside' ), null )
+			$mol_assert_equal( layers.move_to( 'Page', 'Debt/Title', 'before' ), null )
+
+			const transfer = {
+				getData: ( kind: string )=> kind === 'text/plain' ? 'Debt/Title' : '',
+			} as unknown as DataTransfer
+
+			$mol_assert_equal( layers.row_adopt( transfer ), null )
+
+		},
+
+		'an overridden inner layer keeps its place under the part instead of the outside group'( $ ) {
+
+			const { layers, outline } = inner_stage( $, 'inner_over', inner_over )
+
+			layers.row_expanded( 'Debt', true )
+
+			$mol_assert_like( layers.outside(), [] )
+			$mol_assert_like(
+				outline([ '', 'Page', 'Debt', 'Debt/Title', 'Debt/Chart' ]),
+				[
+					`${d}layers_inner root`,
+					'  Page frame',
+					'    Debt part',
+					'      Title text',
+					'      Chart frame',
+				],
+			)
+
 		},
 
 	})
