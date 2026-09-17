@@ -59,6 +59,13 @@ namespace $ {
 		return !$bog_vmap_app_wire_machinery.has( port.name )
 	}
 
+	export function $bog_vmap_app_wire_slot( port: {
+		readonly kind: $bog_vmap_app_inspect_value_kind
+		readonly next: boolean
+	} ) {
+		return port.kind === 'null' && !port.next
+	}
+
 	export function $bog_vmap_app_wire_ports(
 		this: $,
 		props: ReadonlyMap< string, $mol_tree2 >,

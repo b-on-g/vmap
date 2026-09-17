@@ -1980,6 +1980,43 @@ namespace $ {
 
 		},
 
+		'open input slots come one at a time, the taken ones stay and the rest wait'( $ ) {
+
+			const ports = [
+				{ name: 'result', next: false, own: true, kind: 'number' as const },
+				{ name: 'in1', next: false, own: true, kind: 'null' as const },
+				{ name: 'in2', next: false, own: true, kind: 'null' as const },
+				{ name: 'in3', next: false, own: true, kind: 'null' as const },
+				{ name: 'run', next: true, own: true, kind: 'null' as const },
+			]
+
+			const taken = $mol_wire_atom.solo( {}, function taken(
+				next?: readonly string[],
+			): readonly string[] {
+				return next ?? []
+			} )
+
+			const { pane } = pane_make( $, {}, {
+				doc_names: ()=> [ 'Cell' ],
+				part_ports: ()=> ports,
+				part_overs: ()=> taken.sync(),
+				wires: ()=> [],
+			} )
+
+			pane.sizes({ [ `${root}/Cell` ]: box( 0, 0, 200, 100 ) })
+
+			$mol_assert_like( pane.part_dots( 'Cell' ).map( port => port.name ), [ 'result', 'in1', 'run' ] )
+
+			taken.put([ 'in1' ])
+
+			$mol_assert_like( pane.part_dots( 'Cell' ).map( port => port.name ), [ 'result', 'in1', 'in2', 'run' ] )
+
+			taken.put([ 'in1', 'in2' ])
+
+			$mol_assert_like( pane.part_dots( 'Cell' ).map( port => port.name ), [ 'result', 'in1', 'in2', 'in3', 'run' ] )
+
+		},
+
 		'a scene opened for the first time is shown whole once it is measured'( $ ) {
 
 			const kept = session_fake( $ )

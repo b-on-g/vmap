@@ -1668,9 +1668,26 @@ namespace $.$$ {
 		part_dots( name: string ): readonly $bog_vmap_app_wire_port[] {
 			const written = new Set( this.part_overs( name ) )
 
-			return this.part_ports( name ).filter(
+			for( const link of this.wires() ) {
+				if( link.to === name ) written.add( link.to_prop )
+			}
+
+			const ports = this.part_ports( name ).filter(
 				port => ( port.own || written.has( port.name ) ) && $bog_vmap_app_wire_plain( port )
 			)
+
+			let spare = false
+
+			return ports.filter( port => {
+
+				if( !$bog_vmap_app_wire_slot( port ) || written.has( port.name ) ) return true
+
+				if( spare ) return false
+
+				spare = true
+
+				return true
+			} )
 		}
 
 		wire_over() {
