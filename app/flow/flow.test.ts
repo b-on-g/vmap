@@ -108,6 +108,8 @@ namespace $ {
 
 		readonly mute?: boolean
 
+		readonly camera?: 'pinned' | 'own'
+
 	}
 
 	export function $bog_vmap_app_flow_stage( $: $, over: $bog_vmap_app_flow_over = {} ) {
@@ -327,6 +329,15 @@ namespace $ {
 			app.dom_tree()
 			scene.flush()
 		}
+
+		const camera_pin = ()=> {
+			pane.camera_doc( pane.camera_key() )
+			pane.camera_zoom( 1 )
+			pane.camera_shift( new $mol_vector_2d( 0, 0 ) )
+			app.dom_tree()
+		}
+
+		if( over.camera !== 'own' ) camera_pin()
 
 		const found = ( selector: string, note: string, match: ( el: Element )=> boolean )=> {
 			const el = [ ... root.querySelectorAll( selector ) ].find( match )
