@@ -23864,13 +23864,34 @@ var $;
         await ask(() => store.doc(link).title(scene_title));
         await ask(() => app.camera_reset());
     }
-    $mol_test({
-        'the editor on its own page writes the mortgage scene as one whole class, and only once'() {
-            const app = $mol_view.roots().find((view) => view instanceof $$.$bog_vmap_app);
+    function editor() {
+        return $mol_view.roots().find((view) => view instanceof $$.$bog_vmap_app) ?? null;
+    }
+    async function built() {
+        for (let step = 0; step * 200 < scene_limit; ++step) {
+            const app = editor();
             if (app)
-                mortgage(app).catch($mol_fail_log);
-        },
-    });
+                return await mortgage(app);
+            await $$.$mol_wait_timeout_async(200);
+        }
+    }
+    function aborted() {
+        let running = '';
+        for (let at = 0; at < $mol_test_all.length; ++at) {
+            const test = $mol_test_all[at];
+            const named = (context) => { running = test.name; return test(context); };
+            Object.defineProperty(named, 'name', { value: test.name });
+            $mol_test_all[at] = named;
+        }
+        $mol_dom_context.addEventListener('unhandledrejection', event => {
+            const reason = event.reason;
+            console.error(`Прогон тестов оборван на «${running}», остальные не исполнялись:`, reason?.message ?? reason);
+        });
+    }
+    if (typeof $mol_dom_context !== 'undefined' && $mol_dom_context.document) {
+        $$.$mol_wait_timeout_async(0).then(aborted);
+        built().catch($mol_fail_log);
+    }
 })($ || ($ = {}));
 
 ;
