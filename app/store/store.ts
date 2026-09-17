@@ -37,7 +37,7 @@ namespace $ {
 
 			const arg = this.doc_arg()
 			const checked = arg ? $giper_baza_link.check( arg ) : null
-			if( checked ) return this.doc( new $giper_baza_link( checked ) )
+			if( checked ) return this.doc( checked )
 
 			const last = this.doc_links().at( -1 )
 			return last ? this.doc( last ) : null
