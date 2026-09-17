@@ -177,16 +177,18 @@ namespace $.$$ {
 			const key = this.camera_key()
 			if( !key || key === this.camera_doc() ) return null
 
-			this.camera_doc( key )
-
 			const kept = this.camera_kept()
 
 			if( kept ) {
+				this.camera_doc( key )
 				this.camera_zoom( kept.zoom )
 				this.camera_shift( new this.$.$mol_vector_2d( kept.x, kept.y ) )
 				return null
 			}
 
+			if( !this.free_boxes().length ) return null
+
+			this.camera_doc( key )
 			this.camera_reset()
 
 			return null

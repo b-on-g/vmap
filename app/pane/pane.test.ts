@@ -1980,6 +1980,45 @@ namespace $ {
 
 		},
 
+		'a scene opened for the first time is shown whole once it is measured'( $ ) {
+
+			const kept = session_fake( $ )
+			const opened = doc_opened( $ )
+
+			const { pane, answer } = pane_make( $, {}, { doc_key: ()=> opened() } )
+
+			answer({ kind: 'sizes', sizes: {} })
+			pane.dom_tree()
+
+			$mol_assert_equal( pane.camera_doc(), '' )
+			$mol_assert_equal( kept[ 'vmap_camera one' ], undefined )
+
+			answer({ kind: 'sizes', sizes: { [ `${root}/A` ]: box( 100, 100, 400, 300 ) } })
+			pane.dom_tree()
+
+			$mol_assert_equal( pane.camera_doc(), 'vmap_camera one' )
+			$mol_assert_like( [ ... pane.camera_shift() ], [ 200, 150 ] )
+			$mol_assert_like( JSON.parse( kept[ 'vmap_camera one' ]! ), { x: 200, y: 150, zoom: 1 } )
+
+		},
+
+		'the editor left to its own camera brings the measured part onto the screen'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $, { camera: 'own' } )
+
+			stage.drop( calc, stage.client([ 560, 450 ]) )
+
+			const rect = $bog_vmap_app_flow_rect
+			const box = stage.pane.part_box( 'Calc' )!
+
+			$mol_assert_ok( box )
+			$mol_assert_equal( box.left >= 0, true )
+			$mol_assert_equal( box.top >= 0, true )
+			$mol_assert_equal( box.left + box.width <= rect.width, true )
+			$mol_assert_equal( box.top + box.height <= rect.height, true )
+
+		},
+
 		'the camera of the scene left behind is not written under the scene opened'( $ ) {
 
 			const kept = session_fake( $ )
