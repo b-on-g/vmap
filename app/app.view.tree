@@ -153,6 +153,7 @@ $bog_vmap_app $mol_page
 				doc_css <= doc_css
 				spots? <=> spots?
 				picked? <=> picked?
+				inner <= inner
 				entered? <=> entered? null
 				doc_js <= doc_js
 				doc_root <= doc_root

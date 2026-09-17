@@ -254,6 +254,7 @@ namespace $ {
 
 		let picked = [] as readonly string[]
 		let inner = ''
+		const shown = [] as ( string | null )[]
 
 		const layers = $$.$bog_vmap_app_layers.make({
 			$,
@@ -264,12 +265,17 @@ namespace $ {
 			inner: ( next?: string )=> next === undefined ? inner : ( inner = next ),
 			inner_kids: ( key: string )=> inner_kids[ key ] ?? [],
 			inner_class: ( key: string )=> inner_classes[ key ] ?? '',
+			node_show: ( next?: string | null )=> {
+				if( next !== undefined ) shown.push( next )
+				return null
+			},
 		})
 
 		return {
 			layers,
 			picked: ()=> picked,
 			inner: ()=> inner,
+			shown: ()=> shown,
 			click: ( type = 'click' )=> new dom.MouseEvent( type, { bubbles: true, cancelable: true } ),
 			outline: ( names: readonly string[] )=> {
 
@@ -1064,13 +1070,14 @@ namespace $ {
 
 		'a click on an inner layer picks it and keeps the part selected'( $ ) {
 
-			const { layers, picked, inner, click } = inner_stage( $, 'inner_pick' )
+			const { layers, picked, inner, click, shown } = inner_stage( $, 'inner_pick' )
 
 			layers.row_expanded( 'Debt', true )
 			layers.row_pick( 'Debt/Title', click() )
 
 			$mol_assert_like( picked(), [ 'Debt' ] )
 			$mol_assert_equal( inner(), 'Debt/Title' )
+			$mol_assert_like( shown(), [ 'Debt/Title' ] )
 			$mol_assert_equal( layers.row_picked( 'Debt/Title' ), true )
 			$mol_assert_equal( layers.row_picked( 'Debt/Chart' ), false )
 

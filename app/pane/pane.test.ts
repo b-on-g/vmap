@@ -2281,6 +2281,102 @@ namespace $ {
 		return { ... made, node }
 	}
 
+	const inner_sizes = {
+		[ `${root}/Debt` ]: box( 0, 0, 400, 300 ),
+		[ `${root}/Debt/Title` ]: box( 10, 20, 200, 40 ),
+		[ `${root}/Debt/Chart` ]: box( 10, 80, 380, 200 ),
+		[ `${root}/Debt/Chart/Plot/Line` ]: box( 20, 90, 360, 180 ),
+	}
+
+	const inner_pane = ( $: $mol_ambient_context, inner = '' )=> {
+
+		const { pane } = pane_make( $, {}, {
+			doc_names: ()=> [ 'Debt' ],
+			inner: ()=> inner,
+		} )
+
+		pane.sizes( inner_sizes )
+
+		return pane
+	}
+
+	$mol_test({
+
+		'a layer inside a part is addressed by node and port, however deep the scene renders it'( $ ) {
+
+			const pane = inner_pane( $ )
+
+			$mol_assert_like( pane.part_size( 'Debt/Title' ), box( 10, 20, 200, 40 ) )
+			$mol_assert_like( pane.part_size( 'Debt/Line' ), box( 20, 90, 360, 180 ) )
+			$mol_assert_like( pane.part_size( 'Debt' ), box( 0, 0, 400, 300 ) )
+
+			$mol_assert_equal( pane.part_size( 'Debt/Nobody' ), null )
+			$mol_assert_equal( pane.part_size( 'Title' ), null )
+
+		},
+
+		'the shallowest path wins when a nested class repeats a port name'( $ ) {
+
+			const { pane } = pane_make( $, {}, { doc_names: ()=> [ 'Debt' ] } )
+
+			pane.sizes({
+				[ `${root}/Debt` ]: box( 0, 0, 400, 300 ),
+				[ `${root}/Debt/Chart/Legend` ]: box( 200, 10, 100, 20 ),
+				[ `${root}/Debt/Legend` ]: box( 10, 10, 100, 20 ),
+			})
+
+			$mol_assert_like( pane.part_size( 'Debt/Legend' ), box( 10, 10, 100, 20 ) )
+
+		},
+
+		'an inner layer is framed apart from the node, with no handles of its own'( $ ) {
+
+			const bare = inner_pane( $ )
+
+			$mol_assert_equal( bare.inner_shown(), '' )
+			$mol_assert_like( bare.inner_style(), {} )
+			$mol_assert_equal( bare.Overlay().sub().includes( bare.Overlay().Inner() ), false )
+
+			const pane = inner_pane( $, 'Debt/Title' )
+			pane.picked([ 'Debt' ])
+
+			$mol_assert_equal( pane.inner_shown(), 'Debt/Title' )
+			$mol_assert_like(
+				pane.inner_style(),
+				{ left: '10px', top: '20px', width: '200px', height: '40px' },
+			)
+
+			const overlay = pane.Overlay()
+
+			$mol_assert_equal( overlay.sub().includes( overlay.Inner() ), true )
+			$mol_assert_equal( overlay.Inner().sub().length, 0 )
+			$mol_assert_equal( overlay.Frame( 'Debt' ).sub().length, 4 )
+
+		},
+
+		'an inner layer the scene never measured gets no frame'( $ ) {
+
+			const pane = inner_pane( $, 'Debt/Nobody' )
+
+			$mol_assert_equal( pane.inner_shown(), '' )
+			$mol_assert_like( pane.inner_style(), {} )
+			$mol_assert_equal( pane.Overlay().sub().length, 0 )
+
+		},
+
+		'the camera goes to an inner layer the same way it goes to a node'( $ ) {
+
+			const pane = inner_pane( $, 'Debt/Title' )
+
+			pane.node_show( 'Debt/Title' )
+
+			$mol_assert_like( [ ... pane.camera_shift() ], [ 390, 360 ] )
+			$mol_assert_equal( pane.camera_zoom(), 1 )
+
+		},
+
+	})
+
 }
 
 namespace $ {

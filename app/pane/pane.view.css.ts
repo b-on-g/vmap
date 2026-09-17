@@ -176,6 +176,18 @@ namespace $.$$ {
 
 		},
 
+		Inner: {
+			position: 'absolute',
+
+			outline: '1px dashed ' + String( $mol_theme.focus ),
+			outlineOffset: '1px',
+
+			pointerEvents: 'none',
+
+			transition: 'none',
+
+		},
+
 	} )
 
 	$mol_style_define( $bog_vmap_app_pane_handle, {

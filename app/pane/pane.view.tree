@@ -26,6 +26,7 @@ $bog_vmap_app_pane $mol_view
 	doc_css \
 	spots? *
 	picked? /string
+	inner \
 	doc_js *
 	doc_root \
 	libs /$bog_vmap_bridge_part
@@ -87,6 +88,8 @@ $bog_vmap_app_pane $mol_view
 			style <= overlay_style *
 			frames <= frames /string
 			frame_style* <= frame_style* *
+			inner <= inner_shown \
+			inner_style <= inner_style *
 			press? <=> node_press? null
 			move? <=> node_move? null
 			release? <=> node_release? null
@@ -166,6 +169,8 @@ $bog_vmap_app_pane $mol_view
 $bog_vmap_app_pane_overlay $mol_view
 	frames /string
 	frame_style* *
+	inner \
+	inner_style *
 	press? null
 	move? null
 	release? null
@@ -185,6 +190,8 @@ $bog_vmap_app_pane_overlay $mol_view
 			<= Handle_ne $bog_vmap_app_pane_handle corner \ne
 			<= Handle_sw $bog_vmap_app_pane_handle corner \sw
 			<= Handle_se $bog_vmap_app_pane_handle corner \se
+	Inner $mol_view
+		style <= inner_style *
 
 $bog_vmap_app_pane_label $mol_view
 	lines /string

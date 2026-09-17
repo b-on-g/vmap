@@ -288,6 +288,7 @@ namespace $.$$ {
 			if( this.row_inner( name ) ) {
 				this.picked([ this.inner_owner( name ) ])
 				this.inner( name )
+				this.node_show( name )
 				return null
 			}
 

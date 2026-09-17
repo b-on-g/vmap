@@ -499,7 +499,36 @@ namespace $.$$ {
 			return nodes
 		}
 
+		@ $mol_mem
+		inner_measured() {
+
+			const prefix = this.doc_root() + '/'
+			const known = new Set( this.doc_names() )
+			const found = new Map< string, { readonly depth: number, readonly box: $bog_vmap_bridge_rect } >()
+
+			for( const key of Object.keys( this.sizes() ) ) {
+				if( !key.startsWith( prefix ) ) continue
+
+				const path = key.slice( prefix.length ).split( '/' )
+				if( path.length < 2 || !known.has( path[ 0 ] ) ) continue
+
+				const address = `${ path[ 0 ] }/${ path[ path.length - 1 ] }`
+				const held = found.get( address )
+				if( held && held.depth <= path.length ) continue
+
+				found.set( address, { depth: path.length, box: this.sizes()[ key ] } )
+			}
+
+			return found
+		}
+
+		inner_size( address: string ) {
+			return this.inner_measured().get( address )?.box ?? null
+		}
+
 		override part_size( name: string ) {
+			if( name.includes( '/' ) ) return this.inner_size( name )
+
 			let found = null as $bog_vmap_bridge_rect | null
 
 			for( const node of this.nodes_measured() ) if( node.name === name ) found = node.box
@@ -1525,6 +1554,25 @@ namespace $.$$ {
 			}
 		}
 
+		inner_shown() {
+			const inner = this.inner()
+			return inner && this.part_box( inner ) ? inner : ''
+		}
+
+		@ $mol_mem
+		override inner_style(): { readonly [ prop: string ]: string } {
+
+			const rect = this.part_box( this.inner() )
+			if( !rect ) return {}
+
+			return {
+				left: rect.left + 'px',
+				top: rect.top + 'px',
+				width: rect.width + 'px',
+				height: rect.height + 'px',
+			}
+		}
+
 		@ $mol_mem_key
 		override frame_style( name: string ): { readonly [ prop: string ]: string } {
 			const rect = this.part_box( name )
@@ -2219,7 +2267,10 @@ namespace $.$$ {
 
 	export class $bog_vmap_app_pane_overlay extends $.$bog_vmap_app_pane_overlay {
 		override sub() {
-			return this.frames().map( name => this.Frame( name ) )
+			return [
+				... this.frames().map( name => this.Frame( name ) ),
+				... this.inner() ? [ this.Inner() ] : [],
+			]
 		}
 
 	}
