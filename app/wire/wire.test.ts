@@ -143,6 +143,37 @@ namespace $ {
 
 		},
 
+		'a point on the open column counts as over the part, the body of a neighbour does not'( $ ) {
+
+			const b = box( 100, 200, 60, 30 )
+			const deep = $bog_vmap_app_wire_port_point( b, 'in', 19 )
+
+			$mol_assert_equal( $bog_vmap_app_wire_over( b, deep ), false )
+			$mol_assert_equal( $bog_vmap_app_wire_over( b, deep, 22 ), true )
+
+			$mol_assert_equal( $bog_vmap_app_wire_over( b, [ b.left + 10, deep[1] ], 22 ), false )
+
+			const out = $bog_vmap_app_wire_port_point( b, 'out', 19 )
+			$mol_assert_equal( $bog_vmap_app_wire_over( b, out, 22 ), true )
+
+		},
+
+		'a column that would run past the floor is lifted just enough to fit'( $ ) {
+
+			const low = box( 0, 700, 120, 40 )
+
+			$mol_assert_equal( $bog_vmap_app_wire_lift( low, 22, 800 ), 208 )
+			$mol_assert_equal( $bog_vmap_app_wire_lift( low, 2, 800 ), 0 )
+
+			const lifted = $bog_vmap_app_wire_port_point( low, 'in', 21, 208 )
+
+			$mol_assert_equal( lifted[1] <= 800, true )
+			$mol_assert_equal( $bog_vmap_app_wire_port_point( low, 'in', 0, 208 )[1] >= 0, true )
+
+			$mol_assert_equal( $bog_vmap_app_wire_lift( box( 0, 40, 120, 40 ), 60, 200 ), 40 )
+
+		},
+
 		'compatibility by shape'( $ ) {
 			$mol_assert_equal( $bog_vmap_app_wire_fits( 'number', 'number' ), true )
 			$mol_assert_equal( $bog_vmap_app_wire_fits( 'string', 'locale' ), true )

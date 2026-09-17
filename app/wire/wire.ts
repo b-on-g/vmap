@@ -154,14 +154,44 @@ namespace $ {
 		box: $bog_vmap_app_wire_box,
 		side: $bog_vmap_app_wire_side,
 		index: number,
+		lift = 0,
 	): readonly [ number, number ] {
 		const x = side === 'in'
 			? box.left - $bog_vmap_app_wire_gap
 			: box.left + box.width + $bog_vmap_app_wire_gap
 
-		const y = box.top + $bog_vmap_app_wire_row / 2 + index * $bog_vmap_app_wire_row
+		const y = box.top - lift + $bog_vmap_app_wire_row / 2 + index * $bog_vmap_app_wire_row
 
 		return [ x, y ]
+	}
+
+	export function $bog_vmap_app_wire_off(
+		box: $bog_vmap_app_wire_box,
+		point: readonly [ number, number ],
+		count = 1,
+		lift = 0,
+	) {
+		const dx = Math.min(
+			Math.abs( point[0] - ( box.left - $bog_vmap_app_wire_gap ) ),
+			Math.abs( point[0] - ( box.left + box.width + $bog_vmap_app_wire_gap ) ),
+		)
+
+		const first = box.top - lift + $bog_vmap_app_wire_row / 2
+		const index = Math.round( ( point[1] - first ) / $bog_vmap_app_wire_row )
+		const held = Math.max( 0, Math.min( count - 1, index ) )
+
+		return Math.hypot( dx, point[1] - ( first + held * $bog_vmap_app_wire_row ) )
+	}
+
+	export function $bog_vmap_app_wire_lift(
+		box: $bog_vmap_app_wire_box,
+		count: number,
+		height: number,
+	) {
+		const over = box.top + count * $bog_vmap_app_wire_row - height
+		if( over <= 0 ) return 0
+
+		return Math.min( over, Math.max( box.top, 0 ) )
 	}
 
 	export function $bog_vmap_app_wire_side_point(
@@ -174,15 +204,29 @@ namespace $ {
 	export function $bog_vmap_app_wire_over(
 		box: $bog_vmap_app_wire_box,
 		point: readonly [ number, number ],
+		count = 1,
+		lift = 0,
 	) {
 		const reach = $bog_vmap_app_wire_gap + $bog_vmap_app_wire_hit
 
-		if( point[0] < box.left - reach ) return false
-		if( point[0] > box.left + box.width + reach ) return false
-		if( point[1] < box.top ) return false
-		if( point[1] > box.top + box.height ) return false
+		const top = Math.min( box.top, box.top - lift )
+		const bottom = Math.max( box.top + box.height, top + count * $bog_vmap_app_wire_row )
 
-		return true
+		if( point[1] < top ) return false
+		if( point[1] > bottom ) return false
+
+		if( point[1] >= box.top && point[1] <= box.top + box.height ) {
+			if( point[0] < box.left - reach ) return false
+			if( point[0] > box.left + box.width + reach ) return false
+			return true
+		}
+
+		const strip = $bog_vmap_app_wire_hit + $bog_vmap_app_wire_radius
+
+		if( Math.abs( point[0] - ( box.left - $bog_vmap_app_wire_gap ) ) <= strip ) return true
+		if( Math.abs( point[0] - ( box.left + box.width + $bog_vmap_app_wire_gap ) ) <= strip ) return true
+
+		return false
 	}
 
 	function wire_reach( span: number ) {

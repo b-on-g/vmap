@@ -1980,6 +1980,65 @@ namespace $ {
 
 		},
 
+		'the column stays open while the pointer walks down it to a deep port'( $ ) {
+
+			const ports = [] as { name: string, next: boolean, own: boolean, kind: 'number' }[]
+			for( let i = 0; i < 22; ++ i ) ports.push({ name: 'p' + i, next: false, own: true, kind: 'number' })
+
+			const { pane } = pane_make( $, {}, {
+				doc_names: ()=> [ 'Num', 'Source' ],
+				part_ports: ()=> ports,
+				wires: ()=> [],
+			} )
+
+			pane.sizes({
+				[ `${root}/Num` ]: box( 400, 0, 120, 40 ),
+				[ `${root}/Source` ]: box( 0, 400, 120, 40 ),
+			})
+
+			pane.wire_drag({ from: 'Source', from_prop: 'p0', kind: 'number' })
+
+			const deep = $bog_vmap_app_wire_port_point( pane.part_box( 'Num' )!, 'in', 19 )
+
+			pane.wire_point( deep )
+
+			$mol_assert_equal( pane.wire_over(), 'Num' )
+			$mol_assert_equal( pane.wire_dots().filter( dot => dot.node === 'Num' ).length, 22 )
+			$mol_assert_equal( $bog_vmap_app_wire_dot_at( pane.wire_dots(), deep )?.port.name, 'p19' )
+
+		},
+
+		'a part under the column keeps its own dots, the column above does not take them'( $ ) {
+
+			const ports = [] as { name: string, next: boolean, own: boolean, kind: 'number' }[]
+			for( let i = 0; i < 22; ++ i ) ports.push({ name: 'p' + i, next: false, own: true, kind: 'number' })
+
+			const { pane } = pane_make( $, {}, {
+				doc_names: ()=> [ 'Num', 'Under', 'Source' ],
+				part_ports: ()=> ports,
+				wires: ()=> [],
+			} )
+
+			pane.sizes({
+				[ `${root}/Num` ]: box( 400, 0, 120, 40 ),
+				[ `${root}/Under` ]: box( 400, 200, 120, 40 ),
+				[ `${root}/Source` ]: box( 0, 600, 120, 40 ),
+			})
+
+			pane.wire_drag({ from: 'Source', from_prop: 'p0', kind: 'number' })
+
+			const inside = [ 460, 220 ] as const
+
+			pane.wire_point( inside )
+			$mol_assert_equal( pane.wire_over(), 'Under' )
+
+			const deep = $bog_vmap_app_wire_port_point( pane.part_box( 'Num' )!, 'in', 19 )
+
+			pane.wire_point( deep )
+			$mol_assert_equal( pane.wire_over(), 'Num' )
+
+		},
+
 		'the names written on the node become the labels of its open slots'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )

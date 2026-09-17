@@ -1690,21 +1690,47 @@ namespace $.$$ {
 			} )
 		}
 
+		part_lift( name: string ) {
+
+			const box = this.part_box( name )
+			if( !box ) return 0
+
+			return $bog_vmap_app_wire_lift( box, this.part_dots( name ).length, this.pane_rect().height )
+		}
+
 		wire_over() {
 			if( !this.wire_drag() ) return null
 
 			const point = this.wire_point()
-			let found = null as string | null
+
+			let own = null as string | null
+			let near = null as string | null
+			let best = Infinity
 
 			for( const name of this.part_names() ) {
+
 				const box = this.part_box( name )
 				if( !box ) continue
-				if( !$bog_vmap_app_wire_over( box, point ) ) continue
 
-				found = name
+				if( $bog_vmap_app_wire_over( box, point ) ) {
+					own = name
+					continue
+				}
+
+				const count = this.part_dots( name ).length
+				const lift = this.part_lift( name )
+
+				if( !$bog_vmap_app_wire_over( box, point, count, lift ) ) continue
+
+				const off = $bog_vmap_app_wire_off( box, point, count, lift )
+				if( off > best ) continue
+
+				best = off
+				near = name
+
 			}
 
-			return found
+			return own ?? near
 		}
 
 		part_spread( name: string ) {
@@ -1720,7 +1746,7 @@ namespace $.$$ {
 			if( !box ) return null
 
 			return this.part_spread( name )
-				? $bog_vmap_app_wire_port_point( box, side, this.port_index( name, port ) )
+				? $bog_vmap_app_wire_port_point( box, side, this.port_index( name, port ), this.part_lift( name ) )
 				: $bog_vmap_app_wire_side_point( box, side )
 		}
 
@@ -1773,10 +1799,14 @@ namespace $.$$ {
 				})
 
 				if( this.part_spread( node ) ) {
+
+					const lift = this.part_lift( node )
+
 					ports.forEach( ( port, index )=> {
-						const [ x, y ] = $bog_vmap_app_wire_port_point( box, side, index )
+						const [ x, y ] = $bog_vmap_app_wire_port_point( box, side, index, lift )
 						mark( port, x, y )
 					} )
+
 					return
 				}
 
