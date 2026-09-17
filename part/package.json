@@ -127,6 +127,7 @@
     "$bog_vmap_part_calc",
     "$mol_number",
     "$mol_hotkey",
+    "$mol_hotkey2",
     "$mol_keyboard_code",
     "$mol_keyboard",
     "$mol_string",

@@ -4039,7 +4039,7 @@ var $;
 })($ || ($ = {}));
 
 ;
-	($.$mol_hotkey) = class $mol_hotkey extends ($.$mol_plugin) {
+	($.$mol_hotkey2) = class $mol_hotkey2 extends ($.$mol_plugin) {
 		keydown(next){
 			if(next !== undefined) return next;
 			return null;
@@ -4047,20 +4047,11 @@ var $;
 		event(){
 			return {...(super.event()), "keydown": (next) => (this.keydown(next))};
 		}
-		key(){
+		action(){
 			return {};
 		}
-		mod_ctrl(){
-			return false;
-		}
-		mod_alt(){
-			return false;
-		}
-		mod_shift(){
-			return false;
-		}
 	};
-	($mol_mem(($.$mol_hotkey.prototype), "keydown"));
+	($mol_mem(($.$mol_hotkey2.prototype), "keydown"));
 
 
 ;
@@ -4190,27 +4181,71 @@ var $;
          * Plugin which adds handlers for keyboard keys.
          * @see [mol_keyboard_code](../keyboard/code/code.ts)
          */
-        class $mol_hotkey extends $.$mol_hotkey {
-            key() {
-                return super.key();
-            }
+        class $mol_hotkey2 extends $.$mol_hotkey2 {
             keydown(event) {
                 if (!event)
                     return;
                 if (event.defaultPrevented)
                     return;
-                let name = $mol_keyboard_code[event.keyCode];
-                if (this.mod_ctrl() !== (event.ctrlKey || event.metaKey))
-                    return;
-                if (this.mod_alt() !== event.altKey)
-                    return;
-                if (this.mod_shift() !== event.shiftKey)
-                    return;
-                const handle = this.key()[name];
-                if (handle)
-                    handle(event);
+                const key = [...new Set([
+                        ...(event.ctrlKey || event.metaKey) ? ['ctrl'] : [],
+                        ...event.altKey ? ['alt'] : [],
+                        ...event.shiftKey ? ['shift'] : [],
+                        $mol_keyboard_code[event.keyCode] ?? '?',
+                    ])].join('_');
+                this.action()[key]?.(event);
             }
         }
+        $$.$mol_hotkey2 = $mol_hotkey2;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+	($.$mol_hotkey) = class $mol_hotkey extends ($.$mol_hotkey2) {
+		key(){
+			return {};
+		}
+		mod_ctrl(){
+			return false;
+		}
+		mod_alt(){
+			return false;
+		}
+		mod_shift(){
+			return false;
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Plugin which adds handlers for keyboard keys.
+         * @deprecated Use $mol_hotkey2
+         * @see [mol_keyboard_code](../keyboard/code/code.ts)
+         */
+        class $mol_hotkey extends $.$mol_hotkey {
+            action() {
+                const prefix = [...new Set([
+                        ...this.mod_ctrl() ? ['ctrl_'] : [],
+                        ...this.mod_alt() ? ['alt_'] : [],
+                        ...this.mod_shift() ? ['shift_'] : [],
+                    ])].join('');
+                return Object.fromEntries(Object.entries(this.key())
+                    .map(([key, val]) => [prefix + key, val]));
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_hotkey.prototype, "action", null);
         $$.$mol_hotkey = $mol_hotkey;
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
@@ -9499,6 +9534,7 @@ var $;
 		}
 		View(){
 			const obj = new this.$.$mol_text_code();
+			(obj.attr) = () => ({...(this.$.$mol_text_code.prototype.attr.call(obj)), "inert": ""});
 			(obj.text) = () => ((this.value()));
 			(obj.render_visible_only) = () => (false);
 			(obj.row_numb) = (id) => ((this.row_numb(id)));
@@ -12029,7 +12065,7 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    $mol_style_attach("mol/pop/pop.view.css", "@keyframes mol_pop_show {\n\tfrom {\n\t\topacity: 0;\n\t}\n}\n\n[mol_pop] {\n\tposition: relative;\n\tdisplay: inline-flex;\n}\n\n[mol_pop_bubble] {\n\tborder: none;\n\tpadding: 0;\n\tcolor: var(--mol_theme_text);\n\tbox-shadow: 0 0 1rem hsla(0,0%,0%,.5);\n\tborder-radius: var(--mol_gap_round);\n\tposition: fixed;\n\tz-index: var(--mol_layer_popup);\n\tbackground: var(--mol_theme_back);\n\tmax-width: none;\n\tmax-height: none;\n\t/* overflow: hidden;\n\toverflow-y: scroll;\n\toverflow-y: overlay; */\n\tword-break: normal;\n\twidth: max-content;\n\t/* height: max-content; */\n\tflex-direction: column;\n\tmax-width: calc( 100vw - var(--mol_gap_page) );\n\tmax-height: 80vw;\n\tcontain: paint;\n\ttransition-property: opacity;\n\t/* Safari ios layer fix, https://t.me/mam_mol/170017 */\n\ttransform: translateZ(0);\n\tanimation: mol_pop_show .1s ease-in;\n}\n\n:where( [mol_pop_bubble] > * ) {\n\tbackground: var(--mol_theme_card);\n}\n\n[mol_pop_bubble][mol_scroll] {\n\tbackground: var(--mol_theme_back);\n}\n\n[mol_pop_bubble]:focus {\n\toutline: none;\n}\n");
+    $mol_style_attach("mol/pop/pop.view.css", "@keyframes mol_pop_show {\n\tfrom {\n\t\topacity: 0;\n\t}\n}\n\n[mol_pop] {\n\tposition: relative;\n\tdisplay: inline-flex;\n}\n\n[mol_pop_bubble] {\n\tborder: none;\n\tpadding: 0;\n\tcolor: var(--mol_theme_text);\n\tbox-shadow: 0 0 1rem hsla(0,0%,0%,.5);\n\tborder-radius: var(--mol_gap_round);\n\tposition: fixed;\n\tz-index: var(--mol_layer_popup);\n\tbackground: var(--mol_theme_back);\n\tmax-width: none;\n\tmax-height: none;\n\t/* overflow: hidden;\n\toverflow-y: scroll;\n\toverflow-y: overlay; */\n\tword-break: normal;\n\twidth: max-content;\n\t/* height: max-content; */\n\tflex-direction: column;\n\tmax-width: 100vw;\n\tmax-height: 80vw;\n\tcontain: paint;\n\ttransition-property: opacity;\n\t/* Safari ios layer fix, https://t.me/mam_mol/170017 */\n\ttransform: translateZ(0);\n\tanimation: mol_pop_show .1s ease-in;\n}\n\n:where( [mol_pop_bubble] > * ) {\n\tbackground: var(--mol_theme_card);\n}\n\n[mol_pop_bubble][mol_scroll] {\n\tbackground: var(--mol_theme_back);\n}\n\n[mol_pop_bubble]:focus {\n\toutline: none;\n}\n");
 })($ || ($ = {}));
 
 ;

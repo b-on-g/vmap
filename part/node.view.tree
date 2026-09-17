@@ -1,7 +1,10 @@
-$mol_hotkey $mol_plugin
+$mol_hotkey2 $mol_plugin
 	event *
 		^
 		keydown? <=> keydown? null
+	action *
+
+$mol_hotkey $mol_hotkey2
 	key *
 	mod_ctrl false
 	mod_alt false
@@ -373,6 +376,9 @@ $mol_textarea $mol_stack
 			submit? <=> submit? null
 			submit_with_ctrl <= submit_with_ctrl true
 		<= View $mol_text_code
+			attr *
+				^
+				inert \
 			text <= value
 			render_visible_only false
 			row_numb* <= row_numb* 0
