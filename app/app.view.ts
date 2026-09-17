@@ -486,7 +486,20 @@ namespace $.$$ {
 		}
 
 		code_prop() {
+			if( this.inner() ) return this.inner_name()
 			return this.selected() ?? ''
+		}
+
+		code_node_note() {
+
+			const inner = this.inner()
+			if( !inner ) return ''
+
+			if( this.node().inner_ref( this.inner_node(), this.inner_prop() ) ) return ''
+
+			return `Слой ${ this.inner_prop() } взят из класса детали ${ this.inner_node() },`
+				+ ` в документе его ещё нет. Правка заведёт узел ${ this.inner_name() }`
+				+ ` и сошлётся на него из блока детали; класс детали останется как был.`
 		}
 
 		@ $mol_mem
@@ -553,7 +566,7 @@ namespace $.$$ {
 
 		@ $mol_mem
 		code_hooks(): readonly string[] {
-			const name = this.selected()
+			const name = this.code_prop()
 			if( !name ) return []
 
 			const node = this.node()

@@ -179,6 +179,25 @@ namespace $ {
 		return { app, code, name: app.selected()! }
 	}
 
+	const inner_editor = ( $: $ )=> {
+
+		const stage = $bog_vmap_app_flow_stage( $ )
+		const app = stage.app
+
+		app.doc_source( [
+			`${d}flow_inner ${d}mol_view`,
+			`	Cell ${d}bog_vmap_part_cell`,
+			`	sub / <= Cell`,
+			``,
+		].join( '\n' ) )
+
+		app.picked([ 'Cell' ])
+		app.right_tab( 'code' )
+		stage.redraw()
+
+		return { stage, app, code: app.Code() as $$.$bog_vmap_app_code }
+	}
+
 	const stroke = ( code: $$.$bog_vmap_app_code )=> ({
 		code: 'KeyZ',
 		metaKey: true,
@@ -773,6 +792,51 @@ namespace $ {
 				code.Sources().current( tab )
 				$mol_assert_equal( code.dom_tree().querySelectorAll( '[mol_textarea]' ).length, 1 )
 			}
+
+		},
+
+		'an inner layer names its own node in the head and in the styles'( $ ) {
+
+			const { app, code } = inner_editor( $ )
+
+			$mol_assert_equal( code.scope_note(), 'Узел Cell' )
+			$mol_assert_equal( code.css_text(), '[flow_inner_cell] {\n\t\n}' )
+
+			app.inner( 'Cell/Note' )
+
+			$mol_assert_equal( code.scope_note(), 'Узел Cell_Note' )
+			$mol_assert_equal( code.tree_text(), `Cell_Note ${d}mol_paragraph title \\Выполнить\n` )
+			$mol_assert_equal( code.css_text(), '[flow_inner_cell_note] {\n\t\n}' )
+
+		},
+
+		'a layer that the document does not hold yet says so instead of going blank'( $ ) {
+
+			const { app, code } = inner_editor( $ )
+
+			app.inner( 'Cell/Note' )
+
+			$mol_assert_ok( code.note().includes( 'в документе его ещё нет' ) )
+			$mol_assert_ok( code.note().includes( 'Cell_Note' ) )
+			$mol_assert_equal( code.body().includes( code.Refusal() ), true )
+
+			code.tree_text( `Cell_Note ${d}mol_paragraph title \\Считать\n` )
+
+			$mol_assert_equal( code.note(), '' )
+			$mol_assert_equal( code.body().includes( code.Refusal() ), false )
+			$mol_assert_ok( app.doc_source().includes( 'Note <= Cell_Note' ) )
+			$mol_assert_ok( app.doc_source().includes( `Cell_Note ${d}mol_paragraph title \\Считать` ) )
+
+		},
+
+		'a refusal outranks the word about a layer the document does not hold'( $ ) {
+
+			const { app, code } = inner_editor( $ )
+
+			app.inner( 'Cell/Note' )
+			code.tree_text( '' )
+
+			$mol_assert_ok( code.note().includes( $bog_vmap_app_code_blank ) )
 
 		},
 

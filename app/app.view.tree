@@ -228,6 +228,7 @@ $bog_vmap_app $mol_page
 		js? <=> code_js?
 		css? <=> code_css?
 		error <= code_error \
+		node_note <= code_node_note \
 		editable <= editable
 	Readonly $mol_chip
 		title \Только просмотр
