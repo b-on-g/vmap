@@ -35,6 +35,11 @@ namespace $.$$ {
 		}
 
 		@ $mol_mem
+		override sub() {
+			return [ ... super.sub(), ... this.menu() ? [ this.Menu() ] : [] ] as readonly $mol_view[]
+		}
+
+		@ $mol_mem
 		menu_asking( next?: boolean ) {
 			return next ?? false
 		}

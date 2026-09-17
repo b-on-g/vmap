@@ -17,14 +17,12 @@ $bog_vmap_app_scenes $mol_page
 	body /
 		<= List $mol_list
 			rows <= scene_rows /
-	sub /
-		^
-		<= Menu $bog_vmap_app_menu
-			showed? <=> menu_showed? false
-			left <= menu_left \
-			top <= menu_top \
-			items <= menu_items /$mol_view
-			close? <=> menu_close? null
+	Menu $bog_vmap_app_menu
+		showed? <=> menu_showed? false
+		left <= menu_left \
+		top <= menu_top \
+		items <= menu_items /$mol_view
+		close? <=> menu_close? null
 	Scene_row* $bog_vmap_app_palette_item
 		title <= scene_title* \
 		hint <= scene_title* \

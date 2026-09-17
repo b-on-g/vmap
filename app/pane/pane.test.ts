@@ -176,6 +176,58 @@ namespace $ {
 
 		},
 
+		'Escape closes the menu of the canvas'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const dom = $.$mol_dom_context
+
+			stage.overlay().dispatchEvent( new dom.MouseEvent( 'contextmenu', {
+				bubbles: true,
+				cancelable: true,
+				clientX: stage.client([ 480, 380 ])[ 0 ],
+				clientY: stage.client([ 480, 380 ])[ 1 ],
+			} ) )
+
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.menu_showed(), true )
+			$mol_assert_equal( stage.pane.menu_on_node(), false )
+
+			dom.document.dispatchEvent( new dom.KeyboardEvent( 'keydown', { key: 'Escape', bubbles: true } ) )
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.menu_showed(), false )
+
+		},
+
+		'Escape closes the menu of a node'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const dom = $.$mol_dom_context
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			const at = stage.part_center( 'Calc' )
+
+			stage.overlay().dispatchEvent( new dom.MouseEvent( 'contextmenu', {
+				bubbles: true,
+				cancelable: true,
+				clientX: at[ 0 ],
+				clientY: at[ 1 ],
+			} ) )
+
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.menu_showed(), true )
+			$mol_assert_equal( stage.pane.menu_on_node(), true )
+
+			dom.document.dispatchEvent( new dom.KeyboardEvent( 'keydown', { key: 'Escape', bubbles: true } ) )
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.menu_showed(), false )
+
+		},
+
 		'while Alt is held the place of the original is marked, and the mark goes on release'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )

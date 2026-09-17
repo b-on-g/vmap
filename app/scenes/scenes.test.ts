@@ -122,6 +122,26 @@ namespace $ {
 
 		},
 
+		'a closed menu keeps no node in the page'( $ ) {
+
+			const { store, view } = scenes( $ )
+
+			const first = store.doc_add( 'First', src_page )
+
+			const held = ()=> [ ... ( view.dom_tree() as Element ).querySelectorAll( '[bog_vmap_app_menu]' ) ].length
+
+			$mol_assert_equal( held(), 0 )
+
+			view.scene_menu( first.link().str, right_click( $ ) )
+
+			$mol_assert_equal( held(), 1 )
+
+			view.menu_close()
+
+			$mol_assert_equal( held(), 0 )
+
+		},
+
 		'the question of the menu can be refused, and the list stays whole'( $ ) {
 
 			const { store, view } = scenes( $ )
