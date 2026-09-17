@@ -30,7 +30,20 @@ namespace $.$$ {
 		}
 
 		ins_named() {
-			return this.names().split( ',' ).map( name => name.trim() )
+			return this.slots().split( ',' ).map( name => name.trim() )
+		}
+
+		ins_refused() {
+			return this.ins_named().filter( name => name && !name_ok.test( name ) )
+		}
+
+		override slots_note() {
+
+			const refused = this.ins_refused()
+			if( !refused.length ) return ''
+
+			return `Имена ${ refused.map( name => `«${ name }»` ).join( ', ' ) }`
+				+ ` не годятся в имя аргумента, эти входы остались под номерами`
 		}
 
 		body_call( code: string ) {

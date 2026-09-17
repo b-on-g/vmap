@@ -67,7 +67,7 @@ namespace $ {
 			one.code( 'return in1 * in2' )
 			$mol_assert_equal( one.result_number(), 12 )
 
-			one.names( 'width, height' )
+			one.slots( 'width, height' )
 
 			one.code( 'return width + height' )
 			$mol_assert_equal( one.result_number(), 7 )
@@ -86,11 +86,18 @@ namespace $ {
 
 			one.auto( true )
 			one.in1 = ()=> 5
-			one.names( '2bad, good' )
+			one.slots( '2bad, good' )
 			one.code( 'return in1 + in2' )
 
 			$mol_assert_equal( one.error(), '' )
 			$mol_assert_equal( one.result_number(), 5 )
+
+			$mol_assert_ok( one.slots_note().includes( '«2bad»' ) )
+			$mol_assert_ok( one.slots_note().includes( 'под номерами' ) )
+			$mol_assert_equal( one.slots_note().includes( 'good' ), false )
+
+			one.slots( 'good' )
+			$mol_assert_equal( one.slots_note(), '' )
 
 		},
 
