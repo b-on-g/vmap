@@ -253,7 +253,28 @@ namespace $.$$ {
 
 			const value = this.port_node( name )?.kids[ 0 ] ?? null
 
-			if( this.$.$bog_vmap_app_inspect_value_kind_of( value ) === 'wire' ) {
+			const kind = this.$.$bog_vmap_app_inspect_value_kind_of( value )
+
+			if( kind === 'bind' || kind === 'get' ) {
+
+				const prop = node.property( name )
+				const own = prop.tree()
+				const port = sign_of( own.type )
+				const ref = value!.kids[ 0 ] ?? null
+				const cell = sign_of( ref?.type ?? '' )
+				const tail = next ? '?' : ''
+
+				prop.tree( own.struct( port.name + port.key + tail, [
+					value!.struct(
+						next ? '<=>' : '<=',
+						ref ? [ ref.struct( cell.name + cell.key + tail, ref.kids ) ] : [],
+					),
+				] ) )
+
+				return next
+			}
+
+			if( kind === 'wire' ) {
 
 				const origin = value!.kids[ 0 ]
 

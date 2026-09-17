@@ -551,6 +551,43 @@ namespace $ {
 
 		},
 
+		'the sign box over a port bound to a wire turns the binding one way and back'( $ ) {
+
+			const num = `${ d }bog_vmap_app_inspect_test_number`
+
+			const { root, inspect } = part_panel( $, root_src
+				.replace(
+					`	Amount ${ num }`,
+					`	Years ${ num }\n`
+					+ `	years_value = Years value\n`
+					+ `	Amount ${ num } value? <=> years_value?`,
+				), 'Amount' )
+
+			const compiles = ()=> {
+				const tree = $.$mol_tree2_from_string( root.source(), 'bound.view.tree' )
+				for( const klass of tree.kids ) $.$mol_view_tree2_class_props( klass )
+				return true
+			}
+
+			$mol_assert_equal( inspect.row_changeable( 'value' ), true )
+			$mol_assert_ok( compiles() )
+
+			inspect.row_changeable( 'value', false )
+
+			$mol_assert_equal( root.over_tree( 'Amount', 'value' )!.toString(), 'value <= years_value\n' )
+			$mol_assert_equal( inspect.row_changeable( 'value' ), false )
+			$mol_assert_ok( compiles() )
+
+			inspect.row_changeable( 'value', true )
+
+			$mol_assert_equal( root.over_tree( 'Amount', 'value' )!.toString(), 'value? <=> years_value?\n' )
+			$mol_assert_equal( inspect.row_changeable( 'value' ), true )
+			$mol_assert_ok( compiles() )
+
+			$mol_assert_ok( root.source().includes( 'years_value = Years value' ) )
+
+		},
+
 		'the sign box of a node row says whether the field takes input'( $ ) {
 
 			const { root, inspect } = part_panel( $, root_src
