@@ -37,6 +37,7 @@ $bog_vmap_app_pane $mol_view
 	link_drop? null
 	containers /string
 	doc_names /string
+	doc_key \
 	node_title? \
 	axis* \
 	tree_move? null

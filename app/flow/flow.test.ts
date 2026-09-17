@@ -153,6 +153,22 @@ namespace $ {
 		}
 		$.$mol_state_local = $mol_state_local_flow
 
+		const session = {} as { [ key: string ]: string | undefined }
+
+		class $mol_state_session_flow< Value > extends $mol_state_session< Value > {
+			@ $mol_mem_key
+			static override value< Value >( key: string, next?: Value | null ): Value {
+
+				if( next === undefined ) return JSON.parse( session[ key ] ?? 'null' )
+
+				if( next === null ) delete session[ key ]
+				else session[ key ] = JSON.stringify( next )
+
+				return next as Value
+			}
+		}
+		$.$mol_state_session = $mol_state_session_flow
+
 		class $mol_media_flow extends $mol_media {
 			static override match( query: string, next?: boolean ) {
 				if( query === '(prefers-color-scheme: light)' ) return false

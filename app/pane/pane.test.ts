@@ -64,6 +64,32 @@ namespace $ {
 
 	const clicks = ( posted: sent[] ) => posted.filter( m => m.kind === 'click_at' )
 
+	const session_fake = ( $: $mol_ambient_context ) => {
+
+		const kept = {} as { [ key: string ]: string | undefined }
+
+		class $mol_state_session_fake< Value > extends $mol_state_session< Value > {
+			@ $mol_mem_key
+			static override value< Value >( key: string, next?: Value | null ): Value {
+
+				if( next === undefined ) return JSON.parse( kept[ key ] ?? 'null' )
+
+				if( next === null ) delete kept[ key ]
+				else kept[ key ] = JSON.stringify( next )
+
+				return next as Value
+			}
+		}
+
+		$.$mol_state_session = $mol_state_session_fake
+
+		return kept
+	}
+
+	const doc_opened = ( $: $mol_ambient_context ) => {
+		return ( next?: string ) => $.$mol_state_session.value< string >( 'doc_opened', next ) ?? 'one'
+	}
+
 	const timers_fake = ( $: $mol_ambient_context ) => {
 		const made = [] as $mol_after_timeout[]
 
@@ -1917,6 +1943,62 @@ namespace $ {
 				.map( name => name.textContent )
 
 			$mol_assert_like( drawn, [ 'Page' ] )
+
+		},
+
+		'every scene keeps its own camera, and a scene without a kept one is shown whole'( $ ) {
+
+			const kept = session_fake( $ )
+			const opened = doc_opened( $ )
+
+			const { pane, answer } = pane_make( $, {}, { doc_key: ()=> opened() } )
+
+			const sizes = { [ `${root}/A` ]: box( 100, 100, 400, 300 ) }
+
+			answer({ kind: 'sizes', sizes })
+			pane.dom_tree()
+
+			pane.camera_zoom( 2 )
+			pane.camera_shift( new $mol_vector_2d( 30, 40 ) )
+			pane.dom_tree()
+
+			$mol_assert_like( JSON.parse( kept[ 'vmap_camera one' ]! ), { x: 30, y: 40, zoom: 2 } )
+
+			opened( 'two' )
+			answer({ kind: 'sizes', sizes })
+			pane.dom_tree()
+
+			$mol_assert_equal( pane.camera_zoom(), 1 )
+			$mol_assert_like( [ ... pane.camera_shift() ], [ 200, 150 ] )
+
+			opened( 'one' )
+			answer({ kind: 'sizes', sizes })
+			pane.dom_tree()
+
+			$mol_assert_equal( pane.camera_zoom(), 2 )
+			$mol_assert_like( [ ... pane.camera_shift() ], [ 30, 40 ] )
+
+		},
+
+		'the camera of the scene left behind is not written under the scene opened'( $ ) {
+
+			const kept = session_fake( $ )
+			const opened = doc_opened( $ )
+
+			const { pane, answer } = pane_make( $, {}, { doc_key: ()=> opened() } )
+
+			const sizes = { [ `${root}/A` ]: box( 100, 100, 400, 300 ) }
+
+			answer({ kind: 'sizes', sizes })
+			pane.camera_zoom( 2 )
+			pane.camera_shift( new $mol_vector_2d( 30, 40 ) )
+			pane.dom_tree()
+
+			opened( 'two' )
+			pane.dom_tree()
+
+			$mol_assert_equal( kept[ 'vmap_camera two' ], undefined )
+			$mol_assert_like( JSON.parse( kept[ 'vmap_camera one' ]! ), { x: 30, y: 40, zoom: 2 } )
 
 		},
 

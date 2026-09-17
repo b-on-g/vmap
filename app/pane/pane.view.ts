@@ -39,6 +39,12 @@ namespace $.$$ {
 
 	export type $bog_vmap_app_pane_tool = 'select' | 'board' | 'hand'
 
+	export type $bog_vmap_app_pane_camera_kept = {
+		readonly x: number
+		readonly y: number
+		readonly zoom: number
+	}
+
 	export type $bog_vmap_app_pane_stroke = {
 		readonly key: string
 		readonly code: string
@@ -144,6 +150,57 @@ namespace $.$$ {
 
 			this.camera_zoom( 1 )
 			this.camera_shift( new this.$.$mol_vector_2d( 0, 0 ) )
+
+			return null
+		}
+
+		camera_key() {
+			const key = this.doc_key()
+			return key ? `vmap_camera ${ key }` : ''
+		}
+
+		camera_kept( next?: $bog_vmap_app_pane_camera_kept | null ) {
+			const key = this.camera_key()
+			if( !key ) return null
+
+			return this.$.$mol_state_session.value< $bog_vmap_app_pane_camera_kept | null >( key, next ) ?? null
+		}
+
+		@ $mol_mem
+		camera_doc( next?: string ) {
+			return next ?? ''
+		}
+
+		@ $mol_action
+		camera_settle() {
+
+			const key = this.camera_key()
+			if( !key || key === this.camera_doc() ) return null
+
+			this.camera_doc( key )
+
+			const kept = this.camera_kept()
+
+			if( kept ) {
+				this.camera_zoom( kept.zoom )
+				this.camera_shift( new this.$.$mol_vector_2d( kept.x, kept.y ) )
+				return null
+			}
+
+			this.camera_reset()
+
+			return null
+		}
+
+		@ $mol_mem
+		camera_keep() {
+
+			const key = this.camera_key()
+			if( !key || this.camera_doc() !== key ) return null
+
+			const shift = this.camera_shift()
+
+			this.camera_kept({ x: shift[0], y: shift[1], zoom: this.camera_zoom() })
 
 			return null
 		}
@@ -2101,6 +2158,7 @@ namespace $.$$ {
 				this.sizes( this.sizes_merged( message.sizes ) )
 				this.warmed( true )
 				this.restart_tries( 0 )
+				this.camera_settle()
 				return
 			}
 
@@ -2127,6 +2185,7 @@ namespace $.$$ {
 				this.libs_push(),
 				this.spots_push(),
 				this.camera_push(),
+				this.camera_keep(),
 				this.values_push(),
 				this.heartbeat(),
 				this.watchdog(),
