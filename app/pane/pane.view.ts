@@ -314,6 +314,15 @@ namespace $.$$ {
 			return this.scene_generation() + ' ' + this.pack_uri()
 		}
 
+		@ $mol_mem
+		override scene_lost( next?: string ) {
+			return next ?? ''
+		}
+
+		scene_boot_fail() {
+			return `parent.postMessage({ns:'${ $bog_vmap_bridge_ns }',kind:'boot_fail'},'*')`
+		}
+
 		override scene_html() {
 			return [
 				'<!doctype html>',
@@ -323,7 +332,7 @@ namespace $.$$ {
 				'</head>',
 				'<body mol_view_root style="padding:0;margin:0;height:100%;width:100%">',
 				`<div mol_view_root="${ scene_root }"></div>`,
-				`<script src="${ this.scene_bundle() }" charset="utf-8"></script>`,
+				`<script src="${ this.scene_bundle() }" charset="utf-8" onerror="${ this.scene_boot_fail() }"></script>`,
 				'</body></html>',
 			].join( '' )
 		}
@@ -369,6 +378,7 @@ namespace $.$$ {
 			this.scene_generation( this.scene_generation() + 1 )
 			this.warmed( false )
 			this.stalled( false )
+			this.scene_lost( '' )
 			this.scene_shown( false )
 
 			new this.$.$mol_after_timeout( this.remount_delay(), ()=> this.scene_shown( true ) )
@@ -2148,9 +2158,14 @@ namespace $.$$ {
 		override value_labels(): readonly $mol_view[] {
 			if( !this.warmed() ) return []
 
-			return this.parts_visible()
-				.filter( name => this.label_lines( name ).length )
-				.map( name => this.Label( name ) )
+			try {
+				return this.parts_visible()
+					.filter( name => this.label_lines( name ).length )
+					.map( name => this.Label( name ) )
+			} catch( error: unknown ) {
+				if( $mol_promise_like( error ) ) return $mol_fail_hidden( error )
+				return []
+			}
 		}
 
 		@ $mol_mem
@@ -2367,8 +2382,16 @@ namespace $.$$ {
 			const message = this.$.$bog_vmap_bridge_read< $bog_vmap_bridge_up >( event, peer )
 			if( !message ) return
 
+			const kind: string = message.kind
+
+			if( kind === 'boot_fail' ) {
+				this.scene_lost( this.scene_bundle() )
+				return
+			}
+
 			this.answer_at( this.stamp() )
 			this.stalled( false )
+			this.scene_lost( '' )
 
 			if( message.kind === 'ready' ) {
 				this.error_at( 'compile', '' )

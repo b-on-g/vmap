@@ -304,6 +304,11 @@ namespace $ {
 				app.dom_tree()
 			},
 
+			lost() {
+				deliver({ kind: 'boot_fail' })
+				app.dom_tree()
+			},
+
 			hello() {
 				deliver({ kind: 'ready' })
 				app.dom_tree()
@@ -377,6 +382,10 @@ namespace $ {
 
 			text() {
 				return root.textContent ?? ''
+			},
+
+			canvas_text() {
+				return app.Canvas().dom_node().textContent ?? ''
 			},
 
 			broken() {
@@ -1173,6 +1182,77 @@ namespace $ {
 			$mol_assert_equal( stage.pane.pack_note(), note )
 			$mol_assert_ok( stage.text().includes( note ) )
 			$mol_assert_equal( stage.text().includes( 'сцена на связи' ), false )
+
+		},
+
+		'a pack tree that never loads is named on the canvas and the status drops the live claim'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const dead = 'http://lost.test/'
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.scene.values({ 'Calc.result': '42' })
+
+			$mol_assert_equal( stage.app.status(), 'сцена на связи' )
+			$mol_assert_ok( stage.pane.value_labels().length )
+
+			const kept = $.$mol_fetch
+			class $mol_fetch_lost extends kept {
+				static override text( input: RequestInfo, init?: RequestInit ) {
+					const uri = String( input )
+					if( uri.startsWith( dead ) ) return $mol_fail( new Error( 'Failed to fetch' ) )
+					return super.text( input, init )
+				}
+			}
+			$.$mol_fetch = $mol_fetch_lost
+
+			stage.app.links( dead )
+			stage.scene.hello()
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.warmed(), true )
+			$mol_assert_ok( stage.canvas_text().includes( dead + 'web.view.tree' ) )
+			$mol_assert_ok( stage.app.status().includes( 'Не загрузилось дерево пака деталей' ) )
+			$mol_assert_equal( stage.app.status().includes( 'на связи' ), false )
+			$mol_assert_equal( stage.pane.value_labels().length, 0 )
+			$mol_assert_equal( stage.pane.Values().dom_node().getAttribute( 'mol_view_error' ), null )
+			$mol_assert_equal( stage.app.doc_pending(), false )
+
+		},
+
+		'a scene bundle that never loads is named on the canvas before the watchdog fires'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const bundle = stage.app.scene_bundle()
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			$mol_assert_equal( stage.pane.warmed(), true )
+
+			const armed = stage.timers.filter( timer => timer.delay === stage.pane.cold_limit() ).length
+
+			stage.scene.lost()
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.scene_lost(), bundle )
+			$mol_assert_ok( stage.canvas_text().includes( bundle ) )
+			$mol_assert_ok( stage.app.status().includes( 'Не загрузился бандл сцены' ) )
+			$mol_assert_equal( stage.app.status().includes( 'на связи' ), false )
+			$mol_assert_equal( stage.pane.stalled(), false )
+			$mol_assert_equal( stage.timers.filter( timer => timer.delay === stage.pane.cold_limit() ).length, armed )
+
+		},
+
+		'healthy pack and scene leave the canvas without a word about loading'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			$mol_assert_equal( stage.canvas_text().includes( 'Не загрузил' ), false )
+			$mol_assert_equal( stage.app.status(), 'сцена на связи' )
+
+			stage.scene.hello()
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.scene_lost(), '' )
+			$mol_assert_equal( stage.app.status(), 'сцена на связи' )
 
 		},
 

@@ -1118,7 +1118,34 @@ namespace $.$$ {
 			return this.Pane().error()
 		}
 
+		pack_lost() {
+			try {
+				this.Lib().tree()
+				return ''
+			} catch( error: unknown ) {
+				if( this.$.$mol_promise_like( error ) ) return ''
+				return this.Lib().tree_link()
+			}
+		}
+
+		lost_cure() {
+			return 'перезагрузите страницу с очисткой кеша при живом дев-сервере'
+		}
+
+		lost_note() {
+			const pack = this.pack_lost()
+			if( pack ) return `Не загрузилось дерево пака деталей ${ pack } — ${ this.lost_cure() }`
+
+			const scene = this.Pane().scene_lost()
+			if( scene ) return `Не загрузился бандл сцены ${ scene } — ${ this.lost_cure() }`
+
+			return ''
+		}
+
 		override status() {
+			const lost = this.lost_note()
+			if( lost ) return lost
+
 			const note = this.store_note()
 			if( note ) return note
 
