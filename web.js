@@ -24448,7 +24448,7 @@ var $;
 "use strict";
 var $;
 (function ($) {
-    $mol_style_attach("giper/baza/rich/edit/edit.view.css", "[giper_baza_rich_edit] {\n\tflex-direction: column;\n\tflex: 1;\n\tborder-radius: var(--mol_gap_round);\n\tbackground-color: var(--mol_theme_field);\n}\n\n[giper_baza_rich_edit_enabled] {\n\toutline: 1px solid var(--mol_theme_line);\n}\n\n[giper_baza_rich_edit]:focus-within {\n\tz-index: var(--mol_layer_focus);\n\toutline: 1px solid var(--mol_theme_focus);\n}\n\n[giper_baza_rich_edit_tools] {\n\tborder-radius: var(--mol_gap_round);\n}\n\n[giper_baza_rich_edit_content] {\n\tflex-direction: column;\n\tflex: 1;\n\twhite-space: pre-wrap;\n\toutline: none;\n\tpadding: var(--mol_gap_block);\n}\n\n[giper_baza_rich_edit_content] a {\n\tcolor: var(--mol_theme_control);\n\ttext-decoration: none;\n\tborder-radius: var(--mol_gap_round);\n}\n\n[giper_baza_rich_edit_content] a:hover {\n\tbackground: var(--mol_theme_card);\n\tbox-shadow: 0 0 0 .25rem var(--mol_theme_card);\n}\n\n[giper_baza_rich_edit_content] p {\n\tmargin: 0;\n\tpadding: var(--mol_gap_text);\n}\n\n[giper_baza_rich_edit_content] ul {\n\tmargin: 0;\n\tpadding: 0 1.5rem;\n}\n\n[giper_baza_rich_edit_content] ul > p:before {\n\tcontent: '• ';\n\twidth: 0;\n    display: inline-flex;\n    white-space: pre;\n    flex-direction: row-reverse;\n}\n\n[giper_baza_rich_edit_content] ol {\n\tmargin: 0;\n\tpadding: 0 1.5rem;\n}\n\n[giper_baza_rich_edit_content] ol > p:before {\n\tcontent: counter(giper_baza_rich_edit_content_ol) \". \";\n\twidth: 0;\n    display: inline-flex;\n    white-space: pre;\n    flex-direction: row-reverse;\n}\n\n[giper_baza_rich_edit_content] blockquote {\n\tmargin: var(--mol_gap_block);\n\tpadding: var(--mol_gap_block);\n\tbackground: var(--mol_theme_card);\n\tborder-radius: var(--mol_gap_round);\n}\n\n[giper_baza_rich_edit_content] pre {\n\tmargin: 0 var(--mol_gap_block);\n\tpadding: 0 var(--mol_gap_block);\n\tborder-radius: var(--mol_gap_round);\n\toverflow-x: auto;\n}\n\n[giper_baza_rich_edit_content] img {\n\tmargin: var(--mol_gap_block);\n\tmax-width: calc( 100% - 2 * var(--mol_gap_block) );\n}\n\n[giper_baza_rich_edit_content] strong {\n\ttext-shadow: 0 0;\n\tfont-weight: normal;\n}\n\n[giper_baza_rich_edit_content] em {\n\tfont-style: italic;\n}\n\n[giper_baza_rich_edit_content] ins {\n\ttext-decoration: none;\n\tcolor: var(--mol_theme_special);\n}\n\n[giper_baza_rich_edit_content] del {\n\ttext-decoration: none;\n\tcolor: var(--mol_theme_shade);\n}\n\n[giper_baza_rich_edit_content] del {\n\tfont-family: monospace;\n}\n\n[giper_baza_rich_edit_content] hr {\n\tmargin: var(--mol_gap_block);\n\tborder: none;\n\tbox-shadow: 0 -1px 0 0px var(--mol_theme_line);\n    height: 1px;\n}\n\n[giper_baza_rich_edit_content] section > p:first-child {\n\tfont-size: 2rem;\n\tline-height: 3rem;\n\tfont-weight: normal;\n\tletter-spacing: 2px;\n\tmargin: var(--mol_gap_block) 0;\n\tpadding: var(--mol_gap_text);\n}\n\n[giper_baza_rich_edit_content] section section > p:first-child {\n\tfont-size: 1.75rem;\n\tline-height: 3rem;\n}\n\n[giper_baza_rich_edit_content] section section section > p:first-child {\n\tfont-size: 1.5rem;\n\tline-height: 3rem;\n}\n\n[giper_baza_rich_edit_content] section section section section > p:first-child {\n\tfont-size: 1.25rem;\n\tline-height: 3rem;\n}\n\n[giper_baza_rich_edit_content] section section section section section > p:first-child {\n\tfont-size: 1.25rem;\n\tline-height: 3rem;\n\tfont-style: italic;\n}\n\n[giper_baza_rich_edit_content] section:not(:last-child) {\n\tbox-shadow: 0 1px 0 0 var(--mol_theme_line);\n}\n");
+    $mol_style_attach("giper/baza/rich/edit/edit.view.css", "[giper_baza_rich_edit] {\n\tflex-direction: column;\n\tflex: 1;\n\tborder-radius: var(--mol_gap_round);\n\tbackground-color: var(--mol_theme_field);\n}\n\n[giper_baza_rich_edit_enabled] {\n\toutline: 1px solid var(--mol_theme_line);\n}\n\n[giper_baza_rich_edit]:focus-within {\n\tz-index: var(--mol_layer_focus);\n\toutline: 1px solid var(--mol_theme_focus);\n}\n\n[giper_baza_rich_edit_tools] {\n\tborder-radius: var(--mol_gap_round);\n}\n\n[giper_baza_rich_edit_content] {\n\tflex-direction: column;\n\tflex: 1;\n\twhite-space: pre-wrap;\n\toutline: none;\n\tpadding: var(--mol_gap_block);\n}\n\n[giper_baza_rich_edit_content] a {\n\tcolor: var(--mol_theme_control);\n\ttext-decoration: none;\n\tborder-radius: var(--mol_gap_round);\n}\n\n[giper_baza_rich_edit_content] a:hover {\n\tbackground: var(--mol_theme_card);\n\tbox-shadow: 0 0 0 .25rem var(--mol_theme_card);\n}\n\n[giper_baza_rich_edit_content] p {\n\tmargin: 0;\n\tpadding: var(--mol_gap_text);\n}\n\n[giper_baza_rich_edit_content] ul {\n\tmargin: 0;\n\tpadding: 0 1.5rem;\n}\n\n[giper_baza_rich_edit_content] ul > p:before {\n\tcontent: '• ';\n\twidth: 0;\n    display: inline-flex;\n    white-space: pre;\n    flex-direction: row-reverse;\n}\n\n[giper_baza_rich_edit_content] ol {\n\tmargin: 0;\n\tpadding: 0 1.5rem;\n}\n\n[giper_baza_rich_edit_content] ol > p:before {\n\tcontent: counter(giper_baza_rich_edit_content_ol) \". \";\n\twidth: 0;\n    display: inline-flex;\n    white-space: pre;\n    flex-direction: row-reverse;\n}\n\n[giper_baza_rich_edit_content] blockquote {\n\tmargin: var(--mol_gap_block);\n\tpadding: var(--mol_gap_block);\n\tbackground: var(--mol_theme_card);\n\tborder-radius: var(--mol_gap_round);\n}\n\n[giper_baza_rich_edit_content] pre {\n\tmargin: 0 var(--mol_gap_block);\n\tpadding: 0 var(--mol_gap_block);\n\tborder-radius: var(--mol_gap_round);\n\toverflow-x: auto;\n}\n\n[giper_baza_rich_edit_content] img {\n\tmargin: var(--mol_gap_block);\n\tmax-width: calc( 100% - 2 * var(--mol_gap_block) );\n}\n\n[giper_baza_rich_edit_content] strong {\n\ttext-shadow: 0 0;\n\tfont-weight: normal;\n}\n\n[giper_baza_rich_edit_content] em {\n\tfont-style: italic;\n}\n\n[giper_baza_rich_edit_content] ins {\n\ttext-decoration: none;\n\tcolor: var(--mol_theme_special);\n}\n\n[giper_baza_rich_edit_content] del {\n\ttext-decoration: none;\n\tcolor: var(--mol_theme_shade);\n}\n\n[giper_baza_rich_edit_content] del {\n\tfont-family: monospace;\n}\n\n[giper_baza_rich_edit_content] hr {\n\tmargin: var(--mol_gap_block);\n\tborder: none;\n\tbox-shadow: 0 -1px 0 0px var(--mol_theme_line);\n    height: 1px;\n}\n\n[giper_baza_rich_edit_content] section {\n\tpadding: 0;\n\tmargin: 0;\n}\n\n[giper_baza_rich_edit_content] section > p:first-child {\n\tfont-size: 2rem;\n\tline-height: 3rem;\n\tfont-weight: normal;\n\tletter-spacing: 2px;\n}\n\n[giper_baza_rich_edit_content] section section > p:first-child {\n\tfont-size: 1.75rem;\n\tline-height: 3rem;\n}\n\n[giper_baza_rich_edit_content] section section section > p:first-child {\n\tfont-size: 1.5rem;\n\tline-height: 3rem;\n}\n\n[giper_baza_rich_edit_content] section section section section > p:first-child {\n\tfont-size: 1.25rem;\n\tline-height: 3rem;\n}\n\n[giper_baza_rich_edit_content] section section section section section > p:first-child {\n\tfont-size: 1.25rem;\n\tline-height: 3rem;\n\tfont-style: italic;\n}\n\n[giper_baza_rich_edit_content] section:not(:last-child) {\n\tbox-shadow: 0 1px 0 0 var(--mol_theme_line);\n}\n\n[giper_baza_rich_edit_content] section:not(:last-child) {\n\tpadding-bottom: var(--mol_gap_block);\n\tmargin-bottom: var(--mol_gap_block);\n\tbox-shadow: 0 1px 0 0 var(--mol_theme_line);\n}\n");
 })($ || ($ = {}));
 
 ;
@@ -24481,8 +24481,9 @@ var $;
                 let nodes = $mol_jsx_attach($mol_dom_context.document, () => this.pawn()?.dom() ?? []);
                 nodes = this.$.$mol_dom_safe(nodes);
                 this.selection_load();
-                return nodes.length ? nodes : [$mol_jsx("p", null,
-                        $mol_jsx("br", null))];
+                return nodes.length ? nodes : [$mol_jsx("section", null,
+                        $mol_jsx("p", null,
+                            $mol_jsx("br", null)))];
             }
             selection(next) {
                 return this.pawn()?.selection(this.$.$giper_baza_auth.current().pass().lord(), next) ?? [['', 0, 0], ['', 0, 0]];
@@ -36754,6 +36755,10 @@ var $;
 		pack_note(){
 			return "";
 		}
+		scene_lost(next){
+			if(next !== undefined) return next;
+			return "";
+		}
 		error(){
 			return "";
 		}
@@ -36926,6 +36931,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_restart"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_at"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_node"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_lost"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_shift"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_zoom"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_generation"));
@@ -37415,6 +37421,12 @@ var $;
             scene_key() {
                 return this.scene_generation() + ' ' + this.pack_uri();
             }
+            scene_lost(next) {
+                return next ?? '';
+            }
+            scene_boot_fail() {
+                return `parent.postMessage({ns:'${$bog_vmap_bridge_ns}',kind:'boot_fail'},'*')`;
+            }
             scene_html() {
                 return [
                     '<!doctype html>',
@@ -37424,7 +37436,7 @@ var $;
                     '</head>',
                     '<body mol_view_root style="padding:0;margin:0;height:100%;width:100%">',
                     `<div mol_view_root="${scene_root}"></div>`,
-                    `<script src="${this.scene_bundle()}" charset="utf-8"></script>`,
+                    `<script src="${this.scene_bundle()}" charset="utf-8" onerror="${this.scene_boot_fail()}"></script>`,
                     '</body></html>',
                 ].join('');
             }
@@ -37461,6 +37473,7 @@ var $;
                 this.scene_generation(this.scene_generation() + 1);
                 this.warmed(false);
                 this.stalled(false);
+                this.scene_lost('');
                 this.scene_shown(false);
                 new this.$.$mol_after_timeout(this.remount_delay(), () => this.scene_shown(true));
             }
@@ -38839,9 +38852,16 @@ var $;
             value_labels() {
                 if (!this.warmed())
                     return [];
-                return this.parts_visible()
-                    .filter(name => this.label_lines(name).length)
-                    .map(name => this.Label(name));
+                try {
+                    return this.parts_visible()
+                        .filter(name => this.label_lines(name).length)
+                        .map(name => this.Label(name));
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return $mol_fail_hidden(error);
+                    return [];
+                }
             }
             name_views() {
                 return this.parts_visible()
@@ -39004,8 +39024,14 @@ var $;
                 const message = this.$.$bog_vmap_bridge_read(event, peer);
                 if (!message)
                     return;
+                const kind = message.kind;
+                if (kind === 'boot_fail') {
+                    this.scene_lost(this.scene_bundle());
+                    return;
+                }
                 this.answer_at(this.stamp());
                 this.stalled(false);
+                this.scene_lost('');
                 if (message.kind === 'ready') {
                     this.error_at('compile', '');
                     this.error_at('runtime', '');
@@ -39107,6 +39133,9 @@ var $;
         __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "mark_style", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "scene_lost", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "scene_shown", null);
@@ -45709,7 +45738,33 @@ var $;
             error() {
                 return this.Pane().error();
             }
+            pack_lost() {
+                try {
+                    this.Lib().tree();
+                    return '';
+                }
+                catch (error) {
+                    if (this.$.$mol_promise_like(error))
+                        return '';
+                    return this.Lib().tree_link();
+                }
+            }
+            lost_cure() {
+                return 'перезагрузите страницу с очисткой кеша при живом дев-сервере';
+            }
+            lost_note() {
+                const pack = this.pack_lost();
+                if (pack)
+                    return `Не загрузилось дерево пака деталей ${pack} — ${this.lost_cure()}`;
+                const scene = this.Pane().scene_lost();
+                if (scene)
+                    return `Не загрузился бандл сцены ${scene} — ${this.lost_cure()}`;
+                return '';
+            }
             status() {
+                const lost = this.lost_note();
+                if (lost)
+                    return lost;
                 const note = this.store_note();
                 if (note)
                     return note;

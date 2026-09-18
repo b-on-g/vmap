@@ -28431,6 +28431,10 @@ var $;
 		pack_note(){
 			return "";
 		}
+		scene_lost(next){
+			if(next !== undefined) return next;
+			return "";
+		}
 		error(){
 			return "";
 		}
@@ -28603,6 +28607,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_restart"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_at"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "error_node"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_lost"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_shift"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_zoom"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_generation"));
@@ -29092,6 +29097,12 @@ var $;
             scene_key() {
                 return this.scene_generation() + ' ' + this.pack_uri();
             }
+            scene_lost(next) {
+                return next ?? '';
+            }
+            scene_boot_fail() {
+                return `parent.postMessage({ns:'${$bog_vmap_bridge_ns}',kind:'boot_fail'},'*')`;
+            }
             scene_html() {
                 return [
                     '<!doctype html>',
@@ -29101,7 +29112,7 @@ var $;
                     '</head>',
                     '<body mol_view_root style="padding:0;margin:0;height:100%;width:100%">',
                     `<div mol_view_root="${scene_root}"></div>`,
-                    `<script src="${this.scene_bundle()}" charset="utf-8"></script>`,
+                    `<script src="${this.scene_bundle()}" charset="utf-8" onerror="${this.scene_boot_fail()}"></script>`,
                     '</body></html>',
                 ].join('');
             }
@@ -29138,6 +29149,7 @@ var $;
                 this.scene_generation(this.scene_generation() + 1);
                 this.warmed(false);
                 this.stalled(false);
+                this.scene_lost('');
                 this.scene_shown(false);
                 new this.$.$mol_after_timeout(this.remount_delay(), () => this.scene_shown(true));
             }
@@ -30516,9 +30528,16 @@ var $;
             value_labels() {
                 if (!this.warmed())
                     return [];
-                return this.parts_visible()
-                    .filter(name => this.label_lines(name).length)
-                    .map(name => this.Label(name));
+                try {
+                    return this.parts_visible()
+                        .filter(name => this.label_lines(name).length)
+                        .map(name => this.Label(name));
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return $mol_fail_hidden(error);
+                    return [];
+                }
             }
             name_views() {
                 return this.parts_visible()
@@ -30681,8 +30700,14 @@ var $;
                 const message = this.$.$bog_vmap_bridge_read(event, peer);
                 if (!message)
                     return;
+                const kind = message.kind;
+                if (kind === 'boot_fail') {
+                    this.scene_lost(this.scene_bundle());
+                    return;
+                }
                 this.answer_at(this.stamp());
                 this.stalled(false);
+                this.scene_lost('');
                 if (message.kind === 'ready') {
                     this.error_at('compile', '');
                     this.error_at('runtime', '');
@@ -30784,6 +30809,9 @@ var $;
         __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "mark_style", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "scene_lost", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "scene_shown", null);
@@ -37248,7 +37276,33 @@ var $;
             error() {
                 return this.Pane().error();
             }
+            pack_lost() {
+                try {
+                    this.Lib().tree();
+                    return '';
+                }
+                catch (error) {
+                    if (this.$.$mol_promise_like(error))
+                        return '';
+                    return this.Lib().tree_link();
+                }
+            }
+            lost_cure() {
+                return 'перезагрузите страницу с очисткой кеша при живом дев-сервере';
+            }
+            lost_note() {
+                const pack = this.pack_lost();
+                if (pack)
+                    return `Не загрузилось дерево пака деталей ${pack} — ${this.lost_cure()}`;
+                const scene = this.Pane().scene_lost();
+                if (scene)
+                    return `Не загрузился бандл сцены ${scene} — ${this.lost_cure()}`;
+                return '';
+            }
             status() {
+                const lost = this.lost_note();
+                if (lost)
+                    return lost;
                 const note = this.store_note();
                 if (note)
                     return note;

@@ -46803,6 +46803,7 @@ declare namespace $ {
 		error_at( id: any, next?: string ): string
 		error_node( id: any, next?: string ): string
 		pack_note( ): string
+		scene_lost( next?: string ): string
 		error( ): string
 		isolation( ): string
 		camera_shift( next?: $mol_vector_2d<number> ): $mol_vector_2d<number>
@@ -47040,6 +47041,8 @@ declare namespace $.$$ {
             readonly [prop: string]: string;
         };
         scene_key(): string;
+        scene_lost(next?: string): string;
+        scene_boot_fail(): string;
         scene_html(): string;
         scene_peer(): $bog_vmap_app_pane_peer | null;
         sub(): readonly $mol_view[];
@@ -57331,6 +57334,9 @@ declare namespace $.$$ {
         lib_class_list(): string[];
         libs(): readonly $bog_vmap_lib_land_text[];
         error(): string;
+        pack_lost(): string;
+        lost_cure(): string;
+        lost_note(): string;
         status(): string;
         dragged(): string;
         ghost_title(): string;
