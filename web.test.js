@@ -12444,7 +12444,7 @@ var $;
     $mol_test({
         'on a node the menu offers copy, delete, wrap, parent and inside, on bare canvas a board and the whole view'($) {
             const node = menu_make($, { on_node: () => true });
-            $mol_assert_like(node.titles(), ['Копировать', 'Удалить', 'Обернуть в артборд', 'Выделить родителя', 'Внутрь']);
+            $mol_assert_like(node.titles(), ['Копировать', 'Удалить', 'Сгруппировать', 'Разгруппировать', 'Обернуть в артборд', 'Вернуть как в детали', 'Выделить родителя', 'Внутрь']);
             const canvas = menu_make($, { on_node: () => false });
             $mol_assert_like(canvas.titles(), ['Артборд здесь', 'Показать всё']);
         },
@@ -12456,10 +12456,10 @@ var $;
         },
         'each item carries its key after the title, the way the platform writes it'($) {
             const mac = menu_make($, { on_node: () => true, apple: () => true });
-            $mol_assert_like(mac.keys(), ['⌘D', '⌫', '⌥⌘G', '', '']);
+            $mol_assert_like(mac.keys(), ['⌘D', '⌫', '⌘G', '⇧⌘G', '⌥⌘G', '', '', '']);
             $mol_assert_like([...mac.item('copy').children].map(el => el.hasAttribute('bog_vmap_app_menu_item_keys')), [false, true]);
             const other = menu_make($, { on_node: () => true, apple: () => false });
-            $mol_assert_like(other.keys(), ['Ctrl+D', 'Del', 'Ctrl+Alt+G', '', '']);
+            $mol_assert_like(other.keys(), ['Ctrl+D', 'Del', 'Ctrl+G', 'Ctrl+Shift+G', 'Ctrl+Alt+G', '', '', '']);
             $mol_assert_like(menu_make($, { apple: () => true }).keys(), ['', '⇧1']);
             $mol_assert_like(menu_make($, { apple: () => false }).keys(), ['', 'Shift+1']);
         },
@@ -12502,7 +12502,7 @@ var $;
             $mol_assert_equal(stage.roll(stage.item('wrap')).defaultPrevented, true);
             $mol_assert_equal(stage.point(stage.item('enter')).defaultPrevented, true);
             $mol_assert_equal(stage.menu.showed(), true);
-            $mol_assert_equal(stage.items().length, 5);
+            $mol_assert_equal(stage.items().length, 8);
         },
         'a press or a wheel outside the menu closes it'($) {
             const pressed = menu_make($);
@@ -12969,8 +12969,8 @@ var $;
             stage.tap(stage.client([40, 40]));
             stage.drop(calc, stage.client([520, 430]));
             stage.drop(map, stage.client([560, 200]));
-            stage.app.tree_move({ name: 'Calc', owner: 'Page', index: 0 });
-            stage.app.tree_move({ name: 'Map', owner: 'Page', index: 1 });
+            stage.app.tree_move({ names: ['Calc'], owner: 'Page', index: 0 });
+            stage.app.tree_move({ names: ['Map'], owner: 'Page', index: 1 });
             stage.redraw();
             stage.scene.flush();
             $mol_assert_like(stage.app.node().sub_names('Page'), ['Calc', 'Map']);
@@ -13003,7 +13003,62 @@ var $;
             $mol_assert_equal(stage.app.doc_source().includes('Calc_2'), false);
             $mol_assert_equal(stage.app.spots()['Calc'], undefined);
         },
-        'a picked set dragged into a board with Alt copies the dragged node only'($) {
+        'a picked set dragged into a board moves the whole set, top to bottom, in one write'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.pane.tool('board');
+            stage.tap(stage.client([40, 40]));
+            stage.drop(calc, stage.client([520, 430]));
+            stage.drop(map, stage.client([560, 200]));
+            stage.app.picked(['Calc', 'Map']);
+            stage.redraw();
+            const app = stage.app;
+            let writes = 0;
+            const kept = app.doc_source.bind(app);
+            app.doc_source = (next) => {
+                if (next !== undefined)
+                    ++writes;
+                return kept(next);
+            };
+            const overlay = stage.overlay();
+            const from = stage.part_center('Calc');
+            const into = stage.client([120, 120]);
+            stage.press(overlay, from);
+            stage.move(overlay, into);
+            stage.release(overlay, into);
+            Reflect.deleteProperty(app, 'doc_source');
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like(stage.app.node().sub_names('Page'), ['Map', 'Calc']);
+            $mol_assert_like(stage.app.node().sub_names(), ['Page']);
+            $mol_assert_equal(stage.app.spots()['Calc'], undefined);
+            $mol_assert_equal(stage.app.spots()['Map'], undefined);
+            $mol_assert_equal(writes, 1);
+        },
+        'a drag by a part outside the pick takes only it and the pick moves onto it'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.pane.tool('board');
+            stage.tap(stage.client([40, 40]));
+            stage.drop(calc, stage.client([520, 430]));
+            stage.drop(map, stage.client([560, 200]));
+            stage.drop(`${d}mol_number`, stage.client([600, 300]));
+            stage.app.picked(['Calc', 'Map']);
+            stage.redraw();
+            const spots = stage.app.spots();
+            const overlay = stage.overlay();
+            const from = stage.part_center('Number');
+            const into = stage.client([120, 120]);
+            stage.press(overlay, from);
+            $mol_assert_like([...stage.app.picked()], ['Number']);
+            stage.move(overlay, into);
+            stage.release(overlay, into);
+            stage.redraw();
+            stage.scene.flush();
+            $mol_assert_like(stage.app.node().sub_names('Page'), ['Number']);
+            $mol_assert_like(stage.app.node().sub_names(), ['Page', 'Calc', 'Map']);
+            $mol_assert_like(stage.app.spots()['Calc'], spots['Calc']);
+            $mol_assert_like(stage.app.spots()['Map'], spots['Map']);
+        },
+        'a picked set dragged into a board with Alt copies the whole set, top to bottom'($) {
             const stage = $bog_vmap_app_flow_stage($);
             stage.pane.tool('board');
             stage.tap(stage.client([40, 40]));
@@ -13019,8 +13074,11 @@ var $;
             stage.release(overlay, into, { altKey: true });
             stage.redraw();
             stage.scene.flush();
-            $mol_assert_like(stage.app.node().sub_names('Page'), ['Calc_2']);
+            $mol_assert_like(stage.app.node().sub_names('Page'), ['Map_2', 'Calc_2']);
             $mol_assert_like(stage.app.node().sub_names(), ['Page', 'Calc', 'Map']);
+            $mol_assert_like([...stage.app.picked()], ['Map_2', 'Calc_2']);
+            $mol_assert_equal(stage.app.spots()['Map_2'], undefined);
+            $mol_assert_equal(stage.app.spots()['Calc_2'], undefined);
             $mol_assert_like(stage.app.spots()['Map'], { x: 464, y: 124 });
             $mol_assert_like(stage.app.spots()['Calc'], { x: 424, y: 354 });
         },
@@ -13031,7 +13089,7 @@ var $;
             stage.drop(calc, stage.client([120, 120]));
             stage.drop(map, stage.client([560, 420]));
             const node = stage.app.node();
-            stage.app.tree_move({ name: 'Calc', owner: 'Page', index: 0 });
+            stage.app.tree_move({ names: ['Calc'], owner: 'Page', index: 0 });
             stage.redraw();
             stage.scene.flush();
             $mol_assert_like(node.sub_names('Page'), ['Calc']);
@@ -14581,7 +14639,7 @@ var $;
             $mol_assert_equal(pane.slot()?.index, 1);
             $mol_assert_like(pane.spots(), { Loose: { x: 600, y: 0 } });
             pane.node_release(pointer(200, 120, { buttons: 0 }));
-            $mol_assert_like(moves, [{ name: 'Loose', owner: 'Board', index: 1 }]);
+            $mol_assert_like(moves, [{ names: ['Loose'], owner: 'Board', index: 1 }]);
             $mol_assert_equal(pane.slot(), null);
             $mol_assert_like(pane.spots(), { Loose: { x: 600, y: 0 } });
         },
@@ -14626,7 +14684,7 @@ var $;
             pane.node_move(pointer(200, 180));
             pane.node_release(pointer(200, 180, { buttons: 0 }));
             $mol_assert_like(pane.spots(), {});
-            $mol_assert_like(moves, [{ name: 'Head', owner: 'Board', index: 2 }]);
+            $mol_assert_like(moves, [{ names: ['Head'], owner: 'Board', index: 2 }]);
         },
         'a container inside a container takes the drop itself'($) {
             const { pane } = pane_make($, {}, {
@@ -14692,6 +14750,19 @@ var $;
         });
         return { ...made, node };
     }
+    const sized = ($) => {
+        const made = [];
+        const { pane } = pane_make($, {}, {
+            node_resize: (next) => {
+                if (next)
+                    made.push(next);
+                return next ?? null;
+            },
+        });
+        pane.sizes({ [`${root}/A`]: box(100, 100, 200, 80) });
+        pane.picked(['A']);
+        return { pane, made };
+    };
     const inner_sizes = {
         [`${root}/Debt`]: box(0, 0, 400, 300),
         [`${root}/Debt/Title`]: box(10, 20, 200, 40),
@@ -14713,6 +14784,95 @@ var $;
         return pane;
     };
     $mol_test({
+        'a pull by the corner sizes the node and writes it once, at the end'($) {
+            const { pane, made } = sized($);
+            $mol_assert_equal(pane.handle_at([300, 180]), 'se');
+            pane.node_press(pointer(300, 180));
+            $mol_assert_equal(pane.sizing()?.name, 'A');
+            $mol_assert_equal(pane.sizing()?.corner, 'se');
+            $mol_assert_like(pane.sizing_box(), box(100, 100, 200, 80));
+            pane.node_move(pointer(360, 230));
+            $mol_assert_like(pane.sizing_box(), box(100, 100, 260, 130));
+            $mol_assert_ok(pane.sizing_note().startsWith('260 × 130'));
+            $mol_assert_like(made, []);
+            pane.node_release(pointer(360, 230, { buttons: 0 }));
+            $mol_assert_equal(pane.sizing(), null);
+            $mol_assert_like(made, [{ name: 'A', width: 260, height: 130, floor: false }]);
+        },
+        'a low node keeps its middle, and a node with no width offers no handle'($) {
+            const { pane } = sized($);
+            pane.sizes({ [`${root}/A`]: box(100, 100, 200, 12) });
+            $mol_assert_equal(pane.handle_at([200, 106]), '');
+            $mol_assert_equal(pane.handle_at([300, 112]), 'se');
+            pane.sizes({ [`${root}/A`]: box(100, 100, 0, 12) });
+            $mol_assert_equal(pane.handle_at([100, 106]), '');
+            $mol_assert_equal(pane.handle_at([100, 100]), '');
+        },
+        'a pull by a side moves only its own edge, and the far edges stay'($) {
+            const west = sized($);
+            $mol_assert_equal(west.pane.handle_at([100, 140]), 'w');
+            west.pane.node_press(pointer(100, 140));
+            west.pane.node_move(pointer(60, 140));
+            $mol_assert_like(west.pane.sizing_box(), box(60, 100, 240, 80));
+            const north = sized($);
+            north.pane.node_press(pointer(200, 100));
+            north.pane.node_move(pointer(200, 70));
+            $mol_assert_like(north.pane.sizing_box(), box(100, 70, 200, 110));
+        },
+        'Shift keeps the shape of the node while it is pulled'($) {
+            const { pane } = sized($);
+            pane.node_press(pointer(300, 180));
+            pane.node_move(pointer(500, 185, { shiftKey: true }));
+            $mol_assert_equal(pane.sizing()?.ratio, true);
+            $mol_assert_like(pane.sizing_box(), box(100, 100, 400, 160));
+        },
+        'Escape gives the node its size back and writes nothing'($) {
+            const { pane, made } = sized($);
+            pane.node_press(pointer(300, 180));
+            pane.node_move(pointer(500, 400));
+            $mol_assert_ok(pane.sizing());
+            pane.escape();
+            $mol_assert_equal(pane.sizing(), null);
+            $mol_assert_like(made, []);
+            $mol_assert_like(pane.part_size('A'), box(100, 100, 200, 80));
+        },
+        'the caption says who holds the size: the content below and the parent aside'($) {
+            const { pane } = pane_make($, {}, {
+                doc_names: () => ['A', 'B'],
+                axis: (name) => name === 'A' ? 'column' : '',
+            });
+            pane.sizes({
+                [`${root}/A`]: box(100, 100, 200, 80),
+                [`${root}/A/B`]: box(100, 100, 200, 60),
+            });
+            pane.picked(['A']);
+            pane.node_press(pointer(300, 180));
+            pane.node_move(pointer(300, 120));
+            $mol_assert_like(pane.sizing_box(), box(100, 100, 200, 20));
+            $mol_assert_equal(pane.sizing_note(), '200 × 60 по содержимому');
+            pane.node_move(pointer(300, 300));
+            $mol_assert_equal(pane.sizing_note(), '200 × 200');
+            const kid = pane_make($, {}, {
+                doc_names: () => ['A', 'B'],
+                axis: (name) => name === 'A' ? 'column' : '',
+            });
+            kid.pane.sizes({
+                [`${root}/A`]: box(100, 100, 200, 80),
+                [`${root}/A/B`]: box(100, 100, 200, 60),
+            });
+            kid.pane.picked(['B']);
+            $mol_assert_equal(kid.pane.size_hard('B'), 'width');
+            kid.pane.node_press(pointer(300, 130));
+            kid.pane.node_move(pointer(340, 130));
+            $mol_assert_equal(kid.pane.sizing_note(), '240 жёстко × 60');
+        },
+        'a pull that changes nothing writes nothing'($) {
+            const { pane, made } = sized($);
+            pane.node_press(pointer(300, 180));
+            pane.node_move(pointer(300, 180));
+            pane.node_release(pointer(300, 180, { buttons: 0 }));
+            $mol_assert_like(made, []);
+        },
         'a layer inside a part is addressed by the chain of its layers, however deep the scene renders it'($) {
             const pane = inner_pane($);
             $mol_assert_like(pane.part_size('Debt/Title'), box(10, 20, 200, 40));
@@ -14745,7 +14905,7 @@ var $;
             const overlay = pane.Overlay();
             $mol_assert_equal(overlay.sub().includes(overlay.Inner()), true);
             $mol_assert_equal(overlay.Inner().sub().length, 0);
-            $mol_assert_equal(overlay.Frame('Debt').sub().length, 4);
+            $mol_assert_equal(overlay.Frame('Debt').sub().length, 8);
         },
         'an inner layer the scene never measured gets no frame'($) {
             const pane = inner_pane($, 'Debt/Nobody');
@@ -15177,6 +15337,27 @@ var $;
         pane.node_press(pointer(x, y));
         pane.node_release(pointer(x, y, { buttons: 0 }));
     };
+    const nudged = ($) => {
+        const writes = [];
+        let places = { A: { x: 100, y: 100 }, B: { x: 200, y: 100 } };
+        const pane = tools_make($, {
+            spots: (next) => {
+                if (next === undefined)
+                    return places;
+                places = next;
+                writes.push(next);
+                return places;
+            },
+        });
+        pane.sizes({
+            [`${root}/A`]: box(100, 100),
+            [`${root}/B`]: box(200, 100),
+            [`${root}/Board`]: box(400, 0, 300, 200),
+            [`${root}/Board/Inner`]: box(410, 10),
+        });
+        pane.picked(['A']);
+        return { pane, writes, places: () => places };
+    };
     const drawn = () => {
         const boards = [];
         const board_draw = (next) => {
@@ -15190,6 +15371,14 @@ var $;
         await Promise.resolve();
     };
     $mol_test({
+        'all the styles of the pane live in one sheet: a second define would wipe the first'($) {
+            const sheet = $.$mol_dom_context.document.getElementById('$mol_style_attach:$bog_vmap_app_pane');
+            $mol_assert_ok(sheet);
+            const text = sheet.innerHTML;
+            for (const part of ['scene', 'overlay', 'band', 'draft', 'ghost', 'sizing', 'text_field', 'say']) {
+                $mol_assert_equal(part + ' есть: ' + text.includes(`bog_vmap_app_pane_${part}`), part + ' есть: true');
+            }
+        },
         'the tool keys switch the tool, and Escape steps back to the arrow'($) {
             const pane = tools_make($);
             $mol_assert_equal(pane.tool(), 'select');
@@ -15223,6 +15412,69 @@ var $;
             $mol_assert_equal(pane.key_down(stroke('', { key: 'Backspace' })), true);
             $mol_assert_equal(pane.key_down(stroke('', { key: 'Delete' })), true);
             $mol_assert_equal(deleted, 2);
+        },
+        'plus and minus step the zoom about the middle of the view, and a hundred comes back by two keys'($) {
+            const pane = tools_make($);
+            const middle = { clientX: 10 + 500, clientY: 20 + 400 };
+            const under = () => pane.world_point(middle).map(one => Math.round(one));
+            const held = under();
+            const plus = stroke('Equal', { key: '+', shiftKey: true });
+            $mol_assert_equal(pane.key_down(plus), true);
+            $mol_assert_equal(plus.prevented, true);
+            $mol_assert_equal(Math.round(pane.camera_zoom() * 100), 125);
+            $mol_assert_like(under(), held);
+            pane.key_down(stroke('Minus', { key: '-' }));
+            $mol_assert_equal(Math.round(pane.camera_zoom() * 100), 100);
+            $mol_assert_like(under(), held);
+            pane.key_down(stroke('Equal'));
+            pane.key_down(stroke('Digit0', { metaKey: true }));
+            $mol_assert_equal(pane.camera_zoom(), 1);
+            pane.key_down(stroke('Equal'));
+            pane.key_down(stroke('Digit0', { shiftKey: true }));
+            $mol_assert_equal(pane.camera_zoom(), 1);
+            const browser = stroke('Equal', { metaKey: true });
+            $mol_assert_equal(pane.key_down(browser), false);
+            $mol_assert_equal(browser.prevented, false);
+            $mol_assert_equal(pane.camera_zoom(), 1);
+        },
+        'an arrow moves a free part by a step, Shift by ten, and writes the places once a press'($) {
+            const { pane, writes, places } = nudged($);
+            const right = stroke('ArrowRight');
+            $mol_assert_equal(pane.key_down(right), true);
+            $mol_assert_equal(right.prevented, true);
+            $mol_assert_like(places().A, { x: 101, y: 100 });
+            $mol_assert_equal(writes.length, 1);
+            pane.key_down(stroke('ArrowDown', { shiftKey: true }));
+            $mol_assert_like(places().A, { x: 101, y: 110 });
+            $mol_assert_equal(writes.length, 2);
+            pane.key_down(stroke('ArrowUp'));
+            pane.key_down(stroke('ArrowLeft', { shiftKey: true }));
+            $mol_assert_like(places().A, { x: 91, y: 109 });
+            $mol_assert_equal(writes.length, 4);
+            pane.picked(['A', 'B']);
+            pane.key_down(stroke('ArrowRight', { shiftKey: true }));
+            $mol_assert_like(places().A, { x: 101, y: 109 });
+            $mol_assert_like(places().B, { x: 210, y: 100 });
+            $mol_assert_equal(writes.length, 5);
+            $mol_assert_equal(pane.say(), '');
+        },
+        'a part held by a layout says so instead of moving, and a modifier leaves the arrow alone'($) {
+            const { pane, writes, places } = nudged($);
+            pane.picked(['Inner']);
+            const arrow = stroke('ArrowRight');
+            $mol_assert_equal(pane.key_down(arrow), true);
+            $mol_assert_equal(writes.length, 0);
+            $mol_assert_like(places().A, { x: 100, y: 100 });
+            $mol_assert_ok(pane.say().includes('Inner'));
+            $mol_assert_ok(pane.say().includes('раскладка родителя'));
+            pane.picked(['A']);
+            const carried = stroke('ArrowRight', { metaKey: true });
+            $mol_assert_equal(pane.key_down(carried), false);
+            $mol_assert_equal(carried.prevented, false);
+            $mol_assert_equal(writes.length, 0);
+            pane.picked([]);
+            $mol_assert_equal(pane.key_down(stroke('ArrowRight')), false);
+            $mol_assert_equal(writes.length, 0);
         },
         'a tool key with a modifier, or typed into a field, changes nothing'($) {
             const pane = tools_make($);
@@ -16022,7 +16274,6 @@ var $;
             $mol_assert_equal(wrapped, 2);
             for (const key of [
                 stroke('KeyG'),
-                stroke('KeyG', { metaKey: true }),
                 stroke('KeyG', { altKey: true }),
                 stroke('KeyG', { metaKey: true, altKey: true, shiftKey: true }),
                 stroke('KeyG', { ctrlKey: true, altKey: true, target: $.$mol_dom_context.document.createElement('input') }),
@@ -16031,6 +16282,36 @@ var $;
                 $mol_assert_equal(key.prevented, false);
             }
             $mol_assert_equal(wrapped, 2);
+        },
+        'Cmd+G groups and Shift+Cmd+G ungroups, only with a pick and never typed into a field'($) {
+            let grouped = 0;
+            let ungrouped = 0;
+            let ready = false;
+            const pane = menu_pane($, {
+                node_group: () => { ++grouped; return null; },
+                node_ungroup: () => { ++ungrouped; return null; },
+                ungroup_enabled: () => ready,
+            });
+            $mol_assert_equal(pane.key_down(stroke('KeyG', { metaKey: true })), false);
+            $mol_assert_equal(grouped, 0);
+            pane.picked(['A']);
+            const mac = stroke('KeyG', { metaKey: true, key: '\u00A9' });
+            $mol_assert_equal(pane.key_down(mac), true);
+            $mol_assert_equal(mac.prevented, true);
+            pane.key_down(stroke('KeyG', { ctrlKey: true }));
+            $mol_assert_equal(grouped, 2);
+            $mol_assert_equal(pane.key_down(stroke('KeyG', { metaKey: true, shiftKey: true })), false);
+            $mol_assert_equal(ungrouped, 0);
+            ready = true;
+            const back = stroke('KeyG', { metaKey: true, shiftKey: true });
+            $mol_assert_equal(pane.key_down(back), true);
+            $mol_assert_equal(back.prevented, true);
+            $mol_assert_equal(ungrouped, 1);
+            $mol_assert_equal(grouped, 2);
+            const typed = stroke('KeyG', { metaKey: true, target: $.$mol_dom_context.document.createElement('input') });
+            $mol_assert_equal(pane.key_down(typed), false);
+            $mol_assert_equal(typed.prevented, false);
+            $mol_assert_equal(grouped, 2);
         },
     });
 })($ || ($ = {}));
@@ -16378,6 +16659,16 @@ var $;
             $mol_assert_equal(lib.inner_step(`${chart}/Legend`)?.declared, `${d}bog_vmap_lib_test_chart`);
             $mol_assert_equal(lib.inner_step(`${chart}/Line`)?.declared, `${d}bog_vmap_lib_test_plot`);
             $mol_assert_equal(lib.inner_class(`${chart}/Legend`), `${d}bog_vmap_lib_test_legend`);
+        },
+        'a class that puts a port into its own body is told from one that only holds it'($) {
+            const lib = $.$bog_vmap_lib_any.make({
+                $,
+                tree: () => $.$bog_vmap_lib_parse(inner_src),
+            });
+            $mol_assert_equal(lib.shows(`${d}bog_vmap_lib_test_plot/title`), false);
+            $mol_assert_equal(lib.shows(`${d}bog_vmap_lib_test_legend/Mark`), true);
+            $mol_assert_equal(lib.shows(`${d}mol_view/title`), false);
+            $mol_assert_equal(lib.shows(`${d}bog_vmap_lib_test_plot`), false);
         },
         'a route that leaves the class it started from stays foreign all the way down'($) {
             const lib = $.$bog_vmap_lib_any.make({
@@ -16886,6 +17177,455 @@ var $;
             $mol_assert_equal(add.textContent, '');
             $mol_assert_ok(add.contains(view.Add_icon().dom_node()));
             $mol_assert_ok(add.getAttribute('title').startsWith('Новая сцена'));
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($_1) {
+    $mol_test_mocks.push($ => {
+        class $mol_state_arg_mock extends $.$mol_state_arg {
+        }
+        $.$mol_state_arg = $mol_state_arg_mock;
+    });
+    class $bog_vmap_app_history_test_doc extends $mol_object {
+        state(next) {
+            return next ?? { source: '', js: {}, css: {}, spots: {} };
+        }
+        source(next) {
+            const state = this.state();
+            if (next === undefined)
+                return state.source;
+            this.state({ ...state, source: next });
+            return next;
+        }
+        css(klass, next) {
+            const state = this.state();
+            this.state({ ...state, css: { ...state.css, [klass]: next } });
+        }
+        spot(name, x, y) {
+            const state = this.state();
+            this.state({ ...state, spots: { ...state.spots, [name]: { x, y } } });
+        }
+    }
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_app_history_test_doc.prototype, "state", null);
+    function $bog_vmap_app_history_test_pair($, delay = 0) {
+        const doc = $bog_vmap_app_history_test_doc.make({ $ });
+        const one = $$.$bog_vmap_app_history.make({
+            $,
+            doc_key: () => 'doc',
+            step_delay: () => delay,
+            state: (next) => doc.state(next),
+        });
+        const eye = new $mol_wire_atom('history_tape', () => {
+            const tape = one.tape('doc');
+            return tape.states.length + ':' + tape.pos;
+        });
+        eye.fresh();
+        const commit = async () => {
+            await $mol_wire_async(one).step(one.slug());
+            eye.fresh();
+        };
+        return { doc, one, commit };
+    }
+    const d = '$';
+    const src_one = `${d}bog_vmap_app_history_test_page ${d}mol_view\n\ttitle \\One\n\tsub / <= title\n`;
+    const src_two = `${d}bog_vmap_app_history_test_page ${d}mol_view\n\ttitle \\Two\n\tsub / <= title\n`;
+    function $bog_vmap_app_history_test_land($) {
+        const store = $bog_vmap_app_store.make({ $, doc_land_config: () => null });
+        const doc = store.doc_add('Landing');
+        const one = $$.$bog_vmap_app_history.make({
+            $,
+            store: () => store,
+            step_delay: () => 0,
+            snap_delay: () => 0,
+            state: (next) => store.doc_state(doc, next),
+        });
+        return { store, doc, one };
+    }
+    async function $bog_vmap_app_history_test_peers($, writable) {
+        const auth_own = await $.$giper_baza_auth.grab();
+        const auth_mate = await $.$giper_baza_auth.grab();
+        const land_own = $giper_baza_land.make({ $, auth: () => auth_own });
+        const land_mate = $giper_baza_land.make({
+            $,
+            link: () => land_own.link(),
+            auth: () => auth_mate,
+        });
+        if (writable)
+            land_own.give(auth_mate.pass(), $giper_baza_rank_post('just'));
+        const peer = (land, lord) => {
+            const doc = land.Data($bog_vmap_app_doc);
+            const store = $bog_vmap_app_store.make({ $, doc_current: () => doc });
+            const one = $$.$bog_vmap_app_history.make({
+                $,
+                store: () => store,
+                step_delay: () => 0,
+                snap_delay: () => 0,
+                state: (next) => store.doc_state(doc, next),
+            });
+            return { land, doc, store, one, lord };
+        };
+        const sync = (from, to) => $mol_wire_async(to.land).units_steal(from.land);
+        return {
+            own: peer(land_own, auth_own.pass().lord().str),
+            mate: peer(land_mate, auth_mate.pass().lord().str),
+            sync,
+        };
+    }
+    function $bog_vmap_app_history_test_times(store, doc) {
+        return store.snaps(doc).map(snap => snap.time());
+    }
+    function $bog_vmap_app_history_test_stroke(next) {
+        return {
+            code: 'KeyZ',
+            command: true,
+            shift: false,
+            alt: false,
+            tag: 'DIV',
+            editable: false,
+            ...next,
+        };
+    }
+    $mol_test({
+        async 'three edits and two undos give the state of the first edit'($) {
+            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
+            await commit();
+            doc.source('one');
+            await commit();
+            doc.source('two');
+            await commit();
+            doc.source('three');
+            await commit();
+            one.undo();
+            one.undo();
+            $mol_assert_equal(doc.source(), 'one');
+        },
+        async 'redo after two undos gives the state of the second edit'($) {
+            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
+            await commit();
+            doc.source('one');
+            await commit();
+            doc.source('two');
+            await commit();
+            doc.source('three');
+            await commit();
+            one.undo();
+            one.undo();
+            one.redo();
+            $mol_assert_equal(doc.source(), 'two');
+        },
+        async 'an edit after an undo cuts the tail off'($) {
+            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
+            await commit();
+            doc.source('one');
+            await commit();
+            doc.source('two');
+            await commit();
+            one.undo();
+            $mol_assert_equal(doc.source(), 'one');
+            $mol_assert_equal(one.redoable(), true);
+            doc.source('other');
+            await commit();
+            $mol_assert_equal(one.redoable(), false);
+            one.undo();
+            $mol_assert_equal(doc.source(), 'one');
+        },
+        async 'the ring starts from the state at hand'($) {
+            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
+            doc.source('typed at once');
+            await commit();
+            $mol_assert_equal(one.ring('doc').length, 1);
+            $mol_assert_equal(one.ring('doc')[0].source, 'typed at once');
+            $mol_assert_equal(one.undoable(), false);
+        },
+        async 'a step whose text has already moved on is dropped'($) {
+            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
+            await commit();
+            doc.source('o');
+            const stale = one.slug();
+            doc.source('one');
+            one.slug();
+            await $mol_wire_async(one).step(stale);
+            $mol_assert_equal(one.ring('doc').length, 1);
+            $mol_assert_equal(one.undoable(), false);
+        },
+        async 'the same state twice adds no step'($) {
+            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
+            await commit();
+            doc.source('one');
+            await commit();
+            await commit();
+            await commit();
+            $mol_assert_equal(one.ring('doc').length, 2);
+            $mol_assert_equal(one.undoable(), true);
+            one.undo();
+            $mol_assert_equal(doc.source(), '');
+            $mol_assert_equal(one.undoable(), false);
+        },
+        async 'a style is part of the step and comes back with it'($) {
+            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
+            doc.source('page');
+            await commit();
+            doc.css('page', 'color: red');
+            await commit();
+            $mol_assert_equal(one.ring('doc').length, 2);
+            one.undo();
+            $mol_assert_equal(Object.keys(doc.state().css).length, 0);
+            $mol_assert_equal(doc.source(), 'page');
+        },
+        async 'undo at the oldest step and redo at the newest change nothing'($) {
+            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
+            await commit();
+            doc.source('one');
+            await commit();
+            one.redo();
+            $mol_assert_equal(doc.source(), 'one');
+            one.undo();
+            one.undo();
+            $mol_assert_equal(doc.source(), '');
+        },
+        'a stroke of Z with a command key means undo, with shift means redo'($) {
+            const one = $$.$bog_vmap_app_history.make({ $ });
+            $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({})), 'undo');
+            $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({ shift: true })), 'redo');
+        },
+        'a stroke without a command key or with alt is not ours'($) {
+            const one = $$.$bog_vmap_app_history.make({ $ });
+            $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({ command: false })), null);
+            $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({ alt: true })), null);
+            $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({ code: 'KeyY' })), null);
+        },
+        'a stroke typed into a field or into the scene frame is left alone'($) {
+            const one = $$.$bog_vmap_app_history.make({ $ });
+            for (const tag of ['INPUT', 'TEXTAREA', 'SELECT', 'IFRAME']) {
+                $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({ tag })), null);
+            }
+            $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({ editable: true })), null);
+        },
+        'a snapshot of an unchanged document is not written twice'($) {
+            const { store, doc, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_make(100);
+            $mol_assert_equal(store.snaps(doc).length, 1);
+            one.snap_make(200);
+            $mol_assert_equal(store.snaps(doc).length, 1);
+            store.source(src_two);
+            one.snap_make(300);
+            $mol_assert_equal(store.snaps(doc).length, 2);
+        },
+        'restoring a snapshot puts the current state into the history first'($) {
+            const { store, doc, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_make(100);
+            store.source(src_two);
+            one.snap_revert(store.snaps(doc)[0].link().str);
+            $mol_assert_equal(store.source(), src_one);
+            $mol_assert_equal(store.snaps(doc).length, 2);
+            $mol_assert_equal(store.snap_state(store.snaps(doc)[1]).source, src_two);
+        },
+        async 'a pause in editing leaves a snapshot'($) {
+            const { store, doc, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            await $mol_wire_async(one).snap_step(one.slug());
+            $mol_assert_equal(store.snaps(doc).length, 1);
+            $mol_assert_equal(store.snap_state(store.snaps(doc)[0]).source, src_one);
+        },
+        'the newest snapshot comes first and every row shows its own moment'($) {
+            const { store, doc, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_make(1757000000000);
+            store.source(src_two);
+            one.snap_make(1757000060000);
+            const links = one.snap_links();
+            $mol_assert_equal(links.length, 2);
+            $mol_assert_equal(one.snap_preview(links[0]), src_two);
+            $mol_assert_equal(one.snap_preview(links[1]), src_one);
+            $mol_assert_equal(one.snap_moment(links[0]) === one.snap_moment(links[1]), false);
+            $mol_assert_equal(one.snap_author(links[0]), doc.land().auth().pass().lord().str);
+        },
+        'a snapshot is signed with the class that changed and by how much'($) {
+            const { store, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_make(1);
+            store.source(src_one.replace('\tsub / <= title\n', '\tsub / <= title\n\tCard $mol_view\n'));
+            one.snap_make(2);
+            const links = one.snap_links();
+            $mol_assert_equal(one.snap_change(links[1]), 'первый снимок');
+            $mol_assert_equal(one.snap_change(links[0]), 'bog_vmap_app_history_test_page Card +1');
+        },
+        'two snapshots in a row are signed differently'($) {
+            const { store, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_make(1);
+            store.source(src_two);
+            one.snap_make(2);
+            const links = one.snap_links();
+            $mol_assert_equal(one.snap_change(links[0]) === one.snap_change(links[1]), false);
+        },
+        'a style written without touching the tree is named in the signature'($) {
+            const { store, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_make(1);
+            store.node_css(store.doc_current(), `${d}bog_vmap_app_history_test_page`, '[x] {}');
+            one.snap_make(2);
+            $mol_assert_equal(one.snap_change(one.snap_links()[0]), 'bog_vmap_app_history_test_page стиль +1');
+        },
+        'the button on an unchanged document says so instead of keeping quiet'($) {
+            const { store, doc, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_press();
+            $mol_assert_equal(store.snaps(doc).length, 1);
+            $mol_assert_equal(one.note(), '');
+            one.snap_press();
+            $mol_assert_equal(store.snaps(doc).length, 1);
+            $mol_assert_equal(one.note(), 'Изменений с прошлого снимка нет');
+        },
+        'the note goes away as soon as the document moves on'($) {
+            const { store, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_press();
+            one.snap_press();
+            $mol_assert_equal(one.note() !== '', true);
+            store.source(src_two);
+            $mol_assert_equal(one.note(), '');
+        },
+        'a long snapshot is previewed trimmed'($) {
+            const { store, one } = $bog_vmap_app_history_test_land($);
+            const long = src_one.replace(/\n$/, '')
+                + Array.from({ length: 40 }, (_, index) => `\n\tItem${index} ${d}mol_view`).join('')
+                + '\n';
+            store.source(long);
+            one.snap_make(1);
+            const preview = one.snap_preview(one.snap_links()[0]);
+            $mol_assert_equal(preview.split('\n').length, one.preview_limit() + 1);
+            $mol_assert_equal(preview.endsWith('…'), true);
+        },
+        async 'a place of a part is part of the step and comes back with it'($) {
+            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
+            doc.source('page');
+            doc.spot('Hero', 10, 20);
+            await commit();
+            doc.spot('Hero', 300, 400);
+            await commit();
+            $mol_assert_equal(one.ring('doc').length, 2);
+            one.undo();
+            $mol_assert_like(doc.state().spots, { Hero: { x: 10, y: 20 } });
+        },
+        'a snapshot carries the places of the parts'($) {
+            const { store, doc, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            store.spots({ Hero: { x: 10, y: 20 } });
+            one.snap_make(100);
+            store.spots({ Hero: { x: 300, y: 400 } });
+            one.snap_revert(store.snaps(doc)[0].link().str);
+            $mol_assert_like(store.spots(), { Hero: { x: 10, y: 20 } });
+            $mol_assert_like(store.snap_state(store.snaps(doc)[1]).spots, { Hero: { x: 300, y: 400 } });
+        },
+        'the panel is a page with the three steps in its tools'($) {
+            const dom = $.$mol_dom_context;
+            const { one } = $bog_vmap_app_history_test_land($);
+            dom.document.body.appendChild(one.dom_tree());
+            const node = one.dom_node();
+            $mol_assert_equal(node.querySelectorAll('[mol_page_head]').length, 1);
+            $mol_assert_equal(node.querySelectorAll('[mol_page_tools] [mol_button_minor]').length, 3);
+        },
+        'every snapshot is a button with a labeler inside a list'($) {
+            const dom = $.$mol_dom_context;
+            const { store, one } = $bog_vmap_app_history_test_land($);
+            store.source(src_one);
+            one.snap_make(100);
+            store.source(src_two);
+            one.snap_make(200);
+            dom.document.body.appendChild(one.dom_tree());
+            const rows = one.dom_node().querySelectorAll('[mol_list] > [bog_vmap_app_history_snap]');
+            $mol_assert_equal(rows.length, 2);
+            $mol_assert_equal(rows[0].hasAttribute('mol_button_minor'), true);
+            $mol_assert_equal(rows[0].querySelectorAll('[mol_labeler]').length, 1);
+            $mol_assert_equal(rows[0].textContent.includes(one.snap_moment(one.snap_links()[0])), true);
+        },
+        'a press on the row of a snapshot asks to go back to it'($) {
+            const dom = $.$mol_dom_context;
+            const store = $bog_vmap_app_store.make({ $, doc_land_config: () => null });
+            const doc = store.doc_add('Landing');
+            const asked = [];
+            const one = $$.$bog_vmap_app_history.make({
+                $,
+                store: () => store,
+                step_delay: () => 0,
+                snap_delay: () => 0,
+                state: (next) => store.doc_state(doc, next),
+                snap_back: (link, next) => {
+                    asked.push(link);
+                    return null;
+                },
+            });
+            store.source(src_one);
+            one.snap_make(100);
+            store.source(src_two);
+            one.snap_make(200);
+            dom.document.body.appendChild(one.dom_tree());
+            const rows = one.dom_node().querySelectorAll('[mol_list] > [bog_vmap_app_history_snap]');
+            $mol_assert_equal(rows.length, 2);
+            $mol_assert_equal(one.editable(), true);
+            rows[0].click();
+            $mol_assert_equal(asked.join(' '), one.snap_links()[0]);
+        },
+        async 'a document of somebody else refuses a snapshot in words and turns the button off'($) {
+            const { own, mate, sync } = await $bog_vmap_app_history_test_peers($, false);
+            own.store.doc_source(own.doc, src_one);
+            await sync(own, mate);
+            $mol_assert_equal(mate.store.doc_source(mate.doc), src_one);
+            $mol_assert_equal(mate.one.editable(), false);
+            $mol_assert_equal(mate.one.Take().enabled(), false);
+            $mol_assert_equal(own.one.Take().enabled(), true);
+            const before = (await $mol_wire_async(mate.land).diff_units()).length;
+            mate.one.snap_press();
+            $mol_assert_equal(mate.one.note(), 'Чужая сцена: снимок в неё не пишется');
+            $mol_assert_equal(mate.one.snap_make(100), null);
+            $mol_assert_equal(mate.store.snaps(mate.doc).length, 0);
+            $mol_assert_equal((await $mol_wire_async(mate.land).diff_units()).length, before);
+            await sync(mate, own);
+            $mol_assert_equal(own.store.snaps(own.doc).length, 0);
+        },
+        async 'two peers with the right to write take snapshots in turn and both see both in one order'($) {
+            const { own, mate, sync } = await $bog_vmap_app_history_test_peers($, true);
+            await sync(own, mate);
+            $mol_assert_equal(mate.one.editable(), true);
+            $mol_assert_equal(mate.one.Take().enabled(), true);
+            own.store.doc_source(own.doc, src_one);
+            own.one.snap_make(100);
+            await sync(own, mate);
+            mate.store.doc_source(mate.doc, src_two);
+            mate.one.snap_make(200);
+            await sync(mate, own);
+            $mol_assert_equal(own.store.snaps(own.doc).length, 2);
+            $mol_assert_like(own.store.snaps(own.doc).map(snap => snap.link().str), mate.store.snaps(mate.doc).map(snap => snap.link().str));
+            $mol_assert_like(own.one.snap_links(), mate.one.snap_links());
+            $mol_assert_like($bog_vmap_app_history_test_times(own.store, own.doc), [100, 200]);
+            $mol_assert_like($bog_vmap_app_history_test_times(mate.store, mate.doc), [100, 200]);
+            $mol_assert_like(mate.store.snaps(mate.doc).map(snap => mate.store.snap_state(snap).source), [src_one, src_two]);
+            $mol_assert_like(own.store.snaps(own.doc).map(snap => snap.author()), [own.lord, mate.lord]);
+            $mol_assert_like(mate.store.snaps(mate.doc).map(snap => snap.author()), [own.lord, mate.lord]);
+        },
+        async 'a return to a snapshot at one peer reaches the other'($) {
+            const { own, mate, sync } = await $bog_vmap_app_history_test_peers($, true);
+            await sync(own, mate);
+            own.store.doc_source(own.doc, src_one);
+            own.one.snap_make(100);
+            own.store.doc_source(own.doc, src_two);
+            await sync(own, mate);
+            $mol_assert_equal(mate.store.doc_source(mate.doc), src_two);
+            own.one.snap_revert(own.store.snaps(own.doc)[0].link().str);
+            $mol_assert_equal(own.store.doc_source(own.doc), src_one);
+            await sync(own, mate);
+            $mol_assert_equal(mate.store.doc_source(mate.doc), src_one);
+            $mol_assert_equal(mate.store.snaps(mate.doc).length, 2);
+            $mol_assert_equal(mate.store.snap_state(mate.store.snaps(mate.doc)[1]).source, src_two);
         },
     });
 })($ || ($ = {}));
@@ -17722,455 +18462,6 @@ var $;
 "use strict";
 var $;
 (function ($_1) {
-    $mol_test_mocks.push($ => {
-        class $mol_state_arg_mock extends $.$mol_state_arg {
-        }
-        $.$mol_state_arg = $mol_state_arg_mock;
-    });
-    class $bog_vmap_app_history_test_doc extends $mol_object {
-        state(next) {
-            return next ?? { source: '', js: {}, css: {}, spots: {} };
-        }
-        source(next) {
-            const state = this.state();
-            if (next === undefined)
-                return state.source;
-            this.state({ ...state, source: next });
-            return next;
-        }
-        css(klass, next) {
-            const state = this.state();
-            this.state({ ...state, css: { ...state.css, [klass]: next } });
-        }
-        spot(name, x, y) {
-            const state = this.state();
-            this.state({ ...state, spots: { ...state.spots, [name]: { x, y } } });
-        }
-    }
-    __decorate([
-        $mol_mem
-    ], $bog_vmap_app_history_test_doc.prototype, "state", null);
-    function $bog_vmap_app_history_test_pair($, delay = 0) {
-        const doc = $bog_vmap_app_history_test_doc.make({ $ });
-        const one = $$.$bog_vmap_app_history.make({
-            $,
-            doc_key: () => 'doc',
-            step_delay: () => delay,
-            state: (next) => doc.state(next),
-        });
-        const eye = new $mol_wire_atom('history_tape', () => {
-            const tape = one.tape('doc');
-            return tape.states.length + ':' + tape.pos;
-        });
-        eye.fresh();
-        const commit = async () => {
-            await $mol_wire_async(one).step(one.slug());
-            eye.fresh();
-        };
-        return { doc, one, commit };
-    }
-    const d = '$';
-    const src_one = `${d}bog_vmap_app_history_test_page ${d}mol_view\n\ttitle \\One\n\tsub / <= title\n`;
-    const src_two = `${d}bog_vmap_app_history_test_page ${d}mol_view\n\ttitle \\Two\n\tsub / <= title\n`;
-    function $bog_vmap_app_history_test_land($) {
-        const store = $bog_vmap_app_store.make({ $, doc_land_config: () => null });
-        const doc = store.doc_add('Landing');
-        const one = $$.$bog_vmap_app_history.make({
-            $,
-            store: () => store,
-            step_delay: () => 0,
-            snap_delay: () => 0,
-            state: (next) => store.doc_state(doc, next),
-        });
-        return { store, doc, one };
-    }
-    async function $bog_vmap_app_history_test_peers($, writable) {
-        const auth_own = await $.$giper_baza_auth.grab();
-        const auth_mate = await $.$giper_baza_auth.grab();
-        const land_own = $giper_baza_land.make({ $, auth: () => auth_own });
-        const land_mate = $giper_baza_land.make({
-            $,
-            link: () => land_own.link(),
-            auth: () => auth_mate,
-        });
-        if (writable)
-            land_own.give(auth_mate.pass(), $giper_baza_rank_post('just'));
-        const peer = (land, lord) => {
-            const doc = land.Data($bog_vmap_app_doc);
-            const store = $bog_vmap_app_store.make({ $, doc_current: () => doc });
-            const one = $$.$bog_vmap_app_history.make({
-                $,
-                store: () => store,
-                step_delay: () => 0,
-                snap_delay: () => 0,
-                state: (next) => store.doc_state(doc, next),
-            });
-            return { land, doc, store, one, lord };
-        };
-        const sync = (from, to) => $mol_wire_async(to.land).units_steal(from.land);
-        return {
-            own: peer(land_own, auth_own.pass().lord().str),
-            mate: peer(land_mate, auth_mate.pass().lord().str),
-            sync,
-        };
-    }
-    function $bog_vmap_app_history_test_times(store, doc) {
-        return store.snaps(doc).map(snap => snap.time());
-    }
-    function $bog_vmap_app_history_test_stroke(next) {
-        return {
-            code: 'KeyZ',
-            command: true,
-            shift: false,
-            alt: false,
-            tag: 'DIV',
-            editable: false,
-            ...next,
-        };
-    }
-    $mol_test({
-        async 'three edits and two undos give the state of the first edit'($) {
-            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
-            await commit();
-            doc.source('one');
-            await commit();
-            doc.source('two');
-            await commit();
-            doc.source('three');
-            await commit();
-            one.undo();
-            one.undo();
-            $mol_assert_equal(doc.source(), 'one');
-        },
-        async 'redo after two undos gives the state of the second edit'($) {
-            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
-            await commit();
-            doc.source('one');
-            await commit();
-            doc.source('two');
-            await commit();
-            doc.source('three');
-            await commit();
-            one.undo();
-            one.undo();
-            one.redo();
-            $mol_assert_equal(doc.source(), 'two');
-        },
-        async 'an edit after an undo cuts the tail off'($) {
-            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
-            await commit();
-            doc.source('one');
-            await commit();
-            doc.source('two');
-            await commit();
-            one.undo();
-            $mol_assert_equal(doc.source(), 'one');
-            $mol_assert_equal(one.redoable(), true);
-            doc.source('other');
-            await commit();
-            $mol_assert_equal(one.redoable(), false);
-            one.undo();
-            $mol_assert_equal(doc.source(), 'one');
-        },
-        async 'the ring starts from the state at hand'($) {
-            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
-            doc.source('typed at once');
-            await commit();
-            $mol_assert_equal(one.ring('doc').length, 1);
-            $mol_assert_equal(one.ring('doc')[0].source, 'typed at once');
-            $mol_assert_equal(one.undoable(), false);
-        },
-        async 'a step whose text has already moved on is dropped'($) {
-            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
-            await commit();
-            doc.source('o');
-            const stale = one.slug();
-            doc.source('one');
-            one.slug();
-            await $mol_wire_async(one).step(stale);
-            $mol_assert_equal(one.ring('doc').length, 1);
-            $mol_assert_equal(one.undoable(), false);
-        },
-        async 'the same state twice adds no step'($) {
-            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
-            await commit();
-            doc.source('one');
-            await commit();
-            await commit();
-            await commit();
-            $mol_assert_equal(one.ring('doc').length, 2);
-            $mol_assert_equal(one.undoable(), true);
-            one.undo();
-            $mol_assert_equal(doc.source(), '');
-            $mol_assert_equal(one.undoable(), false);
-        },
-        async 'a style is part of the step and comes back with it'($) {
-            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
-            doc.source('page');
-            await commit();
-            doc.css('page', 'color: red');
-            await commit();
-            $mol_assert_equal(one.ring('doc').length, 2);
-            one.undo();
-            $mol_assert_equal(Object.keys(doc.state().css).length, 0);
-            $mol_assert_equal(doc.source(), 'page');
-        },
-        async 'undo at the oldest step and redo at the newest change nothing'($) {
-            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
-            await commit();
-            doc.source('one');
-            await commit();
-            one.redo();
-            $mol_assert_equal(doc.source(), 'one');
-            one.undo();
-            one.undo();
-            $mol_assert_equal(doc.source(), '');
-        },
-        'a stroke of Z with a command key means undo, with shift means redo'($) {
-            const one = $$.$bog_vmap_app_history.make({ $ });
-            $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({})), 'undo');
-            $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({ shift: true })), 'redo');
-        },
-        'a stroke without a command key or with alt is not ours'($) {
-            const one = $$.$bog_vmap_app_history.make({ $ });
-            $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({ command: false })), null);
-            $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({ alt: true })), null);
-            $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({ code: 'KeyY' })), null);
-        },
-        'a stroke typed into a field or into the scene frame is left alone'($) {
-            const one = $$.$bog_vmap_app_history.make({ $ });
-            for (const tag of ['INPUT', 'TEXTAREA', 'SELECT', 'IFRAME']) {
-                $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({ tag })), null);
-            }
-            $mol_assert_equal(one.stroke_kind($bog_vmap_app_history_test_stroke({ editable: true })), null);
-        },
-        'a snapshot of an unchanged document is not written twice'($) {
-            const { store, doc, one } = $bog_vmap_app_history_test_land($);
-            store.source(src_one);
-            one.snap_make(100);
-            $mol_assert_equal(store.snaps(doc).length, 1);
-            one.snap_make(200);
-            $mol_assert_equal(store.snaps(doc).length, 1);
-            store.source(src_two);
-            one.snap_make(300);
-            $mol_assert_equal(store.snaps(doc).length, 2);
-        },
-        'restoring a snapshot puts the current state into the history first'($) {
-            const { store, doc, one } = $bog_vmap_app_history_test_land($);
-            store.source(src_one);
-            one.snap_make(100);
-            store.source(src_two);
-            one.snap_revert(store.snaps(doc)[0].link().str);
-            $mol_assert_equal(store.source(), src_one);
-            $mol_assert_equal(store.snaps(doc).length, 2);
-            $mol_assert_equal(store.snap_state(store.snaps(doc)[1]).source, src_two);
-        },
-        async 'a pause in editing leaves a snapshot'($) {
-            const { store, doc, one } = $bog_vmap_app_history_test_land($);
-            store.source(src_one);
-            await $mol_wire_async(one).snap_step(one.slug());
-            $mol_assert_equal(store.snaps(doc).length, 1);
-            $mol_assert_equal(store.snap_state(store.snaps(doc)[0]).source, src_one);
-        },
-        'the newest snapshot comes first and every row shows its own moment'($) {
-            const { store, doc, one } = $bog_vmap_app_history_test_land($);
-            store.source(src_one);
-            one.snap_make(1757000000000);
-            store.source(src_two);
-            one.snap_make(1757000060000);
-            const links = one.snap_links();
-            $mol_assert_equal(links.length, 2);
-            $mol_assert_equal(one.snap_preview(links[0]), src_two);
-            $mol_assert_equal(one.snap_preview(links[1]), src_one);
-            $mol_assert_equal(one.snap_moment(links[0]) === one.snap_moment(links[1]), false);
-            $mol_assert_equal(one.snap_author(links[0]), doc.land().auth().pass().lord().str);
-        },
-        'a snapshot is signed with the class that changed and by how much'($) {
-            const { store, one } = $bog_vmap_app_history_test_land($);
-            store.source(src_one);
-            one.snap_make(1);
-            store.source(src_one.replace('\tsub / <= title\n', '\tsub / <= title\n\tCard $mol_view\n'));
-            one.snap_make(2);
-            const links = one.snap_links();
-            $mol_assert_equal(one.snap_change(links[1]), 'первый снимок');
-            $mol_assert_equal(one.snap_change(links[0]), 'bog_vmap_app_history_test_page Card +1');
-        },
-        'two snapshots in a row are signed differently'($) {
-            const { store, one } = $bog_vmap_app_history_test_land($);
-            store.source(src_one);
-            one.snap_make(1);
-            store.source(src_two);
-            one.snap_make(2);
-            const links = one.snap_links();
-            $mol_assert_equal(one.snap_change(links[0]) === one.snap_change(links[1]), false);
-        },
-        'a style written without touching the tree is named in the signature'($) {
-            const { store, one } = $bog_vmap_app_history_test_land($);
-            store.source(src_one);
-            one.snap_make(1);
-            store.node_css(store.doc_current(), `${d}bog_vmap_app_history_test_page`, '[x] {}');
-            one.snap_make(2);
-            $mol_assert_equal(one.snap_change(one.snap_links()[0]), 'bog_vmap_app_history_test_page стиль +1');
-        },
-        'the button on an unchanged document says so instead of keeping quiet'($) {
-            const { store, doc, one } = $bog_vmap_app_history_test_land($);
-            store.source(src_one);
-            one.snap_press();
-            $mol_assert_equal(store.snaps(doc).length, 1);
-            $mol_assert_equal(one.note(), '');
-            one.snap_press();
-            $mol_assert_equal(store.snaps(doc).length, 1);
-            $mol_assert_equal(one.note(), 'Изменений с прошлого снимка нет');
-        },
-        'the note goes away as soon as the document moves on'($) {
-            const { store, one } = $bog_vmap_app_history_test_land($);
-            store.source(src_one);
-            one.snap_press();
-            one.snap_press();
-            $mol_assert_equal(one.note() !== '', true);
-            store.source(src_two);
-            $mol_assert_equal(one.note(), '');
-        },
-        'a long snapshot is previewed trimmed'($) {
-            const { store, one } = $bog_vmap_app_history_test_land($);
-            const long = src_one.replace(/\n$/, '')
-                + Array.from({ length: 40 }, (_, index) => `\n\tItem${index} ${d}mol_view`).join('')
-                + '\n';
-            store.source(long);
-            one.snap_make(1);
-            const preview = one.snap_preview(one.snap_links()[0]);
-            $mol_assert_equal(preview.split('\n').length, one.preview_limit() + 1);
-            $mol_assert_equal(preview.endsWith('…'), true);
-        },
-        async 'a place of a part is part of the step and comes back with it'($) {
-            const { doc, one, commit } = $bog_vmap_app_history_test_pair($);
-            doc.source('page');
-            doc.spot('Hero', 10, 20);
-            await commit();
-            doc.spot('Hero', 300, 400);
-            await commit();
-            $mol_assert_equal(one.ring('doc').length, 2);
-            one.undo();
-            $mol_assert_like(doc.state().spots, { Hero: { x: 10, y: 20 } });
-        },
-        'a snapshot carries the places of the parts'($) {
-            const { store, doc, one } = $bog_vmap_app_history_test_land($);
-            store.source(src_one);
-            store.spots({ Hero: { x: 10, y: 20 } });
-            one.snap_make(100);
-            store.spots({ Hero: { x: 300, y: 400 } });
-            one.snap_revert(store.snaps(doc)[0].link().str);
-            $mol_assert_like(store.spots(), { Hero: { x: 10, y: 20 } });
-            $mol_assert_like(store.snap_state(store.snaps(doc)[1]).spots, { Hero: { x: 300, y: 400 } });
-        },
-        'the panel is a page with the three steps in its tools'($) {
-            const dom = $.$mol_dom_context;
-            const { one } = $bog_vmap_app_history_test_land($);
-            dom.document.body.appendChild(one.dom_tree());
-            const node = one.dom_node();
-            $mol_assert_equal(node.querySelectorAll('[mol_page_head]').length, 1);
-            $mol_assert_equal(node.querySelectorAll('[mol_page_tools] [mol_button_minor]').length, 3);
-        },
-        'every snapshot is a button with a labeler inside a list'($) {
-            const dom = $.$mol_dom_context;
-            const { store, one } = $bog_vmap_app_history_test_land($);
-            store.source(src_one);
-            one.snap_make(100);
-            store.source(src_two);
-            one.snap_make(200);
-            dom.document.body.appendChild(one.dom_tree());
-            const rows = one.dom_node().querySelectorAll('[mol_list] > [bog_vmap_app_history_snap]');
-            $mol_assert_equal(rows.length, 2);
-            $mol_assert_equal(rows[0].hasAttribute('mol_button_minor'), true);
-            $mol_assert_equal(rows[0].querySelectorAll('[mol_labeler]').length, 1);
-            $mol_assert_equal(rows[0].textContent.includes(one.snap_moment(one.snap_links()[0])), true);
-        },
-        'a press on the row of a snapshot asks to go back to it'($) {
-            const dom = $.$mol_dom_context;
-            const store = $bog_vmap_app_store.make({ $, doc_land_config: () => null });
-            const doc = store.doc_add('Landing');
-            const asked = [];
-            const one = $$.$bog_vmap_app_history.make({
-                $,
-                store: () => store,
-                step_delay: () => 0,
-                snap_delay: () => 0,
-                state: (next) => store.doc_state(doc, next),
-                snap_back: (link, next) => {
-                    asked.push(link);
-                    return null;
-                },
-            });
-            store.source(src_one);
-            one.snap_make(100);
-            store.source(src_two);
-            one.snap_make(200);
-            dom.document.body.appendChild(one.dom_tree());
-            const rows = one.dom_node().querySelectorAll('[mol_list] > [bog_vmap_app_history_snap]');
-            $mol_assert_equal(rows.length, 2);
-            $mol_assert_equal(one.editable(), true);
-            rows[0].click();
-            $mol_assert_equal(asked.join(' '), one.snap_links()[0]);
-        },
-        async 'a document of somebody else refuses a snapshot in words and turns the button off'($) {
-            const { own, mate, sync } = await $bog_vmap_app_history_test_peers($, false);
-            own.store.doc_source(own.doc, src_one);
-            await sync(own, mate);
-            $mol_assert_equal(mate.store.doc_source(mate.doc), src_one);
-            $mol_assert_equal(mate.one.editable(), false);
-            $mol_assert_equal(mate.one.Take().enabled(), false);
-            $mol_assert_equal(own.one.Take().enabled(), true);
-            const before = (await $mol_wire_async(mate.land).diff_units()).length;
-            mate.one.snap_press();
-            $mol_assert_equal(mate.one.note(), 'Чужая сцена: снимок в неё не пишется');
-            $mol_assert_equal(mate.one.snap_make(100), null);
-            $mol_assert_equal(mate.store.snaps(mate.doc).length, 0);
-            $mol_assert_equal((await $mol_wire_async(mate.land).diff_units()).length, before);
-            await sync(mate, own);
-            $mol_assert_equal(own.store.snaps(own.doc).length, 0);
-        },
-        async 'two peers with the right to write take snapshots in turn and both see both in one order'($) {
-            const { own, mate, sync } = await $bog_vmap_app_history_test_peers($, true);
-            await sync(own, mate);
-            $mol_assert_equal(mate.one.editable(), true);
-            $mol_assert_equal(mate.one.Take().enabled(), true);
-            own.store.doc_source(own.doc, src_one);
-            own.one.snap_make(100);
-            await sync(own, mate);
-            mate.store.doc_source(mate.doc, src_two);
-            mate.one.snap_make(200);
-            await sync(mate, own);
-            $mol_assert_equal(own.store.snaps(own.doc).length, 2);
-            $mol_assert_like(own.store.snaps(own.doc).map(snap => snap.link().str), mate.store.snaps(mate.doc).map(snap => snap.link().str));
-            $mol_assert_like(own.one.snap_links(), mate.one.snap_links());
-            $mol_assert_like($bog_vmap_app_history_test_times(own.store, own.doc), [100, 200]);
-            $mol_assert_like($bog_vmap_app_history_test_times(mate.store, mate.doc), [100, 200]);
-            $mol_assert_like(mate.store.snaps(mate.doc).map(snap => mate.store.snap_state(snap).source), [src_one, src_two]);
-            $mol_assert_like(own.store.snaps(own.doc).map(snap => snap.author()), [own.lord, mate.lord]);
-            $mol_assert_like(mate.store.snaps(mate.doc).map(snap => snap.author()), [own.lord, mate.lord]);
-        },
-        async 'a return to a snapshot at one peer reaches the other'($) {
-            const { own, mate, sync } = await $bog_vmap_app_history_test_peers($, true);
-            await sync(own, mate);
-            own.store.doc_source(own.doc, src_one);
-            own.one.snap_make(100);
-            own.store.doc_source(own.doc, src_two);
-            await sync(own, mate);
-            $mol_assert_equal(mate.store.doc_source(mate.doc), src_two);
-            own.one.snap_revert(own.store.snaps(own.doc)[0].link().str);
-            $mol_assert_equal(own.store.doc_source(own.doc), src_one);
-            await sync(own, mate);
-            $mol_assert_equal(mate.store.doc_source(mate.doc), src_one);
-            $mol_assert_equal(mate.store.snaps(mate.doc).length, 2);
-            $mol_assert_equal(mate.store.snap_state(mate.store.snaps(mate.doc)[1]).source, src_two);
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
     const d = '$';
     $_1.$bog_vmap_app_flow_parts = [
         `${d}mol_string ${d}mol_view`,
@@ -18187,6 +18478,7 @@ var $;
         `\tchecked? false`,
         `${d}mol_paragraph ${d}mol_view`,
         `\ttitle \\`,
+        `\tsub / <= title`,
         `${d}bog_vmap_part_cell ${d}mol_view`,
         `\tresult \\`,
         `\tcode? \\`,
@@ -18620,10 +18912,13 @@ var $;
             stage.button('В библиотеку');
             const canvas = stage.pane.dom_node();
             const tools = stage.root.querySelector('[bog_vmap_app_tools]');
-            for (const title of ['−', '100%', '+']) {
+            for (const title of ['−', 'Вписать всё', '+']) {
                 $mol_assert_equal(tools.contains(stage.button(title)), true);
                 $mol_assert_equal(canvas.contains(stage.button(title)), false);
             }
+            const foot = stage.root.querySelector('[bog_vmap_app_canvas_foot]');
+            $mol_assert_equal(foot.contains(stage.button('100%')), true);
+            $mol_assert_equal(tools.contains(stage.button('100%')), false);
             $mol_assert_equal(canvas.querySelector('[role=button]'), null);
             const text = stage.text();
             $mol_assert_ok(text.includes('Ассеты'));
@@ -18939,6 +19234,7 @@ var $;
             $mol_assert_ok(stage.text().includes('125%'));
             stage.click(stage.button('125%'));
             $mol_assert_ok(stage.text().includes('100%'));
+            stage.click(stage.button('Вписать всё'));
             const size = $_2.$bog_vmap_app_flow_size;
             const shift = stage.pane.camera_shift();
             $mol_assert_like([204 + size.width / 2 + shift[0], 24 + size.height / 2 + shift[1]], [$_2.$bog_vmap_app_flow_rect.width / 2, $_2.$bog_vmap_app_flow_rect.height / 2]);
@@ -19272,8 +19568,9 @@ var $;
             $mol_assert_ok(app.Canvas().body().includes(app.Pane()));
             $mol_assert_equal(foot.childElementCount, 1);
             $mol_assert_ok(foot.contains(app.Status().dom_node()));
+            $mol_assert_ok(foot.contains(app.Zoom_chip().dom_node()));
         },
-        'the percent in the canvas tools zooms and gives the view back'($) {
+        'the percent in the footer gives a hundred back, and the trio in the head steps and fits'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
             stage.pane.camera_shift(new $mol_vector_2d(700, 700));
             stage.redraw();
@@ -19285,8 +19582,11 @@ var $;
             stage.click(stage.button('+'));
             stage.click(stage.button('125%'));
             $mol_assert_equal(stage.pane.camera_zoom(), 1);
-            $mol_assert_like([...stage.pane.camera_shift()], [0, 0]);
             $mol_assert_ok(stage.button('100%'));
+            stage.click(stage.button('+'));
+            stage.click(stage.button('Вписать всё'));
+            $mol_assert_equal(stage.pane.camera_zoom(), 1);
+            $mol_assert_like([...stage.pane.camera_shift()], [0, 0]);
         },
         'the column checks and the tabs put panels on screen and take them off'($) {
             const stage = $_3.$bog_vmap_app_flow_stage($);
@@ -19664,6 +19964,7 @@ var $;
     const d = '$';
     const calc = `${d}flow_calc`;
     const map = `${d}flow_map`;
+    const number = `${d}mol_number`;
     const context = ($, stage, point) => {
         const dom = $.$mol_dom_context;
         const event = new dom.MouseEvent('contextmenu', {
@@ -19735,7 +20036,7 @@ var $;
             const at = stage.part_center('Calc');
             const event = context($, stage, at);
             $mol_assert_equal(event.defaultPrevented, true);
-            $mol_assert_like(titles(stage), ['Копировать', 'Удалить', 'Обернуть в артборд', 'Выделить родителя', 'Внутрь']);
+            $mol_assert_like(titles(stage), ['Копировать', 'Удалить', 'Сгруппировать', 'Разгруппировать', 'Обернуть в артборд', 'Вернуть как в детали', 'Выделить родителя', 'Внутрь']);
             const style = stage.pane.menu_view().dom_node().style;
             $mol_assert_equal(style.left, (at[0] - $_5.$bog_vmap_app_flow_rect.left) + 'px');
             $mol_assert_equal(style.top, (at[1] - $_5.$bog_vmap_app_flow_rect.top) + 'px');
@@ -19821,6 +20122,409 @@ var $;
             $mol_assert_equal(styled(stage, 'Page', 'width'), '300px');
             $mol_assert_equal(styled(stage, 'Page', 'minHeight'), '50px');
         },
+        'Cmd+G puts free parts into a plain group at their own corner'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            stage.drop(map, stage.client([400, 150]));
+            stage.drop(calc, stage.client([200, 150]));
+            const spots = stage.app.spots();
+            stage.app.picked(['Map', 'Calc']);
+            pressed($, stage, 'KeyG', { key: 'g', metaKey: true });
+            $mol_assert_like(node.sub_names(), ['Group']);
+            $mol_assert_like(node.sub_names('Group'), ['Calc', 'Map']);
+            $mol_assert_like(stage.app.spots(), { Group: spots['Calc'] });
+            $mol_assert_equal(styled(stage, 'Group', 'width'), null);
+            $mol_assert_equal(styled(stage, 'Group', 'background'), null);
+            $mol_assert_equal(styled(stage, 'Group', 'flexDirection'), null);
+            $mol_assert_like([...stage.app.picked()], ['Group']);
+        },
+        'Cmd+G on parts standing one above the other lays the group in a column'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 120]));
+            stage.drop(map, stage.client([200, 400]));
+            stage.app.picked(['Calc', 'Map']);
+            pressed($, stage, 'KeyG', { key: 'g', metaKey: true });
+            $mol_assert_equal(styled(stage, 'Group', 'flexDirection'), 'column');
+        },
+        'Cmd+G on neighbours inside a board keeps the order of the parent and adds no spot'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            pressed($, stage, 'KeyF', { key: 'f' });
+            stage.tap(stage.client([100, 100]));
+            const page = stage.pane.part_box('Page');
+            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
+            stage.drop(map, stage.client([page.left + 200, page.top + 120]));
+            stage.drop(number, stage.client([page.left + 200, page.top + 200]));
+            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map', 'Number']);
+            stage.app.picked(['Calc', 'Map']);
+            pressed($, stage, 'KeyG', { key: 'g', metaKey: true });
+            $mol_assert_like(node.sub_names('Page'), ['Group', 'Number']);
+            $mol_assert_like(node.sub_names('Group'), ['Calc', 'Map']);
+            $mol_assert_equal(stage.app.spots()['Group'], undefined);
+            $mol_assert_equal(stage.app.spots()['Calc'], undefined);
+        },
+        'a wire between grouped parts keeps working after Cmd+G'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const overlay = stage.overlay();
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([400, 100]));
+            stage.tap(stage.part_center('Calc'));
+            const out = stage.port_dot('Calc', 'result', 'out');
+            const into = stage.port_dot('Map', 'zoom', 'in');
+            stage.press(overlay, out);
+            stage.move(overlay, into);
+            stage.release(overlay, into);
+            stage.redraw();
+            const links = stage.app.node().links().length;
+            $mol_assert_equal(links, 1);
+            stage.app.picked(['Calc', 'Map']);
+            pressed($, stage, 'KeyG', { key: 'g', metaKey: true });
+            $mol_assert_equal(stage.app.node().links().length, links);
+            $mol_assert_like(stage.app.node().sub_names('Group'), ['Calc', 'Map']);
+            $mol_assert_ok(stage.app.doc_source().includes('\tcalc_result = Calc result\n'));
+            $mol_assert_ok(stage.app.doc_source().includes('zoom <= calc_result'));
+        },
+        'Shift+Cmd+G brings the parts back on the canvas where the layout put them'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([400, 150]));
+            stage.app.picked(['Calc', 'Map']);
+            pressed($, stage, 'KeyG', { key: 'g', metaKey: true });
+            $mol_assert_like(node.sub_names(), ['Group']);
+            const boxes = ['Calc', 'Map'].map(name => stage.pane.part_size(name));
+            $mol_assert_ok(boxes.every(Boolean));
+            pressed($, stage, 'KeyG', { key: 'g', metaKey: true, shiftKey: true });
+            $mol_assert_like(node.sub_names(), ['Calc', 'Map']);
+            $mol_assert_equal(stage.app.doc_source().includes('Group'), false);
+            $mol_assert_like(stage.app.spots()['Calc'], { x: Math.round(boxes[0].x), y: Math.round(boxes[0].y) });
+            $mol_assert_like(stage.app.spots()['Map'], { x: Math.round(boxes[1].x), y: Math.round(boxes[1].y) });
+            $mol_assert_like([...stage.app.picked()], ['Calc', 'Map']);
+        },
+        'Shift+Cmd+G inside a board splices the kids back at the place of the group'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            pressed($, stage, 'KeyF', { key: 'f' });
+            stage.tap(stage.client([100, 100]));
+            const page = stage.pane.part_box('Page');
+            stage.drop(calc, stage.client([page.left + 200, page.top + 40]));
+            stage.drop(map, stage.client([page.left + 200, page.top + 120]));
+            stage.drop(number, stage.client([page.left + 200, page.top + 200]));
+            stage.app.picked(['Calc', 'Map']);
+            pressed($, stage, 'KeyG', { key: 'g', metaKey: true });
+            $mol_assert_like(node.sub_names('Page'), ['Group', 'Number']);
+            stage.app.picked(['Group']);
+            pressed($, stage, 'KeyG', { key: 'g', metaKey: true, shiftKey: true });
+            $mol_assert_like(node.sub_names('Page'), ['Calc', 'Map', 'Number']);
+            $mol_assert_equal(stage.app.spots()['Calc'], undefined);
+            $mol_assert_like([...stage.app.picked()], ['Calc', 'Map']);
+        },
+        'a group that shifted its kids says so, and stays silent when nothing moved'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.app.picked(['Calc']);
+            pressed($, stage, 'KeyG', { key: 'g', metaKey: true });
+            stage.scene.flush();
+            stage.redraw();
+            $mol_assert_equal(stage.app.group_moved(), false);
+            $mol_assert_equal(stage.app.group_note(), '');
+            $mol_assert_equal(stage.app.status(), 'сцена на связи');
+            stage.app.picked(['Group']);
+            pressed($, stage, 'KeyG', { key: 'g', metaKey: true, shiftKey: true });
+            stage.drop(map, stage.client([500, 150]));
+            stage.app.picked(['Calc', 'Map']);
+            const before = stage.pane.part_size('Map');
+            pressed($, stage, 'KeyG', { key: 'g', metaKey: true });
+            stage.scene.flush();
+            stage.redraw();
+            const after = stage.pane.part_size('Map');
+            $mol_assert_ok(Math.abs(after.x - before.x) >= 1 || Math.abs(after.y - before.y) >= 1);
+            $mol_assert_equal(stage.app.group_moved(), true);
+            $mol_assert_ok(stage.app.status().includes('Группа раскладывает содержимое'));
+            $mol_assert_ok(stage.app.status().includes('вернёт как было'));
+            $mol_assert_ok(stage.canvas_text().includes('Группа раскладывает содержимое'));
+            stage.drop(number, stage.client([700, 150]));
+            stage.redraw();
+            $mol_assert_ok(stage.pane.part_size('Map'));
+            $mol_assert_equal(stage.app.group_note(), '');
+        },
+        async 'Cmd+G writes the document once and one undo puts everything back'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([400, 150]));
+            await stepped(stage);
+            const before = stage.app.doc_source();
+            const spots = stage.app.spots();
+            const app = stage.app;
+            let writes = 0;
+            const kept = app.doc_source.bind(app);
+            app.doc_source = (next) => {
+                if (next !== undefined)
+                    ++writes;
+                return kept(next);
+            };
+            stage.app.picked(['Calc', 'Map']);
+            pressed($, stage, 'KeyG', { key: 'g', metaKey: true });
+            Reflect.deleteProperty(app, 'doc_source');
+            $mol_assert_equal(writes, 1);
+            $mol_assert_ok(stage.app.doc_source().includes('Group $mol_view'));
+            await stepped(stage);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), before);
+            $mol_assert_like(stage.app.spots(), spots);
+        },
+        'T takes the text tool and a click opens a field without touching the document'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            $mol_assert_equal(stage.pane.text_enabled(), true);
+            pressed($, stage, 'KeyT', { key: 't' });
+            $mol_assert_equal(stage.pane.tool_text(), true);
+            const before = stage.app.doc_source();
+            stage.tap(stage.client([300, 200]));
+            $mol_assert_ok(stage.pane.text_spot());
+            $mol_assert_equal(stage.pane.text_new(), '');
+            $mol_assert_like(stage.app.node().part_names(), []);
+            $mol_assert_equal(stage.app.doc_source(), before);
+            $mol_assert_equal(stage.pane.tool_text(), false);
+        },
+        'the typed text is born as a node in one write'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            pressed($, stage, 'KeyT', { key: 't' });
+            stage.tap(stage.client([300, 200]));
+            const app = stage.app;
+            let writes = 0;
+            const kept = app.doc_source.bind(app);
+            app.doc_source = (next) => {
+                if (next !== undefined)
+                    ++writes;
+                return kept(next);
+            };
+            stage.pane.text_new('Привет');
+            stage.pane.text_new_submit();
+            Reflect.deleteProperty(app, 'doc_source');
+            stage.redraw();
+            $mol_assert_equal(writes, 1);
+            $mol_assert_like(stage.app.node().part_names(), ['Text']);
+            $mol_assert_equal(stage.app.node().prop_decl('Text').kids[0].type, `${d}mol_paragraph`);
+            $mol_assert_ok(stage.app.doc_source().includes('title \\Привет'));
+            $mol_assert_ok(stage.app.spots()['Text']);
+            $mol_assert_like([...stage.app.picked()], ['Text']);
+            $mol_assert_equal(stage.pane.text_spot(), null);
+        },
+        'a text left empty writes nothing at all, whatever the way out'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            let writes = 0;
+            let asked = 0;
+            const kept = app.doc_source.bind(app);
+            app.doc_source = (next) => {
+                if (next !== undefined)
+                    ++writes;
+                return kept(next);
+            };
+            const born = app.text_draw.bind(app);
+            app.text_draw = (next) => {
+                ++asked;
+                return born(next);
+            };
+            pressed($, stage, 'KeyT', { key: 't' });
+            stage.tap(stage.client([300, 200]));
+            pressed($, stage, 'Escape', { key: 'Escape' });
+            $mol_assert_equal(stage.pane.text_spot(), null);
+            pressed($, stage, 'KeyT', { key: 't' });
+            stage.tap(stage.client([400, 300]));
+            pressed($, stage, 'KeyV', { key: 'v' });
+            $mol_assert_equal(stage.pane.text_spot(), null);
+            pressed($, stage, 'KeyT', { key: 't' });
+            stage.tap(stage.client([500, 400]));
+            stage.pane.text_new_submit();
+            Reflect.deleteProperty(app, 'doc_source');
+            Reflect.deleteProperty(app, 'text_draw');
+            $mol_assert_equal(writes, 0);
+            $mol_assert_equal(asked, 0);
+            $mol_assert_like(stage.app.node().part_names(), []);
+        },
+        'a drag sets the width and the width reaches the node'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const overlay = stage.overlay();
+            pressed($, stage, 'KeyT', { key: 't' });
+            stage.press(overlay, stage.client([200, 200]));
+            stage.move(overlay, stage.client([460, 260]));
+            stage.release(overlay, stage.client([460, 260]));
+            stage.redraw();
+            $mol_assert_equal(stage.pane.text_spot().width, 260);
+            stage.pane.text_new('Широкий');
+            stage.pane.text_new_submit();
+            stage.redraw();
+            $mol_assert_equal(styled(stage, 'Text', 'width'), '260px');
+            $mol_assert_equal(styled(stage, 'Text', 'height'), null);
+        },
+        'what was typed is kept when the tool changes under it'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            pressed($, stage, 'KeyT', { key: 't' });
+            stage.tap(stage.client([300, 200]));
+            stage.pane.text_new('Не потеряй');
+            pressed($, stage, 'KeyV', { key: 'v' });
+            stage.redraw();
+            $mol_assert_like(stage.app.node().part_names(), ['Text']);
+            $mol_assert_ok(stage.app.doc_source().includes('title \\Не потеряй'));
+            $mol_assert_equal(stage.pane.text_spot(), null);
+        },
+        'a pack that never loads leaves the text tool off, and the canvas says why'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const dead = 'http://lost.test/';
+            $mol_assert_equal(stage.pane.text_enabled(), true);
+            const fetched = $.$mol_fetch;
+            class $mol_fetch_lost extends fetched {
+                static text(input, init) {
+                    const uri = String(input);
+                    if (uri.startsWith(dead))
+                        return $mol_fail(new Error('Failed to fetch'));
+                    return super.text(input, init);
+                }
+            }
+            $.$mol_fetch = $mol_fetch_lost;
+            stage.app.links(dead);
+            stage.scene.hello();
+            stage.redraw();
+            $mol_assert_equal(stage.pane.text_enabled(), false);
+            pressed($, stage, 'KeyT', { key: 't' });
+            $mol_assert_equal(stage.pane.tool_text(), false);
+            stage.tap(stage.client([300, 200]));
+            $mol_assert_equal(stage.pane.text_spot(), null);
+            $mol_assert_like(stage.app.node().part_names(), []);
+            $mol_assert_ok(stage.app.status().includes('Не загрузилось дерево пака деталей'));
+        },
+        'a property override comes back to what the part offers'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            stage.drop(map, stage.client([200, 150]));
+            const tree = node.tree();
+            node.over_set('Map', 'title', tree.struct('title', [tree.data('Моя карта')]));
+            stage.redraw();
+            node.over_set('Map', 'wat', tree.struct('wat', [tree.data('своё')]));
+            stage.redraw();
+            $mol_assert_ok(stage.app.doc_source().includes('title \\Моя карта'));
+            $mol_assert_equal(stage.app.selected(), 'Map');
+            $mol_assert_equal(stage.app.node_resettable('title'), true);
+            $mol_assert_equal(stage.app.node_resettable('wat'), false);
+            stage.app.node_reset('title', null);
+            stage.redraw();
+            $mol_assert_equal(stage.app.doc_source().includes('Моя карта'), false);
+            $mol_assert_ok(stage.app.doc_source().includes('wat \\своё'));
+            $mol_assert_equal(stage.app.node_resettable('title'), false);
+        },
+        'an inner layer reset takes its node away, and a foreign reference keeps it'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            stage.drop(map, stage.client([200, 150]));
+            stage.drop(calc, stage.client([500, 150]));
+            const klass = node.prop_decl('Map').kids[0].type;
+            const decl = stage.app.Lib().props_map(klass).get('sub');
+            $mol_assert_ok(decl);
+            const layer = node.inner_bind('Map', 'sub', decl);
+            stage.redraw();
+            $mol_assert_equal(layer, 'Map_sub');
+            $mol_assert_like(node.inner_refs('Map'), ['Map_sub']);
+            stage.app.selected('Map');
+            stage.app.node_reset('sub', null);
+            stage.redraw();
+            $mol_assert_equal(stage.app.node().prop_names().includes('Map_sub'), false);
+            $mol_assert_like(stage.app.node().inner_refs('Map'), []);
+            const again = stage.app.node().inner_bind('Map', 'sub', decl);
+            $mol_assert_equal(again, 'Map_sub');
+            const tree = stage.app.node().tree();
+            stage.app.node().over_set('Calc', 'title', tree.struct('title', [tree.struct('<=', [tree.struct('Map_sub')])]));
+            stage.redraw();
+            stage.app.selected('Map');
+            stage.app.node_reset('sub', null);
+            stage.redraw();
+            $mol_assert_equal(stage.app.node().prop_names().includes('Map_sub'), true);
+            $mol_assert_like(stage.app.node().inner_refs('Map'), []);
+        },
+        'a full reset keeps the wires and the props the part knows nothing about, and says so'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            const overlay = stage.overlay();
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([400, 100]));
+            stage.tap(stage.part_center('Calc'));
+            stage.press(overlay, stage.port_dot('Calc', 'result', 'out'));
+            stage.move(overlay, stage.port_dot('Map', 'zoom', 'in'));
+            stage.release(overlay, stage.port_dot('Map', 'zoom', 'in'));
+            stage.redraw();
+            const tree = node.tree();
+            node.over_set('Map', 'title', tree.struct('title', [tree.data('Моя карта')]));
+            node.over_set('Map', 'wat', tree.struct('wat', [tree.data('своё')]));
+            stage.redraw();
+            stage.app.picked(['Map']);
+            $mol_assert_equal(stage.app.reset_enabled(), true);
+            stage.app.node_reset_all(null);
+            stage.redraw();
+            const source = stage.app.doc_source();
+            $mol_assert_equal(source.includes('Моя карта'), false);
+            $mol_assert_ok(source.includes('wat \\своё'));
+            $mol_assert_ok(source.includes('zoom <= calc_result'));
+            $mol_assert_equal(stage.app.node().links().length, 1);
+            $mol_assert_ok(stage.app.status().includes('Провода и свои свойства остались'));
+            $mol_assert_ok(stage.canvas_text().includes('Провода и свои свойства остались'));
+        },
+        async 'a full reset is one write and one undo brings the overrides back'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            stage.drop(map, stage.client([200, 150]));
+            stage.app.node_text_write({ name: 'Map', text: 'Моя карта' });
+            stage.drop(calc, stage.client([500, 150]));
+            stage.redraw();
+            await stepped(stage);
+            const before = stage.app.doc_source();
+            const app = stage.app;
+            let writes = 0;
+            const kept = app.doc_source.bind(app);
+            app.doc_source = (next) => {
+                if (next !== undefined)
+                    ++writes;
+                return kept(next);
+            };
+            stage.app.picked(['Map']);
+            context($, stage, stage.part_center('Map'));
+            chosen(stage, 'Вернуть как в детали');
+            Reflect.deleteProperty(app, 'doc_source');
+            stage.redraw();
+            $mol_assert_equal(writes, 1);
+            $mol_assert_equal(stage.app.doc_source().includes('Моя карта'), false);
+            await stepped(stage);
+            undone(stage);
+            $mol_assert_equal(stage.app.doc_source(), before);
+        },
+        'a dead pack leaves the reset off, and the canvas says why'($) {
+            const stage = $_5.$bog_vmap_app_flow_stage($);
+            const node = stage.app.node();
+            const dead = 'http://lost.test/';
+            stage.drop(map, stage.client([200, 150]));
+            const tree = node.tree();
+            node.over_set('Map', 'title', tree.struct('title', [tree.data('Моя карта')]));
+            stage.redraw();
+            stage.app.picked(['Map']);
+            stage.app.selected('Map');
+            $mol_assert_equal(stage.app.reset_enabled(), true);
+            const fetched = $.$mol_fetch;
+            class $mol_fetch_lost extends fetched {
+                static text(input, init) {
+                    const uri = String(input);
+                    if (uri.startsWith(dead))
+                        return $mol_fail(new Error('Failed to fetch'));
+                    return super.text(input, init);
+                }
+            }
+            $.$mol_fetch = $mol_fetch_lost;
+            stage.app.links(dead);
+            stage.scene.hello();
+            stage.redraw();
+            $mol_assert_equal(stage.app.reset_enabled(), false);
+            $mol_assert_equal(stage.app.node_resettable('title'), false);
+            $mol_assert_ok(stage.app.status().includes('Не загрузилось дерево пака деталей'));
+            $mol_assert_ok(stage.app.doc_source().includes('Моя карта'));
+        },
         'Select parent from the menu picks the board around the part, and is off for a free part'($) {
             const stage = $_5.$bog_vmap_app_flow_stage($);
             pressed($, stage, 'KeyF', { key: 'f' });
@@ -19878,7 +20582,7 @@ var $;
             const stage = $_5.$bog_vmap_app_flow_stage($);
             stage.drop(calc, stage.client([200, 150]));
             context($, stage, stage.part_center('Calc'));
-            $mol_assert_equal(items(stage).length, 5);
+            $mol_assert_equal(items(stage).length, 8);
             const escape = pressed($, stage, 'Escape');
             $mol_assert_equal(escape.defaultPrevented, true);
             $mol_assert_equal(items(stage).length, 0);
@@ -21272,7 +21976,7 @@ var $;
             stage.scene.flush();
             $mol_assert_equal(stage.pane.part_size('Lost'), null);
             drag('Lost', 'Card', .9);
-            $mol_assert_like(moves, [{ name: 'Lost', owner: 'Card', index: 1 }]);
+            $mol_assert_like(moves, [{ names: ['Lost'], owner: 'Card', index: 1 }]);
             $mol_assert_like(app.node().sub_names('Card'), ['caption', 'Lost']);
             $mol_assert_equal(app.spots().Lost, undefined);
             $mol_assert_like(grouped(), ['Box', 'Deep', 'Near']);
@@ -22553,6 +23257,20 @@ var $;
             pane.camera_zoom(1);
             $mol_assert_equal(app.doc_source(), before);
         },
+        'the zoom number stands in the footer of the canvas and a click on it gives a hundred'($) {
+            const app = $bog_vmap_app.make({ $ });
+            const pane = app.Pane();
+            $mol_assert_equal(app.Zoom_chip().title(), '100%');
+            $mol_assert_equal(app.Zoom_reset().title(), 'Вписать всё');
+            pane.camera_zoom(2);
+            pane.camera_shift(new $mol_vector_2d(120, 60));
+            $mol_assert_equal(app.Zoom_chip().title(), '200%');
+            $mol_assert_ok(app.Foot_bar().sub().includes(app.Zoom_chip()));
+            app.Zoom_chip().click(new $.$mol_dom_context.MouseEvent('click'));
+            $mol_assert_equal(pane.camera_zoom(), 1);
+            $mol_assert_equal(app.Zoom_chip().title(), '100%');
+            $mol_assert_like([...pane.camera_shift()], [60, 30]);
+        },
         'panning does not touch the placement'($) {
             const app = $bog_vmap_app.make({ $ });
             app.part_drop(`${d}mol_button_minor`, 100, 200);
@@ -22727,7 +23445,7 @@ var $;
             app.board_draw(clicked);
             app.part_drop(`${d}mol_button_minor`, 2000, 100);
             $mol_assert_like(app.spots()['Button_minor'], { x: 1904, y: 24 });
-            app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 });
+            app.tree_move({ names: ['Button_minor'], owner: 'Page', index: 0 });
             $mol_assert_like(app.node().sub_names('Page'), ['Button_minor']);
             $mol_assert_like(app.node().sub_names(), ['Page']);
             $mol_assert_equal(app.spots()['Button_minor'], undefined);
@@ -22736,7 +23454,7 @@ var $;
             const app = $bog_vmap_app.make({ $ });
             app.board_draw(clicked);
             app.part_drop(`${d}mol_button_minor`, 2000, 100);
-            app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 });
+            app.tree_move({ names: ['Button_minor'], owner: 'Page', index: 0 });
             app.selected('Page');
             app.node_delete();
             const names = app.node().prop_names();
@@ -22761,7 +23479,7 @@ var $;
             const app = $bog_vmap_app.make({ $ });
             app.board_draw(clicked);
             app.part_drop(`${d}mol_button_minor`, 2000, 100);
-            app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 });
+            app.tree_move({ names: ['Button_minor'], owner: 'Page', index: 0 });
             app.node_rename('Button_minor', 'Send');
             $mol_assert_like(app.node().sub_names('Page'), ['Send']);
         },
@@ -22905,7 +23623,7 @@ var $;
             $mol_assert_equal(app.export_rows().length, 2);
             $mol_assert_equal(app.export_text(1), notes[1]);
             $mol_assert_ok(app.notes().includes(app.Export_row(1)));
-            $mol_assert_equal(app.Canvas().foot().includes(app.Export_row(1)), true);
+            $mol_assert_equal(app.Foot_bar().sub().includes(app.Export_row(1)), true);
             $mol_assert_fail(() => app.export_blob(), Error);
             app.root_js('greeting( who: string ) {\n\treturn who\n}\n');
             $mol_assert_equal(app.export_ready(), true);
@@ -23265,7 +23983,7 @@ var $;
             $mol_assert_equal(app.doc_source(), before);
             $mol_assert_ok(app.root_title_note().includes('Страница'));
             $mol_assert_ok(app.notes().includes(app.Root_note()));
-            $mol_assert_ok(app.Canvas().foot().includes(app.Root_note()));
+            $mol_assert_ok(app.Foot_bar().sub().includes(app.Root_note()));
             $mol_assert_equal(app.Canvas().body().includes(app.Root_note()), false);
             app.root_draft('Страница');
             app.root_submit();
@@ -23465,11 +24183,12 @@ var $;
             $mol_assert_equal(head[2], app.Root_name());
             $mol_assert_equal(head[3], app.Tools());
             const instruments = app.instruments();
-            $mol_assert_equal(instruments.length, 4);
+            $mol_assert_equal(instruments.length, 5);
             $mol_assert_equal(instruments[0], app.Tool_select());
             $mol_assert_equal(instruments[1], app.Tool_board());
-            $mol_assert_equal(instruments[2], app.Tool_hand());
-            $mol_assert_equal(instruments[3], app.Delete());
+            $mol_assert_equal(instruments[2], app.Tool_text());
+            $mol_assert_equal(instruments[3], app.Tool_hand());
+            $mol_assert_equal(instruments[4], app.Delete());
             const tools = app.tools();
             for (const tool of [
                 app.Zoom_out(),
@@ -23488,7 +24207,8 @@ var $;
             $mol_assert_equal(canvas[0], app.Canvas().Body());
             $mol_assert_equal(canvas[1], app.Canvas().Foot());
             $mol_assert_equal(app.Canvas().body()[0], app.Pane());
-            $mol_assert_equal(app.Canvas().foot(), [app.Status()]);
+            $mol_assert_equal(app.Canvas().foot(), [app.Foot_bar()]);
+            $mol_assert_equal(app.Foot_bar().sub(), [app.Status(), app.Zoom_chip()]);
             $mol_assert_equal(app.floats().length, 0);
         },
         'the column switches carry an icon and a hint instead of a label'($) {
@@ -23640,6 +24360,342 @@ var $;
             $mol_assert_ok(source.includes(`uri \\${uri}`));
             $mol_assert_ok(source.includes('title \\notes.pdf'));
         },
+        'a second click on a text node opens the field and one edit writes once'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            const pane = stage.pane;
+            app.doc_source([
+                `${d}flow_text ${d}mol_view`,
+                `	Title ${d}mol_paragraph title \\Привет`,
+                `	sub / <= Title`,
+                ``,
+            ].join('\n'));
+            app.spots({ Title: { x: 0, y: 0 }, Cell: { x: 400, y: 0 } });
+            stage.redraw();
+            stage.scene.flush();
+            stage.redraw();
+            $mol_assert_equal(app.node_text('Title'), 'Привет');
+            $mol_assert_equal(app.node_text_kind('Title'), 'own');
+            const written = [];
+            const write = app.node_text_write.bind(app);
+            app.node_text_write = (next) => {
+                if (next)
+                    written.push(next);
+                return write(next);
+            };
+            stage.tap(stage.part_center('Title'));
+            $mol_assert_equal(pane.text_edited(), null);
+            stage.tap(stage.part_center('Title'));
+            $mol_assert_equal(pane.text_edited(), 'Title');
+            $mol_assert_equal(pane.text_draft('Title'), 'Привет');
+            const before = app.doc_source();
+            pane.text_draft('Title', 'Здравствуй');
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_like(written, []);
+            pane.text_submit('Title');
+            $mol_assert_equal(pane.text_edited(), null);
+            $mol_assert_ok(app.doc_source().includes('title \\Здравствуй'));
+            $mol_assert_equal(app.doc_source().includes('Привет'), false);
+            $mol_assert_like([...app.picked()], ['Title']);
+            $mol_assert_like(written, [{ name: 'Title', text: 'Здравствуй' }]);
+            stage.tap(stage.part_center('Title'));
+            $mol_assert_equal(pane.text_edited(), 'Title');
+            pane.text_submit('Title');
+            $mol_assert_like(written, [{ name: 'Title', text: 'Здравствуй' }]);
+        },
+        'a low text node keeps its middle for the field, not for a resize handle'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            const pane = stage.pane;
+            app.doc_source([
+                `${d}flow_text ${d}mol_view`,
+                `	Title ${d}mol_paragraph title \\Привет`,
+                `	sub / <= Title`,
+                ``,
+            ].join('\n'));
+            app.spots({ Title: { x: 0, y: 0 } });
+            stage.redraw();
+            stage.scene.flush();
+            stage.redraw();
+            stage.tap(stage.part_center('Title'));
+            const tall = pane.part_box('Title');
+            $mol_assert_equal(pane.handle_at([tall.left + tall.width - 6, tall.top + tall.height - 6]), 'se');
+            pane.camera_zoom(0.2);
+            stage.redraw();
+            const box = pane.part_box('Title');
+            $mol_assert_ok(box.height < 16);
+            $mol_assert_equal(pane.handle_at(pane.screen_point({
+                clientX: stage.part_center('Title')[0],
+                clientY: stage.part_center('Title')[1],
+            })), '');
+            stage.tap(stage.part_center('Title'));
+            $mol_assert_equal(pane.text_edited(), 'Title');
+        },
+        'Escape leaves the text as it was and writes nothing'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            const pane = stage.pane;
+            app.doc_source([
+                `${d}flow_text ${d}mol_view`,
+                `	Title ${d}mol_paragraph title \\Привет`,
+                `	sub / <= Title`,
+                ``,
+            ].join('\n'));
+            app.spots({ Title: { x: 0, y: 0 }, Cell: { x: 400, y: 0 } });
+            stage.redraw();
+            stage.scene.flush();
+            stage.redraw();
+            stage.tap(stage.part_center('Title'));
+            stage.tap(stage.part_center('Title'));
+            $mol_assert_equal(pane.text_edited(), 'Title');
+            const before = app.doc_source();
+            pane.text_draft('Title', 'Здравствуй');
+            pane.text_key('Title', { key: 'Escape', stopPropagation() { } });
+            $mol_assert_equal(pane.text_edited(), null);
+            $mol_assert_equal(app.doc_source(), before);
+            $mol_assert_equal(pane.text_draft('Title'), 'Привет');
+        },
+        'a text fed by a wire says where it comes from instead of opening a field'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            const pane = stage.pane;
+            app.doc_source([
+                `${d}flow_text ${d}mol_view`,
+                `	Cell ${d}bog_vmap_part_cell`,
+                `	Title ${d}mol_paragraph title <= cell_result`,
+                `	cell_result = Cell result`,
+                `	sub /`,
+                `		<= Cell`,
+                `		<= Title`,
+                ``,
+            ].join('\n'));
+            app.spots({ Title: { x: 0, y: 0 }, Cell: { x: 400, y: 0 } });
+            stage.redraw();
+            stage.scene.flush();
+            stage.redraw();
+            $mol_assert_equal(app.node_text_kind('Title'), 'Cell');
+            const before = app.doc_source();
+            stage.tap(stage.part_center('Title'));
+            stage.tap(stage.part_center('Title'));
+            $mol_assert_equal(pane.text_edited(), null);
+            $mol_assert_ok(pane.say().includes('Cell'));
+            $mol_assert_ok(pane.say().includes('правится у источника'));
+            $mol_assert_equal(app.doc_source(), before);
+        },
+        'free parts line up by their edges, and the bar shows up only for a pair'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            app.doc_source([
+                `${d}flow_align ${d}mol_view`,
+                `	A ${d}mol_view`,
+                `	B ${d}mol_view`,
+                `	sub /`,
+                `		<= A`,
+                `		<= B`,
+                ``,
+            ].join('\n'));
+            app.spots({ A: { x: 100, y: 40 }, B: { x: 300, y: 200 } });
+            stage.redraw();
+            stage.scene.flush();
+            stage.redraw();
+            $mol_assert_ok(stage.pane.part_size('A'));
+            $mol_assert_equal(app.right_content().includes(app.Align()), false);
+            app.picked(['A', 'B']);
+            stage.redraw();
+            $mol_assert_equal(app.right_content().includes(app.Align()), true);
+            $mol_assert_equal(app.align_group().kind, 'free');
+            $mol_assert_equal(app.align_enabled('left'), true);
+            $mol_assert_equal(app.align_enabled('spread_x'), true);
+            $mol_assert_equal(app.align_note(), '');
+            app.align_act('left', new $.$mol_dom_context.MouseEvent('click'));
+            $mol_assert_like(app.spots().A, { x: 100, y: 40 });
+            $mol_assert_like(app.spots().B, { x: 100, y: 200 });
+        },
+        async 'one undo takes the aligned parts back to where they stood'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            const history = app.History();
+            app.doc_source([
+                `${d}flow_align ${d}mol_view`,
+                `	A ${d}mol_view`,
+                `	B ${d}mol_view`,
+                `	sub /`,
+                `		<= A`,
+                `		<= B`,
+                ``,
+            ].join('\n'));
+            app.spots({ A: { x: 100, y: 40 }, B: { x: 300, y: 200 } });
+            stage.redraw();
+            stage.scene.flush();
+            stage.redraw();
+            const stepped = async () => {
+                const spots = JSON.stringify(app.spots());
+                const taken = () => JSON.stringify(history.ring(history.doc_key()).at(-1)?.spots ?? null) === spots;
+                for (let i = 0; i < 10 && !taken(); ++i) {
+                    stage.timers.filter(timer => timer.delay === history.step_delay()).at(-1)?.task();
+                    await $bog_vmap_app_flow_settle(taken, 30);
+                    stage.redraw();
+                }
+                $mol_assert_equal(taken(), true);
+            };
+            await stepped();
+            app.picked(['A', 'B']);
+            app.align_act('left', new $.$mol_dom_context.MouseEvent('click'));
+            $mol_assert_like(app.spots().B, { x: 100, y: 200 });
+            await stepped();
+            history.undo();
+            stage.redraw();
+            $mol_assert_like(app.spots().B, { x: 300, y: 200 });
+        },
+        'free parts spread out with equal gaps and keep the outer two in place'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            app.doc_source([
+                `${d}flow_align ${d}mol_view`,
+                `	A ${d}mol_view`,
+                `	B ${d}mol_view`,
+                `	C ${d}mol_view`,
+                `	sub /`,
+                `		<= A`,
+                `		<= B`,
+                `		<= C`,
+                ``,
+            ].join('\n'));
+            app.spots({ A: { x: 0, y: 0 }, B: { x: 40, y: 0 }, C: { x: 400, y: 0 } });
+            stage.redraw();
+            stage.scene.flush();
+            stage.redraw();
+            const width = stage.pane.part_size('A').width;
+            app.picked(['A', 'B', 'C']);
+            app.align_act('spread_x', new $.$mol_dom_context.MouseEvent('click'));
+            const spots = app.spots();
+            $mol_assert_like(spots.A, { x: 0, y: 0 });
+            $mol_assert_like(spots.C, { x: 400, y: 0 });
+            $mol_assert_equal(spots.B.x - (spots.A.x + width), spots.C.x - (spots.B.x + width));
+        },
+        'kin inside one parent go to the layout of that parent, in one change'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            app.doc_source([
+                `${d}flow_align ${d}mol_view`,
+                `	Board ${d}mol_view`,
+                `		style * flexDirection \\column`,
+                `		sub /`,
+                `			<= A`,
+                `			<= B`,
+                `	A ${d}mol_paragraph title \\раз`,
+                `	B ${d}mol_paragraph title \\два`,
+                `	sub / <= Board`,
+                ``,
+            ].join('\n'));
+            app.picked(['A', 'B']);
+            stage.redraw();
+            $mol_assert_equal(app.align_group().kind, 'kin');
+            $mol_assert_equal(app.align_group().owner, 'Board');
+            $mol_assert_equal(app.align_enabled('left'), true);
+            $mol_assert_equal(app.align_enabled('spread_y'), false);
+            $mol_assert_ok(app.align_note().includes('Зазор'));
+            $mol_assert_ok(app.align_note().includes('Board'));
+            const before = app.doc_source();
+            app.align_act('right', new $.$mol_dom_context.MouseEvent('click'));
+            $mol_assert_ok(app.doc_source().includes('alignItems \\flex-end'));
+            $mol_assert_equal(app.spots().A, undefined);
+            $mol_assert_equal(before.includes('alignItems'), false);
+            app.align_act('bottom', new $.$mol_dom_context.MouseEvent('click'));
+            $mol_assert_ok(app.doc_source().includes('justifyContent \\flex-end'));
+        },
+        'a mixed selection turns the bar off and says why in words'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            app.doc_source([
+                `${d}flow_align ${d}mol_view`,
+                `	Board ${d}mol_view`,
+                `		sub / <= A`,
+                `	A ${d}mol_paragraph title \\раз`,
+                `	B ${d}mol_view`,
+                `	sub / <= Board`,
+                ``,
+            ].join('\n'));
+            app.picked(['A', 'B']);
+            stage.redraw();
+            $mol_assert_equal(app.align_group().kind, 'mixed');
+            for (const kind of ['left', 'top', 'spread_x']) {
+                $mol_assert_equal(app.align_enabled(kind), false);
+            }
+            $mol_assert_ok(app.align_note().includes('раскладка родителя'));
+            const before = app.doc_source();
+            app.align_act('left', new $.$mol_dom_context.MouseEvent('click'));
+            $mol_assert_equal(app.doc_source(), before);
+        },
+        'a size pulled on the canvas lands in the style of the node, in one change'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            app.doc_source([
+                `${d}flow_size ${d}mol_view`,
+                `	Board ${d}mol_view`,
+                `		style * flexDirection \\column`,
+                `		sub / <= Note`,
+                `	Note ${d}mol_paragraph title \\Привет`,
+                `	sub / <= Board`,
+                ``,
+            ].join('\n'));
+            const before = app.doc_source();
+            app.node_resize({ name: 'Board', width: 640, height: 480, floor: false });
+            $mol_assert_equal(app.doc_source(), [
+                `${d}flow_size ${d}mol_view`,
+                `	Board ${d}mol_view`,
+                `		style *`,
+                `			flexDirection \\column`,
+                `			width \\640px`,
+                `			minHeight \\480px`,
+                `		sub / <= Note`,
+                `	Note ${d}mol_paragraph title \\Привет`,
+                `	sub / <= Board`,
+                ``,
+            ].join('\n'));
+            $mol_assert_equal(before.includes('640px'), false);
+        },
+        'a node held by a parent takes a hard height, not a floor'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            app.doc_source([
+                `${d}flow_size ${d}mol_view`,
+                `	Board ${d}mol_view`,
+                `		style * flexDirection \\column`,
+                `		sub / <= Note`,
+                `	Note ${d}mol_paragraph title \\Привет`,
+                `	sub / <= Board`,
+                ``,
+            ].join('\n'));
+            $mol_assert_equal(app.size_key('Note'), 'height');
+            $mol_assert_equal(app.size_key('Board'), 'minHeight');
+            app.node_resize({ name: 'Note', width: 200, height: 40, floor: true });
+            const after = app.doc_source();
+            $mol_assert_ok(after.includes('width \\200px'));
+            $mol_assert_ok(after.includes('height \\40px'));
+            $mol_assert_equal(after.includes('minHeight \\40px'), false);
+        },
+        'a size written once more keeps the style it already had'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const app = stage.app;
+            app.doc_source([
+                `${d}flow_size ${d}mol_view`,
+                `	Board ${d}mol_view`,
+                `		style *`,
+                `			width \\480px`,
+                `			minHeight \\720px`,
+                `			background \\red`,
+                `		sub /`,
+                `	sub / <= Board`,
+                ``,
+            ].join('\n'));
+            app.node_resize({ name: 'Board', width: 900, height: 300, floor: false });
+            const after = app.doc_source();
+            $mol_assert_ok(after.includes('width \\900px'));
+            $mol_assert_ok(after.includes('minHeight \\300px'));
+            $mol_assert_ok(after.includes('background \\red'));
+            $mol_assert_equal(after.includes('480px'), false);
+        },
         'a layer picked inside a part reaches the canvas by the address the panel made'($) {
             const stage = $bog_vmap_app_flow_stage($);
             const app = stage.app;
@@ -23666,11 +24722,13 @@ var $;
 ;
 "use strict";
 var $;
-(function ($) {
+(function ($_1) {
     const d = '$';
     const scene_title = 'Ипотека';
     const scene_building = 'Ипотека (собирается)';
-    const scene_limit = 60000;
+    const root_limit = 10000;
+    const doc_limit = 15000;
+    const step = 200;
     const scene_root = d + 'bog_mortgage';
     const scene_tree = [
         `${d}bog_mortgage ${d}mol_view`,
@@ -23872,14 +24930,25 @@ var $;
         '}',
         '',
     ].join('\n');
+    let shape = null;
+    function wanted() {
+        if (shape)
+            return shape;
+        const want = $bog_vmap_lang_node.make({ source: () => scene_tree });
+        return shape = {
+            props: [...want.prop_names()].sort(),
+            subs: ['', ...want.sub_names() ?? []].map(owner => [owner, want.sub_names(owner)]),
+            links: want.links().length,
+        };
+    }
     function complete(text) {
         if (!text)
             return false;
+        const want = wanted();
         const have = $bog_vmap_lang_node.make({ source: () => text });
-        const want = $bog_vmap_lang_node.make({ source: () => scene_tree });
-        return $mol_compare_deep([...have.prop_names()].sort(), [...want.prop_names()].sort())
-            && ['', ...want.sub_names() ?? []].every(owner => $mol_compare_deep(have.sub_names(owner), want.sub_names(owner)))
-            && have.links().length === want.links().length;
+        return $mol_compare_deep([...have.prop_names()].sort(), want.props)
+            && want.subs.every(([owner, names]) => $mol_compare_deep(have.sub_names(owner), names))
+            && have.links().length === want.links;
     }
     function ask(task) {
         return $mol_wire_async(task)();
@@ -23894,52 +24963,73 @@ var $;
             return $mol_fail_hidden(error);
         }
     }
+    async function waited(check, limit, note) {
+        const started = Date.now();
+        while (!seen(check)) {
+            if (Date.now() - started > limit)
+                $mol_fail(new Error(`${note} за ${limit} мс`));
+            await $$.$mol_wait_timeout_async(step);
+        }
+    }
     async function mortgage(app) {
         const store = app.store();
-        const pause = (ms) => app.$.$mol_wait_timeout_async(ms);
-        const until = async (check, limit, note) => {
-            const started = Date.now();
-            while (!seen(check)) {
-                if (Date.now() - started > limit)
-                    $mol_fail(new Error(`${note} за ${limit} мс`));
-                await pause(200);
+        await waited(() => app.doc_key() !== '', doc_limit, 'документ редактора не открылся');
+        const found = await ask(() => {
+            const list = [];
+            for (const link of store.doc_links()) {
+                const doc = store.doc(link);
+                const title = doc.title();
+                if (title !== scene_title && title !== scene_building)
+                    continue;
+                list.push({ link, whole: title === scene_title && complete(store.doc_source(doc)) });
             }
-        };
-        await until(() => app.doc_key() !== '', 600000, 'документ редактора не открылся');
-        const found = await ask(() => store.doc_links()
-            .filter(link => [scene_title, scene_building].includes(store.doc(link).title()))
-            .map(link => ({
-            link,
-            whole: store.doc(link).title() === scene_title && complete(store.doc_source(store.doc(link))),
-        })));
-        const broken = found.filter(one => !one.whole).map(one => one.link);
-        if (broken.length)
-            await ask(() => { for (const link of broken)
-                store.home().Docs(null).cut(link); });
-        if (found.some(one => one.whole))
+            return list;
+        });
+        const stray = found.filter(one => !one.whole).map(one => one.link);
+        if (found.some(one => one.whole)) {
+            if (stray.length)
+                await ask(() => { for (const link of stray)
+                    store.home().Docs(null).cut(link); });
             return;
+        }
+        const whole = await ask(() => {
+            for (const link of stray)
+                store.home().Docs(null).cut(link);
+            return app.code_whole();
+        });
         const link = (await $mol_wire_async(store).doc_add(scene_building)).link();
-        await until(() => store.doc_current()?.title() === scene_building, scene_limit, `сцена «${scene_building}» не стала текущей`);
-        const whole = await ask(() => app.code_whole());
-        await ask(() => { app.selected(null); app.code_whole(true); app.code_source(scene_tree); });
-        await ask(() => { app.code_js(body); app.code_css(style); app.code_whole(whole); });
-        if (await ask(() => app.doc_root()) !== scene_root)
-            $mol_fail(new Error('корень не принял имя модуля'));
-        if (!await ask(() => complete(app.doc_src())))
-            $mol_fail(new Error(`документ сцены «${scene_building}» записался не целиком`));
-        await ask(() => store.doc(link).title(scene_title));
-        await ask(() => app.camera_reset());
+        await ask(() => {
+            if (store.doc_current()?.link().str !== link.str) {
+                $mol_fail(new Error(`сцена «${scene_building}» не стала текущей`));
+            }
+            app.selected(null);
+            app.code_whole(true);
+            app.code_source(scene_tree);
+            app.code_js(body);
+            app.code_css(style);
+            app.code_whole(whole);
+        });
+        await ask(() => {
+            if (app.doc_root() !== scene_root)
+                $mol_fail(new Error('корень не принял имя модуля'));
+            if (!complete(app.doc_src()))
+                $mol_fail(new Error(`документ сцены «${scene_building}» записался не целиком`));
+            store.doc(link).title(scene_title);
+            app.camera_reset();
+        });
     }
     function editor() {
         return $mol_view.roots().find((view) => view instanceof $$.$bog_vmap_app) ?? null;
     }
     async function built() {
-        for (let step = 0; step * 200 < scene_limit; ++step) {
+        const started = Date.now();
+        while (Date.now() - started <= root_limit) {
             const app = editor();
             if (app)
                 return await mortgage(app);
-            await $$.$mol_wait_timeout_async(200);
+            await $$.$mol_wait_timeout_async(step);
         }
+        $mol_fail(new Error(`корень редактора не появился за ${root_limit} мс`));
     }
     function aborted() {
         let running = '';
@@ -23954,6 +25044,31 @@ var $;
             console.error(`Прогон тестов оборван на «${running}», остальные не исполнялись:`, reason?.message ?? reason);
         });
     }
+    $mol_test({
+        async 'a whole mortgage scene survives the next pass untouched'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const store = stage.store;
+            const doc = store.doc_add(scene_title, scene_tree);
+            const link = doc.link();
+            const docs = store.doc_links().map(one => one.str);
+            const source = store.doc_source(store.doc(link));
+            await mortgage(stage.app);
+            $mol_assert_like(store.doc_links().map(one => one.str), docs);
+            $mol_assert_equal(store.doc(link).title(), scene_title);
+            $mol_assert_equal(store.doc_source(store.doc(link)), source);
+        },
+        async 'a stray unfinished scene is swept while the whole one stays'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const store = stage.store;
+            const link = store.doc_add(scene_title, scene_tree).link();
+            const stray = store.doc_add(scene_building).link();
+            await mortgage(stage.app);
+            const links = store.doc_links().map(one => one.str);
+            $mol_assert_equal(links.includes(link.str), true);
+            $mol_assert_equal(links.includes(stray.str), false);
+            $mol_assert_equal(store.doc(link).title(), scene_title);
+        },
+    });
     if (typeof $mol_dom_context !== 'undefined' && $mol_dom_context.document) {
         $$.$mol_wait_timeout_async(0).then(aborted);
         built().catch($mol_fail_log);
