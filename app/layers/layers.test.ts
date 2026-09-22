@@ -949,7 +949,7 @@ namespace $ {
 
 			drag( 'Lost', 'Card', .9 )
 
-			$mol_assert_like( moves, [ { name: 'Lost', owner: 'Card', index: 1 } ] )
+			$mol_assert_like( moves, [ { names: [ 'Lost' ], owner: 'Card', index: 1 } ] )
 			$mol_assert_like( app.node().sub_names( 'Card' ), [ 'caption', 'Lost' ] )
 			$mol_assert_equal( app.spots().Lost, undefined )
 			$mol_assert_like( grouped(), [ 'Box', 'Deep', 'Near' ] )

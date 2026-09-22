@@ -318,7 +318,7 @@ namespace $ {
 
 			$mol_assert_like( app.spots()[ 'Button_minor' ], { x: 1904, y: 24 } )
 
-			app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 })
+			app.tree_move({ names: [ 'Button_minor' ], owner: 'Page', index: 0 })
 
 			$mol_assert_like( app.node().sub_names( 'Page' ), [ 'Button_minor' ] )
 			$mol_assert_like( app.node().sub_names(), [ 'Page' ] )
@@ -331,7 +331,7 @@ namespace $ {
 
 			app.board_draw( clicked )
 			app.part_drop( `${d}mol_button_minor`, 2000, 100 )
-			app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 })
+			app.tree_move({ names: [ 'Button_minor' ], owner: 'Page', index: 0 })
 
 			app.selected( 'Page' )
 			app.node_delete()
@@ -369,7 +369,7 @@ namespace $ {
 
 			app.board_draw( clicked )
 			app.part_drop( `${d}mol_button_minor`, 2000, 100 )
-			app.tree_move({ name: 'Button_minor', owner: 'Page', index: 0 })
+			app.tree_move({ names: [ 'Button_minor' ], owner: 'Page', index: 0 })
 
 			app.node_rename( 'Button_minor', 'Send' )
 

@@ -25,7 +25,7 @@ namespace $.$$ {
 	export type $bog_vmap_app_pane_link_end = Pick< $bog_vmap_lang_link, 'to' | 'to_prop' >
 
 	export type $bog_vmap_app_pane_tree_move = {
-		readonly name: string
+		readonly names: readonly string[]
 		readonly owner: string
 		readonly index: number
 	}
@@ -1897,7 +1897,7 @@ namespace $.$$ {
 				this.slot( null )
 
 				if( drag && event.altKey ) this.drag_clone( drag, slot )
-				else if( drag && slot ) this.tree_move({ name: drag.name, owner: slot.owner, index: slot.index })
+				else if( drag && slot ) this.tree_move({ names: this.drag_names( drag ), owner: slot.owner, index: slot.index })
 
 				this.drag( null )
 				this.drag_alt( false )
@@ -2099,6 +2099,15 @@ namespace $.$$ {
 		}
 
 		@ $mol_action
+		drag_names(
+			drag: {
+				readonly name: string
+				readonly spots: { readonly [ name: string ]: { readonly x: number, readonly y: number } }
+			},
+		) {
+			return drag.spots[ drag.name ] ? Object.keys( drag.spots ) : [ drag.name ]
+		}
+
 		drag_clone(
 			drag: {
 				readonly name: string
@@ -2112,7 +2121,7 @@ namespace $.$$ {
 
 			if( slot ) {
 				this.spots({ ... dropped, ... drag.spots })
-				this.node_clone({ names: [ drag.name ], owner: slot.owner, index: slot.index })
+				this.node_clone({ names: this.drag_names( drag ), owner: slot.owner, index: slot.index })
 				return null
 			}
 

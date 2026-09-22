@@ -1110,21 +1110,45 @@ namespace $.$$ {
 			return this.$.$bog_vmap_lang_dict_get( style, 'flexDirection' )?.value ?? ''
 		}
 
+		boxed_order( names: readonly string[] ) {
+
+			const pane = this.Pane()
+			const place = ( name: string )=> pane.part_size( name ) ?? { x: 0, y: 0 }
+
+			return [ ... names ].sort( ( one, two )=> place( one ).y - place( two ).y || place( one ).x - place( two ).x )
+		}
+
 		override tree_move( next?: $bog_vmap_app_pane_tree_move | null ) {
 			if( !next ) return null
 
-			const box = this.Pane().part_size( next.name )
+			const pane = this.Pane()
+			const names = this.boxed_order( next.names )
+			if( !names.length ) return null
 
-			this.node().sub_move( next.name, next.index, next.owner )
+			const boxes = new Map( names.map( name => [ name, pane.part_size( name ) ] as const ) )
 
+			const draft = this.doc_draft()
+			const node = draft.node( this.doc_root() )
 			const spots = { ... this.spots() }
 
-			if( next.owner ) delete spots[ next.name ]
-			else if( !spots[ next.name ] ) {
-				const [ x, y ] = box ? [ box.x, box.y ] : this.Pane().free_spot()
-				spots[ next.name ] = { x, y }
-			}
+			names.forEach( ( name, at )=> {
 
+				node.sub_move( name, next.index + at, next.owner )
+
+				if( next.owner ) {
+					delete spots[ name ]
+					return
+				}
+
+				if( spots[ name ] ) return
+
+				const box = boxes.get( name )
+				const [ x, y ] = box ? [ box.x, box.y ] : pane.free_spot()
+				spots[ name ] = { x, y }
+
+			} )
+
+			this.node().tree( node.tree() )
 			this.spots( spots )
 
 			return next
@@ -1686,7 +1710,7 @@ namespace $.$$ {
 				if( box ) places[ kid ] = { x: box.x, y: box.y }
 			}
 
-			this.doc_source( draft.source() )
+			this.node().tree( node.tree() )
 			this.spots( spots )
 			this.picked([ name ])
 
@@ -1797,7 +1821,7 @@ namespace $.$$ {
 
 			}
 
-			this.doc_source( draft.source() )
+			this.node().tree( node.tree() )
 			this.spots( spots )
 			this.picked( freed )
 
@@ -1833,11 +1857,16 @@ namespace $.$$ {
 
 			if( !next || !this.editable() ) return null
 
-			const node = this.node()
+			const live = this.node()
 			const names = next.names
 			if( !names.length ) return null
 
-			const tops = names.filter( name => !names.some( up => up !== name && node.sub_within( up, name ) ) )
+			const tops = this.boxed_order(
+				names.filter( name => !names.some( up => up !== name && live.sub_within( up, name ) ) )
+			)
+
+			const draft = this.doc_draft()
+			const node = draft.node( this.doc_root() )
 
 			const spots = { ... this.spots() }
 			const made = [] as string[]
@@ -1848,7 +1877,7 @@ namespace $.$$ {
 				made.push( copy )
 
 				if( next.owner !== undefined ) {
-					node.sub_move( copy, next.index ?? 0, next.owner )
+					node.sub_move( copy, ( next.index ?? 0 ) + made.length - 1, next.owner )
 					delete spots[ copy ]
 					continue
 				}
@@ -1860,6 +1889,7 @@ namespace $.$$ {
 
 			}
 
+			this.node().tree( node.tree() )
 			this.spots( spots )
 			this.picked( made )
 

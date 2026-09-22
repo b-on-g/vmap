@@ -478,7 +478,7 @@ namespace $.$$ {
 				if( index === at || index === at + 1 ) return null
 			}
 
-			return { name, owner, index }
+			return { names: [ name ], owner, index }
 		}
 
 	}

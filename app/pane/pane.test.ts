@@ -440,8 +440,8 @@ namespace $ {
 			stage.drop( calc, stage.client([ 520, 430 ]) )
 			stage.drop( map, stage.client([ 560, 200 ]) )
 
-			stage.app.tree_move({ name: 'Calc', owner: 'Page', index: 0 })
-			stage.app.tree_move({ name: 'Map', owner: 'Page', index: 1 })
+			stage.app.tree_move({ names: [ 'Calc' ], owner: 'Page', index: 0 })
+			stage.app.tree_move({ names: [ 'Map' ], owner: 'Page', index: 1 })
 			stage.redraw()
 			stage.scene.flush()
 
@@ -487,7 +487,79 @@ namespace $ {
 
 		},
 
-		'a picked set dragged into a board with Alt copies the dragged node only'( $ ) {
+		'a picked set dragged into a board moves the whole set, top to bottom, in one write'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.pane.tool( 'board' )
+			stage.tap( stage.client([ 40, 40 ]) )
+			stage.drop( calc, stage.client([ 520, 430 ]) )
+			stage.drop( map, stage.client([ 560, 200 ]) )
+
+			stage.app.picked([ 'Calc', 'Map' ])
+			stage.redraw()
+
+			const store = stage.store
+			let writes = 0
+			const kept = store.source.bind( store )
+			store.source = ( next?: string )=> {
+				if( next !== undefined ) ++ writes
+				return kept( next )
+			}
+
+			const overlay = stage.overlay()
+			const from = stage.part_center( 'Calc' )
+			const into = stage.client([ 120, 120 ])
+
+			stage.press( overlay, from )
+			stage.move( overlay, into )
+			stage.release( overlay, into )
+			stage.redraw()
+			stage.scene.flush()
+
+			$mol_assert_like( stage.app.node().sub_names( 'Page' ), [ 'Map', 'Calc' ] )
+			$mol_assert_like( stage.app.node().sub_names(), [ 'Page' ] )
+			$mol_assert_equal( stage.app.spots()[ 'Calc' ], undefined )
+			$mol_assert_equal( stage.app.spots()[ 'Map' ], undefined )
+			$mol_assert_equal( writes, 1 )
+
+		},
+
+		'a drag by a part outside the pick takes only it and the pick moves onto it'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.pane.tool( 'board' )
+			stage.tap( stage.client([ 40, 40 ]) )
+			stage.drop( calc, stage.client([ 520, 430 ]) )
+			stage.drop( map, stage.client([ 560, 200 ]) )
+			stage.drop( `${ d }mol_number`, stage.client([ 600, 300 ]) )
+
+			stage.app.picked([ 'Calc', 'Map' ])
+			stage.redraw()
+
+			const spots = stage.app.spots()
+
+			const overlay = stage.overlay()
+			const from = stage.part_center( 'Number' )
+			const into = stage.client([ 120, 120 ])
+
+			stage.press( overlay, from )
+			$mol_assert_like( [ ... stage.app.picked() ], [ 'Number' ] )
+
+			stage.move( overlay, into )
+			stage.release( overlay, into )
+			stage.redraw()
+			stage.scene.flush()
+
+			$mol_assert_like( stage.app.node().sub_names( 'Page' ), [ 'Number' ] )
+			$mol_assert_like( stage.app.node().sub_names(), [ 'Page', 'Calc', 'Map' ] )
+			$mol_assert_like( stage.app.spots()[ 'Calc' ], spots[ 'Calc' ] )
+			$mol_assert_like( stage.app.spots()[ 'Map' ], spots[ 'Map' ] )
+
+		},
+
+		'a picked set dragged into a board with Alt copies the whole set, top to bottom'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )
 
@@ -509,8 +581,11 @@ namespace $ {
 			stage.redraw()
 			stage.scene.flush()
 
-			$mol_assert_like( stage.app.node().sub_names( 'Page' ), [ 'Calc_2' ] )
+			$mol_assert_like( stage.app.node().sub_names( 'Page' ), [ 'Map_2', 'Calc_2' ] )
 			$mol_assert_like( stage.app.node().sub_names(), [ 'Page', 'Calc', 'Map' ] )
+			$mol_assert_like( [ ... stage.app.picked() ], [ 'Map_2', 'Calc_2' ] )
+			$mol_assert_equal( stage.app.spots()[ 'Map_2' ], undefined )
+			$mol_assert_equal( stage.app.spots()[ 'Calc_2' ], undefined )
 			$mol_assert_like( stage.app.spots()[ 'Map' ], { x: 464, y: 124 } )
 			$mol_assert_like( stage.app.spots()[ 'Calc' ], { x: 424, y: 354 } )
 
@@ -527,7 +602,7 @@ namespace $ {
 
 			const node = stage.app.node()
 
-			stage.app.tree_move({ name: 'Calc', owner: 'Page', index: 0 })
+			stage.app.tree_move({ names: [ 'Calc' ], owner: 'Page', index: 0 })
 			stage.redraw()
 			stage.scene.flush()
 
@@ -2853,7 +2928,7 @@ namespace $ {
 
 			pane.node_release( pointer( 200, 120, { buttons: 0 } ) )
 
-			$mol_assert_like( moves, [ { name: 'Loose', owner: 'Board', index: 1 } ] )
+			$mol_assert_like( moves, [ { names: [ 'Loose' ], owner: 'Board', index: 1 } ] )
 			$mol_assert_equal( pane.slot(), null )
 			$mol_assert_like( pane.spots(), { Loose: { x: 600, y: 0 } } )
 
@@ -2909,7 +2984,7 @@ namespace $ {
 			pane.node_release( pointer( 200, 180, { buttons: 0 } ) )
 
 			$mol_assert_like( pane.spots(), {} )
-			$mol_assert_like( moves, [ { name: 'Head', owner: 'Board', index: 2 } ] )
+			$mol_assert_like( moves, [ { names: [ 'Head' ], owner: 'Board', index: 2 } ] )
 
 		},
 
