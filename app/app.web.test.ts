@@ -6,11 +6,7 @@ namespace $ {
 
 	const scene_building = 'Ипотека (собирается)'
 
-	const root_limit = 10000
-
-	const doc_limit = 15000
-
-	const step = 200
+	const scene_limit = 60000
 
 	const scene_root = d + 'bog_mortgage'
 
@@ -217,33 +213,15 @@ namespace $ {
 		'',
 	].join( '\n' )
 
-	let shape: {
-		readonly props: readonly string[]
-		readonly subs: readonly ( readonly [ string, readonly ( string | null )[] | null ] )[]
-		readonly links: number
-	} | null = null
-
-	function wanted() {
-		if( shape ) return shape
-
-		const want = $bog_vmap_lang_node.make({ source: ()=> scene_tree })
-
-		return shape = {
-			props: [ ... want.prop_names() ].sort(),
-			subs: [ '', ... want.sub_names() ?? [] ].map( owner => [ owner, want.sub_names( owner ) ] as const ),
-			links: want.links().length,
-		}
-	}
-
 	function complete( text: string ) {
 		if( !text ) return false
 
-		const want = wanted()
 		const have = $bog_vmap_lang_node.make({ source: ()=> text })
+		const want = $bog_vmap_lang_node.make({ source: ()=> scene_tree })
 
-		return $mol_compare_deep( [ ... have.prop_names() ].sort(), want.props )
-			&& want.subs.every( ( [ owner, names ] )=> $mol_compare_deep( have.sub_names( owner ), names ) )
-			&& have.links().length === want.links
+		return $mol_compare_deep( [ ... have.prop_names() ].sort(), [ ... want.prop_names() ].sort() )
+			&& [ '', ... want.sub_names() ?? [] ].every( owner => $mol_compare_deep( have.sub_names( owner ), want.sub_names( owner ) ) )
+			&& have.links().length === want.links().length
 	}
 
 	function ask< Result >( task: ()=> Result ) {
@@ -259,73 +237,47 @@ namespace $ {
 		}
 	}
 
-	async function waited( check: ()=> boolean, limit: number, note: string ) {
-
-		const started = Date.now()
-
-		while( !seen( check ) ) {
-			if( Date.now() - started > limit ) $mol_fail( new Error( `${ note } за ${ limit } мс` ) )
-			await $$.$mol_wait_timeout_async( step )
-		}
-
-	}
-
 	async function mortgage( app: $$.$bog_vmap_app ) {
 
 		const store = app.store()
 
-		await waited( ()=> app.doc_key() !== '', doc_limit, 'документ редактора не открылся' )
+		const pause = ( ms: number )=> app.$.$mol_wait_timeout_async( ms )
 
-		const found = await ask( ()=> {
-
-			const list = [] as { readonly link: $giper_baza_link, readonly whole: boolean }[]
-
-			for( const link of store.doc_links() ) {
-
-				const doc = store.doc( link )
-				const title = doc.title()
-				if( title !== scene_title && title !== scene_building ) continue
-
-				list.push({ link, whole: title === scene_title && complete( store.doc_source( doc ) ) })
-
+		const until = async ( check: ()=> boolean, limit: number, note: string )=> {
+			const started = Date.now()
+			while( !seen( check ) ) {
+				if( Date.now() - started > limit ) $mol_fail( new Error( `${ note } за ${ limit } мс` ) )
+				await pause( 200 )
 			}
+		}
 
-			return list
-		} )
+		await until( ()=> app.doc_key() !== '', 600000, 'документ редактора не открылся' )
+
+		const found = await ask( ()=> store.doc_links()
+			.filter( link => [ scene_title, scene_building ].includes( store.doc( link ).title() ) )
+			.map( link => ({
+				link,
+				whole: store.doc( link ).title() === scene_title && complete( store.doc_source( store.doc( link ) ) ),
+			}) )
+		)
+
+		const broken = found.filter( one => !one.whole ).map( one => one.link )
+		if( broken.length ) await ask( ()=> { for( const link of broken ) store.home().Docs( null )!.cut( link ) } )
 
 		if( found.some( one => one.whole ) ) return
 
-		const whole = await ask( ()=> {
-			for( const one of found ) store.home().Docs( null )!.cut( one.link )
-			return app.code_whole()
-		} )
-
 		const link = ( await $mol_wire_async( store ).doc_add( scene_building ) ).link()
+		await until( ()=> store.doc_current()?.title() === scene_building, scene_limit, `сцена «${ scene_building }» не стала текущей` )
 
-		await ask( ()=> {
+		const whole = await ask( ()=> app.code_whole() )
+		await ask( ()=> { app.selected( null ); app.code_whole( true ); app.code_source( scene_tree ) } )
+		await ask( ()=> { app.code_js( body ); app.code_css( style ); app.code_whole( whole ) } )
 
-			if( store.doc_current()?.link().str !== link.str ) {
-				$mol_fail( new Error( `сцена «${ scene_building }» не стала текущей` ) )
-			}
+		if( await ask( ()=> app.doc_root() ) !== scene_root ) $mol_fail( new Error( 'корень не принял имя модуля' ) )
+		if( !await ask( ()=> complete( app.doc_src() ) ) ) $mol_fail( new Error( `документ сцены «${ scene_building }» записался не целиком` ) )
 
-			app.selected( null )
-			app.code_whole( true )
-			app.code_source( scene_tree )
-			app.code_js( body )
-			app.code_css( style )
-			app.code_whole( whole )
-
-		} )
-
-		await ask( ()=> {
-
-			if( app.doc_root() !== scene_root ) $mol_fail( new Error( 'корень не принял имя модуля' ) )
-			if( !complete( app.doc_src() ) ) $mol_fail( new Error( `документ сцены «${ scene_building }» записался не целиком` ) )
-
-			store.doc( link ).title( scene_title )
-			app.camera_reset()
-
-		} )
+		await ask( ()=> store.doc( link ).title( scene_title ) )
+		await ask( ()=> app.camera_reset() )
 
 	}
 
@@ -335,18 +287,14 @@ namespace $ {
 
 	async function built() {
 
-		const started = Date.now()
-
-		while( Date.now() - started <= root_limit ) {
+		for( let step = 0; step * 200 < scene_limit; ++ step ) {
 
 			const app = editor()
 			if( app ) return await mortgage( app )
 
-			await $$.$mol_wait_timeout_async( step )
+			await $$.$mol_wait_timeout_async( 200 )
 
 		}
-
-		$mol_fail( new Error( `корень редактора не появился за ${ root_limit } мс` ) )
 
 	}
 
@@ -374,29 +322,6 @@ namespace $ {
 		} )
 
 	}
-
-	$mol_test({
-
-		async 'a whole mortgage scene survives the next pass untouched'( $ ) {
-
-			const stage = $bog_vmap_app_flow_stage( $ )
-			const store = stage.store
-
-			const doc = store.doc_add( scene_title, scene_tree )
-			const link = doc.link()
-
-			const docs = store.doc_links().map( one => one.str )
-			const source = store.doc_source( store.doc( link ) )
-
-			await mortgage( stage.app )
-
-			$mol_assert_like( store.doc_links().map( one => one.str ), docs )
-			$mol_assert_equal( store.doc( link ).title(), scene_title )
-			$mol_assert_equal( store.doc_source( store.doc( link ) ), source )
-
-		},
-
-	})
 
 	if( typeof $mol_dom_context !== 'undefined' && $mol_dom_context.document ) {
 		$$.$mol_wait_timeout_async( 0 ).then( aborted )

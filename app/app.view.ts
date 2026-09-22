@@ -689,6 +689,162 @@ namespace $.$$ {
 			return this.left_tab() === 'layers' ? this.Layers() : this.Shelf()
 		}
 
+		right_content() {
+			return [
+				... this.picked().length > 1 ? [ this.Align() ] : [],
+				this.Right_tabs(),
+				this.right_panel(),
+			] as readonly $mol_view[]
+		}
+
+		@ $mol_mem
+		align_group() {
+
+			const picked = this.picked()
+			if( picked.length < 2 ) return { kind: 'none', names: picked, owner: '' }
+
+			const node = this.node()
+			const owners = picked.map( name => node.sub_holder( name ) )
+
+			if( owners.every( one => one === '' ) ) return { kind: 'free', names: picked, owner: '' }
+
+			const first = owners[ 0 ]
+			if( first && owners.every( one => one === first ) ) {
+				return { kind: 'kin', names: picked, owner: first }
+			}
+
+			return { kind: 'mixed', names: picked, owner: '' }
+		}
+
+		override align_enabled( kind: string ) {
+
+			if( !this.editable() ) return false
+
+			const group = this.align_group()
+
+			if( group.kind === 'free' ) return true
+			if( group.kind === 'kin' ) return !kind.startsWith( 'spread' )
+
+			return false
+		}
+
+		override align_note() {
+
+			const group = this.align_group()
+
+			if( group.kind === 'mixed' ) {
+				return 'Выделены и свободные детали, и вложенные узлы:'
+					+ ' вместе их не выровнять, потому что свободные стоят по своим местам,'
+					+ ' а вложенные ставит раскладка родителя. Оставьте в выделении что-то одно.'
+			}
+
+			if( group.kind === 'kin' ) {
+				return `Разложить равномерно нельзя: расстояние между соседями задаёт «Зазор»`
+					+ ` в разделе раскладки «Дизайна» у узла ${ group.owner }.`
+			}
+
+			return ''
+		}
+
+		@ $mol_action
+		override align_act( kind: string, next?: Event | null ) {
+
+			if( !next ) return null
+			if( !this.align_enabled( kind ) ) return null
+
+			const group = this.align_group()
+
+			if( group.kind === 'free' ) this.align_spots( kind, group.names )
+			if( group.kind === 'kin' ) this.align_kin( kind, group.owner )
+
+			return null
+		}
+
+		align_boxes( names: readonly string[] ) {
+
+			const pane = this.Pane() as $bog_vmap_app_pane
+
+			return names
+				.map( name => ({ name, box: pane.spot_box( name ) }) )
+				.filter( ( one ): one is { name: string, box: $bog_vmap_bridge_rect } => Boolean( one.box ) )
+		}
+
+		align_spots( kind: string, names: readonly string[] ) {
+
+			const boxes = this.align_boxes( names )
+			if( boxes.length < 2 ) return
+
+			const across = kind === 'top' || kind === 'center_y' || kind === 'bottom' || kind === 'spread_y'
+
+			const start = ( one: $bog_vmap_bridge_rect )=> across ? one.y : one.x
+			const size = ( one: $bog_vmap_bridge_rect )=> across ? one.height : one.width
+
+			const edge = Math.min( ... boxes.map( one => start( one.box ) ) )
+			const far = Math.max( ... boxes.map( one => start( one.box ) + size( one.box ) ) )
+
+			const placed = {} as { [ name: string ]: number }
+
+			if( kind === 'spread_x' || kind === 'spread_y' ) {
+
+				const sorted = [ ... boxes ].sort( ( one, other )=> start( one.box ) - start( other.box ) )
+				const used = sorted.reduce( ( sum, one )=> sum + size( one.box ), 0 )
+				const gap = ( far - edge - used ) / ( sorted.length - 1 )
+
+				let at = edge
+
+				for( const one of sorted ) {
+					placed[ one.name ] = Math.round( at )
+					at += size( one.box ) + gap
+				}
+
+			} else {
+
+				for( const one of boxes ) {
+					placed[ one.name ] = Math.round(
+						kind === 'left' || kind === 'top' ? edge
+						: kind === 'right' || kind === 'bottom' ? far - size( one.box )
+						: ( edge + far ) / 2 - size( one.box ) / 2
+					)
+				}
+
+			}
+
+			const spots = { ... this.spots() }
+
+			for( const one of boxes ) {
+				const spot = spots[ one.name ] ?? { x: one.box.x, y: one.box.y }
+				spots[ one.name ] = across
+					? { x: spot.x, y: placed[ one.name ] }
+					: { x: placed[ one.name ], y: spot.y }
+			}
+
+			this.spots( spots )
+
+		}
+
+		align_kin( kind: string, owner: string ) {
+
+			const node = this.node()
+			const tree = node.tree()
+
+			const column = this.doc_axis( owner ) === 'column'
+			const horizontal = kind === 'left' || kind === 'center_x' || kind === 'right'
+
+			const key = horizontal === column ? 'alignItems' : 'justifyContent'
+
+			const value = kind === 'left' || kind === 'top' ? 'flex-start'
+				: kind === 'right' || kind === 'bottom' ? 'flex-end'
+				: 'center'
+
+			const style = node.over_tree( owner, 'style' )?.kids[ 0 ]
+				?? tree.struct( '*', [ tree.struct( '^' ) ] )
+
+			node.over_set( owner, 'style', tree.struct( 'style', [
+				this.$.$bog_vmap_lang_dict_set( style, key, tree.data( value ) ),
+			] ) )
+
+		}
+
 		override right_panel() {
 			switch( this.right_tab() ) {
 				case 'code': return this.Code()

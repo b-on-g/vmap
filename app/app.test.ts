@@ -1689,6 +1689,211 @@ namespace $ {
 
 		},
 
+		'free parts line up by their edges, and the bar shows up only for a pair'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			app.doc_source( [
+				`${d}flow_align ${d}mol_view`,
+				`	A ${d}mol_view`,
+				`	B ${d}mol_view`,
+				`	sub /`,
+				`		<= A`,
+				`		<= B`,
+				``,
+			].join( '\n' ) )
+
+			app.spots({ A: { x: 100, y: 40 }, B: { x: 300, y: 200 } })
+			stage.redraw()
+			stage.scene.flush()
+			stage.redraw()
+
+			$mol_assert_ok( stage.pane.part_size( 'A' ) )
+			$mol_assert_equal( app.right_content().includes( app.Align() ), false )
+
+			app.picked([ 'A', 'B' ])
+			stage.redraw()
+
+			$mol_assert_equal( app.right_content().includes( app.Align() ), true )
+			$mol_assert_equal( app.align_group().kind, 'free' )
+			$mol_assert_equal( app.align_enabled( 'left' ), true )
+			$mol_assert_equal( app.align_enabled( 'spread_x' ), true )
+			$mol_assert_equal( app.align_note(), '' )
+
+			app.align_act( 'left', new $.$mol_dom_context.MouseEvent( 'click' ) )
+
+			$mol_assert_like( app.spots().A, { x: 100, y: 40 } )
+			$mol_assert_like( app.spots().B, { x: 100, y: 200 } )
+
+		},
+
+		async 'one undo takes the aligned parts back to where they stood'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+			const history = app.History() as $$.$bog_vmap_app_history
+
+			app.doc_source( [
+				`${d}flow_align ${d}mol_view`,
+				`	A ${d}mol_view`,
+				`	B ${d}mol_view`,
+				`	sub /`,
+				`		<= A`,
+				`		<= B`,
+				``,
+			].join( '\n' ) )
+
+			app.spots({ A: { x: 100, y: 40 }, B: { x: 300, y: 200 } })
+			stage.redraw()
+			stage.scene.flush()
+			stage.redraw()
+
+			const stepped = async ()=> {
+				const spots = JSON.stringify( app.spots() )
+				const taken = ()=> JSON.stringify(
+					history.ring( history.doc_key() ).at( -1 )?.spots ?? null,
+				) === spots
+
+				for( let i = 0; i < 10 && !taken(); ++i ) {
+					stage.timers.filter( timer => timer.delay === history.step_delay() ).at( -1 )?.task()
+					await $bog_vmap_app_flow_settle( taken, 30 )
+					stage.redraw()
+				}
+
+				$mol_assert_equal( taken(), true )
+			}
+
+			await stepped()
+
+			app.picked([ 'A', 'B' ])
+			app.align_act( 'left', new $.$mol_dom_context.MouseEvent( 'click' ) )
+
+			$mol_assert_like( app.spots().B, { x: 100, y: 200 } )
+
+			await stepped()
+			history.undo()
+			stage.redraw()
+
+			$mol_assert_like( app.spots().B, { x: 300, y: 200 } )
+
+		},
+
+		'free parts spread out with equal gaps and keep the outer two in place'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			app.doc_source( [
+				`${d}flow_align ${d}mol_view`,
+				`	A ${d}mol_view`,
+				`	B ${d}mol_view`,
+				`	C ${d}mol_view`,
+				`	sub /`,
+				`		<= A`,
+				`		<= B`,
+				`		<= C`,
+				``,
+			].join( '\n' ) )
+
+			app.spots({ A: { x: 0, y: 0 }, B: { x: 40, y: 0 }, C: { x: 400, y: 0 } })
+			stage.redraw()
+			stage.scene.flush()
+			stage.redraw()
+
+			const width = stage.pane.part_size( 'A' )!.width
+
+			app.picked([ 'A', 'B', 'C' ])
+			app.align_act( 'spread_x', new $.$mol_dom_context.MouseEvent( 'click' ) )
+
+			const spots = app.spots()
+
+			$mol_assert_like( spots.A, { x: 0, y: 0 } )
+			$mol_assert_like( spots.C, { x: 400, y: 0 } )
+
+			$mol_assert_equal(
+				spots.B.x - ( spots.A.x + width ),
+				spots.C.x - ( spots.B.x + width ),
+			)
+
+		},
+
+		'kin inside one parent go to the layout of that parent, in one change'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			app.doc_source( [
+				`${d}flow_align ${d}mol_view`,
+				`	Board ${d}mol_view`,
+				`		style * flexDirection \\column`,
+				`		sub /`,
+				`			<= A`,
+				`			<= B`,
+				`	A ${d}mol_paragraph title \\раз`,
+				`	B ${d}mol_paragraph title \\два`,
+				`	sub / <= Board`,
+				``,
+			].join( '\n' ) )
+
+			app.picked([ 'A', 'B' ])
+			stage.redraw()
+
+			$mol_assert_equal( app.align_group().kind, 'kin' )
+			$mol_assert_equal( app.align_group().owner, 'Board' )
+
+			$mol_assert_equal( app.align_enabled( 'left' ), true )
+			$mol_assert_equal( app.align_enabled( 'spread_y' ), false )
+			$mol_assert_ok( app.align_note().includes( 'Зазор' ) )
+			$mol_assert_ok( app.align_note().includes( 'Board' ) )
+
+			const before = app.doc_source()
+
+			app.align_act( 'right', new $.$mol_dom_context.MouseEvent( 'click' ) )
+
+			$mol_assert_ok( app.doc_source().includes( 'alignItems \\flex-end' ) )
+			$mol_assert_equal( app.spots().A, undefined )
+			$mol_assert_equal( before.includes( 'alignItems' ), false )
+
+			app.align_act( 'bottom', new $.$mol_dom_context.MouseEvent( 'click' ) )
+
+			$mol_assert_ok( app.doc_source().includes( 'justifyContent \\flex-end' ) )
+
+		},
+
+		'a mixed selection turns the bar off and says why in words'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			app.doc_source( [
+				`${d}flow_align ${d}mol_view`,
+				`	Board ${d}mol_view`,
+				`		sub / <= A`,
+				`	A ${d}mol_paragraph title \\раз`,
+				`	B ${d}mol_view`,
+				`	sub / <= Board`,
+				``,
+			].join( '\n' ) )
+
+			app.picked([ 'A', 'B' ])
+			stage.redraw()
+
+			$mol_assert_equal( app.align_group().kind, 'mixed' )
+
+			for( const kind of [ 'left', 'top', 'spread_x' ] ) {
+				$mol_assert_equal( app.align_enabled( kind ), false )
+			}
+
+			$mol_assert_ok( app.align_note().includes( 'раскладка родителя' ) )
+
+			const before = app.doc_source()
+			app.align_act( 'left', new $.$mol_dom_context.MouseEvent( 'click' ) )
+
+			$mol_assert_equal( app.doc_source(), before )
+
+		},
+
 		'a size pulled on the canvas lands in the style of the node, in one change'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )

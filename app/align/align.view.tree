@@ -1,0 +1,23 @@
+$bog_vmap_app_align $mol_view
+	act*? null
+	button_enabled* false
+	note \
+	sub <= rows /$mol_view
+	Bar $mol_bar
+		sub <= buttons /$mol_view
+	Button* $mol_button_minor
+		hint <= button_hint* \
+		enabled <= button_enabled*
+		click? <=> act*? null
+		sub /
+			<= Icon* null
+	Note $mol_status
+		status <= note
+	Icon_left $mol_icon_align_horizontal_left
+	Icon_center_x $mol_icon_align_horizontal_center
+	Icon_right $mol_icon_align_horizontal_right
+	Icon_top $mol_icon_align_vertical_top
+	Icon_center_y $mol_icon_align_vertical_center
+	Icon_bottom $mol_icon_align_vertical_bottom
+	Icon_spread_x $mol_icon_align_horizontal_distribute
+	Icon_spread_y $mol_icon_align_vertical_distribute

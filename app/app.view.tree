@@ -128,14 +128,18 @@ $bog_vmap_app $mol_page
 					assets \Ассеты
 			<= left_panel null
 	Right $mol_view
-		sub /
-			<= Right_tabs $mol_switch
-				value? <=> right_tab?
-				options *
-					design \Дизайн
-					code \Код
-					history \Версии
-			<= right_panel null
+		sub <= right_content /$mol_view
+	right_panel null
+	Right_tabs $mol_switch
+		value? <=> right_tab?
+		options *
+			design \Дизайн
+			code \Код
+			history \Версии
+	Align $bog_vmap_app_align
+		act*? <=> align_act*? null
+		button_enabled* <= align_enabled* false
+		note <= align_note \
 	Canvas $mol_page
 		title \Холст
 		Body => Canvas_body
