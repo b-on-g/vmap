@@ -2996,6 +2996,23 @@ namespace $ {
 		return { ... made, node }
 	}
 
+	const sized = ( $: $mol_ambient_context )=> {
+
+		const made = [] as $$.$bog_vmap_app_pane_size[]
+
+		const { pane } = pane_make( $, {}, {
+			node_resize: ( next?: $$.$bog_vmap_app_pane_size | null )=> {
+				if( next ) made.push( next )
+				return next ?? null
+			},
+		} )
+
+		pane.sizes({ [ `${root}/A` ]: box( 100, 100, 200, 80 ) })
+		pane.picked([ 'A' ])
+
+		return { pane, made }
+	}
+
 	const inner_sizes = {
 		[ `${root}/Debt` ]: box( 0, 0, 400, 300 ),
 		[ `${root}/Debt/Title` ]: box( 10, 20, 200, 40 ),
@@ -3027,6 +3044,135 @@ namespace $ {
 	}
 
 	$mol_test({
+
+		'a pull by the corner sizes the node and writes it once, at the end'( $ ) {
+
+			const { pane, made } = sized( $ )
+
+			$mol_assert_equal( pane.handle_at( [ 300, 180 ] ), 'se' )
+
+			pane.node_press( pointer( 300, 180 ) )
+
+			$mol_assert_equal( pane.sizing()?.name, 'A' )
+			$mol_assert_equal( pane.sizing()?.corner, 'se' )
+			$mol_assert_like( pane.sizing_box(), box( 100, 100, 200, 80 ) )
+
+			pane.node_move( pointer( 360, 230 ) )
+
+			$mol_assert_like( pane.sizing_box(), box( 100, 100, 260, 130 ) )
+			$mol_assert_ok( pane.sizing_note().startsWith( '260 × 130' ) )
+			$mol_assert_like( made, [] )
+
+			pane.node_release( pointer( 360, 230, { buttons: 0 } ) )
+
+			$mol_assert_equal( pane.sizing(), null )
+			$mol_assert_like( made, [ { name: 'A', width: 260, height: 130, floor: false } ] )
+
+		},
+
+		'a pull by a side moves only its own edge, and the far edges stay'( $ ) {
+
+			const west = sized( $ )
+
+			$mol_assert_equal( west.pane.handle_at( [ 100, 140 ] ), 'w' )
+
+			west.pane.node_press( pointer( 100, 140 ) )
+			west.pane.node_move( pointer( 60, 140 ) )
+
+			$mol_assert_like( west.pane.sizing_box(), box( 60, 100, 240, 80 ) )
+
+			const north = sized( $ )
+
+			north.pane.node_press( pointer( 200, 100 ) )
+			north.pane.node_move( pointer( 200, 70 ) )
+
+			$mol_assert_like( north.pane.sizing_box(), box( 100, 70, 200, 110 ) )
+
+		},
+
+		'Shift keeps the shape of the node while it is pulled'( $ ) {
+
+			const { pane } = sized( $ )
+
+			pane.node_press( pointer( 300, 180 ) )
+			pane.node_move( pointer( 500, 185, { shiftKey: true } ) )
+
+			$mol_assert_equal( pane.sizing()?.ratio, true )
+			$mol_assert_like( pane.sizing_box(), box( 100, 100, 400, 160 ) )
+
+		},
+
+		'Escape gives the node its size back and writes nothing'( $ ) {
+
+			const { pane, made } = sized( $ )
+
+			pane.node_press( pointer( 300, 180 ) )
+			pane.node_move( pointer( 500, 400 ) )
+
+			$mol_assert_ok( pane.sizing() )
+
+			pane.escape()
+
+			$mol_assert_equal( pane.sizing(), null )
+			$mol_assert_like( made, [] )
+			$mol_assert_like( pane.part_size( 'A' ), box( 100, 100, 200, 80 ) )
+
+		},
+
+		'the caption says who holds the size: the content below and the parent aside'( $ ) {
+
+			const { pane } = pane_make( $, {}, {
+				doc_names: ()=> [ 'A', 'B' ],
+				axis: ( name: string )=> name === 'A' ? 'column' : '',
+			} )
+
+			pane.sizes({
+				[ `${root}/A` ]: box( 100, 100, 200, 80 ),
+				[ `${root}/A/B` ]: box( 100, 100, 200, 60 ),
+			})
+
+			pane.picked([ 'A' ])
+			pane.node_press( pointer( 300, 180 ) )
+			pane.node_move( pointer( 300, 120 ) )
+
+			$mol_assert_like( pane.sizing_box(), box( 100, 100, 200, 20 ) )
+			$mol_assert_equal( pane.sizing_note(), '200 × 60 по содержимому' )
+
+			pane.node_move( pointer( 300, 300 ) )
+			$mol_assert_equal( pane.sizing_note(), '200 × 200' )
+
+			const kid = pane_make( $, {}, {
+				doc_names: ()=> [ 'A', 'B' ],
+				axis: ( name: string )=> name === 'A' ? 'column' : '',
+			} )
+
+			kid.pane.sizes({
+				[ `${root}/A` ]: box( 100, 100, 200, 80 ),
+				[ `${root}/A/B` ]: box( 100, 100, 200, 60 ),
+			})
+
+			kid.pane.picked([ 'B' ])
+
+			$mol_assert_equal( kid.pane.size_hard( 'B' ), 'width' )
+
+			kid.pane.node_press( pointer( 300, 130 ) )
+			kid.pane.node_move( pointer( 340, 130 ) )
+
+			$mol_assert_equal( kid.pane.sizing_note(), '240 жёстко × 60' )
+
+		},
+
+		'a pull that changes nothing writes nothing'( $ ) {
+
+			const { pane, made } = sized( $ )
+
+			pane.node_press( pointer( 300, 180 ) )
+			pane.node_move( pointer( 300, 180 ) )
+			pane.node_release( pointer( 300, 180, { buttons: 0 } ) )
+
+			$mol_assert_like( made, [] )
+
+		},
 
 		'a layer inside a part is addressed by the chain of its layers, however deep the scene renders it'( $ ) {
 
@@ -3086,7 +3232,7 @@ namespace $ {
 
 			$mol_assert_equal( overlay.sub().includes( overlay.Inner() ), true )
 			$mol_assert_equal( overlay.Inner().sub().length, 0 )
-			$mol_assert_equal( overlay.Frame( 'Debt' ).sub().length, 4 )
+			$mol_assert_equal( overlay.Frame( 'Debt' ).sub().length, 8 )
 
 		},
 

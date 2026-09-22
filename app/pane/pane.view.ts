@@ -81,6 +81,26 @@ namespace $.$$ {
 		readonly to: readonly [ number, number ]
 	}
 
+	export type $bog_vmap_app_pane_size = {
+		readonly name: string
+		readonly width: number
+		readonly height: number
+		readonly floor: boolean
+	}
+
+	export type $bog_vmap_app_pane_sizing = {
+		readonly name: string
+		readonly corner: string
+		readonly box: $bog_vmap_bridge_rect
+		readonly grab: readonly [ number, number ]
+		readonly to: readonly [ number, number ]
+		readonly ratio: boolean
+	}
+
+	const corners = [ 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w' ] as const
+
+	const size_min = 8
+
 	export type $bog_vmap_app_pane_menu = {
 		readonly screen: readonly [ number, number ]
 		readonly world: readonly [ number, number ]
@@ -350,6 +370,7 @@ namespace $.$$ {
 				this.Names(),
 				this.Marks(),
 				... this.slot() ? [ this.Insert() ] : [],
+				... this.sizing() ? [ this.Sizing() ] : [],
 				... this.band() ? [ this.Band() ] : [],
 				... this.draft() ? [ this.Draft() ] : [],
 				... this.guide_views(),
@@ -941,8 +962,182 @@ namespace $.$$ {
 			return null
 		}
 
+		@ $mol_mem
+		sizing( next?: $bog_vmap_app_pane_sizing | null ) {
+			return next ?? null
+		}
+
+		handle_box( name: string, corner: string ) {
+
+			const rect = this.part_box( name )
+			if( !rect ) return null
+
+			const x = corner.includes( 'w' ) ? rect.left
+				: corner.includes( 'e' ) ? rect.left + rect.width
+				: rect.left + rect.width / 2
+
+			const y = corner.includes( 'n' ) ? rect.top
+				: corner.includes( 's' ) ? rect.top + rect.height
+				: rect.top + rect.height / 2
+
+			return { x, y }
+		}
+
+		handle_at( screen: readonly [ number, number ] ) {
+
+			if( !this.editable() ) return ''
+
+			const picked = this.picked()
+			if( picked.length !== 1 ) return ''
+
+			const name = picked[ 0 ]
+			if( !this.part_box( name ) ) return ''
+
+			for( const corner of corners ) {
+				const spot = this.handle_box( name, corner )
+				if( !spot ) continue
+				if( Math.abs( screen[0] - spot.x ) > grab_slack ) continue
+				if( Math.abs( screen[1] - spot.y ) > grab_slack ) continue
+				return corner
+			}
+
+			return ''
+		}
+
+		sizing_press( corner: string, point: readonly [ number, number ], event: PointerEvent ) {
+
+			const name = this.picked()[ 0 ]
+			const box = this.part_size( name )
+			if( !box ) return
+
+			event.preventDefault()
+
+			this.sizing({
+				name,
+				corner,
+				box,
+				grab: point,
+				to: point,
+				ratio: Boolean( event.shiftKey ),
+			})
+
+			try {
+				this.Overlay().dom_node().setPointerCapture( event.pointerId )
+			} catch {}
+
+		}
+
+		sizing_box( sizing = this.sizing() ): $bog_vmap_bridge_rect | null {
+
+			if( !sizing ) return null
+
+			const box = sizing.box
+			const dx = sizing.to[0] - sizing.grab[0]
+			const dy = sizing.to[1] - sizing.grab[1]
+
+			const west = sizing.corner.includes( 'w' )
+			const east = sizing.corner.includes( 'e' )
+			const north = sizing.corner.includes( 'n' )
+			const south = sizing.corner.includes( 's' )
+
+			let width = box.width + ( east ? dx : west ? -dx : 0 )
+			let height = box.height + ( south ? dy : north ? -dy : 0 )
+
+			width = Math.max( size_min, Math.round( width ) )
+			height = Math.max( size_min, Math.round( height ) )
+
+			if( sizing.ratio && box.width > 0 && box.height > 0 ) {
+				const ratio = box.height / box.width
+				if( west || east ) height = Math.max( size_min, Math.round( width * ratio ) )
+				else width = Math.max( size_min, Math.round( height / ratio ) )
+			}
+
+			return {
+				x: west ? box.x + box.width - width : box.x,
+				y: north ? box.y + box.height - height : box.y,
+				width,
+				height,
+			}
+		}
+
+		sizing_floor() {
+
+			const sizing = this.sizing()
+			if( !sizing ) return null
+
+			return this.box_union( this.node_kids( sizing.name ) )
+		}
+
+		sizing_note() {
+
+			const sizing = this.sizing()
+			const next = this.sizing_box()
+			if( !sizing || !next ) return ''
+
+			const floor = this.sizing_floor()
+			const held = floor && next.height < floor.height
+
+			const hard = this.size_hard( sizing.name )
+
+			const width = `${ next.width }${ hard === 'width' ? ' жёстко' : '' }`
+			const height = held
+				? `${ Math.round( floor!.height ) } по содержимому`
+				: `${ next.height }${ hard === 'height' ? ' жёстко' : '' }`
+
+			return `${ width } × ${ height }`
+		}
+
+		size_hard( name: string ) {
+
+			const path = this.node_path( name )
+			const owner = path[ path.length - 1 ]
+			if( !owner ) return ''
+
+			return this.axis( owner ) === 'column' ? 'width' : 'height'
+		}
+
+		@ $mol_mem
+		override sizing_style(): { readonly [ prop: string ]: string } {
+
+			const box = this.sizing_box()
+			if( !box ) return {}
+
+			const rect = this.$.$bog_vmap_app_pane_screen( box, this.camera_zoom(), this.camera_shift() )
+
+			return {
+				left: rect.left + rect.width + 'px',
+				top: rect.top + rect.height + 'px',
+			}
+		}
+
+		sizing_cancel() {
+			if( !this.sizing() ) return null
+			this.sizing( null )
+			return null
+		}
+
+		sizing_release() {
+
+			const sizing = this.sizing()
+			const box = this.sizing_box()
+
+			this.sizing( null )
+
+			if( !sizing || !box ) return
+			if( box.width === sizing.box.width && box.height === sizing.box.height ) return
+
+			this.node_resize({
+				name: sizing.name,
+				width: box.width,
+				height: box.height,
+				floor: Boolean( this.size_hard( sizing.name ) ),
+			})
+
+		}
+
 		escape() {
-			if( this.drag() ) this.drag_cancel()
+			if( this.sizing() ) this.sizing_cancel()
+			else if( this.drag() ) this.drag_cancel()
 			else if( this.draft() ) this.draft( null )
 			else if( this.inside() ) this.leave()
 			else if( this.tool() !== 'select' ) this.tool( 'select' )
@@ -1268,6 +1463,9 @@ namespace $.$$ {
 			const dot = editable ? $bog_vmap_app_wire_dot_at( this.wire_dots(), this.screen_point( event ) ) : null
 			if( dot ) return this.wire_press( dot, event )
 
+			const corner = this.handle_at( this.screen_point( event ) )
+			if( corner ) return this.sizing_press( corner, point, event )
+
 			if( this.band_wanted( event ) ) {
 				event.preventDefault()
 				this.band({ from: point, to: point })
@@ -1434,6 +1632,14 @@ namespace $.$$ {
 			this.press_track( event )
 			this.hover_track( event )
 
+			const sizing = this.sizing()
+			if( sizing ) {
+				if( !event.buttons ) return this.node_release( event )
+				event.preventDefault()
+				this.sizing({ ... sizing, to: this.world_point( event ), ratio: Boolean( event.shiftKey ) })
+				return
+			}
+
 			const draft = this.draft()
 			if( draft ) {
 				if( !event.buttons ) return this.node_release( event )
@@ -1504,6 +1710,17 @@ namespace $.$$ {
 			if( this.carrying() ) {
 				const point = this.world_point( event )
 				this.carry_at({ x: point[0], y: point[1] })
+				return
+			}
+
+			if( this.sizing() ) {
+
+				this.sizing_release()
+
+				try {
+					this.Overlay().dom_node().releasePointerCapture( event.pointerId )
+				} catch {}
+
 				return
 			}
 
@@ -1673,7 +1890,14 @@ namespace $.$$ {
 
 		@ $mol_mem_key
 		override frame_style( name: string ): { readonly [ prop: string ]: string } {
-			const rect = this.part_box( name )
+
+			const sizing = this.sizing()
+			const box = sizing?.name === name ? this.sizing_box() : null
+
+			const rect = box
+				? this.$.$bog_vmap_app_pane_screen( box, this.camera_zoom(), this.camera_shift() )
+				: this.part_box( name )
+
 			if( !rect ) return {}
 
 			return {

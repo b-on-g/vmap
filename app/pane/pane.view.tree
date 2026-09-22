@@ -12,6 +12,7 @@ $bog_vmap_app_pane $mol_view
 	tool_hand? false
 	editable true
 	board_draw? null
+	node_resize? null
 	node_delete? null
 	node_copy? null
 	node_wrap? null
@@ -140,6 +141,10 @@ $bog_vmap_app_pane $mol_view
 			\!
 	Insert $mol_view
 		style <= insert_style *
+	Sizing $mol_view
+		style <= sizing_style *
+		sub /
+			<= sizing_note \
 	Band $mol_view
 		style <= band_style *
 	Draft $mol_view
@@ -192,9 +197,13 @@ $bog_vmap_app_pane_overlay $mol_view
 		style <= frame_style* *
 		sub /
 			<= Handle_nw $bog_vmap_app_pane_handle corner \nw
+			<= Handle_n $bog_vmap_app_pane_handle corner \n
 			<= Handle_ne $bog_vmap_app_pane_handle corner \ne
-			<= Handle_sw $bog_vmap_app_pane_handle corner \sw
+			<= Handle_e $bog_vmap_app_pane_handle corner \e
 			<= Handle_se $bog_vmap_app_pane_handle corner \se
+			<= Handle_s $bog_vmap_app_pane_handle corner \s
+			<= Handle_sw $bog_vmap_app_pane_handle corner \sw
+			<= Handle_w $bog_vmap_app_pane_handle corner \w
 	Inner $mol_view
 		style <= inner_style *
 

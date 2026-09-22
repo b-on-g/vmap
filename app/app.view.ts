@@ -1300,6 +1300,40 @@ namespace $.$$ {
 			return name
 		}
 
+		size_key( name: string ) {
+
+			const style = this.node().over_tree( name, 'style' )?.kids[ 0 ] ?? null
+
+			if( this.$.$bog_vmap_lang_dict_get( style, 'minHeight' ) ) return 'minHeight'
+			if( this.$.$bog_vmap_lang_dict_get( style, 'height' ) ) return 'height'
+
+			return this.node().sub_holder( name ) ? 'height' : 'minHeight'
+		}
+
+		@ $mol_action
+		override node_resize( next?: $bog_vmap_app_pane_size | null ) {
+
+			if( !next || !this.editable() ) return null
+
+			const node = this.node()
+			const tree = node.tree()
+
+			const style = node.over_tree( next.name, 'style' )?.kids[ 0 ]
+				?? tree.struct( '*', [ tree.struct( '^' ) ] )
+
+			const width = this.$.$bog_vmap_lang_dict_set(
+				style, 'width', tree.data( `${ next.width }px` ),
+			)
+
+			const both = this.$.$bog_vmap_lang_dict_set(
+				width, this.size_key( next.name ), tree.data( `${ next.height }px` ),
+			)
+
+			node.over_set( next.name, 'style', tree.struct( 'style', [ both ] ) )
+
+			return next
+		}
+
 		@ $mol_action
 		override board_draw( next?: $bog_vmap_bridge_rect | null ) {
 			if( !next || !this.editable() ) return null

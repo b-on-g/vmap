@@ -199,20 +199,45 @@ namespace $.$$ {
 
 	} )
 
+	$mol_style_define( $bog_vmap_app_pane, {
+
+		Sizing: {
+			position: 'absolute',
+
+			padding: { left: '6px', right: '6px', top: '2px', bottom: '2px' },
+			margin: { left: '8px', top: '8px' },
+
+			background: { color: $mol_theme.focus },
+			color: $mol_theme.card,
+
+			font: { size: '12px' },
+			whiteSpace: 'nowrap',
+
+			pointerEvents: 'none',
+			transition: 'none',
+			zIndex: 3,
+		},
+
+	} )
+
 	$mol_style_define( $bog_vmap_app_pane_handle, {
 		position: 'absolute',
 		width: '8px',
 		height: '8px',
 		background: { color: $mol_theme.focus },
-		pointerEvents: 'none',
+		pointerEvents: 'auto',
 		transition: 'none',
 
 		'@': {
 			bog_vmap_app_pane_handle_corner: {
-				nw: { left: '-8px', top: '-8px' },
-				ne: { right: '-8px', top: '-8px' },
-				sw: { left: '-8px', bottom: '-8px' },
-				se: { right: '-8px', bottom: '-8px' },
+				nw: { left: '-8px', top: '-8px', cursor: 'nwse-resize' },
+				n: { left: '50%', top: '-8px', marginLeft: '-4px', cursor: 'ns-resize' },
+				ne: { right: '-8px', top: '-8px', cursor: 'nesw-resize' },
+				e: { right: '-8px', top: '50%', marginTop: '-4px', cursor: 'ew-resize' },
+				se: { right: '-8px', bottom: '-8px', cursor: 'nwse-resize' },
+				s: { left: '50%', bottom: '-8px', marginLeft: '-4px', cursor: 'ns-resize' },
+				sw: { left: '-8px', bottom: '-8px', cursor: 'nesw-resize' },
+				w: { left: '-8px', top: '50%', marginTop: '-4px', cursor: 'ew-resize' },
 			},
 		},
 

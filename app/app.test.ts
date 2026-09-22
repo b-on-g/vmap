@@ -1689,6 +1689,101 @@ namespace $ {
 
 		},
 
+		'a size pulled on the canvas lands in the style of the node, in one change'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			app.doc_source( [
+				`${d}flow_size ${d}mol_view`,
+				`	Board ${d}mol_view`,
+				`		style * flexDirection \\column`,
+				`		sub / <= Note`,
+				`	Note ${d}mol_paragraph title \\Привет`,
+				`	sub / <= Board`,
+				``,
+			].join( '\n' ) )
+
+			const before = app.doc_source()
+
+			app.node_resize({ name: 'Board', width: 640, height: 480, floor: false })
+
+			$mol_assert_equal(
+				app.doc_source(),
+				[
+					`${d}flow_size ${d}mol_view`,
+					`	Board ${d}mol_view`,
+					`		style *`,
+					`			flexDirection \\column`,
+					`			width \\640px`,
+					`			minHeight \\480px`,
+					`		sub / <= Note`,
+					`	Note ${d}mol_paragraph title \\Привет`,
+					`	sub / <= Board`,
+					``,
+				].join( '\n' ),
+			)
+
+			$mol_assert_equal( before.includes( '640px' ), false )
+
+		},
+
+		'a node held by a parent takes a hard height, not a floor'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			app.doc_source( [
+				`${d}flow_size ${d}mol_view`,
+				`	Board ${d}mol_view`,
+				`		style * flexDirection \\column`,
+				`		sub / <= Note`,
+				`	Note ${d}mol_paragraph title \\Привет`,
+				`	sub / <= Board`,
+				``,
+			].join( '\n' ) )
+
+			$mol_assert_equal( app.size_key( 'Note' ), 'height' )
+			$mol_assert_equal( app.size_key( 'Board' ), 'minHeight' )
+
+			app.node_resize({ name: 'Note', width: 200, height: 40, floor: true } )
+
+			const after = app.doc_source()
+
+			$mol_assert_ok( after.includes( 'width \\200px' ) )
+			$mol_assert_ok( after.includes( 'height \\40px' ) )
+			$mol_assert_equal( after.includes( 'minHeight \\40px' ), false )
+
+		},
+
+		'a size written once more keeps the style it already had'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			app.doc_source( [
+				`${d}flow_size ${d}mol_view`,
+				`	Board ${d}mol_view`,
+				`		style *`,
+				`			width \\480px`,
+				`			minHeight \\720px`,
+				`			background \\red`,
+				`		sub /`,
+				`	sub / <= Board`,
+				``,
+			].join( '\n' ) )
+
+			app.node_resize({ name: 'Board', width: 900, height: 300, floor: false })
+
+			const after = app.doc_source()
+
+			$mol_assert_ok( after.includes( 'width \\900px' ) )
+			$mol_assert_ok( after.includes( 'minHeight \\300px' ) )
+			$mol_assert_ok( after.includes( 'background \\red' ) )
+			$mol_assert_equal( after.includes( '480px' ), false )
+
+		},
+
 		'a layer picked inside a part reaches the canvas by the address the panel made'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )
