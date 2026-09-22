@@ -5050,7 +5050,6 @@ namespace $ {
 
 			for( const key of [
 				stroke( 'KeyG' ),
-				stroke( 'KeyG', { metaKey: true } ),
 				stroke( 'KeyG', { altKey: true } ),
 				stroke( 'KeyG', { metaKey: true, altKey: true, shiftKey: true } ),
 				stroke( 'KeyG', { ctrlKey: true, altKey: true, target: $.$mol_dom_context.document.createElement( 'input' ) } ),
@@ -5060,6 +5059,48 @@ namespace $ {
 			}
 
 			$mol_assert_equal( wrapped, 2 )
+		},
+
+		'Cmd+G groups and Shift+Cmd+G ungroups, only with a pick and never typed into a field'( $ ) {
+
+			let grouped = 0
+			let ungrouped = 0
+			let ready = false
+
+			const pane = menu_pane( $, {
+				node_group: ()=> { ++ grouped; return null },
+				node_ungroup: ()=> { ++ ungrouped; return null },
+				ungroup_enabled: ()=> ready,
+			} )
+
+			$mol_assert_equal( pane.key_down( stroke( 'KeyG', { metaKey: true } ) ), false )
+			$mol_assert_equal( grouped, 0 )
+
+			pane.picked([ 'A' ])
+
+			const mac = stroke( 'KeyG', { metaKey: true, key: '\u00A9' } )
+			$mol_assert_equal( pane.key_down( mac ), true )
+			$mol_assert_equal( mac.prevented, true )
+
+			pane.key_down( stroke( 'KeyG', { ctrlKey: true } ) )
+			$mol_assert_equal( grouped, 2 )
+
+			$mol_assert_equal( pane.key_down( stroke( 'KeyG', { metaKey: true, shiftKey: true } ) ), false )
+			$mol_assert_equal( ungrouped, 0 )
+
+			ready = true
+
+			const back = stroke( 'KeyG', { metaKey: true, shiftKey: true } )
+			$mol_assert_equal( pane.key_down( back ), true )
+			$mol_assert_equal( back.prevented, true )
+			$mol_assert_equal( ungrouped, 1 )
+			$mol_assert_equal( grouped, 2 )
+
+			const typed = stroke( 'KeyG', { metaKey: true, target: $.$mol_dom_context.document.createElement( 'input' ) } )
+			$mol_assert_equal( pane.key_down( typed ), false )
+			$mol_assert_equal( typed.prevented, false )
+			$mol_assert_equal( grouped, 2 )
+
 		},
 
 	})

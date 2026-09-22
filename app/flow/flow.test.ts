@@ -16,6 +16,7 @@ namespace $ {
 		`\tchecked? false`,
 		`${d}mol_paragraph ${d}mol_view`,
 		`\ttitle \\`,
+		`\tsub / <= title`,
 		`${d}bog_vmap_part_cell ${d}mol_view`,
 		`\tresult \\`,
 		`\tcode? \\`,
@@ -2093,6 +2094,7 @@ namespace $ {
 
 	const calc = `${d}flow_calc`
 	const map = `${d}flow_map`
+	const number = `${d}mol_number`
 
 	type stage = ReturnType< typeof $bog_vmap_app_flow_stage >
 
@@ -2183,7 +2185,7 @@ namespace $ {
 			const event = context( $, stage, at )
 
 			$mol_assert_equal( event.defaultPrevented, true )
-			$mol_assert_like( titles( stage ), [ 'Копировать', 'Удалить', 'Обернуть в артборд', 'Выделить родителя', 'Внутрь' ] )
+			$mol_assert_like( titles( stage ), [ 'Копировать', 'Удалить', 'Сгруппировать', 'Разгруппировать', 'Обернуть в артборд', 'Выделить родителя', 'Внутрь' ] )
 
 			const style = ( stage.pane.menu_view().dom_node() as HTMLElement ).style
 			$mol_assert_equal( style.left, ( at[0] - $bog_vmap_app_flow_rect.left ) + 'px' )
@@ -2305,6 +2307,175 @@ namespace $ {
 
 		},
 
+		'Cmd+G puts free parts into a plain group at their own corner'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const node = stage.app.node()
+
+			stage.drop( map, stage.client([ 400, 150 ]) )
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			const spots = stage.app.spots()
+
+			stage.app.picked([ 'Map', 'Calc' ])
+			pressed( $, stage, 'KeyG', { key: 'g', metaKey: true } )
+
+			$mol_assert_like( node.sub_names(), [ 'Group' ] )
+			$mol_assert_like( node.sub_names( 'Group' ), [ 'Calc', 'Map' ] )
+			$mol_assert_like( stage.app.spots(), { Group: spots[ 'Calc' ] } )
+			$mol_assert_equal( styled( stage, 'Group', 'width' ), null )
+			$mol_assert_equal( styled( stage, 'Group', 'background' ), null )
+			$mol_assert_equal( styled( stage, 'Group', 'flexDirection' ), null )
+			$mol_assert_like( [ ... stage.app.picked() ], [ 'Group' ] )
+
+		},
+
+		'Cmd+G on parts standing one above the other lays the group in a column'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 120 ]) )
+			stage.drop( map, stage.client([ 200, 400 ]) )
+
+			stage.app.picked([ 'Calc', 'Map' ])
+			pressed( $, stage, 'KeyG', { key: 'g', metaKey: true } )
+
+			$mol_assert_equal( styled( stage, 'Group', 'flexDirection' ), 'column' )
+
+		},
+
+		'Cmd+G on neighbours inside a board keeps the order of the parent and adds no spot'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const node = stage.app.node()
+
+			pressed( $, stage, 'KeyF', { key: 'f' } )
+			stage.tap( stage.client([ 100, 100 ]) )
+
+			const page = stage.pane.part_box( 'Page' )!
+			stage.drop( calc, stage.client([ page.left + 200, page.top + 40 ]) )
+			stage.drop( map, stage.client([ page.left + 200, page.top + 120 ]) )
+			stage.drop( number, stage.client([ page.left + 200, page.top + 200 ]) )
+			$mol_assert_like( node.sub_names( 'Page' ), [ 'Calc', 'Map', 'Number' ] )
+
+			stage.app.picked([ 'Calc', 'Map' ])
+			pressed( $, stage, 'KeyG', { key: 'g', metaKey: true } )
+
+			$mol_assert_like( node.sub_names( 'Page' ), [ 'Group', 'Number' ] )
+			$mol_assert_like( node.sub_names( 'Group' ), [ 'Calc', 'Map' ] )
+			$mol_assert_equal( stage.app.spots()[ 'Group' ], undefined )
+			$mol_assert_equal( stage.app.spots()[ 'Calc' ], undefined )
+
+		},
+
+		'a wire between grouped parts keeps working after Cmd+G'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const overlay = stage.overlay()
+
+			stage.drop( calc, stage.client([ 100, 100 ]) )
+			stage.drop( map, stage.client([ 400, 100 ]) )
+			stage.tap( stage.part_center( 'Calc' ) )
+
+			const out = stage.port_dot( 'Calc', 'result', 'out' )
+			const into = stage.port_dot( 'Map', 'zoom', 'in' )
+
+			stage.press( overlay, out )
+			stage.move( overlay, into )
+			stage.release( overlay, into )
+			stage.redraw()
+
+			const links = stage.app.node().links().length
+			$mol_assert_equal( links, 1 )
+
+			stage.app.picked([ 'Calc', 'Map' ])
+			pressed( $, stage, 'KeyG', { key: 'g', metaKey: true } )
+
+			$mol_assert_equal( stage.app.node().links().length, links )
+			$mol_assert_like( stage.app.node().sub_names( 'Group' ), [ 'Calc', 'Map' ] )
+			$mol_assert_ok( stage.app.doc_source().includes( '\tcalc_result = Calc result\n' ) )
+			$mol_assert_ok( stage.app.doc_source().includes( 'zoom <= calc_result' ) )
+
+		},
+
+		'Shift+Cmd+G brings the parts back on the canvas where the layout put them'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const node = stage.app.node()
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.drop( map, stage.client([ 400, 150 ]) )
+
+			stage.app.picked([ 'Calc', 'Map' ])
+			pressed( $, stage, 'KeyG', { key: 'g', metaKey: true } )
+			$mol_assert_like( node.sub_names(), [ 'Group' ] )
+
+			const boxes = [ 'Calc', 'Map' ].map( name => stage.pane.part_size( name )! )
+			$mol_assert_ok( boxes.every( Boolean ) )
+
+			pressed( $, stage, 'KeyG', { key: 'g', metaKey: true, shiftKey: true } )
+
+			$mol_assert_like( node.sub_names(), [ 'Calc', 'Map' ] )
+			$mol_assert_equal( stage.app.doc_source().includes( 'Group' ), false )
+			$mol_assert_like( stage.app.spots()[ 'Calc' ], { x: Math.round( boxes[0].x ), y: Math.round( boxes[0].y ) } )
+			$mol_assert_like( stage.app.spots()[ 'Map' ], { x: Math.round( boxes[1].x ), y: Math.round( boxes[1].y ) } )
+			$mol_assert_like( [ ... stage.app.picked() ], [ 'Calc', 'Map' ] )
+
+		},
+
+		'Shift+Cmd+G inside a board splices the kids back at the place of the group'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const node = stage.app.node()
+
+			pressed( $, stage, 'KeyF', { key: 'f' } )
+			stage.tap( stage.client([ 100, 100 ]) )
+
+			const page = stage.pane.part_box( 'Page' )!
+			stage.drop( calc, stage.client([ page.left + 200, page.top + 40 ]) )
+			stage.drop( map, stage.client([ page.left + 200, page.top + 120 ]) )
+			stage.drop( number, stage.client([ page.left + 200, page.top + 200 ]) )
+
+			stage.app.picked([ 'Calc', 'Map' ])
+			pressed( $, stage, 'KeyG', { key: 'g', metaKey: true } )
+			$mol_assert_like( node.sub_names( 'Page' ), [ 'Group', 'Number' ] )
+
+			stage.app.picked([ 'Group' ])
+			pressed( $, stage, 'KeyG', { key: 'g', metaKey: true, shiftKey: true } )
+
+			$mol_assert_like( node.sub_names( 'Page' ), [ 'Calc', 'Map', 'Number' ] )
+			$mol_assert_equal( stage.app.spots()[ 'Calc' ], undefined )
+			$mol_assert_like( [ ... stage.app.picked() ], [ 'Calc', 'Map' ] )
+
+		},
+
+		async 'Cmd+G writes the document once and one undo puts everything back'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const store = stage.store
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.drop( map, stage.client([ 400, 150 ]) )
+
+			await stepped( stage )
+
+			const before = stage.app.doc_source()
+			const spots = stage.app.spots()
+
+			let writes = 0
+			const kept = store.source.bind( store )
+			store.source = ( next?: string )=> {
+				if( next !== undefined ) ++ writes
+				return kept( next )
+			}
+
+			stage.app.picked([ 'Calc', 'Map' ])
+			pressed( $, stage, 'KeyG', { key: 'g', metaKey: true } )
+
+			$mol_assert_equal( writes, 1 )
+			$mol_assert_ok( stage.app.doc_source().includes( 'Group $mol_view' ) )
+
+			await stepped( stage )
+			undone( stage )
+
+			$mol_assert_equal( stage.app.doc_source(), before )
+			$mol_assert_like( stage.app.spots(), spots )
+
+		},
+
 		'Select parent from the menu picks the board around the part, and is off for a free part'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 
@@ -2386,7 +2557,7 @@ namespace $ {
 			stage.drop( calc, stage.client([ 200, 150 ]) )
 
 			context( $, stage, stage.part_center( 'Calc' ) )
-			$mol_assert_equal( items( stage ).length, 5 )
+			$mol_assert_equal( items( stage ).length, 7 )
 
 			const escape = pressed( $, stage, 'Escape' )
 			$mol_assert_equal( escape.defaultPrevented, true )

@@ -4,7 +4,11 @@ namespace $.$$ {
 		override items() {
 			const edits = this.editable()
 			return this.on_node()
-				? [ ... edits ? [ this.Copy(), this.Remove(), this.Wrap() ] : [], this.Parent(), this.Enter() ]
+				? [
+					... edits ? [ this.Copy(), this.Remove(), this.Group(), this.Ungroup(), this.Wrap() ] : [],
+					this.Parent(),
+					this.Enter(),
+				]
 				: [ ... edits ? [ this.Board() ] : [], this.Fit() ]
 		}
 
@@ -18,6 +22,14 @@ namespace $.$$ {
 
 		override remove_keys() {
 			return this.apple() ? '⌫' : 'Del'
+		}
+
+		override group_keys() {
+			return this.apple() ? '⌘G' : 'Ctrl+G'
+		}
+
+		override ungroup_keys() {
+			return this.apple() ? '⇧⌘G' : 'Ctrl+Shift+G'
 		}
 
 		override wrap_keys() {

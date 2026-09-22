@@ -180,6 +180,9 @@ $bog_vmap_app $mol_page
 				node_delete? <=> node_delete?
 				node_copy? <=> node_copy? null
 				node_wrap? <=> node_wrap? null
+				node_group? <=> node_group? null
+				node_ungroup? <=> node_ungroup? null
+				ungroup_enabled <= ungroup_enabled false
 				node_clone? <=> node_clone? null
 				board_draw? <=> board_draw? null
 				node_resize? <=> node_resize? null

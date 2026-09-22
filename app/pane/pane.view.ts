@@ -892,6 +892,27 @@ namespace $.$$ {
 				return true
 			}
 
+			if( stroke.code === 'KeyG' && command && !stroke.altKey ) {
+
+				if( !this.editable() ) return false
+
+				if( stroke.shiftKey ) {
+					if( !this.ungroup_enabled() ) return false
+
+					stroke.preventDefault()
+					this.leave()
+					this.node_ungroup( null )
+					return true
+				}
+
+				if( !this.picked().length ) return false
+
+				stroke.preventDefault()
+				this.leave()
+				this.node_group( null )
+				return true
+			}
+
 			if( stroke.code === 'KeyG' && command && stroke.altKey && !stroke.shiftKey ) {
 				if( !this.editable() || !this.picked().length ) return false
 

@@ -8,6 +8,9 @@ $bog_vmap_app_menu $mol_pop
 	copy? null
 	remove? null
 	wrap? null
+	group? null
+	ungroup? null
+	ungroup_enabled true
 	parent? null
 	parent_enabled true
 	enter? null
@@ -37,6 +40,17 @@ $bog_vmap_app_menu $mol_pop
 		title \Удалить
 		keys <= remove_keys \
 		act? <=> remove?
+		done? <=> close?
+	Group $bog_vmap_app_menu_item
+		title \Сгруппировать
+		keys <= group_keys \
+		act? <=> group?
+		done? <=> close?
+	Ungroup $bog_vmap_app_menu_item
+		title \Разгруппировать
+		keys <= ungroup_keys \
+		enabled <= ungroup_enabled
+		act? <=> ungroup?
 		done? <=> close?
 	Wrap $bog_vmap_app_menu_item
 		title \Обернуть в артборд

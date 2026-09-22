@@ -16,6 +16,9 @@ $bog_vmap_app_pane $mol_view
 	node_delete? null
 	node_copy? null
 	node_wrap? null
+	node_group? null
+	node_ungroup? null
+	ungroup_enabled false
 	node_clone? null
 	leave? null
 	key_down* false
@@ -162,6 +165,9 @@ $bog_vmap_app_pane $mol_view
 		copy? <=> node_copy?
 		remove? <=> node_delete?
 		wrap? <=> node_wrap?
+		group? <=> node_group?
+		ungroup? <=> node_ungroup?
+		ungroup_enabled <= ungroup_enabled
 		parent? <=> menu_parent? null
 		parent_enabled <= menu_parent_enabled false
 		enter? <=> menu_enter? null

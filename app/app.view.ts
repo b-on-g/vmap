@@ -1506,10 +1506,7 @@ namespace $.$$ {
 			return next
 		}
 
-		@ $mol_action
-		override node_wrap() {
-			const picked = this.picked()
-			if( !picked.length || !this.editable() ) return null
+		pack_plan( picked: readonly string[] ) {
 
 			const node = this.node()
 			const pane = this.Pane()
@@ -1534,12 +1531,42 @@ namespace $.$$ {
 			const width = Math.max( ... found.map( box => box.x + box.width ) ) - left
 			const height = Math.max( ... found.map( box => box.y + box.height ) ) - upper
 
+			return {
+				tops,
+				holder,
+				index,
+				found,
+				box: { x: left, y: upper, width, height },
+			}
+		}
+
+		doc_draft() {
+
+			let text = this.doc_source()
+
+			return this.$.$bog_vmap_lang_doc.make({
+				$: this.$,
+				source: ( next?: string )=> next === undefined ? text : ( text = next ),
+			})
+		}
+
+		@ $mol_action
+		override node_wrap() {
+			const picked = this.picked()
+			if( !picked.length || !this.editable() ) return null
+
+			const node = this.node()
+			const pane = this.Pane()
+
+			const plan = this.pack_plan( picked )
+			const { tops, holder, index, found } = plan
+
 			const spots = { ... this.spots() }
-			const spot = found.length ? { x: left, y: upper } : spots[ tops[ 0 ] ]
+			const spot = found.length ? { x: plan.box.x, y: plan.box.y } : spots[ tops[ 0 ] ]
 			const [ x, y ] = spot ? [ spot.x, spot.y ] : pane.free_spot()
 
 			const name = this.board_new( found.length
-				? { width: Math.round( width ), height: Math.round( height ) }
+				? { width: Math.round( plan.box.width ), height: Math.round( plan.box.height ) }
 				: this.board_size()
 			)
 
@@ -1553,6 +1580,127 @@ namespace $.$$ {
 
 			this.spots( spots )
 			this.picked([ name ])
+
+			return null
+		}
+
+		@ $mol_action
+		override node_group() {
+
+			const picked = this.picked()
+			if( !picked.length || !this.editable() ) return null
+
+			const plan = this.pack_plan( picked )
+			if( !plan.tops.length ) return null
+
+			const name = this.name_free( 'Group' )
+			const draft = this.doc_draft()
+			const node = draft.node( this.doc_root() )
+			const tree = node.tree()
+
+			node.part_add( name, '$mol_view' )
+
+			if( plan.found.length && plan.box.height > plan.box.width ) node.over_set(
+				name,
+				'style',
+				tree.struct( 'style', [
+					tree.struct( '*', [ tree.struct( 'flexDirection', [ tree.data( 'column' ) ] ) ] ),
+				] ),
+			)
+
+			node.sub_open( name )
+			node.sub_insert( name, plan.index, plan.holder )
+
+			plan.tops.forEach( ( kid, at )=> node.sub_move( kid, at, name ) )
+
+			const spots = { ... this.spots() }
+			const kept = spots[ plan.tops[ 0 ] ]
+
+			for( const kid of plan.tops ) delete spots[ kid ]
+
+			if( !plan.holder ) {
+				const spot = plan.found.length ? plan.box : kept
+				const [ x, y ] = spot ? [ spot.x, spot.y ] : this.Pane().free_spot()
+				spots[ name ] = { x: Math.round( x ), y: Math.round( y ) }
+			}
+
+			this.doc_source( draft.source() )
+			this.spots( spots )
+			this.picked([ name ])
+
+			return null
+		}
+
+		group_names() {
+			const node = this.node()
+			return this.picked().filter( name => ( node.sub_names( name ) ?? [] ).length > 0 )
+		}
+
+		group_ready( name: string ) {
+			if( this.node().sub_holder( name ) ) return true
+
+			const pane = this.Pane()
+			return ( this.node().sub_names( name ) ?? [] ).every( kid => Boolean( kid && pane.part_size( kid ) ) )
+		}
+
+		override ungroup_enabled() {
+			if( !this.editable() ) return false
+
+			const names = this.group_names()
+			return names.length > 0 && names.every( name => this.group_ready( name ) )
+		}
+
+		@ $mol_action
+		override node_ungroup() {
+
+			if( !this.ungroup_enabled() ) return null
+
+			const live = this.node()
+			const pane = this.Pane()
+			const names = this.group_names()
+
+			const boxes = new Map< string, $bog_vmap_bridge_rect >()
+
+			for( const name of names ) {
+				if( live.sub_holder( name ) ) continue
+				for( const kid of live.sub_names( name ) ?? [] ) {
+					const box = kid && pane.part_size( kid )
+					if( kid && box ) boxes.set( kid, box )
+				}
+			}
+
+			const draft = this.doc_draft()
+			const node = draft.node( this.doc_root() )
+
+			const spots = { ... this.spots() }
+			const freed = [] as string[]
+
+			for( const name of names ) {
+
+				const holder = node.sub_holder( name ) ?? ''
+				const kids = ( node.sub_names( name ) ?? [] ).filter( ( kid ): kid is string => Boolean( kid ) )
+				const at = ( node.sub_names( holder ) ?? [] ).indexOf( name )
+
+				kids.forEach( ( kid, shift )=> node.sub_move( kid, at + shift, holder ) )
+
+				if( !holder ) for( const kid of kids ) {
+					const box = boxes.get( kid )
+					if( box ) spots[ kid ] = { x: Math.round( box.x ), y: Math.round( box.y ) }
+				}
+
+				node.links_drop( name )
+				node.cells_drop( name )
+				node.sub_drop( name )
+				node.prop_drop( name )
+
+				delete spots[ name ]
+				freed.push( ... kids )
+
+			}
+
+			this.doc_source( draft.source() )
+			this.spots( spots )
+			this.picked( freed )
 
 			return null
 		}
