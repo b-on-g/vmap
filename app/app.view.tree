@@ -81,15 +81,15 @@ $bog_vmap_app $mol_page
 	tools /
 		<= Zoom_out $mol_button_minor
 			title \−
-			hint \Отдалить
+			hint \Отдалить. Клавиша минус
 			click? <=> zoom_out? null
 		<= Zoom_reset $mol_button_minor
-			title <= zoom_title \
-			hint \Показать всё. Shift+1 — всё, Shift+2 — выделенное, Shift+0 — 100 %
+			title \Вписать всё
+			hint \Показать всё. Shift+1 — всё, Shift+2 — выделенное
 			click? <=> camera_reset? null
 		<= Zoom_in $mol_button_minor
 			title \+
-			hint \Приблизить
+			hint \Приблизить. Клавиша плюс
 			click? <=> zoom_in? null
 		<= History_check $mol_check_icon
 			Icon <= History_icon $mol_icon_history
@@ -260,6 +260,10 @@ $bog_vmap_app $mol_page
 		lands <= lands /string
 	Status $mol_status
 		status <= status \
+	Zoom_chip $mol_button_minor
+		title <= zoom_title \
+		hint \Масштаб холста. Клик — сто процентов. Shift+0 и Cmd+0 — сто процентов, плюс и минус — шаг, Shift+1 — вписать всё, Shift+2 — вписать выделенное
+		click? <=> zoom_full? null
 	Alarm $mol_status
 		status <= error \
 	Inside_note $mol_paragraph

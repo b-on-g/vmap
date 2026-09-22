@@ -79,6 +79,7 @@ $bog_vmap_app_pane $mol_view
 	node_show? null
 	zoom_out? null
 	zoom_in? null
+	zoom_full? null
 	zoom_title \
 	node_error* \
 	scene_restart? null

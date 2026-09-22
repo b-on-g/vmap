@@ -552,10 +552,15 @@ namespace $ {
 			const canvas = stage.pane.dom_node()
 			const tools = stage.root.querySelector( '[bog_vmap_app_tools]' )!
 
-			for( const title of [ '−', '100%', '+' ] ) {
+			for( const title of [ '−', 'Вписать всё', '+' ] ) {
 				$mol_assert_equal( tools.contains( stage.button( title ) ), true )
 				$mol_assert_equal( canvas.contains( stage.button( title ) ), false )
 			}
+
+			const foot = stage.root.querySelector( '[bog_vmap_app_canvas_foot]' )!
+
+			$mol_assert_equal( foot.contains( stage.button( '100%' ) ), true )
+			$mol_assert_equal( tools.contains( stage.button( '100%' ) ), false )
 			$mol_assert_equal( canvas.querySelector( '[role=button]' ), null )
 
 			const text = stage.text()
@@ -1034,6 +1039,8 @@ namespace $ {
 
 			stage.click( stage.button( '125%' ) )
 			$mol_assert_ok( stage.text().includes( '100%' ) )
+
+			stage.click( stage.button( 'Вписать всё' ) )
 
 			const size = $bog_vmap_app_flow_size
 			const shift = stage.pane.camera_shift()
@@ -1514,12 +1521,13 @@ namespace $ {
 			const foot = stage.root.querySelector( '[bog_vmap_app_canvas_foot]' )!
 
 			$mol_assert_ok( app.Canvas().body().includes( app.Pane() ) )
-			$mol_assert_equal( foot.childElementCount, 1 )
+			$mol_assert_equal( foot.childElementCount, 2 )
 			$mol_assert_ok( foot.contains( app.Status().dom_node() ) )
+			$mol_assert_ok( foot.contains( app.Zoom_chip().dom_node() ) )
 
 		},
 
-		'the percent in the canvas tools zooms and gives the view back'( $ ) {
+		'the percent in the footer gives a hundred back, and the trio in the head steps and fits'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.pane.camera_shift( new $mol_vector_2d( 700, 700 ) )
@@ -1538,8 +1546,13 @@ namespace $ {
 			stage.click( stage.button( '125%' ) )
 
 			$mol_assert_equal( stage.pane.camera_zoom(), 1 )
-			$mol_assert_like( [ ... stage.pane.camera_shift() ], [ 0, 0 ] )
 			$mol_assert_ok( stage.button( '100%' ) )
+
+			stage.click( stage.button( '+' ) )
+			stage.click( stage.button( 'Вписать всё' ) )
+
+			$mol_assert_equal( stage.pane.camera_zoom(), 1 )
+			$mol_assert_like( [ ... stage.pane.camera_shift() ], [ 0, 0 ] )
 
 		},
 

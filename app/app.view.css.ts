@@ -55,6 +55,11 @@ namespace $.$$ {
 
 		},
 
+		Zoom_chip: {
+			alignSelf: 'flex-end',
+			font: { family: 'monospace' },
+		},
+
 		Ghost: {
 			position: 'fixed',
 			zIndex: 100,
