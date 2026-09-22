@@ -2532,6 +2532,170 @@ namespace $ {
 
 		},
 
+		'T takes the text tool and a click opens a field without touching the document'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			$mol_assert_equal( stage.pane.text_enabled(), true )
+
+			pressed( $, stage, 'KeyT', { key: 't' } )
+			$mol_assert_equal( stage.pane.tool_text(), true )
+
+			const before = stage.app.doc_source()
+
+			stage.tap( stage.client([ 300, 200 ]) )
+
+			$mol_assert_ok( stage.pane.text_spot() )
+			$mol_assert_equal( stage.pane.text_new(), '' )
+			$mol_assert_like( stage.app.node().part_names(), [] )
+			$mol_assert_equal( stage.app.doc_source(), before )
+			$mol_assert_equal( stage.pane.tool_text(), false )
+
+		},
+
+		'the typed text is born as a node in one write'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			pressed( $, stage, 'KeyT', { key: 't' } )
+			stage.tap( stage.client([ 300, 200 ]) )
+
+			const app = stage.app
+			let writes = 0
+			const kept = app.doc_source.bind( app )
+			app.doc_source = ( next?: string )=> {
+				if( next !== undefined ) ++ writes
+				return kept( next )
+			}
+
+			stage.pane.text_new( 'Привет' )
+			stage.pane.text_new_submit()
+
+			Reflect.deleteProperty( app, 'doc_source' )
+			stage.redraw()
+
+			$mol_assert_equal( writes, 1 )
+			$mol_assert_like( stage.app.node().part_names(), [ 'Text' ] )
+			$mol_assert_equal( stage.app.node().prop_decl( 'Text' )!.kids[ 0 ]!.type, `${d}mol_paragraph` )
+			$mol_assert_ok( stage.app.doc_source().includes( 'title \\Привет' ) )
+			$mol_assert_ok( stage.app.spots()[ 'Text' ] )
+			$mol_assert_like( [ ... stage.app.picked() ], [ 'Text' ] )
+			$mol_assert_equal( stage.pane.text_spot(), null )
+
+		},
+
+		'a text left empty writes nothing at all, whatever the way out'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			const app = stage.app
+			let writes = 0
+			let asked = 0
+
+			const kept = app.doc_source.bind( app )
+			app.doc_source = ( next?: string )=> {
+				if( next !== undefined ) ++ writes
+				return kept( next )
+			}
+
+			const born = app.text_draw.bind( app )
+			app.text_draw = ( next?: $$.$bog_vmap_app_text_born | null )=> {
+				++ asked
+				return born( next )
+			}
+
+			pressed( $, stage, 'KeyT', { key: 't' } )
+			stage.tap( stage.client([ 300, 200 ]) )
+			pressed( $, stage, 'Escape', { key: 'Escape' } )
+
+			$mol_assert_equal( stage.pane.text_spot(), null )
+
+			pressed( $, stage, 'KeyT', { key: 't' } )
+			stage.tap( stage.client([ 400, 300 ]) )
+			pressed( $, stage, 'KeyV', { key: 'v' } )
+
+			$mol_assert_equal( stage.pane.text_spot(), null )
+
+			pressed( $, stage, 'KeyT', { key: 't' } )
+			stage.tap( stage.client([ 500, 400 ]) )
+			stage.pane.text_new_submit()
+
+			Reflect.deleteProperty( app, 'doc_source' )
+			Reflect.deleteProperty( app, 'text_draw' )
+
+			$mol_assert_equal( writes, 0 )
+			$mol_assert_equal( asked, 0 )
+			$mol_assert_like( stage.app.node().part_names(), [] )
+
+		},
+
+		'a drag sets the width and the width reaches the node'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const overlay = stage.overlay()
+
+			pressed( $, stage, 'KeyT', { key: 't' } )
+
+			stage.press( overlay, stage.client([ 200, 200 ]) )
+			stage.move( overlay, stage.client([ 460, 260 ]) )
+			stage.release( overlay, stage.client([ 460, 260 ]) )
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.text_spot()!.width, 260 )
+
+			stage.pane.text_new( 'Широкий' )
+			stage.pane.text_new_submit()
+			stage.redraw()
+
+			$mol_assert_equal( styled( stage, 'Text', 'width' ), '260px' )
+			$mol_assert_equal( styled( stage, 'Text', 'height' ), null )
+
+		},
+
+		'what was typed is kept when the tool changes under it'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			pressed( $, stage, 'KeyT', { key: 't' } )
+			stage.tap( stage.client([ 300, 200 ]) )
+
+			stage.pane.text_new( 'Не потеряй' )
+			pressed( $, stage, 'KeyV', { key: 'v' } )
+			stage.redraw()
+
+			$mol_assert_like( stage.app.node().part_names(), [ 'Text' ] )
+			$mol_assert_ok( stage.app.doc_source().includes( 'title \\Не потеряй' ) )
+			$mol_assert_equal( stage.pane.text_spot(), null )
+
+		},
+
+		'a pack that never loads leaves the text tool off, and the canvas says why'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const dead = 'http://lost.test/'
+
+			$mol_assert_equal( stage.pane.text_enabled(), true )
+
+			const fetched = $.$mol_fetch
+			class $mol_fetch_lost extends fetched {
+				static override text( input: RequestInfo, init?: RequestInit ) {
+					const uri = String( input )
+					if( uri.startsWith( dead ) ) return $mol_fail( new Error( 'Failed to fetch' ) )
+					return super.text( input, init )
+				}
+			}
+			$.$mol_fetch = $mol_fetch_lost
+
+			stage.app.links( dead )
+			stage.scene.hello()
+			stage.redraw()
+
+			$mol_assert_equal( stage.pane.text_enabled(), false )
+
+			pressed( $, stage, 'KeyT', { key: 't' } )
+			$mol_assert_equal( stage.pane.tool_text(), false )
+
+			stage.tap( stage.client([ 300, 200 ]) )
+			$mol_assert_equal( stage.pane.text_spot(), null )
+			$mol_assert_like( stage.app.node().part_names(), [] )
+			$mol_assert_ok( stage.app.status().includes( 'Не загрузилось дерево пака деталей' ) )
+
+		},
+
 		'a property override comes back to what the part offers'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 			const node = stage.app.node()

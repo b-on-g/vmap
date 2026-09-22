@@ -1766,6 +1766,46 @@ namespace $.$$ {
 			return `Группа раскладывает содержимое, поэтому детей выстроило ${ lined }. ${ keys } вернёт как было`
 		}
 
+		text_class() {
+			return '$' + 'mol_paragraph'
+		}
+
+		override text_enabled() {
+			if( !this.editable() ) return false
+
+			const props = this.class_props( this.text_class() )
+			return Boolean( props?.has( 'title' ) )
+		}
+
+		@ $mol_action
+		override text_draw( next?: $bog_vmap_app_text_born | null ) {
+
+			if( !next || !next.text || !this.text_enabled() ) return null
+
+			const draft = this.doc_draft()
+			const node = draft.node( this.doc_root() )
+			const tree = node.tree()
+
+			const name = this.name_free( 'Text' )
+
+			node.part_add( name, this.text_class() )
+			node.over_set( name, 'title', tree.struct( 'title', [ tree.data( next.text ) ] ) )
+
+			if( next.width ) node.over_set( name, 'style', tree.struct( 'style', [
+				tree.struct( '*', [
+					tree.struct( 'width', [ tree.data( Math.round( next.width ) + 'px' ) ] ),
+				] ),
+			] ) )
+
+			node.sub_add( name )
+
+			this.node().tree( node.tree() )
+			this.spots({ ... this.spots(), [ name ]: { x: Math.round( next.x ), y: Math.round( next.y ) } })
+			this.picked([ name ])
+
+			return name
+		}
+
 		class_props( klass: string ) {
 			if( !klass ) return null
 

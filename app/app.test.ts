@@ -1455,11 +1455,12 @@ namespace $ {
 
 			const instruments = app.instruments()
 
-			$mol_assert_equal( instruments.length, 4 )
+			$mol_assert_equal( instruments.length, 5 )
 			$mol_assert_equal( instruments[ 0 ], app.Tool_select() )
 			$mol_assert_equal( instruments[ 1 ], app.Tool_board() )
-			$mol_assert_equal( instruments[ 2 ], app.Tool_hand() )
-			$mol_assert_equal( instruments[ 3 ], app.Delete() )
+			$mol_assert_equal( instruments[ 2 ], app.Tool_text() )
+			$mol_assert_equal( instruments[ 3 ], app.Tool_hand() )
+			$mol_assert_equal( instruments[ 4 ], app.Delete() )
 
 			const tools = app.tools()
 

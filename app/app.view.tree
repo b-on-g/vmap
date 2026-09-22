@@ -56,6 +56,11 @@ $bog_vmap_app $mol_page
 					hint \Артборд: клик по холсту ставит страницу 1280×720, тяга — страницу этого размера. Клавиша F
 					checked? <=> tool_board?
 					enabled <= editable true
+				<= Tool_text $mol_check_icon
+					Icon <= Tool_text_icon $mol_icon_format_text
+					hint \Текст: клик ставит надпись по содержимому, тяга — надпись заданной ширины. Клавиша T
+					checked? <=> tool_text?
+					enabled <= text_enabled false
 				<= Tool_hand $mol_check_icon
 					Icon <= Tool_hand_icon $mol_icon_hand_back_right_outline
 					hint \Рука: тяга двигает холст, пробел с тягой — то же на время. Клавиша H
@@ -187,12 +192,15 @@ $bog_vmap_app $mol_page
 				reset_enabled <= reset_enabled false
 				node_clone? <=> node_clone? null
 				board_draw? <=> board_draw? null
+				text_draw? <=> text_draw? null
+				text_enabled <= text_enabled false
 				node_resize? <=> node_resize? null
 				node_text* <= node_text* \
 				node_text_kind* <= node_text_kind* \
 				node_text_write? <=> node_text_write? null
 				tool_select? => tool_select?
 				tool_board? => tool_board?
+				tool_text? => tool_text?
 				tool_hand? => tool_hand?
 				node_show? => node_show?
 		foot <= canvas_foot /$mol_view

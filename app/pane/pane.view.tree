@@ -9,9 +9,16 @@ $bog_vmap_app_pane $mol_view
 	hand false
 	tool_select? false
 	tool_board? false
+	tool_text? false
 	tool_hand? false
 	editable true
 	board_draw? null
+	text_draw? null
+	text_enabled false
+	text_new? \
+	text_new_style *
+	text_new_submit? null
+	text_new_key? null
 	node_resize? null
 	node_text* \
 	node_text_kind* \
@@ -154,6 +161,15 @@ $bog_vmap_app_pane $mol_view
 		style <= sizing_style *
 		sub /
 			<= sizing_note \
+	Text_new $mol_string
+		style <= text_new_style *
+		hint \текст
+		value? <=> text_new? \
+		submit? <=> text_new_submit? null
+		event *
+			^
+			blur? <=> text_new_submit? null
+			keydown? <=> text_new_key? null
 	Text_field* $mol_string
 		style <= text_style* *
 		hint \текст узла

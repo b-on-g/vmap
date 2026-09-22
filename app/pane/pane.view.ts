@@ -57,7 +57,14 @@ namespace $.$$ {
 		readonly origin: string
 	}
 
-	export type $bog_vmap_app_pane_tool = 'select' | 'board' | 'hand'
+	export type $bog_vmap_app_pane_tool = 'select' | 'board' | 'text' | 'hand'
+
+	export type $bog_vmap_app_text_born = {
+		readonly x: number
+		readonly y: number
+		readonly width: number
+		readonly text: string
+	}
 
 	export type $bog_vmap_app_pane_camera_kept = {
 		readonly x: number
@@ -378,6 +385,7 @@ namespace $.$$ {
 				... this.slot() ? [ this.Insert() ] : [],
 				... this.sizing() ? [ this.Sizing() ] : [],
 				... this.text_edited() ? [ this.Text_field( this.text_edited()! ) ] : [],
+				... this.text_spot() ? [ this.Text_new() ] : [],
 				... this.say() ? [ this.Say() ] : [],
 				... this.band() ? [ this.Band() ] : [],
 				... this.draft() ? [ this.Draft() ] : [],
@@ -828,7 +836,10 @@ namespace $.$$ {
 
 		@ $mol_action
 		tool_take( next: $bog_vmap_app_pane_tool ) {
-			if( next === 'board' && !this.editable() ) return
+			if( ( next === 'board' || next === 'text' ) && !this.editable() ) return
+			if( next === 'text' && !this.text_enabled() ) return
+
+			this.text_new_submit()
 			if( next !== 'select' ) this.leave()
 			this.draft( null )
 			this.tool( next )
@@ -844,13 +855,18 @@ namespace $.$$ {
 			return this.tool() === 'board'
 		}
 
+		override tool_text( next?: boolean ) {
+			if( next !== undefined ) this.tool_take( next ? 'text' : 'select' )
+			return this.tool() === 'text'
+		}
+
 		override tool_hand( next?: boolean ) {
 			if( next !== undefined ) this.tool_take( next ? 'hand' : 'select' )
 			return this.tool() === 'hand'
 		}
 
 		key_tools(): { readonly [ code: string ]: $bog_vmap_app_pane_tool | undefined } {
-			return { KeyV: 'select', KeyF: 'board', KeyH: 'hand' }
+			return { KeyV: 'select', KeyF: 'board', KeyT: 'text', KeyH: 'hand' }
 		}
 
 		key_zooms(): { readonly [ code: string ]: number | undefined } {
@@ -1357,6 +1373,7 @@ namespace $.$$ {
 
 		escape() {
 			if( this.text_edited() ) return this.text_key( this.text_edited()!, { key: 'Escape', stopPropagation() {} } as KeyboardEvent )
+			if( this.text_spot() ) return void this.text_new_key({ key: 'Escape', stopPropagation() {} } as KeyboardEvent )
 			if( this.say() ) return this.say( '' )
 			if( this.sizing() ) this.sizing_cancel()
 			else if( this.drag() ) this.drag_cancel()
@@ -1682,7 +1699,7 @@ namespace $.$$ {
 
 			const editable = this.editable()
 
-			if( editable && this.tool() === 'board' ) return this.draft_press( point, event )
+			if( editable && ( this.tool() === 'board' || this.tool() === 'text' ) ) return this.draft_press( point, event )
 
 			const dot = editable ? $bog_vmap_app_wire_dot_at( this.wire_dots(), this.screen_point( event ) ) : null
 			if( dot ) return this.wire_press( dot, event )
@@ -1809,6 +1826,7 @@ namespace $.$$ {
 
 		draft_release( draft: $bog_vmap_app_pane_draft, event: PointerEvent ) {
 			const box = this.draft_box({ from: draft.from, to: this.world_point( event ) })
+			const tool = this.tool()
 
 			this.draft( null )
 			this.tool( 'select' )
@@ -1817,7 +1835,78 @@ namespace $.$$ {
 				this.Overlay().dom_node().releasePointerCapture( event.pointerId )
 			} catch {}
 
-			this.board_draw( box )
+			if( tool !== 'text' ) return void this.board_draw( box )
+
+			this.text_spot({ x: box.x, y: box.y, width: box.width })
+			this.text_new( '' )
+			this.Text_new().bring()
+		}
+
+		@ $mol_mem
+		text_spot( next?: { readonly x: number, readonly y: number, readonly width: number } | null ) {
+			return next ?? null
+		}
+
+		@ $mol_mem
+		override text_new( next?: string ) {
+			return next ?? ''
+		}
+
+		@ $mol_mem
+		override text_new_style(): { readonly [ prop: string ]: string } {
+
+			const spot = this.text_spot()
+			if( !spot ) return {}
+
+			const rect = this.$.$bog_vmap_app_pane_screen(
+				{ x: spot.x, y: spot.y, width: spot.width || this.text_new_width(), height: this.text_new_height() },
+				this.camera_zoom(),
+				this.camera_shift(),
+			)
+
+			return {
+				left: rect.left + 'px',
+				top: rect.top + 'px',
+				width: Math.max( rect.width, 40 ) + 'px',
+			}
+		}
+
+		text_new_width() {
+			return 160
+		}
+
+		text_new_height() {
+			return 24
+		}
+
+		@ $mol_action
+		override text_new_submit( event?: Event ) {
+
+			const spot = this.text_spot()
+			if( !spot ) return null
+
+			const text = this.text_new().trim()
+
+			this.text_spot( null )
+			this.text_new( '' )
+
+			if( text ) this.text_draw({ x: spot.x, y: spot.y, width: spot.width, text })
+
+			return null
+		}
+
+		@ $mol_action
+		override text_new_key( event?: KeyboardEvent ) {
+
+			if( event?.key !== 'Escape' ) return null
+			if( !this.text_spot() ) return null
+
+			event.stopPropagation()
+
+			this.text_spot( null )
+			this.text_new( '' )
+
+			return null
 		}
 
 		override board_draw( next?: $bog_vmap_bridge_rect | null ) {
