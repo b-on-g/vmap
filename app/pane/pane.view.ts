@@ -259,6 +259,12 @@ namespace $.$$ {
 			this.zoom_by( 1 / 1.25 )
 		}
 
+		@ $mol_action
+		override zoom_full() {
+			this.zoom_to( 1 )
+			return null
+		}
+
 		zoom_by( mult: number ) {
 			this.zoom_to( this.camera_zoom() * mult )
 		}
@@ -847,6 +853,56 @@ namespace $.$$ {
 			return { KeyV: 'select', KeyF: 'board', KeyH: 'hand' }
 		}
 
+		key_zooms(): { readonly [ code: string ]: number | undefined } {
+			return { Equal: 1.25, NumpadAdd: 1.25, Minus: 1 / 1.25, NumpadSubtract: 1 / 1.25 }
+		}
+
+		key_nudges(): { readonly [ code: string ]: readonly [ number, number ] | undefined } {
+			return {
+				ArrowLeft: [ -1, 0 ],
+				ArrowRight: [ 1, 0 ],
+				ArrowUp: [ 0, -1 ],
+				ArrowDown: [ 0, 1 ],
+			}
+		}
+
+		nudge_near() { return 1 }
+
+		nudge_far() { return 10 }
+
+		nudge_note( held: readonly string[] ) {
+			const rest = held.length > 1 ? ` и ещё ${ held.length - 1 }` : ''
+			return `Узел ${ held[ 0 ] }${ rest } ставит раскладка родителя:`
+				+ ' стрелки двигают только свободные детали.'
+		}
+
+		@ $mol_action
+		nudge( way: readonly [ number, number ], step: number ) {
+
+			const spots = { ... this.spots() } as { [ name: string ]: { readonly x: number, readonly y: number } }
+			const held = [] as string[]
+			let moved = 0
+
+			for( const name of this.picked() ) {
+
+				if( this.node_path( name ).length ) {
+					held.push( name )
+					continue
+				}
+
+				const spot = spots[ name ] ?? { x: 0, y: 0 }
+
+				spots[ name ] = { x: spot.x + way[ 0 ] * step, y: spot.y + way[ 1 ] * step }
+				moved += 1
+			}
+
+			if( moved ) this.spots( spots )
+
+			this.say( held.length ? this.nudge_note( held ) : '' )
+
+			return moved
+		}
+
 		override key_field( target: EventTarget | null ) {
 			const element = target as { readonly tagName?: string, readonly isContentEditable?: boolean } | null
 			if( element?.isContentEditable ) return true
@@ -941,6 +997,31 @@ namespace $.$$ {
 				if( stroke.code === 'Digit0' ) {
 					stroke.preventDefault()
 					this.zoom_to( 1 )
+					return true
+				}
+
+			}
+
+			if( stroke.code === 'Digit0' && command && !stroke.altKey && !stroke.shiftKey ) {
+				stroke.preventDefault()
+				this.zoom_to( 1 )
+				return true
+			}
+
+			if( !command && !stroke.altKey ) {
+
+				const mult = this.key_zooms()[ stroke.code ]
+				if( mult ) {
+					stroke.preventDefault()
+					this.zoom_by( mult )
+					return true
+				}
+
+				const way = this.key_nudges()[ stroke.code ]
+				if( way ) {
+					if( !this.editable() || !this.picked().length ) return false
+					stroke.preventDefault()
+					this.nudge( way, stroke.shiftKey ? this.nudge_far() : this.nudge_near() )
 					return true
 				}
 

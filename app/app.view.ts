@@ -33,6 +33,10 @@ namespace $.$$ {
 			this.Pane().camera_reset()
 		}
 
+		override zoom_full() {
+			return this.Pane().zoom_full()
+		}
+
 		@ $mol_action
 		override pack_default() {
 			this.links( this.links_parsed().lands.join( ', ' ) )
@@ -674,6 +678,7 @@ namespace $.$$ {
 				... this.export_rows(),
 				... this.root_title_note() ? [ this.Root_note() ] : [],
 				this.Status(),
+				this.Zoom_chip(),
 			] as readonly $mol_view[]
 		}
 

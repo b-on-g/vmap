@@ -59,6 +59,28 @@ namespace $ {
 
 		},
 
+		'the zoom number stands in the footer of the canvas and a click on it gives a hundred'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+			const pane = app.Pane() as $$.$bog_vmap_app_pane
+
+			$mol_assert_equal( app.Zoom_chip().title(), '100%' )
+			$mol_assert_equal( app.Zoom_reset().title(), 'Вписать всё' )
+
+			pane.camera_zoom( 2 )
+			pane.camera_shift( new $mol_vector_2d( 120, 60 ) )
+
+			$mol_assert_equal( app.Zoom_chip().title(), '200%' )
+			$mol_assert_ok( app.Canvas().foot().includes( app.Zoom_chip() ) )
+
+			app.Zoom_chip().click( new $.$mol_dom_context.MouseEvent( 'click' ) )
+
+			$mol_assert_equal( pane.camera_zoom(), 1 )
+			$mol_assert_equal( app.Zoom_chip().title(), '100%' )
+			$mol_assert_like( [ ... pane.camera_shift() ], [ 60, 30 ] )
+
+		},
+
 		'panning does not touch the placement'( $ ) {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
@@ -1461,7 +1483,7 @@ namespace $ {
 			$mol_assert_equal( canvas[ 1 ], app.Canvas().Foot() )
 
 			$mol_assert_equal( app.Canvas().body()[ 0 ], app.Pane() )
-			$mol_assert_equal( app.Canvas().foot(), [ app.Status() ] )
+			$mol_assert_equal( app.Canvas().foot(), [ app.Status(), app.Zoom_chip() ] )
 			$mol_assert_equal( app.floats().length, 0 )
 
 		},
