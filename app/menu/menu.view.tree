@@ -11,6 +11,8 @@ $bog_vmap_app_menu $mol_pop
 	group? null
 	ungroup? null
 	ungroup_enabled true
+	reset? null
+	reset_enabled true
 	parent? null
 	parent_enabled true
 	enter? null
@@ -51,6 +53,12 @@ $bog_vmap_app_menu $mol_pop
 		keys <= ungroup_keys \
 		enabled <= ungroup_enabled
 		act? <=> ungroup?
+		done? <=> close?
+	Reset $bog_vmap_app_menu_item
+		title \Вернуть как в детали
+		hint \Убрать переопределения узла: значения вернутся к тем, что предлагает деталь
+		enabled <= reset_enabled
+		act? <=> reset?
 		done? <=> close?
 	Wrap $bog_vmap_app_menu_item
 		title \Обернуть в артборд

@@ -33,8 +33,9 @@ $bog_vmap_app_inspect_row $mol_form_field
 		hint \Изменяемое
 		checked? <=> changeable?
 		enabled <= editable
+	drop_hint \Убрать свойство из документа
 	Drop $mol_button_minor
 		title \✕
-		hint \Убрать свойство из документа
+		hint <= drop_hint
 		click? <=> drop?
 		enabled <= editable

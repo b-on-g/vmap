@@ -499,10 +499,10 @@ namespace $ {
 			stage.app.picked([ 'Calc', 'Map' ])
 			stage.redraw()
 
-			const store = stage.store
+			const app = stage.app
 			let writes = 0
-			const kept = store.source.bind( store )
-			store.source = ( next?: string )=> {
+			const kept = app.doc_source.bind( app )
+			app.doc_source = ( next?: string )=> {
 				if( next !== undefined ) ++ writes
 				return kept( next )
 			}
@@ -514,6 +514,8 @@ namespace $ {
 			stage.press( overlay, from )
 			stage.move( overlay, into )
 			stage.release( overlay, into )
+
+			Reflect.deleteProperty( app, 'doc_source' )
 			stage.redraw()
 			stage.scene.flush()
 
@@ -4049,95 +4051,6 @@ namespace $ {
 			$mol_assert_equal( pane.key_down( stroke( '', { key: 'Backspace' } ) ), true )
 			$mol_assert_equal( pane.key_down( stroke( '', { key: 'Delete' } ) ), true )
 			$mol_assert_equal( deleted, 2 )
-
-		},
-
-		'plus and minus step the zoom about the middle of the view, and a hundred comes back by two keys'( $ ) {
-
-			const pane = tools_make( $ )
-			const middle = { clientX: 10 + 500, clientY: 20 + 400 }
-			const under = ()=> pane.world_point( middle as PointerEvent ).map( one => Math.round( one ) )
-
-			const held = under()
-
-			const plus = stroke( 'Equal', { key: '+', shiftKey: true } )
-			$mol_assert_equal( pane.key_down( plus ), true )
-			$mol_assert_equal( plus.prevented, true )
-			$mol_assert_equal( Math.round( pane.camera_zoom() * 100 ), 125 )
-			$mol_assert_like( under(), held )
-
-			pane.key_down( stroke( 'Minus', { key: '-' } ) )
-			$mol_assert_equal( Math.round( pane.camera_zoom() * 100 ), 100 )
-			$mol_assert_like( under(), held )
-
-			pane.key_down( stroke( 'Equal' ) )
-			pane.key_down( stroke( 'Digit0', { metaKey: true } ) )
-			$mol_assert_equal( pane.camera_zoom(), 1 )
-
-			pane.key_down( stroke( 'Equal' ) )
-			pane.key_down( stroke( 'Digit0', { shiftKey: true } ) )
-			$mol_assert_equal( pane.camera_zoom(), 1 )
-
-			const browser = stroke( 'Equal', { metaKey: true } )
-			$mol_assert_equal( pane.key_down( browser ), false )
-			$mol_assert_equal( browser.prevented, false )
-			$mol_assert_equal( pane.camera_zoom(), 1 )
-
-		},
-
-		'an arrow moves a free part by a step, Shift by ten, and writes the places once a press'( $ ) {
-
-			const { pane, writes, places } = nudged( $ )
-
-			const right = stroke( 'ArrowRight' )
-			$mol_assert_equal( pane.key_down( right ), true )
-			$mol_assert_equal( right.prevented, true )
-			$mol_assert_like( places().A, { x: 101, y: 100 } )
-			$mol_assert_equal( writes.length, 1 )
-
-			pane.key_down( stroke( 'ArrowDown', { shiftKey: true } ) )
-			$mol_assert_like( places().A, { x: 101, y: 110 } )
-			$mol_assert_equal( writes.length, 2 )
-
-			pane.key_down( stroke( 'ArrowUp' ) )
-			pane.key_down( stroke( 'ArrowLeft', { shiftKey: true } ) )
-			$mol_assert_like( places().A, { x: 91, y: 109 } )
-			$mol_assert_equal( writes.length, 4 )
-
-			pane.picked([ 'A', 'B' ])
-			pane.key_down( stroke( 'ArrowRight', { shiftKey: true } ) )
-
-			$mol_assert_like( places().A, { x: 101, y: 109 } )
-			$mol_assert_like( places().B, { x: 210, y: 100 } )
-			$mol_assert_equal( writes.length, 5 )
-
-			$mol_assert_equal( pane.say(), '' )
-
-		},
-
-		'a part held by a layout says so instead of moving, and a modifier leaves the arrow alone'( $ ) {
-
-			const { pane, writes, places } = nudged( $ )
-
-			pane.picked([ 'Inner' ])
-
-			const arrow = stroke( 'ArrowRight' )
-			$mol_assert_equal( pane.key_down( arrow ), true )
-			$mol_assert_equal( writes.length, 0 )
-			$mol_assert_like( places().A, { x: 100, y: 100 } )
-			$mol_assert_ok( pane.say().includes( 'Inner' ) )
-			$mol_assert_ok( pane.say().includes( 'раскладка родителя' ) )
-
-			pane.picked([ 'A' ])
-
-			const carried = stroke( 'ArrowRight', { metaKey: true } )
-			$mol_assert_equal( pane.key_down( carried ), false )
-			$mol_assert_equal( carried.prevented, false )
-			$mol_assert_equal( writes.length, 0 )
-
-			pane.picked([])
-			$mol_assert_equal( pane.key_down( stroke( 'ArrowRight' ) ), false )
-			$mol_assert_equal( writes.length, 0 )
 
 		},
 

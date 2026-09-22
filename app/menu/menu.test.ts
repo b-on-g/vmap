@@ -93,7 +93,7 @@ namespace $ {
 
 		'on a node the menu offers copy, delete, wrap, parent and inside, on bare canvas a board and the whole view'( $ ) {
 			const node = menu_make( $, { on_node: ()=> true } )
-			$mol_assert_like( node.titles(), [ 'Копировать', 'Удалить', 'Сгруппировать', 'Разгруппировать', 'Обернуть в артборд', 'Выделить родителя', 'Внутрь' ] )
+			$mol_assert_like( node.titles(), [ 'Копировать', 'Удалить', 'Сгруппировать', 'Разгруппировать', 'Обернуть в артборд', 'Вернуть как в детали', 'Выделить родителя', 'Внутрь' ] )
 
 			const canvas = menu_make( $, { on_node: ()=> false } )
 			$mol_assert_like( canvas.titles(), [ 'Артборд здесь', 'Показать всё' ] )
@@ -109,14 +109,14 @@ namespace $ {
 
 		'each item carries its key after the title, the way the platform writes it'( $ ) {
 			const mac = menu_make( $, { on_node: ()=> true, apple: ()=> true } )
-			$mol_assert_like( mac.keys(), [ '⌘D', '⌫', '⌘G', '⇧⌘G', '⌥⌘G', '', '' ] )
+			$mol_assert_like( mac.keys(), [ '⌘D', '⌫', '⌘G', '⇧⌘G', '⌥⌘G', '', '', '' ] )
 			$mol_assert_like(
 				[ ... mac.item( 'copy' ).children ].map( el => el.hasAttribute( 'bog_vmap_app_menu_item_keys' ) ),
 				[ false, true ],
 			)
 
 			const other = menu_make( $, { on_node: ()=> true, apple: ()=> false } )
-			$mol_assert_like( other.keys(), [ 'Ctrl+D', 'Del', 'Ctrl+G', 'Ctrl+Shift+G', 'Ctrl+Alt+G', '', '' ] )
+			$mol_assert_like( other.keys(), [ 'Ctrl+D', 'Del', 'Ctrl+G', 'Ctrl+Shift+G', 'Ctrl+Alt+G', '', '', '' ] )
 
 			$mol_assert_like( menu_make( $, { apple: ()=> true } ).keys(), [ '', '⇧1' ] )
 			$mol_assert_like( menu_make( $, { apple: ()=> false } ).keys(), [ '', 'Shift+1' ] )
@@ -172,7 +172,7 @@ namespace $ {
 			$mol_assert_equal( stage.point( stage.item( 'enter' ) ).defaultPrevented, true )
 
 			$mol_assert_equal( stage.menu.showed(), true )
-			$mol_assert_equal( stage.items().length, 7 )
+			$mol_assert_equal( stage.items().length, 8 )
 		},
 
 		'a press or a wheel outside the menu closes it'( $ ) {

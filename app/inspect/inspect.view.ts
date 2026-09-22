@@ -292,8 +292,16 @@ namespace $.$$ {
 		}
 
 		row_drop( name: string ) {
+			if( this.resettable( this.row_sign( name ) ) ) return this.reset( this.row_sign( name ), null )
+
 			if( this.row_held( name ) ) this.cell( this.row_sign( name ), null )
 			else this.Node().prop_drop( name )
+		}
+
+		override row_drop_hint( name: string ) {
+			return this.resettable( this.row_sign( name ) )
+				? 'Вернуть как в детали: значение вернётся к тому, что предлагает деталь'
+				: 'Убрать свойство из документа'
 		}
 
 		style_dict() {

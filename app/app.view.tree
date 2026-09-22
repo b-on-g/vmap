@@ -81,15 +81,15 @@ $bog_vmap_app $mol_page
 	tools /
 		<= Zoom_out $mol_button_minor
 			title \−
-			hint \Отдалить. Клавиша минус
+			hint \Отдалить
 			click? <=> zoom_out? null
 		<= Zoom_reset $mol_button_minor
-			title \Вписать всё
-			hint \Показать всё. Shift+1 — всё, Shift+2 — выделенное
+			title <= zoom_title \
+			hint \Показать всё. Shift+1 — всё, Shift+2 — выделенное, Shift+0 — 100 %
 			click? <=> camera_reset? null
 		<= Zoom_in $mol_button_minor
 			title \+
-			hint \Приблизить. Клавиша плюс
+			hint \Приблизить
 			click? <=> zoom_in? null
 		<= History_check $mol_check_icon
 			Icon <= History_icon $mol_icon_history
@@ -183,6 +183,8 @@ $bog_vmap_app $mol_page
 				node_group? <=> node_group? null
 				node_ungroup? <=> node_ungroup? null
 				ungroup_enabled <= ungroup_enabled false
+				node_reset_all? <=> node_reset_all? null
+				reset_enabled <= reset_enabled false
 				node_clone? <=> node_clone? null
 				board_draw? <=> board_draw? null
 				node_resize? <=> node_resize? null
@@ -226,6 +228,8 @@ $bog_vmap_app $mol_page
 		title_note <= node_title_note \
 		renamable <= node_renamable true
 		cell*? <=> node_cell*? null
+		resettable* <= node_resettable* false
+		reset*? <=> node_reset*? null
 		editable <= node_editable true
 	Idle $mol_page
 		title \Свойства
@@ -256,10 +260,6 @@ $bog_vmap_app $mol_page
 		lands <= lands /string
 	Status $mol_status
 		status <= status \
-	Zoom_chip $mol_button_minor
-		title <= zoom_title \
-		hint \Масштаб холста. Клик — сто процентов. Shift+0 и Cmd+0 — сто процентов, плюс и минус — шаг, Shift+1 — вписать всё, Shift+2 — вписать выделенное
-		click? <=> zoom_full? null
 	Alarm $mol_status
 		status <= error \
 	Inside_note $mol_paragraph

@@ -552,15 +552,10 @@ namespace $ {
 			const canvas = stage.pane.dom_node()
 			const tools = stage.root.querySelector( '[bog_vmap_app_tools]' )!
 
-			for( const title of [ '−', 'Вписать всё', '+' ] ) {
+			for( const title of [ '−', '100%', '+' ] ) {
 				$mol_assert_equal( tools.contains( stage.button( title ) ), true )
 				$mol_assert_equal( canvas.contains( stage.button( title ) ), false )
 			}
-
-			const foot = stage.root.querySelector( '[bog_vmap_app_canvas_foot]' )!
-
-			$mol_assert_equal( foot.contains( stage.button( '100%' ) ), true )
-			$mol_assert_equal( tools.contains( stage.button( '100%' ) ), false )
 			$mol_assert_equal( canvas.querySelector( '[role=button]' ), null )
 
 			const text = stage.text()
@@ -1039,8 +1034,6 @@ namespace $ {
 
 			stage.click( stage.button( '125%' ) )
 			$mol_assert_ok( stage.text().includes( '100%' ) )
-
-			stage.click( stage.button( 'Вписать всё' ) )
 
 			const size = $bog_vmap_app_flow_size
 			const shift = stage.pane.camera_shift()
@@ -1521,13 +1514,12 @@ namespace $ {
 			const foot = stage.root.querySelector( '[bog_vmap_app_canvas_foot]' )!
 
 			$mol_assert_ok( app.Canvas().body().includes( app.Pane() ) )
-			$mol_assert_equal( foot.childElementCount, 2 )
+			$mol_assert_equal( foot.childElementCount, 1 )
 			$mol_assert_ok( foot.contains( app.Status().dom_node() ) )
-			$mol_assert_ok( foot.contains( app.Zoom_chip().dom_node() ) )
 
 		},
 
-		'the percent in the footer gives a hundred back, and the trio in the head steps and fits'( $ ) {
+		'the percent in the canvas tools zooms and gives the view back'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 
 			stage.pane.camera_shift( new $mol_vector_2d( 700, 700 ) )
@@ -1546,13 +1538,8 @@ namespace $ {
 			stage.click( stage.button( '125%' ) )
 
 			$mol_assert_equal( stage.pane.camera_zoom(), 1 )
-			$mol_assert_ok( stage.button( '100%' ) )
-
-			stage.click( stage.button( '+' ) )
-			stage.click( stage.button( 'Вписать всё' ) )
-
-			$mol_assert_equal( stage.pane.camera_zoom(), 1 )
 			$mol_assert_like( [ ... stage.pane.camera_shift() ], [ 0, 0 ] )
+			$mol_assert_ok( stage.button( '100%' ) )
 
 		},
 
@@ -2198,7 +2185,7 @@ namespace $ {
 			const event = context( $, stage, at )
 
 			$mol_assert_equal( event.defaultPrevented, true )
-			$mol_assert_like( titles( stage ), [ 'Копировать', 'Удалить', 'Сгруппировать', 'Разгруппировать', 'Обернуть в артборд', 'Выделить родителя', 'Внутрь' ] )
+			$mol_assert_like( titles( stage ), [ 'Копировать', 'Удалить', 'Сгруппировать', 'Разгруппировать', 'Обернуть в артборд', 'Вернуть как в детали', 'Выделить родителя', 'Внутрь' ] )
 
 			const style = ( stage.pane.menu_view().dom_node() as HTMLElement ).style
 			$mol_assert_equal( style.left, ( at[0] - $bog_vmap_app_flow_rect.left ) + 'px' )
@@ -2499,7 +2486,6 @@ namespace $ {
 
 		async 'Cmd+G writes the document once and one undo puts everything back'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
-			const store = stage.store
 
 			stage.drop( calc, stage.client([ 200, 150 ]) )
 			stage.drop( map, stage.client([ 400, 150 ]) )
@@ -2509,15 +2495,18 @@ namespace $ {
 			const before = stage.app.doc_source()
 			const spots = stage.app.spots()
 
+			const app = stage.app
 			let writes = 0
-			const kept = store.source.bind( store )
-			store.source = ( next?: string )=> {
+			const kept = app.doc_source.bind( app )
+			app.doc_source = ( next?: string )=> {
 				if( next !== undefined ) ++ writes
 				return kept( next )
 			}
 
 			stage.app.picked([ 'Calc', 'Map' ])
 			pressed( $, stage, 'KeyG', { key: 'g', metaKey: true } )
+
+			Reflect.deleteProperty( app, 'doc_source' )
 
 			$mol_assert_equal( writes, 1 )
 			$mol_assert_ok( stage.app.doc_source().includes( 'Group $mol_view' ) )
@@ -2527,6 +2516,183 @@ namespace $ {
 
 			$mol_assert_equal( stage.app.doc_source(), before )
 			$mol_assert_like( stage.app.spots(), spots )
+
+		},
+
+		'a property override comes back to what the part offers'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const node = stage.app.node()
+
+			stage.drop( map, stage.client([ 200, 150 ]) )
+
+			const tree = node.tree()
+			node.over_set( 'Map', 'title', tree.struct( 'title', [ tree.data( 'Моя карта' ) ] ) )
+			stage.redraw()
+
+			node.over_set( 'Map', 'wat', tree.struct( 'wat', [ tree.data( 'своё' ) ] ) )
+			stage.redraw()
+
+			$mol_assert_ok( stage.app.doc_source().includes( 'title \\Моя карта' ) )
+			$mol_assert_equal( stage.app.selected(), 'Map' )
+			$mol_assert_equal( stage.app.node_resettable( 'title' ), true )
+			$mol_assert_equal( stage.app.node_resettable( 'wat' ), false )
+
+			stage.app.node_reset( 'title', null )
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.doc_source().includes( 'Моя карта' ), false )
+			$mol_assert_ok( stage.app.doc_source().includes( 'wat \\своё' ) )
+			$mol_assert_equal( stage.app.node_resettable( 'title' ), false )
+
+		},
+
+		'an inner layer reset takes its node away, and a foreign reference keeps it'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const node = stage.app.node()
+
+			stage.drop( map, stage.client([ 200, 150 ]) )
+			stage.drop( calc, stage.client([ 500, 150 ]) )
+
+			const klass = node.prop_decl( 'Map' )!.kids[ 0 ]!.type
+			const decl = stage.app.Lib().props_map( klass ).get( 'sub' )!
+			$mol_assert_ok( decl )
+
+			const layer = node.inner_bind( 'Map', 'sub', decl )
+			stage.redraw()
+
+			$mol_assert_equal( layer, 'Map_sub' )
+			$mol_assert_like( node.inner_refs( 'Map' ), [ 'Map_sub' ] )
+
+			stage.app.selected( 'Map' )
+			stage.app.node_reset( 'sub', null )
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.node().prop_names().includes( 'Map_sub' ), false )
+			$mol_assert_like( stage.app.node().inner_refs( 'Map' ), [] )
+
+			const again = stage.app.node().inner_bind( 'Map', 'sub', decl )
+			$mol_assert_equal( again, 'Map_sub' )
+
+			const tree = stage.app.node().tree()
+			stage.app.node().over_set( 'Calc', 'title', tree.struct( 'title', [ tree.struct( '<=', [ tree.struct( 'Map_sub' ) ] ) ] ) )
+			stage.redraw()
+
+			stage.app.selected( 'Map' )
+			stage.app.node_reset( 'sub', null )
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.node().prop_names().includes( 'Map_sub' ), true )
+			$mol_assert_like( stage.app.node().inner_refs( 'Map' ), [] )
+
+		},
+
+		'a full reset keeps the wires and the props the part knows nothing about, and says so'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const node = stage.app.node()
+			const overlay = stage.overlay()
+
+			stage.drop( calc, stage.client([ 100, 100 ]) )
+			stage.drop( map, stage.client([ 400, 100 ]) )
+			stage.tap( stage.part_center( 'Calc' ) )
+
+			stage.press( overlay, stage.port_dot( 'Calc', 'result', 'out' ) )
+			stage.move( overlay, stage.port_dot( 'Map', 'zoom', 'in' ) )
+			stage.release( overlay, stage.port_dot( 'Map', 'zoom', 'in' ) )
+			stage.redraw()
+
+			const tree = node.tree()
+			node.over_set( 'Map', 'title', tree.struct( 'title', [ tree.data( 'Моя карта' ) ] ) )
+			node.over_set( 'Map', 'wat', tree.struct( 'wat', [ tree.data( 'своё' ) ] ) )
+			stage.redraw()
+
+			stage.app.picked([ 'Map' ])
+			$mol_assert_equal( stage.app.reset_enabled(), true )
+
+			stage.app.node_reset_all( null )
+			stage.redraw()
+
+			const source = stage.app.doc_source()
+
+			$mol_assert_equal( source.includes( 'Моя карта' ), false )
+			$mol_assert_ok( source.includes( 'wat \\своё' ) )
+			$mol_assert_ok( source.includes( 'zoom <= calc_result' ) )
+			$mol_assert_equal( stage.app.node().links().length, 1 )
+			$mol_assert_ok( stage.app.status().includes( 'Провода и свои свойства остались' ) )
+			$mol_assert_ok( stage.canvas_text().includes( 'Провода и свои свойства остались' ) )
+
+		},
+
+		async 'a full reset is one write and one undo brings the overrides back'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const node = stage.app.node()
+
+			stage.drop( map, stage.client([ 200, 150 ]) )
+
+			stage.app.node_text_write({ name: 'Map', text: 'Моя карта' })
+			stage.drop( calc, stage.client([ 500, 150 ]) )
+			stage.redraw()
+
+			await stepped( stage )
+			const before = stage.app.doc_source()
+
+			const app = stage.app
+			let writes = 0
+			const kept = app.doc_source.bind( app )
+			app.doc_source = ( next?: string )=> {
+				if( next !== undefined ) ++ writes
+				return kept( next )
+			}
+
+			stage.app.picked([ 'Map' ])
+			context( $, stage, stage.part_center( 'Map' ) )
+			chosen( stage, 'Вернуть как в детали' )
+
+			Reflect.deleteProperty( app, 'doc_source' )
+			stage.redraw()
+
+			$mol_assert_equal( writes, 1 )
+			$mol_assert_equal( stage.app.doc_source().includes( 'Моя карта' ), false )
+
+			await stepped( stage )
+			undone( stage )
+
+			$mol_assert_equal( stage.app.doc_source(), before )
+
+		},
+
+		'a dead pack leaves the reset off, and the canvas says why'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const node = stage.app.node()
+			const dead = 'http://lost.test/'
+
+			stage.drop( map, stage.client([ 200, 150 ]) )
+
+			const tree = node.tree()
+			node.over_set( 'Map', 'title', tree.struct( 'title', [ tree.data( 'Моя карта' ) ] ) )
+			stage.redraw()
+
+			stage.app.picked([ 'Map' ])
+			stage.app.selected( 'Map' )
+			$mol_assert_equal( stage.app.reset_enabled(), true )
+
+			const fetched = $.$mol_fetch
+			class $mol_fetch_lost extends fetched {
+				static override text( input: RequestInfo, init?: RequestInit ) {
+					const uri = String( input )
+					if( uri.startsWith( dead ) ) return $mol_fail( new Error( 'Failed to fetch' ) )
+					return super.text( input, init )
+				}
+			}
+			$.$mol_fetch = $mol_fetch_lost
+
+			stage.app.links( dead )
+			stage.scene.hello()
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.reset_enabled(), false )
+			$mol_assert_equal( stage.app.node_resettable( 'title' ), false )
+			$mol_assert_ok( stage.app.status().includes( 'Не загрузилось дерево пака деталей' ) )
+			$mol_assert_ok( stage.app.doc_source().includes( 'Моя карта' ) )
 
 		},
 
@@ -2611,7 +2777,7 @@ namespace $ {
 			stage.drop( calc, stage.client([ 200, 150 ]) )
 
 			context( $, stage, stage.part_center( 'Calc' ) )
-			$mol_assert_equal( items( stage ).length, 7 )
+			$mol_assert_equal( items( stage ).length, 8 )
 
 			const escape = pressed( $, stage, 'Escape' )
 			$mol_assert_equal( escape.defaultPrevented, true )

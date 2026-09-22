@@ -33,10 +33,6 @@ namespace $.$$ {
 			this.Pane().camera_reset()
 		}
 
-		override zoom_full() {
-			return this.Pane().zoom_full()
-		}
-
 		@ $mol_action
 		override pack_default() {
 			this.links( this.links_parsed().lands.join( ', ' ) )
@@ -678,7 +674,6 @@ namespace $.$$ {
 				... this.export_rows(),
 				... this.root_title_note() ? [ this.Root_note() ] : [],
 				this.Status(),
-				this.Zoom_chip(),
 			] as readonly $mol_view[]
 		}
 
@@ -1342,6 +1337,9 @@ namespace $.$$ {
 			const group = this.group_note()
 			if( group ) return group
 
+			const reset = this.reset_note()
+			if( reset ) return reset
+
 			if( this.Pane().warmed() ) return 'сцена на связи'
 			return this.Pane().pack_note() || 'ожидание сцены…'
 		}
@@ -1757,6 +1755,158 @@ namespace $.$$ {
 			const keys = ( this.Pane() as $bog_vmap_app_pane ).menu_view().apple() ? 'Cmd+Z' : 'Ctrl+Z'
 
 			return `Группа раскладывает содержимое, поэтому детей выстроило ${ lined }. ${ keys } вернёт как было`
+		}
+
+		class_props( klass: string ) {
+			if( !klass ) return null
+
+			try {
+				return this.Lib().props_map( klass )
+			} catch( error: unknown ) {
+				if( $mol_promise_like( error ) ) return null
+				$mol_fail_log( error )
+				return null
+			}
+		}
+
+		over_name( sign: string ) {
+			return sign.replace( /[?*]+$/, '' )
+		}
+
+		over_known( part: string, prop: string ) {
+			const props = this.class_props( this.node_class( part ) )
+			if( !props ) return false
+
+			return props.has( prop ) || props.has( prop + '?' ) || props.has( prop + '*' )
+		}
+
+		over_wired( part: string, prop: string ) {
+			return this.node().links().some( link =>
+				( link.to === part && link.to_prop === prop )
+				|| ( link.from === part && link.from_prop === prop )
+			)
+		}
+
+		over_names( part: string ) {
+			const klass = this.node().prop_decl( part )?.kids[ 0 ]
+			if( !klass || !$mol_view_tree2_class_match( klass ) ) return [] as readonly string[]
+
+			return klass.kids.map( over => this.$.$mol_view_tree2_prop_parts( over ).name )
+		}
+
+		over_resettable( part: string, prop: string ) {
+			if( !this.node_editable() ) return false
+			if( !prop || !part ) return false
+			if( this.over_wired( part, prop ) ) return false
+
+			return this.over_known( part, prop ) && this.over_names( part ).includes( prop )
+		}
+
+		override node_resettable( sign: string ) {
+			if( this.inner() ) return false
+			return this.over_resettable( this.selected() ?? '', this.over_name( sign ) )
+		}
+
+		reset_one( node: $bog_vmap_lang_node, part: string, prop: string ) {
+
+			const inner = node.inner_ref( part, prop )
+
+			node.over_set( part, prop, null )
+
+			if( inner ) this.tree_drop( node, inner )
+			else node.cell_tidy( node.cell_of( part, prop ) )
+
+		}
+
+		tree_drop( node: $bog_vmap_lang_node, name: string ) {
+
+			if( !name ) return false
+			if( node.ref_names().includes( name ) ) return false
+
+			const doomed = [ name ]
+
+			for( const dead of doomed ) for( const kid of node.sub_names( dead ) ?? [] ) {
+				if( kid && !doomed.includes( kid ) ) doomed.push( kid )
+			}
+
+			for( const dead of doomed ) node.links_drop( dead )
+
+			for( const dead of doomed ) {
+				node.cells_drop( dead )
+				node.sub_drop( dead )
+				node.prop_drop( dead )
+			}
+
+			return true
+		}
+
+		@ $mol_action
+		override node_reset( sign: string, next?: Event | null ) {
+
+			const part = this.selected() ?? ''
+			const prop = this.over_name( sign )
+			if( !this.over_resettable( part, prop ) ) return null
+
+			const draft = this.doc_draft()
+			const node = draft.node( this.doc_root() )
+
+			this.reset_one( node, part, prop )
+			this.node().tree( node.tree() )
+
+			return null
+		}
+
+		reset_names() {
+			return this.picked().filter( part => this.over_names( part ).some(
+				prop => this.over_resettable( part, prop )
+			) )
+		}
+
+		override reset_enabled() {
+			return this.reset_names().length > 0
+		}
+
+		@ $mol_action
+		override node_reset_all( next?: Event | null ) {
+
+			const parts = this.reset_names()
+			if( !parts.length ) return null
+
+			const draft = this.doc_draft()
+			const node = draft.node( this.doc_root() )
+
+			let done = 0
+			let kept = 0
+
+			for( const part of parts ) for( const prop of this.over_names( part ) ) {
+
+				if( !this.over_resettable( part, prop ) ) {
+					++ kept
+					continue
+				}
+
+				this.reset_one( node, part, prop )
+				++ done
+
+			}
+
+			this.node().tree( node.tree() )
+			this.reset_made({ source: this.doc_source(), done, kept })
+
+			return null
+		}
+
+		@ $mol_mem
+		reset_made( next?: { readonly source: string, readonly done: number, readonly kept: number } | null ) {
+			return next ?? null
+		}
+
+		reset_note() {
+			const made = this.reset_made()
+			if( !made || !made.kept ) return ''
+			if( this.doc_source() !== made.source ) return ''
+
+			return 'Провода и свои свойства остались, сброс вернул только то, что предлагает деталь'
 		}
 
 		group_names() {

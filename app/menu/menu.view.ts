@@ -5,7 +5,7 @@ namespace $.$$ {
 			const edits = this.editable()
 			return this.on_node()
 				? [
-					... edits ? [ this.Copy(), this.Remove(), this.Group(), this.Ungroup(), this.Wrap() ] : [],
+					... edits ? [ this.Copy(), this.Remove(), this.Group(), this.Ungroup(), this.Wrap(), this.Reset() ] : [],
 					this.Parent(),
 					this.Enter(),
 				]

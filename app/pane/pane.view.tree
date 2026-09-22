@@ -22,6 +22,8 @@ $bog_vmap_app_pane $mol_view
 	node_group? null
 	node_ungroup? null
 	ungroup_enabled false
+	node_reset_all? null
+	reset_enabled false
 	node_clone? null
 	leave? null
 	key_down* false
@@ -77,7 +79,6 @@ $bog_vmap_app_pane $mol_view
 	node_show? null
 	zoom_out? null
 	zoom_in? null
-	zoom_full? null
 	zoom_title \
 	node_error* \
 	scene_restart? null
@@ -185,6 +186,8 @@ $bog_vmap_app_pane $mol_view
 		group? <=> node_group?
 		ungroup? <=> node_ungroup?
 		ungroup_enabled <= ungroup_enabled
+		reset? <=> node_reset_all?
+		reset_enabled <= reset_enabled
 		parent? <=> menu_parent? null
 		parent_enabled <= menu_parent_enabled false
 		enter? <=> menu_enter? null
