@@ -440,6 +440,20 @@ namespace $ {
 
 		},
 
+		'a class that puts a port into its own body is told from one that only holds it'( $ ) {
+
+			const lib = $.$bog_vmap_lib_any.make({
+				$,
+				tree: ()=> $.$bog_vmap_lib_parse( inner_src ),
+			})
+
+			$mol_assert_equal( lib.shows( `${d}bog_vmap_lib_test_plot/title` ), false )
+			$mol_assert_equal( lib.shows( `${d}bog_vmap_lib_test_legend/Mark` ), true )
+			$mol_assert_equal( lib.shows( `${d}mol_view/title` ), false )
+			$mol_assert_equal( lib.shows( `${d}bog_vmap_lib_test_plot` ), false )
+
+		},
+
 		'a route that leaves the class it started from stays foreign all the way down'( $ ) {
 
 			const lib = $.$bog_vmap_lib_any.make({

@@ -13,6 +13,9 @@ $bog_vmap_app_pane $mol_view
 	editable true
 	board_draw? null
 	node_resize? null
+	node_text* \
+	node_text_kind* \
+	node_text_write? null
 	node_delete? null
 	node_copy? null
 	node_wrap? null
@@ -148,6 +151,19 @@ $bog_vmap_app_pane $mol_view
 		style <= sizing_style *
 		sub /
 			<= sizing_note \
+	Text_field* $mol_string
+		style <= text_style* *
+		hint \текст узла
+		value? <=> text_draft*? \
+		submit? <=> text_submit*? null
+		event *
+			^
+			blur? <=> text_submit*? null
+			keydown? <=> text_key*? null
+	Say $mol_view
+		style <= say_style *
+		sub /
+			<= say_note \
 	Band $mol_view
 		style <= band_style *
 	Draft $mol_view

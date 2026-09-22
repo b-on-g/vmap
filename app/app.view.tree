@@ -186,6 +186,9 @@ $bog_vmap_app $mol_page
 				node_clone? <=> node_clone? null
 				board_draw? <=> board_draw? null
 				node_resize? <=> node_resize? null
+				node_text* <= node_text* \
+				node_text_kind* <= node_text_kind* \
+				node_text_write? <=> node_text_write? null
 				tool_select? => tool_select?
 				tool_board? => tool_board?
 				tool_hand? => tool_hand?

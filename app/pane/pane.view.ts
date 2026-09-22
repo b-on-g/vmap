@@ -371,6 +371,8 @@ namespace $.$$ {
 				this.Marks(),
 				... this.slot() ? [ this.Insert() ] : [],
 				... this.sizing() ? [ this.Sizing() ] : [],
+				... this.text_edited() ? [ this.Text_field( this.text_edited()! ) ] : [],
+				... this.say() ? [ this.Say() ] : [],
 				... this.band() ? [ this.Band() ] : [],
 				... this.draft() ? [ this.Draft() ] : [],
 				... this.guide_views(),
@@ -1012,13 +1014,17 @@ namespace $.$$ {
 			if( picked.length !== 1 ) return ''
 
 			const name = picked[ 0 ]
-			if( !this.part_box( name ) ) return ''
+			const rect = this.part_box( name )
+			if( !rect ) return ''
+
+			const slack_x = Math.min( grab_slack, rect.width / 3 )
+			const slack_y = Math.min( grab_slack, rect.height / 3 )
 
 			for( const corner of corners ) {
 				const spot = this.handle_box( name, corner )
 				if( !spot ) continue
-				if( Math.abs( screen[0] - spot.x ) > grab_slack ) continue
-				if( Math.abs( screen[1] - spot.y ) > grab_slack ) continue
+				if( Math.abs( screen[0] - spot.x ) > slack_x ) continue
+				if( Math.abs( screen[1] - spot.y ) > slack_y ) continue
 				return corner
 			}
 
@@ -1156,7 +1162,119 @@ namespace $.$$ {
 
 		}
 
+		@ $mol_mem
+		text_edited( next?: string | null ) {
+			return next ?? null
+		}
+
+		text_editing( name: string ) {
+			return Boolean( name ) && this.text_edited() === name
+		}
+
+		text_seed( name: string ) {
+			return this.node_text( name ) || String( this.values()[ `${ name }.title` ] ?? '' )
+		}
+
+		@ $mol_mem_key
+		override text_draft( name: string, next?: string ) {
+			return next ?? this.text_seed( name )
+		}
+
+		@ $mol_mem_key
+		override text_style( name: string ): { readonly [ prop: string ]: string } {
+
+			const rect = this.part_box( name )
+			if( !rect ) return {}
+
+			return {
+				left: rect.left + 'px',
+				top: rect.top + 'px',
+				width: Math.max( rect.width, 40 ) + 'px',
+				height: Math.max( rect.height, 20 ) + 'px',
+			}
+		}
+
+		@ $mol_action
+		text_press( name: string ) {
+
+			const kind = this.node_text_kind( name )
+
+			if( kind === 'own' ) {
+
+				this.text_draft( name, this.text_seed( name ) )
+				this.text_edited( name )
+				this.say( '' )
+
+				const field = this.Text_field( name )
+				field.selection([ 0, this.text_draft( name ).length ])
+				field.bring()
+
+				return true
+			}
+
+			if( kind ) {
+				this.say(
+					`Текст узла ${ name } приходит от ${ kind } и правится у источника,`
+					+ ' поэтому с холста он не меняется.'
+				)
+				return true
+			}
+
+			return false
+		}
+
+		@ $mol_action
+		override text_submit( name: string, event?: Event ) {
+
+			if( !this.text_editing( name ) ) return null
+
+			const draft = this.text_draft( name )
+
+			this.text_edited( null )
+
+			if( draft !== this.text_seed( name ) ) this.node_text_write({ name, text: draft })
+
+			return null
+		}
+
+		@ $mol_action
+		override text_key( name: string, event?: KeyboardEvent ) {
+
+			if( event?.key !== 'Escape' ) return null
+
+			event.stopPropagation()
+
+			this.text_draft( name, this.text_seed( name ) )
+			this.text_edited( null )
+
+			return null
+		}
+
+		@ $mol_mem
+		say( next?: string ) {
+			return next ?? ''
+		}
+
+		override say_note() {
+			return this.say()
+		}
+
+		@ $mol_mem
+		override say_style(): { readonly [ prop: string ]: string } {
+
+			const name = this.primary()
+			const rect = name ? this.part_box( name ) : null
+			if( !rect ) return {}
+
+			return {
+				left: rect.left + 'px',
+				top: rect.top + rect.height + 'px',
+			}
+		}
+
 		escape() {
+			if( this.text_edited() ) return this.text_key( this.text_edited()!, { key: 'Escape', stopPropagation() {} } as KeyboardEvent )
+			if( this.say() ) return this.say( '' )
 			if( this.sizing() ) this.sizing_cancel()
 			else if( this.drag() ) this.drag_cancel()
 			else if( this.draft() ) this.draft( null )
@@ -1474,6 +1592,8 @@ namespace $.$$ {
 			if( this.carrying() ) return
 
 			if( this.hand() ) return this.press( null )
+
+			this.say( '' )
 
 			const point = this.world_point( event )
 
@@ -1794,6 +1914,8 @@ namespace $.$$ {
 			if( press.name && this.picked().length > 1 ) return this.picked([ press.name ])
 
 			if( !press.entering ) return
+
+			if( press.name && this.text_press( press.name ) ) return
 
 			this.enter( this.primary() )
 

@@ -169,6 +169,34 @@ namespace $ {
 		return value && $mol_view_tree2_class_match( value ) ? value.type : ''
 	}
 
+	export function $bog_vmap_lib_shown(
+		this: $,
+		props: Map< string, $mol_tree2 >,
+		prop: string,
+		ref: string,
+	) {
+
+		const decl = props.get( prop )
+		if( !decl ) return false
+
+		let found = false
+
+		const walk = ( tree: $mol_tree2 ): void => {
+
+			const kid = tree.kids[ 0 ]
+
+			if( kid && !kid.kids.length && ( tree.type === '<=' || tree.type === '<=>' ) ) {
+				if( this.$mol_view_tree2_prop_parts( kid ).name === ref ) found = true
+			}
+
+			for( const one of tree.kids ) walk( one )
+		}
+
+		walk( decl )
+
+		return found
+	}
+
 	export type $bog_vmap_lib_inner_step = {
 
 		/** Class whose declaration brought this layer in. */
@@ -328,6 +356,13 @@ namespace $ {
 		@ $mol_mem_key
 		inner_alien( key: string ) {
 			return this.inner_step( key )?.alien ?? false
+		}
+
+		@ $mol_mem_key
+		shows( key: string ) {
+			const cut = key.indexOf( '/' )
+			if( cut < 0 ) return false
+			return this.$.$bog_vmap_lib_shown( this.props_map( key.slice( 0, cut ) ), 'sub', key.slice( cut + 1 ) )
 		}
 
 	}

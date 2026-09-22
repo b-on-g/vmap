@@ -1689,6 +1689,179 @@ namespace $ {
 
 		},
 
+		'a second click on a text node opens the field and one edit writes once'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+			const pane = stage.pane
+
+			app.doc_source( [
+				`${d}flow_text ${d}mol_view`,
+				`	Title ${d}mol_paragraph title \\Привет`,
+				`	sub / <= Title`,
+				``,
+			].join( '\n' ) )
+
+			app.spots({ Title: { x: 0, y: 0 }, Cell: { x: 400, y: 0 } })
+			stage.redraw()
+			stage.scene.flush()
+			stage.redraw()
+
+			$mol_assert_equal( app.node_text( 'Title' ), 'Привет' )
+			$mol_assert_equal( app.node_text_kind( 'Title' ), 'own' )
+
+			const written = [] as { readonly name: string, readonly text: string }[]
+			const write = app.node_text_write.bind( app )
+
+			app.node_text_write = ( next?: { readonly name: string, readonly text: string } | null )=> {
+				if( next ) written.push( next )
+				return write( next )
+			}
+
+			stage.tap( stage.part_center( 'Title' ) )
+			$mol_assert_equal( pane.text_edited(), null )
+
+			stage.tap( stage.part_center( 'Title' ) )
+			$mol_assert_equal( pane.text_edited(), 'Title' )
+			$mol_assert_equal( pane.text_draft( 'Title' ), 'Привет' )
+
+			const before = app.doc_source()
+
+			pane.text_draft( 'Title', 'Здравствуй' )
+			$mol_assert_equal( app.doc_source(), before )
+			$mol_assert_like( written, [] )
+
+			pane.text_submit( 'Title' )
+
+			$mol_assert_equal( pane.text_edited(), null )
+			$mol_assert_ok( app.doc_source().includes( 'title \\Здравствуй' ) )
+			$mol_assert_equal( app.doc_source().includes( 'Привет' ), false )
+			$mol_assert_like( [ ... app.picked() ], [ 'Title' ] )
+			$mol_assert_like( written, [ { name: 'Title', text: 'Здравствуй' } ] )
+
+			stage.tap( stage.part_center( 'Title' ) )
+
+			$mol_assert_equal( pane.text_edited(), 'Title' )
+
+			pane.text_submit( 'Title' )
+
+			$mol_assert_like( written, [ { name: 'Title', text: 'Здравствуй' } ] )
+
+		},
+
+		'a low text node keeps its middle for the field, not for a resize handle'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+			const pane = stage.pane
+
+			app.doc_source( [
+				`${d}flow_text ${d}mol_view`,
+				`	Title ${d}mol_paragraph title \\Привет`,
+				`	sub / <= Title`,
+				``,
+			].join( '\n' ) )
+
+			app.spots({ Title: { x: 0, y: 0 } })
+			stage.redraw()
+			stage.scene.flush()
+			stage.redraw()
+
+			stage.tap( stage.part_center( 'Title' ) )
+
+			const tall = pane.part_box( 'Title' )!
+			$mol_assert_equal(
+				pane.handle_at([ tall.left + tall.width - 6, tall.top + tall.height - 6 ]),
+				'se',
+			)
+
+			pane.camera_zoom( 0.2 )
+			stage.redraw()
+
+			const box = pane.part_box( 'Title' )!
+			$mol_assert_ok( box.height < 16 )
+
+			$mol_assert_equal( pane.handle_at( pane.screen_point({
+				clientX: stage.part_center( 'Title' )[0],
+				clientY: stage.part_center( 'Title' )[1],
+			}) ), '' )
+
+			stage.tap( stage.part_center( 'Title' ) )
+
+			$mol_assert_equal( pane.text_edited(), 'Title' )
+
+		},
+
+		'Escape leaves the text as it was and writes nothing'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+			const pane = stage.pane
+
+			app.doc_source( [
+				`${d}flow_text ${d}mol_view`,
+				`	Title ${d}mol_paragraph title \\Привет`,
+				`	sub / <= Title`,
+				``,
+			].join( '\n' ) )
+
+			app.spots({ Title: { x: 0, y: 0 }, Cell: { x: 400, y: 0 } })
+			stage.redraw()
+			stage.scene.flush()
+			stage.redraw()
+
+			stage.tap( stage.part_center( 'Title' ) )
+			stage.tap( stage.part_center( 'Title' ) )
+
+			$mol_assert_equal( pane.text_edited(), 'Title' )
+
+			const before = app.doc_source()
+
+			pane.text_draft( 'Title', 'Здравствуй' )
+			pane.text_key( 'Title', { key: 'Escape', stopPropagation() {} } as KeyboardEvent )
+
+			$mol_assert_equal( pane.text_edited(), null )
+			$mol_assert_equal( app.doc_source(), before )
+			$mol_assert_equal( pane.text_draft( 'Title' ), 'Привет' )
+
+		},
+
+		'a text fed by a wire says where it comes from instead of opening a field'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+			const pane = stage.pane
+
+			app.doc_source( [
+				`${d}flow_text ${d}mol_view`,
+				`	Cell ${d}bog_vmap_part_cell`,
+				`	Title ${d}mol_paragraph title <= cell_result`,
+				`	cell_result = Cell result`,
+				`	sub /`,
+				`		<= Cell`,
+				`		<= Title`,
+				``,
+			].join( '\n' ) )
+
+			app.spots({ Title: { x: 0, y: 0 }, Cell: { x: 400, y: 0 } })
+			stage.redraw()
+			stage.scene.flush()
+			stage.redraw()
+
+			$mol_assert_equal( app.node_text_kind( 'Title' ), 'Cell' )
+
+			const before = app.doc_source()
+
+			stage.tap( stage.part_center( 'Title' ) )
+			stage.tap( stage.part_center( 'Title' ) )
+
+			$mol_assert_equal( pane.text_edited(), null )
+			$mol_assert_ok( pane.say().includes( 'Cell' ) )
+			$mol_assert_ok( pane.say().includes( 'правится у источника' ) )
+			$mol_assert_equal( app.doc_source(), before )
+
+		},
+
 		'free parts line up by their edges, and the bar shows up only for a pair'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )

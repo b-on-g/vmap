@@ -1460,6 +1460,57 @@ namespace $.$$ {
 			return name
 		}
 
+		@ $mol_mem_key
+		override node_text( name: string ) {
+
+			const value = this.node().over_tree( name, 'title' )?.kids[ 0 ] ?? null
+
+			return value && !value.type ? value.value : ''
+		}
+
+		@ $mol_mem_key
+		override node_text_kind( name: string ) {
+
+			const node = this.node()
+			const value = node.over_tree( name, 'title' )?.kids[ 0 ] ?? null
+
+			if( value && [ '<=', '<=>', '=' ].includes( value.type ) ) {
+
+				const ref = value.kids[ 0 ]
+				const named = ref ? this.$.$mol_view_tree2_prop_parts( ref ).name : ''
+
+				if( value.type === '=' ) return named
+
+				const wire = node.wires().find( one => one.name === named )
+
+				return wire ? wire.node : named
+			}
+
+			const klass = this.node_class( name )
+			if( !klass ) return ''
+
+			try {
+				return this.Lib().shows( `${ klass }/title` ) ? 'own' : ''
+			} catch( error ) {
+				if( !$mol_promise_like( error ) ) $mol_fail_log( error )
+				return ''
+			}
+
+		}
+
+		@ $mol_action
+		override node_text_write( next?: { readonly name: string, readonly text: string } | null ) {
+
+			if( !next || !this.editable() ) return null
+
+			const node = this.node()
+			const tree = node.tree()
+
+			node.over_set( next.name, 'title', tree.struct( 'title', [ tree.data( next.text ) ] ) )
+
+			return next
+		}
+
 		size_key( name: string ) {
 
 			const style = this.node().over_tree( name, 'style' )?.kids[ 0 ] ?? null
