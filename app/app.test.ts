@@ -71,7 +71,7 @@ namespace $ {
 			pane.camera_shift( new $mol_vector_2d( 120, 60 ) )
 
 			$mol_assert_equal( app.Zoom_chip().title(), '200%' )
-			$mol_assert_ok( app.Canvas().foot().includes( app.Zoom_chip() ) )
+			$mol_assert_ok( app.Foot_bar().sub().includes( app.Zoom_chip() ) )
 
 			app.Zoom_chip().click( new $.$mol_dom_context.MouseEvent( 'click' ) )
 
@@ -624,7 +624,7 @@ namespace $ {
 			$mol_assert_equal( app.export_rows().length, 2 )
 			$mol_assert_equal( app.export_text( 1 ), notes[ 1 ] )
 			$mol_assert_ok( app.notes().includes( app.Export_row( 1 ) ) )
-			$mol_assert_equal( app.Canvas().foot().includes( app.Export_row( 1 ) ), true )
+			$mol_assert_equal( app.Foot_bar().sub().includes( app.Export_row( 1 ) ), true )
 
 			$mol_assert_fail( ()=> app.export_blob(), Error )
 
@@ -1158,7 +1158,7 @@ namespace $ {
 			$mol_assert_equal( app.doc_source(), before )
 			$mol_assert_ok( app.root_title_note().includes( 'Страница' ) )
 			$mol_assert_ok( app.notes().includes( app.Root_note() ) )
-			$mol_assert_ok( app.Canvas().foot().includes( app.Root_note() ) )
+			$mol_assert_ok( app.Foot_bar().sub().includes( app.Root_note() ) )
 			$mol_assert_equal( app.Canvas().body().includes( app.Root_note() ), false )
 
 			app.root_draft( 'Страница' )
@@ -1483,7 +1483,8 @@ namespace $ {
 			$mol_assert_equal( canvas[ 1 ], app.Canvas().Foot() )
 
 			$mol_assert_equal( app.Canvas().body()[ 0 ], app.Pane() )
-			$mol_assert_equal( app.Canvas().foot(), [ app.Status(), app.Zoom_chip() ] )
+			$mol_assert_equal( app.Canvas().foot(), [ app.Foot_bar() ] )
+			$mol_assert_equal( app.Foot_bar().sub(), [ app.Status(), app.Zoom_chip() ] )
 			$mol_assert_equal( app.floats().length, 0 )
 
 		},

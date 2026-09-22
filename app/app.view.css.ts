@@ -55,8 +55,15 @@ namespace $.$$ {
 
 		},
 
+		Foot_bar: {
+			flex: { direction: 'row', wrap: 'wrap' },
+			align: { items: 'center' },
+			gap: $mol_gap.text,
+			width: '100%',
+		},
+
 		Zoom_chip: {
-			alignSelf: 'flex-end',
+			margin: { left: 'auto' },
 			font: { family: 'monospace' },
 		},
 

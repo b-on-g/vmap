@@ -4006,6 +4006,19 @@ namespace $ {
 
 	$mol_test({
 
+		'all the styles of the pane live in one sheet: a second define would wipe the first'( $ ) {
+
+			const sheet = $.$mol_dom_context.document.getElementById( '$mol_style_attach:$bog_vmap_app_pane' )
+			$mol_assert_ok( sheet )
+
+			const text = sheet!.innerHTML
+
+			for( const part of [ 'scene', 'overlay', 'band', 'draft', 'ghost', 'sizing', 'text_field', 'say' ] ) {
+				$mol_assert_equal( part + ' есть: ' + text.includes( `bog_vmap_app_pane_${ part }` ), part + ' есть: true' )
+			}
+
+		},
+
 		'the tool keys switch the tool, and Escape steps back to the arrow'( $ ) {
 			const pane = tools_make( $ )
 

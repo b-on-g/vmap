@@ -682,6 +682,10 @@ namespace $.$$ {
 			] as readonly $mol_view[]
 		}
 
+		override canvas_foot() {
+			return [ this.Foot_bar() ]
+		}
+
 		override main() {
 			return [
 				... this.left_showed() ? [ this.Left() ] : [],

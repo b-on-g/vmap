@@ -1521,7 +1521,7 @@ namespace $ {
 			const foot = stage.root.querySelector( '[bog_vmap_app_canvas_foot]' )!
 
 			$mol_assert_ok( app.Canvas().body().includes( app.Pane() ) )
-			$mol_assert_equal( foot.childElementCount, 2 )
+			$mol_assert_equal( foot.childElementCount, 1 )
 			$mol_assert_ok( foot.contains( app.Status().dom_node() ) )
 			$mol_assert_ok( foot.contains( app.Zoom_chip().dom_node() ) )
 

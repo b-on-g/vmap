@@ -195,7 +195,7 @@ $bog_vmap_app $mol_page
 				tool_board? => tool_board?
 				tool_hand? => tool_hand?
 				node_show? => node_show?
-		foot <= notes /$mol_view
+		foot <= canvas_foot /$mol_view
 	Scenes $bog_vmap_app_scenes
 		store <= store
 	Layers $bog_vmap_app_layers
@@ -260,6 +260,8 @@ $bog_vmap_app $mol_page
 		lands <= lands /string
 	Status $mol_status
 		status <= status \
+	Foot_bar $mol_bar
+		sub <= notes /$mol_view
 	Zoom_chip $mol_button_minor
 		title <= zoom_title \
 		hint \Масштаб холста. Клик — сто процентов. Shift+0 и Cmd+0 — сто процентов, плюс и минус — шаг, Shift+1 — вписать всё, Shift+2 — вписать выделенное

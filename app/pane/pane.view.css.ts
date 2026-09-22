@@ -142,6 +142,55 @@ namespace $.$$ {
 			pointerEvents: 'auto',
 		},
 
+		Text_field: {
+			position: 'absolute',
+
+			background: { color: $mol_theme.card },
+			outline: '1px solid ' + String( $mol_theme.focus ),
+
+			padding: { left: '0px', right: '0px', top: '0px', bottom: '0px' },
+
+			transition: 'none',
+			zIndex: 3,
+		},
+
+		Say: {
+			position: 'absolute',
+
+			padding: { left: '6px', right: '6px', top: '2px', bottom: '2px' },
+			margin: { top: '8px' },
+
+			maxWidth: '320px',
+
+			background: { color: $mol_theme.card },
+			color: $mol_theme.text,
+			border: { radius: '4px' },
+			box: { shadow: [ { x: 0, y: '2px', blur: '8px', spread: 0, color: $mol_theme.shade } ] },
+
+			font: { size: '12px' },
+
+			pointerEvents: 'none',
+			transition: 'none',
+			zIndex: 3,
+		},
+
+		Sizing: {
+			position: 'absolute',
+
+			padding: { left: '6px', right: '6px', top: '2px', bottom: '2px' },
+			margin: { left: '8px', top: '8px' },
+
+			background: { color: $mol_theme.focus },
+			color: $mol_theme.card,
+
+			font: { size: '12px' },
+			whiteSpace: 'nowrap',
+
+			pointerEvents: 'none',
+			transition: 'none',
+			zIndex: 3,
+		},
+
 	} )
 
 	$mol_style_define( $bog_vmap_app_pane_label, {
@@ -195,59 +244,6 @@ namespace $.$$ {
 
 			transition: 'none',
 
-		},
-
-	} )
-
-	$mol_style_define( $bog_vmap_app_pane, {
-
-		Text_field: {
-			position: 'absolute',
-
-			background: { color: $mol_theme.card },
-			outline: '1px solid ' + String( $mol_theme.focus ),
-
-			padding: { left: '0px', right: '0px', top: '0px', bottom: '0px' },
-
-			transition: 'none',
-			zIndex: 3,
-		},
-
-		Say: {
-			position: 'absolute',
-
-			padding: { left: '6px', right: '6px', top: '2px', bottom: '2px' },
-			margin: { top: '8px' },
-
-			maxWidth: '320px',
-
-			background: { color: $mol_theme.card },
-			color: $mol_theme.text,
-			border: { radius: '4px' },
-			box: { shadow: [ { x: 0, y: '2px', blur: '8px', spread: 0, color: $mol_theme.shade } ] },
-
-			font: { size: '12px' },
-
-			pointerEvents: 'none',
-			transition: 'none',
-			zIndex: 3,
-		},
-
-		Sizing: {
-			position: 'absolute',
-
-			padding: { left: '6px', right: '6px', top: '2px', bottom: '2px' },
-			margin: { left: '8px', top: '8px' },
-
-			background: { color: $mol_theme.focus },
-			color: $mol_theme.card,
-
-			font: { size: '12px' },
-			whiteSpace: 'nowrap',
-
-			pointerEvents: 'none',
-			transition: 'none',
-			zIndex: 3,
 		},
 
 	} )
