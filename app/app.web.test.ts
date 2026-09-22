@@ -293,10 +293,15 @@ namespace $ {
 			return list
 		} )
 
-		if( found.some( one => one.whole ) ) return
+		const stray = found.filter( one => !one.whole ).map( one => one.link )
+
+		if( found.some( one => one.whole ) ) {
+			if( stray.length ) await ask( ()=> { for( const link of stray ) store.home().Docs( null )!.cut( link ) } )
+			return
+		}
 
 		const whole = await ask( ()=> {
-			for( const one of found ) store.home().Docs( null )!.cut( one.link )
+			for( const link of stray ) store.home().Docs( null )!.cut( link )
 			return app.code_whole()
 		} )
 
@@ -393,6 +398,24 @@ namespace $ {
 			$mol_assert_like( store.doc_links().map( one => one.str ), docs )
 			$mol_assert_equal( store.doc( link ).title(), scene_title )
 			$mol_assert_equal( store.doc_source( store.doc( link ) ), source )
+
+		},
+
+		async 'a stray unfinished scene is swept while the whole one stays'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const store = stage.store
+
+			const link = store.doc_add( scene_title, scene_tree ).link()
+			const stray = store.doc_add( scene_building ).link()
+
+			await mortgage( stage.app )
+
+			const links = store.doc_links().map( one => one.str )
+
+			$mol_assert_equal( links.includes( link.str ), true )
+			$mol_assert_equal( links.includes( stray.str ), false )
+			$mol_assert_equal( store.doc( link ).title(), scene_title )
 
 		},
 
