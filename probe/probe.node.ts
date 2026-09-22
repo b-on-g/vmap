@@ -692,13 +692,10 @@ namespace $ {
 			want( !moved.length, `${ at } наведение сдвинуло абсолютные узлы: ${ moved.map( id => `${ short( id ) } ${ before[ id ] } → ${ after[ id ] }` ).join( '; ' ) }` )
 
 			await browser.evaluate( `
-				document.addEventListener( 'animationstart', ()=> {
-					for( const one of document.getAnimations() ) {
-						if( one.effect?.pseudoElement !== '::after' ) continue
-						one.pause()
-						one.currentTime = Number( one.effect.getComputedTiming().duration ) / 2
-					}
-				}, true )
+				const style = document.createElement( 'style' )
+				style.id = 'bog_vmap_probe_freeze'
+				style.innerHTML = '*::after { animation-play-state: paused !important }'
+				document.head.appendChild( style )
 				return true
 			`, 5000 )
 
@@ -706,25 +703,53 @@ namespace $ {
 			let half_scroll = 0
 			let frozen = 0
 
+			const halted = async ( id: string )=> await browser.evaluate( `
+				const node = document.getElementById( ${ JSON.stringify( id ) } )
+				const mine = ()=> node.getAnimations( { subtree: true } )
+					.filter( one => one.effect?.target === node && one.effect?.pseudoElement === '::after' )
+
+				let own = mine()
+				for( let step = 0; step < 30 && !own.length; ++ step ) {
+					await new Promise( done => requestAnimationFrame( done ) )
+					own = mine()
+				}
+
+				if( !own.length ) return 'анимации нет'
+
+				for( const one of own ) {
+					one.pause()
+					one.currentTime = Number( one.effect.getComputedTiming().duration ) / 2
+				}
+
+				await Promise.all( own.map( one => one.ready.catch( ()=> null ) ) )
+				await new Promise( done => requestAnimationFrame( ()=> requestAnimationFrame( done ) ) )
+
+				const stuck = own.filter( one => one.playState !== 'paused' )
+				return stuck.length ? stuck.map( one => one.playState ).join( ', ' ) : 'на паузе'
+			`, 5000 ) as string
+
 			for( const target of targets ) {
 
-				await mouse( ... away )
-				await $bog_probe_pause( 150 )
-				await mouse( target.x, target.y )
-				await $bog_probe_pause( 150 )
+				let stop = 'анимации нет'
+
+				for( let attempt = 1; attempt <= 3 && stop !== 'на паузе'; ++ attempt ) {
+					await mouse( ... away )
+					await $bog_probe_pause( 150 )
+					await mouse( target.x, target.y )
+					await $bog_probe_pause( 150 )
+					stop = await halted( target.id )
+				}
 
 				const box = await tip_box( target.id )
 
 				const state = await browser.evaluate( `
 					const node = document.getElementById( ${ JSON.stringify( target.id ) } )
-					const own = node.getAnimations( { subtree: true } ).filter( one => one.effect?.target === node && one.effect?.pseudoElement === '::after' )
 					return {
 						view: [ document.documentElement.clientWidth, document.documentElement.clientHeight ],
 						scroll: document.scrollingElement.scrollWidth,
 						named: getComputedStyle( node, '::after' ).animationName !== 'none',
-						paused: own.some( one => one.playState === 'paused' ),
 					}
-				`, 5000 ) as { view: [ number, number ], scroll: number, named: boolean, paused: boolean }
+				`, 5000 ) as { view: [ number, number ], scroll: number, named: boolean }
 
 				const name = short( target.id )
 				const [ view_width, view_height ] = state.view
@@ -733,11 +758,11 @@ namespace $ {
 
 				halves.push( cut )
 				half_scroll = Math.max( half_scroll, state.scroll )
-				if( state.paused ) frozen ++
+				if( stop === 'на паузе' ) frozen ++
 
 				want(
-					!state.named || state.paused,
-					`${ at } анимацию появления подсказки ${ name } не удалось остановить на середине: середина не проверена`,
+					!state.named || stop === 'на паузе',
+					`${ at } анимацию появления подсказки ${ name } не удалось остановить на середине за три наведения: ${ stop }`,
 				)
 				want(
 					!!box && cut === 0,
@@ -1356,12 +1381,19 @@ namespace $ {
 
 	}
 
+	/** Пункты, без которых меню узла бессмысленно. Новые пункты гейт не ломают, пропажа известного — ломает. */
+	export const $bog_vmap_probe_menu_node = [ 'Копировать', 'Удалить', 'Обернуть в артборд', 'Выделить родителя', 'Внутрь' ]
+
+	/** То же для меню на голом холсте. */
+	export const $bog_vmap_probe_menu_bare = [ 'Артборд здесь', 'Показать всё' ]
+
 	export type $bog_vmap_probe_bubble = {
 		readonly left: number
 		readonly top: number
 		readonly right: number
 		readonly bottom: number
 		readonly items: number
+		readonly labels: readonly string[]
 		readonly keys: readonly number[]
 		readonly view: readonly [ number, number ]
 		readonly transform: string
@@ -1399,9 +1431,12 @@ namespace $ {
 				const key = item.querySelector( '[bog_vmap_app_menu_item_keys]' ).getBoundingClientRect()
 				return key.width ? [ key.left - label.right ] : []
 			} )
+			const labels = items.map(
+				item => item.querySelector( '[bog_vmap_app_menu_item_label]' ).textContent.trim()
+			)
 			return {
 				left: box.left, top: box.top, right: box.right, bottom: box.bottom,
-				items: items.length, keys,
+				items: items.length, labels, keys,
 				view: [ innerWidth, innerHeight ],
 				transform: getComputedStyle( bubble ).transform,
 			}
@@ -1479,9 +1514,12 @@ namespace $ {
 						const away = ( right ? got.right <= x + 1 : got.left >= x - 1 )
 							&& ( low ? got.bottom <= y + 1 : got.top >= y - 1 )
 
-						say( `${ at } меню ${ kind }, пунктов ${ got.items }, пузырь ${ show( got ) } во вьюпорте ${ view_width }×${ view_height }; от подписи до клавиши ${ got.keys.map( Math.round ).join( ', ' ) || 'клавиш нет' }` )
+						say( `${ at } меню ${ kind }, пунктов ${ got.items } (${ got.labels.join( ', ' ) }), пузырь ${ show( got ) } во вьюпорте ${ view_width }×${ view_height }; от подписи до клавиши ${ got.keys.map( Math.round ).join( ', ' ) || 'клавиш нет' }` )
 
-						want( got.items === ( node ? 5 : 2 ), `${ at } у меню ${ kind } ${ got.items } пунктов` )
+						const must = node ? $bog_vmap_probe_menu_node : $bog_vmap_probe_menu_bare
+						const lost = must.filter( one => !got.labels.includes( one ) )
+
+						want( !lost.length, `${ at } в меню ${ kind } пропали пункты: ${ lost.join( ', ' ) }; на месте ${ got.labels.join( ', ' ) || 'ничего' }` )
 						want( inside, `${ at } меню ${ kind } вылезло за вьюпорт: ${ show( got ) } при ${ view_width }×${ view_height }` )
 						want( away, `${ at } меню ${ kind } не развернулось от края: ${ show( got ) } при точке ${ Math.round( x ) },${ Math.round( y ) }` )
 						want( got.keys.every( gap => gap >= 0 ), `${ at } клавиша наехала на подпись: ${ got.keys.join( ', ' ) }` )
