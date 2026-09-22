@@ -3070,6 +3070,22 @@ namespace $ {
 
 		},
 
+		'a low node keeps its middle, and a node with no width offers no handle'( $ ) {
+
+			const { pane } = sized( $ )
+
+			pane.sizes({ [ `${ root }/A` ]: box( 100, 100, 200, 12 ) })
+
+			$mol_assert_equal( pane.handle_at( [ 200, 106 ] ), '' )
+			$mol_assert_equal( pane.handle_at( [ 300, 112 ] ), 'se' )
+
+			pane.sizes({ [ `${ root }/A` ]: box( 100, 100, 0, 12 ) })
+
+			$mol_assert_equal( pane.handle_at( [ 100, 106 ] ), '' )
+			$mol_assert_equal( pane.handle_at( [ 100, 100 ] ), '' )
+
+		},
+
 		'a pull by a side moves only its own edge, and the far edges stay'( $ ) {
 
 			const west = sized( $ )

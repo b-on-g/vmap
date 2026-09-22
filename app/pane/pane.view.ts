@@ -1020,6 +1020,8 @@ namespace $.$$ {
 			const slack_x = Math.min( grab_slack, rect.width / 3 )
 			const slack_y = Math.min( grab_slack, rect.height / 3 )
 
+			if( slack_x < 1 || slack_y < 1 ) return ''
+
 			for( const corner of corners ) {
 				const spot = this.handle_box( name, corner )
 				if( !spot ) continue
