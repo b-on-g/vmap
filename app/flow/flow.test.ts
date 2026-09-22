@@ -2443,6 +2443,47 @@ namespace $ {
 
 		},
 
+		'a group that shifted its kids says so, and stays silent when nothing moved'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.app.picked([ 'Calc' ])
+			pressed( $, stage, 'KeyG', { key: 'g', metaKey: true } )
+			stage.scene.flush()
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.group_moved(), false )
+			$mol_assert_equal( stage.app.group_note(), '' )
+			$mol_assert_equal( stage.app.status(), 'сцена на связи' )
+
+			stage.app.picked([ 'Group' ])
+			pressed( $, stage, 'KeyG', { key: 'g', metaKey: true, shiftKey: true } )
+
+			stage.drop( map, stage.client([ 500, 150 ]) )
+			stage.app.picked([ 'Calc', 'Map' ])
+
+			const before = stage.pane.part_size( 'Map' )!
+
+			pressed( $, stage, 'KeyG', { key: 'g', metaKey: true } )
+			stage.scene.flush()
+			stage.redraw()
+
+			const after = stage.pane.part_size( 'Map' )!
+			$mol_assert_ok( Math.abs( after.x - before.x ) >= 1 || Math.abs( after.y - before.y ) >= 1 )
+
+			$mol_assert_equal( stage.app.group_moved(), true )
+			$mol_assert_ok( stage.app.status().includes( 'Группа раскладывает содержимое' ) )
+			$mol_assert_ok( stage.app.status().includes( 'вернёт как было' ) )
+			$mol_assert_ok( stage.canvas_text().includes( 'Группа раскладывает содержимое' ) )
+
+			stage.drop( number, stage.client([ 700, 150 ]) )
+			stage.redraw()
+
+			$mol_assert_ok( stage.pane.part_size( 'Map' ) )
+			$mol_assert_equal( stage.app.group_note(), '' )
+
+		},
+
 		async 'Cmd+G writes the document once and one undo puts everything back'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 			const store = stage.store

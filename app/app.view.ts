@@ -1309,6 +1309,10 @@ namespace $.$$ {
 			if( assets ) return assets
 
 			if( this.stalled() ) return 'сцена не отвечает'
+
+			const group = this.group_note()
+			if( group ) return group
+
 			if( this.Pane().warmed() ) return 'сцена на связи'
 			return this.Pane().pack_note() || 'ожидание сцены…'
 		}
@@ -1624,11 +1628,55 @@ namespace $.$$ {
 				spots[ name ] = { x: Math.round( x ), y: Math.round( y ) }
 			}
 
+			const places = {} as { [ kid: string ]: { readonly x: number, readonly y: number } }
+
+			for( const kid of plan.tops ) {
+				const box = this.Pane().part_size( kid )
+				if( box ) places[ kid ] = { x: box.x, y: box.y }
+			}
+
 			this.doc_source( draft.source() )
 			this.spots( spots )
 			this.picked([ name ])
 
+			this.group_made({ source: this.doc_source(), name, places })
+
 			return null
+		}
+
+		@ $mol_mem
+		group_made( next?: {
+			readonly source: string
+			readonly name: string
+			readonly places: { readonly [ kid: string ]: { readonly x: number, readonly y: number } }
+		} | null ) {
+			return next ?? null
+		}
+
+		group_moved() {
+
+			const made = this.group_made()
+			if( !made ) return false
+			if( this.doc_source() !== made.source ) return false
+
+			const pane = this.Pane()
+
+			return Object.keys( made.places ).some( kid => {
+				const place = made.places[ kid ]
+				const box = pane.part_size( kid )
+				if( !box || !place ) return false
+				return Math.abs( box.x - place.x ) >= 1 || Math.abs( box.y - place.y ) >= 1
+			} )
+		}
+
+		group_note() {
+			if( !this.group_moved() ) return ''
+
+			const made = this.group_made()!
+			const lined = this.doc_axis( made.name ) === 'column' ? 'в колонку' : 'в ряд'
+			const keys = ( this.Pane() as $bog_vmap_app_pane ).menu_view().apple() ? 'Cmd+Z' : 'Ctrl+Z'
+
+			return `Группа раскладывает содержимое, поэтому детей выстроило ${ lined }. ${ keys } вернёт как было`
 		}
 
 		group_names() {
