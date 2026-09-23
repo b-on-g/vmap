@@ -4975,6 +4975,10 @@ namespace $ {
 
 	const root = `${d}doc`
 
+	const calc = `${d}flow_calc`
+
+	const map = `${d}flow_map`
+
 	const box = ( x: number, y: number, width = 100, height = 50 ) => ({ x, y, width, height })
 
 	const menu_pane = ( $: $, over: Partial< $$.$bog_vmap_app_pane > = {} ) => {
@@ -5282,6 +5286,72 @@ namespace $ {
 			}
 
 			$mol_assert_equal( wrapped, 2 )
+		},
+
+		'numbers show up on hover over a neighbour and only when something is picked'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.drop( map, stage.client([ 500, 150 ]) )
+
+			const pane = stage.pane
+
+			stage.app.picked([])
+			pane.hovered( 'Map' )
+			stage.redraw()
+
+			$mol_assert_like( pane.gaps().map( gap => gap.axis + ':' + gap.size ), [] )
+
+			stage.app.picked([ 'Calc' ])
+			pane.hovered( 'Map' )
+			stage.redraw()
+
+			const gaps = pane.gaps()
+
+			$mol_assert_equal( gaps.length, 1 )
+			$mol_assert_equal( gaps[ 0 ].axis, 'x' )
+			$mol_assert_equal( gaps[ 0 ].size, 200 )
+			$mol_assert_equal( pane.gap_title( 0 ), '200' )
+			$mol_assert_equal( pane.gap_views().length, 1 )
+
+			pane.hovered( 'Calc' )
+			stage.redraw()
+
+			$mol_assert_like( pane.gaps().map( gap => gap.size ), [] )
+
+			stage.app.picked([ 'Calc', 'Map' ])
+			pane.hovered( 'Map' )
+			stage.redraw()
+
+			$mol_assert_like( pane.gaps().map( gap => gap.size ), [] )
+
+		},
+
+		'the number keeps its own size whatever the zoom is'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.drop( map, stage.client([ 500, 150 ]) )
+
+			const pane = stage.pane
+
+			stage.app.picked([ 'Calc' ])
+			pane.hovered( 'Map' )
+			stage.redraw()
+
+			const close = pane.gap_style( 0 )
+
+			pane.camera_zoom( 0.3 )
+			stage.redraw()
+
+			const far = pane.gap_style( 0 )
+
+			$mol_assert_like( Object.keys( close ).sort(), [ 'left', 'top' ] )
+			$mol_assert_like( Object.keys( far ).sort(), [ 'left', 'top' ] )
+			$mol_assert_equal( close.left === far.left, false )
+
 		},
 
 		'Cmd+G groups and Shift+Cmd+G ungroups, only with a pick and never typed into a field'( $ ) {

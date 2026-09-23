@@ -390,6 +390,7 @@ namespace $.$$ {
 				... this.band() ? [ this.Band() ] : [],
 				... this.draft() ? [ this.Draft() ] : [],
 				... this.guide_views(),
+				... this.gap_views(),
 				... this.ghost_views(),
 				... this.menu() ? [ this.menu_view() ] : [],
 			] as readonly $mol_view[]
@@ -768,6 +769,75 @@ namespace $.$$ {
 		@ $mol_mem
 		guides( next?: readonly $bog_vmap_app_pane_snap_line[] ) {
 			return next ?? []
+		}
+
+		gap_bounds( name: string ) {
+
+			const holder = this.node_path( name ).at( -2 )
+			if( !holder ) return null
+
+			return this.part_size( holder )
+		}
+
+		picked_box() {
+			const boxes = this.picked().flatMap( name => this.spot_box( name ) ?? [] )
+			return boxes.length ? this.box_union( boxes ) : null
+		}
+
+		@ $mol_mem
+		gaps(): readonly $bog_vmap_app_pane_gap[] {
+
+			const drag = this.drag()
+
+			if( drag ) {
+
+				const box = this.picked_box()
+				if( !box ) return []
+
+				return this.$.$bog_vmap_app_pane_gaps(
+					box,
+					this.snap_boxes( drag.spots ),
+					this.gap_bounds( drag.name ),
+				)
+			}
+
+			const over = this.hovered()
+			if( !over ) return []
+
+			const box = this.picked_box()
+			const other = this.spot_box( over )
+			if( !box || !other ) return []
+
+			return this.$.$bog_vmap_app_pane_gaps( box, [ other ] )
+		}
+
+		gap_views() {
+			return this.gaps().map( ( gap, index )=> this.Gap( index ) )
+		}
+
+		override gap_title( index: number ) {
+			const gap = this.gaps()[ index ]
+			return gap ? String( gap.size ) : ''
+		}
+
+		@ $mol_mem_key
+		override gap_style( index: number ): { readonly [ prop: string ]: string } {
+
+			const gap = this.gaps()[ index ]
+			if( !gap ) return {}
+
+			const middle = ( gap.from + gap.to ) / 2
+
+			const spot = gap.axis === 'x'
+				? { x: middle, y: gap.cross, width: 0, height: 0 }
+				: { x: gap.cross, y: middle, width: 0, height: 0 }
+
+			const rect = this.$.$bog_vmap_app_pane_screen( spot, this.camera_zoom(), this.camera_shift() )
+
+			return {
+				left: rect.left + 'px',
+				top: rect.top + 'px',
+			}
 		}
 
 		guide_views() {

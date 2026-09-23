@@ -189,6 +189,10 @@ $bog_vmap_app_pane $mol_view
 		style <= draft_style *
 	Guide* $mol_view
 		style <= guide_style* *
+	Gap* $mol_view
+		style <= gap_style* *
+		sub /
+			<= gap_title* \
 	Ghost* $mol_view
 		style <= ghost_style* *
 	Menu* $bog_vmap_app_menu

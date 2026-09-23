@@ -51,6 +51,20 @@ namespace $.$$ {
 			transition: 'none',
 		},
 
+		Gap: {
+			position: 'absolute',
+			padding: [ 0, '.25rem' ],
+			font: { size: '.75rem' },
+			lineHeight: '1rem' as const,
+			color: $mol_theme.back,
+			background: { color: $mol_theme.special },
+			borderRadius: String( $mol_gap.round ),
+			pointerEvents: 'none',
+			transition: 'none',
+			transform: 'translate(-50%, -50%)',
+			whiteSpace: 'pre',
+		},
+
 		Ghost: {
 			position: 'absolute',
 			outline: '1px dashed ' + String( $mol_theme.focus ),
