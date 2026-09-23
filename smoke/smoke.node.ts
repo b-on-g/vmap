@@ -2,6 +2,9 @@ namespace $ {
 
 	export const $bog_vmap_smoke_skip = 'Chrome не найден, дымовой тест пропущен'
 
+	/** Сколько узлов меряет сцена на пустом документе: корень и ничего сверх него. */
+	export const $bog_vmap_smoke_blank_nodes = 1
+
 	export const $bog_vmap_smoke_parts = [
 		'app/-/index.html',
 		'app/-/web.js',
@@ -45,7 +48,16 @@ namespace $ {
 
 			say( `прогрев и документ ${ warm } мс, порт статики ${ site.port }` )
 
+			await $bog_vmap_blank( browser, site.uri( '/app/-/index.html' ), 'дым:' )
+
 			const before = Number( await browser.evaluate( `return Object.keys( ${ pane }.sizes() ).length`, 15000 ) )
+
+			if( before > $bog_vmap_smoke_blank_nodes ) return $mol_fail( new Error(
+				`дым начинает не с чистой сцены: измеренных узлов ${ before },`
+				+ ` ждали не больше ${ $bog_vmap_smoke_blank_nodes }`
+			) )
+
+			say( `чистая сцена: измеренных узлов ${ before }` )
 
 			await browser.evaluate(
 				`await $[ ${ JSON.stringify( d + 'mol_wire_async' ) } ]( ${ app } ).part_drop( ${ JSON.stringify( d + 'bog_vmap_part_calc' ) }, 320, 220 ); return 1`,
