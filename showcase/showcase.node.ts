@@ -442,7 +442,7 @@ namespace $ {
 			const warm = await browser.open_page( site.uri( $bog_vmap_showcase_page ), ready, 150000 )
 			say( `прогрев и документ ${ warm } мс, порт статики ${ site.port }` )
 
-			await $bog_vmap_probe_fresh( browser, site.uri( $bog_vmap_showcase_page ), 'витрина:' )
+			await $bog_vmap_blank( browser, site.uri( $bog_vmap_showcase_page ), 'витрина:' )
 
 			const hand = $bog_vmap_showcase_hand( browser )
 
