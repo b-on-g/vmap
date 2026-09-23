@@ -391,6 +391,7 @@ namespace $.$$ {
 				... this.draft() ? [ this.Draft() ] : [],
 				... this.guide_views(),
 				... this.gap_views(),
+				... this.ruler_views(),
 				... this.ghost_views(),
 				... this.menu() ? [ this.menu_view() ] : [],
 			] as readonly $mol_view[]
@@ -809,6 +810,116 @@ namespace $.$$ {
 			if( !box || !other ) return []
 
 			return this.$.$bog_vmap_app_pane_gaps( box, [ other ] )
+		}
+
+		ruler_size() {
+			return this.ruler_shown() ? 20 : 0
+		}
+
+		ruler_room() {
+			return { width: 480, height: 320 }
+		}
+
+		ruler_shown() {
+			const rect = this.pane_rect()
+			const room = this.ruler_room()
+			return rect.width >= room.width && rect.height >= room.height
+		}
+
+		ruler_zero() {
+			const inside = this.entered()
+			const box = inside ? this.part_size( inside ) : null
+			return box ? { x: box.x, y: box.y } : { x: 0, y: 0 }
+		}
+
+		@ $mol_mem_key
+		ruler_ticks( axis: $bog_vmap_app_pane_snap_axis ): readonly $bog_vmap_app_pane_ruler_tick[] {
+
+			if( !this.ruler_shown() ) return []
+
+			const rect = this.pane_rect()
+			const zoom = this.camera_zoom()
+			const shift = this.camera_shift()
+
+			const size = axis === 'x' ? rect.width : rect.height
+			const start = axis === 'x' ? shift[ 0 ] : shift[ 1 ]
+
+			const step = this.$.$bog_vmap_app_pane_ruler_step( zoom )
+			const zero = axis === 'x' ? this.ruler_zero().x : this.ruler_zero().y
+
+			return this.$.$bog_vmap_app_pane_ruler_ticks( -start / zoom, ( size - start ) / zoom, step, zero )
+		}
+
+		ruler_span( axis: $bog_vmap_app_pane_snap_axis ) {
+
+			const box = this.picked_box()
+			if( !box ) return null
+
+			const zoom = this.camera_zoom()
+			const shift = this.camera_shift()
+
+			const from = axis === 'x' ? box.x : box.y
+			const size = axis === 'x' ? box.width : box.height
+			const start = axis === 'x' ? shift[ 0 ] : shift[ 1 ]
+
+			return { at: from * zoom + start, size: size * zoom }
+		}
+
+		ruler_views() {
+			return this.ruler_shown() ? [ this.Ruler( 'x' ), this.Ruler( 'y' ) ] : []
+		}
+
+		@ $mol_mem_key
+		override ruler_sub( axis: string ): readonly $mol_view[] {
+
+			const side = axis as $bog_vmap_app_pane_snap_axis
+
+			return [
+				... this.ruler_span( side ) ? [ this.Span( axis ) ] : [],
+				... this.ruler_ticks( side ).map( ( tick, index )=> this.Tick( axis + ':' + index ) ),
+			]
+		}
+
+		@ $mol_mem_key
+		override ruler_style( axis: string ): { readonly [ prop: string ]: string } {
+
+			const size = this.ruler_size() + 'px'
+
+			return axis === 'x'
+				? { left: size, top: '0', right: '0', height: size }
+				: { left: '0', top: size, bottom: '0', width: size }
+		}
+
+		override tick_title( key: string ) {
+			const [ axis, index ] = key.split( ':' )
+			return String( this.ruler_ticks( axis as $bog_vmap_app_pane_snap_axis )[ Number( index ) ]?.label ?? '' )
+		}
+
+		@ $mol_mem_key
+		override tick_style( key: string ): { readonly [ prop: string ]: string } {
+
+			const [ axis, index ] = key.split( ':' )
+			const tick = this.ruler_ticks( axis as $bog_vmap_app_pane_snap_axis )[ Number( index ) ]
+			if( !tick ) return {}
+
+			const zoom = this.camera_zoom()
+			const shift = this.camera_shift()
+			const at = tick.at * zoom + ( axis === 'x' ? shift[ 0 ] : shift[ 1 ] )
+
+			return axis === 'x'
+				? { left: ( at - this.ruler_size() ) + 'px' }
+				: { top: at + 'px' }
+		}
+
+		@ $mol_mem_key
+		override span_style( axis: string ): { readonly [ prop: string ]: string } {
+
+			const span = this.ruler_span( axis as $bog_vmap_app_pane_snap_axis )
+			if( !span ) return {}
+
+			return axis === 'x'
+				? { left: ( span.at - this.ruler_size() ) + 'px', width: span.size + 'px' }
+				: { top: span.at + 'px', height: span.size + 'px' }
 		}
 
 		gap_views() {

@@ -51,6 +51,31 @@ namespace $.$$ {
 			transition: 'none',
 		},
 
+		Ruler: {
+			position: 'absolute',
+			overflow: 'hidden',
+			background: { color: $mol_theme.back },
+			color: $mol_theme.shade,
+			font: { size: '.625rem' },
+			pointerEvents: 'none',
+			transition: 'none',
+			zIndex: 2,
+		},
+
+		Tick: {
+			position: 'absolute',
+			padding: [ 0, '.125rem' ],
+			whiteSpace: 'pre',
+			transition: 'none',
+		},
+
+		Span: {
+			position: 'absolute',
+			background: { color: $mol_theme.focus },
+			opacity: .35,
+			transition: 'none',
+		},
+
 		Gap: {
 			position: 'absolute',
 			padding: [ 0, '.25rem' ],

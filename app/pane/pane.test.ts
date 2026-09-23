@@ -1601,7 +1601,7 @@ namespace $ {
 			$mol_assert_equal( pane.warmed(), false )
 			$mol_assert_equal( pane.sub()[0] !== frame_before, true )
 			$mol_assert_equal( pane.sub()[0], pane.Scene( pane.scene_key() ) )
-			$mol_assert_equal( pane.sub().length, 6 )
+			$mol_assert_equal( pane.sub().length, 8 )
 			$mol_assert_equal( pane.sub()[3], pane.Values() )
 			$mol_assert_equal( pane.sub()[4], pane.Names() )
 			$mol_assert_equal( pane.sub()[5], pane.Marks() )
@@ -5286,6 +5286,64 @@ namespace $ {
 			}
 
 			$mol_assert_equal( wrapped, 2 )
+		},
+
+		'the rulers show round marks, hide on a small pane and move their zero inside a node'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const pane = stage.pane
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			$mol_assert_equal( pane.ruler_shown(), true )
+			$mol_assert_equal( pane.ruler_views().length, 2 )
+
+			const marks = pane.ruler_ticks( 'x' ).map( tick => tick.label )
+
+			$mol_assert_ok( marks.length )
+			$mol_assert_equal( marks.every( label => label % 100 === 0 ), true )
+			$mol_assert_equal( pane.tick_title( 'x:0' ), String( marks[ 0 ] ) )
+
+			pane.entered( 'Calc' )
+			stage.redraw()
+
+			const box = pane.part_size( 'Calc' )!
+			$mol_assert_like( pane.ruler_zero(), { x: box.x, y: box.y } )
+			$mol_assert_ok( pane.ruler_ticks( 'x' ).some( tick => tick.label === 0 && tick.at === box.x ) )
+
+			pane.entered( null )
+			pane.pane_rect = ()=> ({ left: 0, top: 0, width: 300, height: 200 })
+			stage.redraw()
+
+			$mol_assert_equal( pane.ruler_shown(), false )
+			$mol_assert_like( pane.ruler_views(), [] )
+			$mol_assert_like( pane.ruler_ticks( 'x' ), [] )
+
+		},
+
+		'the ruler paints the range taken by the selection'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const pane = stage.pane
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.drop( map, stage.client([ 500, 150 ]) )
+
+			stage.app.picked([])
+			stage.redraw()
+
+			$mol_assert_equal( pane.ruler_span( 'x' ), null )
+
+			stage.app.picked([ 'Calc', 'Map' ])
+			stage.redraw()
+
+			const box = pane.picked_box()!
+			const span = pane.ruler_span( 'x' )!
+
+			$mol_assert_ok( span )
+			$mol_assert_equal( span.size, box.width * pane.camera_zoom() )
+			$mol_assert_equal( pane.span_style( 'x' ).width, box.width * pane.camera_zoom() + 'px' )
+
 		},
 
 		'numbers show up on hover over a neighbour and only when something is picked'( $ ) {
