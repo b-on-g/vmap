@@ -1185,29 +1185,38 @@ namespace $ {
 				await $.$mol_wire_async( store ).doc_drop( $.$giper_baza_link.check( link ) )
 			}
 
-			return { было: old.length, стало: ( await links() ).length }
+			const titles = await $.$mol_wire_async( ()=> store.doc_links().map( link => store.doc( link ).title() ) )()
+
+			return { было: old.length, осталось: titles }
 		`
 	}
 
 	export async function $bog_vmap_probe_fresh( browser: $bog_probe_browser, uri: string, at: string ) {
 
-		const cut = await browser.evaluate( $bog_vmap_probe_blank(), 60000 ) as { было: number, стало: number }
-		if( cut.стало !== 1 ) $mol_fail( new Error( `${ at } чистая сцена не завелась, сцен ${ cut.стало } из ${ cut.было }` ) )
+		const cut = await browser.evaluate( $bog_vmap_probe_blank(), 60000 ) as { было: number, осталось: string[] }
 
-		await browser.send( 'Page.navigate', { url: 'about:blank' }, browser.page )
+		if( cut.осталось.length !== 1 ) $mol_fail( new Error(
+			`${ at } ждали одну пустую сцену, из ${ cut.было } осталось ${ cut.осталось.length }: ${ JSON.stringify( cut.осталось ) }`
+		) )
+
 		await browser.open_page( uri, $bog_vmap_probe_ready(), 150000 )
 
 		const left = await browser.evaluate( `
 			const app = [ ... $.$mol_view.roots() ].find( view => view instanceof $.$$.$bog_vmap_app )
 			const root = app.doc_root()
 			return {
+				сцена: app.store().doc_current()?.title() ?? '',
+				корень: root,
 				узлы: app.node().part_names(),
 				размеры: Object.keys( app.Pane().sizes() ).filter( key => key !== root ),
 			}
-		`, 60000 ) as { узлы: string[], размеры: string[] }
+		`, 60000 ) as { сцена: string, корень: string, узлы: string[], размеры: string[] }
+
+		const few = ( list: string[] )=> `${ list.length }${ list.length ? ' (' + list.slice( 0, 5 ).join( ', ' ) + ( list.length > 5 ? ', …' : '' ) + ')' : '' }`
 
 		if( left.узлы.length || left.размеры.length ) $mol_fail( new Error(
-			`${ at } после перезагрузки осталось лишнее, узлы ${ JSON.stringify( left.узлы ) }, размеры ${ JSON.stringify( left.размеры ) }`
+			`${ at } ждали пустую сцену, получили «${ left.сцена }» с корнем ${ left.корень }:`
+			+ ` деталей ${ few( left.узлы ) }, измеренных узлов ${ few( left.размеры ) }`
 		) )
 
 	}
