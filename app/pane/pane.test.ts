@@ -1600,11 +1600,20 @@ namespace $ {
 			$mol_assert_equal( pane.ready(), false )
 			$mol_assert_equal( pane.warmed(), false )
 			$mol_assert_equal( pane.sub()[0] !== frame_before, true )
-			$mol_assert_equal( pane.sub()[0], pane.Scene( pane.scene_key() ) )
-			$mol_assert_equal( pane.sub().length, 8 )
-			$mol_assert_equal( pane.sub()[3], pane.Values() )
-			$mol_assert_equal( pane.sub()[4], pane.Names() )
-			$mol_assert_equal( pane.sub()[5], pane.Marks() )
+
+			const layers = pane.sub()
+			const kept = [
+				pane.Scene( pane.scene_key() ),
+				pane.Overlay(),
+				pane.Wire(),
+				pane.Values(),
+				pane.Names(),
+				pane.Marks(),
+			]
+
+			$mol_assert_like( layers.slice( 0, kept.length ), kept )
+			$mol_assert_equal( layers.includes( pane.Insert() ), false )
+			$mol_assert_equal( layers.includes( pane.Draft() ), false )
 
 			$mol_assert_equal( pane.watchdog(), null )
 			$mol_assert_equal( pane.heartbeat(), null )
