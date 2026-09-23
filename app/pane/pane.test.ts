@@ -5297,6 +5297,37 @@ namespace $ {
 			$mol_assert_equal( wrapped, 2 )
 		},
 
+		'a board drawn by a drag keeps the dragged rectangle, rulers or not'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const pane = stage.pane
+			const overlay = stage.overlay()
+
+			$mol_assert_equal( pane.ruler_shown(), true )
+
+			pane.tool_board( true )
+
+			stage.press( overlay, stage.client([ 40, 40 ]) )
+			stage.move( overlay, stage.client([ 520, 760 ]) )
+			stage.release( overlay, stage.client([ 520, 760 ]) )
+			stage.redraw()
+
+			const node = stage.app.node()
+
+			const style = node.over_tree( 'Page', 'style' )?.kids[ 0 ] ?? null
+			const styled = ( prop: string )=> $bog_vmap_lang_dict_get( style, prop )?.value ?? null
+
+			$mol_assert_like( node.part_names(), [ 'Page' ] )
+			$mol_assert_equal( styled( 'width' ), '480px' )
+			$mol_assert_equal( styled( 'minHeight' ), '720px' )
+
+			const spot = stage.app.spots()[ 'Page' ]
+
+			$mol_assert_equal( spot.x, stage.pane.world_point({ clientX: stage.client([ 40, 40 ])[ 0 ], clientY: stage.client([ 40, 40 ])[ 1 ] })[ 0 ] )
+			$mol_assert_equal( spot.y, stage.pane.world_point({ clientX: stage.client([ 40, 40 ])[ 0 ], clientY: stage.client([ 40, 40 ])[ 1 ] })[ 1 ] )
+
+		},
+
 		'the rulers show round marks, hide on a small pane and move their zero inside a node'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )

@@ -1168,6 +1168,50 @@ namespace $ {
 		return { point, mouse, click, away, tab }
 	}
 
+	export function $bog_vmap_probe_blank() {
+		return `
+			const app = [ ... $.$mol_view.roots() ].find( view => view instanceof $.$$.$bog_vmap_app )
+			const store = app.store()
+
+			const links = ()=> $.$mol_wire_async( ()=> store.doc_links().map( link => link.str ) )()
+
+			const old = await links()
+
+			const doc = await $.$mol_wire_async( store ).doc_add( 'Проба' )
+			const kept = doc.link().str
+
+			for( const link of await links() ) {
+				if( link === kept ) continue
+				await $.$mol_wire_async( store ).doc_drop( $.$giper_baza_link.check( link ) )
+			}
+
+			return { было: old.length, стало: ( await links() ).length }
+		`
+	}
+
+	export async function $bog_vmap_probe_fresh( browser: $bog_probe_browser, uri: string, at: string ) {
+
+		const cut = await browser.evaluate( $bog_vmap_probe_blank(), 60000 ) as { было: number, стало: number }
+		if( cut.стало !== 1 ) $mol_fail( new Error( `${ at } чистая сцена не завелась, сцен ${ cut.стало } из ${ cut.было }` ) )
+
+		await browser.send( 'Page.navigate', { url: 'about:blank' }, browser.page )
+		await browser.open_page( uri, $bog_vmap_probe_ready(), 150000 )
+
+		const left = await browser.evaluate( `
+			const app = [ ... $.$mol_view.roots() ].find( view => view instanceof $.$$.$bog_vmap_app )
+			const root = app.doc_root()
+			return {
+				узлы: app.node().part_names(),
+				размеры: Object.keys( app.Pane().sizes() ).filter( key => key !== root ),
+			}
+		`, 60000 ) as { узлы: string[], размеры: string[] }
+
+		if( left.узлы.length || left.размеры.length ) $mol_fail( new Error(
+			`${ at } после перезагрузки осталось лишнее, узлы ${ JSON.stringify( left.узлы ) }, размеры ${ JSON.stringify( left.размеры ) }`
+		) )
+
+	}
+
 	export async function $bog_vmap_probe_drive(
 		root: string,
 		at: string,
@@ -1186,6 +1230,8 @@ namespace $ {
 			await browser.open()
 			await browser.viewport( 1280, 800 )
 			await browser.open_page( site.uri( $bog_vmap_probe_page ), $bog_vmap_probe_ready(), 150000 )
+
+			await $bog_vmap_probe_fresh( browser, site.uri( $bog_vmap_probe_page ), at )
 
 			await act( browser, $bog_vmap_probe_mouse( browser, at ) )
 
@@ -1466,6 +1512,8 @@ namespace $ {
 
 				await browser.viewport( width, 800 )
 				await browser.open_page( site.uri( $bog_vmap_probe_page ), $bog_vmap_probe_ready(), 150000 )
+
+				await $bog_vmap_probe_fresh( browser, site.uri( $bog_vmap_probe_page ), `${ width }, меню у угла холста:` )
 
 				const pane = await browser.evaluate( `
 					const box = document.querySelector( '[bog_vmap_app_pane]' ).getBoundingClientRect()
