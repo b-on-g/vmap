@@ -4398,6 +4398,8 @@ declare namespace $ {
         glob(): $giper_baza_glob;
         lands_news: $mol_wire_set<string>;
         static masters_default: string[];
+        static masters_seeded(): string[] | null;
+        static masters_override(): string[] | null;
         static masters(): string[];
         master_cursor(next?: number): number;
         master_current(): string;
@@ -4449,7 +4451,7 @@ declare namespace $ {
          * Priority: time > lord > tick
          */
         static compare(left: $giper_baza_unit_base | undefined, right: $giper_baza_unit_base | undefined): number;
-        static narrow(buf: ArrayBuffer): $giper_baza_auth_pass | $giper_baza_unit_sand | $giper_baza_unit_gift | $giper_baza_unit_seal;
+        static narrow(buf: ArrayBuffer): $giper_baza_auth_pass | $giper_baza_unit_sand | $giper_baza_unit_seal | $giper_baza_unit_gift;
         constructor(buffer: ArrayBuffer, byteOffset?: number, byteLength?: number);
         kind(next?: keyof typeof $giper_baza_unit_kind): Exclude<keyof typeof $giper_baza_unit_kind, 'pass'>;
         choose<Res>(ways: {
