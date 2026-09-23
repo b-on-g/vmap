@@ -93,9 +93,55 @@ namespace $.$$ {
 			return `${ this.doc_root_default() } $mol_view\n\tsub /\n`
 		}
 
+		demo_host() {
+			try {
+				return new URL( this.page_uri() ).hostname
+			} catch( error: unknown ) {
+				return ''
+			}
+		}
+
+		demo_local() {
+
+			const host = this.demo_host()
+			if( !host ) return false
+
+			if( [ 'localhost', '127.0.0.1', '::1', '[::1]' ].includes( host ) ) return true
+			if( host.endsWith( '.local' ) ) return true
+
+			return /^(?:10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|198\.1[89]\.)/.test( host )
+		}
+
+		demo_wanted( store: $bog_vmap_app_store ) {
+			return this.demo_local() && store.doc_links().length === 0
+		}
+
+		@ $mol_action
+		demo_first( store: $bog_vmap_app_store ) {
+
+			if( store.doc_current() ) return
+
+			if( !this.demo_wanted( store ) ) {
+				store.doc_add( store.title_next(), store.draft_source(), store.draft_spots(), store.draft_pack() )
+				return
+			}
+
+			const doc = store.doc_add( this.$.$bog_vmap_app_demo_title, this.$.$bog_vmap_app_demo_source )
+
+			store.node_js( doc, this.$.$bog_vmap_app_demo_root, this.$.$bog_vmap_app_demo_js )
+			store.node_css( doc, this.$.$bog_vmap_app_demo_root, this.$.$bog_vmap_app_demo_css )
+
+		}
+
 		@ $mol_mem
 		override store() {
-			return this.$.$bog_vmap_app_store.make({ $: this.$ })
+
+			const store: $bog_vmap_app_store = this.$.$bog_vmap_app_store.make({
+				$: this.$,
+				doc_first: ()=> this.demo_first( store ),
+			})
+
+			return store
 		}
 
 		doc_source( next?: string ) {

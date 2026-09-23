@@ -120,6 +120,8 @@ namespace $ {
 
 		readonly camera?: 'pinned' | 'own'
 
+		readonly page?: string
+
 	}
 
 	export function $bog_vmap_app_flow_stage( $: $, over: $bog_vmap_app_flow_over = {} ) {
@@ -204,7 +206,7 @@ namespace $ {
 		if( !over.store ) store.doc_add( 'Сцена 1' )
 
 		const app = $bog_vmap_app.make({ $, store: ()=> store }) as $$.$bog_vmap_app
-		app.page_uri = ()=> 'http://localhost/'
+		app.page_uri = ()=> over.page ?? 'http://localhost/'
 		$bog_vmap_app_flow_last = app
 
 		const posted = [] as $bog_vmap_app_flow_sent[]

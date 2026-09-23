@@ -1416,6 +1416,95 @@ namespace $ {
 			$mol_assert_equal( $.$mol_state_arg.value( 'doc' ), first )
 
 		},
+		async 'an empty list on a local address gets the demo scene'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+			app.page_uri = ()=> 'http://localhost:9080/bog/vmap/app/'
+
+			const store = app.store()
+			store.doc_land_config = ()=> null
+
+			await $mol_wire_async( store ).doc_first()
+
+			const doc = store.doc_current()!
+
+			$mol_assert_equal( app.demo_local(), true )
+			$mol_assert_like( store.doc_links().map( link => store.doc( link ).title() ), [ $bog_vmap_app_demo_title ] )
+			$mol_assert_equal( store.doc_source( doc ), $bog_vmap_app_demo_source )
+			$mol_assert_equal( store.node_js( doc, $bog_vmap_app_demo_root ), $bog_vmap_app_demo_js )
+			$mol_assert_equal( store.node_css( doc, $bog_vmap_app_demo_root ), $bog_vmap_app_demo_css )
+			$mol_assert_equal( $bog_vmap_app_demo_whole( store.doc_source( doc ) ), true )
+
+		},
+
+		async 'an empty list on a live address gets an empty scene and not a byte of the demo'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+			app.page_uri = ()=> 'https://b-on-g.github.io/vmap/'
+
+			const store = app.store()
+			store.doc_land_config = ()=> null
+
+			await $mol_wire_async( store ).doc_first()
+
+			const doc = store.doc_current()!
+
+			$mol_assert_equal( app.demo_local(), false )
+			$mol_assert_like( store.doc_links().map( link => store.doc( link ).title() ), [ 'Сцена 1' ] )
+			$mol_assert_equal( store.doc_source( doc ).includes( 'bog_mortgage' ), false )
+			$mol_assert_equal( store.node_js( doc, $bog_vmap_app_demo_root ), '' )
+			$mol_assert_equal( store.node_css( doc, $bog_vmap_app_demo_root ), '' )
+
+		},
+
+		'a list that already holds a scene is left alone by the demo'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+			app.page_uri = ()=> 'http://localhost:9080/bog/vmap/app/'
+
+			let added = 0
+			let stated = 0
+
+			const busy = {
+				doc_current: ()=> ({}),
+				doc_links: ()=> [ {} ],
+				doc_add: ()=> { ++ added; return {} },
+				doc_state: ()=> { ++ stated; return {} },
+				title_next: ()=> 'Сцена 2',
+				draft_source: ()=> '',
+				draft_spots: ()=> ({}),
+				draft_pack: ()=> '',
+			} as unknown as $bog_vmap_app_store
+
+			$mol_assert_equal( app.demo_wanted( busy ), false )
+
+			app.demo_first( busy )
+
+			$mol_assert_equal( added, 0 )
+			$mol_assert_equal( stated, 0 )
+
+		},
+
+		'a local address covers the loopback, the .local name and the network address of the dev server'( $ ) {
+
+			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
+
+			const local = ( page: string )=> {
+				app.page_uri = ()=> page
+				return app.demo_local()
+			}
+
+			$mol_assert_equal( local( 'http://localhost:9080/bog/vmap/app/' ), true )
+			$mol_assert_equal( local( 'http://127.0.0.1:9080/' ), true )
+			$mol_assert_equal( local( 'http://mac.local:9080/' ), true )
+			$mol_assert_equal( local( 'http://198.18.0.1:9080/' ), true )
+			$mol_assert_equal( local( 'http://192.168.1.5:9080/' ), true )
+
+			$mol_assert_equal( local( 'https://b-on-g.github.io/vmap/' ), false )
+			$mol_assert_equal( local( 'https://vmap.example.com/' ), false )
+
+		},
+
 		'the shell is a head bar over three columns, and the canvas keeps no head of its own'( $ ) {
 			const app = $bog_vmap_app.make({ $ }) as $$.$bog_vmap_app
 
