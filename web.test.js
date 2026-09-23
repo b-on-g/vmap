@@ -12583,6 +12583,43 @@ var $;
 ;
 "use strict";
 var $;
+(function ($) {
+    $mol_test({
+        'the step keeps the ladder of one, two and five at every zoom'() {
+            $mol_assert_equal($bog_vmap_app_pane_ruler_step(1), 100);
+            $mol_assert_equal($bog_vmap_app_pane_ruler_step(2), 50);
+            $mol_assert_equal($bog_vmap_app_pane_ruler_step(0.5), 200);
+        },
+        'the step holds at the far ends of the zoom range'() {
+            $mol_assert_equal($bog_vmap_app_pane_ruler_step(0.05), 2000);
+            $mol_assert_equal($bog_vmap_app_pane_ruler_step(16), 5);
+            $mol_assert_ok($bog_vmap_app_pane_ruler_step(0.05) * 0.05 >= 64);
+            $mol_assert_ok($bog_vmap_app_pane_ruler_step(16) * 16 >= 64);
+        },
+        'a step of zero comes out of a zoom of zero, and nothing is drawn'() {
+            $mol_assert_equal($bog_vmap_app_pane_ruler_step(0), 0);
+            $mol_assert_like($bog_vmap_app_pane_ruler_ticks(0, 100, 0), []);
+        },
+        'ticks stand on round numbers inside the asked range'() {
+            const ticks = $bog_vmap_app_pane_ruler_ticks(-30, 220, 100);
+            $mol_assert_like(ticks.map(tick => tick.label), [0, 100, 200]);
+            $mol_assert_like(ticks.map(tick => tick.at), [0, 100, 200]);
+        },
+        'the zero of the ruler moves with its origin, labels stay relative to it'() {
+            const ticks = $bog_vmap_app_pane_ruler_ticks(100, 420, 100, 120);
+            $mol_assert_like(ticks.map(tick => tick.label), [0, 100, 200, 300]);
+            $mol_assert_like(ticks.map(tick => tick.at), [120, 220, 320, 420]);
+        },
+        'an empty or inside out range gives no ticks'() {
+            $mol_assert_like($bog_vmap_app_pane_ruler_ticks(100, 100, 10), []);
+            $mol_assert_like($bog_vmap_app_pane_ruler_ticks(200, 100, 10), []);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
 (function ($_1) {
     const box = (x, y, width, height) => ({ x, y, width, height });
     const column = [box(0, 0, 400, 100), box(0, 100, 400, 100), box(0, 200, 400, 100)];
@@ -13762,11 +13799,18 @@ var $;
             $mol_assert_equal(pane.ready(), false);
             $mol_assert_equal(pane.warmed(), false);
             $mol_assert_equal(pane.sub()[0] !== frame_before, true);
-            $mol_assert_equal(pane.sub()[0], pane.Scene(pane.scene_key()));
-            $mol_assert_equal(pane.sub().length, 6);
-            $mol_assert_equal(pane.sub()[3], pane.Values());
-            $mol_assert_equal(pane.sub()[4], pane.Names());
-            $mol_assert_equal(pane.sub()[5], pane.Marks());
+            const layers = pane.sub();
+            const kept = [
+                pane.Scene(pane.scene_key()),
+                pane.Overlay(),
+                pane.Wire(),
+                pane.Values(),
+                pane.Names(),
+                pane.Marks(),
+            ];
+            $mol_assert_like(layers.slice(0, kept.length), kept);
+            $mol_assert_equal(layers.includes(pane.Insert()), false);
+            $mol_assert_equal(layers.includes(pane.Draft()), false);
             $mol_assert_equal(pane.watchdog(), null);
             $mol_assert_equal(pane.heartbeat(), null);
             $mol_assert_equal(posted.length, 0);
@@ -16038,6 +16082,8 @@ var $;
 (function ($_7) {
     const d = '$';
     const root = `${d}doc`;
+    const calc = `${d}flow_calc`;
+    const map = `${d}flow_map`;
     const box = (x, y, width = 100, height = 50) => ({ x, y, width, height });
     const menu_pane = ($, over = {}) => {
         const peer = { origin: 'null', postMessage() { } };
@@ -16279,6 +16325,106 @@ var $;
                 $mol_assert_equal(key.prevented, false);
             }
             $mol_assert_equal(wrapped, 2);
+        },
+        'a board drawn by a drag keeps the dragged rectangle, rulers or not'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            const overlay = stage.overlay();
+            $mol_assert_equal(pane.ruler_shown(), true);
+            pane.tool_board(true);
+            stage.press(overlay, stage.client([40, 40]));
+            stage.move(overlay, stage.client([520, 760]));
+            stage.release(overlay, stage.client([520, 760]));
+            stage.redraw();
+            const node = stage.app.node();
+            const style = node.over_tree('Page', 'style')?.kids[0] ?? null;
+            const styled = (prop) => $bog_vmap_lang_dict_get(style, prop)?.value ?? null;
+            $mol_assert_like(node.part_names(), ['Page']);
+            $mol_assert_equal(styled('width'), '480px');
+            $mol_assert_equal(styled('minHeight'), '720px');
+            const spot = stage.app.spots()['Page'];
+            $mol_assert_equal(spot.x, stage.pane.world_point({ clientX: stage.client([40, 40])[0], clientY: stage.client([40, 40])[1] })[0]);
+            $mol_assert_equal(spot.y, stage.pane.world_point({ clientX: stage.client([40, 40])[0], clientY: stage.client([40, 40])[1] })[1]);
+        },
+        'the rulers show round marks, hide on a small pane and move their zero inside a node'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            stage.drop(calc, stage.client([200, 150]));
+            $mol_assert_equal(pane.ruler_shown(), true);
+            $mol_assert_equal(pane.ruler_views().length, 2);
+            const marks = pane.ruler_ticks('x').map(tick => tick.label);
+            $mol_assert_ok(marks.length);
+            $mol_assert_equal(marks.every(label => label % 100 === 0), true);
+            $mol_assert_equal(pane.tick_title('x:0'), String(marks[0]));
+            pane.entered('Calc');
+            stage.redraw();
+            const box = pane.part_size('Calc');
+            $mol_assert_like(pane.ruler_zero(), { x: box.x, y: box.y });
+            $mol_assert_ok(pane.ruler_ticks('x').some(tick => tick.label === 0 && tick.at === box.x));
+            pane.entered(null);
+            pane.pane_rect = () => ({ left: 0, top: 0, width: 300, height: 200 });
+            stage.redraw();
+            $mol_assert_equal(pane.ruler_shown(), false);
+            $mol_assert_like(pane.ruler_views(), []);
+            $mol_assert_like(pane.ruler_ticks('x'), []);
+        },
+        'the ruler paints the range taken by the selection'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([500, 150]));
+            stage.app.picked([]);
+            stage.redraw();
+            $mol_assert_equal(pane.ruler_span('x'), null);
+            stage.app.picked(['Calc', 'Map']);
+            stage.redraw();
+            const box = pane.picked_box();
+            const span = pane.ruler_span('x');
+            $mol_assert_ok(span);
+            $mol_assert_equal(span.size, box.width * pane.camera_zoom());
+            $mol_assert_equal(pane.span_style('x').width, box.width * pane.camera_zoom() + 'px');
+        },
+        'numbers show up on hover over a neighbour and only when something is picked'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([500, 150]));
+            const pane = stage.pane;
+            stage.app.picked([]);
+            pane.hovered('Map');
+            stage.redraw();
+            $mol_assert_like(pane.gaps().map(gap => gap.axis + ':' + gap.size), []);
+            stage.app.picked(['Calc']);
+            pane.hovered('Map');
+            stage.redraw();
+            const gaps = pane.gaps();
+            $mol_assert_equal(gaps.length, 1);
+            $mol_assert_equal(gaps[0].axis, 'x');
+            $mol_assert_equal(gaps[0].size, 200);
+            $mol_assert_equal(pane.gap_title(0), '200');
+            $mol_assert_equal(pane.gap_views().length, 1);
+            pane.hovered('Calc');
+            stage.redraw();
+            $mol_assert_like(pane.gaps().map(gap => gap.size), []);
+            stage.app.picked(['Calc', 'Map']);
+            pane.hovered('Map');
+            stage.redraw();
+            $mol_assert_like(pane.gaps().map(gap => gap.size), []);
+        },
+        'the number keeps its own size whatever the zoom is'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([500, 150]));
+            const pane = stage.pane;
+            stage.app.picked(['Calc']);
+            pane.hovered('Map');
+            stage.redraw();
+            const close = pane.gap_style(0);
+            pane.camera_zoom(0.3);
+            stage.redraw();
+            const far = pane.gap_style(0);
+            $mol_assert_like(Object.keys(close).sort(), ['left', 'top']);
+            $mol_assert_like(Object.keys(far).sort(), ['left', 'top']);
+            $mol_assert_equal(close.left === far.left, false);
         },
         'Cmd+G groups and Shift+Cmd+G ungroups, only with a pick and never typed into a field'($) {
             let grouped = 0;
@@ -18631,7 +18777,7 @@ var $;
         if (!over.store)
             store.doc_add('Сцена 1');
         const app = $bog_vmap_app.make({ $, store: () => store });
-        app.page_uri = () => 'http://localhost/';
+        app.page_uri = () => over.page ?? 'http://localhost/';
         $bog_vmap_app_flow_last = app;
         const posted = [];
         const queue = [];
@@ -23213,6 +23359,45 @@ var $;
 ;
 "use strict";
 var $;
+(function ($) {
+    const box = (x, y, width, height) => ({ x, y, width, height });
+    const sized = (gaps) => gaps.map(gap => gap.axis + ':' + gap.size);
+    $mol_test({
+        'a neighbour on the right gives the gap between the near edges'() {
+            const gaps = $bog_vmap_app_pane_gaps(box(0, 0, 100, 50), [box(180, 10, 100, 50)]);
+            $mol_assert_like(sized(gaps), ['x:80']);
+            $mol_assert_equal(gaps[0].from, 100);
+            $mol_assert_equal(gaps[0].to, 180);
+            $mol_assert_equal(gaps[0].cross, 30);
+        },
+        'a neighbour above gives the gap up, and the nearest one wins'() {
+            const gaps = $bog_vmap_app_pane_gaps(box(0, 200, 100, 50), [box(10, 0, 100, 50), box(10, 100, 100, 50)]);
+            $mol_assert_like(sized(gaps), ['y:50']);
+            $mol_assert_equal(gaps[0].from, 150);
+            $mol_assert_equal(gaps[0].to, 200);
+        },
+        'a neighbour standing aside gives no number at all'() {
+            const gaps = $bog_vmap_app_pane_gaps(box(0, 0, 100, 50), [box(300, 300, 100, 50)]);
+            $mol_assert_like(sized(gaps), []);
+        },
+        'parts standing side by side show a zero, not silence'() {
+            const gaps = $bog_vmap_app_pane_gaps(box(0, 0, 100, 50), [box(100, 0, 100, 50)]);
+            $mol_assert_like(sized(gaps), ['x:0']);
+        },
+        'the walls of the holder are measured as well'() {
+            const gaps = $bog_vmap_app_pane_gaps(box(120, 60, 100, 50), [], box(20, 20, 400, 300));
+            $mol_assert_like(sized(gaps), ['x:100', 'x:200', 'y:40', 'y:210']);
+        },
+        'a neighbour beats the wall when it stands closer'() {
+            const gaps = $bog_vmap_app_pane_gaps(box(120, 60, 100, 50), [box(260, 60, 40, 50)], box(20, 20, 400, 300));
+            $mol_assert_like(sized(gaps), ['x:100', 'x:40', 'y:40', 'y:210']);
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
 (function ($_1) {
     const d = '$';
     const clicked = { x: 0, y: 0, width: 0, height: 0 };
@@ -24153,6 +24338,67 @@ var $;
             stage.click(stage.scene_row('Сцена 1'));
             $mol_assert_equal($.$mol_state_arg.value('doc'), first);
         },
+        async 'an empty list on a local address gets the demo scene'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.page_uri = () => 'http://localhost:9080/bog/vmap/app/';
+            const store = app.store();
+            store.doc_land_config = () => null;
+            await $mol_wire_async(store).doc_first();
+            const doc = store.doc_current();
+            $mol_assert_equal(app.demo_local(), true);
+            $mol_assert_like(store.doc_links().map(link => store.doc(link).title()), [$bog_vmap_app_demo_title]);
+            $mol_assert_equal(store.doc_source(doc), $bog_vmap_app_demo_source);
+            $mol_assert_equal(store.node_js(doc, $bog_vmap_app_demo_root), $bog_vmap_app_demo_js);
+            $mol_assert_equal(store.node_css(doc, $bog_vmap_app_demo_root), $bog_vmap_app_demo_css);
+            $mol_assert_equal($bog_vmap_app_demo_whole(store.doc_source(doc)), true);
+        },
+        async 'an empty list on a live address gets an empty scene and not a byte of the demo'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.page_uri = () => 'https://b-on-g.github.io/vmap/';
+            const store = app.store();
+            store.doc_land_config = () => null;
+            await $mol_wire_async(store).doc_first();
+            const doc = store.doc_current();
+            $mol_assert_equal(app.demo_local(), false);
+            $mol_assert_like(store.doc_links().map(link => store.doc(link).title()), ['Сцена 1']);
+            $mol_assert_equal(store.doc_source(doc).includes('bog_mortgage'), false);
+            $mol_assert_equal(store.node_js(doc, $bog_vmap_app_demo_root), '');
+            $mol_assert_equal(store.node_css(doc, $bog_vmap_app_demo_root), '');
+        },
+        'a list that already holds a scene is left alone by the demo'($) {
+            const app = $bog_vmap_app.make({ $ });
+            app.page_uri = () => 'http://localhost:9080/bog/vmap/app/';
+            let added = 0;
+            let stated = 0;
+            const busy = {
+                doc_current: () => ({}),
+                doc_links: () => [{}],
+                doc_add: () => { ++added; return {}; },
+                doc_state: () => { ++stated; return {}; },
+                title_next: () => 'Сцена 2',
+                draft_source: () => '',
+                draft_spots: () => ({}),
+                draft_pack: () => '',
+            };
+            $mol_assert_equal(app.demo_wanted(busy), false);
+            app.demo_first(busy);
+            $mol_assert_equal(added, 0);
+            $mol_assert_equal(stated, 0);
+        },
+        'a local address covers the loopback, the .local name and the network address of the dev server'($) {
+            const app = $bog_vmap_app.make({ $ });
+            const local = (page) => {
+                app.page_uri = () => page;
+                return app.demo_local();
+            };
+            $mol_assert_equal(local('http://localhost:9080/bog/vmap/app/'), true);
+            $mol_assert_equal(local('http://127.0.0.1:9080/'), true);
+            $mol_assert_equal(local('http://mac.local:9080/'), true);
+            $mol_assert_equal(local('http://198.18.0.1:9080/'), true);
+            $mol_assert_equal(local('http://192.168.1.5:9080/'), true);
+            $mol_assert_equal(local('https://b-on-g.github.io/vmap/'), false);
+            $mol_assert_equal(local('https://vmap.example.com/'), false);
+        },
         'the shell is a head bar over three columns, and the canvas keeps no head of its own'($) {
             const app = $bog_vmap_app.make({ $ });
             const sub = app.sub();
@@ -24721,232 +24967,16 @@ var $;
 var $;
 (function ($_1) {
     const d = '$';
-    const scene_title = 'Ипотека';
+    const scene_title = $bog_vmap_app_demo_title;
     const scene_building = 'Ипотека (собирается)';
     const root_limit = 10000;
     const doc_limit = 15000;
     const step = 200;
-    const scene_root = d + 'bog_mortgage';
-    const scene_tree = [
-        `${d}bog_mortgage ${d}mol_view`,
-        `\tmonths_2_op? \\mul`,
-        `\tmonths_2_right? 12`,
-        `\tmonthly_2_op? \\div`,
-        `\tmonthly_2_right? 1200`,
-        `\tyears_2_value? 20`,
-        `\trate_2_value? 6`,
-        `\tend_op? \\add`,
-        `\tyear_auto? true`,
-        `\tyear_code? \\return new Date().getFullYear()`,
-        `\tmonths_op? \\mul`,
-        `\tmonths_right? 12`,
-        `\tmonthly_op? \\div`,
-        `\tmonthly_right? 1200`,
-        `\tyears_value? 20`,
-        `\trate_value? 18`,
-        `\tamount_value? 6000000`,
-        `\tsub /`,
-        `\t\t<= Loan`,
-        `\t\t<= Compare`,
-        `\tLoan ${d}mol_view`,
-        `\t\tstyle *`,
-        `\t\t\twidth \\480px`,
-        `\t\t\tminHeight \\720px`,
-        `\t\t\tflexDirection \\column`,
-        `\t\t\tbackground \\var(--mol_theme_back)`,
-        `\t\t\tcolor \\var(--mol_theme_text)`,
-        `\t\tsub /`,
-        `\t\t\t<= Title`,
-        `\t\t\t<= Amount`,
-        `\t\t\t<= Rate`,
-        `\t\t\t<= Years`,
-        `\t\t\t<= Monthly`,
-        `\t\t\t<= Months`,
-        `\t\t\t<= Payment`,
-        `\t\t\t<= Overpay`,
-        `\t\t\t<= Debt`,
-        `\t\t\t<= Year`,
-        `\t\t\t<= End`,
-        `\t\t\t<= Next`,
-        `\tCompare ${d}mol_view`,
-        `\t\tstyle *`,
-        `\t\t\twidth \\480px`,
-        `\t\t\tminHeight \\720px`,
-        `\t\t\tflexDirection \\column`,
-        `\t\t\tbackground \\var(--mol_theme_back)`,
-        `\t\t\tcolor \\var(--mol_theme_text)`,
-        `\t\tsub /`,
-        `\t\t\t<= Title_2`,
-        `\t\t\t<= Amount_2`,
-        `\t\t\t<= Rate_2`,
-        `\t\t\t<= Years_2`,
-        `\t\t\t<= Monthly_2`,
-        `\t\t\t<= Months_2`,
-        `\t\t\t<= Verdict`,
-        `\t\t\t<= Debt_2`,
-        `\t\t\t<= Back`,
-        `\tTitle ${d}mol_paragraph title \\Ипотека: платёж и переплата`,
-        `\tAmount ${d}mol_number`,
-        `\t\thint \\Сумма кредита, ₽`,
-        `\t\tvalue? <=> amount_value?`,
-        `\tRate ${d}mol_number`,
-        `\t\thint \\Ставка, % годовых`,
-        `\t\tvalue? <=> rate_value?`,
-        `\tYears ${d}mol_number`,
-        `\t\thint \\Срок, лет`,
-        `\t\tvalue? <=> years_value?`,
-        `\tMonthly ${d}bog_vmap_part_calc`,
-        `\t\tright? <=> monthly_right?`,
-        `\t\top? <=> monthly_op?`,
-        `\t\tleft <= rate_value_2`,
-        `\tMonths ${d}bog_vmap_part_calc`,
-        `\t\tright? <=> months_right?`,
-        `\t\top? <=> months_op?`,
-        `\t\tleft? <=> years_value_2?`,
-        `\tPayment ${d}mol_paragraph title <= payment`,
-        `\tOverpay ${d}mol_paragraph title <= overpay`,
-        `\tDebt ${d}bog_vmap_part_plot`,
-        `\t\ttitle \\Остаток долга по годам, ₽`,
-        `\t\tvalues <= balance`,
-        `\tYear ${d}bog_vmap_part_cell`,
-        `\t\tcode? <=> year_code?`,
-        `\t\tauto? <=> year_auto?`,
-        `\tEnd ${d}bog_vmap_part_calc`,
-        `\t\top? <=> end_op?`,
-        `\t\tright <= years_value_3`,
-        `\t\tleft <= year_result_number`,
-        `\tNext ${d}mol_link`,
-        `\t\ttitle \\Сравнить с другим вариантом →`,
-        `\t\targ * page \\Compare`,
-        `\tTitle_2 ${d}mol_paragraph title \\Сравнение: другая ставка или срок`,
-        `\tAmount_2 ${d}mol_number`,
-        `\t\thint \\Сумма кредита, ₽`,
-        `\t\tvalue? <=> amount_value_2?`,
-        `\tRate_2 ${d}mol_number`,
-        `\t\thint \\Ставка, % годовых`,
-        `\t\tvalue? <=> rate_2_value?`,
-        `\tYears_2 ${d}mol_number`,
-        `\t\thint \\Срок, лет`,
-        `\t\tvalue? <=> years_2_value?`,
-        `\tMonthly_2 ${d}bog_vmap_part_calc`,
-        `\t\tright? <=> monthly_2_right?`,
-        `\t\top? <=> monthly_2_op?`,
-        `\t\tleft <= rate_2_value_2`,
-        `\tMonths_2 ${d}bog_vmap_part_calc`,
-        `\t\tright? <=> months_2_right?`,
-        `\t\top? <=> months_2_op?`,
-        `\t\tleft <= years_2_value_2`,
-        `\tVerdict ${d}mol_paragraph title <= verdict`,
-        `\tDebt_2 ${d}bog_vmap_part_plot`,
-        `\t\ttitle \\Остаток долга, второй вариант, ₽`,
-        `\t\tvalues <= balance_2`,
-        `\tBack ${d}mol_link`,
-        `\t\ttitle \\← К расчёту`,
-        `\t\targ * page \\Loan`,
-        `\trate_value_2 = Rate value`,
-        `\tyears_value_2? = Years value?`,
-        `\tyears_value_3 = Years value`,
-        `\tyear_result_number = Year result_number`,
-        `\trate_2_value_2 = Rate_2 value`,
-        `\tyears_2_value_2 = Years_2 value`,
-        `\tamount_value_2? = Amount value?`,
-        `\tpayment null`,
-        `\toverpay null`,
-        `\tbalance null`,
-        `\tverdict null`,
-        `\tbalance_2 null`,
-        ``,
-    ].join('\n');
-    const body = [
-        'annuity( sum = 0, rate = 0, months = 0 ) {',
-        '	if( !( sum > 0 ) || !( months > 0 ) ) return NaN',
-        '	if( !( rate > 0 ) ) return sum / months',
-        '	return sum * rate / ( 1 - Math.pow( 1 + rate, -months ) )',
-        '}',
-        '',
-        'schedule( sum = 0, rate = 0, months = 0 ) {',
-        '	const pay = this.annuity( sum, rate, months )',
-        '	if( !Number.isFinite( pay ) ) return [ 0 ]',
-        '	const out = [ Math.round( sum ) ]',
-        '	let debt = sum',
-        '	for( let month = 1; month <= months; month += 1 ) {',
-        '		debt = debt * ( 1 + rate ) - pay',
-        '		if( month % 12 === 0 ) out.push( Math.max( 0, Math.round( debt ) ) )',
-        '	}',
-        '	return out',
-        '}',
-        '',
-        'rub( value = 0 ) {',
-        '	return Math.round( value ).toLocaleString( \'ru-RU\' ) + \' ₽\'',
-        '}',
-        '',
-        'payment() {',
-        '	const pay = this.annuity( this.Amount().value(), this.Monthly().result(), this.Months().result() )',
-        '	if( !Number.isFinite( pay ) ) return \'Заполните сумму, ставку и срок\'',
-        '	return \'Платёж \' + this.rub( pay ) + \' в месяц\'',
-        '}',
-        '',
-        'overpay() {',
-        '	const sum = this.Amount().value()',
-        '	const months = this.Months().result()',
-        '	const pay = this.annuity( sum, this.Monthly().result(), months )',
-        '	if( !Number.isFinite( pay ) ) return \'\'',
-        '	return \'Переплата \' + this.rub( pay * months - sum ) + \' за \' + months + \' мес.\'',
-        '}',
-        '',
-        'balance() {',
-        '	return this.schedule( this.Amount().value(), this.Monthly().result(), this.Months().result() )',
-        '}',
-        '',
-        'balance_2() {',
-        '	return this.schedule( this.Amount_2().value(), this.Monthly_2().result(), this.Months_2().result() )',
-        '}',
-        '',
-        'verdict() {',
-        '	const sum = this.Amount_2().value()',
-        '	const first = this.annuity( sum, this.Monthly().result(), this.Months().result() ) * this.Months().result() - sum',
-        '	const pay = this.annuity( sum, this.Monthly_2().result(), this.Months_2().result() )',
-        '	const second = pay * this.Months_2().result() - sum',
-        '	if( !Number.isFinite( first ) || !Number.isFinite( second ) ) return \'Заполните оба варианта\'',
-        '	const side = second < first ? \'меньше\' : \'больше\'',
-        '	return \'Платёж \' + this.rub( pay ) + \', переплата \' + this.rub( second ) + \' — на \' + this.rub( Math.abs( first - second ) ) + \' \' + side + \', чем в первом варианте\'',
-        '}',
-        '',
-    ].join('\n');
-    const style = [
-        '[bog_mortgage_loan],',
-        '[bog_mortgage_compare] {',
-        '	padding: 1.5rem;',
-        '	gap: .75rem;',
-        '}',
-        '',
-        '[bog_mortgage_payment],',
-        '[bog_mortgage_verdict] {',
-        '	font-size: 1.25rem;',
-        '	font-weight: bold;',
-        '}',
-        '',
-    ].join('\n');
-    let shape = null;
-    function wanted() {
-        if (shape)
-            return shape;
-        const want = $bog_vmap_lang_node.make({ source: () => scene_tree });
-        return shape = {
-            props: [...want.prop_names()].sort(),
-            subs: ['', ...want.sub_names() ?? []].map(owner => [owner, want.sub_names(owner)]),
-            links: want.links().length,
-        };
-    }
-    function complete(text) {
-        if (!text)
-            return false;
-        const want = wanted();
-        const have = $bog_vmap_lang_node.make({ source: () => text });
-        return $mol_compare_deep([...have.prop_names()].sort(), want.props)
-            && want.subs.every(([owner, names]) => $mol_compare_deep(have.sub_names(owner), names))
-            && have.links().length === want.links;
-    }
+    const scene_root = $bog_vmap_app_demo_root;
+    const scene_tree = $bog_vmap_app_demo_source;
+    const body = $bog_vmap_app_demo_js;
+    const style = $bog_vmap_app_demo_css;
+    const complete = $bog_vmap_app_demo_whole;
     function ask(task) {
         return $mol_wire_async(task)();
     }
@@ -25042,6 +25072,13 @@ var $;
         });
     }
     $mol_test({
+        'the builder and the demo share one text, not a copy'() {
+            $mol_assert_equal(scene_tree, $bog_vmap_app_demo_source);
+            $mol_assert_equal(body, $bog_vmap_app_demo_js);
+            $mol_assert_equal(style, $bog_vmap_app_demo_css);
+            $mol_assert_equal(scene_title, $bog_vmap_app_demo_title);
+            $mol_assert_equal(scene_root, $bog_vmap_app_demo_root);
+        },
         async 'a whole mortgage scene survives the next pass untouched'($) {
             const stage = $bog_vmap_app_flow_stage($);
             const store = stage.store;

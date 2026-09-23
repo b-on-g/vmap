@@ -49236,6 +49236,15 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
+    const $bog_vmap_app_demo_title = "\u0418\u043F\u043E\u0442\u0435\u043A\u0430";
+    const $bog_vmap_app_demo_root: string;
+    const $bog_vmap_app_demo_source: string;
+    const $bog_vmap_app_demo_js: string;
+    const $bog_vmap_app_demo_css: string;
+    function $bog_vmap_app_demo_whole(text: string): boolean;
+}
+
+declare namespace $ {
     function $bog_vmap_app_export_zip_crc32(bytes: Uint8Array): number;
     function $bog_vmap_app_export_zip(this: $, files: readonly $bog_vmap_app_export_file[]): Uint8Array<ArrayBuffer>;
     function $bog_vmap_app_export_zip_archive(this: $, module: $bog_vmap_app_export_module): Uint8Array<ArrayBuffer>;
@@ -50917,6 +50926,10 @@ declare namespace $.$$ {
         doc_root(): string;
         doc_root_default(): string;
         doc_source_initial(): string;
+        demo_host(): string;
+        demo_local(): boolean;
+        demo_wanted(store: $bog_vmap_app_store): boolean;
+        demo_first(store: $bog_vmap_app_store): void;
         store(): $bog_vmap_app_store;
         doc_source(next?: string): string;
         node(): $bog_vmap_lang_node;
@@ -51510,6 +51523,15 @@ declare namespace $ {
 }
 
 declare namespace $ {
+    type $bog_vmap_app_pane_ruler_tick = {
+        readonly at: number;
+        readonly label: number;
+    };
+    function $bog_vmap_app_pane_ruler_step(zoom: number, room?: number): number;
+    function $bog_vmap_app_pane_ruler_ticks(from: number, to: number, step: number, zero?: number): readonly $bog_vmap_app_pane_ruler_tick[];
+}
+
+declare namespace $ {
     type $bog_vmap_app_pane_slot = {
         readonly owner: string;
         readonly index: number;
@@ -51817,96 +51839,131 @@ declare namespace $ {
 		ReturnType< $mol_view['style'] >
 	>
 	type $mol_view__style_bog_vmap_app_pane_56 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['gap_style'] >
+		,
+		ReturnType< $mol_view['style'] >
+	>
+	type $mol_view__sub_bog_vmap_app_pane_57 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__style_bog_vmap_app_pane_58 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['ruler_style'] >
+		,
+		ReturnType< $mol_view['style'] >
+	>
+	type $mol_view__sub_bog_vmap_app_pane_59 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['ruler_sub'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__style_bog_vmap_app_pane_60 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['tick_style'] >
+		,
+		ReturnType< $mol_view['style'] >
+	>
+	type $mol_view__sub_bog_vmap_app_pane_61 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_view__style_bog_vmap_app_pane_62 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['span_style'] >
+		,
+		ReturnType< $mol_view['style'] >
+	>
+	type $mol_view__style_bog_vmap_app_pane_63 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['ghost_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $bog_vmap_app_menu__showed_bog_vmap_app_pane_57 = $mol_type_enforce<
+	type $bog_vmap_app_menu__showed_bog_vmap_app_pane_64 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_showed'] >
 		,
 		ReturnType< $bog_vmap_app_menu['showed'] >
 	>
-	type $bog_vmap_app_menu__left_bog_vmap_app_pane_58 = $mol_type_enforce<
+	type $bog_vmap_app_menu__left_bog_vmap_app_pane_65 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_left'] >
 		,
 		ReturnType< $bog_vmap_app_menu['left'] >
 	>
-	type $bog_vmap_app_menu__top_bog_vmap_app_pane_59 = $mol_type_enforce<
+	type $bog_vmap_app_menu__top_bog_vmap_app_pane_66 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_top'] >
 		,
 		ReturnType< $bog_vmap_app_menu['top'] >
 	>
-	type $bog_vmap_app_menu__on_node_bog_vmap_app_pane_60 = $mol_type_enforce<
+	type $bog_vmap_app_menu__on_node_bog_vmap_app_pane_67 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_on_node'] >
 		,
 		ReturnType< $bog_vmap_app_menu['on_node'] >
 	>
-	type $bog_vmap_app_menu__editable_bog_vmap_app_pane_61 = $mol_type_enforce<
+	type $bog_vmap_app_menu__editable_bog_vmap_app_pane_68 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['editable'] >
 		,
 		ReturnType< $bog_vmap_app_menu['editable'] >
 	>
-	type $bog_vmap_app_menu__copy_bog_vmap_app_pane_62 = $mol_type_enforce<
+	type $bog_vmap_app_menu__copy_bog_vmap_app_pane_69 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_copy'] >
 		,
 		ReturnType< $bog_vmap_app_menu['copy'] >
 	>
-	type $bog_vmap_app_menu__remove_bog_vmap_app_pane_63 = $mol_type_enforce<
+	type $bog_vmap_app_menu__remove_bog_vmap_app_pane_70 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_delete'] >
 		,
 		ReturnType< $bog_vmap_app_menu['remove'] >
 	>
-	type $bog_vmap_app_menu__wrap_bog_vmap_app_pane_64 = $mol_type_enforce<
+	type $bog_vmap_app_menu__wrap_bog_vmap_app_pane_71 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_wrap'] >
 		,
 		ReturnType< $bog_vmap_app_menu['wrap'] >
 	>
-	type $bog_vmap_app_menu__group_bog_vmap_app_pane_65 = $mol_type_enforce<
+	type $bog_vmap_app_menu__group_bog_vmap_app_pane_72 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_group'] >
 		,
 		ReturnType< $bog_vmap_app_menu['group'] >
 	>
-	type $bog_vmap_app_menu__ungroup_bog_vmap_app_pane_66 = $mol_type_enforce<
+	type $bog_vmap_app_menu__ungroup_bog_vmap_app_pane_73 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_ungroup'] >
 		,
 		ReturnType< $bog_vmap_app_menu['ungroup'] >
 	>
-	type $bog_vmap_app_menu__ungroup_enabled_bog_vmap_app_pane_67 = $mol_type_enforce<
+	type $bog_vmap_app_menu__ungroup_enabled_bog_vmap_app_pane_74 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['ungroup_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_menu['ungroup_enabled'] >
 	>
-	type $bog_vmap_app_menu__reset_bog_vmap_app_pane_68 = $mol_type_enforce<
+	type $bog_vmap_app_menu__reset_bog_vmap_app_pane_75 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_reset_all'] >
 		,
 		ReturnType< $bog_vmap_app_menu['reset'] >
 	>
-	type $bog_vmap_app_menu__reset_enabled_bog_vmap_app_pane_69 = $mol_type_enforce<
+	type $bog_vmap_app_menu__reset_enabled_bog_vmap_app_pane_76 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['reset_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_menu['reset_enabled'] >
 	>
-	type $bog_vmap_app_menu__parent_bog_vmap_app_pane_70 = $mol_type_enforce<
+	type $bog_vmap_app_menu__parent_bog_vmap_app_pane_77 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_parent'] >
 		,
 		ReturnType< $bog_vmap_app_menu['parent'] >
 	>
-	type $bog_vmap_app_menu__parent_enabled_bog_vmap_app_pane_71 = $mol_type_enforce<
+	type $bog_vmap_app_menu__parent_enabled_bog_vmap_app_pane_78 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_parent_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_menu['parent_enabled'] >
 	>
-	type $bog_vmap_app_menu__enter_bog_vmap_app_pane_72 = $mol_type_enforce<
+	type $bog_vmap_app_menu__enter_bog_vmap_app_pane_79 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_enter'] >
 		,
 		ReturnType< $bog_vmap_app_menu['enter'] >
 	>
-	type $bog_vmap_app_menu__board_bog_vmap_app_pane_73 = $mol_type_enforce<
+	type $bog_vmap_app_menu__board_bog_vmap_app_pane_80 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_board'] >
 		,
 		ReturnType< $bog_vmap_app_menu['board'] >
 	>
-	type $bog_vmap_app_menu__fit_bog_vmap_app_pane_74 = $mol_type_enforce<
+	type $bog_vmap_app_menu__fit_bog_vmap_app_pane_81 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['camera_reset'] >
 		,
 		ReturnType< $bog_vmap_app_menu['fit'] >
@@ -51963,6 +52020,13 @@ declare namespace $ {
 		band_style( ): Record<string, any>
 		draft_style( ): Record<string, any>
 		guide_style( id: any): Record<string, any>
+		gap_style( id: any): Record<string, any>
+		gap_title( id: any): string
+		ruler_style( id: any): Record<string, any>
+		ruler_sub( id: any): readonly($mol_view)[]
+		tick_style( id: any): Record<string, any>
+		tick_title( id: any): string
+		span_style( id: any): Record<string, any>
 		ghost_style( id: any): Record<string, any>
 		menu_showed( next?: boolean ): boolean
 		menu_left( ): string
@@ -52081,6 +52145,10 @@ declare namespace $ {
 		Band( ): $mol_view
 		Draft( ): $mol_view
 		Guide( id: any): $mol_view
+		Gap( id: any): $mol_view
+		Ruler( id: any): $mol_view
+		Tick( id: any): $mol_view
+		Span( id: any): $mol_view
 		Ghost( id: any): $mol_view
 		Menu( id: any): $bog_vmap_app_menu
 		plugins( ): readonly(any)[]
@@ -52440,6 +52508,46 @@ declare namespace $.$$ {
             readonly [name: string]: unknown;
         }, shift: readonly [number, number]): $bog_vmap_app_pane_snap | null;
         guides(next?: readonly $bog_vmap_app_pane_snap_line[]): readonly $bog_vmap_app_pane_snap_line[];
+        gap_bounds(name: string): $bog_vmap_bridge_rect | null;
+        picked_box(): {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+        } | null;
+        gaps(): readonly $bog_vmap_app_pane_gap[];
+        ruler_size(): 0 | 20;
+        ruler_room(): {
+            width: number;
+            height: number;
+        };
+        ruler_shown(): boolean;
+        ruler_zero(): {
+            x: number;
+            y: number;
+        };
+        ruler_ticks(axis: $bog_vmap_app_pane_snap_axis): readonly $bog_vmap_app_pane_ruler_tick[];
+        ruler_span(axis: $bog_vmap_app_pane_snap_axis): {
+            at: number;
+            size: number;
+        } | null;
+        ruler_views(): $mol_view[];
+        ruler_sub(axis: string): readonly $mol_view[];
+        ruler_style(axis: string): {
+            readonly [prop: string]: string;
+        };
+        tick_title(key: string): string;
+        tick_style(key: string): {
+            readonly [prop: string]: string;
+        };
+        span_style(axis: string): {
+            readonly [prop: string]: string;
+        };
+        gap_views(): $mol_view[];
+        gap_title(index: number): string;
+        gap_style(index: number): {
+            readonly [prop: string]: string;
+        };
         guide_views(): $mol_view[];
         guide_style(index: number): {
             readonly [prop: string]: string;
@@ -52744,6 +52852,17 @@ declare namespace $.$$ {
 }
 
 declare namespace $.$$ {
+}
+
+declare namespace $ {
+    type $bog_vmap_app_pane_gap = {
+        readonly axis: $bog_vmap_app_pane_snap_axis;
+        readonly size: number;
+        readonly from: number;
+        readonly to: number;
+        readonly cross: number;
+    };
+    function $bog_vmap_app_pane_gaps(box: $bog_vmap_bridge_rect, others: readonly $bog_vmap_bridge_rect[], bounds?: $bog_vmap_bridge_rect | null): readonly $bog_vmap_app_pane_gap[];
 }
 
 declare namespace $ {

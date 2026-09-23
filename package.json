@@ -420,6 +420,8 @@
     "$bog_vmap_bridge",
     "$bog_vmap_app_pane_screen",
     "$bog_vmap_app_pane_snap",
+    "$bog_vmap_app_pane_gaps",
+    "$bog_vmap_app_pane_ruler",
     "$bog_vmap_app_pane_slot",
     "$bog_vmap_app_pane_hole",
     "$bog_vmap_app_store",
@@ -463,6 +465,7 @@
     "$mol_chip",
     "$bog_vmap_app_history",
     "$bog_vmap_app_history_snap",
+    "$bog_vmap_app_demo",
     "$bog_vmap_app_export_zip",
     "$mol_image",
     "$bog_vmap_app_copy"

@@ -2216,6 +2216,19 @@ $bog_vmap_app_pane $mol_view
 		style <= draft_style *
 	Guide* $mol_view
 		style <= guide_style* *
+	Gap* $mol_view
+		style <= gap_style* *
+		sub /
+			<= gap_title* \
+	Ruler* $mol_view
+		style <= ruler_style* *
+		sub <= ruler_sub* /$mol_view
+	Tick* $mol_view
+		style <= tick_style* *
+		sub /
+			<= tick_title* \
+	Span* $mol_view
+		style <= span_style* *
 	Ghost* $mol_view
 		style <= ghost_style* *
 	Menu* $bog_vmap_app_menu

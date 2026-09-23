@@ -30648,6 +30648,236 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    const d = '$';
+    $.$bog_vmap_app_demo_title = 'Ипотека';
+    $.$bog_vmap_app_demo_root = d + 'bog_mortgage';
+    $.$bog_vmap_app_demo_source = [
+        `${d}bog_mortgage ${d}mol_view`,
+        `\tmonths_2_op? \\mul`,
+        `\tmonths_2_right? 12`,
+        `\tmonthly_2_op? \\div`,
+        `\tmonthly_2_right? 1200`,
+        `\tyears_2_value? 20`,
+        `\trate_2_value? 6`,
+        `\tend_op? \\add`,
+        `\tyear_auto? true`,
+        `\tyear_code? \\return new Date().getFullYear()`,
+        `\tmonths_op? \\mul`,
+        `\tmonths_right? 12`,
+        `\tmonthly_op? \\div`,
+        `\tmonthly_right? 1200`,
+        `\tyears_value? 20`,
+        `\trate_value? 18`,
+        `\tamount_value? 6000000`,
+        `\tsub /`,
+        `\t\t<= Loan`,
+        `\t\t<= Compare`,
+        `\tLoan ${d}mol_view`,
+        `\t\tstyle *`,
+        `\t\t\twidth \\480px`,
+        `\t\t\tminHeight \\720px`,
+        `\t\t\tflexDirection \\column`,
+        `\t\t\tbackground \\var(--mol_theme_back)`,
+        `\t\t\tcolor \\var(--mol_theme_text)`,
+        `\t\tsub /`,
+        `\t\t\t<= Title`,
+        `\t\t\t<= Amount`,
+        `\t\t\t<= Rate`,
+        `\t\t\t<= Years`,
+        `\t\t\t<= Monthly`,
+        `\t\t\t<= Months`,
+        `\t\t\t<= Payment`,
+        `\t\t\t<= Overpay`,
+        `\t\t\t<= Debt`,
+        `\t\t\t<= Year`,
+        `\t\t\t<= End`,
+        `\t\t\t<= Next`,
+        `\tCompare ${d}mol_view`,
+        `\t\tstyle *`,
+        `\t\t\twidth \\480px`,
+        `\t\t\tminHeight \\720px`,
+        `\t\t\tflexDirection \\column`,
+        `\t\t\tbackground \\var(--mol_theme_back)`,
+        `\t\t\tcolor \\var(--mol_theme_text)`,
+        `\t\tsub /`,
+        `\t\t\t<= Title_2`,
+        `\t\t\t<= Amount_2`,
+        `\t\t\t<= Rate_2`,
+        `\t\t\t<= Years_2`,
+        `\t\t\t<= Monthly_2`,
+        `\t\t\t<= Months_2`,
+        `\t\t\t<= Verdict`,
+        `\t\t\t<= Debt_2`,
+        `\t\t\t<= Back`,
+        `\tTitle ${d}mol_paragraph title \\Ипотека: платёж и переплата`,
+        `\tAmount ${d}mol_number`,
+        `\t\thint \\Сумма кредита, ₽`,
+        `\t\tvalue? <=> amount_value?`,
+        `\tRate ${d}mol_number`,
+        `\t\thint \\Ставка, % годовых`,
+        `\t\tvalue? <=> rate_value?`,
+        `\tYears ${d}mol_number`,
+        `\t\thint \\Срок, лет`,
+        `\t\tvalue? <=> years_value?`,
+        `\tMonthly ${d}bog_vmap_part_calc`,
+        `\t\tright? <=> monthly_right?`,
+        `\t\top? <=> monthly_op?`,
+        `\t\tleft <= rate_value_2`,
+        `\tMonths ${d}bog_vmap_part_calc`,
+        `\t\tright? <=> months_right?`,
+        `\t\top? <=> months_op?`,
+        `\t\tleft? <=> years_value_2?`,
+        `\tPayment ${d}mol_paragraph title <= payment`,
+        `\tOverpay ${d}mol_paragraph title <= overpay`,
+        `\tDebt ${d}bog_vmap_part_plot`,
+        `\t\ttitle \\Остаток долга по годам, ₽`,
+        `\t\tvalues <= balance`,
+        `\tYear ${d}bog_vmap_part_cell`,
+        `\t\tcode? <=> year_code?`,
+        `\t\tauto? <=> year_auto?`,
+        `\tEnd ${d}bog_vmap_part_calc`,
+        `\t\top? <=> end_op?`,
+        `\t\tright <= years_value_3`,
+        `\t\tleft <= year_result_number`,
+        `\tNext ${d}mol_link`,
+        `\t\ttitle \\Сравнить с другим вариантом →`,
+        `\t\targ * page \\Compare`,
+        `\tTitle_2 ${d}mol_paragraph title \\Сравнение: другая ставка или срок`,
+        `\tAmount_2 ${d}mol_number`,
+        `\t\thint \\Сумма кредита, ₽`,
+        `\t\tvalue? <=> amount_value_2?`,
+        `\tRate_2 ${d}mol_number`,
+        `\t\thint \\Ставка, % годовых`,
+        `\t\tvalue? <=> rate_2_value?`,
+        `\tYears_2 ${d}mol_number`,
+        `\t\thint \\Срок, лет`,
+        `\t\tvalue? <=> years_2_value?`,
+        `\tMonthly_2 ${d}bog_vmap_part_calc`,
+        `\t\tright? <=> monthly_2_right?`,
+        `\t\top? <=> monthly_2_op?`,
+        `\t\tleft <= rate_2_value_2`,
+        `\tMonths_2 ${d}bog_vmap_part_calc`,
+        `\t\tright? <=> months_2_right?`,
+        `\t\top? <=> months_2_op?`,
+        `\t\tleft <= years_2_value_2`,
+        `\tVerdict ${d}mol_paragraph title <= verdict`,
+        `\tDebt_2 ${d}bog_vmap_part_plot`,
+        `\t\ttitle \\Остаток долга, второй вариант, ₽`,
+        `\t\tvalues <= balance_2`,
+        `\tBack ${d}mol_link`,
+        `\t\ttitle \\← К расчёту`,
+        `\t\targ * page \\Loan`,
+        `\trate_value_2 = Rate value`,
+        `\tyears_value_2? = Years value?`,
+        `\tyears_value_3 = Years value`,
+        `\tyear_result_number = Year result_number`,
+        `\trate_2_value_2 = Rate_2 value`,
+        `\tyears_2_value_2 = Years_2 value`,
+        `\tamount_value_2? = Amount value?`,
+        `\tpayment null`,
+        `\toverpay null`,
+        `\tbalance null`,
+        `\tverdict null`,
+        `\tbalance_2 null`,
+        ``,
+    ].join('\n');
+    $.$bog_vmap_app_demo_js = [
+        'annuity( sum = 0, rate = 0, months = 0 ) {',
+        '	if( !( sum > 0 ) || !( months > 0 ) ) return NaN',
+        '	if( !( rate > 0 ) ) return sum / months',
+        '	return sum * rate / ( 1 - Math.pow( 1 + rate, -months ) )',
+        '}',
+        '',
+        'schedule( sum = 0, rate = 0, months = 0 ) {',
+        '	const pay = this.annuity( sum, rate, months )',
+        '	if( !Number.isFinite( pay ) ) return [ 0 ]',
+        '	const out = [ Math.round( sum ) ]',
+        '	let debt = sum',
+        '	for( let month = 1; month <= months; month += 1 ) {',
+        '		debt = debt * ( 1 + rate ) - pay',
+        '		if( month % 12 === 0 ) out.push( Math.max( 0, Math.round( debt ) ) )',
+        '	}',
+        '	return out',
+        '}',
+        '',
+        'rub( value = 0 ) {',
+        '	return Math.round( value ).toLocaleString( \'ru-RU\' ) + \' ₽\'',
+        '}',
+        '',
+        'payment() {',
+        '	const pay = this.annuity( this.Amount().value(), this.Monthly().result(), this.Months().result() )',
+        '	if( !Number.isFinite( pay ) ) return \'Заполните сумму, ставку и срок\'',
+        '	return \'Платёж \' + this.rub( pay ) + \' в месяц\'',
+        '}',
+        '',
+        'overpay() {',
+        '	const sum = this.Amount().value()',
+        '	const months = this.Months().result()',
+        '	const pay = this.annuity( sum, this.Monthly().result(), months )',
+        '	if( !Number.isFinite( pay ) ) return \'\'',
+        '	return \'Переплата \' + this.rub( pay * months - sum ) + \' за \' + months + \' мес.\'',
+        '}',
+        '',
+        'balance() {',
+        '	return this.schedule( this.Amount().value(), this.Monthly().result(), this.Months().result() )',
+        '}',
+        '',
+        'balance_2() {',
+        '	return this.schedule( this.Amount_2().value(), this.Monthly_2().result(), this.Months_2().result() )',
+        '}',
+        '',
+        'verdict() {',
+        '	const sum = this.Amount_2().value()',
+        '	const first = this.annuity( sum, this.Monthly().result(), this.Months().result() ) * this.Months().result() - sum',
+        '	const pay = this.annuity( sum, this.Monthly_2().result(), this.Months_2().result() )',
+        '	const second = pay * this.Months_2().result() - sum',
+        '	if( !Number.isFinite( first ) || !Number.isFinite( second ) ) return \'Заполните оба варианта\'',
+        '	const side = second < first ? \'меньше\' : \'больше\'',
+        '	return \'Платёж \' + this.rub( pay ) + \', переплата \' + this.rub( second ) + \' — на \' + this.rub( Math.abs( first - second ) ) + \' \' + side + \', чем в первом варианте\'',
+        '}',
+        '',
+    ].join('\n');
+    $.$bog_vmap_app_demo_css = [
+        '[bog_mortgage_loan],',
+        '[bog_mortgage_compare] {',
+        '	padding: 1.5rem;',
+        '	gap: .75rem;',
+        '}',
+        '',
+        '[bog_mortgage_payment],',
+        '[bog_mortgage_verdict] {',
+        '	font-size: 1.25rem;',
+        '	font-weight: bold;',
+        '}',
+        '',
+    ].join('\n');
+    let shape = null;
+    function wanted() {
+        if (shape)
+            return shape;
+        const want = $bog_vmap_lang_node.make({ source: () => $.$bog_vmap_app_demo_source });
+        return shape = {
+            props: [...want.prop_names()].sort(),
+            subs: ['', ...want.sub_names() ?? []].map(owner => [owner, want.sub_names(owner)]),
+            links: want.links().length,
+        };
+    }
+    function $bog_vmap_app_demo_whole(text) {
+        if (!text)
+            return false;
+        const want = wanted();
+        const have = $bog_vmap_lang_node.make({ source: () => text });
+        return $mol_compare_deep([...have.prop_names()].sort(), want.props)
+            && want.subs.every(([owner, names]) => $mol_compare_deep(have.sub_names(owner), names))
+            && have.links().length === want.links;
+    }
+    $.$bog_vmap_app_demo_whole = $bog_vmap_app_demo_whole;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
     const crc_table = (() => {
         const table = new Uint32Array(256);
         for (let i = 0; i < 256; ++i) {
@@ -31851,8 +32081,44 @@ var $;
             doc_source_initial() {
                 return `${this.doc_root_default()} $mol_view\n\tsub /\n`;
             }
+            demo_host() {
+                try {
+                    return new URL(this.page_uri()).hostname;
+                }
+                catch (error) {
+                    return '';
+                }
+            }
+            demo_local() {
+                const host = this.demo_host();
+                if (!host)
+                    return false;
+                if (['localhost', '127.0.0.1', '::1', '[::1]'].includes(host))
+                    return true;
+                if (host.endsWith('.local'))
+                    return true;
+                return /^(?:10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|198\.1[89]\.)/.test(host);
+            }
+            demo_wanted(store) {
+                return this.demo_local() && store.doc_links().length === 0;
+            }
+            demo_first(store) {
+                if (store.doc_current())
+                    return;
+                if (!this.demo_wanted(store)) {
+                    store.doc_add(store.title_next(), store.draft_source(), store.draft_spots(), store.draft_pack());
+                    return;
+                }
+                const doc = store.doc_add(this.$.$bog_vmap_app_demo_title, this.$.$bog_vmap_app_demo_source);
+                store.node_js(doc, this.$.$bog_vmap_app_demo_root, this.$.$bog_vmap_app_demo_js);
+                store.node_css(doc, this.$.$bog_vmap_app_demo_root, this.$.$bog_vmap_app_demo_css);
+            }
             store() {
-                return this.$.$bog_vmap_app_store.make({ $: this.$ });
+                const store = this.$.$bog_vmap_app_store.make({
+                    $: this.$,
+                    doc_first: () => this.demo_first(store),
+                });
+                return store;
             }
             doc_source(next) {
                 const store = this.store();
@@ -33620,6 +33886,9 @@ var $;
             $mol_mem
         ], $bog_vmap_app.prototype, "stall_content", null);
         __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "demo_first", null);
+        __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "store", null);
         __decorate([
@@ -34852,6 +35121,27 @@ var $;
 		guide_style(id){
 			return {};
 		}
+		gap_style(id){
+			return {};
+		}
+		gap_title(id){
+			return "";
+		}
+		ruler_style(id){
+			return {};
+		}
+		ruler_sub(id){
+			return [];
+		}
+		tick_style(id){
+			return {};
+		}
+		tick_title(id){
+			return "";
+		}
+		span_style(id){
+			return {};
+		}
 		ghost_style(id){
 			return {};
 		}
@@ -35318,6 +35608,29 @@ var $;
 			(obj.style) = () => ((this.guide_style(id)));
 			return obj;
 		}
+		Gap(id){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.gap_style(id)));
+			(obj.sub) = () => ([(this.gap_title(id))]);
+			return obj;
+		}
+		Ruler(id){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.ruler_style(id)));
+			(obj.sub) = () => ((this.ruler_sub(id)));
+			return obj;
+		}
+		Tick(id){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.tick_style(id)));
+			(obj.sub) = () => ([(this.tick_title(id))]);
+			return obj;
+		}
+		Span(id){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.span_style(id)));
+			return obj;
+		}
 		Ghost(id){
 			const obj = new this.$.$mol_view();
 			(obj.style) = () => ((this.ghost_style(id)));
@@ -35435,6 +35748,10 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Band"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Draft"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Guide"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Gap"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Ruler"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Tick"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Span"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Ghost"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Menu"));
 	($.$bog_vmap_app_pane_overlay) = class $bog_vmap_app_pane_overlay extends ($.$mol_view) {
@@ -35675,6 +35992,43 @@ var $;
         return { dx, dy, lines: [...lines.values()] };
     }
     $.$bog_vmap_app_pane_snap = $bog_vmap_app_pane_snap;
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const ladder = [1, 2, 5];
+    function $bog_vmap_app_pane_ruler_step(zoom, room = 64) {
+        if (!(zoom > 0) || !(room > 0))
+            return 0;
+        const want = room / zoom;
+        const power = Math.floor(Math.log10(want));
+        for (let order = power; order < power + 3; ++order) {
+            const base = Math.pow(10, order);
+            for (const step of ladder) {
+                if (step * base >= want)
+                    return step * base;
+            }
+        }
+        return Math.pow(10, power + 3);
+    }
+    $.$bog_vmap_app_pane_ruler_step = $bog_vmap_app_pane_ruler_step;
+    function $bog_vmap_app_pane_ruler_ticks(from, to, step, zero = 0) {
+        if (!(step > 0) || !(to > from))
+            return [];
+        const ticks = [];
+        const first = Math.ceil((from - zero) / step);
+        const last = Math.floor((to - zero) / step);
+        if (last - first > 1000)
+            return [];
+        for (let turn = first; turn <= last; ++turn) {
+            const label = turn * step;
+            ticks.push({ at: zero + label, label: Math.round(label) + 0 || 0 });
+        }
+        return ticks;
+    }
+    $.$bog_vmap_app_pane_ruler_ticks = $bog_vmap_app_pane_ruler_ticks;
 })($ || ($ = {}));
 
 ;
@@ -35958,6 +36312,8 @@ var $;
                     ...this.band() ? [this.Band()] : [],
                     ...this.draft() ? [this.Draft()] : [],
                     ...this.guide_views(),
+                    ...this.gap_views(),
+                    ...this.ruler_views(),
                     ...this.ghost_views(),
                     ...this.menu() ? [this.menu_view()] : [],
                 ];
@@ -36233,6 +36589,133 @@ var $;
             }
             guides(next) {
                 return next ?? [];
+            }
+            gap_bounds(name) {
+                const holder = this.node_path(name).at(-2);
+                if (!holder)
+                    return null;
+                return this.part_size(holder);
+            }
+            picked_box() {
+                const boxes = this.picked().flatMap(name => this.spot_box(name) ?? []);
+                return boxes.length ? this.box_union(boxes) : null;
+            }
+            gaps() {
+                const drag = this.drag();
+                if (drag) {
+                    const box = this.picked_box();
+                    if (!box)
+                        return [];
+                    return this.$.$bog_vmap_app_pane_gaps(box, this.snap_boxes(drag.spots), this.gap_bounds(drag.name));
+                }
+                const over = this.hovered();
+                if (!over)
+                    return [];
+                const box = this.picked_box();
+                const other = this.spot_box(over);
+                if (!box || !other)
+                    return [];
+                return this.$.$bog_vmap_app_pane_gaps(box, [other]);
+            }
+            ruler_size() {
+                return this.ruler_shown() ? 20 : 0;
+            }
+            ruler_room() {
+                return { width: 480, height: 320 };
+            }
+            ruler_shown() {
+                const rect = this.pane_rect();
+                const room = this.ruler_room();
+                return rect.width >= room.width && rect.height >= room.height;
+            }
+            ruler_zero() {
+                const inside = this.entered();
+                const box = inside ? this.part_size(inside) : null;
+                return box ? { x: box.x, y: box.y } : { x: 0, y: 0 };
+            }
+            ruler_ticks(axis) {
+                if (!this.ruler_shown())
+                    return [];
+                const rect = this.pane_rect();
+                const zoom = this.camera_zoom();
+                const shift = this.camera_shift();
+                const size = axis === 'x' ? rect.width : rect.height;
+                const start = axis === 'x' ? shift[0] : shift[1];
+                const step = this.$.$bog_vmap_app_pane_ruler_step(zoom);
+                const zero = axis === 'x' ? this.ruler_zero().x : this.ruler_zero().y;
+                return this.$.$bog_vmap_app_pane_ruler_ticks(-start / zoom, (size - start) / zoom, step, zero);
+            }
+            ruler_span(axis) {
+                const box = this.picked_box();
+                if (!box)
+                    return null;
+                const zoom = this.camera_zoom();
+                const shift = this.camera_shift();
+                const from = axis === 'x' ? box.x : box.y;
+                const size = axis === 'x' ? box.width : box.height;
+                const start = axis === 'x' ? shift[0] : shift[1];
+                return { at: from * zoom + start, size: size * zoom };
+            }
+            ruler_views() {
+                return this.ruler_shown() ? [this.Ruler('x'), this.Ruler('y')] : [];
+            }
+            ruler_sub(axis) {
+                const side = axis;
+                return [
+                    ...this.ruler_span(side) ? [this.Span(axis)] : [],
+                    ...this.ruler_ticks(side).map((tick, index) => this.Tick(axis + ':' + index)),
+                ];
+            }
+            ruler_style(axis) {
+                const size = this.ruler_size() + 'px';
+                return axis === 'x'
+                    ? { left: size, top: '0', right: '0', height: size }
+                    : { left: '0', top: size, bottom: '0', width: size };
+            }
+            tick_title(key) {
+                const [axis, index] = key.split(':');
+                return String(this.ruler_ticks(axis)[Number(index)]?.label ?? '');
+            }
+            tick_style(key) {
+                const [axis, index] = key.split(':');
+                const tick = this.ruler_ticks(axis)[Number(index)];
+                if (!tick)
+                    return {};
+                const zoom = this.camera_zoom();
+                const shift = this.camera_shift();
+                const at = tick.at * zoom + (axis === 'x' ? shift[0] : shift[1]);
+                return axis === 'x'
+                    ? { left: (at - this.ruler_size()) + 'px' }
+                    : { top: at + 'px' };
+            }
+            span_style(axis) {
+                const span = this.ruler_span(axis);
+                if (!span)
+                    return {};
+                return axis === 'x'
+                    ? { left: (span.at - this.ruler_size()) + 'px', width: span.size + 'px' }
+                    : { top: span.at + 'px', height: span.size + 'px' };
+            }
+            gap_views() {
+                return this.gaps().map((gap, index) => this.Gap(index));
+            }
+            gap_title(index) {
+                const gap = this.gaps()[index];
+                return gap ? String(gap.size) : '';
+            }
+            gap_style(index) {
+                const gap = this.gaps()[index];
+                if (!gap)
+                    return {};
+                const middle = (gap.from + gap.to) / 2;
+                const spot = gap.axis === 'x'
+                    ? { x: middle, y: gap.cross, width: 0, height: 0 }
+                    : { x: gap.cross, y: middle, width: 0, height: 0 };
+                const rect = this.$.$bog_vmap_app_pane_screen(spot, this.camera_zoom(), this.camera_shift());
+                return {
+                    left: rect.left + 'px',
+                    top: rect.top + 'px',
+                };
             }
             guide_views() {
                 return this.guides().map((line, index) => this.Guide(index));
@@ -38080,6 +38563,27 @@ var $;
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "guides", null);
         __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "gaps", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "ruler_ticks", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "ruler_sub", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "ruler_style", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "tick_style", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "span_style", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "gap_style", null);
+        __decorate([
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "guide_style", null);
         __decorate([
@@ -38382,6 +38886,41 @@ var $;
                 pointerEvents: 'none',
                 transition: 'none',
             },
+            Ruler: {
+                position: 'absolute',
+                overflow: 'hidden',
+                background: { color: $mol_theme.back },
+                color: $mol_theme.shade,
+                font: { size: '.625rem' },
+                pointerEvents: 'none',
+                transition: 'none',
+                zIndex: 2,
+            },
+            Tick: {
+                position: 'absolute',
+                padding: [0, '.125rem'],
+                whiteSpace: 'pre',
+                transition: 'none',
+            },
+            Span: {
+                position: 'absolute',
+                background: { color: $mol_theme.focus },
+                opacity: .35,
+                transition: 'none',
+            },
+            Gap: {
+                position: 'absolute',
+                padding: [0, '.25rem'],
+                font: { size: '.75rem' },
+                lineHeight: '1rem',
+                color: $mol_theme.back,
+                background: { color: $mol_theme.special },
+                borderRadius: String($mol_gap.round),
+                pointerEvents: 'none',
+                transition: 'none',
+                transform: 'translate(-50%, -50%)',
+                whiteSpace: 'pre',
+            },
             Ghost: {
                 position: 'absolute',
                 outline: '1px dashed ' + String($mol_theme.focus),
@@ -38558,6 +39097,75 @@ var $;
             },
         });
     })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    const slack = 1e-6;
+    const along = (box, axis) => {
+        return axis === 'x'
+            ? { start: box.x, end: box.x + box.width }
+            : { start: box.y, end: box.y + box.height };
+    };
+    const crossed = (box, other, axis) => {
+        const cross = axis === 'x' ? 'y' : 'x';
+        const mine = along(box, cross);
+        const theirs = along(other, cross);
+        const start = Math.max(mine.start, theirs.start);
+        const end = Math.min(mine.end, theirs.end);
+        return end - start > slack ? (start + end) / 2 : null;
+    };
+    function $bog_vmap_app_pane_gaps(box, others, bounds = null) {
+        const gaps = [];
+        for (const axis of ['x', 'y']) {
+            const mine = along(box, axis);
+            for (const side of ['before', 'after']) {
+                let edge = null;
+                let cross = null;
+                const take = (at, middle) => {
+                    if (middle === null)
+                        return;
+                    if (side === 'before') {
+                        if (at > mine.start + slack)
+                            return;
+                        if (edge !== null && at <= edge)
+                            return;
+                    }
+                    else {
+                        if (at < mine.end - slack)
+                            return;
+                        if (edge !== null && at >= edge)
+                            return;
+                    }
+                    edge = at;
+                    cross = middle;
+                };
+                for (const other of others) {
+                    const theirs = along(other, axis);
+                    take(side === 'before' ? theirs.end : theirs.start, crossed(box, other, axis));
+                }
+                if (bounds) {
+                    const wall = along(bounds, axis);
+                    take(side === 'before' ? wall.start : wall.end, crossed(box, bounds, axis));
+                }
+                if (edge === null || cross === null)
+                    continue;
+                const from = side === 'before' ? edge : mine.end;
+                const to = side === 'before' ? mine.start : edge;
+                gaps.push({
+                    axis,
+                    size: Math.max(0, Math.round(to - from)),
+                    from,
+                    to,
+                    cross,
+                });
+            }
+        }
+        return gaps;
+    }
+    $.$bog_vmap_app_pane_gaps = $bog_vmap_app_pane_gaps;
 })($ || ($ = {}));
 
 ;
