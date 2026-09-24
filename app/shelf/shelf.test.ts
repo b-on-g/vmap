@@ -26,14 +26,6 @@ namespace $ {
 	}
 
 	function shelf_make( $: $, over: Partial< $$.$bog_vmap_app_shelf > = {} ) {
-
-		const dom = $.$mol_dom_context
-
-		Object.assign( globalThis, {
-			ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
-			PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
-		} )
-
 		return $bog_vmap_app_shelf.make({ $, ... over }) as $$.$bog_vmap_app_shelf
 	}
 

@@ -81,13 +81,21 @@ namespace $ {
 
 	export type $bog_vmap_app_flow_sent = { kind: string, [ key: string ]: unknown }
 
-	function browser_gaps( $: $ ) {
-		const dom = $.$mol_dom_context
+	export const $bog_vmap_app_flow_globals = ( ()=> {
+
+		const dom = $mol_dom_context
 
 		Object.assign( globalThis, {
 			ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
 			PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
 		} )
+
+		return [ typeof globalThis.ShadowRoot, typeof globalThis.PointerEvent ]
+
+	} )()
+
+	function browser_gaps( $: $ ) {
+		const dom = $.$mol_dom_context
 
 		const proto = dom.Element.prototype
 

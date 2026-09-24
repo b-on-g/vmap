@@ -815,8 +815,6 @@ namespace $ {
 
 	function part_panel( $: $mol_ambient_context, source: string, part: string ) {
 
-		browser_gaps( $ )
-
 		const root = $.$bog_vmap_lang_node.make({ $ })
 		root.source( source )
 
@@ -838,24 +836,11 @@ namespace $ {
 		return { root, inspect }
 	}
 
-	function browser_gaps( $: $mol_ambient_context ) {
-
-		const dom = $.$mol_dom_context
-
-		Object.assign( globalThis, {
-			ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
-			PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
-		} )
-
-	}
-
 	function panel(
 		$: $mol_ambient_context,
 		source: string,
 		peers: readonly $mol_tree2[] = [],
 	) {
-
-		browser_gaps( $ )
 
 		let text = source
 
@@ -869,8 +854,6 @@ namespace $ {
 	}
 
 	function pair( $: $mol_ambient_context, source: string, klass: string ) {
-
-		browser_gaps( $ )
 
 		let text = source
 
