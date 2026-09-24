@@ -58137,11 +58137,6 @@ var $;
         return $bog_vmap_app_shelf_presets().find(item => item.id === id).source;
     }
     function shelf_make($, over = {}) {
-        const dom = $.$mol_dom_context;
-        Object.assign(globalThis, {
-            ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
-            PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
-        });
         return $bog_vmap_app_shelf.make({ $, ...over });
     }
     $mol_test({
@@ -58581,12 +58576,16 @@ var $;
     };
     $_1.$bog_vmap_app_flow_size = { width: 100, height: 50 };
     $_1.$bog_vmap_app_flow_board = { width: 400, height: 300 };
-    function browser_gaps($) {
-        const dom = $.$mol_dom_context;
+    $_1.$bog_vmap_app_flow_globals = (() => {
+        const dom = $mol_dom_context;
         Object.assign(globalThis, {
             ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
             PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
         });
+        return [typeof globalThis.ShadowRoot, typeof globalThis.PointerEvent];
+    })();
+    function browser_gaps($) {
+        const dom = $.$mol_dom_context;
         const proto = dom.Element.prototype;
         if (!proto.setPointerCapture)
             Object.assign(proto, {
@@ -61212,7 +61211,6 @@ var $;
         return { stage, app, inspect: app.Inspect() };
     }
     function part_panel($, source, part) {
-        browser_gaps($);
         const root = $.$bog_vmap_lang_node.make({ $ });
         root.source(source);
         const base = $.$mol_tree2_from_string(number_src, 'number.view.tree').kids;
@@ -61231,15 +61229,7 @@ var $;
         });
         return { root, inspect };
     }
-    function browser_gaps($) {
-        const dom = $.$mol_dom_context;
-        Object.assign(globalThis, {
-            ShadowRoot: globalThis.ShadowRoot ?? dom.ShadowRoot,
-            PointerEvent: globalThis.PointerEvent ?? dom.PointerEvent,
-        });
-    }
     function panel($, source, peers = []) {
-        browser_gaps($);
         let text = source;
         return $.$bog_vmap_app_inspect.make({
             $,
@@ -61249,7 +61239,6 @@ var $;
         });
     }
     function pair($, source, klass) {
-        browser_gaps($);
         let text = source;
         const doc = $.$bog_vmap_lang_doc.make({
             $,
