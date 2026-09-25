@@ -16005,35 +16005,35 @@ var $;
         ...over,
     });
     $mol_test({
-        'a dragged node snaps its edge onto its neighbour, the guides follow and go on release'($) {
+        'a dragged node snaps its edge onto its neighbour, the snap hints follow and go on release'($) {
             const pane = pane_make($, { A: box(0, 0), B: box(300, 200) });
             pane.node_press(pointer(50, 25));
             pane.node_move(pointer(347, 129));
             $mol_assert_like(pane.spots()['A'], { x: 300, y: 104 });
-            $mol_assert_like(pane.guides(), [
+            $mol_assert_like(pane.snap_hints(), [
                 { axis: 'x', at: 300, from: 104, to: 250 },
                 { axis: 'x', at: 350, from: 104, to: 250 },
                 { axis: 'x', at: 400, from: 104, to: 250 },
             ]);
             pane.node_release(pointer(347, 129, { buttons: 0 }));
             $mol_assert_like(pane.spots()['A'], { x: 300, y: 104 });
-            $mol_assert_like(pane.guides(), []);
+            $mol_assert_like(pane.snap_hints(), []);
         },
         'Cmd or Ctrl held during a drag lets the node free of its neighbours, Alt does not'($) {
             const pane = pane_make($, { A: box(0, 0), B: box(300, 200) });
             pane.node_press(pointer(50, 25));
             pane.node_move(pointer(347, 129, { metaKey: true }));
             $mol_assert_like(pane.spots()['A'], { x: 297, y: 104 });
-            $mol_assert_like(pane.guides(), []);
+            $mol_assert_like(pane.snap_hints(), []);
             pane.node_move(pointer(347, 129, { altKey: true }));
             $mol_assert_like(pane.spots()['A'], { x: 300, y: 104 });
-            $mol_assert_equal(pane.guides().length, 3);
+            $mol_assert_equal(pane.snap_hints().length, 3);
             pane.node_move(pointer(347, 129, { ctrlKey: true }));
             $mol_assert_like(pane.spots()['A'], { x: 297, y: 104 });
-            $mol_assert_like(pane.guides(), []);
+            $mol_assert_like(pane.snap_hints(), []);
             pane.node_move(pointer(347, 129));
             $mol_assert_like(pane.spots()['A'], { x: 300, y: 104 });
-            $mol_assert_equal(pane.guides().length, 3);
+            $mol_assert_equal(pane.snap_hints().length, 3);
         },
         'the slack is counted in pixels of the screen, not of the world'($) {
             const near = pane_make($, { A: box(0, 0), B: box(300, 200) });
@@ -16045,17 +16045,17 @@ var $;
             zoomed.node_press(pointer(100, 50));
             zoomed.node_move(pointer(692, 258));
             $mol_assert_like(zoomed.spots()['A'], { x: 296, y: 104 });
-            $mol_assert_like(zoomed.guides(), []);
+            $mol_assert_like(zoomed.snap_hints(), []);
             zoomed.node_move(pointer(698, 258));
             $mol_assert_like(zoomed.spots()['A'], { x: 300, y: 104 });
-            $mol_assert_like(zoomed.guide_style(0), { left: '600px', top: '208px', width: '1px', height: '292px' });
+            $mol_assert_like(zoomed.snap_hint_style(0), { left: '600px', top: '208px', width: '1px', height: '292px' });
         },
         'a neighbour off the screen does not pull'($) {
             const pane = pane_make($, { A: box(0, 0), B: box(1200, 0) });
             pane.node_press(pointer(50, 25));
             pane.node_move(pointer(1147, 25));
             $mol_assert_like(pane.spots()['A'], { x: 1097, y: 0 });
-            $mol_assert_like(pane.guides(), []);
+            $mol_assert_like(pane.snap_hints(), []);
         },
         'a picked set snaps as one box'($) {
             const pane = pane_make($, { A: box(0, 0), B: box(0, 100, 160, 50), C: box(300, 400) });
@@ -16063,21 +16063,21 @@ var $;
             pane.node_press(pointer(50, 25));
             pane.node_move(pointer(187, 25));
             $mol_assert_like(pane.spots(), { A: { x: 140, y: 0 }, B: { x: 140, y: 100 }, C: { x: 300, y: 400 } });
-            $mol_assert_like(pane.guides(), [{ axis: 'x', at: 300, from: 0, to: 450 }]);
+            $mol_assert_like(pane.snap_hints(), [{ axis: 'x', at: 300, from: 0, to: 450 }]);
         },
-        'over a container the guides give way to the insertion line'($) {
+        'over a container the snap hints give way to the insertion line'($) {
             const pane = pane_make($, { A: box(0, 0), B: box(300, 200), P: box(500, 500, 300, 200) }, { containers: () => ['P'] });
             pane.node_press(pointer(50, 25));
             pane.node_move(pointer(347, 129));
-            $mol_assert_equal(pane.guides().length, 3);
+            $mol_assert_equal(pane.snap_hints().length, 3);
             pane.node_move(pointer(600, 600));
             $mol_assert_ok(pane.slot() !== null);
-            $mol_assert_like(pane.guides(), []);
+            $mol_assert_like(pane.snap_hints(), []);
         },
-        'the guides are drawn on the canvas while a part is dragged, and go on release'($) {
+        'the snap hints are drawn on the canvas while a part is dragged, and go on release'($) {
             const stage = $bog_vmap_app_flow_stage($);
             const overlay = stage.overlay();
-            const guides = () => [...stage.root.querySelectorAll('[bog_vmap_app_pane_guide]')];
+            const hints = () => [...stage.root.querySelectorAll('[bog_vmap_app_pane_snap_hint]')];
             stage.drop(calc, stage.client([200, 150]));
             stage.drop(map, stage.client([400, 300]));
             stage.app.spots({ Calc: { x: 100, y: 100 }, Map: { x: 300, y: 300 } });
@@ -16088,17 +16088,17 @@ var $;
             stage.move(overlay, [from[0] + 203, from[1] + 50], { metaKey: true });
             stage.redraw();
             $mol_assert_like(stage.app.spots()['Calc'], { x: 303, y: 150 });
-            $mol_assert_equal(guides().length, 0);
+            $mol_assert_equal(hints().length, 0);
             stage.move(overlay, [from[0] + 203, from[1] + 50]);
             stage.redraw();
             $mol_assert_like(stage.app.spots()['Calc'], { x: 300, y: 150 });
-            $mol_assert_equal(guides().length, 3);
-            const line = guides()[0].style;
+            $mol_assert_equal(hints().length, 3);
+            const line = hints()[0].style;
             $mol_assert_like([line.left, line.top, line.width, line.height], ['300px', '150px', '1px', '200px']);
             stage.release(overlay, [from[0] + 203, from[1] + 50]);
             stage.redraw();
             $mol_assert_like(stage.app.spots()['Calc'], { x: 300, y: 150 });
-            $mol_assert_equal(guides().length, 0);
+            $mol_assert_equal(hints().length, 0);
         },
         'a part from the shelf lands centred by a guess, and exactly once its kind is measured'($) {
             const stage = $bog_vmap_app_flow_stage($);

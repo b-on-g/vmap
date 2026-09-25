@@ -44818,7 +44818,7 @@ var $;
 		draft_style(){
 			return {};
 		}
-		guide_style(id){
+		snap_hint_style(id){
 			return {};
 		}
 		gap_style(id){
@@ -45324,9 +45324,9 @@ var $;
 			(obj.style) = () => ((this.draft_style()));
 			return obj;
 		}
-		Guide(id){
+		Snap_hint(id){
 			const obj = new this.$.$mol_view();
-			(obj.style) = () => ((this.guide_style(id)));
+			(obj.style) = () => ((this.snap_hint_style(id)));
 			return obj;
 		}
 		Gap(id){
@@ -45465,7 +45465,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Say"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Band"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Draft"));
-	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Guide"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Snap_hint"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Gap"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Ruler"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Tick"));
@@ -46061,7 +46061,7 @@ var $;
                     ...this.say() ? [this.Say()] : [],
                     ...this.band() ? [this.Band()] : [],
                     ...this.draft() ? [this.Draft()] : [],
-                    ...this.guide_views(),
+                    ...this.snap_hint_views(),
                     ...this.gap_views(),
                     ...this.ghost_views(),
                     ...this.menu() ? [this.menu_view()] : [],
@@ -46340,7 +46340,7 @@ var $;
                     return null;
                 return this.$.$bog_vmap_app_pane_snap({ x: box.x + shift[0], y: box.y + shift[1], width: box.width, height: box.height }, this.snap_boxes(moving), this.snap_slack() / this.camera_zoom());
             }
-            guides(next) {
+            snap_hints(next) {
                 return next ?? [];
             }
             gap_bounds(name) {
@@ -46472,11 +46472,11 @@ var $;
                     top: rect.top + 'px',
                 };
             }
-            guide_views() {
-                return this.guides().map((line, index) => this.Guide(index));
+            snap_hint_views() {
+                return this.snap_hints().map((line, index) => this.Snap_hint(index));
             }
-            guide_style(index) {
-                const line = this.guides()[index];
+            snap_hint_style(index) {
+                const line = this.snap_hints()[index];
                 if (!line)
                     return {};
                 const box = line.axis === 'x'
@@ -46726,7 +46726,7 @@ var $;
                 this.drag(null);
                 this.drag_alt(false);
                 this.slot(null);
-                this.guides([]);
+                this.snap_hints([]);
                 return null;
             }
             sizing(next) {
@@ -47458,12 +47458,12 @@ var $;
                 const slot = this.insert_slot(point, drag.name);
                 this.slot(slot);
                 if (slot || drag.nested) {
-                    this.guides([]);
+                    this.snap_hints([]);
                     return;
                 }
                 const shift = [point[0] - drag.grab[0], point[1] - drag.grab[1]];
                 const snap = this.snap_off(event) ? null : this.snap_at(drag.box, drag.spots, shift);
-                this.guides(snap?.lines ?? []);
+                this.snap_hints(snap?.lines ?? []);
                 const dx = shift[0] + (snap?.dx ?? 0);
                 const dy = shift[1] + (snap?.dy ?? 0);
                 const next = { ...this.spots() };
@@ -47520,7 +47520,7 @@ var $;
                         this.tree_move({ names: this.drag_names(drag), owner: slot.owner, index: slot.index });
                     this.drag(null);
                     this.drag_alt(false);
-                    this.guides([]);
+                    this.snap_hints([]);
                     try {
                         this.Overlay().dom_node().releasePointerCapture(event.pointerId);
                     }
@@ -48319,7 +48319,7 @@ var $;
         ], $bog_vmap_app_pane.prototype, "drag", null);
         __decorate([
             $mol_mem
-        ], $bog_vmap_app_pane.prototype, "guides", null);
+        ], $bog_vmap_app_pane.prototype, "snap_hints", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "gaps", null);
@@ -48343,7 +48343,7 @@ var $;
         ], $bog_vmap_app_pane.prototype, "gap_style", null);
         __decorate([
             $mol_mem_key
-        ], $bog_vmap_app_pane.prototype, "guide_style", null);
+        ], $bog_vmap_app_pane.prototype, "snap_hint_style", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "press", null);
@@ -48646,7 +48646,7 @@ var $;
                 pointerEvents: 'none',
                 transition: 'none',
             },
-            Guide: {
+            Snap_hint: {
                 position: 'absolute',
                 background: { color: $mol_theme.special },
                 pointerEvents: 'none',

@@ -57412,7 +57412,7 @@ declare namespace $ {
 		ReturnType< $mol_view['style'] >
 	>
 	type $mol_view__style_bog_vmap_app_pane_54 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_pane['guide_style'] >
+		ReturnType< $bog_vmap_app_pane['snap_hint_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
@@ -57595,7 +57595,7 @@ declare namespace $ {
 		say_note( ): string
 		band_style( ): Record<string, any>
 		draft_style( ): Record<string, any>
-		guide_style( id: any): Record<string, any>
+		snap_hint_style( id: any): Record<string, any>
 		gap_style( id: any): Record<string, any>
 		gap_title( id: any): string
 		ruler_style( id: any): Record<string, any>
@@ -57724,7 +57724,7 @@ declare namespace $ {
 		Say( ): $mol_view
 		Band( ): $mol_view
 		Draft( ): $mol_view
-		Guide( id: any): $mol_view
+		Snap_hint( id: any): $mol_view
 		Gap( id: any): $mol_view
 		Ruler( id: any): $mol_view
 		Tick( id: any): $mol_view
@@ -58127,7 +58127,7 @@ declare namespace $.$$ {
         snap_at(box: $bog_vmap_bridge_rect | null, moving: {
             readonly [name: string]: unknown;
         }, shift: readonly [number, number]): $bog_vmap_app_pane_snap | null;
-        guides(next?: readonly $bog_vmap_app_pane_snap_line[]): readonly $bog_vmap_app_pane_snap_line[];
+        snap_hints(next?: readonly $bog_vmap_app_pane_snap_line[]): readonly $bog_vmap_app_pane_snap_line[];
         gap_bounds(name: string): $bog_vmap_bridge_rect | null;
         picked_box(): {
             x: number;
@@ -58168,8 +58168,8 @@ declare namespace $.$$ {
         gap_style(index: number): {
             readonly [prop: string]: string;
         };
-        guide_views(): $mol_view[];
-        guide_style(index: number): {
+        snap_hint_views(): $mol_view[];
+        snap_hint_style(index: number): {
             readonly [prop: string]: string;
         };
         press(next?: {
