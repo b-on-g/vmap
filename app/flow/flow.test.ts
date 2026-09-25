@@ -616,6 +616,10 @@ namespace $ {
 				el.dispatchEvent( pointer( 'lostpointercapture', point, { buttons: 0, ... over } ) )
 			},
 
+			cancel( el: Element, point: readonly [ number, number ], over: object = {} ) {
+				el.dispatchEvent( pointer( 'pointercancel', point, { buttons: 0, ... over } ) )
+			},
+
 			drop( klass: string, point: readonly [ number, number ] ) {
 				this.classes_open()
 				this.press( this.class_row( klass ), [ 10, 300 ] )
@@ -3963,6 +3967,51 @@ namespace $ {
 			stage.redraw()
 
 			$mol_assert_ok( scenes.dom_node().textContent!.includes( 'ключ, а не пароль' ) )
+
+		},
+
+	})
+
+}
+
+namespace $ {
+	const d = '$'
+
+	const calc = `${d}flow_calc`
+
+	$mol_test({
+
+		'a source rewritten from scratch takes the spots of the gone nodes with it'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.app.board_draw({ x: 40, y: 40, width: 200, height: 120 })
+			stage.redraw()
+
+			$mol_assert_like( Object.keys( stage.app.spots() ).sort(), [ 'Calc', 'Page' ] )
+
+			stage.app.doc_source( `${ d }my_site_page ${ d }mol_view\n\tsub /\n` )
+			stage.redraw()
+
+			$mol_assert_like( stage.app.node().part_names(), [] )
+			$mol_assert_like( Object.keys( stage.app.spots() ), [] )
+
+		},
+
+		'a rewrite that keeps a node keeps its spot untouched'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 200, 150 ]) )
+			stage.redraw()
+
+			const spot = stage.app.spots()[ 'Calc' ]
+
+			$mol_assert_ok( spot )
+
+			stage.app.doc_source( stage.app.doc_source() + '' )
+			stage.redraw()
+
+			$mol_assert_like( stage.app.spots()[ 'Calc' ], spot )
 
 		},
 

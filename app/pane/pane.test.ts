@@ -5591,6 +5591,67 @@ namespace $ {
 
 		},
 
+		'the drag still ends on a real release, on a cancel and on Escape'( $ ) {
+
+			const key = ( pane: $$.$bog_vmap_app_pane, code: string )=> pane.key_down({
+				key: code, code, metaKey: false, ctrlKey: false, altKey: false, shiftKey: false,
+				target: null, preventDefault() {},
+			} as unknown as $$.$bog_vmap_app_pane_stroke )
+
+			const started = ( stage: ReturnType< typeof $bog_vmap_app_flow_stage > )=> {
+				stage.drop( calc, stage.client([ 100, 100 ]) )
+				const spot = stage.app.spots()[ 'Calc' ]
+				stage.press( stage.overlay(), stage.part_center( 'Calc' ) )
+				stage.move( stage.overlay(), stage.client([ 300, 260 ]) )
+				$mol_assert_ok( stage.pane.drag() )
+				return spot
+			}
+
+			const released = $bog_vmap_app_flow_stage( $ )
+			started( released )
+			released.release( released.overlay(), released.client([ 300, 260 ]) )
+
+			$mol_assert_equal( released.pane.drag(), null )
+			$mol_assert_ok( released.app.spots()[ 'Calc' ].x !== 100 )
+
+			const cancelled = $bog_vmap_app_flow_stage( $ )
+			started( cancelled )
+			cancelled.cancel( cancelled.overlay(), cancelled.client([ 300, 260 ]) )
+
+			$mol_assert_equal( cancelled.pane.drag(), null )
+
+			const escaped = $bog_vmap_app_flow_stage( $ )
+			const spot = started( escaped )
+			key( escaped.pane, 'Escape' )
+			escaped.redraw()
+
+			$mol_assert_equal( escaped.pane.drag(), null )
+			$mol_assert_like( escaped.app.spots()[ 'Calc' ], spot )
+
+		},
+
+		'without a captured pointer a move with no button still ends the drag'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const pane = stage.pane
+			const overlay = stage.overlay()
+
+			pane.tool_board( true )
+
+			stage.press( overlay, stage.client([ 40, 40 ]) )
+
+			$mol_assert_equal( overlay.hasPointerCapture( 1 ), true )
+
+			overlay.releasePointerCapture( 1 )
+
+			stage.move( overlay, stage.client([ 520, 760 ]), { buttons: 0 } )
+			stage.redraw()
+
+			$mol_assert_equal( pane.draft(), null )
+			$mol_assert_like( stage.app.node().part_names(), [ 'Page' ] )
+
+		},
+
 		'a lost pointer capture ends the drag instead of hanging it'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )
