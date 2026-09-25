@@ -2508,9 +2508,41 @@ $bog_vmap_app_scenes $mol_page
 			click? <=> add? null
 			sub /
 				<= Add_icon $mol_icon_plus
+	face_brief \
+	face_note \
+	face_who \
+	face_file \blob.bin
+	face_draft? \
+	face_take? null
+	face_status \
 	body /
 		<= List $mol_list
 			rows <= scene_rows /
+	foot /
+		<= Face_brief $mol_paragraph
+			title <= face_brief \
+		<= Face $mol_expander
+			title \Личность
+			expanded? <=> face_shown? false
+			content /
+				<= Face_note $mol_paragraph
+					title <= face_note
+				<= Face_who $mol_paragraph
+					title <= face_who
+				<= Face_save $mol_button_download
+					title \Сохранить ключ в файл
+					hint \Скачать строку личности файлом. Это ключ: у кого он есть, тот и есть вы
+					blob <= face_blob $mol_blob
+					file_name <= face_file
+				<= Face_field $mol_string
+					hint \Строка ключа или ссылка с ним
+					value? <=> face_draft?
+				<= Face_take $mol_button_minor
+					title \Перенести личность сюда
+					hint \Принять сохранённую личность и перезагрузить редактор
+					click? <=> face_take?
+				<= Face_status $mol_status
+					status <= face_status
 	Menu $bog_vmap_app_menu
 		showed? <=> menu_showed? false
 		left <= menu_left \
@@ -3337,6 +3369,14 @@ $bog_vmap_app $mol_page
 		foot <= canvas_foot /$mol_view
 	Scenes $bog_vmap_app_scenes
 		store <= store
+		face_brief <= face_brief \
+		face_note <= face_note \
+		face_who <= face_who \
+		face_blob <= face_blob $mol_blob
+		face_file <= face_file \
+		face_draft? <=> face_draft? \
+		face_take? <=> face_take? null
+		face_status <= face_status \
 	Layers $bog_vmap_app_layers
 		source <= doc_src
 		root <= doc_root

@@ -23126,6 +23126,168 @@ var $;
 
 
 ;
+	($.$mol_icon_chevron) = class $mol_icon_chevron extends ($.$mol_icon) {
+		path(){
+			return "M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z";
+		}
+	};
+
+
+;
+"use strict";
+
+
+;
+	($.$mol_check_expand) = class $mol_check_expand extends ($.$mol_check) {
+		level_style(){
+			return "0px";
+		}
+		expanded(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		expandable(){
+			return false;
+		}
+		Icon(){
+			const obj = new this.$.$mol_icon_chevron();
+			return obj;
+		}
+		level(){
+			return 0;
+		}
+		style(){
+			return {...(super.style()), "paddingLeft": (this.level_style())};
+		}
+		checked(next){
+			return (this.expanded(next));
+		}
+		enabled(){
+			return (this.expandable());
+		}
+	};
+	($mol_mem(($.$mol_check_expand.prototype), "expanded"));
+	($mol_mem(($.$mol_check_expand.prototype), "Icon"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Expander for trees, lists, etc
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_check_expand_demo
+         */
+        class $mol_check_expand extends $.$mol_check_expand {
+            level_style() {
+                return `${this.level() * 1 - 1}rem`;
+            }
+            expandable() {
+                return this.expanded() !== null;
+            }
+        }
+        $$.$mol_check_expand = $mol_check_expand;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/check/expand/expand.view.css", "[mol_check_expand] {\n\tmin-width: 20px;\n}\n\n:where([mol_check_expand][disabled]) [mol_check_expand_icon] {\n\tvisibility: hidden;\n}\n\n[mol_check_expand_icon] {\n\tbox-shadow: none;\n\tmargin-inline-start: -0.375rem;\n}\n[mol_check_expand_icon] {\n\ttransform: rotateZ(0deg);\n}\n\n:where([mol_check_checked]) [mol_check_expand_icon] {\n\ttransform: rotateZ(90deg);\n}\n\n[mol_check_expand_icon] {\n\tvertical-align: text-top;\n}\n\n[mol_check_expand_label] {\n\tmargin-inline-start: 0;\n}\n");
+})($ || ($ = {}));
+
+;
+	($.$mol_expander) = class $mol_expander extends ($.$mol_list) {
+		expanded(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		expandable(){
+			return true;
+		}
+		label(){
+			return [(this.title())];
+		}
+		Trigger(){
+			const obj = new this.$.$mol_check_expand();
+			(obj.checked) = (next) => ((this.expanded(next)));
+			(obj.expandable) = () => ((this.expandable()));
+			(obj.label) = () => ((this.label()));
+			return obj;
+		}
+		Tools(){
+			return null;
+		}
+		Label(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ([(this.Trigger()), (this.Tools())]);
+			return obj;
+		}
+		content(){
+			return [];
+		}
+		Content(){
+			const obj = new this.$.$mol_list();
+			(obj.rows) = () => ((this.content()));
+			return obj;
+		}
+		rows(){
+			return [(this.Label()), (this.Content())];
+		}
+	};
+	($mol_mem(($.$mol_expander.prototype), "expanded"));
+	($mol_mem(($.$mol_expander.prototype), "Trigger"));
+	($mol_mem(($.$mol_expander.prototype), "Label"));
+	($mol_mem(($.$mol_expander.prototype), "Content"));
+
+
+;
+"use strict";
+
+
+;
+"use strict";
+var $;
+(function ($) {
+    var $$;
+    (function ($$) {
+        /**
+         * Component which expands any content on title click.
+         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_expander_demo
+         */
+        class $mol_expander extends $.$mol_expander {
+            rows() {
+                return [
+                    this.Label(),
+                    ...this.expanded() ? [this.Content()] : []
+                ];
+            }
+            expandable() {
+                return this.content().length > 0;
+            }
+        }
+        __decorate([
+            $mol_mem
+        ], $mol_expander.prototype, "rows", null);
+        $$.$mol_expander = $mol_expander;
+    })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    $mol_style_attach("mol/expander/expander.view.css", "[mol_expander] {\n\tflex-direction: column;\n}\n\n[mol_expander_label] {\n\tdisplay: flex;\n\tflex-wrap: wrap;\n\tborder-radius: var(--mol_gap_round);\n}\n\n[mol_expander_trigger] {\n\tflex: auto;\n\tposition: relative;\n}\n");
+})($ || ($ = {}));
+
+;
 	($.$mol_ghost) = class $mol_ghost extends ($.$mol_view) {
 		Sub(){
 			const obj = new this.$.$mol_view();
@@ -24615,6 +24777,72 @@ var $;
 			(obj.rows) = () => ((this.scene_rows()));
 			return obj;
 		}
+		face_brief(){
+			return "";
+		}
+		Face_brief(){
+			const obj = new this.$.$mol_paragraph();
+			(obj.title) = () => ((this.face_brief()));
+			return obj;
+		}
+		face_shown(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		Face_note(){
+			const obj = new this.$.$mol_paragraph();
+			(obj.title) = () => ((this.face_note()));
+			return obj;
+		}
+		Face_who(){
+			const obj = new this.$.$mol_paragraph();
+			(obj.title) = () => ((this.face_who()));
+			return obj;
+		}
+		face_blob(){
+			const obj = new this.$.$mol_blob();
+			return obj;
+		}
+		Face_save(){
+			const obj = new this.$.$mol_button_download();
+			(obj.title) = () => ("Сохранить ключ в файл");
+			(obj.hint) = () => ("Скачать строку личности файлом. Это ключ: у кого он есть, тот и есть вы");
+			(obj.blob) = () => ((this.face_blob()));
+			(obj.file_name) = () => ((this.face_file()));
+			return obj;
+		}
+		Face_field(){
+			const obj = new this.$.$mol_string();
+			(obj.hint) = () => ("Строка ключа или ссылка с ним");
+			(obj.value) = (next) => ((this.face_draft(next)));
+			return obj;
+		}
+		Face_take(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("Перенести личность сюда");
+			(obj.hint) = () => ("Принять сохранённую личность и перезагрузить редактор");
+			(obj.click) = (next) => ((this.face_take(next)));
+			return obj;
+		}
+		Face_status(){
+			const obj = new this.$.$mol_status();
+			(obj.status) = () => ((this.face_status()));
+			return obj;
+		}
+		Face(){
+			const obj = new this.$.$mol_expander();
+			(obj.title) = () => ("Личность");
+			(obj.expanded) = (next) => ((this.face_shown(next)));
+			(obj.content) = () => ([
+				(this.Face_note()), 
+				(this.Face_who()), 
+				(this.Face_save()), 
+				(this.Face_field()), 
+				(this.Face_take()), 
+				(this.Face_status())
+			]);
+			return obj;
+		}
 		menu_showed(next){
 			if(next !== undefined) return next;
 			return false;
@@ -24678,8 +24906,31 @@ var $;
 		tools(){
 			return [(this.Name()), (this.Add())];
 		}
+		face_note(){
+			return "";
+		}
+		face_who(){
+			return "";
+		}
+		face_file(){
+			return "blob.bin";
+		}
+		face_draft(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		face_take(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		face_status(){
+			return "";
+		}
 		body(){
 			return [(this.List())];
+		}
+		foot(){
+			return [(this.Face_brief()), (this.Face())];
 		}
 		Menu(){
 			const obj = new this.$.$bog_vmap_app_menu();
@@ -24729,6 +24980,16 @@ var $;
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Add_icon"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Add"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "List"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_brief"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "face_shown"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_note"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_who"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "face_blob"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_save"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_field"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_take"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_status"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "menu_showed"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "menu_close"));
 	($mol_mem_key(($.$bog_vmap_app_scenes.prototype), "scene_click"));
@@ -24738,6 +24999,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "store"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "current"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "doc_title"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "face_draft"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "face_take"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Menu"));
 	($mol_mem_key(($.$bog_vmap_app_scenes.prototype), "Scene_row"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Drop"));
@@ -25517,168 +25780,6 @@ var $;
 var $;
 (function ($) {
     $mol_style_attach("mol/button/open/open.view.css", "[mol_button_open_native] {\n\tposition: absolute;\n\tleft: 0;\n\ttop: -100%;\n\twidth: 100%;\n\theight: 200%;\n\tcursor: pointer;\n\topacity: 0;\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_icon_chevron) = class $mol_icon_chevron extends ($.$mol_icon) {
-		path(){
-			return "M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z";
-		}
-	};
-
-
-;
-"use strict";
-
-
-;
-	($.$mol_check_expand) = class $mol_check_expand extends ($.$mol_check) {
-		level_style(){
-			return "0px";
-		}
-		expanded(next){
-			if(next !== undefined) return next;
-			return false;
-		}
-		expandable(){
-			return false;
-		}
-		Icon(){
-			const obj = new this.$.$mol_icon_chevron();
-			return obj;
-		}
-		level(){
-			return 0;
-		}
-		style(){
-			return {...(super.style()), "paddingLeft": (this.level_style())};
-		}
-		checked(next){
-			return (this.expanded(next));
-		}
-		enabled(){
-			return (this.expandable());
-		}
-	};
-	($mol_mem(($.$mol_check_expand.prototype), "expanded"));
-	($mol_mem(($.$mol_check_expand.prototype), "Icon"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Expander for trees, lists, etc
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_check_expand_demo
-         */
-        class $mol_check_expand extends $.$mol_check_expand {
-            level_style() {
-                return `${this.level() * 1 - 1}rem`;
-            }
-            expandable() {
-                return this.expanded() !== null;
-            }
-        }
-        $$.$mol_check_expand = $mol_check_expand;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/check/expand/expand.view.css", "[mol_check_expand] {\n\tmin-width: 20px;\n}\n\n:where([mol_check_expand][disabled]) [mol_check_expand_icon] {\n\tvisibility: hidden;\n}\n\n[mol_check_expand_icon] {\n\tbox-shadow: none;\n\tmargin-inline-start: -0.375rem;\n}\n[mol_check_expand_icon] {\n\ttransform: rotateZ(0deg);\n}\n\n:where([mol_check_checked]) [mol_check_expand_icon] {\n\ttransform: rotateZ(90deg);\n}\n\n[mol_check_expand_icon] {\n\tvertical-align: text-top;\n}\n\n[mol_check_expand_label] {\n\tmargin-inline-start: 0;\n}\n");
-})($ || ($ = {}));
-
-;
-	($.$mol_expander) = class $mol_expander extends ($.$mol_list) {
-		expanded(next){
-			if(next !== undefined) return next;
-			return false;
-		}
-		expandable(){
-			return true;
-		}
-		label(){
-			return [(this.title())];
-		}
-		Trigger(){
-			const obj = new this.$.$mol_check_expand();
-			(obj.checked) = (next) => ((this.expanded(next)));
-			(obj.expandable) = () => ((this.expandable()));
-			(obj.label) = () => ((this.label()));
-			return obj;
-		}
-		Tools(){
-			return null;
-		}
-		Label(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ([(this.Trigger()), (this.Tools())]);
-			return obj;
-		}
-		content(){
-			return [];
-		}
-		Content(){
-			const obj = new this.$.$mol_list();
-			(obj.rows) = () => ((this.content()));
-			return obj;
-		}
-		rows(){
-			return [(this.Label()), (this.Content())];
-		}
-	};
-	($mol_mem(($.$mol_expander.prototype), "expanded"));
-	($mol_mem(($.$mol_expander.prototype), "Trigger"));
-	($mol_mem(($.$mol_expander.prototype), "Label"));
-	($mol_mem(($.$mol_expander.prototype), "Content"));
-
-
-;
-"use strict";
-
-
-;
-"use strict";
-var $;
-(function ($) {
-    var $$;
-    (function ($$) {
-        /**
-         * Component which expands any content on title click.
-         * @see https://mol.hyoo.ru/#!section=demos/demo=mol_expander_demo
-         */
-        class $mol_expander extends $.$mol_expander {
-            rows() {
-                return [
-                    this.Label(),
-                    ...this.expanded() ? [this.Content()] : []
-                ];
-            }
-            expandable() {
-                return this.content().length > 0;
-            }
-        }
-        __decorate([
-            $mol_mem
-        ], $mol_expander.prototype, "rows", null);
-        $$.$mol_expander = $mol_expander;
-    })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    $mol_style_attach("mol/expander/expander.view.css", "[mol_expander] {\n\tflex-direction: column;\n}\n\n[mol_expander_label] {\n\tdisplay: flex;\n\tflex-wrap: wrap;\n\tborder-radius: var(--mol_gap_round);\n}\n\n[mol_expander_trigger] {\n\tflex: auto;\n\tposition: relative;\n}\n");
 })($ || ($ = {}));
 
 ;
@@ -30654,6 +30755,33 @@ var $;
 		canvas_foot(){
 			return [];
 		}
+		face_brief(){
+			return "";
+		}
+		face_note(){
+			return "";
+		}
+		face_who(){
+			return "";
+		}
+		face_blob(){
+			const obj = new this.$.$mol_blob();
+			return obj;
+		}
+		face_file(){
+			return "";
+		}
+		face_draft(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		face_take(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		face_status(){
+			return "";
+		}
 		inner_kids(id){
 			return [];
 		}
@@ -31001,6 +31129,14 @@ var $;
 		Scenes(){
 			const obj = new this.$.$bog_vmap_app_scenes();
 			(obj.store) = () => ((this.store()));
+			(obj.face_brief) = () => ((this.face_brief()));
+			(obj.face_note) = () => ((this.face_note()));
+			(obj.face_who) = () => ((this.face_who()));
+			(obj.face_blob) = () => ((this.face_blob()));
+			(obj.face_file) = () => ((this.face_file()));
+			(obj.face_draft) = (next) => ((this.face_draft(next)));
+			(obj.face_take) = (next) => ((this.face_take(next)));
+			(obj.face_status) = () => ((this.face_status()));
 			return obj;
 		}
 		Layers(){
@@ -31225,6 +31361,9 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "node_resize"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_text_write"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Pane"));
+	($mol_mem(($.$bog_vmap_app.prototype), "face_blob"));
+	($mol_mem(($.$bog_vmap_app.prototype), "face_draft"));
+	($mol_mem(($.$bog_vmap_app.prototype), "face_take"));
 	($mol_mem(($.$bog_vmap_app.prototype), "shelf_place"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_title"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_base"));
@@ -34408,6 +34547,85 @@ var $;
                 this.node().tree(node.tree());
                 return next;
             }
+            face_key() {
+                return String(this.$.$mol_state_local.value('$giper_baza_auth') ?? '');
+            }
+            face_who() {
+                try {
+                    return `Эта личность: ${this.$.$giper_baza_auth.current().pass().lord().str}`;
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return 'Личность ещё заводится…';
+                    return 'Личность не прочиталась';
+                }
+            }
+            face_brief() {
+                return 'Личность живёт только в этом браузере, и теряется вместе с профилем.';
+            }
+            face_note() {
+                return 'Личность живёт только в этом браузере. Это ключ, а не пароль:'
+                    + ' у кого есть строка, тот и есть вы, так что не пересылайте её чужим.'
+                    + ' Ключ один на все наши приложения на этом домене, то есть вы сохраняете вход везде,'
+                    + ' а не только в редактор.'
+                    + ' Если профиль обнулится, документы не пропадут и останутся читаемыми по ссылке,'
+                    + ' но список сцен опустеет, а править своё станет нечем, и вернуть права без этой строки нельзя.';
+            }
+            face_file() {
+                return 'vmap-kluch-lichnosti.txt';
+            }
+            face_blob() {
+                return new this.$.$mol_blob([this.face_key()], { type: 'text/plain' });
+            }
+            face_clean(raw) {
+                const text = raw.trim();
+                const found = /[#&](?:face|account)=([^&\s]+)/.exec(text);
+                return found ? decodeURIComponent(found[1]) : text;
+            }
+            face_checked(raw) {
+                const key = this.face_clean(raw);
+                if (!key)
+                    return { key: '', note: 'Вставьте строку ключа или ссылку с ним' };
+                if (key === this.face_key())
+                    return { key: '', note: 'Это та же личность, что уже здесь' };
+                if (!/^[0-9a-zA-Z_\-+/=]+$/.test(key)) {
+                    return { key: '', note: 'В строке есть лишние знаки: это не ключ личности' };
+                }
+                try {
+                    const auth = this.$.$giper_baza_auth.from(key);
+                    if (auth.byteLength !== 128)
+                        return { key: '', note: `Ключ не той длины: байт ${auth.byteLength} вместо 128` };
+                }
+                catch (error) {
+                    return { key: '', note: 'Строка не разбирается как ключ личности' };
+                }
+                return { key, note: '' };
+            }
+            face_said(next) {
+                return next ?? '';
+            }
+            face_status() {
+                return this.face_said();
+            }
+            face_draft(next) {
+                if (next !== undefined)
+                    this.face_said('');
+                return super.face_draft(next);
+            }
+            face_take(next) {
+                const checked = this.face_checked(this.face_draft());
+                if (!checked.key) {
+                    this.face_said(checked.note);
+                    return null;
+                }
+                this.$.$mol_state_local.value('$giper_baza_auth', checked.key);
+                this.face_said('Личность принята, перезагружаю…');
+                this.face_reload();
+                return null;
+            }
+            face_reload() {
+                this.$.$mol_dom_context.location?.reload();
+            }
             share_names() {
                 return this.node().share_names();
             }
@@ -35054,6 +35272,12 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "node_share_unshare", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app.prototype, "face_said", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "face_take", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "share_make", null);
@@ -57674,6 +57898,24 @@ var $;
             $mol_assert_equal(pane.ruler_shown(), false);
             $mol_assert_like(pane.field_style(), { left: '0px', top: '0px' });
         },
+        'a press on the ruler band itself leaves a guide on the canvas'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            const room = $bog_vmap_app_flow_rect;
+            const band = pane.Ruler('x').dom_node();
+            $mol_assert_equal(band.getAttribute('id')?.includes('Ruler'), true);
+            $mol_assert_like(stage.app.guides(), {});
+            stage.press(band, [room.left + 240, room.top + 8]);
+            const id = pane.guide_ids()[0];
+            $mol_assert_equal(pane.guide_ids().length, 1);
+            $mol_assert_equal(pane.field_sub().includes(pane.Guide(id)), true);
+            stage.move(band, [room.left + 260, room.top + 120]);
+            stage.release(band, [room.left + 260, room.top + 120], { buttons: 0 });
+            stage.redraw();
+            const kept = Object.values(stage.app.guides());
+            $mol_assert_like(kept, [{ axis: 'x', at: 260 }]);
+            $mol_assert_like(pane.guide_style(id), { left: '260px', top: '0', bottom: '0', width: '1px' });
+        },
         'the mark of zero stands over the zero of the field and inside its own band'($) {
             const stage = $bog_vmap_app_flow_stage($);
             const pane = stage.pane;
@@ -62741,6 +62983,103 @@ var $;
             shared(stage, 'background');
             $mol_assert_ok(inspect.binds().includes('background'));
             $mol_assert_ok(inspect.binds().includes('style'));
+        },
+    });
+})($ || ($ = {}));
+(function ($_12) {
+    const key_one = '_3VC9lZgSA44SEqneXyqPZ-0qQ80YWa4kzAIxbe_fCMqDpYNHtPBDoRwpo9lpGLq8h0sgev9gGZbxo04oViiWswlNl-KfkesI8ueZV8CslDUdWntKXaX90jzd-_EV8kuE6AJziVfKbazev__X_Ydrxu03Ti2skqBAG8QnjWnT6n0';
+    const key_two = '_6hB96hzdas32B3cR20woEhgUnuYIHCItckI8H01uBYITVWdczAOikEZICEkZoo4vTR1Fcg_9i6v2SVcbVJmUYaIWhZ0OX7O63c9HDLWRfvZRcmAOSaIQpEUls2Jcjy40UABF-0n92SBN_kah2t8bcpE-JRczMLehKMgx_t_8cWk';
+    const key_of = (stage) => stage.app.face_key();
+    const seeded = (stage, key) => {
+        stage.app.$.$mol_state_local.value('$giper_baza_auth', key);
+        return key;
+    };
+    const reloaded = (stage) => {
+        let hits = 0;
+        stage.app.face_reload = () => { ++hits; };
+        return () => hits;
+    };
+    $mol_test({
+        'the scene panel warns that the identity is a key, lives here only and is one for every app'($) {
+            const stage = $_12.$bog_vmap_app_flow_stage($);
+            const note = stage.app.face_note();
+            $mol_assert_ok(note.includes('только в этом браузере'));
+            $mol_assert_ok(note.includes('ключ, а не пароль'));
+            $mol_assert_ok(note.includes('все наши приложения'));
+            $mol_assert_ok(note.includes('документы не пропадут'));
+            $mol_assert_ok(note.includes('вернуть права без этой строки нельзя'));
+            $mol_assert_ok(stage.app.face_who().length > 'Эта личность: '.length);
+            $mol_assert_ok(stage.app.face_file().includes('kluch'));
+        },
+        'the saved file carries the very string the identity lives in'($) {
+            const stage = $_12.$bog_vmap_app_flow_stage($);
+            seeded(stage, key_one);
+            $mol_assert_equal(key_of(stage), key_one);
+            $mol_assert_equal(key_one.length, 172);
+            $mol_assert_equal(String(stage.kept['$giper_baza_auth'] ?? ''), JSON.stringify(key_one));
+        },
+        'a saved identity is taken from a bare string and from a link'($) {
+            const stage = $_12.$bog_vmap_app_flow_stage($);
+            const hits = reloaded(stage);
+            const mine = seeded(stage, key_one);
+            const alien = key_two;
+            stage.app.face_draft(alien);
+            stage.app.face_take(null);
+            $mol_assert_equal(key_of(stage), alien);
+            $mol_assert_ok(stage.app.face_status().includes('принята'));
+            $mol_assert_equal(hits(), 1);
+            stage.app.face_draft('http://site/app/#face=' + encodeURIComponent(mine));
+            stage.app.face_take(null);
+            $mol_assert_equal(key_of(stage), mine);
+            $mol_assert_equal(hits(), 2);
+        },
+        'a broken string is refused by words and never costs the identity'($) {
+            const stage = $_12.$bog_vmap_app_flow_stage($);
+            const hits = reloaded(stage);
+            const mine = seeded(stage, key_one);
+            for (const [raw, said] of [
+                ['', 'Вставьте строку'],
+                ['   ', 'Вставьте строку'],
+                ['ключ личности!!', 'лишние знаки'],
+                ['abcdef', 'не разбирается'],
+                ['a'.repeat(300), 'не той длины'],
+                [mine, 'та же личность'],
+            ]) {
+                stage.app.face_draft(raw);
+                stage.app.face_take(null);
+                $mol_assert_ok(stage.app.face_status().includes(said));
+                $mol_assert_equal(key_of(stage), mine);
+                $mol_assert_equal(hits(), 0);
+            }
+        },
+        'typing again clears the last refusal'($) {
+            const stage = $_12.$bog_vmap_app_flow_stage($);
+            stage.app.face_draft('мусор');
+            stage.app.face_take(null);
+            $mol_assert_ok(stage.app.face_status().length > 0);
+            stage.app.face_draft('другое');
+            $mol_assert_equal(stage.app.face_status(), '');
+        },
+    });
+})($ || ($ = {}));
+(function ($_13) {
+    $mol_test({
+        'the warning stands in plain sight and only the key work waits under the fold'($) {
+            const stage = $_13.$bog_vmap_app_flow_stage($);
+            const scenes = stage.app.Scenes();
+            const brief = stage.app.face_brief();
+            $mol_assert_ok(brief.includes('только в этом браузере'));
+            $mol_assert_equal(brief.split('.').filter(one => one.trim()).length, 1);
+            const foot = scenes.foot();
+            $mol_assert_equal(foot[0], scenes.Face_brief());
+            $mol_assert_equal(foot.includes(scenes.Face()), true);
+            $mol_assert_equal(scenes.face_shown(), false);
+            $mol_assert_equal(scenes.Face().rows().includes(scenes.Face().Content()), false);
+            $mol_assert_ok(scenes.Face_brief().dom_node().textContent.includes('только в этом браузере'));
+            $mol_assert_equal(scenes.dom_node().textContent.includes('ключ, а не пароль'), false);
+            scenes.face_shown(true);
+            stage.redraw();
+            $mol_assert_ok(scenes.dom_node().textContent.includes('ключ, а не пароль'));
         },
     });
 })($ || ($ = {}));

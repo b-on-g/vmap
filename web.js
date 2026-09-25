@@ -36071,6 +36071,72 @@ var $;
 			(obj.rows) = () => ((this.scene_rows()));
 			return obj;
 		}
+		face_brief(){
+			return "";
+		}
+		Face_brief(){
+			const obj = new this.$.$mol_paragraph();
+			(obj.title) = () => ((this.face_brief()));
+			return obj;
+		}
+		face_shown(next){
+			if(next !== undefined) return next;
+			return false;
+		}
+		Face_note(){
+			const obj = new this.$.$mol_paragraph();
+			(obj.title) = () => ((this.face_note()));
+			return obj;
+		}
+		Face_who(){
+			const obj = new this.$.$mol_paragraph();
+			(obj.title) = () => ((this.face_who()));
+			return obj;
+		}
+		face_blob(){
+			const obj = new this.$.$mol_blob();
+			return obj;
+		}
+		Face_save(){
+			const obj = new this.$.$mol_button_download();
+			(obj.title) = () => ("Сохранить ключ в файл");
+			(obj.hint) = () => ("Скачать строку личности файлом. Это ключ: у кого он есть, тот и есть вы");
+			(obj.blob) = () => ((this.face_blob()));
+			(obj.file_name) = () => ((this.face_file()));
+			return obj;
+		}
+		Face_field(){
+			const obj = new this.$.$mol_string();
+			(obj.hint) = () => ("Строка ключа или ссылка с ним");
+			(obj.value) = (next) => ((this.face_draft(next)));
+			return obj;
+		}
+		Face_take(){
+			const obj = new this.$.$mol_button_minor();
+			(obj.title) = () => ("Перенести личность сюда");
+			(obj.hint) = () => ("Принять сохранённую личность и перезагрузить редактор");
+			(obj.click) = (next) => ((this.face_take(next)));
+			return obj;
+		}
+		Face_status(){
+			const obj = new this.$.$mol_status();
+			(obj.status) = () => ((this.face_status()));
+			return obj;
+		}
+		Face(){
+			const obj = new this.$.$mol_expander();
+			(obj.title) = () => ("Личность");
+			(obj.expanded) = (next) => ((this.face_shown(next)));
+			(obj.content) = () => ([
+				(this.Face_note()), 
+				(this.Face_who()), 
+				(this.Face_save()), 
+				(this.Face_field()), 
+				(this.Face_take()), 
+				(this.Face_status())
+			]);
+			return obj;
+		}
 		menu_showed(next){
 			if(next !== undefined) return next;
 			return false;
@@ -36134,8 +36200,31 @@ var $;
 		tools(){
 			return [(this.Name()), (this.Add())];
 		}
+		face_note(){
+			return "";
+		}
+		face_who(){
+			return "";
+		}
+		face_file(){
+			return "blob.bin";
+		}
+		face_draft(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		face_take(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		face_status(){
+			return "";
+		}
 		body(){
 			return [(this.List())];
+		}
+		foot(){
+			return [(this.Face_brief()), (this.Face())];
 		}
 		Menu(){
 			const obj = new this.$.$bog_vmap_app_menu();
@@ -36185,6 +36274,16 @@ var $;
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Add_icon"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Add"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "List"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_brief"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "face_shown"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_note"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_who"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "face_blob"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_save"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_field"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_take"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face_status"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Face"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "menu_showed"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "menu_close"));
 	($mol_mem_key(($.$bog_vmap_app_scenes.prototype), "scene_click"));
@@ -36194,6 +36293,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "store"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "current"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "doc_title"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "face_draft"));
+	($mol_mem(($.$bog_vmap_app_scenes.prototype), "face_take"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Menu"));
 	($mol_mem_key(($.$bog_vmap_app_scenes.prototype), "Scene_row"));
 	($mol_mem(($.$bog_vmap_app_scenes.prototype), "Drop"));
@@ -40527,6 +40628,33 @@ var $;
 		canvas_foot(){
 			return [];
 		}
+		face_brief(){
+			return "";
+		}
+		face_note(){
+			return "";
+		}
+		face_who(){
+			return "";
+		}
+		face_blob(){
+			const obj = new this.$.$mol_blob();
+			return obj;
+		}
+		face_file(){
+			return "";
+		}
+		face_draft(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		face_take(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		face_status(){
+			return "";
+		}
 		inner_kids(id){
 			return [];
 		}
@@ -40874,6 +41002,14 @@ var $;
 		Scenes(){
 			const obj = new this.$.$bog_vmap_app_scenes();
 			(obj.store) = () => ((this.store()));
+			(obj.face_brief) = () => ((this.face_brief()));
+			(obj.face_note) = () => ((this.face_note()));
+			(obj.face_who) = () => ((this.face_who()));
+			(obj.face_blob) = () => ((this.face_blob()));
+			(obj.face_file) = () => ((this.face_file()));
+			(obj.face_draft) = (next) => ((this.face_draft(next)));
+			(obj.face_take) = (next) => ((this.face_take(next)));
+			(obj.face_status) = () => ((this.face_status()));
 			return obj;
 		}
 		Layers(){
@@ -41098,6 +41234,9 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "node_resize"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_text_write"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Pane"));
+	($mol_mem(($.$bog_vmap_app.prototype), "face_blob"));
+	($mol_mem(($.$bog_vmap_app.prototype), "face_draft"));
+	($mol_mem(($.$bog_vmap_app.prototype), "face_take"));
 	($mol_mem(($.$bog_vmap_app.prototype), "shelf_place"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_title"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_base"));
@@ -43920,6 +44059,85 @@ var $;
                 this.node().tree(node.tree());
                 return next;
             }
+            face_key() {
+                return String(this.$.$mol_state_local.value('$giper_baza_auth') ?? '');
+            }
+            face_who() {
+                try {
+                    return `Эта личность: ${this.$.$giper_baza_auth.current().pass().lord().str}`;
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return 'Личность ещё заводится…';
+                    return 'Личность не прочиталась';
+                }
+            }
+            face_brief() {
+                return 'Личность живёт только в этом браузере, и теряется вместе с профилем.';
+            }
+            face_note() {
+                return 'Личность живёт только в этом браузере. Это ключ, а не пароль:'
+                    + ' у кого есть строка, тот и есть вы, так что не пересылайте её чужим.'
+                    + ' Ключ один на все наши приложения на этом домене, то есть вы сохраняете вход везде,'
+                    + ' а не только в редактор.'
+                    + ' Если профиль обнулится, документы не пропадут и останутся читаемыми по ссылке,'
+                    + ' но список сцен опустеет, а править своё станет нечем, и вернуть права без этой строки нельзя.';
+            }
+            face_file() {
+                return 'vmap-kluch-lichnosti.txt';
+            }
+            face_blob() {
+                return new this.$.$mol_blob([this.face_key()], { type: 'text/plain' });
+            }
+            face_clean(raw) {
+                const text = raw.trim();
+                const found = /[#&](?:face|account)=([^&\s]+)/.exec(text);
+                return found ? decodeURIComponent(found[1]) : text;
+            }
+            face_checked(raw) {
+                const key = this.face_clean(raw);
+                if (!key)
+                    return { key: '', note: 'Вставьте строку ключа или ссылку с ним' };
+                if (key === this.face_key())
+                    return { key: '', note: 'Это та же личность, что уже здесь' };
+                if (!/^[0-9a-zA-Z_\-+/=]+$/.test(key)) {
+                    return { key: '', note: 'В строке есть лишние знаки: это не ключ личности' };
+                }
+                try {
+                    const auth = this.$.$giper_baza_auth.from(key);
+                    if (auth.byteLength !== 128)
+                        return { key: '', note: `Ключ не той длины: байт ${auth.byteLength} вместо 128` };
+                }
+                catch (error) {
+                    return { key: '', note: 'Строка не разбирается как ключ личности' };
+                }
+                return { key, note: '' };
+            }
+            face_said(next) {
+                return next ?? '';
+            }
+            face_status() {
+                return this.face_said();
+            }
+            face_draft(next) {
+                if (next !== undefined)
+                    this.face_said('');
+                return super.face_draft(next);
+            }
+            face_take(next) {
+                const checked = this.face_checked(this.face_draft());
+                if (!checked.key) {
+                    this.face_said(checked.note);
+                    return null;
+                }
+                this.$.$mol_state_local.value('$giper_baza_auth', checked.key);
+                this.face_said('Личность принята, перезагружаю…');
+                this.face_reload();
+                return null;
+            }
+            face_reload() {
+                this.$.$mol_dom_context.location?.reload();
+            }
             share_names() {
                 return this.node().share_names();
             }
@@ -44566,6 +44784,12 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "node_share_unshare", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app.prototype, "face_said", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "face_take", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "share_make", null);

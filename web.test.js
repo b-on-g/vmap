@@ -16484,6 +16484,24 @@ var $;
             $mol_assert_equal(pane.ruler_shown(), false);
             $mol_assert_like(pane.field_style(), { left: '0px', top: '0px' });
         },
+        'a press on the ruler band itself leaves a guide on the canvas'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            const room = $bog_vmap_app_flow_rect;
+            const band = pane.Ruler('x').dom_node();
+            $mol_assert_equal(band.getAttribute('id')?.includes('Ruler'), true);
+            $mol_assert_like(stage.app.guides(), {});
+            stage.press(band, [room.left + 240, room.top + 8]);
+            const id = pane.guide_ids()[0];
+            $mol_assert_equal(pane.guide_ids().length, 1);
+            $mol_assert_equal(pane.field_sub().includes(pane.Guide(id)), true);
+            stage.move(band, [room.left + 260, room.top + 120]);
+            stage.release(band, [room.left + 260, room.top + 120], { buttons: 0 });
+            stage.redraw();
+            const kept = Object.values(stage.app.guides());
+            $mol_assert_like(kept, [{ axis: 'x', at: 260 }]);
+            $mol_assert_like(pane.guide_style(id), { left: '260px', top: '0', bottom: '0', width: '1px' });
+        },
         'the mark of zero stands over the zero of the field and inside its own band'($) {
             const stage = $bog_vmap_app_flow_stage($);
             const pane = stage.pane;
@@ -21458,6 +21476,103 @@ var $;
             shared(stage, 'background');
             $mol_assert_ok(inspect.binds().includes('background'));
             $mol_assert_ok(inspect.binds().includes('style'));
+        },
+    });
+})($ || ($ = {}));
+(function ($_12) {
+    const key_one = '_3VC9lZgSA44SEqneXyqPZ-0qQ80YWa4kzAIxbe_fCMqDpYNHtPBDoRwpo9lpGLq8h0sgev9gGZbxo04oViiWswlNl-KfkesI8ueZV8CslDUdWntKXaX90jzd-_EV8kuE6AJziVfKbazev__X_Ydrxu03Ti2skqBAG8QnjWnT6n0';
+    const key_two = '_6hB96hzdas32B3cR20woEhgUnuYIHCItckI8H01uBYITVWdczAOikEZICEkZoo4vTR1Fcg_9i6v2SVcbVJmUYaIWhZ0OX7O63c9HDLWRfvZRcmAOSaIQpEUls2Jcjy40UABF-0n92SBN_kah2t8bcpE-JRczMLehKMgx_t_8cWk';
+    const key_of = (stage) => stage.app.face_key();
+    const seeded = (stage, key) => {
+        stage.app.$.$mol_state_local.value('$giper_baza_auth', key);
+        return key;
+    };
+    const reloaded = (stage) => {
+        let hits = 0;
+        stage.app.face_reload = () => { ++hits; };
+        return () => hits;
+    };
+    $mol_test({
+        'the scene panel warns that the identity is a key, lives here only and is one for every app'($) {
+            const stage = $_12.$bog_vmap_app_flow_stage($);
+            const note = stage.app.face_note();
+            $mol_assert_ok(note.includes('только в этом браузере'));
+            $mol_assert_ok(note.includes('ключ, а не пароль'));
+            $mol_assert_ok(note.includes('все наши приложения'));
+            $mol_assert_ok(note.includes('документы не пропадут'));
+            $mol_assert_ok(note.includes('вернуть права без этой строки нельзя'));
+            $mol_assert_ok(stage.app.face_who().length > 'Эта личность: '.length);
+            $mol_assert_ok(stage.app.face_file().includes('kluch'));
+        },
+        'the saved file carries the very string the identity lives in'($) {
+            const stage = $_12.$bog_vmap_app_flow_stage($);
+            seeded(stage, key_one);
+            $mol_assert_equal(key_of(stage), key_one);
+            $mol_assert_equal(key_one.length, 172);
+            $mol_assert_equal(String(stage.kept['$giper_baza_auth'] ?? ''), JSON.stringify(key_one));
+        },
+        'a saved identity is taken from a bare string and from a link'($) {
+            const stage = $_12.$bog_vmap_app_flow_stage($);
+            const hits = reloaded(stage);
+            const mine = seeded(stage, key_one);
+            const alien = key_two;
+            stage.app.face_draft(alien);
+            stage.app.face_take(null);
+            $mol_assert_equal(key_of(stage), alien);
+            $mol_assert_ok(stage.app.face_status().includes('принята'));
+            $mol_assert_equal(hits(), 1);
+            stage.app.face_draft('http://site/app/#face=' + encodeURIComponent(mine));
+            stage.app.face_take(null);
+            $mol_assert_equal(key_of(stage), mine);
+            $mol_assert_equal(hits(), 2);
+        },
+        'a broken string is refused by words and never costs the identity'($) {
+            const stage = $_12.$bog_vmap_app_flow_stage($);
+            const hits = reloaded(stage);
+            const mine = seeded(stage, key_one);
+            for (const [raw, said] of [
+                ['', 'Вставьте строку'],
+                ['   ', 'Вставьте строку'],
+                ['ключ личности!!', 'лишние знаки'],
+                ['abcdef', 'не разбирается'],
+                ['a'.repeat(300), 'не той длины'],
+                [mine, 'та же личность'],
+            ]) {
+                stage.app.face_draft(raw);
+                stage.app.face_take(null);
+                $mol_assert_ok(stage.app.face_status().includes(said));
+                $mol_assert_equal(key_of(stage), mine);
+                $mol_assert_equal(hits(), 0);
+            }
+        },
+        'typing again clears the last refusal'($) {
+            const stage = $_12.$bog_vmap_app_flow_stage($);
+            stage.app.face_draft('мусор');
+            stage.app.face_take(null);
+            $mol_assert_ok(stage.app.face_status().length > 0);
+            stage.app.face_draft('другое');
+            $mol_assert_equal(stage.app.face_status(), '');
+        },
+    });
+})($ || ($ = {}));
+(function ($_13) {
+    $mol_test({
+        'the warning stands in plain sight and only the key work waits under the fold'($) {
+            const stage = $_13.$bog_vmap_app_flow_stage($);
+            const scenes = stage.app.Scenes();
+            const brief = stage.app.face_brief();
+            $mol_assert_ok(brief.includes('только в этом браузере'));
+            $mol_assert_equal(brief.split('.').filter(one => one.trim()).length, 1);
+            const foot = scenes.foot();
+            $mol_assert_equal(foot[0], scenes.Face_brief());
+            $mol_assert_equal(foot.includes(scenes.Face()), true);
+            $mol_assert_equal(scenes.face_shown(), false);
+            $mol_assert_equal(scenes.Face().rows().includes(scenes.Face().Content()), false);
+            $mol_assert_ok(scenes.Face_brief().dom_node().textContent.includes('только в этом браузере'));
+            $mol_assert_equal(scenes.dom_node().textContent.includes('ключ, а не пароль'), false);
+            scenes.face_shown(true);
+            stage.redraw();
+            $mol_assert_ok(scenes.dom_node().textContent.includes('ключ, а не пароль'));
         },
     });
 })($ || ($ = {}));

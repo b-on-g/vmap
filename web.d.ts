@@ -52886,94 +52886,174 @@ declare namespace $ {
 		,
 		ReturnType< $mol_list['rows'] >
 	>
-	type $bog_vmap_app_menu__showed_bog_vmap_app_scenes_8 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_scenes_8 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['face_brief'] >
+		,
+		ReturnType< $mol_paragraph['title'] >
+	>
+	type $mol_paragraph__title_bog_vmap_app_scenes_9 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['face_note'] >
+		,
+		ReturnType< $mol_paragraph['title'] >
+	>
+	type $mol_paragraph__title_bog_vmap_app_scenes_10 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['face_who'] >
+		,
+		ReturnType< $mol_paragraph['title'] >
+	>
+	type $mol_button_download__title_bog_vmap_app_scenes_11 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_download['title'] >
+	>
+	type $mol_button_download__hint_bog_vmap_app_scenes_12 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_download['hint'] >
+	>
+	type $mol_button_download__blob_bog_vmap_app_scenes_13 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['face_blob'] >
+		,
+		ReturnType< $mol_button_download['blob'] >
+	>
+	type $mol_button_download__file_name_bog_vmap_app_scenes_14 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['face_file'] >
+		,
+		ReturnType< $mol_button_download['file_name'] >
+	>
+	type $mol_string__hint_bog_vmap_app_scenes_15 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_string['hint'] >
+	>
+	type $mol_string__value_bog_vmap_app_scenes_16 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['face_draft'] >
+		,
+		ReturnType< $mol_string['value'] >
+	>
+	type $mol_button_minor__title_bog_vmap_app_scenes_17 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_bog_vmap_app_scenes_18 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__click_bog_vmap_app_scenes_19 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['face_take'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_status__status_bog_vmap_app_scenes_20 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['face_status'] >
+		,
+		ReturnType< $mol_status['status'] >
+	>
+	type $mol_expander__title_bog_vmap_app_scenes_21 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_expander['title'] >
+	>
+	type $mol_expander__expanded_bog_vmap_app_scenes_22 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_scenes['face_shown'] >
+		,
+		ReturnType< $mol_expander['expanded'] >
+	>
+	type $mol_expander__content_bog_vmap_app_scenes_23 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_expander['content'] >
+	>
+	type $bog_vmap_app_menu__showed_bog_vmap_app_scenes_24 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['menu_showed'] >
 		,
 		ReturnType< $bog_vmap_app_menu['showed'] >
 	>
-	type $bog_vmap_app_menu__left_bog_vmap_app_scenes_9 = $mol_type_enforce<
+	type $bog_vmap_app_menu__left_bog_vmap_app_scenes_25 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['menu_left'] >
 		,
 		ReturnType< $bog_vmap_app_menu['left'] >
 	>
-	type $bog_vmap_app_menu__top_bog_vmap_app_scenes_10 = $mol_type_enforce<
+	type $bog_vmap_app_menu__top_bog_vmap_app_scenes_26 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['menu_top'] >
 		,
 		ReturnType< $bog_vmap_app_menu['top'] >
 	>
-	type $bog_vmap_app_menu__items_bog_vmap_app_scenes_11 = $mol_type_enforce<
+	type $bog_vmap_app_menu__items_bog_vmap_app_scenes_27 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['menu_items'] >
 		,
 		ReturnType< $bog_vmap_app_menu['items'] >
 	>
-	type $bog_vmap_app_menu__close_bog_vmap_app_scenes_12 = $mol_type_enforce<
+	type $bog_vmap_app_menu__close_bog_vmap_app_scenes_28 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['menu_close'] >
 		,
 		ReturnType< $bog_vmap_app_menu['close'] >
 	>
-	type $bog_vmap_app_palette_item__title_bog_vmap_app_scenes_13 = $mol_type_enforce<
+	type $bog_vmap_app_palette_item__title_bog_vmap_app_scenes_29 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['scene_title'] >
 		,
 		ReturnType< $bog_vmap_app_palette_item['title'] >
 	>
-	type $bog_vmap_app_palette_item__hint_bog_vmap_app_scenes_14 = $mol_type_enforce<
+	type $bog_vmap_app_palette_item__hint_bog_vmap_app_scenes_30 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['scene_title'] >
 		,
 		ReturnType< $bog_vmap_app_palette_item['hint'] >
 	>
-	type $bog_vmap_app_palette_item__current_bog_vmap_app_scenes_15 = $mol_type_enforce<
+	type $bog_vmap_app_palette_item__current_bog_vmap_app_scenes_31 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['scene_current'] >
 		,
 		ReturnType< $bog_vmap_app_palette_item['current'] >
 	>
-	type $bog_vmap_app_palette_item__click_bog_vmap_app_scenes_16 = $mol_type_enforce<
+	type $bog_vmap_app_palette_item__click_bog_vmap_app_scenes_32 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['scene_click'] >
 		,
 		ReturnType< $bog_vmap_app_palette_item['click'] >
 	>
-	type $bog_vmap_app_palette_item__event_bog_vmap_app_scenes_17 = $mol_type_enforce<
+	type $bog_vmap_app_palette_item__event_bog_vmap_app_scenes_33 = $mol_type_enforce<
 		({ 
 			contextmenu( next?: ReturnType< $bog_vmap_app_scenes['scene_menu'] > ): ReturnType< $bog_vmap_app_scenes['scene_menu'] >,
 		})  & ReturnType< $bog_vmap_app_palette_item['event'] >
 		,
 		ReturnType< $bog_vmap_app_palette_item['event'] >
 	>
-	type $bog_vmap_app_menu_item__title_bog_vmap_app_scenes_18 = $mol_type_enforce<
+	type $bog_vmap_app_menu_item__title_bog_vmap_app_scenes_34 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $bog_vmap_app_menu_item['title'] >
 	>
-	type $bog_vmap_app_menu_item__act_bog_vmap_app_scenes_19 = $mol_type_enforce<
+	type $bog_vmap_app_menu_item__act_bog_vmap_app_scenes_35 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['drop_ask'] >
 		,
 		ReturnType< $bog_vmap_app_menu_item['act'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_scenes_20 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_scenes_36 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['drop_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $bog_vmap_app_menu_item__title_bog_vmap_app_scenes_21 = $mol_type_enforce<
+	type $bog_vmap_app_menu_item__title_bog_vmap_app_scenes_37 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $bog_vmap_app_menu_item['title'] >
 	>
-	type $bog_vmap_app_menu_item__act_bog_vmap_app_scenes_22 = $mol_type_enforce<
+	type $bog_vmap_app_menu_item__act_bog_vmap_app_scenes_38 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['drop'] >
 		,
 		ReturnType< $bog_vmap_app_menu_item['act'] >
 	>
-	type $bog_vmap_app_menu_item__done_bog_vmap_app_scenes_23 = $mol_type_enforce<
+	type $bog_vmap_app_menu_item__done_bog_vmap_app_scenes_39 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['menu_close'] >
 		,
 		ReturnType< $bog_vmap_app_menu_item['done'] >
 	>
-	type $bog_vmap_app_menu_item__title_bog_vmap_app_scenes_24 = $mol_type_enforce<
+	type $bog_vmap_app_menu_item__title_bog_vmap_app_scenes_40 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $bog_vmap_app_menu_item['title'] >
 	>
-	type $bog_vmap_app_menu_item__act_bog_vmap_app_scenes_25 = $mol_type_enforce<
+	type $bog_vmap_app_menu_item__act_bog_vmap_app_scenes_41 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_scenes['menu_close'] >
 		,
 		ReturnType< $bog_vmap_app_menu_item['act'] >
@@ -52985,6 +53065,17 @@ declare namespace $ {
 		Add( ): $mol_button_minor
 		scene_rows( ): readonly(any)[]
 		List( ): $mol_list
+		face_brief( ): string
+		Face_brief( ): $mol_paragraph
+		face_shown( next?: boolean ): boolean
+		Face_note( ): $mol_paragraph
+		Face_who( ): $mol_paragraph
+		face_blob( ): $mol_blob
+		Face_save( ): $mol_button_download
+		Face_field( ): $mol_string
+		Face_take( ): $mol_button_minor
+		Face_status( ): $mol_status
+		Face( ): $mol_expander
 		menu_showed( next?: boolean ): boolean
 		menu_left( ): string
 		menu_top( ): string
@@ -53003,7 +53094,14 @@ declare namespace $ {
 		current_exists( ): boolean
 		title( ): string
 		tools( ): readonly(any)[]
+		face_note( ): string
+		face_who( ): string
+		face_file( ): string
+		face_draft( next?: string ): string
+		face_take( next?: any ): any
+		face_status( ): string
 		body( ): readonly(any)[]
+		foot( ): readonly(any)[]
 		Menu( ): $bog_vmap_app_menu
 		Scene_row( id: any): $bog_vmap_app_palette_item
 		Drop( ): $bog_vmap_app_menu_item
@@ -56411,397 +56509,437 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_scenes['store'] >
 	>
-	type $bog_vmap_app_layers__source_bog_vmap_app_130 = $mol_type_enforce<
+	type $bog_vmap_app_scenes__face_brief_bog_vmap_app_130 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['face_brief'] >
+		,
+		ReturnType< $bog_vmap_app_scenes['face_brief'] >
+	>
+	type $bog_vmap_app_scenes__face_note_bog_vmap_app_131 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['face_note'] >
+		,
+		ReturnType< $bog_vmap_app_scenes['face_note'] >
+	>
+	type $bog_vmap_app_scenes__face_who_bog_vmap_app_132 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['face_who'] >
+		,
+		ReturnType< $bog_vmap_app_scenes['face_who'] >
+	>
+	type $bog_vmap_app_scenes__face_blob_bog_vmap_app_133 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['face_blob'] >
+		,
+		ReturnType< $bog_vmap_app_scenes['face_blob'] >
+	>
+	type $bog_vmap_app_scenes__face_file_bog_vmap_app_134 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['face_file'] >
+		,
+		ReturnType< $bog_vmap_app_scenes['face_file'] >
+	>
+	type $bog_vmap_app_scenes__face_draft_bog_vmap_app_135 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['face_draft'] >
+		,
+		ReturnType< $bog_vmap_app_scenes['face_draft'] >
+	>
+	type $bog_vmap_app_scenes__face_take_bog_vmap_app_136 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['face_take'] >
+		,
+		ReturnType< $bog_vmap_app_scenes['face_take'] >
+	>
+	type $bog_vmap_app_scenes__face_status_bog_vmap_app_137 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['face_status'] >
+		,
+		ReturnType< $bog_vmap_app_scenes['face_status'] >
+	>
+	type $bog_vmap_app_layers__source_bog_vmap_app_138 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_src'] >
 		,
 		ReturnType< $bog_vmap_app_layers['source'] >
 	>
-	type $bog_vmap_app_layers__root_bog_vmap_app_131 = $mol_type_enforce<
+	type $bog_vmap_app_layers__root_bog_vmap_app_139 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_root'] >
 		,
 		ReturnType< $bog_vmap_app_layers['root'] >
 	>
-	type $bog_vmap_app_layers__doc_key_bog_vmap_app_132 = $mol_type_enforce<
+	type $bog_vmap_app_layers__doc_key_bog_vmap_app_140 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_key'] >
 		,
 		ReturnType< $bog_vmap_app_layers['doc_key'] >
 	>
-	type $bog_vmap_app_layers__picked_bog_vmap_app_133 = $mol_type_enforce<
+	type $bog_vmap_app_layers__picked_bog_vmap_app_141 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['picked'] >
 		,
 		ReturnType< $bog_vmap_app_layers['picked'] >
 	>
-	type $bog_vmap_app_layers__inner_bog_vmap_app_134 = $mol_type_enforce<
+	type $bog_vmap_app_layers__inner_bog_vmap_app_142 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['inner'] >
 		,
 		ReturnType< $bog_vmap_app_layers['inner'] >
 	>
-	type $bog_vmap_app_layers__inner_kids_bog_vmap_app_135 = $mol_type_enforce<
+	type $bog_vmap_app_layers__inner_kids_bog_vmap_app_143 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['inner_kids'] >
 		,
 		ReturnType< $bog_vmap_app_layers['inner_kids'] >
 	>
-	type $bog_vmap_app_layers__inner_class_bog_vmap_app_136 = $mol_type_enforce<
+	type $bog_vmap_app_layers__inner_class_bog_vmap_app_144 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['inner_class'] >
 		,
 		ReturnType< $bog_vmap_app_layers['inner_class'] >
 	>
-	type $bog_vmap_app_layers__inner_alien_bog_vmap_app_137 = $mol_type_enforce<
+	type $bog_vmap_app_layers__inner_alien_bog_vmap_app_145 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['inner_alien'] >
 		,
 		ReturnType< $bog_vmap_app_layers['inner_alien'] >
 	>
-	type $bog_vmap_app_layers__node_title_bog_vmap_app_138 = $mol_type_enforce<
+	type $bog_vmap_app_layers__node_title_bog_vmap_app_146 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_title'] >
 		,
 		ReturnType< $bog_vmap_app_layers['node_title'] >
 	>
-	type $bog_vmap_app_layers__node_title_note_bog_vmap_app_139 = $mol_type_enforce<
+	type $bog_vmap_app_layers__node_title_note_bog_vmap_app_147 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_title_note'] >
 		,
 		ReturnType< $bog_vmap_app_layers['node_title_note'] >
 	>
-	type $bog_vmap_app_layers__tree_move_bog_vmap_app_140 = $mol_type_enforce<
+	type $bog_vmap_app_layers__tree_move_bog_vmap_app_148 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['tree_move'] >
 		,
 		ReturnType< $bog_vmap_app_layers['tree_move'] >
 	>
-	type $bog_vmap_app_layers__node_show_bog_vmap_app_141 = $mol_type_enforce<
+	type $bog_vmap_app_layers__node_show_bog_vmap_app_149 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_show'] >
 		,
 		ReturnType< $bog_vmap_app_layers['node_show'] >
 	>
-	type $bog_vmap_app_layers__editable_bog_vmap_app_142 = $mol_type_enforce<
+	type $bog_vmap_app_layers__editable_bog_vmap_app_150 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['editable'] >
 		,
 		ReturnType< $bog_vmap_app_layers['editable'] >
 	>
-	type $bog_vmap_app_shelf__Title_bog_vmap_app_143 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__Title_bog_vmap_app_151 = $mol_type_enforce<
 		any
 		,
 		ReturnType< $bog_vmap_app_shelf['Title'] >
 	>
-	type $bog_vmap_app_shelf__editable_bog_vmap_app_144 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__editable_bog_vmap_app_152 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['editable'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['editable'] >
 	>
-	type $bog_vmap_app_shelf__links_bog_vmap_app_145 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__links_bog_vmap_app_153 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['links'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['links'] >
 	>
-	type $bog_vmap_app_shelf__pack_link_bog_vmap_app_146 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__pack_link_bog_vmap_app_154 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['pack_link'] >
 	>
-	type $bog_vmap_app_shelf__land_classes_bog_vmap_app_147 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__land_classes_bog_vmap_app_155 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lib_classes'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['land_classes'] >
 	>
-	type $bog_vmap_app_shelf__class_list_bog_vmap_app_148 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__class_list_bog_vmap_app_156 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lib_class_list'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['class_list'] >
 	>
-	type $bog_vmap_app_shelf__place_bog_vmap_app_149 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__place_bog_vmap_app_157 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['shelf_place'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['place'] >
 	>
-	type $bog_vmap_app_inspect__source_bog_vmap_app_150 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__source_bog_vmap_app_158 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_source'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['source'] >
 	>
-	type $bog_vmap_app_inspect__peers_bog_vmap_app_151 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__peers_bog_vmap_app_159 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_peers'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['peers'] >
 	>
-	type $bog_vmap_app_inspect__pack_bog_vmap_app_152 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__pack_bog_vmap_app_160 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['pack'] >
 	>
-	type $bog_vmap_app_inspect__class_title_bog_vmap_app_153 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__class_title_bog_vmap_app_161 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_title'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['class_title'] >
 	>
-	type $bog_vmap_app_inspect__base_bog_vmap_app_154 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__base_bog_vmap_app_162 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_base'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['base'] >
 	>
-	type $bog_vmap_app_inspect__bases_bog_vmap_app_155 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__bases_bog_vmap_app_163 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_bases'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['bases'] >
 	>
-	type $bog_vmap_app_inspect__base_titles_bog_vmap_app_156 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__base_titles_bog_vmap_app_164 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_base_titles'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['base_titles'] >
 	>
-	type $bog_vmap_app_inspect__sub_note_bog_vmap_app_157 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__sub_note_bog_vmap_app_165 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $bog_vmap_app_inspect['sub_note'] >
 	>
-	type $bog_vmap_app_inspect__title_note_bog_vmap_app_158 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__title_note_bog_vmap_app_166 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_title_note'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['title_note'] >
 	>
-	type $bog_vmap_app_inspect__renamable_bog_vmap_app_159 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__renamable_bog_vmap_app_167 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_renamable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['renamable'] >
 	>
-	type $bog_vmap_app_inspect__cell_bog_vmap_app_160 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__cell_bog_vmap_app_168 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_cell'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['cell'] >
 	>
-	type $bog_vmap_app_inspect__resettable_bog_vmap_app_161 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__resettable_bog_vmap_app_169 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_resettable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['resettable'] >
 	>
-	type $bog_vmap_app_inspect__reset_bog_vmap_app_162 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__reset_bog_vmap_app_170 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_reset'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['reset'] >
 	>
-	type $bog_vmap_app_inspect__share_able_bog_vmap_app_163 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__share_able_bog_vmap_app_171 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_share_able'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['share_able'] >
 	>
-	type $bog_vmap_app_inspect__share_mark_bog_vmap_app_164 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__share_mark_bog_vmap_app_172 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_share_mark'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['share_mark'] >
 	>
-	type $bog_vmap_app_inspect__share_bog_vmap_app_165 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__share_bog_vmap_app_173 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_share'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['share'] >
 	>
-	type $bog_vmap_app_inspect__share_unshare_bog_vmap_app_166 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__share_unshare_bog_vmap_app_174 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_share_unshare'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['share_unshare'] >
 	>
-	type $bog_vmap_app_inspect__shares_bog_vmap_app_167 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__shares_bog_vmap_app_175 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_shares'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['shares'] >
 	>
-	type $bog_vmap_app_inspect__share_uses_bog_vmap_app_168 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__share_uses_bog_vmap_app_176 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_share_uses'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['share_uses'] >
 	>
-	type $bog_vmap_app_inspect__share_value_bog_vmap_app_169 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__share_value_bog_vmap_app_177 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_share_value'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['share_value'] >
 	>
-	type $bog_vmap_app_inspect__editable_bog_vmap_app_170 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__editable_bog_vmap_app_178 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_editable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['editable'] >
 	>
-	type $mol_page__title_bog_vmap_app_171 = $mol_type_enforce<
+	type $mol_page__title_bog_vmap_app_179 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_page['title'] >
 	>
-	type $mol_page__body_bog_vmap_app_172 = $mol_type_enforce<
+	type $mol_page__body_bog_vmap_app_180 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_page['body'] >
 	>
-	type $bog_vmap_app_code__klass_bog_vmap_app_173 = $mol_type_enforce<
+	type $bog_vmap_app_code__klass_bog_vmap_app_181 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_klass'] >
 		,
 		ReturnType< $bog_vmap_app_code['klass'] >
 	>
-	type $bog_vmap_app_code__prop_bog_vmap_app_174 = $mol_type_enforce<
+	type $bog_vmap_app_code__prop_bog_vmap_app_182 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_prop'] >
 		,
 		ReturnType< $bog_vmap_app_code['prop'] >
 	>
-	type $bog_vmap_app_code__hooks_bog_vmap_app_175 = $mol_type_enforce<
+	type $bog_vmap_app_code__hooks_bog_vmap_app_183 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_hooks'] >
 		,
 		ReturnType< $bog_vmap_app_code['hooks'] >
 	>
-	type $bog_vmap_app_code__whole_bog_vmap_app_176 = $mol_type_enforce<
+	type $bog_vmap_app_code__whole_bog_vmap_app_184 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_whole'] >
 		,
 		ReturnType< $bog_vmap_app_code['whole'] >
 	>
-	type $bog_vmap_app_code__source_bog_vmap_app_177 = $mol_type_enforce<
+	type $bog_vmap_app_code__source_bog_vmap_app_185 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['source'] >
 	>
-	type $bog_vmap_app_code__node_source_bog_vmap_app_178 = $mol_type_enforce<
+	type $bog_vmap_app_code__node_source_bog_vmap_app_186 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['node_source'] >
 	>
-	type $bog_vmap_app_code__js_bog_vmap_app_179 = $mol_type_enforce<
+	type $bog_vmap_app_code__js_bog_vmap_app_187 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_js'] >
 		,
 		ReturnType< $bog_vmap_app_code['js'] >
 	>
-	type $bog_vmap_app_code__css_bog_vmap_app_180 = $mol_type_enforce<
+	type $bog_vmap_app_code__css_bog_vmap_app_188 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_css'] >
 		,
 		ReturnType< $bog_vmap_app_code['css'] >
 	>
-	type $bog_vmap_app_code__error_bog_vmap_app_181 = $mol_type_enforce<
+	type $bog_vmap_app_code__error_bog_vmap_app_189 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_error'] >
 		,
 		ReturnType< $bog_vmap_app_code['error'] >
 	>
-	type $bog_vmap_app_code__node_note_bog_vmap_app_182 = $mol_type_enforce<
+	type $bog_vmap_app_code__node_note_bog_vmap_app_190 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_node_note'] >
 		,
 		ReturnType< $bog_vmap_app_code['node_note'] >
 	>
-	type $bog_vmap_app_code__editable_bog_vmap_app_183 = $mol_type_enforce<
+	type $bog_vmap_app_code__editable_bog_vmap_app_191 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_editable'] >
 		,
 		ReturnType< $bog_vmap_app_code['editable'] >
 	>
-	type $mol_chip__title_bog_vmap_app_184 = $mol_type_enforce<
+	type $mol_chip__title_bog_vmap_app_192 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_chip['title'] >
 	>
-	type $mol_chip__hint_bog_vmap_app_185 = $mol_type_enforce<
+	type $mol_chip__hint_bog_vmap_app_193 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_chip['hint'] >
 	>
-	type $bog_vmap_app_history__Title_bog_vmap_app_186 = $mol_type_enforce<
+	type $bog_vmap_app_history__Title_bog_vmap_app_194 = $mol_type_enforce<
 		any
 		,
 		ReturnType< $bog_vmap_app_history['Title'] >
 	>
-	type $bog_vmap_app_history__store_bog_vmap_app_187 = $mol_type_enforce<
+	type $bog_vmap_app_history__store_bog_vmap_app_195 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['store'] >
 		,
 		ReturnType< $bog_vmap_app_history['store'] >
 	>
-	type $bog_vmap_app_history__state_bog_vmap_app_188 = $mol_type_enforce<
+	type $bog_vmap_app_history__state_bog_vmap_app_196 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['history_state'] >
 		,
 		ReturnType< $bog_vmap_app_history['state'] >
 	>
-	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_189 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_197 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['pack'] >
 	>
-	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_190 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_198 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lands'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['lands'] >
 	>
-	type $mol_status__status_bog_vmap_app_191 = $mol_type_enforce<
+	type $mol_status__status_bog_vmap_app_199 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['status'] >
 		,
 		ReturnType< $mol_status['status'] >
 	>
-	type $mol_bar__sub_bog_vmap_app_192 = $mol_type_enforce<
+	type $mol_bar__sub_bog_vmap_app_200 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['notes'] >
 		,
 		ReturnType< $mol_bar['sub'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_193 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_201 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['zoom_title'] >
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_194 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_202 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_195 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_203 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['zoom_full'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_status__status_bog_vmap_app_196 = $mol_type_enforce<
+	type $mol_status__status_bog_vmap_app_204 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['error'] >
 		,
 		ReturnType< $mol_status['status'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_197 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_205 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['inside_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_198 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_206 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['root_title_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_199 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_207 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_text'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_bar__sub_bog_vmap_app_200 = $mol_type_enforce<
+	type $mol_bar__sub_bog_vmap_app_208 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['stall_content'] >
 		,
 		ReturnType< $mol_bar['sub'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_201 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_209 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['stall_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_202 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_210 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_203 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_211 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_204 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_212 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_default'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_205 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_213 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_206 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_214 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_207 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_215 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_restart'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_view__style_bog_vmap_app_208 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_216 = $mol_type_enforce<
 		({ 
 			'left': ReturnType< $bog_vmap_app['ghost_left'] >,
 			'top': ReturnType< $bog_vmap_app['ghost_top'] >,
@@ -56809,7 +56947,7 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_209 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_217 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
@@ -56916,6 +57054,14 @@ declare namespace $ {
 		node_show( next?: ReturnType< ReturnType< $bog_vmap_app['Pane'] >['node_show'] > ): ReturnType< ReturnType< $bog_vmap_app['Pane'] >['node_show'] >
 		Pane( ): $bog_vmap_app_pane
 		canvas_foot( ): readonly($mol_view)[]
+		face_brief( ): string
+		face_note( ): string
+		face_who( ): string
+		face_blob( ): $mol_blob
+		face_file( ): string
+		face_draft( next?: string ): string
+		face_take( next?: any ): any
+		face_status( ): string
 		inner_kids( id: any): readonly(string)[]
 		inner_class( id: any): string
 		inner_alien( id: any): boolean
@@ -57379,6 +57525,22 @@ declare namespace $.$$ {
         node_shares(): string[];
         node_share_uses(name: string): string;
         node_share_value(name: string, next?: $mol_tree2): $mol_tree2;
+        face_key(): string;
+        face_who(): string;
+        face_brief(): string;
+        face_note(): string;
+        face_file(): string;
+        face_blob(): Blob;
+        face_clean(raw: string): string;
+        face_checked(raw: string): {
+            key: string;
+            note: string;
+        };
+        face_said(next?: string): string;
+        face_status(): string;
+        face_draft(next?: string): string;
+        face_take(next?: Event | null): null;
+        face_reload(): void;
         share_names(): string[];
         share_uses(name: string): string[];
         share_spot(path: string): {
