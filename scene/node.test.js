@@ -6004,12 +6004,16 @@ var $;
             next: parts?.next ? '?' : '',
         };
     }
-    function cell_plain(value) {
+    function $bog_vmap_lang_plain(value) {
         if (!value)
             return false;
         if (['=', '<=', '<=>', '=>', '^'].includes(value.type))
             return false;
         return !$mol_view_tree2_class_match(value);
+    }
+    $.$bog_vmap_lang_plain = $bog_vmap_lang_plain;
+    function cell_plain(value) {
+        return $bog_vmap_lang_plain(value);
     }
     function $bog_vmap_lang_css_rename(css, from, to) {
         if (!css || from === to)
@@ -6238,6 +6242,64 @@ var $;
         }
         prop_drop(name) {
             this.prop_tree(name, null);
+        }
+        share_names() {
+            const cells = new Set();
+            for (const part of this.part_names()) {
+                for (const prop of this.inner_refs(part))
+                    cells.add(prop);
+                const klass = this.prop_decl(part)?.kids[0];
+                if (!klass)
+                    continue;
+                for (const over of klass.kids) {
+                    const cell = this.cell_of(part, sign_of(over.type).name);
+                    if (cell)
+                        cells.add(cell);
+                }
+            }
+            const wires = new Set(this.wires().map(wire => wire.name));
+            const parts = new Set(this.part_names());
+            return this.props_tree().kids
+                .map(prop => sign_of(prop.type).name)
+                .filter(name => name !== 'sub' && !parts.has(name) && !wires.has(name) && !cells.has(name))
+                .filter(name => cell_plain(this.prop_decl(name)?.kids[0]));
+        }
+        share_free(base) {
+            const clean = base.replace(/[^0-9a-z_]/gi, '_').replace(/^[0-9]+/, '').toLowerCase() || 'value';
+            const taken = new Set([...this.prop_names(), ...this.ref_names()]);
+            for (let i = 1;; ++i) {
+                const name = i === 1 ? clean : `${clean}_${i}`;
+                if (!taken.has(name))
+                    return name;
+            }
+        }
+        share_add(name, value) {
+            const token = this.$.$bog_vmap_lang_token(name, 'Общее значение');
+            if (this.prop_names().includes(token))
+                this.$.$mol_fail(new Error(`Имя ${JSON.stringify(token)} в этом документе уже занято`));
+            this.prop_add(token);
+            this.prop_tree(token, this.tree().struct(token, [value]));
+            return token;
+        }
+        share_uses(name) {
+            const used = [];
+            for (const part of this.part_names()) {
+                const klass = this.prop_decl(part)?.kids[0];
+                if (!klass)
+                    continue;
+                let found = false;
+                const walk = (tree) => {
+                    const head = tree.kids[0];
+                    if (head && (tree.type === '<=' || tree.type === '<=>') && sign_of(head.type).name === name)
+                        found = true;
+                    for (const kid of tree.kids)
+                        walk(kid);
+                };
+                walk(klass);
+                if (found)
+                    used.push(part);
+            }
+            return used;
         }
         prop_rename(name, next) {
             const to = [...next.matchAll($mol_view_tree2_prop_signature)][0]?.groups?.name;
@@ -6723,6 +6785,9 @@ var $;
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "prop_drop", null);
+    __decorate([
+        $mol_action
+    ], $bog_vmap_lang_node.prototype, "share_add", null);
     __decorate([
         $mol_action
     ], $bog_vmap_lang_node.prototype, "prop_rename", null);
@@ -9910,12 +9975,15 @@ var $;
 "use strict";
 var $;
 (function ($) {
+    $.$bog_vmap_scene_value_none = '—';
     function $bog_vmap_scene_value_text(val, limit = 40) {
         let text;
         if (val === undefined)
             text = 'undefined';
         else if (val === null)
             text = 'null';
+        else if (typeof val === 'number' && Number.isNaN(val))
+            text = $.$bog_vmap_scene_value_none;
         else if (typeof val === 'function')
             text = 'function';
         else if (typeof val !== 'object')
@@ -19240,6 +19308,19 @@ var $;
             $mol_assert_equal(typeof values.view, 'string');
             $mol_assert_equal(values.view.length > 0, true);
             $mol_assert_equal(values.nil, 'null');
+        },
+        'a number that is not a number is a dash, and an empty field stays empty'($) {
+            const root = {
+                count() { return NaN; },
+                sum() { return 0; },
+                note() { return ''; },
+                rows() { return [{ sum: NaN }, { sum: 3 }]; },
+            };
+            const values = $.$bog_vmap_scene_values(root, ['count', 'sum', 'note', 'rows']);
+            $mol_assert_equal(values.count, '—');
+            $mol_assert_equal(values.sum, '0');
+            $mol_assert_equal(values.note, '');
+            $mol_assert_like(values.rows.split('\n'), ['sum', '—', '3']);
         },
     });
 })($ || ($ = {}));

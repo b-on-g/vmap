@@ -2710,6 +2710,7 @@ declare namespace $ {
     function $bog_vmap_lang_token(this: $, token: string, role: string): string;
     function $bog_vmap_lang_class_ok(name: string): boolean;
     function $bog_vmap_lang_attr(klass: string): string;
+    function $bog_vmap_lang_plain(value?: $mol_tree2 | null): boolean;
     function $bog_vmap_lang_css_rename(css: string, from: string, to: string): string;
     function $bog_vmap_lang_js_rename(js: string, from: string, to: string): string;
     function $bog_vmap_lang_wire_tree(this: $, wire: $bog_vmap_lang_wire): $mol_tree2;
@@ -2739,6 +2740,10 @@ declare namespace $ {
         prop_tree(name: string, next?: $mol_tree2 | null): $mol_tree2 | null;
         prop_add(name: string): void;
         prop_drop(name: string): void;
+        share_names(): string[];
+        share_free(base: string): string;
+        share_add(name: string, value: $mol_tree2): string;
+        share_uses(name: string): string[];
         prop_rename(name: string, next: string): undefined;
         property(name: string): $bog_vmap_lang_prop;
         part_add(name: string, klass: string): void;
@@ -3488,6 +3493,7 @@ declare namespace $.$$ {
 }
 
 declare namespace $ {
+    const $bog_vmap_scene_value_none = "\u2014";
     function $bog_vmap_scene_value_text(val: unknown, limit?: number): string;
     function $bog_vmap_scene_values_columns(list: readonly object[]): string[];
     function $bog_vmap_scene_values_table(val: unknown, rows?: number, limit?: number): string | null;
