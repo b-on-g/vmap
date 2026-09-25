@@ -396,7 +396,7 @@ namespace $.$$ {
 				... this.say() ? [ this.Say() ] : [],
 				... this.band() ? [ this.Band() ] : [],
 				... this.draft() ? [ this.Draft() ] : [],
-				... this.guide_views(),
+				... this.snap_hint_views(),
 				... this.gap_views(),
 				... this.ghost_views(),
 				... this.menu() ? [ this.menu_view() ] : [],
@@ -779,7 +779,7 @@ namespace $.$$ {
 		}
 
 		@ $mol_mem
-		guides( next?: readonly $bog_vmap_app_pane_snap_line[] ) {
+		snap_hints( next?: readonly $bog_vmap_app_pane_snap_line[] ) {
 			return next ?? []
 		}
 
@@ -963,13 +963,13 @@ namespace $.$$ {
 			}
 		}
 
-		guide_views() {
-			return this.guides().map( ( line, index )=> this.Guide( index ) )
+		snap_hint_views() {
+			return this.snap_hints().map( ( line, index )=> this.Snap_hint( index ) )
 		}
 
 		@ $mol_mem_key
-		override guide_style( index: number ): { readonly [ prop: string ]: string } {
-			const line = this.guides()[ index ]
+		override snap_hint_style( index: number ): { readonly [ prop: string ]: string } {
+			const line = this.snap_hints()[ index ]
 			if( !line ) return {}
 
 			const box = line.axis === 'x'
@@ -1270,7 +1270,7 @@ namespace $.$$ {
 			this.drag( null )
 			this.drag_alt( false )
 			this.slot( null )
-			this.guides( [] )
+			this.snap_hints( [] )
 
 			return null
 		}
@@ -2185,14 +2185,14 @@ namespace $.$$ {
 			this.slot( slot )
 
 			if( slot || drag.nested ) {
-				this.guides( [] )
+				this.snap_hints( [] )
 				return
 			}
 
 			const shift = [ point[0] - drag.grab[0], point[1] - drag.grab[1] ] as const
 			const snap = this.snap_off( event ) ? null : this.snap_at( drag.box, drag.spots, shift )
 
-			this.guides( snap?.lines ?? [] )
+			this.snap_hints( snap?.lines ?? [] )
 
 			const dx = shift[0] + ( snap?.dx ?? 0 )
 			const dy = shift[1] + ( snap?.dy ?? 0 )
@@ -2264,7 +2264,7 @@ namespace $.$$ {
 
 				this.drag( null )
 				this.drag_alt( false )
-				this.guides( [] )
+				this.snap_hints( [] )
 
 				try {
 					this.Overlay().dom_node().releasePointerCapture( event.pointerId )

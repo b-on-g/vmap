@@ -53,7 +53,7 @@ namespace $.$$ {
 			transition: 'none',
 		},
 
-		Guide: {
+		Snap_hint: {
 			position: 'absolute',
 			background: { color: $mol_theme.special },
 			pointerEvents: 'none',
