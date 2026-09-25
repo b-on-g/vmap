@@ -66,15 +66,50 @@ namespace $.$$ {
 			background: { color: $mol_theme.back },
 			color: $mol_theme.shade,
 			font: { size: '.625rem' },
-			pointerEvents: 'none',
 			transition: 'none',
 			zIndex: 2,
+			touchAction: 'none',
+		},
+
+		Guide: {
+			position: 'absolute',
+			background: { color: $mol_theme.special },
+			transition: 'none',
+			touchAction: 'none',
+			zIndex: 2,
+
+			backgroundClip: 'content-box',
+
+			'@': {
+
+				bog_vmap_app_pane_guide_axis: {
+
+					x: {
+						cursor: 'ew-resize',
+						margin: { left: '-2px' },
+						padding: { left: '2px', right: '2px' },
+					},
+
+					y: {
+						cursor: 'ns-resize',
+						margin: { top: '-2px' },
+						padding: { top: '2px', bottom: '2px' },
+					},
+
+				},
+
+				bog_vmap_app_pane_guide_picked: {
+					true: { background: { color: $mol_theme.focus } },
+				},
+
+			},
 		},
 
 		Tick: {
 			position: 'absolute',
 			padding: [ 0, '.125rem' ],
 			whiteSpace: 'pre',
+			pointerEvents: 'none',
 			transition: 'none',
 		},
 
@@ -82,6 +117,7 @@ namespace $.$$ {
 			position: 'absolute',
 			background: { color: $mol_theme.focus },
 			opacity: .35,
+			pointerEvents: 'none',
 			transition: 'none',
 		},
 

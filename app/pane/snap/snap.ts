@@ -14,6 +14,24 @@ namespace $ {
 		readonly lines: readonly $bog_vmap_app_pane_snap_line[]
 	}
 
+	export type $bog_vmap_app_pane_rail = {
+		readonly axis: $bog_vmap_app_pane_snap_axis
+		readonly at: number
+	}
+
+	export type $bog_vmap_app_pane_guide_drag = $bog_vmap_app_pane_rail & {
+		readonly id: string
+		readonly born: boolean
+		readonly off: boolean
+	}
+
+	export function $bog_vmap_app_pane_rail_stops(
+		rails: readonly $bog_vmap_app_pane_rail[],
+		axis: $bog_vmap_app_pane_snap_axis,
+	) {
+		return rails.filter( rail => rail.axis === axis ).map( rail => rail.at )
+	}
+
 	export function $bog_vmap_app_pane_snap_stops( box: $bog_vmap_bridge_rect, axis: $bog_vmap_app_pane_snap_axis ) {
 		const start = axis === 'x' ? box.x : box.y
 		const size = axis === 'x' ? box.width : box.height
@@ -41,11 +59,21 @@ namespace $ {
 		moving: $bog_vmap_bridge_rect,
 		others: readonly $bog_vmap_bridge_rect[],
 		slack: number,
+		rails: readonly $bog_vmap_app_pane_rail[] = [],
 	): $bog_vmap_app_pane_snap {
 		const stops = $bog_vmap_app_pane_snap_stops
 
-		const dx = $bog_vmap_app_pane_snap_gap( stops( moving, 'x' ), others.flatMap( box => stops( box, 'x' ) ), slack )
-		const dy = $bog_vmap_app_pane_snap_gap( stops( moving, 'y' ), others.flatMap( box => stops( box, 'y' ) ), slack )
+		const dx = $bog_vmap_app_pane_snap_gap(
+			stops( moving, 'x' ),
+			[ ... others.flatMap( box => stops( box, 'x' ) ), ... $bog_vmap_app_pane_rail_stops( rails, 'x' ) ],
+			slack,
+		)
+
+		const dy = $bog_vmap_app_pane_snap_gap(
+			stops( moving, 'y' ),
+			[ ... others.flatMap( box => stops( box, 'y' ) ), ... $bog_vmap_app_pane_rail_stops( rails, 'y' ) ],
+			slack,
+		)
 
 		const placed = { x: moving.x + dx, y: moving.y + dy, width: moving.width, height: moving.height }
 

@@ -2,6 +2,7 @@ $bog_vmap_app $mol_page
 	doc_src \
 	doc_css \
 	spots? *
+	guides? *
 	selected? null
 	picked? /string
 	inner? \
@@ -170,6 +171,7 @@ $bog_vmap_app $mol_page
 				doc_src <= doc_src
 				doc_css <= doc_css
 				spots? <=> spots?
+				guides? <=> guides?
 				picked? <=> picked?
 				inner <= inner
 				entered? <=> entered? null

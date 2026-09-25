@@ -163,6 +163,10 @@ namespace $.$$ {
 			return this.store().spots( next )
 		}
 
+		override guides( next?: $bog_vmap_app_store_guides ): $bog_vmap_app_store_guides {
+			return this.store().guides( next )
+		}
+
 		override links( next?: string ) {
 			const store = this.store()
 			if( next !== undefined ) return store.pack( next ) || super.links()

@@ -398,6 +398,7 @@ namespace $.$$ {
 				... this.draft() ? [ this.Draft() ] : [],
 				... this.snap_hint_views(),
 				... this.gap_views(),
+				... this.guide_views(),
 				... this.ghost_views(),
 				... this.menu() ? [ this.menu_view() ] : [],
 			] as readonly $mol_view[]
@@ -775,6 +776,7 @@ namespace $.$$ {
 				{ x: box.x + shift[0], y: box.y + shift[1], width: box.width, height: box.height },
 				this.snap_boxes( moving ),
 				this.snap_slack() / this.camera_zoom(),
+				this.guide_rails(),
 			)
 		}
 
@@ -986,6 +988,175 @@ namespace $.$$ {
 			}
 		}
 
+		guide_lines(): { readonly [ id: string ]: $bog_vmap_app_pane_rail } {
+			return this.guides() as { readonly [ id: string ]: $bog_vmap_app_pane_rail }
+		}
+
+		guide_at( id: string ): $bog_vmap_app_pane_rail | null {
+			const drag = this.guide_drag()
+			if( drag && drag.id === id ) return { axis: drag.axis, at: drag.at }
+
+			const line = this.guide_lines()[ id ]
+			if( !line ) return null
+			if( line.axis !== 'x' && line.axis !== 'y' ) return null
+
+			return line
+		}
+
+		guide_ids(): readonly string[] {
+			const ids = Object.keys( this.guide_lines() ).sort()
+			const drag = this.guide_drag()
+			if( drag && !ids.includes( drag.id ) ) ids.push( drag.id )
+			return ids
+		}
+
+		guide_rails(): readonly $bog_vmap_app_pane_rail[] {
+			return this.guide_ids().flatMap( id => this.guide_at( id ) ?? [] )
+		}
+
+		guide_views() {
+			return this.guide_ids().map( id => this.Guide( id ) )
+		}
+
+		override guide_picked( id: string ) {
+			return this.guide_pick() === id
+		}
+
+		override guide_axis( id: string ) {
+			return this.guide_at( id )?.axis ?? ''
+		}
+
+		@ $mol_mem_key
+		override guide_style( id: string ): { readonly [ prop: string ]: string } {
+			const line = this.guide_at( id )
+			if( !line ) return {}
+
+			const zoom = this.camera_zoom()
+			const shift = this.camera_shift()
+			const at = line.at * zoom + ( line.axis === 'x' ? shift[0] : shift[1] )
+
+			return line.axis === 'x'
+				? { left: at + 'px', top: '0', bottom: '0', width: '1px' }
+				: { top: at + 'px', left: '0', right: '0', height: '1px' }
+		}
+
+		@ $mol_mem
+		guide_pick( next?: string | null ) {
+			return next ?? null
+		}
+
+		@ $mol_mem
+		guide_drag( next?: $bog_vmap_app_pane_guide_drag | null ) {
+			return next ?? null
+		}
+
+		guide_snap( axis: $bog_vmap_app_pane_snap_axis, at: number ) {
+			const slack = this.snap_slack() / this.camera_zoom()
+			const stops = this.snap_boxes({}).flatMap(
+				box => this.$.$bog_vmap_app_pane_snap_stops( box, axis )
+			)
+
+			return at + this.$.$bog_vmap_app_pane_snap_gap( [ at ], stops, slack )
+		}
+
+		guide_point( event: { readonly clientX: number, readonly clientY: number }, axis: $bog_vmap_app_pane_snap_axis ) {
+			const point = this.world_point( event )
+			return this.guide_snap( axis, axis === 'x' ? point[0] : point[1] )
+		}
+
+		guide_off( event: { readonly clientX: number, readonly clientY: number }, axis: $bog_vmap_app_pane_snap_axis ) {
+			const screen = this.screen_point( event )
+			return ( axis === 'x' ? screen[0] : screen[1] ) < 0
+		}
+
+		@ $mol_action
+		override ruler_press( axis: string, next?: PointerEvent | null ) {
+			if( !next || !this.editable() ) return null
+
+			const side = axis as $bog_vmap_app_pane_snap_axis
+			if( side !== 'x' && side !== 'y' ) return null
+
+			next.preventDefault()
+			this.grab( next )
+
+			const id = this.$.$mol_guid()
+
+			this.guide_pick( id )
+			this.guide_drag({ id, axis: side, at: this.guide_point( next, side ), born: true, off: false })
+
+			return null
+		}
+
+		@ $mol_action
+		override guide_press( id: string, next?: PointerEvent | null ) {
+			if( !next ) return null
+
+			next.preventDefault()
+			next.stopPropagation()
+
+			this.guide_pick( id )
+			if( !this.editable() ) return null
+
+			const line = this.guide_at( id )
+			if( !line ) return null
+
+			this.grab( next )
+			this.guide_drag({ id, axis: line.axis, at: line.at, born: false, off: false })
+
+			return null
+		}
+
+		@ $mol_action
+		override guide_move( id: string, next?: PointerEvent | null ) {
+			const drag = this.guide_drag()
+			if( !drag || !next ) return null
+			if( !next.buttons ) return this.guide_release( id, next )
+
+			next.preventDefault()
+
+			this.guide_drag({
+				... drag,
+				at: this.guide_point( next, drag.axis ),
+				off: this.guide_off( next, drag.axis ),
+			})
+
+			return null
+		}
+
+		@ $mol_action
+		override guide_release( id: string, next?: PointerEvent | null ) {
+			const drag = this.guide_drag()
+			if( !drag ) return null
+
+			this.guide_drag( null )
+
+			if( drag.off ) {
+				if( !drag.born ) this.guide_drop( drag.id )
+				else this.guide_pick( null )
+				return null
+			}
+
+			this.guides({ ... this.guide_lines(), [ drag.id ]: { axis: drag.axis, at: drag.at } })
+
+			return null
+		}
+
+		@ $mol_action
+		guide_drop( id: string ) {
+			const next = { ... this.guide_lines() } as { [ id: string ]: $bog_vmap_app_pane_rail }
+			delete next[ id ]
+
+			this.guides( next )
+			if( this.guide_pick() === id ) this.guide_pick( null )
+
+			return null
+		}
+
+		grab( event: PointerEvent ) {
+			const node = event.target as Element | null
+			try { node?.setPointerCapture?.( event.pointerId ) } catch {}
+		}
+
 		@ $mol_mem
 		press( next?: {
 			screen: readonly [ number, number ],
@@ -1151,7 +1322,17 @@ namespace $.$$ {
 
 			if( stroke.key === 'Delete' || stroke.key === 'Backspace' ) {
 				if( command || stroke.altKey ) return false
-				if( !this.editable() || !this.picked().length ) return false
+				if( !this.editable() ) return false
+
+				const guide = this.guide_pick()
+
+				if( guide && this.guide_at( guide ) ) {
+					stroke.preventDefault()
+					this.guide_drop( guide )
+					return true
+				}
+
+				if( !this.picked().length ) return false
 
 				stroke.preventDefault()
 				this.leave()
@@ -1887,6 +2068,7 @@ namespace $.$$ {
 			if( this.hand() ) return this.press( null )
 
 			this.say( '' )
+			this.guide_pick( null )
 
 			const point = this.world_point( event )
 

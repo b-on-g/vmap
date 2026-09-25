@@ -5056,6 +5056,128 @@ namespace $ {
 
 		},
 
+		'a guide pulled off the ruler reaches the document only on release'( $ ) {
+			const pane = pane_make( $, { A: box( 0, 0 ) } )
+
+			pane.ruler_press( 'x', pointer( 300, 40 ) )
+
+			const id = pane.guide_ids()[ 0 ]
+
+			$mol_assert_equal( pane.guide_ids().length, 1 )
+			$mol_assert_like( pane.guide_at( id ), { axis: 'x', at: 300 } )
+			$mol_assert_like( pane.guides(), {} )
+
+			pane.guide_move( id, pointer( 420, 200 ) )
+
+			$mol_assert_like( pane.guide_at( id ), { axis: 'x', at: 420 } )
+			$mol_assert_like( pane.guides(), {} )
+
+			pane.guide_release( id, pointer( 420, 200, { buttons: 0 } ) )
+
+			$mol_assert_like( pane.guides(), { [ id ]: { axis: 'x', at: 420 } } )
+			$mol_assert_equal( pane.guide_drag(), null )
+
+		},
+
+		'a guide moves, and a drag back onto the ruler takes it away'( $ ) {
+			const pane = pane_make( $, { A: box( 0, 0 ) }, {
+				pane_rect: ()=> ({ left: 20, top: 20, width: 1000, height: 800 }),
+			} )
+
+			pane.guides({ one: { axis: 'x', at: 300 } })
+
+			const press = ( x: number )=> pointer( x, 120, { stopPropagation() {} } )
+
+			pane.guide_press( 'one', press( 320 ) )
+			pane.guide_move( 'one', pointer( 380, 120 ) )
+
+			$mol_assert_like( pane.guide_at( 'one' ), { axis: 'x', at: 360 } )
+
+			pane.guide_release( 'one', pointer( 380, 120, { buttons: 0 } ) )
+
+			$mol_assert_like( pane.guides(), { one: { axis: 'x', at: 360 } } )
+
+			pane.guide_press( 'one', press( 380 ) )
+			pane.guide_move( 'one', pointer( 10, 120 ) )
+
+			$mol_assert_equal( pane.guide_drag()?.off, true )
+
+			pane.guide_release( 'one', pointer( 10, 120, { buttons: 0 } ) )
+
+			$mol_assert_like( pane.guides(), {} )
+
+		},
+
+		'Delete takes away the picked guide and leaves the nodes alone'( $ ) {
+			const pane = pane_make( $, { A: box( 0, 0 ) } )
+
+			pane.guides({ one: { axis: 'y', at: 200 } })
+			pane.picked([ 'A' ])
+
+			let dropped = 0
+			pane.node_delete = ()=> { ++ dropped; return null }
+
+			pane.guide_press( 'one', pointer( 400, 200, { stopPropagation() {} } ) )
+			pane.guide_release( 'one', pointer( 400, 200, { buttons: 0 } ) )
+
+			$mol_assert_equal( pane.guide_picked( 'one' ), true )
+
+			const stroke = { key: 'Delete', prevented: false, preventDefault() { this.prevented = true } }
+
+			$mol_assert_equal( pane.key_down( stroke as unknown as KeyboardEvent ), true )
+			$mol_assert_like( pane.guides(), {} )
+			$mol_assert_equal( dropped, 0 )
+			$mol_assert_equal( pane.key_down( stroke as unknown as KeyboardEvent ), true )
+			$mol_assert_equal( dropped, 1 )
+
+		},
+
+		'a node snaps to a guide on the axis of the guide, and only on it'( $ ) {
+			const upright = pane_make( $, { A: box( 0, 0 ) } )
+
+			upright.guides({ one: { axis: 'x', at: 300 } })
+
+			upright.node_press( pointer( 50, 25 ) )
+			upright.node_move( pointer( 347, 129 ) )
+
+			$mol_assert_like( upright.spots()[ 'A' ], { x: 300, y: 104 } )
+
+			const flat = pane_make( $, { A: box( 0, 0 ) } )
+
+			flat.guides({ one: { axis: 'y', at: 100 } })
+
+			flat.node_press( pointer( 50, 25 ) )
+			flat.node_move( pointer( 347, 129 ) )
+
+			$mol_assert_like( flat.spots()[ 'A' ], { x: 297, y: 100 } )
+
+		},
+
+		'a guide dragged near a node edge sticks to it'( $ ) {
+			const pane = pane_make( $, { A: box( 0, 0 ), B: box( 300, 200 ) } )
+
+			pane.ruler_press( 'x', pointer( 297, 40 ) )
+
+			const id = pane.guide_ids()[ 0 ]
+
+			$mol_assert_like( pane.guide_at( id ), { axis: 'x', at: 300 } )
+
+			pane.guide_move( id, pointer( 500, 200 ) )
+
+			$mol_assert_like( pane.guide_at( id ), { axis: 'x', at: 500 } )
+
+		},
+
+		'a document that cannot be changed gets no guides'( $ ) {
+			const pane = pane_make( $, { A: box( 0, 0 ) }, { editable: ()=> false } )
+
+			pane.ruler_press( 'x', pointer( 300, 40 ) )
+
+			$mol_assert_equal( pane.guide_drag(), null )
+			$mol_assert_like( pane.guides(), {} )
+
+		},
+
 	})
 
 }

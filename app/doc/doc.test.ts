@@ -150,8 +150,13 @@ namespace $ {
 			)
 
 			$mol_assert_like(
+				Object.keys( $bog_vmap_app_doc_guide.schema ),
+				[ 'Axis', 'At' ],
+			)
+
+			$mol_assert_like(
 				Object.keys( $bog_vmap_app_doc.schema ),
-				[ 'Title', 'Nodes', 'Root', 'Spots', 'Pack', 'Snaps' ],
+				[ 'Title', 'Nodes', 'Root', 'Spots', 'Pack', 'Snaps', 'Guides' ],
 			)
 
 			$mol_assert_like(

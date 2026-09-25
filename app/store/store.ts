@@ -8,6 +8,15 @@ namespace $ {
 		readonly [ klass: string ]: string
 	}
 
+	export type $bog_vmap_app_store_guide = {
+		readonly axis: 'x' | 'y'
+		readonly at: number
+	}
+
+	export type $bog_vmap_app_store_guides = {
+		readonly [ id: string ]: $bog_vmap_app_store_guide
+	}
+
 	export type $bog_vmap_app_store_state = {
 		readonly source: string
 		readonly js: $bog_vmap_app_store_parts
@@ -150,6 +159,11 @@ namespace $ {
 		}
 
 		@ $mol_mem
+		draft_guides( next?: $bog_vmap_app_store_guides ): $bog_vmap_app_store_guides {
+			return next ?? {}
+		}
+
+		@ $mol_mem
 		draft_pack( next?: string ) {
 			return next ?? ''
 		}
@@ -271,6 +285,54 @@ namespace $ {
 			}
 
 			return next
+		}
+
+		doc_guides( doc: $bog_vmap_app_doc, next?: $bog_vmap_app_store_guides ): $bog_vmap_app_store_guides {
+
+			if( next === undefined ) {
+
+				const dict = doc.Guides()
+				const res = {} as { [ id: string ]: $bog_vmap_app_store_guide }
+
+				const keys = ( dict?.keys() ?? [] )
+					.filter( ( key ): key is string => typeof key === 'string' )
+					.sort()
+
+				for( const key of keys ) {
+					const line = dict!.key( key )
+					if( !line ) continue
+					const axis = line.axis()
+					if( axis !== 'x' && axis !== 'y' ) continue
+					res[ key ] = { axis, at: line.at() }
+				}
+
+				return res
+			}
+
+			const dict = doc.Guides( null )!
+
+			for( const id of Object.keys( next ) ) {
+				const line = dict.key( id, null )!
+				line.axis( next[ id ].axis )
+				line.at( next[ id ].at )
+			}
+
+			for( const key of dict.keys() ) {
+				if( typeof key !== 'string' ) continue
+				if( !( key in next ) ) dict.has( key, false )
+			}
+
+			return next
+		}
+
+		guides( next?: $bog_vmap_app_store_guides ): $bog_vmap_app_store_guides {
+
+			const doc = this.doc_current()
+			if( !doc ) return this.draft_guides( next )
+
+			if( next !== undefined && !doc.can_change() ) return this.doc_guides( doc )
+
+			return this.doc_guides( doc, next )
 		}
 
 		source( next?: string ): string {

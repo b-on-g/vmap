@@ -81,6 +81,21 @@ namespace $ {
 
 	}
 
+	export class $bog_vmap_app_doc_guide extends $giper_baza_dict.with({
+		Axis: $giper_baza_atom_text,
+		At: $giper_baza_atom_real,
+	}) {
+
+		axis( next?: string ) {
+			return this.Axis( next )?.val( next ) ?? ''
+		}
+
+		at( next?: number ) {
+			return this.At( next )?.val( next ) ?? 0
+		}
+
+	}
+
 	export class $bog_vmap_app_doc extends $giper_baza_dict.with({
 
 		Title: $giper_baza_atom_text,
@@ -94,6 +109,8 @@ namespace $ {
 		Pack: $giper_baza_atom_text,
 
 		Snaps: $giper_baza_list_link.to( ()=> $bog_vmap_app_doc_snap ),
+
+		Guides: $giper_baza_dict_to( $bog_vmap_app_doc_guide ),
 
 	}) {
 
@@ -116,6 +133,7 @@ namespace $ {
 		$bog_vmap_app_doc_node,
 		$bog_vmap_app_doc_snap,
 		$bog_vmap_app_doc_spot,
+		$bog_vmap_app_doc_guide,
 		$bog_vmap_app_doc_home,
 	] as const
 
