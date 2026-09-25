@@ -5564,6 +5564,33 @@ namespace $ {
 
 		},
 
+		'a text field drawn in small steps keeps the width of the whole drag'( $ ) {
+
+			for( const buttons of [ 1, 0 ] ) {
+
+				const stage = $bog_vmap_app_flow_stage( $ )
+				const pane = stage.pane
+				const overlay = stage.overlay()
+
+				pane.tool_text( true )
+
+				const steps = 30
+
+				stage.press( overlay, stage.client([ 40, 40 ]) )
+
+				for( let step = 1; step <= steps; ++ step ) {
+					stage.move( overlay, stage.client([ 40 + 300 * step / steps, 40 + 60 * step / steps ]), { buttons } )
+				}
+
+				stage.release( overlay, stage.client([ 340, 100 ]) )
+				stage.redraw()
+
+				$mol_assert_equal( pane.text_spot()?.width, 300 )
+
+			}
+
+		},
+
 		'a lost pointer capture ends the drag instead of hanging it'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )
