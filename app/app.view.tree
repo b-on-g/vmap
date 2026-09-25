@@ -217,6 +217,13 @@ $bog_vmap_app $mol_page
 		foot <= canvas_foot /$mol_view
 	Scenes $bog_vmap_app_scenes
 		store <= store
+		face_note <= face_note \
+		face_who <= face_who \
+		face_blob <= face_blob $mol_blob
+		face_file <= face_file \
+		face_draft? <=> face_draft? \
+		face_take? <=> face_take? null
+		face_status <= face_status \
 	Layers $bog_vmap_app_layers
 		source <= doc_src
 		root <= doc_root

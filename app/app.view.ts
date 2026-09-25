@@ -2299,6 +2299,102 @@ namespace $.$$ {
 			return next
 		}
 
+		face_key() {
+			return String( this.$.$mol_state_local.value( '$giper_baza_auth' ) ?? '' )
+		}
+
+		override face_who() {
+
+			try {
+				return `Эта личность: ${ this.$.$giper_baza_auth.current().pass().lord().str }`
+			} catch( error: unknown ) {
+				if( $mol_promise_like( error ) ) return 'Личность ещё заводится…'
+				return 'Личность не прочиталась'
+			}
+
+		}
+
+		override face_note() {
+			return 'Личность живёт только в этом браузере. Это ключ, а не пароль:'
+				+ ' у кого есть строка, тот и есть вы, так что не пересылайте её чужим.'
+				+ ' Ключ один на все наши приложения на этом домене, то есть вы сохраняете вход везде,'
+				+ ' а не только в редактор.'
+				+ ' Если профиль обнулится, документы не пропадут и останутся читаемыми по ссылке,'
+				+ ' но список сцен опустеет, а править своё станет нечем, и вернуть права без этой строки нельзя.'
+		}
+
+		override face_file() {
+			return 'vmap-kluch-lichnosti.txt'
+		}
+
+		override face_blob() {
+			return new this.$.$mol_blob( [ this.face_key() ], { type: 'text/plain' } )
+		}
+
+		face_clean( raw: string ) {
+
+			const text = raw.trim()
+			const found = /[#&](?:face|account)=([^&\s]+)/.exec( text )
+
+			return found ? decodeURIComponent( found[ 1 ] ) : text
+		}
+
+		face_checked( raw: string ) {
+
+			const key = this.face_clean( raw )
+
+			if( !key ) return { key: '', note: 'Вставьте строку ключа или ссылку с ним' }
+			if( key === this.face_key() ) return { key: '', note: 'Это та же личность, что уже здесь' }
+
+			if( !/^[0-9a-zA-Z_\-+/=]+$/.test( key ) ) {
+				return { key: '', note: 'В строке есть лишние знаки: это не ключ личности' }
+			}
+
+			try {
+				const auth = this.$.$giper_baza_auth.from( key )
+				if( auth.byteLength !== 128 ) return { key: '', note: `Ключ не той длины: байт ${ auth.byteLength } вместо 128` }
+			} catch( error: unknown ) {
+				return { key: '', note: 'Строка не разбирается как ключ личности' }
+			}
+
+			return { key, note: '' }
+		}
+
+		@ $mol_mem
+		face_said( next?: string ) {
+			return next ?? ''
+		}
+
+		override face_status() {
+			return this.face_said()
+		}
+
+		override face_draft( next?: string ) {
+			if( next !== undefined ) this.face_said( '' )
+			return super.face_draft( next )
+		}
+
+		@ $mol_action
+		override face_take( next?: Event | null ) {
+
+			const checked = this.face_checked( this.face_draft() )
+
+			if( !checked.key ) {
+				this.face_said( checked.note )
+				return null
+			}
+
+			this.$.$mol_state_local.value( '$giper_baza_auth', checked.key )
+			this.face_said( 'Личность принята, перезагружаю…' )
+			this.face_reload()
+
+			return null
+		}
+
+		face_reload() {
+			this.$.$mol_dom_context.location?.reload()
+		}
+
 		share_names() {
 			return this.node().share_names()
 		}

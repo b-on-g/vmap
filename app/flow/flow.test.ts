@@ -3799,3 +3799,117 @@ namespace $ {
 	})
 
 }
+
+namespace $ {
+
+	type stage = ReturnType< typeof $bog_vmap_app_flow_stage >
+
+	const key_one = '_3VC9lZgSA44SEqneXyqPZ-0qQ80YWa4kzAIxbe_fCMqDpYNHtPBDoRwpo9lpGLq8h0sgev9gGZbxo04oViiWswlNl-KfkesI8ueZV8CslDUdWntKXaX90jzd-_EV8kuE6AJziVfKbazev__X_Ydrxu03Ti2skqBAG8QnjWnT6n0'
+	const key_two = '_6hB96hzdas32B3cR20woEhgUnuYIHCItckI8H01uBYITVWdczAOikEZICEkZoo4vTR1Fcg_9i6v2SVcbVJmUYaIWhZ0OX7O63c9HDLWRfvZRcmAOSaIQpEUls2Jcjy40UABF-0n92SBN_kah2t8bcpE-JRczMLehKMgx_t_8cWk'
+
+	const key_of = ( stage: stage )=> stage.app.face_key()
+
+	const seeded = ( stage: stage, key: string )=> {
+		stage.app.$.$mol_state_local.value( '$giper_baza_auth', key )
+		return key
+	}
+
+	const reloaded = ( stage: stage )=> {
+		let hits = 0
+		;( stage.app as unknown as { face_reload: ()=> void } ).face_reload = ()=> { ++ hits }
+		return ()=> hits
+	}
+
+	$mol_test({
+
+		'the scene panel warns that the identity is a key, lives here only and is one for every app'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const note = stage.app.face_note()
+
+			$mol_assert_ok( note.includes( 'только в этом браузере' ) )
+			$mol_assert_ok( note.includes( 'ключ, а не пароль' ) )
+			$mol_assert_ok( note.includes( 'все наши приложения' ) )
+			$mol_assert_ok( note.includes( 'документы не пропадут' ) )
+			$mol_assert_ok( note.includes( 'вернуть права без этой строки нельзя' ) )
+
+			$mol_assert_ok( stage.app.face_who().length > 'Эта личность: '.length )
+			$mol_assert_ok( stage.app.face_file().includes( 'kluch' ) )
+
+		},
+
+		'the saved file carries the very string the identity lives in'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			seeded( stage, key_one )
+
+			$mol_assert_equal( key_of( stage ), key_one )
+			$mol_assert_equal( key_one.length, 172 )
+			$mol_assert_equal( String( stage.kept[ '$giper_baza_auth' ] ?? '' ), JSON.stringify( key_one ) )
+
+		},
+
+		'a saved identity is taken from a bare string and from a link'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const hits = reloaded( stage )
+
+			const mine = seeded( stage, key_one )
+			const alien = key_two
+
+			stage.app.face_draft( alien )
+			stage.app.face_take( null )
+
+			$mol_assert_equal( key_of( stage ), alien )
+			$mol_assert_ok( stage.app.face_status().includes( 'принята' ) )
+			$mol_assert_equal( hits(), 1 )
+
+			stage.app.face_draft( 'http://site/app/#face=' + encodeURIComponent( mine ) )
+			stage.app.face_take( null )
+
+			$mol_assert_equal( key_of( stage ), mine )
+			$mol_assert_equal( hits(), 2 )
+
+		},
+
+		'a broken string is refused by words and never costs the identity'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const hits = reloaded( stage )
+
+			const mine = seeded( stage, key_one )
+
+			for( const [ raw, said ] of [
+				[ '', 'Вставьте строку' ],
+				[ '   ', 'Вставьте строку' ],
+				[ 'ключ личности!!', 'лишние знаки' ],
+				[ 'abcdef', 'не разбирается' ],
+				[ 'a'.repeat( 300 ), 'не той длины' ],
+				[ mine, 'та же личность' ],
+			] as const ) {
+
+				stage.app.face_draft( raw )
+				stage.app.face_take( null )
+
+				$mol_assert_ok( stage.app.face_status().includes( said ) )
+				$mol_assert_equal( key_of( stage ), mine )
+				$mol_assert_equal( hits(), 0 )
+
+			}
+
+		},
+
+		'typing again clears the last refusal'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.app.face_draft( 'мусор' )
+			stage.app.face_take( null )
+
+			$mol_assert_ok( stage.app.face_status().length > 0 )
+
+			stage.app.face_draft( 'другое' )
+
+			$mol_assert_equal( stage.app.face_status(), '' )
+
+		},
+
+	})
+
+}
