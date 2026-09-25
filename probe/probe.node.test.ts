@@ -8,7 +8,14 @@ namespace $ {
 
 			$node.fs.writeFileSync( $.$mol_file.relative( 'bog/vmap/probe/-/probe.log' ).path(), out )
 
-			$mol_assert_ok( out.includes( $bog_probe_skip ) || out.includes( $bog_vmap_probe_ok ) )
+			const ok = out.includes( $bog_probe_skip ) || out.includes( $bog_vmap_probe_ok )
+
+			if( !ok ) {
+				const broken = out.split( '\n' ).filter( line => line.includes( 'КРИВО' ) )
+				console.error( broken.length ? broken.join( '\n' ) : out.slice( -4000 ) )
+			}
+
+			$mol_assert_ok( ok )
 
 		},
 

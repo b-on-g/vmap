@@ -194,6 +194,9 @@ jobs:
           bog/vmap/showcase/-/bog/
           bog/vmap/showcase/-/showcase.log
           bog/vmap/showcase/-/site.log
+          bog/vmap/probe/-/probe.log
+          bog/vmap/border/-/border.log
+          bog/vmap/smoke/-/smoke.log
         include-hidden-files: true
         if-no-files-found: warn
 
